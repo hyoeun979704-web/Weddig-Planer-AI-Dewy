@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useFilterStore, FilterState } from "@/stores/useFilterStore";
 
 const VENUES_PER_PAGE = 10;
 
@@ -17,13 +18,39 @@ export interface Venue {
   updated_at: string;
 }
 
-const fetchVenues = async ({ pageParam = 0 }: { pageParam: number }) => {
+interface FetchVenuesParams {
+  pageParam: number;
+  filters: FilterState;
+}
+
+const fetchVenues = async ({ pageParam = 0, filters }: FetchVenuesParams) => {
   const from = pageParam * VENUES_PER_PAGE;
   const to = from + VENUES_PER_PAGE - 1;
 
-  const { data, error, count } = await supabase
+  let query = supabase
     .from("venues")
-    .select("*", { count: "exact" })
+    .select("*", { count: "exact" });
+
+  // Apply filters
+  if (filters.region) {
+    query = query.ilike("address", `%${filters.region}%`);
+  }
+
+  if (filters.priceRange) {
+    query = query
+      .gte("price_per_person", filters.priceRange[0])
+      .lte("price_per_person", filters.priceRange[1]);
+  }
+
+  if (filters.minGuarantee) {
+    query = query.lte("min_guarantee", filters.minGuarantee);
+  }
+
+  if (filters.minRating) {
+    query = query.gte("rating", filters.minRating);
+  }
+
+  const { data, error, count } = await query
     .order("is_partner", { ascending: false })
     .order("rating", { ascending: false })
     .range(from, to);
@@ -40,10 +67,39 @@ const fetchVenues = async ({ pageParam = 0 }: { pageParam: number }) => {
 };
 
 export const useVenues = () => {
+  const { region, priceRange, minGuarantee, minRating } = useFilterStore();
+  
+  const filters: FilterState = {
+    region,
+    priceRange,
+    minGuarantee,
+    minRating,
+  };
+
   return useInfiniteQuery({
-    queryKey: ["venues"],
-    queryFn: fetchVenues,
+    queryKey: ["venues", filters],
+    queryFn: ({ pageParam }) => fetchVenues({ pageParam, filters }),
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 0,
+  });
+};
+
+// Hook for fetching a single venue
+export const useVenue = (id: string) => {
+  return useInfiniteQuery({
+    queryKey: ["venue", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("venues")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return { venues: data ? [data as Venue] : [], nextPage: undefined, totalCount: data ? 1 : 0 };
+    },
+    getNextPageParam: () => undefined,
+    initialPageParam: 0,
+    enabled: !!id,
   });
 };
