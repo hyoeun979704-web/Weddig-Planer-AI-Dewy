@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { MapPin, Wallet, Users, Star, X, SlidersHorizontal } from "lucide-react";
+import { MapPin, Wallet, Users, Star, X, SlidersHorizontal, ChevronDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useFilterStore } from "@/stores/useFilterStore";
 
@@ -55,6 +56,78 @@ const FilterChip = ({ label, isActive, onClick, icon }: FilterChipProps) => (
   </button>
 );
 
+interface QuickFilterChipProps {
+  label: string;
+  defaultLabel: string;
+  isActive: boolean;
+  icon: React.ReactNode;
+  onClear: () => void;
+  children: React.ReactNode;
+}
+
+const QuickFilterChip = ({ label, defaultLabel, isActive, icon, onClear, children }: QuickFilterChipProps) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200",
+            isActive
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "bg-card border border-border text-foreground hover:border-primary/50"
+          )}
+        >
+          {icon}
+          <span>{isActive ? label : defaultLabel}</span>
+          {isActive ? (
+            <X 
+              className="w-3.5 h-3.5 ml-0.5 hover:opacity-70" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+              }}
+            />
+          ) : (
+            <ChevronDown className="w-3.5 h-3.5 ml-0.5" />
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent 
+        className="w-auto p-2 min-w-[140px]" 
+        align="start"
+        sideOffset={8}
+      >
+        <div className="flex flex-col gap-1" onClick={() => setOpen(false)}>
+          {children}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+interface FilterOptionProps {
+  label: string;
+  isSelected: boolean;
+  onClick: () => void;
+}
+
+const FilterOption = ({ label, isSelected, onClick }: FilterOptionProps) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      "flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left w-full",
+      isSelected
+        ? "bg-primary/10 text-primary font-medium"
+        : "hover:bg-muted text-foreground"
+    )}
+  >
+    <span>{label}</span>
+    {isSelected && <Check className="w-4 h-4" />}
+  </button>
+);
+
 const FilterBar = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const {
@@ -71,6 +144,12 @@ const FilterBar = () => {
   } = useFilterStore();
 
   const activeFiltersCount = [region, priceRange, minGuarantee, minRating].filter(Boolean).length;
+
+  const getPriceLabel = () => {
+    if (!priceRange) return null;
+    const found = priceRanges.find(p => p.value[0] === priceRange[0] && p.value[1] === priceRange[1]);
+    return found?.label || `${(priceRange[0] / 10000).toFixed(0)}~${(priceRange[1] / 10000).toFixed(0)}만원`;
+  };
 
   return (
     <div className="px-4 py-3">
@@ -209,31 +288,80 @@ const FilterBar = () => {
           </SheetContent>
         </Sheet>
 
-        {/* Quick filter chips */}
-        <FilterChip
-          label={region || "지역"}
+        {/* Quick filter chips with dropdowns */}
+        <QuickFilterChip
+          label={region || ""}
+          defaultLabel="지역"
           isActive={!!region}
-          onClick={() => setRegion(null)}
-          icon={region ? <X className="w-3 h-3" /> : <MapPin className="w-3.5 h-3.5" />}
-        />
-        <FilterChip
-          label={priceRange ? `${(priceRange[0] / 10000).toFixed(0)}~${(priceRange[1] / 10000).toFixed(0)}만원` : "가격대"}
+          icon={<MapPin className="w-3.5 h-3.5" />}
+          onClear={() => setRegion(null)}
+        >
+          {regions.map((r) => (
+            <FilterOption
+              key={r.value}
+              label={r.label}
+              isSelected={region === r.value}
+              onClick={() => setRegion(region === r.value ? null : r.value)}
+            />
+          ))}
+        </QuickFilterChip>
+
+        <QuickFilterChip
+          label={getPriceLabel() || ""}
+          defaultLabel="가격대"
           isActive={!!priceRange}
-          onClick={() => setPriceRange(null)}
-          icon={priceRange ? <X className="w-3 h-3" /> : <Wallet className="w-3.5 h-3.5" />}
-        />
-        <FilterChip
-          label={minGuarantee ? `${minGuarantee}명 이하` : "보증인원"}
+          icon={<Wallet className="w-3.5 h-3.5" />}
+          onClear={() => setPriceRange(null)}
+        >
+          {priceRanges.map((p) => (
+            <FilterOption
+              key={p.label}
+              label={p.label}
+              isSelected={priceRange?.[0] === p.value[0] && priceRange?.[1] === p.value[1]}
+              onClick={() =>
+                setPriceRange(
+                  priceRange?.[0] === p.value[0] && priceRange?.[1] === p.value[1]
+                    ? null
+                    : p.value
+                )
+              }
+            />
+          ))}
+        </QuickFilterChip>
+
+        <QuickFilterChip
+          label={minGuarantee ? `${minGuarantee}명 이하` : ""}
+          defaultLabel="보증인원"
           isActive={!!minGuarantee}
-          onClick={() => setMinGuarantee(null)}
-          icon={minGuarantee ? <X className="w-3 h-3" /> : <Users className="w-3.5 h-3.5" />}
-        />
-        <FilterChip
-          label={minRating ? `${minRating}점+` : "평점"}
+          icon={<Users className="w-3.5 h-3.5" />}
+          onClear={() => setMinGuarantee(null)}
+        >
+          {minGuaranteeOptions.map((g) => (
+            <FilterOption
+              key={g.value}
+              label={g.label}
+              isSelected={minGuarantee === g.value}
+              onClick={() => setMinGuarantee(minGuarantee === g.value ? null : g.value)}
+            />
+          ))}
+        </QuickFilterChip>
+
+        <QuickFilterChip
+          label={minRating ? `${minRating}점 이상` : ""}
+          defaultLabel="평점"
           isActive={!!minRating}
-          onClick={() => setMinRating(null)}
-          icon={minRating ? <X className="w-3 h-3" /> : <Star className="w-3.5 h-3.5" />}
-        />
+          icon={<Star className="w-3.5 h-3.5" />}
+          onClear={() => setMinRating(null)}
+        >
+          {ratingOptions.map((r) => (
+            <FilterOption
+              key={r.value}
+              label={r.label}
+              isSelected={minRating === r.value}
+              onClick={() => setMinRating(minRating === r.value ? null : r.value)}
+            />
+          ))}
+        </QuickFilterChip>
       </div>
     </div>
   );
