@@ -1,4 +1,4 @@
-import { Home, Heart, ShoppingBag, Grid3X3 } from "lucide-react";
+import { Home, Heart, ShoppingBag, Grid3X3, Church } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -9,6 +9,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { icon: Home, label: "홈", href: "/" },
+  { icon: Church, label: "웨딩홀", href: "/venues" },
   { icon: Heart, label: "찜", href: "/favorites" },
   { icon: ShoppingBag, label: "스토어", href: "/store" },
   { icon: Grid3X3, label: "더보기", href: "/more" },
