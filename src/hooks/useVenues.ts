@@ -39,14 +39,12 @@ const fetchVenues = async ({ pageParam = 0, filters }: FetchVenuesParams) => {
     query = query.ilike("address", `%${filters.region}%`);
   }
 
-  if (filters.priceRange) {
-    query = query
-      .gte("price_per_person", filters.priceRange[0])
-      .lte("price_per_person", filters.priceRange[1]);
+  if (filters.maxPrice) {
+    query = query.lte("price_per_person", filters.maxPrice);
   }
 
-  if (filters.minGuarantee) {
-    query = query.lte("min_guarantee", filters.minGuarantee);
+  if (filters.maxGuarantee) {
+    query = query.lte("min_guarantee", filters.maxGuarantee);
   }
 
   if (filters.minRating) {
@@ -83,12 +81,12 @@ const fetchVenues = async ({ pageParam = 0, filters }: FetchVenuesParams) => {
 };
 
 export const useVenues = () => {
-  const { region, priceRange, minGuarantee, minRating, hallTypes, mealOptions, eventOptions } = useFilterStore();
+  const { region, maxPrice, maxGuarantee, minRating, hallTypes, mealOptions, eventOptions } = useFilterStore();
   
   const filters: FilterState = {
     region,
-    priceRange,
-    minGuarantee,
+    maxPrice,
+    maxGuarantee,
     minRating,
     hallTypes,
     mealOptions,

@@ -2,8 +2,8 @@ import { create } from "zustand";
 
 export interface FilterState {
   region: string | null;
-  priceRange: [number, number] | null;
-  minGuarantee: number | null;
+  maxPrice: number | null; // 단일 슬라이더 (최대 가격)
+  maxGuarantee: number | null; // 단일 슬라이더 (최대 보증인원)
   minRating: number | null;
   hallTypes: string[];
   mealOptions: string[];
@@ -12,8 +12,8 @@ export interface FilterState {
 
 interface FilterStore extends FilterState {
   setRegion: (region: string | null) => void;
-  setPriceRange: (range: [number, number] | null) => void;
-  setMinGuarantee: (minGuarantee: number | null) => void;
+  setMaxPrice: (maxPrice: number | null) => void;
+  setMaxGuarantee: (maxGuarantee: number | null) => void;
   setMinRating: (rating: number | null) => void;
   setHallTypes: (hallTypes: string[]) => void;
   toggleHallType: (hallType: string) => void;
@@ -27,8 +27,8 @@ interface FilterStore extends FilterState {
 
 const initialState: FilterState = {
   region: null,
-  priceRange: null,
-  minGuarantee: null,
+  maxPrice: null,
+  maxGuarantee: null,
   minRating: null,
   hallTypes: [],
   mealOptions: [],
@@ -39,8 +39,8 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   ...initialState,
   
   setRegion: (region) => set({ region }),
-  setPriceRange: (priceRange) => set({ priceRange }),
-  setMinGuarantee: (minGuarantee) => set({ minGuarantee }),
+  setMaxPrice: (maxPrice) => set({ maxPrice }),
+  setMaxGuarantee: (maxGuarantee) => set({ maxGuarantee }),
   setMinRating: (minRating) => set({ minRating }),
   
   setHallTypes: (hallTypes) => set({ hallTypes }),
@@ -79,8 +79,8 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
     const state = get();
     return !!(
       state.region || 
-      state.priceRange || 
-      state.minGuarantee || 
+      state.maxPrice || 
+      state.maxGuarantee || 
       state.minRating ||
       state.hallTypes.length > 0 ||
       state.mealOptions.length > 0 ||

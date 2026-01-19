@@ -3,6 +3,7 @@ import { MapPin, Wallet, Users, Star, X, SlidersHorizontal, ChevronDown, Check, 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { useFilterStore } from "@/stores/useFilterStore";
 
@@ -12,20 +13,6 @@ const regions = [
   { value: "인천", label: "인천" },
   { value: "부산", label: "부산" },
   { value: "대구", label: "대구" },
-];
-
-const priceRanges = [
-  { value: [0, 70000] as [number, number], label: "7만원 이하" },
-  { value: [70000, 100000] as [number, number], label: "7~10만원" },
-  { value: [100000, 150000] as [number, number], label: "10~15만원" },
-  { value: [150000, 999999] as [number, number], label: "15만원 이상" },
-];
-
-const minGuaranteeOptions = [
-  { value: 100, label: "100명 이하" },
-  { value: 150, label: "150명 이하" },
-  { value: 200, label: "200명 이하" },
-  { value: 250, label: "250명 이하" },
 ];
 
 const ratingOptions = [
@@ -57,6 +44,15 @@ const eventOptionOptions = [
   { value: "돔오픈", label: "돔오픈" },
   { value: "라이브 연주", label: "라이브 연주" },
 ];
+
+// 슬라이더 설정
+const PRICE_MIN = 40000;
+const PRICE_MAX = 200000;
+const PRICE_STEP = 10000;
+
+const GUARANTEE_MIN = 50;
+const GUARANTEE_MAX = 300;
+const GUARANTEE_STEP = 10;
 
 interface FilterChipProps {
   label: string;
@@ -182,15 +178,15 @@ const FilterBar = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const {
     region,
-    priceRange,
-    minGuarantee,
+    maxPrice,
+    maxGuarantee,
     minRating,
     hallTypes,
     mealOptions,
     eventOptions,
     setRegion,
-    setPriceRange,
-    setMinGuarantee,
+    setMaxPrice,
+    setMaxGuarantee,
     setMinRating,
     toggleHallType,
     setHallTypes,
@@ -204,8 +200,8 @@ const FilterBar = () => {
 
   const activeFiltersCount = [
     region, 
-    priceRange, 
-    minGuarantee, 
+    maxPrice, 
+    maxGuarantee, 
     minRating,
     hallTypes.length > 0 ? hallTypes : null,
     mealOptions.length > 0 ? mealOptions : null,
@@ -213,9 +209,13 @@ const FilterBar = () => {
   ].filter(Boolean).length;
 
   const getPriceLabel = () => {
-    if (!priceRange) return null;
-    const found = priceRanges.find(p => p.value[0] === priceRange[0] && p.value[1] === priceRange[1]);
-    return found?.label || `${(priceRange[0] / 10000).toFixed(0)}~${(priceRange[1] / 10000).toFixed(0)}만원`;
+    if (!maxPrice) return null;
+    return `${(maxPrice / 10000).toFixed(0)}만원 이하`;
+  };
+
+  const getGuaranteeLabel = () => {
+    if (!maxGuarantee) return null;
+    return `${maxGuarantee}명 이하`;
   };
 
   const getHallTypesLabel = () => {
@@ -259,8 +259,8 @@ const FilterBar = () => {
               )}
             </button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl">
-            <SheetHeader className="text-left mb-6">
+          <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl flex flex-col">
+            <SheetHeader className="text-left mb-4 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <SheetTitle className="text-lg font-bold">필터</SheetTitle>
                 {hasActiveFilters() && (
@@ -276,7 +276,7 @@ const FilterBar = () => {
               </div>
             </SheetHeader>
 
-            <div className="space-y-6 overflow-y-auto pb-24">
+            <div className="flex-1 overflow-y-auto space-y-6 pb-24">
               {/* Region Filter */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -295,49 +295,53 @@ const FilterBar = () => {
                 </div>
               </div>
 
-              {/* Price Range Filter */}
+              {/* Price Slider */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                   <Wallet className="w-4 h-4" />
                   가격대 (1인 식대)
                 </h3>
-                <div className="flex flex-wrap gap-2">
-                  {priceRanges.map((p) => (
-                    <FilterChip
-                      key={p.label}
-                      label={p.label}
-                      isActive={
-                        priceRange?.[0] === p.value[0] && priceRange?.[1] === p.value[1]
-                      }
-                      onClick={() =>
-                        setPriceRange(
-                          priceRange?.[0] === p.value[0] && priceRange?.[1] === p.value[1]
-                            ? null
-                            : p.value
-                        )
-                      }
-                    />
-                  ))}
+                <div className="px-2">
+                  <div className="flex justify-between text-sm text-muted-foreground mb-3">
+                    <span>{PRICE_MIN / 10000}만원</span>
+                    <span className="font-semibold text-foreground">
+                      {maxPrice ? `${maxPrice / 10000}만원 이하` : "전체"}
+                    </span>
+                    <span>{PRICE_MAX / 10000}만원</span>
+                  </div>
+                  <Slider
+                    value={[maxPrice || PRICE_MAX]}
+                    onValueChange={(value) => setMaxPrice(value[0] === PRICE_MAX ? null : value[0])}
+                    min={PRICE_MIN}
+                    max={PRICE_MAX}
+                    step={PRICE_STEP}
+                    className="w-full"
+                  />
                 </div>
               </div>
 
-              {/* Min Guarantee Filter */}
+              {/* Guarantee Slider */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   보증인원
                 </h3>
-                <div className="flex flex-wrap gap-2">
-                  {minGuaranteeOptions.map((g) => (
-                    <FilterChip
-                      key={g.value}
-                      label={g.label}
-                      isActive={minGuarantee === g.value}
-                      onClick={() =>
-                        setMinGuarantee(minGuarantee === g.value ? null : g.value)
-                      }
-                    />
-                  ))}
+                <div className="px-2">
+                  <div className="flex justify-between text-sm text-muted-foreground mb-3">
+                    <span>{GUARANTEE_MIN}명</span>
+                    <span className="font-semibold text-foreground">
+                      {maxGuarantee ? `${maxGuarantee}명 이하` : "전체"}
+                    </span>
+                    <span>{GUARANTEE_MAX}명</span>
+                  </div>
+                  <Slider
+                    value={[maxGuarantee || GUARANTEE_MAX]}
+                    onValueChange={(value) => setMaxGuarantee(value[0] === GUARANTEE_MAX ? null : value[0])}
+                    min={GUARANTEE_MIN}
+                    max={GUARANTEE_MAX}
+                    step={GUARANTEE_STEP}
+                    className="w-full"
+                  />
                 </div>
               </div>
 
@@ -448,41 +452,55 @@ const FilterBar = () => {
         <QuickFilterChip
           label={getPriceLabel() || ""}
           defaultLabel="가격대"
-          isActive={!!priceRange}
+          isActive={!!maxPrice}
           icon={<Wallet className="w-3.5 h-3.5" />}
-          onClear={() => setPriceRange(null)}
+          onClear={() => setMaxPrice(null)}
+          keepOpen
         >
-          {priceRanges.map((p) => (
-            <FilterOption
-              key={p.label}
-              label={p.label}
-              isSelected={priceRange?.[0] === p.value[0] && priceRange?.[1] === p.value[1]}
-              onClick={() =>
-                setPriceRange(
-                  priceRange?.[0] === p.value[0] && priceRange?.[1] === p.value[1]
-                    ? null
-                    : p.value
-                )
-              }
+          <div className="p-3 min-w-[200px]">
+            <div className="text-sm font-medium mb-2 text-center">
+              {maxPrice ? `${maxPrice / 10000}만원 이하` : "전체"}
+            </div>
+            <Slider
+              value={[maxPrice || PRICE_MAX]}
+              onValueChange={(value) => setMaxPrice(value[0] === PRICE_MAX ? null : value[0])}
+              min={PRICE_MIN}
+              max={PRICE_MAX}
+              step={PRICE_STEP}
+              className="w-full"
             />
-          ))}
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>{PRICE_MIN / 10000}만</span>
+              <span>{PRICE_MAX / 10000}만</span>
+            </div>
+          </div>
         </QuickFilterChip>
 
         <QuickFilterChip
-          label={minGuarantee ? `${minGuarantee}명 이하` : ""}
+          label={getGuaranteeLabel() || ""}
           defaultLabel="보증인원"
-          isActive={!!minGuarantee}
+          isActive={!!maxGuarantee}
           icon={<Users className="w-3.5 h-3.5" />}
-          onClear={() => setMinGuarantee(null)}
+          onClear={() => setMaxGuarantee(null)}
+          keepOpen
         >
-          {minGuaranteeOptions.map((g) => (
-            <FilterOption
-              key={g.value}
-              label={g.label}
-              isSelected={minGuarantee === g.value}
-              onClick={() => setMinGuarantee(minGuarantee === g.value ? null : g.value)}
+          <div className="p-3 min-w-[200px]">
+            <div className="text-sm font-medium mb-2 text-center">
+              {maxGuarantee ? `${maxGuarantee}명 이하` : "전체"}
+            </div>
+            <Slider
+              value={[maxGuarantee || GUARANTEE_MAX]}
+              onValueChange={(value) => setMaxGuarantee(value[0] === GUARANTEE_MAX ? null : value[0])}
+              min={GUARANTEE_MIN}
+              max={GUARANTEE_MAX}
+              step={GUARANTEE_STEP}
+              className="w-full"
             />
-          ))}
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>{GUARANTEE_MIN}명</span>
+              <span>{GUARANTEE_MAX}명</span>
+            </div>
+          </div>
         </QuickFilterChip>
 
         <QuickFilterChip
