@@ -16,6 +16,9 @@ export interface Venue {
   thumbnail_url: string | null;
   created_at: string;
   updated_at: string;
+  hall_types: string[] | null;
+  meal_options: string[] | null;
+  event_options: string[] | null;
 }
 
 interface FetchVenuesParams {
@@ -50,6 +53,19 @@ const fetchVenues = async ({ pageParam = 0, filters }: FetchVenuesParams) => {
     query = query.gte("rating", filters.minRating);
   }
 
+  // Array containment filters (복수선택)
+  if (filters.hallTypes.length > 0) {
+    query = query.overlaps("hall_types", filters.hallTypes);
+  }
+
+  if (filters.mealOptions.length > 0) {
+    query = query.overlaps("meal_options", filters.mealOptions);
+  }
+
+  if (filters.eventOptions.length > 0) {
+    query = query.overlaps("event_options", filters.eventOptions);
+  }
+
   const { data, error, count } = await query
     .order("is_partner", { ascending: false })
     .order("rating", { ascending: false })
@@ -67,13 +83,16 @@ const fetchVenues = async ({ pageParam = 0, filters }: FetchVenuesParams) => {
 };
 
 export const useVenues = () => {
-  const { region, priceRange, minGuarantee, minRating } = useFilterStore();
+  const { region, priceRange, minGuarantee, minRating, hallTypes, mealOptions, eventOptions } = useFilterStore();
   
   const filters: FilterState = {
     region,
     priceRange,
     minGuarantee,
     minRating,
+    hallTypes,
+    mealOptions,
+    eventOptions,
   };
 
   return useInfiniteQuery({

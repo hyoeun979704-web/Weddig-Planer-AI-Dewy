@@ -18,8 +18,11 @@ export type Database = {
         Row: {
           address: string
           created_at: string
+          event_options: string[] | null
+          hall_types: string[] | null
           id: string
           is_partner: boolean
+          meal_options: string[] | null
           min_guarantee: number
           name: string
           price_per_person: number
@@ -31,8 +34,11 @@ export type Database = {
         Insert: {
           address: string
           created_at?: string
+          event_options?: string[] | null
+          hall_types?: string[] | null
           id?: string
           is_partner?: boolean
+          meal_options?: string[] | null
           min_guarantee?: number
           name: string
           price_per_person: number
@@ -44,8 +50,11 @@ export type Database = {
         Update: {
           address?: string
           created_at?: string
+          event_options?: string[] | null
+          hall_types?: string[] | null
           id?: string
           is_partner?: boolean
+          meal_options?: string[] | null
           min_guarantee?: number
           name?: string
           price_per_person?: number

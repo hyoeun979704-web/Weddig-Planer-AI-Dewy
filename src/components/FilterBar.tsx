@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, Wallet, Users, Star, X, SlidersHorizontal, ChevronDown, Check } from "lucide-react";
+import { MapPin, Wallet, Users, Star, X, SlidersHorizontal, ChevronDown, Check, Building2, UtensilsCrossed, PartyPopper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -34,6 +34,30 @@ const ratingOptions = [
   { value: 4.9, label: "4.9점 이상" },
 ];
 
+const hallTypeOptions = [
+  { value: "어두운홀", label: "어두운홀" },
+  { value: "밝은홀", label: "밝은홀" },
+  { value: "야외", label: "야외" },
+  { value: "단독홀", label: "단독홀" },
+  { value: "호텔", label: "호텔" },
+];
+
+const mealOptionOptions = [
+  { value: "뷔페", label: "뷔페" },
+  { value: "양식코스", label: "양식코스" },
+  { value: "한식코스", label: "한식코스" },
+  { value: "중식코스", label: "중식코스" },
+  { value: "일식코스", label: "일식코스" },
+];
+
+const eventOptionOptions = [
+  { value: "포토부스", label: "포토부스" },
+  { value: "벌룬이펙트", label: "벌룬이펙트" },
+  { value: "뮤지컬", label: "뮤지컬" },
+  { value: "돔오픈", label: "돔오픈" },
+  { value: "라이브 연주", label: "라이브 연주" },
+];
+
 interface FilterChipProps {
   label: string;
   isActive: boolean;
@@ -63,9 +87,10 @@ interface QuickFilterChipProps {
   icon: React.ReactNode;
   onClear: () => void;
   children: React.ReactNode;
+  keepOpen?: boolean;
 }
 
-const QuickFilterChip = ({ label, defaultLabel, isActive, icon, onClear, children }: QuickFilterChipProps) => {
+const QuickFilterChip = ({ label, defaultLabel, isActive, icon, onClear, children, keepOpen = false }: QuickFilterChipProps) => {
   const [open, setOpen] = useState(false);
 
   return (
@@ -99,7 +124,7 @@ const QuickFilterChip = ({ label, defaultLabel, isActive, icon, onClear, childre
         align="start"
         sideOffset={8}
       >
-        <div className="flex flex-col gap-1" onClick={() => setOpen(false)}>
+        <div className="flex flex-col gap-1" onClick={() => !keepOpen && setOpen(false)}>
           {children}
         </div>
       </PopoverContent>
@@ -128,6 +153,31 @@ const FilterOption = ({ label, isSelected, onClick }: FilterOptionProps) => (
   </button>
 );
 
+// 복수선택용 필터 옵션
+interface MultiFilterOptionProps {
+  label: string;
+  isSelected: boolean;
+  onClick: () => void;
+}
+
+const MultiFilterOption = ({ label, isSelected, onClick }: MultiFilterOptionProps) => (
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick();
+    }}
+    className={cn(
+      "flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left w-full",
+      isSelected
+        ? "bg-primary/10 text-primary font-medium"
+        : "hover:bg-muted text-foreground"
+    )}
+  >
+    <span>{label}</span>
+    {isSelected && <Check className="w-4 h-4" />}
+  </button>
+);
+
 const FilterBar = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const {
@@ -135,20 +185,55 @@ const FilterBar = () => {
     priceRange,
     minGuarantee,
     minRating,
+    hallTypes,
+    mealOptions,
+    eventOptions,
     setRegion,
     setPriceRange,
     setMinGuarantee,
     setMinRating,
+    toggleHallType,
+    setHallTypes,
+    toggleMealOption,
+    setMealOptions,
+    toggleEventOption,
+    setEventOptions,
     resetFilters,
     hasActiveFilters,
   } = useFilterStore();
 
-  const activeFiltersCount = [region, priceRange, minGuarantee, minRating].filter(Boolean).length;
+  const activeFiltersCount = [
+    region, 
+    priceRange, 
+    minGuarantee, 
+    minRating,
+    hallTypes.length > 0 ? hallTypes : null,
+    mealOptions.length > 0 ? mealOptions : null,
+    eventOptions.length > 0 ? eventOptions : null,
+  ].filter(Boolean).length;
 
   const getPriceLabel = () => {
     if (!priceRange) return null;
     const found = priceRanges.find(p => p.value[0] === priceRange[0] && p.value[1] === priceRange[1]);
     return found?.label || `${(priceRange[0] / 10000).toFixed(0)}~${(priceRange[1] / 10000).toFixed(0)}만원`;
+  };
+
+  const getHallTypesLabel = () => {
+    if (hallTypes.length === 0) return null;
+    if (hallTypes.length === 1) return hallTypes[0];
+    return `${hallTypes[0]} 외 ${hallTypes.length - 1}`;
+  };
+
+  const getMealOptionsLabel = () => {
+    if (mealOptions.length === 0) return null;
+    if (mealOptions.length === 1) return mealOptions[0];
+    return `${mealOptions[0]} 외 ${mealOptions.length - 1}`;
+  };
+
+  const getEventOptionsLabel = () => {
+    if (eventOptions.length === 0) return null;
+    if (eventOptions.length === 1) return eventOptions[0];
+    return `${eventOptions[0]} 외 ${eventOptions.length - 1}`;
   };
 
   return (
@@ -174,7 +259,7 @@ const FilterBar = () => {
               )}
             </button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="h-[70vh] rounded-t-3xl">
+          <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl">
             <SheetHeader className="text-left mb-6">
               <div className="flex items-center justify-between">
                 <SheetTitle className="text-lg font-bold">필터</SheetTitle>
@@ -191,7 +276,7 @@ const FilterBar = () => {
               </div>
             </SheetHeader>
 
-            <div className="space-y-6 overflow-y-auto">
+            <div className="space-y-6 overflow-y-auto pb-24">
               {/* Region Filter */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -271,6 +356,60 @@ const FilterBar = () => {
                       onClick={() =>
                         setMinRating(minRating === r.value ? null : r.value)
                       }
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Hall Type Filter (복수선택) */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  홀타입 <span className="text-xs text-muted-foreground font-normal">(복수선택 가능)</span>
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {hallTypeOptions.map((h) => (
+                    <FilterChip
+                      key={h.value}
+                      label={h.label}
+                      isActive={hallTypes.includes(h.value)}
+                      onClick={() => toggleHallType(h.value)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Meal Options Filter (복수선택) */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <UtensilsCrossed className="w-4 h-4" />
+                  식사 옵션 <span className="text-xs text-muted-foreground font-normal">(복수선택 가능)</span>
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {mealOptionOptions.map((m) => (
+                    <FilterChip
+                      key={m.value}
+                      label={m.label}
+                      isActive={mealOptions.includes(m.value)}
+                      onClick={() => toggleMealOption(m.value)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Event Options Filter (복수선택) */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <PartyPopper className="w-4 h-4" />
+                  이벤트옵션 <span className="text-xs text-muted-foreground font-normal">(복수선택 가능)</span>
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {eventOptionOptions.map((e) => (
+                    <FilterChip
+                      key={e.value}
+                      label={e.label}
+                      isActive={eventOptions.includes(e.value)}
+                      onClick={() => toggleEventOption(e.value)}
                     />
                   ))}
                 </div>
@@ -359,6 +498,63 @@ const FilterBar = () => {
               label={r.label}
               isSelected={minRating === r.value}
               onClick={() => setMinRating(minRating === r.value ? null : r.value)}
+            />
+          ))}
+        </QuickFilterChip>
+
+        {/* 홀타입 (복수선택) */}
+        <QuickFilterChip
+          label={getHallTypesLabel() || ""}
+          defaultLabel="홀타입"
+          isActive={hallTypes.length > 0}
+          icon={<Building2 className="w-3.5 h-3.5" />}
+          onClear={() => setHallTypes([])}
+          keepOpen
+        >
+          {hallTypeOptions.map((h) => (
+            <MultiFilterOption
+              key={h.value}
+              label={h.label}
+              isSelected={hallTypes.includes(h.value)}
+              onClick={() => toggleHallType(h.value)}
+            />
+          ))}
+        </QuickFilterChip>
+
+        {/* 식사 옵션 (복수선택) */}
+        <QuickFilterChip
+          label={getMealOptionsLabel() || ""}
+          defaultLabel="식사"
+          isActive={mealOptions.length > 0}
+          icon={<UtensilsCrossed className="w-3.5 h-3.5" />}
+          onClear={() => setMealOptions([])}
+          keepOpen
+        >
+          {mealOptionOptions.map((m) => (
+            <MultiFilterOption
+              key={m.value}
+              label={m.label}
+              isSelected={mealOptions.includes(m.value)}
+              onClick={() => toggleMealOption(m.value)}
+            />
+          ))}
+        </QuickFilterChip>
+
+        {/* 이벤트옵션 (복수선택) */}
+        <QuickFilterChip
+          label={getEventOptionsLabel() || ""}
+          defaultLabel="이벤트"
+          isActive={eventOptions.length > 0}
+          icon={<PartyPopper className="w-3.5 h-3.5" />}
+          onClear={() => setEventOptions([])}
+          keepOpen
+        >
+          {eventOptionOptions.map((e) => (
+            <MultiFilterOption
+              key={e.value}
+              label={e.label}
+              isSelected={eventOptions.includes(e.value)}
+              onClick={() => toggleEventOption(e.value)}
             />
           ))}
         </QuickFilterChip>
