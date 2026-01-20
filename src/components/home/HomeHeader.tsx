@@ -5,6 +5,7 @@ const HomeHeader = () => {
   const navigate = useNavigate();
 
   return (
+    /* Note: top-0 and z-50 ensure header stays above CategoryTabBar */
     <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border">
       <div className="flex items-center justify-between px-4 h-14">
         {/* Logo */}

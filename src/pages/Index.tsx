@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
-import HeroSection from "@/components/home/HeroSection";
+import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
+import TabHeroContent from "@/components/home/TabHeroContent";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import RecommendedVenues from "@/components/home/RecommendedVenues";
 import StudioGallery from "@/components/home/StudioGallery";
@@ -12,20 +14,28 @@ import Footer from "@/components/home/Footer";
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [activeTab, setActiveTab] = useState<CategoryTab>("wedding-hall");
 
   const handleTabChange = (href: string) => {
     navigate(href);
   };
 
+  const handleCategoryTabChange = (tab: CategoryTab) => {
+    setActiveTab(tab);
+    // Future: Can add routing here for each tab
+    // navigate(`/${tab}`);
+  };
+
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
+      {/* Fixed Header + Category Tab Bar */}
       <HomeHeader />
+      <CategoryTabBar activeTab={activeTab} onTabChange={handleCategoryTabChange} />
 
       {/* Main Content */}
       <main className="pb-20">
-        {/* Hero Section */}
-        <HeroSection />
+        {/* Tab-specific Hero Section */}
+        <TabHeroContent activeTab={activeTab} />
 
         {/* Category Grid */}
         <CategoryGrid />
