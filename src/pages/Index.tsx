@@ -4,7 +4,6 @@ import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
 import TabHeroContent from "@/components/home/TabHeroContent";
-import CategoryGrid from "@/components/home/CategoryGrid";
 import RecommendedVenues from "@/components/home/RecommendedVenues";
 import StudioGallery from "@/components/home/StudioGallery";
 import MagazineSection from "@/components/home/MagazineSection";
@@ -22,8 +21,6 @@ const Index = () => {
 
   const handleCategoryTabChange = (tab: CategoryTab) => {
     setActiveTab(tab);
-    // Future: Can add routing here for each tab
-    // navigate(`/${tab}`);
   };
 
   return (
@@ -36,9 +33,6 @@ const Index = () => {
       <main className="pb-20">
         {/* Tab-specific Hero Section */}
         <TabHeroContent activeTab={activeTab} />
-
-        {/* Category Grid */}
-        <CategoryGrid />
 
         {/* Recommended Venues - Horizontal Scroll */}
         <RecommendedVenues />

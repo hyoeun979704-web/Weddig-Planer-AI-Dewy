@@ -46,6 +46,7 @@ const VenueCard = ({ name, location, priceRange, rating, reviewCount, imageUrl, 
 );
 
 const RecommendedVenues = () => {
+  // Spacing adjusted: pt-4 instead of py-6 for better flow from hero
   const navigate = useNavigate();
 
   // Dummy data - will be replaced with Supabase data
@@ -89,7 +90,7 @@ const RecommendedVenues = () => {
   ];
 
   return (
-    <section className="py-6">
+    <section className="pt-4 pb-6">
       <div className="flex items-center justify-between px-4 mb-4">
         <h2 className="text-lg font-bold text-foreground">맞춤 웨딩홀 추천</h2>
         <button 
