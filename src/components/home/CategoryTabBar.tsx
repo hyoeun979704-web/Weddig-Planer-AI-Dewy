@@ -32,8 +32,11 @@ interface CategoryTabBarProps {
 
 const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
   return (
-    <div className="sticky top-14 z-40 bg-card border-b border-border">
-      <div className="flex overflow-x-auto scrollbar-hide">
+    <div className="sticky top-14 z-40 bg-card border-b border-border w-full">
+      <div 
+        className="flex overflow-x-auto overflow-y-hidden scrollbar-hide"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           
@@ -42,7 +45,7 @@ const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "flex-shrink-0 flex items-center gap-1.5 px-4 py-3 relative transition-colors",
+                "flex-shrink-0 flex items-center gap-1.5 px-4 py-3 relative transition-colors whitespace-nowrap",
                 isActive 
                   ? "text-primary" 
                   : "text-muted-foreground hover:text-foreground"
