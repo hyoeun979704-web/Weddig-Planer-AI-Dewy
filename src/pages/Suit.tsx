@@ -10,11 +10,13 @@ import { CategoryItem } from "@/hooks/useCategoryData";
 const Suit = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { hasActiveFilters, resetFilters } = useCategoryFilterStore();
+  const hasActiveFilters = useCategoryFilterStore((state) => state.hasActiveFilters);
+  const resetFilters = useCategoryFilterStore((state) => state.resetFilters);
 
   useEffect(() => {
     resetFilters();
-  }, [resetFilters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleItemClick = (item: CategoryItem) => {
     navigate(`/suit/${item.id}`);
