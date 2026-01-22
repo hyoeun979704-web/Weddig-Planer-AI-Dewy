@@ -65,7 +65,7 @@ const sectionDataMap: Record<CategoryTab, SectionData> = {
   },
   "sdm": {
     title: "인기 스드메 패키지",
-    viewAllPath: "/sdm",
+    viewAllPath: "/studios",
     items: [
       { id: "1", name: "라움 스튜디오", location: "서울 강남구", priceRange: "350만원~", rating: 4.9, reviewCount: 521, imageUrl: "https://images.unsplash.com/photo-1595407753234-0882f1e77954?w=400", onClick: () => {} },
       { id: "2", name: "소렐라 드레스", location: "서울 종로구", priceRange: "200만원~", rating: 4.7, reviewCount: 312, imageUrl: "https://images.unsplash.com/photo-1594463750939-ebb28c3f7f75?w=400", onClick: () => {} },
