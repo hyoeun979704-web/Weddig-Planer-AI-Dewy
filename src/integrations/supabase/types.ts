@@ -14,6 +14,300 @@ export type Database = {
   }
   public: {
     Tables: {
+      appliances: {
+        Row: {
+          brand: string
+          brand_options: string[] | null
+          category_types: string[] | null
+          created_at: string
+          feature_options: string[] | null
+          id: string
+          is_partner: boolean
+          name: string
+          price_range: string
+          rating: number
+          review_count: number
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand: string
+          brand_options?: string[] | null
+          category_types?: string[] | null
+          created_at?: string
+          feature_options?: string[] | null
+          id?: string
+          is_partner?: boolean
+          name: string
+          price_range: string
+          rating?: number
+          review_count?: number
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand?: string
+          brand_options?: string[] | null
+          category_types?: string[] | null
+          created_at?: string
+          feature_options?: string[] | null
+          id?: string
+          is_partner?: boolean
+          name?: string
+          price_range?: string
+          rating?: number
+          review_count?: number
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hanbok: {
+        Row: {
+          address: string
+          created_at: string
+          hanbok_types: string[] | null
+          id: string
+          is_partner: boolean
+          name: string
+          price_range: string
+          rating: number
+          review_count: number
+          service_options: string[] | null
+          style_options: string[] | null
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          hanbok_types?: string[] | null
+          id?: string
+          is_partner?: boolean
+          name: string
+          price_range: string
+          rating?: number
+          review_count?: number
+          service_options?: string[] | null
+          style_options?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          hanbok_types?: string[] | null
+          id?: string
+          is_partner?: boolean
+          name?: string
+          price_range?: string
+          rating?: number
+          review_count?: number
+          service_options?: string[] | null
+          style_options?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      honeymoon: {
+        Row: {
+          accommodation_types: string[] | null
+          created_at: string
+          destination: string
+          duration: string
+          id: string
+          included_services: string[] | null
+          is_partner: boolean
+          name: string
+          price_range: string
+          rating: number
+          review_count: number
+          thumbnail_url: string | null
+          trip_types: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          accommodation_types?: string[] | null
+          created_at?: string
+          destination: string
+          duration: string
+          id?: string
+          included_services?: string[] | null
+          is_partner?: boolean
+          name: string
+          price_range: string
+          rating?: number
+          review_count?: number
+          thumbnail_url?: string | null
+          trip_types?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          accommodation_types?: string[] | null
+          created_at?: string
+          destination?: string
+          duration?: string
+          id?: string
+          included_services?: string[] | null
+          is_partner?: boolean
+          name?: string
+          price_range?: string
+          rating?: number
+          review_count?: number
+          thumbnail_url?: string | null
+          trip_types?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      honeymoon_gifts: {
+        Row: {
+          brand: string
+          brand_options: string[] | null
+          category_types: string[] | null
+          created_at: string
+          delivery_options: string[] | null
+          id: string
+          is_partner: boolean
+          name: string
+          price_range: string
+          rating: number
+          review_count: number
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand: string
+          brand_options?: string[] | null
+          category_types?: string[] | null
+          created_at?: string
+          delivery_options?: string[] | null
+          id?: string
+          is_partner?: boolean
+          name: string
+          price_range: string
+          rating?: number
+          review_count?: number
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand?: string
+          brand_options?: string[] | null
+          category_types?: string[] | null
+          created_at?: string
+          delivery_options?: string[] | null
+          id?: string
+          is_partner?: boolean
+          name?: string
+          price_range?: string
+          rating?: number
+          review_count?: number
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      studios: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          is_partner: boolean
+          min_guarantee: number
+          name: string
+          package_types: string[] | null
+          price_per_person: number
+          rating: number
+          review_count: number
+          service_options: string[] | null
+          style_options: string[] | null
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: string
+          is_partner?: boolean
+          min_guarantee?: number
+          name: string
+          package_types?: string[] | null
+          price_per_person: number
+          rating?: number
+          review_count?: number
+          service_options?: string[] | null
+          style_options?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          is_partner?: boolean
+          min_guarantee?: number
+          name?: string
+          package_types?: string[] | null
+          price_per_person?: number
+          rating?: number
+          review_count?: number
+          service_options?: string[] | null
+          style_options?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      suits: {
+        Row: {
+          address: string
+          brand_options: string[] | null
+          created_at: string
+          id: string
+          is_partner: boolean
+          name: string
+          price_range: string
+          rating: number
+          review_count: number
+          service_options: string[] | null
+          suit_types: string[] | null
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          brand_options?: string[] | null
+          created_at?: string
+          id?: string
+          is_partner?: boolean
+          name: string
+          price_range: string
+          rating?: number
+          review_count?: number
+          service_options?: string[] | null
+          suit_types?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          brand_options?: string[] | null
+          created_at?: string
+          id?: string
+          is_partner?: boolean
+          name?: string
+          price_range?: string
+          rating?: number
+          review_count?: number
+          service_options?: string[] | null
+          suit_types?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       venues: {
         Row: {
           address: string
