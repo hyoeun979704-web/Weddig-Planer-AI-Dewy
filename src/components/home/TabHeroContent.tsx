@@ -142,6 +142,7 @@ const TabHeroContent = ({ activeTab }: TabHeroContentProps) => {
           </Button>
           <Button 
             variant="outline"
+            onClick={() => navigate("/ai-planner")}
             className="flex-1 h-12 rounded-xl font-semibold gap-2 border-primary/30 hover:bg-accent"
           >
             <Sparkles className="w-4 h-4" />

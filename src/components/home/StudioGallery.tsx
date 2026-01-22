@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { CategoryTab } from "./CategoryTabBar";
 
@@ -59,6 +60,7 @@ interface StudioGalleryProps {
 }
 
 const StudioGallery = ({ activeTab = "sdm" }: StudioGalleryProps) => {
+  const navigate = useNavigate();
   const data = galleryDataMap[activeTab] || galleryDataMap["sdm"];
 
   return (
@@ -68,7 +70,10 @@ const StudioGallery = ({ activeTab = "sdm" }: StudioGalleryProps) => {
           <h2 className="text-lg font-bold text-foreground">{data.title}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">{data.subtitle}</p>
         </div>
-        <button className="flex items-center gap-1 text-sm text-primary font-medium">
+        <button 
+          onClick={() => navigate("/gallery")}
+          className="flex items-center gap-1 text-sm text-primary font-medium"
+        >
           더보기
           <ChevronRight className="w-4 h-4" />
         </button>
