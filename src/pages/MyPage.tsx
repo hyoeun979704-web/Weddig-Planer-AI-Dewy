@@ -8,6 +8,7 @@ import {
   MessageSquare,
   ChevronRight,
   LogIn,
+  LogOut,
   Heart,
   Coins,
   Ticket,
@@ -15,6 +16,9 @@ import {
   Calendar
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 const quickMenuItems = [
   { icon: Heart, label: "찜", count: 12, href: "/favorites" },
@@ -36,9 +40,41 @@ const menuItems = [
 const MyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isLoading, signOut } = useAuth();
 
   const handleTabChange = (href: string) => {
     navigate(href);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success("로그아웃되었습니다");
+    } catch (error) {
+      toast.error("로그아웃에 실패했습니다");
+    }
+  };
+
+  const getUserDisplayName = () => {
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name;
+    }
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name;
+    }
+    if (user?.email) {
+      return user.email.split("@")[0];
+    }
+    return "사용자";
+  };
+
+  const getUserAvatar = () => {
+    return user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+  };
+
+  const getUserInitial = () => {
+    const name = getUserDisplayName();
+    return name.charAt(0).toUpperCase();
   };
 
   return (
@@ -55,26 +91,54 @@ const MyPage = () => {
 
       {/* Main Content */}
       <main className="pb-20">
-        {/* Login Section */}
+        {/* User Section */}
         <div className="px-4 py-6 bg-gradient-to-br from-primary/10 via-accent to-background">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-              <User className="w-8 h-8 text-muted-foreground" />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-bold text-foreground mb-1">로그인해주세요</h2>
-              <p className="text-sm text-muted-foreground">
-                더 많은 혜택을 만나보세요
-              </p>
+          ) : user ? (
+            <div className="flex items-center gap-4">
+              <Avatar className="w-16 h-16 border-2 border-primary/20">
+                <AvatarImage src={getUserAvatar() || undefined} alt={getUserDisplayName()} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
+                  {getUserInitial()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-foreground mb-1">{getUserDisplayName()}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {user.email}
+                </p>
+              </div>
+              <button 
+                onClick={handleSignOut}
+                className="px-4 py-2 bg-muted text-muted-foreground rounded-xl text-sm font-medium flex items-center gap-1 hover:bg-destructive/10 hover:text-destructive transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                로그아웃
+              </button>
             </div>
-            <button 
-              onClick={() => navigate("/auth")}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium flex items-center gap-1"
-            >
-              <LogIn className="w-4 h-4" />
-              로그인
-            </button>
-          </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                <User className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-foreground mb-1">로그인해주세요</h2>
+                <p className="text-sm text-muted-foreground">
+                  더 많은 혜택을 만나보세요
+                </p>
+              </div>
+              <button 
+                onClick={() => navigate("/auth")}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium flex items-center gap-1"
+              >
+                <LogIn className="w-4 h-4" />
+                로그인
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Quick Menu */}
