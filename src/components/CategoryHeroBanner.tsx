@@ -1,4 +1,4 @@
-import { Camera, Plane, Gift, Gem, Shirt, Sparkles } from "lucide-react";
+import { Camera, Plane, Gift, Gem, Shirt, Sparkles, Mail } from "lucide-react";
 import { CategoryType } from "@/stores/useCategoryFilterStore";
 
 interface CategoryConfig {
@@ -82,6 +82,16 @@ const categoryConfigs: Record<CategoryType, CategoryConfig> = {
     title: ["전통의 아름다움,", "현대적 감각"],
     highlight: "text-rose-600",
     description: "신부·혼주 맞춤 한복 & 대여",
+  },
+  invitation_venues: {
+    icon: Mail,
+    iconColor: "text-pink-600",
+    bgGradient: "from-pink-100/50 via-pink-50/30 to-background",
+    accentBg: "bg-pink-200/30",
+    label: "청첩장 모임",
+    title: ["소중한 분들과", "특별한 자리"],
+    highlight: "text-pink-600",
+    description: "가족, 친구들과 함께하는 청첩장 모임 장소",
   },
 };
 

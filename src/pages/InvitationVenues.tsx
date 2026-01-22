@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Star, MapPin, Users } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
+import CategoryFilterBar from "@/components/CategoryFilterBar";
+import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { supabase } from "@/integrations/supabase/client";
 
 const tabToRoute: Record<CategoryTab, string> = {
@@ -35,13 +37,41 @@ interface InvitationVenue {
 const InvitationVenues = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  const region = useCategoryFilterStore((state) => state.region);
+  const minRating = useCategoryFilterStore((state) => state.minRating);
+  const filterOptions1 = useCategoryFilterStore((state) => state.filterOptions1);
+  const filterOptions2 = useCategoryFilterStore((state) => state.filterOptions2);
+  const filterOptions3 = useCategoryFilterStore((state) => state.filterOptions3);
 
   const { data: venues, isLoading } = useQuery({
-    queryKey: ['invitation-venues'],
+    queryKey: ['invitation-venues', region, minRating, filterOptions1, filterOptions2, filterOptions3],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      let query = (supabase as any)
         .from('invitation_venues')
-        .select('*')
+        .select('*');
+      
+      if (region) {
+        query = query.ilike('address', `%${region}%`);
+      }
+      
+      if (minRating) {
+        query = query.gte('rating', minRating);
+      }
+      
+      if (filterOptions1.length > 0) {
+        query = query.overlaps('venue_types', filterOptions1);
+      }
+      
+      if (filterOptions2.length > 0) {
+        query = query.overlaps('amenity_options', filterOptions2);
+      }
+      
+      if (filterOptions3.length > 0) {
+        query = query.overlaps('cuisine_options', filterOptions3);
+      }
+      
+      const { data, error } = await query
         .order('is_partner', { ascending: false })
         .order('rating', { ascending: false });
       
@@ -73,6 +103,9 @@ const InvitationVenues = () => {
 
       {/* Category Tab Bar */}
       <CategoryTabBar activeTab="invitation" onTabChange={handleCategoryTabChange} />
+
+      {/* Filter Bar */}
+      <CategoryFilterBar category="invitation_venues" />
 
       {/* Main Content */}
       <main className="pb-20">

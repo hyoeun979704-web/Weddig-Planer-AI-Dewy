@@ -39,8 +39,12 @@ const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const activeTabRef = useRef<HTMLButtonElement>(null);
 
-  // Scroll to active tab on mount and when activeTab changes
+  // Scroll to active tab only on mount
+  const hasScrolledRef = useRef(false);
+  
   useEffect(() => {
+    if (hasScrolledRef.current) return;
+    
     if (activeTabRef.current && containerRef.current) {
       const container = containerRef.current;
       const activeButton = activeTabRef.current;
@@ -54,8 +58,10 @@ const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
       
       container.scrollTo({
         left: Math.max(0, scrollPosition),
-        behavior: 'smooth'
+        behavior: 'instant'
       });
+      
+      hasScrolledRef.current = true;
     }
   }, [activeTab]);
 

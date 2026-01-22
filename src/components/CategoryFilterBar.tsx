@@ -302,6 +302,47 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
       ],
     },
   },
+  invitation_venues: {
+    title: "청첩장 모임 필터",
+    regions: [
+      { value: "강남", label: "강남" },
+      { value: "서초", label: "서초" },
+      { value: "마포", label: "마포" },
+      { value: "종로", label: "종로" },
+      { value: "용산", label: "용산" },
+      { value: "성수", label: "성수" },
+    ],
+    filterOptions1: {
+      label: "장소 유형",
+      options: [
+        { value: "레스토랑", label: "레스토랑" },
+        { value: "한정식", label: "한정식" },
+        { value: "카페", label: "카페" },
+        { value: "파인다이닝", label: "파인다이닝" },
+        { value: "호텔레스토랑", label: "호텔레스토랑" },
+      ],
+    },
+    filterOptions2: {
+      label: "편의시설",
+      options: [
+        { value: "룸", label: "룸" },
+        { value: "주차", label: "주차" },
+        { value: "발렛", label: "발렛" },
+        { value: "프로젝터", label: "프로젝터" },
+        { value: "키즈존", label: "키즈존" },
+      ],
+    },
+    filterOptions3: {
+      label: "음식 종류",
+      options: [
+        { value: "한식", label: "한식" },
+        { value: "양식", label: "양식" },
+        { value: "중식", label: "중식" },
+        { value: "일식", label: "일식" },
+        { value: "코스요리", label: "코스요리" },
+      ],
+    },
+  },
 };
 
 const ratingOptions = [

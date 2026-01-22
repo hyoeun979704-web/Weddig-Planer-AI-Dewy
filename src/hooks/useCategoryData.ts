@@ -78,6 +78,13 @@ const categoryConfigs: Record<CategoryType, CategoryConfig> = {
     arrayField3: 'service_options',
     locationField: 'address',
   },
+  invitation_venues: {
+    tableName: 'invitation_venues',
+    arrayField1: 'venue_types',
+    arrayField2: 'amenity_options',
+    arrayField3: 'cuisine_options',
+    locationField: 'address',
+  },
 };
 
 const PAGE_SIZE = 10;
@@ -94,7 +101,7 @@ async function fetchCategoryItems(
   pageParam: number
 ) {
   const config = categoryConfigs[category];
-  const tableName = config.tableName as 'venues' | 'studios' | 'honeymoon' | 'honeymoon_gifts' | 'appliances' | 'suits' | 'hanbok';
+  const tableName = config.tableName as 'venues' | 'studios' | 'honeymoon' | 'honeymoon_gifts' | 'appliances' | 'suits' | 'hanbok' | 'invitation_venues';
   
   let query = supabase
     .from(tableName)
