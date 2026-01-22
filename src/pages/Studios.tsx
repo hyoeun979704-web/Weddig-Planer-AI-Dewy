@@ -17,6 +17,7 @@ const tabToRoute: Record<CategoryTab, string> = {
   "appliances": "/appliances",
   "suit": "/suit",
   "hanbok": "/hanbok",
+  "invitation": "/invitation-venues",
 };
 
 const Studios = () => {

@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-export type ItemType = "venue" | "studio" | "honeymoon" | "honeymoon_gift" | "appliance" | "suit" | "hanbok";
+export type ItemType = "venue" | "studio" | "honeymoon" | "honeymoon_gift" | "appliance" | "suit" | "hanbok" | "invitation_venues";
 
 interface Favorite {
   id: string;

@@ -24,6 +24,7 @@ const Index = () => {
       "appliances": "/appliances",
       "suit": "/suit",
       "hanbok": "/hanbok",
+      "invitation": "/invitation-venues",
     };
     navigate(tabRoutes[tab]);
   };

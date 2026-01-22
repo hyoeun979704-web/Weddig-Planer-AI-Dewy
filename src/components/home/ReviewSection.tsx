@@ -121,6 +121,15 @@ const reviewDataMap: Record<CategoryTab, ReviewData> = {
       { rating: 4, review: "폐백 패키지로 대여했는데 어머님들 한복도 예쁘게 맞춰주셨어요.", vendorName: "리슬한복", vendorType: "한복", userName: "심**님", date: "2025.01.05" },
     ],
   },
+  "invitation": {
+    title: "청첩장 모임 후기",
+    subtitle: "모임 장소 이용 후기",
+    reviews: [
+      { rating: 5, review: "라메르에서 가족 모임했는데 분위기도 좋고 음식도 맛있어서 다들 만족하셨어요.", vendorName: "레스토랑 라메르", vendorType: "레스토랑", userName: "김**님", date: "2025.01.18" },
+      { rating: 5, review: "프라이빗룸이 있어서 편하게 이야기 나눌 수 있었어요. 다음에 또 이용하고 싶습니다.", vendorName: "한정식 소담", vendorType: "한정식", userName: "박**님", date: "2025.01.15" },
+      { rating: 4, review: "카페 분위기가 예쁘고 디저트도 맛있었어요. 소규모 모임에 추천합니다.", vendorName: "카페 블룸", vendorType: "카페", userName: "이**님", date: "2025.01.10" },
+    ],
+  },
 };
 
 interface ReviewSectionProps {

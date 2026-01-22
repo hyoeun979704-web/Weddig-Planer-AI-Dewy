@@ -42,6 +42,8 @@ import MyInquiries from "./pages/MyInquiries";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import Settings from "./pages/Settings";
+import InvitationVenues from "./pages/InvitationVenues";
+import InvitationVenueDetail from "./pages/InvitationVenueDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -93,6 +95,8 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/invitation-venues" element={<InvitationVenues />} />
+            <Route path="/invitation-venues/:id" element={<InvitationVenueDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

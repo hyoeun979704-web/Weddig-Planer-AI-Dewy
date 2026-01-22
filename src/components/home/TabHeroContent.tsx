@@ -103,6 +103,16 @@ const heroDataMap: Record<CategoryTab, HeroData> = {
     secondaryCta: "맞춤 상담 받기",
     bgColor: "from-rose-100/50 via-rose-50/30 to-background",
   },
+  "invitation": {
+    badge: "청첩장 모임",
+    badgeIcon: Sparkles,
+    title: ["소중한 분들과", "특별한 자리,", "청첩장 모임"],
+    subtitle: "가족, 친구들과 함께하는\n따뜻한 모임 장소 추천.",
+    primaryCta: "",
+    primaryCtaAction: "",
+    secondaryCta: "장소 추천받기",
+    bgColor: "from-pink-100/50 via-pink-50/30 to-background",
+  },
 };
 
 interface TabHeroContentProps {

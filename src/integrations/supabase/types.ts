@@ -233,6 +233,57 @@ export type Database = {
         }
         Relationships: []
       }
+      invitation_venues: {
+        Row: {
+          address: string
+          amenity_options: string[] | null
+          capacity_range: string
+          created_at: string
+          cuisine_options: string[] | null
+          id: string
+          is_partner: boolean
+          name: string
+          price_range: string
+          rating: number
+          review_count: number
+          thumbnail_url: string | null
+          updated_at: string
+          venue_types: string[] | null
+        }
+        Insert: {
+          address: string
+          amenity_options?: string[] | null
+          capacity_range: string
+          created_at?: string
+          cuisine_options?: string[] | null
+          id?: string
+          is_partner?: boolean
+          name: string
+          price_range: string
+          rating?: number
+          review_count?: number
+          thumbnail_url?: string | null
+          updated_at?: string
+          venue_types?: string[] | null
+        }
+        Update: {
+          address?: string
+          amenity_options?: string[] | null
+          capacity_range?: string
+          created_at?: string
+          cuisine_options?: string[] | null
+          id?: string
+          is_partner?: boolean
+          name?: string
+          price_range?: string
+          rating?: number
+          review_count?: number
+          thumbnail_url?: string | null
+          updated_at?: string
+          venue_types?: string[] | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

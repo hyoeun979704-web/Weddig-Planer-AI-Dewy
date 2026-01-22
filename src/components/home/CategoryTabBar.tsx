@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useRef, useEffect } from "react";
 
 export type CategoryTab = 
   | "home"
@@ -8,7 +9,8 @@ export type CategoryTab =
   | "honeymoon" 
   | "appliances" 
   | "suit" 
-  | "hanbok";
+  | "hanbok"
+  | "invitation";
 
 interface Tab {
   id: CategoryTab;
@@ -25,6 +27,7 @@ const tabs: Tab[] = [
   { id: "appliances", label: "가전·예물", emoji: "💍" },
   { id: "suit", label: "예복", emoji: "👔" },
   { id: "hanbok", label: "한복", emoji: "👗" },
+  { id: "invitation", label: "청첩장 모임", emoji: "✉️" },
 ];
 
 interface CategoryTabBarProps {
@@ -33,9 +36,33 @@ interface CategoryTabBarProps {
 }
 
 const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const activeTabRef = useRef<HTMLButtonElement>(null);
+
+  // Scroll to active tab on mount and when activeTab changes
+  useEffect(() => {
+    if (activeTabRef.current && containerRef.current) {
+      const container = containerRef.current;
+      const activeButton = activeTabRef.current;
+      
+      // Calculate scroll position to center the active tab
+      const containerWidth = container.offsetWidth;
+      const buttonLeft = activeButton.offsetLeft;
+      const buttonWidth = activeButton.offsetWidth;
+      
+      const scrollPosition = buttonLeft - (containerWidth / 2) + (buttonWidth / 2);
+      
+      container.scrollTo({
+        left: Math.max(0, scrollPosition),
+        behavior: 'smooth'
+      });
+    }
+  }, [activeTab]);
+
   return (
     <div className="sticky top-14 z-40 bg-card border-b border-border w-full">
       <div 
+        ref={containerRef}
         className="flex overflow-x-auto overflow-y-hidden scrollbar-hide"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
@@ -45,6 +72,7 @@ const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
           return (
             <button
               key={tab.id}
+              ref={isActive ? activeTabRef : null}
               onClick={() => onTabChange(tab.id)}
               className={cn(
                 "flex-shrink-0 flex items-center gap-1.5 px-4 py-3 relative transition-colors whitespace-nowrap",

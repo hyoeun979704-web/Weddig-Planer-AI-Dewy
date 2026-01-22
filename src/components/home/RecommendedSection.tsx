@@ -133,6 +133,16 @@ const sectionDataMap: Record<CategoryTab, SectionData> = {
       { id: "4", name: "담연재 한복", location: "서울 인사동", priceRange: "120만원~", rating: 4.8, reviewCount: 278, imageUrl: "https://images.unsplash.com/photo-1590735213920-68192a487bc2?w=400", onClick: () => {} },
     ],
   },
+  "invitation": {
+    title: "인기 청첩장 모임 장소",
+    viewAllPath: "/invitation-venues",
+    items: [
+      { id: "1", name: "레스토랑 라메르", location: "서울 강남구", priceRange: "5만원~", rating: 4.8, reviewCount: 156, imageUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400", onClick: () => {} },
+      { id: "2", name: "카페 블룸", location: "서울 서초구", priceRange: "3만원~", rating: 4.6, reviewCount: 89, imageUrl: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400", onClick: () => {} },
+      { id: "3", name: "한정식 소담", location: "서울 종로구", priceRange: "6만원~", rating: 4.9, reviewCount: 234, imageUrl: "https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=400", onClick: () => {} },
+      { id: "4", name: "이탈리안 비스트로", location: "서울 마포구", priceRange: "4만원~", rating: 4.5, reviewCount: 112, imageUrl: "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=400", onClick: () => {} },
+    ],
+  },
 };
 
 interface RecommendedSectionProps {

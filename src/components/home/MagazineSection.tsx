@@ -110,6 +110,16 @@ const magazineDataMap: Record<CategoryTab, MagazineData> = {
       { icon: Camera, title: "한복 촬영 포즈", description: "전통 한복 화보 가이드", color: "bg-violet-100 text-violet-500" },
     ],
   },
+  "invitation": {
+    title: "청첩장 모임 가이드",
+    subtitle: "특별한 모임을 위해",
+    articles: [
+      { icon: Heart, title: "청첩장 모임 에티켓", description: "자연스러운 진행 팁", color: "bg-pink-100 text-pink-500" },
+      { icon: Lightbulb, title: "장소 선택 가이드", description: "인원별 추천 장소", color: "bg-amber-100 text-amber-500" },
+      { icon: Gift, title: "메뉴 구성 팁", description: "다양한 입맛 고려하기", color: "bg-emerald-100 text-emerald-500" },
+      { icon: Camera, title: "모임 사진 꿀팁", description: "추억 남기기 가이드", color: "bg-violet-100 text-violet-500" },
+    ],
+  },
 };
 
 interface MagazineSectionProps {
