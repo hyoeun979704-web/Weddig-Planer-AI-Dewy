@@ -5,10 +5,10 @@ import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
 import TabContent from "@/components/home/TabContent";
 import Footer from "@/components/home/Footer";
 
-const Index = () => {
+const HoneymoonGifts = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const activeTab: CategoryTab = "wedding-hall";
+  const activeTab: CategoryTab = "honeymoon-gifts";
 
   const handleTabChange = (href: string) => {
     navigate(href);
@@ -42,4 +42,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default HoneymoonGifts;
