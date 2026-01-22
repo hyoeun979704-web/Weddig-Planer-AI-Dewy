@@ -20,6 +20,10 @@ import Magazine from "./pages/Magazine";
 import Reviews from "./pages/Reviews";
 import Gallery from "./pages/Gallery";
 import AIPlanner from "./pages/AIPlanner";
+import Schedule from "./pages/Schedule";
+import AIStudio from "./pages/AIStudio";
+import Community from "./pages/Community";
+import MyPage from "./pages/MyPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +52,11 @@ const App = () => (
           <Route path="/reviews" element={<Reviews />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/ai-planner" element={<AIPlanner />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/ai-studio" element={<AIStudio />} />
+          <Route path="/ai-studio/:service" element={<AIStudio />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/mypage" element={<MyPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
