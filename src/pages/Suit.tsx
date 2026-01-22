@@ -4,8 +4,19 @@ import BottomNav from "@/components/BottomNav";
 import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import CategoryFilterBar from "@/components/CategoryFilterBar";
 import CategoryGrid from "@/components/CategoryGrid";
+import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
+
+const tabToRoute: Record<CategoryTab, string> = {
+  "wedding-hall": "/venues",
+  "sdm": "/studios",
+  "honeymoon-gifts": "/honeymoon-gifts",
+  "honeymoon": "/honeymoon",
+  "appliances": "/appliances",
+  "suit": "/suit",
+  "hanbok": "/hanbok",
+};
 
 const Suit = () => {
   const navigate = useNavigate();
@@ -26,6 +37,10 @@ const Suit = () => {
     navigate(href);
   };
 
+  const handleCategoryTabChange = (tab: CategoryTab) => {
+    navigate(tabToRoute[tab]);
+  };
+
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       {/* Header */}
@@ -37,6 +52,9 @@ const Suit = () => {
           </div>
         </div>
       </header>
+
+      {/* Category Tab Bar */}
+      <CategoryTabBar activeTab="suit" onTabChange={handleCategoryTabChange} />
 
       {/* Main Content */}
       <main className="pb-20">
