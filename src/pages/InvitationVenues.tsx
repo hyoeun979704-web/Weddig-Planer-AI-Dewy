@@ -1,11 +1,12 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Star, MapPin, Users } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
+import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import CategoryFilterBar from "@/components/CategoryFilterBar";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
-import { supabase } from "@/integrations/supabase/client";
+import { useCategoryData, CategoryItem } from "@/hooks/useCategoryData";
 
 const tabToRoute: Record<CategoryTab, string> = {
   "home": "/",
@@ -19,66 +20,19 @@ const tabToRoute: Record<CategoryTab, string> = {
   "invitation": "/invitation-venues",
 };
 
-interface InvitationVenue {
-  id: string;
-  name: string;
-  address: string;
-  price_range: string;
-  capacity_range: string;
-  rating: number;
-  review_count: number;
-  is_partner: boolean;
-  thumbnail_url: string | null;
-  venue_types: string[] | null;
-  amenity_options: string[] | null;
-  cuisine_options: string[] | null;
-}
-
 const InvitationVenues = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const region = useCategoryFilterStore((state) => state.region);
-  const minRating = useCategoryFilterStore((state) => state.minRating);
-  const filterOptions1 = useCategoryFilterStore((state) => state.filterOptions1);
-  const filterOptions2 = useCategoryFilterStore((state) => state.filterOptions2);
-  const filterOptions3 = useCategoryFilterStore((state) => state.filterOptions3);
+  const hasActiveFilters = useCategoryFilterStore((state) => state.hasActiveFilters);
+  const resetFilters = useCategoryFilterStore((state) => state.resetFilters);
 
-  const { data: venues, isLoading } = useQuery({
-    queryKey: ['invitation-venues', region, minRating, filterOptions1, filterOptions2, filterOptions3],
-    queryFn: async () => {
-      let query = (supabase as any)
-        .from('invitation_venues')
-        .select('*');
-      
-      if (region) {
-        query = query.ilike('address', `%${region}%`);
-      }
-      
-      if (minRating) {
-        query = query.gte('rating', minRating);
-      }
-      
-      if (filterOptions1.length > 0) {
-        query = query.overlaps('venue_types', filterOptions1);
-      }
-      
-      if (filterOptions2.length > 0) {
-        query = query.overlaps('amenity_options', filterOptions2);
-      }
-      
-      if (filterOptions3.length > 0) {
-        query = query.overlaps('cuisine_options', filterOptions3);
-      }
-      
-      const { data, error } = await query
-        .order('is_partner', { ascending: false })
-        .order('rating', { ascending: false });
-      
-      if (error) throw error;
-      return data as InvitationVenue[];
-    },
-  });
+  useEffect(() => {
+    resetFilters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const { data, isLoading } = useCategoryData('invitation_venues');
+  const venues = data?.pages.flatMap(page => page.data) ?? [];
 
   const handleTabChange = (href: string) => {
     navigate(href);
@@ -88,7 +42,7 @@ const InvitationVenues = () => {
     navigate(tabToRoute[tab]);
   };
 
-  const handleVenueClick = (venue: InvitationVenue) => {
+  const handleVenueClick = (venue: CategoryItem) => {
     navigate(`/invitation-venues/${venue.id}`);
   };
 
@@ -104,34 +58,22 @@ const InvitationVenues = () => {
       {/* Category Tab Bar */}
       <CategoryTabBar activeTab="invitation" onTabChange={handleCategoryTabChange} />
 
-      {/* Filter Bar */}
-      <CategoryFilterBar category="invitation_venues" />
-
       {/* Main Content */}
       <main className="pb-20">
-        {/* Hero Banner */}
-        <div className="relative bg-gradient-to-br from-pink-100/50 via-pink-50/30 to-background px-4 py-8 overflow-hidden">
-          <div className="absolute top-4 right-4 w-24 h-24 bg-pink-200/30 rounded-full blur-2xl" />
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-pink-200 bg-opacity-50 rounded-full mb-3">
-              <span className="text-base">✉️</span>
-              <span className="text-xs font-medium text-pink-600">청첩장 모임</span>
-            </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">
-              소중한 분들과<br />
-              <span className="text-pink-600">특별한 자리</span>
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              가족, 친구들과 함께하는 청첩장 모임 장소
-            </p>
-          </div>
-        </div>
-
+        <CategoryHeroBanner category="invitation_venues" />
+        
+        {/* Filter Bar */}
+        <CategoryFilterBar category="invitation_venues" />
+        
         {/* Section Title */}
         <div className="px-4 py-3">
-          <h2 className="text-lg font-bold text-foreground">추천 모임 장소</h2>
+          <h2 className="text-lg font-bold text-foreground">
+            {hasActiveFilters() ? "검색 결과" : "추천 모임 장소"}
+          </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            청첩장 전달, 결혼 인사 자리에 딱 맞는 공간
+            {hasActiveFilters() 
+              ? "필터 조건에 맞는 모임 장소입니다"
+              : "청첩장 전달, 결혼 인사 자리에 딱 맞는 공간"}
           </p>
         </div>
 
@@ -181,11 +123,11 @@ const InvitationVenues = () => {
                     </h3>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                       <MapPin className="w-3 h-3" />
-                      <span className="line-clamp-1">{venue.address}</span>
+                      <span className="line-clamp-1">{venue.address as string}</span>
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
                       <Users className="w-3 h-3" />
-                      <span>{venue.capacity_range}</span>
+                      <span>{(venue as any).capacity_range}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
