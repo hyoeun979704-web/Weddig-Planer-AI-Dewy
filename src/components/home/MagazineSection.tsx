@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { ChevronRight, Music, Camera, CheckSquare, Heart, Sparkles, Lightbulb, Gift, Plane, Tv, Shirt } from "lucide-react";
 import { CategoryTab } from "./CategoryTabBar";
 
@@ -6,10 +7,14 @@ interface MagazineCardProps {
   title: string;
   description: string;
   color: string;
+  onClick?: () => void;
 }
 
-const MagazineCard = ({ icon: Icon, title, description, color }: MagazineCardProps) => (
-  <button className="flex-shrink-0 w-40 p-4 bg-card rounded-2xl border border-border hover:border-primary/30 hover:shadow-md transition-all duration-200 text-left">
+const MagazineCard = ({ icon: Icon, title, description, color, onClick }: MagazineCardProps) => (
+  <button 
+    onClick={onClick}
+    className="flex-shrink-0 w-40 p-4 bg-card rounded-2xl border border-border hover:border-primary/30 hover:shadow-md transition-all duration-200 text-left"
+  >
     <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${color}`}>
       <Icon className="w-5 h-5" />
     </div>
@@ -102,6 +107,7 @@ interface MagazineSectionProps {
 }
 
 const MagazineSection = ({ activeTab = "wedding-hall" }: MagazineSectionProps) => {
+  const navigate = useNavigate();
   const data = magazineDataMap[activeTab];
 
   return (
@@ -111,7 +117,10 @@ const MagazineSection = ({ activeTab = "wedding-hall" }: MagazineSectionProps) =
           <h2 className="text-lg font-bold text-foreground">{data.title}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">{data.subtitle}</p>
         </div>
-        <button className="flex items-center gap-1 text-sm text-primary font-medium">
+        <button 
+          onClick={() => navigate("/magazine")}
+          className="flex items-center gap-1 text-sm text-primary font-medium"
+        >
           전체보기
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -119,7 +128,7 @@ const MagazineSection = ({ activeTab = "wedding-hall" }: MagazineSectionProps) =
       
       <div className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide">
         {data.articles.map((article, index) => (
-          <MagazineCard key={index} {...article} />
+          <MagazineCard key={index} {...article} onClick={() => navigate("/magazine")} />
         ))}
       </div>
     </section>
