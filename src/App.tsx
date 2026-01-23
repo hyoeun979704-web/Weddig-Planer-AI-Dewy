@@ -29,6 +29,7 @@ import Gallery from "./pages/Gallery";
 import AIPlanner from "./pages/AIPlanner";
 import Schedule from "./pages/Schedule";
 import AIStudio from "./pages/AIStudio";
+import AIStudioService from "./pages/AIStudioService";
 import Community from "./pages/Community";
 import MyPage from "./pages/MyPage";
 import Auth from "./pages/Auth";
@@ -82,7 +83,7 @@ const App = () => (
             <Route path="/ai-planner" element={<AIPlanner />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/ai-studio" element={<AIStudio />} />
-            <Route path="/ai-studio/:service" element={<AIStudio />} />
+            <Route path="/ai-studio/:service" element={<AIStudioService />} />
             <Route path="/community" element={<Community />} />
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/points" element={<Points />} />
