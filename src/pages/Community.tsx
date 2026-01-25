@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
   MessageSquare, 
@@ -7,9 +8,12 @@ import {
   PenSquare,
   Image,
   TrendingUp,
-  Clock
+  Clock,
+  X
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 interface Post {
   id: string;
@@ -92,9 +96,31 @@ const posts: Post[] = [
 const Community = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [selectedCategory, setSelectedCategory] = useState("전체");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleTabChange = (href: string) => {
     navigate(href);
+  };
+
+  const filteredPosts = selectedCategory === "전체" 
+    ? posts 
+    : posts.filter(post => post.category === selectedCategory);
+
+  const searchedPosts = searchQuery 
+    ? filteredPosts.filter(post => 
+        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        post.preview.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : filteredPosts;
+
+  const handlePostClick = (postId: string) => {
+    toast.info("게시글 상세 페이지는 준비 중입니다.");
+  };
+
+  const handleWriteClick = () => {
+    toast.info("글쓰기 기능은 준비 중입니다.");
   };
 
   return (
@@ -102,24 +128,55 @@ const Community = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
-          <h1 className="text-lg font-bold text-foreground">커뮤니티</h1>
-          <div className="flex items-center gap-2">
-            <button className="p-2">
-              <Search className="w-5 h-5 text-muted-foreground" />
-            </button>
-            <button className="p-2">
-              <PenSquare className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
+          {isSearchOpen ? (
+            <div className="flex-1 flex items-center gap-2">
+              <Input
+                type="text"
+                placeholder="게시글 검색..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 h-9"
+                autoFocus
+              />
+              <button 
+                onClick={() => {
+                  setIsSearchOpen(false);
+                  setSearchQuery("");
+                }}
+                className="p-2"
+              >
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
+          ) : (
+            <>
+              <h1 className="text-lg font-bold text-foreground">커뮤니티</h1>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setIsSearchOpen(true)}
+                  className="p-2 hover:bg-muted rounded-full transition-colors"
+                >
+                  <Search className="w-5 h-5 text-muted-foreground" />
+                </button>
+                <button 
+                  onClick={handleWriteClick}
+                  className="p-2 hover:bg-muted rounded-full transition-colors"
+                >
+                  <PenSquare className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
+            </>
+          )}
         </div>
         
         {/* Category Tabs */}
         <div className="flex overflow-x-auto scrollbar-hide px-4 pb-3 gap-2">
-          {categories.map((category, index) => (
+          {categories.map((category) => (
             <button
               key={category}
+              onClick={() => setSelectedCategory(category)}
               className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                index === 0 
+                selectedCategory === category 
                   ? "bg-primary text-primary-foreground" 
                   : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
@@ -140,9 +197,10 @@ const Community = () => {
           </div>
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {posts.slice(0, 3).map((post, index) => (
-              <div 
+              <button 
                 key={post.id}
-                className="flex-shrink-0 w-[200px] p-3 bg-card rounded-xl border border-border"
+                onClick={() => handlePostClick(post.id)}
+                className="flex-shrink-0 w-[200px] p-3 bg-card rounded-xl border border-border text-left hover:border-primary/30 transition-colors"
               >
                 <span className="text-xs text-primary font-medium">#{index + 1}</span>
                 <p className="text-sm font-medium text-foreground line-clamp-2 mt-1">{post.title}</p>
@@ -154,7 +212,7 @@ const Community = () => {
                     <MessageSquare className="w-3 h-3" /> {post.comments}
                   </span>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -164,55 +222,70 @@ const Community = () => {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">최신 글</span>
+              <span className="text-sm font-medium text-foreground">
+                {searchQuery ? `'${searchQuery}' 검색 결과` : "최신 글"}
+              </span>
             </div>
+            {selectedCategory !== "전체" && (
+              <span className="text-xs text-primary font-medium">{selectedCategory}</span>
+            )}
           </div>
           
-          <div className="space-y-3">
-            {posts.map((post) => (
-              <button
-                key={post.id}
-                className="w-full p-4 bg-card rounded-2xl border border-border hover:border-primary/30 transition-colors text-left"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="px-2 py-0.5 bg-muted rounded text-[10px] font-medium text-muted-foreground">
-                        {post.category}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{post.date}</span>
-                    </div>
-                    <h4 className="font-semibold text-foreground text-sm mb-1 line-clamp-1">{post.title}</h4>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{post.preview}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">{post.author}</span>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Heart className="w-3 h-3" /> {post.likes}
+          {searchedPosts.length === 0 ? (
+            <div className="py-12 text-center">
+              <p className="text-muted-foreground text-sm">게시글이 없습니다.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {searchedPosts.map((post) => (
+                <button
+                  key={post.id}
+                  onClick={() => handlePostClick(post.id)}
+                  className="w-full p-4 bg-card rounded-2xl border border-border hover:border-primary/30 transition-colors text-left"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2 py-0.5 bg-muted rounded text-[10px] font-medium text-muted-foreground">
+                          {post.category}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className="w-3 h-3" /> {post.comments}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Eye className="w-3 h-3" /> {post.views}
-                        </span>
+                        <span className="text-xs text-muted-foreground">{post.date}</span>
+                      </div>
+                      <h4 className="font-semibold text-foreground text-sm mb-1 line-clamp-1">{post.title}</h4>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{post.preview}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">{post.author}</span>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Heart className="w-3 h-3" /> {post.likes}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageSquare className="w-3 h-3" /> {post.comments}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-3 h-3" /> {post.views}
+                          </span>
+                        </div>
                       </div>
                     </div>
+                    {post.hasImage && (
+                      <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                        <Image className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
                   </div>
-                  {post.hasImage && (
-                    <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                      <Image className="w-6 h-6 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
       {/* Floating Write Button */}
-      <button className="fixed bottom-24 right-4 w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center z-40">
+      <button 
+        onClick={handleWriteClick}
+        className="fixed bottom-24 right-4 w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center z-40 hover:bg-primary/90 transition-colors active:scale-95"
+      >
         <PenSquare className="w-6 h-6 text-primary-foreground" />
       </button>
 
