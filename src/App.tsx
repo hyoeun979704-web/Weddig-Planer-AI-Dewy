@@ -31,6 +31,7 @@ import Schedule from "./pages/Schedule";
 import AIStudio from "./pages/AIStudio";
 import AIStudioService from "./pages/AIStudioService";
 import Community from "./pages/Community";
+import CommunityPostDetail from "./pages/CommunityPostDetail";
 import MyPage from "./pages/MyPage";
 import Auth from "./pages/Auth";
 import Points from "./pages/Points";
@@ -85,6 +86,7 @@ const App = () => (
             <Route path="/ai-studio" element={<AIStudio />} />
             <Route path="/ai-studio/:service" element={<AIStudioService />} />
             <Route path="/community" element={<Community />} />
+            <Route path="/community/:id" element={<CommunityPostDetail />} />
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/points" element={<Points />} />
             <Route path="/coupons" element={<Coupons />} />

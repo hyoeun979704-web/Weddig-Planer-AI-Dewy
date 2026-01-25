@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { 
   MessageSquare, 
   Heart,
@@ -13,85 +14,25 @@ import {
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale";
 
 interface Post {
   id: string;
   category: string;
   title: string;
-  preview: string;
-  author: string;
-  date: string;
-  likes: number;
-  comments: number;
+  content: string;
+  has_image: boolean;
   views: number;
-  hasImage: boolean;
+  created_at: string;
+  likes_count: number;
+  comments_count: number;
 }
 
 const categories = ["전체", "웨딩홀", "스드메", "혼수", "허니문", "자유"];
-
-const posts: Post[] = [
-  {
-    id: "1",
-    category: "웨딩홀",
-    title: "강남 웨딩홀 투어 후기 공유해요!",
-    preview: "지난 주말에 강남 쪽 웨딩홀 5군데 투어 다녀왔어요. 각 웨딩홀 장단점 정리해서 공유드립니다...",
-    author: "예비신부",
-    date: "2시간 전",
-    likes: 42,
-    comments: 15,
-    views: 230,
-    hasImage: true
-  },
-  {
-    id: "2",
-    category: "스드메",
-    title: "스드메 패키지 vs 개별계약 고민중이에요",
-    preview: "예산이 한정되어있는데 스드메 패키지로 할지 개별로 할지 너무 고민되네요. 경험자분들 조언 부탁드려요!",
-    author: "2025신부",
-    date: "5시간 전",
-    likes: 28,
-    comments: 32,
-    views: 456,
-    hasImage: false
-  },
-  {
-    id: "3",
-    category: "혼수",
-    title: "가전 혼수 브랜드별 비교 정리",
-    preview: "삼성, LG, 다이슨 등 가전 브랜드별로 가격대, AS, 품질 비교해서 정리했어요. 참고하세요!",
-    author: "알뜰신부",
-    date: "1일 전",
-    likes: 89,
-    comments: 41,
-    views: 1203,
-    hasImage: true
-  },
-  {
-    id: "4",
-    category: "허니문",
-    title: "몰디브 허니문 일정 & 비용 공개",
-    preview: "6박 8일 몰디브 다녀왔어요! 리조트 선택부터 액티비티까지 상세 후기 남깁니다.",
-    author: "신혼여행중",
-    date: "2일 전",
-    likes: 156,
-    comments: 67,
-    views: 2341,
-    hasImage: true
-  },
-  {
-    id: "5",
-    category: "자유",
-    title: "결혼 준비하면서 싸우는 커플들 많죠?",
-    preview: "다들 결혼 준비하면서 싸움 많이 하시나요? 저희도 사소한 거에 자꾸 다투게 되네요...",
-    author: "예비부부",
-    date: "3일 전",
-    likes: 203,
-    comments: 89,
-    views: 3421,
-    hasImage: false
-  }
-];
 
 const Community = () => {
   const navigate = useNavigate();
@@ -99,6 +40,48 @@ const Community = () => {
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Fetch posts from database
+  const { data: posts = [], isLoading } = useQuery({
+    queryKey: ["community-posts"],
+    queryFn: async () => {
+      const { data: postsData, error: postsError } = await supabase
+        .from("community_posts")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (postsError) throw postsError;
+
+      // Fetch likes and comments counts for each post
+      const postsWithCounts = await Promise.all(
+        (postsData || []).map(async (post) => {
+          const [likesResult, commentsResult] = await Promise.all([
+            supabase
+              .from("community_likes")
+              .select("*", { count: "exact", head: true })
+              .eq("post_id", post.id),
+            supabase
+              .from("community_comments")
+              .select("*", { count: "exact", head: true })
+              .eq("post_id", post.id),
+          ]);
+
+          return {
+            ...post,
+            likes_count: likesResult.count || 0,
+            comments_count: commentsResult.count || 0,
+          };
+        })
+      );
+
+      return postsWithCounts as Post[];
+    },
+  });
+
+  // Get trending posts (sorted by likes)
+  const trendingPosts = [...posts]
+    .sort((a, b) => b.likes_count - a.likes_count)
+    .slice(0, 3);
 
   const handleTabChange = (href: string) => {
     navigate(href);
@@ -111,16 +94,27 @@ const Community = () => {
   const searchedPosts = searchQuery 
     ? filteredPosts.filter(post => 
         post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.preview.toLowerCase().includes(searchQuery.toLowerCase())
+        post.content.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : filteredPosts;
 
   const handlePostClick = (postId: string) => {
-    toast.info("게시글 상세 페이지는 준비 중입니다.");
+    navigate(`/community/${postId}`);
   };
 
   const handleWriteClick = () => {
     toast.info("글쓰기 기능은 준비 중입니다.");
+  };
+
+  const formatDate = (dateString: string) => {
+    return formatDistanceToNow(new Date(dateString), { 
+      addSuffix: true, 
+      locale: ko 
+    }).replace("약 ", "");
+  };
+
+  const getPreview = (content: string) => {
+    return content.length > 80 ? content.slice(0, 80) + "..." : content;
   };
 
   return (
@@ -195,26 +189,34 @@ const Community = () => {
             <TrendingUp className="w-4 h-4 text-primary" />
             <span className="text-sm font-bold text-foreground">인기 게시글</span>
           </div>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            {posts.slice(0, 3).map((post, index) => (
-              <button 
-                key={post.id}
-                onClick={() => handlePostClick(post.id)}
-                className="flex-shrink-0 w-[200px] p-3 bg-card rounded-xl border border-border text-left hover:border-primary/30 transition-colors"
-              >
-                <span className="text-xs text-primary font-medium">#{index + 1}</span>
-                <p className="text-sm font-medium text-foreground line-clamp-2 mt-1">{post.title}</p>
-                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Heart className="w-3 h-3" /> {post.likes}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MessageSquare className="w-3 h-3" /> {post.comments}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="flex-shrink-0 w-[200px] h-24 rounded-xl" />
+              ))}
+            </div>
+          ) : (
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+              {trendingPosts.map((post, index) => (
+                <button 
+                  key={post.id}
+                  onClick={() => handlePostClick(post.id)}
+                  className="flex-shrink-0 w-[200px] p-3 bg-card rounded-xl border border-border text-left hover:border-primary/30 transition-colors"
+                >
+                  <span className="text-xs text-primary font-medium">#{index + 1}</span>
+                  <p className="text-sm font-medium text-foreground line-clamp-2 mt-1">{post.title}</p>
+                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Heart className="w-3 h-3" /> {post.likes_count}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageSquare className="w-3 h-3" /> {post.comments_count}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Post List */}
@@ -231,7 +233,13 @@ const Community = () => {
             )}
           </div>
           
-          {searchedPosts.length === 0 ? (
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-32 rounded-2xl" />
+              ))}
+            </div>
+          ) : searchedPosts.length === 0 ? (
             <div className="py-12 text-center">
               <p className="text-muted-foreground text-sm">게시글이 없습니다.</p>
             </div>
@@ -249,18 +257,18 @@ const Community = () => {
                         <span className="px-2 py-0.5 bg-muted rounded text-[10px] font-medium text-muted-foreground">
                           {post.category}
                         </span>
-                        <span className="text-xs text-muted-foreground">{post.date}</span>
+                        <span className="text-xs text-muted-foreground">{formatDate(post.created_at)}</span>
                       </div>
                       <h4 className="font-semibold text-foreground text-sm mb-1 line-clamp-1">{post.title}</h4>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{post.preview}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{getPreview(post.content)}</p>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">{post.author}</span>
+                        <span className="text-xs text-muted-foreground">익명</span>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <Heart className="w-3 h-3" /> {post.likes}
+                            <Heart className="w-3 h-3" /> {post.likes_count}
                           </span>
                           <span className="flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3" /> {post.comments}
+                            <MessageSquare className="w-3 h-3" /> {post.comments_count}
                           </span>
                           <span className="flex items-center gap-1">
                             <Eye className="w-3 h-3" /> {post.views}
@@ -268,7 +276,7 @@ const Community = () => {
                         </div>
                       </div>
                     </div>
-                    {post.hasImage && (
+                    {post.has_image && (
                       <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
                         <Image className="w-6 h-6 text-muted-foreground" />
                       </div>
