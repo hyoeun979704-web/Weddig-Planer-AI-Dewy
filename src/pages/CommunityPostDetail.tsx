@@ -9,13 +9,25 @@ import {
   Share2, 
   Send,
   User,
-  Pencil
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -174,6 +186,28 @@ const CommunityPostDetail = () => {
     },
   });
 
+  // Delete post mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) return;
+
+      const { error } = await supabase
+        .from("community_posts")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("게시글이 삭제되었습니다.");
+      navigate("/community");
+    },
+    onError: () => {
+      toast.error("게시글 삭제에 실패했습니다.");
+    },
+  });
+
   const handleSubmitComment = () => {
     if (!newComment.trim()) {
       toast.error("댓글 내용을 입력해주세요.");
@@ -254,12 +288,39 @@ const CommunityPostDetail = () => {
               <Share2 className="w-5 h-5 text-muted-foreground" />
             </button>
             {user && post.user_id === user.id && (
-              <button 
-                onClick={() => navigate(`/community/${id}/edit`)}
-                className="p-2"
-              >
-                <Pencil className="w-5 h-5 text-muted-foreground" />
-              </button>
+              <>
+                <button 
+                  onClick={() => navigate(`/community/${id}/edit`)}
+                  className="p-2"
+                >
+                  <Pencil className="w-5 h-5 text-muted-foreground" />
+                </button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button className="p-2">
+                      <Trash2 className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="max-w-[360px] rounded-2xl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>게시글 삭제</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        정말로 이 게시글을 삭제하시겠습니까?<br />
+                        삭제된 게시글은 복구할 수 없습니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteMutation.mutate()}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        삭제
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             )}
           </div>
         </div>
