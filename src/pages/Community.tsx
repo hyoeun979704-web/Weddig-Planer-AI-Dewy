@@ -103,7 +103,7 @@ const Community = () => {
   };
 
   const handleWriteClick = () => {
-    toast.info("글쓰기 기능은 준비 중입니다.");
+    navigate("/community/write");
   };
 
   const formatDate = (dateString: string) => {
