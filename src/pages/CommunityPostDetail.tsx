@@ -7,9 +7,9 @@ import {
   MessageSquare, 
   Eye, 
   Share2, 
-  MoreVertical,
   Send,
-  User
+  User,
+  Pencil
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -253,9 +253,14 @@ const CommunityPostDetail = () => {
             <button onClick={handleShare} className="p-2">
               <Share2 className="w-5 h-5 text-muted-foreground" />
             </button>
-            <button className="p-2">
-              <MoreVertical className="w-5 h-5 text-muted-foreground" />
-            </button>
+            {user && post.user_id === user.id && (
+              <button 
+                onClick={() => navigate(`/community/${id}/edit`)}
+                className="p-2"
+              >
+                <Pencil className="w-5 h-5 text-muted-foreground" />
+              </button>
+            )}
           </div>
         </div>
       </header>
