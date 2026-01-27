@@ -10,7 +10,9 @@ import {
   Send,
   User,
   Pencil,
-  Trash2
+  Trash2,
+  X,
+  Check
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,6 +64,8 @@ const CommunityPostDetail = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState("");
 
   // Fetch post
   const { data: post, isLoading: postLoading } = useQuery({
@@ -208,7 +212,29 @@ const CommunityPostDetail = () => {
     },
   });
 
-  // Delete post mutation
+  // Update comment mutation
+  const updateCommentMutation = useMutation({
+    mutationFn: async ({ commentId, content }: { commentId: string; content: string }) => {
+      if (!user) return;
+
+      const { error } = await supabase
+        .from("community_comments")
+        .update({ content })
+        .eq("id", commentId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["community-comments", id] });
+      setEditingCommentId(null);
+      setEditingContent("");
+      toast.success("댓글이 수정되었습니다.");
+    },
+    onError: () => {
+      toast.error("댓글 수정에 실패했습니다.");
+    },
+  });
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!user) return;
@@ -254,8 +280,26 @@ const CommunityPostDetail = () => {
       }
     } else {
       await navigator.clipboard.writeText(window.location.href);
-      toast.success("링크가 복사되었습니다.");
+    toast.success("링크가 복사되었습니다.");
     }
+  };
+
+  const handleStartEdit = (comment: Comment) => {
+    setEditingCommentId(comment.id);
+    setEditingContent(comment.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditingContent("");
+  };
+
+  const handleSaveEdit = (commentId: string) => {
+    if (!editingContent.trim()) {
+      toast.error("댓글 내용을 입력해주세요.");
+      return;
+    }
+    updateCommentMutation.mutate({ commentId, content: editingContent.trim() });
   };
 
   const formatDate = (dateString: string) => {
@@ -423,34 +467,72 @@ const CommunityPostDetail = () => {
                       <span className="text-sm font-medium text-foreground">익명</span>
                       <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
                     </div>
-                    {user && comment.user_id === user.id && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <button className="p-1 hover:bg-muted rounded-md transition-colors">
-                            <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                          </button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="max-w-[360px] rounded-2xl">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>댓글 삭제</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              정말로 이 댓글을 삭제하시겠습니까?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>취소</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => deleteCommentMutation.mutate(comment.id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              삭제
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                    {user && comment.user_id === user.id && editingCommentId !== comment.id && (
+                      <div className="flex items-center gap-1">
+                        <button 
+                          onClick={() => handleStartEdit(comment)}
+                          className="p-1 hover:bg-muted rounded-md transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                        </button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button className="p-1 hover:bg-muted rounded-md transition-colors">
+                              <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="max-w-[360px] rounded-2xl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>댓글 삭제</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                정말로 이 댓글을 삭제하시겠습니까?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>취소</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteCommentMutation.mutate(comment.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                삭제
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     )}
                   </div>
-                  <p className="text-sm text-foreground leading-relaxed">{comment.content}</p>
+                  {editingCommentId === comment.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={editingContent}
+                        onChange={(e) => setEditingContent(e.target.value)}
+                        className="min-h-[60px] max-h-[120px] resize-none text-sm"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveEdit(comment.id)}
+                          disabled={updateCommentMutation.isPending}
+                          className="h-8 px-3"
+                        >
+                          <Check className="w-3.5 h-3.5 mr-1" />
+                          저장
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCancelEdit}
+                          className="h-8 px-3"
+                        >
+                          <X className="w-3.5 h-3.5 mr-1" />
+                          취소
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-foreground leading-relaxed">{comment.content}</p>
+                  )}
                 </div>
               </div>
             ))}
