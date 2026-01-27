@@ -186,6 +186,28 @@ const CommunityPostDetail = () => {
     },
   });
 
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      if (!user) return;
+
+      const { error } = await supabase
+        .from("community_comments")
+        .delete()
+        .eq("id", commentId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["community-comments", id] });
+      toast.success("댓글이 삭제되었습니다.");
+    },
+    onError: () => {
+      toast.error("댓글 삭제에 실패했습니다.");
+    },
+  });
+
   // Delete post mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -396,9 +418,37 @@ const CommunityPostDetail = () => {
                   <User className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium text-foreground">익명</span>
-                    <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-foreground">익명</span>
+                      <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
+                    </div>
+                    {user && comment.user_id === user.id && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button className="p-1 hover:bg-muted rounded-md transition-colors">
+                            <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="max-w-[360px] rounded-2xl">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>댓글 삭제</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              정말로 이 댓글을 삭제하시겠습니까?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>취소</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteCommentMutation.mutate(comment.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              삭제
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                   <p className="text-sm text-foreground leading-relaxed">{comment.content}</p>
                 </div>
