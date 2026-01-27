@@ -33,6 +33,7 @@ import {
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
+import PostImageGallery from "@/components/community/PostImageGallery";
 
 interface Post {
   id: string;
@@ -420,6 +421,11 @@ const CommunityPostDetail = () => {
         <div className="py-6 whitespace-pre-wrap text-foreground leading-relaxed">
           {post.content}
         </div>
+
+        {/* Image Gallery */}
+        {post.image_urls && post.image_urls.length > 0 && (
+          <PostImageGallery images={post.image_urls} />
+        )}
 
         {/* Stats */}
         <div className="flex items-center gap-4 py-4 border-t border-b border-border">
