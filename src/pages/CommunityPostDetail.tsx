@@ -11,8 +11,7 @@ import {
   User,
   Pencil,
   Trash2,
-  X,
-  Check
+  X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,6 +33,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import PostImageGallery from "@/components/community/PostImageGallery";
+import CommentItem from "@/components/community/CommentItem";
 
 interface Post {
   id: string;
@@ -53,10 +53,7 @@ interface Comment {
   user_id: string;
   content: string;
   created_at: string;
-  profile?: {
-    display_name: string | null;
-    avatar_url: string | null;
-  };
+  parent_comment_id: string | null;
 }
 
 const CommunityPostDetail = () => {
@@ -67,6 +64,8 @@ const CommunityPostDetail = () => {
   const [newComment, setNewComment] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
 
   // Fetch post
   const { data: post, isLoading: postLoading } = useQuery({
@@ -166,7 +165,7 @@ const CommunityPostDetail = () => {
 
   // Add comment mutation
   const commentMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, parentCommentId }: { content: string; parentCommentId?: string | null }) => {
       if (!user) {
         navigate("/auth");
         return;
@@ -177,12 +176,15 @@ const CommunityPostDetail = () => {
         .insert({ 
           post_id: id, 
           user_id: user.id,
-          content 
+          content,
+          parent_comment_id: parentCommentId || null
         });
       if (error) throw error;
     },
     onSuccess: () => {
       setNewComment("");
+      setReplyContent("");
+      setReplyingToId(null);
       queryClient.invalidateQueries({ queryKey: ["community-comments", id] });
       toast.success("댓글이 등록되었습니다.");
     },
@@ -266,7 +268,33 @@ const CommunityPostDetail = () => {
       navigate("/auth");
       return;
     }
-    commentMutation.mutate(newComment.trim());
+    commentMutation.mutate({ content: newComment.trim(), parentCommentId: null });
+  };
+
+  const handleSubmitReply = (parentId: string) => {
+    if (!replyContent.trim()) {
+      toast.error("답글 내용을 입력해주세요.");
+      return;
+    }
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    commentMutation.mutate({ content: replyContent.trim(), parentCommentId: parentId });
+  };
+
+  const handleStartReply = (parentId: string) => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    setReplyingToId(parentId);
+    setReplyContent("");
+  };
+
+  const handleCancelReply = () => {
+    setReplyingToId(null);
+    setReplyContent("");
   };
 
   const handleShare = async () => {
@@ -462,86 +490,66 @@ const CommunityPostDetail = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {comments.map((comment) => (
-              <div key={comment.id} className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-foreground">익명</span>
-                      <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
-                    </div>
-                    {user && comment.user_id === user.id && editingCommentId !== comment.id && (
-                      <div className="flex items-center gap-1">
-                        <button 
-                          onClick={() => handleStartEdit(comment)}
-                          className="p-1 hover:bg-muted rounded-md transition-colors"
-                        >
-                          <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                        </button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <button className="p-1 hover:bg-muted rounded-md transition-colors">
-                              <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                            </button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="max-w-[360px] rounded-2xl">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>댓글 삭제</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                정말로 이 댓글을 삭제하시겠습니까?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>취소</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteCommentMutation.mutate(comment.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                삭제
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+            {/* Filter parent comments (no parent_comment_id) */}
+            {comments
+              .filter((comment) => !comment.parent_comment_id)
+              .map((comment) => {
+                const replies = comments.filter(
+                  (c) => c.parent_comment_id === comment.id
+                );
+                return (
+                  <div key={comment.id} className="space-y-3">
+                    <CommentItem
+                      comment={comment}
+                      replies={replies}
+                      currentUserId={user?.id}
+                      editingCommentId={editingCommentId}
+                      editingContent={editingContent}
+                      onStartEdit={handleStartEdit}
+                      onCancelEdit={handleCancelEdit}
+                      onSaveEdit={handleSaveEdit}
+                      onDelete={(commentId) => deleteCommentMutation.mutate(commentId)}
+                      onEditingContentChange={setEditingContent}
+                      onReply={handleStartReply}
+                      isUpdating={updateCommentMutation.isPending}
+                      isDeleting={deleteCommentMutation.isPending}
+                    />
+                    
+                    {/* Reply Input */}
+                    {replyingToId === comment.id && (
+                      <div className="ml-8 pl-4 border-l-2 border-muted">
+                        <div className="flex gap-2">
+                          <Textarea
+                            value={replyContent}
+                            onChange={(e) => setReplyContent(e.target.value)}
+                            placeholder="답글을 입력하세요..."
+                            className="min-h-[44px] max-h-[100px] resize-none flex-1 text-sm"
+                            autoFocus
+                          />
+                          <div className="flex flex-col gap-1">
+                            <Button
+                              size="icon"
+                              onClick={() => handleSubmitReply(comment.id)}
+                              disabled={!replyContent.trim() || commentMutation.isPending}
+                              className="h-8 w-8"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              onClick={handleCancelReply}
+                              className="h-8 w-8"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
-                  {editingCommentId === comment.id ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={editingContent}
-                        onChange={(e) => setEditingContent(e.target.value)}
-                        className="min-h-[60px] max-h-[120px] resize-none text-sm"
-                      />
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleSaveEdit(comment.id)}
-                          disabled={updateCommentMutation.isPending}
-                          className="h-8 px-3"
-                        >
-                          <Check className="w-3.5 h-3.5 mr-1" />
-                          저장
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCancelEdit}
-                          className="h-8 px-3"
-                        >
-                          <X className="w-3.5 h-3.5 mr-1" />
-                          취소
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-foreground leading-relaxed">{comment.content}</p>
-                  )}
-                </div>
-              </div>
-            ))}
+                );
+              })}
           </div>
         )}
       </section>
