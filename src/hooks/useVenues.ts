@@ -24,15 +24,21 @@ export interface Venue {
 interface FetchVenuesParams {
   pageParam: number;
   filters: FilterState;
+  partnersOnly?: boolean;
 }
 
-const fetchVenues = async ({ pageParam = 0, filters }: FetchVenuesParams) => {
+const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: FetchVenuesParams) => {
   const from = pageParam * VENUES_PER_PAGE;
   const to = from + VENUES_PER_PAGE - 1;
 
   let query = supabase
     .from("venues")
     .select("*", { count: "exact" });
+
+  // 파트너 웨딩홀만 표시 (인기 웨딩홀 섹션)
+  if (partnersOnly) {
+    query = query.eq("is_partner", true);
+  }
 
   // Apply filters
   if (filters.region) {
@@ -80,8 +86,9 @@ const fetchVenues = async ({ pageParam = 0, filters }: FetchVenuesParams) => {
   };
 };
 
-export const useVenues = () => {
+export const useVenues = (partnersOnly: boolean = false) => {
   const { region, maxPrice, maxGuarantee, minRating, hallTypes, mealOptions, eventOptions } = useFilterStore();
+  const hasFilters = !!(region || maxPrice || maxGuarantee || minRating || hallTypes.length || mealOptions.length || eventOptions.length);
   
   const filters: FilterState = {
     region,
@@ -93,9 +100,12 @@ export const useVenues = () => {
     eventOptions,
   };
 
+  // 필터가 활성화되면 모든 웨딩홀 표시, 아니면 partnersOnly 적용
+  const showPartnersOnly = partnersOnly && !hasFilters;
+
   return useInfiniteQuery({
-    queryKey: ["venues", filters],
-    queryFn: ({ pageParam }) => fetchVenues({ pageParam, filters }),
+    queryKey: ["venues", filters, showPartnersOnly],
+    queryFn: ({ pageParam }) => fetchVenues({ pageParam, filters, partnersOnly: showPartnersOnly }),
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 0,
   });

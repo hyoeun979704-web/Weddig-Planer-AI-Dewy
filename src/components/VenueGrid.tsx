@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 
 interface VenueGridProps {
   onVenueClick?: (venue: Venue) => void;
+  partnersOnly?: boolean;
 }
 
-const VenueGrid = ({ onVenueClick }: VenueGridProps) => {
+const VenueGrid = ({ onVenueClick, partnersOnly = true }: VenueGridProps) => {
   const { toast } = useToast();
   const { resetFilters, hasActiveFilters } = useFilterStore();
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -23,7 +24,7 @@ const VenueGrid = ({ onVenueClick }: VenueGridProps) => {
     isLoading,
     isError,
     error,
-  } = useVenues();
+  } = useVenues(partnersOnly);
 
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
