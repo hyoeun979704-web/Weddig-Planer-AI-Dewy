@@ -1,24 +1,10 @@
 import { useState } from "react";
 import { Users, Utensils, Star, Sparkles, Building2, DollarSign, Flower2, Wine, ChevronLeft, ChevronRight } from "lucide-react";
-
-interface HallInfo {
-  name: string;
-  type: string;
-  ceremonyInterval: string;
-  minCapacity: number;
-  seatCapacity: number;
-  maxCapacity: number;
-  menuType: string;
-  priceMin: number;
-  priceMax: number;
-  rentalFee: number | null;
-  productionFee: number;
-  flowerType: string;
-  flowerPrice: number;
-  drinkType: string;
-}
+import { useVenueHalls, VenueHall } from "@/hooks/useVenueDetails";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface VenueHallTabProps {
+  venueId: string;
   hallTypes?: string[] | null;
   mealOptions?: string[] | null;
   eventOptions?: string[] | null;
@@ -50,7 +36,22 @@ const InfoCard = ({ icon, title, children }: InfoCardProps) => (
   </div>
 );
 
+// Transform DB hall data to display format
+const transformHallData = (hall: VenueHall, fallbackPrice: number, fallbackGuarantee: number) => ({
+  id: hall.id,
+  name: hall.name,
+  type: hall.hall_type || "(준비중)",
+  floor: hall.floor || null,
+  minCapacity: hall.capacity_min || fallbackGuarantee,
+  maxCapacity: hall.capacity_max || Math.round(fallbackGuarantee * 1.5),
+  priceMin: hall.price_per_person || fallbackPrice,
+  priceMax: hall.meal_price || fallbackPrice + 20000,
+  ceremonyFee: hall.ceremony_fee,
+  sizePyeong: hall.size_pyeong,
+});
+
 const VenueHallTab = ({ 
+  venueId,
   hallTypes = [], 
   mealOptions = [], 
   eventOptions = [],
@@ -59,36 +60,35 @@ const VenueHallTab = ({
 }: VenueHallTabProps) => {
   const [currentHallIndex, setCurrentHallIndex] = useState(0);
   
-  const halls = hallTypes || [];
+  const { data: dbHalls, isLoading } = useVenueHalls(venueId);
+  
   const meals = mealOptions || [];
   const events = eventOptions || [];
 
-  // Generate mock hall data based on hallTypes
-  const hallNames = halls.length > 0 
-    ? halls 
-    : ["그랜드볼룸", "크리스탈홀", "가든홀"];
-
-  const hallsData: HallInfo[] = hallNames.map((name, index) => {
-    const baseCapacity = minGuarantee + (index * 50);
-    const basePriceVariation = index * 10000;
+  // Generate fallback halls if no DB data
+  const generateFallbackHalls = () => {
+    const names = hallTypes && hallTypes.length > 0 
+      ? hallTypes 
+      : ["그랜드볼룸", "크리스탈홀"];
     
-    return {
+    return names.map((name, index) => ({
+      id: `fallback-${index}`,
       name,
-      type: index === 0 ? "호텔" : index === 1 ? "컨벤션" : "가든",
-      ceremonyInterval: index === 0 ? "동시/240분" : "순차/180분",
-      minCapacity: Math.max(100, baseCapacity - 100),
-      seatCapacity: baseCapacity,
-      maxCapacity: baseCapacity + Math.round(baseCapacity * 0.2),
-      menuType: meals.length > 0 ? meals[0] : "양식",
-      priceMin: pricePerPerson + basePriceVariation,
-      priceMax: pricePerPerson + basePriceVariation + 40000,
-      rentalFee: index === 0 ? null : 5000000 + (index * 1000000),
-      productionFee: (pricePerPerson + basePriceVariation) * baseCapacity * 0.05,
-      flowerType: "생화",
-      flowerPrice: 15000000 + (index * 3000000),
-      drinkType: "당일소모량"
-    };
-  });
+      type: index === 0 ? "호텔형" : "컨벤션",
+      floor: null,
+      minCapacity: minGuarantee + (index * 50),
+      maxCapacity: minGuarantee + (index * 50) + 100,
+      priceMin: pricePerPerson + (index * 10000),
+      priceMax: pricePerPerson + (index * 10000) + 30000,
+      ceremonyFee: null,
+      sizePyeong: null,
+    }));
+  };
+
+  // Use DB data if available, otherwise use fallback
+  const hallsData = dbHalls && dbHalls.length > 0 
+    ? dbHalls.map(hall => transformHallData(hall, pricePerPerson, minGuarantee))
+    : generateFallbackHalls();
 
   const currentHall = hallsData[currentHallIndex];
 
@@ -99,6 +99,16 @@ const VenueHallTab = ({
   const handleNext = () => {
     setCurrentHallIndex((prev) => (prev === hallsData.length - 1 ? 0 : prev + 1));
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-4 space-y-6">
+        <Skeleton className="h-40 w-full rounded-2xl" />
+        <Skeleton className="h-10 w-full rounded-full" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-6">
@@ -151,7 +161,7 @@ const VenueHallTab = ({
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {hallsData.map((hall, index) => (
             <button
-              key={index}
+              key={hall.id}
               onClick={() => setCurrentHallIndex(index)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 index === currentHallIndex
@@ -171,8 +181,8 @@ const VenueHallTab = ({
               className="flex transition-transform duration-300 ease-out"
               style={{ transform: `translateX(-${currentHallIndex * 100}%)` }}
             >
-              {hallsData.map((hall, index) => (
-                <div key={index} className="min-w-full p-4 bg-background">
+              {hallsData.map((hall) => (
+                <div key={hall.id} className="min-w-full p-4 bg-background">
                   {/* Hall Name Badge */}
                   <div className="text-center mb-4">
                     <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary font-bold rounded-full">
@@ -182,13 +192,14 @@ const VenueHallTab = ({
 
                   {/* Info Grid */}
                   <div className="grid grid-cols-2 gap-3">
-                    {/* 홀타입/예식 형태/간격 */}
+                    {/* 홀타입 */}
                     <InfoCard 
                       icon={<Building2 className="w-6 h-6" />}
-                      title="홀타입/예식 형태/간격"
+                      title="홀타입"
                     >
                       <p>{hall.type}</p>
-                      <p>{hall.ceremonyInterval}</p>
+                      {hall.floor && <p>{hall.floor}</p>}
+                      {hall.sizePyeong && <p>{hall.sizePyeong}평</p>}
                     </InfoCard>
 
                     {/* 수용 인원 */}
@@ -197,45 +208,24 @@ const VenueHallTab = ({
                       title="수용 인원"
                     >
                       <p>최소 {hall.minCapacity}명</p>
-                      <p>좌석 {hall.seatCapacity}명</p>
                       <p>최대 {hall.maxCapacity}명</p>
                     </InfoCard>
 
                     {/* 메뉴/식대 */}
                     <InfoCard 
                       icon={<Utensils className="w-6 h-6" />}
-                      title="메뉴/식대"
+                      title="식대"
                     >
-                      <p>{hall.menuType}</p>
                       <p>{formatKoreanWon(hall.priceMin)}</p>
                       <p>~{formatKoreanWon(hall.priceMax)}</p>
                     </InfoCard>
 
-                    {/* 대관료/연출료 */}
+                    {/* 대관료 */}
                     <InfoCard 
                       icon={<DollarSign className="w-6 h-6" />}
-                      title="대관료/연출료"
+                      title="대관료"
                     >
-                      <p>대관료 {hall.rentalFee ? formatKoreanWon(hall.rentalFee) : "없음"}</p>
-                      <p>연출료 있음</p>
-                      <p>{formatKoreanWon(hall.productionFee)}</p>
-                    </InfoCard>
-
-                    {/* 꽃장식 */}
-                    <InfoCard 
-                      icon={<Flower2 className="w-6 h-6" />}
-                      title="꽃장식"
-                    >
-                      <p>{hall.flowerType}</p>
-                      <p>{formatKoreanWon(hall.flowerPrice)}</p>
-                    </InfoCard>
-
-                    {/* 음주류 */}
-                    <InfoCard 
-                      icon={<Wine className="w-6 h-6" />}
-                      title="음주류"
-                    >
-                      <p>{hall.drinkType}</p>
+                      <p>{hall.ceremonyFee ? formatKoreanWon(hall.ceremonyFee) : "대관료 포함"}</p>
                     </InfoCard>
                   </div>
                 </div>
