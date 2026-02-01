@@ -1,7 +1,10 @@
 import { MapPin, Clock, Car, Phone, Globe, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useRef } from "react";
+import { useVenueSpecialPoints, VenueSpecialPoint } from "@/hooks/useVenueDetails";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface VenueInfoTabProps {
+  venueId: string;
   address: string;
   phone?: string;
   website?: string;
@@ -10,30 +13,33 @@ interface VenueInfoTabProps {
   venueName?: string;
 }
 
-const specialPoints = [
+// Fallback special points when no DB data exists
+const fallbackSpecialPoints = [
   {
+    id: "fallback-1",
     title: "최고의 접근성",
-    description: "강남역에서 도보 5분, 주차 500대 가능한 편리한 위치",
-    emoji: "🚗"
+    description: "편리한 교통과 넉넉한 주차 공간을 제공합니다",
+    icon: "🚗",
+    category: "접근성",
   },
   {
+    id: "fallback-2",
     title: "프리미엄 서비스",
-    description: "전담 웨딩플래너 배정, VIP 대기실 및 신부 전용 메이크업룸 제공",
-    emoji: "💎"
+    description: "전담 웨딩플래너와 함께 완벽한 결혼식을 준비하세요",
+    icon: "💎",
+    category: "서비스",
   },
   {
+    id: "fallback-3",
     title: "다양한 홀 구성",
-    description: "100명부터 500명까지, 규모에 맞는 6개의 개별 홀 보유",
-    emoji: "🏛️"
+    description: "규모에 맞는 다양한 홀을 보유하고 있습니다",
+    icon: "🏛️",
+    category: "시설",
   },
-  {
-    title: "미식 경험",
-    description: "호텔 출신 셰프의 프리미엄 한식/양식 코스 제공",
-    emoji: "🍽️"
-  }
 ];
 
 const VenueInfoTab = ({ 
+  venueId,
   address, 
   phone = "02-1234-5678",
   website,
@@ -44,12 +50,25 @@ const VenueInfoTab = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
+  const { data: specialPoints, isLoading } = useVenueSpecialPoints(venueId);
+
+  // Use DB data if available, otherwise use fallback
+  const displayPoints = specialPoints && specialPoints.length > 0 
+    ? specialPoints.map(point => ({
+        id: point.id,
+        title: point.title,
+        description: point.description || "",
+        icon: point.icon || "✨",
+        category: point.category,
+      }))
+    : fallbackSpecialPoints;
+
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev === 0 ? specialPoints.length - 1 : prev - 1));
+    setCurrentIndex((prev) => (prev === 0 ? displayPoints.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev === specialPoints.length - 1 ? 0 : prev + 1));
+    setCurrentIndex((prev) => (prev === displayPoints.length - 1 ? 0 : prev + 1));
   };
 
   return (
@@ -61,62 +80,72 @@ const VenueInfoTab = ({
           Special Point!
         </h3>
         
-        <div className="relative">
-          {/* Carousel Container */}
-          <div 
-            ref={carouselRef}
-            className="overflow-hidden rounded-2xl"
-          >
+        {isLoading ? (
+          <Skeleton className="h-28 w-full rounded-2xl" />
+        ) : (
+          <div className="relative">
+            {/* Carousel Container */}
             <div 
-              className="flex transition-transform duration-300 ease-out"
-              style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+              ref={carouselRef}
+              className="overflow-hidden rounded-2xl"
             >
-              {specialPoints.map((point, index) => (
-                <div 
-                  key={index}
-                  className="min-w-full p-5 bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 rounded-2xl"
-                >
-                  <div className="flex items-start gap-4">
-                    <span className="text-3xl">{point.emoji}</span>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-foreground mb-1.5">{point.title}</h4>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {point.description}
-                      </p>
+              <div 
+                className="flex transition-transform duration-300 ease-out"
+                style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+              >
+                {displayPoints.map((point, index) => (
+                  <div 
+                    key={point.id}
+                    className="min-w-full p-5 bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20 rounded-2xl"
+                  >
+                    <div className="flex items-start gap-4">
+                      <span className="text-3xl">{point.icon}</span>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-foreground mb-1.5">{point.title}</h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                          {point.description}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Navigation Buttons */}
-          <button 
-            onClick={handlePrev}
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-background transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button 
-            onClick={handleNext}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-background transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+            {/* Navigation Buttons */}
+            {displayPoints.length > 1 && (
+              <>
+                <button 
+                  onClick={handlePrev}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-background transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={handleNext}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center hover:bg-background transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
 
-          {/* Dots Indicator */}
-          <div className="flex justify-center gap-1.5 mt-3">
-            {specialPoints.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentIndex ? "bg-primary" : "bg-muted"
-                }`}
-              />
-            ))}
+            {/* Dots Indicator */}
+            {displayPoints.length > 1 && (
+              <div className="flex justify-center gap-1.5 mt-3">
+                {displayPoints.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentIndex(index)}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      index === currentIndex ? "bg-primary" : "bg-muted"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Divider */}

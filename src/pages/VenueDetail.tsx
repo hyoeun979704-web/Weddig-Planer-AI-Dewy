@@ -141,10 +141,11 @@ const VenueDetail = () => {
         {/* Tab Content */}
         <div className="pb-24">
           {activeTab === "info" && (
-            <VenueInfoTab address={venue.address} />
+            <VenueInfoTab venueId={venue.id} address={venue.address} />
           )}
           {activeTab === "hall" && (
             <VenueHallTab
+              venueId={venue.id}
               hallTypes={venue.hall_types}
               mealOptions={venue.meal_options}
               eventOptions={venue.event_options}
