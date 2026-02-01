@@ -555,6 +555,103 @@ export type Database = {
         }
         Relationships: []
       }
+      venue_halls: {
+        Row: {
+          capacity_max: number | null
+          capacity_min: number | null
+          ceremony_fee: number | null
+          created_at: string
+          floor: string | null
+          hall_type: string | null
+          id: string
+          meal_price: number | null
+          name: string
+          price_per_person: number | null
+          size_pyeong: number | null
+          thumbnail_url: string | null
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          capacity_max?: number | null
+          capacity_min?: number | null
+          ceremony_fee?: number | null
+          created_at?: string
+          floor?: string | null
+          hall_type?: string | null
+          id?: string
+          meal_price?: number | null
+          name: string
+          price_per_person?: number | null
+          size_pyeong?: number | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          capacity_max?: number | null
+          capacity_min?: number | null
+          ceremony_fee?: number | null
+          created_at?: string
+          floor?: string | null
+          hall_type?: string | null
+          id?: string
+          meal_price?: number | null
+          name?: string
+          price_per_person?: number | null
+          size_pyeong?: number | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_halls_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_special_points: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          title: string
+          venue_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          title: string
+          venue_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          title?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_special_points_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venues: {
         Row: {
           address: string
