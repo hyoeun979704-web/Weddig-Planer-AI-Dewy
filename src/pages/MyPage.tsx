@@ -83,7 +83,7 @@ const MyPage = () => {
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
-          <button className="p-2">
+          <button onClick={() => navigate("/settings")} className="p-2">
             <Settings className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
@@ -170,7 +170,10 @@ const MyPage = () => {
                 <p className="text-sm text-muted-foreground">결혼식까지</p>
                 <p className="text-2xl font-bold text-primary">D-180</p>
               </div>
-              <button className="px-3 py-1.5 bg-primary/10 rounded-lg text-sm font-medium text-primary">
+              <button 
+                onClick={() => navigate("/my-schedule")}
+                className="px-3 py-1.5 bg-primary/10 rounded-lg text-sm font-medium text-primary"
+              >
                 날짜 설정
               </button>
             </div>
