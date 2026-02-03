@@ -555,6 +555,63 @@ export type Database = {
         }
         Relationships: []
       }
+      user_schedule_items: {
+        Row: {
+          completed: boolean
+          created_at: string
+          id: string
+          scheduled_date: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          scheduled_date: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          scheduled_date?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_wedding_settings: {
+        Row: {
+          created_at: string
+          id: string
+          partner_name: string | null
+          updated_at: string
+          user_id: string
+          wedding_date: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          partner_name?: string | null
+          updated_at?: string
+          user_id: string
+          wedding_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          partner_name?: string | null
+          updated_at?: string
+          user_id?: string
+          wedding_date?: string | null
+        }
+        Relationships: []
+      }
       venue_halls: {
         Row: {
           capacity_max: number | null

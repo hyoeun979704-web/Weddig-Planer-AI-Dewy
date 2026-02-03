@@ -1,73 +1,99 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Plus, Check, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-
-interface ScheduleItem {
-  id: number;
-  title: string;
-  date: string;
-  completed: boolean;
-}
-
-const initialSchedule: ScheduleItem[] = [
-  { id: 1, title: "웨딩홀 투어", date: "2025-02-01", completed: true },
-  { id: 2, title: "스튜디오 상담", date: "2025-02-10", completed: false },
-  { id: 3, title: "드레스 피팅", date: "2025-02-15", completed: false },
-  { id: 4, title: "청첩장 디자인 확정", date: "2025-03-01", completed: false },
-  { id: 5, title: "허니문 예약", date: "2025-03-15", completed: false },
-];
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useAuth } from "@/contexts/AuthContext";
 
 const MySchedule = () => {
   const navigate = useNavigate();
-  const [weddingDate, setWeddingDate] = useState("2025-06-15");
-  const [schedule, setSchedule] = useState<ScheduleItem[]>(initialSchedule);
+  const { user } = useAuth();
+  const {
+    weddingSettings,
+    scheduleItems,
+    isLoading,
+    saveWeddingDate,
+    addScheduleItem,
+    toggleItemCompletion,
+    deleteScheduleItem,
+  } = useWeddingSchedule();
+
+  const [weddingDateInput, setWeddingDateInput] = useState("");
   const [newTask, setNewTask] = useState("");
   const [newTaskDate, setNewTaskDate] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const daysUntilWedding = () => {
-    const wedding = new Date(weddingDate);
+    if (!weddingSettings.wedding_date) return null;
+    const wedding = new Date(weddingSettings.wedding_date);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const diff = Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     return diff;
   };
 
-  const toggleComplete = (id: number) => {
-    setSchedule(schedule.map(item => 
-      item.id === id ? { ...item, completed: !item.completed } : item
-    ));
+  const handleStartEditing = () => {
+    setWeddingDateInput(weddingSettings.wedding_date || "");
+    setIsEditing(true);
   };
 
-  const addTask = () => {
-    if (!newTask.trim() || !newTaskDate) {
-      toast.error("일정과 날짜를 입력해주세요");
-      return;
+  const handleSaveWeddingDate = async () => {
+    if (!weddingDateInput) return;
+    setIsSaving(true);
+    const success = await saveWeddingDate(weddingDateInput);
+    if (success) {
+      setIsEditing(false);
     }
-    const newItem: ScheduleItem = {
-      id: Date.now(),
-      title: newTask,
-      date: newTaskDate,
-      completed: false,
-    };
-    setSchedule([...schedule, newItem].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
-    setNewTask("");
-    setNewTaskDate("");
-    toast.success("일정이 추가되었습니다");
+    setIsSaving(false);
   };
 
-  const deleteTask = (id: number) => {
-    setSchedule(schedule.filter(item => item.id !== id));
-    toast.success("일정이 삭제되었습니다");
+  const handleAddTask = async () => {
+    if (!newTask.trim() || !newTaskDate) return;
+    setIsSaving(true);
+    const success = await addScheduleItem(newTask.trim(), newTaskDate);
+    if (success) {
+      setNewTask("");
+      setNewTaskDate("");
+    }
+    setIsSaving(false);
   };
 
-  const handleSaveWeddingDate = () => {
-    setIsEditing(false);
-    toast.success("결혼식 날짜가 저장되었습니다");
-  };
+  const days = daysUntilWedding();
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+          <div className="flex items-center h-14 px-4">
+            <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="flex-1 text-center font-semibold text-lg pr-10">내 웨딩 일정</h1>
+          </div>
+        </header>
+        <div className="flex flex-col items-center justify-center py-20 px-4">
+          <Calendar className="w-16 h-16 text-muted-foreground mb-4" />
+          <h2 className="text-lg font-bold text-foreground mb-2">로그인이 필요합니다</h2>
+          <p className="text-sm text-muted-foreground text-center mb-4">
+            웨딩 일정을 관리하려면 로그인해주세요
+          </p>
+          <Button onClick={() => navigate("/auth")}>로그인하기</Button>
+        </div>
+        <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
@@ -87,7 +113,13 @@ const MySchedule = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm text-muted-foreground">결혼식까지</p>
-                <p className="text-4xl font-bold text-primary">D-{daysUntilWedding()}</p>
+                {days !== null ? (
+                  <p className="text-4xl font-bold text-primary">
+                    {days > 0 ? `D-${days}` : days === 0 ? "D-Day!" : `D+${Math.abs(days)}`}
+                  </p>
+                ) : (
+                  <p className="text-2xl font-bold text-muted-foreground">날짜를 설정해주세요</p>
+                )}
               </div>
               <Calendar className="w-12 h-12 text-primary/50" />
             </div>
@@ -96,17 +128,24 @@ const MySchedule = () => {
               <div className="flex gap-2">
                 <Input
                   type="date"
-                  value={weddingDate}
-                  onChange={(e) => setWeddingDate(e.target.value)}
+                  value={weddingDateInput}
+                  onChange={(e) => setWeddingDateInput(e.target.value)}
                   className="flex-1"
                 />
-                <Button onClick={handleSaveWeddingDate} size="sm">저장</Button>
+                <Button onClick={handleSaveWeddingDate} size="sm" disabled={isSaving}>
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "저장"}
+                </Button>
+                <Button onClick={() => setIsEditing(false)} size="sm" variant="outline">
+                  취소
+                </Button>
               </div>
             ) : (
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">{weddingDate}</p>
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                  날짜 변경
+                <p className="text-sm text-muted-foreground">
+                  {weddingSettings.wedding_date || "아직 설정되지 않음"}
+                </p>
+                <Button variant="outline" size="sm" onClick={handleStartEditing}>
+                  {weddingSettings.wedding_date ? "날짜 변경" : "날짜 설정"}
                 </Button>
               </div>
             )}
@@ -133,7 +172,9 @@ const MySchedule = () => {
                   onChange={(e) => setNewTaskDate(e.target.value)}
                   className="flex-1"
                 />
-                <Button onClick={addTask}>추가</Button>
+                <Button onClick={handleAddTask} disabled={isSaving || !newTask.trim() || !newTaskDate}>
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "추가"}
+                </Button>
               </div>
             </div>
           </div>
@@ -142,39 +183,47 @@ const MySchedule = () => {
         {/* Schedule List */}
         <div className="p-4">
           <h2 className="font-bold text-foreground mb-4">웨딩 체크리스트</h2>
-          <div className="space-y-2">
-            {schedule.map((item) => (
-              <div
-                key={item.id}
-                className={`flex items-center gap-3 p-4 bg-card rounded-xl border border-border ${
-                  item.completed ? "opacity-60" : ""
-                }`}
-              >
-                <button
-                  onClick={() => toggleComplete(item.id)}
-                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                    item.completed
-                      ? "bg-primary border-primary"
-                      : "border-muted-foreground"
+          {scheduleItems.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">아직 등록된 일정이 없습니다</p>
+              <p className="text-xs">위에서 새 일정을 추가해보세요</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {scheduleItems.map((item) => (
+                <div
+                  key={item.id}
+                  className={`flex items-center gap-3 p-4 bg-card rounded-xl border border-border ${
+                    item.completed ? "opacity-60" : ""
                   }`}
                 >
-                  {item.completed && <Check className="w-4 h-4 text-primary-foreground" />}
-                </button>
-                <div className="flex-1">
-                  <p className={`font-medium text-sm ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                    {item.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{item.date}</p>
+                  <button
+                    onClick={() => toggleItemCompletion(item.id)}
+                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      item.completed
+                        ? "bg-primary border-primary"
+                        : "border-muted-foreground"
+                    }`}
+                  >
+                    {item.completed && <Check className="w-4 h-4 text-primary-foreground" />}
+                  </button>
+                  <div className="flex-1">
+                    <p className={`font-medium text-sm ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                      {item.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{item.scheduled_date}</p>
+                  </div>
+                  <button
+                    onClick={() => deleteScheduleItem(item.id)}
+                    className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => deleteTask(item.id)}
-                  className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 

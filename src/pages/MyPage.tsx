@@ -19,6 +19,7 @@ import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 const quickMenuItems = [
   { icon: Heart, label: "찜", count: 12, href: "/favorites" },
@@ -41,6 +42,18 @@ const MyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isLoading, signOut } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
+
+  const daysUntilWedding = () => {
+    if (!weddingSettings.wedding_date) return null;
+    const wedding = new Date(weddingSettings.wedding_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  const days = daysUntilWedding();
 
   const handleTabChange = (href: string) => {
     navigate(href);
@@ -168,13 +181,19 @@ const MyPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">결혼식까지</p>
-                <p className="text-2xl font-bold text-primary">D-180</p>
+                {days !== null ? (
+                  <p className="text-2xl font-bold text-primary">
+                    {days > 0 ? `D-${days}` : days === 0 ? "D-Day!" : `D+${Math.abs(days)}`}
+                  </p>
+                ) : (
+                  <p className="text-xl font-bold text-muted-foreground">미설정</p>
+                )}
               </div>
               <button 
                 onClick={() => navigate("/my-schedule")}
                 className="px-3 py-1.5 bg-primary/10 rounded-lg text-sm font-medium text-primary"
               >
-                날짜 설정
+                {weddingSettings.wedding_date ? "일정 관리" : "날짜 설정"}
               </button>
             </div>
           </div>

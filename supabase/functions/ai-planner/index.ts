@@ -76,13 +76,17 @@ interface Message {
 interface UserData {
   profile: { display_name: string | null; email: string | null } | null;
   favorites: { item_type: string; item_id: string; name?: string }[];
+  weddingSettings: { wedding_date: string | null } | null;
+  scheduleItems: { title: string; scheduled_date: string; completed: boolean }[];
 }
 
 // deno-lint-ignore no-explicit-any
 async function fetchUserData(supabase: any, userId: string): Promise<UserData> {
-  const [profileRes, favoritesRes] = await Promise.all([
-    supabase.from("profiles").select("display_name, email").eq("user_id", userId).single(),
+  const [profileRes, favoritesRes, weddingRes, scheduleRes] = await Promise.all([
+    supabase.from("profiles").select("display_name, email").eq("user_id", userId).maybeSingle(),
     supabase.from("favorites").select("item_type, item_id").eq("user_id", userId),
+    supabase.from("user_wedding_settings").select("wedding_date").eq("user_id", userId).maybeSingle(),
+    supabase.from("user_schedule_items").select("title, scheduled_date, completed").eq("user_id", userId).order("scheduled_date", { ascending: true }),
   ]);
 
   const favorites = favoritesRes.data || [];
@@ -116,6 +120,8 @@ async function fetchUserData(supabase: any, userId: string): Promise<UserData> {
   return {
     profile: profileRes.data,
     favorites: enrichedFavorites,
+    weddingSettings: weddingRes.data,
+    scheduleItems: scheduleRes.data || [],
   };
 }
 
@@ -126,6 +132,44 @@ function buildUserContext(userData: UserData): string {
     parts.push(`사용자 이름: ${userData.profile.display_name}`);
   }
   
+  // Wedding date and D-Day
+  if (userData.weddingSettings?.wedding_date) {
+    const weddingDate = new Date(userData.weddingSettings.wedding_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysUntil = Math.ceil((weddingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    parts.push(`예식일: ${userData.weddingSettings.wedding_date}`);
+    if (daysUntil > 0) {
+      parts.push(`D-Day: D-${daysUntil} (${daysUntil}일 남음)`);
+    } else if (daysUntil === 0) {
+      parts.push(`D-Day: 오늘이 결혼식입니다!`);
+    } else {
+      parts.push(`D-Day: D+${Math.abs(daysUntil)} (결혼식 ${Math.abs(daysUntil)}일 지남)`);
+    }
+  }
+  
+  // Schedule items
+  if (userData.scheduleItems.length > 0) {
+    const pending = userData.scheduleItems.filter(i => !i.completed);
+    const completed = userData.scheduleItems.filter(i => i.completed);
+    
+    let scheduleText = `\n웨딩 체크리스트 (총 ${userData.scheduleItems.length}개, 완료 ${completed.length}개):`;
+    
+    if (pending.length > 0) {
+      scheduleText += `\n- 남은 일정:`;
+      pending.slice(0, 5).forEach(item => {
+        scheduleText += `\n  · ${item.title} (${item.scheduled_date})`;
+      });
+      if (pending.length > 5) {
+        scheduleText += `\n  · ... 외 ${pending.length - 5}개`;
+      }
+    }
+    
+    parts.push(scheduleText);
+  }
+  
+  // Favorites
   if (userData.favorites.length > 0) {
     const grouped: Record<string, string[]> = {};
     const typeLabels: Record<string, string> = {
