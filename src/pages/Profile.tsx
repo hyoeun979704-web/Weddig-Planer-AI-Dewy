@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, User, Mail, Phone, Calendar, Save } from "lucide-react";
+import { ArrowLeft, Camera, User, Mail, Phone, Calendar, Save, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,11 +14,54 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const [displayName, setDisplayName] = useState(
-    user?.user_metadata?.full_name || user?.user_metadata?.name || ""
-  );
+  const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [weddingDate, setWeddingDate] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load profile data
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Load profile
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name, avatar_url")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        // Load wedding settings
+        const { data: settings } = await supabase
+          .from("user_wedding_settings")
+          .select("wedding_date, partner_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (profile) {
+          setDisplayName(profile.display_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "");
+        } else {
+          setDisplayName(user?.user_metadata?.full_name || user?.user_metadata?.name || "");
+        }
+
+        if (settings) {
+          setWeddingDate(settings.wedding_date || "");
+          // You can store phone in partner_name temporarily or add a new column
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [user]);
 
   const getUserAvatar = () => {
     return user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
@@ -28,8 +72,46 @@ const Profile = () => {
     return name.charAt(0).toUpperCase();
   };
 
-  const handleSave = () => {
-    toast.success("프로필이 저장되었습니다");
+  const handleSave = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    try {
+      // Update profile
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ display_name: displayName })
+        .eq("user_id", user.id);
+
+      if (profileError) throw profileError;
+
+      // Update or insert wedding settings
+      if (weddingDate) {
+        const { data: existing } = await supabase
+          .from("user_wedding_settings")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase
+            .from("user_wedding_settings")
+            .update({ wedding_date: weddingDate })
+            .eq("user_id", user.id);
+        } else {
+          await supabase
+            .from("user_wedding_settings")
+            .insert({ user_id: user.id, wedding_date: weddingDate });
+        }
+      }
+
+      toast.success("프로필이 저장되었습니다");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast.error("저장에 실패했습니다");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!user) {
@@ -136,8 +218,12 @@ const Profile = () => {
             />
           </div>
 
-          <Button onClick={handleSave} className="w-full mt-6" size="lg">
-            <Save className="w-4 h-4 mr-2" />
+          <Button onClick={handleSave} className="w-full mt-6" size="lg" disabled={isSaving}>
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
             저장하기
           </Button>
         </div>
