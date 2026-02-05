@@ -4,8 +4,18 @@ import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2 } from "lucide-react"
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
+
+const categoryOptions = [
+  { value: "general", label: "일반" },
+  { value: "phase-1", label: "D-365~180: 웨딩 준비 시작" },
+  { value: "phase-2", label: "D-180~120: 웨딩홀 & 스드메" },
+  { value: "phase-3", label: "D-120~60: 혼수 및 예물" },
+  { value: "phase-4", label: "D-60~30: 허니문 & 청첩장" },
+  { value: "phase-5", label: "D-30~Day: 최종 점검" },
+];
 
 const MySchedule = () => {
   const navigate = useNavigate();
@@ -23,6 +33,7 @@ const MySchedule = () => {
   const [weddingDateInput, setWeddingDateInput] = useState("");
   const [newTask, setNewTask] = useState("");
   const [newTaskDate, setNewTaskDate] = useState("");
+  const [newTaskCategory, setNewTaskCategory] = useState("general");
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -53,12 +64,18 @@ const MySchedule = () => {
   const handleAddTask = async () => {
     if (!newTask.trim() || !newTaskDate) return;
     setIsSaving(true);
-    const success = await addScheduleItem(newTask.trim(), newTaskDate);
+    const success = await addScheduleItem(newTask.trim(), newTaskDate, newTaskCategory);
     if (success) {
       setNewTask("");
       setNewTaskDate("");
+      setNewTaskCategory("general");
     }
     setIsSaving(false);
+  };
+
+  const getCategoryLabel = (category: string) => {
+    const found = categoryOptions.find(c => c.value === category);
+    return found ? found.label : "일반";
   };
 
   const days = daysUntilWedding();
@@ -165,6 +182,18 @@ const MySchedule = () => {
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
               />
+              <Select value={newTaskCategory} onValueChange={setNewTaskCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="타임라인 단계 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <div className="flex gap-2">
                 <Input
                   type="date"
@@ -212,7 +241,14 @@ const MySchedule = () => {
                     <p className={`font-medium text-sm ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
                       {item.title}
                     </p>
-                    <p className="text-xs text-muted-foreground">{item.scheduled_date}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground">{item.scheduled_date}</p>
+                      {item.category && item.category !== "general" && (
+                        <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                          {getCategoryLabel(item.category)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={() => deleteScheduleItem(item.id)}
