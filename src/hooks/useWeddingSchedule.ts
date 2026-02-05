@@ -180,6 +180,29 @@ export const useWeddingSchedule = () => {
     }
   };
 
+  // Update schedule item
+  const updateScheduleItem = async (id: string, updates: { title?: string; scheduled_date?: string; category?: string }) => {
+    try {
+      const { error } = await supabase
+        .from("user_schedule_items")
+        .update(updates)
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setScheduleItems(prev =>
+        prev.map(i => (i.id === id ? { ...i, ...updates } : i))
+          .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())
+      );
+      toast.success("일정이 수정되었습니다");
+      return true;
+    } catch (error) {
+      console.error("Error updating item:", error);
+      toast.error("수정에 실패했습니다");
+      return false;
+    }
+  };
+
   return {
     weddingSettings,
     scheduleItems,
@@ -189,5 +212,6 @@ export const useWeddingSchedule = () => {
     toggleItemCompletion,
     deleteScheduleItem,
     updateItemNotes,
+    updateScheduleItem,
   };
 };

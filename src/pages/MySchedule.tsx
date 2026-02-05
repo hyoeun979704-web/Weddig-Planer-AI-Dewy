@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2, Pencil, X, Save } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ const MySchedule = () => {
     addScheduleItem,
     toggleItemCompletion,
     deleteScheduleItem,
+    updateScheduleItem,
   } = useWeddingSchedule();
 
   const [weddingDateInput, setWeddingDateInput] = useState("");
@@ -36,6 +37,12 @@ const MySchedule = () => {
   const [newTaskCategory, setNewTaskCategory] = useState("general");
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingItem, setEditingItem] = useState<{
+    id: string;
+    title: string;
+    scheduled_date: string;
+    category: string;
+  } | null>(null);
 
   const daysUntilWedding = () => {
     if (!weddingSettings.wedding_date) return null;
@@ -76,6 +83,33 @@ const MySchedule = () => {
   const getCategoryLabel = (category: string) => {
     const found = categoryOptions.find(c => c.value === category);
     return found ? found.label : "일반";
+  };
+
+  const handleStartEdit = (item: typeof scheduleItems[0]) => {
+    setEditingItem({
+      id: item.id,
+      title: item.title,
+      scheduled_date: item.scheduled_date,
+      category: item.category || "general",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingItem) return;
+    setIsSaving(true);
+    const success = await updateScheduleItem(editingItem.id, {
+      title: editingItem.title,
+      scheduled_date: editingItem.scheduled_date,
+      category: editingItem.category,
+    });
+    if (success) {
+      setEditingItem(null);
+    }
+    setIsSaving(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItem(null);
   };
 
   const days = daysUntilWedding();
@@ -223,39 +257,92 @@ const MySchedule = () => {
               {scheduleItems.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-3 p-4 bg-card rounded-xl border border-border ${
+                  className={`p-4 bg-card rounded-xl border border-border ${
                     item.completed ? "opacity-60" : ""
                   }`}
                 >
-                  <button
-                    onClick={() => toggleItemCompletion(item.id)}
-                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      item.completed
-                        ? "bg-primary border-primary"
-                        : "border-muted-foreground"
-                    }`}
-                  >
-                    {item.completed && <Check className="w-4 h-4 text-primary-foreground" />}
-                  </button>
-                  <div className="flex-1">
-                    <p className={`font-medium text-sm ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                      {item.title}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-muted-foreground">{item.scheduled_date}</p>
-                      {item.category && item.category !== "general" && (
-                        <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-                          {getCategoryLabel(item.category)}
-                        </span>
-                      )}
+                  {editingItem?.id === item.id ? (
+                    /* Edit Mode */
+                    <div className="space-y-2">
+                      <Input
+                        value={editingItem.title}
+                        onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                        placeholder="일정 제목"
+                      />
+                      <Select 
+                        value={editingItem.category} 
+                        onValueChange={(v) => setEditingItem({ ...editingItem, category: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoryOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="date"
+                        value={editingItem.scheduled_date}
+                        onChange={(e) => setEditingItem({ ...editingItem, scheduled_date: e.target.value })}
+                      />
+                      <div className="flex gap-2 pt-2">
+                        <Button 
+                          onClick={handleSaveEdit} 
+                          size="sm" 
+                          disabled={isSaving || !editingItem.title.trim()}
+                          className="flex-1"
+                        >
+                          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-1" /> 저장</>}
+                        </Button>
+                        <Button onClick={handleCancelEdit} size="sm" variant="outline">
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <button
-                    onClick={() => deleteScheduleItem(item.id)}
-                    className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  ) : (
+                    /* View Mode */
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => toggleItemCompletion(item.id)}
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          item.completed
+                            ? "bg-primary border-primary"
+                            : "border-muted-foreground"
+                        }`}
+                      >
+                        {item.completed && <Check className="w-4 h-4 text-primary-foreground" />}
+                      </button>
+                      <div className="flex-1">
+                        <p className={`font-medium text-sm ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                          {item.title}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground">{item.scheduled_date}</p>
+                          {item.category && item.category !== "general" && (
+                            <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                              {getCategoryLabel(item.category)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleStartEdit(item)}
+                        className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteScheduleItem(item.id)}
+                        className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
