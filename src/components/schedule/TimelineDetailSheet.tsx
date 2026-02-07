@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScheduleItem } from "@/hooks/useWeddingSchedule";
 
 interface TimelinePhase {
@@ -46,8 +47,17 @@ const TimelineDetailSheet = ({
   const [isAdding, setIsAdding] = useState(false);
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<{ id: string; notes: string } | null>(null);
-  const [editingItem, setEditingItem] = useState<{ id: string; title: string; scheduled_date: string } | null>(null);
+  const [editingItem, setEditingItem] = useState<{ id: string; title: string; scheduled_date: string; category: string } | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const categoryOptions = [
+    { value: "general", label: "일반" },
+    { value: "phase-1", label: "D-365~180: 웨딩 준비 시작" },
+    { value: "phase-2", label: "D-180~120: 웨딩홀 & 스드메" },
+    { value: "phase-3", label: "D-120~60: 혼수 및 예물" },
+    { value: "phase-4", label: "D-60~30: 허니문 & 청첩장" },
+    { value: "phase-5", label: "D-30~Day: 최종 점검" },
+  ];
 
   if (!phase) return null;
 
@@ -72,7 +82,7 @@ const TimelineDetailSheet = ({
   };
 
   const handleStartEdit = (item: ScheduleItem) => {
-    setEditingItem({ id: item.id, title: item.title, scheduled_date: item.scheduled_date });
+    setEditingItem({ id: item.id, title: item.title, scheduled_date: item.scheduled_date, category: item.category || "general" });
   };
 
   const handleSaveEdit = async () => {
@@ -81,6 +91,7 @@ const TimelineDetailSheet = ({
     const success = await onUpdateItem(editingItem.id, {
       title: editingItem.title,
       scheduled_date: editingItem.scheduled_date,
+      category: editingItem.category,
     });
     if (success) setEditingItem(null);
     setIsSavingEdit(false);
@@ -173,6 +184,21 @@ const TimelineDetailSheet = ({
                         onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
                         placeholder="일정 제목"
                       />
+                      <Select 
+                        value={editingItem.category} 
+                        onValueChange={(v) => setEditingItem({ ...editingItem, category: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="타임라인 단계 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoryOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <Input
                         type="date"
                         value={editingItem.scheduled_date}
