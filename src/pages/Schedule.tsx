@@ -87,7 +87,8 @@ const Schedule = () => {
     toggleItemCompletion,
     addScheduleItem,
     deleteScheduleItem,
-    updateItemNotes
+    updateItemNotes,
+    updateScheduleItem
   } = useWeddingSchedule();
 
   const [selectedPhase, setSelectedPhase] = useState<TimelinePhase | null>(null);
@@ -334,6 +335,7 @@ const Schedule = () => {
         onToggleItem={toggleItemCompletion}
         onDeleteItem={deleteScheduleItem}
         onUpdateNotes={updateItemNotes}
+        onUpdateItem={updateScheduleItem}
         weddingDate={weddingSettings.wedding_date}
       />
 
