@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Plus, Check, Trash2, MessageSquare, Loader2 } from "lucide-react";
+import { X, Plus, Check, Trash2, MessageSquare, Loader2, Pencil, Save } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ interface TimelineDetailSheetProps {
   onToggleItem: (id: string) => void;
   onDeleteItem: (id: string) => void;
   onUpdateNotes: (id: string, notes: string) => void;
+  onUpdateItem?: (id: string, updates: { title?: string; scheduled_date?: string; category?: string }) => Promise<boolean>;
   weddingDate: string | null;
 }
 
@@ -37,6 +38,7 @@ const TimelineDetailSheet = ({
   onToggleItem,
   onDeleteItem,
   onUpdateNotes,
+  onUpdateItem,
   weddingDate,
 }: TimelineDetailSheetProps) => {
   const [newTask, setNewTask] = useState("");
@@ -44,6 +46,8 @@ const TimelineDetailSheet = ({
   const [isAdding, setIsAdding] = useState(false);
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<{ id: string; notes: string } | null>(null);
+  const [editingItem, setEditingItem] = useState<{ id: string; title: string; scheduled_date: string } | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   if (!phase) return null;
 
@@ -65,6 +69,21 @@ const TimelineDetailSheet = ({
   const handleSaveNotes = (id: string, notes: string) => {
     onUpdateNotes(id, notes);
     setEditingNotes(null);
+  };
+
+  const handleStartEdit = (item: ScheduleItem) => {
+    setEditingItem({ id: item.id, title: item.title, scheduled_date: item.scheduled_date });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingItem || !onUpdateItem) return;
+    setIsSavingEdit(true);
+    const success = await onUpdateItem(editingItem.id, {
+      title: editingItem.title,
+      scheduled_date: editingItem.scheduled_date,
+    });
+    if (success) setEditingItem(null);
+    setIsSavingEdit(false);
   };
 
   const handleAddDefaultTask = async (task: string) => {
@@ -146,38 +165,75 @@ const TimelineDetailSheet = ({
             <div className="space-y-2">
               {phaseItems.map((item) => (
                 <div key={item.id} className="bg-card rounded-xl border border-border overflow-hidden">
-                  <div className="flex items-center gap-3 p-3">
-                    <button
-                      onClick={() => onToggleItem(item.id)}
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
-                        item.completed
-                          ? "bg-primary border-primary"
-                          : "border-muted-foreground hover:border-primary"
-                      }`}
-                    >
-                      {item.completed && <Check className="w-4 h-4 text-primary-foreground" />}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-medium text-sm ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                        {item.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{item.scheduled_date}</p>
+                  {editingItem?.id === item.id ? (
+                    /* Edit Mode */
+                    <div className="p-3 space-y-2">
+                      <Input
+                        value={editingItem.title}
+                        onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                        placeholder="일정 제목"
+                      />
+                      <Input
+                        type="date"
+                        value={editingItem.scheduled_date}
+                        onChange={(e) => setEditingItem({ ...editingItem, scheduled_date: e.target.value })}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <Button variant="outline" size="sm" onClick={() => setEditingItem(null)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={handleSaveEdit} 
+                          disabled={isSavingEdit || !editingItem.title.trim()}
+                        >
+                          {isSavingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-1" /> 저장</>}
+                        </Button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => setExpandedNotes(expandedNotes === item.id ? null : item.id)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        item.notes ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted"
-                      }`}
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteItem(item.id)}
-                      className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  ) : (
+                    /* View Mode */
+                    <div className="flex items-center gap-3 p-3">
+                      <button
+                        onClick={() => onToggleItem(item.id)}
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+                          item.completed
+                            ? "bg-primary border-primary"
+                            : "border-muted-foreground hover:border-primary"
+                        }`}
+                      >
+                        {item.completed && <Check className="w-4 h-4 text-primary-foreground" />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-medium text-sm ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                          {item.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{item.scheduled_date}</p>
+                      </div>
+                      {onUpdateItem && (
+                        <button
+                          onClick={() => handleStartEdit(item)}
+                          className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setExpandedNotes(expandedNotes === item.id ? null : item.id)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          item.notes ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => onDeleteItem(item.id)}
+                        className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                   
                   {/* Notes section */}
                   {expandedNotes === item.id && (
