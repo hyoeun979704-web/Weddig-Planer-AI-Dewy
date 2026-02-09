@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { CategoryTab } from "./CategoryTabBar";
+import { useRecommendedItems } from "@/hooks/useRecommendedItems";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface GalleryItemProps {
   imageUrl: string;
@@ -22,36 +24,20 @@ const GalleryItem = ({ imageUrl, label }: GalleryItemProps) => (
   </button>
 );
 
-interface GalleryData {
-  title: string;
-  subtitle: string;
-  items: GalleryItemProps[];
-}
+const GallerySkeleton = () => (
+  <Skeleton className="aspect-[3/4] rounded-xl w-full" />
+);
 
-const galleryDataMap: Record<string, GalleryData> = {
+const galleryMeta: Record<string, { title: string; subtitle: string; galleryPath: string }> = {
   "wedding-hall": {
     title: "실시간 웨딩홀 갤러리",
     subtitle: "실제 예식장 사진",
-    items: [
-      { imageUrl: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300", label: "더채플앳청담" },
-      { imageUrl: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300", label: "그랜드힐튼" },
-      { imageUrl: "https://images.unsplash.com/photo-1507504031003-b417219a0fde?w=300", label: "루벨아뜨리움" },
-      { imageUrl: "https://images.unsplash.com/photo-1478146896981-b80fe463b330?w=300", label: "아펠가모" },
-      { imageUrl: "https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=300", label: "더플라자" },
-      { imageUrl: "https://images.unsplash.com/photo-1510076857177-7470076d4098?w=300", label: "롯데호텔" },
-    ],
+    galleryPath: "/gallery",
   },
   "sdm": {
     title: "실시간 스드메 화보",
     subtitle: "스튜디오·드레스·메이크업",
-    items: [
-      { imageUrl: "https://images.unsplash.com/photo-1595407753234-0882f1e77954?w=300", label: "스튜디오A" },
-      { imageUrl: "https://images.unsplash.com/photo-1594463750939-ebb28c3f7f75?w=300", label: "드레스샵B" },
-      { imageUrl: "https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=300", label: "메이크업C" },
-      { imageUrl: "https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=300", label: "스튜디오D" },
-      { imageUrl: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=300", label: "드레스샵E" },
-      { imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?w=300", label: "메이크업F" },
-    ],
+    galleryPath: "/gallery",
   },
 };
 
@@ -61,17 +47,18 @@ interface StudioGalleryProps {
 
 const StudioGallery = ({ activeTab = "sdm" }: StudioGalleryProps) => {
   const navigate = useNavigate();
-  const data = galleryDataMap[activeTab] || galleryDataMap["sdm"];
+  const meta = galleryMeta[activeTab] || galleryMeta["sdm"];
+  const { data: items, isLoading } = useRecommendedItems(activeTab);
 
   return (
     <section className="py-6 bg-muted/30">
       <div className="flex items-center justify-between px-4 mb-4">
         <div>
-          <h2 className="text-lg font-bold text-foreground">{data.title}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{data.subtitle}</p>
+          <h2 className="text-lg font-bold text-foreground">{meta.title}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">{meta.subtitle}</p>
         </div>
         <button 
-          onClick={() => navigate("/gallery")}
+          onClick={() => navigate(meta.galleryPath)}
           className="flex items-center gap-1 text-sm text-primary font-medium"
         >
           더보기
@@ -80,9 +67,17 @@ const StudioGallery = ({ activeTab = "sdm" }: StudioGalleryProps) => {
       </div>
       
       <div className="grid grid-cols-3 gap-2 px-4">
-        {data.items.map((item, index) => (
-          <GalleryItem key={index} {...item} />
-        ))}
+        {isLoading ? (
+          Array.from({ length: 6 }).map((_, i) => <GallerySkeleton key={i} />)
+        ) : items && items.length > 0 ? (
+          items.slice(0, 6).map((item) => (
+            <GalleryItem key={item.id} imageUrl={item.imageUrl} label={item.name} />
+          ))
+        ) : (
+          <div className="col-span-3 flex items-center justify-center py-8">
+            <p className="text-sm text-muted-foreground">등록된 항목이 없습니다</p>
+          </div>
+        )}
       </div>
     </section>
   );
