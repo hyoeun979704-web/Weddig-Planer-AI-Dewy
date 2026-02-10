@@ -14,10 +14,12 @@ import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
 
 const Settings = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const handleSignOut = async () => {
     try {
@@ -54,7 +56,7 @@ const Settings = () => {
                 <Moon className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">다크 모드</span>
               </div>
-              <Switch />
+              <Switch checked={theme === "dark"} onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} />
             </div>
             <button className="w-full flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
