@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,53 +8,61 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
-import Index from "./pages/Index";
-import Studios from "./pages/Studios";
-import StudioDetail from "./pages/StudioDetail";
-import HoneymoonGifts from "./pages/HoneymoonGifts";
-import HoneymoonGiftDetail from "./pages/HoneymoonGiftDetail";
-import Honeymoon from "./pages/Honeymoon";
-import HoneymoonDetail from "./pages/HoneymoonDetail";
-import Appliances from "./pages/Appliances";
-import ApplianceDetail from "./pages/ApplianceDetail";
-import Suit from "./pages/Suit";
-import SuitDetail from "./pages/SuitDetail";
-import Hanbok from "./pages/Hanbok";
-import HanbokDetail from "./pages/HanbokDetail";
-import Venues from "./pages/Venues";
-import VenueDetail from "./pages/VenueDetail";
-import Favorites from "./pages/Favorites";
-import Store from "./pages/Store";
-import More from "./pages/More";
-import Magazine from "./pages/Magazine";
-import Reviews from "./pages/Reviews";
-import Gallery from "./pages/Gallery";
-import AIPlanner from "./pages/AIPlanner";
-import Schedule from "./pages/Schedule";
-import AIStudio from "./pages/AIStudio";
-import AIStudioService from "./pages/AIStudioService";
-import Community from "./pages/Community";
-import CommunityWrite from "./pages/CommunityWrite";
-import CommunityEdit from "./pages/CommunityEdit";
-import CommunityPostDetail from "./pages/CommunityPostDetail";
-import BookmarkedPosts from "./pages/BookmarkedPosts";
-import MyPage from "./pages/MyPage";
-import Auth from "./pages/Auth";
-import Points from "./pages/Points";
-import Coupons from "./pages/Coupons";
-import Orders from "./pages/Orders";
-import MySchedule from "./pages/MySchedule";
-import Profile from "./pages/Profile";
-import Notifications from "./pages/Notifications";
-import MyInquiries from "./pages/MyInquiries";
-import Contact from "./pages/Contact";
-import FAQ from "./pages/FAQ";
-import Settings from "./pages/Settings";
-import InvitationVenues from "./pages/InvitationVenues";
-import InvitationVenueDetail from "./pages/InvitationVenueDetail";
-import NotFound from "./pages/NotFound";
+
+// Lazy-loaded pages
+const Index = lazy(() => import("./pages/Index"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Studios = lazy(() => import("./pages/Studios"));
+const StudioDetail = lazy(() => import("./pages/StudioDetail"));
+const HoneymoonGifts = lazy(() => import("./pages/HoneymoonGifts"));
+const HoneymoonGiftDetail = lazy(() => import("./pages/HoneymoonGiftDetail"));
+const Honeymoon = lazy(() => import("./pages/Honeymoon"));
+const HoneymoonDetail = lazy(() => import("./pages/HoneymoonDetail"));
+const Appliances = lazy(() => import("./pages/Appliances"));
+const ApplianceDetail = lazy(() => import("./pages/ApplianceDetail"));
+const Suit = lazy(() => import("./pages/Suit"));
+const SuitDetail = lazy(() => import("./pages/SuitDetail"));
+const Hanbok = lazy(() => import("./pages/Hanbok"));
+const HanbokDetail = lazy(() => import("./pages/HanbokDetail"));
+const Venues = lazy(() => import("./pages/Venues"));
+const VenueDetail = lazy(() => import("./pages/VenueDetail"));
+const Favorites = lazy(() => import("./pages/Favorites"));
+const Store = lazy(() => import("./pages/Store"));
+const More = lazy(() => import("./pages/More"));
+const Magazine = lazy(() => import("./pages/Magazine"));
+const Reviews = lazy(() => import("./pages/Reviews"));
+const Gallery = lazy(() => import("./pages/Gallery"));
+const AIPlanner = lazy(() => import("./pages/AIPlanner"));
+const Schedule = lazy(() => import("./pages/Schedule"));
+const AIStudio = lazy(() => import("./pages/AIStudio"));
+const AIStudioService = lazy(() => import("./pages/AIStudioService"));
+const Community = lazy(() => import("./pages/Community"));
+const CommunityWrite = lazy(() => import("./pages/CommunityWrite"));
+const CommunityEdit = lazy(() => import("./pages/CommunityEdit"));
+const CommunityPostDetail = lazy(() => import("./pages/CommunityPostDetail"));
+const BookmarkedPosts = lazy(() => import("./pages/BookmarkedPosts"));
+const MyPage = lazy(() => import("./pages/MyPage"));
+const Points = lazy(() => import("./pages/Points"));
+const Coupons = lazy(() => import("./pages/Coupons"));
+const Orders = lazy(() => import("./pages/Orders"));
+const MySchedule = lazy(() => import("./pages/MySchedule"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const MyInquiries = lazy(() => import("./pages/MyInquiries"));
+const Contact = lazy(() => import("./pages/Contact"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const Settings = lazy(() => import("./pages/Settings"));
+const InvitationVenues = lazy(() => import("./pages/InvitationVenues"));
+const InvitationVenueDetail = lazy(() => import("./pages/InvitationVenueDetail"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
+
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
@@ -65,54 +74,56 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/studios" element={<Studios />} />
-            <Route path="/studio/:id" element={<StudioDetail />} />
-            <Route path="/honeymoon-gifts" element={<HoneymoonGifts />} />
-            <Route path="/honeymoon-gifts/:id" element={<HoneymoonGiftDetail />} />
-            <Route path="/honeymoon" element={<Honeymoon />} />
-            <Route path="/honeymoon/:id" element={<HoneymoonDetail />} />
-            <Route path="/appliances" element={<Appliances />} />
-            <Route path="/appliances/:id" element={<ApplianceDetail />} />
-            <Route path="/suit" element={<Suit />} />
-            <Route path="/suit/:id" element={<SuitDetail />} />
-            <Route path="/hanbok" element={<Hanbok />} />
-            <Route path="/hanbok/:id" element={<HanbokDetail />} />
-            <Route path="/venues" element={<Venues />} />
-            <Route path="/venue/:id" element={<VenueDetail />} />
-            <Route path="/favorites" element={<Favorites />} />
-            <Route path="/store" element={<Store />} />
-            <Route path="/more" element={<More />} />
-            <Route path="/magazine" element={<Magazine />} />
-            <Route path="/reviews" element={<Reviews />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/ai-planner" element={<AIPlanner />} />
-            <Route path="/schedule" element={<Schedule />} />
-            <Route path="/ai-studio" element={<AIStudio />} />
-            <Route path="/ai-studio/:service" element={<AIStudioService />} />
-            <Route path="/community" element={<Community />} />
-            <Route path="/community/write" element={<CommunityWrite />} />
-            <Route path="/community/bookmarks" element={<BookmarkedPosts />} />
-            <Route path="/community/:id" element={<CommunityPostDetail />} />
-            <Route path="/community/:id/edit" element={<CommunityEdit />} />
-            <Route path="/mypage" element={<MyPage />} />
-            <Route path="/points" element={<Points />} />
-            <Route path="/coupons" element={<Coupons />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/my-schedule" element={<MySchedule />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/my-inquiries" element={<MyInquiries />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/invitation-venues" element={<InvitationVenues />} />
-            <Route path="/invitation-venues/:id" element={<InvitationVenueDetail />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/studios" element={<Studios />} />
+              <Route path="/studio/:id" element={<StudioDetail />} />
+              <Route path="/honeymoon-gifts" element={<HoneymoonGifts />} />
+              <Route path="/honeymoon-gifts/:id" element={<HoneymoonGiftDetail />} />
+              <Route path="/honeymoon" element={<Honeymoon />} />
+              <Route path="/honeymoon/:id" element={<HoneymoonDetail />} />
+              <Route path="/appliances" element={<Appliances />} />
+              <Route path="/appliances/:id" element={<ApplianceDetail />} />
+              <Route path="/suit" element={<Suit />} />
+              <Route path="/suit/:id" element={<SuitDetail />} />
+              <Route path="/hanbok" element={<Hanbok />} />
+              <Route path="/hanbok/:id" element={<HanbokDetail />} />
+              <Route path="/venues" element={<Venues />} />
+              <Route path="/venue/:id" element={<VenueDetail />} />
+              <Route path="/favorites" element={<Favorites />} />
+              <Route path="/store" element={<Store />} />
+              <Route path="/more" element={<More />} />
+              <Route path="/magazine" element={<Magazine />} />
+              <Route path="/reviews" element={<Reviews />} />
+              <Route path="/gallery" element={<Gallery />} />
+              <Route path="/ai-planner" element={<AIPlanner />} />
+              <Route path="/schedule" element={<Schedule />} />
+              <Route path="/ai-studio" element={<AIStudio />} />
+              <Route path="/ai-studio/:service" element={<AIStudioService />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="/community/write" element={<CommunityWrite />} />
+              <Route path="/community/bookmarks" element={<BookmarkedPosts />} />
+              <Route path="/community/:id" element={<CommunityPostDetail />} />
+              <Route path="/community/:id/edit" element={<CommunityEdit />} />
+              <Route path="/mypage" element={<MyPage />} />
+              <Route path="/points" element={<Points />} />
+              <Route path="/coupons" element={<Coupons />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/my-schedule" element={<MySchedule />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/my-inquiries" element={<MyInquiries />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/invitation-venues" element={<InvitationVenues />} />
+              <Route path="/invitation-venues/:id" element={<InvitationVenueDetail />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
