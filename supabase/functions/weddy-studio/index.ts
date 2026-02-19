@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface WeddyRequest {
+interface DewyRequest {
   service: "invitation" | "photoshoot" | "video" | "speech";
   prompt: string;
   options?: Record<string, unknown>;
@@ -17,14 +17,14 @@ serve(async (req) => {
   }
 
   try {
-    const WEDDY_API_KEY = Deno.env.get("WEDDY_STUDIO_API_KEY");
-    const WEDDY_API_URL = Deno.env.get("WEDDY_STUDIO_API_URL");
+    const DEWY_API_KEY = Deno.env.get("DEWY_STUDIO_API_KEY") || Deno.env.get("WEDDY_STUDIO_API_KEY");
+    const DEWY_API_URL = Deno.env.get("DEWY_STUDIO_API_URL") || Deno.env.get("WEDDY_STUDIO_API_URL");
 
-    if (!WEDDY_API_KEY || !WEDDY_API_URL) {
-      throw new Error("Weddy Studio API credentials are not configured");
+    if (!DEWY_API_KEY || !DEWY_API_URL) {
+      throw new Error("Dewy Studio API credentials are not configured");
     }
 
-    const { service, prompt, options } = await req.json() as WeddyRequest;
+    const { service, prompt, options } = await req.json() as DewyRequest;
 
     if (!service || !prompt) {
       return new Response(
@@ -49,12 +49,12 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Calling Weddy Studio API: ${service} with prompt: ${prompt.substring(0, 100)}...`);
+    console.log(`Calling Dewy Studio API: ${service} with prompt: ${prompt.substring(0, 100)}...`);
 
-    const apiResponse = await fetch(`${WEDDY_API_URL}${endpoint}`, {
+    const apiResponse = await fetch(`${DEWY_API_URL}${endpoint}`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${WEDDY_API_KEY}`,
+        "Authorization": `Bearer ${DEWY_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -65,7 +65,7 @@ serve(async (req) => {
 
     if (!apiResponse.ok) {
       const errorText = await apiResponse.text();
-      console.error(`Weddy API error: ${apiResponse.status} - ${errorText}`);
+      console.error(`Dewy API error: ${apiResponse.status} - ${errorText}`);
       
       if (apiResponse.status === 429) {
         return new Response(
@@ -82,20 +82,20 @@ serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ error: "Weddy Studio API 오류가 발생했습니다." }),
+        JSON.stringify({ error: "Dewy Studio API 오류가 발생했습니다." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const data = await apiResponse.json();
-    console.log("Weddy Studio API response received successfully");
+    console.log("Dewy Studio API response received successfully");
 
     return new Response(
       JSON.stringify(data),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Weddy Studio function error:", error);
+    console.error("Dewy Studio function error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
