@@ -3,7 +3,7 @@ import {
   Building2, 
   Camera, 
   Gem, 
-  Users, 
+  Sparkles, 
   BookOpen 
 } from "lucide-react";
 
@@ -56,11 +56,11 @@ const CategoryGrid = () => {
       onClick: () => {},
     },
     {
-      icon: Users,
-      title: "웨딩플래너",
-      description: "전문 플래너 상담 연결",
-      color: "bg-sky-100 text-sky-500",
-      onClick: () => {},
+      icon: Sparkles,
+      title: "듀이 AI 플래너",
+      description: "AI와 함께하는 웨딩 준비",
+      color: "bg-pink-100 text-pink-500",
+      onClick: () => navigate("/ai-planner"),
     },
     {
       icon: BookOpen,
