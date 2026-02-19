@@ -6,7 +6,7 @@ const HeroSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative bg-gradient-to-br from-accent via-accent/50 to-background px-4 py-10 overflow-hidden">
+    <section className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-background px-4 py-10 overflow-hidden">
       {/* Background decorations */}
       <div className="absolute top-4 right-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl" />
       <div className="absolute bottom-4 left-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
