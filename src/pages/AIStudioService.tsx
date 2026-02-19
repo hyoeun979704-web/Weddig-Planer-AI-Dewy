@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useWeddyStudio } from "@/hooks/useWeddyStudio";
+import { useDewyStudio } from "@/hooks/useDewyStudio";
 import BottomNav from "@/components/BottomNav";
 
 const serviceConfig = {
@@ -75,7 +75,7 @@ const AIStudioService = () => {
   const location = useLocation();
   const { service } = useParams<{ service: string }>();
   const [prompt, setPrompt] = useState("");
-  const { isLoading, result, generate } = useWeddyStudio();
+  const { isLoading, result, generate } = useDewyStudio();
 
   const config = serviceConfig[service as keyof typeof serviceConfig];
 

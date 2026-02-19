@@ -57,7 +57,7 @@ const AIPlanner = () => {
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
-              <h1 className="text-lg font-bold text-foreground">AI 플래너</h1>
+              <h1 className="text-lg font-bold text-foreground">듀이 AI 플래너</h1>
             </div>
           </div>
           {messages.length > 0 && (
@@ -84,8 +84,8 @@ const AIPlanner = () => {
               <div className="flex-1">
                 <div className="bg-muted rounded-2xl rounded-tl-sm p-4">
                   <p className="text-sm text-foreground leading-relaxed">
-                    안녕하세요! 💍✨<br /><br />
-                    저는 여러분의 든든한 수석 웨딩플래너예요. 결혼 준비, 막막하고 어디서부터 시작해야 할지 모르시겠죠? 걱정 마세요! 제가 하나하나 함께 챙겨드릴게요. 🌸<br /><br />
+                    안녕하세요! 🌿✨<br /><br />
+                    저는 듀이, 여러분의 든든한 AI 웨딩플래너예요. 결혼 준비, 막막하고 어디서부터 시작해야 할지 모르시겠죠? 걱정 마세요! 둘이니까, 쉬워지니까 — 제가 하나하나 함께 챙겨드릴게요. 💍<br /><br />
                     먼저, 예식일은 정해지셨나요? 아직이시라면 함께 일정 계획부터 세워볼까요?
                   </p>
                 </div>
@@ -161,7 +161,7 @@ const AIPlanner = () => {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="메시지를 입력하세요..."
+              placeholder="듀이에게 물어보세요..."
               disabled={isLoading}
               className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground disabled:opacity-50"
             />
