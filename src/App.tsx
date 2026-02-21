@@ -10,6 +10,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 import CoupleDiary from "./pages/CoupleDiary";
 import CoupleDiaryWrite from "./pages/CoupleDiaryWrite";
+import Influencers from "./pages/Influencers";
+import InfluencerDetail from "./pages/InfluencerDetail";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
@@ -117,6 +119,8 @@ const App = () => (
               <Route path="/couple-diary" element={<CoupleDiary />} />
               <Route path="/couple-diary/write" element={<CoupleDiaryWrite />} />
               <Route path="/couple-diary/edit/:id" element={<CoupleDiaryWrite />} />
+              <Route path="/influencers" element={<Influencers />} />
+              <Route path="/influencers/:id" element={<InfluencerDetail />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/my-inquiries" element={<MyInquiries />} />
