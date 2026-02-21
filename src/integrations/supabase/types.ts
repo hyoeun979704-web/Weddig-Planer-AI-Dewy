@@ -1063,6 +1063,171 @@ export type Database = {
         }
         Relationships: []
       }
+      products: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          short_description: string | null
+          category: string
+          price: number
+          sale_price: number | null
+          thumbnail_url: string | null
+          images: string[]
+          stock: number
+          is_active: boolean
+          is_featured: boolean
+          display_order: number
+          rating: number
+          review_count: number
+          sold_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          short_description?: string | null
+          category?: string
+          price: number
+          sale_price?: number | null
+          thumbnail_url?: string | null
+          images?: string[]
+          stock?: number
+          is_active?: boolean
+          is_featured?: boolean
+          display_order?: number
+          rating?: number
+          review_count?: number
+          sold_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          short_description?: string | null
+          category?: string
+          price?: number
+          sale_price?: number | null
+          thumbnail_url?: string | null
+          images?: string[]
+          stock?: number
+          is_active?: boolean
+          is_featured?: boolean
+          display_order?: number
+          rating?: number
+          review_count?: number
+          sold_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cart_items: {
+        Row: {
+          id: string
+          user_id: string
+          product_id: string
+          quantity: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          product_id: string
+          quantity?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          product_id?: string
+          quantity?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          id: string
+          user_id: string
+          order_number: string
+          status: string
+          total_amount: number
+          shipping_name: string
+          shipping_phone: string
+          shipping_address: string
+          shipping_memo: string | null
+          payment_method: string | null
+          paid_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          order_number: string
+          status?: string
+          total_amount: number
+          shipping_name: string
+          shipping_phone: string
+          shipping_address: string
+          shipping_memo?: string | null
+          payment_method?: string | null
+          paid_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          order_number?: string
+          status?: string
+          total_amount?: number
+          shipping_name?: string
+          shipping_phone?: string
+          shipping_address?: string
+          shipping_memo?: string | null
+          payment_method?: string | null
+          paid_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          id: string
+          order_id: string
+          product_id: string
+          product_name: string
+          product_price: number
+          quantity: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          product_id: string
+          product_name: string
+          product_price: number
+          quantity?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          product_id?: string
+          product_name?: string
+          product_price?: number
+          quantity?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
