@@ -49,14 +49,14 @@ export const usePartnerDeals = (category?: string) => {
 
   const fetchDeals = useCallback(async () => {
     try {
-      let query = supabase
-        .from("partner_deals")
-        .select("*")
+      let query = (supabase
+        .from("partner_deals" as any)
+        .select("*") as any)
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
       if (category && category !== "all") {
-        query = query.eq("category", category);
+        query = query.eq("category", category) as any;
       }
 
       const { data, error } = await query;
@@ -64,11 +64,11 @@ export const usePartnerDeals = (category?: string) => {
 
       let claimedIds = new Set<string>();
       if (user) {
-        const { data: claims } = await supabase
-          .from("deal_claims")
-          .select("deal_id")
+        const { data: claims } = await (supabase
+          .from("deal_claims" as any)
+          .select("deal_id") as any)
           .eq("user_id", user.id);
-        claimedIds = new Set((claims || []).map((c: { deal_id: string }) => c.deal_id));
+        claimedIds = new Set((claims || []).map((c: any) => c.deal_id));
       }
 
       const enriched = (data || []).map((d: PartnerDeal) => ({
@@ -96,8 +96,8 @@ export const usePartnerDeals = (category?: string) => {
     }
 
     try {
-      const { error } = await supabase
-        .from("deal_claims")
+      const { error } = await (supabase
+        .from("deal_claims" as any) as any)
         .insert({ deal_id: dealId, user_id: user.id });
 
       if (error) {
@@ -109,7 +109,7 @@ export const usePartnerDeals = (category?: string) => {
       }
 
       // claim_count 증가
-      await supabase.rpc("increment_claim_count", { deal_id: dealId }).catch(() => {});
+      await (supabase.rpc as any)("increment_claim_count", { deal_id: dealId }).catch(() => {});
 
       setDeals((prev) =>
         prev.map((d) =>
@@ -139,9 +139,9 @@ export const usePartnerDealDetail = (id: string | undefined) => {
 
     const fetch = async () => {
       try {
-        const { data, error } = await supabase
-          .from("partner_deals")
-          .select("*")
+        const { data, error } = await (supabase
+          .from("partner_deals" as any)
+          .select("*") as any)
           .eq("id", id)
           .single();
 
@@ -149,9 +149,9 @@ export const usePartnerDealDetail = (id: string | undefined) => {
 
         let isClaimed = false;
         if (user) {
-          const { data: claim } = await supabase
-            .from("deal_claims")
-            .select("id")
+          const { data: claim } = await (supabase
+            .from("deal_claims" as any)
+            .select("id") as any)
             .eq("deal_id", id)
             .eq("user_id", user.id)
             .maybeSingle();
@@ -162,8 +162,8 @@ export const usePartnerDealDetail = (id: string | undefined) => {
 
         // view_count 증가 (fire and forget)
         supabase
-          .from("partner_deals")
-          .update({ view_count: (data.view_count || 0) + 1 })
+          .from("partner_deals" as any)
+          .update({ view_count: ((data as any).view_count || 0) + 1 } as any)
           .eq("id", id)
           .then(() => {});
       } catch (error) {

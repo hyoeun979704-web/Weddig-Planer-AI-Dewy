@@ -30,9 +30,9 @@ export const useCart = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("cart_items")
-        .select("id, product_id, quantity, products(id, name, price, sale_price, thumbnail_url, stock)")
+      const { data, error } = await (supabase
+        .from("cart_items" as any)
+        .select("id, product_id, quantity, products(id, name, price, sale_price, thumbnail_url, stock)") as any)
         .eq("user_id", user.id);
 
       if (error) throw error;
@@ -66,13 +66,13 @@ export const useCart = () => {
       const existing = items.find((i) => i.product_id === productId);
 
       if (existing) {
-        await supabase
-          .from("cart_items")
+        await (supabase
+          .from("cart_items" as any) as any)
           .update({ quantity: existing.quantity + quantity })
           .eq("id", existing.id);
       } else {
-        await supabase
-          .from("cart_items")
+        await (supabase
+          .from("cart_items" as any) as any)
           .insert({ user_id: user.id, product_id: productId, quantity });
       }
 
@@ -90,7 +90,7 @@ export const useCart = () => {
     if (quantity < 1) return removeItem(cartItemId);
 
     try {
-      await supabase.from("cart_items").update({ quantity }).eq("id", cartItemId);
+      await (supabase.from("cart_items" as any) as any).update({ quantity }).eq("id", cartItemId);
       setItems((prev) =>
         prev.map((i) => (i.id === cartItemId ? { ...i, quantity } : i))
       );
@@ -101,7 +101,7 @@ export const useCart = () => {
 
   const removeItem = async (cartItemId: string) => {
     try {
-      await supabase.from("cart_items").delete().eq("id", cartItemId);
+      await (supabase.from("cart_items" as any) as any).delete().eq("id", cartItemId);
       setItems((prev) => prev.filter((i) => i.id !== cartItemId));
       toast.success("삭제되었습니다");
     } catch (error) {
@@ -112,7 +112,7 @@ export const useCart = () => {
   const clearCart = async () => {
     if (!user) return;
     try {
-      await supabase.from("cart_items").delete().eq("user_id", user.id);
+      await (supabase.from("cart_items" as any) as any).delete().eq("user_id", user.id);
       setItems([]);
     } catch (error) {
       console.error("Error clearing cart:", error);

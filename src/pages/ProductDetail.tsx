@@ -41,12 +41,12 @@ const ProductDetail = () => {
   useEffect(() => {
     if (!id) return;
     const fetch = async () => {
-      const { data } = await supabase
-        .from("products")
-        .select("*")
+      const { data } = await (supabase
+        .from("products" as any)
+        .select("*") as any)
         .eq("id", id)
         .single();
-      setProduct(data);
+      setProduct(data as any);
       setIsLoading(false);
     };
     fetch();

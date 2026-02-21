@@ -46,20 +46,20 @@ const Store = () => {
   useEffect(() => {
     const fetch = async () => {
       setIsLoading(true);
-      let query = supabase
-        .from("products")
-        .select("id, name, short_description, category, price, sale_price, thumbnail_url, rating, review_count, sold_count, is_featured")
+      let query = (supabase
+        .from("products" as any)
+        .select("id, name, short_description, category, price, sale_price, thumbnail_url, rating, review_count, sold_count, is_featured") as any)
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
       if (selectedCategory !== "all") {
-        query = query.eq("category", selectedCategory);
+        query = query.eq("category", selectedCategory) as any;
       }
 
       const { data } = await query;
-      setProducts(data || []);
+      setProducts((data || []) as any);
       if (selectedCategory === "all") {
-        setFeatured((data || []).filter((p: Product) => p.is_featured));
+        setFeatured(((data || []) as any).filter((p: any) => p.is_featured));
       }
       setIsLoading(false);
     };

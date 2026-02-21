@@ -24,12 +24,12 @@ const OrderComplete = () => {
   useEffect(() => {
     if (!id) return;
     const fetch = async () => {
-      const { data } = await supabase
-        .from("orders")
-        .select("id, order_number, total_amount, shipping_name, shipping_address, created_at")
+      const { data } = await (supabase
+        .from("orders" as any)
+        .select("id, order_number, total_amount, shipping_name, shipping_address, created_at") as any)
         .eq("id", id)
         .single();
-      setOrder(data);
+      setOrder(data as any);
       setIsLoading(false);
     };
     fetch();

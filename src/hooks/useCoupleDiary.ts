@@ -39,19 +39,19 @@ export const useCoupleDiary = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("couple_diary")
+      const { data, error } = await (supabase
+        .from("couple_diary" as any)
         .select(`
           *,
           couple_diary_photos (id, photo_url, storage_path, display_order)
-        `)
+        `) as any)
         .eq("couple_link_id", coupleLink.id)
         .order("diary_date", { ascending: false });
 
       if (error) throw error;
 
       // 작성자 이름 가져오기
-      const authorIds = [...new Set((data || []).map((d: { author_id: string }) => d.author_id))];
+      const authorIds = [...new Set((data || []).map((d: any) => String(d.author_id)))] as string[];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, display_name")
@@ -61,18 +61,7 @@ export const useCoupleDiary = () => {
         (profiles || []).map((p: { user_id: string; display_name: string | null }) => [p.user_id, p.display_name])
       );
 
-      const enriched: DiaryEntry[] = (data || []).map((entry: {
-        id: string;
-        couple_link_id: string;
-        author_id: string;
-        title: string;
-        content: string;
-        mood: string | null;
-        diary_date: string;
-        created_at: string;
-        updated_at: string;
-        couple_diary_photos: DiaryPhoto[];
-      }) => ({
+      const enriched: DiaryEntry[] = (data || []).map((entry: any) => ({
         ...entry,
         photos: entry.couple_diary_photos || [],
         author_name: profileMap.get(entry.author_id) || "익명",
@@ -140,8 +129,8 @@ export const useCoupleDiary = () => {
     }
 
     try {
-      const { data: entry, error } = await supabase
-        .from("couple_diary")
+      const { data: entry, error } = await (supabase
+        .from("couple_diary" as any) as any)
         .insert({
           couple_link_id: coupleLink.id,
           author_id: user.id,
@@ -159,7 +148,7 @@ export const useCoupleDiary = () => {
       if (photos && photos.length > 0) {
         const uploaded = await uploadPhotos(photos);
         if (uploaded.length > 0) {
-          await supabase.from("couple_diary_photos").insert(
+          await (supabase.from("couple_diary_photos" as any) as any).insert(
             uploaded.map((p) => ({
               diary_id: entry.id,
               photo_url: p.photo_url,
@@ -192,8 +181,8 @@ export const useCoupleDiary = () => {
     if (!user) return false;
 
     try {
-      const { error } = await supabase
-        .from("couple_diary")
+      const { error } = await (supabase
+        .from("couple_diary" as any) as any)
         .update({ title, content, diary_date: diaryDate, mood: mood || null })
         .eq("id", id)
         .eq("author_id", user.id);
@@ -203,7 +192,7 @@ export const useCoupleDiary = () => {
       if (newPhotos && newPhotos.length > 0) {
         const uploaded = await uploadPhotos(newPhotos);
         if (uploaded.length > 0) {
-          await supabase.from("couple_diary_photos").insert(
+          await (supabase.from("couple_diary_photos" as any) as any).insert(
             uploaded.map((p) => ({
               diary_id: id,
               photo_url: p.photo_url,
@@ -236,7 +225,7 @@ export const useCoupleDiary = () => {
         await supabase.storage.from("couple-diary-photos").remove(paths);
       }
 
-      await supabase.from("couple_diary").delete().eq("id", id).eq("author_id", user.id);
+      await (supabase.from("couple_diary" as any) as any).delete().eq("id", id).eq("author_id", user.id);
 
       setEntries((prev) => prev.filter((e) => e.id !== id));
       toast.success("일기가 삭제되었습니다");
@@ -252,7 +241,7 @@ export const useCoupleDiary = () => {
   const deletePhoto = async (photoId: string, storagePath: string): Promise<boolean> => {
     try {
       await supabase.storage.from("couple-diary-photos").remove([storagePath]);
-      await supabase.from("couple_diary_photos").delete().eq("id", photoId);
+      await (supabase.from("couple_diary_photos" as any) as any).delete().eq("id", photoId);
 
       setEntries((prev) =>
         prev.map((e) => ({

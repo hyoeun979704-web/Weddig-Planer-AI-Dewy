@@ -50,13 +50,13 @@ const Orders = () => {
     }
 
     const fetch = async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*, order_items(*)")
+      const { data, error } = await (supabase
+        .from("orders" as any)
+        .select("*, order_items(*)") as any)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (!error && data) setOrders(data);
+      if (!error && data) setOrders(data as any);
       setIsLoading(false);
     };
     fetch();
