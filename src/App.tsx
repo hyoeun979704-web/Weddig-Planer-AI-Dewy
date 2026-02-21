@@ -8,16 +8,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
-import CoupleDiary from "./pages/CoupleDiary";
-import CoupleDiaryWrite from "./pages/CoupleDiaryWrite";
-import Influencers from "./pages/Influencers";
-import InfluencerDetail from "./pages/InfluencerDetail";
-import Deals from "./pages/Deals";
-import DealDetail from "./pages/DealDetail";
-import ProductDetail from "./pages/ProductDetail";
-import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
-import OrderComplete from "./pages/OrderComplete";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
@@ -65,6 +55,24 @@ const Settings = lazy(() => import("./pages/Settings"));
 const InvitationVenues = lazy(() => import("./pages/InvitationVenues"));
 const InvitationVenueDetail = lazy(() => import("./pages/InvitationVenueDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+
+// 기능 1: 커플 일정 공유 + 공유 일기
+const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
+const CoupleDiaryWrite = lazy(() => import("./pages/CoupleDiaryWrite"));
+
+// 기능 2: 인플루언서 소개
+const Influencers = lazy(() => import("./pages/Influencers"));
+const InfluencerDetail = lazy(() => import("./pages/InfluencerDetail"));
+
+// 기능 3: 업체 제휴 혜택
+const Deals = lazy(() => import("./pages/Deals"));
+const DealDetail = lazy(() => import("./pages/DealDetail"));
+
+// 기능 4: 쇼핑 결제 플로우
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const OrderComplete = lazy(() => import("./pages/OrderComplete"));
 
 const queryClient = new QueryClient();
 
@@ -122,17 +130,6 @@ const App = () => (
               <Route path="/coupons" element={<Coupons />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/my-schedule" element={<MySchedule />} />
-              <Route path="/couple-diary" element={<CoupleDiary />} />
-              <Route path="/couple-diary/write" element={<CoupleDiaryWrite />} />
-              <Route path="/couple-diary/edit/:id" element={<CoupleDiaryWrite />} />
-              <Route path="/influencers" element={<Influencers />} />
-              <Route path="/influencers/:id" element={<InfluencerDetail />} />
-              <Route path="/deals" element={<Deals />} />
-              <Route path="/deals/:id" element={<DealDetail />} />
-              <Route path="/store/:id" element={<ProductDetail />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/order-complete/:id" element={<OrderComplete />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/my-inquiries" element={<MyInquiries />} />
@@ -141,6 +138,26 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/invitation-venues" element={<InvitationVenues />} />
               <Route path="/invitation-venues/:id" element={<InvitationVenueDetail />} />
+
+              {/* 기능 1: 커플 일정 공유 + 공유 일기 */}
+              <Route path="/couple-diary" element={<CoupleDiary />} />
+              <Route path="/couple-diary/write" element={<CoupleDiaryWrite />} />
+              <Route path="/couple-diary/edit/:id" element={<CoupleDiaryWrite />} />
+
+              {/* 기능 2: 인플루언서 소개 */}
+              <Route path="/influencers" element={<Influencers />} />
+              <Route path="/influencers/:id" element={<InfluencerDetail />} />
+
+              {/* 기능 3: 업체 제휴 혜택 */}
+              <Route path="/deals" element={<Deals />} />
+              <Route path="/deals/:id" element={<DealDetail />} />
+
+              {/* 기능 4: 쇼핑 결제 플로우 */}
+              <Route path="/store/:id" element={<ProductDetail />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/order-complete/:id" element={<OrderComplete />} />
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
