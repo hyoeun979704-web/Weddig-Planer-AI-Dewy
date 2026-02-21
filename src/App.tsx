@@ -8,6 +8,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
+import CoupleDiary from "./pages/CoupleDiary";
+import CoupleDiaryWrite from "./pages/CoupleDiaryWrite";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
@@ -112,6 +114,9 @@ const App = () => (
               <Route path="/coupons" element={<Coupons />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/my-schedule" element={<MySchedule />} />
+              <Route path="/couple-diary" element={<CoupleDiary />} />
+              <Route path="/couple-diary/write" element={<CoupleDiaryWrite />} />
+              <Route path="/couple-diary/edit/:id" element={<CoupleDiaryWrite />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/my-inquiries" element={<MyInquiries />} />
