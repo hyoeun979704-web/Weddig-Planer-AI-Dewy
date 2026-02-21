@@ -58,8 +58,8 @@ const Checkout = () => {
       const orderNumber = generateOrderNumber();
 
       // 1. 주문 생성
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
+      const { data: order, error: orderError } = await (supabase
+        .from("orders" as any) as any)
         .insert({
           user_id: user.id,
           order_number: orderNumber,
@@ -85,8 +85,8 @@ const Checkout = () => {
         quantity: item.quantity,
       }));
 
-      const { error: itemsError } = await supabase
-        .from("order_items")
+      const { error: itemsError } = await (supabase
+        .from("order_items" as any) as any)
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
@@ -95,8 +95,8 @@ const Checkout = () => {
       await clearCart();
 
       // 4. 결제 완료 (현재는 바로 paid 처리, 나중에 PG 연동)
-      await supabase
-        .from("orders")
+      await (supabase
+        .from("orders" as any) as any)
         .update({ status: "paid", paid_at: new Date().toISOString() })
         .eq("id", order.id);
 

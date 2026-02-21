@@ -48,21 +48,21 @@ export const useInfluencers = (category?: string) => {
 
   const fetchInfluencers = useCallback(async () => {
     try {
-      let query = supabase
-        .from("influencers")
-        .select("*")
+      let query = (supabase
+        .from("influencers" as any)
+        .select("*") as any)
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
       if (category && category !== "all") {
-        query = query.eq("category", category);
+        query = query.eq("category", category) as any;
       }
 
       const { data, error } = await query;
       if (error) throw error;
 
-      setInfluencers(data || []);
-      setFeatured((data || []).filter((i: Influencer) => i.is_featured));
+      setInfluencers((data || []) as any);
+      setFeatured(((data || []) as any).filter((i: any) => i.is_featured));
     } catch (error) {
       console.error("Error fetching influencers:", error);
     } finally {
@@ -88,16 +88,16 @@ export const useInfluencerDetail = (id: string | undefined) => {
     const fetch = async () => {
       try {
         const [infRes, contRes] = await Promise.all([
-          supabase.from("influencers").select("*").eq("id", id).single(),
-          supabase
-            .from("influencer_contents")
-            .select("*")
+          (supabase.from("influencers" as any).select("*") as any).eq("id", id).single(),
+          (supabase
+            .from("influencer_contents" as any)
+            .select("*") as any)
             .eq("influencer_id", id)
             .order("display_order", { ascending: true }),
         ]);
 
-        if (infRes.data) setInfluencer(infRes.data);
-        if (contRes.data) setContents(contRes.data);
+        if (infRes.data) setInfluencer(infRes.data as any);
+        if (contRes.data) setContents(contRes.data as any);
       } catch (error) {
         console.error("Error fetching influencer detail:", error);
       } finally {

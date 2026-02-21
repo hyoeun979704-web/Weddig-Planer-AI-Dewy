@@ -31,20 +31,20 @@ export const useCoupleLink = () => {
 
     try {
       // 내가 생성한 커플 링크 또는 파트너로 연결된 링크 조회
-      const { data, error } = await supabase
-        .from("couple_links")
-        .select("*")
+      const { data, error } = await (supabase
+        .from("couple_links" as any)
+        .select("*") as any)
         .or(`user_id.eq.${user.id},partner_user_id.eq.${user.id}`)
         .maybeSingle();
 
       if (error && error.code !== "PGRST116") throw error;
 
       if (data) {
-        setCoupleLink(data);
+        setCoupleLink(data as any);
 
         // 파트너 프로필 가져오기
-        const partnerId = data.user_id === user.id ? data.partner_user_id : data.user_id;
-        if (partnerId && data.status === "linked") {
+        const partnerId = (data as any).user_id === user.id ? (data as any).partner_user_id : (data as any).user_id;
+        if (partnerId && (data as any).status === "linked") {
           const { data: profile } = await supabase
             .from("profiles")
             .select("display_name, email")
@@ -79,8 +79,8 @@ export const useCoupleLink = () => {
 
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-      const { data, error } = await supabase
-        .from("couple_links")
+      const { data, error } = await (supabase
+        .from("couple_links" as any) as any)
         .insert({
           user_id: user.id,
           invite_code: code,
@@ -91,7 +91,7 @@ export const useCoupleLink = () => {
 
       if (error) throw error;
 
-      setCoupleLink(data);
+      setCoupleLink(data as any);
       toast.success("초대 코드가 생성되었습니다");
       return code;
     } catch (error) {
@@ -110,9 +110,9 @@ export const useCoupleLink = () => {
 
     try {
       // 초대 코드로 링크 찾기
-      const { data: link, error: findError } = await supabase
-        .from("couple_links")
-        .select("*")
+      const { data: link, error: findError } = await (supabase
+        .from("couple_links" as any)
+        .select("*") as any)
         .eq("invite_code", code.toUpperCase())
         .eq("status", "pending")
         .maybeSingle();
@@ -123,20 +123,20 @@ export const useCoupleLink = () => {
         return false;
       }
 
-      if (link.user_id === user.id) {
+      if ((link as any).user_id === user.id) {
         toast.error("본인의 초대 코드는 사용할 수 없어요");
         return false;
       }
 
       // 연결 처리
-      const { data: updated, error: updateError } = await supabase
-        .from("couple_links")
+      const { data: updated, error: updateError } = await (supabase
+        .from("couple_links" as any) as any)
         .update({
           partner_user_id: user.id,
           status: "linked",
           linked_at: new Date().toISOString(),
         })
-        .eq("id", link.id)
+        .eq("id", (link as any).id)
         .select()
         .single();
 
@@ -144,15 +144,15 @@ export const useCoupleLink = () => {
 
       // 양쪽 user_wedding_settings에 partner_user_id 저장
       await Promise.all([
-        supabase
-          .from("user_wedding_settings")
-          .upsert({ user_id: link.user_id, partner_user_id: user.id }, { onConflict: "user_id" }),
-        supabase
-          .from("user_wedding_settings")
-          .upsert({ user_id: user.id, partner_user_id: link.user_id }, { onConflict: "user_id" }),
+        (supabase
+          .from("user_wedding_settings") as any)
+          .upsert({ user_id: (link as any).user_id, partner_user_id: user.id }, { onConflict: "user_id" }),
+        (supabase
+          .from("user_wedding_settings") as any)
+          .upsert({ user_id: user.id, partner_user_id: (link as any).user_id }, { onConflict: "user_id" }),
       ]);
 
-      setCoupleLink(updated);
+      setCoupleLink(updated as any);
       await fetchCoupleLink(); // 파트너 프로필 다시 로드
       toast.success("커플이 연결되었습니다! 💕");
       return true;
@@ -168,8 +168,8 @@ export const useCoupleLink = () => {
     if (!coupleLink) return false;
 
     try {
-      await supabase
-        .from("couple_links")
+      await (supabase
+        .from("couple_links" as any) as any)
         .update({ status: "unlinked", partner_user_id: null })
         .eq("id", coupleLink.id);
 
