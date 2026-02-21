@@ -14,6 +14,10 @@ import Influencers from "./pages/Influencers";
 import InfluencerDetail from "./pages/InfluencerDetail";
 import Deals from "./pages/Deals";
 import DealDetail from "./pages/DealDetail";
+import ProductDetail from "./pages/ProductDetail";
+import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import OrderComplete from "./pages/OrderComplete";
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
@@ -125,6 +129,10 @@ const App = () => (
               <Route path="/influencers/:id" element={<InfluencerDetail />} />
               <Route path="/deals" element={<Deals />} />
               <Route path="/deals/:id" element={<DealDetail />} />
+              <Route path="/store/:id" element={<ProductDetail />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/order-complete/:id" element={<OrderComplete />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/my-inquiries" element={<MyInquiries />} />
