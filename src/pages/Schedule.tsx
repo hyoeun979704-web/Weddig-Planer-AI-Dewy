@@ -191,26 +191,26 @@ const Schedule = () => {
       {/* Main Content */}
       <main className="pb-20 px-4 py-4">
         {/* Couple Section */}
-<div className="mb-6">
-  <CoupleInvite />
-</div>
-
-{/* Couple Diary Link */}
-{isLinked && (
-  <button
-    onClick={() => navigate("/couple-diary")}
-    className="w-full mb-6 p-4 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 rounded-2xl border border-pink-200/50 dark:border-pink-800/30 flex items-center gap-3"
-  >
-    <div className="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
-      <BookOpen className="w-5 h-5 text-pink-500" />
-    </div>
-    <div className="flex-1 text-left">
-      <h3 className="font-semibold text-foreground text-sm">우리의 일기</h3>
-      <p className="text-xs text-muted-foreground">함께 쓰는 웨딩 준비 일기</p>
-    </div>
-    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-  </button>
-)}
+        <div className="mb-6">
+        </div><CoupleInvite />
+      </div>
+      
+      {/* Couple Diary Link */}
+      {isLinked && (
+      <button
+        onClick={() => navigate("/couple-diary")}
+        className="w-full mb-6 p-4 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 rounded-2xl border border-pink-200/50 dark:border-pink-800/30 flex items-center gap-3"
+        >
+        <div className="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
+          <BookOpen className="w-5 h-5 text-pink-500" />
+        </div>
+        <div className="flex-1 text-left">
+          <h3 className="font-semibold text-foreground text-sm">우리의 일기</h3>
+          <p className="text-xs text-muted-foreground">함께 쓰는 웨딩 준비 일기</p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-muted-foreground" />
+      </button>
+    )}
         {/* Progress Summary - Dynamic */}
         <div 
           className="bg-gradient-to-br from-primary/10 via-accent to-background rounded-2xl p-4 mb-6 cursor-pointer"
@@ -218,8 +218,8 @@ const Schedule = () => {
         >
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-primary" />
-            </div>
+          <Calendar className="w-6 h-6 text-primary" />
+                </div>
             <div>
               {days !== null ? (
                 <>
