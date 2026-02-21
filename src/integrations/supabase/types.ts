@@ -596,6 +596,7 @@ export type Database = {
           created_at: string
           id: string
           partner_name: string | null
+          partner_user_id: string | null
           updated_at: string
           user_id: string
           wedding_date: string | null
@@ -604,6 +605,7 @@ export type Database = {
           created_at?: string
           id?: string
           partner_name?: string | null
+          partner_user_id?: string | null
           updated_at?: string
           user_id: string
           wedding_date?: string | null
@@ -612,6 +614,7 @@ export type Database = {
           created_at?: string
           id?: string
           partner_name?: string | null
+          partner_user_id?: string | null
           updated_at?: string
           user_id?: string
           wedding_date?: string | null
@@ -763,6 +766,465 @@ export type Database = {
           review_count?: number
           thumbnail_url?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      couple_links: {
+        Row: {
+          id: string
+          user_id: string
+          partner_user_id: string | null
+          invite_code: string
+          status: string
+          created_at: string
+          linked_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          partner_user_id?: string | null
+          invite_code: string
+          status?: string
+          created_at?: string
+          linked_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          partner_user_id?: string | null
+          invite_code?: string
+          status?: string
+          created_at?: string
+          linked_at?: string | null
+        }
+        Relationships: []
+      }
+      couple_diary: {
+        Row: {
+          id: string
+          couple_link_id: string
+          author_id: string
+          title: string
+          content: string
+          mood: string | null
+          diary_date: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          couple_link_id: string
+          author_id: string
+          title: string
+          content: string
+          mood?: string | null
+          diary_date?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          couple_link_id?: string
+          author_id?: string
+          title?: string
+          content?: string
+          mood?: string | null
+          diary_date?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      couple_diary_photos: {
+        Row: {
+          id: string
+          diary_id: string
+          photo_url: string
+          storage_path: string
+          display_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          diary_id: string
+          photo_url: string
+          storage_path: string
+          display_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          diary_id?: string
+          photo_url?: string
+          storage_path?: string
+          display_order?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      influencers: {
+        Row: {
+          id: string
+          name: string
+          handle: string
+          platform: string
+          profile_image_url: string | null
+          cover_image_url: string | null
+          bio: string | null
+          follower_count: number
+          category: string
+          tags: string[]
+          external_url: string | null
+          is_featured: boolean
+          is_active: boolean
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          handle: string
+          platform?: string
+          profile_image_url?: string | null
+          cover_image_url?: string | null
+          bio?: string | null
+          follower_count?: number
+          category?: string
+          tags?: string[]
+          external_url?: string | null
+          is_featured?: boolean
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          handle?: string
+          platform?: string
+          profile_image_url?: string | null
+          cover_image_url?: string | null
+          bio?: string | null
+          follower_count?: number
+          category?: string
+          tags?: string[]
+          external_url?: string | null
+          is_featured?: boolean
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      influencer_contents: {
+        Row: {
+          id: string
+          influencer_id: string
+          title: string
+          description: string | null
+          thumbnail_url: string | null
+          content_url: string | null
+          content_type: string
+          view_count: number
+          like_count: number
+          display_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          influencer_id: string
+          title: string
+          description?: string | null
+          thumbnail_url?: string | null
+          content_url?: string | null
+          content_type?: string
+          view_count?: number
+          like_count?: number
+          display_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          influencer_id?: string
+          title?: string
+          description?: string | null
+          thumbnail_url?: string | null
+          content_url?: string | null
+          content_type?: string
+          view_count?: number
+          like_count?: number
+          display_order?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      partner_deals: {
+        Row: {
+          id: string
+          title: string
+          description: string
+          short_description: string | null
+          partner_name: string
+          partner_logo_url: string | null
+          banner_image_url: string | null
+          category: string
+          deal_type: string
+          discount_info: string | null
+          original_price: number | null
+          deal_price: number | null
+          coupon_code: string | null
+          external_url: string | null
+          terms: string | null
+          start_date: string | null
+          end_date: string | null
+          is_featured: boolean
+          is_active: boolean
+          display_order: number
+          view_count: number
+          claim_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description: string
+          short_description?: string | null
+          partner_name: string
+          partner_logo_url?: string | null
+          banner_image_url?: string | null
+          category?: string
+          deal_type?: string
+          discount_info?: string | null
+          original_price?: number | null
+          deal_price?: number | null
+          coupon_code?: string | null
+          external_url?: string | null
+          terms?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          is_featured?: boolean
+          is_active?: boolean
+          display_order?: number
+          view_count?: number
+          claim_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string
+          short_description?: string | null
+          partner_name?: string
+          partner_logo_url?: string | null
+          banner_image_url?: string | null
+          category?: string
+          deal_type?: string
+          discount_info?: string | null
+          original_price?: number | null
+          deal_price?: number | null
+          coupon_code?: string | null
+          external_url?: string | null
+          terms?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          is_featured?: boolean
+          is_active?: boolean
+          display_order?: number
+          view_count?: number
+          claim_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      deal_claims: {
+        Row: {
+          id: string
+          deal_id: string
+          user_id: string
+          claimed_at: string
+        }
+        Insert: {
+          id?: string
+          deal_id: string
+          user_id: string
+          claimed_at?: string
+        }
+        Update: {
+          id?: string
+          deal_id?: string
+          user_id?: string
+          claimed_at?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          short_description: string | null
+          category: string
+          price: number
+          sale_price: number | null
+          thumbnail_url: string | null
+          images: string[]
+          stock: number
+          is_active: boolean
+          is_featured: boolean
+          display_order: number
+          rating: number
+          review_count: number
+          sold_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          short_description?: string | null
+          category?: string
+          price: number
+          sale_price?: number | null
+          thumbnail_url?: string | null
+          images?: string[]
+          stock?: number
+          is_active?: boolean
+          is_featured?: boolean
+          display_order?: number
+          rating?: number
+          review_count?: number
+          sold_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          short_description?: string | null
+          category?: string
+          price?: number
+          sale_price?: number | null
+          thumbnail_url?: string | null
+          images?: string[]
+          stock?: number
+          is_active?: boolean
+          is_featured?: boolean
+          display_order?: number
+          rating?: number
+          review_count?: number
+          sold_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cart_items: {
+        Row: {
+          id: string
+          user_id: string
+          product_id: string
+          quantity: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          product_id: string
+          quantity?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          product_id?: string
+          quantity?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          id: string
+          user_id: string
+          order_number: string
+          status: string
+          total_amount: number
+          shipping_name: string
+          shipping_phone: string
+          shipping_address: string
+          shipping_memo: string | null
+          payment_method: string | null
+          paid_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          order_number: string
+          status?: string
+          total_amount: number
+          shipping_name: string
+          shipping_phone: string
+          shipping_address: string
+          shipping_memo?: string | null
+          payment_method?: string | null
+          paid_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          order_number?: string
+          status?: string
+          total_amount?: number
+          shipping_name?: string
+          shipping_phone?: string
+          shipping_address?: string
+          shipping_memo?: string | null
+          payment_method?: string | null
+          paid_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          id: string
+          order_id: string
+          product_id: string
+          product_name: string
+          product_price: number
+          quantity: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          product_id: string
+          product_name: string
+          product_price: number
+          quantity?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          product_id?: string
+          product_name?: string
+          product_price?: number
+          quantity?: number
+          created_at?: string
         }
         Relationships: []
       }
