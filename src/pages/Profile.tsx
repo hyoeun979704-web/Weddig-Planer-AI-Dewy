@@ -8,16 +8,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+
+const birthYearOptions = Array.from({ length: 61 }, (_, i) => 1960 + i); // 1960~2020
+const regionOptions = [
+  "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "세종",
+  "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"
+];
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   
   const [displayName, setDisplayName] = useState("");
-  const [birthYear, setBirthYear] = useState("");
+  const [birthYear, setBirthYear] = useState("1997");
   const [phone, setPhone] = useState("");
-  const [weddingRegion, setWeddingRegion] = useState("");
+  const [weddingRegion, setWeddingRegion] = useState("서울");
   const [weddingDate, setWeddingDate] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -47,14 +54,14 @@ const Profile = () => {
 
         if (profile) {
           setDisplayName(profile.display_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "");
-          setBirthYear(profile.birth_year ? String(profile.birth_year) : "");
+          setBirthYear(profile.birth_year ? String(profile.birth_year) : "1997");
         } else {
           setDisplayName(user?.user_metadata?.full_name || user?.user_metadata?.name || "");
         }
 
         if (settings) {
           setWeddingDate(settings.wedding_date || "");
-          setWeddingRegion((settings as any).wedding_region || "");
+          setWeddingRegion((settings as any).wedding_region || "서울");
         }
       } catch (error) {
         console.error("Error loading profile:", error);
@@ -185,19 +192,22 @@ const Profile = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="birthYear" className="flex items-center gap-2">
+            <Label className="flex items-center gap-2">
               <CakeSlice className="w-4 h-4" />
               출생년도
             </Label>
-            <Input
-              id="birthYear"
-              type="number"
-              value={birthYear}
-              onChange={(e) => setBirthYear(e.target.value)}
-              placeholder="예: 1995"
-              min="1950"
-              max="2010"
-            />
+            <Select value={birthYear} onValueChange={setBirthYear}>
+              <SelectTrigger>
+                <SelectValue placeholder="출생년도 선택" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border border-border z-50 max-h-60">
+                {birthYearOptions.map((year) => (
+                  <SelectItem key={year} value={String(year)}>
+                    {year}년
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -228,16 +238,22 @@ const Profile = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="weddingRegion" className="flex items-center gap-2">
+            <Label className="flex items-center gap-2">
               <MapPin className="w-4 h-4" />
               결혼 지역
             </Label>
-            <Input
-              id="weddingRegion"
-              value={weddingRegion}
-              onChange={(e) => setWeddingRegion(e.target.value)}
-              placeholder="예: 서울, 부산, 대구"
-            />
+            <Select value={weddingRegion} onValueChange={setWeddingRegion}>
+              <SelectTrigger>
+                <SelectValue placeholder="지역 선택" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border border-border z-50 max-h-60">
+                {regionOptions.map((region) => (
+                  <SelectItem key={region} value={region}>
+                    {region}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

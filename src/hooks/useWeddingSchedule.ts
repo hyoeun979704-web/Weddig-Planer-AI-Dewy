@@ -15,11 +15,12 @@ export interface ScheduleItem {
 interface WeddingSettings {
   wedding_date: string | null;
   partner_name: string | null;
+  wedding_region: string | null;
 }
 
 export const useWeddingSchedule = () => {
   const { user } = useAuth();
-  const [weddingSettings, setWeddingSettings] = useState<WeddingSettings>({ wedding_date: null, partner_name: null });
+  const [weddingSettings, setWeddingSettings] = useState<WeddingSettings>({ wedding_date: null, partner_name: null, wedding_region: null });
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,7 +35,7 @@ export const useWeddingSchedule = () => {
       const [settingsRes, itemsRes] = await Promise.all([
         supabase
           .from("user_wedding_settings")
-          .select("wedding_date, partner_name")
+          .select("wedding_date, partner_name, wedding_region")
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
@@ -48,6 +49,7 @@ export const useWeddingSchedule = () => {
         setWeddingSettings({
           wedding_date: settingsRes.data.wedding_date,
           partner_name: settingsRes.data.partner_name,
+          wedding_region: (settingsRes.data as any).wedding_region || null,
         });
       }
 
