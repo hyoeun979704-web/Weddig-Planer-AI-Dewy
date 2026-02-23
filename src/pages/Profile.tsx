@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, User, Mail, Phone, Calendar, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Camera, User, Mail, Phone, Calendar, Save, Loader2, MapPin, CakeSlice } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +15,9 @@ const Profile = () => {
   const { user } = useAuth();
   
   const [displayName, setDisplayName] = useState("");
+  const [birthYear, setBirthYear] = useState("");
   const [phone, setPhone] = useState("");
+  const [weddingRegion, setWeddingRegion] = useState("");
   const [weddingDate, setWeddingDate] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -32,26 +34,27 @@ const Profile = () => {
         // Load profile
         const { data: profile } = await supabase
           .from("profiles")
-          .select("display_name, avatar_url")
+          .select("display_name, avatar_url, birth_year")
           .eq("user_id", user.id)
           .maybeSingle();
 
         // Load wedding settings
         const { data: settings } = await supabase
           .from("user_wedding_settings")
-          .select("wedding_date, partner_name")
+          .select("wedding_date, partner_name, wedding_region")
           .eq("user_id", user.id)
           .maybeSingle();
 
         if (profile) {
           setDisplayName(profile.display_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "");
+          setBirthYear(profile.birth_year ? String(profile.birth_year) : "");
         } else {
           setDisplayName(user?.user_metadata?.full_name || user?.user_metadata?.name || "");
         }
 
         if (settings) {
           setWeddingDate(settings.wedding_date || "");
-          // You can store phone in partner_name temporarily or add a new column
+          setWeddingRegion((settings as any).wedding_region || "");
         }
       } catch (error) {
         console.error("Error loading profile:", error);
@@ -80,13 +83,16 @@ const Profile = () => {
       // Update profile
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ display_name: displayName })
+        .update({ 
+          display_name: displayName,
+          birth_year: birthYear ? parseInt(birthYear) : null
+        } as any)
         .eq("user_id", user.id);
 
       if (profileError) throw profileError;
 
       // Update or insert wedding settings
-      if (weddingDate) {
+      if (weddingDate || weddingRegion) {
         const { data: existing } = await supabase
           .from("user_wedding_settings")
           .select("id")
@@ -96,12 +102,12 @@ const Profile = () => {
         if (existing) {
           await supabase
             .from("user_wedding_settings")
-            .update({ wedding_date: weddingDate })
+            .update({ wedding_date: weddingDate || null, wedding_region: weddingRegion || null } as any)
             .eq("user_id", user.id);
         } else {
           await supabase
             .from("user_wedding_settings")
-            .insert({ user_id: user.id, wedding_date: weddingDate });
+            .insert({ user_id: user.id, wedding_date: weddingDate || null, wedding_region: weddingRegion || null } as any);
         }
       }
 
@@ -179,6 +185,22 @@ const Profile = () => {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="birthYear" className="flex items-center gap-2">
+              <CakeSlice className="w-4 h-4" />
+              출생년도
+            </Label>
+            <Input
+              id="birthYear"
+              type="number"
+              value={birthYear}
+              onChange={(e) => setBirthYear(e.target.value)}
+              placeholder="예: 1995"
+              min="1950"
+              max="2010"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="email" className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
               이메일
@@ -202,6 +224,19 @@ const Profile = () => {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="010-0000-0000"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="weddingRegion" className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              결혼 지역
+            </Label>
+            <Input
+              id="weddingRegion"
+              value={weddingRegion}
+              onChange={(e) => setWeddingRegion(e.target.value)}
+              placeholder="예: 서울, 부산, 대구"
             />
           </div>
 
