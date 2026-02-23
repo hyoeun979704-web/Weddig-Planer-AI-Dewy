@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const FREE_DAILY_LIMIT = 3;
+
 const BASE_SYSTEM_PROMPT = `## 1. 페르소나 정의 (Persona Definition)
 
 당신은 '듀이(Dewy)'입니다. 한국의 웨딩 트렌드와 예절, 실무 절차를 완벽하게 파악하고 있는 AI 웨딩플래너입니다.
@@ -93,7 +95,6 @@ async function fetchUserData(supabase: any, userId: string): Promise<UserData> {
 
   const favorites = favoritesRes.data || [];
   
-  // Fetch names for each favorite item
   const enrichedFavorites = await Promise.all(
     favorites.map(async (fav: { item_type: string; item_id: string }) => {
       let name = "";
@@ -134,7 +135,6 @@ function buildUserContext(userData: UserData): string {
     parts.push(`사용자 이름: ${userData.profile.display_name}`);
   }
   
-  // Wedding date and D-Day
   if (userData.weddingSettings?.wedding_date) {
     const weddingDate = new Date(userData.weddingSettings.wedding_date);
     const today = new Date();
@@ -151,7 +151,6 @@ function buildUserContext(userData: UserData): string {
     }
   }
   
-  // Schedule items
   if (userData.scheduleItems.length > 0) {
     const pending = userData.scheduleItems.filter(i => !i.completed);
     const completed = userData.scheduleItems.filter(i => i.completed);
@@ -171,7 +170,6 @@ function buildUserContext(userData: UserData): string {
     parts.push(scheduleText);
   }
   
-  // Favorites
   if (userData.favorites.length > 0) {
     const grouped: Record<string, string[]> = {};
     const typeLabels: Record<string, string> = {
@@ -203,6 +201,49 @@ function buildUserContext(userData: UserData): string {
   return `\n\n## 7. 현재 사용자 정보 (User Context)\n\n다음은 현재 대화하고 있는 사용자의 정보입니다. 이 정보를 바탕으로 더 맞춤화된 조언을 제공하세요:\n\n${parts.join("\n")}`;
 }
 
+// deno-lint-ignore no-explicit-any
+async function checkAndIncrementUsage(supabase: any, userId: string): Promise<{ allowed: boolean; remaining: number; isPremium: boolean }> {
+  const today = new Date().toISOString().split("T")[0];
+
+  // Check subscription
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("plan, status, expires_at, trial_ends_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const now = new Date();
+  const isPremium = sub &&
+    sub.plan !== "free" &&
+    sub.status === "active" &&
+    ((sub.trial_ends_at && new Date(sub.trial_ends_at) > now) ||
+     (sub.expires_at && new Date(sub.expires_at) > now));
+
+  if (isPremium) {
+    // Increment usage for tracking but no limit
+    await supabase.rpc("increment_ai_usage", { p_user_id: userId, p_date: today });
+    return { allowed: true, remaining: -1, isPremium: true };
+  }
+
+  // Free user: check daily limit
+  const { data: usage } = await supabase
+    .from("ai_usage_daily")
+    .select("message_count")
+    .eq("user_id", userId)
+    .eq("usage_date", today)
+    .maybeSingle();
+
+  const currentCount = usage?.message_count || 0;
+
+  if (currentCount >= FREE_DAILY_LIMIT) {
+    return { allowed: false, remaining: 0, isPremium: false };
+  }
+
+  // Increment
+  await supabase.rpc("increment_ai_usage", { p_user_id: userId, p_date: today });
+  return { allowed: true, remaining: FREE_DAILY_LIMIT - currentCount - 1, isPremium: false };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -219,8 +260,8 @@ serve(async (req) => {
     }
 
     let userContext = "";
+    let dailyRemaining = -1;
     
-    // Try to get user data if authenticated
     const authHeader = req.headers.get("Authorization");
     if (authHeader && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
       try {
@@ -229,9 +270,32 @@ serve(async (req) => {
         const { data: { user } } = await supabase.auth.getUser(token);
         
         if (user) {
+          // Check usage limits
+          const usageResult = await checkAndIncrementUsage(supabase, user.id);
+          dailyRemaining = usageResult.remaining;
+
+          if (!usageResult.allowed) {
+            return new Response(
+              JSON.stringify({
+                error: "daily_limit",
+                message: "오늘의 무료 질문 3회를 모두 사용했어요",
+                remaining: 0,
+                upgrade_url: "/premium",
+              }),
+              {
+                status: 429,
+                headers: {
+                  ...corsHeaders,
+                  "Content-Type": "application/json",
+                  "X-Daily-Remaining": "0",
+                },
+              }
+            );
+          }
+
           const userData = await fetchUserData(supabase, user.id);
           userContext = buildUserContext(userData);
-          console.log("User context loaded for:", user.id);
+          console.log("User context loaded for:", user.id, "premium:", usageResult.isPremium, "remaining:", usageResult.remaining);
         }
       } catch (e) {
         console.log("Could not fetch user data:", e);
@@ -282,7 +346,11 @@ serve(async (req) => {
 
     console.log("Streaming response from AI gateway");
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "X-Daily-Remaining": String(dailyRemaining),
+      },
     });
   } catch (error) {
     console.error("Dewy AI Planner error:", error);

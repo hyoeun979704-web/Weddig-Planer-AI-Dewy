@@ -58,6 +58,7 @@ const Settings = lazy(() => import("./pages/Settings"));
 const InvitationVenues = lazy(() => import("./pages/InvitationVenues"));
 const InvitationVenueDetail = lazy(() => import("./pages/InvitationVenueDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Premium = lazy(() => import("./pages/Premium"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
 const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
@@ -144,6 +145,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/invitation-venues" element={<InvitationVenues />} />
               <Route path="/invitation-venues/:id" element={<InvitationVenueDetail />} />
+              <Route path="/premium" element={<Premium />} />
 
               {/* 기능 1: 커플 일정 공유 + 공유 일기 */}
               <Route path="/couple-diary" element={<CoupleDiary />} />
