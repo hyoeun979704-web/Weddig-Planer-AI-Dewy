@@ -1,18 +1,35 @@
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Sparkles, Send, RotateCcw } from "lucide-react";
+import { ArrowLeft, Sparkles, Send, RotateCcw, FileText, Clock, Users, Lock, ChevronRight } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import BottomNav from "@/components/BottomNav";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
+import { useSubscription } from "@/hooks/useSubscription";
 import DailyUsageBadge from "@/components/premium/DailyUsageBadge";
 import UpgradeModal from "@/components/premium/UpgradeModal";
+import EstimateSheet from "@/components/premium/EstimateSheet";
+import BudgetReportSheet from "@/components/premium/BudgetReportSheet";
+import TimelineSheet from "@/components/premium/TimelineSheet";
+import StaffGuideSheet from "@/components/premium/StaffGuideSheet";
+import GuestMessageSheet from "@/components/premium/GuestMessageSheet";
+
+type SheetType = "estimate" | "budget-report" | "timeline-snap" | "timeline-ceremony" | "timeline-guest" | "staff-gabang" | "staff-reception" | "staff-mc" | "staff-parents" | "guest-message" | null;
+
+const premiumTools = [
+  { icon: FileText, label: "AI 견적서", sheet: "estimate" as SheetType },
+  { icon: FileText, label: "예산 리포트", sheet: "budget-report" as SheetType },
+  { icon: Clock, label: "타임라인", sheet: "timeline-ceremony" as SheetType },
+  { icon: Users, label: "스태프 안내", sheet: "staff-gabang" as SheetType },
+];
 
 const suggestedQuestions = [
   "결혼 준비 어디서부터 시작해야 하나요?",
   "예산 3000만원으로 웨딩홀 추천해주세요",
   "스드메 패키지 비용은 얼마나 하나요?",
   "허니문 인기 여행지 추천해주세요",
+  "우리 결혼 예산 분석 리포트 만들어줘",
+  "본식 당일 타임라인 만들어줘",
 ];
 
 const AIPlanner = () => {
@@ -21,10 +38,16 @@ const AIPlanner = () => {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, sendMessage, clearMessages, showUpgradeModal, setShowUpgradeModal } = useAIPlanner();
+  const { isPremium } = useSubscription();
   const tutorial = usePageTutorial("ai-planner");
+  const [activeSheet, setActiveSheet] = useState<SheetType>(null);
 
-  const handleTabChange = (href: string) => {
-    navigate(href);
+  const handlePremiumTool = (sheet: SheetType) => {
+    if (!isPremium) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    setActiveSheet(sheet);
   };
 
   const handleSend = () => {
@@ -80,6 +103,33 @@ const AIPlanner = () => {
       {/* Daily Usage Badge */}
       <div className="pt-3">
         <DailyUsageBadge />
+      </div>
+
+      {/* Premium Tools Bar */}
+      <div className="px-4 pt-3 pb-1">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+          {premiumTools.map((tool) => (
+            <button
+              key={tool.label}
+              onClick={() => handlePremiumTool(tool.sheet)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-xl text-xs font-medium text-foreground whitespace-nowrap hover:border-primary/30 transition-colors flex-shrink-0"
+            >
+              {isPremium ? (
+                <tool.icon className="w-3.5 h-3.5 text-primary" />
+              ) : (
+                <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+              {tool.label}
+            </button>
+          ))}
+          <button
+            onClick={() => navigate("/premium/content")}
+            className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-primary whitespace-nowrap flex-shrink-0"
+          >
+            전체보기
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -193,8 +243,15 @@ const AIPlanner = () => {
         trigger="daily_limit"
       />
 
+      {/* Premium Sheets */}
+      <EstimateSheet open={activeSheet === "estimate"} onClose={() => setActiveSheet(null)} />
+      <BudgetReportSheet open={activeSheet === "budget-report"} onClose={() => setActiveSheet(null)} />
+      <TimelineSheet open={activeSheet?.startsWith("timeline") ? activeSheet as "timeline-snap" | "timeline-ceremony" | "timeline-guest" : null} onClose={() => setActiveSheet(null)} />
+      <StaffGuideSheet open={activeSheet?.startsWith("staff") ? activeSheet as "staff-gabang" | "staff-reception" | "staff-mc" | "staff-parents" : null} onClose={() => setActiveSheet(null)} />
+      <GuestMessageSheet open={activeSheet === "guest-message"} onClose={() => setActiveSheet(null)} />
+
       {/* Bottom Navigation */}
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
+      <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
 
       {tutorial.isActive && tutorial.currentStep && (
         <TutorialOverlay
