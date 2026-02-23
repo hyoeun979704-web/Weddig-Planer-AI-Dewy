@@ -513,6 +513,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          birth_year: number | null
           created_at: string
           display_name: string | null
           email: string | null
@@ -522,6 +523,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          birth_year?: number | null
           created_at?: string
           display_name?: string | null
           email?: string | null
@@ -531,6 +533,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          birth_year?: number | null
           created_at?: string
           display_name?: string | null
           email?: string | null
@@ -683,6 +686,7 @@ export type Database = {
           updated_at: string
           user_id: string
           wedding_date: string | null
+          wedding_region: string | null
         }
         Insert: {
           created_at?: string
@@ -691,6 +695,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           wedding_date?: string | null
+          wedding_region?: string | null
         }
         Update: {
           created_at?: string
@@ -699,6 +704,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           wedding_date?: string | null
+          wedding_region?: string | null
         }
         Relationships: []
       }
