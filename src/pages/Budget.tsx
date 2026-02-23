@@ -12,6 +12,13 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import type { BudgetItem } from "@/hooks/useBudget";
+import { useDefaultRegion } from "@/hooks/useDefaultRegion";
+
+// Map Korean region label to budget region key
+const regionLabelToKey = (label: string | null): string | undefined => {
+  if (!label) return undefined;
+  return Object.entries(regions).find(([_, r]) => r.label === label)?.[0];
+};
 
 const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 
@@ -24,6 +31,8 @@ const Budget = () => {
   const [setupOpen, setSetupOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
+  const { defaultRegion } = useDefaultRegion();
+  const profileRegionKey = regionLabelToKey(defaultRegion);
 
   // First visit: auto-open setup
   useEffect(() => {
@@ -230,7 +239,7 @@ const Budget = () => {
 
       <BudgetSetupSheet
         open={setupOpen} onOpenChange={setSetupOpen}
-        initialRegion={settings?.region}
+        initialRegion={settings?.region || profileRegionKey}
         initialGuestCount={settings?.guest_count}
         initialTotalBudget={settings?.total_budget}
         initialCategoryBudgets={settings?.category_budgets}
