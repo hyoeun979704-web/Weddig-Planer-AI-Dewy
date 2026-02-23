@@ -4,6 +4,7 @@ import { ArrowLeft, Camera, User, Mail, Phone, Calendar, Save, Loader2, MapPin, 
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { regions } from "@/data/budgetData";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -115,6 +116,25 @@ const Profile = () => {
           await supabase
             .from("user_wedding_settings")
             .insert({ user_id: user.id, wedding_date: weddingDate || null, wedding_region: weddingRegion || null } as any);
+        }
+      }
+
+      // Sync region to budget_settings
+      if (weddingRegion) {
+        const budgetRegionKey = Object.entries(regions).find(([_, r]) => r.label === weddingRegion)?.[0];
+        if (budgetRegionKey) {
+          const { data: budgetSettings } = await (supabase as any)
+            .from("budget_settings")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (budgetSettings) {
+            await (supabase as any)
+              .from("budget_settings")
+              .update({ region: budgetRegionKey })
+              .eq("id", budgetSettings.id);
+          }
         }
       }
 

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { regionalAverages, type BudgetCategory } from "@/data/budgetData";
+import { regionalAverages, regions, type BudgetCategory } from "@/data/budgetData";
 
 export interface BudgetSettings {
   id: string;
@@ -107,8 +107,34 @@ export function useBudget(profileRegionKey?: string) {
           .insert(payload);
         if (error) throw error;
       }
+
+      // Sync region to user_wedding_settings
+      if (s.region) {
+        const regionLabel = regions[s.region]?.label;
+        if (regionLabel) {
+          const { data: existing } = await supabase
+            .from("user_wedding_settings")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (existing) {
+            await supabase
+              .from("user_wedding_settings")
+              .update({ wedding_region: regionLabel } as any)
+              .eq("user_id", user.id);
+          } else {
+            await supabase
+              .from("user_wedding_settings")
+              .insert({ user_id: user.id, wedding_region: regionLabel } as any);
+          }
+        }
+      }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["budget-settings"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["budget-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["default-region"] });
+    },
   });
 
   const addItem = useMutation({
