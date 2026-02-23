@@ -1,4 +1,4 @@
-import { Home, Calendar, Sparkles, Users, User } from "lucide-react";
+import { Home, Calendar, Wallet, Sparkles, Users, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -10,6 +10,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { icon: Home, label: "홈", href: "/" },
   { icon: Calendar, label: "스케쥴", href: "/schedule" },
+  { icon: Wallet, label: "예산", href: "/budget" },
   { icon: Sparkles, label: "AI 플래너", href: "/ai-planner" },
   { icon: Users, label: "커뮤니티", href: "/community" },
   { icon: User, label: "마이페이지", href: "/mypage" },
