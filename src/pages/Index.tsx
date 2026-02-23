@@ -1,39 +1,17 @@
-import { useEffect } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
 import TabContent from "@/components/home/TabContent";
 import Footer from "@/components/home/Footer";
 import TutorialOverlay from "@/components/TutorialOverlay";
-import { useTutorial, FEATURE_GUIDES } from "@/hooks/useTutorial";
+import { usePageTutorial } from "@/hooks/usePageTutorial";
 
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
   const activeTab: CategoryTab = "home";
-  const tutorial = useTutorial();
-
-  // Auto-start tutorial for first-time users or via query param
-  useEffect(() => {
-    const tutorialParam = searchParams.get("tutorial");
-    if (tutorialParam) {
-      const guide = FEATURE_GUIDES.find((g) => g.id === tutorialParam);
-      if (guide) {
-        tutorial.startTutorial(guide.steps);
-      } else {
-        tutorial.startTutorial();
-      }
-      // Remove query param
-      searchParams.delete("tutorial");
-      setSearchParams(searchParams, { replace: true });
-    } else if (!tutorial.hasSeen) {
-      // First visit - auto-start full tour
-      const timer = setTimeout(() => tutorial.startTutorial(), 800);
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams]);
+  const tutorial = usePageTutorial("app-tour");
 
   const handleTabChange = (href: string) => {
     navigate(href);
