@@ -21,7 +21,7 @@ const initialFilters: StoreFilters = {
   keyword: "",
 };
 
-const filterCategories = ["셀프웨딩", "스냅", "촬영소품", "드레스소품", "예물", "답례품", "데코/소품", "청첩장", "뷰티"];
+const filterCategories = ["셀프웨딩", "스냅", "촬영소품", "드레스소품", "답례품", "데코/소품", "청첩장", "뷰티"];
 const colorOptions = ["화이트", "블랙", "핑크", "레드", "블루", "골드", "실버", "아이보리"];
 const sizeOptions = ["FREE", "XS", "S", "M", "L", "XL"];
 
