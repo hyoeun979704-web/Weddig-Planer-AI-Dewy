@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Sparkles, Send, RotateCcw, FileText, Clock, Users, Lock, ChevronRight } from "lucide-react";
+import { ArrowLeft, Sparkles, Send, RotateCcw, FileText, Clock, Users, Lock, ChevronRight, Gem, X, BarChart3, Camera, Church, Briefcase, DollarSign, Mic, UserCheck, MessageSquare, Download } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import BottomNav from "@/components/BottomNav";
 import TutorialOverlay from "@/components/TutorialOverlay";
@@ -16,11 +16,32 @@ import GuestMessageSheet from "@/components/premium/GuestMessageSheet";
 
 type SheetType = "estimate" | "budget-report" | "timeline-snap" | "timeline-ceremony" | "timeline-guest" | "staff-gabang" | "staff-reception" | "staff-mc" | "staff-parents" | "guest-message" | null;
 
-const premiumTools = [
-  { icon: FileText, label: "AI 견적서", sheet: "estimate" as SheetType },
-  { icon: FileText, label: "예산 리포트", sheet: "budget-report" as SheetType },
-  { icon: Clock, label: "타임라인", sheet: "timeline-ceremony" as SheetType },
-  { icon: Users, label: "스태프 안내", sheet: "staff-gabang" as SheetType },
+const premiumSections = [
+  {
+    title: "AI 리포트",
+    items: [
+      { icon: FileText, emoji: "📋", label: "견적서 자동생성", desc: "조건 입력 → AI 견적 PDF", sheet: "estimate" as SheetType },
+      { icon: BarChart3, emoji: "📊", label: "예산 분석 리포트", desc: "지출 현황 분석 PDF", sheet: "budget-report" as SheetType },
+    ],
+  },
+  {
+    title: "타임라인",
+    items: [
+      { icon: Camera, emoji: "📸", label: "스냅촬영일 타임라인", desc: "촬영 일정표 PDF", sheet: "timeline-snap" as SheetType },
+      { icon: Church, emoji: "💒", label: "본식 당일 타임라인", desc: "당일 일정표 PDF", sheet: "timeline-ceremony" as SheetType },
+      { icon: Users, emoji: "👥", label: "하객 안내 타임라인", desc: "하객용 안내서 PDF", sheet: "timeline-guest" as SheetType },
+    ],
+  },
+  {
+    title: "스태프 안내서",
+    items: [
+      { icon: Briefcase, emoji: "👜", label: "가방순이 전달사항", desc: "역할 안내 PDF", sheet: "staff-gabang" as SheetType },
+      { icon: DollarSign, emoji: "💰", label: "축의대 전달사항", desc: "운영 안내 PDF", sheet: "staff-reception" as SheetType },
+      { icon: Mic, emoji: "🎤", label: "사회자 큐시트", desc: "진행 안내 PDF", sheet: "staff-mc" as SheetType },
+      { icon: UserCheck, emoji: "👪", label: "부모님 안내서", desc: "양가 안내 PDF", sheet: "staff-parents" as SheetType },
+      { icon: MessageSquare, emoji: "📱", label: "하객 안내 메시지", desc: "메시지 템플릿", sheet: "guest-message" as SheetType },
+    ],
+  },
 ];
 
 const suggestedQuestions = [
@@ -41,7 +62,7 @@ const AIPlanner = () => {
   const { isPremium } = useSubscription();
   const tutorial = usePageTutorial("ai-planner");
   const [activeSheet, setActiveSheet] = useState<SheetType>(null);
-
+  const [showPremiumMenu, setShowPremiumMenu] = useState(false);
   const handlePremiumTool = (sheet: SheetType) => {
     if (!isPremium) {
       setShowUpgradeModal(true);
@@ -88,48 +109,86 @@ const AIPlanner = () => {
               <h1 className="text-lg font-bold text-foreground">AI 플래너 듀이</h1>
             </div>
           </div>
-          {messages.length > 0 && (
+          <div className="flex items-center gap-1">
             <button
-              onClick={clearMessages}
-              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-              title="대화 초기화"
+              onClick={() => setShowPremiumMenu(!showPremiumMenu)}
+              className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors"
+              title="프리미엄 콘텐츠"
             >
-              <RotateCcw className="w-5 h-5" />
+              <Gem className="w-5 h-5" />
             </button>
-          )}
+            {messages.length > 0 && (
+              <button
+                onClick={clearMessages}
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                title="대화 초기화"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
       </header>
+
+      {/* Premium Menu Panel */}
+      {showPremiumMenu && (
+        <div className="absolute top-14 left-0 right-0 z-30 bg-background border-b border-border shadow-lg max-h-[70vh] overflow-y-auto">
+          <div className="px-4 py-3 flex items-center justify-between border-b border-border">
+            <div className="flex items-center gap-2">
+              <Gem className="w-4 h-4 text-primary" />
+              <span className="text-sm font-bold text-foreground">프리미엄 콘텐츠</span>
+            </div>
+            <button onClick={() => setShowPremiumMenu(false)} className="p-1">
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+
+          {!isPremium && (
+            <div className="px-4 py-3 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
+              <p className="text-xs font-bold text-foreground">🔒 프리미엄 전용 기능입니다</p>
+              <p className="text-xs text-muted-foreground mt-0.5">무료 체험을 시작하고 모든 PDF를 이용해보세요</p>
+              <button onClick={() => { setShowPremiumMenu(false); setShowUpgradeModal(true); }} className="mt-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold">
+                무료 체험 시작
+              </button>
+            </div>
+          )}
+
+          <div className="px-4 py-3 space-y-4">
+            {premiumSections.map((section) => (
+              <div key={section.title}>
+                <p className="text-[10px] font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">{section.title}</p>
+                <div className="bg-card rounded-xl border border-border overflow-hidden divide-y divide-border">
+                  {section.items.map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={() => {
+                        setShowPremiumMenu(false);
+                        handlePremiumTool(item.sheet);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-accent/30 transition-colors"
+                    >
+                      <span className="text-base">{item.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-foreground">{item.label}</p>
+                        <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                      </div>
+                      {isPremium ? (
+                        <Download className="w-3.5 h-3.5 text-primary" />
+                      ) : (
+                        <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Daily Usage Badge */}
       <div className="pt-3">
         <DailyUsageBadge />
-      </div>
-
-      {/* Premium Tools Bar */}
-      <div className="px-4 pt-3 pb-1">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-          {premiumTools.map((tool) => (
-            <button
-              key={tool.label}
-              onClick={() => handlePremiumTool(tool.sheet)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border rounded-xl text-xs font-medium text-foreground whitespace-nowrap hover:border-primary/30 transition-colors flex-shrink-0"
-            >
-              {isPremium ? (
-                <tool.icon className="w-3.5 h-3.5 text-primary" />
-              ) : (
-                <Lock className="w-3.5 h-3.5 text-muted-foreground" />
-              )}
-              {tool.label}
-            </button>
-          ))}
-          <button
-            onClick={() => navigate("/premium/content")}
-            className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-primary whitespace-nowrap flex-shrink-0"
-          >
-            전체보기
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
       </div>
 
       {/* Main Content */}
