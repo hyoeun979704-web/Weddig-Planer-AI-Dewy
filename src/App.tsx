@@ -59,6 +59,9 @@ const InvitationVenues = lazy(() => import("./pages/InvitationVenues"));
 const InvitationVenueDetail = lazy(() => import("./pages/InvitationVenueDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Premium = lazy(() => import("./pages/Premium"));
+const CoupleVote = lazy(() => import("./pages/CoupleVote"));
+const CoupleVoteDetail = lazy(() => import("./pages/CoupleVoteDetail"));
+const BudgetSplitSimulator = lazy(() => import("./pages/BudgetSplitSimulator"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
 const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
@@ -146,6 +149,9 @@ const App = () => (
               <Route path="/invitation-venues" element={<InvitationVenues />} />
               <Route path="/invitation-venues/:id" element={<InvitationVenueDetail />} />
               <Route path="/premium" element={<Premium />} />
+              <Route path="/couple-vote" element={<CoupleVote />} />
+              <Route path="/couple-vote/:id" element={<CoupleVoteDetail />} />
+              <Route path="/budget/split-simulator" element={<BudgetSplitSimulator />} />
 
               {/* 기능 1: 커플 일정 공유 + 공유 일기 */}
               <Route path="/couple-diary" element={<CoupleDiary />} />
