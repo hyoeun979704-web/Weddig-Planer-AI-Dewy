@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
+import DOMPurify from "dompurify";
 
 const PDF_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
@@ -64,7 +65,7 @@ export function generatePdfFooter(): string {
 
 export async function downloadPdf(htmlContent: string, filename: string): Promise<void> {
   const container = document.createElement("div");
-  container.innerHTML = htmlContent;
+  container.innerHTML = DOMPurify.sanitize(htmlContent);
   container.style.position = "absolute";
   container.style.left = "-9999px";
   container.style.top = "0";
