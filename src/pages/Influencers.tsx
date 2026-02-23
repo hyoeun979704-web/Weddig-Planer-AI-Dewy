@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Star, ExternalLink, Users, Play, Image, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, Star, Users, Loader2, SlidersHorizontal } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useInfluencers, useCategoryLabels, Influencer } from "@/hooks/useInfluencers";
+import SortToggle, { SortMode } from "@/components/SortToggle";
+import InfoFilterSheet, { InfoFilters, initialInfoFilters } from "@/components/info/InfoFilterSheet";
 
 const platformIcons: Record<string, string> = {
   instagram: "📸",
@@ -17,17 +19,34 @@ const formatCount = (n: number): string => {
 };
 
 const categories = [
-  "all", "wedding_planner", "dress", "makeup", "photo", "honeymoon", "interior"
+  { id: "all", label: "전체" },
+  { id: "wedding_hall", label: "웨딩홀" },
+  { id: "photo", label: "촬영" },
+  { id: "ceremony", label: "본식" },
 ];
 
 const Influencers = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const categoryLabels = useCategoryLabels();
+  const [sortMode, setSortMode] = useState<SortMode>("popular");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<InfoFilters>(initialInfoFilters);
   const { influencers, featured, isLoading } = useInfluencers(selectedCategory);
 
   const handleTabChange = (href: string) => navigate(href);
+
+  const hasActiveFilters =
+    filters.category !== null ||
+    filters.duration !== null ||
+    filters.uploadDate !== null ||
+    filters.keyword !== "";
+
+  // Sort influencers
+  const sorted = [...influencers].sort((a, b) => {
+    if (sortMode === "popular") return b.follower_count - a.follower_count;
+    return 0; // already ordered by display_order (latest)
+  });
 
   if (isLoading) {
     return (
@@ -45,34 +64,51 @@ const Influencers = () => {
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-bold text-foreground">웨딩 인플루언서</h1>
+          <h1 className="text-lg font-bold text-foreground">웨딩 정보</h1>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
+        {/* Category Tabs + Filter */}
+        <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
           {categories.map((cat) => (
             <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedCategory === cat
+                selectedCategory === cat.id
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:bg-accent"
               }`}
             >
-              {categoryLabels[cat]}
+              {cat.label}
             </button>
           ))}
+          <button
+            onClick={() => setFilterOpen(true)}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border ${
+              hasActiveFilters
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-border hover:border-primary/50"
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            필터
+            {hasActiveFilters && <span className="ml-0.5 text-[10px]">●</span>}
+          </button>
         </div>
       </header>
 
       <main className="pb-20 px-4 py-4">
+        {/* Sort Toggle */}
+        <div className="flex justify-end mb-3">
+          <SortToggle value={sortMode} onChange={setSortMode} />
+        </div>
+
         {/* Featured Section */}
         {selectedCategory === "all" && featured.length > 0 && (
           <div className="mb-6">
             <h2 className="font-bold text-foreground mb-3 flex items-center gap-2">
               <Star className="w-4 h-4 text-primary fill-primary" />
-              추천 인플루언서
+              추천 콘텐츠
             </h2>
             <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
               {featured.map((inf) => (
@@ -83,20 +119,21 @@ const Influencers = () => {
         )}
 
         {/* List */}
-        {influencers.length === 0 ? (
+        {sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Users className="w-10 h-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">등록된 인플루언서가 없습니다</p>
+            <p className="text-muted-foreground">등록된 정보가 없습니다</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {influencers.map((inf) => (
+            {sorted.map((inf) => (
               <InfluencerCard key={inf.id} influencer={inf} onClick={() => navigate(`/influencers/${inf.id}`)} />
             ))}
           </div>
         )}
       </main>
 
+      <InfoFilterSheet open={filterOpen} onOpenChange={setFilterOpen} filters={filters} onApply={setFilters} />
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
     </div>
   );

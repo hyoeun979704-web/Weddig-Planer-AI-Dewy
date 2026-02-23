@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export type CategoryTab = "home" | "events" | "shopping" | "influencers";
+export type CategoryTab = "home" | "events" | "shopping" | "info";
 
 interface Tab {
   id: CategoryTab;
@@ -11,7 +11,7 @@ const tabs: Tab[] = [
   { id: "home", label: "홈" },
   { id: "events", label: "이벤트" },
   { id: "shopping", label: "쇼핑" },
-  { id: "influencers", label: "인플루언서" },
+  { id: "info", label: "정보" },
 ];
 
 interface CategoryTabBarProps {
