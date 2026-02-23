@@ -21,7 +21,7 @@ interface CategoryTabBarProps {
 
 const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
   return (
-    <div className="sticky top-14 z-40 bg-card border-b border-border w-full">
+    <div data-tutorial="category-tab" className="sticky top-14 z-40 bg-card border-b border-border w-full">
       <div className="flex">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
