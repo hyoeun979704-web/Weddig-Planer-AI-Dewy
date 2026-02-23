@@ -127,6 +127,18 @@ export const FEATURE_GUIDES = [
       { id: "c3", title: "글 작성", description: "오른쪽 상단 펜 아이콘으로 질문, 후기, 정보를 공유하세요.", targetSelector: "[data-tutorial='community-write']", position: "bottom" as const },
     ],
   },
+  {
+    id: "premium",
+    icon: "💎",
+    title: "프리미엄 콘텐츠",
+    description: "AI 리포트와 PDF 도구 활용법",
+    route: "/premium/content",
+    steps: [
+      { id: "p1", title: "프리미엄 콘텐츠", description: "AI 견적서, 예산 리포트, 타임라인 등 다양한 PDF 도구를 이용할 수 있어요.", targetSelector: "[data-tutorial='premium-header']", position: "bottom" as const },
+      { id: "p2", title: "AI 리포트", description: "조건 입력만으로 AI가 견적서와 예산 분석 리포트를 자동 생성해줘요.", targetSelector: "[data-tutorial='premium-reports']", position: "bottom" as const },
+      { id: "p3", title: "타임라인 & 안내서", description: "스냅촬영, 본식, 스태프 안내서 등 당일에 필요한 PDF를 한 곳에서 관리하세요.", targetSelector: "[data-tutorial='premium-guides']", position: "bottom" as const },
+    ],
+  },
 ];
 
 const TUTORIAL_SEEN_KEY = "dewy_tutorial_seen";
