@@ -10,7 +10,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { icon: Home, label: "홈", href: "/" },
   { icon: Calendar, label: "스케쥴", href: "/schedule" },
-  { icon: Sparkles, label: "AI 스튜디오", href: "/ai-studio" },
+  { icon: Sparkles, label: "AI 플래너", href: "/ai-planner" },
   { icon: Users, label: "커뮤니티", href: "/community" },
   { icon: User, label: "마이페이지", href: "/mypage" },
 ];
