@@ -79,6 +79,19 @@ export const paidByOptions = [
   { value: "bride", label: "신부측", emoji: "👰" },
 ] as const;
 
+export const paymentStageOptions = [
+  { value: "deposit", label: "예약금", emoji: "🔖" },
+  { value: "contract", label: "계약금", emoji: "📝" },
+  { value: "full", label: "완납", emoji: "✅" },
+] as const;
+
+export const paymentMethodOptions = [
+  { value: "cash", label: "현금", emoji: "💵" },
+  { value: "card", label: "카드", emoji: "💳" },
+  { value: "transfer", label: "계좌이체", emoji: "🏦" },
+  { value: "check", label: "수표", emoji: "🧾" },
+] as const;
+
 export const savingTips: Record<BudgetCategory, string[]> = {
   venue: [
     "주중이나 오전 예식은 10~30% 할인되는 곳이 많아요",

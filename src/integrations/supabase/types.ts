@@ -74,6 +74,8 @@ export type Database = {
           item_date: string | null
           memo: string | null
           paid_by: string | null
+          payment_method: string | null
+          payment_stage: string | null
           title: string
           user_id: string
         }
@@ -88,6 +90,8 @@ export type Database = {
           item_date?: string | null
           memo?: string | null
           paid_by?: string | null
+          payment_method?: string | null
+          payment_stage?: string | null
           title: string
           user_id: string
         }
@@ -102,6 +106,8 @@ export type Database = {
           item_date?: string | null
           memo?: string | null
           paid_by?: string | null
+          payment_method?: string | null
+          payment_stage?: string | null
           title?: string
           user_id?: string
         }

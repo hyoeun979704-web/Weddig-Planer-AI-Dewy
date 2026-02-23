@@ -26,6 +26,8 @@ export interface BudgetItem {
   has_balance: boolean;
   balance_amount: number | null;
   balance_due_date: string | null;
+  payment_stage: string;
+  payment_method: string;
   created_at: string;
 }
 
