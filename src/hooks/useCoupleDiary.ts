@@ -100,13 +100,15 @@ export const useCoupleDiary = () => {
         continue;
       }
 
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = await supabase.storage
         .from("couple-diary-photos")
-        .getPublicUrl(path);
+        .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 day signed URL
+
+      if (!urlData?.signedUrl) continue;
 
       uploaded.push({
         id: "",
-        photo_url: urlData.publicUrl,
+        photo_url: urlData.signedUrl,
         storage_path: path,
         display_order: i,
       });

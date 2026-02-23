@@ -312,6 +312,118 @@ export type Database = {
         }
         Relationships: []
       }
+      couple_diary: {
+        Row: {
+          author_id: string
+          content: string
+          couple_link_id: string
+          created_at: string
+          diary_date: string
+          id: string
+          mood: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          couple_link_id: string
+          created_at?: string
+          diary_date?: string
+          id?: string
+          mood?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          couple_link_id?: string
+          created_at?: string
+          diary_date?: string
+          id?: string
+          mood?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "couple_diary_couple_link_id_fkey"
+            columns: ["couple_link_id"]
+            isOneToOne: false
+            referencedRelation: "couple_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      couple_diary_photos: {
+        Row: {
+          created_at: string
+          diary_id: string
+          display_order: number
+          id: string
+          photo_url: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          diary_id: string
+          display_order?: number
+          id?: string
+          photo_url: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          diary_id?: string
+          display_order?: number
+          id?: string
+          photo_url?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "couple_diary_photos_diary_id_fkey"
+            columns: ["diary_id"]
+            isOneToOne: false
+            referencedRelation: "couple_diary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      couple_links: {
+        Row: {
+          created_at: string
+          id: string
+          invite_code: string
+          linked_at: string | null
+          partner_user_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_code: string
+          linked_at?: string | null
+          partner_user_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_code?: string
+          linked_at?: string | null
+          partner_user_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       couple_votes: {
         Row: {
           ai_suggestion: string | null
@@ -987,6 +1099,10 @@ export type Database = {
       increment_ai_usage: {
         Args: { p_date: string; p_user_id: string }
         Returns: undefined
+      }
+      is_couple_member: {
+        Args: { _couple_link_id: string; _user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
