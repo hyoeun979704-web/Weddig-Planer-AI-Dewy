@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useBudget } from "@/hooks/useBudget";
 import { 
   Calendar, 
   CheckCircle2, 
@@ -96,7 +97,7 @@ const Schedule = () => {
   } = useWeddingSchedule();
 
   const [selectedPhase, setSelectedPhase] = useState<TimelinePhase | null>(null);
-
+  const { settings: budgetSettings, summary: budgetSummary } = useBudget();
   const handleTabChange = (href: string) => {
     navigate(href);
   };
@@ -211,8 +212,42 @@ const Schedule = () => {
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
         )}
+
+        {/* Budget Mini Widget */}
+        {budgetSettings && budgetSettings.total_budget > 0 && (
+          <button
+            onClick={() => navigate("/budget")}
+            className="w-full mb-6 p-4 bg-card rounded-2xl border border-border flex items-center gap-3"
+          >
+            <span className="text-xl">💰</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-sm font-semibold text-foreground">예산 사용 현황</span>
+                <span className="text-xs text-muted-foreground">
+                  {budgetSummary.totalSpent.toLocaleString()} / {budgetSettings.total_budget.toLocaleString()}만원
+                </span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${Math.min((budgetSummary.totalSpent / budgetSettings.total_budget) * 100, 100)}%`,
+                    backgroundColor:
+                      budgetSummary.totalSpent / budgetSettings.total_budget >= 0.9
+                        ? "hsl(var(--destructive))"
+                        : budgetSummary.totalSpent / budgetSettings.total_budget >= 0.7
+                        ? "#F59E0B"
+                        : "hsl(var(--primary))",
+                  }}
+                />
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </button>
+        )}
+
         {/* Progress Summary - Dynamic */}
-        <div 
+        <div
           className="bg-gradient-to-br from-primary/10 via-accent to-background rounded-2xl p-4 mb-6 cursor-pointer"
           onClick={() => navigate("/my-schedule")}
         >
