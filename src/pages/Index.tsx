@@ -19,7 +19,7 @@ const Index = () => {
       home: "/",
       events: "/deals",
       shopping: "/store",
-      influencers: "/influencers",
+      info: "/influencers",
     };
     navigate(tabRoutes[tab]);
   };

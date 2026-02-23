@@ -60,13 +60,13 @@ const magazineDataMap: Record<CategoryTab, MagazineData> = {
       { icon: CheckSquare, title: "구매 시기 꿀팁", description: "특가 시즌 완벽 정리", color: "bg-pink-500/15 text-pink-500" },
     ],
   },
-  influencers: {
-    title: "인플루언서 매거진",
+  info: {
+    title: "웨딩 정보 매거진",
     subtitle: "리얼 웨딩 스토리",
     articles: [
-      { icon: Camera, title: "인플루언서 웨딩 촬영기", description: "리얼 촬영 비하인드", color: "bg-violet-500/15 text-violet-500" },
-      { icon: Heart, title: "인플루언서 추천템", description: "실제 사용 후기 모음", color: "bg-rose-500/15 text-rose-500" },
-      { icon: Sparkles, title: "웨딩 트렌드 2025", description: "인플루언서가 알려주는 트렌드", color: "bg-pink-500/15 text-pink-500" },
+      { icon: Camera, title: "웨딩 촬영 비하인드", description: "리얼 촬영 비하인드", color: "bg-violet-500/15 text-violet-500" },
+      { icon: Heart, title: "전문가 추천템", description: "실제 사용 후기 모음", color: "bg-rose-500/15 text-rose-500" },
+      { icon: Sparkles, title: "웨딩 트렌드 2025", description: "전문가가 알려주는 트렌드", color: "bg-pink-500/15 text-pink-500" },
       { icon: Lightbulb, title: "예산 절약 노하우", description: "현명한 결혼 준비 팁", color: "bg-amber-500/15 text-amber-500" },
     ],
   },

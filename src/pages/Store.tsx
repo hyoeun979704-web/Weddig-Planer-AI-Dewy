@@ -5,6 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
+import SortToggle, { SortMode } from "@/components/SortToggle";
 
 interface Product {
   id: string;
@@ -41,7 +42,7 @@ const Store = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<StoreFilters>(initialFilters);
-
+  const [sortMode, setSortMode] = useState<SortMode>("popular");
   useEffect(() => {
     const fetch = async () => {
       setIsLoading(true);
@@ -49,7 +50,7 @@ const Store = () => {
         .from("products" as any)
         .select("id, name, short_description, category, price, sale_price, thumbnail_url, rating, review_count, sold_count, is_featured") as any)
         .eq("is_active", true)
-        .order("display_order", { ascending: true });
+        .order(sortMode === "popular" ? "sold_count" : "created_at", { ascending: false });
 
       // Tab-based category filter
       if (selectedTab !== "all") {
@@ -75,7 +76,7 @@ const Store = () => {
       setIsLoading(false);
     };
     fetch();
-  }, [selectedTab, filters]);
+  }, [selectedTab, filters, sortMode]);
 
   const hasActiveFilters =
     filters.category !== null ||
@@ -132,6 +133,9 @@ const Store = () => {
       </header>
 
       <main className="pb-20 px-4 py-4">
+        <div className="flex justify-end mb-3">
+          <SortToggle value={sortMode} onChange={setSortMode} />
+        </div>
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />

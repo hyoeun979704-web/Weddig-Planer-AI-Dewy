@@ -33,11 +33,11 @@ const heroDataMap: Record<CategoryTab, HeroData> = {
     cta: "쇼핑하러 가기",
     bgColor: "from-emerald-100/50 via-emerald-50/30 to-background",
   },
-  influencers: {
-    badge: "웨딩 인플루언서",
-    title: ["실제 결혼 준비 후기,", "인플루언서 추천으로", "똑똑하게 준비"],
-    subtitle: "웨딩 인플루언서들의 리얼 후기와\n추천 업체를 확인하세요.",
-    cta: "인플루언서 보러가기",
+  info: {
+    badge: "웨딩 정보",
+    title: ["실제 결혼 준비 후기,", "전문가 정보로", "똑똑하게 준비"],
+    subtitle: "웨딩 전문가들의 리얼 후기와\n추천 업체를 확인하세요.",
+    cta: "정보 보러가기",
     bgColor: "from-violet-100/50 via-violet-50/30 to-background",
   },
 };
@@ -46,7 +46,7 @@ const tabCtaRoutes: Record<CategoryTab, string> = {
   home: "/ai-planner",
   events: "/deals",
   shopping: "/store",
-  influencers: "/influencers",
+  info: "/influencers",
 };
 
 interface TabHeroContentProps {

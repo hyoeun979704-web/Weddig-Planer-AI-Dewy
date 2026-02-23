@@ -76,12 +76,12 @@ const reviewDataMap: Record<CategoryTab, ReviewData> = {
       { rating: 5, review: "한샘 리하우스로 인테리어 했는데 신혼집이 너무 예뻐졌어요!", vendorName: "한샘", vendorType: "인테리어", userName: "송**님", date: "2025.01.07" },
     ],
   },
-  influencers: {
-    title: "인플루언서 추천 후기",
-    subtitle: "팔로워들의 실제 후기",
+  info: {
+    title: "웨딩 정보 후기",
+    subtitle: "전문가 추천 후기",
     reviews: [
-      { rating: 5, review: "인플루언서 추천으로 스튜디오 선택했는데 대만족이에요!", vendorName: "라움스튜디오", vendorType: "스튜디오", userName: "이**님", date: "2025.01.12" },
-      { rating: 5, review: "인플루언서 콘텐츠 보고 결정했는데 실제로도 너무 좋았어요.", vendorName: "블러썸뷰티", vendorType: "메이크업", userName: "최**님", date: "2025.01.08" },
+      { rating: 5, review: "전문가 추천으로 스튜디오 선택했는데 대만족이에요!", vendorName: "라움스튜디오", vendorType: "스튜디오", userName: "이**님", date: "2025.01.12" },
+      { rating: 5, review: "정보 콘텐츠 보고 결정했는데 실제로도 너무 좋았어요.", vendorName: "블러썸뷰티", vendorType: "메이크업", userName: "최**님", date: "2025.01.08" },
       { rating: 4, review: "리얼 후기가 많아서 참고하기 좋았어요. 추천드려요!", vendorName: "모먼트스튜디오", vendorType: "스튜디오", userName: "정**님", date: "2025.01.05" },
     ],
   },

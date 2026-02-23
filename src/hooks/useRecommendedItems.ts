@@ -46,13 +46,13 @@ const tabConfigMap: Record<CategoryTab, TabConfig> = {
     detailPath: "/store",
     title: "인기 쇼핑 상품",
   },
-  influencers: {
+  info: {
     table: "studios",
     locationField: "address",
     priceField: "price_per_person",
     priceType: "number",
     detailPath: "/influencers",
-    title: "인플루언서 추천",
+    title: "웨딩 정보 추천",
   },
 };
 
