@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { useBudget } from "@/hooks/useBudget";
-import { categories, paidByOptions, type BudgetCategory } from "@/data/budgetData";
+import { categories, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -107,8 +107,18 @@ const BudgetHistory = () => {
                       <span className="text-lg">{cat?.emoji || "📋"}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
                           {format(new Date(item.item_date), "M.d")} · {pb?.emoji} {pb?.label}
+                          {item.payment_stage && (
+                            <span className="bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
+                              {paymentStageOptions.find(s => s.value === item.payment_stage)?.label || item.payment_stage}
+                            </span>
+                          )}
+                          {item.payment_method && item.payment_method !== "cash" && (
+                            <span className="bg-muted px-1.5 py-0.5 rounded">
+                              {paymentMethodOptions.find(m => m.value === item.payment_method)?.emoji}
+                            </span>
+                          )}
                           {item.memo && ` · ${item.memo}`}
                         </p>
                       </div>

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { categories, paidByOptions, type BudgetCategory } from "@/data/budgetData";
+import { categories, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,8 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
   const [title, setTitle] = useState("");
   const [itemDate, setItemDate] = useState<Date>(new Date());
   const [paidBy, setPaidBy] = useState("shared");
+  const [paymentStage, setPaymentStage] = useState("full");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
   const [memo, setMemo] = useState("");
   const [hasBalance, setHasBalance] = useState(false);
   const [balanceAmount, setBalanceAmount] = useState(0);
@@ -40,13 +42,16 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
       setTitle(editItem.title);
       setItemDate(new Date(editItem.item_date));
       setPaidBy(editItem.paid_by);
+      setPaymentStage(editItem.payment_stage || "full");
+      setPaymentMethod(editItem.payment_method || "cash");
       setMemo(editItem.memo || "");
       setHasBalance(editItem.has_balance);
       setBalanceAmount(editItem.balance_amount || 0);
       setBalanceDueDate(editItem.balance_due_date ? new Date(editItem.balance_due_date) : undefined);
     } else if (open) {
       setAmount(0); setCategory("venue"); setTitle(""); setItemDate(new Date());
-      setPaidBy("shared"); setMemo(""); setHasBalance(false); setBalanceAmount(0); setBalanceDueDate(undefined);
+      setPaidBy("shared"); setPaymentStage("full"); setPaymentMethod("cash");
+      setMemo(""); setHasBalance(false); setBalanceAmount(0); setBalanceDueDate(undefined);
     }
   }, [open, editItem]);
 
@@ -56,6 +61,8 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
     if (!title || amount <= 0) return;
     onSave({
       category, title, amount, paid_by: paidBy,
+      payment_stage: paymentStage,
+      payment_method: paymentMethod,
       item_date: format(itemDate, "yyyy-MM-dd"),
       memo: memo || null,
       has_balance: hasBalance,
@@ -151,7 +158,42 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
           </div>
         </div>
 
-        {/* Memo */}
+        {/* Payment Stage */}
+        <div className="mb-4">
+          <Label className="text-sm font-semibold mb-1.5 block">결제 단계</Label>
+          <div className="flex gap-2">
+            {paymentStageOptions.map(opt => (
+              <button key={opt.value} onClick={() => setPaymentStage(opt.value)}
+                className={cn(
+                  "flex-1 text-xs py-2 rounded-lg border transition-all",
+                  paymentStage === opt.value
+                    ? "border-primary bg-primary/10 font-bold"
+                    : "border-border text-muted-foreground"
+                )}>
+                {opt.emoji} {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Payment Method */}
+        <div className="mb-4">
+          <Label className="text-sm font-semibold mb-1.5 block">결제수단</Label>
+          <div className="flex gap-1.5 flex-wrap">
+            {paymentMethodOptions.map(opt => (
+              <button key={opt.value} onClick={() => setPaymentMethod(opt.value)}
+                className={cn(
+                  "text-xs py-1.5 px-3 rounded-full border transition-all",
+                  paymentMethod === opt.value
+                    ? "border-primary bg-primary/10 font-bold"
+                    : "border-border text-muted-foreground"
+                )}>
+                {opt.emoji} {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="mb-4">
           <Label className="text-sm font-semibold mb-1.5 block">메모 (선택)</Label>
           <Textarea value={memo} onChange={e => setMemo(e.target.value)}

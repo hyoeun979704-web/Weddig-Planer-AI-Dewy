@@ -5,7 +5,7 @@ import { ArrowLeft, Plus, Settings, MapPin, AlertTriangle, ChevronRight, Trash2 
 import { Progress } from "@/components/ui/progress";
 import { useBudget } from "@/hooks/useBudget";
 import { useAuth } from "@/contexts/AuthContext";
-import { categories, regions, paidByOptions, type BudgetCategory } from "@/data/budgetData";
+import { categories, regions, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
 import BudgetSetupSheet from "@/components/budget/BudgetSetupSheet";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import { cn } from "@/lib/utils";
@@ -188,7 +188,19 @@ const Budget = () => {
                       <span className="text-lg">{cat?.emoji || "📋"}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                        <p className="text-[10px] text-muted-foreground">{format(new Date(item.item_date), "M.d")} · {pb?.emoji} {pb?.label}</p>
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
+                          {format(new Date(item.item_date), "M.d")} · {pb?.emoji} {pb?.label}
+                          {item.payment_stage && item.payment_stage !== "full" && (
+                            <span className="bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
+                              {paymentStageOptions.find(s => s.value === item.payment_stage)?.label}
+                            </span>
+                          )}
+                          {item.payment_method && item.payment_method !== "cash" && (
+                            <span className="bg-muted px-1.5 py-0.5 rounded">
+                              {paymentMethodOptions.find(m => m.value === item.payment_method)?.emoji} {paymentMethodOptions.find(m => m.value === item.payment_method)?.label}
+                            </span>
+                          )}
+                        </p>
                       </div>
                       <span className="text-sm font-bold text-foreground">{item.amount}만원</span>
                     </button>
