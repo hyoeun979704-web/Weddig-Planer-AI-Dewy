@@ -57,7 +57,7 @@ const AIPlanner = () => {
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
-              <h1 className="text-lg font-bold text-foreground">듀이 AI 플래너</h1>
+              <h1 className="text-lg font-bold text-foreground">AI 플래너 듀이</h1>
             </div>
           </div>
           {messages.length > 0 && (
