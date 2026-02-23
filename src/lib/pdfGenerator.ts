@@ -1,4 +1,5 @@
-import html2pdf from "html2pdf.js";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 
 const PDF_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
@@ -64,20 +65,42 @@ export function generatePdfFooter(): string {
 export async function downloadPdf(htmlContent: string, filename: string): Promise<void> {
   const container = document.createElement("div");
   container.innerHTML = htmlContent;
+  container.style.position = "absolute";
+  container.style.left = "-9999px";
+  container.style.top = "0";
   document.body.appendChild(container);
 
   try {
-    await html2pdf()
-      .set({
-        margin: 0,
-        filename,
-        image: { type: "jpeg", quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-      })
-      .from(container)
-      .save();
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 0.95);
+    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    const ratio = pdfWidth / imgWidth;
+    const scaledHeight = imgHeight * ratio;
+
+    let heightLeft = scaledHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, scaledHeight);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+      position -= pdfHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, scaledHeight);
+      heightLeft -= pdfHeight;
+    }
+
+    pdf.save(filename);
   } finally {
     document.body.removeChild(container);
   }
