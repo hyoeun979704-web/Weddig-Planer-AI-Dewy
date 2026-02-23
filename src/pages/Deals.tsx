@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Tag, Star, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Tag, Star, ChevronRight, SlidersHorizontal, Heart } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -49,11 +49,16 @@ const Deals = () => {
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center px-4 h-14">
-          <button onClick={() => navigate(-1)} className="mr-3">
-            <ArrowLeft className="w-6 h-6 text-foreground" />
+        <div className="flex items-center justify-between px-4 h-14">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} className="p-1">
+              <ArrowLeft className="w-5 h-5 text-foreground" />
+            </button>
+            <h1 className="text-lg font-bold text-foreground">파트너 혜택</h1>
+          </div>
+          <button onClick={() => navigate("/favorites")} className="p-2">
+            <Heart className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-bold text-foreground">파트너 혜택</h1>
         </div>
       </header>
 

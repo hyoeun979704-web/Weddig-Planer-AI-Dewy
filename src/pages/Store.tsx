@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, Star, Loader2, SlidersHorizontal } from "lucide-react";
+import { ShoppingCart, Star, Loader2, SlidersHorizontal, ArrowLeft, Heart } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
@@ -91,15 +91,25 @@ const Store = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
-          <h1 className="text-lg font-bold text-foreground">듀이 스토어</h1>
-          <button onClick={() => navigate("/cart")} className="relative p-2">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} className="p-1">
+              <ArrowLeft className="w-5 h-5 text-foreground" />
+            </button>
+            <h1 className="text-lg font-bold text-foreground">듀이 스토어</h1>
+          </div>
+          <div className="flex items-center gap-1">
+            <button onClick={() => navigate("/favorites")} className="p-2">
+              <Heart className="w-5 h-5 text-foreground" />
+            </button>
+            <button onClick={() => navigate("/cart")} className="relative p-2">
             <ShoppingCart className="w-5 h-5 text-foreground" />
             {itemCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center min-w-[18px] h-[18px]">
                 {itemCount}
               </span>
             )}
-          </button>
+            </button>
+          </div>
         </div>
 
         {/* Tabs + Filter button */}
