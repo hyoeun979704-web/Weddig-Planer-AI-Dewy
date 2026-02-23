@@ -22,6 +22,7 @@ interface FilterStore extends FilterState {
   setEventOptions: (eventOptions: string[]) => void;
   toggleEventOption: (eventOption: string) => void;
   resetFilters: () => void;
+  initWithRegion: (region: string | null) => void;
   hasActiveFilters: () => boolean;
 }
 
@@ -74,6 +75,7 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   },
   
   resetFilters: () => set(initialState),
+  initWithRegion: (region) => set({ ...initialState, region }),
   
   hasActiveFilters: () => {
     const state = get();

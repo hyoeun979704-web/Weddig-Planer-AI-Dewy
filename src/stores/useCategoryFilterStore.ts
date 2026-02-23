@@ -20,6 +20,7 @@ interface CategoryFilterStore extends CategoryFilterState {
   setFilterOptions3: (options: string[]) => void;
   toggleFilterOption3: (option: string) => void;
   resetFilters: () => void;
+  initWithRegion: (region: string | null) => void;
   hasActiveFilters: () => boolean;
 }
 
@@ -68,6 +69,7 @@ export const useCategoryFilterStore = create<CategoryFilterStore>((set, get) => 
   },
   
   resetFilters: () => set(initialState),
+  initWithRegion: (region) => set({ ...initialState, region }),
   
   hasActiveFilters: () => {
     const state = get();

@@ -7,14 +7,16 @@ import VenueGrid from "@/components/VenueGrid";
 import FilterBar from "@/components/FilterBar";
 import { Venue } from "@/hooks/useVenues";
 import { useFilterStore } from "@/stores/useFilterStore";
+import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 
 const Venues = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const hasActiveFilters = useFilterStore((state) => state.hasActiveFilters);
-  const resetFilters = useFilterStore((state) => state.resetFilters);
+  const initWithRegion = useFilterStore((state) => state.initWithRegion);
+  const { defaultRegion, isLoaded } = useDefaultRegion();
 
-  useEffect(() => { resetFilters(); }, []);
+  useEffect(() => { if (isLoaded) initWithRegion(defaultRegion); }, [isLoaded]);
 
   const handleVenueClick = (venue: Venue) => { navigate(`/venue/${venue.id}`); };
 

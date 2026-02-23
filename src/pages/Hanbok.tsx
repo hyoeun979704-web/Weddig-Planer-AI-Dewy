@@ -7,14 +7,16 @@ import CategoryFilterBar from "@/components/CategoryFilterBar";
 import CategoryGrid from "@/components/CategoryGrid";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
+import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 
 const Hanbok = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const hasActiveFilters = useCategoryFilterStore((state) => state.hasActiveFilters);
-  const resetFilters = useCategoryFilterStore((state) => state.resetFilters);
+  const initWithRegion = useCategoryFilterStore((state) => state.initWithRegion);
+  const { defaultRegion, isLoaded } = useDefaultRegion();
 
-  useEffect(() => { resetFilters(); }, []);
+  useEffect(() => { if (isLoaded) initWithRegion(defaultRegion); }, [isLoaded]);
 
   const handleItemClick = (item: CategoryItem) => { navigate(`/hanbok/${item.id}`); };
 
