@@ -9,6 +9,8 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-planner`;
 export const useAIPlanner = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
   const { toast } = useToast();
 
   const sendMessage = useCallback(async (input: string) => {
@@ -29,7 +31,6 @@ export const useAIPlanner = () => {
     };
 
     try {
-      // Get current session for auth token
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -43,11 +44,25 @@ export const useAIPlanner = () => {
       });
 
       if (resp.status === 429) {
+        // Check if it's daily limit
+        try {
+          const body = await resp.json();
+          if (body.error === "daily_limit") {
+            setShowUpgradeModal(true);
+            setDailyRemaining(0);
+            setMessages(prev => prev.filter(m => m !== userMsg));
+            setIsLoading(false);
+            return;
+          }
+        } catch {
+          // fallback
+        }
         toast({
           title: "요청 한도 초과",
           description: "잠시 후 다시 시도해주세요.",
           variant: "destructive",
         });
+        setMessages(prev => prev.filter(m => m !== userMsg));
         setIsLoading(false);
         return;
       }
@@ -64,6 +79,23 @@ export const useAIPlanner = () => {
 
       if (!resp.ok || !resp.body) {
         throw new Error("스트림 시작에 실패했어요");
+      }
+
+      // Read remaining from header
+      const remainingHeader = resp.headers.get("X-Daily-Remaining");
+      if (remainingHeader !== null) {
+        const remaining = parseInt(remainingHeader, 10);
+        if (!isNaN(remaining) && remaining >= 0) {
+          setDailyRemaining(remaining);
+          if (remaining === 0) {
+            toast({
+              title: "마지막 무료 질문이에요",
+              description: "프리미엄으로 업그레이드하면 무제한으로 이용할 수 있어요.",
+            });
+          }
+        } else {
+          setDailyRemaining(null); // premium user
+        }
       }
 
       const reader = resp.body.getReader();
@@ -125,7 +157,6 @@ export const useAIPlanner = () => {
         description: "메시지 전송에 실패했어요. 다시 시도해주세요.",
         variant: "destructive",
       });
-      // Remove the user message on failure
       setMessages(prev => prev.filter(m => m !== userMsg));
     } finally {
       setIsLoading(false);
@@ -136,5 +167,5 @@ export const useAIPlanner = () => {
     setMessages([]);
   }, []);
 
-  return { messages, isLoading, sendMessage, clearMessages };
+  return { messages, isLoading, sendMessage, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining };
 };

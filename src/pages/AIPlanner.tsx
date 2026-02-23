@@ -3,6 +3,8 @@ import { ArrowLeft, Sparkles, Send, RotateCcw } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import BottomNav from "@/components/BottomNav";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
+import DailyUsageBadge from "@/components/premium/DailyUsageBadge";
+import UpgradeModal from "@/components/premium/UpgradeModal";
 
 const suggestedQuestions = [
   "결혼 준비 어디서부터 시작해야 하나요?",
@@ -16,7 +18,7 @@ const AIPlanner = () => {
   const location = useLocation();
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, sendMessage, clearMessages } = useAIPlanner();
+  const { messages, isLoading, sendMessage, clearMessages, showUpgradeModal, setShowUpgradeModal } = useAIPlanner();
 
   const handleTabChange = (href: string) => {
     navigate(href);
@@ -72,8 +74,13 @@ const AIPlanner = () => {
         </div>
       </header>
 
+      {/* Daily Usage Badge */}
+      <div className="pt-3">
+        <DailyUsageBadge />
+      </div>
+
       {/* Main Content */}
-      <main className="flex-1 pb-36 px-4 py-6 overflow-y-auto">
+      <main className="flex-1 pb-36 px-4 py-4 overflow-y-auto">
         {messages.length === 0 ? (
           <>
             {/* Welcome Message */}
@@ -175,6 +182,13 @@ const AIPlanner = () => {
           </div>
         </div>
       </div>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        trigger="daily_limit"
+      />
 
       {/* Bottom Navigation */}
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />

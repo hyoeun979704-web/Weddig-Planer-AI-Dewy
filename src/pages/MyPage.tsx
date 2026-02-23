@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import PremiumBanner from "@/components/premium/PremiumBanner";
 
 const quickMenuItems = [
   { icon: Heart, label: "찜", count: 12, href: "/favorites" },
@@ -174,6 +175,9 @@ const MyPage = () => {
             ))}
           </div>
         </div>
+
+        {/* Premium Banner */}
+        <PremiumBanner />
 
         {/* D-Day Card */}
         <div className="px-4 py-2">
