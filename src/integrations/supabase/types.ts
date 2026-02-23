@@ -499,6 +499,35 @@ export type Database = {
         }
         Relationships: []
       }
+      deal_claims: {
+        Row: {
+          created_at: string
+          deal_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_claims_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "partner_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string
@@ -801,6 +830,87 @@ export type Database = {
           total_amount?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      partner_deals: {
+        Row: {
+          banner_image_url: string | null
+          category: string
+          claim_count: number
+          coupon_code: string | null
+          created_at: string
+          deal_price: number | null
+          deal_type: string
+          description: string
+          discount_info: string | null
+          display_order: number
+          end_date: string | null
+          external_url: string | null
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          original_price: number | null
+          partner_logo_url: string | null
+          partner_name: string
+          short_description: string | null
+          start_date: string | null
+          terms: string | null
+          title: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          banner_image_url?: string | null
+          category?: string
+          claim_count?: number
+          coupon_code?: string | null
+          created_at?: string
+          deal_price?: number | null
+          deal_type?: string
+          description: string
+          discount_info?: string | null
+          display_order?: number
+          end_date?: string | null
+          external_url?: string | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          original_price?: number | null
+          partner_logo_url?: string | null
+          partner_name: string
+          short_description?: string | null
+          start_date?: string | null
+          terms?: string | null
+          title: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          banner_image_url?: string | null
+          category?: string
+          claim_count?: number
+          coupon_code?: string | null
+          created_at?: string
+          deal_price?: number | null
+          deal_type?: string
+          description?: string
+          discount_info?: string | null
+          display_order?: number
+          end_date?: string | null
+          external_url?: string | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          original_price?: number | null
+          partner_logo_url?: string | null
+          partner_name?: string
+          short_description?: string | null
+          start_date?: string | null
+          terms?: string | null
+          title?: string
+          updated_at?: string
+          view_count?: number
         }
         Relationships: []
       }
@@ -1252,6 +1362,7 @@ export type Database = {
         Args: { p_date: string; p_user_id: string }
         Returns: undefined
       }
+      increment_claim_count: { Args: { deal_id: string }; Returns: undefined }
       is_couple_member: {
         Args: { _couple_link_id: string; _user_id: string }
         Returns: boolean
