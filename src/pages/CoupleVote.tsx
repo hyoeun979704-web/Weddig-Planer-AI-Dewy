@@ -172,17 +172,17 @@ const CoupleVote = () => {
           <div className="mt-4 space-y-4">
             <div>
               <label className="text-xs font-medium text-foreground mb-1 block">고민 주제</label>
-              <input value={topic} onChange={e => setTopic(e.target.value)} placeholder="예: 웨딩홀 어디로 할까?"
+              <input value={topic} onChange={e => setTopic(e.target.value.slice(0, 200))} placeholder="예: 웨딩홀 어디로 할까?" maxLength={200}
                 className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none" />
             </div>
             <div>
               <label className="text-xs font-medium text-foreground mb-1 block">선택지 A</label>
-              <input value={optionA} onChange={e => setOptionA(e.target.value)} placeholder="예: 그랜드 하얏트"
+              <input value={optionA} onChange={e => setOptionA(e.target.value.slice(0, 200))} placeholder="예: 그랜드 하얏트" maxLength={200}
                 className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none" />
             </div>
             <div>
               <label className="text-xs font-medium text-foreground mb-1 block">선택지 B</label>
-              <input value={optionB} onChange={e => setOptionB(e.target.value)} placeholder="예: 신라호텔"
+              <input value={optionB} onChange={e => setOptionB(e.target.value.slice(0, 200))} placeholder="예: 신라호텔" maxLength={200}
                 className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none" />
             </div>
             <button
