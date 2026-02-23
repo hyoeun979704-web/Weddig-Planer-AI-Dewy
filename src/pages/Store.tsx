@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, Star, Loader2 } from "lucide-react";
+import { ShoppingCart, Star, Loader2, SlidersHorizontal } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
+import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
 
 interface Product {
   id: string;
@@ -19,17 +20,14 @@ interface Product {
   is_featured: boolean;
 }
 
-const categoryLabels: Record<string, string> = {
-  all: "전체",
-  dress_acc: "드레스소품",
-  ring: "예물",
-  gift: "답례품",
-  decor: "데코/소품",
-  invitation: "청첩장",
-  beauty: "뷰티",
-};
+const tabs = [
+  { id: "all", label: "전체" },
+  { id: "self_wedding", label: "셀프웨딩" },
+  { id: "snap", label: "스냅" },
+  { id: "props", label: "촬영소품" },
+] as const;
 
-const categories = ["all", "dress_acc", "decor", "gift", "invitation", "beauty"];
+type TabId = (typeof tabs)[number]["id"];
 
 const formatPrice = (price: number) => price.toLocaleString() + "원";
 
@@ -39,9 +37,10 @@ const Store = () => {
   const { itemCount } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [featured, setFeatured] = useState<Product[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedTab, setSelectedTab] = useState<TabId>("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<StoreFilters>(initialFilters);
 
   useEffect(() => {
     const fetch = async () => {
@@ -52,21 +51,39 @@ const Store = () => {
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
-      if (selectedCategory !== "all") {
-        query = query.eq("category", selectedCategory) as any;
+      // Tab-based category filter
+      if (selectedTab !== "all") {
+        query = query.eq("category", selectedTab) as any;
+      }
+
+      // Advanced filters
+      if (filters.category) {
+        query = query.eq("category", filters.category) as any;
+      }
+      if (filters.priceRange[0] > 0) {
+        query = query.gte("price", filters.priceRange[0]) as any;
+      }
+      if (filters.priceRange[1] < 500000) {
+        query = query.lte("price", filters.priceRange[1]) as any;
+      }
+      if (filters.keyword) {
+        query = query.ilike("name", `%${filters.keyword}%`) as any;
       }
 
       const { data } = await query;
       setProducts((data || []) as any);
-      if (selectedCategory === "all") {
-        setFeatured(((data || []) as any).filter((p: any) => p.is_featured));
-      }
       setIsLoading(false);
     };
     fetch();
-  }, [selectedCategory]);
+  }, [selectedTab, filters]);
 
-  const handleTabChange = (href: string) => navigate(href);
+  const hasActiveFilters =
+    filters.category !== null ||
+    filters.priceRange[0] > 0 ||
+    filters.priceRange[1] < 500000 ||
+    filters.colors.length > 0 ||
+    filters.sizes.length > 0 ||
+    filters.keyword !== "";
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
@@ -84,21 +101,33 @@ const Store = () => {
           </button>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
-          {categories.map((cat) => (
+        {/* Tabs + Filter button */}
+        <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
+          {tabs.map((tab) => (
             <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
+              key={tab.id}
+              onClick={() => setSelectedTab(tab.id)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedCategory === cat
+                selectedTab === tab.id
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:bg-accent"
               }`}
             >
-              {categoryLabels[cat] || cat}
+              {tab.label}
             </button>
           ))}
+          <button
+            onClick={() => setFilterOpen(true)}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border ${
+              hasActiveFilters
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-border hover:border-primary/50"
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            필터
+            {hasActiveFilters && <span className="ml-0.5 text-[10px]">●</span>}
+          </button>
         </div>
       </header>
 
@@ -158,7 +187,8 @@ const Store = () => {
         )}
       </main>
 
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
+      <StoreFilterSheet open={filterOpen} onOpenChange={setFilterOpen} filters={filters} onApply={setFilters} />
+      <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
     </div>
   );
 };
