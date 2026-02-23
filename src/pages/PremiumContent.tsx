@@ -2,6 +2,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, FileText, BarChart3, Camera, Church, Users, Briefcase, DollarSign, Mic, UserCheck, MessageSquare, ChevronRight, Lock, Download } from "lucide-react";
 import { useState } from "react";
 import BottomNav from "@/components/BottomNav";
+import TutorialOverlay from "@/components/TutorialOverlay";
+import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useSubscription } from "@/hooks/useSubscription";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import EstimateSheet from "@/components/premium/EstimateSheet";
@@ -46,6 +48,7 @@ const PremiumContent = () => {
   const { isPremium } = useSubscription();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [activeSheet, setActiveSheet] = useState<SheetType>(null);
+  const tutorial = usePageTutorial("premium");
 
   const handleItemClick = (sheet: SheetType) => {
     if (!isPremium) {
@@ -57,7 +60,7 @@ const PremiumContent = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header data-tutorial="premium-header" className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-lg font-bold">프리미엄 콘텐츠</h1>
@@ -76,29 +79,10 @@ const PremiumContent = () => {
           </div>
         )}
 
-        {sections.map((section) => (
-          <div key={section.title}>
+        {sections.map((section, sIdx) => (
+          <div key={section.title} data-tutorial={sIdx === 0 ? "premium-reports" : sIdx >= 1 ? "premium-guides" : undefined}>
             <p className="text-xs font-bold text-muted-foreground mb-2 uppercase">{section.title}</p>
-            <div className="bg-card rounded-2xl border border-border overflow-hidden divide-y divide-border">
-              {section.items.map((item) => (
-                <button
-                  key={item.label}
-                  onClick={() => handleItemClick(item.sheet)}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-accent/30 transition-colors"
-                >
-                  <span className="text-lg">{item.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{item.label}</p>
-                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                  </div>
-                  {isPremium ? (
-                    <Download className="w-4 h-4 text-primary" />
-                  ) : (
-                    <Lock className="w-4 h-4 text-muted-foreground" />
-                  )}
-                </button>
-              ))}
-            </div>
+...
           </div>
         ))}
       </main>
@@ -110,6 +94,15 @@ const PremiumContent = () => {
       <GuestMessageSheet open={activeSheet === "guest-message"} onClose={() => setActiveSheet(null)} />
 
       <UpgradeModal isOpen={showUpgrade} onClose={() => setShowUpgrade(false)} trigger="pdf_feature" />
+      <TutorialOverlay
+        isActive={tutorial.isActive}
+        currentStep={tutorial.currentStep}
+        currentStepIndex={tutorial.currentStepIndex}
+        totalSteps={tutorial.totalSteps}
+        onNext={tutorial.nextStep}
+        onPrev={tutorial.prevStep}
+        onSkip={tutorial.skipTutorial}
+      />
       <BottomNav activeTab={location.pathname} onTabChange={(h) => navigate(h)} />
     </div>
   );
