@@ -104,6 +104,19 @@ const Schedule = () => {
   const { isPremium } = useSubscription();
   const [showUpgrade, setShowUpgrade] = useState(false);
 
+  // Calculate D-Day
+  const daysUntilWedding = () => {
+    if (!weddingSettings.wedding_date) return null;
+    const wedding = new Date(weddingSettings.wedding_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  const days = daysUntilWedding();
+  const progress = days !== null && days > 0 ? Math.max(0, Math.min(100, Math.round((1 - days / 365) * 100))) : 0;
+
   // D-Day based premium banners
   const getDDayBanner = () => {
     if (days === null || days <= 0) return null;
@@ -123,18 +136,6 @@ const Schedule = () => {
     navigate(href);
   };
 
-  // Calculate D-Day
-  const daysUntilWedding = () => {
-    if (!weddingSettings.wedding_date) return null;
-    const wedding = new Date(weddingSettings.wedding_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diff = Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return diff;
-  };
-
-  const days = daysUntilWedding();
-  const progress = days !== null && days > 0 ? Math.max(0, Math.min(100, Math.round((1 - days / 365) * 100))) : 0;
 
   // Get phase status based on D-Day
   const getPhaseStatus = (category: string): "completed" | "current" | "upcoming" => {
