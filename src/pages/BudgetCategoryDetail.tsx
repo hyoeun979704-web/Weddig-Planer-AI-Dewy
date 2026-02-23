@@ -9,12 +9,17 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import type { BudgetItem } from "@/hooks/useBudget";
+import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 
 const BudgetCategoryDetail = () => {
   const navigate = useNavigate();
   const { category } = useParams<{ category: string }>();
   const cat = category as BudgetCategory;
-  const { settings, items, summary, regionalAverage, updateItem, deleteItem, addItem } = useBudget();
+  const { defaultRegion } = useDefaultRegion();
+  const profileRegionKey = defaultRegion
+    ? Object.entries(regions).find(([_, r]) => r.label === defaultRegion)?.[0]
+    : undefined;
+  const { settings, items, summary, regionalAverage, updateItem, deleteItem, addItem } = useBudget(profileRegionKey);
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
 
@@ -58,7 +63,7 @@ const BudgetCategoryDetail = () => {
         {/* Regional comparison */}
         {avgVal > 0 && (
           <div className="rounded-xl bg-card border border-border p-4">
-            <p className="text-xs font-semibold text-foreground mb-3">📍 {regions[settings?.region || "seoul"]?.label} 지역 평균 비교</p>
+            <p className="text-xs font-semibold text-foreground mb-3">📍 {regions[settings?.region || profileRegionKey || "seoul"]?.label} 지역 평균 비교</p>
             <div className="flex justify-between text-sm mb-2">
               <span className="text-muted-foreground">내 지출</span>
               <span className="font-bold">{spent}만원</span>

@@ -38,7 +38,7 @@ export interface BudgetSummary {
   paidByTotals: Record<string, number>;
 }
 
-export function useBudget() {
+export function useBudget(profileRegionKey?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -88,7 +88,8 @@ export function useBudget() {
     }, {} as Record<string, number>),
   };
 
-  const regionalAverage = settings ? regionalAverages[settings.region] : regionalAverages.seoul;
+  const effectiveRegion = settings?.region || profileRegionKey || "seoul";
+  const regionalAverage = regionalAverages[effectiveRegion] || regionalAverages.seoul;
 
   const saveSettings = useMutation({
     mutationFn: async (s: Partial<BudgetSettings>) => {

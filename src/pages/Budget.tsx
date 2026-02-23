@@ -26,13 +26,13 @@ const Budget = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem } = useBudget();
+  const { defaultRegion } = useDefaultRegion();
+  const profileRegionKey = regionLabelToKey(defaultRegion);
+  const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem } = useBudget(profileRegionKey);
 
   const [setupOpen, setSetupOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
-  const { defaultRegion } = useDefaultRegion();
-  const profileRegionKey = regionLabelToKey(defaultRegion);
 
   // First visit: auto-open setup
   useEffect(() => {
