@@ -63,6 +63,7 @@ const Premium = lazy(() => import("./pages/Premium"));
 const CoupleVote = lazy(() => import("./pages/CoupleVote"));
 const CoupleVoteDetail = lazy(() => import("./pages/CoupleVoteDetail"));
 const BudgetSplitSimulator = lazy(() => import("./pages/BudgetSplitSimulator"));
+const Tutorial = lazy(() => import("./pages/Tutorial"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
 const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
@@ -153,6 +154,7 @@ const App = () => (
               <Route path="/couple-vote" element={<CoupleVote />} />
               <Route path="/couple-vote/:id" element={<CoupleVoteDetail />} />
               <Route path="/budget/split-simulator" element={<BudgetSplitSimulator />} />
+              <Route path="/tutorial" element={<Tutorial />} />
 
               {/* 기능 1: 커플 일정 공유 + 공유 일기 */}
               <Route path="/couple-diary" element={<CoupleDiary />} />

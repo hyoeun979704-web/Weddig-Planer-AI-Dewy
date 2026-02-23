@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Bell, Heart, ShoppingCart } from "lucide-react";
+import { Search, Bell, Heart, ShoppingCart, HelpCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SearchOverlay from "./SearchOverlay";
 
@@ -24,7 +24,14 @@ const HomeHeader = () => {
           </button>
 
           {/* Right Icons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate("/tutorial")}
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="튜토리얼"
+            >
+              <HelpCircle className="w-[18px] h-[18px] text-muted-foreground" />
+            </button>
             <button 
               onClick={() => setIsSearchOpen(true)}
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"

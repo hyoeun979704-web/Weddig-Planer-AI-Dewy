@@ -7,13 +7,13 @@ interface NavItem {
   href: string;
 }
 
-const navItems: NavItem[] = [
+const navItems: (NavItem & { tutorialId?: string })[] = [
   { icon: Home, label: "홈", href: "/" },
-  { icon: Calendar, label: "스케쥴", href: "/schedule" },
-  { icon: Wallet, label: "예산", href: "/budget" },
-  { icon: Sparkles, label: "AI 플래너", href: "/ai-planner" },
-  { icon: Users, label: "커뮤니티", href: "/community" },
-  { icon: User, label: "마이페이지", href: "/mypage" },
+  { icon: Calendar, label: "스케쥴", href: "/schedule", tutorialId: "nav-schedule" },
+  { icon: Wallet, label: "예산", href: "/budget", tutorialId: "nav-budget" },
+  { icon: Sparkles, label: "AI 플래너", href: "/ai-planner", tutorialId: "nav-ai" },
+  { icon: Users, label: "커뮤니티", href: "/community", tutorialId: "nav-community" },
+  { icon: User, label: "마이페이지", href: "/mypage", tutorialId: "nav-mypage" },
 ];
 
 interface BottomNavProps {
@@ -30,6 +30,7 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
           return (
             <button
               key={item.href}
+              data-tutorial={item.tutorialId}
               onClick={() => onTabChange?.(item.href)}
               className={cn(
                 "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors duration-200",
