@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
-import { ArrowLeft, Plus, Settings, MapPin, AlertTriangle, ChevronRight, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Settings, MapPin, AlertTriangle, ChevronRight, Trash2, Sparkles, Download } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useBudget } from "@/hooks/useBudget";
 import { useAuth } from "@/contexts/AuthContext";
 import { categories, regions, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
 import BudgetSetupSheet from "@/components/budget/BudgetSetupSheet";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
+import BudgetReportSheet from "@/components/premium/BudgetReportSheet";
+import UpgradeModal from "@/components/premium/UpgradeModal";
+import { useSubscription } from "@/hooks/useSubscription";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
@@ -33,6 +36,9 @@ const Budget = () => {
   const [setupOpen, setSetupOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const { isPremium } = useSubscription();
 
   // First visit: auto-open setup
   useEffect(() => {
@@ -176,6 +182,32 @@ const Budget = () => {
           </div>
         </div>
 
+        {/* Premium Report Banner */}
+        <button
+          onClick={() => isPremium ? setReportOpen(true) : setUpgradeOpen(true)}
+          className="w-full rounded-xl bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20 p-4 flex items-center gap-3"
+        >
+          {isPremium ? (
+            <>
+              <Download className="w-6 h-6 text-primary flex-shrink-0" />
+              <div className="flex-1 text-left">
+                <p className="text-sm font-bold text-foreground">예산 분석 리포트</p>
+                <p className="text-xs text-muted-foreground">현재 지출 데이터 기반 PDF 다운로드</p>
+              </div>
+              <span className="text-xs font-medium text-primary">PDF 받기</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-6 h-6 text-primary flex-shrink-0" />
+              <div className="flex-1 text-left">
+                <p className="text-sm font-bold text-foreground">📊 예산 분석 리포트 PDF로 받아보세요</p>
+                <p className="text-xs text-muted-foreground">프리미엄 전용 기능</p>
+              </div>
+              <span className="text-xs font-medium text-primary">✨ 프리미엄</span>
+            </>
+          )}
+        </button>
+
         {/* Recent items */}
         <div className="rounded-xl bg-card border border-border p-4">
           <div className="flex items-center justify-between mb-3">
@@ -268,6 +300,9 @@ const Budget = () => {
           }
         }}
       />
+
+      <BudgetReportSheet open={reportOpen} onClose={() => setReportOpen(false)} />
+      <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} trigger="pdf_feature" />
 
       <BottomNav activeTab={location.pathname} onTabChange={href => navigate(href)} />
     </div>
