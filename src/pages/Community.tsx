@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import TutorialOverlay from "@/components/TutorialOverlay";
+import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useQuery } from "@tanstack/react-query";
 import { 
   MessageSquare, 
@@ -38,6 +40,7 @@ const Community = () => {
   const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const tutorial = usePageTutorial("community");
 
   // Fetch posts from database
   const { data: posts = [], isLoading } = useQuery({
@@ -117,7 +120,7 @@ const Community = () => {
       />
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header data-tutorial="community-header" className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">커뮤니티</h1>
           <div className="flex items-center gap-2">
@@ -134,6 +137,7 @@ const Community = () => {
               <Search className="w-5 h-5 text-muted-foreground" />
             </button>
             <button 
+              data-tutorial="community-write"
               onClick={handleWriteClick}
               className="p-2 hover:bg-muted rounded-full transition-colors"
             >
@@ -143,7 +147,7 @@ const Community = () => {
         </div>
         
         {/* Category Tabs */}
-        <div className="flex overflow-x-auto scrollbar-hide px-4 pb-3 gap-2">
+        <div data-tutorial="community-categories" className="flex overflow-x-auto scrollbar-hide px-4 pb-3 gap-2">
           {categories.map((category) => (
             <button
               key={category}
@@ -276,6 +280,18 @@ const Community = () => {
 
       {/* Bottom Navigation */}
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
+
+      {tutorial.isActive && tutorial.currentStep && (
+        <TutorialOverlay
+          isActive={tutorial.isActive}
+          currentStep={tutorial.currentStep}
+          currentStepIndex={tutorial.currentStepIndex}
+          totalSteps={tutorial.totalSteps}
+          onNext={tutorial.nextStep}
+          onPrev={tutorial.prevStep}
+          onSkip={tutorial.skipTutorial}
+        />
+      )}
     </div>
   );
 };

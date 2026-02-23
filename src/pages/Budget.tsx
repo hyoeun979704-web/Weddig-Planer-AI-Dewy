@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import TutorialOverlay from "@/components/TutorialOverlay";
+import { usePageTutorial } from "@/hooks/usePageTutorial";
 import BottomNav from "@/components/BottomNav";
 import { ArrowLeft, Plus, Settings, MapPin, AlertTriangle, ChevronRight, Trash2, Sparkles, Download } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -38,6 +40,7 @@ const Budget = () => {
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const tutorial = usePageTutorial("budget");
   const { isPremium } = useSubscription();
 
   // First visit: auto-open setup
@@ -86,13 +89,13 @@ const Budget = () => {
         <div className="flex items-center justify-between px-4 h-14">
           <button onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5 text-foreground" /></button>
           <h1 className="text-base font-bold text-foreground">웨딩 예산</h1>
-          <button onClick={() => setSetupOpen(true)}><Settings className="w-5 h-5 text-foreground" /></button>
+          <button data-tutorial="budget-settings" onClick={() => setSetupOpen(true)}><Settings className="w-5 h-5 text-foreground" /></button>
         </div>
       </div>
 
       <div className="px-4 py-4 pb-36 space-y-4">
         {/* Summary Card */}
-        <div className="rounded-xl bg-card border border-border p-4">
+        <div data-tutorial="budget-summary" className="rounded-xl bg-card border border-border p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-1.5">
               <span className="text-lg font-bold text-foreground">
@@ -141,7 +144,7 @@ const Budget = () => {
         )}
 
         {/* Category progress */}
-        <div className="rounded-xl bg-card border border-border p-4">
+        <div data-tutorial="budget-categories" className="rounded-xl bg-card border border-border p-4">
           <p className="text-xs font-semibold text-foreground mb-3">카테고리별 현황</p>
           <div className="space-y-3">
             {categoryKeys.map(key => {
@@ -265,7 +268,7 @@ const Budget = () => {
       </div>
 
       {/* Fixed bottom button */}
-      <div className="fixed bottom-20 left-0 right-0 max-w-[430px] mx-auto px-4 z-30">
+      <div data-tutorial="budget-add" className="fixed bottom-20 left-0 right-0 max-w-[430px] mx-auto px-4 z-30">
         <button onClick={() => { setEditItem(null); setAddOpen(true); }}
           className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold text-sm shadow-lg">
           + 지출 기록하기
@@ -305,6 +308,18 @@ const Budget = () => {
       <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} trigger="pdf_feature" />
 
       <BottomNav activeTab={location.pathname} onTabChange={href => navigate(href)} />
+
+      {tutorial.isActive && tutorial.currentStep && (
+        <TutorialOverlay
+          isActive={tutorial.isActive}
+          currentStep={tutorial.currentStep}
+          currentStepIndex={tutorial.currentStepIndex}
+          totalSteps={tutorial.totalSteps}
+          onNext={tutorial.nextStep}
+          onPrev={tutorial.prevStep}
+          onSkip={tutorial.skipTutorial}
+        />
+      )}
     </div>
   );
 };

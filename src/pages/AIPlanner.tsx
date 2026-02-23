@@ -1,7 +1,9 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Sparkles, Send, RotateCcw } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import BottomNav from "@/components/BottomNav";
+import TutorialOverlay from "@/components/TutorialOverlay";
+import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
 import DailyUsageBadge from "@/components/premium/DailyUsageBadge";
 import UpgradeModal from "@/components/premium/UpgradeModal";
@@ -19,6 +21,7 @@ const AIPlanner = () => {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, sendMessage, clearMessages, showUpgradeModal, setShowUpgradeModal } = useAIPlanner();
+  const tutorial = usePageTutorial("ai-planner");
 
   const handleTabChange = (href: string) => {
     navigate(href);
@@ -49,7 +52,7 @@ const AIPlanner = () => {
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header data-tutorial="ai-header" className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="p-1">
@@ -100,7 +103,7 @@ const AIPlanner = () => {
             </div>
 
             {/* Suggested Questions */}
-            <div className="mb-6">
+            <div data-tutorial="ai-suggestions" className="mb-6">
               <p className="text-xs text-muted-foreground mb-3 px-1">이런 질문은 어떠세요?</p>
               <div className="flex flex-wrap gap-2">
                 {suggestedQuestions.map((question, index) => (
@@ -160,7 +163,7 @@ const AIPlanner = () => {
       </main>
 
       {/* Input Area */}
-      <div className="fixed bottom-16 left-0 right-0 bg-background border-t border-border p-4">
+      <div data-tutorial="ai-input" className="fixed bottom-16 left-0 right-0 bg-background border-t border-border p-4">
         <div className="max-w-[430px] mx-auto">
           <div className="flex items-center gap-2 bg-muted rounded-2xl px-4 py-2">
             <input
@@ -192,6 +195,18 @@ const AIPlanner = () => {
 
       {/* Bottom Navigation */}
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
+
+      {tutorial.isActive && tutorial.currentStep && (
+        <TutorialOverlay
+          isActive={tutorial.isActive}
+          currentStep={tutorial.currentStep}
+          currentStepIndex={tutorial.currentStepIndex}
+          totalSteps={tutorial.totalSteps}
+          onNext={tutorial.nextStep}
+          onPrev={tutorial.prevStep}
+          onSkip={tutorial.skipTutorial}
+        />
+      )}
     </div>
   );
 };

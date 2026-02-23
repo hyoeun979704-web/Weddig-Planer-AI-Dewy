@@ -6,9 +6,8 @@ import BottomNav from "@/components/BottomNav";
 const Tutorial = () => {
   const navigate = useNavigate();
 
-  const handleStartGuide = (guideId: string) => {
-    // Navigate home and trigger tutorial via query param
-    navigate(`/?tutorial=${guideId}`);
+  const handleStartGuide = (guide: typeof FEATURE_GUIDES[number]) => {
+    navigate(`${guide.route}?tutorial=${guide.id}`);
   };
 
   return (
@@ -31,7 +30,7 @@ const Tutorial = () => {
         {FEATURE_GUIDES.map((guide) => (
           <button
             key={guide.id}
-            onClick={() => handleStartGuide(guide.id)}
+            onClick={() => handleStartGuide(guide)}
             className="w-full flex items-center gap-4 p-4 bg-card rounded-2xl border border-border hover:border-primary/30 hover:shadow-sm transition-all text-left group"
           >
             <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center text-2xl shrink-0">

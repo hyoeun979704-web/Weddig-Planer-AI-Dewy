@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useBudget } from "@/hooks/useBudget";
+import TutorialOverlay from "@/components/TutorialOverlay";
+import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { 
   Calendar, 
   CheckCircle2, 
@@ -103,6 +105,7 @@ const Schedule = () => {
   const { settings: budgetSettings, summary: budgetSummary } = useBudget();
   const { isPremium } = useSubscription();
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const tutorial = usePageTutorial("schedule");
 
   // Calculate D-Day
   const daysUntilWedding = () => {
@@ -202,6 +205,7 @@ const Schedule = () => {
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">웨딩 스케쥴</h1>
           <button 
+            data-tutorial="schedule-add"
             onClick={() => navigate("/my-schedule")}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium"
           >
@@ -214,7 +218,7 @@ const Schedule = () => {
       {/* Main Content */}
       <main className="pb-20 px-4 py-4">
         {/* Couple Section */}
-        <div className="mb-6">
+        <div className="mb-6" data-tutorial="schedule-couple">
           <CoupleInvite />
         </div>
       
@@ -290,6 +294,7 @@ const Schedule = () => {
 
         {/* Progress Summary - Dynamic */}
         <div
+          data-tutorial="schedule-dday"
           className="bg-gradient-to-br from-primary/10 via-accent to-background rounded-2xl p-4 mb-6 cursor-pointer"
           onClick={() => navigate("/my-schedule")}
         >
@@ -359,7 +364,7 @@ const Schedule = () => {
         </div>
 
         {/* Timeline */}
-        <div>
+        <div data-tutorial="schedule-timeline">
           <h3 className="font-bold text-foreground mb-4">웨딩 타임라인</h3>
           <div className="space-y-4">
             {timelinePhases.map((phase, index) => {
@@ -445,6 +450,18 @@ const Schedule = () => {
 
       {/* Bottom Navigation */}
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
+
+      {tutorial.isActive && tutorial.currentStep && (
+        <TutorialOverlay
+          isActive={tutorial.isActive}
+          currentStep={tutorial.currentStep}
+          currentStepIndex={tutorial.currentStepIndex}
+          totalSteps={tutorial.totalSteps}
+          onNext={tutorial.nextStep}
+          onPrev={tutorial.prevStep}
+          onSkip={tutorial.skipTutorial}
+        />
+      )}
     </div>
   );
 };
