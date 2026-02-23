@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Bell, User } from "lucide-react";
+import { Search, Bell, Heart, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SearchOverlay from "./SearchOverlay";
 
@@ -39,10 +39,16 @@ const HomeHeader = () => {
               <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full" />
             </button>
             <button 
-              onClick={() => navigate("/mypage")}
+              onClick={() => navigate("/favorites")}
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
             >
-              <User className="w-5 h-5 text-muted-foreground" />
+              <Heart className="w-5 h-5 text-muted-foreground" />
+            </button>
+            <button 
+              onClick={() => navigate("/cart")}
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            >
+              <ShoppingCart className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
         </div>
