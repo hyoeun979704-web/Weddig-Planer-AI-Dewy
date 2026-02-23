@@ -34,6 +34,8 @@ const Reviews = lazy(() => import("./pages/Reviews"));
 const Gallery = lazy(() => import("./pages/Gallery"));
 const AIPlanner = lazy(() => import("./pages/AIPlanner"));
 const Budget = lazy(() => import("./pages/Budget"));
+const BudgetHistory = lazy(() => import("./pages/BudgetHistory"));
+const BudgetCategoryDetail = lazy(() => import("./pages/BudgetCategoryDetail"));
 const Schedule = lazy(() => import("./pages/Schedule"));
 const AIStudio = lazy(() => import("./pages/AIStudio"));
 const AIStudioService = lazy(() => import("./pages/AIStudioService"));
@@ -119,6 +121,8 @@ const App = () => (
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/ai-planner" element={<AIPlanner />} />
               <Route path="/budget" element={<Budget />} />
+              <Route path="/budget/history" element={<BudgetHistory />} />
+              <Route path="/budget/category/:category" element={<BudgetCategoryDetail />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/ai-studio/:service" element={<AIStudioService />} />

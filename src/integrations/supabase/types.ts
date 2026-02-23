@@ -62,6 +62,84 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_items: {
+        Row: {
+          amount: number
+          balance_amount: number | null
+          balance_due_date: string | null
+          category: string
+          created_at: string
+          has_balance: boolean | null
+          id: string
+          item_date: string | null
+          memo: string | null
+          paid_by: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_amount?: number | null
+          balance_due_date?: string | null
+          category: string
+          created_at?: string
+          has_balance?: boolean | null
+          id?: string
+          item_date?: string | null
+          memo?: string | null
+          paid_by?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_amount?: number | null
+          balance_due_date?: string | null
+          category?: string
+          created_at?: string
+          has_balance?: boolean | null
+          id?: string
+          item_date?: string | null
+          memo?: string | null
+          paid_by?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      budget_settings: {
+        Row: {
+          category_budgets: Json | null
+          created_at: string
+          guest_count: number | null
+          id: string
+          region: string
+          total_budget: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_budgets?: Json | null
+          created_at?: string
+          guest_count?: number | null
+          id?: string
+          region?: string
+          total_budget?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_budgets?: Json | null
+          created_at?: string
+          guest_count?: number | null
+          id?: string
+          region?: string
+          total_budget?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_comment_likes: {
         Row: {
           comment_id: string
