@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Tag, Star, ChevronRight, SlidersHorizontal, Heart } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -6,6 +6,7 @@ import { usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { Skeleton } from "@/components/ui/skeleton";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import DealFilterSheet, { DealFilters, defaultFilters } from "@/components/deals/DealFilterSheet";
+import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 
 const mainCategories = [
   { key: "all", label: "전체" },
@@ -21,6 +22,13 @@ const Deals = () => {
   const [sortMode, setSortMode] = useState<SortMode>("popular");
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<DealFilters>(defaultFilters);
+  const { defaultRegion, isLoaded } = useDefaultRegion();
+
+  useEffect(() => {
+    if (isLoaded && defaultRegion) {
+      setFilters(prev => ({ ...prev, region: defaultRegion }));
+    }
+  }, [isLoaded]);
 
   const { deals, featured, isLoading } = usePartnerDeals(selectedCategory);
 

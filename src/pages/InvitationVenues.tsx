@@ -6,14 +6,16 @@ import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import CategoryFilterBar from "@/components/CategoryFilterBar";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { useCategoryData, CategoryItem } from "@/hooks/useCategoryData";
+import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 
 const InvitationVenues = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const hasActiveFilters = useCategoryFilterStore((state) => state.hasActiveFilters);
-  const resetFilters = useCategoryFilterStore((state) => state.resetFilters);
+  const initWithRegion = useCategoryFilterStore((state) => state.initWithRegion);
+  const { defaultRegion, isLoaded } = useDefaultRegion();
 
-  useEffect(() => { resetFilters(); }, []);
+  useEffect(() => { if (isLoaded) initWithRegion(defaultRegion); }, [isLoaded]);
 
   const { data, isLoading } = useCategoryData('invitation_venues');
   const venues = data?.pages.flatMap(page => page.data) ?? [];
