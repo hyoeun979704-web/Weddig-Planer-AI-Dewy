@@ -312,6 +312,57 @@ export type Database = {
         }
         Relationships: []
       }
+      couple_votes: {
+        Row: {
+          ai_suggestion: string | null
+          created_at: string
+          id: string
+          my_pick: string | null
+          my_reason: string | null
+          option_a: string
+          option_b: string
+          partner_pick: string | null
+          partner_reason: string | null
+          partner_user_id: string | null
+          status: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_suggestion?: string | null
+          created_at?: string
+          id?: string
+          my_pick?: string | null
+          my_reason?: string | null
+          option_a: string
+          option_b: string
+          partner_pick?: string | null
+          partner_reason?: string | null
+          partner_user_id?: string | null
+          status?: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_suggestion?: string | null
+          created_at?: string
+          id?: string
+          my_pick?: string | null
+          my_reason?: string | null
+          option_a?: string
+          option_b?: string
+          partner_pick?: string | null
+          partner_reason?: string | null
+          partner_user_id?: string | null
+          status?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string

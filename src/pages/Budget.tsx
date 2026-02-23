@@ -117,7 +117,10 @@ const Budget = () => {
         {/* Paid-by bar */}
         {paidTotal > 0 && (
           <div className="rounded-xl bg-card border border-border p-4">
-            <p className="text-xs font-semibold text-foreground mb-2">양가 분담 현황</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-foreground">양가 분담 현황</p>
+              <button onClick={() => navigate("/budget/split-simulator")} className="text-[10px] text-primary font-bold">시뮬레이션</button>
+            </div>
             <div className="h-4 rounded-full overflow-hidden flex bg-muted">
               {paidShared > 0 && <div className="bg-gray-400 h-full" style={{ width: `${(paidShared / paidTotal) * 100}%` }} />}
               {paidGroom > 0 && <div className="h-full" style={{ width: `${(paidGroom / paidTotal) * 100}%`, backgroundColor: "#3B82F6" }} />}
