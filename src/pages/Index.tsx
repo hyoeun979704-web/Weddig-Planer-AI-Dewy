@@ -16,15 +16,10 @@ const Index = () => {
 
   const handleCategoryTabChange = (tab: CategoryTab) => {
     const tabRoutes: Record<CategoryTab, string> = {
-      "home": "/",
-      "wedding-hall": "/venues",
-      "sdm": "/studios",
-      "honeymoon-gifts": "/honeymoon-gifts",
-      "honeymoon": "/honeymoon",
-      "appliances": "/appliances",
-      "suit": "/suit",
-      "hanbok": "/hanbok",
-      "invitation": "/invitation-venues",
+      home: "/",
+      events: "/deals",
+      shopping: "/store",
+      influencers: "/influencers",
     };
     navigate(tabRoutes[tab]);
   };

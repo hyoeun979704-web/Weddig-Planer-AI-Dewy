@@ -1,5 +1,6 @@
 import { CategoryTab } from "./CategoryTabBar";
 import TabHeroContent from "./TabHeroContent";
+import HomeCategoryGrid from "./HomeCategoryGrid";
 import RecommendedSection from "./RecommendedSection";
 import StudioGallery from "./StudioGallery";
 import MagazineSection from "./MagazineSection";
@@ -12,21 +13,17 @@ interface TabContentProps {
 const TabContent = ({ activeTab }: TabContentProps) => {
   return (
     <div className="animate-fade-in">
-      {/* Tab-specific Hero Section */}
       <TabHeroContent activeTab={activeTab} />
 
-      {/* Recommended Section - dynamic based on tab */}
+      {/* Show category grid on home tab */}
+      {activeTab === "home" && <HomeCategoryGrid />}
+
       <RecommendedSection activeTab={activeTab} />
 
-      {/* Gallery Section - shown for relevant tabs */}
-      {(activeTab === "wedding-hall" || activeTab === "sdm") && (
-        <StudioGallery activeTab={activeTab} />
-      )}
+      {activeTab === "home" && <StudioGallery />}
 
-      {/* Magazine Section */}
       <MagazineSection activeTab={activeTab} />
 
-      {/* Review Section */}
       <ReviewSection activeTab={activeTab} />
     </div>
   );

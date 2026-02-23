@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
-import { CategoryTab } from "./CategoryTabBar";
 import { useRecommendedItems } from "@/hooks/useRecommendedItems";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -28,37 +27,19 @@ const GallerySkeleton = () => (
   <Skeleton className="aspect-[3/4] rounded-xl w-full" />
 );
 
-const galleryMeta: Record<string, { title: string; subtitle: string; galleryPath: string }> = {
-  "wedding-hall": {
-    title: "실시간 웨딩홀 갤러리",
-    subtitle: "실제 예식장 사진",
-    galleryPath: "/gallery",
-  },
-  "sdm": {
-    title: "실시간 스드메 화보",
-    subtitle: "스튜디오·드레스·메이크업",
-    galleryPath: "/gallery",
-  },
-};
-
-interface StudioGalleryProps {
-  activeTab?: CategoryTab;
-}
-
-const StudioGallery = ({ activeTab = "sdm" }: StudioGalleryProps) => {
+const StudioGallery = () => {
   const navigate = useNavigate();
-  const meta = galleryMeta[activeTab] || galleryMeta["sdm"];
-  const { data: items, isLoading } = useRecommendedItems(activeTab);
+  const { data: items, isLoading } = useRecommendedItems("home");
 
   return (
     <section className="py-6 bg-muted/30">
       <div className="flex items-center justify-between px-4 mb-4">
         <div>
-          <h2 className="text-lg font-bold text-foreground">{meta.title}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{meta.subtitle}</p>
+          <h2 className="text-lg font-bold text-foreground">실시간 웨딩 갤러리</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">실제 예식 사진</p>
         </div>
         <button 
-          onClick={() => navigate(meta.galleryPath)}
+          onClick={() => navigate("/gallery")}
           className="flex items-center gap-1 text-sm text-primary font-medium"
         >
           더보기
