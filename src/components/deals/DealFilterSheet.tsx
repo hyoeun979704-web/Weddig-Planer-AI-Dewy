@@ -20,7 +20,10 @@ const defaultFilters: DealFilters = {
 };
 
 const filterCategories = ["드레스", "메이크업", "예물", "인테리어", "기타"];
-const regions = ["서울", "경기", "인천", "부산", "대구", "대전", "광주", "제주"];
+const regions = [
+  "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "세종",
+  "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"
+];
 
 interface Props {
   open: boolean;
