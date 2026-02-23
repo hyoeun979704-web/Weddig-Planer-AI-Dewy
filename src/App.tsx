@@ -58,6 +58,7 @@ const Settings = lazy(() => import("./pages/Settings"));
 const InvitationVenues = lazy(() => import("./pages/InvitationVenues"));
 const InvitationVenueDetail = lazy(() => import("./pages/InvitationVenueDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const PremiumContent = lazy(() => import("./pages/PremiumContent"));
 const Premium = lazy(() => import("./pages/Premium"));
 const CoupleVote = lazy(() => import("./pages/CoupleVote"));
 const CoupleVoteDetail = lazy(() => import("./pages/CoupleVoteDetail"));
@@ -171,6 +172,9 @@ const App = () => (
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-complete/:id" element={<OrderComplete />} />
+
+              {/* 프리미엄 콘텐츠 */}
+              <Route path="/premium/content" element={<PremiumContent />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

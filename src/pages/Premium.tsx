@@ -108,6 +108,12 @@ const Premium = () => {
               <p className="text-sm text-muted-foreground">
                 {isTrialActive ? `체험 종료까지 ${trialDaysLeft}일 남았어요` : `만료일: ${expiresLabel}`}
               </p>
+              <button
+                onClick={() => navigate("/premium/content")}
+                className="mt-3 w-full py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold"
+              >
+                📄 프리미엄 콘텐츠 바로가기
+              </button>
             </div>
           ) : (
             <div className="p-5 bg-muted rounded-2xl border border-border">

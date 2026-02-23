@@ -12,7 +12,8 @@ import {
   Plane,
   Home as HomeIcon,
   Loader2,
-  Plus
+  Plus,
+  Sparkles
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
@@ -21,6 +22,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import CoupleInvite from "@/components/schedule/CoupleInvite";
 import { useCoupleLink } from "@/hooks/useCoupleLink";
 import { BookOpen } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
+import UpgradeModal from "@/components/premium/UpgradeModal";
 
 interface TimelinePhase {
   id: string;
@@ -98,6 +101,24 @@ const Schedule = () => {
 
   const [selectedPhase, setSelectedPhase] = useState<TimelinePhase | null>(null);
   const { settings: budgetSettings, summary: budgetSummary } = useBudget();
+  const { isPremium } = useSubscription();
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  // D-Day based premium banners
+  const getDDayBanner = () => {
+    if (days === null || days <= 0) return null;
+    const banners = [
+      { min: 120, max: 180, msg: "📋 업체 비교 견적서 만들어보세요", route: "/premium/content" },
+      { min: 60, max: 90, msg: "📸 스냅 촬영 타임라인 준비할 때예요!", route: "/premium/content" },
+      { min: 30, max: 60, msg: "📊 예산 중간 점검 리포트를 확인하세요", route: "/premium/content" },
+      { min: 14, max: 30, msg: "💒 본식 타임라인 + 스태프 안내서를 준비하세요", route: "/premium/content" },
+      { min: 7, max: 14, msg: "👜 가방순이·축의대 안내서 전달하셨나요?", route: "/premium/content" },
+      { min: 1, max: 7, msg: "📱 하객에게 리마인드 메시지를 보내세요", route: "/premium/content" },
+    ];
+    return banners.find(b => days >= b.min && days <= b.max) || null;
+  };
+
+  const ddayBanner = getDDayBanner();
   const handleTabChange = (href: string) => {
     navigate(href);
   };
@@ -210,6 +231,26 @@ const Schedule = () => {
               <p className="text-xs text-muted-foreground">함께 쓰는 웨딩 준비 일기</p>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+        )}
+
+        {/* Budget Mini Widget */}
+        {ddayBanner && (
+          <button
+            onClick={() => {
+              if (isPremium) navigate(ddayBanner.route);
+              else setShowUpgrade(true);
+            }}
+            className="w-full mb-6 p-4 bg-gradient-to-r from-primary/15 to-primary/5 rounded-2xl border border-primary/20 flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-medium text-foreground">{ddayBanner.msg}</p>
+              <p className="text-xs text-muted-foreground">{isPremium ? "탭하여 시작하기" : "프리미엄 전용"}</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-primary" />
           </button>
         )}
 
@@ -398,6 +439,8 @@ const Schedule = () => {
         onUpdateItem={updateScheduleItem}
         weddingDate={weddingSettings.wedding_date}
       />
+
+      <UpgradeModal isOpen={showUpgrade} onClose={() => setShowUpgrade(false)} trigger="pdf_feature" />
 
       {/* Bottom Navigation */}
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
