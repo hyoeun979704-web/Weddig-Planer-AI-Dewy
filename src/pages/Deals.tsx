@@ -1,24 +1,49 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Tag, Star, ChevronRight } from "lucide-react";
+import { ArrowLeft, Tag, Star, ChevronRight, SlidersHorizontal } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import { usePartnerDeals, useDealCategoryLabels } from "@/hooks/usePartnerDeals";
+import { usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { Skeleton } from "@/components/ui/skeleton";
 import SortToggle, { SortMode } from "@/components/SortToggle";
+import DealFilterSheet, { DealFilters, defaultFilters } from "@/components/deals/DealFilterSheet";
+
+const mainCategories = [
+  { key: "all", label: "전체" },
+  { key: "venue", label: "웨딩홀" },
+  { key: "studio", label: "스드메" },
+  { key: "honeymoon", label: "허니문" },
+];
 
 const Deals = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortMode, setSortMode] = useState<SortMode>("popular");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<DealFilters>(defaultFilters);
+
   const { deals, featured, isLoading } = usePartnerDeals(selectedCategory);
 
-  const handleTabChange = (href: string) => navigate(href);
-  const categories = Object.entries(useDealCategoryLabels());
+  const hasActiveFilters = !!(filters.category || filters.region || filters.maxPrice || filters.keyword);
 
-  const sorted = [...deals].sort((a, b) => {
+  const handleTabChange = (href: string) => navigate(href);
+
+  // Apply filters
+  let filtered = [...deals];
+  if (filters.keyword) {
+    const kw = filters.keyword.toLowerCase();
+    filtered = filtered.filter(
+      (d) => d.title.toLowerCase().includes(kw) || d.partner_name.toLowerCase().includes(kw)
+    );
+  }
+  if (filters.maxPrice) {
+    filtered = filtered.filter((d) => (d.deal_price ?? 0) <= filters.maxPrice!);
+  }
+
+  // Sort
+  const sorted = filtered.sort((a, b) => {
     if (sortMode === "popular") return b.view_count - a.view_count;
-    return 0; // already ordered by display_order
+    return 0;
   });
 
   return (
@@ -35,7 +60,7 @@ const Deals = () => {
       {/* Category Filter */}
       <div className="px-4 py-3 overflow-x-auto">
         <div className="flex gap-2">
-          {categories.map(([key, label]) => (
+          {mainCategories.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setSelectedCategory(key)}
@@ -48,6 +73,16 @@ const Deals = () => {
               {label}
             </button>
           ))}
+          <button
+            onClick={() => setFilterOpen(true)}
+            className="relative px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors bg-muted text-muted-foreground flex items-center gap-1"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            필터
+            {hasActiveFilters && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full" />
+            )}
+          </button>
         </div>
       </div>
 
@@ -127,6 +162,7 @@ const Deals = () => {
         )}
       </main>
 
+      <DealFilterSheet open={filterOpen} onOpenChange={setFilterOpen} filters={filters} onApply={setFilters} />
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
     </div>
   );
