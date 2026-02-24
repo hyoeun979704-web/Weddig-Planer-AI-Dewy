@@ -59,18 +59,14 @@ const Premium = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("yearly");
 
-  const handleStartTrial = async () => {
+  const handleStartTrial = () => {
     if (!user) { navigate("/auth"); return; }
-    const ok = await startTrial();
-    if (ok) toast.success("🎉 무료 체험이 시작되었습니다!");
-    else toast.error("체험 시작에 실패했습니다");
+    navigate("/premium/subscribe?type=trial");
   };
 
-  const handleSubscribe = async () => {
+  const handleSubscribe = () => {
     if (!user) { navigate("/auth"); return; }
-    const ok = await subscribe(selectedPlan);
-    if (ok) toast.success("구독이 완료되었습니다!");
-    else toast.error("구독에 실패했습니다");
+    navigate(`/premium/subscribe?type=${selectedPlan}`);
   };
 
   const handleCancel = async () => {

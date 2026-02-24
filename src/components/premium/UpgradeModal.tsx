@@ -1,6 +1,5 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Sparkles, Check, X } from "lucide-react";
-import { useSubscription } from "@/hooks/useSubscription";
+import { Sparkles, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,24 +26,18 @@ const benefits = [
 ];
 
 const UpgradeModal = ({ isOpen, onClose, trigger = "manual" }: UpgradeModalProps) => {
-  const { startTrial } = useSubscription();
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleStartTrial = async () => {
+  const handleStartTrial = () => {
     if (!user) {
       toast.error("로그인이 필요합니다");
       navigate("/auth");
       onClose();
       return;
     }
-    const ok = await startTrial();
-    if (ok) {
-      toast.success("🎉 무료 체험이 시작되었습니다!");
-      onClose();
-    } else {
-      toast.error("체험 시작에 실패했습니다");
-    }
+    onClose();
+    navigate("/premium/subscribe?type=trial");
   };
 
   return (

@@ -2,3 +2,6 @@ project_id = "bkbdoswqkemctcrcevxz"
 
 [functions.confirm-payment]
 verify_jwt = false
+
+[functions.confirm-subscription-payment]
+verify_jwt = false
