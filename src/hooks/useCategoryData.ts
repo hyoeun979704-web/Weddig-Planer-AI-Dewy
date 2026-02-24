@@ -31,9 +31,9 @@ interface CategoryConfig {
 const categoryConfigs: Record<CategoryType, CategoryConfig> = {
   venues: {
     tableName: 'venues',
-    arrayField1: 'hall_types',
-    arrayField2: 'meal_options',
-    arrayField3: 'event_options',
+    arrayField1: '',
+    arrayField2: '',
+    arrayField3: '',
     locationField: 'address',
   },
   studios: {
@@ -105,10 +105,18 @@ async function fetchCategoryItems(
   
   let query = supabase
     .from(tableName)
-    .select('*', { count: 'exact' })
-    .order('is_partner', { ascending: false })
-    .order('rating', { ascending: false })
-    .range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
+    .select('*', { count: 'exact' });
+
+  // venues 테이블에는 is_partner, rating(numeric) 정렬 칼럼이 다름
+  if (category !== 'venues') {
+    query = query
+      .order('is_partner', { ascending: false })
+      .order('rating', { ascending: false });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
+
+  query = query.range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
 
   // Apply region filter
   if (filters.region) {

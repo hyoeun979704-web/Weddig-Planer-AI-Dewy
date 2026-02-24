@@ -25,7 +25,7 @@ const tabConfigMap: Record<CategoryTab, TabConfig> = {
   home: {
     table: "venues",
     locationField: "address",
-    priceField: "price_per_person",
+    priceField: "price_min",
     priceType: "number",
     detailPath: "/venues",
     title: "맞춤 웨딩홀 추천",
@@ -33,7 +33,7 @@ const tabConfigMap: Record<CategoryTab, TabConfig> = {
   events: {
     table: "venues",
     locationField: "address",
-    priceField: "price_per_person",
+    priceField: "price_min",
     priceType: "number",
     detailPath: "/deals",
     title: "이벤트 추천",
@@ -74,22 +74,30 @@ export const useRecommendedItems = (activeTab: CategoryTab) => {
   return useQuery({
     queryKey: ["recommended", activeTab],
     queryFn: async (): Promise<RecommendedItem[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from(config.table as any)
-        .select("*")
-        .order("is_partner", { ascending: false })
-        .order("rating", { ascending: false })
-        .limit(6);
+        .select("*");
+
+      // venues 테이블에는 is_partner 칼럼이 없음
+      if (config.table === "venues") {
+        query = query.order("created_at", { ascending: false });
+      } else {
+        query = query
+          .order("is_partner", { ascending: false })
+          .order("rating", { ascending: false });
+      }
+
+      const { data, error } = await query.limit(6);
 
       if (error) throw error;
       if (!data) return [];
 
       return (data as any[]).map((item) => ({
-        id: item.id,
+        id: item.id || String(item.number),
         name: item.name,
         location: item[config.locationField] || "",
         priceRange: formatPrice(item[config.priceField], config.priceType),
-        rating: item.rating || 4.0,
+        rating: parseFloat(item.rating) || 4.0,
         reviewCount: item.review_count || 0,
         imageUrl: item.thumbnail_url || "/placeholder.svg",
       }));
