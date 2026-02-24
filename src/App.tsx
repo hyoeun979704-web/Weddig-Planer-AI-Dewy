@@ -84,6 +84,9 @@ const Checkout = lazy(() => import("./pages/Checkout"));
 const OrderComplete = lazy(() => import("./pages/OrderComplete"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentFail = lazy(() => import("./pages/PaymentFail"));
+const SubscriptionCheckout = lazy(() => import("./pages/SubscriptionCheckout"));
+const SubscriptionPaymentSuccess = lazy(() => import("./pages/SubscriptionPaymentSuccess"));
+const SubscriptionPaymentFail = lazy(() => import("./pages/SubscriptionPaymentFail"));
 
 const queryClient = new QueryClient();
 
@@ -178,6 +181,9 @@ const App = () => (
               <Route path="/order-complete/:id" element={<OrderComplete />} />
               <Route path="/payment/success" element={<PaymentSuccess />} />
               <Route path="/payment/fail" element={<PaymentFail />} />
+              <Route path="/premium/subscribe" element={<SubscriptionCheckout />} />
+              <Route path="/premium/payment/success" element={<SubscriptionPaymentSuccess />} />
+              <Route path="/premium/payment/fail" element={<SubscriptionPaymentFail />} />
 
               {/* 프리미엄 콘텐츠 */}
               <Route path="/premium/content" element={<PremiumContent />} />
