@@ -82,6 +82,8 @@ const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const Cart = lazy(() => import("./pages/Cart"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const OrderComplete = lazy(() => import("./pages/OrderComplete"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const PaymentFail = lazy(() => import("./pages/PaymentFail"));
 
 const queryClient = new QueryClient();
 
@@ -174,6 +176,8 @@ const App = () => (
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-complete/:id" element={<OrderComplete />} />
+              <Route path="/payment/success" element={<PaymentSuccess />} />
+              <Route path="/payment/fail" element={<PaymentFail />} />
 
               {/* 프리미엄 콘텐츠 */}
               <Route path="/premium/content" element={<PremiumContent />} />

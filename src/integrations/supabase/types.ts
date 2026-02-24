@@ -794,6 +794,7 @@ export type Database = {
           id: string
           order_number: string
           paid_at: string | null
+          payment_method: string | null
           shipping_address: string | null
           shipping_memo: string | null
           shipping_name: string | null
@@ -808,6 +809,7 @@ export type Database = {
           id?: string
           order_number: string
           paid_at?: string | null
+          payment_method?: string | null
           shipping_address?: string | null
           shipping_memo?: string | null
           shipping_name?: string | null
@@ -822,6 +824,7 @@ export type Database = {
           id?: string
           order_number?: string
           paid_at?: string | null
+          payment_method?: string | null
           shipping_address?: string | null
           shipping_memo?: string | null
           shipping_name?: string | null
@@ -913,6 +916,59 @@ export type Database = {
           view_count?: number
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          created_at: string
+          id: string
+          method: string | null
+          order_id: string | null
+          order_number: string
+          payment_key: string
+          raw_response: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          method?: string | null
+          order_id?: string | null
+          order_number: string
+          payment_key: string
+          raw_response?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          method?: string | null
+          order_id?: string | null
+          order_number?: string
+          payment_key?: string
+          raw_response?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
