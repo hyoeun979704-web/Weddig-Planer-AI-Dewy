@@ -25,6 +25,7 @@ const SuitDetail = lazy(() => import("./pages/SuitDetail"));
 const Hanbok = lazy(() => import("./pages/Hanbok"));
 const HanbokDetail = lazy(() => import("./pages/HanbokDetail"));
 const Venues = lazy(() => import("./pages/Venues"));
+const VenueDebug = lazy(() => import("./pages/VenueDebug"));
 const VenueDetail = lazy(() => import("./pages/VenueDetail"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Store = lazy(() => import("./pages/Store"));
@@ -123,6 +124,7 @@ const App = () => (
               <Route path="/hanbok" element={<Hanbok />} />
               <Route path="/hanbok/:id" element={<HanbokDetail />} />
               <Route path="/venues" element={<Venues />} />
+              <Route path="/venue-debug" element={<VenueDebug />} />
               <Route path="/venue/:id" element={<VenueDetail />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/store" element={<Store />} />
