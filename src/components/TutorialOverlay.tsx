@@ -118,13 +118,20 @@ const TutorialOverlay = ({
       {/* Click catcher */}
       <div className="absolute inset-0" onClick={onNext} />
 
-      {/* Skip button */}
-      <button
-        onClick={(e) => { e.stopPropagation(); onSkip(); }}
-        className="fixed top-4 right-4 z-[10000] flex items-center gap-1 px-3 py-1.5 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground text-sm border border-border hover:bg-card transition-colors"
-      >
-        건너뛰기 <X className="w-3.5 h-3.5" />
-      </button>
+      {/* Skip button below highlight */}
+      {targetRect && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onSkip(); }}
+          className="fixed z-[10000] flex items-center gap-1 px-3 py-1.5 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground text-sm border border-border hover:bg-card transition-colors"
+          style={{
+            top: targetRect.bottom + padding + 4,
+            left: targetRect.left + targetRect.width / 2,
+            transform: "translateX(-50%)",
+          }}
+        >
+          건너뛰기 <X className="w-3.5 h-3.5" />
+        </button>
+      )}
 
       {/* Tooltip card */}
       <div
