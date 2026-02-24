@@ -4,12 +4,13 @@ import { useVenueSpecialPoints, VenueSpecialPoint } from "@/hooks/useVenueDetail
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface VenueInfoTabProps {
-  venueId: string;
+  venueId: number;
   address: string;
   phone?: string;
   website?: string;
   operatingHours?: string;
   parking?: string;
+  publicTransit?: string;
   venueName?: string;
 }
 
@@ -41,10 +42,11 @@ const fallbackSpecialPoints = [
 const VenueInfoTab = ({ 
   venueId,
   address, 
-  phone = "02-1234-5678",
+  phone,
   website,
-  operatingHours = "10:00 ~ 19:00",
-  parking = "자체 주차장 이용 가능",
+  operatingHours,
+  parking,
+  publicTransit,
   venueName = "웨딩홀"
 }: VenueInfoTabProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
