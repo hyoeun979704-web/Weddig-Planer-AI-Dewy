@@ -3,15 +3,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 interface VenueCardProps {
-  id: string;
+  id: number;
   name: string;
   address: string;
-  pricePerPerson: number;
-  minGuarantee: number;
-  rating: number;
-  reviewCount: number;
-  isPartner: boolean;
+  priceMin: number | null;
+  priceMax: number | null;
+  rating: string | null;
   thumbnailUrl?: string | null;
+  region?: string | null;
   onClick?: () => void;
 }
 
@@ -25,12 +24,11 @@ const formatKoreanWon = (price: number): string => {
 const VenueCard = ({
   name,
   address,
-  pricePerPerson,
-  minGuarantee,
+  priceMin,
+  priceMax,
   rating,
-  reviewCount,
-  isPartner,
   thumbnailUrl,
+  region,
   onClick,
 }: VenueCardProps) => {
   return (
@@ -56,11 +54,6 @@ const VenueCard = ({
             <span className="text-4xl">💒</span>
           </div>
         )}
-        {isPartner && (
-          <span className="absolute top-2 left-2 px-2 py-0.5 bg-primary text-primary-foreground text-xs font-medium rounded-full">
-            파트너
-          </span>
-        )}
       </div>
 
       {/* Content */}
@@ -68,7 +61,7 @@ const VenueCard = ({
         {/* Location */}
         <div className="flex items-center gap-1 text-muted-foreground mb-1">
           <MapPin className="w-3 h-3" />
-          <span className="text-xs truncate">{address}</span>
+          <span className="text-xs truncate">{region || address}</span>
         </div>
 
         {/* Name */}
@@ -77,24 +70,24 @@ const VenueCard = ({
         </h3>
 
         {/* Price */}
-        <div className="flex items-baseline gap-1 mb-2">
-          <span className="text-primary font-bold text-sm">
-            {formatKoreanWon(pricePerPerson)}
-          </span>
-          <span className="text-muted-foreground text-xs">/인</span>
-          <span className="text-muted-foreground text-xs ml-1">
-            최소 {minGuarantee}명
-          </span>
-        </div>
+        {(priceMin || priceMax) && (
+          <div className="flex items-baseline gap-1 mb-2">
+            <span className="text-primary font-bold text-sm">
+              {priceMin ? formatKoreanWon(priceMin) : ""}
+              {priceMin && priceMax ? " ~ " : ""}
+              {priceMax ? formatKoreanWon(priceMax) : ""}
+            </span>
+            <span className="text-muted-foreground text-xs">/인</span>
+          </div>
+        )}
 
         {/* Rating */}
-        <div className="flex items-center gap-1">
-          <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-          <span className="text-sm font-medium text-foreground">{rating.toFixed(1)}</span>
-          <span className="text-xs text-muted-foreground">
-            ({reviewCount.toLocaleString()})
-          </span>
-        </div>
+        {rating && (
+          <div className="flex items-center gap-1">
+            <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+            <span className="text-sm font-medium text-foreground">{rating}</span>
+          </div>
+        )}
       </div>
     </div>
   );

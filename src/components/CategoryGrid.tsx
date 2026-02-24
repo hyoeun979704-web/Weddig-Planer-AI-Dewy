@@ -99,9 +99,18 @@ export default function CategoryGrid({ category, onItemClick }: CategoryGridProp
   return (
     <div className="px-4">
       <div className="grid grid-cols-2 gap-3">
-        {allItems.map((item) => (
+        {allItems.map((item) => {
+          const itemId = item.id || String((item as any).number);
+          const itemRating = typeof item.rating === 'string' ? parseFloat(item.rating) || 0 : (item.rating || 0);
+          const itemPrice = item.price_per_person
+            ? `${(item.price_per_person / 10000).toFixed(0)}만원~`
+            : (item as any).price_min
+            ? `${((item as any).price_min / 10000).toFixed(0)}만원~`
+            : item.price_range || "";
+          
+          return (
           <button
-            key={item.id}
+            key={itemId}
             onClick={() => onItemClick?.(item)}
             className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-all text-left"
           >
@@ -128,26 +137,27 @@ export default function CategoryGrid({ category, onItemClick }: CategoryGridProp
               <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
                 <MapPin className="w-3 h-3" />
                 <span className="truncate">
-                  {item.address || item.destination || item.brand || ""}
+                  {item.address || item.destination || item.brand || (item as any).region || ""}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-primary">
-                  {item.price_per_person
-                    ? `${(item.price_per_person / 10000).toFixed(0)}만원~`
-                    : item.price_range || ""}
+                  {itemPrice}
                 </span>
                 <div className="flex items-center gap-1">
                   <Star className="w-3 h-3 fill-primary text-primary" />
-                  <span className="text-xs font-medium">{item.rating}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({item.review_count})
-                  </span>
+                  <span className="text-xs font-medium">{typeof itemRating === 'number' ? itemRating.toFixed(1) : itemRating}</span>
+                  {item.review_count > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      ({item.review_count})
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
           </button>
-        ))}
+          );
+        })}
       </div>
 
       {/* Load more trigger */}
