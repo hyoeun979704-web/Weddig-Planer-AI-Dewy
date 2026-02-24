@@ -50,30 +50,37 @@ const TutorialOverlay = ({
   const isFirstStep = currentStepIndex === 0;
   const padding = 8;
 
-  // Calculate tooltip position
+  // Calculate tooltip position — always use top/left to keep it in viewport
   const getTooltipStyle = (): React.CSSProperties => {
     if (!targetRect) {
       return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
     }
 
     const pos = currentStep.position;
-    const style: React.CSSProperties = { position: "fixed" };
+    const tooltipW = 300;
+    const tooltipH = 220; // approximate height including skip button
+    const gap = padding + 8;
+
+    let top = 0;
+    let left = Math.max(16, Math.min(targetRect.left + targetRect.width / 2 - tooltipW / 2, window.innerWidth - tooltipW - 16));
 
     if (pos === "bottom") {
-      style.top = targetRect.bottom + padding + 8;
-      style.left = Math.max(16, Math.min(targetRect.left + targetRect.width / 2 - 150, window.innerWidth - 316));
+      top = targetRect.bottom + gap;
     } else if (pos === "top") {
-      style.bottom = window.innerHeight - targetRect.top + padding + 8;
-      style.left = Math.max(16, Math.min(targetRect.left + targetRect.width / 2 - 150, window.innerWidth - 316));
+      top = targetRect.top - gap - tooltipH;
     } else if (pos === "right") {
-      style.top = targetRect.top + targetRect.height / 2 - 60;
-      style.left = targetRect.right + padding + 8;
+      top = targetRect.top + targetRect.height / 2 - tooltipH / 2;
+      left = targetRect.right + gap;
     } else {
-      style.top = targetRect.top + targetRect.height / 2 - 60;
-      style.right = window.innerWidth - targetRect.left + padding + 8;
+      top = targetRect.top + targetRect.height / 2 - tooltipH / 2;
+      left = targetRect.left - gap - tooltipW;
     }
 
-    return style;
+    // Clamp within viewport
+    top = Math.max(16, Math.min(top, window.innerHeight - tooltipH - 16));
+    left = Math.max(16, Math.min(left, window.innerWidth - tooltipW - 16));
+
+    return { position: "fixed", top, left };
   };
 
   return (
