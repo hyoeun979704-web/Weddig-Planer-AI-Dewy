@@ -118,71 +118,68 @@ const TutorialOverlay = ({
       {/* Click catcher */}
       <div className="absolute inset-0" onClick={onNext} />
 
-      {/* Skip button below highlight */}
-      {targetRect && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onSkip(); }}
-          className="fixed z-[10000] flex items-center gap-1 px-3 py-1.5 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground text-sm border border-border hover:bg-card transition-colors"
-          style={{
-            top: targetRect.bottom + padding + 4,
-            left: targetRect.left + targetRect.width / 2,
-            transform: "translateX(-50%)",
-          }}
-        >
-          건너뛰기 <X className="w-3.5 h-3.5" />
-        </button>
-      )}
-
       {/* Tooltip card */}
       <div
         ref={tooltipRef}
         onClick={(e) => e.stopPropagation()}
         style={getTooltipStyle()}
-        className="fixed z-[10000] w-[300px] bg-card rounded-2xl shadow-xl border border-border p-5 animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
+        className="fixed z-[10000] w-[300px] animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
       >
-        {/* Step indicator */}
-        <div className="flex items-center gap-1.5 mb-3">
-          {Array.from({ length: totalSteps }).map((_, i) => (
-            <div
-              key={i}
+        <div className="bg-card rounded-2xl shadow-xl border border-border p-5">
+          {/* Step indicator */}
+          <div className="flex items-center gap-1.5 mb-3">
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-300",
+                  i === currentStepIndex
+                    ? "w-6 bg-primary"
+                    : i < currentStepIndex
+                    ? "w-1.5 bg-primary/50"
+                    : "w-1.5 bg-muted"
+                )}
+              />
+            ))}
+            <span className="ml-auto text-xs text-muted-foreground">
+              {currentStepIndex + 1}/{totalSteps}
+            </span>
+          </div>
+
+          <h3 className="text-base font-bold text-foreground mb-1.5">{currentStep.title}</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+            {currentStep.description}
+          </p>
+
+          <div className="flex items-center justify-between">
+            <button
+              onClick={onPrev}
+              disabled={isFirstStep}
               className={cn(
-                "h-1.5 rounded-full transition-all duration-300",
-                i === currentStepIndex
-                  ? "w-6 bg-primary"
-                  : i < currentStepIndex
-                  ? "w-1.5 bg-primary/50"
-                  : "w-1.5 bg-muted"
+                "flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg transition-colors",
+                isFirstStep
+                  ? "text-muted-foreground/40 cursor-not-allowed"
+                  : "text-muted-foreground hover:bg-muted"
               )}
-            />
-          ))}
-          <span className="ml-auto text-xs text-muted-foreground">
-            {currentStepIndex + 1}/{totalSteps}
-          </span>
+            >
+              <ChevronLeft className="w-4 h-4" /> 이전
+            </button>
+            <button
+              onClick={onNext}
+              className="flex items-center gap-1 text-sm px-4 py-1.5 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+            >
+              {isLastStep ? "완료" : "다음"} {!isLastStep && <ChevronRight className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
-        <h3 className="text-base font-bold text-foreground mb-1.5">{currentStep.title}</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-          {currentStep.description}
-        </p>
-
-        <div className="flex items-center justify-between">
+        {/* Skip button below tooltip */}
+        <div className="flex justify-center mt-3">
           <button
-            onClick={onPrev}
-            disabled={isFirstStep}
-            className={cn(
-              "flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg transition-colors",
-              isFirstStep
-                ? "text-muted-foreground/40 cursor-not-allowed"
-                : "text-muted-foreground hover:bg-muted"
-            )}
+            onClick={(e) => { e.stopPropagation(); onSkip(); }}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground text-sm border border-border hover:bg-card transition-colors"
           >
-            <ChevronLeft className="w-4 h-4" /> 이전
-          </button>
-          <button
-            onClick={onNext}
-            className="flex items-center gap-1 text-sm px-4 py-1.5 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
-          >
-            {isLastStep ? "완료" : "다음"} {!isLastStep && <ChevronRight className="w-4 h-4" />}
+            건너뛰기 <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
