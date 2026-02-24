@@ -25,7 +25,7 @@ const VenueDetail = () => {
       const { data, error } = await supabase
         .from("venues")
         .select("*")
-        .eq("id", id)
+        .eq("number", parseInt(id!))
         .maybeSingle();
 
       if (error) throw error;
@@ -77,7 +77,7 @@ const VenueDetail = () => {
               <Share2 className="w-5 h-5" />
             </button>
             <FavoriteButton
-              itemId={venue.id}
+              itemId={String(venue.number)}
               itemType="venue"
               variant="default"
             />
@@ -95,26 +95,23 @@ const VenueDetail = () => {
 
         {/* Venue Title Section */}
         <div className="p-4 border-b border-border">
-          {/* Partner Badge */}
-          {venue.is_partner && (
-            <span className="inline-block px-2.5 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-full mb-2">
-              파트너
-            </span>
-          )}
-          
           <h1 className="text-xl font-bold text-foreground mb-2">
             {venue.name}
           </h1>
           
-          {/* Rating & Reviews */}
+          {/* Rating */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-bold">{venue.rating.toFixed(1)}</span>
-            </div>
-            <span className="text-muted-foreground text-sm">
-              리뷰 {venue.review_count.toLocaleString()}개
-            </span>
+            {venue.rating && (
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                <span className="font-bold">{venue.rating}</span>
+              </div>
+            )}
+            {venue.region && (
+              <span className="text-muted-foreground text-sm">
+                {venue.region}
+              </span>
+            )}
           </div>
         </div>
 
@@ -141,22 +138,26 @@ const VenueDetail = () => {
         {/* Tab Content */}
         <div className="pb-24">
           {activeTab === "info" && (
-            <VenueInfoTab venueId={venue.id} address={venue.address} />
+            <VenueInfoTab
+              venueId={venue.venue_id ?? venue.number}
+              address={venue.address}
+              phone={venue.phone ?? undefined}
+              operatingHours={venue.opening_hour ?? undefined}
+              parking={venue.parking_info ?? undefined}
+              publicTransit={venue.public_transit ?? undefined}
+            />
           )}
           {activeTab === "hall" && (
             <VenueHallTab
-              venueId={venue.id}
-              hallTypes={venue.hall_types}
-              mealOptions={venue.meal_options}
-              eventOptions={venue.event_options}
-              pricePerPerson={venue.price_per_person}
-              minGuarantee={venue.min_guarantee}
+              venueId={venue.venue_id ?? venue.number}
+              priceMin={venue.price_min ?? 0}
+              priceMax={venue.price_max ?? 0}
             />
           )}
           {activeTab === "review" && (
             <VenueReviewTab
-              rating={venue.rating}
-              reviewCount={venue.review_count}
+              rating={venue.rating ? parseFloat(venue.rating) : 0}
+              reviewCount={0}
             />
           )}
         </div>

@@ -18,7 +18,7 @@ const Venues = () => {
 
   useEffect(() => { if (isLoaded) initWithRegion(defaultRegion); }, [isLoaded]);
 
-  const handleVenueClick = (venue: Venue) => { navigate(`/venue/${venue.id}`); };
+  const handleVenueClick = (venue: Venue) => { navigate(`/venue/${venue.number}`); };
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
