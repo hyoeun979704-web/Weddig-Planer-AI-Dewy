@@ -84,8 +84,8 @@ export const FEATURE_GUIDES = [
     description: "D-Day 기반 일정 관리 방법을 알아보세요",
     route: "/schedule",
     steps: [
-      { id: "s1", title: "D-Day 현황", description: "결혼식까지 남은 일수와 전체 진행률을 한눈에 확인하세요.", targetSelector: "[data-tutorial='schedule-dday']", position: "bottom" as const },
-      { id: "s2", title: "커플 연동", description: "파트너를 초대하고 일정을 함께 공유할 수 있어요.", targetSelector: "[data-tutorial='schedule-couple']", position: "bottom" as const },
+      { id: "s1", title: "커플 연동", description: "파트너를 초대하고 일정을 함께 공유할 수 있어요.", targetSelector: "[data-tutorial='schedule-couple']", position: "bottom" as const },
+      { id: "s2", title: "D-Day 현황", description: "결혼식까지 남은 일수와 전체 진행률을 한눈에 확인하세요.", targetSelector: "[data-tutorial='schedule-dday']", position: "bottom" as const },
       { id: "s3", title: "준비 타임라인", description: "시기별 체크리스트를 확인하고 진행 상황을 관리하세요.", targetSelector: "[data-tutorial='schedule-timeline']", position: "bottom" as const },
       { id: "s4", title: "일정 관리", description: "오른쪽 상단의 '일정 관리' 버튼으로 개인 일정을 추가하세요.", targetSelector: "[data-tutorial='schedule-add']", position: "bottom" as const },
     ],

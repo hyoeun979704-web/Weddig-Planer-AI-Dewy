@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TutorialStep } from "@/hooks/useTutorial";
@@ -23,26 +23,45 @@ const TutorialOverlay = ({
   onSkip,
 }: TutorialOverlayProps) => {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [tooltipRect, setTooltipRect] = useState<{ width: number; height: number }>({ width: 300, height: 200 });
   const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Measure tooltip after render
+  useEffect(() => {
+    if (!tooltipRef.current) return;
+    const measure = () => {
+      const r = tooltipRef.current?.getBoundingClientRect();
+      if (r) setTooltipRect({ width: r.width, height: r.height });
+    };
+    // Measure after animation settles
+    const t = setTimeout(measure, 50);
+    return () => clearTimeout(t);
+  }, [currentStepIndex, isActive]);
+
+  const findAndSetTarget = useCallback(() => {
+    if (!currentStep) return;
+    const el = document.querySelector(currentStep.targetSelector);
+    if (el) {
+      // First scroll into view
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Then re-measure after scroll completes
+      const measure = () => {
+        const rect = el.getBoundingClientRect();
+        setTargetRect(rect);
+      };
+      // Measure immediately and again after scroll settles
+      measure();
+      setTimeout(measure, 400);
+    } else {
+      setTargetRect(null);
+    }
+  }, [currentStep]);
 
   useEffect(() => {
     if (!isActive || !currentStep) return;
-
-    const findTarget = () => {
-      const el = document.querySelector(currentStep.targetSelector);
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        setTargetRect(rect);
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-      } else {
-        setTargetRect(null);
-      }
-    };
-
-    // Small delay to let DOM settle
-    const timer = setTimeout(findTarget, 150);
+    const timer = setTimeout(findAndSetTarget, 150);
     return () => clearTimeout(timer);
-  }, [isActive, currentStep]);
+  }, [isActive, currentStep, findAndSetTarget]);
 
   if (!isActive || !currentStep) return null;
 
@@ -50,35 +69,47 @@ const TutorialOverlay = ({
   const isFirstStep = currentStepIndex === 0;
   const padding = 8;
 
-  // Calculate tooltip position — always use top/left to keep it in viewport
+  // Calculate tooltip position
   const getTooltipStyle = (): React.CSSProperties => {
     if (!targetRect) {
       return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
     }
 
     const pos = currentStep.position;
-    const tooltipW = 300;
-    const tooltipH = 220; // approximate height including skip button
-    const gap = padding + 8;
+    const tW = tooltipRect.width;
+    const tH = tooltipRect.height;
+    const gap = 12;
+    const margin = 16;
 
     let top = 0;
-    let left = Math.max(16, Math.min(targetRect.left + targetRect.width / 2 - tooltipW / 2, window.innerWidth - tooltipW - 16));
+    let left = 0;
+
+    // Horizontal centering relative to target
+    left = targetRect.left + targetRect.width / 2 - tW / 2;
 
     if (pos === "bottom") {
       top = targetRect.bottom + gap;
+      // If tooltip goes below viewport, flip to top
+      if (top + tH > window.innerHeight - margin) {
+        top = targetRect.top - gap - tH;
+      }
     } else if (pos === "top") {
-      top = targetRect.top - gap - tooltipH;
+      top = targetRect.top - gap - tH;
+      // If tooltip goes above viewport, flip to bottom
+      if (top < margin) {
+        top = targetRect.bottom + gap;
+      }
     } else if (pos === "right") {
-      top = targetRect.top + targetRect.height / 2 - tooltipH / 2;
+      top = targetRect.top + targetRect.height / 2 - tH / 2;
       left = targetRect.right + gap;
     } else {
-      top = targetRect.top + targetRect.height / 2 - tooltipH / 2;
-      left = targetRect.left - gap - tooltipW;
+      top = targetRect.top + targetRect.height / 2 - tH / 2;
+      left = targetRect.left - gap - tW;
     }
 
-    // Clamp within viewport
-    top = Math.max(16, Math.min(top, window.innerHeight - tooltipH - 16));
-    left = Math.max(16, Math.min(left, window.innerWidth - tooltipW - 16));
+    // Final clamp to viewport
+    top = Math.max(margin, Math.min(top, window.innerHeight - tH - margin));
+    left = Math.max(margin, Math.min(left, window.innerWidth - tW - margin));
 
     return { position: "fixed", top, left };
   };
@@ -103,8 +134,8 @@ const TutorialOverlay = ({
           </mask>
         </defs>
         <rect
-          x="0" y="0" width="100%" height="100%" 
-          fill="hsl(0 0% 0% / 0.6)" 
+          x="0" y="0" width="100%" height="100%"
+          fill="hsl(0 0% 0% / 0.6)"
           mask="url(#tutorial-mask)"
         />
       </svg>
@@ -125,7 +156,7 @@ const TutorialOverlay = ({
       {/* Click catcher */}
       <div className="absolute inset-0" onClick={onNext} />
 
-      {/* Tooltip card */}
+      {/* Tooltip card + skip */}
       <div
         ref={tooltipRef}
         onClick={(e) => e.stopPropagation()}
@@ -181,12 +212,12 @@ const TutorialOverlay = ({
         </div>
 
         {/* Skip button below tooltip */}
-        <div className="flex justify-center mt-3">
+        <div className="flex justify-center mt-2">
           <button
             onClick={(e) => { e.stopPropagation(); onSkip(); }}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground text-sm border border-border hover:bg-card transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground text-xs border border-border hover:bg-card transition-colors"
           >
-            건너뛰기 <X className="w-3.5 h-3.5" />
+            건너뛰기 <X className="w-3 h-3" />
           </button>
         </div>
       </div>
