@@ -11,7 +11,6 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    cloudflare(), // 핵심: Cloudflare Vite plugin 추가
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
