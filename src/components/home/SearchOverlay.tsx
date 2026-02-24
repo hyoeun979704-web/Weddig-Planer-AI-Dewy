@@ -92,7 +92,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
     const fetchResults = async () => {
       try {
         const [venues, studios, honeymoon, honeymoonGifts, appliances, suits, hanbok, invitationVenues] = await Promise.all([
-          supabase.from("venues").select("id, name, address").ilike("name", searchTerm).limit(3),
+          supabase.from("venues").select("number, name, address").ilike("name", searchTerm).limit(3),
           supabase.from("studios").select("id, name, address").ilike("name", searchTerm).limit(3),
           supabase.from("honeymoon").select("id, name, destination").ilike("name", searchTerm).limit(3),
           supabase.from("honeymoon_gifts").select("id, name, brand").ilike("name", searchTerm).limit(3),
@@ -103,7 +103,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
         ]);
 
         const allResults: SearchResult[] = [
-          ...(venues.data || []).map(v => ({ ...v, type: "venue" as const })),
+          ...(venues.data || []).map(v => ({ id: String(v.number), name: v.name, address: v.address, type: "venue" as const })),
           ...(studios.data || []).map(s => ({ ...s, type: "studio" as const })),
           ...(honeymoon.data || []).map(h => ({ ...h, type: "honeymoon" as const })),
           ...(honeymoonGifts.data || []).map(hg => ({ ...hg, type: "honeymoon_gift" as const })),
