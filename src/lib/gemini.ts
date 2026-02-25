@@ -34,6 +34,11 @@ export async function askGemini(
   userMessage: string,
   history: { role: string; content: string }[] = []
 ): Promise<string> {
+  // ✅ API 키 사전 검증
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.");
+  }
+
   const contents = [
     ...history.map(msg => ({
       role: msg.role === "user" ? "user" : "model",
@@ -51,8 +56,18 @@ export async function askGemini(
     }),
   });
 
-  if (!response.ok) throw new Error("Gemini API 오류");
+  // ✅ 상태코드별 에러 처리
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    if (response.status === 401) throw new Error("API 키가 올바르지 않아요.");
+    if (response.status === 429) throw new Error("잠시 후 다시 시도해주세요. (요청 한도 초과)");
+    throw new Error(errorData?.error?.message || `Gemini API 오류 (${response.status})`);
+  }
 
   const data = await response.json();
-  return data.candidates[0].content.parts[0].text;
+
+  // ✅ 응답 구조 안전하게 접근 (옵셔널 체이닝)
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("AI 응답을 파싱할 수 없어요.");
+  return text;
 }
