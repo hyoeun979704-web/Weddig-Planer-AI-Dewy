@@ -33,7 +33,7 @@ const More = lazy(() => import("./pages/More"));
 const Magazine = lazy(() => import("./pages/Magazine"));
 const Reviews = lazy(() => import("./pages/Reviews"));
 const Gallery = lazy(() => import("./pages/Gallery"));
-const AIPlanner = lazy(() => import("./pages/AIPlanner"));
+const AIPlanner = lazy(() => import("./components/AIPlanner"));
 const Budget = lazy(() => import("./pages/Budget"));
 const BudgetHistory = lazy(() => import("./pages/BudgetHistory"));
 const BudgetCategoryDetail = lazy(() => import("./pages/BudgetCategoryDetail"));
