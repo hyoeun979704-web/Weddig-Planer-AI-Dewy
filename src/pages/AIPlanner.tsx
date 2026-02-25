@@ -43,12 +43,17 @@ const AIPlanner = () => {
   }, [messages, isTyping]);
 
   const addAssistantMessage = useCallback((content: string, isHtml = false) => {
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      setMessages(prev => [...prev, { id: nextId(), role: "assistant", content, isHtml }]);
-    }, 1800);
-  }, []);
+  setIsTyping(true);
+  setTimeout(() => {
+    setIsTyping(false);
+    setMessages(prev => [...prev, {
+      id: crypto.randomUUID(), // ✅ useRef 의존성 없이 안전
+      role: "assistant",
+      content,
+      isHtml
+    }]);
+  }, 1800);
+}, []);
 
   const handleChipClick = (modal: ModalType) => {
     setShowChips(false);
