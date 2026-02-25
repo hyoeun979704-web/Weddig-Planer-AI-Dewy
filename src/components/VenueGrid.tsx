@@ -99,15 +99,13 @@ const VenueGrid = ({ onVenueClick, partnersOnly = true }: VenueGridProps) => {
       <div className="grid grid-cols-2 gap-3 px-4">
         {allVenues.map((venue) => (
           <VenueCard
-            key={venue.number}
-            id={venue.number}
+            key={venue.id}
+            id={venue.id}
             name={venue.name}
             address={venue.address}
-            priceMin={venue.price_min}
-            priceMax={venue.price_max}
+            pricePerPerson={venue.price_per_person}
             rating={venue.rating}
             thumbnailUrl={venue.thumbnail_url}
-            region={venue.region}
             onClick={() => onVenueClick?.(venue)}
           />
         ))}

@@ -3,14 +3,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 interface VenueCardProps {
-  id: number;
+  id: string;
   name: string;
   address: string;
-  priceMin: number | null;
-  priceMax: number | null;
-  rating: string | null;
+  pricePerPerson: number;
+  rating: number;
   thumbnailUrl?: string | null;
-  region?: string | null;
   onClick?: () => void;
 }
 
@@ -24,11 +22,9 @@ const formatKoreanWon = (price: number): string => {
 const VenueCard = ({
   name,
   address,
-  priceMin,
-  priceMax,
+  pricePerPerson,
   rating,
   thumbnailUrl,
-  region,
   onClick,
 }: VenueCardProps) => {
   return (
@@ -40,15 +36,9 @@ const VenueCard = ({
         "hover:shadow-md"
       )}
     >
-      {/* Thumbnail */}
       <div className="relative aspect-[4/3] bg-muted overflow-hidden">
         {thumbnailUrl ? (
-          <img
-            src={thumbnailUrl}
-            alt={name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
+          <img src={thumbnailUrl} alt={name} className="w-full h-full object-cover" loading="lazy" />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
             <span className="text-4xl">💒</span>
@@ -56,33 +46,22 @@ const VenueCard = ({
         )}
       </div>
 
-      {/* Content */}
       <div className="p-3">
-        {/* Location */}
         <div className="flex items-center gap-1 text-muted-foreground mb-1">
           <MapPin className="w-3 h-3" />
-          <span className="text-xs truncate">{region || address}</span>
+          <span className="text-xs truncate">{address}</span>
         </div>
 
-        {/* Name */}
-        <h3 className="font-semibold text-sm text-foreground mb-2 line-clamp-1">
-          {name}
-        </h3>
+        <h3 className="font-semibold text-sm text-foreground mb-2 line-clamp-1">{name}</h3>
 
-        {/* Price */}
-        {(priceMin || priceMax) && (
+        {pricePerPerson > 0 && (
           <div className="flex items-baseline gap-1 mb-2">
-            <span className="text-primary font-bold text-sm">
-              {priceMin ? formatKoreanWon(priceMin) : ""}
-              {priceMin && priceMax ? " ~ " : ""}
-              {priceMax ? formatKoreanWon(priceMax) : ""}
-            </span>
+            <span className="text-primary font-bold text-sm">{formatKoreanWon(pricePerPerson)}</span>
             <span className="text-muted-foreground text-xs">/인</span>
           </div>
         )}
 
-        {/* Rating */}
-        {rating && (
+        {rating > 0 && (
           <div className="flex items-center gap-1">
             <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
             <span className="text-sm font-medium text-foreground">{rating}</span>

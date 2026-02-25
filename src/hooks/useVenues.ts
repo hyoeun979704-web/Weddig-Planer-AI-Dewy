@@ -5,26 +5,21 @@ import { useFilterStore, FilterState } from "@/stores/useFilterStore";
 const VENUES_PER_PAGE = 10;
 
 export interface Venue {
-  number: number;
+  id: string;
   name: string;
   address: string;
-  phone: string | null;
-  rating: string | null;
   thumbnail_url: string | null;
-  opening_hour: string | null;
-  parking_info: string | null;
-  region: string | null;
-  price_min: number | null;
-  price_max: number | null;
+  rating: number;
+  review_count: number;
+  price_per_person: number;
+  min_guarantee: number;
+  is_partner: boolean;
   created_at: string;
-  public_transit: string | null;
-  parking_time: string | null;
-  keyword: string | null;
-  venue_id: number | null;
+  updated_at: string;
+  hall_types: string[] | null;
+  meal_options: string[] | null;
+  event_options: string[] | null;
 }
-
-// Helper: venues 테이블의 PK는 number(int4)입니다
-// venue_halls, venue_special_points는 venue_id(int4)로 연결됩니다
 
 interface FetchVenuesParams {
   pageParam: number;
@@ -40,13 +35,12 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
     .from("venues")
     .select("*", { count: "exact" });
 
-  // Apply filters
   if (filters.region) {
     query = query.ilike("address", `%${filters.region}%`);
   }
 
   if (filters.maxPrice) {
-    query = query.lte("price_min", filters.maxPrice);
+    query = query.lte("price_per_person", filters.maxPrice);
   }
 
   if (filters.minRating) {
@@ -82,7 +76,6 @@ export const useVenues = (partnersOnly: boolean = false) => {
     eventOptions,
   };
 
-  // 필터가 활성화되면 모든 웨딩홀 표시, 아니면 partnersOnly 적용
   const showPartnersOnly = partnersOnly && !hasFilters;
 
   return useInfiniteQuery({
@@ -101,7 +94,7 @@ export const useVenue = (id: string) => {
       const { data, error } = await supabase
         .from("venues")
         .select("*")
-        .eq("number", parseInt(id))
+        .eq("id", id)
         .maybeSingle();
 
       if (error) throw error;

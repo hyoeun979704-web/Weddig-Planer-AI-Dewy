@@ -2,38 +2,33 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface VenueHall {
-  number: number;
+  id: string;
+  venue_id: string;
   name: string;
-  hall: string | null;
-  Min_Pax: number | null;
-  Max_Pax: number | null;
-  Meal_Price_Min: number | null;
-  Meal_Price_Max: number | null;
-  description: string | null;
-  image_urls: string | null;
+  hall_type: string | null;
+  capacity_min: number | null;
+  capacity_max: number | null;
+  price_per_person: number | null;
+  meal_price: number | null;
+  ceremony_fee: number | null;
+  size_pyeong: number | null;
+  floor: string | null;
+  thumbnail_url: string | null;
   created_at: string;
-  Keywords_Tag: string | null;
-  Interval: string | null;
-  sit: string | null;
-  flower: string | null;
-  venue_rental_fee: number | null;
-  meal: string | null;
-  drink: string | null;
-  main_color: string | null;
-  venue_id: number | null;
+  updated_at: string;
 }
 
 export interface VenueSpecialPoint {
-  number: number;
-  name: string;
+  id: string;
+  venue_id: string;
   title: string;
-  icon: string | null;
   description: string | null;
+  icon: string | null;
+  category: string | null;
   created_at: string;
-  venue_id: number | null;
 }
 
-export const useVenueHalls = (venueId: number | undefined) => {
+export const useVenueHalls = (venueId: string | undefined) => {
   return useQuery({
     queryKey: ["venue_halls", venueId],
     queryFn: async () => {
@@ -50,7 +45,7 @@ export const useVenueHalls = (venueId: number | undefined) => {
   });
 };
 
-export const useVenueSpecialPoints = (venueId: number | undefined) => {
+export const useVenueSpecialPoints = (venueId: string | undefined) => {
   return useQuery({
     queryKey: ["venue_special_points", venueId],
     queryFn: async () => {
