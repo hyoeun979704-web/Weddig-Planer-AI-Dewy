@@ -45,7 +45,6 @@ serve(async (req) => {
 
   try {
     const { userMessage, history } = await req.json();
-
     const contents = [
       ...history.map((msg: any) => ({
         role: msg.role === "user" ? "user" : "model",
@@ -64,21 +63,15 @@ serve(async (req) => {
     });
 
     const data = await response.json();
-    const reply = data.candidates[0].content.parts[0].text;
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "응답을 받지 못했어요.";
 
     return new Response(JSON.stringify({ reply }), {
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
     });
   } catch (error) {
     return new Response(JSON.stringify({ error: "오류가 발생했어요" }), {
       status: 500,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
     });
   }
 });
