@@ -100,10 +100,10 @@ const AIPlanner = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-100 h-14 flex items-center justify-between px-4 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-xl">💍</span>
-          <h1 className="text-base font-bold" style={{ color: "#C9A96E" }}>AI 웨딩플래너</h1>
+          <span className="text-xl">💕</span>
+          <h1 className="text-base font-bold" style={{ color: "rgb(50, 50, 50)" }}>AI 웨딩플래너 듀이</h1>
         </div>
-        <button className="px-3 py-1.5 rounded-full border text-xs font-medium transition-colors hover:bg-[#C9A96E]/5" style={{ borderColor: "#C9A96E", color: "#C9A96E" }}>
+        <button className="px-3 py-1.5 rounded-full border text-xs font-medium transition-colors hover:bg-[#dd6dae]/5" style={{ borderColor: "#C9A96E", color: "#C9A96E" }}>
           프리미엄 시작하기
         </button>
       </header>
@@ -114,10 +114,11 @@ const AIPlanner = () => {
           {/* Welcome message (always visible) */}
           {messages.length === 0 && (
             <div className="flex gap-3 items-start">
-              <div className="w-8 h-8 rounded-full bg-[#C9A96E]/10 flex items-center justify-center flex-shrink-0 text-sm">💍</div>
+              <div className="w-8 h-8 rounded-full bg-[rgb(255, 234, 239)]/10 flex items-center justify-center flex-shrink-0 text-sm">💕</div>
               <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm max-w-[85%]">
                 <p className="text-sm leading-relaxed">
-                  안녕하세요 💍 AI 웨딩플래너입니다.<br /><br />
+                  안녕하세요 😊 <br />
+                  AI 웨딩플래너 듀이입니다.<br />
                   결혼 준비의 모든 것을 도와드릴게요.<br />
                   아래 예시 질문을 선택하거나 직접 입력해보세요!
                 </p>
