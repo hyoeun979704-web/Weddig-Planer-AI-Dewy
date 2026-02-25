@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface DewyRequest {
@@ -17,6 +18,31 @@ serve(async (req) => {
   }
 
   try {
+    // 1. Validate authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const userId = claimsData.claims.sub;
+
     const DEWY_API_KEY = Deno.env.get("DEWY_STUDIO_API_KEY") || Deno.env.get("WEDDY_STUDIO_API_KEY");
     const DEWY_API_URL = Deno.env.get("DEWY_STUDIO_API_URL") || Deno.env.get("WEDDY_STUDIO_API_URL");
 
@@ -33,7 +59,6 @@ serve(async (req) => {
       );
     }
 
-    // Map service to API endpoint
     const endpointMap: Record<string, string> = {
       invitation: "/api/v1/invitation/generate",
       photoshoot: "/api/v1/photoshoot/generate",
@@ -49,7 +74,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Calling Dewy Studio API: ${service} with prompt: ${prompt.substring(0, 100)}...`);
+    console.log(`Calling Dewy Studio API: ${service} for user: ${userId}, prompt: ${prompt.substring(0, 100)}...`);
 
     const apiResponse = await fetch(`${DEWY_API_URL}${endpoint}`, {
       method: "POST",
@@ -57,10 +82,7 @@ serve(async (req) => {
         "Authorization": `Bearer ${DEWY_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        prompt,
-        ...options,
-      }),
+      body: JSON.stringify({ prompt, ...options }),
     });
 
     if (!apiResponse.ok) {
@@ -73,7 +95,6 @@ serve(async (req) => {
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      
       if (apiResponse.status === 402) {
         return new Response(
           JSON.stringify({ error: "크레딧이 부족합니다. 충전 후 이용해주세요." }),
@@ -97,7 +118,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Dewy Studio function error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "서비스 오류가 발생했습니다." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

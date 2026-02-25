@@ -25,7 +25,7 @@ const VenueDetail = () => {
       const { data, error } = await supabase
         .from("venues")
         .select("*")
-        .eq("number", parseInt(id!))
+        .eq("id", id!)
         .maybeSingle();
 
       if (error) throw error;
@@ -56,7 +56,6 @@ const VenueDetail = () => {
     { key: "review", label: "후기" },
   ];
 
-  // Mock images for gallery
   const galleryImages = venue.thumbnail_url 
     ? [venue.thumbnail_url, "/placeholder.svg", "/placeholder.svg", "/placeholder.svg"]
     : [];
@@ -77,7 +76,7 @@ const VenueDetail = () => {
               <Share2 className="w-5 h-5" />
             </button>
             <FavoriteButton
-              itemId={String(venue.number)}
+              itemId={venue.id}
               itemType="venue"
               variant="default"
             />
@@ -87,19 +86,16 @@ const VenueDetail = () => {
 
       {/* Content with top padding for fixed header */}
       <div className="pt-14">
-        {/* Image Gallery */}
         <VenueImageGallery 
           images={galleryImages}
           venueName={venue.name}
         />
 
-        {/* Venue Title Section */}
         <div className="p-4 border-b border-border">
           <h1 className="text-xl font-bold text-foreground mb-2">
             {venue.name}
           </h1>
           
-          {/* Rating */}
           <div className="flex items-center gap-2">
             {venue.rating && (
               <div className="flex items-center gap-1">
@@ -107,15 +103,12 @@ const VenueDetail = () => {
                 <span className="font-bold">{venue.rating}</span>
               </div>
             )}
-            {venue.region && (
-              <span className="text-muted-foreground text-sm">
-                {venue.region}
-              </span>
-            )}
+            <span className="text-muted-foreground text-sm">
+              {venue.address}
+            </span>
           </div>
         </div>
 
-        {/* Tab Navigation */}
         <div className="flex border-b border-border sticky top-14 bg-background z-40">
           {tabs.map((tab) => (
             <button
@@ -135,29 +128,23 @@ const VenueDetail = () => {
           ))}
         </div>
 
-        {/* Tab Content */}
         <div className="pb-24">
           {activeTab === "info" && (
             <VenueInfoTab
-              venueId={venue.venue_id ?? venue.number}
+              venueId={venue.id}
               address={venue.address}
-              phone={venue.phone ?? undefined}
-              operatingHours={venue.opening_hour ?? undefined}
-              parking={venue.parking_info ?? undefined}
-              publicTransit={venue.public_transit ?? undefined}
             />
           )}
           {activeTab === "hall" && (
             <VenueHallTab
-              venueId={venue.venue_id ?? venue.number}
-              priceMin={venue.price_min ?? 0}
-              priceMax={venue.price_max ?? 0}
+              venueId={venue.id}
+              pricePerPerson={venue.price_per_person}
             />
           )}
           {activeTab === "review" && (
             <VenueReviewTab
-              rating={venue.rating ? parseFloat(venue.rating) : 0}
-              reviewCount={0}
+              rating={venue.rating}
+              reviewCount={venue.review_count}
             />
           )}
         </div>
@@ -182,29 +169,20 @@ const VenueDetail = () => {
 
 const VenueDetailSkeleton = () => (
   <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-    {/* Header */}
     <div className="h-14 border-b border-border flex items-center px-4">
       <Skeleton className="w-6 h-6 rounded" />
     </div>
-    
-    {/* Image */}
     <Skeleton className="aspect-[4/3] w-full" />
-    
-    {/* Title */}
     <div className="p-4 space-y-3 border-b border-border">
       <Skeleton className="h-5 w-16 rounded-full" />
       <Skeleton className="h-6 w-48" />
       <Skeleton className="h-4 w-32" />
     </div>
-    
-    {/* Tabs */}
     <div className="flex border-b border-border">
       <Skeleton className="flex-1 h-12 rounded-none" />
       <Skeleton className="flex-1 h-12 rounded-none" />
       <Skeleton className="flex-1 h-12 rounded-none" />
     </div>
-    
-    {/* Content */}
     <div className="p-4 space-y-4">
       <Skeleton className="h-16 w-full rounded-xl" />
       <Skeleton className="h-16 w-full rounded-xl" />
