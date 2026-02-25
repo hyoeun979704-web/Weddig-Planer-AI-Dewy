@@ -68,8 +68,9 @@ const AIPlanner = () => {
   try {
     // ✅ HTML 메시지 제외하고 순수 텍스트 히스토리만 전달
     const history = messages
-      .filter(m => !m.isHtml)
-      .map(m => ({ role: m.role, content: m.content }));
+  .filter(m => !m.isHtml)
+  .slice(-20)
+  .map(m => ({ role: m.role, content: m.content }));
 
     const reply = await askGemini(text, history);
     setIsTyping(false);
@@ -199,7 +200,7 @@ const AIPlanner = () => {
           />
           <button
             onClick={handleFreeTextSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isTyping}
             className="w-9 h-9 rounded-xl flex items-center justify-center transition-opacity disabled:opacity-30"
             style={{ background: input.trim() ? "linear-gradient(135deg, #F9B8C6, #C9A96E)" : "#E5E7EB" }}
           >
