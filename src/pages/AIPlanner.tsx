@@ -55,25 +55,32 @@ const AIPlanner = () => {
     setActiveModal(modal);
   };
 
-  const handleFreeTextSend = async () => {
+ const handleFreeTextSend = async () => {
   const text = input.trim();
-  if (!text) return;
+  if (!text || isTyping) return; // ✅ 중복 전송 방지
 
-  setMessages(prev => [...prev, { id: nextId(), role: "user", content: text }]);
+  const userMsg: ChatMessage = { id: nextId(), role: "user", content: text };
+  setMessages(prev => [...prev, userMsg]);
   setInput("");
   setShowChips(false);
   setIsTyping(true);
 
   try {
-    const reply = await askGemini(text, messages); // Gemini 호출
+    // ✅ HTML 메시지 제외하고 순수 텍스트 히스토리만 전달
+    const history = messages
+      .filter(m => !m.isHtml)
+      .map(m => ({ role: m.role, content: m.content }));
+
+    const reply = await askGemini(text, history);
     setIsTyping(false);
     setMessages(prev => [...prev, { id: nextId(), role: "assistant", content: reply }]);
   } catch (error) {
     setIsTyping(false);
+    const errorMessage = error instanceof Error ? error.message : "일시적인 오류가 발생했어요.";
     setMessages(prev => [...prev, {
       id: nextId(),
       role: "assistant",
-      content: "죄송해요, 일시적인 오류가 발생했어요. 잠시 후 다시 시도해주세요 😢"
+      content: `죄송해요, ${errorMessage} 잠시 후 다시 시도해주세요 😢`
     }]);
   }
 };
