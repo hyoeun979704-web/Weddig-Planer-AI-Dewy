@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Paperclip, Send } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
+import { askGemini } from "@/lib/gemini";
 import TypingIndicator from "@/components/wedding-planner/TypingIndicator";
 import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
 import SdmeSurvey from "@/components/wedding-planner/SdmeSurvey";
@@ -54,14 +55,29 @@ const AIPlanner = () => {
     setActiveModal(modal);
   };
 
-  const handleFreeTextSend = () => {
-    const text = input.trim();
-    if (!text) return;
-    setMessages(prev => [...prev, { id: nextId(), role: "user", content: text }]);
-    setInput("");
-    setShowChips(false);
-    addAssistantMessage(GENERIC_RESPONSE);
-  };
+  const handleFreeTextSend = async () => {
+  const text = input.trim();
+  if (!text) return;
+
+  setMessages(prev => [...prev, { id: nextId(), role: "user", content: text }]);
+  setInput("");
+  setShowChips(false);
+  setIsTyping(true);
+
+  try {
+    const reply = await askGemini(text, messages); // Gemini 호출
+    setIsTyping(false);
+    setMessages(prev => [...prev, { id: nextId(), role: "assistant", content: reply }]);
+  } catch (error) {
+    setIsTyping(false);
+    setMessages(prev => [...prev, {
+      id: nextId(),
+      role: "assistant",
+      content: "죄송해요, 일시적인 오류가 발생했어요. 잠시 후 다시 시도해주세요 😢"
+    }]);
+  }
+};
+
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
