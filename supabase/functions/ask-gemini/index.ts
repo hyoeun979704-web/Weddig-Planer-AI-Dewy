@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-
 const SYSTEM_PROMPT = `
 1. 페르소나 정의
 당신은 한국의 웨딩 트렌드와 예절, 실무 절차를 완벽하게 파악하고 있는 수석 웨딩플래너 'dewy'입니다.
@@ -32,7 +29,6 @@ const SYSTEM_PROMPT = `
 - 불확실한 정보는 "대략적인 평균가이며 업체별로 상이할 수 있어요"라고 명시
 `;
 
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -45,30 +41,43 @@ serve(async (req) => {
 
   try {
     const { userMessage, history } = await req.json();
-    const contents = [
+
+    const messages = [
+      { role: "system", content: SYSTEM_PROMPT },
       ...history.map((msg: any) => ({
-        role: msg.role === "user" ? "user" : "model",
-        parts: [{ text: msg.content }],
+        role: msg.role === "user" ? "user" : "assistant",
+        content: msg.content,
       })),
-      { role: "user", parts: [{ text: userMessage }] },
+      { role: "user", content: userMessage },
     ];
 
-    const response = await fetch(API_URL, {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents,
+        model: "google/gemini-2.5-flash",
+        messages,
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Lovable AI error:", response.status, errorText);
+      throw new Error(`AI API error: ${response.status}`);
+    }
+
     const data = await response.json();
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "응답을 받지 못했어요.";
+    const reply = data?.choices?.[0]?.message?.content ?? "응답을 받지 못했어요.";
 
     return new Response(JSON.stringify({ reply }), {
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
     });
   } catch (error) {
+    console.error("ask-gemini error:", error);
     return new Response(JSON.stringify({ error: "오류가 발생했어요" }), {
       status: 500,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },

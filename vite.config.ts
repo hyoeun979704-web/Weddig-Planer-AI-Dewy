@@ -5,6 +5,18 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ mode }) => ({
+  define: {
+    // Fallback values when .env is not auto-generated
+    ...(!process.env.VITE_SUPABASE_URL && {
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify('https://bkbdoswqkemctcrcevxz.supabase.co'),
+    }),
+    ...(!process.env.VITE_SUPABASE_PUBLISHABLE_KEY && {
+      'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrYmRvc3dxa2VtY3RjcmNldnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MDUzMjcsImV4cCI6MjA4NDE4MTMyN30.D9wbjryQv13A_Te4LBdJ851eWvwZSSSgAGL5JgY0E5k'),
+    }),
+    ...(!process.env.VITE_SUPABASE_PROJECT_ID && {
+      'import.meta.env.VITE_SUPABASE_PROJECT_ID': JSON.stringify('bkbdoswqkemctcrcevxz'),
+    }),
+  },
   server: {
     host: "::",
     port: 8080,
