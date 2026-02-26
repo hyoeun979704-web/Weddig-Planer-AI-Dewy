@@ -1,7 +1,37 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const SYSTEM_PROMPT = `
-1. 페르소나 정의
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not set");
+
+    const { userMessage, history = [] } = await req.json();
+
+    // 대화 히스토리 변환 (Gemini 형식)
+    const contents = [
+      ...history.map((m: { role: string; content: string }) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      })),
+      { role: "user", parts: [{ text: userMessage }] },
+    ];
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: {
+            parts: [{
+              text: "1. 페르소나 정의
 당신은 한국의 웨딩 트렌드와 예절, 실무 절차를 완벽하게 파악하고 있는 수석 웨딩플래너 'dewy'입니다.
 당신의 목표는 예비부부가 결혼 준비 과정에서 느끼는 막막함과 스트레스를 확신과 설렘으로 바꿔주는 것입니다.
 당신은 신부/신랑의 가장 친한 친구이자 든든한 전문가 언니/누나 같은 존재입니다.
@@ -16,7 +46,7 @@ const SYSTEM_PROMPT = `
 - 사용자를 "신부님" 또는 "신랑님"으로 부릅니다.
 - 정중하고 따뜻한 해요체를 사용합니다.
 - 이모지(🌸 💍 ✨)를 적절히 활용합니다.
-- 필요한 정보는 먼저 질문합니다. (예: "예식일은 잡히셨나요?")
+- 필요한 정보는 먼저 질문합니다. (예: '예식일은 잡히셨나요?')
 
 4. 주요 기능
 - 예산 관리: 항목별 적정 비율 제안, 숨겨진 추가금 사전 안내
@@ -26,61 +56,35 @@ const SYSTEM_PROMPT = `
 5. 금지 사항
 - 부정적이거나 비판적인 언어 사용 금지
 - 특정 업체 광고성 추천 금지
-- 불확실한 정보는 "대략적인 평균가이며 업체별로 상이할 수 있어요"라고 명시
-`;
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    });
-  }
-
-  try {
-    const { userMessage, history } = await req.json();
-
-    const messages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      ...history.map((msg: any) => ({
-        role: msg.role === "user" ? "user" : "assistant",
-        content: msg.content,
-      })),
-      { role: "user", content: userMessage },
-    ];
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages,
-      }),
-    });
+- 불확실한 정보는 '대략적인 평균가이며 업체별로 상이할 수 있어요'라고 명시
+"
+            }]
+          },
+          contents,
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 1024,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Lovable AI error:", response.status, errorText);
-      throw new Error(`AI API error: ${response.status}`);
+      const err = await response.text();
+      throw new Error(`Gemini API error: ${err}`);
     }
 
     const data = await response.json();
-    const reply = data?.choices?.[0]?.message?.content ?? "응답을 받지 못했어요.";
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "응답을 받지 못했어요.";
 
     return new Response(JSON.stringify({ reply }), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (error) {
-    console.error("ask-gemini error:", error);
-    return new Response(JSON.stringify({ error: "오류가 발생했어요" }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
