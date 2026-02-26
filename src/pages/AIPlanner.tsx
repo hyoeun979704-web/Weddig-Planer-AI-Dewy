@@ -18,10 +18,10 @@ type Message = {
 type ModalType = "venue" | "sdme" | "timeline" | "budget" | null;
 
 const QUICK_QUESTIONS = [
-  { emoji: "🏛️", label: "웨딩홀 어떻게 골라요?", modal: "venue" as ModalType },
+  { emoji: "🏛️", label: "웨딩홀 추천해줘.", modal: "venue" as ModalType },
   { emoji: "📸", label: "스드메 순서 알려줘", modal: "sdme" as ModalType },
   { emoji: "📅", label: "결혼 준비 타임라인", modal: "timeline" as ModalType },
-  { emoji: "💰", label: "예산 어떻게 짜요?", modal: "budget" as ModalType, premium: true },
+  { emoji: "💰", label: "예산 계획 도와줘", modal: "budget" as ModalType, premium: true },
 ];
 
 const AIPlanner = () => {
