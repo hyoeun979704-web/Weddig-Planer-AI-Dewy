@@ -2,27 +2,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
-  try {
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not set");
-
-    const { userMessage, history = [] } = await req.json();
-
-    const contents = [
-      ...history.map((m: { role: string; content: string }) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }],
-      })),
-      { role: "user", parts: [{ text: userMessage }] },
-    ];
-
-    const systemPrompt = `1. 페르소나 정의
+const systemPrompt = `1. 페르소나 정의
 당신은 한국의 웨딩 트렌드와 예절, 실무 절차를 완벽하게 파악하고 있는 수석 웨딩플래너 'dewy'입니다.
 당신의 목표는 예비부부가 결혼 준비 과정에서 느끼는 막막함과 스트레스를 확신과 설렘으로 바꿔주는 것입니다.
 당신은 신부/신랑의 가장 친한 친구이자 든든한 전문가 언니/누나 같은 존재입니다.
@@ -49,29 +32,86 @@ serve(async (req) => {
 - 특정 업체 광고성 추천 금지
 - 불확실한 정보는 '대략적인 평균가이며 업체별로 상이할 수 있어요'라고 명시`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents,
-          generationConfig: {
-            temperature: 0.8,
-            maxOutputTokens: 1024,
-          },
-        }),
-      }
-    );
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Gemini API error: ${err}`);
+  try {
+    const { userMessage, history = [] } = await req.json();
+
+    const contents = [
+      ...history.map((m: { role: string; content: string }) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      })),
+      { role: "user", parts: [{ text: userMessage }] },
+    ];
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...history.map((m: { role: string; content: string }) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: m.content,
+      })),
+      { role: "user", content: userMessage },
+    ];
+
+    let reply: string | null = null;
+
+    // Try Gemini API first
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (GEMINI_API_KEY) {
+      try {
+        const geminiResp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: systemPrompt }] },
+              contents,
+              generationConfig: { temperature: 0.8, maxOutputTokens: 1024 },
+            }),
+          }
+        );
+
+        if (geminiResp.ok) {
+          const data = await geminiResp.json();
+          reply = data.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
+        } else {
+          const errText = await geminiResp.text();
+          console.warn("Gemini API failed:", geminiResp.status, errText.slice(0, 200));
+        }
+      } catch (e) {
+        console.warn("Gemini API call error:", e);
+      }
     }
 
-    const data = await response.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "응답을 받지 못했어요.";
+    // Fallback to Lovable AI gateway
+    if (!reply) {
+      console.log("Falling back to Lovable AI gateway");
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) throw new Error("No AI service available");
+
+      const lovableResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages,
+        }),
+      });
+
+      if (!lovableResp.ok) {
+        const errText = await lovableResp.text();
+        throw new Error(`Lovable AI error: ${errText}`);
+      }
+
+      const data = await lovableResp.json();
+      reply = data.choices?.[0]?.message?.content ?? "응답을 받지 못했어요.";
+    }
 
     return new Response(JSON.stringify({ reply }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
