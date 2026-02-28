@@ -125,7 +125,9 @@ export const useAIPlanner = () => {
 
           try {
             const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            // Support both OpenAI and Gemini SSE formats
+            const content = parsed.choices?.[0]?.delta?.content
+              || parsed.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
             if (content) upsertAssistant(content);
           } catch {
             textBuffer = line + "\n" + textBuffer;
@@ -145,7 +147,8 @@ export const useAIPlanner = () => {
           if (jsonStr === "[DONE]") continue;
           try {
             const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            const content = parsed.choices?.[0]?.delta?.content
+              || parsed.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
             if (content) upsertAssistant(content);
           } catch { /* ignore partial leftovers */ }
         }
