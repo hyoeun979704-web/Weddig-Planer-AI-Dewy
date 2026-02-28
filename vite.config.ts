@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => ({
     ...(!process.env.VITE_SUPABASE_PUBLISHABLE_KEY && {
       'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrYmRvc3dxa2VtY3RjcmNldnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MDUzMjcsImV4cCI6MjA4NDE4MTMyN30.D9wbjryQv13A_Te4LBdJ851eWvwZSSSgAGL5JgY0E5k'),
     }),
+    ...(!process.env.VITE_SUPABASE_ANON_KEY && {
+      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrYmRvc3dxa2VtY3RjcmNldnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MDUzMjcsImV4cCI6MjA4NDE4MTMyN30.D9wbjryQv13A_Te4LBdJ851eWvwZSSSgAGL5JgY0E5k'),
+    }),
     ...(!process.env.VITE_SUPABASE_PROJECT_ID && {
       'import.meta.env.VITE_SUPABASE_PROJECT_ID': JSON.stringify('bkbdoswqkemctcrcevxz'),
     }),

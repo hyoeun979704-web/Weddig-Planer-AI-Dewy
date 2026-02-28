@@ -356,53 +356,92 @@ serve(async (req) => {
     const systemPrompt = BASE_SYSTEM_PROMPT + userContext;
     console.log("Dewy AI Planner request received, messages count:", messages.length, "has user context:", !!userContext);
 
-    // Convert messages to Gemini format
+    // Try Gemini first, fallback to Lovable AI gateway
+    let streamResponse: Response | null = null;
+
+    // Attempt Gemini API
     const geminiContents = messages.map((m: Message) => ({
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     }));
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: geminiContents,
-          generationConfig: {
-            temperature: 0.8,
-            maxOutputTokens: 2048,
-          },
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        console.error("Rate limit exceeded");
-        return new Response(
-          JSON.stringify({ error: "요청 한도를 초과했어요. 잠시 후 다시 시도해주세요." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        console.error("Payment required");
-        return new Response(
-          JSON.stringify({ error: "크레딧이 부족해요. 충전 후 이용해주세요." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: "AI 서비스에 문제가 발생했어요." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    try {
+      const geminiResp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents: geminiContents,
+            generationConfig: { temperature: 0.8, maxOutputTokens: 2048 },
+          }),
+        }
       );
+
+      if (geminiResp.ok) {
+        streamResponse = geminiResp;
+        console.log("Streaming response from Gemini API");
+      } else {
+        const errText = await geminiResp.text();
+        console.warn("Gemini API failed:", geminiResp.status, errText.slice(0, 200));
+      }
+    } catch (e) {
+      console.warn("Gemini API call error:", e);
     }
 
-    console.log("Streaming response from Gemini API");
-    return new Response(response.body, {
+    // Fallback to Lovable AI gateway
+    if (!streamResponse) {
+      console.log("Falling back to Lovable AI gateway");
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) {
+        return new Response(
+          JSON.stringify({ error: "AI 서비스를 이용할 수 없어요. 잠시 후 다시 시도해주세요." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const lovableResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages,
+          ],
+          stream: true,
+        }),
+      });
+
+      if (!lovableResp.ok) {
+        const errText = await lovableResp.text();
+        console.error("Lovable AI gateway error:", lovableResp.status, errText);
+        if (lovableResp.status === 429) {
+          return new Response(
+            JSON.stringify({ error: "요청 한도를 초과했어요. 잠시 후 다시 시도해주세요." }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (lovableResp.status === 402) {
+          return new Response(
+            JSON.stringify({ error: "크레딧이 부족해요." }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        return new Response(
+          JSON.stringify({ error: "AI 서비스에 문제가 발생했어요." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      streamResponse = lovableResp;
+    }
+
+    return new Response(streamResponse.body, {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/event-stream",
