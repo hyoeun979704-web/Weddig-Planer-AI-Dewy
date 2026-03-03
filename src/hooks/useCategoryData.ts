@@ -107,14 +107,9 @@ async function fetchCategoryItems(
     .from(tableName)
     .select('*', { count: 'exact' });
 
-  // venues 테이블에는 is_partner, rating(numeric) 정렬 칼럼이 다름
-  if (category !== 'venues') {
-    query = query
-      .order('is_partner', { ascending: false })
-      .order('rating', { ascending: false });
-  } else {
-    query = query.order('created_at', { ascending: false });
-  }
+  query = query
+    .order('is_partner', { ascending: false })
+    .order('rating', { ascending: false });
 
   query = query.range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
 

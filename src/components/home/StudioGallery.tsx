@@ -1,65 +1,40 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Heart, Eye, MessageSquare } from "lucide-react";
+import { ChevronRight, Star, MapPin } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface PopularPost {
+interface StudioItem {
   id: string;
-  title: string;
-  category: string;
-  views: number;
-  image_url: string | null;
-  like_count: number;
-  comment_count: number;
+  name: string;
+  address: string;
+  price_per_person: number;
+  rating: number;
+  review_count: number;
+  thumbnail_url: string | null;
+  is_partner: boolean;
 }
+
+const formatPrice = (price: number): string => {
+  if (price >= 10000) return `${Math.floor(price / 10000)}만원`;
+  return `${price.toLocaleString()}원`;
+};
 
 const StudioGallery = () => {
   const navigate = useNavigate();
 
-  const { data: posts = [], isLoading } = useQuery({
-    queryKey: ["popular-posts-home"],
-    queryFn: async (): Promise<PopularPost[]> => {
-      // Fetch top posts by views
+  const { data: studios = [], isLoading } = useQuery({
+    queryKey: ["home-studio-gallery"],
+    queryFn: async (): Promise<StudioItem[]> => {
       const { data, error } = await supabase
-        .from("community_posts")
-        .select("id, title, category, views, image_urls")
-        .order("views", { ascending: false })
+        .from("studios")
+        .select("id, name, address, price_per_person, rating, review_count, thumbnail_url, is_partner")
+        .order("is_partner", { ascending: false })
+        .order("rating", { ascending: false })
         .limit(6);
 
       if (error) throw error;
-      if (!data) return [];
-
-      // Fetch like counts
-      const postIds = data.map((p) => p.id);
-      const { data: likes } = await supabase
-        .from("community_likes")
-        .select("post_id")
-        .in("post_id", postIds);
-
-      const { data: comments } = await supabase
-        .from("community_comments")
-        .select("post_id")
-        .in("post_id", postIds);
-
-      const likeCounts: Record<string, number> = {};
-      const commentCounts: Record<string, number> = {};
-      (likes || []).forEach((l) => {
-        likeCounts[l.post_id] = (likeCounts[l.post_id] || 0) + 1;
-      });
-      (comments || []).forEach((c) => {
-        commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1;
-      });
-
-      return data.map((p) => ({
-        id: p.id,
-        title: p.title,
-        category: p.category,
-        views: p.views || 0,
-        image_url: p.image_urls && p.image_urls.length > 0 ? p.image_urls[0] : null,
-        like_count: likeCounts[p.id] || 0,
-        comment_count: commentCounts[p.id] || 0,
-      }));
+      return (data || []) as StudioItem[];
     },
   });
 
@@ -67,58 +42,69 @@ const StudioGallery = () => {
     <section className="py-6 bg-muted/30">
       <div className="flex items-center justify-between px-4 mb-4">
         <div>
-          <h2 className="text-lg font-bold text-foreground">실시간 인기 게시물</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">커뮤니티에서 가장 핫한 글</p>
+          <h2 className="text-lg font-bold text-foreground">인기 스드메 갤러리</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">예비부부가 가장 많이 찜한 스튜디오</p>
         </div>
         <button
-          onClick={() => navigate("/community")}
+          onClick={() => navigate("/studios")}
           className="flex items-center gap-1 text-sm text-primary font-medium"
         >
-          더보기
+          전체보기
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="space-y-2 px-4">
+      <div className="grid grid-cols-2 gap-3 px-4">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-xl" />
+            <Skeleton key={i} className="aspect-[4/3] w-full rounded-xl" />
           ))
-        ) : posts.length > 0 ? (
-          posts.map((post) => (
+        ) : studios.length > 0 ? (
+          studios.slice(0, 4).map((studio) => (
             <button
-              key={post.id}
-              onClick={() => navigate(`/community/${post.id}`)}
-              className="w-full flex items-center gap-3 p-3 bg-card rounded-xl border border-border hover:shadow-sm transition-shadow text-left"
+              key={studio.id}
+              onClick={() => navigate(`/studio/${studio.id}`)}
+              className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow text-left"
             >
-              {post.image_url && (
-                <img
-                  src={post.image_url}
-                  alt=""
-                  className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                  onError={(e) => { e.currentTarget.style.display = "none"; }}
-                />
-              )}
-              <div className="flex-1 min-w-0">
-                <span className="text-[10px] text-primary font-medium">{post.category}</span>
-                <h4 className="text-sm font-semibold text-foreground truncate">{post.title}</h4>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                    <Eye className="w-3 h-3" /> {post.views}
+              <div className="aspect-[4/3] bg-muted overflow-hidden relative">
+                {studio.thumbnail_url ? (
+                  <img
+                    src={studio.thumbnail_url}
+                    alt={studio.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                    <span className="text-3xl">📸</span>
+                  </div>
+                )}
+                {studio.is_partner && (
+                  <span className="absolute top-2 left-2 text-[10px] font-semibold bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                    파트너
                   </span>
-                  <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                    <Heart className="w-3 h-3" /> {post.like_count}
-                  </span>
-                  <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                    <MessageSquare className="w-3 h-3" /> {post.comment_count}
-                  </span>
+                )}
+              </div>
+              <div className="p-2.5">
+                <h4 className="text-sm font-semibold text-foreground truncate">{studio.name}</h4>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                  <MapPin className="w-3 h-3" />
+                  <span className="truncate">{studio.address}</span>
+                </div>
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="text-xs font-medium text-primary">{formatPrice(studio.price_per_person)}</span>
+                  <div className="flex items-center gap-0.5">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    <span className="text-xs font-medium">{studio.rating}</span>
+                  </div>
                 </div>
               </div>
             </button>
           ))
         ) : (
-          <div className="flex items-center justify-center py-8">
-            <p className="text-sm text-muted-foreground">아직 게시물이 없습니다</p>
+          <div className="col-span-2 flex items-center justify-center py-8">
+            <p className="text-sm text-muted-foreground">등록된 스튜디오가 없습니다</p>
           </div>
         )}
       </div>
