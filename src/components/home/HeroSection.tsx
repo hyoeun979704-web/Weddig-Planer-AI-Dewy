@@ -37,14 +37,15 @@ const HeroSection = () => {
         {/* CTA Buttons */}
         <div className="flex gap-3">
           <Button 
-            onClick={() => navigate("/venues")}
+            onClick={() => navigate("/studios")}
             className="flex-1 h-12 rounded-xl font-semibold gap-2"
           >
             <Search className="w-4 h-4" />
-            웨딩홀 찾기
+            스드메 찾기
           </Button>
           <Button 
             variant="outline"
+            onClick={() => navigate("/ai-planner")}
             className="flex-1 h-12 rounded-xl font-semibold gap-2 border-primary/30 hover:bg-accent"
           >
             <Sparkles className="w-4 h-4" />

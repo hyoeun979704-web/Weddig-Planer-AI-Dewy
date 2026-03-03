@@ -17,42 +17,47 @@ interface TabConfig {
   locationField: string;
   priceField: string;
   priceType: "number" | "string";
+  listPath: string;
   detailPath: string;
   title: string;
 }
 
 const tabConfigMap: Record<CategoryTab, TabConfig> = {
   home: {
-    table: "venues",
+    table: "studios",
     locationField: "address",
-    priceField: "price_min",
+    priceField: "price_per_person",
     priceType: "number",
-    detailPath: "/venues",
-    title: "맞춤 웨딩홀 추천",
+    listPath: "/studios",
+    detailPath: "/studio",
+    title: "인기 스드메 추천",
   },
   events: {
-    table: "venues",
-    locationField: "address",
-    priceField: "price_min",
-    priceType: "number",
-    detailPath: "/deals",
-    title: "이벤트 추천",
+    table: "honeymoon",
+    locationField: "destination",
+    priceField: "price_range",
+    priceType: "string",
+    listPath: "/honeymoon",
+    detailPath: "/honeymoon",
+    title: "인기 허니문 추천",
   },
   shopping: {
     table: "honeymoon_gifts",
     locationField: "brand",
     priceField: "price_range",
     priceType: "string",
-    detailPath: "/store",
+    listPath: "/honeymoon-gifts",
+    detailPath: "/honeymoon-gifts",
     title: "인기 쇼핑 상품",
   },
   info: {
-    table: "studios",
+    table: "suits",
     locationField: "address",
-    priceField: "price_per_person",
-    priceType: "number",
-    detailPath: "/influencers",
-    title: "웨딩 정보 추천",
+    priceField: "price_range",
+    priceType: "string",
+    listPath: "/suit",
+    detailPath: "/suit",
+    title: "인기 예복 추천",
   },
 };
 
@@ -78,14 +83,9 @@ export const useRecommendedItems = (activeTab: CategoryTab) => {
         .from(config.table as any)
         .select("*");
 
-      // venues 테이블에는 is_partner 칼럼이 없음
-      if (config.table === "venues") {
-        query = query.order("created_at", { ascending: false });
-      } else {
-        query = query
-          .order("is_partner", { ascending: false })
-          .order("rating", { ascending: false });
-      }
+      query = query
+        .order("is_partner", { ascending: false })
+        .order("rating", { ascending: false });
 
       const { data, error } = await query.limit(6);
 

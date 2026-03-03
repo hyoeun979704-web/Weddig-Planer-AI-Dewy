@@ -73,7 +73,7 @@ const RecommendedSection = ({ activeTab }: RecommendedSectionProps) => {
       <div className="flex items-center justify-between px-4 mb-4">
         <h2 className="text-lg font-bold text-foreground">{config.title}</h2>
         <button 
-          onClick={() => navigate(config.detailPath)}
+          onClick={() => navigate(config.listPath)}
           className="flex items-center gap-1 text-sm text-primary font-medium"
         >
           전체보기
