@@ -10,7 +10,7 @@ const SubscriptionPaymentSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const { startTrial, subscribe, refetch } = useSubscription();
+  const { refetch } = useSubscription();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -28,23 +28,13 @@ const SubscriptionPaymentSuccess = () => {
       }
 
       try {
-        // 1. Confirm payment with edge function
+        // Confirm payment + activate subscription server-side via edge function
         const { data, error } = await supabase.functions.invoke("confirm-subscription-payment", {
           body: { paymentKey, orderId, amount: Number(amount), type },
         });
 
         if (error || !data?.success) {
           throw new Error(data?.error || error?.message || "결제 승인 실패");
-        }
-
-        // 2. Activate subscription
-        if (type === "trial") {
-          const ok = await startTrial();
-          if (!ok) throw new Error("체험 활성화 실패");
-        } else {
-          const plan = type as "monthly" | "yearly";
-          const ok = await subscribe(plan);
-          if (!ok) throw new Error("구독 활성화 실패");
         }
 
         await refetch();

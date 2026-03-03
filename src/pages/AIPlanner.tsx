@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Send, Paperclip, ArrowLeft } from "lucide-react";
-import { askGemini } from "@/lib/gemini";
+import { useAIPlanner } from "@/hooks/useAIPlanner";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
 import TypingIndicator from "@/components/wedding-planner/TypingIndicator";
 import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
@@ -9,12 +9,8 @@ import SdmeSurvey from "@/components/wedding-planner/SdmeSurvey";
 import TimelineSurvey from "@/components/wedding-planner/TimelineSurvey";
 import BudgetSurvey from "@/components/wedding-planner/BudgetSurvey";
 import BottomNav from "@/components/BottomNav";
+import UpgradeModal from "@/components/premium/UpgradeModal";
 
-type Message = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-};
 type ModalType = "venue" | "sdme" | "timeline" | "budget" | null;
 
 const QUICK_QUESTIONS = [
@@ -27,42 +23,26 @@ const QUICK_QUESTIONS = [
 const AIPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "0",
-      role: "assistant",
-      content: "안녕하세요 신부님! 💍 저는 웨딩플래너 dewy예요. 결혼 준비, 무엇이든 물어보세요 🌸",
-    },
-  ]);
+  const { messages, isLoading, sendMessage, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const allMessages = messages.length === 0
+    ? [{ role: "assistant" as const, content: "안녕하세요 신부님! 💍 저는 웨딩플래너 dewy예요. 결혼 준비, 무엇이든 물어보세요 🌸" }]
+    : messages;
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+  }, [messages, isLoading]);
 
-  const sendMessage = useCallback(async (text: string, historyOverride?: Message[]) => {
-    if (!text.trim() || isTyping) return;
-    const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
-    const baseHistory = historyOverride ?? messages;
-    const newMessages = [...baseHistory, userMsg];
-    setMessages(newMessages);
+  const handleSend = (text: string) => {
+    if (!text.trim() || isLoading) return;
     setInput("");
-    setIsTyping(true);
-    try {
-      const history = baseHistory.map(m => ({ role: m.role, content: m.content }));
-      const reply = await askGemini(text, history);
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: reply }]);
-    } catch {
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: "AI 응답을 받지 못했어요. 잠시 후 다시 시도해주세요." }]);
-    } finally {
-      setIsTyping(false);
-    }
-  }, [messages, isTyping]);
+    sendMessage(text);
+  };
 
-  const handleFreeTextSend = () => sendMessage(input);
+  const handleFreeTextSend = () => handleSend(input);
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -72,19 +52,19 @@ const AIPlanner = () => {
   const handleQuickClick = (item: typeof QUICK_QUESTIONS[0]) => setActiveModal(item.modal);
   const handleVenueSubmit = (data: Record<string, string>) => {
     setActiveModal(null);
-    sendMessage(`웨딩홀 추천해줘. 지역: ${data.region ?? "미정"}, 예산: ${data.budget ?? "미정"}, 하객수: ${data.guests ?? "미정"}명`);
+    handleSend(`웨딩홀 추천해줘. 지역: ${data.region ?? "미정"}, 예산: ${data.budget ?? "미정"}, 하객수: ${data.guests ?? "미정"}명`);
   };
   const handleSdmeSubmit = (data: Record<string, string>) => {
     setActiveModal(null);
-    sendMessage(`스드메 견적 알려줘. 스타일: ${data.style ?? "미정"}, 예산: ${data.budget ?? "미정"}`);
+    handleSend(`스드메 견적 알려줘. 스타일: ${data.style ?? "미정"}, 예산: ${data.budget ?? "미정"}`);
   };
   const handleTimelineSubmit = (data: Record<string, string>) => {
     setActiveModal(null);
-    sendMessage(`결혼 준비 타임라인 짜줘. 예식일: ${data.weddingDate ?? "미정"}, 현재 진행상황: ${data.progress ?? "초기단계"}`);
+    handleSend(`결혼 준비 타임라인 짜줘. 예식일: ${data.weddingDate ?? "미정"}, 현재 진행상황: ${data.progress ?? "초기단계"}`);
   };
   const handleBudgetSubmit = (data: Record<string, string>) => {
     setActiveModal(null);
-    sendMessage(`결혼 예산 계획 세워줘. 총 예산: ${data.total ?? "미정"}, 우선순위: ${data.priority ?? "없음"}`);
+    handleSend(`결혼 예산 계획 세워줘. 총 예산: ${data.total ?? "미정"}, 우선순위: ${data.priority ?? "없음"}`);
   };
 
   return (
@@ -106,7 +86,7 @@ const AIPlanner = () => {
       {/* ✅ 채팅 영역 - pb-20으로 BottomNav 공간 확보 */}
       <main className="flex-1 overflow-y-auto pb-32 px-4">
         <div className="space-y-4 py-4">
-          {messages.length <= 1 && (
+          {messages.length === 0 && (
             <div className="grid grid-cols-2 gap-2 mt-4">
               {QUICK_QUESTIONS.map((q) => (
                 <button
@@ -122,16 +102,21 @@ const AIPlanner = () => {
               ))}
             </div>
           )}
-          {messages.map(msg => (
-            <ChatBubble key={msg.id} msg={msg} />
+          {allMessages.map((msg, i) => (
+            <ChatBubble key={i} msg={{ id: String(i), ...msg }} />
           ))}
-          {isTyping && <TypingIndicator />}
+          {isLoading && <TypingIndicator />}
           <div ref={messagesEndRef} />
         </div>
       </main>
 
       {/* ✅ 입력창 - BottomNav 바로 위에 위치 */}
       <div className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto bg-card border-t border-border p-3 z-40">
+        {dailyRemaining !== null && dailyRemaining >= 0 && (
+          <p className="text-xs text-muted-foreground text-center mb-1">
+            오늘 남은 무료 질문: {dailyRemaining}회
+          </p>
+        )}
         <div className="flex items-center gap-2">
           <button disabled className="p-2 text-muted-foreground cursor-not-allowed">
             <Paperclip className="w-5 h-5" />
@@ -146,7 +131,7 @@ const AIPlanner = () => {
           />
           <button
             onClick={handleFreeTextSend}
-            disabled={!input.trim() || isTyping}
+            disabled={!input.trim() || isLoading}
             className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center transition-opacity disabled:opacity-30"
           >
             <Send className="w-4 h-4 text-primary-foreground" />
@@ -161,6 +146,7 @@ const AIPlanner = () => {
       <SdmeSurvey isOpen={activeModal === "sdme"} onClose={() => setActiveModal(null)} onSubmit={handleSdmeSubmit} />
       <TimelineSurvey isOpen={activeModal === "timeline"} onClose={() => setActiveModal(null)} onSubmit={handleTimelineSubmit} />
       <BudgetSurvey isOpen={activeModal === "budget"} onClose={() => setActiveModal(null)} onSubmit={handleBudgetSubmit} />
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} trigger="daily_limit" />
     </div>
   );
 };
