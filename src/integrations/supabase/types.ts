@@ -528,6 +528,194 @@ export type Database = {
           },
         ]
       }
+      events: {
+        Row: {
+          benefit_detail: string | null
+          category: string | null
+          cautions: string | null
+          conditions: string | null
+          description: string | null
+          end_date: string | null
+          event_id: number
+          start_date: string | null
+          status: string | null
+          title: string
+          vendor_id: number | null
+          vendor_name: string | null
+          view_count: number | null
+        }
+        Insert: {
+          benefit_detail?: string | null
+          category?: string | null
+          cautions?: string | null
+          conditions?: string | null
+          description?: string | null
+          end_date?: string | null
+          event_id: number
+          start_date?: string | null
+          status?: string | null
+          title: string
+          vendor_id?: number | null
+          vendor_name?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          benefit_detail?: string | null
+          category?: string | null
+          cautions?: string | null
+          conditions?: string | null
+          description?: string | null
+          end_date?: string | null
+          event_id?: number
+          start_date?: string | null
+          status?: string | null
+          title?: string
+          vendor_id?: number | null
+          vendor_name?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["vendor_id"]
+          },
+        ]
+      }
+      ext_hanbok: {
+        Row: {
+          additional_options: Json | null
+          composition: string | null
+          composition_name: string | null
+          custom_price: number | null
+          fabric_option1: string | null
+          fabric_option2: string | null
+          fabric1_price: number | null
+          fabric2_price: number | null
+          hanbok_id: number
+          item_id: number | null
+          rental_price: number | null
+        }
+        Insert: {
+          additional_options?: Json | null
+          composition?: string | null
+          composition_name?: string | null
+          custom_price?: number | null
+          fabric_option1?: string | null
+          fabric_option2?: string | null
+          fabric1_price?: number | null
+          fabric2_price?: number | null
+          hanbok_id: number
+          item_id?: number | null
+          rental_price?: number | null
+        }
+        Update: {
+          additional_options?: Json | null
+          composition?: string | null
+          composition_name?: string | null
+          custom_price?: number | null
+          fabric_option1?: string | null
+          fabric_option2?: string | null
+          fabric1_price?: number | null
+          fabric2_price?: number | null
+          hanbok_id?: number
+          item_id?: number | null
+          rental_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ext_hanbok_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "ext_products"
+            referencedColumns: ["item_id"]
+          },
+        ]
+      }
+      ext_products: {
+        Row: {
+          as_warranty: string | null
+          category_sub: string | null
+          delivery_period: string | null
+          item_id: number
+          model_no: string | null
+          name: string
+          original_price: number | null
+          price: number | null
+          purchase_url: string | null
+          specs: Json | null
+          vendor_id: number | null
+        }
+        Insert: {
+          as_warranty?: string | null
+          category_sub?: string | null
+          delivery_period?: string | null
+          item_id: number
+          model_no?: string | null
+          name: string
+          original_price?: number | null
+          price?: number | null
+          purchase_url?: string | null
+          specs?: Json | null
+          vendor_id?: number | null
+        }
+        Update: {
+          as_warranty?: string | null
+          category_sub?: string | null
+          delivery_period?: string | null
+          item_id?: number
+          model_no?: string | null
+          name?: string
+          original_price?: number | null
+          price?: number | null
+          purchase_url?: string | null
+          specs?: Json | null
+          vendor_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ext_products_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["vendor_id"]
+          },
+        ]
+      }
+      ext_wedding_halls: {
+        Row: {
+          meal_cost_range: string | null
+          meal_type: string | null
+          parking_info: string | null
+          rental_cost_range: string | null
+          vendor_id: number
+        }
+        Insert: {
+          meal_cost_range?: string | null
+          meal_type?: string | null
+          parking_info?: string | null
+          rental_cost_range?: string | null
+          vendor_id: number
+        }
+        Update: {
+          meal_cost_range?: string | null
+          meal_type?: string | null
+          parking_info?: string | null
+          rental_cost_range?: string | null
+          vendor_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ext_wedding_halls_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: true
+            referencedRelation: "vendors"
+            referencedColumns: ["vendor_id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string
@@ -970,6 +1158,41 @@ export type Database = {
           },
         ]
       }
+      product_options: {
+        Row: {
+          extra_price: number | null
+          features: string | null
+          item_id: number | null
+          option_id: number
+          option_name: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          extra_price?: number | null
+          features?: string | null
+          item_id?: number | null
+          option_id: number
+          option_name?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          extra_price?: number | null
+          features?: string | null
+          item_id?: number | null
+          option_id?: number
+          option_name?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_options_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "ext_products"
+            referencedColumns: ["item_id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string | null
@@ -1045,6 +1268,95 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          ai_summary: string | null
+          content: string | null
+          created_at: string | null
+          item_id: number | null
+          rating: number | null
+          review_id: number
+          user_id: number | null
+          vendor_id: number | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          content?: string | null
+          created_at?: string | null
+          item_id?: number | null
+          rating?: number | null
+          review_id: number
+          user_id?: number | null
+          vendor_id?: number | null
+        }
+        Update: {
+          ai_summary?: string | null
+          content?: string | null
+          created_at?: string | null
+          item_id?: number | null
+          rating?: number | null
+          review_id?: number
+          user_id?: number | null
+          vendor_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["vendor_id"]
+          },
+        ]
+      }
+      shopping_products: {
+        Row: {
+          brand_id: number | null
+          cautions: string | null
+          detail_url: string | null
+          discount_rate: number | null
+          keywords: string | null
+          original_price: number | null
+          price: number | null
+          product_name: string
+          rating: number | null
+          review_count: number | null
+          sales_count: number | null
+          shopping_product_id: number
+          thumbnail_url: string | null
+        }
+        Insert: {
+          brand_id?: number | null
+          cautions?: string | null
+          detail_url?: string | null
+          discount_rate?: number | null
+          keywords?: string | null
+          original_price?: number | null
+          price?: number | null
+          product_name: string
+          rating?: number | null
+          review_count?: number | null
+          sales_count?: number | null
+          shopping_product_id: number
+          thumbnail_url?: string | null
+        }
+        Update: {
+          brand_id?: number | null
+          cautions?: string | null
+          detail_url?: string | null
+          discount_rate?: number | null
+          keywords?: string | null
+          original_price?: number | null
+          price?: number | null
+          product_name?: string
+          rating?: number | null
+          review_count?: number | null
+          sales_count?: number | null
+          shopping_product_id?: number
+          thumbnail_url?: string | null
         }
         Relationships: []
       }
@@ -1258,6 +1570,60 @@ export type Database = {
           user_id?: string
           wedding_date?: string | null
           wedding_region?: string | null
+        }
+        Relationships: []
+      }
+      vendors: {
+        Row: {
+          address: string | null
+          amenities: string | null
+          avg_rating: number | null
+          business_hours: string | null
+          category_type: string
+          keywords: string | null
+          name: string
+          parking_hours: string | null
+          parking_location: string | null
+          region: string | null
+          review_count: number | null
+          sns_info: Json | null
+          tel: string | null
+          thumbnail_url: string | null
+          vendor_id: number
+        }
+        Insert: {
+          address?: string | null
+          amenities?: string | null
+          avg_rating?: number | null
+          business_hours?: string | null
+          category_type: string
+          keywords?: string | null
+          name: string
+          parking_hours?: string | null
+          parking_location?: string | null
+          region?: string | null
+          review_count?: number | null
+          sns_info?: Json | null
+          tel?: string | null
+          thumbnail_url?: string | null
+          vendor_id: number
+        }
+        Update: {
+          address?: string | null
+          amenities?: string | null
+          avg_rating?: number | null
+          business_hours?: string | null
+          category_type?: string
+          keywords?: string | null
+          name?: string
+          parking_hours?: string | null
+          parking_location?: string | null
+          region?: string | null
+          review_count?: number | null
+          sns_info?: Json | null
+          tel?: string | null
+          thumbnail_url?: string | null
+          vendor_id?: number
         }
         Relationships: []
       }

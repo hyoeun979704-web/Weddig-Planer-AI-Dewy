@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { categoryRouteMap } from "@/hooks/useVendors";
 
 interface CategoryItem {
   label: string;
@@ -6,16 +7,11 @@ interface CategoryItem {
   path: string;
 }
 
-const categories: CategoryItem[] = [
-  { label: "웨딩홀", emoji: "🏛️", path: "/venues" },
-  { label: "스드메", emoji: "📸", path: "/studios" },
-  { label: "혼수·골든타임", emoji: "🎁", path: "/honeymoon-gifts" },
-  { label: "허니문", emoji: "🌴", path: "/honeymoon" },
-  { label: "가전·예물", emoji: "💍", path: "/appliances" },
-  { label: "예복", emoji: "👔", path: "/suit" },
-  { label: "한복", emoji: "👗", path: "/hanbok" },
-  { label: "청첩장 모임", emoji: "✉️", path: "/invitation-venues" },
-];
+const categories: CategoryItem[] = Object.entries(categoryRouteMap).map(([, config]) => ({
+  label: config.label,
+  emoji: config.emoji,
+  path: config.listPath,
+}));
 
 const HomeCategoryGrid = () => {
   const navigate = useNavigate();
