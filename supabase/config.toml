@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.confirm-subscription-payment]
 verify_jwt = false
+
+[functions.migrate-data]
+verify_jwt = false
