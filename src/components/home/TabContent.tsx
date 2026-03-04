@@ -18,7 +18,7 @@ const TabContent = ({ activeTab }: TabContentProps) => {
       {/* Show category grid on home tab */}
       {activeTab === "home" && <HomeCategoryGrid />}
 
-      <RecommendedSection activeTab={activeTab} />
+      <RecommendedSection />
 
       {activeTab === "home" && <StudioGallery />}
 

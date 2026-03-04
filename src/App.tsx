@@ -57,6 +57,8 @@ const FAQ = lazy(() => import("./pages/FAQ"));
 const Settings = lazy(() => import("./pages/Settings"));
 const InvitationVenues = lazy(() => import("./pages/InvitationVenues"));
 const InvitationVenueDetail = lazy(() => import("./pages/InvitationVenueDetail"));
+const VendorList = lazy(() => import("./pages/VendorList"));
+const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PremiumContent = lazy(() => import("./pages/PremiumContent"));
 const Premium = lazy(() => import("./pages/Premium"));
@@ -155,6 +157,8 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/invitation-venues" element={<InvitationVenues />} />
               <Route path="/invitation-venues/:id" element={<InvitationVenueDetail />} />
+              <Route path="/vendors/:category" element={<VendorList />} />
+              <Route path="/vendor/:id" element={<VendorDetailPage />} />
               <Route path="/premium" element={<Premium />} />
               <Route path="/couple-vote" element={<CoupleVote />} />
               <Route path="/couple-vote/:id" element={<CoupleVoteDetail />} />
