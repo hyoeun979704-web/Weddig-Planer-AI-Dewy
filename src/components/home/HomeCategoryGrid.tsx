@@ -30,14 +30,20 @@ const HomeCategoryGrid = () => {
 
   return (
     <section className="px-4 py-5">
-      <div className="grid grid-cols-4 gap-y-4 gap-x-2">
+      <div className="grid grid-cols-4 gap-y-5 gap-x-2">
         {categories.map((cat) => (
           <button
             key={cat.label}
             onClick={() => navigate(cat.path)}
-            className="flex flex-col items-center gap-1.5 py-2 rounded-xl hover:bg-accent/50 transition-colors"
+            className="flex flex-col items-center gap-2 group"
           >
-            <img src={cat.image} alt={cat.label} className="w-10 h-10 object-contain" />
+            <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-border group-hover:ring-primary/40 transition-all shadow-sm">
+              <img
+                src={cat.image}
+                alt={cat.label}
+                className="w-full h-full object-cover"
+              />
+            </div>
             <span className="text-[11px] font-medium text-foreground leading-tight text-center">
               {cat.label}
             </span>
