@@ -15,14 +15,14 @@ interface CategoryItem {
 }
 
 const categories: CategoryItem[] = [
-  { label: "웨딩홀", image: weddingHallImg, path: "/vendors/웨딩홀" },
-  { label: "스드메", image: studioImg, path: "/vendors/스드메" },
-  { label: "한복", image: hanbokImg, path: "/vendors/한복" },
-  { label: "예복", image: suitImg, path: "/vendors/예복" },
-  { label: "허니문", image: honeymoonImg, path: "/vendors/허니문" },
-  { label: "예물예단", image: jewelryImg, path: "/vendors/혼수" },
-  { label: "혼수가전", image: applianceImg, path: "/vendors/혼수" },
-  { label: "청첩장·모임", image: invitationImg, path: "/vendors/청첩장" },
+  { label: "웨딩홀", image: weddingHallImg, path: "/venues" },
+  { label: "스드메", image: studioImg, path: "/studios" },
+  { label: "한복", image: hanbokImg, path: "/hanbok" },
+  { label: "예복", image: suitImg, path: "/suit" },
+  { label: "허니문", image: honeymoonImg, path: "/honeymoon" },
+  { label: "예물예단", image: jewelryImg, path: "/honeymoon-gifts" },
+  { label: "혼수가전", image: applianceImg, path: "/appliances" },
+  { label: "청첩장·모임", image: invitationImg, path: "/invitation-venues" },
 ];
 
 const HomeCategoryGrid = () => {

@@ -1,11 +1,12 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { ChevronLeft, Star, MapPin, Users } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import CategoryFilterBar from "@/components/CategoryFilterBar";
+import CategoryGrid from "@/components/CategoryGrid";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
-import { useCategoryData, CategoryItem } from "@/hooks/useCategoryData";
+import { CategoryItem } from "@/hooks/useCategoryData";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 
 const InvitationVenues = () => {
@@ -17,10 +18,7 @@ const InvitationVenues = () => {
 
   useEffect(() => { if (isLoaded) initWithRegion(defaultRegion); }, [isLoaded]);
 
-  const { data, isLoading } = useCategoryData('invitation_venues');
-  const venues = data?.pages.flatMap(page => page.data) ?? [];
-
-  const handleVenueClick = (venue: CategoryItem) => { navigate(`/invitation-venues/${venue.id}`); };
+  const handleItemClick = (item: CategoryItem) => { navigate(`/invitation-venues/${item.id}`); };
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
@@ -39,62 +37,7 @@ const InvitationVenues = () => {
           <h2 className="text-lg font-bold text-foreground">{hasActiveFilters() ? "검색 결과" : "추천 모임 장소"}</h2>
           <p className="text-sm text-muted-foreground mt-1">{hasActiveFilters() ? "필터 조건에 맞는 모임 장소입니다" : "청첩장 전달, 결혼 인사 자리에 딱 맞는 공간"}</p>
         </div>
-        <div className="px-4">
-          {isLoading ? (
-            <div className="grid grid-cols-2 gap-3">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-card rounded-2xl overflow-hidden border border-border animate-pulse">
-                  <div className="aspect-[4/3] bg-muted" />
-                  <div className="p-3 space-y-2">
-                    <div className="h-4 bg-muted rounded w-3/4" />
-                    <div className="h-3 bg-muted rounded w-1/2" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : venues && venues.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
-              {venues.map((venue) => (
-                <button key={venue.id} onClick={() => handleVenueClick(venue)} className="bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-colors text-left">
-                  <div className="relative aspect-[4/3] bg-muted">
-                    {venue.thumbnail_url ? (
-                      <img src={venue.thumbnail_url} alt={venue.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl">🍽️</div>
-                    )}
-                    {venue.is_partner && (
-                      <span className="absolute top-2 left-2 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full">파트너</span>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <h3 className="font-bold text-sm text-foreground line-clamp-1 mb-1">{venue.name}</h3>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                      <MapPin className="w-3 h-3" />
-                      <span className="line-clamp-1">{venue.address as string}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-                      <Users className="w-3 h-3" />
-                      <span>{(venue as any).capacity_range}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                        <span className="text-xs font-medium">{venue.rating}</span>
-                        <span className="text-xs text-muted-foreground">({venue.review_count})</span>
-                      </div>
-                      <span className="text-xs font-bold text-primary">{venue.price_range.split('~')[0]}~</span>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12">
-              <span className="text-4xl mb-4">✉️</span>
-              <p className="text-muted-foreground">등록된 모임 장소가 없습니다</p>
-            </div>
-          )}
-        </div>
+        <CategoryGrid category="invitation_venues" onItemClick={handleItemClick} />
       </main>
       <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
     </div>
