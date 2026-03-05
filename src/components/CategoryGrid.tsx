@@ -13,17 +13,225 @@ interface CategoryGridProps {
 
 const CategoryCardSkeleton = () => (
   <div className="bg-card rounded-2xl border border-border overflow-hidden">
-    <Skeleton className="h-32 w-full" />
+    <Skeleton className="aspect-[4/3] w-full" />
     <div className="p-3 space-y-2">
+      <Skeleton className="h-3 w-20" />
       <Skeleton className="h-4 w-3/4" />
-      <Skeleton className="h-3 w-1/2" />
-      <div className="flex justify-between">
-        <Skeleton className="h-3 w-1/4" />
-        <Skeleton className="h-3 w-1/4" />
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-3 w-2/3" />
+      <div className="flex justify-between pt-1">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-3 w-20" />
       </div>
     </div>
   </div>
 );
+
+// Helper to extract keywords from various array fields
+function getKeywords(item: CategoryItem, category: CategoryType): string[] {
+  const any = item as any;
+  switch (category) {
+    case "venues": return any.hall_types || [];
+    case "studios": return any.style_options || [];
+    case "hanbok": return any.style_options || [];
+    case "suits": return any.suit_types || [];
+    case "honeymoon": return any.trip_types || [];
+    case "honeymoon_gifts": return any.category_types || [];
+    case "appliances": return any.category_types || [];
+    case "invitation_venues": return any.venue_types || [];
+    default: return [];
+  }
+}
+
+// Category-specific card content renderer
+function CategoryCardContent({ item, category }: { item: CategoryItem; category: CategoryType }) {
+  const any = item as any;
+  const rating = typeof item.rating === "string" ? parseFloat(item.rating) || 0 : item.rating || 0;
+  const keywords = getKeywords(item, category);
+
+  // Location line
+  const getLocation = () => {
+    switch (category) {
+      case "honeymoon": return item.destination || "";
+      case "honeymoon_gifts":
+      case "appliances": return item.brand || "";
+      default: return item.address || "";
+    }
+  };
+
+  // Format price range shorthand
+  const formatPrice = (range?: string) => {
+    if (!range) return null;
+    return range;
+  };
+
+  // Render category-specific detail lines
+  const renderDetails = () => {
+    switch (category) {
+      case "venues":
+        return (
+          <>
+            {item.price_per_person && (
+              <div className="space-y-0.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground">식대</span>
+                  <span className="text-xs font-semibold text-primary">
+                    {(item.price_per_person / 10000).toFixed(0)}만원~
+                  </span>
+                </div>
+                {any.min_guarantee > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">보증인원</span>
+                    <span className="text-xs font-medium text-foreground">{any.min_guarantee}명</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        );
+
+      case "studios":
+        return (
+          <>
+            {any.package_types?.length > 0 && (
+              <p className="text-[11px] text-muted-foreground truncate">
+                {any.package_types.slice(0, 3).join(" · ")}
+              </p>
+            )}
+            {item.price_per_person && (
+              <span className="text-xs font-semibold text-primary">
+                {(item.price_per_person / 10000).toFixed(0)}만원~
+              </span>
+            )}
+          </>
+        );
+
+      case "hanbok":
+        return (
+          <>
+            <div className="space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground">대여/맞춤</span>
+                <span className="text-xs font-semibold text-primary">
+                  {formatPrice(item.price_range) || "(준비중)"}
+                </span>
+              </div>
+            </div>
+          </>
+        );
+
+      case "suits":
+        return (
+          <>
+            <div className="space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground">대여/맞춤</span>
+                <span className="text-xs font-semibold text-primary">
+                  {formatPrice(item.price_range) || "(준비중)"}
+                </span>
+              </div>
+            </div>
+          </>
+        );
+
+      case "honeymoon":
+        return (
+          <>
+            {item.duration && (
+              <p className="text-[11px] text-muted-foreground">{item.duration}</p>
+            )}
+            <span className="text-xs font-semibold text-primary">
+              {formatPrice(item.price_range) || "(준비중)"}
+            </span>
+          </>
+        );
+
+      case "honeymoon_gifts":
+        return (
+          <>
+            {any.category_types?.length > 0 && (
+              <p className="text-[11px] text-muted-foreground truncate">
+                {any.category_types.slice(0, 3).join(" · ")}
+              </p>
+            )}
+            <span className="text-xs font-semibold text-primary">
+              {formatPrice(item.price_range) || "(준비중)"}
+            </span>
+          </>
+        );
+
+      case "appliances":
+        return (
+          <>
+            {any.category_types?.length > 0 && (
+              <p className="text-[11px] text-muted-foreground truncate">
+                {any.category_types.slice(0, 3).join(" · ")}
+              </p>
+            )}
+            <span className="text-xs font-semibold text-primary">
+              {formatPrice(item.price_range) || "(준비중)"}
+            </span>
+          </>
+        );
+
+      case "invitation_venues":
+        return (
+          <>
+            {any.cuisine_options?.length > 0 && (
+              <p className="text-[11px] text-muted-foreground truncate">
+                {any.cuisine_options.slice(0, 3).join(" · ")}
+              </p>
+            )}
+            <span className="text-xs font-semibold text-primary">
+              {formatPrice(item.price_range) || "(준비중)"}
+            </span>
+          </>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="p-3 space-y-1.5">
+      {/* Location */}
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <MapPin className="w-3 h-3 flex-shrink-0" />
+        <span className="truncate">{getLocation() || "(위치 미정)"}</span>
+      </div>
+
+      {/* Name */}
+      <h4 className="font-bold text-foreground text-sm truncate">{item.name}</h4>
+
+      {/* Category-specific details */}
+      {renderDetails()}
+
+      {/* Keywords */}
+      {keywords.length > 0 && (
+        <div className="flex flex-wrap gap-1 pt-0.5">
+          {keywords.slice(0, 3).map((kw, i) => (
+            <span
+              key={i}
+              className="text-[10px] px-1.5 py-0.5 bg-primary/5 text-primary rounded-full"
+            >
+              {kw}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Rating & Reviews */}
+      <div className="flex items-center gap-1 pt-0.5">
+        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+        <span className="text-xs font-semibold text-foreground">{rating.toFixed(1)}</span>
+        {item.review_count > 0 && (
+          <span className="text-xs text-muted-foreground">({item.review_count})</span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function CategoryGrid({ category, onItemClick }: CategoryGridProps) {
   const { toast } = useToast();
@@ -101,61 +309,35 @@ export default function CategoryGrid({ category, onItemClick }: CategoryGridProp
       <div className="grid grid-cols-2 gap-3">
         {allItems.map((item) => {
           const itemId = item.id || String((item as any).number);
-          const itemRating = typeof item.rating === 'string' ? parseFloat(item.rating) || 0 : (item.rating || 0);
-          const itemPrice = item.price_per_person
-            ? `${(item.price_per_person / 10000).toFixed(0)}만원~`
-            : (item as any).price_min
-            ? `${((item as any).price_min / 10000).toFixed(0)}만원~`
-            : item.price_range || "";
-          
+
           return (
-          <button
-            key={itemId}
-            onClick={() => onItemClick?.(item)}
-            className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-all text-left"
-          >
-            <div className="h-32 bg-muted overflow-hidden relative">
-              <img
-                src={item.thumbnail_url || "/placeholder.svg"}
-                alt={item.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = "/placeholder.svg";
-                }}
-              />
-              {item.is_partner && (
-                <span className="absolute top-2 left-2 px-2 py-0.5 bg-primary text-primary-foreground text-xs rounded-full flex items-center gap-1">
-                  <BadgeCheck className="w-3 h-3" />
-                  파트너
-                </span>
-              )}
-            </div>
-            <div className="p-3">
-              <h4 className="font-semibold text-foreground text-sm mb-1 truncate">
-                {item.name}
-              </h4>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-                <MapPin className="w-3 h-3" />
-                <span className="truncate">
-                  {item.address || item.destination || item.brand || (item as any).region || ""}
-                </span>
+            <button
+              key={itemId}
+              onClick={() => onItemClick?.(item)}
+              className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all text-left"
+            >
+              {/* Thumbnail */}
+              <div className="aspect-[4/3] bg-muted overflow-hidden relative">
+                <img
+                  src={item.thumbnail_url || "/placeholder.svg"}
+                  alt={item.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src = "/placeholder.svg";
+                  }}
+                />
+                {item.is_partner && (
+                  <span className="absolute top-2 left-2 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center gap-0.5 shadow-sm">
+                    <BadgeCheck className="w-3 h-3" />
+                    파트너
+                  </span>
+                )}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-primary">
-                  {itemPrice}
-                </span>
-                <div className="flex items-center gap-1">
-                  <Star className="w-3 h-3 fill-primary text-primary" />
-                  <span className="text-xs font-medium">{typeof itemRating === 'number' ? itemRating.toFixed(1) : itemRating}</span>
-                  {item.review_count > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      ({item.review_count})
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </button>
+
+              {/* Card Content */}
+              <CategoryCardContent item={item} category={category} />
+            </button>
           );
         })}
       </div>
