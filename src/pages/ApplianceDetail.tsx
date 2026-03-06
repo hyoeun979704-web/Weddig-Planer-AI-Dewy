@@ -56,8 +56,8 @@ const ApplianceDetail = () => {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-violet-200 to-purple-300 flex items-center justify-center">
-              <span className="text-8xl">💍</span>
+            <div className="w-full h-full bg-gradient-to-br from-emerald-200 to-teal-300 flex items-center justify-center">
+              <span className="text-8xl">🏠</span>
             </div>
           )}
         </div>
