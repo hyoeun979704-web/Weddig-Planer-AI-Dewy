@@ -323,7 +323,7 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
   }
 
   return (
-    <div className="px-4">
+    <div className="px-4" ref={ref}>
       <div className="grid grid-cols-2 gap-3">
         {allItems.map((item) => {
           const itemId = item.id || String((item as any).number);
@@ -376,4 +376,6 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
       </div>
     </div>
   );
-}
+});
+
+export default CategoryGrid;

@@ -27,15 +27,15 @@ const Appliances = () => {
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ChevronLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-bold text-foreground flex-1 text-center -mr-8">가전·예물</h1>
+          <h1 className="text-lg font-bold text-foreground flex-1 text-center -mr-8">혼수가전</h1>
         </div>
       </header>
       <main className="pb-20">
         <CategoryHeroBanner category="appliances" />
         <CategoryFilterBar category="appliances" />
         <div className="px-4 py-3">
-          <h2 className="text-lg font-bold text-foreground">{hasActiveFilters() ? "검색 결과" : "인기 예물·가전"}</h2>
-          <p className="text-sm text-muted-foreground mt-1">{hasActiveFilters() ? "필터 조건에 맞는 상품입니다" : "예비부부를 위한 특별한 선물"}</p>
+          <h2 className="text-lg font-bold text-foreground">{hasActiveFilters() ? "검색 결과" : "인기 혼수가전"}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{hasActiveFilters() ? "필터 조건에 맞는 상품입니다" : "신혼생활에 꼭 필요한 가전제품"}</p>
         </div>
         <CategoryGrid category="appliances" onItemClick={handleItemClick} />
       </main>
