@@ -685,4 +685,6 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
       </div>
     </div>
   );
-}
+});
+
+export default CategoryFilterBar;
