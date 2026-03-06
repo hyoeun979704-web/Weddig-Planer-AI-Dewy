@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useCategoryFilterStore, CategoryType } from "@/stores/useCategoryFilterStore";
-import { useState } from "react";
+import React, { useState, forwardRef } from "react";
 
 interface FilterConfig {
   title: string;
