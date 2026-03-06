@@ -251,7 +251,7 @@ function CategoryCardContent({ item, category }: { item: CategoryItem; category:
   );
 }
 
-export default function CategoryGrid({ category, onItemClick }: CategoryGridProps) {
+const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function CategoryGrid({ category, onItemClick }, ref) {
   const { toast } = useToast();
   const { resetFilters, hasActiveFilters } = useCategoryFilterStore();
   const loadMoreRef = useRef<HTMLDivElement>(null);
