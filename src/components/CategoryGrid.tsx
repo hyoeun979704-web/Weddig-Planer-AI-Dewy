@@ -156,30 +156,40 @@ function CategoryCardContent({ item, category }: { item: CategoryItem; category:
 
       case "honeymoon_gifts":
         return (
-          <>
-            {any.category_types?.length > 0 && (
-              <p className="text-[11px] text-muted-foreground truncate">
-                {any.category_types.slice(0, 3).join(" · ")}
-              </p>
-            )}
-            <span className="text-xs font-semibold text-primary">
-              {formatPrice(item.price_range) || "(준비중)"}
-            </span>
-          </>
+          <div className="space-y-0.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-muted-foreground">웨딩링</span>
+              <span className="text-xs font-semibold text-primary">
+                {item.price_range ? item.price_range.split('~')[0]?.trim() + '~' : '(준비중)'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-muted-foreground">커플링</span>
+              <span className="text-xs font-medium text-foreground">
+                {item.price_range ? (item.price_range.split('~')[1]?.trim() || '문의') : '문의'}
+              </span>
+            </div>
+          </div>
         );
 
       case "appliances":
         return (
-          <>
+          <div className="space-y-0.5">
             {any.category_types?.length > 0 && (
-              <p className="text-[11px] text-muted-foreground truncate">
-                {any.category_types.slice(0, 3).join(" · ")}
-              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground">카테고리</span>
+                <span className="text-xs font-medium text-foreground truncate max-w-[60%] text-right">
+                  {any.category_types.slice(0, 2).join(" · ")}
+                </span>
+              </div>
             )}
-            <span className="text-xs font-semibold text-primary">
-              {formatPrice(item.price_range) || "(준비중)"}
-            </span>
-          </>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-muted-foreground">가격</span>
+              <span className="text-xs font-semibold text-primary">
+                {formatPrice(item.price_range) || "(준비중)"}
+              </span>
+            </div>
+          </div>
         );
 
       case "invitation_venues":
