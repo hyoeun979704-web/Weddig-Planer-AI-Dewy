@@ -57,7 +57,7 @@ const HoneymoonGiftDetail = () => {
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-amber-200 to-orange-300 flex items-center justify-center">
-              <span className="text-8xl">🎁</span>
+              <span className="text-8xl">💍</span>
             </div>
           )}
         </div>
