@@ -444,7 +444,7 @@ const FilterChip = ({
   </button>
 );
 
-export default function CategoryFilterBar({ category }: CategoryFilterBarProps) {
+const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(function CategoryFilterBar({ category }, ref) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const config = filterConfigs[category];
 
