@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useCategoryFilterStore, CategoryType } from "@/stores/useCategoryFilterStore";
-import { useState } from "react";
+import React, { useState, forwardRef } from "react";
 
 interface FilterConfig {
   title: string;
@@ -444,7 +444,7 @@ const FilterChip = ({
   </button>
 );
 
-export default function CategoryFilterBar({ category }: CategoryFilterBarProps) {
+const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(function CategoryFilterBar({ category }, ref) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const config = filterConfigs[category];
 
@@ -685,4 +685,6 @@ export default function CategoryFilterBar({ category }: CategoryFilterBarProps) 
       </div>
     </div>
   );
-}
+});
+
+export default CategoryFilterBar;

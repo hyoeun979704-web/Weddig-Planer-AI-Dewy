@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef, forwardRef } from "react";
 import { Star, MapPin, BadgeCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -251,7 +251,7 @@ function CategoryCardContent({ item, category }: { item: CategoryItem; category:
   );
 }
 
-export default function CategoryGrid({ category, onItemClick }: CategoryGridProps) {
+const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function CategoryGrid({ category, onItemClick }, ref) {
   const { toast } = useToast();
   const { resetFilters, hasActiveFilters } = useCategoryFilterStore();
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -323,7 +323,7 @@ export default function CategoryGrid({ category, onItemClick }: CategoryGridProp
   }
 
   return (
-    <div className="px-4">
+    <div className="px-4" ref={ref}>
       <div className="grid grid-cols-2 gap-3">
         {allItems.map((item) => {
           const itemId = item.id || String((item as any).number);
@@ -376,4 +376,6 @@ export default function CategoryGrid({ category, onItemClick }: CategoryGridProp
       </div>
     </div>
   );
-}
+});
+
+export default CategoryGrid;
