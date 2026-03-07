@@ -28,7 +28,7 @@ const categoryConfigs: Record<CategoryType, CategoryConfig> = {
     iconColor: "text-violet-500",
     bgGradient: "from-violet-500/10 via-violet-500/5 to-background",
     accentBg: "bg-violet-500/10",
-    label: "스드메 촬영",
+    label: "스드메",
     title: ["특별한 순간을", "사진으로 담다"],
     highlight: "text-violet-500",
     description: "스튜디오, 드레스, 메이크업 패키지",
