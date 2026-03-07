@@ -27,7 +27,7 @@ const InvitationVenues = () => {
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ChevronLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-bold text-foreground flex-1 text-center -mr-8">청첩장 모임</h1>
+          <h1 className="text-lg font-bold text-foreground flex-1 text-center -mr-8">청첩장·모임</h1>
         </div>
       </header>
       <main className="pb-20">
