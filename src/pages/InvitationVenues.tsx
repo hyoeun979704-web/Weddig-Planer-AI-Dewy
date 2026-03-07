@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { ChevronLeft } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import BottomNav from "@/components/BottomNav";
 import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import CategoryFilterBar from "@/components/CategoryFilterBar";
