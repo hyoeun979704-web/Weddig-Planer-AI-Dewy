@@ -38,7 +38,7 @@ const categoryConfigs: Record<CategoryType, CategoryConfig> = {
     iconColor: "text-sky-500",
     bgGradient: "from-sky-500/10 via-sky-500/5 to-background",
     accentBg: "bg-sky-500/10",
-    label: "허니문 여행",
+    label: "허니문",
     title: ["신혼여행,", "어디로 갈까?"],
     highlight: "text-sky-500",
     description: "발리, 몰디브, 유럽 등 인기 허니문 패키지",
