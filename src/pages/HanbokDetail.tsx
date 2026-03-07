@@ -1,17 +1,24 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Star, MapPin, Phone, Share2, ChevronRight, Palette, Sparkles } from "lucide-react";
+import { ArrowLeft, Share2, Star, Phone, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import VenueImageGallery from "@/components/venue/VenueImageGallery";
+import HanbokInfoTab from "@/components/hanbok/HanbokInfoTab";
+import HanbokPhotoTab from "@/components/hanbok/HanbokPhotoTab";
+import HanbokReviewTab from "@/components/hanbok/HanbokReviewTab";
 
 type Hanbok = Tables<"hanbok">;
+type TabType = "info" | "photo" | "review";
 
 const HanbokDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<TabType>("info");
 
   const { data: hanbok, isLoading, error } = useQuery({
     queryKey: ["hanbok", id],
@@ -21,200 +28,90 @@ const HanbokDetail = () => {
         .select("*")
         .eq("id", id)
         .maybeSingle();
-
       if (error) throw error;
       return data as Hanbok;
     },
     enabled: !!id,
   });
 
-  if (isLoading) {
-    return <DetailSkeleton />;
-  }
+  if (isLoading) return <DetailSkeleton />;
 
   if (error || !hanbok) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center p-4">
         <span className="text-4xl mb-4">😢</span>
-        <p className="text-muted-foreground text-center mb-4">
-          한복 정보를 찾을 수 없습니다.
-        </p>
+        <p className="text-muted-foreground text-center mb-4">한복 정보를 찾을 수 없습니다.</p>
         <Button onClick={() => navigate("/hanbok")}>목록으로 돌아가기</Button>
       </div>
     );
   }
 
+  const tabs: { key: TabType; label: string }[] = [
+    { key: "info", label: "상세정보" },
+    { key: "photo", label: "사진" },
+    { key: "review", label: "리뷰" },
+  ];
+
+  const galleryImages = hanbok.thumbnail_url
+    ? [hanbok.thumbnail_url, "/placeholder.svg", "/placeholder.svg"]
+    : [];
+
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto animate-fade-in">
-      {/* Header Image */}
-      <div className="relative">
-        <div className="aspect-[4/3] bg-muted">
-          {hanbok.thumbnail_url ? (
-            <img
-              src={hanbok.thumbnail_url}
-              alt={hanbok.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-rose-200 to-pink-300 flex items-center justify-center">
-              <span className="text-8xl">👗</span>
-            </div>
-          )}
-        </div>
-
-        {/* Fixed Header */}
-        <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 bg-background/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm"
-          >
-            <ArrowLeft className="w-5 h-5" />
+      {/* Fixed Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border max-w-[430px] mx-auto">
+        <div className="flex items-center justify-between px-4 h-14">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
+            <ArrowLeft className="w-6 h-6" />
           </button>
-          <div className="flex gap-2">
-            <button className="w-10 h-10 bg-background/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm">
+          <div className="flex items-center gap-1">
+            <button className="w-10 h-10 flex items-center justify-center">
               <Share2 className="w-5 h-5" />
             </button>
-            <FavoriteButton
-              itemId={hanbok.id}
-              itemType="hanbok"
-              variant="overlay"
-            />
+            <FavoriteButton itemId={hanbok.id} itemType="hanbok" variant="default" />
           </div>
         </div>
-
-        {hanbok.is_partner && (
-          <span className="absolute bottom-4 left-4 px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-full shadow-lg">
-            파트너 한복점
-          </span>
-        )}
       </div>
 
-      {/* Content */}
-      <div className="p-5">
-        {/* Title & Rating */}
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold text-foreground mb-2">{hanbok.name}</h1>
-          <div className="flex items-center gap-3">
+      <div className="pt-14">
+        <VenueImageGallery images={galleryImages} venueName={hanbok.name} />
+
+        {/* Name & Rating */}
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-xl font-bold text-foreground">{hanbok.name}</h1>
+            {hanbok.is_partner && (
+              <span className="px-2.5 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-full">파트너</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
-              <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-              <span className="font-bold text-lg">{hanbok.rating.toFixed(1)}</span>
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+              <span className="font-bold">{hanbok.rating.toFixed(1)}</span>
             </div>
-            <span className="text-muted-foreground text-sm">
-              리뷰 {hanbok.review_count.toLocaleString()}개
-            </span>
+            <span className="text-muted-foreground text-sm">리뷰 {hanbok.review_count.toLocaleString()}개</span>
           </div>
         </div>
 
-        {/* Location */}
-        <div className="flex items-start gap-3 p-4 bg-secondary rounded-xl mb-4">
-          <MapPin className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
-          <div>
-            <p className="font-medium text-foreground">{hanbok.address}</p>
-            <button className="text-primary text-sm mt-1 flex items-center gap-1">
-              지도에서 보기
-              <ChevronRight className="w-4 h-4" />
+        {/* Tabs */}
+        <div className="flex border-b border-border sticky top-14 bg-background z-40">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 py-3.5 text-sm font-medium transition-colors relative ${activeTab === tab.key ? "text-primary" : "text-muted-foreground"}`}
+            >
+              {tab.label}
+              {activeTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
             </button>
-          </div>
+          ))}
         </div>
 
-        {/* Pricing Card */}
-        <div className="bg-card border border-border rounded-xl p-5 mb-4 shadow-sm">
-          <h2 className="font-bold text-lg mb-4">가격 정보</h2>
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground">한복 가격</span>
-            <span className="text-xl font-bold text-primary">{hanbok.price_range}</span>
-          </div>
-        </div>
-
-        {/* Hanbok Types */}
-        {hanbok.hanbok_types && hanbok.hanbok_types.length > 0 && (
-          <div className="mb-4">
-            <h2 className="font-bold text-lg mb-3 flex items-center gap-2">
-              <Palette className="w-5 h-5 text-primary" />
-              한복 종류
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {hanbok.hanbok_types.map((type, idx) => (
-                <span key={idx} className="px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                  {type}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Style Options */}
-        {hanbok.style_options && hanbok.style_options.length > 0 && (
-          <div className="mb-4">
-            <h2 className="font-bold text-lg mb-3 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              스타일
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {hanbok.style_options.map((style, idx) => (
-                <span key={idx} className="px-3 py-1.5 bg-muted text-muted-foreground rounded-full text-sm">
-                  {style}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Service Options */}
-        {hanbok.service_options && hanbok.service_options.length > 0 && (
-          <div className="mb-4">
-            <h2 className="font-bold text-lg mb-3">서비스 옵션</h2>
-            <div className="flex flex-wrap gap-2">
-              {hanbok.service_options.map((service, idx) => (
-                <span key={idx} className="px-3 py-1.5 bg-muted text-muted-foreground rounded-full text-sm">
-                  {service}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Gallery */}
-        <div className="mb-4">
-          <h2 className="font-bold text-lg mb-3">한복 갤러리</h2>
-          <div className="grid grid-cols-3 gap-2">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                <span className="text-2xl opacity-50">👗</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Reviews */}
-        <div className="mb-24">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-lg">후기</h2>
-            <button className="text-primary text-sm flex items-center gap-1">
-              전체보기
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="space-y-3">
-            {[1, 2].map((i) => (
-              <div key={i} className="bg-secondary rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-muted rounded-full" />
-                  <div>
-                    <p className="font-medium text-sm">신부{i}</p>
-                    <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star key={star} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  한복이 정말 예쁘고 색감이 화사해요! 사장님도 친절하시고 좋은 경험이었습니다.
-                </p>
-              </div>
-            ))}
-          </div>
+        {/* Tab Content */}
+        <div className="pb-24">
+          {activeTab === "info" && <HanbokInfoTab hanbok={hanbok} />}
+          {activeTab === "photo" && <HanbokPhotoTab />}
+          {activeTab === "review" && <HanbokReviewTab rating={hanbok.rating} reviewCount={hanbok.review_count} />}
         </div>
       </div>
 
@@ -225,7 +122,10 @@ const HanbokDetail = () => {
             <Phone className="w-4 h-4" />
             전화 문의
           </Button>
-          <Button className="flex-1 h-12">예약하기</Button>
+          <Button className="flex-1 h-12 gap-2">
+            <Calendar className="w-4 h-4" />
+            예약하기
+          </Button>
         </div>
       </div>
     </div>
@@ -234,12 +134,20 @@ const HanbokDetail = () => {
 
 const DetailSkeleton = () => (
   <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+    <div className="h-14 border-b border-border flex items-center px-4"><Skeleton className="w-6 h-6 rounded" /></div>
     <Skeleton className="aspect-[4/3] w-full" />
-    <div className="p-5 space-y-4">
-      <Skeleton className="h-8 w-48" />
-      <Skeleton className="h-5 w-32" />
-      <Skeleton className="h-20 w-full rounded-xl" />
-      <Skeleton className="h-40 w-full rounded-xl" />
+    <div className="p-4 space-y-3 border-b border-border">
+      <Skeleton className="h-6 w-48" />
+      <Skeleton className="h-4 w-32" />
+    </div>
+    <div className="flex border-b border-border">
+      <Skeleton className="flex-1 h-12 rounded-none" />
+      <Skeleton className="flex-1 h-12 rounded-none" />
+      <Skeleton className="flex-1 h-12 rounded-none" />
+    </div>
+    <div className="p-4 space-y-4">
+      <Skeleton className="h-16 w-full rounded-xl" />
+      <Skeleton className="h-16 w-full rounded-xl" />
     </div>
   </div>
 );
