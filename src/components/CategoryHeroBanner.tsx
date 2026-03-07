@@ -88,7 +88,7 @@ const categoryConfigs: Record<CategoryType, CategoryConfig> = {
     iconColor: "text-pink-500",
     bgGradient: "from-pink-500/10 via-pink-500/5 to-background",
     accentBg: "bg-pink-500/10",
-    label: "청첩장 모임",
+    label: "청첩장·모임",
     title: ["소중한 분들과", "특별한 자리"],
     highlight: "text-pink-500",
     description: "가족, 친구들과 함께하는 청첩장 모임 장소",
