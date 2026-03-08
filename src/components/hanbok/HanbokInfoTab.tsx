@@ -14,8 +14,35 @@ const fallbackHighlights = [
   { id: "3", title: "전문 스타일링", description: "한복에 어울리는 헤어·메이크업 연계 서비스를 제공합니다", icon: "💄" },
 ];
 
+type HanbokCategory = "custom" | "rental" | "other";
+
+const hanbokCategories: { key: HanbokCategory; label: string }[] = [
+  { key: "custom", label: "맞춤" },
+  { key: "rental", label: "대여" },
+  { key: "other", label: "그외" },
+];
+
+const pricingData: Record<HanbokCategory, { label: string; value: string }[]> = {
+  custom: [
+    { label: "기본구성", value: "저고리 + 치마 (또는 바지)" },
+    { label: "기본 원단 가격", value: "문의" },
+    { label: "고급 원단 가격", value: "문의" },
+  ],
+  rental: [
+    { label: "기본구성", value: "저고리 + 치마 (또는 바지)" },
+    { label: "기본 원단 가격", value: "문의" },
+    { label: "고급 원단 가격", value: "문의" },
+  ],
+  other: [
+    { label: "기본구성", value: "아동한복 / 헤어메이크업 등" },
+    { label: "기본 원단 가격", value: "문의" },
+    { label: "고급 원단 가격", value: "문의" },
+  ],
+};
+
 const HanbokInfoTab = ({ hanbok }: HanbokInfoTabProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<HanbokCategory>("custom");
 
   const handlePrev = () => setCurrentIndex((prev) => (prev === 0 ? fallbackHighlights.length - 1 : prev - 1));
   const handleNext = () => setCurrentIndex((prev) => (prev === fallbackHighlights.length - 1 ? 0 : prev + 1));
