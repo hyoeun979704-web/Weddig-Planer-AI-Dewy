@@ -219,11 +219,11 @@ const HoneymoonGiftDetail = () => {
       {/* Fixed Bottom CTA */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 max-w-[430px] mx-auto">
         <div className="flex gap-3">
-          <Button variant="outline" className="flex-1 h-12 gap-2">
+          <Button variant="outline" className="flex-1 h-12 gap-2" onClick={() => { toast.info("전화 연결 준비 중입니다."); window.location.href = "tel:02-1234-5678"; }}>
             <Phone className="w-4 h-4" />
             문의하기
           </Button>
-          <Button className="flex-1 h-12">구매하기</Button>
+          <Button className="flex-1 h-12" onClick={() => toast.success("구매 상담 신청이 완료되었습니다.")}>구매하기</Button>
         </div>
       </div>
     </div>

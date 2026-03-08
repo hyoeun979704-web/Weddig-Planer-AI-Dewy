@@ -173,11 +173,11 @@ const InvitationVenueDetail = () => {
       {/* Fixed Bottom CTA */}
       <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-background border-t border-border p-4">
         <div className="flex gap-3">
-          <Button variant="outline" className="flex-1 gap-2">
+          <Button variant="outline" className="flex-1 gap-2" onClick={() => { toast.info("전화 연결 준비 중입니다."); window.location.href = "tel:02-1234-5678"; }}>
             <Phone className="w-4 h-4" />
             전화 문의
           </Button>
-          <Button className="flex-1">예약 문의</Button>
+          <Button className="flex-1" onClick={() => toast.success("예약 문의가 접수되었습니다. 곧 연락드리겠습니다.")}>예약 문의</Button>
         </div>
       </div>
     </div>
