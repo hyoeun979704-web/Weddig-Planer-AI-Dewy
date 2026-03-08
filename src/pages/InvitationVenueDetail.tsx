@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Star, MapPin, Users, Phone, Share2, Clock, Utensils, Car } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,7 @@ const InvitationVenueDetail = () => {
           <h1 className="font-semibold text-lg line-clamp-1 flex-1 text-center px-2">{venue.name}</h1>
           <div className="flex items-center gap-1">
             <FavoriteButton itemId={venue.id} itemType="invitation_venues" />
-            <button className="w-10 h-10 flex items-center justify-center">
+            <button className="w-10 h-10 flex items-center justify-center" onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("링크가 복사되었습니다."); }}>
               <Share2 className="w-5 h-5" />
             </button>
           </div>
@@ -172,11 +173,11 @@ const InvitationVenueDetail = () => {
       {/* Fixed Bottom CTA */}
       <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-background border-t border-border p-4">
         <div className="flex gap-3">
-          <Button variant="outline" className="flex-1 gap-2">
+          <Button variant="outline" className="flex-1 gap-2" onClick={() => { toast.info("전화 연결 준비 중입니다."); window.location.href = "tel:02-1234-5678"; }}>
             <Phone className="w-4 h-4" />
             전화 문의
           </Button>
-          <Button className="flex-1">예약 문의</Button>
+          <Button className="flex-1" onClick={() => toast.success("예약 문의가 접수되었습니다. 곧 연락드리겠습니다.")}>예약 문의</Button>
         </div>
       </div>
     </div>

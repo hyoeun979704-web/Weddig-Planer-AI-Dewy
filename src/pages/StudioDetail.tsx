@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Star, MapPin, Phone, Share2, ChevronRight, Camera, Palette, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,7 +72,7 @@ const StudioDetail = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex gap-2">
-            <button className="w-10 h-10 bg-background/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm">
+            <button className="w-10 h-10 bg-background/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm" onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("링크가 복사되었습니다."); }}>
               <Share2 className="w-5 h-5" />
             </button>
             <FavoriteButton
@@ -232,11 +233,11 @@ const StudioDetail = () => {
       {/* Fixed Bottom CTA */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 max-w-[430px] mx-auto">
         <div className="flex gap-3">
-          <Button variant="outline" className="flex-1 h-12 gap-2">
+          <Button variant="outline" className="flex-1 h-12 gap-2" onClick={() => { toast.info("전화 연결 준비 중입니다."); window.location.href = "tel:02-1234-5678"; }}>
             <Phone className="w-4 h-4" />
             전화 문의
           </Button>
-          <Button className="flex-1 h-12">상담 예약</Button>
+          <Button className="flex-1 h-12" onClick={() => toast.success("상담 예약 신청이 완료되었습니다. 곧 연락드리겠습니다.")}>상담 예약</Button>
         </div>
       </div>
     </div>

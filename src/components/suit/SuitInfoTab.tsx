@@ -1,5 +1,6 @@
 import { MapPin, Phone, Clock, Globe, Car, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Tables } from "@/integrations/supabase/types";
 
 type Suit = Tables<"suits">;
@@ -70,7 +71,7 @@ const SuitInfoTab = ({ suit }: SuitInfoTabProps) => {
         <div className="flex-1">
           <p className="text-sm text-muted-foreground mb-0.5">주소</p>
           <p className="font-medium text-foreground">{suit.address}</p>
-          <button className="text-primary text-sm mt-1 underline underline-offset-2">지도보기</button>
+          <button onClick={() => { window.open(`https://map.kakao.com/?q=${encodeURIComponent(suit.address)}`, '_blank'); }} className="text-primary text-sm mt-1 underline underline-offset-2">지도보기</button>
         </div>
       </div>
 
