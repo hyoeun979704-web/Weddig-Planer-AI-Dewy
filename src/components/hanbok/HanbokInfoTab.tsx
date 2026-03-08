@@ -14,8 +14,35 @@ const fallbackHighlights = [
   { id: "3", title: "전문 스타일링", description: "한복에 어울리는 헤어·메이크업 연계 서비스를 제공합니다", icon: "💄" },
 ];
 
+type HanbokCategory = "custom" | "rental" | "other";
+
+const hanbokCategories: { key: HanbokCategory; label: string }[] = [
+  { key: "custom", label: "맞춤" },
+  { key: "rental", label: "대여" },
+  { key: "other", label: "그외" },
+];
+
+const pricingData: Record<HanbokCategory, { label: string; value: string }[]> = {
+  custom: [
+    { label: "기본구성", value: "저고리 + 치마 (또는 바지)" },
+    { label: "기본 원단 가격", value: "문의" },
+    { label: "고급 원단 가격", value: "문의" },
+  ],
+  rental: [
+    { label: "기본구성", value: "저고리 + 치마 (또는 바지)" },
+    { label: "기본 원단 가격", value: "문의" },
+    { label: "고급 원단 가격", value: "문의" },
+  ],
+  other: [
+    { label: "기본구성", value: "아동한복 / 헤어메이크업 등" },
+    { label: "기본 원단 가격", value: "문의" },
+    { label: "고급 원단 가격", value: "문의" },
+  ],
+};
+
 const HanbokInfoTab = ({ hanbok }: HanbokInfoTabProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<HanbokCategory>("custom");
 
   const handlePrev = () => setCurrentIndex((prev) => (prev === 0 ? fallbackHighlights.length - 1 : prev - 1));
   const handleNext = () => setCurrentIndex((prev) => (prev === fallbackHighlights.length - 1 ? 0 : prev + 1));
@@ -112,36 +139,29 @@ const HanbokInfoTab = ({ hanbok }: HanbokInfoTabProps) => {
 
       <div className="border-t border-border" />
 
-      {/* Hanbok Types as filter buttons */}
-      {hanbok.hanbok_types && hanbok.hanbok_types.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="font-bold text-lg">한복 종류</h3>
-          <div className="flex flex-wrap gap-2">
-            {hanbok.hanbok_types.map((type, idx) => (
-              <span key={idx} className="px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium">{type}</span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Pricing / Composition */}
+      {/* Hanbok Type Selector + Pricing */}
       <div className="space-y-3">
-        <h3 className="font-bold text-lg">구성·가격</h3>
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="flex justify-between items-center p-4 border-b border-border">
-            <span className="text-muted-foreground">한복 가격</span>
-            <span className="font-bold text-primary">{hanbok.price_range}</span>
-          </div>
-          {hanbok.style_options && hanbok.style_options.map((style, idx) => (
-            <div key={idx} className="flex justify-between items-center p-4 border-b border-border last:border-0">
-              <span className="text-muted-foreground">{style}</span>
-              <span className="font-medium text-foreground">문의</span>
-            </div>
+        <h3 className="font-bold text-lg">종류·구성·가격</h3>
+        <div className="flex gap-2">
+          {hanbokCategories.map((cat) => (
+            <button
+              key={cat.key}
+              onClick={() => setSelectedCategory(cat.key)}
+              className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-colors ${
+                selectedCategory === cat.key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {cat.label}
+            </button>
           ))}
-          {hanbok.service_options && hanbok.service_options.map((service, idx) => (
+        </div>
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          {pricingData[selectedCategory].map((row, idx) => (
             <div key={idx} className="flex justify-between items-center p-4 border-b border-border last:border-0">
-              <span className="text-muted-foreground">{service}</span>
-              <span className="font-medium text-foreground">문의</span>
+              <span className="text-muted-foreground text-sm">{row.label}</span>
+              <span className="font-bold text-primary text-sm">{row.value}</span>
             </div>
           ))}
         </div>
