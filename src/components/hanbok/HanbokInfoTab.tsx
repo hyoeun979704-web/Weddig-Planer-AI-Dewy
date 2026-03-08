@@ -112,36 +112,29 @@ const HanbokInfoTab = ({ hanbok }: HanbokInfoTabProps) => {
 
       <div className="border-t border-border" />
 
-      {/* Hanbok Types as filter buttons */}
-      {hanbok.hanbok_types && hanbok.hanbok_types.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="font-bold text-lg">한복 종류</h3>
-          <div className="flex flex-wrap gap-2">
-            {hanbok.hanbok_types.map((type, idx) => (
-              <span key={idx} className="px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium">{type}</span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Pricing / Composition */}
+      {/* Hanbok Type Selector + Pricing */}
       <div className="space-y-3">
-        <h3 className="font-bold text-lg">구성·가격</h3>
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="flex justify-between items-center p-4 border-b border-border">
-            <span className="text-muted-foreground">한복 가격</span>
-            <span className="font-bold text-primary">{hanbok.price_range}</span>
-          </div>
-          {hanbok.style_options && hanbok.style_options.map((style, idx) => (
-            <div key={idx} className="flex justify-between items-center p-4 border-b border-border last:border-0">
-              <span className="text-muted-foreground">{style}</span>
-              <span className="font-medium text-foreground">문의</span>
-            </div>
+        <h3 className="font-bold text-lg">종류·구성·가격</h3>
+        <div className="flex gap-2">
+          {hanbokCategories.map((cat) => (
+            <button
+              key={cat.key}
+              onClick={() => setSelectedCategory(cat.key)}
+              className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-colors ${
+                selectedCategory === cat.key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {cat.label}
+            </button>
           ))}
-          {hanbok.service_options && hanbok.service_options.map((service, idx) => (
+        </div>
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          {pricingRows.map((row, idx) => (
             <div key={idx} className="flex justify-between items-center p-4 border-b border-border last:border-0">
-              <span className="text-muted-foreground">{service}</span>
-              <span className="font-medium text-foreground">문의</span>
+              <span className="text-muted-foreground text-sm">{row.label}</span>
+              <span className="font-bold text-primary text-sm">{row.value}</span>
             </div>
           ))}
         </div>
