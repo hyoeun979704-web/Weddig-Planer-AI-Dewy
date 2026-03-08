@@ -158,7 +158,7 @@ const HanbokInfoTab = ({ hanbok }: HanbokInfoTabProps) => {
           ))}
         </div>
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          {pricingRows.map((row, idx) => (
+          {pricingData[selectedCategory].map((row, idx) => (
             <div key={idx} className="flex justify-between items-center p-4 border-b border-border last:border-0">
               <span className="text-muted-foreground text-sm">{row.label}</span>
               <span className="font-bold text-primary text-sm">{row.value}</span>
