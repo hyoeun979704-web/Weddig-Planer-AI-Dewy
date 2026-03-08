@@ -70,7 +70,7 @@ const InvitationVenueDetail = () => {
           <h1 className="font-semibold text-lg line-clamp-1 flex-1 text-center px-2">{venue.name}</h1>
           <div className="flex items-center gap-1">
             <FavoriteButton itemId={venue.id} itemType="invitation_venues" />
-            <button className="w-10 h-10 flex items-center justify-center">
+            <button className="w-10 h-10 flex items-center justify-center" onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("링크가 복사되었습니다."); }}>
               <Share2 className="w-5 h-5" />
             </button>
           </div>

@@ -72,7 +72,7 @@ const VenueDetail = () => {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-1">
-            <button className="w-10 h-10 flex items-center justify-center">
+            <button className="w-10 h-10 flex items-center justify-center" onClick={() => { navigator.clipboard.writeText(window.location.href); import("sonner").then(m => m.toast.success("링크가 복사되었습니다.")); }}>
               <Share2 className="w-5 h-5" />
             </button>
             <FavoriteButton
