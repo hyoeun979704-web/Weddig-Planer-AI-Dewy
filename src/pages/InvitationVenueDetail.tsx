@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Star, MapPin, Users, Phone, Share2, Clock, Utensils, Car } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { Button } from "@/components/ui/button";
