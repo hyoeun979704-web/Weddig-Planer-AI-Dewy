@@ -99,6 +99,53 @@ const Deals = () => {
         </div>
       </div>
 
+      {/* ── 꽃 머지 게임 이벤트 카드 ── */}
+      <div className="px-4 mb-5">
+        <button
+          onClick={() => navigate("/merge-game")}
+          className="w-full rounded-2xl overflow-hidden relative cursor-pointer active:scale-[0.98] transition-transform shadow-md"
+          style={{
+            background: "linear-gradient(135deg, #FF8FAB 0%, #FFB3C6 40%, #FFC8A2 75%, #FFD700 100%)",
+          }}
+        >
+          {/* 배경 장식 원형들 */}
+          <span className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-white/10" />
+          <span className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full bg-white/10" />
+
+          <div className="relative flex items-center gap-4 px-5 py-4">
+            {/* 꽃 아이콘 그룹 */}
+            <div className="flex-shrink-0 flex flex-col items-center gap-0.5">
+              <span className="text-3xl drop-shadow">💐</span>
+              <div className="flex gap-0.5 text-base">
+                <span>🌸</span><span>🌼</span><span>🌹</span>
+              </div>
+            </div>
+
+            {/* 텍스트 */}
+            <div className="flex-1 text-left">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                  🎮 이벤트
+                </span>
+              </div>
+              <p className="font-extrabold text-white text-base leading-tight drop-shadow-sm">
+                꽃 머지 게임
+              </p>
+              <p className="text-white/85 text-xs mt-0.5 leading-snug">
+                꽃을 합쳐 프리미엄 부케를 완성하세요!
+              </p>
+            </div>
+
+            {/* CTA */}
+            <div className="flex-shrink-0 flex flex-col items-center gap-1">
+              <span className="bg-white text-pink-500 font-bold text-xs px-3 py-1.5 rounded-full shadow whitespace-nowrap">
+                지금 하기 →
+              </span>
+            </div>
+          </div>
+        </button>
+      </div>
+
       {/* Featured Deals */}
       {featured.length > 0 && (
         <div className="px-4 mb-6">

@@ -10,6 +10,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 
 // Lazy-loaded pages
+const MergeGame = lazy(() => import("./pages/MergeGame"));
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Studios = lazy(() => import("./pages/Studios"));
@@ -191,6 +192,9 @@ const App = () => (
 
               {/* 프리미엄 콘텐츠 */}
               <Route path="/premium/content" element={<PremiumContent />} />
+
+              {/* 꽃 머지 퍼즐 게임 */}
+              <Route path="/merge-game" element={<MergeGame />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
