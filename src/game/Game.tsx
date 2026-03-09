@@ -19,8 +19,8 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
   const gameStateRef = useRef<GameState>(gameState);
   gameStateRef.current = gameState;
 
-  // 획득 포인트 계산 (점수 / 10, 최소 10)
-  const earnedPoints = Math.max(10, Math.floor(gameState.score / 10));
+  // 획득 포인트 계산 (점수의 5%, 최소 10)
+  const earnedPoints = Math.max(10, Math.floor(gameState.score * 0.05));
 
   // ─── 꽃 원형 렌더링 (그라디언트 + 이모지) ───────────────────────────────
   function drawFlower(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, levelId: number, alpha = 1) {
@@ -205,7 +205,6 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
     [dropFlower]
   );
 
-  const currentLevel = FLOWER_LEVEL_MAP.get(gameState.currentLevelId);
   const nextLevel = FLOWER_LEVEL_MAP.get(gameState.nextLevelId);
 
   const handleAdDouble = () => {
@@ -223,28 +222,21 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
       className="flex flex-col items-center w-full h-full bg-pink-50 select-none overflow-hidden"
       style={{ fontFamily: 'sans-serif' }}
     >
-      {/* ── 상단 HUD (축소) ── */}
-      <div className="flex items-center justify-between w-full px-3 py-1 bg-white/90 backdrop-blur border-b border-pink-100 shadow-sm flex-shrink-0">
-        {/* 지금 꽃 */}
+      {/* ── 상단 HUD: 좌측 Score / 우측 next ── */}
+      <div className="flex items-center justify-between w-full px-3 py-1.5 bg-white/90 backdrop-blur border-b border-pink-100 shadow-sm flex-shrink-0">
+        {/* 좌측: Score 2000 🏆 */}
         <div className="flex items-center gap-1.5">
-          <span className="text-xl leading-none">{currentLevel?.emoji}</span>
-          <span className="text-[10px] text-pink-500 font-medium truncate max-w-[56px]">
-            {currentLevel?.name}
-          </span>
-        </div>
-
-        {/* 점수 */}
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-gray-400">🏆</span>
+          <span className="text-sm text-gray-500 font-medium">Score</span>
           <span className="text-lg font-bold text-pink-500 tabular-nums leading-none">
             {gameState.score}
           </span>
+          <span className="text-base leading-none">🏆</span>
         </div>
 
-        {/* 다음 꽃 */}
-        <div className="flex items-center gap-1.5 opacity-70">
-          <span className="text-[10px] text-gray-400">next</span>
-          <span className="text-base leading-none">{nextLevel?.emoji}</span>
+        {/* 우측: next [꽃] */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-gray-400 font-medium">next</span>
+          <span className="text-2xl leading-none">{nextLevel?.emoji}</span>
         </div>
       </div>
 
@@ -311,11 +303,15 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
         )}
       </div>
 
-      {/* ── 하단 광고 배너 ── */}
-      <div className="w-full flex-shrink-0 bg-gray-100 border-t border-gray-200 flex items-center justify-center"
-        style={{ height: '50px' }}
+      {/* ── 하단: 게임내 광고 보기 버튼 + 광고 배너 ── */}
+      <div className="w-full flex-shrink-0 bg-white border-t border-pink-100 flex items-center justify-end px-4"
+        style={{ height: '52px' }}
       >
-        <span className="text-xs text-gray-400">광고 배너</span>
+        <button
+          className="px-4 py-1.5 rounded-full bg-yellow-400 hover:bg-yellow-500 active:scale-95 text-white font-semibold text-sm shadow transition-all"
+        >
+          📺 게임내 광고 보기
+        </button>
       </div>
     </div>
   );
