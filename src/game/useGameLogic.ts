@@ -10,20 +10,24 @@ import {
   DROP_START_Y,
   MERGE_DELAY,
   MAX_DROP_LEVEL,
-  FLOWER_LEVELS,
   FLOWER_LEVEL_MAP,
 } from './constants';
 import type { GameObject, GameState } from './types';
 
-// 1~MAX_DROP_LEVEL 사이의 랜덤 레벨 ID를 반환
 function randomDropLevel(): number {
   return Math.floor(Math.random() * MAX_DROP_LEVEL) + 1;
 }
 
-// 고유 ID 생성기
 let idCounter = 0;
 function genId() {
   return `obj_${++idCounter}`;
+}
+
+export interface MergeFlash {
+  x: number;
+  y: number;
+  radius: number;   // 머지된 상위 오브젝트의 반지름
+  createdAt: number;
 }
 
 interface UseGameLogicOptions {
@@ -35,20 +39,25 @@ interface UseGameLogicOptions {
 export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLogicOptions) {
   const engineRef = useRef<Matter.Engine | null>(null);
   const runnerRef = useRef<Matter.Runner | null>(null);
-  const renderRef = useRef<Matter.Render | null>(null);
-
-  // gameObjects: matter Body ID → GameObject 매핑
   const gameObjectsRef = useRef<Map<number, GameObject>>(new Map());
 
-  // 대기 중인 아이템의 X 위치 (커서/터치 추적)
   const dropXRef = useRef<number>(GAME_WIDTH / 2);
-
-  // 드롭 중복 방지 플래그
   const isDroppingRef = useRef(false);
-
-  // 게임 오버 타이머 ref
   const deathTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isGameOverRef = useRef(false);
+
+  // ── Bug Fix #3: 콜백을 ref로 관리하여 클로저 staleness 방지 ──────────────
+  // 엔진 이벤트 핸들러가 생성 당시의 콜백을 고정 캡처하는 문제를 해결한다.
+  // ref.current는 항상 최신 함수를 가리키므로 props 변경에도 안전하다.
+  const onScoreChangeRef = useRef(onScoreChange);
+  const onGameOverRef = useRef(onGameOver);
+  useEffect(() => {
+    onScoreChangeRef.current = onScoreChange;
+    onGameOverRef.current = onGameOver;
+  }, [onScoreChange, onGameOver]);
+
+  // 머지 이펙트 목록: 렌더링 루프에서 읽어 Canvas에 직접 그린다
+  const mergeFlashesRef = useRef<MergeFlash[]>([]);
 
   const [gameState, setGameState] = useState<GameState>({
     phase: 'idle',
@@ -58,19 +67,16 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
     objects: [],
   });
 
-  // ─── 물리 바디 생성 헬퍼 ───────────────────────────────────────────────────
-  // 꽃 오브젝트를 matter.js 원형 바디로 생성하고 게임 맵에 등록
+  // ─── 물리 바디 생성 ────────────────────────────────────────────────────────
   const createFlowerBody = useCallback(
     (levelId: number, x: number, y: number): Matter.Body => {
       const level = FLOWER_LEVEL_MAP.get(levelId)!;
       const body = Matter.Bodies.circle(x, y, level.radius, {
-        restitution: 0.3,   // 탄성 (살짝 튀기는 효과)
-        friction: 0.5,
+        restitution: 0.25,
+        friction: 0.6,
         density: 0.002,
         label: `flower_${levelId}`,
       });
-
-      // body에 levelId를 커스텀 속성으로 저장 (matter.js는 label 외 플러그인 데이터 지원)
       (body as Matter.Body & { levelId: number }).levelId = levelId;
 
       const obj: GameObject = {
@@ -79,7 +85,6 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
         bodyId: body.id,
         isMerging: false,
       };
-
       gameObjectsRef.current.set(body.id, obj);
       return body;
     },
@@ -87,50 +92,62 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
   );
 
   // ─── 머지 처리 ─────────────────────────────────────────────────────────────
-  // 같은 레벨 두 바디가 충돌하면 하나로 합치고 상위 레벨 생성
-  const handleMerge = useCallback(
-    (bodyA: Matter.Body, bodyB: Matter.Body, engine: Matter.Engine) => {
-      const objA = gameObjectsRef.current.get(bodyA.id);
-      const objB = gameObjectsRef.current.get(bodyB.id);
+  // handleMerge를 ref로 감싸 initEngine 내부 이벤트 핸들러에서 항상 최신 함수를 호출한다.
+  // 이렇게 하면 handleMerge 의존성 배열을 비워 initEngine이 불필요하게 재생성되지 않는다.
+  const handleMergeRef = useRef<(bodyA: Matter.Body, bodyB: Matter.Body, engine: Matter.Engine) => void>();
 
-      if (!objA || !objB) return;
-      if (objA.isMerging || objB.isMerging) return;
-      if (objA.levelId !== objB.levelId) return;
+  handleMergeRef.current = (bodyA, bodyB, engine) => {
+    const objA = gameObjectsRef.current.get(bodyA.id);
+    const objB = gameObjectsRef.current.get(bodyB.id);
 
-      const level = FLOWER_LEVEL_MAP.get(objA.levelId);
-      if (!level || level.nextLevelId === null) return; // 최종 레벨은 머지 안 함
+    if (!objA || !objB) return;
+    if (objA.isMerging || objB.isMerging) return;
+    if (objA.levelId !== objB.levelId) return;
 
-      // 중복 머지 방지 플래그 설정
-      objA.isMerging = true;
-      objB.isMerging = true;
+    const level = FLOWER_LEVEL_MAP.get(objA.levelId);
+    if (!level || level.nextLevelId === null) return;
 
-      // 두 오브젝트 중심 좌표의 평균 위치에 새 오브젝트 생성
-      const midX = (bodyA.position.x + bodyB.position.x) / 2;
-      const midY = (bodyA.position.y + bodyB.position.y) / 2;
+    objA.isMerging = true;
+    objB.isMerging = true;
 
-      // matter.js 월드 수정은 setTimeout으로 물리 스텝과 분리해야 안전함
-      // (충돌 이벤트 핸들러 내부에서 직접 바디를 제거하면 엔진 상태가 깨질 수 있음)
-      setTimeout(() => {
-        Matter.World.remove(engine.world, bodyA);
-        Matter.World.remove(engine.world, bodyB);
-        gameObjectsRef.current.delete(bodyA.id);
-        gameObjectsRef.current.delete(bodyB.id);
+    const midX = (bodyA.position.x + bodyB.position.x) / 2;
+    const midY = (bodyA.position.y + bodyB.position.y) / 2;
 
-        const newBody = createFlowerBody(level.nextLevelId!, midX, midY);
-        Matter.World.add(engine.world, newBody);
+    // 물리 스텝과 분리: 충돌 이벤트 핸들러 안에서 바디를 즉시 제거하면 엔진이 깨진다
+    setTimeout(() => {
+      if (!engineRef.current) return;
+      Matter.World.remove(engine.world, bodyA);
+      Matter.World.remove(engine.world, bodyB);
+      gameObjectsRef.current.delete(bodyA.id);
+      gameObjectsRef.current.delete(bodyB.id);
 
-        setGameState((prev) => {
-          const newScore = prev.score + level.score;
-          onScoreChange?.(newScore);
-          return { ...prev, score: newScore };
+      const newBody = createFlowerBody(level.nextLevelId!, midX, midY);
+      Matter.World.add(engine.world, newBody);
+
+      // 머지 이펙트 등록
+      const nextLevel = FLOWER_LEVEL_MAP.get(level.nextLevelId!);
+      if (nextLevel) {
+        mergeFlashesRef.current.push({
+          x: midX,
+          y: midY,
+          radius: nextLevel.radius,
+          createdAt: performance.now(),
         });
-      }, MERGE_DELAY);
-    },
-    [createFlowerBody, onScoreChange]
-  );
+      }
+
+      setGameState((prev) => {
+        const newScore = prev.score + level.score;
+        onScoreChangeRef.current?.(newScore);
+        return { ...prev, score: newScore };
+      });
+    }, MERGE_DELAY);
+  };
 
   // ─── 게임 오버 체크 ─────────────────────────────────────────────────────────
-  // 매 프레임마다 DEATH_LINE_Y 위에 오브젝트가 있는지 감시
+  // Bug Fix #4: 속도(velocity)가 낮은 오브젝트만 사망 판정에 포함.
+  // 드롭 직후 빠르게 떨어지는 꽃이 데스라인을 통과해도 오작동하지 않는다.
+  const DEATH_SPEED_THRESHOLD = 1.5; // px/frame 이하면 "안착됨"으로 간주
+
   const checkDeathLine = useCallback(
     (engine: Matter.Engine) => {
       if (isGameOverRef.current) return;
@@ -139,22 +156,28 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
         (b) => b.label.startsWith('flower_')
       );
 
-      // 벽/바닥이 아닌 꽃 오브젝트가 데스라인 위에 있는지 확인
-      const overLine = bodies.some((b) => b.position.y - (b.circleRadius ?? 0) < DEATH_LINE_Y);
+      const overLine = bodies.some((b) => {
+        const speed = Matter.Vector.magnitude(b.velocity);
+        const top = b.position.y - (b.circleRadius ?? 0);
+        // 안착 상태(speed 낮음)이고 데스라인 위에 있으면 위험
+        return speed < DEATH_SPEED_THRESHOLD && top < DEATH_LINE_Y;
+      });
 
       if (overLine) {
         if (!deathTimerRef.current) {
-          // 일정 시간 유지될 때만 게임 오버 (순간 튀어오른 경우 제외)
           deathTimerRef.current = setTimeout(() => {
             if (isGameOverRef.current) return;
             const stillOver = Matter.Composite.allBodies(engine.world)
               .filter((b) => b.label.startsWith('flower_'))
-              .some((b) => b.position.y - (b.circleRadius ?? 0) < DEATH_LINE_Y);
+              .some((b) => {
+                const speed = Matter.Vector.magnitude(b.velocity);
+                return speed < DEATH_SPEED_THRESHOLD && b.position.y - (b.circleRadius ?? 0) < DEATH_LINE_Y;
+              });
 
             if (stillOver) {
               isGameOverRef.current = true;
               setGameState((prev) => {
-                onGameOver?.(prev.score);
+                onGameOverRef.current?.(prev.score);
                 return { ...prev, phase: 'gameover' };
               });
             }
@@ -162,69 +185,45 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
           }, DEATH_CHECK_DELAY);
         }
       } else {
-        // 데스라인을 벗어났으면 타이머 리셋
         if (deathTimerRef.current) {
           clearTimeout(deathTimerRef.current);
           deathTimerRef.current = null;
         }
       }
     },
-    [onGameOver]
+    [] // 외부 콜백은 ref로 관리하므로 deps 불필요
   );
 
   // ─── 엔진 초기화 ──────────────────────────────────────────────────────────
   const initEngine = useCallback(() => {
-    if (!canvasRef.current) return;
-
-    // 이전 엔진 정리
+    // Bug Fix #5: renderRef 제거 — Matter.Render를 생성하지 않으므로 관련 정리 코드 삭제
     if (runnerRef.current) Matter.Runner.stop(runnerRef.current);
-    if (renderRef.current) {
-      Matter.Render.stop(renderRef.current);
-      renderRef.current.canvas.remove();
-    }
     if (engineRef.current) Matter.Engine.clear(engineRef.current);
 
-    const engine = Matter.Engine.create({
-      gravity: { y: GRAVITY_Y },
-    });
-
-    // matter.js Render는 디버그용으로만 생성하지 않고 직접 Canvas에 그릴 것이므로 사용 안 함
-    // 물리 연산만 수행하고 렌더링은 Game.tsx의 requestAnimationFrame에서 직접 처리
-
+    const engine = Matter.Engine.create({ gravity: { y: GRAVITY_Y } });
     const halfWall = WALL_THICKNESS / 2;
 
-    // 바닥과 좌우 벽 (정적 바디 - 중력 영향 없음)
     const floor = Matter.Bodies.rectangle(
-      GAME_WIDTH / 2,
-      GAME_HEIGHT - halfWall,
-      GAME_WIDTH,
-      WALL_THICKNESS,
-      { isStatic: true, label: 'wall', friction: 0.5 }
+      GAME_WIDTH / 2, GAME_HEIGHT - halfWall, GAME_WIDTH, WALL_THICKNESS,
+      { isStatic: true, label: 'wall', friction: 0.6 }
     );
     const wallLeft = Matter.Bodies.rectangle(
-      -halfWall,
-      GAME_HEIGHT / 2,
-      WALL_THICKNESS,
-      GAME_HEIGHT,
+      -halfWall, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT,
       { isStatic: true, label: 'wall' }
     );
     const wallRight = Matter.Bodies.rectangle(
-      GAME_WIDTH + halfWall,
-      GAME_HEIGHT / 2,
-      WALL_THICKNESS,
-      GAME_HEIGHT,
+      GAME_WIDTH + halfWall, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT,
       { isStatic: true, label: 'wall' }
     );
-
     Matter.World.add(engine.world, [floor, wallLeft, wallRight]);
 
-    // 충돌 이벤트: 같은 레벨끼리 만나면 머지
+    // handleMergeRef를 통해 항상 최신 머지 로직이 실행됨 (Bug Fix #3)
     Matter.Events.on(engine, 'collisionStart', (event) => {
       event.pairs.forEach(({ bodyA, bodyB }) => {
         const oA = gameObjectsRef.current.get(bodyA.id);
         const oB = gameObjectsRef.current.get(bodyB.id);
         if (oA && oB && oA.levelId === oB.levelId) {
-          handleMerge(bodyA, bodyB, engine);
+          handleMergeRef.current?.(bodyA, bodyB, engine);
         }
       });
     });
@@ -235,24 +234,23 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
     engineRef.current = engine;
     runnerRef.current = runner;
     gameObjectsRef.current.clear();
+    mergeFlashesRef.current = [];
     isGameOverRef.current = false;
     isDroppingRef.current = false;
     if (deathTimerRef.current) {
       clearTimeout(deathTimerRef.current);
       deathTimerRef.current = null;
     }
-  }, [canvasRef, handleMerge]);
+  }, [createFlowerBody]); // handleMerge를 deps에서 제거해 initEngine이 안정적으로 유지됨
 
   // ─── 게임 시작 / 재시작 ───────────────────────────────────────────────────
   const startGame = useCallback(() => {
     initEngine();
-    const firstLevel = randomDropLevel();
-    const secondLevel = randomDropLevel();
     setGameState({
       phase: 'idle',
       score: 0,
-      currentLevelId: firstLevel,
-      nextLevelId: secondLevel,
+      currentLevelId: randomDropLevel(),
+      nextLevelId: randomDropLevel(),
       objects: [],
     });
   }, [initEngine]);
@@ -274,32 +272,13 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
       const newCurrent = prev.nextLevelId;
       const newNext = randomDropLevel();
 
-      // 드롭 후 짧은 지연을 두고 다음 드롭 허용 (연타 방지)
-      setTimeout(() => {
-        isDroppingRef.current = false;
-      }, 400);
+      setTimeout(() => { isDroppingRef.current = false; }, 450);
 
-      return {
-        ...prev,
-        phase: 'idle',
-        currentLevelId: newCurrent,
-        nextLevelId: newNext,
-      };
+      return { ...prev, currentLevelId: newCurrent, nextLevelId: newNext };
     });
   }, [createFlowerBody]);
 
-  // ─── 마우스/터치 X 위치 업데이트 ─────────────────────────────────────────
-  const updateDropX = useCallback((x: number) => {
-    if (isGameOverRef.current) return;
-    // 꽃이 벽 안에 완전히 들어오도록 X 범위 클램핑
-    const level = FLOWER_LEVEL_MAP.get(
-      // 현재 레벨을 직접 읽기 위해 setGameState를 쓰지 않고 ref 패턴 사용
-      0 // 임시값 - 아래 setGameState 내부에서 갱신
-    );
-    dropXRef.current = Math.max(20, Math.min(x, GAME_WIDTH - 20));
-  }, []);
-
-  // dropX 클램핑을 현재 레벨 반지름에 맞게 적용
+  // ─── X 위치 업데이트 (반지름 범위 내로 클램핑) ────────────────────────────
   const setDropX = useCallback((x: number, currentLevelId: number) => {
     if (isGameOverRef.current) return;
     const level = FLOWER_LEVEL_MAP.get(currentLevelId);
@@ -307,15 +286,17 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
     dropXRef.current = Math.max(r, Math.min(x, GAME_WIDTH - r));
   }, []);
 
-  // ─── 매 프레임 데스 라인 체크 ─────────────────────────────────────────────
-  // requestAnimationFrame은 Game.tsx에서 관리하고, 이 함수를 호출하도록 노출
-  const tickDeathCheck = useCallback(() => {
-    if (engineRef.current) {
-      checkDeathLine(engineRef.current);
-    }
+  // ─── 매 프레임 호출: 데스라인 + 이펙트 정리 ─────────────────────────────
+  const tick = useCallback(() => {
+    if (engineRef.current) checkDeathLine(engineRef.current);
+    // 600ms 지난 머지 이펙트 제거
+    const now = performance.now();
+    mergeFlashesRef.current = mergeFlashesRef.current.filter(
+      (f) => now - f.createdAt < 600
+    );
   }, [checkDeathLine]);
 
-  // ─── 현재 물리 오브젝트 스냅샷 (렌더링용) ────────────────────────────────
+  // ─── 렌더링용 스냅샷 ─────────────────────────────────────────────────────
   const getBodies = useCallback((): Array<{ body: Matter.Body; levelId: number }> => {
     if (!engineRef.current) return [];
     return Matter.Composite.allBodies(engineRef.current.world)
@@ -326,7 +307,6 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
       }));
   }, []);
 
-  // 컴포넌트 언마운트 시 엔진 정리
   useEffect(() => {
     return () => {
       if (runnerRef.current) Matter.Runner.stop(runnerRef.current);
@@ -338,10 +318,11 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
   return {
     gameState,
     dropXRef,
+    mergeFlashesRef,
     startGame,
     dropFlower,
     setDropX,
-    tickDeathCheck,
+    tick,
     getBodies,
   };
 }
