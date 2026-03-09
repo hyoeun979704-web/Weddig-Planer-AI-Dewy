@@ -1,4 +1,5 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
+import { Trophy } from 'lucide-react';
 import { useGameLogic } from './useGameLogic';
 import { GAME_WIDTH, GAME_HEIGHT, DEATH_LINE_Y, DROP_START_Y, FLOWER_LEVEL_MAP } from './constants';
 import type { GameState } from './types';
@@ -6,17 +7,32 @@ import type { GameState } from './types';
 interface GameProps {
   onScoreChange?: (score: number) => void;
   onGameOver?: (score: number) => void;
+  bestScore?: number;
 }
 
-export function Game({ onScoreChange, onGameOver }: GameProps) {
+export function Game({ onScoreChange, onGameOver, bestScore = 0 }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
+  const [adWatched, setAdWatched] = useState(false);
 
   const { gameState, dropXRef, mergeFlashesRef, startGame, dropFlower, setDropX, tick, getBodies } =
     useGameLogic({ canvasRef, onScoreChange, onGameOver });
 
   const gameStateRef = useRef<GameState>(gameState);
   gameStateRef.current = gameState;
+
+  // ─── 게임 오버 팝업 핸들러 ────────────────────────────────────────────────
+  const handleWatchAd = useCallback(() => {
+    if (adWatched) return;
+    setAdWatched(true);
+    const doubled = gameStateRef.current.score * 2;
+    onScoreChange?.(doubled);
+  }, [adWatched, onScoreChange]);
+
+  const handleRestart = useCallback(() => {
+    setAdWatched(false);
+    startGame();
+  }, [startGame]);
 
   // ─── 꽃 원형 렌더링 (그라디언트 + 이모지) ───────────────────────────────
   function drawFlower(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, levelId: number, alpha = 1) {
@@ -83,11 +99,17 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
     const gs = gameStateRef.current;
 
     ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // 전체 배경
     const bgGrad = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
     bgGrad.addColorStop(0, '#FFF0F5');
     bgGrad.addColorStop(1, '#FFF9FA');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // 드롭 존 배경 (데드라인 위 영역 구분)
+    ctx.fillStyle = 'rgba(255,230,242,0.45)';
+    ctx.fillRect(0, 0, GAME_WIDTH, DEATH_LINE_Y);
 
     // 바닥
     ctx.fillStyle = '#F9D5E5';
@@ -134,8 +156,9 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
       drawFlower(ctx, body.position.x, body.position.y, body.angle, levelId);
     });
 
-    // 드롭 미리보기
+    // 드롭 미리보기 + NEXT 아이콘
     if (gs.phase !== 'gameover') {
+      // 현재 드롭 꽃 (마우스 따라가는 고스트)
       const waitLevel = FLOWER_LEVEL_MAP.get(gs.currentLevelId);
       if (waitLevel) {
         const x = dropXRef.current;
@@ -155,31 +178,31 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
         ctx.setLineDash([]);
         ctx.restore();
       }
-    }
 
-    // 게임 오버 오버레이
-    if (gs.phase === 'gameover') {
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+      // NEXT 아이콘 (우측 상단, 데드라인 위 영역)
+      const nextLvl = FLOWER_LEVEL_MAP.get(gs.nextLevelId);
+      if (nextLvl) {
+        const TARGET_R = 22;
+        const scale = TARGET_R / nextLvl.radius;
+        const nx = GAME_WIDTH - TARGET_R - 10;
+        const ny = DEATH_LINE_Y / 2; // 드롭존 세로 중앙
 
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.roundRect(GAME_WIDTH / 2 - 110, GAME_HEIGHT / 2 - 65, 220, 130, 16);
-      ctx.fill();
+        // NEXT 라벨
+        ctx.save();
+        ctx.fillStyle = 'rgba(160,80,120,0.75)';
+        ctx.font = 'bold 8px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('NEXT', nx, ny - TARGET_R - 3);
+        ctx.restore();
 
-      ctx.fillStyle = '#e53e3e';
-      ctx.font = 'bold 22px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('💐 Game Over', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 28);
-
-      ctx.fillStyle = '#555';
-      ctx.font = '15px sans-serif';
-      ctx.fillText(`최종 점수: ${gs.score}점`, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 8);
-
-      ctx.fillStyle = '#aaa';
-      ctx.font = '12px sans-serif';
-      ctx.fillText('아래 [다시 시작] 버튼을 누르세요', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 38);
+        // 꽃 스케일 렌더링
+        ctx.save();
+        ctx.translate(nx, ny);
+        ctx.scale(scale, scale);
+        drawFlower(ctx, 0, 0, 0, gs.nextLevelId, 0.85);
+        ctx.restore();
+      }
     }
   }, [getBodies, dropXRef, mergeFlashesRef]);
 
@@ -222,87 +245,108 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
     [dropFlower]
   );
 
-  const currentLevel = FLOWER_LEVEL_MAP.get(gameState.currentLevelId);
-  const nextLevel = FLOWER_LEVEL_MAP.get(gameState.nextLevelId);
+  // 게임 오버 시 표시할 점수 (광고 2배 적용 여부 반영)
+  const displayScore = adWatched ? gameState.score * 2 : gameState.score;
 
   return (
-    <div
-      className="flex flex-col items-center w-full h-full select-none overflow-hidden bg-secondary/30"
-    >
-      {/* HUD */}
-      <div className="flex items-center justify-between w-full px-4 py-2 bg-card/90 backdrop-blur border-b border-border flex-shrink-0">
-        {/* 현재 꽃 */}
-        <div className="flex flex-col items-center min-w-[70px]">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">지금</span>
-          <span className="text-3xl leading-none my-0.5">{currentLevel?.emoji}</span>
-          <span className="text-[11px] font-semibold text-primary truncate max-w-[70px] text-center">
-            {currentLevel?.name}
-          </span>
-        </div>
+    <div className="relative flex flex-col items-center w-full h-full select-none overflow-hidden bg-secondary/30">
 
-        {/* 점수 */}
-        <div className="flex flex-col items-center">
+      {/* ── 상단 점수 배너 (축소: 좌=점수, 우=최고기록) ── */}
+      <div className="flex items-center justify-between w-full px-4 bg-card/90 backdrop-blur border-b border-border flex-shrink-0 h-10">
+        {/* 좌: 현재 점수 */}
+        <div className="flex items-center gap-1.5">
           <span className="text-[10px] text-muted-foreground uppercase tracking-wide">점수</span>
-          <span className="text-3xl font-bold text-primary leading-none my-0.5 tabular-nums">
+          <span className="text-xl font-bold text-primary leading-none tabular-nums">
             {gameState.score}
           </span>
         </div>
 
-        {/* 다음 꽃 */}
-        <div className="flex flex-col items-center min-w-[70px] opacity-70">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">다음</span>
-          <span className="text-2xl leading-none my-0.5">{nextLevel?.emoji}</span>
-          <span className="text-[11px] text-muted-foreground truncate max-w-[70px] text-center">
-            {nextLevel?.name}
+        {/* 우: 최고 기록 */}
+        <div className="flex items-center gap-1.5">
+          <Trophy className="w-3 h-3 text-amber-500" />
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">최고기록</span>
+          <span className="text-xl font-semibold text-amber-500 leading-none tabular-nums">
+            {bestScore}
           </span>
         </div>
       </div>
 
-      {/* 캔버스 */}
-      <div className="flex-1 flex items-center justify-center w-full overflow-hidden py-1">
+      {/* ── 게임 캔버스 (확대) ── */}
+      <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
         <canvas
           ref={canvasRef}
           width={GAME_WIDTH}
           height={GAME_HEIGHT}
           className="touch-none block"
           style={{
-            height: 'min(calc(100dvh - 180px), 520px)',
+            height: 'min(calc(100dvh - 156px), 620px)',
             width: 'auto',
             maxWidth: '100%',
             cursor: gameState.phase === 'gameover' ? 'default' : 'crosshair',
             border: '1.5px solid hsl(var(--border))',
-            borderRadius: '0 0 12px 12px',
+            borderRadius: '0 0 8px 8px',
           }}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
         />
       </div>
 
-      {/* 하단 바 */}
-      <div className="w-full px-4 py-3 bg-card/90 backdrop-blur border-t border-border flex items-center justify-between flex-shrink-0">
-        {/* 진화 힌트 */}
-        <div className="flex items-center gap-1 text-base overflow-hidden">
-          {[gameState.currentLevelId, gameState.currentLevelId + 1, gameState.currentLevelId + 2]
-            .filter((id) => FLOWER_LEVEL_MAP.has(id))
-            .map((id, i, arr) => (
-              <span key={id} className="flex items-center gap-0.5">
-                <span className={i === 0 ? 'text-xl' : 'text-sm opacity-60'}>
-                  {FLOWER_LEVEL_MAP.get(id)?.emoji}
-                </span>
-                {i < arr.length - 1 && (
-                  <span className="text-muted-foreground text-xs">›</span>
-                )}
-              </span>
-            ))}
-        </div>
-
-        <button
-          onClick={startGame}
-          className="px-6 py-2 rounded-full bg-primary hover:bg-primary/90 active:scale-95 text-primary-foreground font-semibold text-sm shadow-md transition-all"
-        >
-          🔄 다시 시작
-        </button>
+      {/* ── 하단 광고 배너 ── */}
+      <div className="w-full flex-shrink-0 h-[56px] bg-gray-50 border-t border-border flex items-center justify-center gap-2">
+        <span className="text-[10px] font-medium text-gray-400 border border-gray-300 px-1.5 py-0.5 rounded leading-none">
+          AD
+        </span>
+        <span className="text-xs text-gray-400">웨딩 플래너 서비스 광고 영역</span>
       </div>
+
+      {/* ── 게임 오버 팝업 오버레이 ── */}
+      {gameState.phase === 'gameover' && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-20">
+          <div className="bg-white rounded-2xl px-6 py-7 w-[270px] shadow-2xl flex flex-col items-center gap-4">
+            {/* 타이틀 */}
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-4xl">💐</span>
+              <h2 className="text-xl font-bold text-red-500 tracking-tight">Game Over</h2>
+            </div>
+
+            {/* 획득 포인트 */}
+            <div className="w-full rounded-xl bg-pink-50 border border-pink-100 p-4 flex flex-col items-center gap-1">
+              <span className="text-xs text-pink-400 font-medium uppercase tracking-wide">획득 포인트</span>
+              <div className="flex items-end gap-1">
+                <span className="text-4xl font-bold text-pink-600 tabular-nums leading-none">
+                  {displayScore}
+                </span>
+                <span className="text-base text-pink-400 mb-0.5">점</span>
+              </div>
+              {adWatched && (
+                <span className="text-xs text-amber-500 font-semibold mt-0.5">
+                  ✨ 광고 2배 보너스 적용!
+                </span>
+              )}
+            </div>
+
+            {/* 광고 2배 버튼 */}
+            {!adWatched && (
+              <button
+                onClick={handleWatchAd}
+                className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-500 active:scale-95 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                <span className="text-base">📺</span>
+                광고 보고 2배 포인트!
+              </button>
+            )}
+
+            {/* 다시하기 버튼 */}
+            <button
+              onClick={handleRestart}
+              className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 active:scale-95 text-primary-foreground font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+            >
+              <span className="text-base">🔄</span>
+              다시하기
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
