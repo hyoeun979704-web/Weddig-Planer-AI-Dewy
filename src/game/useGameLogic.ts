@@ -27,6 +27,7 @@ export interface MergeFlash {
   x: number;
   y: number;
   radius: number;   // 머지된 상위 오브젝트의 반지름
+  score: number;    // 머지로 획득한 점수 (팝업 표시용)
   createdAt: number;
 }
 
@@ -131,6 +132,7 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
           x: midX,
           y: midY,
           radius: nextLevel.radius,
+          score: level.score,
           createdAt: performance.now(),
         });
       }
