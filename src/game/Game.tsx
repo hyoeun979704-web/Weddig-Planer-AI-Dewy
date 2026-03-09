@@ -8,10 +8,15 @@ interface GameProps {
   onGameOver?: (score: number) => void;
 }
 
+const BEST_SCORE_KEY = 'flower_best_score';
+
 export function Game({ onScoreChange, onGameOver }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
   const [showAdDoubled, setShowAdDoubled] = useState(false);
+  const [bestScore, setBestScore] = useState<number>(() => {
+    return parseInt(localStorage.getItem(BEST_SCORE_KEY) ?? '0', 10);
+  });
 
   const { gameState, dropXRef, mergeFlashesRef, startGame, dropFlower, setDropX, tick, getBodies } =
     useGameLogic({ canvasRef, onScoreChange, onGameOver });
@@ -22,7 +27,15 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
   // 획득 포인트 계산 (점수의 5%, 최소 10)
   const earnedPoints = Math.max(10, Math.floor(gameState.score * 0.05));
 
-  // ─── 꽃 원형 렌더링 (그라디언트 + 이모지) ───────────────────────────────
+  // 최고기록 갱신
+  useEffect(() => {
+    if (gameState.phase === 'gameover' && gameState.score > bestScore) {
+      setBestScore(gameState.score);
+      localStorage.setItem(BEST_SCORE_KEY, String(gameState.score));
+    }
+  }, [gameState.phase, gameState.score, bestScore]);
+
+  // ─── 꽃 원형 렌더링 ────────────────────────────────────────────────────────
   function drawFlower(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, levelId: number, alpha = 1) {
     const level = FLOWER_LEVEL_MAP.get(levelId);
     if (!level) return;
@@ -77,7 +90,7 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
     return `rgb(${Math.max(0, r - amt)},${Math.max(0, g - amt)},${Math.max(0, b - amt)})`;
   }
 
-  // ─── 캔버스 렌더링 함수 ──────────────────────────────────────────────────
+  // ─── 캔버스 렌더링 ──────────────────────────────────────────────────────────
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -85,6 +98,7 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
     if (!ctx) return;
     const gs = gameStateRef.current;
 
+    // 배경
     ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
     const bgGrad = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
     bgGrad.addColorStop(0, '#FFF0F5');
@@ -92,6 +106,7 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
+    // 바닥
     ctx.fillStyle = '#F9D5E5';
     ctx.fillRect(0, GAME_HEIGHT - 30, GAME_WIDTH, 30);
 
@@ -136,16 +151,20 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
       drawFlower(ctx, body.position.x, body.position.y, body.angle, levelId);
     });
 
-    // 드롭 미리보기
+    // ── 데드라인 상단 UI: 현재 꽃(마우스 따라) + 우측 next 패널 ──
     if (gs.phase !== 'gameover') {
-      const waitLevel = FLOWER_LEVEL_MAP.get(gs.currentLevelId);
-      if (waitLevel) {
+      const currentLevel = FLOWER_LEVEL_MAP.get(gs.currentLevelId);
+      const nextLevel = FLOWER_LEVEL_MAP.get(gs.nextLevelId);
+
+      // 현재 꽃 – 마우스 위치를 따라가며 드롭 미리보기
+      if (currentLevel) {
         const x = dropXRef.current;
-        const r = waitLevel.radius;
+        const r = currentLevel.radius;
         const previewY = DROP_START_Y;
 
-        drawFlower(ctx, x, previewY, 0, gs.currentLevelId, 0.55);
+        drawFlower(ctx, x, previewY, 0, gs.currentLevelId, 0.6);
 
+        // 드롭 가이드 라인
         ctx.save();
         ctx.strokeStyle = 'rgba(180,120,140,0.3)';
         ctx.setLineDash([4, 6]);
@@ -156,6 +175,38 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.restore();
+      }
+
+      // next 꽃 – 우측 패널 (데드라인 상단 우측)
+      if (nextLevel) {
+        const panelW = 56;
+        const panelH = DEATH_LINE_Y - 4;
+        const panelX = GAME_WIDTH - panelW - 4;
+        const panelY = 2;
+
+        // 패널 배경
+        ctx.save();
+        ctx.globalAlpha = 0.82;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.roundRect(panelX, panelY, panelW, panelH, 8);
+        ctx.fill();
+        ctx.restore();
+
+        // "next" 라벨
+        ctx.save();
+        ctx.fillStyle = '#aaa';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('next', panelX + panelW / 2, panelY + 5);
+        ctx.restore();
+
+        // next 꽃 이모지 (작게)
+        const nR = Math.min(nextLevel.radius * 0.55, 18);
+        drawFlower(ctx, panelX + panelW / 2, panelY + panelH / 2 + 6, 0, gs.nextLevelId, 0.9);
+
+        void nR; // 사용 확인용
       }
     }
   }, [getBodies, dropXRef, mergeFlashesRef]);
@@ -180,7 +231,6 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
     startGame();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 게임 오버 시 광고 2배 상태 초기화
   useEffect(() => {
     if (gameState.phase !== 'gameover') {
       setShowAdDoubled(false);
@@ -205,10 +255,7 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
     [dropFlower]
   );
 
-  const nextLevel = FLOWER_LEVEL_MAP.get(gameState.nextLevelId);
-
   const handleAdDouble = () => {
-    // 광고 시청 후 포인트 2배 처리 (실제 광고 SDK 연동 위치)
     setShowAdDoubled(true);
   };
 
@@ -222,25 +269,26 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
       className="flex flex-col items-center w-full h-full bg-pink-50 select-none overflow-hidden"
       style={{ fontFamily: 'sans-serif' }}
     >
-      {/* ── 상단 HUD: 좌측 Score / 우측 next ── */}
-      <div className="flex items-center justify-between w-full px-3 py-1.5 bg-white/90 backdrop-blur border-b border-pink-100 shadow-sm flex-shrink-0">
-        {/* 좌측: Score 2000 🏆 */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm text-gray-500 font-medium">Score</span>
-          <span className="text-lg font-bold text-pink-500 tabular-nums leading-none">
+      {/* ── 상단 배너: 좌측 스코어 / 우측 최고기록 ── */}
+      <div className="flex items-center justify-between w-full px-4 py-1.5 bg-white/90 backdrop-blur border-b border-pink-100 shadow-sm flex-shrink-0">
+        {/* 좌측: 스코어 */}
+        <div className="flex flex-col items-start">
+          <span className="text-[10px] text-gray-400 uppercase tracking-wide">Score</span>
+          <span className="text-xl font-bold text-pink-500 tabular-nums leading-tight">
             {gameState.score}
           </span>
-          <span className="text-base leading-none">🏆</span>
         </div>
 
-        {/* 우측: next [꽃] */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-400 font-medium">next</span>
-          <span className="text-2xl leading-none">{nextLevel?.emoji}</span>
+        {/* 우측: 최고기록 */}
+        <div className="flex flex-col items-end">
+          <span className="text-[10px] text-gray-400 uppercase tracking-wide">최고기록</span>
+          <span className="text-xl font-bold text-yellow-500 tabular-nums leading-tight">
+            {bestScore}
+          </span>
         </div>
       </div>
 
-      {/* ── 캔버스 플레이 영역 (확대) ── */}
+      {/* ── 캔버스 플레이 영역 ── */}
       <div className="flex-1 flex items-center justify-center w-full overflow-hidden relative">
         <canvas
           ref={canvasRef}
@@ -248,7 +296,7 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
           height={GAME_HEIGHT}
           className="touch-none block"
           style={{
-            height: 'min(calc(100vh - 90px), 680px)',
+            height: 'min(calc(100vh - 100px), 680px)',
             width: 'auto',
             maxWidth: '100%',
             cursor: gameState.phase === 'gameover' ? 'default' : 'crosshair',
@@ -259,7 +307,7 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
           onPointerUp={handlePointerUp}
         />
 
-        {/* ── 게임 오버 팝업 (HTML 오버레이) ── */}
+        {/* ── 게임 오버 팝업 ── */}
         {gameState.phase === 'gameover' && (
           <div
             className="absolute inset-0 flex items-center justify-center"
@@ -303,15 +351,12 @@ export function Game({ onScoreChange, onGameOver }: GameProps) {
         )}
       </div>
 
-      {/* ── 하단: 게임내 광고 보기 버튼 + 광고 배너 ── */}
-      <div className="w-full flex-shrink-0 bg-white border-t border-pink-100 flex items-center justify-end px-4"
-        style={{ height: '52px' }}
+      {/* ── 하단 광고 배너 ── */}
+      <div
+        className="w-full flex-shrink-0 bg-gray-100 border-t border-gray-200 flex items-center justify-center"
+        style={{ height: '50px' }}
       >
-        <button
-          className="px-4 py-1.5 rounded-full bg-yellow-400 hover:bg-yellow-500 active:scale-95 text-white font-semibold text-sm shadow transition-all"
-        >
-          📺 게임내 광고 보기
-        </button>
+        <span className="text-xs text-gray-400 tracking-wide">[ 광고 ]</span>
       </div>
     </div>
   );
