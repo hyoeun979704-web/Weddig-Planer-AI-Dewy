@@ -6,10 +6,12 @@ import type { GameState } from './types';
 interface GameProps {
   onScoreChange?: (score: number) => void;
   onGameOver?: (score: number) => void;
+  onDoublePoints?: (score: number) => void;
   bestScore: number;
 }
 
-export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
+
+export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
 
@@ -318,8 +320,8 @@ export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
         const btn1Y = popY + 112;
         const btn1H = 36;
         if (coords.x >= btnX && coords.x <= btnX + btnW && coords.y >= btn1Y && coords.y <= btn1Y + btn1H) {
-          // TODO: 광고 시청 후 포인트 2배 로직
-          console.log('Ad reward: 2x points');
+          onDoublePoints?.(gameStateRef.current.score);
+          startGame();
           return;
         }
 
@@ -335,7 +337,7 @@ export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
 
       dropFlower();
     },
-    [dropFlower, getCanvasCoords, startGame]
+    [dropFlower, getCanvasCoords, startGame, onDoublePoints]
   );
 
   return (
