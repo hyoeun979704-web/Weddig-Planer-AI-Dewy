@@ -38,6 +38,15 @@ export default function MergeGame() {
     }
   }, [bestScore, user, saveScore, queryClient]);
 
+  const handleDoublePoints = useCallback(async (finalScore: number) => {
+    if (user) {
+      await saveScore(finalScore, true);
+      queryClient.invalidateQueries({ queryKey: ['user-points'] });
+      queryClient.invalidateQueries({ queryKey: ['game-ranking'] });
+      queryClient.invalidateQueries({ queryKey: ['my-best-score'] });
+    }
+  }, [user, saveScore, queryClient]);
+
   return (
     <div className="flex flex-col h-[100dvh] max-w-[430px] mx-auto bg-background overflow-hidden relative">
       {/* 헤더 */}
