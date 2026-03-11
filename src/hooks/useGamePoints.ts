@@ -44,10 +44,24 @@ export function useGamePoints() {
     queryKey: ['game-ranking'],
     queryFn: async () => {
       const { data } = await supabase
-        .from('game_ranking' as any)
-        .select('*')
-        .limit(20);
-      return (data ?? []) as Array<{
+        .from('game_scores')
+        .select('user_id, score, earned_points')
+        .order('score', { ascending: false })
+        .limit(50);
+      
+      // Group by user to get best scores
+      const userMap = new Map<string, { user_id: string; best_score: number; total_earned: number; games_played: number }>();
+      for (const row of data ?? []) {
+        const existing = userMap.get(row.user_id);
+        if (existing) {
+          existing.total_earned += row.earned_points;
+          existing.games_played += 1;
+          if (row.score > existing.best_score) existing.best_score = row.score;
+        } else {
+          userMap.set(row.user_id, { user_id: row.user_id, best_score: row.score, total_earned: row.earned_points, games_played: 1 });
+        }
+      }
+      return Array.from(userMap.values()).sort((a, b) => b.best_score - a.best_score).slice(0, 20) as Array<{
         user_id: string;
         display_name: string | null;
         best_score: number;
