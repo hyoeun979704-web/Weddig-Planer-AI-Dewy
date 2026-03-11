@@ -6,8 +6,10 @@ import type { GameState } from './types';
 interface GameProps {
   onScoreChange?: (score: number) => void;
   onGameOver?: (score: number) => void;
+  onDoublePoints?: (score: number) => void;
   bestScore: number;
 }
+
 
 export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
