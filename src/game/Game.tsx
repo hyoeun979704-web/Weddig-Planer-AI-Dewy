@@ -11,7 +11,7 @@ interface GameProps {
 }
 
 
-export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
+export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
 
