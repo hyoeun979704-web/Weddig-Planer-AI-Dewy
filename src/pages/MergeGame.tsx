@@ -135,6 +135,7 @@ export default function MergeGame() {
         <Game
           onScoreChange={handleScoreChange}
           onGameOver={handleGameOver}
+          onDoublePoints={handleDoublePoints}
           bestScore={effectiveBest}
         />
       </div>
