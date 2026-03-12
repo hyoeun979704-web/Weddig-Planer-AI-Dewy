@@ -11,6 +11,27 @@ interface GameProps {
 }
 
 
+// Custom cursor SVGs encoded as data URIs
+const PLAY_CURSOR = (() => {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'>
+    <circle cx='14' cy='14' r='12' fill='none' stroke='%23F4A7B9' stroke-width='2' opacity='0.7'/>
+    <circle cx='14' cy='14' r='3' fill='%23C9A96E'/>
+    <line x1='14' y1='0' x2='14' y2='8' stroke='%23F4A7B9' stroke-width='1.2' opacity='0.5'/>
+    <line x1='14' y1='20' x2='14' y2='28' stroke='%23F4A7B9' stroke-width='1.2' opacity='0.5'/>
+    <line x1='0' y1='14' x2='8' y2='14' stroke='%23F4A7B9' stroke-width='1.2' opacity='0.5'/>
+    <line x1='20' y1='14' x2='28' y2='14' stroke='%23F4A7B9' stroke-width='1.2' opacity='0.5'/>
+  </svg>`;
+  return `url("data:image/svg+xml,${svg}") 14 14, crosshair`;
+})();
+
+const POINTER_CURSOR = (() => {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'>
+    <circle cx='12' cy='12' r='10' fill='%23C9A96E' opacity='0.25'/>
+    <circle cx='12' cy='12' r='5' fill='%23C9A96E' opacity='0.6'/>
+  </svg>`;
+  return `url("data:image/svg+xml,${svg}") 12 12, pointer`;
+})();
+
 export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
