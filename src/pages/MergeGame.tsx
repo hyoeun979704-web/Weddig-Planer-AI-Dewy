@@ -62,12 +62,6 @@ export default function MergeGame() {
             <span className="text-base font-bold text-foreground ml-1">💐 꽃 머지 게임</span>
           </div>
           <div className="flex items-center gap-3">
-            {user && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Coins className="w-3.5 h-3.5 text-primary" />
-                <span className="font-semibold text-primary">{myPoints.toLocaleString()}P</span>
-              </div>
-            )}
             <button
               onClick={() => setShowRanking(!showRanking)}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
