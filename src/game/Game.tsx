@@ -444,7 +444,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
             height: 'min(calc(100dvh - 130px), 600px)',
             width: 'auto',
             maxWidth: '100%',
-            cursor: gameState.phase === 'gameover' ? 'pointer' : 'crosshair',
+            cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
             borderRadius: '0 0 8px 8px',
           }}
           onPointerMove={handlePointerMove}
