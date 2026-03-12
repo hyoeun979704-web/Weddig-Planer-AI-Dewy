@@ -14,6 +14,8 @@ interface GameProps {
 export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
+  const [adCountdown, setAdCountdown] = useState<number | null>(null);
+  const adTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { gameState, dropXRef, mergeFlashesRef, startGame, dropFlower, setDropX, tick, getBodies } =
     useGameLogic({ canvasRef, onScoreChange, onGameOver });
