@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { useGameLogic } from './useGameLogic';
 import { GAME_WIDTH, GAME_HEIGHT, DEATH_LINE_Y, DROP_START_Y, FLOWER_LEVEL_MAP } from './constants';
 import type { GameState } from './types';
@@ -14,6 +14,8 @@ interface GameProps {
 export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
+  const [adCountdown, setAdCountdown] = useState<number | null>(null);
+  const adTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { gameState, dropXRef, mergeFlashesRef, startGame, dropFlower, setDropX, tick, getBodies } =
     useGameLogic({ canvasRef, onScoreChange, onGameOver });
@@ -231,19 +233,42 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       const btn1Y = popY + 112;
       const btn1H = 36;
       const btnX = (GAME_WIDTH - btnW) / 2;
+      const currentAdCountdown = adCountdown;
 
-      // 골드 그라디언트 버튼
-      const goldGrad = ctx.createLinearGradient(btnX, btn1Y, btnX + btnW, btn1Y);
-      goldGrad.addColorStop(0, '#C9A96E');
-      goldGrad.addColorStop(1, '#E8D5A3');
-      ctx.fillStyle = goldGrad;
-      ctx.beginPath();
-      ctx.roundRect(btnX, btn1Y, btnW, btn1H, 10);
-      ctx.fill();
+      if (currentAdCountdown === null) {
+        // 아직 안 눌림 — 광고 시청 시작 버튼
+        const goldGrad = ctx.createLinearGradient(btnX, btn1Y, btnX + btnW, btn1Y);
+        goldGrad.addColorStop(0, '#C9A96E');
+        goldGrad.addColorStop(1, '#E8D5A3');
+        ctx.fillStyle = goldGrad;
+        ctx.beginPath();
+        ctx.roundRect(btnX, btn1Y, btnW, btn1H, 10);
+        ctx.fill();
 
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 13px sans-serif';
-      ctx.fillText(`📺 포인트 2배 받기 (${earnedPoints * 2}P)`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText(`📺 포인트 2배 받기 (${earnedPoints * 2}P)`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
+      } else if (currentAdCountdown > 0) {
+        // 카운트다운 중 — 비활성 버튼 + 타이머
+        ctx.fillStyle = '#999';
+        ctx.beginPath();
+        ctx.roundRect(btnX, btn1Y, btnW, btn1H, 10);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText(`⏳ 광고 시청 중... ${currentAdCountdown}초`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
+      } else {
+        // 카운트다운 완료 — 비활성 표시 (실제 버튼은 HTML 오버레이)
+        ctx.fillStyle = '#aaa';
+        ctx.beginPath();
+        ctx.roundRect(btnX, btn1Y, btnW, btn1H, 10);
+        ctx.fill();
+
+        ctx.fillStyle = '#ddd';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText(`✅ 우측 상단에서 포인트 받기`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
+      }
 
       // 다시하기 버튼
       const btn2Y = btn1Y + btn1H + 10;
@@ -257,7 +282,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.font = 'bold 13px sans-serif';
       ctx.fillText('🔄 다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
     }
-  }, [getBodies, dropXRef, mergeFlashesRef]);
+  }, [getBodies, dropXRef, mergeFlashesRef, adCountdown]);
 
   // ─── RAF 루프 ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -316,12 +341,24 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         const btnW = 200;
         const btnX = (GAME_WIDTH - btnW) / 2;
 
-        // 포인트 2배 버튼
+        // 포인트 2배 버튼 — 카운트다운 시작만
         const btn1Y = popY + 112;
         const btn1H = 36;
         if (coords.x >= btnX && coords.x <= btnX + btnW && coords.y >= btn1Y && coords.y <= btn1Y + btn1H) {
-          onDoublePoints?.(gameStateRef.current.score);
-          startGame();
+          if (adCountdown === null) {
+            // 15초 카운트다운 시작
+            setAdCountdown(15);
+            if (adTimerRef.current) clearInterval(adTimerRef.current);
+            adTimerRef.current = setInterval(() => {
+              setAdCountdown(prev => {
+                if (prev === null || prev <= 1) {
+                  if (adTimerRef.current) clearInterval(adTimerRef.current);
+                  return 0;
+                }
+                return prev - 1;
+              });
+            }, 1000);
+          }
           return;
         }
 
@@ -329,6 +366,8 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         const btn2Y = btn1Y + btn1H + 10;
         const btn2H = 36;
         if (coords.x >= btnX && coords.x <= btnX + btnW && coords.y >= btn2Y && coords.y <= btn2Y + btn2H) {
+          setAdCountdown(null);
+          if (adTimerRef.current) clearInterval(adTimerRef.current);
           startGame();
           return;
         }
@@ -337,7 +376,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
       dropFlower();
     },
-    [dropFlower, getCanvasCoords, startGame, onDoublePoints]
+    [dropFlower, getCanvasCoords, startGame, onDoublePoints, adCountdown]
   );
 
   return (
@@ -348,9 +387,28 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
           <span className="text-xs text-muted-foreground font-medium">SCORE</span>
           <span className="text-lg font-bold text-primary tabular-nums">{gameState.score}</span>
         </div>
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <span className="text-xs">🏆</span>
-          <span className="text-sm font-semibold text-primary/80 tabular-nums">{bestScore}</span>
+        <div className="flex items-center gap-1">
+          {gameState.phase === 'gameover' && adCountdown === 0 && (
+            <button
+              onClick={() => {
+                onDoublePoints?.(gameState.score);
+                setAdCountdown(null);
+                if (adTimerRef.current) clearInterval(adTimerRef.current);
+                startGame();
+              }}
+              className="px-3 py-1.5 rounded-full text-xs font-bold text-white animate-pulse"
+              style={{
+                background: 'linear-gradient(135deg, #C9A96E, #E8D5A3)',
+                boxShadow: '0 2px 12px rgba(201, 169, 110, 0.5)',
+              }}
+            >
+              🪙 포인트 2배 받기!
+            </button>
+          )}
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <span className="text-xs">🏆</span>
+            <span className="text-sm font-semibold text-primary/80 tabular-nums">{bestScore}</span>
+          </div>
         </div>
       </div>
 
