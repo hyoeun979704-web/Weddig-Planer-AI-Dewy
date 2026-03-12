@@ -75,13 +75,6 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     ctx.textBaseline = 'middle';
     ctx.fillText(level.emoji, 0, 0);
 
-    if (r >= 27) {
-      ctx.font = `bold ${Math.max(7, Math.floor(r * 0.22))}px sans-serif`;
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'top';
-      ctx.fillText(`${levelId}`, r - 3, -r + 3);
-    }
 
     ctx.restore();
   }
