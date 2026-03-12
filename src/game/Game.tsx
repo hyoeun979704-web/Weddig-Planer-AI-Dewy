@@ -341,12 +341,24 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         const btnW = 200;
         const btnX = (GAME_WIDTH - btnW) / 2;
 
-        // 포인트 2배 버튼
+        // 포인트 2배 버튼 — 카운트다운 시작만
         const btn1Y = popY + 112;
         const btn1H = 36;
         if (coords.x >= btnX && coords.x <= btnX + btnW && coords.y >= btn1Y && coords.y <= btn1Y + btn1H) {
-          onDoublePoints?.(gameStateRef.current.score);
-          startGame();
+          if (adCountdown === null) {
+            // 15초 카운트다운 시작
+            setAdCountdown(15);
+            if (adTimerRef.current) clearInterval(adTimerRef.current);
+            adTimerRef.current = setInterval(() => {
+              setAdCountdown(prev => {
+                if (prev === null || prev <= 1) {
+                  if (adTimerRef.current) clearInterval(adTimerRef.current);
+                  return 0;
+                }
+                return prev - 1;
+              });
+            }, 1000);
+          }
           return;
         }
 
