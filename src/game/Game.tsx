@@ -374,7 +374,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
       dropFlower();
     },
-    [dropFlower, getCanvasCoords, startGame, onDoublePoints]
+    [dropFlower, getCanvasCoords, startGame, onDoublePoints, adCountdown]
   );
 
   return (
