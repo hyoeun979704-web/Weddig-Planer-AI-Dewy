@@ -64,8 +64,9 @@ export default function MergeGame() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowRanking(!showRanking)}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              className="flex items-center gap-1 px-2 h-8 rounded-full hover:bg-muted transition-colors"
             >
+              <span className="text-xs font-semibold text-muted-foreground">RANK</span>
               <Trophy className="w-4 h-4 text-primary" />
             </button>
           </div>
