@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Coins, Gift, Clock } from "lucide-react";
+import { ArrowLeft, Coins, Gift, Clock, Gamepad2, ChevronRight } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 
