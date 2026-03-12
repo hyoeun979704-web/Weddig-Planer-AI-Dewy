@@ -366,6 +366,8 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         const btn2Y = btn1Y + btn1H + 10;
         const btn2H = 36;
         if (coords.x >= btnX && coords.x <= btnX + btnW && coords.y >= btn2Y && coords.y <= btn2Y + btn2H) {
+          setAdCountdown(null);
+          if (adTimerRef.current) clearInterval(adTimerRef.current);
           startGame();
           return;
         }
