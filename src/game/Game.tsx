@@ -387,9 +387,28 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
           <span className="text-xs text-muted-foreground font-medium">SCORE</span>
           <span className="text-lg font-bold text-primary tabular-nums">{gameState.score}</span>
         </div>
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <span className="text-xs">🏆</span>
-          <span className="text-sm font-semibold text-primary/80 tabular-nums">{bestScore}</span>
+        <div className="flex items-center gap-1">
+          {gameState.phase === 'gameover' && adCountdown === 0 && (
+            <button
+              onClick={() => {
+                onDoublePoints?.(gameState.score);
+                setAdCountdown(null);
+                if (adTimerRef.current) clearInterval(adTimerRef.current);
+                startGame();
+              }}
+              className="px-3 py-1.5 rounded-full text-xs font-bold text-white animate-pulse"
+              style={{
+                background: 'linear-gradient(135deg, #C9A96E, #E8D5A3)',
+                boxShadow: '0 2px 12px rgba(201, 169, 110, 0.5)',
+              }}
+            >
+              🪙 포인트 2배 받기!
+            </button>
+          )}
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <span className="text-xs">🏆</span>
+            <span className="text-sm font-semibold text-primary/80 tabular-nums">{bestScore}</span>
+          </div>
         </div>
       </div>
 
