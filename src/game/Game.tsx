@@ -421,7 +421,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
           )}
           <div className="flex items-center gap-1 text-muted-foreground">
             <span className="text-xs">🏆</span>
-            <span className="text-sm font-semibold text-primary/80 tabular-nums">{bestScore}</span>
+            <span className="text-sm font-semibold text-primary/80 tabular-nums">{bestScore}점</span>
           </div>
         </div>
       </div>
