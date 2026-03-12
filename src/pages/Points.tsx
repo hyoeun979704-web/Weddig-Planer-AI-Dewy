@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Coins, Gift, Clock } from "lucide-react";
+import { ArrowLeft, Coins, Gift, Clock, Gamepad2, ChevronRight } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -42,6 +42,23 @@ const Points = () => {
               포인트 충전
             </button>
           </div>
+        </div>
+
+        {/* 게임 카드 */}
+        <div className="px-4 pt-4">
+          <button
+            onClick={() => navigate('/merge-game')}
+            className="w-full p-4 bg-gradient-to-r from-secondary to-accent rounded-2xl border border-border flex items-center gap-4 text-left hover:shadow-md transition-shadow"
+          >
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
+              💐
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-foreground text-sm">꽃 머지 게임</p>
+              <p className="text-xs text-muted-foreground mt-0.5">게임하고 포인트 받기! 광고 시청 시 2배</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </button>
         </div>
 
         {/* Point History */}
