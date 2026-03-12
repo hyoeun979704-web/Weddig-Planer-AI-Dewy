@@ -48,7 +48,7 @@ const Points = () => {
         <div className="px-4 pt-4">
           <button
             onClick={() => navigate('/merge-game')}
-            className="w-full p-4 bg-gradient-to-r from-pink-50 to-amber-50 dark:from-pink-950/30 dark:to-amber-950/30 rounded-2xl border border-border flex items-center gap-4 text-left hover:shadow-md transition-shadow"
+            className="w-full p-4 bg-gradient-to-r from-secondary to-accent rounded-2xl border border-border flex items-center gap-4 text-left hover:shadow-md transition-shadow"
           >
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
               💐
