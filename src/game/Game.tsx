@@ -282,7 +282,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.font = 'bold 13px sans-serif';
       ctx.fillText('🔄 다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
     }
-  }, [getBodies, dropXRef, mergeFlashesRef]);
+  }, [getBodies, dropXRef, mergeFlashesRef, adCountdown]);
 
   // ─── RAF 루프 ─────────────────────────────────────────────────────
   useEffect(() => {
