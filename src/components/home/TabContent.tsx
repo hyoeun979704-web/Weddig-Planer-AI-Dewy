@@ -5,6 +5,7 @@ import RecommendedSection from "./RecommendedSection";
 import StudioGallery from "./StudioGallery";
 import MagazineSection from "./MagazineSection";
 import ReviewSection from "./ReviewSection";
+import PopularPostsSection from "./PopularPostsSection";
 
 interface TabContentProps {
   activeTab: CategoryTab;
@@ -19,6 +20,8 @@ const TabContent = ({ activeTab }: TabContentProps) => {
       {activeTab === "home" && <HomeCategoryGrid />}
 
       <RecommendedSection />
+
+      {activeTab === "home" && <PopularPostsSection />}
 
       {activeTab === "home" && <StudioGallery />}
 

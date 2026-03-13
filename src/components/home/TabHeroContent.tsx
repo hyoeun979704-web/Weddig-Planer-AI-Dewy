@@ -1,7 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 import { CategoryTab } from "./CategoryTabBar";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 
 interface HeroData {
   badge: string;
@@ -55,40 +59,101 @@ interface TabHeroContentProps {
 
 const TabHeroContent = ({ activeTab }: TabHeroContentProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
   const data = heroDataMap[activeTab];
 
+  // D-Day calculation for home tab
+  const getDDay = () => {
+    if (!weddingSettings.wedding_date) return null;
+    const wedding = new Date(weddingSettings.wedding_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
+  const days = activeTab === "home" ? getDDay() : null;
+  const showDDay = activeTab === "home" && user && days !== null;
+
+  // Compact home hero with D-Day
+  if (activeTab === "home" && showDDay) {
+    return (
+      <section className="relative bg-gradient-to-br from-accent via-accent/50 to-background px-4 pt-5 pb-4 overflow-hidden">
+        <div className="absolute top-2 right-2 w-20 h-20 bg-primary/8 rounded-full blur-2xl" />
+
+        <div className="relative z-10">
+          {/* D-Day + Date row */}
+          <button
+            onClick={() => navigate("/schedule")}
+            className="w-full flex items-center gap-3 p-3 bg-background/60 backdrop-blur-sm rounded-xl mb-4 border border-border/50 active:scale-[0.98] transition-transform"
+          >
+            <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center">
+              <span className="text-xl font-extrabold text-primary">
+                {days > 0 ? `D-${days}` : days === 0 ? "🎉" : `D+${Math.abs(days)}`}
+              </span>
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-semibold text-foreground">
+                {days > 0 ? "결혼식까지" : days === 0 ? "오늘이 결혼식!" : "결혼식 후"}
+                {days > 0 && <span className="text-primary ml-1">{days}일</span>}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {format(new Date(weddingSettings.wedding_date!), "yyyy.MM.dd (EEEE)", { locale: ko })}
+              </p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+
+          {/* CTA */}
+          <div className="flex gap-2">
+            <Button
+              onClick={() => navigate("/ai-planner")}
+              className="flex-1 h-11 rounded-xl font-semibold gap-2 text-sm"
+            >
+              <Sparkles className="w-4 h-4" />
+              AI 플래너
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/my-schedule")}
+              className="flex-1 h-11 rounded-xl font-semibold text-sm border-primary/30 hover:bg-accent"
+            >
+              일정 관리
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Default hero (no D-Day or other tabs)
   return (
-    <section className={`relative bg-gradient-to-br ${data.bgColor} px-4 py-10 overflow-hidden`}>
+    <section className={`relative bg-gradient-to-br ${data.bgColor} px-4 pt-6 pb-5 overflow-hidden`}>
       <div className="absolute top-4 right-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl" />
-      <div className="absolute bottom-4 left-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
 
       <div className="relative z-10 animate-fade-in">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full mb-4">
-          <Sparkles className="w-4 h-4 text-primary" />
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 rounded-full mb-3">
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
           <span className="text-xs font-medium text-primary">{data.badge}</span>
         </div>
 
-        <h1 className="text-2xl font-bold text-foreground leading-tight mb-3">
+        <h1 className="text-xl font-bold text-foreground leading-tight mb-2">
           {data.title[0]}
           <br />
           <span className="text-primary">{data.title[1]}</span>
-          <br />
-          {data.title[2]}
         </h1>
 
-        <p className="text-sm text-muted-foreground leading-relaxed mb-6 whitespace-pre-line">
+        <p className="text-xs text-muted-foreground leading-relaxed mb-4 whitespace-pre-line">
           {data.subtitle}
         </p>
 
-        <div className="flex">
-          <Button
-            onClick={() => navigate(tabCtaRoutes[activeTab])}
-            className="flex-1 h-12 rounded-xl font-semibold gap-2"
-          >
-            <Sparkles className="w-4 h-4" />
-            {data.cta}
-          </Button>
-        </div>
+        <Button
+          onClick={() => navigate(tabCtaRoutes[activeTab])}
+          className="w-full h-11 rounded-xl font-semibold gap-2 text-sm"
+        >
+          <Sparkles className="w-4 h-4" />
+          {data.cta}
+        </Button>
       </div>
     </section>
   );
