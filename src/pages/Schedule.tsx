@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useBudget } from "@/hooks/useBudget";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
@@ -15,7 +15,8 @@ import {
   Home as HomeIcon,
   Loader2,
   Plus,
-  Sparkles
+  Sparkles,
+  ListChecks
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
@@ -26,6 +27,8 @@ import { useCoupleLink } from "@/hooks/useCoupleLink";
 import { BookOpen } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import UpgradeModal from "@/components/premium/UpgradeModal";
+import { format, differenceInDays, isToday, isTomorrow, isThisWeek } from "date-fns";
+import { ko } from "date-fns/locale";
 
 interface TimelinePhase {
   id: string;
@@ -118,7 +121,11 @@ const Schedule = () => {
   };
 
   const days = daysUntilWedding();
-  const progress = days !== null && days > 0 ? Math.max(0, Math.min(100, Math.round((1 - days / 365) * 100))) : 0;
+
+  // Overall completion
+  const totalItems = scheduleItems.length;
+  const completedItems = scheduleItems.filter(i => i.completed).length;
+  const overallProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
   // D-Day based premium banners
   const getDDayBanner = () => {
@@ -138,7 +145,6 @@ const Schedule = () => {
   const handleTabChange = (href: string) => {
     navigate(href);
   };
-
 
   // Get phase status based on D-Day
   const getPhaseStatus = (category: string): "completed" | "current" | "upcoming" => {
@@ -169,26 +175,28 @@ const Schedule = () => {
     return Math.round((completed / phaseItems.length) * 100);
   };
 
-  const getStatusColor = (status: "completed" | "current" | "upcoming") => {
-    switch (status) {
-      case "completed": return "bg-green-500";
-      case "current": return "bg-primary";
-      case "upcoming": return "bg-muted";
-    }
-  };
-
-  const getStatusBorder = (status: "completed" | "current" | "upcoming") => {
-    switch (status) {
-      case "completed": return "border-green-500/30";
-      case "current": return "border-primary/30";
-      case "upcoming": return "border-border";
-    }
-  };
-
   // Get upcoming tasks (not completed, sorted by date)
   const upcomingTasks = scheduleItems
     .filter(item => !item.completed)
-    .slice(0, 3);
+    .slice(0, 4);
+
+  // Format relative date
+  const formatRelativeDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (isToday(date)) return "오늘";
+    if (isTomorrow(date)) return "내일";
+    const daysLeft = differenceInDays(date, new Date());
+    if (daysLeft >= 0 && daysLeft <= 6) return format(date, "EEEE", { locale: ko });
+    return format(date, "M월 d일", { locale: ko });
+  };
+
+  const getDateUrgency = (dateStr: string) => {
+    const daysLeft = differenceInDays(new Date(dateStr), new Date());
+    if (daysLeft <= 0) return "text-destructive";
+    if (daysLeft <= 3) return "text-orange-500";
+    if (daysLeft <= 7) return "text-yellow-600";
+    return "text-muted-foreground";
+  };
 
   if (isLoading) {
     return (
@@ -216,220 +224,280 @@ const Schedule = () => {
       </header>
 
       {/* Main Content */}
-      <main className="pb-20 px-4 py-4">
-        {/* Couple Section */}
-        <div className="mb-6" data-tutorial="schedule-couple">
-          <CoupleInvite />
-        </div>
-      
-        {/* Couple Diary Link */}
-        {isLinked && (
-          <button
-            onClick={() => navigate("/couple-diary")}
-            className="w-full mb-6 p-4 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 rounded-2xl border border-pink-200/50 dark:border-pink-800/30 flex items-center gap-3"
-          >
-            <div className="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-pink-500" />
-            </div>
-            <div className="flex-1 text-left">
-              <h3 className="font-semibold text-foreground text-sm">우리의 일기</h3>
-              <p className="text-xs text-muted-foreground">함께 쓰는 웨딩 준비 일기</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
-        )}
+      <main className="pb-20">
+        {/* ── Hero: D-Day Card ── */}
+        <div
+          data-tutorial="schedule-dday"
+          className="mx-4 mt-4 mb-5 rounded-2xl overflow-hidden cursor-pointer"
+          onClick={() => navigate("/my-schedule")}
+        >
+          <div className="bg-gradient-to-br from-primary/15 via-primary/8 to-accent/30 p-5 relative">
+            {/* Decorative ring */}
+            <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full border-[3px] border-primary/10" />
+            <div className="absolute -top-3 -right-3 w-16 h-16 rounded-full border-[2px] border-primary/8" />
 
-        {/* Budget Mini Widget */}
+            <div className="flex items-end justify-between mb-4">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">결혼식까지</p>
+                {days !== null ? (
+                  <h2 className="text-4xl font-extrabold tracking-tight text-primary">
+                    {days > 0 ? `D-${days}` : days === 0 ? "D-Day 🎉" : `D+${Math.abs(days)}`}
+                  </h2>
+                ) : (
+                  <h2 className="text-xl font-bold text-foreground">날짜를 설정해주세요 ✨</h2>
+                )}
+                {weddingSettings.wedding_date && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {format(new Date(weddingSettings.wedding_date), "yyyy년 M월 d일 (EEEE)", { locale: ko })}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <Calendar className="w-7 h-7 text-primary/40" />
+              </div>
+            </div>
+
+            {/* Progress summary */}
+            {totalItems > 0 && (
+              <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <ListChecks className="w-3.5 h-3.5 text-primary" />
+                    준비 진행률
+                  </span>
+                  <span className="text-xs font-semibold text-primary">{completedItems}/{totalItems} 완료</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${overallProgress}%`,
+                      background: `linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Premium Banner (contextual) ── */}
         {ddayBanner && (
           <button
             onClick={() => {
               if (isPremium) navigate(ddayBanner.route);
               else setShowUpgrade(true);
             }}
-            className="w-full mb-6 p-4 bg-gradient-to-r from-primary/15 to-primary/5 rounded-2xl border border-primary/20 flex items-center gap-3"
+            className="mx-4 mb-4 w-[calc(100%-2rem)] p-3.5 bg-gradient-to-r from-primary/12 to-primary/4 rounded-xl border border-primary/15 flex items-center gap-3 text-left"
           >
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-medium text-foreground">{ddayBanner.msg}</p>
-              <p className="text-xs text-muted-foreground">{isPremium ? "탭하여 시작하기" : "프리미엄 전용"}</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-primary" />
-          </button>
-        )}
-
-        {/* Budget Mini Widget */}
-        {budgetSettings && budgetSettings.total_budget > 0 && (
-          <button
-            onClick={() => navigate("/budget")}
-            className="w-full mb-6 p-4 bg-card rounded-2xl border border-border flex items-center gap-3"
-          >
-            <span className="text-xl">💰</span>
+            <Sparkles className="w-5 h-5 text-primary shrink-0" />
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm font-semibold text-foreground">예산 사용 현황</span>
-                <span className="text-xs text-muted-foreground">
-                  {budgetSummary.totalSpent.toLocaleString()} / {budgetSettings.total_budget.toLocaleString()}만원
-                </span>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${Math.min((budgetSummary.totalSpent / budgetSettings.total_budget) * 100, 100)}%`,
-                    backgroundColor:
-                      budgetSummary.totalSpent / budgetSettings.total_budget >= 0.9
-                        ? "hsl(var(--destructive))"
-                        : budgetSummary.totalSpent / budgetSettings.total_budget >= 0.7
-                        ? "#F59E0B"
-                        : "hsl(var(--primary))",
-                  }}
-                />
-              </div>
+              <p className="text-sm font-medium text-foreground truncate">{ddayBanner.msg}</p>
+              <p className="text-[11px] text-muted-foreground">{isPremium ? "탭하여 시작하기" : "프리미엄 전용"}</p>
             </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            <ChevronRight className="w-4 h-4 text-primary shrink-0" />
           </button>
         )}
 
-        {/* Progress Summary - Dynamic */}
-        <div
-          data-tutorial="schedule-dday"
-          className="bg-gradient-to-br from-primary/10 via-accent to-background rounded-2xl p-4 mb-6 cursor-pointer"
-          onClick={() => navigate("/my-schedule")}
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-          <Calendar className="w-6 h-6 text-primary" />
-                </div>
-            <div>
-              {days !== null ? (
-                <>
-                  <h2 className="font-bold text-foreground">
-                    {days > 0 ? `D-${days}` : days === 0 ? "D-Day!" : `D+${Math.abs(days)}`}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">결혼식까지 남은 날</p>
-                </>
-              ) : (
-                <>
-                  <h2 className="font-bold text-foreground">날짜 미설정</h2>
-                  <p className="text-sm text-muted-foreground">탭하여 날짜를 설정하세요</p>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
-            </div>
-            <span className="text-sm font-medium text-primary">{progress}%</span>
-          </div>
-        </div>
-
-        {/* Current Tasks - Dynamic */}
-        <div className="mb-6">
+        {/* ── Upcoming Tasks ── */}
+        <section className="px-4 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-foreground">다가오는 일정</h3>
-            <button onClick={() => navigate("/my-schedule")} className="text-sm text-primary font-medium">전체보기</button>
+            <h3 className="font-bold text-foreground flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" />
+              다가오는 일정
+            </h3>
+            <button onClick={() => navigate("/my-schedule")} className="text-xs text-primary font-medium">전체보기</button>
           </div>
           {user && upcomingTasks.length > 0 ? (
             <div className="space-y-2">
               {upcomingTasks.map((task) => (
-                <div key={task.id} className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border">
+                <div
+                  key={task.id}
+                  className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
+                >
                   <button 
                     onClick={() => toggleItemCompletion(task.id)}
-                    className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center hover:border-primary transition-colors"
+                    className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center hover:border-primary transition-colors shrink-0"
                   >
                     <CheckCircle2 className="w-4 h-4 text-transparent" />
                   </button>
-                  <div className="flex-1">
-                    <span className="text-sm text-foreground">{task.title}</span>
-                    <p className="text-xs text-muted-foreground">{task.scheduled_date}</p>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-foreground block truncate">{task.title}</span>
                   </div>
-                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className={`text-xs font-medium whitespace-nowrap ${getDateUrgency(task.scheduled_date)}`}>
+                    {formatRelativeDate(task.scheduled_date)}
+                  </span>
                 </div>
               ))}
             </div>
           ) : (
             <div 
-              className="flex flex-col items-center justify-center py-6 bg-card rounded-xl border border-dashed border-border cursor-pointer hover:border-primary/50 transition-colors"
+              className="flex flex-col items-center justify-center py-8 bg-card rounded-xl border border-dashed border-border cursor-pointer hover:border-primary/50 transition-colors"
               onClick={() => navigate("/my-schedule")}
             >
-              <Plus className="w-8 h-8 text-muted-foreground mb-2" />
+              <Plus className="w-7 h-7 text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">
                 {user ? "일정을 추가해보세요" : "로그인하여 일정을 관리하세요"}
               </p>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Timeline */}
-        <div data-tutorial="schedule-timeline">
-          <h3 className="font-bold text-foreground mb-4">웨딩 타임라인</h3>
-          <div className="space-y-4">
-            {timelinePhases.map((phase, index) => {
-              const status = getPhaseStatus(phase.category);
-              const phaseProgress = getPhaseProgress(phase.category);
-              const phaseItemCount = scheduleItems.filter(item => item.category === phase.category).length;
-              
-              return (
-                <div 
-                  key={phase.id}
-                  onClick={() => user ? setSelectedPhase(phase) : navigate("/auth")}
-                  className={`relative p-4 bg-card rounded-2xl border ${getStatusBorder(status)} cursor-pointer hover:shadow-md transition-shadow`}
-                >
-                  {/* Status indicator */}
-                  <div className={`absolute -left-1 top-6 w-3 h-3 rounded-full ${getStatusColor(status)}`} />
-                  
-                  {/* Connecting line */}
-                  {index < timelinePhases.length - 1 && (
-                    <div className="absolute -left-[2px] top-9 bottom-0 w-0.5 bg-border" style={{ height: 'calc(100% + 1rem)' }} />
-                  )}
+        {/* ── Budget Mini Widget ── */}
+        {budgetSettings && budgetSettings.total_budget > 0 && (
+          <section className="px-4 mb-6">
+            <button
+              onClick={() => navigate("/budget")}
+              className="w-full p-3.5 bg-card rounded-xl border border-border flex items-center gap-3"
+            >
+              <span className="text-lg">💰</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-semibold text-foreground">예산 사용 현황</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {budgetSummary.totalSpent.toLocaleString()} / {budgetSettings.total_budget.toLocaleString()}만원
+                  </span>
+                </div>
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${Math.min((budgetSummary.totalSpent / budgetSettings.total_budget) * 100, 100)}%`,
+                      backgroundColor:
+                        budgetSummary.totalSpent / budgetSettings.total_budget >= 0.9
+                          ? "hsl(var(--destructive))"
+                          : budgetSummary.totalSpent / budgetSettings.total_budget >= 0.7
+                          ? "#F59E0B"
+                          : "hsl(var(--primary))",
+                    }}
+                  />
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </button>
+          </section>
+        )}
 
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      status === "current" ? "bg-primary/20" : "bg-muted"
+        {/* ── Wedding Timeline ── */}
+        <section className="px-4 mb-6" data-tutorial="schedule-timeline">
+          <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-primary" />
+            웨딩 타임라인
+          </h3>
+          <div className="relative">
+            {/* Vertical line */}
+            <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-border" />
+
+            <div className="space-y-3">
+              {timelinePhases.map((phase) => {
+                const status = getPhaseStatus(phase.category);
+                const phaseProgress = getPhaseProgress(phase.category);
+                const phaseItemCount = scheduleItems.filter(item => item.category === phase.category).length;
+                const phaseCompleted = scheduleItems.filter(item => item.category === phase.category && item.completed).length;
+                const isCurrent = status === "current";
+                const isCompleted = status === "completed";
+                
+                return (
+                  <div 
+                    key={phase.id}
+                    onClick={() => user ? setSelectedPhase(phase) : navigate("/auth")}
+                    className={`relative flex items-start gap-3 cursor-pointer group`}
+                  >
+                    {/* Timeline dot */}
+                    <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                      isCurrent 
+                        ? "bg-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]" 
+                        : isCompleted
+                          ? "bg-green-500"
+                          : "bg-muted border-2 border-border"
                     }`}>
-                      <phase.icon className={`w-5 h-5 ${
-                        status === "current" ? "text-primary" : "text-muted-foreground"
+                      <phase.icon className={`w-4.5 h-4.5 ${
+                        isCurrent || isCompleted ? "text-white" : "text-muted-foreground"
                       }`} />
                     </div>
-                    <div className="flex-1">
-                      <span className="text-xs text-muted-foreground">{phase.period}</span>
-                      <h4 className="font-semibold text-foreground">{phase.title}</h4>
-                      <p className="text-sm text-muted-foreground mb-2">{phase.description}</p>
+
+                    {/* Content card */}
+                    <div className={`flex-1 pb-1 p-3 rounded-xl border transition-all ${
+                      isCurrent
+                        ? "bg-primary/5 border-primary/25 shadow-sm"
+                        : "bg-card border-border group-hover:border-primary/20 group-hover:shadow-sm"
+                    }`}>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className={`text-[11px] font-medium ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
+                          {phase.period}
+                        </span>
+                        {isCurrent && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
+                            진행중
+                          </span>
+                        )}
+                        {isCompleted && phaseItemCount > 0 && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-600">
+                            완료
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="font-semibold text-sm text-foreground">{phase.title}</h4>
+                      <p className="text-xs text-muted-foreground mb-2">{phase.description}</p>
                       
-                      {/* Progress bar for phase */}
-                      {phaseItemCount > 0 && (
-                        <div className="flex items-center gap-2 mb-2">
+                      {/* Progress bar */}
+                      {phaseItemCount > 0 ? (
+                        <div className="flex items-center gap-2">
                           <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                             <div 
-                              className="h-full bg-primary rounded-full transition-all" 
+                              className={`h-full rounded-full transition-all duration-500 ${isCompleted && phaseProgress === 100 ? "bg-green-500" : "bg-primary"}`}
                               style={{ width: `${phaseProgress}%` }} 
                             />
                           </div>
-                          <span className="text-xs text-muted-foreground">{phaseProgress}%</span>
+                          <span className="text-[11px] font-medium text-muted-foreground">{phaseCompleted}/{phaseItemCount}</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {phase.defaultTasks.slice(0, 2).map((task, idx) => (
+                            <span key={idx} className="px-2 py-0.5 bg-muted rounded-full text-[11px] text-muted-foreground">
+                              {task}
+                            </span>
+                          ))}
+                          {phase.defaultTasks.length > 2 && (
+                            <span className="text-[11px] text-primary font-medium px-1">+{phase.defaultTasks.length - 2}</span>
+                          )}
                         </div>
                       )}
-                      
-                      <div className="flex flex-wrap gap-1.5">
-                        {phase.defaultTasks.slice(0, 3).map((task, idx) => (
-                          <span key={idx} className="px-2 py-0.5 bg-muted rounded-full text-xs text-muted-foreground">
-                            {task}
-                          </span>
-                        ))}
-                        {phase.defaultTasks.length > 3 && (
-                          <span className="px-2 py-0.5 text-xs text-primary">+{phase.defaultTasks.length - 3}</span>
-                        )}
-                      </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </section>
+
+        {/* ── Couple Section ── */}
+        <section className="px-4 mb-6" data-tutorial="schedule-couple">
+          <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+            <Heart className="w-4 h-4 text-pink-500" />
+            커플 연결
+          </h3>
+          <CoupleInvite />
+        </section>
+      
+        {/* Couple Diary Link */}
+        {isLinked && (
+          <section className="px-4 mb-6">
+            <button
+              onClick={() => navigate("/couple-diary")}
+              className="w-full p-3.5 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 rounded-xl border border-pink-200/50 dark:border-pink-800/30 flex items-center gap-3"
+            >
+              <div className="w-9 h-9 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
+                <BookOpen className="w-4.5 h-4.5 text-pink-500" />
+              </div>
+              <div className="flex-1 text-left">
+                <h3 className="font-semibold text-foreground text-sm">우리의 일기</h3>
+                <p className="text-[11px] text-muted-foreground">함께 쓰는 웨딩 준비 일기</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </section>
+        )}
       </main>
 
       {/* Timeline Detail Sheet */}
