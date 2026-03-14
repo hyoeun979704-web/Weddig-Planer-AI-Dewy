@@ -1,34 +1,41 @@
-import DOMPurify from "dompurify";
-import type { ChatMessage } from "./constants";
+import ReactMarkdown from "react-markdown";
+import { motion } from "framer-motion";
 
-const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+const ChatBubble = ({ msg }: { msg: Message }) => {
   if (msg.role === "user") {
     return (
-      <div className="flex justify-end">
-        <div
-          className="max-w-[80%] rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap"
-          style={{ background: "linear-gradient(135deg, #F9E4EC, #FBCFE8)" }}
-        >
+      <motion.div
+        initial={{ opacity: 0, x: 16 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="flex justify-end"
+      >
+        <div className="max-w-[80%] rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap bg-primary/15 text-foreground">
           {msg.content}
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="flex gap-3 items-start">
-      <div className="w-8 h-8 rounded-full bg-[#C9A96E]/10 flex items-center justify-center flex-shrink-0 text-sm">💍</div>
-      <div className="max-w-[85%] bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
-        {msg.isHtml ? (
-          <div
-            className="text-sm leading-relaxed [&_table]:w-full [&_td]:py-1 [&_b]:font-bold"
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(msg.content.replace(/\n/g, "<br/>")) }}
-          />
-        ) : (
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-        )}
+    <motion.div
+      initial={{ opacity: 0, x: -16 }}
+      animate={{ opacity: 1, x: 0 }}
+      className="flex gap-3 items-start"
+    >
+      <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center flex-shrink-0 text-sm">
+        💍
       </div>
-    </div>
+      <div className="max-w-[85%] bg-card rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-border">
+        <div className="text-sm leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-headings:text-foreground prose-strong:text-foreground text-foreground [&_table]:w-full [&_td]:py-1 [&_th]:py-1 [&_th]:text-left [&_th]:font-semibold">
+          <ReactMarkdown>{msg.content}</ReactMarkdown>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
