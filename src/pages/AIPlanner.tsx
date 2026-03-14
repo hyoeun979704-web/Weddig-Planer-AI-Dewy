@@ -8,7 +8,7 @@ import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
 import SdmeSurvey from "@/components/wedding-planner/SdmeSurvey";
 import TimelineSurvey from "@/components/wedding-planner/TimelineSurvey";
 import BudgetSurvey from "@/components/wedding-planner/BudgetSurvey";
-import { UpgradeModal } from "@/components/premium/UpgradeModal";
+import UpgradeModal from "@/components/premium/UpgradeModal";
 import BottomNav from "@/components/BottomNav";
 import { motion, AnimatePresence } from "framer-motion";
 
