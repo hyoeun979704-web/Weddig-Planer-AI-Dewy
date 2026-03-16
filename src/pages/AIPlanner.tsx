@@ -261,7 +261,6 @@ const AIPlanner = () => {
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        
       />
     </div>
   );
