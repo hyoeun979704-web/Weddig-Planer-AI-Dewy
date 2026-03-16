@@ -5,6 +5,23 @@ import { useVendor, useWeddingHallDetail, useVendorReviews, categoryRouteMap } f
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface AdvantageCard {
+  id: string;
+  emoji: string;
+  title: string;
+  description: string | null;
+  sort_order: number;
+}
+
+interface GalleryImage {
+  id: string;
+  image_url: string;
+  caption: string | null;
+  sort_order: number;
+}
 
 const VendorDetailPage = () => {
   const navigate = useNavigate();
@@ -13,6 +30,23 @@ const VendorDetailPage = () => {
   const { data: vendor, isLoading } = useVendor(id || "");
   const { data: hallDetail } = useWeddingHallDetail(id || "");
   const { data: reviews = [] } = useVendorReviews(id || "");
+  const [advantages, setAdvantages] = useState<AdvantageCard[]>([]);
+  const [gallery, setGallery] = useState<GalleryImage[]>([]);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+
+  useEffect(() => {
+    if (!id) return;
+    const vendorId = parseInt(id, 10);
+    if (isNaN(vendorId)) return;
+
+    Promise.all([
+      supabase.from('vendor_advantage_cards').select('*').eq('vendor_id', vendorId).order('sort_order'),
+      supabase.from('vendor_gallery_images').select('*').eq('vendor_id', vendorId).order('sort_order'),
+    ]).then(([aRes, gRes]) => {
+      if (aRes.data) setAdvantages(aRes.data as AdvantageCard[]);
+      if (gRes.data) setGallery(gRes.data as GalleryImage[]);
+    });
+  }, [id]);
 
   if (isLoading) {
     return (
@@ -124,6 +158,15 @@ const VendorDetailPage = () => {
             </div>
           )}
 
+          {/* 업체 상세 소개 */}
+          {(vendor as Record<string, unknown>).description && (
+            <div className="mt-3 p-3 bg-muted/50 rounded-xl">
+              <p className="text-sm text-foreground leading-relaxed">
+                {(vendor as Record<string, unknown>).description as string}
+              </p>
+            </div>
+          )}
+
           {/* SNS Links */}
           {snsInfo && Object.keys(snsInfo).length > 0 && (
             <div className="mt-3 flex gap-2">
@@ -178,6 +221,78 @@ const VendorDetailPage = () => {
               </div>
             </div>
             <Separator />
+          </>
+        )}
+
+        {/* 장점 카드 */}
+        {advantages.length > 0 && (
+          <>
+            <Separator />
+            <div className="p-4">
+              <h3 className="text-base font-bold text-foreground mb-3">이런 점이 좋아요</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {advantages.map((card) => (
+                  <div key={card.id} className="bg-primary/5 rounded-xl p-3 flex items-start gap-2">
+                    <span className="text-xl flex-shrink-0">{card.emoji}</span>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground leading-tight">{card.title}</p>
+                      {card.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{card.description}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* 포토 갤러리 */}
+        {gallery.length > 0 && (
+          <>
+            <Separator />
+            <div className="p-4">
+              <h3 className="text-base font-bold text-foreground mb-3">포토 갤러리 ({gallery.length})</h3>
+              {/* 메인 이미지 */}
+              <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-muted mb-2">
+                <img
+                  src={gallery[galleryIndex].image_url}
+                  alt={gallery[galleryIndex].caption ?? `gallery ${galleryIndex + 1}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
+                />
+                {gallery[galleryIndex].caption && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/40 px-3 py-1.5">
+                    <p className="text-xs text-white">{gallery[galleryIndex].caption}</p>
+                  </div>
+                )}
+                {gallery.length > 1 && (
+                  <div className="absolute top-2 right-2 bg-black/50 px-2 py-0.5 rounded-full text-xs text-white">
+                    {galleryIndex + 1}/{gallery.length}
+                  </div>
+                )}
+              </div>
+              {/* 썸네일 스트립 */}
+              {gallery.length > 1 && (
+                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                  {gallery.map((img, i) => (
+                    <button
+                      key={img.id}
+                      onClick={() => setGalleryIndex(i)}
+                      className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all
+                        ${i === galleryIndex ? 'border-primary' : 'border-transparent opacity-60'}`}
+                    >
+                      <img
+                        src={img.image_url}
+                        alt={`thumb ${i + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </>
         )}
 

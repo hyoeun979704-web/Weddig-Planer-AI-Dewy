@@ -1,10 +1,10 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { 
-  User, 
-  Settings, 
-  HelpCircle, 
-  FileText, 
-  Bell, 
+import {
+  User,
+  Settings,
+  HelpCircle,
+  FileText,
+  Bell,
   MessageSquare,
   ChevronRight,
   LogIn,
@@ -13,7 +13,11 @@ import {
   Coins,
   Ticket,
   ShoppingBag,
-  Calendar
+  Calendar,
+  Building2,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,7 +46,7 @@ const menuItems = [
 const MyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isLoading, signOut } = useAuth();
+  const { user, isLoading, signOut, isBusinessUser, businessProfile } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
 
   const daysUntilWedding = () => {
@@ -176,32 +180,96 @@ const MyPage = () => {
           </div>
         </div>
 
-        {/* Premium Banner */}
-        <PremiumBanner />
-
-        {/* D-Day Card */}
-        <div className="px-4 py-2">
-          <div className="p-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-2xl border border-primary/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">결혼식까지</p>
-                {days !== null ? (
-                  <p className="text-2xl font-bold text-primary">
-                    {days > 0 ? `D-${days}` : days === 0 ? "D-Day!" : `D+${Math.abs(days)}`}
-                  </p>
-                ) : (
-                  <p className="text-xl font-bold text-muted-foreground">미설정</p>
-                )}
+        {/* 기업회원 업체 관리 섹션 */}
+        {isBusinessUser && (
+          <div className="px-4 py-2">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-border bg-muted/30">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">업체 관리</p>
               </div>
-              <button 
-                onClick={() => navigate("/my-schedule")}
-                className="px-3 py-1.5 bg-primary/10 rounded-lg text-sm font-medium text-primary"
-              >
-                {weddingSettings.wedding_date ? "일정 관리" : "날짜 설정"}
-              </button>
+
+              {/* 사업자 인증 상태 */}
+              {businessProfile ? (
+                <>
+                  <div className="px-4 py-3 flex items-center gap-3">
+                    {businessProfile.verification_status === 'approved' ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    ) : businessProfile.verification_status === 'rejected' ? (
+                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                    ) : (
+                      <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{businessProfile.business_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {businessProfile.verification_status === 'approved' ? '승인 완료'
+                          : businessProfile.verification_status === 'rejected' ? '승인 거절'
+                          : '검토 중'}
+                        {' · '}{businessProfile.category_type}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate('/vendor/dashboard')}
+                    className="w-full flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors text-left border-t border-border"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-foreground text-sm">업체 대시보드</h4>
+                      <p className="text-xs text-muted-foreground">정보·장점카드·갤러리 관리</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => navigate('/vendor/setup')}
+                  className="w-full flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-foreground text-sm">업체 등록하기</h4>
+                    <p className="text-xs text-muted-foreground">사업자 인증 후 업체를 등록하세요</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </button>
+              )}
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Premium Banner + D-Day (개인회원만) */}
+        {!isBusinessUser && (
+          <>
+            <PremiumBanner />
+            <div className="px-4 py-2">
+              <div className="p-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-2xl border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">결혼식까지</p>
+                    {days !== null ? (
+                      <p className="text-2xl font-bold text-primary">
+                        {days > 0 ? `D-${days}` : days === 0 ? "D-Day!" : `D+${Math.abs(days)}`}
+                      </p>
+                    ) : (
+                      <p className="text-xl font-bold text-muted-foreground">미설정</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => navigate("/my-schedule")}
+                    className="px-3 py-1.5 bg-primary/10 rounded-lg text-sm font-medium text-primary"
+                  >
+                    {weddingSettings.wedding_date ? "일정 관리" : "날짜 설정"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Menu Items */}
         <div className="px-4 py-4">

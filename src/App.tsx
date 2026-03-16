@@ -68,6 +68,10 @@ const CoupleVoteDetail = lazy(() => import("./pages/CoupleVoteDetail"));
 const BudgetSplitSimulator = lazy(() => import("./pages/BudgetSplitSimulator"));
 const Tutorial = lazy(() => import("./pages/Tutorial"));
 
+// 기업회원 업체 관리
+const VendorSetup = lazy(() => import("./pages/VendorSetup"));
+const VendorDashboard = lazy(() => import("./pages/VendorDashboard"));
+
 // 기능 1: 커플 일정 공유 + 공유 일기
 const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
 const CoupleDiaryWrite = lazy(() => import("./pages/CoupleDiaryWrite"));
@@ -165,6 +169,10 @@ const App = () => (
               <Route path="/couple-vote/:id" element={<CoupleVoteDetail />} />
               <Route path="/budget/split-simulator" element={<BudgetSplitSimulator />} />
               <Route path="/tutorial" element={<Tutorial />} />
+
+              {/* 기업회원 업체 관리 */}
+              <Route path="/vendor/setup" element={<VendorSetup />} />
+              <Route path="/vendor/dashboard" element={<VendorDashboard />} />
 
               {/* 기능 1: 커플 일정 공유 + 공유 일기 */}
               <Route path="/couple-diary" element={<CoupleDiary />} />
