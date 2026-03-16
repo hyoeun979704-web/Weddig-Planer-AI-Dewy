@@ -91,6 +91,13 @@ const SubscriptionCheckout = lazy(() => import("./pages/SubscriptionCheckout"));
 const SubscriptionPaymentSuccess = lazy(() => import("./pages/SubscriptionPaymentSuccess"));
 const SubscriptionPaymentFail = lazy(() => import("./pages/SubscriptionPaymentFail"));
 
+// 기업회원 플로우
+const BusinessOnboard = lazy(() => import("./pages/BusinessOnboard"));
+const BusinessDashboard = lazy(() => import("./pages/BusinessDashboard"));
+const BusinessVendorEdit = lazy(() => import("./pages/BusinessVendorEdit"));
+const BusinessGallery = lazy(() => import("./pages/BusinessGallery"));
+const BusinessInquiries = lazy(() => import("./pages/BusinessInquiries"));
+
 const queryClient = new QueryClient();
 
 const PageLoader = () => (
