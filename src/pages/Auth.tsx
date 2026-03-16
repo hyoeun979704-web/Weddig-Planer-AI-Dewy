@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Eye, EyeOff, User, Building2 } from "lucide-react";
 
 const emailSchema = z.string().email("올바른 이메일 형식을 입력해주세요");
 const passwordSchema = z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다");
+
+type AccountType = "individual" | "business";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -19,13 +21,19 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [accountType, setAccountType] = useState<AccountType>("individual");
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (user && !isLoading) {
-      navigate("/");
+      // Check if user needs business onboarding
+      if (user.user_metadata?.account_type === "business") {
+        navigate("/business/onboard");
+      } else {
+        navigate("/");
+      }
     }
   }, [user, isLoading, navigate]);
 
@@ -59,7 +67,8 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password);
+        const metadata = accountType === "business" ? { account_type: "business" } : undefined;
+        const { error } = await signUp(email, password, metadata);
         if (error) {
           if (error.message.includes("already registered")) {
             toast.error("이미 가입된 이메일입니다");
@@ -68,7 +77,11 @@ const Auth = () => {
           }
         } else {
           toast.success("회원가입이 완료되었습니다!");
-          navigate("/");
+          if (accountType === "business") {
+            navigate("/business/onboard");
+          } else {
+            navigate("/");
+          }
         }
       } else {
         const { error } = await signIn(email, password);
@@ -128,13 +141,57 @@ const Auth = () => {
       {/* Content */}
       <div className="p-6">
         {/* Logo / Title */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <span className="text-6xl">💍</span>
           <h2 className="text-2xl font-bold mt-4 text-foreground">웨딩 플래너</h2>
           <p className="text-muted-foreground mt-2">
             {isSignUp ? "새 계정을 만들어주세요" : "계정에 로그인하세요"}
           </p>
         </div>
+
+        {/* Account Type Selector (signup only) */}
+        {isSignUp && (
+          <div className="flex gap-3 mb-6">
+            <button
+              type="button"
+              onClick={() => setAccountType("individual")}
+              className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-[0.97] ${
+                accountType === "individual"
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-card"
+              }`}
+            >
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+                accountType === "individual" ? "bg-primary/10" : "bg-muted"
+              }`}>
+                <User className={`w-5 h-5 ${accountType === "individual" ? "text-primary" : "text-muted-foreground"}`} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">개인회원</p>
+                <p className="text-[11px] text-muted-foreground">예비부부</p>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setAccountType("business")}
+              className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all active:scale-[0.97] ${
+                accountType === "business"
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-card"
+              }`}
+            >
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+                accountType === "business" ? "bg-primary/10" : "bg-muted"
+              }`}>
+                <Building2 className={`w-5 h-5 ${accountType === "business" ? "text-primary" : "text-muted-foreground"}`} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">기업회원</p>
+                <p className="text-[11px] text-muted-foreground">웨딩 업체</p>
+              </div>
+            </button>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -210,7 +267,13 @@ const Auth = () => {
             className="w-full h-12 text-base font-medium mt-6"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "처리 중..." : isSignUp ? "회원가입" : "로그인"}
+            {isSubmitting
+              ? "처리 중..."
+              : isSignUp
+              ? accountType === "business"
+                ? "기업회원 가입"
+                : "회원가입"
+              : "로그인"}
           </Button>
         </form>
 
@@ -259,6 +322,7 @@ const Auth = () => {
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setErrors({});
+                setAccountType("individual");
               }}
               className="text-primary font-medium"
             >

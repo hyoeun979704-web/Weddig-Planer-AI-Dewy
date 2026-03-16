@@ -203,6 +203,13 @@ const App = () => (
               {/* 꽃 머지 퍼즐 게임 */}
               <Route path="/merge-game" element={<MergeGame />} />
 
+              {/* 기업회원 플로우 */}
+              <Route path="/business/onboard" element={<BusinessOnboard />} />
+              <Route path="/business/dashboard" element={<BusinessDashboard />} />
+              <Route path="/business/edit" element={<BusinessVendorEdit />} />
+              <Route path="/business/gallery" element={<BusinessGallery />} />
+              <Route path="/business/inquiries" element={<BusinessInquiries />} />
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
