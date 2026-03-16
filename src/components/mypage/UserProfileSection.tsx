@@ -35,7 +35,7 @@ const UserProfileSection = ({ user, isLoading }: UserProfileSectionProps) => {
     return (
       <button
         onClick={() => navigate("/auth")}
-        className="mx-4 mt-4 p-5 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent rounded-2xl border border-primary/20 flex items-center gap-4 active:scale-[0.98] transition-transform w-[calc(100%-2rem)]"
+        className="mx-4 mt-4 p-5 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent rounded-2xl border border-primary/20 flex items-center gap-4 active:scale-[0.98] transition-transform w-[calc(100%-2rem)] text-left"
       >
         <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
           <User className="w-7 h-7 text-primary" />
@@ -55,7 +55,7 @@ const UserProfileSection = ({ user, isLoading }: UserProfileSectionProps) => {
   return (
     <button
       onClick={() => navigate("/profile")}
-      className="mx-4 mt-4 p-5 bg-gradient-to-br from-primary/10 via-accent/50 to-transparent rounded-2xl border border-border flex items-center gap-4 active:scale-[0.98] transition-transform w-[calc(100%-2rem)]"
+      className="mx-4 mt-4 p-5 bg-gradient-to-br from-primary/10 via-accent/50 to-transparent rounded-2xl border border-border flex items-center gap-4 active:scale-[0.98] transition-transform w-[calc(100%-2rem)] text-left"
     >
       <Avatar className="w-14 h-14 border-2 border-primary/20 shadow-sm">
         <AvatarImage src={getUserAvatar() || undefined} alt={getUserDisplayName()} />

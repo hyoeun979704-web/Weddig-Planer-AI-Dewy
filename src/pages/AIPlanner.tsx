@@ -108,8 +108,8 @@ const AIPlanner = () => {
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary flex items-center justify-center text-base">🌸</div>
             <div>
               <p className="text-sm font-semibold text-foreground">Dewy</p>
-              <p className="text-[11px] text-emerald-500 font-medium flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+              <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
                 AI 웨딩플래너
               </p>
             </div>
@@ -217,7 +217,7 @@ const AIPlanner = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
-            className="fixed bottom-36 right-4 max-w-[430px] w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center z-30"
+            className="absolute bottom-40 right-4 w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center z-30"
           >
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </motion.button>
@@ -261,7 +261,6 @@ const AIPlanner = () => {
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        
       />
     </div>
   );
