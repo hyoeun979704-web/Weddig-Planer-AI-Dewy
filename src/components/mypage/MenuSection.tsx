@@ -1,9 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import {
   Calendar, User, Bell, FileText, MessageSquare,
-  HelpCircle, Settings, ChevronRight, LogOut
+  HelpCircle, Settings, ChevronRight, LogOut, Building2
 } from "lucide-react";
 import { User as SupaUser } from "@supabase/supabase-js";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface MenuSectionProps {
   user: SupaUser | null;
@@ -37,9 +38,30 @@ const menuGroups = [
 
 const MenuSection = ({ user, onSignOut }: MenuSectionProps) => {
   const navigate = useNavigate();
+  const { isBusiness, businessProfile } = useUserRole();
 
   return (
     <div className="px-4 py-2 space-y-4">
+      {/* Business management card - only for business users */}
+      {isBusiness && (
+        <div>
+          <h3 className="text-xs font-medium text-muted-foreground mb-1.5 px-1">업체 관리</h3>
+          <button
+            onClick={() => navigate("/business/dashboard")}
+            className="w-full flex items-center gap-3 px-4 py-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl border border-primary/20 hover:border-primary/40 active:scale-[0.98] transition-all"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <p className="text-sm font-semibold text-foreground">{businessProfile?.business_name || "업체 관리"}</p>
+              <p className="text-[11px] text-muted-foreground">업체 정보, 이미지, 문의 관리</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-primary flex-shrink-0" />
+          </button>
+        </div>
+      )}
+
       {menuGroups.map((group) => (
         <div key={group.title}>
           <h3 className="text-xs font-medium text-muted-foreground mb-1.5 px-1">{group.title}</h3>
