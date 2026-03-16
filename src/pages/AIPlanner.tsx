@@ -217,7 +217,7 @@ const AIPlanner = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
-            className="fixed bottom-36 right-4 max-w-[430px] w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center z-30"
+            className="absolute bottom-40 right-4 w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center z-30"
           >
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </motion.button>
