@@ -37,11 +37,34 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };
+
+async function fetchUserProfile(userId: string): Promise<{
+  userType: UserType;
+  businessProfile: BusinessProfile | null;
+}> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('user_type')
+    .eq('id', userId)
+    .single();
+
+  const userType = (profile?.user_type as UserType) ?? 'personal';
+
+  if (userType !== 'business') {
+    return { userType, businessProfile: null };
+  }
+
+  const { data: bp } = await supabase
+    .from('business_profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  return { userType, businessProfile: bp as BusinessProfile | null };
+}
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -50,32 +73,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userType, setUserType] = useState<UserType | null>(null);
   const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null);
 
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('user_type')
-        .eq('id', userId)
-        .single();
+  useEffect(() => {
+    // onAuthStateChange fires immediately with INITIAL_SESSION — no need for getSession()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
 
-      const type = (profile?.user_type as UserType) ?? 'personal';
-      setUserType(type);
+        if (session?.user) {
+          // defer with setTimeout(0) to avoid Supabase auth-lock deadlock
+          // when calling supabase queries inside onAuthStateChange
+          const uid = session.user.id;
+          setTimeout(() => {
+            fetchUserProfile(uid).then(({ userType, businessProfile }) => {
+              setUserType(userType);
+              setBusinessProfile(businessProfile);
+            }).catch(() => {
+              setUserType('personal');
+              setBusinessProfile(null);
+            });
+          }, 0);
+        } else {
+          setUserType(null);
+          setBusinessProfile(null);
+        }
 
-      if (type === 'business') {
-        const { data: bp } = await supabase
-          .from('business_profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
-        setBusinessProfile(bp as BusinessProfile | null);
-      } else {
-        setBusinessProfile(null);
+        setIsLoading(false);
       }
-    } catch {
-      setUserType('personal');
-      setBusinessProfile(null);
-    }
-  };
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const refreshBusinessProfile = async () => {
     if (!user) return;
@@ -87,55 +115,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setBusinessProfile(bp as BusinessProfile | null);
   };
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          // defer to avoid deadlock with Supabase client
-          setTimeout(() => fetchUserProfile(session.user.id), 0);
-        } else {
-          setUserType(null);
-          setBusinessProfile(null);
-        }
-        setIsLoading(false);
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      }
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const signUp = async (email: string, password: string, selectedUserType: UserType = 'personal') => {
-    const redirectUrl = `${window.location.origin}/`;
-
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
+        emailRedirectTo: `${window.location.origin}/`,
         data: { user_type: selectedUserType },
-      }
+      },
     });
 
+    // Upsert user_type immediately — onAuthStateChange will re-fetch the profile
     if (!error && data.user) {
-      // profiles 행이 트리거로 생성된 후 user_type 반영
-      setTimeout(async () => {
-        await supabase
-          .from('profiles')
-          .upsert({ id: data.user!.id, user_type: selectedUserType }, { onConflict: 'id' });
-        await fetchUserProfile(data.user!.id);
-      }, 500);
+      await supabase
+        .from('profiles')
+        .upsert({ id: data.user.id, user_type: selectedUserType }, { onConflict: 'id' });
     }
 
     return { error: error as Error | null };
@@ -160,14 +154,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setBusinessProfile(null);
   };
 
-  const isBusinessUser = userType === 'business';
-  const isApprovedBusiness = isBusinessUser && businessProfile?.verification_status === 'approved';
-
   return (
     <AuthContext.Provider value={{
       user, session, isLoading,
       userType, businessProfile,
-      isBusinessUser, isApprovedBusiness,
+      isBusinessUser: userType === 'business',
+      isApprovedBusiness: userType === 'business' && businessProfile?.verification_status === 'approved',
       signUp, signIn, signInWithGoogle, signOut,
       refreshBusinessProfile,
     }}>

@@ -115,6 +115,7 @@ export function Game({ onScoreChange, onGameOver, bestScore = 0 }: GameProps) {
   }
 
   // ─── 캔버스 렌더링 ──────────────────────────────────────────────────────
+  // dropXRef / mergeFlashesRef는 mutable ref → 의존성 불필요
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -286,15 +287,22 @@ export function Game({ onScoreChange, onGameOver, bestScore = 0 }: GameProps) {
         ctx.restore();
       }
     }
-  }, [getBodies, dropXRef, mergeFlashesRef]);
+  }, [getBodies]); // dropXRef, mergeFlashesRef는 ref이므로 deps 불필요
 
   // ─── RAF 루프 ───────────────────────────────────────────────────────────
+  // draw/tick을 ref로 감싸서 루프가 절대 재시작되지 않게 함
+  // (draw/tick이 바뀌어도 teardown+restart → 프레임 드롭 없음)
+  const drawRef = useRef(draw);
+  drawRef.current = draw;
+  const tickRef = useRef(tick);
+  tickRef.current = tick;
+
   useEffect(() => {
     let running = true;
     function loop() {
       if (!running) return;
-      tick();
-      draw();
+      tickRef.current();
+      drawRef.current();
       animFrameRef.current = requestAnimationFrame(loop);
     }
     animFrameRef.current = requestAnimationFrame(loop);
@@ -302,7 +310,7 @@ export function Game({ onScoreChange, onGameOver, bestScore = 0 }: GameProps) {
       running = false;
       cancelAnimationFrame(animFrameRef.current);
     };
-  }, [draw, tick]);
+  }, []); // 의존성 없음 — 루프는 마운트/언마운트 시에만 시작/종료
 
   useEffect(() => {
     startGame();

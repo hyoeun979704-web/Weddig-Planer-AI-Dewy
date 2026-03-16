@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Building2, Image, Star, Save, Plus, Trash2,
@@ -11,24 +11,37 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { ADVANTAGE_EMOJI_PRESETS, VENDOR_VERIFICATION_STATUS } from "@/constants/vendor";
 
 type Tab = 'info' | 'advantages' | 'gallery';
 
+// sort_order는 배열 인덱스에서 파생 → 상태에 불필요
 interface AdvantageCard {
-  id?: string;
+  id?: string;   // undefined = 신규 (DB에 없음)
   emoji: string;
   title: string;
   description: string;
-  sort_order: number;
-  isNew?: boolean;
 }
 
 interface GalleryImage {
   id?: string;
   image_url: string;
   caption: string;
-  sort_order: number;
-  isNew?: boolean;
+}
+
+interface VendorRow {
+  name: string;
+  category_type: string;
+  region: string | null;
+  address: string;
+  tel: string | null;
+  business_hours: string | null;
+  tagline: string | null;
+  description: string | null;
+  keywords: string | null;
+  amenities: string | null;
+  thumbnail_url: string | null;
+  sns_info: Record<string, string> | null;
 }
 
 interface VendorInfo {
@@ -48,20 +61,11 @@ interface VendorInfo {
   sns_kakao: string;
 }
 
-const STATUS_CONFIG = {
-  pending:  { label: '검토 중', icon: Clock, className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  approved: { label: '승인 완료', icon: CheckCircle2, className: 'bg-green-50 text-green-700 border-green-200' },
-  rejected: { label: '승인 거절', icon: AlertCircle, className: 'bg-red-50 text-red-700 border-red-200' },
-};
-
-const EMOJI_PRESETS = ['⭐', '💍', '📸', '🌸', '🎊', '🍽️', '🚗', '💐', '✨', '🎵', '🏆', '💎'];
-
 const VendorDashboard = () => {
   const navigate = useNavigate();
   const { user, businessProfile, isBusinessUser } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('info');
 
-  // ── 기본 정보 상태 ──────────────────────────────────────────────────
   const [vendorInfo, setVendorInfo] = useState<VendorInfo>({
     name: '', category_type: '', region: '', address: '', tel: '',
     business_hours: '', tagline: '', description: '', keywords: '',
@@ -69,84 +73,74 @@ const VendorDashboard = () => {
   });
   const [isSavingInfo, setIsSavingInfo] = useState(false);
 
-  // ── 장점 카드 상태 ──────────────────────────────────────────────────
   const [advantages, setAdvantages] = useState<AdvantageCard[]>([]);
   const [isSavingAdvantages, setIsSavingAdvantages] = useState(false);
 
-  // ── 갤러리 상태 ────────────────────────────────────────────────────
   const [gallery, setGallery] = useState<GalleryImage[]>([]);
   const [isSavingGallery, setIsSavingGallery] = useState(false);
 
   const vendorId = businessProfile?.vendor_id;
-  const status = businessProfile?.verification_status ?? 'pending';
-  const statusConfig = STATUS_CONFIG[status];
+  const status = (businessProfile?.verification_status ?? 'pending') as keyof typeof VENDOR_VERIFICATION_STATUS;
+  const statusConfig = VENDOR_VERIFICATION_STATUS[status];
 
-  // 업체 정보 로드
+  // ── 업체 정보 로드 ──────────────────────────────────────────────────
   const loadVendorData = useCallback(async () => {
     if (!vendorId) return;
 
-    const [vendorRes, advantagesRes, galleryRes] = await Promise.all([
+    const [vendorRes, advantagesRes, galleryRes] = await Promise.allSettled([
       supabase.from('vendors').select('*').eq('vendor_id', vendorId).single(),
-      supabase.from('vendor_advantage_cards').select('*').eq('vendor_id', vendorId).order('sort_order'),
-      supabase.from('vendor_gallery_images').select('*').eq('vendor_id', vendorId).order('sort_order'),
+      supabase.from('vendor_advantage_cards').select('id,emoji,title,description').eq('vendor_id', vendorId).order('sort_order'),
+      supabase.from('vendor_gallery_images').select('id,image_url,caption').eq('vendor_id', vendorId).order('sort_order'),
     ]);
 
-    if (vendorRes.data) {
-      const v = vendorRes.data as Record<string, unknown>;
-      const sns = (v.sns_info as Record<string, string> | null) ?? {};
+    if (vendorRes.status === 'fulfilled' && vendorRes.value.data) {
+      const v = vendorRes.value.data as unknown as VendorRow;
+      const sns = v.sns_info ?? {};
       setVendorInfo({
-        name: (v.name as string) ?? '',
-        category_type: (v.category_type as string) ?? '',
-        region: (v.region as string) ?? '',
-        address: (v.address as string) ?? '',
-        tel: (v.tel as string) ?? '',
-        business_hours: (v.business_hours as string) ?? '',
-        tagline: (v.tagline as string) ?? '',
-        description: (v.description as string) ?? '',
-        keywords: (v.keywords as string) ?? '',
-        amenities: (v.amenities as string) ?? '',
-        thumbnail_url: (v.thumbnail_url as string) ?? '',
+        name: v.name ?? '',
+        category_type: v.category_type ?? '',
+        region: v.region ?? '',
+        address: v.address ?? '',
+        tel: v.tel ?? '',
+        business_hours: v.business_hours ?? '',
+        tagline: v.tagline ?? '',
+        description: v.description ?? '',
+        keywords: v.keywords ?? '',
+        amenities: v.amenities ?? '',
+        thumbnail_url: v.thumbnail_url ?? '',
         sns_instagram: sns.instagram ?? '',
         sns_blog: sns.blog ?? '',
         sns_kakao: sns.kakao ?? '',
       });
     }
 
-    if (advantagesRes.data) {
-      setAdvantages(advantagesRes.data.map((a) => ({
-        id: a.id,
-        emoji: a.emoji,
-        title: a.title,
-        description: a.description ?? '',
-        sort_order: a.sort_order,
+    if (advantagesRes.status === 'fulfilled' && advantagesRes.value.data) {
+      setAdvantages(advantagesRes.value.data.map((a) => ({
+        id: a.id as string,
+        emoji: a.emoji as string,
+        title: a.title as string,
+        description: (a.description ?? '') as string,
       })));
     }
 
-    if (galleryRes.data) {
-      setGallery(galleryRes.data.map((g) => ({
-        id: g.id,
-        image_url: g.image_url,
-        caption: g.caption ?? '',
-        sort_order: g.sort_order,
+    if (galleryRes.status === 'fulfilled' && galleryRes.value.data) {
+      setGallery(galleryRes.value.data.map((g) => ({
+        id: g.id as string,
+        image_url: g.image_url as string,
+        caption: (g.caption ?? '') as string,
       })));
     }
   }, [vendorId]);
 
   useEffect(() => {
-    if (!isBusinessUser) {
-      navigate('/');
-      return;
-    }
-    if (!businessProfile) {
-      navigate('/vendor/setup');
-      return;
-    }
+    if (!isBusinessUser) { navigate('/'); return; }
+    if (!businessProfile) { navigate('/vendor/setup'); return; }
     loadVendorData();
   }, [isBusinessUser, businessProfile, loadVendorData, navigate]);
 
   // ── 기본 정보 저장 ──────────────────────────────────────────────────
   const saveVendorInfo = async () => {
-    if (!vendorId || !user) return;
+    if (!vendorId) return;
     setIsSavingInfo(true);
     try {
       const snsInfo: Record<string, string> = {};
@@ -160,7 +154,7 @@ const VendorDashboard = () => {
           name: vendorInfo.name,
           region: vendorInfo.region || null,
           address: vendorInfo.address,
-          tel: vendorInfo.tel,
+          tel: vendorInfo.tel || null,
           business_hours: vendorInfo.business_hours || null,
           tagline: vendorInfo.tagline || null,
           description: vendorInfo.description || null,
@@ -180,46 +174,40 @@ const VendorDashboard = () => {
     }
   };
 
-  // ── 장점 카드 저장 ──────────────────────────────────────────────────
+  // ── 장점 카드 저장 (delete-all + bulk insert — 2쿼리) ──────────────
   const saveAdvantages = async () => {
     if (!vendorId) return;
     setIsSavingAdvantages(true);
     try {
-      // 기존 전체 삭제 후 재삽입 (단순 upsert 전략)
-      const existingIds = advantages.filter(a => a.id && !a.isNew).map(a => a.id!);
-      const allExisting = await supabase
-        .from('vendor_advantage_cards')
-        .select('id')
-        .eq('vendor_id', vendorId);
+      await supabase.from('vendor_advantage_cards').delete().eq('vendor_id', vendorId);
 
-      const toDelete = (allExisting.data ?? [])
-        .filter(r => !existingIds.includes(r.id))
-        .map(r => r.id);
-
-      if (toDelete.length > 0) {
-        await supabase.from('vendor_advantage_cards').delete().in('id', toDelete);
-      }
-
-      for (const [i, card] of advantages.entries()) {
-        if (card.isNew || !card.id) {
-          await supabase.from('vendor_advantage_cards').insert({
+      const validCards = advantages.filter(c => c.title.trim());
+      if (validCards.length > 0) {
+        const { data: saved, error } = await supabase
+          .from('vendor_advantage_cards')
+          .insert(validCards.map((card, i) => ({
             vendor_id: vendorId,
             emoji: card.emoji,
             title: card.title,
             description: card.description || null,
             sort_order: i,
-          });
-        } else {
-          await supabase.from('vendor_advantage_cards').update({
-            emoji: card.emoji,
-            title: card.title,
-            description: card.description || null,
-            sort_order: i,
-          }).eq('id', card.id);
+          })))
+          .select('id,emoji,title,description');
+
+        if (error) throw error;
+        // 반환된 ID로 상태 갱신 (전체 리로드 불필요)
+        if (saved) {
+          setAdvantages(saved.map(a => ({
+            id: a.id as string,
+            emoji: a.emoji as string,
+            title: a.title as string,
+            description: (a.description ?? '') as string,
+          })));
         }
+      } else {
+        setAdvantages([]);
       }
 
-      await loadVendorData();
       toast.success("장점 카드가 저장되었습니다");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "저장 중 오류가 발생했습니다");
@@ -228,44 +216,42 @@ const VendorDashboard = () => {
     }
   };
 
-  // ── 갤러리 저장 ────────────────────────────────────────────────────
+  // ── 갤러리 저장 (delete-all + bulk insert — 2쿼리) ─────────────────
   const saveGallery = async () => {
     if (!vendorId) return;
     setIsSavingGallery(true);
     try {
-      const existingIds = gallery.filter(g => g.id && !g.isNew).map(g => g.id!);
-      const allExisting = await supabase
-        .from('vendor_gallery_images')
-        .select('id')
-        .eq('vendor_id', vendorId);
-
-      const toDelete = (allExisting.data ?? [])
-        .filter(r => !existingIds.includes(r.id))
-        .map(r => r.id);
-
-      if (toDelete.length > 0) {
-        await supabase.from('vendor_gallery_images').delete().in('id', toDelete);
+      const validImages = gallery.filter(g => g.image_url.trim());
+      if (validImages.length === 0 && gallery.length > 0) {
+        toast.error("저장할 이미지 URL을 입력해주세요");
+        return;
       }
 
-      for (const [i, img] of gallery.entries()) {
-        if (!img.image_url.trim()) continue;
-        if (img.isNew || !img.id) {
-          await supabase.from('vendor_gallery_images').insert({
+      await supabase.from('vendor_gallery_images').delete().eq('vendor_id', vendorId);
+
+      if (validImages.length > 0) {
+        const { data: saved, error } = await supabase
+          .from('vendor_gallery_images')
+          .insert(validImages.map((img, i) => ({
             vendor_id: vendorId,
             image_url: img.image_url,
             caption: img.caption || null,
             sort_order: i,
-          });
-        } else {
-          await supabase.from('vendor_gallery_images').update({
-            image_url: img.image_url,
-            caption: img.caption || null,
-            sort_order: i,
-          }).eq('id', img.id);
+          })))
+          .select('id,image_url,caption');
+
+        if (error) throw error;
+        if (saved) {
+          setGallery(saved.map(g => ({
+            id: g.id as string,
+            image_url: g.image_url as string,
+            caption: (g.caption ?? '') as string,
+          })));
         }
+      } else {
+        setGallery([]);
       }
 
-      await loadVendorData();
       toast.success("갤러리가 저장되었습니다");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "저장 중 오류가 발생했습니다");
@@ -276,20 +262,14 @@ const VendorDashboard = () => {
 
   // ── 장점 카드 조작 ──────────────────────────────────────────────────
   const addAdvantage = () => {
-    if (advantages.length >= 6) {
-      toast.error("장점 카드는 최대 6개까지 등록할 수 있습니다");
-      return;
-    }
-    setAdvantages(prev => [...prev, {
-      emoji: '⭐', title: '', description: '', sort_order: prev.length, isNew: true
-    }]);
+    if (advantages.length >= 6) { toast.error("장점 카드는 최대 6개까지 등록할 수 있습니다"); return; }
+    setAdvantages(prev => [...prev, { emoji: '⭐', title: '', description: '' }]);
   };
 
-  const removeAdvantage = (index: number) => {
+  const removeAdvantage = (index: number) =>
     setAdvantages(prev => prev.filter((_, i) => i !== index));
-  };
 
-  const moveAdvantage = (index: number, dir: 'up' | 'down') => {
+  const moveAdvantage = (index: number, dir: 'up' | 'down') =>
     setAdvantages(prev => {
       const arr = [...prev];
       const target = dir === 'up' ? index - 1 : index + 1;
@@ -297,22 +277,23 @@ const VendorDashboard = () => {
       [arr[index], arr[target]] = [arr[target], arr[index]];
       return arr;
     });
-  };
+
+  const updateAdvantage = useCallback((index: number, patch: Partial<AdvantageCard>) =>
+    setAdvantages(prev => prev.map((c, i) => i === index ? { ...c, ...patch } : c)),
+  []);
 
   // ── 갤러리 조작 ────────────────────────────────────────────────────
   const addGalleryImage = () => {
-    if (gallery.length >= 10) {
-      toast.error("갤러리는 최대 10개까지 등록할 수 있습니다");
-      return;
-    }
-    setGallery(prev => [...prev, {
-      image_url: '', caption: '', sort_order: prev.length, isNew: true
-    }]);
+    if (gallery.length >= 10) { toast.error("갤러리는 최대 10개까지 등록할 수 있습니다"); return; }
+    setGallery(prev => [...prev, { image_url: '', caption: '' }]);
   };
 
-  const removeGalleryImage = (index: number) => {
+  const removeGalleryImage = (index: number) =>
     setGallery(prev => prev.filter((_, i) => i !== index));
-  };
+
+  const updateGallery = useCallback((index: number, patch: Partial<GalleryImage>) =>
+    setGallery(prev => prev.map((g, i) => i === index ? { ...g, ...patch } : g)),
+  []);
 
   if (!businessProfile) {
     return (
@@ -322,9 +303,14 @@ const VendorDashboard = () => {
     );
   }
 
+  const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
+    { key: 'info', label: '기본 정보', icon: Building2 },
+    { key: 'advantages', label: '장점 카드', icon: Star },
+    { key: 'gallery', label: '포토 갤러리', icon: Image },
+  ];
+
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-      {/* Header */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate('/mypage')} className="w-10 h-10 flex items-center justify-center -ml-2">
@@ -336,7 +322,9 @@ const VendorDashboard = () => {
 
       {/* 인증 상태 배너 */}
       <div className={`mx-4 mt-3 flex items-center gap-2 px-4 py-3 rounded-xl border ${statusConfig.className}`}>
-        <statusConfig.icon className="w-4 h-4 flex-shrink-0" />
+        {status === 'approved' ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+          : status === 'rejected' ? <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          : <Clock className="w-4 h-4 flex-shrink-0" />}
         <div className="flex-1">
           <p className="text-sm font-semibold">{statusConfig.label}</p>
           {status === 'pending' && (
@@ -351,18 +339,12 @@ const VendorDashboard = () => {
 
       {/* 탭 */}
       <div className="flex mx-4 mt-3 bg-muted rounded-xl p-1 gap-1">
-        {[
-          { key: 'info' as Tab, label: '기본 정보', icon: Building2 },
-          { key: 'advantages' as Tab, label: '장점 카드', icon: Star },
-          { key: 'gallery' as Tab, label: '포토 갤러리', icon: Image },
-        ].map(({ key, label, icon: Icon }) => (
+        {tabs.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all
-              ${activeTab === key
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'}`}
+              ${activeTab === key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <Icon className="w-3.5 h-3.5" />
             {label}
@@ -372,9 +354,7 @@ const VendorDashboard = () => {
 
       <div className="p-4 pb-24 space-y-4">
 
-        {/* ═══════════════════════════════════════
-            탭 1: 기본 정보
-        ═══════════════════════════════════════ */}
+        {/* ═══════════ 탭 1: 기본 정보 ═══════════ */}
         {activeTab === 'info' && (
           <div className="space-y-4">
             <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
@@ -408,26 +388,24 @@ const VendorDashboard = () => {
                   type="url"
                 />
                 {vendorInfo.thumbnail_url && (
-                  <img src={vendorInfo.thumbnail_url} alt="thumbnail preview" className="mt-2 w-full h-40 object-cover rounded-xl border border-border" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  <img src={vendorInfo.thumbnail_url} alt="thumbnail preview"
+                    className="mt-2 w-full h-40 object-cover rounded-xl border border-border"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                 )}
               </Field>
             </div>
 
             <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
               <p className="text-sm font-semibold text-foreground">연락처 및 위치</p>
-
               <Field label="지역">
                 <Input value={vendorInfo.region} onChange={(e) => setVendorInfo(p => ({ ...p, region: e.target.value }))} placeholder="서울 강남구" />
               </Field>
-
               <Field label="주소" required>
                 <Input value={vendorInfo.address} onChange={(e) => setVendorInfo(p => ({ ...p, address: e.target.value }))} placeholder="서울시 강남구 테헤란로 123" />
               </Field>
-
               <Field label="전화번호" required>
                 <Input value={vendorInfo.tel} onChange={(e) => setVendorInfo(p => ({ ...p, tel: e.target.value }))} placeholder="02-1234-5678" type="tel" />
               </Field>
-
               <Field label="영업시간">
                 <Input value={vendorInfo.business_hours} onChange={(e) => setVendorInfo(p => ({ ...p, business_hours: e.target.value }))} placeholder="평일 09:00~18:00 / 주말 10:00~17:00" />
               </Field>
@@ -435,13 +413,11 @@ const VendorDashboard = () => {
 
             <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
               <p className="text-sm font-semibold text-foreground">키워드 & 편의시설</p>
-
-              <Field label="검색 키워드" hint="쉼표로 구분, 최대 10개">
-                <Input value={vendorInfo.keywords} onChange={(e) => setVendorInfo(p => ({ ...p, keywords: e.target.value }))} placeholder="예: 야외정원, 소규모, 한식뷔페" />
+              <Field label="검색 키워드" hint="쉼표로 구분">
+                <Input value={vendorInfo.keywords} onChange={(e) => setVendorInfo(p => ({ ...p, keywords: e.target.value }))} placeholder="야외정원, 소규모, 한식뷔페" />
               </Field>
-
               <Field label="편의시설" hint="쉼표로 구분">
-                <Input value={vendorInfo.amenities} onChange={(e) => setVendorInfo(p => ({ ...p, amenities: e.target.value }))} placeholder="예: 주차 200대, 수유실, 장애인 화장실" />
+                <Input value={vendorInfo.amenities} onChange={(e) => setVendorInfo(p => ({ ...p, amenities: e.target.value }))} placeholder="주차 200대, 수유실, 장애인 화장실" />
               </Field>
             </div>
 
@@ -465,9 +441,7 @@ const VendorDashboard = () => {
           </div>
         )}
 
-        {/* ═══════════════════════════════════════
-            탭 2: 장점 카드
-        ═══════════════════════════════════════ */}
+        {/* ═══════════ 탭 2: 장점 카드 ═══════════ */}
         {activeTab === 'advantages' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -476,74 +450,15 @@ const VendorDashboard = () => {
             </div>
 
             {advantages.map((card, i) => (
-              <div key={card.id ?? `new-${i}`} className="bg-card border border-border rounded-2xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground">카드 {i + 1}</span>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => moveAdvantage(i, 'up')} disabled={i === 0} className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30">
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => moveAdvantage(i, 'down')} disabled={i === advantages.length - 1} className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30">
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => removeAdvantage(i)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* 이모지 선택 */}
-                <div>
-                  <Label className="text-xs">이모지</Label>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {EMOJI_PRESETS.map((emoji) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() => setAdvantages(prev => prev.map((c, idx) => idx === i ? { ...c, emoji } : c))}
-                        className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all
-                          ${card.emoji === emoji ? 'bg-primary/20 ring-1 ring-primary' : 'bg-muted hover:bg-primary/10'}`}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                    <Input
-                      value={card.emoji}
-                      onChange={(e) => setAdvantages(prev => prev.map((c, idx) => idx === i ? { ...c, emoji: e.target.value } : c))}
-                      className="w-12 h-8 text-center text-lg p-0"
-                      maxLength={2}
-                    />
-                  </div>
-                </div>
-
-                <Field label="제목" required>
-                  <Input
-                    value={card.title}
-                    onChange={(e) => setAdvantages(prev => prev.map((c, idx) => idx === i ? { ...c, title: e.target.value } : c))}
-                    placeholder="예: 최대 500명 수용 가능"
-                    maxLength={30}
-                  />
-                </Field>
-
-                <Field label="설명">
-                  <Textarea
-                    value={card.description}
-                    onChange={(e) => setAdvantages(prev => prev.map((c, idx) => idx === i ? { ...c, description: e.target.value } : c))}
-                    placeholder="장점에 대한 간략한 설명"
-                    rows={2}
-                    maxLength={100}
-                  />
-                </Field>
-
-                {/* 미리보기 */}
-                <div className="bg-primary/5 rounded-xl p-3 flex items-start gap-3">
-                  <span className="text-2xl">{card.emoji}</span>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{card.title || '제목 미입력'}</p>
-                    {card.description && <p className="text-xs text-muted-foreground mt-0.5">{card.description}</p>}
-                  </div>
-                </div>
-              </div>
+              <AdvantageCardEditor
+                key={card.id ?? `new-${i}`}
+                index={i}
+                card={card}
+                total={advantages.length}
+                onChange={updateAdvantage}
+                onRemove={removeAdvantage}
+                onMove={moveAdvantage}
+              />
             ))}
 
             {advantages.length < 6 && (
@@ -564,9 +479,7 @@ const VendorDashboard = () => {
           </div>
         )}
 
-        {/* ═══════════════════════════════════════
-            탭 3: 포토 갤러리
-        ═══════════════════════════════════════ */}
+        {/* ═══════════ 탭 3: 포토 갤러리 ═══════════ */}
         {activeTab === 'gallery' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -575,42 +488,13 @@ const VendorDashboard = () => {
             </div>
 
             {gallery.map((img, i) => (
-              <div key={img.id ?? `new-${i}`} className="bg-card border border-border rounded-2xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground">이미지 {i + 1}</span>
-                  <button onClick={() => removeGalleryImage(i)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <Field label="이미지 URL" required>
-                  <Input
-                    value={img.image_url}
-                    onChange={(e) => setGallery(prev => prev.map((g, idx) => idx === i ? { ...g, image_url: e.target.value } : g))}
-                    placeholder="https://example.com/photo.jpg"
-                    type="url"
-                  />
-                </Field>
-
-                {img.image_url && (
-                  <img
-                    src={img.image_url}
-                    alt={`gallery ${i + 1}`}
-                    className="w-full h-40 object-cover rounded-xl border border-border"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                    onLoad={(e) => { e.currentTarget.style.display = 'block'; }}
-                  />
-                )}
-
-                <Field label="사진 설명 (캡션)">
-                  <Input
-                    value={img.caption}
-                    onChange={(e) => setGallery(prev => prev.map((g, idx) => idx === i ? { ...g, caption: e.target.value } : g))}
-                    placeholder="예: 그랜드 홀 전경"
-                    maxLength={50}
-                  />
-                </Field>
-              </div>
+              <GalleryImageEditor
+                key={img.id ?? `new-${i}`}
+                index={i}
+                image={img}
+                onChange={updateGallery}
+                onRemove={removeGalleryImage}
+              />
             ))}
 
             {gallery.length < 10 && (
@@ -645,7 +529,137 @@ const VendorDashboard = () => {
   );
 };
 
-// 공통 필드 래퍼
+// ── 장점 카드 에디터 (분리 → 부모 전체 리렌더 방지) ──────────────────
+interface AdvantageCardEditorProps {
+  index: number;
+  card: AdvantageCard;
+  total: number;
+  onChange: (index: number, patch: Partial<AdvantageCard>) => void;
+  onRemove: (index: number) => void;
+  onMove: (index: number, dir: 'up' | 'down') => void;
+}
+
+function AdvantageCardEditor({ index, card, total, onChange, onRemove, onMove }: AdvantageCardEditorProps) {
+  return (
+    <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-muted-foreground">카드 {index + 1}</span>
+        <div className="flex items-center gap-1">
+          <button onClick={() => onMove(index, 'up')} disabled={index === 0} className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30">
+            <ChevronUp className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => onMove(index, 'down')} disabled={index === total - 1} className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30">
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => onRemove(index)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-xs">이모지</Label>
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          {ADVANTAGE_EMOJI_PRESETS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => onChange(index, { emoji })}
+              className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all
+                ${card.emoji === emoji ? 'bg-primary/20 ring-1 ring-primary' : 'bg-muted hover:bg-primary/10'}`}
+            >
+              {emoji}
+            </button>
+          ))}
+          <Input
+            value={card.emoji}
+            onChange={(e) => onChange(index, { emoji: e.target.value })}
+            className="w-12 h-8 text-center text-lg p-0"
+            maxLength={2}
+          />
+        </div>
+      </div>
+
+      <Field label="제목" required>
+        <Input
+          value={card.title}
+          onChange={(e) => onChange(index, { title: e.target.value })}
+          placeholder="예: 최대 500명 수용 가능"
+          maxLength={30}
+        />
+      </Field>
+
+      <Field label="설명">
+        <Textarea
+          value={card.description}
+          onChange={(e) => onChange(index, { description: e.target.value })}
+          placeholder="장점에 대한 간략한 설명"
+          rows={2}
+          maxLength={100}
+        />
+      </Field>
+
+      <div className="bg-primary/5 rounded-xl p-3 flex items-start gap-3">
+        <span className="text-2xl">{card.emoji}</span>
+        <div>
+          <p className="text-sm font-semibold text-foreground">{card.title || '제목 미입력'}</p>
+          {card.description && <p className="text-xs text-muted-foreground mt-0.5">{card.description}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 갤러리 이미지 에디터 ─────────────────────────────────────────────
+interface GalleryImageEditorProps {
+  index: number;
+  image: GalleryImage;
+  onChange: (index: number, patch: Partial<GalleryImage>) => void;
+  onRemove: (index: number) => void;
+}
+
+function GalleryImageEditor({ index, image, onChange, onRemove }: GalleryImageEditorProps) {
+  return (
+    <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-muted-foreground">이미지 {index + 1}</span>
+        <button onClick={() => onRemove(index)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive">
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <Field label="이미지 URL" required>
+        <Input
+          value={image.image_url}
+          onChange={(e) => onChange(index, { image_url: e.target.value })}
+          placeholder="https://example.com/photo.jpg"
+          type="url"
+        />
+      </Field>
+
+      {image.image_url && (
+        <img
+          src={image.image_url}
+          alt={`gallery ${index + 1}`}
+          className="w-full h-40 object-cover rounded-xl border border-border"
+          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          onLoad={(e) => { e.currentTarget.style.display = 'block'; }}
+        />
+      )}
+
+      <Field label="사진 설명 (캡션)">
+        <Input
+          value={image.caption}
+          onChange={(e) => onChange(index, { caption: e.target.value })}
+          placeholder="예: 그랜드 홀 전경"
+          maxLength={50}
+        />
+      </Field>
+    </div>
+  );
+}
+
+// ── 공통 필드 래퍼 ────────────────────────────────────────────────────
 function Field({ label, children, required, hint }: {
   label: string;
   children: React.ReactNode;
@@ -657,7 +671,7 @@ function Field({ label, children, required, hint }: {
       <Label className="text-xs font-medium text-muted-foreground">
         {label}
         {required && <span className="text-destructive ml-0.5">*</span>}
-        {hint && <span className="ml-1 text-muted-foreground font-normal">({hint})</span>}
+        {hint && <span className="ml-1 font-normal">({hint})</span>}
       </Label>
       {children}
     </div>

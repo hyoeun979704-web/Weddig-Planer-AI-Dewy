@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useMemo } from "react";
 import {
   User,
   Settings,
@@ -49,16 +50,13 @@ const MyPage = () => {
   const { user, isLoading, signOut, isBusinessUser, businessProfile } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
 
-  const daysUntilWedding = () => {
+  const days = useMemo(() => {
     if (!weddingSettings.wedding_date) return null;
     const wedding = new Date(weddingSettings.wedding_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const diff = Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return diff;
-  };
-
-  const days = daysUntilWedding();
+    return Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  }, [weddingSettings.wedding_date]);
 
   const handleTabChange = (href: string) => {
     navigate(href);

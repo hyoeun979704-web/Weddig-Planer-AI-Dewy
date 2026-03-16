@@ -8,17 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
-const CATEGORIES = [
-  "웨딩홀",
-  "스드메",
-  "한복",
-  "예복",
-  "허니문",
-  "혼수",
-  "청첩장",
-  "웨딩플래너",
-];
+import { VENDOR_CATEGORIES } from "@/constants/vendor";
 
 // 사업자등록번호 포맷: XXX-XX-XXXXX
 function formatBusinessNumber(raw: string) {
@@ -220,7 +210,7 @@ const VendorSetup = () => {
                 <SelectValue placeholder="카테고리를 선택하세요" />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((c) => (
+                {VENDOR_CATEGORIES.map((c) => (
                   <SelectItem key={c} value={c}>{c}</SelectItem>
                 ))}
               </SelectContent>

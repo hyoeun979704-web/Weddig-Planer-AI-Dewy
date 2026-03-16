@@ -39,12 +39,13 @@ const VendorDetailPage = () => {
     const vendorId = parseInt(id, 10);
     if (isNaN(vendorId)) return;
 
-    Promise.all([
-      supabase.from('vendor_advantage_cards').select('*').eq('vendor_id', vendorId).order('sort_order'),
-      supabase.from('vendor_gallery_images').select('*').eq('vendor_id', vendorId).order('sort_order'),
+    // allSettled: 한쪽 실패가 다른 쪽 데이터 표시를 막지 않음
+    Promise.allSettled([
+      supabase.from('vendor_advantage_cards').select('id,emoji,title,description,sort_order').eq('vendor_id', vendorId).order('sort_order'),
+      supabase.from('vendor_gallery_images').select('id,image_url,caption,sort_order').eq('vendor_id', vendorId).order('sort_order'),
     ]).then(([aRes, gRes]) => {
-      if (aRes.data) setAdvantages(aRes.data as AdvantageCard[]);
-      if (gRes.data) setGallery(gRes.data as GalleryImage[]);
+      if (aRes.status === 'fulfilled' && aRes.value.data) setAdvantages(aRes.value.data as AdvantageCard[]);
+      if (gRes.status === 'fulfilled' && gRes.value.data) setGallery(gRes.value.data as GalleryImage[]);
     });
   }, [id]);
 
