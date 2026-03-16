@@ -30,10 +30,10 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
   }, [user]);
 
   const items = [
-    { icon: Heart, label: "찜", value: user ? String(favCount) : "-", href: "/favorites", color: "text-rose-500", bg: "bg-rose-500/10" },
-    { icon: Coins, label: "포인트", value: user ? `${points.toLocaleString()}P` : "-", href: "/points", color: "text-amber-500", bg: "bg-amber-500/10" },
-    { icon: Ticket, label: "쿠폰", value: "-", href: "/coupons", color: "text-blue-500", bg: "bg-blue-500/10" },
-    { icon: ShoppingBag, label: "주문내역", value: user ? String(orderCount) : "-", href: "/orders", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { icon: Heart, label: "찜", value: user ? String(favCount) : "-", href: "/favorites", color: "text-primary", bg: "bg-primary/10" },
+    { icon: Coins, label: "포인트", value: user ? `${points.toLocaleString()}P` : "-", href: "/points", color: "text-primary", bg: "bg-primary/10" },
+    { icon: Ticket, label: "쿠폰", value: "-", href: "/coupons", color: "text-primary", bg: "bg-primary/10" },
+    { icon: ShoppingBag, label: "주문내역", value: user ? String(orderCount) : "-", href: "/orders", color: "text-primary", bg: "bg-primary/10" },
   ];
 
   return (

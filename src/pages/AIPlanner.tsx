@@ -108,8 +108,8 @@ const AIPlanner = () => {
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary flex items-center justify-center text-base">🌸</div>
             <div>
               <p className="text-sm font-semibold text-foreground">Dewy</p>
-              <p className="text-[11px] text-emerald-500 font-medium flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+              <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
                 AI 웨딩플래너
               </p>
             </div>
