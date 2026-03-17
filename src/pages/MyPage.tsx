@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, ChevronRight } from "lucide-react";
+import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Star, Users, ArrowRight } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
@@ -14,10 +14,17 @@ import { Button } from "@/components/ui/button";
 const GuestMyPage = () => {
   const navigate = useNavigate();
 
-  const benefits = [
-    { icon: Heart, label: "찜한 업체 저장", desc: "마음에 드는 업체를 저장하세요" },
-    { icon: Sparkles, label: "AI 맞춤 추천", desc: "AI가 최적 업체를 추천해요" },
-    { icon: Gift, label: "커플 혜택", desc: "커플만의 특별한 혜택을 받으세요" },
+  const features = [
+    { icon: Calendar, label: "D-Day 관리", desc: "웨딩 카운트다운 & 체크리스트", color: "text-primary", bg: "bg-primary/10" },
+    { icon: Wallet, label: "예산 관리", desc: "지역별 평균 비교·양가 분담", color: "text-primary", bg: "bg-primary/10" },
+    { icon: Sparkles, label: "AI 플래너", desc: "맞춤 업체 추천·타임라인", color: "text-primary", bg: "bg-primary/10" },
+    { icon: Users, label: "커뮤니티", desc: "예비부부 후기·꿀팁 공유", color: "text-primary", bg: "bg-primary/10" },
+  ];
+
+  const stats = [
+    { label: "등록 업체", value: "2,400+" },
+    { label: "이용 커플", value: "15,000+" },
+    { label: "리뷰 수", value: "38,000+" },
   ];
 
   return (
@@ -31,56 +38,101 @@ const GuestMyPage = () => {
 
       <main className="pb-20">
         {/* Hero CTA */}
-        <div className="px-4 pt-6 pb-4">
-          <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-accent/20 border border-primary/20 p-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <UserPlus className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="text-lg font-bold text-foreground mb-1">웨딩 준비의 시작</h2>
-            <p className="text-sm text-muted-foreground mb-5">
-              회원가입하고 맞춤 웨딩 플래닝을<br />무료로 시작해보세요
-            </p>
-            <div className="flex gap-2 justify-center">
-              <Button onClick={() => navigate("/auth")} className="gap-2 px-6 rounded-xl">
-                <UserPlus className="w-4 h-4" />
-                회원가입
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate("/auth")}
-                className="gap-2 px-6 rounded-xl"
-              >
-                <LogIn className="w-4 h-4" />
-                로그인
-              </Button>
+        <div className="px-4 pt-5 pb-3">
+          <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-accent/20 border border-primary/20 p-5 relative overflow-hidden">
+            {/* Decorative circles */}
+            <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full border-2 border-primary/10" />
+            <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full border-2 border-primary/8" />
+
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">💍</span>
+                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">무료</span>
+              </div>
+              <h2 className="text-lg font-bold text-foreground mb-1">웨딩 준비, 여기서 시작하세요</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                가입만 하면 모든 기능을 무료로 이용할 수 있어요
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={() => navigate("/auth")} className="gap-2 rounded-xl flex-1 h-11">
+                  <UserPlus className="w-4 h-4" />
+                  무료 회원가입
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/auth")}
+                  className="gap-1.5 rounded-xl h-11 bg-background/50"
+                >
+                  <LogIn className="w-4 h-4" />
+                  로그인
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Benefits */}
+        {/* Social proof stats */}
         <div className="px-4 py-2">
-          <h3 className="text-xs font-medium text-muted-foreground mb-2 px-1">가입하면 이런 것들이 가능해요</h3>
-          <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            {benefits.map((b, i) => (
-              <div
-                key={b.label}
-                className={`flex items-center gap-3 px-4 py-3.5 ${i < benefits.length - 1 ? "border-b border-border" : ""}`}
-              >
-                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <b.icon className="w-[18px] h-[18px] text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{b.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{b.desc}</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <div className="grid grid-cols-3 gap-2">
+            {stats.map((s) => (
+              <div key={s.label} className="text-center py-3 bg-card rounded-2xl border border-border">
+                <p className="text-base font-bold text-primary">{s.value}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* FAQ / Contact (accessible without login) */}
-        <div className="px-4 py-2 mt-2">
+        {/* Feature preview grid */}
+        <div className="px-4 py-3">
+          <h3 className="text-xs font-medium text-muted-foreground mb-2 px-1">가입하면 이용할 수 있어요</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {features.map((f) => (
+              <button
+                key={f.label}
+                onClick={() => navigate("/auth")}
+                className="flex flex-col gap-2 p-4 bg-card rounded-2xl border border-border hover:border-primary/30 active:scale-[0.97] transition-all text-left group"
+              >
+                <div className={`w-10 h-10 rounded-xl ${f.bg} flex items-center justify-center`}>
+                  <f.icon className={`w-5 h-5 ${f.color}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{f.label}</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">{f.desc}</p>
+                </div>
+                <span className="text-[10px] text-primary font-medium flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  시작하기 <ArrowRight className="w-3 h-3" />
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Review teaser */}
+        <div className="px-4 py-3">
+          <h3 className="text-xs font-medium text-muted-foreground mb-2 px-1">실제 이용 후기</h3>
+          <div className="space-y-2">
+            {[
+              { name: "예비신부 김**", text: "예산 관리 기능이 정말 편해요! 양가 분담까지 한눈에 보여서 좋아요 👍", stars: 5 },
+              { name: "예비신랑 이**", text: "AI 추천으로 웨딩홀 3곳 방문했는데 다 만족스러웠어요", stars: 5 },
+            ].map((r, i) => (
+              <div key={i} className="p-3.5 bg-card rounded-2xl border border-border">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <div className="flex">
+                    {Array.from({ length: r.stars }).map((_, si) => (
+                      <Star key={si} className="w-3 h-3 fill-primary text-primary" />
+                    ))}
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">{r.name}</span>
+                </div>
+                <p className="text-sm text-foreground leading-relaxed">{r.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ / Contact */}
+        <div className="px-4 py-2 mt-1">
           <h3 className="text-xs font-medium text-muted-foreground mb-2 px-1">고객 지원</h3>
           <div className="bg-card rounded-2xl border border-border overflow-hidden">
             {[
