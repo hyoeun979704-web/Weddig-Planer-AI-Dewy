@@ -1,4 +1,6 @@
 import { useState } from "react";
+import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";

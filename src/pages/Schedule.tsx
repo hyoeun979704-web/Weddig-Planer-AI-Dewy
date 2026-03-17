@@ -1,4 +1,5 @@
 import { useState } from "react";
+import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useBudget } from "@/hooks/useBudget";
 import TutorialOverlay from "@/components/TutorialOverlay";

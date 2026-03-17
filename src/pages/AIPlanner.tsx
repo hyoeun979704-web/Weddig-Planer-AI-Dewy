@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Send, ArrowLeft, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
