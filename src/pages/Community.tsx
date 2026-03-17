@@ -116,7 +116,7 @@ const Community = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {!user && <LoginRequiredOverlay message="커뮤니티는 로그인 후 이용할 수 있어요" />}
+      {!user && <LoginRequiredOverlay message="다른 예비부부들의 생생한 후기를 확인하세요" features={["실시간 후기", "웨딩 꿀팁", "업체 추천"]} />}
       {/* Search Overlay */}
       <CommunitySearchOverlay 
         isOpen={isSearchOpen} 
