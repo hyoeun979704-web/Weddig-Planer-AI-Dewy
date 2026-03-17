@@ -1,4 +1,6 @@
 import { useState } from "react";
+import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
@@ -38,6 +40,7 @@ const categories = ["전체", "웨딩홀", "스드메", "혼수", "허니문", "
 const Community = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const tutorial = usePageTutorial("community");
@@ -113,6 +116,7 @@ const Community = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      {!user && <LoginRequiredOverlay message="커뮤니티는 로그인 후 이용할 수 있어요" />}
       {/* Search Overlay */}
       <CommunitySearchOverlay 
         isOpen={isSearchOpen} 

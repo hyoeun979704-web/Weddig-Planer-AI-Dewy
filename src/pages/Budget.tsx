@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useNavigate, useLocation } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
@@ -67,28 +68,7 @@ const Budget = () => {
     }
   }, [isLoading, user, settings]);
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-        <div className="sticky top-0 z-40 bg-card border-b border-border">
-          <div className="flex items-center justify-between px-4 h-14">
-            <button onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5 text-foreground" /></button>
-            <h1 className="text-base font-bold text-foreground">웨딩 예산</h1>
-            <div className="w-5" />
-          </div>
-        </div>
-        <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <span className="text-2xl">💰</span>
-          </div>
-          <p className="text-foreground font-semibold mb-1">예산 관리를 시작해보세요</p>
-          <p className="text-muted-foreground text-sm mb-6">로그인하면 지역별 평균 비교, 양가 분담 현황 등<br />체계적인 예산 관리가 가능해요</p>
-          <button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground px-8 py-2.5 rounded-xl text-sm font-bold">로그인</button>
-        </div>
-        <BottomNav activeTab={location.pathname} onTabChange={href => navigate(href)} />
-      </div>
-    );
-  }
+  const showLoginOverlay = !user;
 
   const totalBudget = settings?.total_budget || 0;
   const pct = totalBudget > 0 ? Math.min((summary.totalSpent / totalBudget) * 100, 100) : 0;
@@ -112,6 +92,7 @@ const Budget = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      {showLoginOverlay && <LoginRequiredOverlay message="예산 관리는 로그인 후 이용할 수 있어요" />}
       {/* Header */}
       <div className="sticky top-0 z-40 bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
