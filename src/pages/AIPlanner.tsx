@@ -33,6 +33,7 @@ const FOLLOW_UP_CHIPS = [
 const AIPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const { messages, isLoading, sendMessage, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
   const [input, setInput] = useState("");
   const [activeModal, setActiveModal] = useState<ModalType>(null);
