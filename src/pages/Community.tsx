@@ -40,6 +40,7 @@ const categories = ["전체", "웨딩홀", "스드메", "혼수", "허니문", "
 const Community = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const tutorial = usePageTutorial("community");
