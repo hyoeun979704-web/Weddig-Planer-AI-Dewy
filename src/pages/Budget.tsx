@@ -92,6 +92,7 @@ const Budget = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      {showLoginOverlay && <LoginRequiredOverlay message="예산 관리는 로그인 후 이용할 수 있어요" />}
       {/* Header */}
       <div className="sticky top-0 z-40 bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
