@@ -208,6 +208,7 @@ const Schedule = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      {!user && <LoginRequiredOverlay message="스케쥴 관리는 로그인 후 이용할 수 있어요" />}
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
