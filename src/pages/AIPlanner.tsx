@@ -101,6 +101,7 @@ const AIPlanner = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
+      {!user && <LoginRequiredOverlay message="AI 플래너는 로그인 후 이용할 수 있어요" />}
       {/* Header */}
       <header className="sticky top-0 bg-card/95 backdrop-blur-md border-b border-border z-40 px-4 py-3">
         <div className="flex items-center justify-between">
