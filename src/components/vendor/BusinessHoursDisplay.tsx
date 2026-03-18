@@ -97,8 +97,8 @@ const BusinessHoursDisplay = ({ businessHours }: BusinessHoursDisplayProps) => {
               className={cn(
                 "text-[11px] font-semibold px-1.5 py-0.5 rounded-full shrink-0",
                 isOpenNow
-                  ? "bg-green-500/15 text-green-600"
-                  : "bg-red-500/15 text-red-500"
+                  ? "bg-primary/15 text-primary"
+                  : "bg-destructive/15 text-destructive"
               )}
             >
               {isOpenNow ? "영업중" : "휴무"}
