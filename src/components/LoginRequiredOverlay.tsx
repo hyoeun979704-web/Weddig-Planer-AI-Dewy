@@ -19,13 +19,13 @@ const LoginRequiredOverlay = ({ variant = "login", message, features }: LoginReq
 
   return (
     <>
-      {/* Bottom gradient fade over content */}
-      <div className="absolute bottom-16 left-0 right-0 z-30 pointer-events-none h-48 bg-gradient-to-t from-background via-background/90 to-transparent" />
+      {/* Full overlay to block other popups/interactions */}
+      <div className="fixed inset-0 z-[100] pointer-events-none" />
 
-      {/* Sticky CTA bar */}
-      <div className="absolute bottom-16 left-0 right-0 z-30">
-        <div className="mx-3 mb-3 rounded-2xl bg-card border border-primary/20 shadow-lg overflow-hidden">
-          <div className="p-4">
+      {/* Centered CTA card */}
+      <div className="fixed inset-0 z-[101] flex items-center justify-center pointer-events-none px-4">
+        <div className="pointer-events-auto w-full max-w-[380px] rounded-2xl bg-card border border-primary/20 shadow-xl overflow-hidden">
+          <div className="p-5">
             {features && features.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {features.map((f) => (
