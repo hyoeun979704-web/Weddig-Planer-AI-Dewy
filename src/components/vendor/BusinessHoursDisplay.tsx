@@ -139,7 +139,7 @@ const BusinessHoursDisplay = ({ businessHours }: BusinessHoursDisplayProps) => {
                       className={cn(
                         "text-right",
                         entry.isOff
-                          ? "text-red-500 font-medium"
+                          ? "text-destructive font-medium"
                           : "text-muted-foreground"
                       )}
                     >
