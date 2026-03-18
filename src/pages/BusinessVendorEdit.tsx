@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import BusinessHoursEditor from "@/components/vendor/BusinessHoursEditor";
 
 const BusinessVendorEdit = () => {
   const navigate = useNavigate();
