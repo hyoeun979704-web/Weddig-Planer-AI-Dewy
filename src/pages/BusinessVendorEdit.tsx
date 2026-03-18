@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import BusinessHoursEditor from "@/components/vendor/BusinessHoursEditor";
 
 const BusinessVendorEdit = () => {
   const navigate = useNavigate();
@@ -119,39 +118,11 @@ const BusinessVendorEdit = () => {
       </header>
 
       <main className="p-5 space-y-5 pb-20">
-        {/* 기본 정보 섹션 */}
-        <div className="space-y-1">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">📋 기본 정보</h2>
-          <p className="text-xs text-muted-foreground">고객에게 보여지는 기본 업체 정보입니다.</p>
-        </div>
         {[
           { key: "name", label: "업체명", placeholder: "업체명을 입력하세요" },
           { key: "address", label: "주소", placeholder: "서울특별시 강남구..." },
           { key: "tel", label: "전화번호", placeholder: "02-0000-0000" },
-        ].map(({ key, label, placeholder }) => (
-          <div key={key} className="space-y-1.5">
-            <Label className="text-sm font-medium">{label}</Label>
-            <Input
-              placeholder={placeholder}
-              value={(form as any)[key]}
-              onChange={(e) => updateField(key, e.target.value)}
-            />
-          </div>
-        ))}
-
-        {/* 영업시간 섹션 */}
-        <div className="pt-3 border-t border-border">
-          <BusinessHoursEditor
-            value={form.business_hours}
-            onChange={(val) => updateField("business_hours", val)}
-          />
-        </div>
-
-        {/* 주차 정보 섹션 */}
-        <div className="pt-3 border-t border-border space-y-1">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">🅿️ 주차 안내</h2>
-        </div>
-        {[
+          { key: "business_hours", label: "영업시간", placeholder: "평일 10:00~19:00" },
           { key: "parking_location", label: "주차 위치", placeholder: "건물 지하 주차장" },
           { key: "parking_hours", label: "주차 시간", placeholder: "2시간 무료" },
         ].map(({ key, label, placeholder }) => (
@@ -165,10 +136,6 @@ const BusinessVendorEdit = () => {
           </div>
         ))}
 
-        {/* 키워드 & 편의시설 섹션 */}
-        <div className="pt-3 border-t border-border space-y-1">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">🏷️ 검색 & 편의시설</h2>
-        </div>
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">키워드</Label>
           <Textarea

@@ -1,11 +1,10 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ChevronLeft, Star, MapPin, Phone, Car, ExternalLink } from "lucide-react";
+import { ChevronLeft, Star, MapPin, Phone, Clock, Car, ExternalLink } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useVendor, useWeddingHallDetail, useVendorReviews, categoryRouteMap } from "@/hooks/useVendors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import BusinessHoursDisplay from "@/components/vendor/BusinessHoursDisplay";
 
 const VendorDetailPage = () => {
   const navigate = useNavigate();
@@ -91,7 +90,12 @@ const VendorDetailPage = () => {
                 <a href={`tel:${vendor.tel}`} className="text-primary underline">{vendor.tel}</a>
               </div>
             )}
-            
+            {vendor.business_hours && (
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 flex-shrink-0" />
+                <span>{vendor.business_hours}</span>
+              </div>
+            )}
             {(vendor.parking_location || vendor.parking_hours) && (
               <div className="flex items-center gap-2">
                 <Car className="w-4 h-4 flex-shrink-0" />
@@ -99,13 +103,6 @@ const VendorDetailPage = () => {
               </div>
             )}
           </div>
-
-          {/* 영업시간 */}
-          {vendor.business_hours && (
-            <div className="mt-4">
-              <BusinessHoursDisplay businessHours={vendor.business_hours} />
-            </div>
-          )}
 
           {vendor.amenities && (
             <div className="mt-3 flex flex-wrap gap-1.5">
