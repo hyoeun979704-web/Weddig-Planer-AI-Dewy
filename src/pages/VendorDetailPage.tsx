@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ChevronLeft, Star, MapPin, Phone, Clock, Car, ExternalLink } from "lucide-react";
+import { ChevronLeft, Star, MapPin, Phone, Car, ExternalLink } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useVendor, useWeddingHallDetail, useVendorReviews, categoryRouteMap } from "@/hooks/useVendors";
 import { Skeleton } from "@/components/ui/skeleton";
