@@ -129,7 +129,7 @@ const BusinessHoursDisplay = ({ businessHours }: BusinessHoursDisplayProps) => {
                     <span
                       className={cn(
                         "w-6 text-center",
-                        entry.isOff ? "text-red-500" : "text-foreground",
+                        entry.isOff ? "text-destructive" : "text-foreground",
                         i === TODAY_INDEX && "text-primary"
                       )}
                     >
