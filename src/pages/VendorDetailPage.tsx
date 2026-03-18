@@ -5,6 +5,7 @@ import { useVendor, useWeddingHallDetail, useVendorReviews, categoryRouteMap } f
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import BusinessHoursDisplay from "@/components/vendor/BusinessHoursDisplay";
 
 const VendorDetailPage = () => {
   const navigate = useNavigate();
