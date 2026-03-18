@@ -100,7 +100,7 @@ const BusinessHoursDisplay = ({ businessHours }: Props) => {
       {/* Holidays */}
       {data.holidays && (
         <div className="flex items-start gap-2 text-sm text-muted-foreground">
-          <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-amber-500" />
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-destructive/70" />
           <span>{data.holidays}</span>
         </div>
       )}

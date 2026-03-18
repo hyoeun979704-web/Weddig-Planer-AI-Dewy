@@ -91,12 +91,7 @@ const VendorDetailPage = () => {
                 <a href={`tel:${vendor.tel}`} className="text-primary underline">{vendor.tel}</a>
               </div>
             )}
-            {vendor.business_hours && (
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 flex-shrink-0" />
-                <span>{vendor.business_hours}</span>
-              </div>
-            )}
+            
             {(vendor.parking_location || vendor.parking_hours) && (
               <div className="flex items-center gap-2">
                 <Car className="w-4 h-4 flex-shrink-0" />
