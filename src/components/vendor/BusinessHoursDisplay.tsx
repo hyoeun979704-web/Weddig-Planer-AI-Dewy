@@ -152,7 +152,7 @@ const BusinessHoursDisplay = ({ businessHours }: BusinessHoursDisplayProps) => {
                   <div className="mt-2 pt-2 border-t border-border">
                     {holidays.map((h, i) => (
                       <p key={i} className="text-xs text-muted-foreground flex items-center gap-1.5 py-0.5">
-                        <span className="text-red-400">•</span> {h}
+                        <span className="text-destructive">•</span> {h}
                       </p>
                     ))}
                   </div>
