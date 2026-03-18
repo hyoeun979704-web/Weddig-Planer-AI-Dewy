@@ -100,6 +100,13 @@ const VendorDetailPage = () => {
             )}
           </div>
 
+          {/* 영업시간 */}
+          {vendor.business_hours && (
+            <div className="mt-4">
+              <BusinessHoursDisplay businessHours={vendor.business_hours} />
+            </div>
+          )}
+
           {vendor.amenities && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {vendor.amenities.split(",").map((a, i) => (
