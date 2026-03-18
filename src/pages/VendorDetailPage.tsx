@@ -1,5 +1,6 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ChevronLeft, Star, MapPin, Phone, Clock, Car, ExternalLink } from "lucide-react";
+import { ChevronLeft, Star, MapPin, Phone, Car, ExternalLink } from "lucide-react";
+import BusinessHoursDisplay from "@/components/vendor/BusinessHoursDisplay";
 import BottomNav from "@/components/BottomNav";
 import { useVendor, useWeddingHallDetail, useVendorReviews, categoryRouteMap } from "@/hooks/useVendors";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -91,10 +92,7 @@ const VendorDetailPage = () => {
               </div>
             )}
             {vendor.business_hours && (
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 flex-shrink-0" />
-                <span>{vendor.business_hours}</span>
-              </div>
+              <BusinessHoursDisplay businessHours={vendor.business_hours} />
             )}
             {(vendor.parking_location || vendor.parking_hours) && (
               <div className="flex items-center gap-2">
