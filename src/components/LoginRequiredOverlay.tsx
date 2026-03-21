@@ -19,8 +19,8 @@ const LoginRequiredOverlay = ({ variant = "login", message, features }: LoginReq
 
   return (
     <>
-      {/* Full overlay to block other popups/interactions */}
-      <div className="fixed inset-0 z-[100] pointer-events-none" />
+      {/* Full overlay with gaussian blur to block other popups/interactions */}
+      <div className="fixed inset-0 z-[100] bg-background/25 backdrop-blur-sm" />
 
       {/* Centered CTA card */}
       <div className="fixed inset-0 z-[101] flex items-center justify-center pointer-events-none px-4">
