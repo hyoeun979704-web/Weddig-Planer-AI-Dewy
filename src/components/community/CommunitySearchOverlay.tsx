@@ -11,8 +11,8 @@ interface Post {
   category: string;
   title: string;
   content: string;
-  has_image: boolean;
-  views: number;
+  has_image: boolean | null;
+  views: number | null;
   created_at: string;
 }
 
