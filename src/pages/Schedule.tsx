@@ -4,10 +4,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useBudget } from "@/hooks/useBudget";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
-import { 
-  Calendar, 
-  CheckCircle2, 
-  Clock, 
+import {
+  Calendar,
+  CheckCircle2,
+  Clock,
   ChevronRight,
   Heart,
   Camera,
@@ -16,8 +16,9 @@ import {
   Home as HomeIcon,
   Loader2,
   Plus,
-  Sparkles,
-  ListChecks
+  ListChecks,
+  Wallet,
+  Check
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
@@ -213,14 +214,18 @@ const Schedule = () => {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
-          <h1 className="text-lg font-bold text-foreground">웨딩 스케쥴</h1>
-          <button 
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+              <ChevronRight className="w-5 h-5 text-foreground rotate-180" />
+            </button>
+            <h1 className="text-lg font-bold text-foreground">스케줄</h1>
+          </div>
+          <button
             data-tutorial="schedule-add"
             onClick={() => navigate("/my-schedule")}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium"
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium"
           >
-            <Plus className="w-4 h-4" />
-            일정 관리
+            + 일정 관리
           </button>
         </div>
       </header>
@@ -230,76 +235,51 @@ const Schedule = () => {
         {/* ── Hero: D-Day Card ── */}
         <div
           data-tutorial="schedule-dday"
-          className="mx-4 mt-4 mb-5 rounded-2xl overflow-hidden cursor-pointer"
+          className="mx-4 mt-4 mb-4 rounded-2xl overflow-hidden cursor-pointer"
           onClick={() => navigate("/my-schedule")}
         >
-          <div className="bg-gradient-to-br from-primary/15 via-primary/8 to-accent/30 p-5 relative">
-            {/* Decorative ring */}
-            <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full border-[3px] border-primary/10" />
-            <div className="absolute -top-3 -right-3 w-16 h-16 rounded-full border-[2px] border-primary/8" />
-
-            <div className="flex items-end justify-between mb-4">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">결혼식까지</p>
-                {days !== null ? (
-                  <h2 className="text-4xl font-extrabold tracking-tight text-primary">
-                    {days > 0 ? `D-${days}` : days === 0 ? "D-Day 🎉" : `D+${Math.abs(days)}`}
-                  </h2>
-                ) : (
-                  <h2 className="text-xl font-bold text-foreground">날짜를 설정해주세요 ✨</h2>
-                )}
-                {weddingSettings.wedding_date && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {format(new Date(weddingSettings.wedding_date), "yyyy년 M월 d일 (EEEE)", { locale: ko })}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <Calendar className="w-7 h-7 text-primary/40" />
+          <div className="bg-primary/10 p-5">
+            <p className="text-sm text-muted-foreground mb-1">결혼식까지</p>
+            {days !== null ? (
+              <h2 className="text-5xl font-extrabold tracking-tight text-primary mb-1">
+                {days > 0 ? `D-${days}` : days === 0 ? "D-Day 🎉" : `D+${Math.abs(days)}`}
+              </h2>
+            ) : (
+              <h2 className="text-2xl font-bold text-primary mb-1">D-DAY</h2>
+            )}
+            {weddingSettings.wedding_date ? (
+              <p className="text-sm text-muted-foreground mb-4">
+                {format(new Date(weddingSettings.wedding_date), "yyyy년 M월 d일 (EEEE)", { locale: ko })}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground mb-4">날짜를 설정해주세요</p>
+            )}
+            <div>
+              <p className="text-xs font-medium text-foreground mb-1.5">준비 진행률</p>
+              <div className="h-2 bg-background/50 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500 bg-primary"
+                  style={{ width: `${overallProgress}%` }}
+                />
               </div>
             </div>
-
-            {/* Progress summary */}
-            {totalItems > 0 && (
-              <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                    <ListChecks className="w-3.5 h-3.5 text-primary" />
-                    준비 진행률
-                  </span>
-                  <span className="text-xs font-semibold text-primary">{completedItems}/{totalItems} 완료</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${overallProgress}%`,
-                      background: `linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))`,
-                    }}
-                  />
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* ── Premium Banner (contextual) ── */}
-        {ddayBanner && (
-          <button
-            onClick={() => {
-              if (isPremium) navigate(ddayBanner.route);
-              else setShowUpgrade(true);
-            }}
-            className="mx-4 mb-4 w-[calc(100%-2rem)] p-3.5 bg-gradient-to-r from-primary/12 to-primary/4 rounded-xl border border-primary/15 flex items-center gap-3 text-left"
-          >
-            <Sparkles className="w-5 h-5 text-primary shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{ddayBanner.msg}</p>
-              <p className="text-[11px] text-muted-foreground">{isPremium ? "탭하여 시작하기" : "프리미엄 전용"}</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-primary shrink-0" />
-          </button>
-        )}
+        {/* ── Premium Banner ── */}
+        <button
+          onClick={() => isPremium ? navigate("/premium/content") : setShowUpgrade(true)}
+          className="mx-4 mb-4 w-[calc(100%-2rem)] p-4 bg-card rounded-2xl border border-border flex items-center gap-3 text-left"
+        >
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <ListChecks className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground">업체 비교 견적서 PDF</p>
+            <p className="text-xs text-muted-foreground">{isPremium ? "탭하여 시작하기" : "프리미엄 전용"}</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+        </button>
 
         {/* ── Upcoming Tasks ── */}
         <section className="px-4 mb-6">
@@ -346,45 +326,43 @@ const Schedule = () => {
         </section>
 
         {/* ── Budget Mini Widget ── */}
-        {budgetSettings && budgetSettings.total_budget > 0 && (
-          <section className="px-4 mb-6">
-            <button
-              onClick={() => navigate("/budget")}
-              className="w-full p-3.5 bg-card rounded-xl border border-border flex items-center gap-3"
-            >
-              <span className="text-lg">💰</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-semibold text-foreground">예산 사용 현황</span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {budgetSummary.totalSpent.toLocaleString()} / {budgetSettings.total_budget.toLocaleString()}만원
-                  </span>
-                </div>
-                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${Math.min((budgetSummary.totalSpent / budgetSettings.total_budget) * 100, 100)}%`,
-                      backgroundColor:
-                        budgetSummary.totalSpent / budgetSettings.total_budget >= 0.9
-                          ? "hsl(var(--destructive))"
-                          : budgetSummary.totalSpent / budgetSettings.total_budget >= 0.7
-                          ? "#F59E0B"
-                          : "hsl(var(--primary))",
-                    }}
-                  />
-                </div>
+        <section className="px-4 mb-6">
+          <button
+            onClick={() => navigate("/budget")}
+            className="w-full p-4 bg-card rounded-2xl border border-border flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <Wallet className="w-5 h-5 text-emerald-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-foreground">예산 사용 현황</span>
+                <span className="text-sm font-semibold text-primary">
+                  {budgetSettings && budgetSettings.total_budget > 0
+                    ? `${budgetSummary.totalSpent.toLocaleString()} / ${budgetSettings.total_budget.toLocaleString()}만원`
+                    : "예산 미설정"}
+                </span>
               </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-            </button>
-          </section>
-        )}
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all bg-primary"
+                  style={{
+                    width: budgetSettings && budgetSettings.total_budget > 0
+                      ? `${Math.min((budgetSummary.totalSpent / budgetSettings.total_budget) * 100, 100)}%`
+                      : "0%",
+                  }}
+                />
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </button>
+        </section>
 
         {/* ── Wedding Timeline ── */}
         <section className="px-4 mb-6" data-tutorial="schedule-timeline">
           <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
             <Calendar className="w-4 h-4 text-primary" />
-            웨딩 타임라인
+            타임라인
           </h3>
           <div className="relative">
             {/* Vertical line */}
@@ -406,16 +384,20 @@ const Schedule = () => {
                     className={`relative flex items-start gap-3 cursor-pointer group`}
                   >
                     {/* Timeline dot */}
-                    <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                      isCurrent 
-                        ? "bg-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]" 
+                    <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all border-2 ${
+                      isCurrent
+                        ? "bg-primary border-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]"
                         : isCompleted
-                          ? "bg-green-500"
-                          : "bg-muted border-2 border-border"
+                          ? "bg-green-500 border-green-500"
+                          : "bg-background border-border"
                     }`}>
-                      <phase.icon className={`w-4.5 h-4.5 ${
-                        isCurrent || isCompleted ? "text-white" : "text-muted-foreground"
-                      }`} />
+                      {isCompleted ? (
+                        <Check className="w-4 h-4 text-white" />
+                      ) : (
+                        <span className={`text-sm font-bold ${isCurrent ? "text-white" : "text-muted-foreground"}`}>
+                          {phase.id}
+                        </span>
+                      )}
                     </div>
 
                     {/* Content card */}
