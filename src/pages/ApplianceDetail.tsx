@@ -20,7 +20,7 @@ const ApplianceDetail = () => {
       const { data, error } = await supabase
         .from("appliances")
         .select("*")
-        .eq("id", id)
+        .eq("id", id!)
         .maybeSingle();
 
       if (error) throw error;

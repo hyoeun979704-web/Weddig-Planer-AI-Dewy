@@ -1,3 +1,4 @@
+import type { StaticImageData } from "next/image";
 import { useNavigate } from "react-router-dom";
 import weddingHallImg from "@/assets/categories/wedding-hall.png";
 import studioImg from "@/assets/categories/studio.png";
@@ -10,7 +11,7 @@ import invitationImg from "@/assets/categories/invitation.png";
 
 interface CategoryItem {
   label: string;
-  image: string;
+  image: string | StaticImageData;
   path: string;
   emoji: string;
 }
@@ -40,7 +41,7 @@ const HomeCategoryGrid = () => {
           >
             <div className="w-16 h-16 rounded-2xl overflow-hidden ring-1 ring-border group-hover:ring-primary/40 transition-all shadow-sm bg-muted">
               <img
-                src={cat.image}
+                src={typeof cat.image === "string" ? cat.image : cat.image.src}
                 alt={cat.label}
                 className="w-full h-full object-cover"
                 loading="lazy"

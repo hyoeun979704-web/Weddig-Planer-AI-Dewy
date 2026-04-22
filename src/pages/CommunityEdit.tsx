@@ -31,7 +31,7 @@ const CommunityEdit = () => {
       const { data, error } = await supabase
         .from("community_posts")
         .select("*")
-        .eq("id", id)
+        .eq("id", id!)
         .single();
 
       if (error) throw error;
@@ -158,7 +158,7 @@ const CommunityEdit = () => {
           has_image: allImageUrls.length > 0,
           image_urls: allImageUrls,
         })
-        .eq("id", id)
+        .eq("id", id!)
         .eq("user_id", user.id);
 
       if (error) throw error;
