@@ -1,3 +1,4 @@
+import type { StaticImageData } from "next/image";
 import { useNavigate } from "react-router-dom";
 import weddingHallImg from "@/assets/categories/wedding-hall.png";
 import studioImg from "@/assets/categories/studio.png";
