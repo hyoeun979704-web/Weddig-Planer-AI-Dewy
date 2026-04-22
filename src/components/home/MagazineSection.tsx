@@ -30,7 +30,7 @@ interface MagazineData {
 }
 
 const magazineDataMap: Record<CategoryTab, MagazineData> = {
-  home: {
+  "ai-planner": {
     title: "웨딩 매거진",
     subtitle: "예비부부를 위한 꿀팁",
     articles: [
@@ -38,6 +38,16 @@ const magazineDataMap: Record<CategoryTab, MagazineData> = {
       { icon: Camera, title: "스냅 촬영 베스트 포즈", description: "자연스러운 커플 포즈 가이드", color: "bg-violet-500/15 text-violet-500" },
       { icon: CheckSquare, title: "결혼 준비 체크리스트", description: "D-365부터 D-Day까지", color: "bg-emerald-500/15 text-emerald-500" },
       { icon: Heart, title: "예비부부 필독 꿀팁", description: "선배 신부가 알려주는 노하우", color: "bg-rose-500/15 text-rose-500" },
+    ],
+  },
+  "ai-studio": {
+    title: "AI 스튜디오 가이드",
+    subtitle: "AI로 나만의 웨딩 스타일",
+    articles: [
+      { icon: Camera, title: "드레스 AI 시뮬레이션", description: "내 체형에 맞는 드레스 찾기", color: "bg-purple-500/15 text-purple-500" },
+      { icon: Sparkles, title: "헤어·메이크업 미리보기", description: "AI가 추천하는 나만의 스타일", color: "bg-pink-500/15 text-pink-500" },
+      { icon: Heart, title: "웨딩 컨셉 추천", description: "분위기별 웨딩 컨셉 가이드", color: "bg-rose-500/15 text-rose-500" },
+      { icon: Lightbulb, title: "AI 스튜디오 활용법", description: "더 잘 쓰는 꿀팁 모음", color: "bg-violet-500/15 text-violet-500" },
     ],
   },
   events: {
@@ -60,7 +70,7 @@ const magazineDataMap: Record<CategoryTab, MagazineData> = {
       { icon: CheckSquare, title: "구매 시기 꿀팁", description: "특가 시즌 완벽 정리", color: "bg-pink-500/15 text-pink-500" },
     ],
   },
-  info: {
+  tips: {
     title: "웨딩 정보 매거진",
     subtitle: "리얼 웨딩 스토리",
     articles: [
@@ -76,7 +86,7 @@ interface MagazineSectionProps {
   activeTab?: CategoryTab;
 }
 
-const MagazineSection = ({ activeTab = "home" }: MagazineSectionProps) => {
+const MagazineSection = ({ activeTab = "ai-planner" }: MagazineSectionProps) => {
   const navigate = useNavigate();
   const data = magazineDataMap[activeTab];
 

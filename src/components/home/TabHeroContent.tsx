@@ -16,19 +16,33 @@ interface HeroData {
 }
 
 const heroDataMap: Record<CategoryTab, HeroData> = {
-  home: {
+  "ai-planner": {
     badge: "AI 웨딩 플래닝",
     title: ["결혼 준비의 새로운 기준,", "AI로 쉽게 시작하는", "웨딩 플래닝"],
     subtitle: "웨딩홀부터 스드메, 예물·가전까지\n한 번에 비교하고 예약하세요.",
     cta: "AI 플래너에게 물어보기",
     bgColor: "from-accent via-accent/50 to-background",
   },
+  "ai-studio": {
+    badge: "AI 스튜디오",
+    title: ["AI가 만들어주는", "나만의 웨딩 스타일", "미리 체험하기"],
+    subtitle: "드레스, 헤어, 메이크업까지\nAI로 미리 시뮬레이션해보세요.",
+    cta: "AI 스튜디오 체험하기",
+    bgColor: "from-purple-100/50 via-purple-50/30 to-background",
+  },
+  tips: {
+    badge: "웨딩 꿀팁",
+    title: ["실전 결혼 준비 꿀팁,", "전문가들이 알려주는", "스마트한 준비법"],
+    subtitle: "예산 절약부터 일정 관리까지\n꼭 알아야 할 정보만 모았어요.",
+    cta: "꿀팁 보러가기",
+    bgColor: "from-amber-100/50 via-amber-50/30 to-background",
+  },
   events: {
     badge: "이벤트 & 혜택",
     title: ["놓치면 아쉬운", "웨딩 특별 이벤트", "모아보기"],
     subtitle: "파트너 업체 제휴 혜택부터\n시즌 한정 이벤트까지.",
     cta: "이벤트 확인하기",
-    bgColor: "from-amber-100/50 via-amber-50/30 to-background",
+    bgColor: "from-rose-100/50 via-rose-50/30 to-background",
   },
   shopping: {
     badge: "웨딩 쇼핑",
@@ -37,20 +51,14 @@ const heroDataMap: Record<CategoryTab, HeroData> = {
     cta: "쇼핑하러 가기",
     bgColor: "from-emerald-100/50 via-emerald-50/30 to-background",
   },
-  info: {
-    badge: "웨딩 정보",
-    title: ["실제 결혼 준비 후기,", "전문가 정보로", "똑똑하게 준비"],
-    subtitle: "웨딩 전문가들의 리얼 후기와\n추천 업체를 확인하세요.",
-    cta: "정보 보러가기",
-    bgColor: "from-violet-100/50 via-violet-50/30 to-background",
-  },
 };
 
 const tabCtaRoutes: Record<CategoryTab, string> = {
-  home: "/ai-planner",
+  "ai-planner": "/ai-planner",
+  "ai-studio": "/ai-studio",
+  tips: "/magazine",
   events: "/deals",
   shopping: "/store",
-  info: "/influencers",
 };
 
 interface TabHeroContentProps {
@@ -63,7 +71,6 @@ const TabHeroContent = ({ activeTab }: TabHeroContentProps) => {
   const { weddingSettings } = useWeddingSchedule();
   const data = heroDataMap[activeTab];
 
-  // D-Day calculation for home tab
   const getDDay = () => {
     if (!weddingSettings.wedding_date) return null;
     const wedding = new Date(weddingSettings.wedding_date);
@@ -72,17 +79,15 @@ const TabHeroContent = ({ activeTab }: TabHeroContentProps) => {
     return Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  const days = activeTab === "home" ? getDDay() : null;
-  const showDDay = activeTab === "home" && user && days !== null;
+  const days = activeTab === "ai-planner" ? getDDay() : null;
+  const showDDay = activeTab === "ai-planner" && user && days !== null;
 
-  // Compact home hero with D-Day
-  if (activeTab === "home" && showDDay) {
+  if (activeTab === "ai-planner" && showDDay) {
     return (
       <section className="relative bg-gradient-to-br from-accent via-accent/50 to-background px-4 pt-5 pb-4 overflow-hidden">
         <div className="absolute top-2 right-2 w-20 h-20 bg-primary/8 rounded-full blur-2xl" />
 
         <div className="relative z-10">
-          {/* D-Day + Date row */}
           <button
             onClick={() => navigate("/schedule")}
             className="w-full flex items-center gap-3 p-3 bg-background/60 backdrop-blur-sm rounded-xl mb-4 border border-border/50 active:scale-[0.98] transition-transform"
@@ -104,7 +109,6 @@ const TabHeroContent = ({ activeTab }: TabHeroContentProps) => {
             <ArrowRight className="w-4 h-4 text-muted-foreground" />
           </button>
 
-          {/* CTA */}
           <div className="flex gap-2">
             <Button
               onClick={() => navigate("/ai-planner")}
@@ -126,7 +130,6 @@ const TabHeroContent = ({ activeTab }: TabHeroContentProps) => {
     );
   }
 
-  // Default hero (no D-Day or other tabs)
   return (
     <section className={`relative bg-gradient-to-br ${data.bgColor} px-4 pt-6 pb-5 overflow-hidden`}>
       <div className="absolute top-4 right-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl" />
