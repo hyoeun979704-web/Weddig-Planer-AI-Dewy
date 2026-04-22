@@ -113,7 +113,7 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
           })
         );
 
-        setResults(resultsWithCounts);
+        setResults(resultsWithCounts as SearchResult[]);
       } catch (error) {
         console.error("Search error:", error);
       } finally {
