@@ -1,15 +1,10 @@
-import Anthropic from '@anthropic-ai/sdk'
-import { AGENT_TOOLS } from './tools'
+import { AGENT_FUNCTION_DECLARATIONS } from './tools'
 import { executeToolCall } from './executor'
 import type { AgentRequest, AgentResponse } from '@/types'
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-})
+const GEMINI_MODEL = 'gemini-2.5-flash'
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 
-// Stable system prompt — module-level const. No dynamic values here.
-// Dynamic context (user_id, etc.) is injected into the first user message
-// so this prefix is fully cacheable across all requests.
 const AGENT_SYSTEM_PROMPT = `당신은 Dewy 웨딩 플래닝 플랫폼의 데이터 관리 & 서버 자동화 에이전트입니다.
 
 ## 역할
@@ -42,95 +37,108 @@ Dewy 플랫폼에서 관리하는 데이터:
 - 쓰기 작업 성공 여부를 반드시 확인 후 보고하세요
 - 작업이 실패하면 이유를 설명하고 대안을 제안하세요`
 
-export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
-  const toolCallsMade: string[] = []
-  const messages: Anthropic.MessageParam[] = []
+interface GeminiPart {
+  text?: string
+  functionCall?: { name: string; args: Record<string, unknown> }
+  functionResponse?: { name: string; response: unknown }
+}
 
-  // Dynamic context goes in the user message — NOT the system prompt —
-  // so the system prompt prefix remains cacheable across all users.
-  let userContent = request.instruction
-  if (request.user_id) {
-    userContent = `[컨텍스트: user_id="${request.user_id}" 사용자를 대신하여 작업 중]\n\n${request.instruction}`
+interface GeminiContent {
+  role: 'user' | 'model'
+  parts: GeminiPart[]
+}
+
+interface GeminiResponse {
+  candidates: Array<{
+    content: GeminiContent
+    finishReason?: string
+  }>
+  usageMetadata?: {
+    promptTokenCount: number
+    candidatesTokenCount: number
   }
+}
+
+export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error('GEMINI_API_KEY가 설정되지 않았습니다.')
+
+  const toolCallsMade: string[] = []
+  const contents: GeminiContent[] = []
 
   if (request.conversation_history && request.conversation_history.length > 0) {
     for (const msg of request.conversation_history) {
-      messages.push({ role: msg.role, content: msg.content })
+      contents.push({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }],
+      })
     }
   }
 
-  messages.push({ role: 'user', content: userContent })
-
-  let totalUsage = {
-    input_tokens: 0,
-    output_tokens: 0,
-    cache_read_input_tokens: 0,
-    cache_creation_input_tokens: 0,
+  let userText = request.instruction
+  if (request.user_id) {
+    userText = `[컨텍스트: user_id="${request.user_id}" 사용자를 대신하여 작업 중]\n\n${request.instruction}`
   }
+  contents.push({ role: 'user', parts: [{ text: userText }] })
 
-  // Agentic loop — runs until Claude stops calling tools
+  let totalInputTokens = 0
+  let totalOutputTokens = 0
+
+  // Agentic loop — runs until Gemini stops calling functions
   while (true) {
-    const response = await client.messages.create({
-      model: 'claude-opus-4-7',
-      max_tokens: 16000,
-      thinking: { type: 'adaptive' },
-      system: [
-        {
-          type: 'text',
-          text: AGENT_SYSTEM_PROMPT,
-          // Cache tools + system prompt together.
-          // Render order: tools → system → messages
-          // This breakpoint captures the stable prefix (tool schemas + system)
-          // for reuse across all subsequent requests.
-          cache_control: { type: 'ephemeral' },
-        },
-      ],
-      tools: AGENT_TOOLS,
-      messages,
-    })
-
-    totalUsage.input_tokens += response.usage.input_tokens
-    totalUsage.output_tokens += response.usage.output_tokens
-    totalUsage.cache_read_input_tokens += response.usage.cache_read_input_tokens ?? 0
-    totalUsage.cache_creation_input_tokens += response.usage.cache_creation_input_tokens ?? 0
-
-    messages.push({ role: 'assistant', content: response.content })
-
-    if (response.stop_reason === 'end_turn') {
-      const textBlock = response.content.find(
-        (b): b is Anthropic.TextBlock => b.type === 'text',
-      )
-      return {
-        reply: textBlock?.text ?? '완료되었습니다.',
-        tool_calls_made: toolCallsMade,
-        usage: totalUsage,
-      }
+    const body = {
+      system_instruction: { parts: [{ text: AGENT_SYSTEM_PROMPT }] },
+      tools: [{ function_declarations: AGENT_FUNCTION_DECLARATIONS }],
+      contents,
+      generationConfig: { temperature: 0.2 },
     }
 
-    if (response.stop_reason !== 'tool_use') {
-      return {
-        reply: `에이전트가 예상치 못한 이유로 중단되었습니다 (stop_reason: ${response.stop_reason})`,
-        tool_calls_made: toolCallsMade,
-        usage: totalUsage,
-      }
-    }
-
-    const toolUseBlocks = response.content.filter(
-      (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use',
+    const res = await fetch(
+      `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
     )
 
-    const toolResults: Anthropic.ToolResultBlockParam[] = []
-    for (const toolUse of toolUseBlocks) {
-      toolCallsMade.push(toolUse.name)
-      const result = await executeToolCall(toolUse.name, toolUse.input)
-      toolResults.push({
-        type: 'tool_result',
-        tool_use_id: toolUse.id,
-        content: JSON.stringify(result),
-        is_error: !result.success,
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(`Gemini API 오류 (${res.status}): ${JSON.stringify(err)}`)
+    }
+
+    const data = (await res.json()) as GeminiResponse
+
+    totalInputTokens += data.usageMetadata?.promptTokenCount ?? 0
+    totalOutputTokens += data.usageMetadata?.candidatesTokenCount ?? 0
+
+    const candidate = data.candidates?.[0]
+    if (!candidate) throw new Error('Gemini 응답에 candidates가 없습니다.')
+
+    const modelContent = candidate.content
+    contents.push(modelContent)
+
+    const functionCallParts = modelContent.parts.filter((p) => p.functionCall)
+
+    if (functionCallParts.length === 0) {
+      const textPart = modelContent.parts.find((p) => p.text)
+      return {
+        reply: textPart?.text ?? '완료되었습니다.',
+        tool_calls_made: toolCallsMade,
+        usage: { input_tokens: totalInputTokens, output_tokens: totalOutputTokens },
+      }
+    }
+
+    const responseParts: GeminiPart[] = []
+    for (const part of functionCallParts) {
+      const { name, args } = part.functionCall!
+      toolCallsMade.push(name)
+      const result = await executeToolCall(name, args)
+      responseParts.push({
+        functionResponse: { name, response: result },
       })
     }
 
-    messages.push({ role: 'user', content: toolResults })
+    contents.push({ role: 'user', parts: responseParts })
   }
 }

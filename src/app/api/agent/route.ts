@@ -3,7 +3,6 @@ import { createUserSupabaseClient } from '@/lib/agent/supabase-server'
 import { runAgent } from '@/lib/agent'
 import type { AgentRequest, AgentResponse } from '@/types'
 
-// Requires Node.js runtime — Anthropic SDK uses Node.js streams
 export const runtime = 'nodejs'
 // Allow up to 2 minutes for multi-step agent loops
 export const maxDuration = 120

@@ -1,5 +1,3 @@
-import type Anthropic from '@anthropic-ai/sdk'
-
 export const ALLOWED_TABLES = [
   'budget_items',
   'budget_settings',
@@ -60,22 +58,22 @@ export const TABLE_DESCRIPTIONS: Record<AllowedTable, string> = {
   subscriptions: '사용자 구독 상태 [READ-ONLY]',
 }
 
-export const AGENT_TOOLS: Anthropic.Tool[] = [
+// Gemini function declarations format
+export const AGENT_FUNCTION_DECLARATIONS = [
   {
     name: 'list_tables',
     description:
       '사용 가능한 데이터베이스 테이블 목록을 조회합니다. 어떤 데이터가 있는지 파악할 때 먼저 사용하세요.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {},
-      required: [],
     },
   },
   {
     name: 'get_table_schema',
     description:
       '특정 테이블의 컬럼 구조를 조회합니다. 데이터를 삽입하거나 조회하기 전에 구조를 파악할 때 사용하세요.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         table: {
@@ -91,7 +89,7 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
     name: 'query_database',
     description:
       'Supabase 테이블에서 레코드를 조회합니다. 사용자 데이터를 조회할 때는 반드시 user_id 필터를 포함하세요.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         table: {
@@ -102,7 +100,6 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
         filters: {
           type: 'object',
           description: '컬럼 필터 (key-value). 예: {"user_id": "abc123", "category": "venue"}',
-          additionalProperties: true,
         },
         columns: {
           type: 'string',
@@ -114,6 +111,7 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
         },
         order_by: {
           type: 'object',
+          description: '정렬 기준',
           properties: {
             column: { type: 'string' },
             ascending: { type: 'boolean' },
@@ -127,7 +125,7 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'count_records',
     description: '테이블의 레코드 수를 집계합니다. 헬스체크 및 데이터 요약에 활용하세요.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         table: {
@@ -137,7 +135,6 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
         filters: {
           type: 'object',
           description: '선택적 필터',
-          additionalProperties: true,
         },
       },
       required: ['table'],
@@ -146,17 +143,16 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'check_server_health',
     description: 'Supabase 데이터베이스 연결 상태와 응답 레이턴시를 확인합니다.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {},
-      required: [],
     },
   },
   {
     name: 'insert_record',
     description:
       'Supabase 테이블에 새 레코드를 삽입합니다. 읽기 전용 테이블에는 사용할 수 없습니다.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         table: {
@@ -166,7 +162,6 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
         data: {
           type: 'object',
           description: '삽입할 레코드 데이터. 사용자 소유 레코드는 user_id를 포함하세요.',
-          additionalProperties: true,
         },
       },
       required: ['table', 'data'],
@@ -174,9 +169,8 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'update_record',
-    description:
-      'ID로 기존 레코드를 수정합니다. 읽기 전용 테이블에는 사용할 수 없습니다.',
-    input_schema: {
+    description: 'ID로 기존 레코드를 수정합니다. 읽기 전용 테이블에는 사용할 수 없습니다.',
+    parameters: {
       type: 'object',
       properties: {
         table: { type: 'string', enum: [...ALLOWED_TABLES] },
@@ -188,7 +182,6 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
         data: {
           type: 'object',
           description: '수정할 필드 (key-value)',
-          additionalProperties: true,
         },
       },
       required: ['table', 'id', 'data'],
@@ -198,7 +191,7 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
     name: 'delete_record',
     description:
       'ID로 레코드를 삭제합니다. 관리자 전용. 삭제 전 반드시 대상을 먼저 조회하여 확인하세요.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         table: { type: 'string', enum: [...ALLOWED_TABLES] },
