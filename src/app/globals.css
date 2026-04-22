@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dewy Design System
+   Brand: Dewy (듀이) - AI 웨딩플래너와 함께하는 결혼준비
+   Primary: Warm Clear Pink (#F4A7B9) - 맑고 따뜻한 핑크
+   All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 20 30% 98%;
+    --foreground: 0 0% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 15%;
+
+    /* Warm Clear Pink #F4A7B9 → HSL: 346 78% 81% */
+    --primary: 346 78% 81%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 20 25% 96%;
+    --secondary-foreground: 0 0% 15%;
+
+    --muted: 20 12% 94%;
+    --muted-foreground: 0 0% 45%;
+
+    /* Soft pink accent */
+    --accent: 346 60% 95%;
+    --accent-foreground: 346 60% 45%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 20 12% 90%;
+    --input: 20 12% 90%;
+    --ring: 346 78% 81%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
