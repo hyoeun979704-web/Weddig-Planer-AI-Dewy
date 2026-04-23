@@ -22,8 +22,8 @@ interface CategoryTabBarProps {
 
 const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
   return (
-    <div data-tutorial="category-tab" className="sticky top-14 z-40 bg-card border-b border-border w-full">
-      <div className="flex overflow-x-auto scrollbar-hide">
+    <div data-tutorial="category-tab" className="sticky top-14 z-40 bg-card border-b border-[#d9d9d9] w-full">
+      <div className="flex items-center justify-center h-[56px] px-[9px]">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
 
@@ -32,23 +32,21 @@ const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "flex-shrink-0 px-4 py-3 relative transition-colors text-center",
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                "w-[75px] h-full flex items-center justify-center relative transition-colors",
+                isActive ? "text-primary" : "text-[#a4a1a2] hover:text-foreground"
               )}
             >
               <span
                 className={cn(
-                  "text-sm whitespace-nowrap",
-                  isActive ? "font-bold" : "font-medium"
+                  "text-[12px] whitespace-nowrap",
+                  isActive ? "font-bold" : "font-semibold"
                 )}
               >
                 {tab.label}
               </span>
 
               {isActive && (
-                <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-primary rounded-full" />
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />
               )}
             </button>
           );
