@@ -7,21 +7,26 @@ const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }
   <button
     onClick={onClick}
     aria-label={vendor.name}
-    className="flex-shrink-0 w-[90px] h-[90px] rounded-[10px] bg-[#d9d9d9] overflow-hidden active:scale-[0.97]"
+    className="flex-shrink-0 w-[90px] flex flex-col gap-1 active:scale-[0.97]"
   >
-    {vendor.thumbnail_url ? (
-      <img
-        src={vendor.thumbnail_url}
-        alt={vendor.name}
-        className="w-full h-full object-cover"
-        loading="lazy"
-        onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
-      />
-    ) : (
-      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-        <span className="text-2xl">🏛️</span>
-      </div>
-    )}
+    <div className="w-[90px] h-[90px] rounded-[10px] bg-[#d9d9d9] overflow-hidden">
+      {vendor.thumbnail_url ? (
+        <img
+          src={vendor.thumbnail_url}
+          alt={vendor.name}
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
+        />
+      ) : (
+        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+          <span className="text-2xl">🏛️</span>
+        </div>
+      )}
+    </div>
+    <p className="text-[11px] leading-tight text-black text-center line-clamp-2">
+      {vendor.name}
+    </p>
   </button>
 );
 
