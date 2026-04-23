@@ -38,7 +38,7 @@ interface ReviewData {
 
 const reviewDataMap: Record<CategoryTab, ReviewData> = {
   "ai-planner": {
-    title: "예비부부 리얼 후기",
+    title: "리얼 후기",
     subtitle: "스드메 실제 이용 후기",
     reviews: [
       { rating: 5, review: "처음부터 끝까지 정말 만족스러웠어요. 특히 담당 플래너분이 꼼꼼하게 챙겨주셔서 너무 감사했습니다!", vendorName: "라르고스튜디오", vendorType: "스드메", userName: "김**님", date: "2025.01.15" },
@@ -94,9 +94,7 @@ const ReviewSection = ({ activeTab = "ai-planner" }: ReviewSectionProps) => {
 
   return (
     <section className="pt-[10px] pb-[30px] px-[30px] bg-[hsl(var(--pink-100))]">
-      <h2 className="text-[16px] font-bold text-black mb-[10px]">
-        {activeTab === "ai-planner" ? "리얼 후기" : data.title}
-      </h2>
+      <h2 className="text-[16px] font-bold text-black mb-[10px]">{data.title}</h2>
       <div className="flex gap-[10px] overflow-x-auto scrollbar-hide">
         {data.reviews.map((review, index) => (
           <ReviewCard key={index} {...review} />

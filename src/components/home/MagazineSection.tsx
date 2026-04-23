@@ -32,7 +32,7 @@ interface MagazineData {
 
 const magazineDataMap: Record<CategoryTab, MagazineData> = {
   "ai-planner": {
-    title: "웨딩 매거진",
+    title: "오늘의 꿀팁",
     subtitle: "예비부부를 위한 꿀팁",
     articles: [
       { icon: Music, title: "2025 인기 입장곡 TOP 20", description: "분위기별 추천 입장곡 모음", color: "bg-pink-500/15 text-pink-500" },
@@ -93,9 +93,7 @@ const MagazineSection = ({ activeTab = "ai-planner" }: MagazineSectionProps) => 
 
   return (
     <section className="pt-[10px] pb-[30px] px-[30px] bg-[hsl(var(--pink-200))]">
-      <h2 className="text-[16px] font-bold text-black mb-[10px]">
-        {activeTab === "ai-planner" ? "오늘의 꿀팁" : data.title}
-      </h2>
+      <h2 className="text-[16px] font-bold text-black mb-[10px]">{data.title}</h2>
       <div className="flex gap-[10px] overflow-x-auto scrollbar-hide">
         {data.articles.map((article, index) => (
           <MagazineCard key={index} {...article} onClick={() => navigate("/magazine")} />

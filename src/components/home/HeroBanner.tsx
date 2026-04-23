@@ -23,11 +23,13 @@ const slides: Slide[] = [
 const HeroBanner = () => {
   const navigate = useNavigate();
   const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
+    if (paused) return;
     const id = setInterval(() => setIndex((i) => (i + 1) % slides.length), 2800);
     return () => clearInterval(id);
-  }, []);
+  }, [paused]);
 
   const bg = "linear-gradient(155.47deg, #FFFFFF 21.36%, #F6909B 111.33%)";
 
@@ -35,6 +37,10 @@ const HeroBanner = () => {
     <div
       className="relative w-full h-[261px] overflow-hidden"
       style={{ background: bg }}
+      onPointerEnter={() => setPaused(true)}
+      onPointerLeave={() => setPaused(false)}
+      onTouchStart={() => setPaused(true)}
+      onTouchEnd={() => setPaused(false)}
     >
       {slides.map((slide, i) => {
         const src = typeof slide.image === "string" ? slide.image : slide.image.src;
