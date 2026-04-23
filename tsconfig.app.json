@@ -18,7 +18,8 @@
     "noUnusedParameters": false,
     "paths": {
       "@/*": [
-        "./src/*"
+        "./src/*",
+        "./*"
       ]
     },
     "skipLibCheck": true,
