@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Search, Bell, Heart, ShoppingCart, HelpCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SearchOverlay from "./SearchOverlay";
+import DewyLogo from "./DewyLogo";
 
 const HomeHeader = () => {
   const navigate = useNavigate();
@@ -14,14 +15,14 @@ const HomeHeader = () => {
         <div className="flex items-center justify-between px-4 h-14">
           {/* Logo + Guide */}
           <div className="flex items-center gap-1">
-            <button 
+            <button
               onClick={() => navigate("/")}
               className="flex items-center gap-1.5"
             >
-              <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground text-sm font-bold">D</span>
-              </div>
-              <span className="text-lg font-bold text-foreground">Dewy</span>
+              <DewyLogo size={28} />
+              <span className="text-[20px] leading-[25px] text-black tracking-tight">
+                Dewy
+              </span>
             </button>
             <button
               onClick={() => navigate("/tutorial")}

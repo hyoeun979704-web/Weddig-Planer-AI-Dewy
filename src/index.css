@@ -1,10 +1,13 @@
+@import url("https://cdn.jsdelivr.net/gh/sun-typeface/SUITE/fonts/variable/woff2/SUITE-Variable.css");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* Dewy Design System
    Brand: Dewy (듀이) - AI 웨딩플래너와 함께하는 결혼준비
-   Primary: Warm Clear Pink (#F4A7B9) - 맑고 따뜻한 핑크
+   Primary: Figma brand pink #F6909B → HSL: 353 85% 76%
    All colors MUST be HSL.
 */
 
@@ -19,8 +22,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
 
-    /* Warm Clear Pink #F4A7B9 → HSL: 346 78% 81% */
-    --primary: 346 78% 81%;
+    /* Figma brand #F6909B */
+    --primary: 353 85% 76%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 20 25% 96%;
@@ -38,7 +41,13 @@
 
     --border: 20 12% 90%;
     --input: 20 12% 90%;
-    --ring: 346 78% 81%;
+    --ring: 353 85% 76%;
+
+    /* Figma section backgrounds */
+    --pink-50: 340 100% 99%;   /* #FFF9FA */
+    --pink-100: 347 100% 97%;  /* #FFF1F4 */
+    --pink-200: 351 100% 97%;  /* #FFF2F4 */
+    --inactive: 340 3% 76%;    /* #C4C0C1 */
 
     --radius: 0.75rem;
 
@@ -103,6 +112,8 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: "SUITE Variable", "Inter", -apple-system, BlinkMacSystemFont,
+      "Segoe UI", "Noto Sans KR", sans-serif;
   }
 }
 
