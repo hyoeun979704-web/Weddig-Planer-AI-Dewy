@@ -8,8 +8,13 @@ const SUPABASE_URL =
   'https://placeholder.supabase.co';
 
 const SUPABASE_PUBLISHABLE_KEY =
-  ((typeof import.meta !== 'undefined') && (import.meta as any).env?.VITE_SUPABASE_ANON_KEY) ||
-  (typeof process !== 'undefined' && (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY)) ||
+  ((typeof import.meta !== 'undefined') &&
+    ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY ||
+     (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY)) ||
+  (typeof process !== 'undefined' &&
+    (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+     process.env.VITE_SUPABASE_ANON_KEY ||
+     process.env.VITE_SUPABASE_PUBLISHABLE_KEY)) ||
   'placeholder-key';
 
 const isBrowser = typeof window !== 'undefined';
