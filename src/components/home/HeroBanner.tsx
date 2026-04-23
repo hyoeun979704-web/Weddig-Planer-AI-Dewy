@@ -25,7 +25,7 @@ const HeroBanner = () => {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setIndex((i) => (i + 1) % slides.length), 2500);
+    const id = setInterval(() => setIndex((i) => (i + 1) % slides.length), 2800);
     return () => clearInterval(id);
   }, []);
 
