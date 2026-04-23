@@ -21,15 +21,32 @@ const VenueDetail = () => {
 
   const { data: venue, isLoading, error } = useQuery({
     queryKey: ["venue", id],
-    queryFn: async () => {
+    queryFn: async (): Promise<Venue | null> => {
       const { data, error } = await supabase
-        .from("venues")
+        .from("places" as any)
         .select("*")
-        .eq("id", id!)
+        .eq("place_id", id!)
         .maybeSingle();
 
       if (error) throw error;
-      return data as Venue;
+      if (!data) return null;
+      const p = data as any;
+      return {
+        id: p.place_id,
+        name: p.name,
+        address: [p.city, p.district].filter(Boolean).join(" "),
+        thumbnail_url: p.main_image_url,
+        rating: Number(p.avg_rating) || 0,
+        review_count: p.review_count || 0,
+        price_per_person: Number(p.min_price) || 0,
+        min_guarantee: p.min_guarantee || 0,
+        is_partner: p.is_partner ?? false,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
+        hall_types: null,
+        meal_options: null,
+        event_options: null,
+      };
     },
     enabled: !!id,
   });
