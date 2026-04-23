@@ -11,34 +11,22 @@ interface ReviewCardProps {
   date: string;
 }
 
-const ReviewCard = ({ rating, review, vendorName, vendorType, userName, date }: ReviewCardProps) => (
-  <div className="flex-shrink-0 w-72 p-4 bg-card rounded-2xl border border-border">
-    <div className="flex items-center gap-2 mb-3">
-      <div className="flex items-center gap-0.5">
-        {[...Array(5)].map((_, i) => (
-          <Star 
-            key={i} 
-            className={`w-3.5 h-3.5 ${i < rating ? 'fill-amber-400 text-amber-400' : 'fill-muted text-muted'}`}
-          />
-        ))}
-      </div>
-      <span className="text-xs text-muted-foreground">{date}</span>
+const ReviewCard = ({ rating, review, vendorName }: ReviewCardProps) => (
+  <div className="flex-shrink-0 w-[200px] h-[120px] p-3 bg-[#d9d9d9] rounded-[10px] flex flex-col">
+    <div className="flex items-center gap-0.5 mb-1">
+      {[...Array(5)].map((_, i) => (
+        <Star
+          key={i}
+          className={`w-3 h-3 ${i < rating ? "fill-amber-400 text-amber-400" : "fill-white/40 text-white/40"}`}
+        />
+      ))}
     </div>
-    
-    <div className="relative mb-3">
-      <Quote className="absolute -top-1 -left-1 w-4 h-4 text-primary/20" />
-      <p className="text-sm text-foreground leading-relaxed line-clamp-3 pl-3">
-        {review}
-      </p>
-    </div>
-    
-    <div className="flex items-center justify-between pt-3 border-t border-border">
-      <div>
-        <p className="text-xs font-medium text-foreground">{vendorName}</p>
-        <p className="text-xs text-muted-foreground">{vendorType}</p>
-      </div>
-      <p className="text-xs text-muted-foreground">{userName}</p>
-    </div>
+    <p className="text-[11px] text-black leading-tight line-clamp-3 flex-1">
+      {review}
+    </p>
+    <p className="text-[10px] font-medium text-black/80 mt-1 truncate">
+      {vendorName}
+    </p>
   </div>
 );
 
@@ -105,22 +93,11 @@ const ReviewSection = ({ activeTab = "ai-planner" }: ReviewSectionProps) => {
   const data = reviewDataMap[activeTab];
 
   return (
-    <section className="py-6 bg-[hsl(var(--pink-100))]">
-      <div className="flex items-center justify-between px-4 mb-4">
-        <div>
-          <h2 className="text-lg font-bold text-foreground">{data.title}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{data.subtitle}</p>
-        </div>
-        <button 
-          onClick={() => navigate("/reviews")}
-          className="flex items-center gap-1 text-sm text-primary font-medium"
-        >
-          더보기
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-      
-      <div className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide">
+    <section className="pt-[10px] pb-[30px] px-[30px] bg-[hsl(var(--pink-100))]">
+      <h2 className="text-[16px] font-bold text-black mb-[10px]">
+        {activeTab === "ai-planner" ? "리얼 후기" : data.title}
+      </h2>
+      <div className="flex gap-[10px] overflow-x-auto scrollbar-hide">
         {data.reviews.map((review, index) => (
           <ReviewCard key={index} {...review} />
         ))}

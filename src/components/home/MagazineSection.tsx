@@ -10,16 +10,17 @@ interface MagazineCardProps {
   onClick?: () => void;
 }
 
-const MagazineCard = ({ icon: Icon, title, description, color, onClick }: MagazineCardProps) => (
-  <button 
+const MagazineCard = ({ icon: Icon, title, color, onClick }: MagazineCardProps) => (
+  <button
     onClick={onClick}
-    className="flex-shrink-0 w-40 p-4 bg-card rounded-2xl border border-border hover:border-primary/30 hover:shadow-md transition-all duration-200 text-left"
+    className="flex-shrink-0 w-[90px] h-[160px] rounded-[10px] bg-[#d9d9d9] relative overflow-hidden text-left"
   >
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${color}`}>
-      <Icon className="w-5 h-5" />
+    <div className={`absolute top-2 left-2 w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
+      <Icon className="w-4 h-4" />
     </div>
-    <h4 className="font-semibold text-foreground text-sm mb-1 line-clamp-2">{title}</h4>
-    <p className="text-xs text-muted-foreground line-clamp-2">{description}</p>
+    <p className="absolute bottom-2 left-2 right-2 text-[11px] font-semibold text-white leading-tight line-clamp-2 drop-shadow">
+      {title}
+    </p>
   </button>
 );
 
@@ -91,22 +92,11 @@ const MagazineSection = ({ activeTab = "ai-planner" }: MagazineSectionProps) => 
   const data = magazineDataMap[activeTab];
 
   return (
-    <section className="py-6 bg-[hsl(var(--pink-200))]">
-      <div className="flex items-center justify-between px-4 mb-4">
-        <div>
-          <h2 className="text-lg font-bold text-foreground">{data.title}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{data.subtitle}</p>
-        </div>
-        <button 
-          onClick={() => navigate("/magazine")}
-          className="flex items-center gap-1 text-sm text-primary font-medium"
-        >
-          전체보기
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-      
-      <div className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide">
+    <section className="pt-[10px] pb-[30px] px-[30px] bg-[hsl(var(--pink-200))]">
+      <h2 className="text-[16px] font-bold text-black mb-[10px]">
+        {activeTab === "ai-planner" ? "오늘의 꿀팁" : data.title}
+      </h2>
+      <div className="flex gap-[10px] overflow-x-auto scrollbar-hide">
         {data.articles.map((article, index) => (
           <MagazineCard key={index} {...article} onClick={() => navigate("/magazine")} />
         ))}
