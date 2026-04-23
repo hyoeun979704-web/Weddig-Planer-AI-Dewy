@@ -20,19 +20,19 @@ interface CategoryItem {
 const categories: CategoryItem[] = [
   { label: "웨딩홀", image: weddingHallImg, path: "/venues", emoji: "🏛️" },
   { label: "스드메", image: studioImg, path: "/studios", emoji: "📸" },
-  { label: "한복", image: hanbokImg, path: "/hanbok", emoji: "👘" },
   { label: "예복", image: suitImg, path: "/suit", emoji: "🤵" },
-  { label: "허니문", image: honeymoonImg, path: "/honeymoon", emoji: "✈️" },
-  { label: "예물예단", image: jewelryImg, path: "/honeymoon-gifts", emoji: "💍" },
-  { label: "혼수가전", image: applianceImg, path: "/appliances", emoji: "🏠" },
-  { label: "청첩장·모임", image: invitationImg, path: "/invitation-venues", emoji: "💌" },
+  { label: "한복", image: hanbokImg, path: "/hanbok", emoji: "👘" },
+  { label: "청첩장 모임", image: invitationImg, path: "/invitation-venues", emoji: "💌" },
+  { label: "가전·혼수", image: applianceImg, path: "/appliances", emoji: "🏠" },
+  { label: "예물·예단", image: jewelryImg, path: "/honeymoon-gifts", emoji: "💍" },
+  { label: "신혼여행", image: honeymoonImg, path: "/honeymoon", emoji: "✈️" },
 ];
 
 const HomeCategoryGrid = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="px-4 py-4">
+    <section className="px-4 py-5 bg-rose-50/60">
       <div className="grid grid-cols-4 gap-y-4 gap-x-3">
         {categories.map((cat) => (
           <button
@@ -40,7 +40,7 @@ const HomeCategoryGrid = () => {
             onClick={() => navigate(cat.path)}
             className="flex flex-col items-center gap-1.5 group active:scale-95 transition-transform"
           >
-            <div className="w-16 h-16 rounded-2xl overflow-hidden ring-1 ring-border group-hover:ring-primary/40 transition-all shadow-sm bg-muted">
+            <div className="w-[72px] h-[72px] rounded-2xl overflow-hidden ring-1 ring-border group-hover:ring-primary/40 transition-all shadow-sm bg-muted">
               <img
                 src={typeof cat.image === "string" ? cat.image : cat.image.src}
                 alt={cat.label}
