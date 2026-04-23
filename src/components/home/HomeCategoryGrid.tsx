@@ -1,4 +1,3 @@
-import type { StaticImageData } from "next/image";
 import { useNavigate } from "react-router-dom";
 import weddingHallImg from "@/assets/categories/wedding-hall.png";
 import studioImg from "@/assets/categories/studio.png";
@@ -9,9 +8,11 @@ import jewelryImg from "@/assets/categories/jewelry.png";
 import applianceImg from "@/assets/categories/appliance.png";
 import invitationImg from "@/assets/categories/invitation.png";
 
+type ImageSrc = string | { src: string; width: number; height: number };
+
 interface CategoryItem {
   label: string;
-  image: string | StaticImageData;
+  image: ImageSrc;
   path: string;
   emoji: string;
 }
