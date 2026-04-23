@@ -49,13 +49,22 @@ interface ReviewData {
 }
 
 const reviewDataMap: Record<CategoryTab, ReviewData> = {
-  home: {
+  "ai-planner": {
     title: "예비부부 리얼 후기",
     subtitle: "스드메 실제 이용 후기",
     reviews: [
       { rating: 5, review: "처음부터 끝까지 정말 만족스러웠어요. 특히 담당 플래너분이 꼼꼼하게 챙겨주셔서 너무 감사했습니다!", vendorName: "라르고스튜디오", vendorType: "스드메", userName: "김**님", date: "2025.01.15" },
       { rating: 5, review: "촬영 컷이 정말 예뻐요. 자연스러운 분위기를 잘 잡아주셔서 대만족입니다.", vendorName: "아이디어스튜디오", vendorType: "스드메", userName: "박**님", date: "2025.01.10" },
       { rating: 4, review: "합리적인 가격에 퀄리티 높은 촬영이 가능해서 추천드려요.", vendorName: "더샵스튜디오", vendorType: "스드메", userName: "이**님", date: "2025.01.08" },
+    ],
+  },
+  "ai-studio": {
+    title: "AI 스튜디오 후기",
+    subtitle: "직접 사용해본 리얼 후기",
+    reviews: [
+      { rating: 5, review: "드레스 시뮬레이션이 너무 정확해요! 실제로 입어보니 AI 추천이 딱 맞았어요.", vendorName: "AI 스튜디오", vendorType: "드레스", userName: "김**님", date: "2025.01.15" },
+      { rating: 5, review: "헤어 스타일 미리보기로 고민을 덜었어요. 진짜 편리합니다.", vendorName: "AI 스튜디오", vendorType: "헤어", userName: "이**님", date: "2025.01.11" },
+      { rating: 4, review: "웨딩 컨셉 추천이 마음에 쏙 들었어요. 덕분에 빨리 결정했습니다.", vendorName: "AI 스튜디오", vendorType: "컨셉", userName: "박**님", date: "2025.01.07" },
     ],
   },
   events: {
@@ -76,7 +85,7 @@ const reviewDataMap: Record<CategoryTab, ReviewData> = {
       { rating: 5, review: "한샘 리하우스로 인테리어 했는데 신혼집이 너무 예뻐졌어요!", vendorName: "한샘", vendorType: "인테리어", userName: "송**님", date: "2025.01.07" },
     ],
   },
-  info: {
+  tips: {
     title: "웨딩 정보 후기",
     subtitle: "전문가 추천 후기",
     reviews: [
@@ -91,7 +100,7 @@ interface ReviewSectionProps {
   activeTab?: CategoryTab;
 }
 
-const ReviewSection = ({ activeTab = "home" }: ReviewSectionProps) => {
+const ReviewSection = ({ activeTab = "ai-planner" }: ReviewSectionProps) => {
   const navigate = useNavigate();
   const data = reviewDataMap[activeTab];
 

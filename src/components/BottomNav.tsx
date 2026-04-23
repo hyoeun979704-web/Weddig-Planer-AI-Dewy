@@ -1,18 +1,18 @@
-import { Home, Calendar, Wallet, Sparkles, Users, User } from "lucide-react";
+import { Calendar, Wallet, MessageSquare, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
-  icon: React.ElementType;
+  icon?: React.ElementType;
   label: string;
   href: string;
+  isHome?: boolean;
 }
 
 const navItems: (NavItem & { tutorialId?: string })[] = [
-  { icon: Home, label: "홈", href: "/" },
-  { icon: Calendar, label: "스케쥴", href: "/schedule", tutorialId: "nav-schedule" },
+  { icon: Calendar, label: "스케줄", href: "/schedule", tutorialId: "nav-schedule" },
   { icon: Wallet, label: "예산", href: "/budget", tutorialId: "nav-budget" },
-  { icon: Sparkles, label: "AI 플래너", href: "/ai-planner", tutorialId: "nav-ai" },
-  { icon: Users, label: "커뮤니티", href: "/community", tutorialId: "nav-community" },
+  { isHome: true, label: "홈", href: "/" },
+  { icon: MessageSquare, label: "커뮤니티", href: "/community", tutorialId: "nav-community" },
   { icon: User, label: "마이페이지", href: "/mypage", tutorialId: "nav-mypage" },
 ];
 
@@ -27,6 +27,37 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
       <div className="max-w-[430px] mx-auto flex justify-around items-center h-16 px-2 safe-area-inset-bottom">
         {navItems.map((item) => {
           const isActive = activeTab === item.href;
+
+          if (item.isHome) {
+            return (
+              <button
+                key={item.href}
+                onClick={() => onTabChange?.(item.href)}
+                className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2"
+              >
+                <div className={cn(
+                  "w-10 h-10 rounded-[14px] flex items-center justify-center transition-all duration-200",
+                  isActive
+                    ? "bg-primary shadow-md shadow-primary/30"
+                    : "bg-muted"
+                )}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="w-5 h-5"
+                    fill={isActive ? "white" : "currentColor"}
+                    strokeWidth={0}
+                  >
+                    <path d="M12 2.5C11.3 2.5 10.7 2.8 10.2 3.3L3.7 9.2C3.3 9.6 3 10.2 3 10.8V19C3 20.1 3.9 21 5 21H9C9.6 21 10 20.6 10 20V15H14V20C14 20.6 14.4 21 15 21H19C20.1 21 21 20.1 21 19V10.8C21 10.2 20.7 9.6 20.3 9.2L13.8 3.3C13.3 2.8 12.7 2.5 12 2.5Z" />
+                  </svg>
+                </div>
+                <span className={cn(
+                  "text-[10px] font-medium",
+                  isActive ? "text-primary" : "text-muted-foreground"
+                )}>{item.label}</span>
+              </button>
+            );
+          }
+
           return (
             <button
               key={item.href}
@@ -37,13 +68,15 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
-              <item.icon 
-                className={cn(
-                  "w-5 h-5 transition-transform duration-200",
-                  isActive && "scale-110"
-                )} 
-                strokeWidth={isActive ? 2.5 : 2}
-              />
+              {item.icon && (
+                <item.icon
+                  className={cn(
+                    "w-5 h-5 transition-transform duration-200",
+                    isActive && "scale-110"
+                  )}
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+              )}
               <span className="text-[10px] font-medium">{item.label}</span>
             </button>
           );

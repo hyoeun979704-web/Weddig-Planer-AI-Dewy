@@ -9,7 +9,7 @@ export interface ScheduleItem {
   scheduled_date: string;
   completed: boolean;
   notes: string | null;
-  category: string;
+  category: string | null;
 }
 
 interface WeddingSettings {

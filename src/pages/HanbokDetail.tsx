@@ -27,7 +27,7 @@ const HanbokDetail = () => {
       const { data, error } = await supabase
         .from("hanbok")
         .select("*")
-        .eq("id", id)
+        .eq("id", id!)
         .maybeSingle();
       if (error) throw error;
       return data as Hanbok;

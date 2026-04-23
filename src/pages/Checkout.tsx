@@ -6,7 +6,7 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-const CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY as string;
+const CLIENT_KEY = ((import.meta as any).env?.VITE_TOSS_CLIENT_KEY ?? "") as string;
 const formatPrice = (price: number) => price.toLocaleString() + "원";
 
 const generateOrderNumber = () => {

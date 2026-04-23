@@ -77,7 +77,7 @@ const BusinessOnboard = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-business`,
+        `${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/verify-business`,
         {
           method: "POST",
           headers: {

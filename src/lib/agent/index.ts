@@ -116,6 +116,7 @@ export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
     if (!candidate) throw new Error('Gemini 응답에 candidates가 없습니다.')
 
     const modelContent = candidate.content
+    if (!modelContent?.parts) throw new Error('Gemini 응답에 content.parts가 없습니다.')
     contents.push(modelContent)
 
     const functionCallParts = modelContent.parts.filter((p) => p.functionCall)

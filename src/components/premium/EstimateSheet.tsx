@@ -54,7 +54,7 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
   "total_max": 숫자
 }`;
 
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-planner`, {
+      const resp = await fetch(`${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/ai-planner`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),

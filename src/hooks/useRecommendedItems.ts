@@ -23,7 +23,7 @@ interface TabConfig {
 }
 
 const tabConfigMap: Record<CategoryTab, TabConfig> = {
-  home: {
+  "ai-planner": {
     table: "studios",
     locationField: "address",
     priceField: "price_per_person",
@@ -31,6 +31,15 @@ const tabConfigMap: Record<CategoryTab, TabConfig> = {
     listPath: "/studios",
     detailPath: "/studio",
     title: "인기 스드메 추천",
+  },
+  "ai-studio": {
+    table: "studios",
+    locationField: "address",
+    priceField: "price_per_person",
+    priceType: "number",
+    listPath: "/studios",
+    detailPath: "/studio",
+    title: "AI 스튜디오 추천",
   },
   events: {
     table: "honeymoon",
@@ -50,7 +59,7 @@ const tabConfigMap: Record<CategoryTab, TabConfig> = {
     detailPath: "/honeymoon-gifts",
     title: "인기 쇼핑 상품",
   },
-  info: {
+  tips: {
     table: "suits",
     locationField: "address",
     priceField: "price_range",

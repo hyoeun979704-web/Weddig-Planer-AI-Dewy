@@ -10,7 +10,7 @@ import { usePageTutorial } from "@/hooks/usePageTutorial";
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const activeTab: CategoryTab = "home";
+  const activeTab: CategoryTab = "ai-planner";
   const tutorial = usePageTutorial("app-tour");
 
   const handleTabChange = (href: string) => {
@@ -19,10 +19,11 @@ const Index = () => {
 
   const handleCategoryTabChange = (tab: CategoryTab) => {
     const tabRoutes: Record<CategoryTab, string> = {
-      home: "/",
+      "ai-planner": "/",
+      "ai-studio": "/ai-studio",
+      tips: "/magazine",
       events: "/deals",
       shopping: "/store",
-      info: "/influencers",
     };
     navigate(tabRoutes[tab]);
   };

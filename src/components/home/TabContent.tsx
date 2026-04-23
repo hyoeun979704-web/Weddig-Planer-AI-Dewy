@@ -17,13 +17,13 @@ const TabContent = ({ activeTab }: TabContentProps) => {
       <TabHeroContent activeTab={activeTab} />
 
       {/* Show category grid on home tab */}
-      {activeTab === "home" && <HomeCategoryGrid />}
+      {activeTab === "ai-planner" && <HomeCategoryGrid />}
 
       <RecommendedSection />
 
-      {activeTab === "home" && <PopularPostsSection />}
+      {activeTab === "ai-planner" && <PopularPostsSection />}
 
-      {activeTab === "home" && <StudioGallery />}
+      {activeTab === "ai-planner" && <StudioGallery />}
 
       <MagazineSection activeTab={activeTab} />
 

@@ -8,9 +8,11 @@ import jewelryImg from "@/assets/categories/jewelry.png";
 import applianceImg from "@/assets/categories/appliance.png";
 import invitationImg from "@/assets/categories/invitation.png";
 
+type ImageSrc = string | { src: string; width: number; height: number };
+
 interface CategoryItem {
   label: string;
-  image: string;
+  image: ImageSrc;
   path: string;
   emoji: string;
 }
@@ -40,7 +42,7 @@ const HomeCategoryGrid = () => {
           >
             <div className="w-16 h-16 rounded-2xl overflow-hidden ring-1 ring-border group-hover:ring-primary/40 transition-all shadow-sm bg-muted">
               <img
-                src={cat.image}
+                src={typeof cat.image === "string" ? cat.image : cat.image.src}
                 alt={cat.label}
                 className="w-full h-full object-cover"
                 loading="lazy"

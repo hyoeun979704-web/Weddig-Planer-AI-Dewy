@@ -20,7 +20,7 @@ const StudioDetail = () => {
       const { data, error } = await supabase
         .from("studios")
         .select("*")
-        .eq("id", id)
+        .eq("id", id!)
         .maybeSingle();
 
       if (error) throw error;

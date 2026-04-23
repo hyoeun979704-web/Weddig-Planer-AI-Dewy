@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import BottomNav from "@/components/BottomNav";
-import { ArrowLeft, Plus, Settings, MapPin, AlertTriangle, ChevronRight, Trash2, Sparkles, Download, Clock, Bell } from "lucide-react";
+import { Plus, Settings, MapPin, AlertTriangle, ChevronRight, Trash2, Sparkles, Download, Clock, Bell } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useBudget } from "@/hooks/useBudget";
 import { useAuth } from "@/contexts/AuthContext";
@@ -94,13 +94,23 @@ const Budget = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       {showLoginOverlay && <LoginRequiredOverlay message="지역별 평균 비교, 양가 분담 현황까지 체계적으로 관리하세요" features={["지역별 평균 비교", "양가 분담 관리", "잔금 알림"]} />}
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-card border-b border-border">
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
-          <button onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5 text-foreground" /></button>
-          <h1 className="text-base font-bold text-foreground">웨딩 예산</h1>
-          <button data-tutorial="budget-settings" onClick={() => setSetupOpen(true)}><Settings className="w-5 h-5 text-foreground" /></button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+              <ChevronRight className="w-5 h-5 text-foreground rotate-180" />
+            </button>
+            <h1 className="text-lg font-bold text-foreground">예산</h1>
+          </div>
+          <button
+            data-tutorial="budget-settings"
+            onClick={() => setSetupOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium"
+          >
+            예산 설정
+          </button>
         </div>
-      </div>
+      </header>
 
       <div className="px-4 py-4 pb-36 space-y-4">
         {/* Summary Card with Donut */}
@@ -268,31 +278,21 @@ const Budget = () => {
         {/* Premium Report Banner */}
         <button
           onClick={() => isPremium ? setReportOpen(true) : setUpgradeOpen(true)}
-          className="w-full rounded-2xl bg-gradient-to-r from-primary/15 to-accent border border-primary/15 p-4 flex items-center gap-3"
+          className="w-full rounded-2xl bg-card border border-border p-4 flex items-center gap-3 text-left"
         >
-          {isPremium ? (
-            <>
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <Download className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-bold text-foreground">예산 분석 리포트</p>
-                <p className="text-xs text-muted-foreground">현재 지출 데이터 기반 PDF 다운로드</p>
-              </div>
-              <span className="text-xs font-medium text-primary">PDF 받기</span>
-            </>
-          ) : (
-            <>
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-bold text-foreground">예산 분석 리포트 PDF</p>
-                <p className="text-xs text-muted-foreground">카테고리별 분석 · 지역 평균 비교 · AI 진단</p>
-              </div>
-              <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">프리미엄</span>
-            </>
-          )}
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            {isPremium
+              ? <Download className="w-5 h-5 text-primary" />
+              : <Sparkles className="w-5 h-5 text-primary" />
+            }
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground">예산 분석 리포트 PDF</p>
+            <p className="text-xs text-muted-foreground">
+              {isPremium ? "현재 지출 데이터 기반 PDF 다운로드" : "프리미엄 전용"}
+            </p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
         </button>
 
         {/* Recent items */}

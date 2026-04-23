@@ -127,25 +127,26 @@ const Community = () => {
       <header data-tutorial="community-header" className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">커뮤니티</h1>
-          <div className="flex items-center gap-2">
-            <button 
+          <div className="flex items-center gap-1.5">
+            <button
               onClick={() => navigate("/community/bookmarks")}
-              className="p-2 hover:bg-muted rounded-full transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
             >
-              <Bookmark className="w-5 h-5 text-muted-foreground" />
+              <Bookmark className="w-4.5 h-4.5 text-muted-foreground" />
             </button>
-            <button 
+            <button
               onClick={() => setIsSearchOpen(true)}
-              className="p-2 hover:bg-muted rounded-full transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
             >
-              <Search className="w-5 h-5 text-muted-foreground" />
+              <Search className="w-4.5 h-4.5 text-muted-foreground" />
             </button>
-            <button 
+            <button
               data-tutorial="community-write"
               onClick={handleWriteClick}
-              className="p-2 hover:bg-muted rounded-full transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium"
             >
-              <PenSquare className="w-5 h-5 text-muted-foreground" />
+              <PenSquare className="w-3.5 h-3.5" />
+              글쓰기
             </button>
           </div>
         </div>
@@ -171,7 +172,7 @@ const Community = () => {
       {/* Main Content */}
       <main className="pb-20">
         {/* Trending Section */}
-        <div className="px-4 py-4 bg-gradient-to-r from-primary/5 to-transparent">
+        <div className="px-4 py-4">
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="w-4 h-4 text-primary" />
             <span className="text-sm font-bold text-foreground">인기 게시글</span>

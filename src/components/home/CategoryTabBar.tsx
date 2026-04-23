@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export type CategoryTab = "home" | "events" | "shopping" | "info";
+export type CategoryTab = "ai-planner" | "ai-studio" | "tips" | "events" | "shopping";
 
 interface Tab {
   id: CategoryTab;
@@ -8,10 +8,11 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
-  { id: "home", label: "홈" },
+  { id: "ai-planner", label: "AI 플래너" },
+  { id: "ai-studio", label: "AI 스튜디오" },
+  { id: "tips", label: "꿀팁" },
   { id: "events", label: "이벤트" },
   { id: "shopping", label: "쇼핑" },
-  { id: "info", label: "정보" },
 ];
 
 interface CategoryTabBarProps {
@@ -22,7 +23,7 @@ interface CategoryTabBarProps {
 const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
   return (
     <div data-tutorial="category-tab" className="sticky top-14 z-40 bg-card border-b border-border w-full">
-      <div className="flex">
+      <div className="flex overflow-x-auto scrollbar-hide">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
 
@@ -31,7 +32,7 @@ const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "flex-1 py-3 relative transition-colors text-center",
+                "flex-shrink-0 px-4 py-3 relative transition-colors text-center",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -47,7 +48,7 @@ const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
               </span>
 
               {isActive && (
-                <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-primary rounded-full" />
+                <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-primary rounded-full" />
               )}
             </button>
           );

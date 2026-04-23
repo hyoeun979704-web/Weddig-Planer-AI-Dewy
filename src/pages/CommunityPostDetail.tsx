@@ -84,7 +84,7 @@ const CommunityPostDetail = () => {
       const { data, error } = await supabase
         .from("community_posts")
         .select("*")
-        .eq("id", id)
+        .eq("id", id!)
         .maybeSingle();
       
       if (error) throw error;
@@ -100,7 +100,7 @@ const CommunityPostDetail = () => {
       const { data, error } = await supabase
         .from("community_comments")
         .select("*")
-        .eq("post_id", id)
+        .eq("post_id", id!)
         .order("created_at", { ascending: true });
       
       if (error) throw error;
@@ -116,7 +116,7 @@ const CommunityPostDetail = () => {
       const { count, error } = await supabase
         .from("community_likes")
         .select("*", { count: "exact", head: true })
-        .eq("post_id", id);
+        .eq("post_id", id!);
       
       if (error) throw error;
       return count || 0;
@@ -132,7 +132,7 @@ const CommunityPostDetail = () => {
       const { data, error } = await supabase
         .from("community_likes")
         .select("id")
-        .eq("post_id", id)
+        .eq("post_id", id!)
         .eq("user_id", user.id)
         .maybeSingle();
       
@@ -154,13 +154,13 @@ const CommunityPostDetail = () => {
         const { error } = await supabase
           .from("community_likes")
           .delete()
-          .eq("post_id", id)
+          .eq("post_id", id!)
           .eq("user_id", user.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("community_likes")
-          .insert({ post_id: id, user_id: user.id });
+          .insert({ post_id: id!, user_id: user.id });
         if (error) throw error;
       }
     },
@@ -183,8 +183,8 @@ const CommunityPostDetail = () => {
 
       const { error } = await supabase
         .from("community_comments")
-        .insert({ 
-          post_id: id, 
+        .insert({
+          post_id: id!,
           user_id: user.id,
           content,
           parent_comment_id: parentCommentId || null
@@ -255,7 +255,7 @@ const CommunityPostDetail = () => {
       const { error } = await supabase
         .from("community_posts")
         .delete()
-        .eq("id", id)
+        .eq("id", id!)
         .eq("user_id", user.id);
 
       if (error) throw error;

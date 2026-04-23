@@ -20,7 +20,7 @@ const HoneymoonDetail = () => {
       const { data, error } = await supabase
         .from("honeymoon")
         .select("*")
-        .eq("id", id)
+        .eq("id", id!)
         .maybeSingle();
 
       if (error) throw error;
