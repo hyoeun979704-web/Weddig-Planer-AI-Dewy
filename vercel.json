@@ -1,8 +1,0 @@
-{
-  "buildCommand": "npm run build:vite",
-  "outputDirectory": "dist",
-  "framework": null,
-  "rewrites": [
-    { "source": "/((?!assets|sw.js|workbox-.*).*)", "destination": "/index.html" }
-  ]
-}
