@@ -57,7 +57,7 @@ const RecommendedSection = () => {
   const { data: vendors, isLoading } = useRecommendedVendors(8);
 
   return (
-    <section className="pt-2 pb-5">
+    <section className="pt-2 pb-5 bg-[hsl(var(--pink-50))]">
       <div className="flex items-center justify-between px-4 mb-3">
         <h2 className="text-base font-bold text-foreground">인기 업체 추천</h2>
         <button 

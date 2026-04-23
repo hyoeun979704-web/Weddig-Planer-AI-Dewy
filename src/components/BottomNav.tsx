@@ -52,7 +52,7 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
                 </div>
                 <span className={cn(
                   "text-[10px] font-medium",
-                  isActive ? "text-primary" : "text-muted-foreground"
+                  isActive ? "text-primary font-bold" : "text-[hsl(var(--inactive))]"
                 )}>{item.label}</span>
               </button>
             );
@@ -65,7 +65,7 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
               onClick={() => onTabChange?.(item.href)}
               className={cn(
                 "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors duration-200",
-                isActive ? "text-primary" : "text-muted-foreground"
+                isActive ? "text-primary font-bold" : "text-[hsl(var(--inactive))]"
               )}
             >
               {item.icon && (

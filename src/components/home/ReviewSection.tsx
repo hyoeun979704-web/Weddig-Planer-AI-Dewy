@@ -105,7 +105,7 @@ const ReviewSection = ({ activeTab = "ai-planner" }: ReviewSectionProps) => {
   const data = reviewDataMap[activeTab];
 
   return (
-    <section className="py-6 bg-accent/30">
+    <section className="py-6 bg-[hsl(var(--pink-100))]">
       <div className="flex items-center justify-between px-4 mb-4">
         <div>
           <h2 className="text-lg font-bold text-foreground">{data.title}</h2>
