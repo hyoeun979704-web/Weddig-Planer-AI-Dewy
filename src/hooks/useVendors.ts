@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Vendor {
-  vendor_id: number;
+  vendor_id: string; // mapped from places.place_id (uuid)
   name: string;
-  category_type: string;
+  category_type: string; // Korean label
   region: string | null;
   address: string | null;
   thumbnail_url: string | null;
@@ -20,7 +20,7 @@ export interface Vendor {
 }
 
 export interface WeddingHallDetail {
-  vendor_id: number;
+  vendor_id: string;
   meal_cost_range: string | null;
   rental_cost_range: string | null;
   meal_type: string | null;
@@ -30,7 +30,7 @@ export interface WeddingHallDetail {
 export interface VendorReview {
   review_id: number;
   user_id: number | null;
-  vendor_id: number | null;
+  vendor_id: string | null;
   item_id: number | null;
   rating: number;
   content: string | null;
@@ -54,7 +54,6 @@ export interface VendorEvent {
   view_count: number;
 }
 
-// All vendor category types from external data
 export const VENDOR_CATEGORIES = [
   "웨딩홀",
   "스드메",
@@ -68,7 +67,6 @@ export const VENDOR_CATEGORIES = [
 
 export type VendorCategoryType = typeof VENDOR_CATEGORIES[number];
 
-// Category type to route mapping
 export const categoryRouteMap: Record<string, { listPath: string; detailPath: string; label: string; emoji: string }> = {
   "웨딩홀": { listPath: "/vendors/웨딩홀", detailPath: "/vendor", label: "웨딩홀", emoji: "🏛️" },
   "스드메": { listPath: "/vendors/스드메", detailPath: "/vendor", label: "스드메", emoji: "📸" },
@@ -80,75 +78,108 @@ export const categoryRouteMap: Record<string, { listPath: string; detailPath: st
   "웨딩플래너": { listPath: "/vendors/웨딩플래너", detailPath: "/vendor", label: "웨딩플래너", emoji: "💐" },
 };
 
-// Fetch vendors by category
+// Korean category label ↔ places.category (English snake_case)
+const KOREAN_TO_PLACE_CATEGORY: Record<string, string> = {
+  "웨딩홀": "wedding_hall",
+  "스드메": "studio",
+  "한복": "hanbok",
+  "예복": "suit",
+  "허니문": "honeymoon",
+  "혼수": "appliance",
+  "청첩장": "invitation",
+  "웨딩플래너": "planner",
+};
+
+const PLACE_TO_KOREAN_CATEGORY: Record<string, string> = Object.fromEntries(
+  Object.entries(KOREAN_TO_PLACE_CATEGORY).map(([k, v]) => [v, k])
+);
+
+interface PlaceRow {
+  place_id: string;
+  category: string;
+  name: string;
+  city: string | null;
+  district: string | null;
+  main_image_url: string | null;
+  tags: string[] | null;
+  avg_rating: string | number | null;
+  review_count: number | null;
+}
+
+const placeToVendor = (p: PlaceRow): Vendor => ({
+  vendor_id: p.place_id,
+  name: p.name,
+  category_type: PLACE_TO_KOREAN_CATEGORY[p.category] || p.category,
+  region: [p.city, p.district].filter(Boolean).join(" ") || null,
+  address: [p.city, p.district].filter(Boolean).join(" ") || null,
+  thumbnail_url: p.main_image_url,
+  tel: null,
+  business_hours: null,
+  parking_location: null,
+  parking_hours: null,
+  sns_info: null,
+  keywords: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags.join(", ") : null,
+  amenities: null,
+  avg_rating: Number(p.avg_rating) || 0,
+  review_count: p.review_count || 0,
+});
+
+// Fetch vendors by category (Korean label)
 export const useVendors = (categoryType?: string) => {
   return useQuery({
     queryKey: ["vendors", categoryType],
     queryFn: async (): Promise<Vendor[]> => {
       let query = supabase
-        .from("vendors" as any)
+        .from("places" as any)
         .select("*")
+        .eq("is_active", true)
+        .is("deleted_at", null)
         .order("avg_rating", { ascending: false });
 
       if (categoryType) {
-        query = query.eq("category_type", categoryType);
+        const placeCat = KOREAN_TO_PLACE_CATEGORY[categoryType] || categoryType;
+        query = query.eq("category", placeCat);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as unknown as Vendor[];
+      return ((data || []) as unknown as PlaceRow[]).map(placeToVendor);
     },
   });
 };
 
-// Fetch single vendor by id
-export const useVendor = (vendorId: number | string) => {
+// Fetch single vendor by id (uuid)
+export const useVendor = (vendorId: string) => {
   return useQuery({
     queryKey: ["vendor", vendorId],
     queryFn: async (): Promise<Vendor | null> => {
       const { data, error } = await supabase
-        .from("vendors" as any)
+        .from("places" as any)
         .select("*")
-        .eq("vendor_id", Number(vendorId))
+        .eq("place_id", vendorId)
         .maybeSingle();
       if (error) throw error;
-      return data as unknown as Vendor | null;
+      return data ? placeToVendor(data as unknown as PlaceRow) : null;
     },
     enabled: !!vendorId,
   });
 };
 
-// Fetch wedding hall details for a vendor
-export const useWeddingHallDetail = (vendorId: number | string) => {
+// Wedding hall detail (placeholder — places-based detail not yet wired)
+export const useWeddingHallDetail = (vendorId: string) => {
   return useQuery({
     queryKey: ["wedding-hall-detail", vendorId],
-    queryFn: async (): Promise<WeddingHallDetail | null> => {
-      const { data, error } = await supabase
-        .from("ext_wedding_halls" as any)
-        .select("*")
-        .eq("vendor_id", Number(vendorId))
-        .maybeSingle();
-      if (error) throw error;
-      return data as unknown as WeddingHallDetail | null;
-    },
-    enabled: !!vendorId,
+    queryFn: async (): Promise<WeddingHallDetail | null> => null,
+    enabled: false,
   });
 };
 
-// Fetch reviews for a vendor
-export const useVendorReviews = (vendorId: number | string) => {
+// Vendor reviews (placeholder until place_reviews schema is wired)
+export const useVendorReviews = (vendorId: string) => {
   return useQuery({
     queryKey: ["vendor-reviews", vendorId],
-    queryFn: async (): Promise<VendorReview[]> => {
-      const { data, error } = await supabase
-        .from("reviews" as any)
-        .select("*")
-        .eq("vendor_id", Number(vendorId))
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data || []) as unknown as VendorReview[];
-    },
-    enabled: !!vendorId,
+    queryFn: async (): Promise<VendorReview[]> => [],
+    enabled: false,
   });
 };
 
@@ -173,18 +204,20 @@ export const useEvents = (category?: string) => {
   });
 };
 
-// Fetch top recommended vendors for home page
+// Top recommended vendors for home page (no category filter)
 export const useRecommendedVendors = (limit = 6) => {
   return useQuery({
     queryKey: ["recommended-vendors", limit],
     queryFn: async (): Promise<Vendor[]> => {
       const { data, error } = await supabase
-        .from("vendors" as any)
+        .from("places" as any)
         .select("*")
+        .eq("is_active", true)
+        .is("deleted_at", null)
         .order("avg_rating", { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return (data || []) as unknown as Vendor[];
+      return ((data || []) as unknown as PlaceRow[]).map(placeToVendor);
     },
   });
 };
