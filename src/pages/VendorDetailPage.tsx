@@ -2,18 +2,33 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { ChevronLeft, Star, MapPin, Phone, Car, ExternalLink } from "lucide-react";
 import BusinessHoursDisplay from "@/components/vendor/BusinessHoursDisplay";
 import BottomNav from "@/components/BottomNav";
-import { useVendor, useWeddingHallDetail, useVendorReviews, categoryRouteMap } from "@/hooks/useVendors";
+import { useVendor, categoryRouteMap } from "@/hooks/useVendors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+
+// Placeholder until place_details / place_reviews tables are wired in
+interface WeddingHallDetail {
+  meal_type: string | null;
+  meal_cost_range: string | null;
+  rental_cost_range: string | null;
+  parking_info: string | null;
+}
+interface VendorReview {
+  review_id: number;
+  rating: number;
+  content: string | null;
+  ai_summary: string | null;
+  created_at: string;
+}
 
 const VendorDetailPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { data: vendor, isLoading } = useVendor(id || "");
-  const { data: hallDetail } = useWeddingHallDetail(id || "");
-  const { data: reviews = [] } = useVendorReviews(id || "");
+  const hallDetail: WeddingHallDetail | null = null;
+  const reviews: VendorReview[] = [];
 
   if (isLoading) {
     return (

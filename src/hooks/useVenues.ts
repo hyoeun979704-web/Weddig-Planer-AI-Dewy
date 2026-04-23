@@ -1,59 +1,11 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useFilterStore, FilterState } from "@/stores/useFilterStore";
+import { placeToVenue, Venue } from "@/lib/placeMappers";
+
+export type { Venue };
 
 const VENUES_PER_PAGE = 10;
-
-export interface Venue {
-  id: string;
-  name: string;
-  address: string;
-  thumbnail_url: string | null;
-  rating: number;
-  review_count: number;
-  price_per_person: number;
-  min_guarantee: number;
-  is_partner: boolean;
-  created_at: string;
-  updated_at: string;
-  hall_types: string[] | null;
-  meal_options: string[] | null;
-  event_options: string[] | null;
-}
-
-interface PlaceRow {
-  place_id: string;
-  category: string;
-  name: string;
-  city: string | null;
-  district: string | null;
-  main_image_url: string | null;
-  tags: string[] | null;
-  avg_rating: string | number | null;
-  review_count: number | null;
-  min_price: string | number | null;
-  min_guarantee: number | null;
-  is_partner: boolean | null;
-  created_at: string;
-  updated_at: string;
-}
-
-const placeToVenue = (p: PlaceRow): Venue => ({
-  id: p.place_id,
-  name: p.name,
-  address: [p.city, p.district].filter(Boolean).join(" "),
-  thumbnail_url: p.main_image_url,
-  rating: Number(p.avg_rating) || 0,
-  review_count: p.review_count || 0,
-  price_per_person: Number(p.min_price) || 0,
-  min_guarantee: p.min_guarantee || 0,
-  is_partner: p.is_partner ?? false,
-  created_at: p.created_at,
-  updated_at: p.updated_at,
-  hall_types: null,
-  meal_options: null,
-  event_options: null,
-});
 
 interface FetchVenuesParams {
   pageParam: number;
@@ -66,7 +18,7 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
   const to = from + VENUES_PER_PAGE - 1;
 
   let query = supabase
-    .from("places" as any)
+    .from("places")
     .select("*", { count: "exact" })
     .eq("category", "wedding_hall")
     .eq("is_active", true)
@@ -77,7 +29,7 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
   }
 
   if (filters.region) {
-    query = query.or(`city.ilike.%${filters.region}%,district.ilike.%${filters.region}%`);
+    query = query.ilike("city", `%${filters.region}%`);
   }
 
   if (filters.maxPrice) {
@@ -94,10 +46,8 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
 
   if (error) throw error;
 
-  const venues = ((data || []) as unknown as PlaceRow[]).map(placeToVenue);
-
   return {
-    venues,
+    venues: (data ?? []).map(placeToVenue),
     nextPage: to < (count ?? 0) - 1 ? pageParam + 1 : undefined,
     totalCount: count ?? 0,
   };
@@ -133,13 +83,13 @@ export const useVenue = (id: string) => {
     queryKey: ["venue", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("places" as any)
+        .from("places")
         .select("*")
         .eq("place_id", id)
         .maybeSingle();
 
       if (error) throw error;
-      const venue = data ? placeToVenue(data as unknown as PlaceRow) : null;
+      const venue = data ? placeToVenue(data) : null;
       return { venues: venue ? [venue] : [], nextPage: undefined, totalCount: venue ? 1 : 0 };
     },
     getNextPageParam: () => undefined,

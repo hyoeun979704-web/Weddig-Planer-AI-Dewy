@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Venue } from "@/hooks/useVenues";
+import { placeToVenue } from "@/lib/placeMappers";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import VenueImageGallery from "@/components/venue/VenueImageGallery";
 import VenueInfoTab from "@/components/venue/VenueInfoTab";
@@ -23,30 +24,13 @@ const VenueDetail = () => {
     queryKey: ["venue", id],
     queryFn: async (): Promise<Venue | null> => {
       const { data, error } = await supabase
-        .from("places" as any)
+        .from("places")
         .select("*")
         .eq("place_id", id!)
         .maybeSingle();
 
       if (error) throw error;
-      if (!data) return null;
-      const p = data as any;
-      return {
-        id: p.place_id,
-        name: p.name,
-        address: [p.city, p.district].filter(Boolean).join(" "),
-        thumbnail_url: p.main_image_url,
-        rating: Number(p.avg_rating) || 0,
-        review_count: p.review_count || 0,
-        price_per_person: Number(p.min_price) || 0,
-        min_guarantee: p.min_guarantee || 0,
-        is_partner: p.is_partner ?? false,
-        created_at: p.created_at,
-        updated_at: p.updated_at,
-        hall_types: null,
-        meal_options: null,
-        event_options: null,
-      };
+      return data ? placeToVenue(data) : null;
     },
     enabled: !!id,
   });
