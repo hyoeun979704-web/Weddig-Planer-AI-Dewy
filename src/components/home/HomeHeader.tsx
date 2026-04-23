@@ -10,17 +10,22 @@ const HomeHeader = () => {
   return (
     <>
       {/* Note: top-0 and z-50 ensure header stays above CategoryTabBar */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-50 bg-background backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           {/* Logo + Guide */}
           <div className="flex items-center gap-1">
-            <button 
-              onClick={() => navigate("/")}
-              className="flex items-center gap-1.5"
-            >
-              <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground text-sm font-bold">D</span>
-              </div>
+            <button onClick={() => navigate("/")} className="flex items-center gap-2">
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#FF6B9D"/>
+                    <stop offset="40%" stopColor="#FF4B77"/>
+                    <stop offset="100%" stopColor="#FF8C42"/>
+                  </linearGradient>
+                </defs>
+                <path d="M16 28C16 28 4 19.5 4 11.5C4 8.42 6.42 6 9.5 6C11.24 6 12.91 6.81 14 8.09C15.09 6.81 16.76 6 18.5 6C21.58 6 24 8.42 24 11.5C24 19.5 16 28 16 28Z" fill="url(#heartGrad)"/>
+                <path d="M16 28C16 28 4 19.5 4 11.5C4 8.42 6.42 6 9.5 6C11.24 6 12.91 6.81 14 8.09C15.09 6.81 16.76 6 18.5 6C21.58 6 24 8.42 24 11.5C24 19.5 16 28 16 28Z" fill="url(#heartGrad)"/>
+              </svg>
               <span className="text-lg font-bold text-foreground">Dewy</span>
             </button>
             <button

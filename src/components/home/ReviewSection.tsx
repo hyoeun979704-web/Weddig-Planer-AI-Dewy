@@ -12,7 +12,7 @@ interface ReviewCardProps {
 }
 
 const ReviewCard = ({ rating, review, vendorName, vendorType, userName, date }: ReviewCardProps) => (
-  <div className="flex-shrink-0 w-72 p-4 bg-card rounded-2xl border border-border">
+  <div className="flex-shrink-0 w-80 p-4 bg-card rounded-2xl border border-border">
     <div className="flex items-center gap-2 mb-3">
       <div className="flex items-center gap-0.5">
         {[...Array(5)].map((_, i) => (
@@ -105,11 +105,11 @@ const ReviewSection = ({ activeTab = "ai-planner" }: ReviewSectionProps) => {
   const data = reviewDataMap[activeTab];
 
   return (
-    <section className="py-6 bg-accent/30">
+    <section className="py-6 bg-rose-50/40">
       <div className="flex items-center justify-between px-4 mb-4">
         <div>
-          <h2 className="text-lg font-bold text-foreground">{data.title}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{data.subtitle}</p>
+          <h2 className="text-lg font-bold text-foreground">리얼 후기</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">예비부부 실제 후기</p>
         </div>
         <button 
           onClick={() => navigate("/reviews")}

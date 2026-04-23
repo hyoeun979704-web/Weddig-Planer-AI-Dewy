@@ -11,9 +11,9 @@ interface MagazineCardProps {
 }
 
 const MagazineCard = ({ icon: Icon, title, description, color, onClick }: MagazineCardProps) => (
-  <button 
+  <button
     onClick={onClick}
-    className="flex-shrink-0 w-40 p-4 bg-card rounded-2xl border border-border hover:border-primary/30 hover:shadow-md transition-all duration-200 text-left"
+    className="flex-shrink-0 w-36 h-44 p-4 bg-card rounded-2xl border border-border hover:border-primary/30 hover:shadow-md transition-all duration-200 text-left"
   >
     <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${color}`}>
       <Icon className="w-5 h-5" />
@@ -91,11 +91,11 @@ const MagazineSection = ({ activeTab = "ai-planner" }: MagazineSectionProps) => 
   const data = magazineDataMap[activeTab];
 
   return (
-    <section className="py-6">
+    <section className="py-6 bg-rose-50/40">
       <div className="flex items-center justify-between px-4 mb-4">
         <div>
-          <h2 className="text-lg font-bold text-foreground">{data.title}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{data.subtitle}</p>
+          <h2 className="text-lg font-bold text-foreground">오늘의 꿀팁</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">웨딩 준비 필수 꿀팁</p>
         </div>
         <button 
           onClick={() => navigate("/magazine")}

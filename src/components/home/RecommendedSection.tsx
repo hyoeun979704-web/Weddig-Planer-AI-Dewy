@@ -59,7 +59,7 @@ const RecommendedSection = () => {
   return (
     <section className="pt-2 pb-5">
       <div className="flex items-center justify-between px-4 mb-3">
-        <h2 className="text-base font-bold text-foreground">인기 업체 추천</h2>
+        <h2 className="text-base font-bold text-foreground">맞춤 추천</h2>
         <button 
           onClick={() => navigate("/vendors/웨딩홀")}
           className="flex items-center gap-0.5 text-xs text-primary font-medium"
