@@ -71,11 +71,11 @@ const CoupleVoteDetail = () => {
     setAiLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const authToken = session?.access_token || ((import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ?? "");
 
       const prompt = `커플이 '${vote.topic}'에 대해 의견이 나뉘었어요.\n\nA: ${vote.option_a} — 이유: ${vote.my_reason || "없음"}\nB: ${vote.option_b} — 이유: ${vote.partner_reason || "없음"}\n\n양쪽 의견을 분석하고 절충안을 제안해주세요. 짧고 따뜻하게 3~5문장으로 답변해주세요.`;
 
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-planner`, {
+      const resp = await fetch(`${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/ai-planner`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),

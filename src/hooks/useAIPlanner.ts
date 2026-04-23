@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Message = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-planner`;
+const CHAT_URL = `${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/ai-planner`;
 
 export const useAIPlanner = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -32,7 +32,7 @@ export const useAIPlanner = () => {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const authToken = session?.access_token || ((import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ?? "");
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",

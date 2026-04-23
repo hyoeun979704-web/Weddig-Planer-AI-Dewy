@@ -57,7 +57,7 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
   "tips": ["주의사항1", "주의사항2"]
 }`;
 
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-planner`, {
+      const resp = await fetch(`${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/ai-planner`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
