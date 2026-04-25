@@ -2233,16 +2233,21 @@ export type Database = {
       }
       places: {
         Row: {
+          analyzed_at: string | null
+          atmosphere: string[] | null
+          avg_price_estimate: Json | null
           avg_rating: number | null
           category: string
           city: string | null
           confidence: number | null
+          cons: string[] | null
           created_at: string | null
           currency: string | null
           data_source: string | null
           deleted_at: string | null
           description: string | null
           district: string | null
+          hidden_costs: string[] | null
           is_active: boolean | null
           is_partner: boolean | null
           last_source_date: string | null
@@ -2254,22 +2259,31 @@ export type Database = {
           min_price: number | null
           name: string
           place_id: string
+          price_tier: string | null
+          pros: string[] | null
+          recommended_for: string[] | null
           review_count: number | null
           source_refs: Json | null
+          summary: string | null
           tags: string[] | null
           updated_at: string | null
         }
         Insert: {
+          analyzed_at?: string | null
+          atmosphere?: string[] | null
+          avg_price_estimate?: Json | null
           avg_rating?: number | null
           category: string
           city?: string | null
           confidence?: number | null
+          cons?: string[] | null
           created_at?: string | null
           currency?: string | null
           data_source?: string | null
           deleted_at?: string | null
           description?: string | null
           district?: string | null
+          hidden_costs?: string[] | null
           is_active?: boolean | null
           is_partner?: boolean | null
           last_source_date?: string | null
@@ -2281,22 +2295,31 @@ export type Database = {
           min_price?: number | null
           name: string
           place_id?: string
+          price_tier?: string | null
+          pros?: string[] | null
+          recommended_for?: string[] | null
           review_count?: number | null
           source_refs?: Json | null
+          summary?: string | null
           tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
+          analyzed_at?: string | null
+          atmosphere?: string[] | null
+          avg_price_estimate?: Json | null
           avg_rating?: number | null
           category?: string
           city?: string | null
           confidence?: number | null
+          cons?: string[] | null
           created_at?: string | null
           currency?: string | null
           data_source?: string | null
           deleted_at?: string | null
           description?: string | null
           district?: string | null
+          hidden_costs?: string[] | null
           is_active?: boolean | null
           is_partner?: boolean | null
           last_source_date?: string | null
@@ -2308,8 +2331,12 @@ export type Database = {
           min_price?: number | null
           name?: string
           place_id?: string
+          price_tier?: string | null
+          pros?: string[] | null
+          recommended_for?: string[] | null
           review_count?: number | null
           source_refs?: Json | null
+          summary?: string | null
           tags?: string[] | null
           updated_at?: string | null
         }

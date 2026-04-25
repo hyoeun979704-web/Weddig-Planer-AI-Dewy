@@ -6,6 +6,13 @@ export interface SourceRef {
   published_at: string | null; // ISO date or null
 }
 
+export interface PriceEstimate {
+  min: number;
+  max: number;
+  currency: "KRW";
+  unit: "per_person" | "per_event" | "per_set" | "per_day" | "per_package";
+}
+
 export interface CollectedPlace {
   name: string;
   category: CategorySlug;
@@ -20,4 +27,15 @@ export interface CollectedPlace {
   confidence: number; // 0-100
   last_source_date: string | null; // YYYY-MM-DD
   source_refs: SourceRef[];
+
+  // Deep analysis (filled by Gemini in Stage 3)
+  price_tier?: string | null;
+  atmosphere?: string[];
+  pros?: string[];
+  cons?: string[];
+  hidden_costs?: string[];
+  recommended_for?: string[];
+  avg_price_estimate?: PriceEstimate | null;
+  summary?: string | null;
+  analyzed_at?: string | null; // ISO timestamp
 }
