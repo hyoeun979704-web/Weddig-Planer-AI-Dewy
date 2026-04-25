@@ -291,8 +291,31 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       meal_types: only(["wedding_hall"], analysis.meal_types ?? null),
       min_guarantee: only(["wedding_hall"], analysis.min_guarantee ?? null),
       max_guarantee: only(["wedding_hall"], analysis.max_guarantee ?? null),
-      // wedding_hall (per-hall 1:N)
-      halls: only(["wedding_hall"], analysis.halls ?? null),
+      // wedding_hall (per-hall 1:N) — guarantee at least 1 hall row by
+      // synthesizing a default from the venue itself when Gemini found none.
+      // The default uses the venue name + venue-level guarantees so the venue
+      // still appears in place_halls queries; vendor input can refine later.
+      halls:
+        cat === "wedding_hall"
+          ? analysis.halls && analysis.halls.length > 0
+            ? analysis.halls
+            : [
+                {
+                  hall_name: c.name,
+                  hall_type: "홀",
+                  capacity_seated: null,
+                  capacity_standing: null,
+                  min_guarantee: analysis.min_guarantee ?? null,
+                  max_guarantee: analysis.max_guarantee ?? null,
+                  meal_price: analysis.avg_price_estimate?.min ?? null,
+                  meal_type:
+                    analysis.meal_types && analysis.meal_types.length > 0
+                      ? analysis.meal_types[0]
+                      : null,
+                  floor: null,
+                },
+              ]
+          : null,
       // studio
       shoot_styles: only(["studio"], analysis.shoot_styles ?? null),
       includes_originals: only(["studio"], analysis.includes_originals ?? null),
