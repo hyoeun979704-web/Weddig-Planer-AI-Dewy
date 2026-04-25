@@ -58,11 +58,39 @@ export interface CollectedPlace {
   parking_location?: string | null;
 
   // Derived from analysis for native columns
-  min_price?: number | null; // KRW per_person; only for wedding_hall categories
+  min_price?: number | null; // KRW per_person, used by every card table
+
+  // Category-specific card fields (only the ones matching p.category get written)
+  // wedding_hall
+  hall_styles?: string[] | null;
+  meal_types?: string[] | null;
   min_guarantee?: number | null;
   max_guarantee?: number | null;
-
-  // Category-specific (hanbok)
+  // studio
+  shoot_styles?: string[] | null;
+  includes_originals?: boolean | null;
+  // dress_shop
+  dress_styles?: string[] | null;
+  rental_only?: boolean | null;
+  // makeup_shop
+  makeup_styles?: string[] | null;
+  includes_rehearsal?: boolean | null;
+  // hanbok
   hanbok_types?: string[] | null;
   custom_available?: boolean | null;
+  // tailor_shop
+  suit_styles?: string[] | null;
+  // (custom_available reused)
+  // honeymoon
+  destinations?: string[] | null;
+  duration_days?: number | null;
+  // appliance
+  brand_options?: string[] | null;
+  product_categories?: string[] | null;
+  // invitation_venue
+  venue_types?: string[] | null;
+  capacity_min?: number | null;
+  capacity_max?: number | null;
+  // planner
+  service_packages?: string[] | null;
 }

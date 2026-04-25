@@ -1,11 +1,13 @@
 export const CATEGORIES = {
   웨딩홀: "wedding_hall",
-  스드메: "studio",
+  스튜디오: "studio",
+  드레스샵: "dress_shop",
+  메이크업샵: "makeup_shop",
   한복: "hanbok",
-  예복: "suit",
+  예복: "tailor_shop",
   허니문: "honeymoon",
   혼수: "appliance",
-  청첩장: "invitation",
+  청첩장: "invitation_venue",
   웨딩플래너: "planner",
 } as const;
 
@@ -56,7 +58,24 @@ export const REGIONS = [
 
 const KEYWORD_TEMPLATES: Record<CategoryLabel, string[]> = {
   웨딩홀: ["{region} 웨딩홀", "{region} 결혼식장", "{region} 호텔웨딩", "{region} 하우스웨딩"],
-  스드메: ["{region} 웨딩스튜디오", "{region} 스드메 패키지", "{region} 본식스냅", "{region} 웨딩촬영"],
+  스튜디오: [
+    "{region} 웨딩스튜디오",
+    "{region} 본식스냅",
+    "{region} 웨딩촬영",
+    "{region} 야외 웨딩촬영",
+  ],
+  드레스샵: [
+    "{region} 웨딩드레스",
+    "{region} 드레스샵",
+    "{region} 드레스 대여",
+    "{region} 신부 드레스",
+  ],
+  메이크업샵: [
+    "{region} 웨딩 메이크업",
+    "{region} 본식 메이크업",
+    "{region} 신부 메이크업",
+    "{region} 신부 헤어메이크업",
+  ],
   한복: [
     "{region} 혼주 한복",
     "{region} 신부 한복 맞춤",

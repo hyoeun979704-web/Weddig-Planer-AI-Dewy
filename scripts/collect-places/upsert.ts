@@ -13,17 +13,17 @@ export interface UpsertResult {
   failed: number;
 }
 
-// Maps script category slug → category-specific card table.
-// Note: script slugs don't always match DB slugs (e.g. "suit" ≠ "tailor_shop"),
-// but the card table is identified by the script slug here for self-consistency.
+// Maps script category slug (now matches DB) → category-specific card table.
 const CATEGORY_CARD_TABLE: Partial<Record<CategorySlug, string>> = {
   wedding_hall: "place_wedding_halls",
   studio: "place_studios",
+  dress_shop: "place_dress_shops",
+  makeup_shop: "place_makeup_shops",
   hanbok: "place_hanboks",
-  suit: "place_tailor_shops",
+  tailor_shop: "place_tailor_shops",
   honeymoon: "place_honeymoons",
   appliance: "place_appliances",
-  invitation: "place_invitation_venues",
+  invitation_venue: "place_invitation_venues",
   planner: "place_planners",
 };
 
@@ -84,27 +84,76 @@ function detailsRow(p: CollectedPlace, placeId: string) {
   });
 }
 
+const arr = (a: string[] | null | undefined) => (a && a.length > 0 ? a : null);
+
 function categoryCardRow(p: CollectedPlace, placeId: string) {
-  if (p.category === "wedding_hall") {
-    return compact({
-      place_id: placeId,
-      min_guarantee: p.min_guarantee ?? null,
-      max_guarantee: p.max_guarantee ?? null,
-      price_per_person: p.min_price ?? null,
-    });
+  const base = { place_id: placeId, price_per_person: p.min_price ?? null };
+  switch (p.category) {
+    case "wedding_hall":
+      return compact({
+        ...base,
+        hall_styles: arr(p.hall_styles),
+        meal_types: arr(p.meal_types),
+        min_guarantee: p.min_guarantee ?? null,
+        max_guarantee: p.max_guarantee ?? null,
+      });
+    case "studio":
+      return compact({
+        ...base,
+        shoot_styles: arr(p.shoot_styles),
+        includes_originals: p.includes_originals ?? null,
+      });
+    case "dress_shop":
+      return compact({
+        ...base,
+        dress_styles: arr(p.dress_styles),
+        rental_only: p.rental_only ?? null,
+      });
+    case "makeup_shop":
+      return compact({
+        ...base,
+        makeup_styles: arr(p.makeup_styles),
+        includes_rehearsal: p.includes_rehearsal ?? null,
+      });
+    case "hanbok":
+      return compact({
+        ...base,
+        hanbok_types: arr(p.hanbok_types),
+        custom_available: p.custom_available ?? null,
+      });
+    case "tailor_shop":
+      return compact({
+        ...base,
+        suit_styles: arr(p.suit_styles),
+        custom_available: p.custom_available ?? null,
+      });
+    case "honeymoon":
+      return compact({
+        ...base,
+        destinations: arr(p.destinations),
+        duration_days: p.duration_days ?? null,
+      });
+    case "appliance":
+      return compact({
+        ...base,
+        brand_options: arr(p.brand_options),
+        product_categories: arr(p.product_categories),
+      });
+    case "invitation_venue":
+      return compact({
+        ...base,
+        venue_types: arr(p.venue_types),
+        capacity_min: p.capacity_min ?? null,
+        capacity_max: p.capacity_max ?? null,
+      });
+    case "planner":
+      return compact({
+        ...base,
+        service_packages: arr(p.service_packages),
+      });
+    default:
+      return compact(base);
   }
-  if (p.category === "hanbok") {
-    return compact({
-      place_id: placeId,
-      price_per_person: p.min_price ?? null,
-      hanbok_types: p.hanbok_types && p.hanbok_types.length > 0 ? p.hanbok_types : null,
-      custom_available: p.custom_available ?? null,
-    });
-  }
-  return compact({
-    place_id: placeId,
-    price_per_person: p.min_price ?? null,
-  });
 }
 
 export async function upsertPlaces(

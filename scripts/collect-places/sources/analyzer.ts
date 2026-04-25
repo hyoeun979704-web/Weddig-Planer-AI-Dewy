@@ -32,22 +32,52 @@ export interface PlaceAnalysis {
     currency: "KRW";
     unit: "per_person" | "per_event" | "per_set" | "per_day" | "per_package";
   } | null;
-  // Wedding-hall specific (null for other categories)
-  min_guarantee: number | null;
-  max_guarantee: number | null;
   summary: string | null;
   tags: string[];
   is_relevant: boolean;
-  analysis_confidence: number; // 0-100, model's self-assessed certainty
-  // Location/access details (best effort, often null)
+  analysis_confidence: number;
+
+  // Location/access (best effort, often null)
   subway_station: string | null;
   subway_line: string | null;
   walk_minutes: number | null;
   parking_capacity: number | null;
   parking_location: string | null;
-  // Hanbok-specific (null for other categories)
+
+  // Per-category card fields. Only the fields matching the input category
+  // should be filled; the rest must be null/empty.
+  // wedding_hall
+  hall_styles: string[] | null;
+  meal_types: string[] | null;
+  min_guarantee: number | null;
+  max_guarantee: number | null;
+  // studio
+  shoot_styles: string[] | null;
+  includes_originals: boolean | null;
+  // dress_shop
+  dress_styles: string[] | null;
+  rental_only: boolean | null;
+  // makeup_shop
+  makeup_styles: string[] | null;
+  includes_rehearsal: boolean | null;
+  // hanbok
   hanbok_types: string[] | null;
   custom_available: boolean | null;
+  // tailor_shop
+  suit_styles: string[] | null;
+  // (custom_available shared with hanbok)
+  // honeymoon
+  destinations: string[] | null;
+  duration_days: number | null;
+  // appliance
+  brand_options: string[] | null;
+  product_categories: string[] | null;
+  // invitation_venue
+  venue_types: string[] | null;
+  capacity_min: number | null;
+  capacity_max: number | null;
+  // planner
+  service_packages: string[] | null;
 }
 
 const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하는 블로그/카페 후기 스니펫 묶음을 종합해 해당 업체에 대해 깊이 있는 구조화 분석을 제공한다.
@@ -72,9 +102,6 @@ const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하
     혼수 → 풀세트 ÷ 2 = 1인 (보통 250-1000만원)
     청첩장 → 1인당 식대 (보통 5-15만원)
     웨딩플래너 → 1쌍 의뢰 ÷ 2 = 1인 (보통 25-150만원)
-- min_guarantee, max_guarantee: 웨딩홀 보증인원 범위. 다른 카테고리는 무조건 null.
-  예: "보증인원 200명부터 가능" → min_guarantee=200, max_guarantee=null.
-
 - 한복 카테고리 특별 규칙 (★엄격하게 적용★):
   업체가 다음 중 **하나라도** 해당되면 무조건 is_relevant=false:
     1) 관광객/외국인 대상 한복 체험 매장 (1시간/반나절 단위 대여)
@@ -101,9 +128,19 @@ const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하
   · 상황/주의 (예: "주말 혼잡", "협소", "유료")
   숫자 capacity가 없어도 위 텍스트 정보가 있으면 적극 채울 것. 정말 언급 없으면 null.
 
-한복 카테고리 전용 (다른 카테고리는 무조건 null):
-- hanbok_types: 후기에 명시된 한복 종류만 ["혼주", "신부", "신랑", "어머님", "아버님", "폐백", "예단"] 중 골라서 배열로. 명시 없으면 null (빈 배열 X).
-- custom_available: "맞춤 제작" / "맞춤한복" 명시 → true. "대여만" / "대여 전문" 명시 → false. 둘 다 또는 모호 → null.
+★ 카테고리별 카드 필드 (해당 카테고리 외엔 무조건 null/빈배열) ★
+입력의 "카테고리:" 라인을 보고 매칭되는 카테고리의 필드만 채워라. 다른 카테고리 필드는 모두 null.
+
+- 웨딩홀: hall_styles[](예: ["호텔","컨벤션","채플","하우스","야외","한옥"]), meal_types[](예: ["코스","한식","뷔페","양식"]), min_guarantee/max_guarantee(보증인원, "200명부터" → min=200)
+- 스드메(스튜디오): shoot_styles[](예: ["내추럴","감성","화보풍","빈티지","야외","스튜디오"]), includes_originals(원본 데이터 제공 명시 시 true/유료별도 명시 시 false/모호 null)
+- 드레스샵: dress_styles[](예: ["머메이드","프린세스","A라인","벨라인","엠파이어","미니"]), rental_only(대여만 명시 true / 구매도 가능 false / 모호 null)
+- 메이크업샵: makeup_styles[](예: ["내추럴","글로우","동안","화려","한복용","컨실러","모던"]), includes_rehearsal(리허설 메이크업 포함 명시 true / 별도 false / 모호 null)
+- 한복 (★엄격★): hanbok_types[](["혼주","신부","신랑","어머님","아버님","폐백","예단"] 중 후기에 명시된 것만), custom_available(맞춤 명시 true / 대여만 false / 모호 null)
+- 예복(맞춤정장): suit_styles[](예: ["클래식","이탈리안","브리티시","모던","턱시도","쓰리피스"]), custom_available(맞춤 true / 대여만 false / 모호 null)
+- 허니문: destinations[](언급된 여행지명 배열, 예: ["몰디브","발리","유럽","스위스","하와이"]), duration_days(패키지 일수, "5박 7일" → 7)
+- 혼수: brand_options[](언급된 브랜드, 예: ["삼성","LG","다이슨","발뮤다"]), product_categories[](예: ["냉장고","세탁기","건조기","TV","에어컨","공기청정기"])
+- 청첩장(상견례 식당): venue_types[](예: ["한식","일식","양식","중식","코스","프라이빗룸","호텔레스토랑"]), capacity_min/capacity_max(룸 수용 인원 범위, "최대 20명" → max=20)
+- 웨딩플래너: service_packages[](예: ["풀패키지","부분 플래닝","스드메 패키지","원데이","컨설팅","당일 진행"])
 
 JSON으로만 응답.`;
 
@@ -169,8 +206,35 @@ ${input.snippets
           walk_minutes: { type: "number", nullable: true },
           parking_capacity: { type: "number", nullable: true },
           parking_location: { type: "string", nullable: true },
+          // wedding_hall
+          hall_styles: { type: "array", items: { type: "string" }, nullable: true },
+          meal_types: { type: "array", items: { type: "string" }, nullable: true },
+          // studio
+          shoot_styles: { type: "array", items: { type: "string" }, nullable: true },
+          includes_originals: { type: "boolean", nullable: true },
+          // dress_shop
+          dress_styles: { type: "array", items: { type: "string" }, nullable: true },
+          rental_only: { type: "boolean", nullable: true },
+          // makeup_shop
+          makeup_styles: { type: "array", items: { type: "string" }, nullable: true },
+          includes_rehearsal: { type: "boolean", nullable: true },
+          // hanbok
           hanbok_types: { type: "array", items: { type: "string" }, nullable: true },
           custom_available: { type: "boolean", nullable: true },
+          // tailor_shop
+          suit_styles: { type: "array", items: { type: "string" }, nullable: true },
+          // honeymoon
+          destinations: { type: "array", items: { type: "string" }, nullable: true },
+          duration_days: { type: "number", nullable: true },
+          // appliance
+          brand_options: { type: "array", items: { type: "string" }, nullable: true },
+          product_categories: { type: "array", items: { type: "string" }, nullable: true },
+          // invitation_venue
+          venue_types: { type: "array", items: { type: "string" }, nullable: true },
+          capacity_min: { type: "number", nullable: true },
+          capacity_max: { type: "number", nullable: true },
+          // planner
+          service_packages: { type: "array", items: { type: "string" }, nullable: true },
         },
         required: ["is_relevant", "analysis_confidence", "atmosphere", "pros", "cons", "tags"],
       },

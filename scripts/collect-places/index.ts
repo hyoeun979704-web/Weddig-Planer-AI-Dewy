@@ -256,11 +256,11 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       continue;
     }
 
-    // Derive native columns: min_price from any unit (UI formats by unit), guarantees for wedding_hall
-    const isWeddingHall = c.category === "wedding_hall";
     const minPrice = analysis.avg_price_estimate?.min ?? null;
+    const cat = c.category;
+    const only = <T>(slugs: CollectedPlace["category"][], v: T): T | null =>
+      slugs.includes(cat) ? v : null;
 
-    const isHanbok = c.category === "hanbok";
     const enhanced: CollectedPlace = {
       ...c,
       description: analysis.summary ?? c.description,
@@ -278,15 +278,43 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       summary: analysis.summary ?? null,
       analyzed_at: new Date().toISOString(),
       min_price: minPrice,
-      min_guarantee: isWeddingHall ? analysis.min_guarantee ?? null : null,
-      max_guarantee: isWeddingHall ? analysis.max_guarantee ?? null : null,
       subway_station: analysis.subway_station ?? null,
       subway_line: analysis.subway_line ?? null,
       walk_minutes: analysis.walk_minutes ?? null,
       parking_capacity: analysis.parking_capacity ?? null,
       parking_location: analysis.parking_location ?? null,
-      hanbok_types: isHanbok ? analysis.hanbok_types ?? null : null,
-      custom_available: isHanbok ? analysis.custom_available ?? null : null,
+      // wedding_hall
+      hall_styles: only(["wedding_hall"], analysis.hall_styles ?? null),
+      meal_types: only(["wedding_hall"], analysis.meal_types ?? null),
+      min_guarantee: only(["wedding_hall"], analysis.min_guarantee ?? null),
+      max_guarantee: only(["wedding_hall"], analysis.max_guarantee ?? null),
+      // studio
+      shoot_styles: only(["studio"], analysis.shoot_styles ?? null),
+      includes_originals: only(["studio"], analysis.includes_originals ?? null),
+      // dress_shop
+      dress_styles: only(["dress_shop"], analysis.dress_styles ?? null),
+      rental_only: only(["dress_shop"], analysis.rental_only ?? null),
+      // makeup_shop
+      makeup_styles: only(["makeup_shop"], analysis.makeup_styles ?? null),
+      includes_rehearsal: only(["makeup_shop"], analysis.includes_rehearsal ?? null),
+      // hanbok
+      hanbok_types: only(["hanbok"], analysis.hanbok_types ?? null),
+      // tailor_shop also uses suit_styles
+      suit_styles: only(["tailor_shop"], analysis.suit_styles ?? null),
+      // hanbok + tailor_shop both use custom_available
+      custom_available: only(["hanbok", "tailor_shop"], analysis.custom_available ?? null),
+      // honeymoon
+      destinations: only(["honeymoon"], analysis.destinations ?? null),
+      duration_days: only(["honeymoon"], analysis.duration_days ?? null),
+      // appliance
+      brand_options: only(["appliance"], analysis.brand_options ?? null),
+      product_categories: only(["appliance"], analysis.product_categories ?? null),
+      // invitation_venue
+      venue_types: only(["invitation_venue"], analysis.venue_types ?? null),
+      capacity_min: only(["invitation_venue"], analysis.capacity_min ?? null),
+      capacity_max: only(["invitation_venue"], analysis.capacity_max ?? null),
+      // planner
+      service_packages: only(["planner"], analysis.service_packages ?? null),
     };
     enhanced.confidence = scoreConfidence(enhanced);
     enriched.push(enhanced);
