@@ -29,7 +29,12 @@ export const REGIONS = [
 const KEYWORD_TEMPLATES: Record<CategoryLabel, string[]> = {
   웨딩홀: ["{region} 웨딩홀", "{region} 결혼식장", "{region} 호텔웨딩", "{region} 하우스웨딩"],
   스드메: ["{region} 웨딩스튜디오", "{region} 스드메 패키지", "{region} 본식스냅", "{region} 웨딩촬영"],
-  한복: ["{region} 한복 대여", "{region} 한복집", "{region} 신부 한복", "{region} 폐백 한복"],
+  한복: [
+    "{region} 혼주 한복",
+    "{region} 신부 한복 맞춤",
+    "{region} 결혼식 한복 대여",
+    "{region} 폐백 한복",
+  ],
   예복: ["{region} 신랑 예복", "{region} 턱시도", "{region} 맞춤 정장", "{region} 예복 대여"],
   허니문: ["허니문 패키지", "신혼여행 추천", "유럽 허니문", "동남아 허니문"],
   혼수: ["{region} 혼수 가전", "신혼 가전 세트", "{region} 혼수 가구", "혼수 침대"],
