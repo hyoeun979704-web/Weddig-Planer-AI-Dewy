@@ -120,6 +120,16 @@ function detailsRow(placeId: string, p: CollectedPlace) {
     advantages[`advantage_${i + 1}_content`] = null;
   }
 
+  // place_details has separate parking_capacity (number) and parking_location
+  // (string) columns but no boolean flag. Synthesize a human-readable string
+  // from the analyzer's parking_available + valet_parking + capacity so the
+  // detail page has something to render.
+  const parkingParts: string[] = [];
+  if (p.parking_capacity != null) parkingParts.push(`${p.parking_capacity}대`);
+  if (p.parking_available === true) parkingParts.push("주차 가능");
+  if (p.valet_parking === true) parkingParts.push("발레파킹");
+  const parkingLocation = parkingParts.length > 0 ? parkingParts.join(" · ") : null;
+
   return {
     place_id: placeId,
     summary: p.summary ?? null,
@@ -132,6 +142,12 @@ function detailsRow(placeId: string, p: CollectedPlace) {
     tel: p.tel ?? null,
     address: p.road_address ?? null,
     naver_place_url: p.naver_place_url ?? null,
+    parking_capacity: p.parking_capacity ?? null,
+    parking_location: parkingLocation,
+    subway_station: p.subway_station ?? null,
+    subway_line: p.subway_line ?? null,
+    walk_minutes: p.walk_minutes ?? null,
+    shuttle_bus_available: p.shuttle_bus_available ?? null,
     ...advantages,
   };
 }
@@ -147,6 +163,8 @@ function categoryRow(placeId: string, p: CollectedPlace) {
     base[col] = found.length > 0 ? found : null;
   }
 
+  // Prefer analyzer's direct extraction; fall back to keyword inference for
+  // booleans when the analyzer didn't commit a value.
   switch (p.category) {
     case "wedding_hall":
       base.min_guarantee = p.min_guarantee ?? null;
@@ -154,16 +172,40 @@ function categoryRow(placeId: string, p: CollectedPlace) {
       break;
     case "hanbok":
     case "tailor_shop":
-      base.custom_available = haystack.some((t) => t.includes("맞춤")) ? true : null;
+      base.custom_available =
+        p.custom_available ??
+        (haystack.some((t) => t.includes("맞춤")) ? true : null);
       break;
     case "makeup_shop":
-      base.includes_rehearsal = haystack.some((t) => t.includes("리허설")) ? true : null;
+      base.includes_rehearsal =
+        p.includes_rehearsal ??
+        (haystack.some((t) => t.includes("리허설")) ? true : null);
       break;
     case "studio":
-      base.includes_originals = haystack.some((t) => t.includes("원본")) ? true : null;
+      base.includes_originals =
+        p.includes_originals ??
+        (haystack.some((t) => t.includes("원본")) ? true : null);
       break;
-    // dress_shop.rental_only, honeymoon.duration_days, invitation_venue.capacity_min/max,
-    // appliance.brand_options: not inferable from current analyzer output → leave null.
+    case "dress_shop":
+      base.rental_only = p.rental_only ?? null;
+      break;
+    case "honeymoon":
+      base.duration_days = p.duration_days ?? null;
+      // analyzer.destinations are concrete trip names ("발리"); keyword inference
+      // produces generic regions ("유럽"). Prefer concrete when available.
+      if (p.destinations && p.destinations.length > 0) base.destinations = p.destinations;
+      break;
+    case "appliance":
+      if (p.brand_options && p.brand_options.length > 0) {
+        base.brand_options = p.brand_options;
+      } else {
+        base.brand_options = null;
+      }
+      break;
+    case "invitation_venue":
+      base.capacity_min = p.capacity_min ?? null;
+      base.capacity_max = p.capacity_max ?? null;
+      break;
   }
   return base;
 }

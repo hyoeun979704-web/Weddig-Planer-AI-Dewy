@@ -48,4 +48,22 @@ export interface CollectedPlace {
   tel?: string | null;
   road_address?: string | null;
   naver_place_url?: string | null;
+
+  // Analyzer extras (Stage 3) — category-specific or detail-only.
+  duration_days?: number | null;
+  capacity_min?: number | null;
+  capacity_max?: number | null;
+  destinations?: string[];
+  brand_options?: string[];
+  custom_available?: boolean | null;
+  rental_only?: boolean | null;
+  includes_originals?: boolean | null;
+  includes_rehearsal?: boolean | null;
+  shuttle_bus_available?: boolean | null;
+  parking_available?: boolean | null;
+  valet_parking?: boolean | null;
+  parking_capacity?: number | null;
+  subway_station?: string | null;
+  subway_line?: string | null;
+  walk_minutes?: number | null;
 }

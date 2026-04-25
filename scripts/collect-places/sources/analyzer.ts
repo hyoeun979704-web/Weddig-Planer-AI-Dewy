@@ -39,6 +39,28 @@ export interface PlaceAnalysis {
   tags: string[];
   is_relevant: boolean;
   analysis_confidence: number; // 0-100, model's self-assessed certainty
+
+  // ── Category-specific extractions (fill only the section matching `category`)
+  duration_days: number | null;       // honeymoon: "5박 7일" → 7
+  capacity_min: number | null;        // invitation_venue
+  capacity_max: number | null;
+  destinations: string[];             // honeymoon: ["발리","프라하"]
+  brand_options: string[];            // appliance: ["LG","삼성","위니아"]
+
+  // ── Booleans (only set when snippets explicitly support the value)
+  custom_available: boolean | null;   // hanbok / tailor_shop
+  rental_only: boolean | null;        // dress_shop
+  includes_originals: boolean | null; // studio (원본 데이터 포함)
+  includes_rehearsal: boolean | null; // makeup_shop (리허설 포함)
+  shuttle_bus_available: boolean | null; // wedding_hall
+  parking_available: boolean | null;
+  valet_parking: boolean | null;
+
+  // ── place_details extras (fill only when the snippets mention it)
+  parking_capacity: number | null;
+  subway_station: string | null;
+  subway_line: string | null;
+  walk_minutes: number | null;
 }
 
 const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하는 블로그/카페 후기 스니펫 묶음을 종합해 해당 업체에 대해 깊이 있는 구조화 분석을 제공한다.
@@ -80,6 +102,28 @@ const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하
 - tags: 카테고리·분위기·강점 통합 키워드 (검색용).
 - is_relevant: 스니펫이 정말 이 업체에 대한 후기인지 (false면 무관한 글이 섞임).
 - analysis_confidence: 스니펫 일관성 + 양 + 최근성 종합 0-100.
+
+── 카테고리별 추가 추출 (해당 카테고리만 채우고 나머지는 null/빈배열):
+- 허니문(honeymoon):
+  · duration_days: 여행 일수 (예: "5박 7일" → 7, "3박 4일" → 4). 언급 없으면 null.
+  · destinations: 실제 여행지명 배열 (예: ["발리","사이판"]). 일반 단어("유럽","동남아")만 있으면 그대로.
+- 청첩장(invitation_venue):
+  · capacity_min, capacity_max: 수용 인원 범위 (예: "30-100명" → 30,100). 언급 없으면 null.
+- 혼수(appliance):
+  · brand_options: 후기에 등장하는 가전 브랜드명 (예: ["LG","삼성","다이슨"]). 일반 카테고리는 tags로.
+
+── 카테고리별 boolean (스니펫에서 명확히 언급될 때만 true/false, 아니면 null):
+- 한복/예복: custom_available — "맞춤 제작", "맞춤 한복", "맞춤 예복" 언급 시 true.
+- 드레스샵: rental_only — "대여만 가능", "맞춤 안함" 명시 시 true. 대여+맞춤 둘 다면 false.
+- 스튜디오: includes_originals — "원본 데이터 포함" 시 true, "원본 별도/추가" 시 false.
+- 메이크업: includes_rehearsal — "리허설 메이크업 포함" 시 true.
+- 웨딩홀: shuttle_bus_available — "셔틀버스 운행" 언급.
+- 모든 카테고리: parking_available — "주차 가능"/"주차장" 언급. valet_parking — "발레파킹/발렛".
+
+── 상세 페이지 정보 (스니펫에서 명시된 경우만):
+- parking_capacity: 주차 대수 숫자 (예: "100대 주차 가능" → 100).
+- subway_station, subway_line: 지하철 접근 (예: "2호선 강남역 도보 5분" → station="강남역", line="2호선").
+- walk_minutes: 지하철역에서 도보 분 (위 예시 → 5).
 
 JSON으로만 응답.`;
 
@@ -140,6 +184,25 @@ ${input.snippets
           tags: { type: "array", items: { type: "string" } },
           is_relevant: { type: "boolean" },
           analysis_confidence: { type: "number" },
+          // Category-specific
+          duration_days: { type: "number", nullable: true },
+          capacity_min: { type: "number", nullable: true },
+          capacity_max: { type: "number", nullable: true },
+          destinations: { type: "array", items: { type: "string" } },
+          brand_options: { type: "array", items: { type: "string" } },
+          // Booleans
+          custom_available: { type: "boolean", nullable: true },
+          rental_only: { type: "boolean", nullable: true },
+          includes_originals: { type: "boolean", nullable: true },
+          includes_rehearsal: { type: "boolean", nullable: true },
+          shuttle_bus_available: { type: "boolean", nullable: true },
+          parking_available: { type: "boolean", nullable: true },
+          valet_parking: { type: "boolean", nullable: true },
+          // Detail page extras
+          parking_capacity: { type: "number", nullable: true },
+          subway_station: { type: "string", nullable: true },
+          subway_line: { type: "string", nullable: true },
+          walk_minutes: { type: "number", nullable: true },
         },
         required: ["is_relevant", "analysis_confidence", "atmosphere", "pros", "cons", "tags"],
       },

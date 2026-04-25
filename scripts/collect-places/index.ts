@@ -256,6 +256,23 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       min_price: minPrice,
       min_guarantee: isWeddingHall ? analysis.min_guarantee ?? null : null,
       max_guarantee: isWeddingHall ? analysis.max_guarantee ?? null : null,
+      // Layer 3 extras: copy through; upsert.ts decides which DB column gets each.
+      duration_days: analysis.duration_days ?? null,
+      capacity_min: analysis.capacity_min ?? null,
+      capacity_max: analysis.capacity_max ?? null,
+      destinations: analysis.destinations ?? [],
+      brand_options: analysis.brand_options ?? [],
+      custom_available: analysis.custom_available ?? null,
+      rental_only: analysis.rental_only ?? null,
+      includes_originals: analysis.includes_originals ?? null,
+      includes_rehearsal: analysis.includes_rehearsal ?? null,
+      shuttle_bus_available: analysis.shuttle_bus_available ?? null,
+      parking_available: analysis.parking_available ?? null,
+      valet_parking: analysis.valet_parking ?? null,
+      parking_capacity: analysis.parking_capacity ?? null,
+      subway_station: analysis.subway_station ?? null,
+      subway_line: analysis.subway_line ?? null,
+      walk_minutes: analysis.walk_minutes ?? null,
     };
     enhanced.confidence = scoreConfidence(enhanced);
     enriched.push(enhanced);
