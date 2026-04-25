@@ -1,0 +1,95 @@
+name: Nightly Place Collection
+
+# Runs the collect-places script per category on a schedule. Each category
+# is a separate matrix job so a Naver/Gemini failure in one doesn't block
+# the others. Snapshots are uploaded as artifacts for replay if needed.
+#
+# Manual trigger (UI: Actions → Nightly Place Collection → Run workflow)
+# is also available so the user can fire it on demand without waiting
+# for the next cron tick.
+
+on:
+  schedule:
+    # 03:00 KST = 18:00 UTC — runs every night
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+    inputs:
+      categories:
+        description: "Comma-separated 카테고리 (default: all 9)"
+        required: false
+        default: "웨딩홀,스튜디오,드레스샵,메이크업샵,한복,예복,허니문,혼수,청첩장"
+      limit:
+        description: "분석 limit per 카테고리"
+        required: false
+        default: "300"
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      categories: ${{ steps.parse.outputs.categories }}
+      limit: ${{ steps.parse.outputs.limit }}
+    steps:
+      - id: parse
+        run: |
+          INPUT_CATEGORIES="${{ github.event.inputs.categories }}"
+          if [ -z "$INPUT_CATEGORIES" ]; then
+            INPUT_CATEGORIES="웨딩홀,스튜디오,드레스샵,메이크업샵,한복,예복,허니문,혼수,청첩장"
+          fi
+          INPUT_LIMIT="${{ github.event.inputs.limit }}"
+          if [ -z "$INPUT_LIMIT" ]; then
+            INPUT_LIMIT="300"
+          fi
+          # Convert "a,b,c" to JSON array for matrix
+          JSON=$(echo "$INPUT_CATEGORIES" | jq -Rc 'split(",")')
+          echo "categories=$JSON" >> $GITHUB_OUTPUT
+          echo "limit=$INPUT_LIMIT" >> $GITHUB_OUTPUT
+
+  collect:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 3   # protect API quotas
+      matrix:
+        category: ${{ fromJson(needs.prepare.outputs.categories) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Collect ${{ matrix.category }}
+        id: collect
+        env:
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npm run collect -- --category=${{ matrix.category }} --limit=${{ needs.prepare.outputs.limit }}
+
+      - name: Upload snapshot (recovery)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collect-cache-${{ matrix.category }}
+          path: .collect-cache/
+          retention-days: 7
+
+  summary:
+    needs: collect
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify
+        run: |
+          echo "🌙 Nightly collection finished. Check the matrix above for any red Xs."
+          echo "Run logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
