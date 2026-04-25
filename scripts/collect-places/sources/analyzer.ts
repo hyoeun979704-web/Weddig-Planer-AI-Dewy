@@ -76,8 +76,6 @@ export interface PlaceAnalysis {
   venue_types: string[] | null;
   capacity_min: number | null;
   capacity_max: number | null;
-  // planner
-  service_packages: string[] | null;
 }
 
 const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하는 블로그/카페 후기 스니펫 묶음을 종합해 해당 업체에 대해 깊이 있는 구조화 분석을 제공한다.
@@ -139,8 +137,7 @@ const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하
 - 예복(맞춤정장): suit_styles[](예: ["클래식","이탈리안","브리티시","모던","턱시도","쓰리피스"]), custom_available(맞춤 true / 대여만 false / 모호 null)
 - 허니문: destinations[](언급된 여행지명 배열, 예: ["몰디브","발리","유럽","스위스","하와이"]), duration_days(패키지 일수, "5박 7일" → 7)
 - 혼수: brand_options[](언급된 브랜드, 예: ["삼성","LG","다이슨","발뮤다"]), product_categories[](예: ["냉장고","세탁기","건조기","TV","에어컨","공기청정기"])
-- 청첩장(상견례 식당): venue_types[](예: ["한식","일식","양식","중식","코스","프라이빗룸","호텔레스토랑"]), capacity_min/capacity_max(룸 수용 인원 범위, "최대 20명" → max=20)
-- 웨딩플래너: service_packages[](예: ["풀패키지","부분 플래닝","스드메 패키지","원데이","컨설팅","당일 진행"])
+- 청첩장(청첩장 모임 식당 — 친구/지인 5~15명 모임용. 상견례·격식 만남은 is_relevant=false): venue_types[](예: ["한식","일식","양식","중식","이탈리안","코스","단품","룸 보유","좌식"]), capacity_min/capacity_max(룸 또는 단체석 수용 인원 범위, "최대 20명까지" → max=20). 청첩장 전달 모임에 적합한 캐주얼하면서도 깔끔한 식당 위주로 평가.
 
 JSON으로만 응답.`;
 
@@ -233,8 +230,6 @@ ${input.snippets
           venue_types: { type: "array", items: { type: "string" }, nullable: true },
           capacity_min: { type: "number", nullable: true },
           capacity_max: { type: "number", nullable: true },
-          // planner
-          service_packages: { type: "array", items: { type: "string" }, nullable: true },
         },
         required: ["is_relevant", "analysis_confidence", "atmosphere", "pros", "cons", "tags"],
       },

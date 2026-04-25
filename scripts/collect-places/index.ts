@@ -313,8 +313,6 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       venue_types: only(["invitation_venue"], analysis.venue_types ?? null),
       capacity_min: only(["invitation_venue"], analysis.capacity_min ?? null),
       capacity_max: only(["invitation_venue"], analysis.capacity_max ?? null),
-      // planner
-      service_packages: only(["planner"], analysis.service_packages ?? null),
     };
     enhanced.confidence = scoreConfidence(enhanced);
     enriched.push(enhanced);

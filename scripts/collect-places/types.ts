@@ -91,6 +91,4 @@ export interface CollectedPlace {
   venue_types?: string[] | null;
   capacity_min?: number | null;
   capacity_max?: number | null;
-  // planner
-  service_packages?: string[] | null;
 }

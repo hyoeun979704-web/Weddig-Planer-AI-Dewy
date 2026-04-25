@@ -13,7 +13,9 @@ export interface UpsertResult {
   failed: number;
 }
 
-// Maps script category slug (now matches DB) → category-specific card table.
+// Maps script category slug → category-specific card table.
+// `planner` is intentionally absent: the app's own AI handles wedding planning,
+// so we do not collect external planner listings.
 const CATEGORY_CARD_TABLE: Partial<Record<CategorySlug, string>> = {
   wedding_hall: "place_wedding_halls",
   studio: "place_studios",
@@ -24,7 +26,6 @@ const CATEGORY_CARD_TABLE: Partial<Record<CategorySlug, string>> = {
   honeymoon: "place_honeymoons",
   appliance: "place_appliances",
   invitation_venue: "place_invitation_venues",
-  planner: "place_planners",
 };
 
 // Drop keys whose value is null or undefined so we never overwrite existing
@@ -145,11 +146,6 @@ function categoryCardRow(p: CollectedPlace, placeId: string) {
         venue_types: arr(p.venue_types),
         capacity_min: p.capacity_min ?? null,
         capacity_max: p.capacity_max ?? null,
-      });
-    case "planner":
-      return compact({
-        ...base,
-        service_packages: arr(p.service_packages),
       });
     default:
       return compact(base);
