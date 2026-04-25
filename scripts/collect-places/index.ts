@@ -211,7 +211,14 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
 
     const snippets = await gatherSnippets(c, naverEnv, args.reviewSnippets);
     if (snippets.length === 0) {
-      console.log("스니펫 0개, 분석 스킵");
+      // Skip the shop entirely if Naver didn't give us an address either —
+      // the listing card would have neither summary nor location, so it's
+      // worse than not appearing.
+      if (!c.address) {
+        console.log("스니펫 0 + 주소 없음, 제외");
+        continue;
+      }
+      console.log("스니펫 0, 분석 스킵 (주소만 보존)");
       enriched.push({ ...c, confidence: scoreConfidence(c) });
       continue;
     }
