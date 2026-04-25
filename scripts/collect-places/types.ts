@@ -57,6 +57,15 @@ export interface CollectedPlace {
   parking_capacity?: number | null;
   parking_location?: string | null;
 
+  // Differentiation fields → place_details (new columns)
+  avg_total_estimate?: number | null;
+  hidden_cost_tags?: string[] | null;
+  refund_warning?: boolean | null;
+  ownership_change_recent?: boolean | null;
+  weekend_premium_pct?: number | null;
+  peak_season_months?: string[] | null;
+  closed_days?: string | null;
+
   // Derived from analysis for native columns
   min_price?: number | null; // KRW per_person, used by every card table
 
@@ -81,6 +90,13 @@ export interface CollectedPlace {
   // studio
   shoot_styles?: string[] | null;
   includes_originals?: boolean | null;
+  // studio extras → place_studios (new columns)
+  raw_file_extra_cost?: number | null;
+  per_retouch_cost?: number | null;
+  album_extra_cost?: number | null;
+  base_shoot_hours?: number | null;
+  base_retouch_count?: number | null;
+  author_tiers?: string[] | null;
   // dress_shop
   dress_styles?: string[] | null;
   rental_only?: boolean | null;

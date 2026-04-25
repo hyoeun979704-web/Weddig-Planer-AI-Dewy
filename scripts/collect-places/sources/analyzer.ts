@@ -44,6 +44,17 @@ export interface PlaceAnalysis {
   parking_capacity: number | null;
   parking_location: string | null;
 
+  // Differentiation fields — these are what competitors don't expose
+  // because they protect advertisers. We extract them from independent
+  // reviews / news / directories.
+  avg_total_estimate: number | null; // KRW, total package estimate from reviews
+  hidden_cost_tags: string[] | null; // standardized: 헬퍼비/얼리차지/원본비/보정추가/앨범/액자/연출비
+  refund_warning: boolean | null; // refund / contract trouble signals
+  ownership_change_recent: boolean | null; // owner/staff change signals (last ~12mo)
+  weekend_premium_pct: number | null; // weekend price premium over weekday, %
+  peak_season_months: string[] | null; // months mentioned as peak ["9","10","11"]
+  closed_days: string | null; // "월요일 휴무" / "매주 화요일"
+
   // Per-category card fields. Only the fields matching the input category
   // should be filled; the rest must be null/empty.
   // wedding_hall (venue-level summary)
@@ -66,6 +77,13 @@ export interface PlaceAnalysis {
   // studio
   shoot_styles: string[] | null;
   includes_originals: boolean | null;
+  // studio extras (hidden-cost transparency)
+  raw_file_extra_cost: number | null; // 원본 추가비 KRW
+  per_retouch_cost: number | null; // 보정 1컷 추가비 KRW
+  album_extra_cost: number | null; // 앨범/액자 추가비 KRW
+  base_shoot_hours: number | null; // 기본 촬영 시간
+  base_retouch_count: number | null; // 기본 보정컷 수
+  author_tiers: string[] | null; // 작가 등급 옵션 ["일반","지정","대표"]
   // dress_shop
   dress_styles: string[] | null;
   rental_only: boolean | null;
@@ -138,6 +156,15 @@ const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하
   · 상황/주의 (예: "주말 혼잡", "협소", "유료")
   숫자 capacity가 없어도 위 텍스트 정보가 있으면 적극 채울 것. 정말 언급 없으면 null.
 
+★ 차별화 필드 (경쟁사가 보여주지 않는 정보 — 후기/뉴스/디렉터리에서 적극 추출) ★
+- avg_total_estimate: 후기에서 본 "총 견적/스드메 합/풀패키지" KRW 숫자. 1~3건이라도 합리적 평균 추정. 단서 없으면 null.
+- hidden_cost_tags: 다음 표준 태그 중 후기에서 언급된 것만 배열로 — ["헬퍼비","얼리차지","원본비","보정추가","앨범","액자","연출비","꽃장식","주류","드레스투어","헤어피스","속눈썹","음향","조명"]. 자유 텍스트 hidden_costs와 별개. 명시 없으면 null.
+- refund_warning: "환불 어려움", "위약금 무리", "계약 분쟁", "다툼" 등 명시 시 true. 정상이면 false 아닌 null.
+- ownership_change_recent: "사장 바뀜", "스태프 교체", "운영진 변경" 명시 시 true. 정상이면 null.
+- weekend_premium_pct: 주말 가격이 평일 대비 +N% (예: "주말 식대 8만원, 평일 6만원" → +33). 단서 없으면 null.
+- peak_season_months: 후기에서 성수기로 언급된 월을 ["9","10","11"] 형태 문자열 배열로. 명시 없으면 null.
+- closed_days: 휴무일 ("월요일 휴무", "매주 화요일", "공휴일 정상영업"). 명시 없으면 null.
+
 ★ 카테고리별 카드 필드 (해당 카테고리 외엔 무조건 null/빈배열) ★
 입력의 "카테고리:" 라인을 보고 매칭되는 카테고리의 필드만 채워라. 다른 카테고리 필드는 모두 null.
 
@@ -154,6 +181,13 @@ const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하
     - floor: 위치 (예: "본관 3층", "별관 2층")
   · 후기에 홀 이름이 전혀 안 나오면 halls=[] (빈배열). 절대 hall_name을 비워두지 말 것 — 모르면 그 홀은 배열에서 제외. 다른 카테고리는 halls=null.
 - 스드메(스튜디오): shoot_styles[](예: ["내추럴","감성","화보풍","빈티지","야외","스튜디오"]), includes_originals(원본 데이터 제공 명시 시 true/유료별도 명시 시 false/모호 null)
+  + 추가금 디테일 (★스튜디오는 추가금이 가장 많으니 적극 추출★):
+    · raw_file_extra_cost: 원본 추가비 KRW (보통 10~33만). 명시 없으면 null.
+    · per_retouch_cost: 보정 1컷 추가 단가 KRW (보통 5~10만). 명시 없으면 null.
+    · album_extra_cost: 앨범/액자 추가비 KRW. 명시 없으면 null.
+    · base_shoot_hours: 패키지 기본 촬영 시간 (보통 4~5). 명시 없으면 null.
+    · base_retouch_count: 패키지 기본 보정컷 수 (보통 30~80). 명시 없으면 null.
+    · author_tiers: 작가 등급 옵션 ["일반","지정","대표"] 중 후기에 언급된 것. 없으면 null.
 - 드레스샵: dress_styles[](예: ["머메이드","프린세스","A라인","벨라인","엠파이어","미니"]), rental_only(대여만 명시 true / 구매도 가능 false / 모호 null)
 - 메이크업샵: makeup_styles[](예: ["내추럴","글로우","동안","화려","한복용","컨실러","모던"]), includes_rehearsal(리허설 메이크업 포함 명시 true / 별도 false / 모호 null)
 - 한복 (★엄격★): hanbok_types[](["혼주","신부","신랑","어머님","아버님","폐백","예단"] 중 후기에 명시된 것만), custom_available(맞춤 명시 true / 대여만 false / 모호 null)
@@ -226,6 +260,14 @@ ${input.snippets
           walk_minutes: { type: "number", nullable: true },
           parking_capacity: { type: "number", nullable: true },
           parking_location: { type: "string", nullable: true },
+          // differentiation
+          avg_total_estimate: { type: "number", nullable: true },
+          hidden_cost_tags: { type: "array", items: { type: "string" }, nullable: true },
+          refund_warning: { type: "boolean", nullable: true },
+          ownership_change_recent: { type: "boolean", nullable: true },
+          weekend_premium_pct: { type: "number", nullable: true },
+          peak_season_months: { type: "array", items: { type: "string" }, nullable: true },
+          closed_days: { type: "string", nullable: true },
           // wedding_hall (venue-level)
           hall_styles: { type: "array", items: { type: "string" }, nullable: true },
           meal_types: { type: "array", items: { type: "string" }, nullable: true },
@@ -252,6 +294,13 @@ ${input.snippets
           // studio
           shoot_styles: { type: "array", items: { type: "string" }, nullable: true },
           includes_originals: { type: "boolean", nullable: true },
+          // studio extras
+          raw_file_extra_cost: { type: "number", nullable: true },
+          per_retouch_cost: { type: "number", nullable: true },
+          album_extra_cost: { type: "number", nullable: true },
+          base_shoot_hours: { type: "number", nullable: true },
+          base_retouch_count: { type: "number", nullable: true },
+          author_tiers: { type: "array", items: { type: "string" }, nullable: true },
           // dress_shop
           dress_styles: { type: "array", items: { type: "string" }, nullable: true },
           rental_only: { type: "boolean", nullable: true },

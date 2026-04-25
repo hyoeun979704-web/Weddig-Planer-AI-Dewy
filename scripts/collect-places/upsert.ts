@@ -82,6 +82,14 @@ function detailsRow(p: CollectedPlace, placeId: string) {
     walk_minutes: p.walk_minutes ?? null,
     parking_capacity: p.parking_capacity ?? null,
     parking_location: p.parking_location ?? null,
+    // differentiation (requires DB migration — see migrations/)
+    avg_total_estimate: p.avg_total_estimate ?? null,
+    hidden_cost_tags: arr(p.hidden_cost_tags),
+    refund_warning: p.refund_warning ?? null,
+    ownership_change_recent: p.ownership_change_recent ?? null,
+    weekend_premium_pct: p.weekend_premium_pct ?? null,
+    peak_season_months: arr(p.peak_season_months),
+    closed_days: p.closed_days ?? null,
   });
 }
 
@@ -103,6 +111,13 @@ function categoryCardRow(p: CollectedPlace, placeId: string) {
         ...base,
         shoot_styles: arr(p.shoot_styles),
         includes_originals: p.includes_originals ?? null,
+        // hidden-cost transparency (requires DB migration)
+        raw_file_extra_cost: p.raw_file_extra_cost ?? null,
+        per_retouch_cost: p.per_retouch_cost ?? null,
+        album_extra_cost: p.album_extra_cost ?? null,
+        base_shoot_hours: p.base_shoot_hours ?? null,
+        base_retouch_count: p.base_retouch_count ?? null,
+        author_tiers: arr(p.author_tiers),
       });
     case "dress_shop":
       return compact({

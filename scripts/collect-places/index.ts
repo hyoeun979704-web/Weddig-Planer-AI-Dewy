@@ -5,6 +5,8 @@ import {
   searchLocal,
   searchBlog,
   searchCafe,
+  searchWeb,
+  searchNews,
   type LocalItem,
   type BlogItem,
 } from "./sources/naver";
@@ -157,33 +159,59 @@ async function discover(label: CategoryLabel, region: string | undefined, env: N
   return dedupe(candidates);
 }
 
-// Stage 2: For each candidate, gather review snippets from blog/cafe.
+// Stage 2: For each candidate, gather snippets from 4 Naver sources (blog, cafe,
+// web, news). Web/news catch info that blog/cafe miss — official venue pages
+// listing all halls, directory entries with prices, openings/ownership news.
 async function gatherSnippets(
   c: CollectedPlace,
   env: NaverEnv,
   target: number
 ): Promise<BlogItem[]> {
-  const queries = [
+  const reviewQueries = [
     `${c.name} 후기`,
     `${c.name} 추천`,
     `${c.name} 가격`,
   ];
+  const directoryQueries = [
+    `${c.name} 홀`,
+    `${c.name} 패키지`,
+    `${c.name}`,
+  ];
   const snippets: BlogItem[] = [];
   const seen = new Set<string>();
-  for (const q of queries) {
+
+  const add = (items: BlogItem[]) => {
+    for (const it of items) {
+      if (snippets.length >= target) break;
+      if (!it.link || seen.has(it.link)) continue;
+      seen.add(it.link);
+      snippets.push(it);
+    }
+  };
+
+  // Pass 1: review queries against blog + cafe (subjective opinion)
+  for (const q of reviewQueries) {
     if (snippets.length >= target) break;
-    const need = Math.min(20, target - snippets.length);
+    const need = Math.min(15, target - snippets.length);
     const [blog, cafe] = await Promise.all([
       searchBlog(q, env, { months: 24, limit: need }).catch(() => []),
       searchCafe(q, env, { months: 24, limit: need }).catch(() => []),
     ]);
-    for (const it of [...blog, ...cafe]) {
-      if (seen.has(it.link)) continue;
-      seen.add(it.link);
-      snippets.push(it);
-      if (snippets.length >= target) break;
-    }
+    add([...blog, ...cafe]);
   }
+
+  // Pass 2: directory/factual queries against web + news (objective info —
+  // official sites, industry directories, news about openings/changes).
+  for (const q of directoryQueries) {
+    if (snippets.length >= target) break;
+    const need = Math.min(10, target - snippets.length);
+    const [web, news] = await Promise.all([
+      searchWeb(q, env, need).catch(() => []),
+      searchNews(q, env, { months: 36, limit: need }).catch(() => []),
+    ]);
+    add([...web, ...news]);
+  }
+
   return snippets;
 }
 
@@ -286,6 +314,20 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       walk_minutes: analysis.walk_minutes ?? null,
       parking_capacity: analysis.parking_capacity ?? null,
       parking_location: analysis.parking_location ?? null,
+      // differentiation (all categories)
+      avg_total_estimate: analysis.avg_total_estimate ?? null,
+      hidden_cost_tags:
+        analysis.hidden_cost_tags && analysis.hidden_cost_tags.length > 0
+          ? analysis.hidden_cost_tags
+          : null,
+      refund_warning: analysis.refund_warning ?? null,
+      ownership_change_recent: analysis.ownership_change_recent ?? null,
+      weekend_premium_pct: analysis.weekend_premium_pct ?? null,
+      peak_season_months:
+        analysis.peak_season_months && analysis.peak_season_months.length > 0
+          ? analysis.peak_season_months
+          : null,
+      closed_days: analysis.closed_days ?? null,
       // wedding_hall (venue-level)
       hall_styles: only(["wedding_hall"], analysis.hall_styles ?? null),
       meal_types: only(["wedding_hall"], analysis.meal_types ?? null),
@@ -319,6 +361,12 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       // studio
       shoot_styles: only(["studio"], analysis.shoot_styles ?? null),
       includes_originals: only(["studio"], analysis.includes_originals ?? null),
+      raw_file_extra_cost: only(["studio"], analysis.raw_file_extra_cost ?? null),
+      per_retouch_cost: only(["studio"], analysis.per_retouch_cost ?? null),
+      album_extra_cost: only(["studio"], analysis.album_extra_cost ?? null),
+      base_shoot_hours: only(["studio"], analysis.base_shoot_hours ?? null),
+      base_retouch_count: only(["studio"], analysis.base_retouch_count ?? null),
+      author_tiers: only(["studio"], analysis.author_tiers ?? null),
       // dress_shop
       dress_styles: only(["dress_shop"], analysis.dress_styles ?? null),
       rental_only: only(["dress_shop"], analysis.rental_only ?? null),
