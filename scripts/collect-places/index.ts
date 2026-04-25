@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 import "dotenv/config";
 import { CATEGORIES, CategoryLabel, seedQueries } from "./utils/categories";
-import { searchAll } from "./sources/naver";
+import { searchAll, searchLocal, type LocalItem } from "./sources/naver";
 import { extractPlace } from "./sources/gemini";
 import { checkOfficialSite } from "./sources/officialSite";
 import { dedupe } from "./dedupe";
@@ -14,13 +14,15 @@ interface CliArgs {
   region?: string;
   limit: number;
   dryRun: boolean;
+  useLLM: boolean;
 }
 
 function parseArgs(): CliArgs {
-  const args: CliArgs = { category: "all", limit: 10, dryRun: false };
+  const args: CliArgs = { category: "all", limit: 10, dryRun: false, useLLM: false };
   for (const a of process.argv.slice(2)) {
     if (a === "--all") args.category = "all";
     else if (a === "--dry-run") args.dryRun = true;
+    else if (a === "--llm") args.useLLM = true;
     else if (a.startsWith("--category=")) args.category = a.split("=")[1] as CategoryLabel;
     else if (a.startsWith("--region=")) args.region = a.split("=")[1];
     else if (a.startsWith("--limit=")) args.limit = +a.split("=")[1];
@@ -33,6 +35,35 @@ function postdateToIso(yyyymmdd?: string): string | null {
   return `${yyyymmdd.slice(0, 4)}-${yyyymmdd.slice(4, 6)}-${yyyymmdd.slice(6, 8)}`;
 }
 
+const stripTags = (s: string) => s.replace(/<\/?[^>]+>/g, "").trim();
+
+function localToCandidate(l: LocalItem, label: CategoryLabel): CollectedPlace {
+  const cleanTitle = stripTags(l.title);
+  const addr = l.roadAddress || l.address || "";
+  const parts = addr.split(/\s+/);
+  const city = parts[0] || null;
+  const district = parts[1] || null;
+  const lat = l.mapy ? +l.mapy / 1e7 : null;
+  const lng = l.mapx ? +l.mapx / 1e7 : null;
+  return {
+    name: cleanTitle,
+    category: CATEGORIES[label],
+    city,
+    district,
+    description: l.category || null,
+    main_image_url: null,
+    tags: l.category ? l.category.split(">").map((t) => t.trim()).filter(Boolean) : [],
+    lat,
+    lng,
+    data_source: "local",
+    confidence: 0, // computed later
+    last_source_date: null,
+    source_refs: [
+      { url: l.link || "", source_type: "local", published_at: null },
+    ],
+  };
+}
+
 async function processCategory(label: CategoryLabel, args: CliArgs): Promise<CollectedPlace[]> {
   const env = {
     naver: {
@@ -43,16 +74,29 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
   };
 
   const queries = seedQueries(label, args.region);
-  console.log(`\n[${label}] ${queries.length} seed queries`);
+  console.log(`\n[${label}] ${queries.length} seed queries  (LLM ${args.useLLM ? "ON" : "OFF"})`);
 
-  // Group up to 5 snippets per business candidate. Heuristic: first searchAll snippets
-  // are aggregated into LLM prompts in batches.
   const candidates: CollectedPlace[] = [];
 
   for (let qi = 0; qi < queries.length; qi++) {
     const query = queries[qi];
-    if (candidates.length >= args.limit * 4) break; // collect 4x raw, dedupe to limit
+    if (candidates.length >= args.limit * 5) break;
     process.stdout.write(`  · [${qi + 1}/${queries.length}] ${query} ... `);
+
+    if (!args.useLLM) {
+      // Local-only path: cheap, no LLM, no daily quota worries
+      try {
+        const local = await searchLocal(query, env.naver, 5);
+        const items = local.map((l) => localToCandidate(l, label));
+        candidates.push(...items);
+        console.log(`+${items.length} local`);
+      } catch (e) {
+        console.log(`error: ${(e as Error).message}`);
+      }
+      continue;
+    }
+
+    // LLM-enriched path (kept for future when quota allows)
     const { blog, cafe, local } = await searchAll(query, env.naver, {
       months: 24,
       perSource: 5,
@@ -63,9 +107,14 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       continue;
     }
 
-    // Use Gemini on top 3 snippets
     const top = allSnippets.slice(0, 3);
-    if (top.length === 0) continue;
+    if (top.length === 0) {
+      // fall back to local-only for this query
+      const items = local.map((l) => localToCandidate(l, label));
+      candidates.push(...items);
+      console.log(`+${items.length} local (no blog)`);
+      continue;
+    }
 
     const extracted = await extractPlace(
       {
@@ -83,6 +132,9 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
 
     if (!extracted || !extracted.is_business_listing || !extracted.name) {
       console.log("skip (no business)");
+      // still keep local results
+      const items = local.map((l) => localToCandidate(l, label));
+      candidates.push(...items);
       continue;
     }
     console.log(`→ ${extracted.name}`);
@@ -93,20 +145,13 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       published_at: postdateToIso(s.postdate),
     }));
 
-    // Match against local results for this query
-    const localMatch = local.find((l) =>
-      l.title.toLowerCase().includes((extracted.name ?? "").toLowerCase()) ||
-      (extracted.name ?? "").toLowerCase().includes(l.title.toLowerCase())
+    const localMatch = local.find(
+      (l) =>
+        stripTags(l.title).toLowerCase().includes(extracted.name!.toLowerCase()) ||
+        extracted.name!.toLowerCase().includes(stripTags(l.title).toLowerCase())
     );
-    if (localMatch) {
-      refs.push({
-        url: localMatch.link || "",
-        source_type: "local",
-        published_at: null,
-      });
-    }
+    if (localMatch) refs.push({ url: localMatch.link || "", source_type: "local", published_at: null });
 
-    // Optional: validate official site
     let officialOk = false;
     let officialImage: string | null = null;
     if (extracted.official_url) {
@@ -115,39 +160,27 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
         if (info.ok && info.hasNameMatch) {
           officialOk = true;
           officialImage = info.ogImage;
-          refs.push({
-            url: extracted.official_url,
-            source_type: "official",
-            published_at: null,
-          });
+          refs.push({ url: extracted.official_url, source_type: "official", published_at: null });
         }
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
 
-    const lastSourceDate = refs
-      .map((r) => r.published_at)
-      .filter((x): x is string => !!x)
-      .sort()
-      .reverse()[0] ?? null;
+    const lastSourceDate =
+      refs.map((r) => r.published_at).filter((x): x is string => !!x).sort().reverse()[0] ?? null;
 
     const dataSource =
-      officialOk && (refs.some((r) => r.source_type === "blog" || r.source_type === "cafe"))
+      officialOk && refs.some((r) => r.source_type === "blog" || r.source_type === "cafe")
         ? "mixed"
         : officialOk
           ? "official"
           : refs[0]?.source_type ?? "blog";
 
-    const place: CollectedPlace = {
+    candidates.push({
       name: extracted.name,
       category: CATEGORIES[label],
-      city:
-        extracted.city ??
-        (localMatch ? (localMatch.address || "").split(" ")[0] : null),
+      city: extracted.city ?? (localMatch ? (localMatch.address || "").split(" ")[0] : null),
       district:
-        extracted.district ??
-        (localMatch ? (localMatch.address || "").split(" ")[1] ?? null : null),
+        extracted.district ?? (localMatch ? (localMatch.address || "").split(" ")[1] ?? null : null),
       description: extracted.description,
       main_image_url: officialImage,
       tags: extracted.tags ?? [],
@@ -157,17 +190,10 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       confidence: 0,
       last_source_date: lastSourceDate,
       source_refs: refs,
-    };
-
-    candidates.push(place);
+    });
   }
 
-  const merged = dedupe(candidates).map((p) => ({
-    ...p,
-    confidence: scoreConfidence(p),
-  }));
-
-  // Sort by confidence desc, take top N
+  const merged = dedupe(candidates).map((p) => ({ ...p, confidence: scoreConfidence(p) }));
   merged.sort((a, b) => b.confidence - a.confidence);
   return merged.slice(0, args.limit);
 }
@@ -179,8 +205,8 @@ async function main() {
     console.error("Missing NAVER_CLIENT_ID or NAVER_CLIENT_SECRET in env");
     process.exit(1);
   }
-  if (!process.env.GEMINI_API_KEY) {
-    console.error("Missing GEMINI_API_KEY");
+  if (args.useLLM && !process.env.GEMINI_API_KEY) {
+    console.error("Missing GEMINI_API_KEY (--llm requires it)");
     process.exit(1);
   }
   if (!args.dryRun && (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)) {
@@ -189,15 +215,16 @@ async function main() {
   }
 
   const cats: CategoryLabel[] =
-    args.category === "all"
-      ? (Object.keys(CATEGORIES) as CategoryLabel[])
-      : [args.category];
+    args.category === "all" ? (Object.keys(CATEGORIES) as CategoryLabel[]) : [args.category];
 
   const all: CollectedPlace[] = [];
   for (const c of cats) {
     const items = await processCategory(c, args);
-    console.log(`[${c}] collected ${items.length} (avg conf ${(items.reduce((s, x) => s + x.confidence, 0) / Math.max(1, items.length)).toFixed(0)})`);
-    items.forEach((it) => console.log(`  · ${it.name} (${it.city ?? "?"} ${it.district ?? ""}) conf=${it.confidence}`));
+    const avg = items.reduce((s, x) => s + x.confidence, 0) / Math.max(1, items.length);
+    console.log(`[${c}] collected ${items.length} (avg conf ${avg.toFixed(0)})`);
+    items.forEach((it) =>
+      console.log(`  · ${it.name} (${it.city ?? "?"} ${it.district ?? ""}) conf=${it.confidence}`)
+    );
     all.push(...items);
   }
 

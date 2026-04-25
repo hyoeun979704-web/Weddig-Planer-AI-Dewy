@@ -1,7 +1,7 @@
 import type { CollectedPlace } from "./types";
 
 export function scoreConfidence(p: CollectedPlace): number {
-  let score = 0;
+  let score = 30; // baseline for any local-API hit (real registered business)
 
   const hasOfficial = p.source_refs.some((r) => r.source_type === "official");
   const hasLocal = p.source_refs.some((r) => r.source_type === "local");
@@ -22,9 +22,7 @@ export function scoreConfidence(p: CollectedPlace): number {
 
   // Field completeness
   if (p.name && p.city && p.district) score += 10;
-
-  // Penalty: only single blog source
-  if (!hasOfficial && !hasLocal && blogCafeCount <= 1) score -= 30;
+  if (p.lat && p.lng) score += 5;
 
   return Math.max(0, Math.min(100, score));
 }
