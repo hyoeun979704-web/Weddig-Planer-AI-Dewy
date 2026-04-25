@@ -5,6 +5,8 @@ const ENDPOINTS = {
   blog: "https://openapi.naver.com/v1/search/blog.json",
   cafearticle: "https://openapi.naver.com/v1/search/cafearticle.json",
   local: "https://openapi.naver.com/v1/search/local.json",
+  news: "https://openapi.naver.com/v1/search/news.json",
+  webkr: "https://openapi.naver.com/v1/search/webkr.json",
 } as const;
 
 export type NaverSourceType = keyof typeof ENDPOINTS;
@@ -15,13 +17,24 @@ interface NaverEnv {
 }
 
 export interface BlogItem {
-  source: "blog" | "cafe";
+  source: "blog" | "cafe" | "news" | "webkr";
   title: string;
   description: string;
   link: string;
   bloggername?: string;
   bloggerlink?: string;
-  postdate: string; // YYYYMMDD
+  postdate: string; // YYYYMMDD ('' when source has no dated metadata, e.g. webkr)
+}
+
+// Naver news pubDate is RFC 2822 ("Mon, 14 Apr 2025 12:34:56 +0900").
+function pubDateToYYYYMMDD(s: string | undefined): string {
+  if (!s) return "";
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}${m}${day}`;
 }
 
 export interface LocalItem {
@@ -157,15 +170,59 @@ export async function searchLocal(query: string, env: NaverEnv, limit = 5): Prom
   }));
 }
 
+export async function searchNews(
+  query: string,
+  env: NaverEnv,
+  opts: { months: number; limit: number }
+): Promise<BlogItem[]> {
+  // News API: sort=date returns most recent. Date filter still useful since
+  // older articles can rank by relevance otherwise.
+  const data = await call<{ items: any[] }>(ENDPOINTS.news, query, env, {
+    display: opts.limit,
+    sort: "date",
+  });
+  return data.items
+    .map((it) => ({
+      source: "news" as const,
+      title: stripTags(it.title),
+      description: stripTags(it.description),
+      link: it.originallink || it.link,
+      postdate: pubDateToYYYYMMDD(it.pubDate),
+    }))
+    .filter((it) => !it.postdate || withinLastNMonths(it.postdate, opts.months));
+}
+
+export async function searchWebkr(
+  query: string,
+  env: NaverEnv,
+  opts: { limit: number }
+): Promise<BlogItem[]> {
+  // webkr has no postdate or sort by date — relevance only.
+  const data = await call<{ items: any[] }>(ENDPOINTS.webkr, query, env, {
+    display: opts.limit,
+  });
+  return data.items.map((it) => ({
+    source: "webkr" as const,
+    title: stripTags(it.title),
+    description: stripTags(it.description),
+    link: it.link,
+    postdate: "",
+  }));
+}
+
 export async function searchAll(
   query: string,
   env: NaverEnv,
   opts: { months: number; perSource: number }
 ) {
-  const [blog, cafe, local] = await Promise.all([
+  const [blog, cafe, local, news, webkr] = await Promise.all([
     searchBlog(query, env, { months: opts.months, limit: opts.perSource }).catch(() => []),
     searchCafe(query, env, { months: opts.months, limit: opts.perSource }).catch(() => []),
     searchLocal(query, env, 5).catch(() => []),
+    searchNews(query, env, { months: opts.months, limit: Math.min(opts.perSource, 10) }).catch(
+      () => []
+    ),
+    searchWebkr(query, env, { limit: Math.min(opts.perSource, 10) }).catch(() => []),
   ]);
-  return { blog, cafe, local };
+  return { blog, cafe, local, news, webkr };
 }

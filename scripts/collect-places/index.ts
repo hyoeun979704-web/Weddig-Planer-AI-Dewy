@@ -5,6 +5,8 @@ import {
   searchLocal,
   searchBlog,
   searchCafe,
+  searchNews,
+  searchWebkr,
   type LocalItem,
   type BlogItem,
 } from "./sources/naver";
@@ -131,7 +133,10 @@ async function discover(label: CategoryLabel, region: string | undefined, env: N
   return dedupe(candidates);
 }
 
-// Stage 2: For each candidate, gather review snippets from blog/cafe.
+// Stage 2: gather snippets from four Naver sources. blog/cafe carry user
+// reviews; news adds press / objective context; webkr is a catch-all that
+// often surfaces the official site or directories. Per-source limits are
+// asymmetric because blog/cafe is where most signal lives.
 async function gatherSnippets(
   c: CollectedPlace,
   env: NaverEnv,
@@ -147,11 +152,13 @@ async function gatherSnippets(
   for (const q of queries) {
     if (snippets.length >= target) break;
     const need = Math.min(20, target - snippets.length);
-    const [blog, cafe] = await Promise.all([
+    const [blog, cafe, news, webkr] = await Promise.all([
       searchBlog(q, env, { months: 24, limit: need }).catch(() => []),
       searchCafe(q, env, { months: 24, limit: need }).catch(() => []),
+      searchNews(q, env, { months: 24, limit: 10 }).catch(() => []),
+      searchWebkr(q, env, { limit: 10 }).catch(() => []),
     ]);
-    for (const it of [...blog, ...cafe]) {
+    for (const it of [...blog, ...cafe, ...news, ...webkr]) {
       if (seen.has(it.link)) continue;
       seen.add(it.link);
       snippets.push(it);
@@ -200,7 +207,7 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       ...c.source_refs,
       ...snippets.slice(0, 5).map((s) => ({
         url: s.link,
-        source_type: s.source as "blog" | "cafe",
+        source_type: s.source,
         published_at: postdateToIso(s.postdate),
       })),
     ];

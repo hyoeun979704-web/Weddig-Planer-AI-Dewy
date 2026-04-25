@@ -2,7 +2,7 @@ import type { CategorySlug } from "./utils/categories";
 
 export interface SourceRef {
   url: string;
-  source_type: "blog" | "cafe" | "official" | "local";
+  source_type: "blog" | "cafe" | "official" | "local" | "news" | "webkr";
   published_at: string | null; // ISO date or null
 }
 
