@@ -40,6 +40,25 @@ export interface LocalItem {
 const stripTags = (s: string) =>
   s.replace(/<\/?[^>]+>/g, "").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
 
+// Shared throttle across all Naver endpoints (blog/cafe/local share the same
+// quota). 150ms gap keeps us comfortably under Naver's per-second cap. The
+// promise chain serializes contenders so concurrent callers (e.g. Promise.all
+// over blog+cafe+local) can't all wake up together.
+const NAVER_MIN_GAP_MS = 150;
+let naverLastCallAt = 0;
+let throttleChain: Promise<void> = Promise.resolve();
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+function acquireSlot(): Promise<void> {
+  const next = throttleChain.then(async () => {
+    const elapsed = Date.now() - naverLastCallAt;
+    if (elapsed < NAVER_MIN_GAP_MS) await sleep(NAVER_MIN_GAP_MS - elapsed);
+    naverLastCallAt = Date.now();
+  });
+  throttleChain = next.catch(() => undefined);
+  return next;
+}
+
 async function call<T>(
   endpoint: string,
   query: string,
@@ -56,16 +75,30 @@ async function call<T>(
   });
   if (sort) params.set("sort", sort);
   const url = `${endpoint}?${params.toString()}`;
-  const res = await fetch(url, {
-    headers: {
-      "X-Naver-Client-Id": env.clientId,
-      "X-Naver-Client-Secret": env.clientSecret,
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`Naver API ${endpoint} failed: ${res.status} ${await res.text()}`);
+
+  // Up to 3 attempts on 429. Backoff: 2s, 4s, 8s.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await acquireSlot();
+    const res = await fetch(url, {
+      headers: {
+        "X-Naver-Client-Id": env.clientId,
+        "X-Naver-Client-Secret": env.clientSecret,
+      },
+    });
+    if (res.status === 429) {
+      const wait = 2000 * Math.pow(2, attempt);
+      console.warn(
+        `  Naver 429 (${endpoint.split("/").pop()}), retry in ${wait / 1000}s [${attempt + 1}/3]`
+      );
+      await sleep(wait);
+      continue;
+    }
+    if (!res.ok) {
+      throw new Error(`Naver API ${endpoint} failed: ${res.status} ${await res.text()}`);
+    }
+    return (await res.json()) as T;
   }
-  return (await res.json()) as T;
+  throw new Error(`Naver API ${endpoint} failed: 429 (3 retries exhausted)`);
 }
 
 function withinLastNMonths(yyyymmdd: string, months: number): boolean {
