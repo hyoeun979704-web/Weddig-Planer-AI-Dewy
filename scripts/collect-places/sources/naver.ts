@@ -40,6 +40,18 @@ export interface LocalItem {
 const stripTags = (s: string) =>
   s.replace(/<\/?[^>]+>/g, "").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
 
+// Naver free tier: ~10 req/sec, 25k/day. Throttle to 5 RPS for headroom.
+const MIN_GAP_MS = 200;
+let lastCallAt = 0;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function throttle() {
+  const now = Date.now();
+  const elapsed = now - lastCallAt;
+  if (elapsed < MIN_GAP_MS) await sleep(MIN_GAP_MS - elapsed);
+  lastCallAt = Date.now();
+}
+
 async function call<T>(
   endpoint: string,
   query: string,
@@ -56,16 +68,29 @@ async function call<T>(
   });
   if (sort) params.set("sort", sort);
   const url = `${endpoint}?${params.toString()}`;
-  const res = await fetch(url, {
-    headers: {
-      "X-Naver-Client-Id": env.clientId,
-      "X-Naver-Client-Secret": env.clientSecret,
-    },
-  });
-  if (!res.ok) {
+
+  // Up to 3 attempts with exponential backoff on 429 (5s, 15s, 45s).
+  const backoffs = [5_000, 15_000, 45_000];
+  let lastErr: string = "";
+  for (let attempt = 0; attempt < backoffs.length; attempt++) {
+    await throttle();
+    const res = await fetch(url, {
+      headers: {
+        "X-Naver-Client-Id": env.clientId,
+        "X-Naver-Client-Secret": env.clientSecret,
+      },
+    });
+    if (res.ok) return (await res.json()) as T;
+    if (res.status === 429) {
+      lastErr = await res.text();
+      const wait = backoffs[attempt];
+      console.warn(`Naver 429, sleeping ${wait / 1000}s (attempt ${attempt + 1}/3)`);
+      await sleep(wait);
+      continue;
+    }
     throw new Error(`Naver API ${endpoint} failed: ${res.status} ${await res.text()}`);
   }
-  return (await res.json()) as T;
+  throw new Error(`Naver API ${endpoint} failed: 429 (3 retries) ${lastErr.slice(0, 200)}`);
 }
 
 function withinLastNMonths(yyyymmdd: string, months: number): boolean {
