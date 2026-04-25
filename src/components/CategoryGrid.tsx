@@ -43,6 +43,35 @@ function getKeywords(item: CategoryItem, category: CategoryType): string[] {
   }
 }
 
+// All places.min_price values are stored as KRW per_person (analyzer normalizes
+// couple/set prices ÷ 2). Labels here are user-facing context only — they do
+// not change the underlying value.
+const PRICE_UNIT_LABEL: Record<CategoryType, string> = {
+  venues: "1인 식대",
+  studios: "1인 기준",
+  hanbok: "1인 1세트",
+  suits: "1인 1세트",
+  honeymoon: "1인 기준",
+  honeymoon_gifts: "1인 분담",
+  appliances: "1인 분담",
+  invitation_venues: "1인 식대",
+};
+
+function PriceRow({ price, label }: { price?: number; label: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      {price ? (
+        <span className="text-xs font-semibold text-primary">
+          {(price / 10000).toFixed(0)}만원~
+        </span>
+      ) : (
+        <span className="text-xs font-medium text-muted-foreground">(준비중)</span>
+      )}
+    </div>
+  );
+}
+
 // Category-specific card content renderer
 function CategoryCardContent({ item, category }: { item: CategoryItem; category: CategoryType }) {
   const any = item as any;
@@ -59,152 +88,41 @@ function CategoryCardContent({ item, category }: { item: CategoryItem; category:
     }
   };
 
-  // Format price range shorthand
-  const formatPrice = (range?: string) => {
-    if (!range) return null;
-    return range;
-  };
+  const priceLabel = PRICE_UNIT_LABEL[category];
 
   // Render category-specific detail lines
   const renderDetails = () => {
     switch (category) {
       case "venues":
         return (
-          <>
-            {item.price_per_person && (
-              <div className="space-y-0.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-muted-foreground">식대</span>
-                  <span className="text-xs font-semibold text-primary">
-                    {(item.price_per_person / 10000).toFixed(0)}만원~
-                  </span>
-                </div>
-                {any.min_guarantee > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground">보증인원</span>
-                    <span className="text-xs font-medium text-foreground">{any.min_guarantee}명</span>
-                  </div>
-                )}
+          <div className="space-y-0.5">
+            <PriceRow price={item.price_per_person} label={priceLabel} />
+            {any.min_guarantee > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground">보증인원</span>
+                <span className="text-xs font-medium text-foreground">{any.min_guarantee}명</span>
               </div>
             )}
-          </>
-        );
-
-      case "studios":
-        return (
-          <>
-            {any.package_types?.length > 0 && (
-              <p className="text-[11px] text-muted-foreground truncate">
-                {any.package_types.slice(0, 3).join(" · ")}
-              </p>
-            )}
-            {item.price_per_person && (
-              <span className="text-xs font-semibold text-primary">
-                {(item.price_per_person / 10000).toFixed(0)}만원~
-              </span>
-            )}
-          </>
-        );
-
-      case "hanbok":
-        return (
-          <div className="space-y-0.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">대여</span>
-              <span className="text-xs font-semibold text-primary">
-                {item.price_range ? item.price_range.split('~')[0]?.trim() + '~' : '(준비중)'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">맞춤</span>
-              <span className="text-xs font-medium text-foreground">
-                {item.price_range ? (item.price_range.split('~')[1]?.trim() || '문의') : '문의'}
-              </span>
-            </div>
-          </div>
-        );
-
-      case "suits":
-        return (
-          <div className="space-y-0.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">대여</span>
-              <span className="text-xs font-semibold text-primary">
-                {item.price_range ? item.price_range.split('~')[0]?.trim() + '~' : '(준비중)'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">맞춤</span>
-              <span className="text-xs font-medium text-foreground">
-                {item.price_range ? (item.price_range.split('~')[1]?.trim() || '문의') : '문의'}
-              </span>
-            </div>
           </div>
         );
 
       case "honeymoon":
         return (
-          <>
+          <div className="space-y-0.5">
             {item.duration && (
               <p className="text-[11px] text-muted-foreground">{item.duration}</p>
             )}
-            <span className="text-xs font-semibold text-primary">
-              {formatPrice(item.price_range) || "(준비중)"}
-            </span>
-          </>
+            <PriceRow price={item.price_per_person} label={priceLabel} />
+          </div>
         );
 
+      case "studios":
+      case "hanbok":
+      case "suits":
       case "honeymoon_gifts":
-        return (
-          <div className="space-y-0.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">웨딩링</span>
-              <span className="text-xs font-semibold text-primary">
-                {item.price_range ? item.price_range.split('~')[0]?.trim() + '~' : '(준비중)'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">커플링</span>
-              <span className="text-xs font-medium text-foreground">
-                {item.price_range ? (item.price_range.split('~')[1]?.trim() || '문의') : '문의'}
-              </span>
-            </div>
-          </div>
-        );
-
       case "appliances":
-        return (
-          <div className="space-y-0.5">
-            {any.category_types?.length > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground">카테고리</span>
-                <span className="text-xs font-medium text-foreground truncate max-w-[60%] text-right">
-                  {any.category_types.slice(0, 2).join(" · ")}
-                </span>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">가격</span>
-              <span className="text-xs font-semibold text-primary">
-                {formatPrice(item.price_range) || "(준비중)"}
-              </span>
-            </div>
-          </div>
-        );
-
       case "invitation_venues":
-        return (
-          <>
-            {any.cuisine_options?.length > 0 && (
-              <p className="text-[11px] text-muted-foreground truncate">
-                {any.cuisine_options.slice(0, 3).join(" · ")}
-              </p>
-            )}
-            <span className="text-xs font-semibold text-primary">
-              {formatPrice(item.price_range) || "(준비중)"}
-            </span>
-          </>
-        );
+        return <PriceRow price={item.price_per_person} label={priceLabel} />;
 
       default:
         return null;
