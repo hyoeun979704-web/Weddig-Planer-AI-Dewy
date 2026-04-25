@@ -45,6 +45,30 @@ function parseArgs(): CliArgs {
 
 const stripTags = (s: string) => s.replace(/<\/?[^>]+>/g, "").trim();
 
+// Pre-filter: known tourist hanbok experience brands & venue keywords.
+// Saves Gemini calls on obvious non-wedding listings.
+const HANBOK_EXPERIENCE_BLOCKLIST = [
+  "한복남",
+  "한복살롱",
+  "한복마법",
+  "한복마을",
+  "한복여행",
+  "한복충",
+  "오늘하루한복",
+  "다온재",
+  "한복애",
+  "한복여기",
+];
+const HANBOK_EXPERIENCE_KEYWORDS = ["체험", "관광", "고궁", "경복궁점", "북촌점", "인사동점"];
+
+function isHanbokExperienceShop(name: string, naverCategory: string): boolean {
+  const lname = name.toLowerCase();
+  if (HANBOK_EXPERIENCE_BLOCKLIST.some((b) => name.includes(b))) return true;
+  if (HANBOK_EXPERIENCE_KEYWORDS.some((k) => name.includes(k) || naverCategory.includes(k)))
+    return true;
+  return false;
+}
+
 function localToCandidate(l: LocalItem, label: CategoryLabel): CollectedPlace {
   const cleanTitle = stripTags(l.title);
   const addr = l.roadAddress || l.address || "";
@@ -88,9 +112,15 @@ async function discover(label: CategoryLabel, region: string | undefined, env: N
     process.stdout.write(`  · [${qi + 1}/${queries.length}] ${q} ... `);
     try {
       const local = await searchLocal(q, env, 5);
-      const items = local.map((l) => localToCandidate(l, label));
+      // Hanbok pre-filter: drop obvious tourist experience shops before Gemini analysis
+      const filtered =
+        label === "한복"
+          ? local.filter((l) => !isHanbokExperienceShop(stripTags(l.title), l.category || ""))
+          : local;
+      const dropped = local.length - filtered.length;
+      const items = filtered.map((l) => localToCandidate(l, label));
       candidates.push(...items);
-      console.log(`+${items.length}`);
+      console.log(`+${items.length}${dropped > 0 ? ` (-${dropped} 체험)` : ""}`);
     } catch (e) {
       console.log(`error: ${(e as Error).message.slice(0, 80)}`);
     }
