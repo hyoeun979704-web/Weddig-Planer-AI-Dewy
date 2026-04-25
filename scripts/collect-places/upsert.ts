@@ -206,14 +206,14 @@ export async function upsertPlaces(
       const { error: detailsErr } = await supabase
         .from("place_details")
         .upsert(dRow, { onConflict: "place_id" });
-      if (detailsErr) throw detailsErr;
+      if (detailsErr) throw new Error(`place_details: ${detailsErr.message}`);
 
       const cardTable = CATEGORY_CARD_TABLE[p.category];
       if (cardTable) {
         const { error: cardErr } = await supabase
           .from(cardTable)
           .upsert(categoryCardRow(p, placeId), { onConflict: "place_id" });
-        if (cardErr) throw cardErr;
+        if (cardErr) throw new Error(`${cardTable}: ${cardErr.message}`);
       }
 
       // wedding_hall: also write individual halls (1:N) into place_halls.
@@ -221,39 +221,44 @@ export async function upsertPlaces(
       // otherwise. We don't auto-delete halls that fall out of analysis since
       // place_gallery_images.hall_id may reference them.
       if (p.category === "wedding_hall" && p.halls && p.halls.length > 0) {
-        const { data: existingHalls, error: hallLookupErr } = await supabase
-          .from("place_halls")
-          .select("hall_id, hall_name")
-          .eq("place_id", placeId);
-        if (hallLookupErr) throw hallLookupErr;
-
-        const byName = new Map<string, string>(
-          (existingHalls ?? []).map((h) => [h.hall_name, h.hall_id])
+        const validHalls = p.halls.filter(
+          (h) => typeof h.hall_name === "string" && h.hall_name.trim().length > 0
         );
+        if (validHalls.length > 0) {
+          const { data: existingHalls, error: hallLookupErr } = await supabase
+            .from("place_halls")
+            .select("hall_id, hall_name")
+            .eq("place_id", placeId);
+          if (hallLookupErr) throw new Error(`place_halls lookup: ${hallLookupErr.message}`);
 
-        for (const h of p.halls) {
-          const row = compact({
-            place_id: placeId,
-            hall_name: h.hall_name,
-            hall_type: h.hall_type ?? null,
-            capacity_seated: h.capacity_seated ?? null,
-            capacity_standing: h.capacity_standing ?? null,
-            min_guarantee: h.min_guarantee ?? null,
-            max_guarantee: h.max_guarantee ?? null,
-            meal_price: h.meal_price ?? null,
-            meal_type: h.meal_type ?? null,
-            floor: h.floor ?? null,
-          });
-          const existingId = byName.get(h.hall_name);
-          if (existingId) {
-            const { error: hUpd } = await supabase
-              .from("place_halls")
-              .update(row)
-              .eq("hall_id", existingId);
-            if (hUpd) throw hUpd;
-          } else {
-            const { error: hIns } = await supabase.from("place_halls").insert(row);
-            if (hIns) throw hIns;
+          const byName = new Map<string, string>(
+            (existingHalls ?? []).map((h) => [h.hall_name, h.hall_id])
+          );
+
+          for (const h of validHalls) {
+            const row = compact({
+              place_id: placeId,
+              hall_name: h.hall_name.trim(),
+              hall_type: h.hall_type ?? null,
+              capacity_seated: h.capacity_seated ?? null,
+              capacity_standing: h.capacity_standing ?? null,
+              min_guarantee: h.min_guarantee ?? null,
+              max_guarantee: h.max_guarantee ?? null,
+              meal_price: h.meal_price ?? null,
+              meal_type: h.meal_type ?? null,
+              floor: h.floor ?? null,
+            });
+            const existingId = byName.get(h.hall_name.trim());
+            if (existingId) {
+              const { error: hUpd } = await supabase
+                .from("place_halls")
+                .update(row)
+                .eq("hall_id", existingId);
+              if (hUpd) throw new Error(`place_halls update "${h.hall_name}": ${hUpd.message}`);
+            } else {
+              const { error: hIns } = await supabase.from("place_halls").insert(row);
+              if (hIns) throw new Error(`place_halls insert "${h.hall_name}": ${hIns.message}`);
+            }
           }
         }
       }
