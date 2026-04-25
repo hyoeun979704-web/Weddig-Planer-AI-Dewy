@@ -52,8 +52,16 @@ const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하
 - cons: 단점/주의점 3-5개. 없으면 빈 배열.
 - hidden_costs: 후기에서 반복 등장하는 추가 비용 항목 (예: "원본 데이터 별도", "헬퍼 비용 5만원")
 - recommended_for: 어떤 신부에게 적합한지 (예: ["소규모 결혼식","외향적 신부","합리적 가격 추구"])
-- avg_price_estimate: 후기에 나온 가격 범위. 단위(unit) 명확히 추정. 없으면 null.
-  unit: per_person(웨딩홀 1인당) | per_event(1회) | per_set(1세트) | per_day(1일) | per_package(패키지)
+- avg_price_estimate: 후기에서 가격 단서를 적극 추정하라. 직접 가격이 없어도 "비싸다/저렴하다/100만원대" 같은 표현으로 합리적 범위를 추정. 정말 단서가 0이면 null.
+  unit 기준 (카테고리별):
+    웨딩홀 → per_person (1인당 식대 기준, 보통 6-15만원 한국 평균)
+    스드메 → per_package (스드메 패키지 1세트, 보통 200-500만원)
+    한복 → per_set (1세트 대여, 보통 10-50만원)
+    예복 → per_set (1세트, 보통 30-150만원)
+    허니문 → per_package (1쌍 1패키지, 보통 200-1000만원)
+    혼수 → per_set (가전 풀세트, 보통 500-2000만원)
+    청첩장 → per_event (식사+장소, 보통 30-100만원)
+    웨딩플래너 → per_event (1회 의뢰, 보통 50-300만원)
 - min_guarantee, max_guarantee: 웨딩홀 보증인원 범위. 다른 카테고리는 무조건 null.
   예: "보증인원 200명부터 가능" → min_guarantee=200, max_guarantee=null.
 - summary: 2-3문장 한글 요약. 핵심 특징.

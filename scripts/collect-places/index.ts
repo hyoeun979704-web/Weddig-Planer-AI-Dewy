@@ -193,12 +193,9 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       continue;
     }
 
-    // Derive native columns: min_price from per_person estimate, guarantees for wedding_hall
+    // Derive native columns: min_price from any unit (UI formats by unit), guarantees for wedding_hall
     const isWeddingHall = c.category === "wedding_hall";
-    const minPrice =
-      analysis.avg_price_estimate?.unit === "per_person"
-        ? analysis.avg_price_estimate.min
-        : null;
+    const minPrice = analysis.avg_price_estimate?.min ?? null;
 
     const enhanced: CollectedPlace = {
       ...c,
