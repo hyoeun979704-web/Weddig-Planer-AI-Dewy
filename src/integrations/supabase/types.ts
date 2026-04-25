@@ -2236,13 +2236,16 @@ export type Database = {
           avg_rating: number | null
           category: string
           city: string | null
+          confidence: number | null
           created_at: string | null
           currency: string | null
+          data_source: string | null
           deleted_at: string | null
           description: string | null
           district: string | null
           is_active: boolean | null
           is_partner: boolean | null
+          last_source_date: string | null
           lat: number | null
           lng: number | null
           main_image_url: string | null
@@ -2252,6 +2255,7 @@ export type Database = {
           name: string
           place_id: string
           review_count: number | null
+          source_refs: Json | null
           tags: string[] | null
           updated_at: string | null
         }
@@ -2259,13 +2263,16 @@ export type Database = {
           avg_rating?: number | null
           category: string
           city?: string | null
+          confidence?: number | null
           created_at?: string | null
           currency?: string | null
+          data_source?: string | null
           deleted_at?: string | null
           description?: string | null
           district?: string | null
           is_active?: boolean | null
           is_partner?: boolean | null
+          last_source_date?: string | null
           lat?: number | null
           lng?: number | null
           main_image_url?: string | null
@@ -2275,6 +2282,7 @@ export type Database = {
           name: string
           place_id?: string
           review_count?: number | null
+          source_refs?: Json | null
           tags?: string[] | null
           updated_at?: string | null
         }
@@ -2282,13 +2290,16 @@ export type Database = {
           avg_rating?: number | null
           category?: string
           city?: string | null
+          confidence?: number | null
           created_at?: string | null
           currency?: string | null
+          data_source?: string | null
           deleted_at?: string | null
           description?: string | null
           district?: string | null
           is_active?: boolean | null
           is_partner?: boolean | null
+          last_source_date?: string | null
           lat?: number | null
           lng?: number | null
           main_image_url?: string | null
@@ -2298,6 +2309,7 @@ export type Database = {
           name?: string
           place_id?: string
           review_count?: number | null
+          source_refs?: Json | null
           tags?: string[] | null
           updated_at?: string | null
         }
