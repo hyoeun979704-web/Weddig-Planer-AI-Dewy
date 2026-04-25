@@ -38,54 +38,6 @@ export type Database = {
         }
         Relationships: []
       }
-      appliances: {
-        Row: {
-          brand: string
-          brand_options: string[] | null
-          category_types: string[] | null
-          created_at: string
-          feature_options: string[] | null
-          id: string
-          is_partner: boolean
-          name: string
-          price_range: string
-          rating: number
-          review_count: number
-          thumbnail_url: string | null
-          updated_at: string
-        }
-        Insert: {
-          brand: string
-          brand_options?: string[] | null
-          category_types?: string[] | null
-          created_at?: string
-          feature_options?: string[] | null
-          id?: string
-          is_partner?: boolean
-          name: string
-          price_range: string
-          rating?: number
-          review_count?: number
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Update: {
-          brand?: string
-          brand_options?: string[] | null
-          category_types?: string[] | null
-          created_at?: string
-          feature_options?: string[] | null
-          id?: string
-          is_partner?: boolean
-          name?: string
-          price_range?: string
-          rating?: number
-          review_count?: number
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       budget_items: {
         Row: {
           amount: number
@@ -655,409 +607,6 @@ export type Database = {
           },
         ]
       }
-      events: {
-        Row: {
-          benefit_detail: string | null
-          category: string | null
-          cautions: string | null
-          conditions: string | null
-          description: string | null
-          end_date: string | null
-          event_id: number
-          start_date: string | null
-          status: string | null
-          title: string
-          vendor_id: number | null
-          vendor_name: string | null
-          view_count: number | null
-        }
-        Insert: {
-          benefit_detail?: string | null
-          category?: string | null
-          cautions?: string | null
-          conditions?: string | null
-          description?: string | null
-          end_date?: string | null
-          event_id: number
-          start_date?: string | null
-          status?: string | null
-          title: string
-          vendor_id?: number | null
-          vendor_name?: string | null
-          view_count?: number | null
-        }
-        Update: {
-          benefit_detail?: string | null
-          category?: string | null
-          cautions?: string | null
-          conditions?: string | null
-          description?: string | null
-          end_date?: string | null
-          event_id?: number
-          start_date?: string | null
-          status?: string | null
-          title?: string
-          vendor_id?: number | null
-          vendor_name?: string | null
-          view_count?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "events_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendors"
-            referencedColumns: ["vendor_id"]
-          },
-        ]
-      }
-      ext_hanbok: {
-        Row: {
-          accessories_included: boolean | null
-          custom_price_range: string | null
-          fabric_options: string[] | null
-          family_package: boolean | null
-          hanbok_styles: string[] | null
-          lead_time_weeks: number | null
-          photo_hanbok_available: boolean | null
-          place_id: string
-          rental_price_range: string | null
-          service_types: string[] | null
-          target_types: string[] | null
-        }
-        Insert: {
-          accessories_included?: boolean | null
-          custom_price_range?: string | null
-          fabric_options?: string[] | null
-          family_package?: boolean | null
-          hanbok_styles?: string[] | null
-          lead_time_weeks?: number | null
-          photo_hanbok_available?: boolean | null
-          place_id: string
-          rental_price_range?: string | null
-          service_types?: string[] | null
-          target_types?: string[] | null
-        }
-        Update: {
-          accessories_included?: boolean | null
-          custom_price_range?: string | null
-          fabric_options?: string[] | null
-          family_package?: boolean | null
-          hanbok_styles?: string[] | null
-          lead_time_weeks?: number | null
-          photo_hanbok_available?: boolean | null
-          place_id?: string
-          rental_price_range?: string | null
-          service_types?: string[] | null
-          target_types?: string[] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ext_hanbok_place_id_fkey"
-            columns: ["place_id"]
-            isOneToOne: true
-            referencedRelation: "places"
-            referencedColumns: ["place_id"]
-          },
-        ]
-      }
-      ext_makeup: {
-        Row: {
-          artist_count: number | null
-          early_morning_available: boolean | null
-          includes_hair: boolean | null
-          package_options: Json | null
-          place_id: string
-          service_types: string[] | null
-          signature_styles: string[] | null
-          travel_fee: number | null
-          travel_service: boolean | null
-          trial_available: boolean | null
-          trial_price: number | null
-        }
-        Insert: {
-          artist_count?: number | null
-          early_morning_available?: boolean | null
-          includes_hair?: boolean | null
-          package_options?: Json | null
-          place_id: string
-          service_types?: string[] | null
-          signature_styles?: string[] | null
-          travel_fee?: number | null
-          travel_service?: boolean | null
-          trial_available?: boolean | null
-          trial_price?: number | null
-        }
-        Update: {
-          artist_count?: number | null
-          early_morning_available?: boolean | null
-          includes_hair?: boolean | null
-          package_options?: Json | null
-          place_id?: string
-          service_types?: string[] | null
-          signature_styles?: string[] | null
-          travel_fee?: number | null
-          travel_service?: boolean | null
-          trial_available?: boolean | null
-          trial_price?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ext_makeup_place_id_fkey"
-            columns: ["place_id"]
-            isOneToOne: true
-            referencedRelation: "places"
-            referencedColumns: ["place_id"]
-          },
-        ]
-      }
-      ext_products: {
-        Row: {
-          as_warranty: string | null
-          category_sub: string | null
-          delivery_period: string | null
-          item_id: number
-          model_no: string | null
-          name: string
-          original_price: number | null
-          price: number | null
-          purchase_url: string | null
-          specs: Json | null
-          vendor_id: number | null
-        }
-        Insert: {
-          as_warranty?: string | null
-          category_sub?: string | null
-          delivery_period?: string | null
-          item_id: number
-          model_no?: string | null
-          name: string
-          original_price?: number | null
-          price?: number | null
-          purchase_url?: string | null
-          specs?: Json | null
-          vendor_id?: number | null
-        }
-        Update: {
-          as_warranty?: string | null
-          category_sub?: string | null
-          delivery_period?: string | null
-          item_id?: number
-          model_no?: string | null
-          name?: string
-          original_price?: number | null
-          price?: number | null
-          purchase_url?: string | null
-          specs?: Json | null
-          vendor_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ext_products_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendors"
-            referencedColumns: ["vendor_id"]
-          },
-        ]
-      }
-      ext_restaurants: {
-        Row: {
-          ambiance_tags: string[] | null
-          capacity: number | null
-          corkage_allowed: boolean | null
-          corkage_fee: number | null
-          cuisine_types: string[] | null
-          featured_menus: string[] | null
-          is_reservable: boolean | null
-          min_order_amount: number | null
-          place_id: string
-          price_per_person: number | null
-          private_room: boolean | null
-          private_room_capacity: number | null
-          rental_fee: number | null
-          venue_rental: boolean | null
-        }
-        Insert: {
-          ambiance_tags?: string[] | null
-          capacity?: number | null
-          corkage_allowed?: boolean | null
-          corkage_fee?: number | null
-          cuisine_types?: string[] | null
-          featured_menus?: string[] | null
-          is_reservable?: boolean | null
-          min_order_amount?: number | null
-          place_id: string
-          price_per_person?: number | null
-          private_room?: boolean | null
-          private_room_capacity?: number | null
-          rental_fee?: number | null
-          venue_rental?: boolean | null
-        }
-        Update: {
-          ambiance_tags?: string[] | null
-          capacity?: number | null
-          corkage_allowed?: boolean | null
-          corkage_fee?: number | null
-          cuisine_types?: string[] | null
-          featured_menus?: string[] | null
-          is_reservable?: boolean | null
-          min_order_amount?: number | null
-          place_id?: string
-          price_per_person?: number | null
-          private_room?: boolean | null
-          private_room_capacity?: number | null
-          rental_fee?: number | null
-          venue_rental?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ext_restaurants_place_id_fkey"
-            columns: ["place_id"]
-            isOneToOne: true
-            referencedRelation: "places"
-            referencedColumns: ["place_id"]
-          },
-        ]
-      }
-      ext_studios: {
-        Row: {
-          additional_retouch_price: number | null
-          album_options: string[] | null
-          dress_count: number | null
-          includes_dress_rental: boolean | null
-          includes_makeup: boolean | null
-          outdoor_locations: string[] | null
-          package_options: Json | null
-          place_id: string
-          reservation_lead_days: number | null
-          retouching_count: number | null
-          shooting_styles: string[] | null
-          studio_types: string[] | null
-        }
-        Insert: {
-          additional_retouch_price?: number | null
-          album_options?: string[] | null
-          dress_count?: number | null
-          includes_dress_rental?: boolean | null
-          includes_makeup?: boolean | null
-          outdoor_locations?: string[] | null
-          package_options?: Json | null
-          place_id: string
-          reservation_lead_days?: number | null
-          retouching_count?: number | null
-          shooting_styles?: string[] | null
-          studio_types?: string[] | null
-        }
-        Update: {
-          additional_retouch_price?: number | null
-          album_options?: string[] | null
-          dress_count?: number | null
-          includes_dress_rental?: boolean | null
-          includes_makeup?: boolean | null
-          outdoor_locations?: string[] | null
-          package_options?: Json | null
-          place_id?: string
-          reservation_lead_days?: number | null
-          retouching_count?: number | null
-          shooting_styles?: string[] | null
-          studio_types?: string[] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ext_studios_place_id_fkey"
-            columns: ["place_id"]
-            isOneToOne: true
-            referencedRelation: "places"
-            referencedColumns: ["place_id"]
-          },
-        ]
-      }
-      ext_tailors: {
-        Row: {
-          alteration_included: boolean | null
-          brand_options: string[] | null
-          custom_price_range: string | null
-          dress_styles: string[] | null
-          fitting_count: number | null
-          gender_target: string | null
-          lead_time_weeks: number | null
-          place_id: string
-          rental_price_range: string | null
-          service_types: string[] | null
-          size_range: string | null
-          suit_styles: string[] | null
-        }
-        Insert: {
-          alteration_included?: boolean | null
-          brand_options?: string[] | null
-          custom_price_range?: string | null
-          dress_styles?: string[] | null
-          fitting_count?: number | null
-          gender_target?: string | null
-          lead_time_weeks?: number | null
-          place_id: string
-          rental_price_range?: string | null
-          service_types?: string[] | null
-          size_range?: string | null
-          suit_styles?: string[] | null
-        }
-        Update: {
-          alteration_included?: boolean | null
-          brand_options?: string[] | null
-          custom_price_range?: string | null
-          dress_styles?: string[] | null
-          fitting_count?: number | null
-          gender_target?: string | null
-          lead_time_weeks?: number | null
-          place_id?: string
-          rental_price_range?: string | null
-          service_types?: string[] | null
-          size_range?: string | null
-          suit_styles?: string[] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ext_tailors_place_id_fkey"
-            columns: ["place_id"]
-            isOneToOne: true
-            referencedRelation: "places"
-            referencedColumns: ["place_id"]
-          },
-        ]
-      }
-      ext_wedding_halls: {
-        Row: {
-          meal_cost_range: string | null
-          meal_type: string | null
-          parking_info: string | null
-          rental_cost_range: string | null
-          vendor_id: number
-        }
-        Insert: {
-          meal_cost_range?: string | null
-          meal_type?: string | null
-          parking_info?: string | null
-          rental_cost_range?: string | null
-          vendor_id: number
-        }
-        Update: {
-          meal_cost_range?: string | null
-          meal_type?: string | null
-          parking_info?: string | null
-          rental_cost_range?: string | null
-          vendor_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ext_wedding_halls_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: true
-            referencedRelation: "vendors"
-            referencedColumns: ["vendor_id"]
-          },
-        ]
-      }
       favorites: {
         Row: {
           created_at: string
@@ -1106,204 +655,6 @@ export type Database = {
           id?: string
           score?: number
           user_id?: string
-        }
-        Relationships: []
-      }
-      hanbok: {
-        Row: {
-          address: string
-          created_at: string
-          hanbok_types: string[] | null
-          id: string
-          is_partner: boolean
-          name: string
-          price_range: string
-          rating: number
-          review_count: number
-          service_options: string[] | null
-          style_options: string[] | null
-          thumbnail_url: string | null
-          updated_at: string
-        }
-        Insert: {
-          address: string
-          created_at?: string
-          hanbok_types?: string[] | null
-          id?: string
-          is_partner?: boolean
-          name: string
-          price_range: string
-          rating?: number
-          review_count?: number
-          service_options?: string[] | null
-          style_options?: string[] | null
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Update: {
-          address?: string
-          created_at?: string
-          hanbok_types?: string[] | null
-          id?: string
-          is_partner?: boolean
-          name?: string
-          price_range?: string
-          rating?: number
-          review_count?: number
-          service_options?: string[] | null
-          style_options?: string[] | null
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      honeymoon: {
-        Row: {
-          accommodation_types: string[] | null
-          created_at: string
-          destination: string
-          duration: string
-          id: string
-          included_services: string[] | null
-          is_partner: boolean
-          name: string
-          price_range: string
-          rating: number
-          review_count: number
-          thumbnail_url: string | null
-          trip_types: string[] | null
-          updated_at: string
-        }
-        Insert: {
-          accommodation_types?: string[] | null
-          created_at?: string
-          destination: string
-          duration: string
-          id?: string
-          included_services?: string[] | null
-          is_partner?: boolean
-          name: string
-          price_range: string
-          rating?: number
-          review_count?: number
-          thumbnail_url?: string | null
-          trip_types?: string[] | null
-          updated_at?: string
-        }
-        Update: {
-          accommodation_types?: string[] | null
-          created_at?: string
-          destination?: string
-          duration?: string
-          id?: string
-          included_services?: string[] | null
-          is_partner?: boolean
-          name?: string
-          price_range?: string
-          rating?: number
-          review_count?: number
-          thumbnail_url?: string | null
-          trip_types?: string[] | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      honeymoon_gifts: {
-        Row: {
-          brand: string
-          brand_options: string[] | null
-          category_types: string[] | null
-          created_at: string
-          delivery_options: string[] | null
-          id: string
-          is_partner: boolean
-          name: string
-          price_range: string
-          rating: number
-          review_count: number
-          thumbnail_url: string | null
-          updated_at: string
-        }
-        Insert: {
-          brand: string
-          brand_options?: string[] | null
-          category_types?: string[] | null
-          created_at?: string
-          delivery_options?: string[] | null
-          id?: string
-          is_partner?: boolean
-          name: string
-          price_range: string
-          rating?: number
-          review_count?: number
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Update: {
-          brand?: string
-          brand_options?: string[] | null
-          category_types?: string[] | null
-          created_at?: string
-          delivery_options?: string[] | null
-          id?: string
-          is_partner?: boolean
-          name?: string
-          price_range?: string
-          rating?: number
-          review_count?: number
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      invitation_venues: {
-        Row: {
-          address: string
-          amenity_options: string[] | null
-          capacity_range: string
-          created_at: string
-          cuisine_options: string[] | null
-          id: string
-          is_partner: boolean
-          name: string
-          price_range: string
-          rating: number
-          review_count: number
-          thumbnail_url: string | null
-          updated_at: string
-          venue_types: string[] | null
-        }
-        Insert: {
-          address: string
-          amenity_options?: string[] | null
-          capacity_range: string
-          created_at?: string
-          cuisine_options?: string[] | null
-          id?: string
-          is_partner?: boolean
-          name: string
-          price_range: string
-          rating?: number
-          review_count?: number
-          thumbnail_url?: string | null
-          updated_at?: string
-          venue_types?: string[] | null
-        }
-        Update: {
-          address?: string
-          amenity_options?: string[] | null
-          capacity_range?: string
-          created_at?: string
-          cuisine_options?: string[] | null
-          id?: string
-          is_partner?: boolean
-          name?: string
-          price_range?: string
-          rating?: number
-          review_count?: number
-          thumbnail_url?: string | null
-          updated_at?: string
-          venue_types?: string[] | null
         }
         Relationships: []
       }
@@ -1527,6 +878,35 @@ export type Database = {
           },
         ]
       }
+      place_appliances: {
+        Row: {
+          brand_options: string[] | null
+          place_id: string
+          price_per_person: number | null
+          product_categories: string[] | null
+        }
+        Insert: {
+          brand_options?: string[] | null
+          place_id: string
+          price_per_person?: number | null
+          product_categories?: string[] | null
+        }
+        Update: {
+          brand_options?: string[] | null
+          place_id?: string
+          price_per_person?: number | null
+          product_categories?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_appliances_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: true
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+        ]
+      }
       place_details: {
         Row: {
           address: string | null
@@ -1536,8 +916,12 @@ export type Database = {
           advantage_2_title: string | null
           advantage_3_content: string | null
           advantage_3_title: string | null
+          analyzed_at: string | null
+          atmosphere: string[] | null
           closed_days: string | null
+          cons: string[] | null
           facebook_url: string | null
+          hidden_costs: string[] | null
           holiday_notice: string | null
           hours_fri: string | null
           hours_mon: string | null
@@ -1558,10 +942,13 @@ export type Database = {
           parking_free_parents: string | null
           parking_location: string | null
           place_id: string
+          pros: string[] | null
+          recommended_for: string[] | null
           shuttle_bus_available: boolean | null
           shuttle_bus_info: string | null
           subway_line: string | null
           subway_station: string | null
+          summary: string | null
           tel: string | null
           updated_at: string | null
           walk_minutes: number | null
@@ -1576,8 +963,12 @@ export type Database = {
           advantage_2_title?: string | null
           advantage_3_content?: string | null
           advantage_3_title?: string | null
+          analyzed_at?: string | null
+          atmosphere?: string[] | null
           closed_days?: string | null
+          cons?: string[] | null
           facebook_url?: string | null
+          hidden_costs?: string[] | null
           holiday_notice?: string | null
           hours_fri?: string | null
           hours_mon?: string | null
@@ -1598,10 +989,13 @@ export type Database = {
           parking_free_parents?: string | null
           parking_location?: string | null
           place_id: string
+          pros?: string[] | null
+          recommended_for?: string[] | null
           shuttle_bus_available?: boolean | null
           shuttle_bus_info?: string | null
           subway_line?: string | null
           subway_station?: string | null
+          summary?: string | null
           tel?: string | null
           updated_at?: string | null
           walk_minutes?: number | null
@@ -1616,8 +1010,12 @@ export type Database = {
           advantage_2_title?: string | null
           advantage_3_content?: string | null
           advantage_3_title?: string | null
+          analyzed_at?: string | null
+          atmosphere?: string[] | null
           closed_days?: string | null
+          cons?: string[] | null
           facebook_url?: string | null
+          hidden_costs?: string[] | null
           holiday_notice?: string | null
           hours_fri?: string | null
           hours_mon?: string | null
@@ -1638,10 +1036,13 @@ export type Database = {
           parking_free_parents?: string | null
           parking_location?: string | null
           place_id?: string
+          pros?: string[] | null
+          recommended_for?: string[] | null
           shuttle_bus_available?: boolean | null
           shuttle_bus_info?: string | null
           subway_line?: string | null
           subway_station?: string | null
+          summary?: string | null
           tel?: string | null
           updated_at?: string | null
           walk_minutes?: number | null
@@ -1658,29 +1059,34 @@ export type Database = {
           },
         ]
       }
-      place_exclusions: {
+      place_dress_shops: {
         Row: {
-          detected_at: string | null
-          id: string
-          reason: string
-          source_id: string
-          source_name: string
+          dress_styles: string[] | null
+          place_id: string
+          price_per_person: number | null
+          rental_only: boolean | null
         }
         Insert: {
-          detected_at?: string | null
-          id?: string
-          reason: string
-          source_id: string
-          source_name: string
+          dress_styles?: string[] | null
+          place_id: string
+          price_per_person?: number | null
+          rental_only?: boolean | null
         }
         Update: {
-          detected_at?: string | null
-          id?: string
-          reason?: string
-          source_id?: string
-          source_name?: string
+          dress_styles?: string[] | null
+          place_id?: string
+          price_per_person?: number | null
+          rental_only?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "place_dress_shops_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: true
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+        ]
       }
       place_gallery_images: {
         Row: {
@@ -1849,257 +1255,150 @@ export type Database = {
           },
         ]
       }
-      place_product_options: {
+      place_hanboks: {
         Row: {
-          extra_price: number | null
-          is_available: boolean | null
-          option_id: string
-          option_name: string | null
-          option_type: string | null
-          product_id: string
+          custom_available: boolean | null
+          hanbok_types: string[] | null
+          place_id: string
+          price_per_person: number | null
         }
         Insert: {
-          extra_price?: number | null
-          is_available?: boolean | null
-          option_id?: string
-          option_name?: string | null
-          option_type?: string | null
-          product_id: string
+          custom_available?: boolean | null
+          hanbok_types?: string[] | null
+          place_id: string
+          price_per_person?: number | null
         }
         Update: {
-          extra_price?: number | null
-          is_available?: boolean | null
-          option_id?: string
-          option_name?: string | null
-          option_type?: string | null
-          product_id?: string
+          custom_available?: boolean | null
+          hanbok_types?: string[] | null
+          place_id?: string
+          price_per_person?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "place_product_options_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "place_products"
-            referencedColumns: ["product_id"]
-          },
-          {
-            foreignKeyName: "place_product_options_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "product_lowest_prices"
-            referencedColumns: ["product_id"]
+            foreignKeyName: "place_hanboks_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: true
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
           },
         ]
       }
-      place_product_price_alerts: {
+      place_honeymoons: {
         Row: {
-          created_at: string | null
-          id: string
-          is_triggered: boolean | null
-          notified_at: string | null
-          notified_price: number | null
-          product_id: string
-          target_price: number
-          triggered_at: string | null
-          user_id: string
+          destinations: string[] | null
+          duration_days: number | null
+          place_id: string
+          price_per_person: number | null
         }
         Insert: {
-          created_at?: string | null
-          id?: string
-          is_triggered?: boolean | null
-          notified_at?: string | null
-          notified_price?: number | null
-          product_id: string
-          target_price: number
-          triggered_at?: string | null
-          user_id: string
+          destinations?: string[] | null
+          duration_days?: number | null
+          place_id: string
+          price_per_person?: number | null
         }
         Update: {
-          created_at?: string | null
-          id?: string
-          is_triggered?: boolean | null
-          notified_at?: string | null
-          notified_price?: number | null
-          product_id?: string
-          target_price?: number
-          triggered_at?: string | null
-          user_id?: string
+          destinations?: string[] | null
+          duration_days?: number | null
+          place_id?: string
+          price_per_person?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "place_product_price_alerts_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "place_products"
-            referencedColumns: ["product_id"]
-          },
-          {
-            foreignKeyName: "place_product_price_alerts_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "product_lowest_prices"
-            referencedColumns: ["product_id"]
+            foreignKeyName: "place_honeymoons_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: true
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
           },
         ]
       }
-      place_product_price_history: {
+      place_invitation_venues: {
         Row: {
-          id: string
-          platform: string
-          price: number
-          product_id: string
-          recorded_at: string | null
+          capacity_max: number | null
+          capacity_min: number | null
+          place_id: string
+          price_per_person: number | null
+          venue_types: string[] | null
         }
         Insert: {
-          id?: string
-          platform: string
-          price: number
-          product_id: string
-          recorded_at?: string | null
+          capacity_max?: number | null
+          capacity_min?: number | null
+          place_id: string
+          price_per_person?: number | null
+          venue_types?: string[] | null
         }
         Update: {
-          id?: string
-          platform?: string
-          price?: number
-          product_id?: string
-          recorded_at?: string | null
+          capacity_max?: number | null
+          capacity_min?: number | null
+          place_id?: string
+          price_per_person?: number | null
+          venue_types?: string[] | null
         }
         Relationships: [
           {
-            foreignKeyName: "place_product_price_history_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "place_products"
-            referencedColumns: ["product_id"]
-          },
-          {
-            foreignKeyName: "place_product_price_history_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "product_lowest_prices"
-            referencedColumns: ["product_id"]
+            foreignKeyName: "place_invitation_venues_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: true
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
           },
         ]
       }
-      place_product_prices: {
+      place_makeup_shops: {
         Row: {
-          crawled_at: string | null
-          discount_rate: number | null
-          id: string
-          is_free_shipping: boolean | null
-          is_lowest: boolean | null
-          original_price: number | null
-          platform: string
-          platform_product_id: string | null
-          price: number
-          product_id: string
-          product_url: string
-          seller_name: string | null
-          shipping_fee: number | null
-          stock_status: string | null
+          includes_rehearsal: boolean | null
+          makeup_styles: string[] | null
+          place_id: string
+          price_per_person: number | null
         }
         Insert: {
-          crawled_at?: string | null
-          discount_rate?: number | null
-          id?: string
-          is_free_shipping?: boolean | null
-          is_lowest?: boolean | null
-          original_price?: number | null
-          platform: string
-          platform_product_id?: string | null
-          price: number
-          product_id: string
-          product_url: string
-          seller_name?: string | null
-          shipping_fee?: number | null
-          stock_status?: string | null
+          includes_rehearsal?: boolean | null
+          makeup_styles?: string[] | null
+          place_id: string
+          price_per_person?: number | null
         }
         Update: {
-          crawled_at?: string | null
-          discount_rate?: number | null
-          id?: string
-          is_free_shipping?: boolean | null
-          is_lowest?: boolean | null
-          original_price?: number | null
-          platform?: string
-          platform_product_id?: string | null
-          price?: number
-          product_id?: string
-          product_url?: string
-          seller_name?: string | null
-          shipping_fee?: number | null
-          stock_status?: string | null
+          includes_rehearsal?: boolean | null
+          makeup_styles?: string[] | null
+          place_id?: string
+          price_per_person?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "place_product_prices_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "place_products"
-            referencedColumns: ["product_id"]
-          },
-          {
-            foreignKeyName: "place_product_prices_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "product_lowest_prices"
-            referencedColumns: ["product_id"]
+            foreignKeyName: "place_makeup_shops_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: true
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
           },
         ]
       }
-      place_products: {
+      place_planners: {
         Row: {
-          brand: string
-          category: string
-          created_at: string | null
-          description: string | null
-          is_active: boolean | null
-          main_image_url: string | null
-          model_name: string | null
-          model_number: string | null
-          name: string
-          product_id: string
-          release_year: number | null
-          specs: Json | null
-          subcategory: string | null
-          tags: string[] | null
-          updated_at: string | null
+          place_id: string
+          price_per_person: number | null
+          service_packages: string[] | null
         }
         Insert: {
-          brand?: string
-          category: string
-          created_at?: string | null
-          description?: string | null
-          is_active?: boolean | null
-          main_image_url?: string | null
-          model_name?: string | null
-          model_number?: string | null
-          name: string
-          product_id?: string
-          release_year?: number | null
-          specs?: Json | null
-          subcategory?: string | null
-          tags?: string[] | null
-          updated_at?: string | null
+          place_id: string
+          price_per_person?: number | null
+          service_packages?: string[] | null
         }
         Update: {
-          brand?: string
-          category?: string
-          created_at?: string | null
-          description?: string | null
-          is_active?: boolean | null
-          main_image_url?: string | null
-          model_name?: string | null
-          model_number?: string | null
-          name?: string
-          product_id?: string
-          release_year?: number | null
-          specs?: Json | null
-          subcategory?: string | null
-          tags?: string[] | null
-          updated_at?: string | null
+          place_id?: string
+          price_per_person?: number | null
+          service_packages?: string[] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "place_planners_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: true
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+        ]
       }
       place_reviews: {
         Row: {
@@ -2166,36 +1465,6 @@ export type Database = {
           },
         ]
       }
-      place_similars: {
-        Row: {
-          place_id: string
-          similar_place_id: string
-        }
-        Insert: {
-          place_id: string
-          similar_place_id: string
-        }
-        Update: {
-          place_id?: string
-          similar_place_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "place_similars_place_id_fkey"
-            columns: ["place_id"]
-            isOneToOne: false
-            referencedRelation: "places"
-            referencedColumns: ["place_id"]
-          },
-          {
-            foreignKeyName: "place_similars_similar_place_id_fkey"
-            columns: ["similar_place_id"]
-            isOneToOne: false
-            referencedRelation: "places"
-            referencedColumns: ["place_id"]
-          },
-        ]
-      }
       place_sources: {
         Row: {
           id: string
@@ -2231,151 +1500,176 @@ export type Database = {
           },
         ]
       }
+      place_studios: {
+        Row: {
+          includes_originals: boolean | null
+          place_id: string
+          price_per_person: number | null
+          shoot_styles: string[] | null
+        }
+        Insert: {
+          includes_originals?: boolean | null
+          place_id: string
+          price_per_person?: number | null
+          shoot_styles?: string[] | null
+        }
+        Update: {
+          includes_originals?: boolean | null
+          place_id?: string
+          price_per_person?: number | null
+          shoot_styles?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_studios_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: true
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+        ]
+      }
+      place_tailor_shops: {
+        Row: {
+          custom_available: boolean | null
+          place_id: string
+          price_per_person: number | null
+          suit_styles: string[] | null
+        }
+        Insert: {
+          custom_available?: boolean | null
+          place_id: string
+          price_per_person?: number | null
+          suit_styles?: string[] | null
+        }
+        Update: {
+          custom_available?: boolean | null
+          place_id?: string
+          price_per_person?: number | null
+          suit_styles?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_tailor_shops_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: true
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+        ]
+      }
+      place_wedding_halls: {
+        Row: {
+          hall_styles: string[] | null
+          max_guarantee: number | null
+          meal_types: string[] | null
+          min_guarantee: number | null
+          place_id: string
+          price_per_person: number | null
+        }
+        Insert: {
+          hall_styles?: string[] | null
+          max_guarantee?: number | null
+          meal_types?: string[] | null
+          min_guarantee?: number | null
+          place_id: string
+          price_per_person?: number | null
+        }
+        Update: {
+          hall_styles?: string[] | null
+          max_guarantee?: number | null
+          meal_types?: string[] | null
+          min_guarantee?: number | null
+          place_id?: string
+          price_per_person?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_wedding_halls_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: true
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+        ]
+      }
       places: {
         Row: {
-          analyzed_at: string | null
-          atmosphere: string[] | null
-          avg_price_estimate: Json | null
           avg_rating: number | null
           category: string
           city: string | null
           confidence: number | null
-          cons: string[] | null
           created_at: string | null
           currency: string | null
           data_source: string | null
           deleted_at: string | null
           description: string | null
           district: string | null
-          hidden_costs: string[] | null
           is_active: boolean | null
           is_partner: boolean | null
           last_source_date: string | null
           lat: number | null
           lng: number | null
           main_image_url: string | null
-          max_guarantee: number | null
-          min_guarantee: number | null
           min_price: number | null
           name: string
           place_id: string
-          price_tier: string | null
-          pros: string[] | null
-          recommended_for: string[] | null
           review_count: number | null
           source_refs: Json | null
-          summary: string | null
           tags: string[] | null
           updated_at: string | null
         }
         Insert: {
-          analyzed_at?: string | null
-          atmosphere?: string[] | null
-          avg_price_estimate?: Json | null
           avg_rating?: number | null
           category: string
           city?: string | null
           confidence?: number | null
-          cons?: string[] | null
           created_at?: string | null
           currency?: string | null
           data_source?: string | null
           deleted_at?: string | null
           description?: string | null
           district?: string | null
-          hidden_costs?: string[] | null
           is_active?: boolean | null
           is_partner?: boolean | null
           last_source_date?: string | null
           lat?: number | null
           lng?: number | null
           main_image_url?: string | null
-          max_guarantee?: number | null
-          min_guarantee?: number | null
           min_price?: number | null
           name: string
           place_id?: string
-          price_tier?: string | null
-          pros?: string[] | null
-          recommended_for?: string[] | null
           review_count?: number | null
           source_refs?: Json | null
-          summary?: string | null
           tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
-          analyzed_at?: string | null
-          atmosphere?: string[] | null
-          avg_price_estimate?: Json | null
           avg_rating?: number | null
           category?: string
           city?: string | null
           confidence?: number | null
-          cons?: string[] | null
           created_at?: string | null
           currency?: string | null
           data_source?: string | null
           deleted_at?: string | null
           description?: string | null
           district?: string | null
-          hidden_costs?: string[] | null
           is_active?: boolean | null
           is_partner?: boolean | null
           last_source_date?: string | null
           lat?: number | null
           lng?: number | null
           main_image_url?: string | null
-          max_guarantee?: number | null
-          min_guarantee?: number | null
           min_price?: number | null
           name?: string
           place_id?: string
-          price_tier?: string | null
-          pros?: string[] | null
-          recommended_for?: string[] | null
           review_count?: number | null
           source_refs?: Json | null
-          summary?: string | null
           tags?: string[] | null
           updated_at?: string | null
         }
         Relationships: []
-      }
-      product_options: {
-        Row: {
-          extra_price: number | null
-          features: string | null
-          item_id: number | null
-          option_id: number
-          option_name: string | null
-          sort_order: number | null
-        }
-        Insert: {
-          extra_price?: number | null
-          features?: string | null
-          item_id?: number | null
-          option_id: number
-          option_name?: string | null
-          sort_order?: number | null
-        }
-        Update: {
-          extra_price?: number | null
-          features?: string | null
-          item_id?: number | null
-          option_id?: number
-          option_name?: string | null
-          sort_order?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_options_item_id_fkey"
-            columns: ["item_id"]
-            isOneToOne: false
-            referencedRelation: "ext_products"
-            referencedColumns: ["item_id"]
-          },
-        ]
       }
       products: {
         Row: {
@@ -2455,146 +1749,6 @@ export type Database = {
         }
         Relationships: []
       }
-      reviews: {
-        Row: {
-          ai_summary: string | null
-          content: string | null
-          created_at: string | null
-          item_id: number | null
-          rating: number | null
-          review_id: number
-          user_id: number | null
-          vendor_id: number | null
-        }
-        Insert: {
-          ai_summary?: string | null
-          content?: string | null
-          created_at?: string | null
-          item_id?: number | null
-          rating?: number | null
-          review_id: number
-          user_id?: number | null
-          vendor_id?: number | null
-        }
-        Update: {
-          ai_summary?: string | null
-          content?: string | null
-          created_at?: string | null
-          item_id?: number | null
-          rating?: number | null
-          review_id?: number
-          user_id?: number | null
-          vendor_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reviews_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendors"
-            referencedColumns: ["vendor_id"]
-          },
-        ]
-      }
-      shopping_products: {
-        Row: {
-          brand_id: number | null
-          cautions: string | null
-          detail_url: string | null
-          discount_rate: number | null
-          keywords: string | null
-          original_price: number | null
-          price: number | null
-          product_name: string
-          rating: number | null
-          review_count: number | null
-          sales_count: number | null
-          shopping_product_id: number
-          thumbnail_url: string | null
-        }
-        Insert: {
-          brand_id?: number | null
-          cautions?: string | null
-          detail_url?: string | null
-          discount_rate?: number | null
-          keywords?: string | null
-          original_price?: number | null
-          price?: number | null
-          product_name: string
-          rating?: number | null
-          review_count?: number | null
-          sales_count?: number | null
-          shopping_product_id: number
-          thumbnail_url?: string | null
-        }
-        Update: {
-          brand_id?: number | null
-          cautions?: string | null
-          detail_url?: string | null
-          discount_rate?: number | null
-          keywords?: string | null
-          original_price?: number | null
-          price?: number | null
-          product_name?: string
-          rating?: number | null
-          review_count?: number | null
-          sales_count?: number | null
-          shopping_product_id?: number
-          thumbnail_url?: string | null
-        }
-        Relationships: []
-      }
-      studios: {
-        Row: {
-          address: string
-          created_at: string
-          id: string
-          is_partner: boolean
-          min_guarantee: number
-          name: string
-          package_types: string[] | null
-          price_per_person: number
-          rating: number
-          review_count: number
-          service_options: string[] | null
-          style_options: string[] | null
-          thumbnail_url: string | null
-          updated_at: string
-        }
-        Insert: {
-          address: string
-          created_at?: string
-          id?: string
-          is_partner?: boolean
-          min_guarantee?: number
-          name: string
-          package_types?: string[] | null
-          price_per_person: number
-          rating?: number
-          review_count?: number
-          service_options?: string[] | null
-          style_options?: string[] | null
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Update: {
-          address?: string
-          created_at?: string
-          id?: string
-          is_partner?: boolean
-          min_guarantee?: number
-          name?: string
-          package_types?: string[] | null
-          price_per_person?: number
-          rating?: number
-          review_count?: number
-          service_options?: string[] | null
-          style_options?: string[] | null
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       subscriptions: {
         Row: {
           cancelled_at: string | null
@@ -2640,54 +1794,6 @@ export type Database = {
           trial_ends_at?: string | null
           updated_at?: string | null
           user_id?: string
-        }
-        Relationships: []
-      }
-      suits: {
-        Row: {
-          address: string
-          brand_options: string[] | null
-          created_at: string
-          id: string
-          is_partner: boolean
-          name: string
-          price_range: string
-          rating: number
-          review_count: number
-          service_options: string[] | null
-          suit_types: string[] | null
-          thumbnail_url: string | null
-          updated_at: string
-        }
-        Insert: {
-          address: string
-          brand_options?: string[] | null
-          created_at?: string
-          id?: string
-          is_partner?: boolean
-          name: string
-          price_range: string
-          rating?: number
-          review_count?: number
-          service_options?: string[] | null
-          suit_types?: string[] | null
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Update: {
-          address?: string
-          brand_options?: string[] | null
-          created_at?: string
-          id?: string
-          is_partner?: boolean
-          name?: string
-          price_range?: string
-          rating?: number
-          review_count?: number
-          service_options?: string[] | null
-          suit_types?: string[] | null
-          thumbnail_url?: string | null
-          updated_at?: string
         }
         Relationships: []
       }
@@ -2932,154 +2038,6 @@ export type Database = {
         }
         Relationships: []
       }
-      venue_halls: {
-        Row: {
-          capacity_max: number | null
-          capacity_min: number | null
-          ceremony_fee: number | null
-          created_at: string
-          floor: string | null
-          hall_type: string | null
-          id: string
-          meal_price: number | null
-          name: string
-          price_per_person: number | null
-          size_pyeong: number | null
-          thumbnail_url: string | null
-          updated_at: string
-          venue_id: string
-        }
-        Insert: {
-          capacity_max?: number | null
-          capacity_min?: number | null
-          ceremony_fee?: number | null
-          created_at?: string
-          floor?: string | null
-          hall_type?: string | null
-          id?: string
-          meal_price?: number | null
-          name: string
-          price_per_person?: number | null
-          size_pyeong?: number | null
-          thumbnail_url?: string | null
-          updated_at?: string
-          venue_id: string
-        }
-        Update: {
-          capacity_max?: number | null
-          capacity_min?: number | null
-          ceremony_fee?: number | null
-          created_at?: string
-          floor?: string | null
-          hall_type?: string | null
-          id?: string
-          meal_price?: number | null
-          name?: string
-          price_per_person?: number | null
-          size_pyeong?: number | null
-          thumbnail_url?: string | null
-          updated_at?: string
-          venue_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "venue_halls_venue_id_fkey"
-            columns: ["venue_id"]
-            isOneToOne: false
-            referencedRelation: "venues"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      venue_special_points: {
-        Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          icon: string | null
-          id: string
-          title: string
-          venue_id: string
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          icon?: string | null
-          id?: string
-          title: string
-          venue_id: string
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          icon?: string | null
-          id?: string
-          title?: string
-          venue_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "venue_special_points_venue_id_fkey"
-            columns: ["venue_id"]
-            isOneToOne: false
-            referencedRelation: "venues"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      venues: {
-        Row: {
-          address: string
-          created_at: string
-          event_options: string[] | null
-          hall_types: string[] | null
-          id: string
-          is_partner: boolean
-          meal_options: string[] | null
-          min_guarantee: number
-          name: string
-          price_per_person: number
-          rating: number
-          review_count: number
-          thumbnail_url: string | null
-          updated_at: string
-        }
-        Insert: {
-          address: string
-          created_at?: string
-          event_options?: string[] | null
-          hall_types?: string[] | null
-          id?: string
-          is_partner?: boolean
-          meal_options?: string[] | null
-          min_guarantee?: number
-          name: string
-          price_per_person: number
-          rating?: number
-          review_count?: number
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Update: {
-          address?: string
-          created_at?: string
-          event_options?: string[] | null
-          hall_types?: string[] | null
-          id?: string
-          is_partner?: boolean
-          meal_options?: string[] | null
-          min_guarantee?: number
-          name?: string
-          price_per_person?: number
-          rating?: number
-          review_count?: number
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       game_ranking: {
@@ -3089,26 +2047,6 @@ export type Database = {
           games_played: number | null
           total_earned: number | null
           user_id: string | null
-        }
-        Relationships: []
-      }
-      product_lowest_prices: {
-        Row: {
-          all_prices: Json | null
-          brand: string | null
-          category: string | null
-          is_free_shipping: boolean | null
-          lowest_platform: string | null
-          lowest_price: number | null
-          lowest_seller: string | null
-          lowest_url: string | null
-          main_image_url: string | null
-          name: string | null
-          price_updated_at: string | null
-          product_id: string | null
-          shipping_fee: number | null
-          specs: Json | null
-          subcategory: string | null
         }
         Relationships: []
       }

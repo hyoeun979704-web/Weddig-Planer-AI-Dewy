@@ -89,24 +89,12 @@ export const useVendor = (vendorId: string) => {
   });
 };
 
-// Fetch all events
-export const useEvents = (category?: string) => {
+// events table removed during schema cleanup. Stub preserved for callers.
+export const useEvents = (_category?: string) => {
   return useQuery({
-    queryKey: ["events", category],
-    queryFn: async (): Promise<VendorEvent[]> => {
-      let query = supabase
-        .from("events")
-        .select("*")
-        .order("view_count", { ascending: false });
-
-      if (category) {
-        query = query.eq("category", category);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data ?? []) as unknown as VendorEvent[];
-    },
+    queryKey: ["events", _category],
+    queryFn: async (): Promise<VendorEvent[]> => [],
+    enabled: false,
   });
 };
 

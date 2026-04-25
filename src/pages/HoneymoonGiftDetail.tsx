@@ -1,33 +1,18 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Star, Phone, Share2, ChevronRight, Gift, Truck, Tag, Building } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { usePlaceDetail, LegacyDetail } from "@/hooks/usePlaceDetail";
 
-type HoneymoonGift = Tables<"honeymoon_gifts">;
+type HoneymoonGift = LegacyDetail;
 
 const HoneymoonGiftDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { data: gift, isLoading, error } = useQuery({
-    queryKey: ["honeymoon-gift", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("honeymoon_gifts")
-        .select("*")
-        .eq("id", id!)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data as HoneymoonGift;
-    },
-    enabled: !!id,
-  });
+  const { data: gift, isLoading, error } = usePlaceDetail(id);
 
   if (isLoading) {
     return <DetailSkeleton />;

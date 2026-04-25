@@ -16,133 +16,74 @@ export interface CategoryItem {
   review_count: number;
   is_partner: boolean;
   thumbnail_url: string | null;
-  // Array fields vary by category
   [key: string]: unknown;
 }
 
-interface CategoryConfig {
-  tableName: string;
-  arrayField1: string;
-  arrayField2: string;
-  arrayField3: string;
-  locationField: string;
-}
+const PAGE_SIZE = 10;
 
-const categoryConfigs: Record<CategoryType, CategoryConfig> = {
-  venues: {
-    tableName: 'venues',
-    arrayField1: '',
-    arrayField2: '',
-    arrayField3: '',
-    locationField: 'address',
-  },
-  studios: {
-    tableName: 'studios',
-    arrayField1: 'package_types',
-    arrayField2: 'style_options',
-    arrayField3: 'service_options',
-    locationField: 'address',
-  },
-  honeymoon: {
-    tableName: 'honeymoon',
-    arrayField1: 'trip_types',
-    arrayField2: 'included_services',
-    arrayField3: 'accommodation_types',
-    locationField: 'destination',
-  },
-  honeymoon_gifts: {
-    tableName: 'honeymoon_gifts',
-    arrayField1: 'category_types',
-    arrayField2: 'brand_options',
-    arrayField3: 'delivery_options',
-    locationField: 'brand',
-  },
-  appliances: {
-    tableName: 'appliances',
-    arrayField1: 'category_types',
-    arrayField2: 'brand_options',
-    arrayField3: 'feature_options',
-    locationField: 'brand',
-  },
-  suits: {
-    tableName: 'suits',
-    arrayField1: 'suit_types',
-    arrayField2: 'brand_options',
-    arrayField3: 'service_options',
-    locationField: 'address',
-  },
-  hanbok: {
-    tableName: 'hanbok',
-    arrayField1: 'hanbok_types',
-    arrayField2: 'style_options',
-    arrayField3: 'service_options',
-    locationField: 'address',
-  },
-  invitation_venues: {
-    tableName: 'invitation_venues',
-    arrayField1: 'venue_types',
-    arrayField2: 'amenity_options',
-    arrayField3: 'cuisine_options',
-    locationField: 'address',
-  },
+// Maps the app's CategoryType → places.category slug
+const CATEGORY_TYPE_TO_PLACE: Record<CategoryType, string> = {
+  venues: "wedding_hall",
+  studios: "studio",
+  honeymoon: "honeymoon",
+  honeymoon_gifts: "appliance",
+  appliances: "appliance",
+  suits: "tailor_shop",
+  hanbok: "hanbok",
+  invitation_venues: "invitation_venue",
 };
 
-const PAGE_SIZE = 10;
+interface FetchParams {
+  region?: string;
+  minRating?: number;
+  filterOptions1?: string[];
+  filterOptions2?: string[];
+  filterOptions3?: string[];
+}
 
 async function fetchCategoryItems(
   category: CategoryType,
-  filters: {
-    region: string | null;
-    minRating: number | null;
-    filterOptions1: string[];
-    filterOptions2: string[];
-    filterOptions3: string[];
-  },
+  filters: FetchParams,
   pageParam: number
 ) {
-  const config = categoryConfigs[category];
-  const tableName = config.tableName as 'venues' | 'studios' | 'honeymoon' | 'honeymoon_gifts' | 'appliances' | 'suits' | 'hanbok' | 'invitation_venues';
-  
+  const placeCategory = CATEGORY_TYPE_TO_PLACE[category] ?? category;
+  const from = pageParam * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   let query = supabase
-    .from(tableName)
-    .select('*', { count: 'exact' });
+    .from("places")
+    .select("*", { count: "exact" })
+    .eq("category", placeCategory)
+    .eq("is_active", true)
+    .is("deleted_at", null);
 
-  query = query
-    .order('is_partner', { ascending: false })
-    .order('rating', { ascending: false });
-
-  query = query.range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
-
-  // Apply region filter
   if (filters.region) {
-    query = query.ilike(config.locationField as never, `%${filters.region}%` as never);
+    query = query.ilike("city", `%${filters.region}%`);
   }
-
-  // Apply rating filter
   if (filters.minRating) {
-    query = query.gte('rating', filters.minRating);
+    query = query.gte("avg_rating", filters.minRating);
   }
 
-  // Apply array filters
-  if (filters.filterOptions1.length > 0) {
-    query = query.overlaps(config.arrayField1 as never, filters.filterOptions1 as never);
-  }
-
-  if (filters.filterOptions2.length > 0) {
-    query = query.overlaps(config.arrayField2 as never, filters.filterOptions2 as never);
-  }
-
-  if (filters.filterOptions3.length > 0) {
-    query = query.overlaps(config.arrayField3 as never, filters.filterOptions3 as never);
-  }
-
-  const { data, error, count } = await query;
+  const { data, error, count } = await query
+    .order("avg_rating", { ascending: false })
+    .range(from, to);
 
   if (error) throw error;
 
+  const items: CategoryItem[] = (data ?? []).map((p) => ({
+    id: p.place_id,
+    name: p.name,
+    address: [p.city, p.district].filter(Boolean).join(" "),
+    price_per_person: p.min_price ?? undefined,
+    rating: p.avg_rating ?? 0,
+    review_count: p.review_count ?? 0,
+    is_partner: p.is_partner ?? false,
+    thumbnail_url: p.main_image_url,
+  }));
+
   return {
-    data: data as CategoryItem[],
-    nextPage: data && data.length === PAGE_SIZE ? pageParam + 1 : undefined,
+    data: items,
+    nextPage: items.length === PAGE_SIZE ? pageParam + 1 : undefined,
     totalCount: count ?? 0,
   };
 }
@@ -156,12 +97,23 @@ export function useCategoryData(category: CategoryType) {
 
   return useInfiniteQuery({
     queryKey: [category, region, minRating, filterOptions1, filterOptions2, filterOptions3],
-    queryFn: ({ pageParam = 0 }) => fetchCategoryItems(category, { region, minRating, filterOptions1, filterOptions2, filterOptions3 }, pageParam),
+    queryFn: ({ pageParam = 0 }) =>
+      fetchCategoryItems(
+        category,
+        { region, minRating, filterOptions1, filterOptions2, filterOptions3 },
+        pageParam
+      ),
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 0,
   });
 }
 
 export function getCategoryConfig(category: CategoryType) {
-  return categoryConfigs[category];
+  return {
+    tableName: CATEGORY_TYPE_TO_PLACE[category] ?? category,
+    arrayField1: "",
+    arrayField2: "",
+    arrayField3: "",
+    locationField: "address" as const,
+  };
 }

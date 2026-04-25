@@ -1,33 +1,18 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Star, MapPin, Phone, Share2, ChevronRight, Camera, Palette, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { usePlaceDetail, LegacyDetail } from "@/hooks/usePlaceDetail";
 
-type Studio = Tables<"studios">;
+type Studio = LegacyDetail;
 
 const StudioDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { data: studio, isLoading, error } = useQuery({
-    queryKey: ["studio", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("studios")
-        .select("*")
-        .eq("id", id!)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data as Studio;
-    },
-    enabled: !!id,
-  });
+  const { data: studio, isLoading, error } = usePlaceDetail(id);
 
   if (isLoading) {
     return <DetailSkeleton />;

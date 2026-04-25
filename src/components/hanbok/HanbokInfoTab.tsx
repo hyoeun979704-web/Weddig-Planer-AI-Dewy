@@ -1,9 +1,9 @@
 import { MapPin, Phone, Clock, Globe, Car, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Tables } from "@/integrations/supabase/types";
+import type { LegacyDetail } from "@/hooks/usePlaceDetail";
 
-type Hanbok = Tables<"hanbok">;
+type Hanbok = LegacyDetail;
 
 interface HanbokInfoTabProps {
   hanbok: Hanbok;

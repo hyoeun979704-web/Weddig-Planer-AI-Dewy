@@ -91,27 +91,35 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
 
     const fetchResults = async () => {
       try {
-        const [venues, studios, honeymoon, honeymoonGifts, appliances, suits, hanbok, invitationVenues] = await Promise.all([
-          supabase.from("venues").select("id, name, address").ilike("name", searchTerm).limit(3),
-          supabase.from("studios").select("id, name, address").ilike("name", searchTerm).limit(3),
-          supabase.from("honeymoon").select("id, name, destination").ilike("name", searchTerm).limit(3),
-          supabase.from("honeymoon_gifts").select("id, name, brand").ilike("name", searchTerm).limit(3),
-          supabase.from("appliances").select("id, name, brand").ilike("name", searchTerm).limit(3),
-          supabase.from("suits").select("id, name, address").ilike("name", searchTerm).limit(3),
-          supabase.from("hanbok").select("id, name, address").ilike("name", searchTerm).limit(3),
-          supabase.from("invitation_venues").select("id, name, address").ilike("name", searchTerm).limit(3),
-        ]);
+        const { data, error } = await supabase
+          .from("places")
+          .select("place_id, name, category, city, district")
+          .eq("is_active", true)
+          .is("deleted_at", null)
+          .ilike("name", searchTerm)
+          .limit(24);
 
-        const allResults: SearchResult[] = [
-          ...(venues.data || []).map(v => ({ id: v.id, name: v.name, address: v.address, type: "venue" as const })),
-          ...(studios.data || []).map(s => ({ ...s, type: "studio" as const })),
-          ...(honeymoon.data || []).map(h => ({ ...h, type: "honeymoon" as const })),
-          ...(honeymoonGifts.data || []).map(hg => ({ ...hg, type: "honeymoon_gift" as const })),
-          ...(appliances.data || []).map(a => ({ ...a, type: "appliance" as const })),
-          ...(suits.data || []).map(s => ({ ...s, type: "suit" as const })),
-          ...(hanbok.data || []).map(h => ({ ...h, type: "hanbok" as const })),
-          ...(invitationVenues.data || []).map(iv => ({ ...iv, type: "invitation_venue" as const })),
-        ];
+        if (error) throw error;
+
+        const slugToType: Record<string, SearchResult["type"]> = {
+          wedding_hall: "venue",
+          studio: "studio",
+          dress_shop: "studio",
+          makeup_shop: "studio",
+          hanbok: "hanbok",
+          tailor_shop: "suit",
+          honeymoon: "honeymoon",
+          appliance: "appliance",
+          invitation_venue: "invitation_venue",
+          planner: "venue",
+        };
+
+        const allResults: SearchResult[] = (data ?? []).map((p) => ({
+          id: p.place_id,
+          name: p.name,
+          address: [p.city, p.district].filter(Boolean).join(" ") || undefined,
+          type: slugToType[p.category] ?? "venue",
+        }));
 
         setResults(allResults);
       } catch (error) {

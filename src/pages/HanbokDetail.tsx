@@ -1,19 +1,17 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Share2, Star, Phone, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import VenueImageGallery from "@/components/venue/VenueImageGallery";
 import HanbokInfoTab from "@/components/hanbok/HanbokInfoTab";
 import HanbokPhotoTab from "@/components/hanbok/HanbokPhotoTab";
 import HanbokReviewTab from "@/components/hanbok/HanbokReviewTab";
+import { usePlaceDetail, LegacyDetail } from "@/hooks/usePlaceDetail";
 
-type Hanbok = Tables<"hanbok">;
+type Hanbok = LegacyDetail;
 type TabType = "info" | "photo" | "review";
 
 const HanbokDetail = () => {
@@ -21,19 +19,7 @@ const HanbokDetail = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("info");
 
-  const { data: hanbok, isLoading, error } = useQuery({
-    queryKey: ["hanbok", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("hanbok")
-        .select("*")
-        .eq("id", id!)
-        .maybeSingle();
-      if (error) throw error;
-      return data as Hanbok;
-    },
-    enabled: !!id,
-  });
+  const { data: hanbok, isLoading, error } = usePlaceDetail(id);
 
   if (isLoading) return <DetailSkeleton />;
 

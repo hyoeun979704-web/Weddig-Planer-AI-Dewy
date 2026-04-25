@@ -1,19 +1,17 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Share2, Star, Phone, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { usePlaceDetail, LegacyDetail } from "@/hooks/usePlaceDetail";
 import VenueImageGallery from "@/components/venue/VenueImageGallery";
 import SuitInfoTab from "@/components/suit/SuitInfoTab";
 import SuitPhotoTab from "@/components/suit/SuitPhotoTab";
 import SuitReviewTab from "@/components/suit/SuitReviewTab";
 
-type Suit = Tables<"suits">;
+type Suit = LegacyDetail;
 type TabType = "info" | "photo" | "review";
 
 const SuitDetail = () => {
@@ -21,19 +19,7 @@ const SuitDetail = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("info");
 
-  const { data: suit, isLoading, error } = useQuery({
-    queryKey: ["suit", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("suits")
-        .select("*")
-        .eq("id", id!)
-        .maybeSingle();
-      if (error) throw error;
-      return data as Suit;
-    },
-    enabled: !!id,
-  });
+  const { data: suit, isLoading, error } = usePlaceDetail(id);
 
   if (isLoading) return <DetailSkeleton />;
 
