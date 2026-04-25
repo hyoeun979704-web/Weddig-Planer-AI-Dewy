@@ -49,14 +49,19 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
   // are aggregated into LLM prompts in batches.
   const candidates: CollectedPlace[] = [];
 
-  for (const query of queries) {
+  for (let qi = 0; qi < queries.length; qi++) {
+    const query = queries[qi];
     if (candidates.length >= args.limit * 4) break; // collect 4x raw, dedupe to limit
+    process.stdout.write(`  · [${qi + 1}/${queries.length}] ${query} ... `);
     const { blog, cafe, local } = await searchAll(query, env.naver, {
       months: 24,
       perSource: 5,
     });
     const allSnippets = [...blog, ...cafe];
-    if (allSnippets.length === 0 && local.length === 0) continue;
+    if (allSnippets.length === 0 && local.length === 0) {
+      console.log("no results");
+      continue;
+    }
 
     // Use Gemini on top 3 snippets
     const top = allSnippets.slice(0, 3);
@@ -76,7 +81,11 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       env.geminiKey
     );
 
-    if (!extracted || !extracted.is_business_listing || !extracted.name) continue;
+    if (!extracted || !extracted.is_business_listing || !extracted.name) {
+      console.log("skip (no business)");
+      continue;
+    }
+    console.log(`→ ${extracted.name}`);
 
     const refs: SourceRef[] = top.map((s) => ({
       url: s.link,

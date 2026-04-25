@@ -1,4 +1,28 @@
 // Extract structured place info from Naver search snippets via Gemini.
+//
+// Free tier limit: 5 RPM for gemini-2.5-flash.
+// We throttle to 4 RPM (15s gap) and retry on 429 with the suggested retryDelay.
+
+const MIN_GAP_MS = 15_000; // 4 RPM safety margin under 5 RPM limit
+let lastCallAt = 0;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function throttle() {
+  const now = Date.now();
+  const elapsed = now - lastCallAt;
+  if (elapsed < MIN_GAP_MS) {
+    await sleep(MIN_GAP_MS - elapsed);
+  }
+  lastCallAt = Date.now();
+}
+
+function parseRetryDelay(errText: string): number {
+  // Match e.g. "Please retry in 57.803s." or RetryInfo retryDelay "57s"
+  const m = errText.match(/retry in ([\d.]+)s/i) || errText.match(/"retryDelay":\s*"(\d+)s"/);
+  if (m) return Math.ceil(parseFloat(m[1]) * 1000) + 500;
+  return 30_000;
+}
 
 export interface ExtractedPlace {
   name: string | null;
@@ -65,14 +89,29 @@ export async function extractPlace(
     },
   };
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }
-  );
+  const callOnce = async (): Promise<Response> => {
+    await throttle();
+    return fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+  };
+
+  let res = await callOnce();
+
+  // On 429, wait the server-suggested retryDelay and retry once.
+  if (res.status === 429) {
+    const txt = await res.text();
+    const wait = parseRetryDelay(txt);
+    console.warn(`Gemini 429, sleeping ${(wait / 1000).toFixed(0)}s before retry…`);
+    await sleep(wait);
+    res = await callOnce();
+  }
+
   if (!res.ok) {
     console.warn("Gemini extract failed:", res.status, await res.text());
     return null;
