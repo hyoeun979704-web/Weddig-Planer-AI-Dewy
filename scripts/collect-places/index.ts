@@ -89,6 +89,9 @@ function localToCandidate(l: LocalItem, label: CategoryLabel): CollectedPlace {
     confidence: 0,
     last_source_date: null,
     source_refs: [{ url: l.link || "", source_type: "local", published_at: null }],
+    tel: l.telephone || null,
+    naver_place_url: l.link || null,
+    address: addr || null,
   };
 }
 
@@ -227,6 +230,7 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
     const isWeddingHall = c.category === "wedding_hall";
     const minPrice = analysis.avg_price_estimate?.min ?? null;
 
+    const isHanbok = c.category === "hanbok";
     const enhanced: CollectedPlace = {
       ...c,
       description: analysis.summary ?? c.description,
@@ -246,6 +250,13 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       min_price: minPrice,
       min_guarantee: isWeddingHall ? analysis.min_guarantee ?? null : null,
       max_guarantee: isWeddingHall ? analysis.max_guarantee ?? null : null,
+      subway_station: analysis.subway_station ?? null,
+      subway_line: analysis.subway_line ?? null,
+      walk_minutes: analysis.walk_minutes ?? null,
+      parking_capacity: analysis.parking_capacity ?? null,
+      parking_location: analysis.parking_location ?? null,
+      hanbok_types: isHanbok ? analysis.hanbok_types ?? null : null,
+      custom_available: isHanbok ? analysis.custom_available ?? null : null,
     };
     enhanced.confidence = scoreConfidence(enhanced);
     enriched.push(enhanced);

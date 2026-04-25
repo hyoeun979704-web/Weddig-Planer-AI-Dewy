@@ -68,6 +68,14 @@ function detailsRow(p: CollectedPlace, placeId: string) {
     recommended_for:
       p.recommended_for && p.recommended_for.length > 0 ? p.recommended_for : null,
     analyzed_at: p.analyzed_at ?? null,
+    tel: p.tel ?? null,
+    naver_place_url: p.naver_place_url ?? null,
+    address: p.address ?? null,
+    subway_station: p.subway_station ?? null,
+    subway_line: p.subway_line ?? null,
+    walk_minutes: p.walk_minutes ?? null,
+    parking_capacity: p.parking_capacity ?? null,
+    parking_location: p.parking_location ?? null,
   });
 }
 
@@ -78,6 +86,14 @@ function categoryCardRow(p: CollectedPlace, placeId: string) {
       min_guarantee: p.min_guarantee ?? null,
       max_guarantee: p.max_guarantee ?? null,
       price_per_person: p.min_price ?? null,
+    });
+  }
+  if (p.category === "hanbok") {
+    return compact({
+      place_id: placeId,
+      price_per_person: p.min_price ?? null,
+      hanbok_types: p.hanbok_types && p.hanbok_types.length > 0 ? p.hanbok_types : null,
+      custom_available: p.custom_available ?? null,
     });
   }
   return compact({

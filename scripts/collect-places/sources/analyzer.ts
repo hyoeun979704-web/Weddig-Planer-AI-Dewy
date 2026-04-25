@@ -39,6 +39,15 @@ export interface PlaceAnalysis {
   tags: string[];
   is_relevant: boolean;
   analysis_confidence: number; // 0-100, model's self-assessed certainty
+  // Location/access details (best effort, often null)
+  subway_station: string | null;
+  subway_line: string | null;
+  walk_minutes: number | null;
+  parking_capacity: number | null;
+  parking_location: string | null;
+  // Hanbok-specific (null for other categories)
+  hanbok_types: string[] | null;
+  custom_available: boolean | null;
 }
 
 const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하는 블로그/카페 후기 스니펫 묶음을 종합해 해당 업체에 대해 깊이 있는 구조화 분석을 제공한다.
@@ -80,6 +89,17 @@ const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하
 - tags: 카테고리·분위기·강점 통합 키워드 (검색용).
 - is_relevant: 스니펫이 정말 이 업체에 대한 후기인지 (false면 무관한 글이 섞임).
 - analysis_confidence: 스니펫 일관성 + 양 + 최근성 종합 0-100.
+
+위치·접근성 (스니펫에 명시된 경우만, 추측 금지. 없으면 null):
+- subway_station: 가까운 지하철역 이름만 (예: "강남역", "삼성중앙역"). "역" 포함.
+- subway_line: 호선 (예: "2호선", "9호선"). 모르면 null.
+- walk_minutes: 역에서 도보 N분 (예: "도보 5분" → 5). 숫자만, 모르면 null.
+- parking_capacity: 주차 가능 대수 (숫자). 모르면 null.
+- parking_location: 주차 위치 설명 (예: "건물 지하 1층", "인근 공영주차장"). 모르면 null.
+
+한복 카테고리 전용 (다른 카테고리는 무조건 null):
+- hanbok_types: 후기에 명시된 한복 종류만 ["혼주", "신부", "신랑", "어머님", "아버님", "폐백", "예단"] 중 골라서 배열로. 명시 없으면 null (빈 배열 X).
+- custom_available: "맞춤 제작" / "맞춤한복" 명시 → true. "대여만" / "대여 전문" 명시 → false. 둘 다 또는 모호 → null.
 
 JSON으로만 응답.`;
 
@@ -140,6 +160,13 @@ ${input.snippets
           tags: { type: "array", items: { type: "string" } },
           is_relevant: { type: "boolean" },
           analysis_confidence: { type: "number" },
+          subway_station: { type: "string", nullable: true },
+          subway_line: { type: "string", nullable: true },
+          walk_minutes: { type: "number", nullable: true },
+          parking_capacity: { type: "number", nullable: true },
+          parking_location: { type: "string", nullable: true },
+          hanbok_types: { type: "array", items: { type: "string" }, nullable: true },
+          custom_available: { type: "boolean", nullable: true },
         },
         required: ["is_relevant", "analysis_confidence", "atmosphere", "pros", "cons", "tags"],
       },

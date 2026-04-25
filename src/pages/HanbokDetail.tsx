@@ -39,9 +39,18 @@ const HanbokDetail = () => {
     { key: "review", label: "리뷰" },
   ];
 
-  const galleryImages = hanbok.thumbnail_url
-    ? [hanbok.thumbnail_url, "/placeholder.svg", "/placeholder.svg"]
+  const detailImages = [
+    hanbok.details?.image_url_1,
+    hanbok.details?.image_url_2,
+    hanbok.details?.image_url_3,
+  ].filter((u): u is string => typeof u === "string" && u.length > 0);
+  const galleryImages = detailImages.length > 0
+    ? detailImages
+    : hanbok.thumbnail_url
+    ? [hanbok.thumbnail_url]
     : [];
+
+  const tel = hanbok.details?.tel ?? null;
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto animate-fade-in">
@@ -97,7 +106,7 @@ const HanbokDetail = () => {
         {/* Tab Content */}
         <div className="pb-24">
           {activeTab === "info" && <HanbokInfoTab hanbok={hanbok} />}
-          {activeTab === "photo" && <HanbokPhotoTab />}
+          {activeTab === "photo" && <HanbokPhotoTab images={detailImages} />}
           {activeTab === "review" && <HanbokReviewTab rating={hanbok.rating} reviewCount={hanbok.review_count} />}
         </div>
       </div>
@@ -105,9 +114,14 @@ const HanbokDetail = () => {
       {/* Fixed Bottom CTA */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 max-w-[430px] mx-auto">
         <div className="flex gap-3">
-          <Button variant="outline" className="flex-1 h-12 gap-2" onClick={() => { toast.info("전화 연결 준비 중입니다."); window.location.href = "tel:02-1234-5678"; }}>
+          <Button
+            variant="outline"
+            className="flex-1 h-12 gap-2"
+            disabled={!tel}
+            onClick={() => { if (tel) window.location.href = `tel:${tel}`; }}
+          >
             <Phone className="w-4 h-4" />
-            전화 문의
+            {tel ? "전화 문의" : "번호 미등록"}
           </Button>
           <Button className="flex-1 h-12 gap-2" onClick={() => toast.success("예약 상담 신청이 완료되었습니다. 곧 연락드리겠습니다.")}>
             <Calendar className="w-4 h-4" />
