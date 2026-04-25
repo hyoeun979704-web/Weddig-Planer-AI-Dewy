@@ -72,7 +72,39 @@ export const useVendors = (categoryType?: string) => {
   });
 };
 
-// Fetch single vendor by id (uuid)
+const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+const DAY_KO = ["월", "화", "수", "목", "금", "토", "일"] as const;
+
+function buildBusinessHours(details: Record<string, unknown>): string | null {
+  const lines: string[] = [];
+  for (let i = 0; i < DAY_KEYS.length; i++) {
+    const v = details[`hours_${DAY_KEYS[i]}`];
+    if (typeof v === "string" && v.trim()) lines.push(`${DAY_KO[i]}: ${v.trim()}`);
+  }
+  return lines.length > 0 ? lines.join(", ") : null;
+}
+
+function buildSnsInfo(details: Record<string, unknown>): Record<string, string> | null {
+  const map: Record<string, string> = {};
+  const entries: Array<[string, string]> = [
+    ["instagram", "instagram_url"],
+    ["facebook", "facebook_url"],
+    ["kakao", "kakao_channel_url"],
+    ["naver_blog", "naver_blog_url"],
+    ["naver_place", "naver_place_url"],
+    ["youtube", "youtube_url"],
+    ["website", "website_url"],
+  ];
+  for (const [key, col] of entries) {
+    const v = details[col];
+    if (typeof v === "string" && v.trim()) map[key] = v;
+  }
+  return Object.keys(map).length > 0 ? map : null;
+}
+
+// Fetch single vendor by id (uuid). Joins place_details so the detail page
+// gets tel/business_hours/parking/SNS instead of the placeholders that
+// placeToVendor leaves on the bare place row.
 export const useVendor = (vendorId: string) => {
   return useQuery({
     queryKey: ["vendor", vendorId],
@@ -83,7 +115,34 @@ export const useVendor = (vendorId: string) => {
         .eq("place_id", vendorId)
         .maybeSingle();
       if (error) throw error;
-      return data ? placeToVendor(data) : null;
+      if (!data) return null;
+      const base = placeToVendor(data);
+
+      const { data: details } = await supabase
+        .from("place_details")
+        .select("*")
+        .eq("place_id", vendorId)
+        .maybeSingle();
+      if (!details) return base;
+      const d = details as Record<string, unknown>;
+
+      const parkingHours = [d.parking_free_guest, d.parking_free_parents]
+        .filter((x): x is string => typeof x === "string" && !!x.trim())
+        .join(" · ") || null;
+
+      return {
+        ...base,
+        tel: typeof d.tel === "string" ? d.tel : base.tel,
+        business_hours: buildBusinessHours(d) ?? base.business_hours,
+        parking_location:
+          typeof d.parking_location === "string" ? d.parking_location : base.parking_location,
+        parking_hours: parkingHours ?? base.parking_hours,
+        sns_info: buildSnsInfo(d) ?? base.sns_info,
+        amenities:
+          Array.isArray(d.pros) && d.pros.length > 0
+            ? (d.pros as string[]).join(", ")
+            : base.amenities,
+      };
     },
     enabled: !!vendorId,
   });
