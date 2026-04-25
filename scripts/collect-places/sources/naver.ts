@@ -5,6 +5,8 @@ const ENDPOINTS = {
   blog: "https://openapi.naver.com/v1/search/blog.json",
   cafearticle: "https://openapi.naver.com/v1/search/cafearticle.json",
   local: "https://openapi.naver.com/v1/search/local.json",
+  webkr: "https://openapi.naver.com/v1/search/webkr.json",
+  news: "https://openapi.naver.com/v1/search/news.json",
 } as const;
 
 export type NaverSourceType = keyof typeof ENDPOINTS;
@@ -15,13 +17,13 @@ interface NaverEnv {
 }
 
 export interface BlogItem {
-  source: "blog" | "cafe";
+  source: "blog" | "cafe" | "web" | "news";
   title: string;
   description: string;
   link: string;
   bloggername?: string;
   bloggerlink?: string;
-  postdate: string; // YYYYMMDD
+  postdate: string; // YYYYMMDD; web/news may have empty
 }
 
 export interface LocalItem {
@@ -40,6 +42,18 @@ export interface LocalItem {
 const stripTags = (s: string) =>
   s.replace(/<\/?[^>]+>/g, "").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
 
+// Naver free tier: ~10 req/sec, 25k/day. Throttle to 5 RPS for headroom.
+const MIN_GAP_MS = 200;
+let lastCallAt = 0;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function throttle() {
+  const now = Date.now();
+  const elapsed = now - lastCallAt;
+  if (elapsed < MIN_GAP_MS) await sleep(MIN_GAP_MS - elapsed);
+  lastCallAt = Date.now();
+}
+
 async function call<T>(
   endpoint: string,
   query: string,
@@ -56,16 +70,29 @@ async function call<T>(
   });
   if (sort) params.set("sort", sort);
   const url = `${endpoint}?${params.toString()}`;
-  const res = await fetch(url, {
-    headers: {
-      "X-Naver-Client-Id": env.clientId,
-      "X-Naver-Client-Secret": env.clientSecret,
-    },
-  });
-  if (!res.ok) {
+
+  // Up to 3 attempts with exponential backoff on 429 (5s, 15s, 45s).
+  const backoffs = [5_000, 15_000, 45_000];
+  let lastErr: string = "";
+  for (let attempt = 0; attempt < backoffs.length; attempt++) {
+    await throttle();
+    const res = await fetch(url, {
+      headers: {
+        "X-Naver-Client-Id": env.clientId,
+        "X-Naver-Client-Secret": env.clientSecret,
+      },
+    });
+    if (res.ok) return (await res.json()) as T;
+    if (res.status === 429) {
+      lastErr = await res.text();
+      const wait = backoffs[attempt];
+      console.warn(`Naver 429, sleeping ${wait / 1000}s (attempt ${attempt + 1}/3)`);
+      await sleep(wait);
+      continue;
+    }
     throw new Error(`Naver API ${endpoint} failed: ${res.status} ${await res.text()}`);
   }
-  return (await res.json()) as T;
+  throw new Error(`Naver API ${endpoint} failed: 429 (3 retries) ${lastErr.slice(0, 200)}`);
 }
 
 function withinLastNMonths(yyyymmdd: string, months: number): boolean {
@@ -103,6 +130,39 @@ export async function searchCafe(query: string, env: NaverEnv, opts: { months: n
       link: it.link,
       postdate: it.postdate || "",
     }))
+    .filter((it) => !it.postdate || withinLastNMonths(it.postdate, opts.months));
+}
+
+// Naver web docs search — catches official wedding venue pages, industry
+// directories, official price tables that blog posts don't surface.
+// No date filter (web pages don't expose postdate).
+export async function searchWeb(query: string, env: NaverEnv, limit = 10): Promise<BlogItem[]> {
+  const data = await call<{ items: any[] }>(ENDPOINTS.webkr, query, env, { display: limit });
+  return data.items.map((it) => ({
+    source: "web" as const,
+    title: stripTags(it.title),
+    description: stripTags(it.description),
+    link: it.link,
+    postdate: "",
+  }));
+}
+
+// Naver news search — surfaces openings, ownership changes, controversies.
+// Date filter applied since news has pubDate.
+export async function searchNews(query: string, env: NaverEnv, opts: { months: number; limit: number }): Promise<BlogItem[]> {
+  const data = await call<{ items: any[] }>(ENDPOINTS.news, query, env, { display: opts.limit, sort: "date" });
+  return data.items
+    .map((it) => {
+      // Naver news returns pubDate as RFC 2822, convert to YYYYMMDD
+      const postdate = it.pubDate ? new Date(it.pubDate).toISOString().slice(0, 10).replace(/-/g, "") : "";
+      return {
+        source: "news" as const,
+        title: stripTags(it.title),
+        description: stripTags(it.description),
+        link: it.link,
+        postdate,
+      };
+    })
     .filter((it) => !it.postdate || withinLastNMonths(it.postdate, opts.months));
 }
 

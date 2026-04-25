@@ -35,3 +35,4 @@ out/
 tsconfig.tsbuildinfo
 scripts/collect-places/.env
 scripts/collect-places/.env.local
+.collect-cache/
