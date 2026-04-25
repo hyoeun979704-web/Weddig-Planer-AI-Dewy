@@ -326,7 +326,9 @@ async function main() {
     url: process.env.SUPABASE_URL!,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
   });
-  console.log(`\nupserted: ${result.inserted} (failed: ${result.failed})`);
+  console.log(
+    `\nupserted: ${result.inserted} new + ${result.updated} updated (failed: ${result.failed})`
+  );
 }
 
 main().catch((e) => {

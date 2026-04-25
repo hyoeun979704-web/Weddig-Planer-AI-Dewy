@@ -9,6 +9,7 @@ interface SupabaseEnv {
 
 interface UpsertResult {
   inserted: number;
+  updated: number;
   failed: number;
 }
 
@@ -210,23 +211,56 @@ function categoryRow(placeId: string, p: CollectedPlace) {
   return base;
 }
 
-async function insertOne(
+// Find an existing place by (name, category). Schema doesn't carry a UNIQUE
+// constraint on this pair (migrations were applied via Supabase MCP, not in
+// repo), so we do a query-then-update/insert dance instead of relying on
+// .upsert(onConflict). Tolerates duplicates by picking the most recent.
+async function findExistingPlaceId(
+  supabase: SupabaseClient,
+  name: string,
+  category: CategorySlug
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("places")
+    .select("place_id, created_at")
+    .eq("name", name)
+    .eq("category", category)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  return data && data.length > 0 ? data[0].place_id : null;
+}
+
+async function upsertOne(
   supabase: SupabaseClient,
   p: CollectedPlace
-): Promise<{ ok: boolean; placeId?: string; reason?: string }> {
-  const { data, error } = await supabase
-    .from("places")
-    .insert(placeRow(p))
-    .select("place_id")
-    .single();
+): Promise<{ ok: boolean; placeId?: string; created?: boolean; reason?: string }> {
+  const existingId = await findExistingPlaceId(supabase, p.name, p.category);
+  let placeId: string;
+  let created = false;
 
-  if (error || !data) {
-    return { ok: false, reason: `places: ${error?.message ?? "no row"}` };
+  if (existingId) {
+    placeId = existingId;
+    const { error } = await supabase
+      .from("places")
+      .update(placeRow(p))
+      .eq("place_id", placeId);
+    if (error) return { ok: false, reason: `places update: ${error.message}` };
+  } else {
+    const { data, error } = await supabase
+      .from("places")
+      .insert(placeRow(p))
+      .select("place_id")
+      .single();
+    if (error || !data) {
+      return { ok: false, reason: `places insert: ${error?.message ?? "no row"}` };
+    }
+    placeId = data.place_id;
+    created = true;
   }
-  const placeId = data.place_id;
 
-  // place_details + place_<category> can fail independently; we log but keep the place row
-  // so that re-run scripts can backfill them later.
+  // place_details + place_<category>: upsert by place_id PK so re-runs refresh
+  // analyzer fields without duplicating rows. Failures here don't roll back the
+  // places row — re-running is now safe (will just update again).
   const detailsPayload = detailsRow(placeId, p);
   const categoryPayload = categoryRow(placeId, p);
   const tableName = CATEGORY_TABLE[p.category];
@@ -234,7 +268,9 @@ async function insertOne(
   const tasks: Array<Promise<{ table: string; error: string | null }>> = [];
   if (detailsPayload) {
     tasks.push(
-      Promise.resolve(supabase.from("place_details").insert(detailsPayload)).then((r) => ({
+      Promise.resolve(
+        supabase.from("place_details").upsert(detailsPayload, { onConflict: "place_id" })
+      ).then((r) => ({
         table: "place_details",
         error: r.error ? r.error.message : null,
       }))
@@ -242,7 +278,9 @@ async function insertOne(
   }
   if (tableName) {
     tasks.push(
-      Promise.resolve(supabase.from(tableName).insert(categoryPayload)).then((r) => ({
+      Promise.resolve(
+        supabase.from(tableName).upsert(categoryPayload, { onConflict: "place_id" })
+      ).then((r) => ({
         table: tableName,
         error: r.error ? r.error.message : null,
       }))
@@ -251,29 +289,32 @@ async function insertOne(
 
   const results = await Promise.all(tasks);
   for (const r of results) {
-    if (r.error) console.warn(`  ⚠ ${r.table} insert (${p.name}): ${r.error}`);
+    if (r.error) console.warn(`  ⚠ ${r.table} (${p.name}): ${r.error}`);
   }
-  return { ok: true, placeId };
+  return { ok: true, placeId, created };
 }
 
 export async function upsertPlaces(
   items: CollectedPlace[],
   env: SupabaseEnv
 ): Promise<UpsertResult> {
-  if (items.length === 0) return { inserted: 0, failed: 0 };
+  if (items.length === 0) return { inserted: 0, updated: 0, failed: 0 };
   const supabase = createClient(env.url, env.serviceRoleKey, {
     auth: { persistSession: false },
   });
 
   let inserted = 0;
+  let updated = 0;
   let failed = 0;
   for (const p of items) {
-    const res = await insertOne(supabase, p);
-    if (res.ok) inserted++;
-    else {
+    const res = await upsertOne(supabase, p);
+    if (res.ok) {
+      if (res.created) inserted++;
+      else updated++;
+    } else {
       failed++;
       console.error(`  ✗ ${p.name}: ${res.reason}`);
     }
   }
-  return { inserted, failed };
+  return { inserted, updated, failed };
 }
