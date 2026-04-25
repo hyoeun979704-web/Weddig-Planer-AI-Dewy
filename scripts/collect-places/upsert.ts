@@ -93,39 +93,51 @@ function detailsRow(p: CollectedPlace, placeId: string) {
   });
 }
 
-// place_halls.hall_type has a CHECK constraint with a fixed allow-list.
-// We don't know the exact list yet, so for now send only values we're
-// reasonably confident are accepted (English lowercase common in DB
-// schemas). Anything else from Gemini → null (column is nullable).
-const ALLOWED_HALL_TYPES = new Set([
-  "chapel",
-  "convention",
-  "hotel",
-  "house",
-  "hanok",
-  "outdoor",
-  "garden",
-  "church",
-]);
+// place_halls.hall_type CHECK constraint allows exactly these 5 Korean values.
+const ALLOWED_HALL_TYPES = new Set(["채플", "가든", "컨벤션", "웨딩홀", "스몰웨딩"]);
 
-// Loose Korean → English mapping for common values Gemini emits.
-const HALL_TYPE_KO_MAP: Record<string, string> = {
-  "채플": "chapel",
-  "컨벤션": "convention",
-  "호텔": "hotel",
-  "하우스": "house",
-  "한옥": "hanok",
-  "야외": "outdoor",
-  "가든": "garden",
-  "성당": "church",
-  "교회": "church",
+// Map common synonyms / English / category nuance → one of the 5 allowed.
+// Anything unmapped → null (column is nullable, safer than failing).
+const HALL_TYPE_MAP: Record<string, string> = {
+  // Direct
+  "채플": "채플",
+  "가든": "가든",
+  "컨벤션": "컨벤션",
+  "웨딩홀": "웨딩홀",
+  "스몰웨딩": "스몰웨딩",
+  // Synonyms
+  "야외": "가든",
+  "정원": "가든",
+  "테라스": "가든",
+  "호텔": "컨벤션",
+  "그랜드볼룸": "컨벤션",
+  "볼룸": "컨벤션",
+  "성당": "채플",
+  "교회": "채플",
+  "하우스": "스몰웨딩",
+  "스몰": "스몰웨딩",
+  "프라이빗": "스몰웨딩",
+  "한옥": "웨딩홀",
+  "전통": "웨딩홀",
+  "홀": "웨딩홀",
+  // English fallbacks (in case Gemini emits them)
+  chapel: "채플",
+  garden: "가든",
+  outdoor: "가든",
+  hotel: "컨벤션",
+  convention: "컨벤션",
+  ballroom: "컨벤션",
+  house: "스몰웨딩",
+  small: "스몰웨딩",
+  hanok: "웨딩홀",
+  hall: "웨딩홀",
 };
 
 function safeHallType(v: string | null | undefined): string | null {
   if (!v) return null;
   const trimmed = v.trim();
-  const mapped = HALL_TYPE_KO_MAP[trimmed] ?? trimmed.toLowerCase();
-  return ALLOWED_HALL_TYPES.has(mapped) ? mapped : null;
+  const mapped = HALL_TYPE_MAP[trimmed] ?? HALL_TYPE_MAP[trimmed.toLowerCase()] ?? null;
+  return mapped && ALLOWED_HALL_TYPES.has(mapped) ? mapped : null;
 }
 
 function categoryCardRow(p: CollectedPlace, placeId: string) {
