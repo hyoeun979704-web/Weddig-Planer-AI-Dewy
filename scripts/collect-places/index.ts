@@ -12,6 +12,7 @@ import { analyzeBusiness } from "./sources/analyzer";
 import { dedupe } from "./dedupe";
 import { scoreConfidence } from "./scoring";
 import { upsertPlaces } from "./upsert";
+import { saveSnapshot, loadSnapshot } from "./cache";
 import type { CollectedPlace, SourceRef } from "./types";
 
 interface CliArgs {
@@ -21,6 +22,7 @@ interface CliArgs {
   dryRun: boolean;
   noAnalyze: boolean; // skip Stage 3 LLM analysis
   reviewSnippets: number; // per-business snippet target
+  fromSnapshot?: string; // path to a prior run's JSON snapshot — skip Stage 1-3
 }
 
 function parseArgs(): CliArgs {
@@ -39,6 +41,7 @@ function parseArgs(): CliArgs {
     else if (a.startsWith("--region=")) args.region = a.split("=")[1];
     else if (a.startsWith("--limit=")) args.limit = +a.split("=")[1];
     else if (a.startsWith("--snippets=")) args.reviewSnippets = +a.split("=")[1];
+    else if (a.startsWith("--from-snapshot=")) args.fromSnapshot = a.split("=")[1];
   }
   return args;
 }
@@ -327,6 +330,26 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
 async function main() {
   const args = parseArgs();
 
+  // --from-snapshot bypasses Stage 1-3 entirely. It just reads a previously
+  // saved JSON dump and replays the upsert. Useful when a prior run analyzed
+  // hundreds of shops via Gemini but the upsert failed (e.g. DB constraint).
+  if (args.fromSnapshot) {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+      process.exit(1);
+    }
+    const items = loadSnapshot(args.fromSnapshot);
+    console.log(`[snapshot] loaded ${items.length} items from ${args.fromSnapshot}`);
+    const result = await upsertPlaces(items, {
+      url: process.env.SUPABASE_URL!,
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    });
+    console.log(
+      `\nupserted: ${result.inserted} new + ${result.updated} updated (failed: ${result.failed})`
+    );
+    return;
+  }
+
   if (!process.env.NAVER_CLIENT_ID || !process.env.NAVER_CLIENT_SECRET) {
     console.error("Missing NAVER_CLIENT_ID or NAVER_CLIENT_SECRET");
     process.exit(1);
@@ -362,6 +385,13 @@ async function main() {
     console.log(`\n[dry-run] would upsert ${all.length} rows`);
     return;
   }
+
+  // Snapshot before upsert so a DB failure (e.g. CHECK constraint, RLS, network)
+  // doesn't waste the Gemini analysis cost. Replay later with --from-snapshot=<path>.
+  const snapshotLabel = args.category === "all" ? "all" : args.category;
+  const snapshotPath = saveSnapshot(snapshotLabel, all);
+  console.log(`\n[snapshot] saved ${all.length} items → ${snapshotPath}`);
+
   const result = await upsertPlaces(all, {
     url: process.env.SUPABASE_URL!,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -369,6 +399,9 @@ async function main() {
   console.log(
     `\nupserted: ${result.inserted} new + ${result.updated} updated (failed: ${result.failed})`
   );
+  if (result.failed > 0) {
+    console.log(`[recovery] retry the failed upsert with: --from-snapshot=${snapshotPath}`);
+  }
 }
 
 main().catch((e) => {
