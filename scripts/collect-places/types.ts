@@ -61,11 +61,23 @@ export interface CollectedPlace {
   min_price?: number | null; // KRW per_person, used by every card table
 
   // Category-specific card fields (only the ones matching p.category get written)
-  // wedding_hall
+  // wedding_hall (venue-level summary → place_wedding_halls)
   hall_styles?: string[] | null;
   meal_types?: string[] | null;
   min_guarantee?: number | null;
   max_guarantee?: number | null;
+  // wedding_hall (per-hall 1:N → place_halls)
+  halls?: Array<{
+    hall_name: string;
+    hall_type?: string | null;
+    capacity_seated?: number | null;
+    capacity_standing?: number | null;
+    min_guarantee?: number | null;
+    max_guarantee?: number | null;
+    meal_price?: number | null;
+    meal_type?: string | null;
+    floor?: string | null;
+  }> | null;
   // studio
   shoot_styles?: string[] | null;
   includes_originals?: boolean | null;

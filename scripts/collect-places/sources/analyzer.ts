@@ -46,11 +46,23 @@ export interface PlaceAnalysis {
 
   // Per-category card fields. Only the fields matching the input category
   // should be filled; the rest must be null/empty.
-  // wedding_hall
+  // wedding_hall (venue-level summary)
   hall_styles: string[] | null;
   meal_types: string[] | null;
   min_guarantee: number | null;
   max_guarantee: number | null;
+  // wedding_hall (individual halls — written 1:N to place_halls)
+  halls: Array<{
+    hall_name: string;
+    hall_type: string | null; // 채플/컨벤션/한옥/하우스/야외/홀
+    capacity_seated: number | null;
+    capacity_standing: number | null;
+    min_guarantee: number | null;
+    max_guarantee: number | null;
+    meal_price: number | null;
+    meal_type: string | null;
+    floor: string | null;
+  }> | null;
   // studio
   shoot_styles: string[] | null;
   includes_originals: boolean | null;
@@ -129,7 +141,18 @@ const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하
 ★ 카테고리별 카드 필드 (해당 카테고리 외엔 무조건 null/빈배열) ★
 입력의 "카테고리:" 라인을 보고 매칭되는 카테고리의 필드만 채워라. 다른 카테고리 필드는 모두 null.
 
-- 웨딩홀: hall_styles[](예: ["호텔","컨벤션","채플","하우스","야외","한옥"]), meal_types[](예: ["코스","한식","뷔페","양식"]), min_guarantee/max_guarantee(보증인원, "200명부터" → min=200)
+- 웨딩홀 (★중요★): 한 업체가 보통 여러 개의 홀(채플홀/연회홀/한옥홀 등)을 보유하니 정보를 두 단계로 분리:
+  · 업체 수준 요약: hall_styles[](예: ["호텔","컨벤션","채플","하우스","야외","한옥"]), meal_types[](예: ["코스","한식","뷔페","양식"]), min_guarantee/max_guarantee(전체 홀 통틀어 최소/최대 보증인원)
+  · halls[]: 후기에 명시된 개별 홀을 객체 배열로. 각 객체에 다음을 가능한 만큼 채움:
+    - hall_name: 홀 이름 (필수, 예: "그랜드볼룸", "채플홀", "그레이스홀")
+    - hall_type: "채플"/"컨벤션"/"한옥"/"하우스"/"야외"/"홀" 중 하나
+    - capacity_seated: 좌석 수용 인원 (숫자)
+    - capacity_standing: 입식 수용 인원 (숫자)
+    - min_guarantee/max_guarantee: 그 홀의 보증인원 범위
+    - meal_price: 그 홀의 1인 식대 (KRW)
+    - meal_type: 그 홀의 식 종류 ("코스","한식","뷔페")
+    - floor: 위치 (예: "본관 3층", "별관 2층")
+  · 홀 정보가 없거나 1개만 있으면 halls를 빈배열 또는 1개짜리로. 다른 카테고리는 halls=null.
 - 스드메(스튜디오): shoot_styles[](예: ["내추럴","감성","화보풍","빈티지","야외","스튜디오"]), includes_originals(원본 데이터 제공 명시 시 true/유료별도 명시 시 false/모호 null)
 - 드레스샵: dress_styles[](예: ["머메이드","프린세스","A라인","벨라인","엠파이어","미니"]), rental_only(대여만 명시 true / 구매도 가능 false / 모호 null)
 - 메이크업샵: makeup_styles[](예: ["내추럴","글로우","동안","화려","한복용","컨실러","모던"]), includes_rehearsal(리허설 메이크업 포함 명시 true / 별도 false / 모호 null)
@@ -203,9 +226,29 @@ ${input.snippets
           walk_minutes: { type: "number", nullable: true },
           parking_capacity: { type: "number", nullable: true },
           parking_location: { type: "string", nullable: true },
-          // wedding_hall
+          // wedding_hall (venue-level)
           hall_styles: { type: "array", items: { type: "string" }, nullable: true },
           meal_types: { type: "array", items: { type: "string" }, nullable: true },
+          // wedding_hall (per-hall, 1:N)
+          halls: {
+            type: "array",
+            nullable: true,
+            items: {
+              type: "object",
+              properties: {
+                hall_name: { type: "string" },
+                hall_type: { type: "string", nullable: true },
+                capacity_seated: { type: "number", nullable: true },
+                capacity_standing: { type: "number", nullable: true },
+                min_guarantee: { type: "number", nullable: true },
+                max_guarantee: { type: "number", nullable: true },
+                meal_price: { type: "number", nullable: true },
+                meal_type: { type: "string", nullable: true },
+                floor: { type: "string", nullable: true },
+              },
+              required: ["hall_name"],
+            },
+          },
           // studio
           shoot_styles: { type: "array", items: { type: "string" }, nullable: true },
           includes_originals: { type: "boolean", nullable: true },

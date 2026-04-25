@@ -286,11 +286,13 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       walk_minutes: analysis.walk_minutes ?? null,
       parking_capacity: analysis.parking_capacity ?? null,
       parking_location: analysis.parking_location ?? null,
-      // wedding_hall
+      // wedding_hall (venue-level)
       hall_styles: only(["wedding_hall"], analysis.hall_styles ?? null),
       meal_types: only(["wedding_hall"], analysis.meal_types ?? null),
       min_guarantee: only(["wedding_hall"], analysis.min_guarantee ?? null),
       max_guarantee: only(["wedding_hall"], analysis.max_guarantee ?? null),
+      // wedding_hall (per-hall 1:N)
+      halls: only(["wedding_hall"], analysis.halls ?? null),
       // studio
       shoot_styles: only(["studio"], analysis.shoot_styles ?? null),
       includes_originals: only(["studio"], analysis.includes_originals ?? null),

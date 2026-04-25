@@ -215,6 +215,48 @@ export async function upsertPlaces(
           .upsert(categoryCardRow(p, placeId), { onConflict: "place_id" });
         if (cardErr) throw cardErr;
       }
+
+      // wedding_hall: also write individual halls (1:N) into place_halls.
+      // Match existing rows by (place_id, hall_name); update if found, insert
+      // otherwise. We don't auto-delete halls that fall out of analysis since
+      // place_gallery_images.hall_id may reference them.
+      if (p.category === "wedding_hall" && p.halls && p.halls.length > 0) {
+        const { data: existingHalls, error: hallLookupErr } = await supabase
+          .from("place_halls")
+          .select("hall_id, hall_name")
+          .eq("place_id", placeId);
+        if (hallLookupErr) throw hallLookupErr;
+
+        const byName = new Map<string, string>(
+          (existingHalls ?? []).map((h) => [h.hall_name, h.hall_id])
+        );
+
+        for (const h of p.halls) {
+          const row = compact({
+            place_id: placeId,
+            hall_name: h.hall_name,
+            hall_type: h.hall_type ?? null,
+            capacity_seated: h.capacity_seated ?? null,
+            capacity_standing: h.capacity_standing ?? null,
+            min_guarantee: h.min_guarantee ?? null,
+            max_guarantee: h.max_guarantee ?? null,
+            meal_price: h.meal_price ?? null,
+            meal_type: h.meal_type ?? null,
+            floor: h.floor ?? null,
+          });
+          const existingId = byName.get(h.hall_name);
+          if (existingId) {
+            const { error: hUpd } = await supabase
+              .from("place_halls")
+              .update(row)
+              .eq("hall_id", existingId);
+            if (hUpd) throw hUpd;
+          } else {
+            const { error: hIns } = await supabase.from("place_halls").insert(row);
+            if (hIns) throw hIns;
+          }
+        }
+      }
     } catch (e) {
       console.error(`upsert failed for "${p.name}" (${p.category}):`, (e as Error).message);
       failed++;
