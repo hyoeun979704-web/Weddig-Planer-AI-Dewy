@@ -27,20 +27,10 @@ const CategoryCardSkeleton = () => (
   </div>
 );
 
-// Helper to extract keywords from various array fields
-function getKeywords(item: CategoryItem, category: CategoryType): string[] {
-  const any = item as any;
-  switch (category) {
-    case "venues": return any.hall_types || [];
-    case "studios": return any.style_options || [];
-    case "hanbok": return any.style_options || [];
-    case "suits": return any.suit_types || [];
-    case "honeymoon": return any.trip_types || [];
-    case "honeymoon_gifts": return any.category_types || [];
-    case "appliances": return any.category_types || [];
-    case "invitation_venues": return any.venue_types || [];
-    default: return [];
-  }
+// Category-specific tag list now flows through CategoryItem.keywords
+// (populated by useCategoryData from place_<category>).
+function getKeywords(item: CategoryItem): string[] {
+  return item.keywords ?? [];
 }
 
 // All places.min_price values are stored as KRW per_person (analyzer normalizes
@@ -74,9 +64,8 @@ function PriceRow({ price, label }: { price?: number; label: string }) {
 
 // Category-specific card content renderer
 function CategoryCardContent({ item, category }: { item: CategoryItem; category: CategoryType }) {
-  const any = item as any;
   const rating = typeof item.rating === "string" ? parseFloat(item.rating) || 0 : item.rating || 0;
-  const keywords = getKeywords(item, category);
+  const keywords = getKeywords(item);
 
   // Location line
   const getLocation = () => {
@@ -97,10 +86,10 @@ function CategoryCardContent({ item, category }: { item: CategoryItem; category:
         return (
           <div className="space-y-0.5">
             <PriceRow price={item.price_per_person} label={priceLabel} />
-            {any.min_guarantee > 0 && (
+            {item.min_guarantee && item.min_guarantee > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-muted-foreground">보증인원</span>
-                <span className="text-xs font-medium text-foreground">{any.min_guarantee}명</span>
+                <span className="text-xs font-medium text-foreground">{item.min_guarantee}명</span>
               </div>
             )}
           </div>

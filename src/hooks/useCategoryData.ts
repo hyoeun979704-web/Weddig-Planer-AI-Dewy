@@ -16,6 +16,8 @@ export interface CategoryItem {
   review_count: number;
   is_partner: boolean;
   thumbnail_url: string | null;
+  keywords?: string[];
+  custom_available?: boolean | null;
   [key: string]: unknown;
 }
 
@@ -32,6 +34,90 @@ const CATEGORY_TYPE_TO_PLACE: Record<CategoryType, string> = {
   hanbok: "hanbok",
   invitation_venues: "invitation_venue",
 };
+
+// Per-category subquery appended to the places select. Each card table is 1:1
+// with places via place_id, so Supabase returns either an object or null
+// (depending on the JS client version it may also be a single-item array;
+// pickCard handles both).
+const CATEGORY_DETAIL_SELECT: Record<CategoryType, string> = {
+  venues:
+    "place_wedding_halls(hall_styles,meal_types,min_guarantee,max_guarantee,price_per_person)",
+  studios: "place_studios(shoot_styles,includes_originals,price_per_person)",
+  hanbok: "place_hanboks(hanbok_types,custom_available,price_per_person)",
+  suits: "place_tailor_shops(suit_styles,custom_available,price_per_person)",
+  honeymoon: "place_honeymoons(destinations,duration_days,price_per_person)",
+  honeymoon_gifts: "place_appliances(product_categories,brand_options,price_per_person)",
+  appliances: "place_appliances(product_categories,brand_options,price_per_person)",
+  invitation_venues:
+    "place_invitation_venues(venue_types,capacity_min,capacity_max,price_per_person)",
+};
+
+const CARD_KEY: Record<CategoryType, string> = {
+  venues: "place_wedding_halls",
+  studios: "place_studios",
+  hanbok: "place_hanboks",
+  suits: "place_tailor_shops",
+  honeymoon: "place_honeymoons",
+  honeymoon_gifts: "place_appliances",
+  appliances: "place_appliances",
+  invitation_venues: "place_invitation_venues",
+};
+
+function pickCard<T>(value: T | T[] | null | undefined): T | null {
+  if (value == null) return null;
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value;
+}
+
+function toCategoryItem(p: any, category: CategoryType): CategoryItem {
+  const card = pickCard<any>(p[CARD_KEY[category]]);
+  const price = card?.price_per_person ?? p.min_price ?? undefined;
+  const base: CategoryItem = {
+    id: p.place_id,
+    name: p.name,
+    address: [p.city, p.district].filter(Boolean).join(" "),
+    price_per_person: price,
+    rating: p.avg_rating ?? 0,
+    review_count: p.review_count ?? 0,
+    is_partner: p.is_partner ?? false,
+    thumbnail_url: p.main_image_url,
+    keywords: [],
+  };
+
+  switch (category) {
+    case "venues":
+      base.keywords = card?.hall_styles ?? [];
+      base.min_guarantee = card?.min_guarantee ?? 0;
+      break;
+    case "studios":
+      base.keywords = card?.shoot_styles ?? [];
+      break;
+    case "hanbok":
+      base.keywords = card?.hanbok_types ?? [];
+      base.custom_available = card?.custom_available ?? null;
+      break;
+    case "suits":
+      base.keywords = card?.suit_styles ?? [];
+      base.custom_available = card?.custom_available ?? null;
+      break;
+    case "honeymoon":
+      base.keywords = card?.destinations ?? [];
+      base.destination = card?.destinations?.join(", ");
+      base.duration =
+        card?.duration_days != null ? `${card.duration_days}일` : undefined;
+      break;
+    case "honeymoon_gifts":
+    case "appliances":
+      base.keywords = card?.product_categories ?? [];
+      base.brand = card?.brand_options?.join(", ");
+      break;
+    case "invitation_venues":
+      base.keywords = card?.venue_types ?? [];
+      base.min_guarantee = card?.capacity_min ?? 0;
+      break;
+  }
+  return base;
+}
 
 interface FetchParams {
   region?: string;
@@ -52,7 +138,7 @@ async function fetchCategoryItems(
 
   let query = supabase
     .from("places")
-    .select("*", { count: "exact" })
+    .select(`*, ${CATEGORY_DETAIL_SELECT[category]}`, { count: "exact" })
     .eq("category", placeCategory)
     .eq("is_active", true)
     .is("deleted_at", null);
@@ -70,16 +156,7 @@ async function fetchCategoryItems(
 
   if (error) throw error;
 
-  const items: CategoryItem[] = (data ?? []).map((p) => ({
-    id: p.place_id,
-    name: p.name,
-    address: [p.city, p.district].filter(Boolean).join(" "),
-    price_per_person: p.min_price ?? undefined,
-    rating: p.avg_rating ?? 0,
-    review_count: p.review_count ?? 0,
-    is_partner: p.is_partner ?? false,
-    thumbnail_url: p.main_image_url,
-  }));
+  const items: CategoryItem[] = (data ?? []).map((p) => toCategoryItem(p, category));
 
   return {
     data: items,
