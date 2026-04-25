@@ -93,7 +93,40 @@ function detailsRow(p: CollectedPlace, placeId: string) {
   });
 }
 
-const arr = (a: string[] | null | undefined) => (a && a.length > 0 ? a : null);
+// place_halls.hall_type has a CHECK constraint with a fixed allow-list.
+// We don't know the exact list yet, so for now send only values we're
+// reasonably confident are accepted (English lowercase common in DB
+// schemas). Anything else from Gemini → null (column is nullable).
+const ALLOWED_HALL_TYPES = new Set([
+  "chapel",
+  "convention",
+  "hotel",
+  "house",
+  "hanok",
+  "outdoor",
+  "garden",
+  "church",
+]);
+
+// Loose Korean → English mapping for common values Gemini emits.
+const HALL_TYPE_KO_MAP: Record<string, string> = {
+  "채플": "chapel",
+  "컨벤션": "convention",
+  "호텔": "hotel",
+  "하우스": "house",
+  "한옥": "hanok",
+  "야외": "outdoor",
+  "가든": "garden",
+  "성당": "church",
+  "교회": "church",
+};
+
+function safeHallType(v: string | null | undefined): string | null {
+  if (!v) return null;
+  const trimmed = v.trim();
+  const mapped = HALL_TYPE_KO_MAP[trimmed] ?? trimmed.toLowerCase();
+  return ALLOWED_HALL_TYPES.has(mapped) ? mapped : null;
+}
 
 function categoryCardRow(p: CollectedPlace, placeId: string) {
   const base = { place_id: placeId, price_per_person: p.min_price ?? null };
@@ -254,7 +287,7 @@ export async function upsertPlaces(
             const row = compact({
               place_id: placeId,
               hall_name: h.hall_name.trim(),
-              hall_type: h.hall_type ?? null,
+              hall_type: safeHallType(h.hall_type),
               capacity_seated: h.capacity_seated ?? null,
               capacity_standing: h.capacity_standing ?? null,
               min_guarantee: h.min_guarantee ?? null,

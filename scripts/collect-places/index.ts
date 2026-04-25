@@ -344,7 +344,7 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
             : [
                 {
                   hall_name: c.name,
-                  hall_type: "홀",
+                  hall_type: null, // upsert.safeHallType maps to allow-list; safer to omit
                   capacity_seated: null,
                   capacity_standing: null,
                   min_guarantee: analysis.min_guarantee ?? null,
