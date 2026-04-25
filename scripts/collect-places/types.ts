@@ -38,4 +38,9 @@ export interface CollectedPlace {
   avg_price_estimate?: PriceEstimate | null;
   summary?: string | null;
   analyzed_at?: string | null; // ISO timestamp
+
+  // Derived from analysis for native columns
+  min_price?: number | null; // KRW per_person; only for wedding_hall categories
+  min_guarantee?: number | null;
+  max_guarantee?: number | null;
 }

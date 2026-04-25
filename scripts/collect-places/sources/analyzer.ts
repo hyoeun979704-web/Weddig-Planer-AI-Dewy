@@ -32,6 +32,9 @@ export interface PlaceAnalysis {
     currency: "KRW";
     unit: "per_person" | "per_event" | "per_set" | "per_day" | "per_package";
   } | null;
+  // Wedding-hall specific (null for other categories)
+  min_guarantee: number | null;
+  max_guarantee: number | null;
   summary: string | null;
   tags: string[];
   is_relevant: boolean;
@@ -51,6 +54,8 @@ const SYSTEM = `너는 한국 웨딩 업체 분석가다. 사용자가 제공하
 - recommended_for: 어떤 신부에게 적합한지 (예: ["소규모 결혼식","외향적 신부","합리적 가격 추구"])
 - avg_price_estimate: 후기에 나온 가격 범위. 단위(unit) 명확히 추정. 없으면 null.
   unit: per_person(웨딩홀 1인당) | per_event(1회) | per_set(1세트) | per_day(1일) | per_package(패키지)
+- min_guarantee, max_guarantee: 웨딩홀 보증인원 범위. 다른 카테고리는 무조건 null.
+  예: "보증인원 200명부터 가능" → min_guarantee=200, max_guarantee=null.
 - summary: 2-3문장 한글 요약. 핵심 특징.
 - tags: 카테고리·분위기·강점 통합 키워드 (검색용).
 - is_relevant: 스니펫이 정말 이 업체에 대한 후기인지 (false면 무관한 글이 섞임).
@@ -109,6 +114,8 @@ ${input.snippets
               unit: { type: "string" },
             },
           },
+          min_guarantee: { type: "number", nullable: true },
+          max_guarantee: { type: "number", nullable: true },
           summary: { type: "string", nullable: true },
           tags: { type: "array", items: { type: "string" } },
           is_relevant: { type: "boolean" },

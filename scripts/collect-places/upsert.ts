@@ -35,6 +35,9 @@ export async function upsertPlaces(items: CollectedPlace[], env: SupabaseEnv) {
     avg_price_estimate: p.avg_price_estimate ?? null,
     summary: p.summary ?? null,
     analyzed_at: p.analyzed_at ?? null,
+    min_price: p.min_price ?? null,
+    min_guarantee: p.min_guarantee ?? null,
+    max_guarantee: p.max_guarantee ?? null,
     is_active: true,
   }));
 

@@ -193,6 +193,13 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       continue;
     }
 
+    // Derive native columns: min_price from per_person estimate, guarantees for wedding_hall
+    const isWeddingHall = c.category === "wedding_hall";
+    const minPrice =
+      analysis.avg_price_estimate?.unit === "per_person"
+        ? analysis.avg_price_estimate.min
+        : null;
+
     const enhanced: CollectedPlace = {
       ...c,
       description: analysis.summary ?? c.description,
@@ -209,6 +216,9 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       avg_price_estimate: analysis.avg_price_estimate ?? null,
       summary: analysis.summary ?? null,
       analyzed_at: new Date().toISOString(),
+      min_price: minPrice,
+      min_guarantee: isWeddingHall ? analysis.min_guarantee ?? null : null,
+      max_guarantee: isWeddingHall ? analysis.max_guarantee ?? null : null,
     };
     enhanced.confidence = scoreConfidence(enhanced);
     enriched.push(enhanced);
