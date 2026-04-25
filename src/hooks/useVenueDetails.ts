@@ -50,7 +50,8 @@ export const useVenueHalls = (placeId: string | undefined) => {
   });
 };
 
-// Legacy stub — migrated to place_details.advantage_1/2/3_title/content
+// Mapped from place_details.advantage_1/2/3_title/content into the legacy
+// shape that VenueInfoTab already renders.
 export interface VenueSpecialPoint {
   id: string;
   venue_id: string;
@@ -61,10 +62,39 @@ export interface VenueSpecialPoint {
   created_at: string;
 }
 
-export const useVenueSpecialPoints = (_placeId: string | undefined) => {
+export const useVenueSpecialPoints = (placeId: string | undefined) => {
   return useQuery({
-    queryKey: ["venue_special_points", _placeId],
-    queryFn: async (): Promise<VenueSpecialPoint[]> => [],
-    enabled: false,
+    queryKey: ["venue_special_points", placeId],
+    queryFn: async (): Promise<VenueSpecialPoint[]> => {
+      if (!placeId) return [];
+      const { data, error } = await supabase
+        .from("place_details")
+        .select(
+          "advantage_1_title,advantage_1_content,advantage_2_title,advantage_2_content,advantage_3_title,advantage_3_content"
+        )
+        .eq("place_id", placeId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return [];
+
+      const points: VenueSpecialPoint[] = [];
+      for (let i = 1; i <= 3; i++) {
+        const title = (data as Record<string, unknown>)[`advantage_${i}_title`];
+        const content = (data as Record<string, unknown>)[`advantage_${i}_content`];
+        if (typeof title === "string" && title.trim()) {
+          points.push({
+            id: `${placeId}-adv${i}`,
+            venue_id: placeId,
+            title,
+            description: typeof content === "string" ? content : null,
+            icon: null,
+            category: null,
+            created_at: "",
+          });
+        }
+      }
+      return points;
+    },
+    enabled: !!placeId,
   });
 };
