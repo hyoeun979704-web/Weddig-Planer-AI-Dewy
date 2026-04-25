@@ -101,13 +101,18 @@ export async function upsertPlaces(
 
   for (const p of items) {
     try {
-      const { data: existing, error: lookupErr } = await supabase
+      // Lookup pre-existing row by (name, category). Pick the oldest match if
+      // multiple exist — duplicates can linger from earlier non-idempotent runs,
+      // and we want every re-run to converge on the same canonical row.
+      const { data: existingRows, error: lookupErr } = await supabase
         .from("places")
         .select("place_id")
         .eq("name", p.name)
         .eq("category", p.category)
-        .maybeSingle();
+        .order("created_at", { ascending: true })
+        .limit(1);
       if (lookupErr) throw lookupErr;
+      const existing = existingRows?.[0];
 
       let placeId: string;
       if (existing?.place_id) {
