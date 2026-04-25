@@ -30,8 +30,14 @@ export interface CollectedPlace {
 
   // From Naver Local API (Stage 1) — written to place_details
   tel?: string | null;
-  naver_place_url?: string | null;
   address?: string | null; // road address
+  // Naver "link" classified by hostname (only one of these is set per shop)
+  naver_place_url?: string | null;
+  naver_blog_url?: string | null;
+  instagram_url?: string | null;
+  facebook_url?: string | null;
+  youtube_url?: string | null;
+  website_url?: string | null;
 
   // Deep analysis (filled by Gemini in Stage 3) — written to place_details
   price_tier?: string | null;

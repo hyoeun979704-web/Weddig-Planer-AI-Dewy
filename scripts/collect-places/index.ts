@@ -69,6 +69,29 @@ function isHanbokExperienceShop(name: string, naverCategory: string): boolean {
   return false;
 }
 
+// Naver Local API's `link` field is the shop's primary external URL (could be
+// Instagram, official site, kakao channel, etc.). Route it into the right
+// place_details column based on hostname so the UI's SNS section labels them
+// correctly.
+function classifyLink(url: string | null | undefined): {
+  naver_place_url?: string;
+  naver_blog_url?: string;
+  instagram_url?: string;
+  facebook_url?: string;
+  youtube_url?: string;
+  website_url?: string;
+} {
+  if (!url) return {};
+  const u = url.toLowerCase();
+  if (u.includes("place.naver.com") || u.includes("map.naver.com") || u.includes("naver.me"))
+    return { naver_place_url: url };
+  if (u.includes("blog.naver.com")) return { naver_blog_url: url };
+  if (u.includes("instagram.com")) return { instagram_url: url };
+  if (u.includes("facebook.com") || u.includes("fb.com")) return { facebook_url: url };
+  if (u.includes("youtube.com") || u.includes("youtu.be")) return { youtube_url: url };
+  return { website_url: url };
+}
+
 function localToCandidate(l: LocalItem, label: CategoryLabel): CollectedPlace {
   const cleanTitle = stripTags(l.title);
   const addr = l.roadAddress || l.address || "";
@@ -90,8 +113,8 @@ function localToCandidate(l: LocalItem, label: CategoryLabel): CollectedPlace {
     last_source_date: null,
     source_refs: [{ url: l.link || "", source_type: "local", published_at: null }],
     tel: l.telephone || null,
-    naver_place_url: l.link || null,
     address: addr || null,
+    ...classifyLink(l.link),
   };
 }
 
