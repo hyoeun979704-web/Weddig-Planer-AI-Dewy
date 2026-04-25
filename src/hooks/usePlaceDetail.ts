@@ -25,8 +25,6 @@ async function fetchCard(category: string, placeId: string): Promise<unknown> {
       supabase.from("place_appliances").select("*").eq("place_id", placeId).maybeSingle(),
     invitation_venue: () =>
       supabase.from("place_invitation_venues").select("*").eq("place_id", placeId).maybeSingle(),
-    planner: () =>
-      supabase.from("place_planners").select("*").eq("place_id", placeId).maybeSingle(),
   };
   const fn = tables[category];
   if (!fn) return null;
@@ -129,8 +127,6 @@ function mergeCard(place: any, card: any): Partial<LegacyDetail> {
         style_options: card.makeup_styles ?? [],
         includes_rehearsal: card.includes_rehearsal ?? null,
       };
-    case "planner":
-      return { service_options: card.service_packages ?? [] };
     default:
       return {};
   }

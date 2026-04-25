@@ -58,6 +58,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify required secrets
+        env:
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          missing=()
+          for v in NAVER_CLIENT_ID NAVER_CLIENT_SECRET GEMINI_API_KEY SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!v}" ]; then missing+=("$v"); fi
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required secrets: ${missing[*]}"
+            echo "Set them in Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -75,14 +93,6 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           npm run collect -- --category=${{ matrix.category }} --limit=${{ needs.prepare.outputs.limit }}
-
-      - name: Upload snapshot (recovery)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: collect-cache-${{ matrix.category }}
-          path: .collect-cache/
-          retention-days: 7
 
   summary:
     needs: collect

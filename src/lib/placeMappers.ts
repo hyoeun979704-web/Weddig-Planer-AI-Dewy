@@ -2,7 +2,8 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type PlaceRow = Database["public"]["Tables"]["places"]["Row"];
 
-// Korean UI category label ↔ places.category snake_case (10 categories)
+// Korean UI category label ↔ places.category snake_case (9 vendor categories)
+// 웨딩플래너는 이 앱의 핵심 제품(AI 플래너)이라 vendor 카테고리에서 제외.
 export const KOREAN_TO_PLACE_CATEGORY: Record<string, string> = {
   "웨딩홀": "wedding_hall",
   "스튜디오": "studio",
@@ -13,7 +14,6 @@ export const KOREAN_TO_PLACE_CATEGORY: Record<string, string> = {
   "허니문": "honeymoon",
   "혼수": "appliance",
   "청첩장": "invitation_venue",
-  "웨딩플래너": "planner",
   // Backward-compat aliases
   "스드메": "studio",
 };
@@ -28,7 +28,6 @@ export const PLACE_TO_KOREAN_CATEGORY: Record<string, string> = {
   honeymoon: "허니문",
   appliance: "혼수",
   invitation_venue: "청첩장",
-  planner: "웨딩플래너",
 };
 
 // Mapping from place category slug → category-specific card table name
@@ -42,7 +41,6 @@ export const CATEGORY_CARD_TABLE: Record<string, string> = {
   honeymoon: "place_honeymoons",
   appliance: "place_appliances",
   invitation_venue: "place_invitation_venues",
-  planner: "place_planners",
 };
 
 export interface Vendor {

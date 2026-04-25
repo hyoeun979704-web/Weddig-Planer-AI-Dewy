@@ -1374,32 +1374,6 @@ export type Database = {
           },
         ]
       }
-      place_planners: {
-        Row: {
-          place_id: string
-          price_per_person: number | null
-          service_packages: string[] | null
-        }
-        Insert: {
-          place_id: string
-          price_per_person?: number | null
-          service_packages?: string[] | null
-        }
-        Update: {
-          place_id?: string
-          price_per_person?: number | null
-          service_packages?: string[] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "place_planners_place_id_fkey"
-            columns: ["place_id"]
-            isOneToOne: true
-            referencedRelation: "places"
-            referencedColumns: ["place_id"]
-          },
-        ]
-      }
       place_reviews: {
         Row: {
           ai_summary: string | null
