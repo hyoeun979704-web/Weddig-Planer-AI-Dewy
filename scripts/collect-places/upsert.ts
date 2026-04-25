@@ -99,13 +99,27 @@ function placeRow(p: CollectedPlace) {
 }
 
 function detailsRow(placeId: string, p: CollectedPlace) {
-  // Skip if analyzer produced nothing meaningful — keeps place_details sparse instead of full of nulls.
+  // Skip the row entirely only when the analyzer produced nothing AND there is
+  // no Naver Local metadata to record either — otherwise we still want a stub
+  // with tel/address/naver_place_url so detail pages have something to show.
   const hasAnalysis =
     p.summary ||
     (p.atmosphere && p.atmosphere.length > 0) ||
     (p.pros && p.pros.length > 0) ||
     (p.cons && p.cons.length > 0);
-  if (!hasAnalysis) return null;
+  const hasMeta = !!(p.tel || p.road_address || p.naver_place_url);
+  if (!hasAnalysis && !hasMeta) return null;
+
+  // Top 3 pros become Special Point cards (VenueInfoTab carousel).
+  // We don't have separate copy for content, so each card uses the pro phrase
+  // as the title and leaves content null until a follow-up enrichment step.
+  const pros = p.pros ?? [];
+  const advantages: Record<string, string | null> = {};
+  for (let i = 0; i < 3; i++) {
+    advantages[`advantage_${i + 1}_title`] = pros[i] ?? null;
+    advantages[`advantage_${i + 1}_content`] = null;
+  }
+
   return {
     place_id: placeId,
     summary: p.summary ?? null,
@@ -115,6 +129,10 @@ function detailsRow(placeId: string, p: CollectedPlace) {
     hidden_costs: p.hidden_costs ?? [],
     recommended_for: p.recommended_for ?? [],
     analyzed_at: p.analyzed_at ?? null,
+    tel: p.tel ?? null,
+    address: p.road_address ?? null,
+    naver_place_url: p.naver_place_url ?? null,
+    ...advantages,
   };
 }
 

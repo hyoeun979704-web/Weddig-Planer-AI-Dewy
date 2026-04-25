@@ -89,6 +89,9 @@ function localToCandidate(l: LocalItem, label: CategoryLabel): CollectedPlace {
     confidence: 0,
     last_source_date: null,
     source_refs: [{ url: l.link || "", source_type: "local", published_at: null }],
+    tel: l.telephone || null,
+    road_address: l.roadAddress || l.address || null,
+    naver_place_url: l.link || null,
   };
 }
 

@@ -43,4 +43,9 @@ export interface CollectedPlace {
   min_price?: number | null; // KRW per_person; only for wedding_hall categories
   min_guarantee?: number | null;
   max_guarantee?: number | null;
+
+  // Naver Local API metadata (Stage 1) — flows directly to place_details.
+  tel?: string | null;
+  road_address?: string | null;
+  naver_place_url?: string | null;
 }
