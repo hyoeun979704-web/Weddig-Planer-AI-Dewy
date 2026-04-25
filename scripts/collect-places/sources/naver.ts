@@ -44,10 +44,18 @@ async function call<T>(
   endpoint: string,
   query: string,
   env: NaverEnv,
-  display = 30,
-  start = 1
+  opts: { display?: number; start?: number; sort?: string } = {}
 ): Promise<T> {
-  const url = `${endpoint}?query=${encodeURIComponent(query)}&display=${display}&start=${start}&sort=date`;
+  const display = opts.display ?? 30;
+  const start = opts.start ?? 1;
+  const sort = opts.sort;
+  const params = new URLSearchParams({
+    query,
+    display: String(display),
+    start: String(start),
+  });
+  if (sort) params.set("sort", sort);
+  const url = `${endpoint}?${params.toString()}`;
   const res = await fetch(url, {
     headers: {
       "X-Naver-Client-Id": env.clientId,
@@ -71,7 +79,7 @@ function withinLastNMonths(yyyymmdd: string, months: number): boolean {
 }
 
 export async function searchBlog(query: string, env: NaverEnv, opts: { months: number; limit: number }): Promise<BlogItem[]> {
-  const data = await call<{ items: any[] }>(ENDPOINTS.blog, query, env, opts.limit);
+  const data = await call<{ items: any[] }>(ENDPOINTS.blog, query, env, { display: opts.limit, sort: "date" });
   return data.items
     .map((it) => ({
       source: "blog" as const,
@@ -86,7 +94,7 @@ export async function searchBlog(query: string, env: NaverEnv, opts: { months: n
 }
 
 export async function searchCafe(query: string, env: NaverEnv, opts: { months: number; limit: number }): Promise<BlogItem[]> {
-  const data = await call<{ items: any[] }>(ENDPOINTS.cafearticle, query, env, opts.limit);
+  const data = await call<{ items: any[] }>(ENDPOINTS.cafearticle, query, env, { display: opts.limit, sort: "date" });
   return data.items
     .map((it) => ({
       source: "cafe" as const,
@@ -99,7 +107,9 @@ export async function searchCafe(query: string, env: NaverEnv, opts: { months: n
 }
 
 export async function searchLocal(query: string, env: NaverEnv, limit = 5): Promise<LocalItem[]> {
-  const data = await call<{ items: any[] }>(ENDPOINTS.local, query, env, limit);
+  // Local API: max display=5, no sort=date (only 'random' or 'comment')
+  const display = Math.min(limit, 5);
+  const data = await call<{ items: any[] }>(ENDPOINTS.local, query, env, { display, sort: "random" });
   return data.items.map((it) => ({
     source: "local" as const,
     title: stripTags(it.title),
