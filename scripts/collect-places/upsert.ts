@@ -23,7 +23,6 @@ const CATEGORY_TABLE: Record<CategorySlug, string> = {
   honeymoon: "place_honeymoons",
   appliance: "place_appliances",
   invitation_venue: "place_invitation_venues",
-  planner: "place_planners",
 };
 
 // Keyword bank for category-specific array columns.
@@ -58,9 +57,6 @@ const STYLE_KEYWORDS: Record<CategorySlug, Record<string, string[]>> = {
   },
   invitation_venue: {
     venue_types: ["한식", "일식", "중식", "양식", "룸", "프라이빗", "이탈리안", "코스"],
-  },
-  planner: {
-    service_packages: ["종합", "부분", "데이오브", "컨설팅", "하드캐리"],
   },
 };
 

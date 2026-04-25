@@ -202,20 +202,29 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       })),
     ];
 
-    const analysis = await analyzeBusiness(
-      {
-        business_name: c.name,
-        category: label,
-        region: [c.city, c.district].filter(Boolean).join(" "),
-        snippets: snippets.map((s) => ({
-          source: s.source,
-          title: s.title,
-          description: s.description,
-          postdate: s.postdate,
-        })),
-      },
-      geminiKey
-    );
+    let analysis: Awaited<ReturnType<typeof analyzeBusiness>> = null;
+    try {
+      analysis = await analyzeBusiness(
+        {
+          business_name: c.name,
+          category: label,
+          region: [c.city, c.district].filter(Boolean).join(" "),
+          snippets: snippets.map((s) => ({
+            source: s.source,
+            title: s.title,
+            description: s.description,
+            postdate: s.postdate,
+          })),
+        },
+        geminiKey
+      );
+    } catch (e) {
+      // Network blip / Gemini outage: keep the candidate w/o analysis instead
+      // of killing the whole category job (300+ candidates, hours of work).
+      console.log(`분석 예외 (${(e as Error).message.slice(0, 80)}), 스킵`);
+      enriched.push({ ...c, confidence: scoreConfidence(c) });
+      continue;
+    }
 
     if (!analysis || !analysis.is_relevant) {
       console.log(`스킵 (관련성 낮음, snippet=${snippets.length})`);

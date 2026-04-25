@@ -1,5 +1,6 @@
 // Category slugs mirror src/lib/placeMappers.ts (DB canonical).
 // Keep this in sync if the slug list ever changes.
+// 웨딩플래너는 이 앱의 핵심 제품(AI 플래너)이므로 외부 수집 카테고리에서 제외.
 export const CATEGORIES = {
   웨딩홀: "wedding_hall",
   스튜디오: "studio",
@@ -10,7 +11,6 @@ export const CATEGORIES = {
   허니문: "honeymoon",
   혼수: "appliance",
   청첩장: "invitation_venue",
-  웨딩플래너: "planner",
 } as const;
 
 export type CategoryLabel = keyof typeof CATEGORIES;
@@ -45,7 +45,6 @@ const KEYWORD_TEMPLATES: Record<CategoryLabel, string[]> = {
   허니문: ["허니문 패키지", "신혼여행 추천", "유럽 허니문", "동남아 허니문"],
   혼수: ["{region} 혼수 가전", "신혼 가전 세트", "{region} 혼수 가구", "혼수 침대"],
   청첩장: ["{region} 청첩장 모임", "{region} 상견례 장소", "{region} 양가 상견례 식당"],
-  웨딩플래너: ["{region} 웨딩플래너", "{region} 결혼 컨설팅", "결혼 준비 플래너"],
 };
 
 export function seedQueries(label: CategoryLabel, region?: string): string[] {
