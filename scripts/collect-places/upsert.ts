@@ -150,9 +150,14 @@ async function insertOne(
   supabase: SupabaseClient,
   p: CollectedPlace
 ): Promise<{ ok: boolean; placeId?: string; reason?: string }> {
+  // Upsert by (category, name, city, district) — UNIQUE index uq_places_identity
+  // ensures we update the existing row instead of creating duplicates on re-run.
   const { data, error } = await supabase
     .from("places")
-    .insert(placeRow(p))
+    .upsert(placeRow(p), {
+      onConflict: "category,name,city,district",
+      ignoreDuplicates: false,
+    })
     .select("place_id")
     .single();
 
@@ -170,24 +175,28 @@ async function insertOne(
   const tasks: Array<Promise<{ table: string; error: string | null }>> = [];
   if (detailsPayload) {
     tasks.push(
-      Promise.resolve(supabase.from("place_details").insert(detailsPayload)).then((r) => ({
-        table: "place_details",
-        error: r.error ? r.error.message : null,
-      }))
+      (async () => {
+        const r = await supabase
+          .from("place_details")
+          .upsert(detailsPayload, { onConflict: "place_id" });
+        return { table: "place_details", error: r.error ? r.error.message : null };
+      })()
     );
   }
   if (tableName) {
     tasks.push(
-      Promise.resolve(supabase.from(tableName).insert(categoryPayload)).then((r) => ({
-        table: tableName,
-        error: r.error ? r.error.message : null,
-      }))
+      (async () => {
+        const r = await supabase
+          .from(tableName)
+          .upsert(categoryPayload, { onConflict: "place_id" });
+        return { table: tableName, error: r.error ? r.error.message : null };
+      })()
     );
   }
 
   const results = await Promise.all(tasks);
   for (const r of results) {
-    if (r.error) console.warn(`  ⚠ ${r.table} insert (${p.name}): ${r.error}`);
+    if (r.error) console.warn(`  ⚠ ${r.table} upsert (${p.name}): ${r.error}`);
   }
   return { ok: true, placeId };
 }

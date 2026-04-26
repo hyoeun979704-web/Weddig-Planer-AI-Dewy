@@ -39,6 +39,8 @@ function getKeywords(item: CategoryItem): string[] {
 const PRICE_UNIT_LABEL: Record<CategoryType, string> = {
   venues: "1인 식대",
   studios: "1인 기준",
+  dress_shops: "1인 1벌",
+  makeup_shops: "1인 기준",
   hanbok: "1인 1세트",
   suits: "1인 1세트",
   honeymoon: "1인 기준",

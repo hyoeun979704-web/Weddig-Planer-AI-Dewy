@@ -27,6 +27,8 @@ const PAGE_SIZE = 10;
 const CATEGORY_TYPE_TO_PLACE: Record<CategoryType, string> = {
   venues: "wedding_hall",
   studios: "studio",
+  dress_shops: "dress_shop",
+  makeup_shops: "makeup_shop",
   honeymoon: "honeymoon",
   honeymoon_gifts: "appliance",
   appliances: "appliance",
@@ -36,13 +38,13 @@ const CATEGORY_TYPE_TO_PLACE: Record<CategoryType, string> = {
 };
 
 // Per-category subquery appended to the places select. Each card table is 1:1
-// with places via place_id, so Supabase returns either an object or null
-// (depending on the JS client version it may also be a single-item array;
-// pickCard handles both).
+// with places via place_id, so Supabase returns the row as an object.
 const CATEGORY_DETAIL_SELECT: Record<CategoryType, string> = {
   venues:
     "place_wedding_halls(hall_styles,meal_types,min_guarantee,max_guarantee,price_per_person)",
   studios: "place_studios(shoot_styles,includes_originals,price_per_person)",
+  dress_shops: "place_dress_shops(dress_styles,rental_only,price_per_person)",
+  makeup_shops: "place_makeup_shops(makeup_styles,includes_rehearsal,price_per_person)",
   hanbok: "place_hanboks(hanbok_types,custom_available,price_per_person)",
   suits: "place_tailor_shops(suit_styles,custom_available,price_per_person)",
   honeymoon: "place_honeymoons(destinations,duration_days,price_per_person)",
@@ -55,6 +57,8 @@ const CATEGORY_DETAIL_SELECT: Record<CategoryType, string> = {
 const CARD_KEY: Record<CategoryType, string> = {
   venues: "place_wedding_halls",
   studios: "place_studios",
+  dress_shops: "place_dress_shops",
+  makeup_shops: "place_makeup_shops",
   hanbok: "place_hanboks",
   suits: "place_tailor_shops",
   honeymoon: "place_honeymoons",
@@ -63,10 +67,10 @@ const CARD_KEY: Record<CategoryType, string> = {
   invitation_venues: "place_invitation_venues",
 };
 
-function pickCard<T>(value: T | T[] | null | undefined): T | null {
-  if (value == null) return null;
-  if (Array.isArray(value)) return value[0] ?? null;
-  return value;
+// 1:1 PostgREST relations return an object directly. Earlier we also handled
+// arrays defensively, but the UNIQUE place_id FK guarantees object-or-null.
+function pickCard<T>(value: T | null | undefined): T | null {
+  return value ?? null;
 }
 
 function toCategoryItem(p: any, category: CategoryType): CategoryItem {
@@ -91,6 +95,12 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
       break;
     case "studios":
       base.keywords = card?.shoot_styles ?? [];
+      break;
+    case "dress_shops":
+      base.keywords = card?.dress_styles ?? [];
+      break;
+    case "makeup_shops":
+      base.keywords = card?.makeup_styles ?? [];
       break;
     case "hanbok":
       base.keywords = card?.hanbok_types ?? [];

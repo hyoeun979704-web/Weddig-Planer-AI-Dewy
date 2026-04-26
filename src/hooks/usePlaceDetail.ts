@@ -1,41 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-// Two-step fetch: places first, then the matching place_<category> card.
-// We switch on category instead of dynamic .from() because Supabase's typed
-// client requires a literal table name.
-async function fetchCard(category: string, placeId: string): Promise<unknown> {
-  // PostgrestBuilder is PromiseLike, not Promise — use that to keep types simple.
-  const tables: Record<string, () => PromiseLike<{ data: unknown }>> = {
-    wedding_hall: () =>
-      supabase.from("place_wedding_halls").select("*").eq("place_id", placeId).maybeSingle(),
-    studio: () =>
-      supabase.from("place_studios").select("*").eq("place_id", placeId).maybeSingle(),
-    dress_shop: () =>
-      supabase.from("place_dress_shops").select("*").eq("place_id", placeId).maybeSingle(),
-    makeup_shop: () =>
-      supabase.from("place_makeup_shops").select("*").eq("place_id", placeId).maybeSingle(),
-    hanbok: () =>
-      supabase.from("place_hanboks").select("*").eq("place_id", placeId).maybeSingle(),
-    tailor_shop: () =>
-      supabase.from("place_tailor_shops").select("*").eq("place_id", placeId).maybeSingle(),
-    honeymoon: () =>
-      supabase.from("place_honeymoons").select("*").eq("place_id", placeId).maybeSingle(),
-    appliance: () =>
-      supabase.from("place_appliances").select("*").eq("place_id", placeId).maybeSingle(),
-    invitation_venue: () =>
-      supabase.from("place_invitation_venues").select("*").eq("place_id", placeId).maybeSingle(),
-  };
-  const fn = tables[category];
-  if (!fn) return null;
-  const { data } = await fn();
-  return data;
-}
-
 /**
  * Fetches a places row + its matching place_<category> card and synthesizes
  * the legacy detail shape that the existing detail pages (HanbokDetail,
- * StudioDetail, etc) consume. Two round-trips total (places, then card).
+ * StudioDetail, etc) consume. Single round-trip via PostgREST embedded selects:
+ * all 9 category tables are LEFT JOINed; only the matching one is non-null.
  */
 export interface LegacyDetail {
   id: string;
@@ -72,6 +42,33 @@ export interface LegacyDetail {
 
 const fmtPrice = (min: number | null): string =>
   min != null ? `${(min / 10000).toFixed(0)}만원~` : "가격 문의";
+
+const CARD_KEY: Record<string, string> = {
+  wedding_hall: "place_wedding_halls",
+  studio: "place_studios",
+  dress_shop: "place_dress_shops",
+  makeup_shop: "place_makeup_shops",
+  hanbok: "place_hanboks",
+  tailor_shop: "place_tailor_shops",
+  honeymoon: "place_honeymoons",
+  appliance: "place_appliances",
+  invitation_venue: "place_invitation_venues",
+};
+
+// All 9 card tables embedded. PostgREST returns each as object-or-null; the
+// 1:1 place_id PK FK guarantees at most one row per place.
+const SELECT_WITH_ALL_CARDS = [
+  "*",
+  "place_wedding_halls(hall_styles,meal_types,min_guarantee,max_guarantee,price_per_person)",
+  "place_studios(shoot_styles,includes_originals,price_per_person)",
+  "place_dress_shops(dress_styles,rental_only,price_per_person)",
+  "place_makeup_shops(makeup_styles,includes_rehearsal,price_per_person)",
+  "place_hanboks(hanbok_types,custom_available,price_per_person)",
+  "place_tailor_shops(suit_styles,custom_available,price_per_person)",
+  "place_honeymoons(destinations,duration_days,price_per_person)",
+  "place_appliances(product_categories,brand_options,price_per_person)",
+  "place_invitation_venues(venue_types,capacity_min,capacity_max,price_per_person)",
+].join(",");
 
 // Map place + category-specific card row into the legacy field names that
 // detail pages already render.
@@ -139,33 +136,35 @@ export const usePlaceDetail = (placeId: string | undefined) => {
       if (!placeId) return null;
       const { data, error } = await supabase
         .from("places")
-        .select("*")
+        .select(SELECT_WITH_ALL_CARDS)
         .eq("place_id", placeId)
         .maybeSingle();
       if (error) throw error;
       if (!data) return null;
 
-      const card = (await fetchCard(data.category, placeId)) as any;
+      const placeRow = data as any;
+      const cardKey = CARD_KEY[placeRow.category];
+      const card = cardKey ? placeRow[cardKey] : null;
 
-      const address = [data.city, data.district].filter(Boolean).join(" ");
+      const address = [placeRow.city, placeRow.district].filter(Boolean).join(" ");
       const cardPrice = card?.price_per_person ?? null;
-      const price = cardPrice ?? data.min_price ?? 0;
+      const price = cardPrice ?? placeRow.min_price ?? 0;
 
       return {
-        id: data.place_id,
-        name: data.name,
+        id: placeRow.place_id,
+        name: placeRow.name,
         address,
-        thumbnail_url: data.main_image_url,
-        rating: data.avg_rating ?? 0,
-        review_count: data.review_count ?? 0,
-        is_partner: data.is_partner ?? false,
+        thumbnail_url: placeRow.main_image_url,
+        rating: placeRow.avg_rating ?? 0,
+        review_count: placeRow.review_count ?? 0,
+        is_partner: placeRow.is_partner ?? false,
         price_range: fmtPrice(price || null),
         price_per_person: price,
         min_guarantee: 0,
         destination: address,
         brand: address,
-        created_at: data.created_at ?? "",
-        updated_at: data.updated_at ?? "",
+        created_at: placeRow.created_at ?? "",
+        updated_at: placeRow.updated_at ?? "",
         hanbok_types: [],
         suit_types: [],
         package_types: [],
@@ -178,7 +177,7 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         included_services: [],
         accommodation_types: [],
         trip_types: [],
-        ...mergeCard(data, card),
+        ...mergeCard(placeRow, card),
       };
     },
     enabled: !!placeId,

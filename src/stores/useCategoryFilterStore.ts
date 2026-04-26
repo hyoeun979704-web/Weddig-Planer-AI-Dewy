@@ -1,6 +1,16 @@
 import { create } from "zustand";
 
-export type CategoryType = 'venues' | 'studios' | 'honeymoon' | 'honeymoon_gifts' | 'appliances' | 'suits' | 'hanbok' | 'invitation_venues';
+export type CategoryType =
+  | 'venues'
+  | 'studios'
+  | 'dress_shops'
+  | 'makeup_shops'
+  | 'honeymoon'
+  | 'honeymoon_gifts'
+  | 'appliances'
+  | 'suits'
+  | 'hanbok'
+  | 'invitation_venues';
 
 export interface CategoryFilterState {
   region: string | null;

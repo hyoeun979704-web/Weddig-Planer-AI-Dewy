@@ -62,7 +62,6 @@ const HANBOK_EXPERIENCE_BLOCKLIST = [
 const HANBOK_EXPERIENCE_KEYWORDS = ["체험", "관광", "고궁", "경복궁점", "북촌점", "인사동점"];
 
 function isHanbokExperienceShop(name: string, naverCategory: string): boolean {
-  const lname = name.toLowerCase();
   if (HANBOK_EXPERIENCE_BLOCKLIST.some((b) => name.includes(b))) return true;
   if (HANBOK_EXPERIENCE_KEYWORDS.some((k) => name.includes(k) || naverCategory.includes(k)))
     return true;

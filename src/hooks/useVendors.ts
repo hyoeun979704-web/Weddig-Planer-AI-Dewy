@@ -102,33 +102,30 @@ function buildSnsInfo(details: Record<string, unknown>): Record<string, string> 
   return Object.keys(map).length > 0 ? map : null;
 }
 
-// Fetch single vendor by id (uuid). Joins place_details so the detail page
-// gets tel/business_hours/parking/SNS instead of the placeholders that
-// placeToVendor leaves on the bare place row.
+// Fetch single vendor by id (uuid). Single round-trip via embedded place_details
+// select; PostgREST returns details as object-or-null since place_id is UNIQUE.
 export const useVendor = (vendorId: string) => {
   return useQuery({
     queryKey: ["vendor", vendorId],
     queryFn: async (): Promise<Vendor | null> => {
       const { data, error } = await supabase
         .from("places")
-        .select("*")
+        .select("*, place_details(*)")
         .eq("place_id", vendorId)
         .maybeSingle();
       if (error) throw error;
       if (!data) return null;
-      const base = placeToVendor(data);
+      const row = data as any;
+      const base = placeToVendor(row);
 
-      const { data: details } = await supabase
-        .from("place_details")
-        .select("*")
-        .eq("place_id", vendorId)
-        .maybeSingle();
+      const details = row.place_details ?? null;
       if (!details) return base;
       const d = details as Record<string, unknown>;
 
-      const parkingHours = [d.parking_free_guest, d.parking_free_parents]
-        .filter((x): x is string => typeof x === "string" && !!x.trim())
-        .join(" · ") || null;
+      const parkingHours =
+        [d.parking_free_guest, d.parking_free_parents]
+          .filter((x): x is string => typeof x === "string" && !!x.trim())
+          .join(" · ") || null;
 
       return {
         ...base,

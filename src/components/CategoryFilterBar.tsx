@@ -113,6 +113,77 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
       ],
     },
   },
+  dress_shops: {
+    title: "드레스샵 필터",
+    regions: [
+      { value: "서울", label: "서울" },
+      { value: "경기", label: "경기" },
+      { value: "인천", label: "인천" },
+      { value: "부산", label: "부산" },
+      { value: "대구", label: "대구" },
+      { value: "대전", label: "대전" },
+      { value: "광주", label: "광주" },
+    ],
+    filterOptions1: {
+      label: "드레스 스타일",
+      options: [
+        { value: "머메이드", label: "머메이드" },
+        { value: "에이라인", label: "A라인" },
+        { value: "프린세스", label: "프린세스" },
+        { value: "심플", label: "심플" },
+      ],
+    },
+    filterOptions2: {
+      label: "이용 방식",
+      options: [
+        { value: "대여", label: "대여" },
+        { value: "구매", label: "구매" },
+      ],
+    },
+    filterOptions3: {
+      label: "옵션",
+      options: [
+        { value: "수선", label: "수선 포함" },
+        { value: "액세서리", label: "액세서리" },
+      ],
+    },
+  },
+  makeup_shops: {
+    title: "메이크업샵 필터",
+    regions: [
+      { value: "서울", label: "서울" },
+      { value: "경기", label: "경기" },
+      { value: "인천", label: "인천" },
+      { value: "부산", label: "부산" },
+      { value: "대구", label: "대구" },
+      { value: "대전", label: "대전" },
+      { value: "광주", label: "광주" },
+    ],
+    filterOptions1: {
+      label: "메이크업 스타일",
+      options: [
+        { value: "내추럴", label: "내추럴" },
+        { value: "글램", label: "글램" },
+        { value: "로맨틱", label: "로맨틱" },
+        { value: "청순", label: "청순" },
+      ],
+    },
+    filterOptions2: {
+      label: "포함 서비스",
+      options: [
+        { value: "헤어", label: "헤어" },
+        { value: "리허설", label: "리허설" },
+        { value: "혼주", label: "혼주" },
+      ],
+    },
+    filterOptions3: {
+      label: "옵션",
+      options: [
+        { value: "출장", label: "출장 가능" },
+        { value: "당일변경", label: "당일 변경" },
+      ],
+    },
+  },
   honeymoon: {
     title: "허니문 필터",
     regions: [
