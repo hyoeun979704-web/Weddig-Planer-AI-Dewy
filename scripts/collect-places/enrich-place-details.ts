@@ -125,30 +125,43 @@ async function main() {
       continue;
     }
 
-    // Upsert place_details row. Only set fields we have new info for; preserve
-    // anything else already there.
-    const update: Record<string, unknown> = { place_id: p.place_id };
-    if (tel) update.tel = tel;
-    if (description) update.description = description;
-
-    const { error: upsertErr } = await supabase
-      .from("place_details")
-      .upsert(update, { onConflict: "place_id" });
-
-    if (upsertErr) {
-      console.log(`upsert failed: ${upsertErr.message.slice(0, 80)}`);
+    // tel lives on place_details, description on places — upsert independently
+    // so a single column mismatch can't sink the whole record.
+    const tasks: Array<Promise<{ kind: string; ok: boolean; msg?: string }>> = [];
+    if (tel) {
+      tasks.push(
+        (async () => {
+          const r = await supabase
+            .from("place_details")
+            .upsert({ place_id: p.place_id, tel }, { onConflict: "place_id" });
+          return { kind: "tel", ok: !r.error, msg: r.error?.message };
+        })()
+      );
+    }
+    if (description) {
+      tasks.push(
+        (async () => {
+          // Only fill places.description if it's currently empty — don't
+          // overwrite something a curator may have edited.
+          const r = await supabase
+            .from("places")
+            .update({ description })
+            .eq("place_id", p.place_id)
+            .is("description", null);
+          return { kind: "desc", ok: !r.error, msg: r.error?.message };
+        })()
+      );
+    }
+    const results = await Promise.all(tasks);
+    const succeeded = results.filter((r) => r.ok).map((r) => r.kind);
+    const failures = results.filter((r) => !r.ok);
+    if (succeeded.length === 0 && failures.length > 0) {
+      console.log(`update failed: ${failures[0].msg?.slice(0, 60) ?? "?"}`);
       nothing++;
     } else {
-      const parts: string[] = [];
-      if (tel) {
-        parts.push(`tel`);
-        filledTel++;
-      }
-      if (description) {
-        parts.push(`desc`);
-        filledDesc++;
-      }
-      console.log(`✓ ${parts.join("+")}`);
+      console.log(`✓ ${succeeded.join("+")}`);
+      if (succeeded.includes("tel")) filledTel++;
+      if (succeeded.includes("desc")) filledDesc++;
     }
   }
 
