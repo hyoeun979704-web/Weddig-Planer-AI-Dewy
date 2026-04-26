@@ -3,10 +3,11 @@ import { Play } from "lucide-react";
 import { CategoryTab } from "./CategoryTabBar";
 import { useTipVideos, youTubeUrl, type TipVideo } from "@/hooks/useTipVideos";
 
-// Card sizing — 2.5x of the original 90×160 spec, 16:9 aspect for the
-// thumbnail so YouTube imagery isn't squished. Title + meta sit below.
+// 9:16 portrait (Shorts-style) thumbnail. Width unchanged from prior 16:9
+// version; the height grows so videos with vertical subjects (most wedding
+// content) read well. object-cover crops 16:9 thumbs to the center.
 const CARD_W = 220;
-const THUMB_H = Math.round((CARD_W * 9) / 16); // 124
+const THUMB_H = Math.round((CARD_W * 16) / 9); // 391
 
 function formatViews(n: number): string {
   if (n >= 10_000) return `${(n / 10_000).toFixed(1).replace(/\.0$/, "")}만회`;
