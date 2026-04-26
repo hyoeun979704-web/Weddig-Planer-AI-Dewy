@@ -188,6 +188,33 @@ export async function enrichPlaceWithSearch(
   try {
     return JSON.parse(jsonText) as EnrichedPlaceData;
   } catch (e) {
+    // Gemini sometimes ignores the schema and writes a natural-language
+    // explanation when it can't verify (e.g. "이 업체는 검색에서 확인되지
+    // 않습니다"). Treat that as a graceful is_verified=false reject so the
+    // orchestrator counts it under "rejected" rather than "errored".
+    const looksLikeRefusal =
+      /확인되지\s*않|찾을\s*수\s*없|is_verified.*false|찾지\s*못/i.test(text);
+    if (looksLikeRefusal) {
+      return {
+        is_verified: false,
+        tel: null,
+        website_url: null,
+        instagram_url: null,
+        naver_place_url: null,
+        hours: null,
+        closed_days: null,
+        advantage_1: null,
+        advantage_2: null,
+        advantage_3: null,
+        description: null,
+        image_urls: null,
+        price_packages: null,
+        event_info: null,
+        contract_policy: null,
+        amenities: null,
+        source_urls: [],
+      };
+    }
     console.warn(`[gemini] JSON parse failed. raw text head: ${text.slice(0, 400)}`);
     return null;
   }
