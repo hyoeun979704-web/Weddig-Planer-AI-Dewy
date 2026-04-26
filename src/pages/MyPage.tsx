@@ -9,6 +9,8 @@ import DdayCard from "@/components/mypage/DdayCard";
 import QuickMenuGrid from "@/components/mypage/QuickMenuGrid";
 import MenuSection from "@/components/mypage/MenuSection";
 import PremiumBanner from "@/components/premium/PremiumBanner";
+import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
+import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import { Button } from "@/components/ui/button";
 
 const GuestMyPage = () => {
@@ -167,6 +169,7 @@ const MyPage = () => {
   const location = useLocation();
   const { user, isLoading, signOut } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
+  const weddingInfoPrompt = useWeddingInfoPrompt();
 
   const handleSignOut = async () => {
     try {
@@ -215,6 +218,11 @@ const MyPage = () => {
       </main>
 
       <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
+
+      <WeddingInfoSetupModal
+        isOpen={weddingInfoPrompt.open}
+        onClose={weddingInfoPrompt.dismiss}
+      />
     </div>
   );
 };

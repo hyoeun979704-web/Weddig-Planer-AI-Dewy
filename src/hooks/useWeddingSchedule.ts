@@ -102,6 +102,43 @@ export const useWeddingSchedule = () => {
     }
   };
 
+  // Bulk save (date + region + partner_name in one call). Used by the
+  // shared WeddingInfoSetupModal that auto-pops on Schedule/Budget/MyPage
+  // when the user hasn't entered basic wedding info yet.
+  const saveWeddingSettings = async (
+    patch: Partial<{ wedding_date: string | null; partner_name: string | null; wedding_region: string | null }>
+  ) => {
+    if (!user) {
+      toast.error("로그인이 필요합니다");
+      return false;
+    }
+    try {
+      const { data: existing } = await supabase
+        .from("user_wedding_settings")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from("user_wedding_settings")
+          .update(patch)
+          .eq("user_id", user.id);
+      } else {
+        await supabase
+          .from("user_wedding_settings")
+          .insert({ user_id: user.id, ...patch });
+      }
+      setWeddingSettings(prev => ({ ...prev, ...patch }));
+      toast.success("결혼 정보가 저장되었어요");
+      return true;
+    } catch (error) {
+      console.error("Error saving wedding settings:", error);
+      toast.error("저장에 실패했어요");
+      return false;
+    }
+  };
+
   // Add schedule item
   const addScheduleItem = async (title: string, scheduledDate: string, category: string = 'general') => {
     if (!user) {
@@ -210,6 +247,7 @@ export const useWeddingSchedule = () => {
     scheduleItems,
     isLoading,
     saveWeddingDate,
+    saveWeddingSettings,
     addScheduleItem,
     toggleItemCompletion,
     deleteScheduleItem,

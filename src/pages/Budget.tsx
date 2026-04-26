@@ -13,6 +13,8 @@ import BudgetSetupSheet from "@/components/budget/BudgetSetupSheet";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import BudgetReportSheet from "@/components/premium/BudgetReportSheet";
 import UpgradeModal from "@/components/premium/UpgradeModal";
+import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
+import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import { useSubscription } from "@/hooks/useSubscription";
 import { cn } from "@/lib/utils";
 import { format, differenceInDays } from "date-fns";
@@ -61,6 +63,7 @@ const Budget = () => {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const tutorial = usePageTutorial("budget");
   const { isPremium } = useSubscription();
+  const weddingInfoPrompt = useWeddingInfoPrompt();
 
   useEffect(() => {
     if (!isLoading && user && !settings) {
@@ -391,6 +394,11 @@ const Budget = () => {
 
       <BudgetReportSheet open={reportOpen} onClose={() => setReportOpen(false)} />
       <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} trigger="pdf_feature" />
+
+      <WeddingInfoSetupModal
+        isOpen={weddingInfoPrompt.open}
+        onClose={weddingInfoPrompt.dismiss}
+      />
 
       <BottomNav activeTab={location.pathname} onTabChange={href => navigate(href)} />
 

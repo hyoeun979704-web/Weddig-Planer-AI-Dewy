@@ -29,6 +29,8 @@ import { useCoupleLink } from "@/hooks/useCoupleLink";
 import { BookOpen } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import UpgradeModal from "@/components/premium/UpgradeModal";
+import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
+import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import { format, differenceInDays, isToday, isTomorrow, isThisWeek } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -111,6 +113,7 @@ const Schedule = () => {
   const { isPremium } = useSubscription();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const tutorial = usePageTutorial("schedule");
+  const weddingInfoPrompt = useWeddingInfoPrompt();
 
   // Calculate D-Day
   const daysUntilWedding = () => {
@@ -499,6 +502,11 @@ const Schedule = () => {
       />
 
       <UpgradeModal isOpen={showUpgrade} onClose={() => setShowUpgrade(false)} trigger="pdf_feature" />
+
+      <WeddingInfoSetupModal
+        isOpen={weddingInfoPrompt.open}
+        onClose={weddingInfoPrompt.dismiss}
+      />
 
       {/* Bottom Navigation */}
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
