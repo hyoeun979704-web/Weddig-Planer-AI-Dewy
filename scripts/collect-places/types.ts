@@ -28,6 +28,9 @@ export interface CollectedPlace {
   last_source_date: string | null; // YYYY-MM-DD
   source_refs: SourceRef[];
 
+  // Naver Local fields persisted directly onto place_details (not Gemini-derived).
+  tel?: string | null;
+
   // Deep analysis (filled by Gemini in Stage 3)
   price_tier?: string | null;
   atmosphere?: string[];

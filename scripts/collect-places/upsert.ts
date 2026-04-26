@@ -95,15 +95,20 @@ function placeRow(p: CollectedPlace) {
 }
 
 function detailsRow(placeId: string, p: CollectedPlace) {
-  // Skip if analyzer produced nothing meaningful — keeps place_details sparse instead of full of nulls.
+  // Persist place_details when we have either Naver Local fields (tel/description)
+  // or analyzer output. Skipping when both are empty keeps the table sparse
+  // instead of full of all-null rows.
   const hasAnalysis =
     p.summary ||
     (p.atmosphere && p.atmosphere.length > 0) ||
     (p.pros && p.pros.length > 0) ||
     (p.cons && p.cons.length > 0);
-  if (!hasAnalysis) return null;
+  const hasLocalFields = p.tel || p.description;
+  if (!hasAnalysis && !hasLocalFields) return null;
   return {
     place_id: placeId,
+    tel: p.tel ?? null,
+    description: p.description ?? null,
     summary: p.summary ?? null,
     atmosphere: p.atmosphere ?? [],
     pros: p.pros ?? [],

@@ -105,7 +105,7 @@ function localToCandidate(l: LocalItem, label: CategoryLabel): CollectedPlace {
     category: CATEGORIES[label],
     city,
     district,
-    description: null,
+    description: l.description ? stripTags(l.description) : null,
     main_image_url: null,
     tags: l.category ? l.category.split(">").map((t) => t.trim()).filter(Boolean) : [],
     lat: l.mapy ? +l.mapy / 1e7 : null,
@@ -114,6 +114,7 @@ function localToCandidate(l: LocalItem, label: CategoryLabel): CollectedPlace {
     confidence: 0,
     last_source_date: null,
     source_refs: [{ url: l.link || "", source_type: "local", published_at: null }],
+    tel: l.telephone || null,
   };
 }
 
