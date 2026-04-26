@@ -1,0 +1,66 @@
+name: Enrich Source Refs
+
+# One-shot re-fetch of source_refs for places with empty arrays. The seed
+# import populated places.* but not source_refs, so trust-signal queries
+# (homepage / Instagram present?) returned false negatives. Run once after
+# fresh imports; afterwards the live collector keeps source_refs in sync.
+#
+# UI: Actions → Enrich Source Refs → Run workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      category:
+        description: "Korean category label (empty = all)"
+        required: false
+        default: ""
+      limit:
+        description: "Max rows to enrich"
+        required: false
+        default: "2000"
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify required secrets
+        env:
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          missing=()
+          for v in NAVER_CLIENT_ID NAVER_CLIENT_SECRET SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!v}" ]; then missing+=("$v"); fi
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required secrets: ${missing[*]}"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Enrich source_refs
+        env:
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          INPUT_CATEGORY: ${{ github.event.inputs.category }}
+          INPUT_LIMIT: ${{ github.event.inputs.limit }}
+        run: |
+          ARGS="--limit=${INPUT_LIMIT:-2000}"
+          if [ -n "$INPUT_CATEGORY" ]; then
+            ARGS="$ARGS --category=$INPUT_CATEGORY"
+          fi
+          echo "Running: npm run enrich-source-refs -- $ARGS"
+          npm run enrich-source-refs -- $ARGS

@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "collect": "tsx scripts/collect-places/index.ts",
     "backfill-images": "tsx scripts/collect-places/backfill-images.ts",
+    "enrich-source-refs": "tsx scripts/collect-places/enrich-source-refs.ts",
     "collect-tips": "tsx scripts/collect-tips/index.ts"
   },
   "dependencies": {
