@@ -179,21 +179,39 @@ export interface ImageItem {
 }
 
 // Hosts that commonly serve referrer-locked or thumbnail-only assets which
-// later 403 in a browser. Skip these in favor of the next candidate.
+// later 403 in a browser, OR are known low-quality (Naver search thumbs
+// at ~150px). Skip these in favor of the next candidate.
 const IMAGE_HOST_BLOCKLIST = [
   "instagram.com",
   "fbcdn.net",
-  "pinimg.com", // Pinterest hotlinks break under referrer policy
+  "pinimg.com",
   "bing.net",
+  "search.pstatic.net", // Naver search thumbnails — uniformly tiny (~150px)
 ];
 
+// URL shape patterns that almost always mean "thumbnail / icon / sprite",
+// regardless of the host's reported width.
+const LOW_QUALITY_URL_PATTERNS = [
+  /favicon/i,
+  /\/logo[._/-]/i,
+  /sprite/i,
+  /icon[._/-]/i,
+  /thumb(nail)?[._/-]/i,
+  /\bs\d{2,3}_/i, // Naver phinf size markers like /s120_/, /s150_/
+];
+
+function isLowQualityImageUrl(url: string): boolean {
+  return LOW_QUALITY_URL_PATTERNS.some((re) => re.test(url));
+}
+
 // Find a representative image for a place. Strategy: pull a wider candidate
-// pool, prefer reasonably-sized landscape/near-square photos, skip hosts that
-// commonly 403 when hotlinked, fall back through progressively looser tiers.
+// pool, demand real photo dimensions (≥800px wide), reject thumbnail/icon
+// URL shapes, skip referrer-locked hosts. Quality bar is intentionally
+// strict — better to return null than serve a 150px thumbnail.
 export async function searchImage(
   query: string,
   env: NaverEnv,
-  limit = 20
+  limit = 30
 ): Promise<string | null> {
   try {
     const data = await call<{ items: ImageItem[] }>(ENDPOINTS.image, query, env, {
@@ -202,27 +220,27 @@ export async function searchImage(
     });
     const items = (data.items ?? []).filter((it) => {
       const link = it.link ?? "";
-      return !IMAGE_HOST_BLOCKLIST.some((host) => link.includes(host));
+      if (!link) return false;
+      if (IMAGE_HOST_BLOCKLIST.some((host) => link.includes(host))) return false;
+      if (isLowQualityImageUrl(link)) return false;
+      return true;
     });
-    // Tier 1: ≥600px wide, landscape-ish (not a sliver banner).
+    // Tier 1: ≥800px wide, real photo aspect (not a banner sliver, not
+    // a tall portrait crop). This is the only tier we trust outright.
     for (const it of items) {
       const w = +it.sizewidth || 0;
       const h = +it.sizeheight || 0;
-      if (w >= 600 && h >= 360 && h <= w * 1.4 && w <= h * 3) return it.link;
+      if (w >= 800 && h >= 500 && h <= w * 1.4 && w <= h * 2.5) return it.link;
     }
-    // Tier 2: ≥400px wide, any reasonable aspect.
+    // Tier 2: ≥600px wide, any reasonable photo aspect.
     for (const it of items) {
       const w = +it.sizewidth || 0;
       const h = +it.sizeheight || 0;
-      if (w >= 400 && h >= 300) return it.link;
+      if (w >= 600 && h >= 400 && h <= w * 1.6) return it.link;
     }
-    // Tier 3: anything ≥300px (last resort before thumbnail).
-    for (const it of items) {
-      const w = +it.sizewidth || 0;
-      if (w >= 300) return it.link;
-    }
-    // Final fallback: first item's thumbnail if all else fails.
-    return items[0]?.thumbnail ?? items[0]?.link ?? null;
+    // No tier 3 / thumbnail fallback — skipping low-quality entirely is
+    // better than persisting a tiny thumbnail.
+    return null;
   } catch {
     return null;
   }

@@ -1,7 +1,5 @@
-// Fetch a business's official representative photo by reading the og:image
-// meta tag from its homepage. This is what the business itself chose to show
-// in social shares — a much higher-trust signal than keyword image search.
-
+// Hosts that commonly serve referrer-locked or thumbnail-only assets that
+// later 403 in a browser. Skip these in favor of the next candidate.
 const SOCIAL_HOSTS = [
   "instagram.com",
   "facebook.com",
@@ -12,7 +10,20 @@ const SOCIAL_HOSTS = [
   "tiktok.com",
 ];
 
-const META_TIMEOUT_MS = 6000; // homepages can be slow; cap firmly
+// URL substrings that strongly suggest a tiny / wrong asset:
+// favicon, logo, sprite, search-thumbnail size markers.
+const LOW_QUALITY_PATTERNS = [
+  /favicon/i,
+  /\/logo[._/-]/i,
+  /sprite/i,
+  /icon[._/-]/i,
+  /thumb(nail)?[._/-]/i,
+  /\bs\d{2,3}_/i, // Naver phinf size markers like /s120_/, /s150_/
+  /search\.pstatic\.net/i,
+];
+
+const META_TIMEOUT_MS = 6000;
+const MIN_BYTES = 30_000; // 30KB — below this, almost certainly a thumbnail/icon
 
 const OG_RE = /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i;
 const OG_RE_REVERSED = /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i;
@@ -22,6 +33,32 @@ export function isCrawlableHomepage(url: string | null | undefined): boolean {
   if (!url || !url.startsWith("http")) return false;
   const lower = url.toLowerCase();
   return !SOCIAL_HOSTS.some((host) => lower.includes(host));
+}
+
+function isLowQualityUrl(url: string): boolean {
+  return LOW_QUALITY_PATTERNS.some((re) => re.test(url));
+}
+
+// HEAD probe — accept only if the asset's Content-Length is plausibly photo-
+// sized. Many sites return 200 OK for misconfigured images, so this guards
+// against tiny logos / search thumbs sneaking in.
+async function probeSize(url: string): Promise<number | null> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(url, {
+      method: "HEAD",
+      signal: controller.signal,
+      redirect: "follow",
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; DewyBot/1.0)" },
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const len = res.headers.get("content-length");
+    return len ? parseInt(len, 10) : null;
+  } catch {
+    return null;
+  }
 }
 
 function resolveUrl(found: string, base: string): string | null {
@@ -40,15 +77,12 @@ export async function fetchOgImage(url: string): Promise<string | null> {
       signal: controller.signal,
       redirect: "follow",
       headers: {
-        // Some Korean sites refuse default fetch UA; pretend to be a real browser.
         "User-Agent":
           "Mozilla/5.0 (compatible; DewyBot/1.0; +https://dewy-wedding.com/)",
         Accept: "text/html,application/xhtml+xml",
       },
     });
     if (!res.ok) return null;
-    // Don't read the entire response if it's an image or huge file. We only
-    // need the <head>; cap at 256 KB.
     const ctype = res.headers.get("content-type") ?? "";
     if (!ctype.includes("text/html") && !ctype.includes("application/xhtml")) {
       return null;
@@ -63,7 +97,6 @@ export async function fetchOgImage(url: string): Promise<string | null> {
       if (done) break;
       html += decoder.decode(value, { stream: true });
       total += value.byteLength;
-      // Most og: tags appear early; bail once we have enough head.
       if (html.includes("</head>")) break;
     }
     reader.cancel().catch(() => undefined);
@@ -73,7 +106,17 @@ export async function fetchOgImage(url: string): Promise<string | null> {
     if (!match) return null;
     const raw = match[1].trim();
     if (!raw) return null;
-    return resolveUrl(raw, url);
+    const resolved = resolveUrl(raw, url);
+    if (!resolved) return null;
+
+    // Filter out obvious tiny assets by URL shape.
+    if (isLowQualityUrl(resolved)) return null;
+
+    // Probe filesize. Reject if too small to be a real photo.
+    const size = await probeSize(resolved);
+    if (size !== null && size < MIN_BYTES) return null;
+
+    return resolved;
   } catch {
     return null;
   } finally {
