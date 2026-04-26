@@ -6,7 +6,7 @@ name: Backfill Place Images
 #
 # UI: Actions → Backfill Place Images → Run workflow
 #   inputs.category: 한복 / 웨딩홀 / ... or empty (= all)
-#   inputs.limit:    cap N rows (default 500)
+#   inputs.limit:    cap N rows (default 2000 — covers the full corpus)
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ on:
       limit:
         description: "Max rows to backfill"
         required: false
-        default: "500"
+        default: "2000"
 
 jobs:
   backfill:
@@ -59,7 +59,7 @@ jobs:
           INPUT_CATEGORY: ${{ github.event.inputs.category }}
           INPUT_LIMIT: ${{ github.event.inputs.limit }}
         run: |
-          ARGS="--limit=${INPUT_LIMIT:-500}"
+          ARGS="--limit=${INPUT_LIMIT:-2000}"
           if [ -n "$INPUT_CATEGORY" ]; then
             ARGS="$ARGS --category=$INPUT_CATEGORY"
           fi
