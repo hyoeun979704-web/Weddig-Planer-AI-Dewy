@@ -83,6 +83,9 @@ export interface EnrichedPlaceData {
   /** Universal "기본 제공" — services included regardless of package tier.
    *  E.g. ["신부대기실 무료", "답례품 제공", "셔틀버스 운영", "주차 무료"]. */
   basic_services: string[] | null;
+  /** Consumer-facing search/filter tags. Short keywords describing what the
+   *  business is known for. E.g. ["스몰웨딩", "야외", "강남", "프리미엄"]. */
+  tags: string[] | null;
   /** Category-specific fields. Shape varies per category — see category-prompts.ts.
    *  Orchestrator filters to allow-listed columns before card-table upsert. */
   category_extras: Record<string, unknown> | null;
@@ -130,6 +133,13 @@ const SYSTEM = `당신은 한국 웨딩 업체 정보 검증기입니다. Google
 13. **contract_policy**: 계약·환불 정책 요약 한 줄. 명시되어 있을 때만.
 14. **amenities**: 업체 보유 시설/편의 ["폐백실", "신부대기실", "발렛파킹", "주차" 등]. 출처에서 확인된 것만.
 14a. **basic_services** (배열, null 허용): 패키지와 무관하게 "기본 제공"되는 것들. 예: ["신부대기실 무료", "답례품 제공", "셔틀버스 운영", "사회자 무료 매칭"]. 모든 패키지 공통이 아니면 amenities에.
+14b. **tags** (배열, null 허용): 소비자 검색·필터용 짧은 키워드 5~12개. 업체의 *대표적 특성*만. 예시:
+    - 웨딩홀: ["스몰웨딩", "야외", "하우스", "강남", "프리미엄", "1.5부 가능", "한옥", "200명대"]
+    - 스튜디오: ["내추럴", "야외", "한옥", "본식스냅", "필름톤", "감성", "강남"]
+    - 드레스: ["머메이드", "수입", "프리미엄", "신상", "리허설", "강남"]
+    - 한복: ["혼주", "맞춤", "전통", "강남", "당일대여"]
+    - 허니문: ["발리", "허니문 풀빌라", "5박7일", "프리미엄"]
+    한국어 명사구 위주. 지역(예: "강남")·가격대(예: "프리미엄"/"가성비")·스타일·특기 모두 포함 가능. 마케팅 카피 ("최고", "1위") 금지.
 
 [★★★ 소비자 페인 포인트 — 적극적으로 검색해서 hidden_costs / contract_policy / event_info 채울 것 ★★★]
 검색 시 "{업체명} 후기 단점", "{업체명} 환불", "{업체명} 추가 비용", "{업체명} 시즌" 같은 쿼리도 시도해서 다음을 발견하면 즉시 포함:
@@ -188,6 +198,7 @@ const SYSTEM = `당신은 한국 웨딩 업체 정보 검증기입니다. Google
   "contract_policy": string|null,
   "amenities": [string]|null,
   "basic_services": [string]|null,
+  "tags": [string]|null,
   "category_extras": object|null,   // 카테고리별 추가 필드 (아래 카테고리 섹션 참조)
   "source_urls": [string]
 }
@@ -295,6 +306,7 @@ export async function enrichPlaceWithSearch(
         contract_policy: null,
         amenities: null,
         basic_services: null,
+        tags: null,
         category_extras: null,
         source_urls: [],
       };
@@ -382,6 +394,23 @@ export function validateEnriched(d: EnrichedPlaceData): ValidationResult {
       .slice(0, 8);
     if (svc.length > 0) cleaned.basic_services = svc;
   }
+  // tags: dedupe, drop empties + marketing fluff, cap at 12.
+  if (Array.isArray(d.tags)) {
+    const FLUFF = /^(최고|1위|넘버원|국내최대|최저가)$/;
+    const seen = new Set<string>();
+    const tags = d.tags
+      .filter((t): t is string => typeof t === "string" && t.length > 0 && t.length < 25)
+      .map((t) => t.trim())
+      .filter((t) => !FLUFF.test(t))
+      .filter((t) => {
+        const k = t.toLowerCase();
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .slice(0, 12);
+    if (tags.length > 0) cleaned.tags = tags;
+  }
   // category_extras: pass through as-is — orchestrator filters by allowed
   // columns per the category-prompts cardColumns list.
   if (d.category_extras && typeof d.category_extras === "object" && Object.keys(d.category_extras).length > 0) {
@@ -392,7 +421,7 @@ export function validateEnriched(d: EnrichedPlaceData): ValidationResult {
     [
       "tel", "website_url", "instagram_url", "advantage_1", "advantage_2",
       "advantage_3", "hours", "image_urls", "price_packages", "amenities",
-      "basic_services", "category_extras", "event_info", "contract_policy",
+      "basic_services", "tags", "category_extras", "event_info", "contract_policy",
     ].includes(k)
   );
   if (!useful) return { ok: false, reason: "no useful fields after cleaning" };

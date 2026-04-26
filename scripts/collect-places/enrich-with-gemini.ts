@@ -218,8 +218,9 @@ async function main() {
       }
     }
 
-    // Description goes on places (only if currently null — preserve curator edits).
+    // places-level updates: description (only when null) + tags (merge with existing).
     let descMsg = "";
+    let tagsMsg = "";
     if (c.description) {
       const { error: descErr } = await supabase
         .from("places")
@@ -229,13 +230,29 @@ async function main() {
       if (descErr) descMsg = ` desc-fail`;
       else descMsg = ` +desc`;
     }
+    if (c.tags && c.tags.length > 0) {
+      // Merge with existing tags so seed-collection breadcrumb tags survive.
+      const { data: existingRow } = await supabase
+        .from("places")
+        .select("tags")
+        .eq("place_id", p.place_id)
+        .maybeSingle();
+      const existing = (existingRow?.tags as string[] | null) ?? [];
+      const merged = Array.from(new Set([...existing, ...c.tags])).slice(0, 16);
+      const { error: tagsErr } = await supabase
+        .from("places")
+        .update({ tags: merged })
+        .eq("place_id", p.place_id);
+      if (tagsErr) tagsMsg = ` tags-fail`;
+      else tagsMsg = ` +tags(${c.tags.length})`;
+    }
 
     if (detailsErr) {
       console.log(`upsert failed: ${detailsErr.message.slice(0, 60)}${cardMsg}`);
       errored++;
     } else {
       const fields = Object.keys(detailsUpdate).filter((k) => k !== "place_id").length;
-      console.log(`✓ ${fields} fields${descMsg}${cardMsg} [${c.source_urls?.length ?? 0} src]`);
+      console.log(`✓ ${fields} fields${descMsg}${tagsMsg}${cardMsg} [${c.source_urls?.length ?? 0} src]`);
       verified++;
     }
   }

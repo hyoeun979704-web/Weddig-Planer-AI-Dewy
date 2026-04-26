@@ -16,7 +16,11 @@ export const CATEGORIES = {
 export type CategoryLabel = keyof typeof CATEGORIES;
 export type CategorySlug = (typeof CATEGORIES)[CategoryLabel];
 
+// All 17 시·도 + secondary cities. Naver Local seeds use these tokens
+// directly ("{region} 웨딩홀") so the keywords need to match real Naver
+// search vernacular (people search "충북 웨딩홀" not "충청북도 웨딩홀").
 export const REGIONS = [
+  // 광역시·도 (17개)
   "서울",
   "경기",
   "인천",
@@ -24,10 +28,27 @@ export const REGIONS = [
   "대구",
   "대전",
   "광주",
+  "울산",
+  "세종",
+  "강원",
+  "충북",
+  "충남",
+  "전북",
+  "전남",
+  "경북",
+  "경남",
+  "제주",
+  // 인기 광역 도시
   "수원",
   "성남",
   "용인",
   "고양",
+  "청주",
+  "천안",
+  "전주",
+  "포항",
+  "창원",
+  "춘천",
 ];
 
 const KEYWORD_TEMPLATES: Record<CategoryLabel, string[]> = {
