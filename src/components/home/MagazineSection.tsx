@@ -1,87 +1,73 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Music, Camera, CheckSquare, Heart, Sparkles, Lightbulb, Gift, ShoppingBag } from "lucide-react";
+import { Play } from "lucide-react";
 import { CategoryTab } from "./CategoryTabBar";
+import { useTipVideos, youTubeUrl, type TipVideo } from "@/hooks/useTipVideos";
 
-interface MagazineCardProps {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  color: string;
-  onClick?: () => void;
+// Card sizing — 2.5x of the original 90×160 spec, 16:9 aspect for the
+// thumbnail so YouTube imagery isn't squished. Title + meta sit below.
+const CARD_W = 220;
+const THUMB_H = Math.round((CARD_W * 9) / 16); // 124
+
+function formatViews(n: number): string {
+  if (n >= 10_000) return `${(n / 10_000).toFixed(1).replace(/\.0$/, "")}만회`;
+  return `${n.toLocaleString()}회`;
 }
 
-const MagazineCard = ({ icon: Icon, title, color, onClick }: MagazineCardProps) => (
-  <button
-    onClick={onClick}
-    className="flex-shrink-0 w-[90px] h-[160px] rounded-[10px] bg-[#d9d9d9] relative overflow-hidden text-left"
-  >
-    <div className={`absolute top-2 left-2 w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
-      <Icon className="w-4 h-4" />
+function VideoCard({ video }: { video: TipVideo }) {
+  return (
+    <a
+      href={youTubeUrl(video.video_id)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex-shrink-0 rounded-[10px] overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow active:scale-[0.98]"
+      style={{ width: CARD_W }}
+    >
+      <div
+        className="relative bg-[#d9d9d9] overflow-hidden"
+        style={{ height: THUMB_H }}
+      >
+        {video.thumbnail_url ? (
+          <img
+            src={video.thumbnail_url}
+            alt={video.title}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-3xl">🎥</div>
+        )}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30">
+          <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+            <Play className="w-5 h-5 text-black fill-black ml-0.5" />
+          </div>
+        </div>
+      </div>
+      <div className="p-2.5">
+        <p className="text-[12px] font-semibold text-black leading-snug line-clamp-2 mb-1">
+          {video.title}
+        </p>
+        <p className="text-[10px] text-muted-foreground line-clamp-1">
+          {video.channel_name ?? ""} · 조회 {formatViews(video.view_count)}
+        </p>
+      </div>
+    </a>
+  );
+}
+
+function CardSkeleton() {
+  return (
+    <div
+      className="flex-shrink-0 rounded-[10px] overflow-hidden bg-white"
+      style={{ width: CARD_W }}
+    >
+      <div className="bg-muted animate-pulse" style={{ height: THUMB_H }} />
+      <div className="p-2.5 space-y-1.5">
+        <div className="h-3 bg-muted rounded animate-pulse" />
+        <div className="h-3 bg-muted rounded w-2/3 animate-pulse" />
+      </div>
     </div>
-    <p className="absolute bottom-2 left-2 right-2 text-[11px] font-semibold text-white leading-tight line-clamp-2 drop-shadow">
-      {title}
-    </p>
-  </button>
-);
-
-interface MagazineData {
-  title: string;
-  subtitle: string;
-  articles: MagazineCardProps[];
+  );
 }
-
-const magazineDataMap: Record<CategoryTab, MagazineData> = {
-  "ai-planner": {
-    title: "오늘의 꿀팁",
-    subtitle: "예비부부를 위한 꿀팁",
-    articles: [
-      { icon: Music, title: "2025 인기 입장곡 TOP 20", description: "분위기별 추천 입장곡 모음", color: "bg-pink-500/15 text-pink-500" },
-      { icon: Camera, title: "스냅 촬영 베스트 포즈", description: "자연스러운 커플 포즈 가이드", color: "bg-violet-500/15 text-violet-500" },
-      { icon: CheckSquare, title: "결혼 준비 체크리스트", description: "D-365부터 D-Day까지", color: "bg-emerald-500/15 text-emerald-500" },
-      { icon: Heart, title: "예비부부 필독 꿀팁", description: "선배 신부가 알려주는 노하우", color: "bg-rose-500/15 text-rose-500" },
-    ],
-  },
-  "ai-studio": {
-    title: "AI 스튜디오 가이드",
-    subtitle: "AI로 나만의 웨딩 스타일",
-    articles: [
-      { icon: Camera, title: "드레스 AI 시뮬레이션", description: "내 체형에 맞는 드레스 찾기", color: "bg-purple-500/15 text-purple-500" },
-      { icon: Sparkles, title: "헤어·메이크업 미리보기", description: "AI가 추천하는 나만의 스타일", color: "bg-pink-500/15 text-pink-500" },
-      { icon: Heart, title: "웨딩 컨셉 추천", description: "분위기별 웨딩 컨셉 가이드", color: "bg-rose-500/15 text-rose-500" },
-      { icon: Lightbulb, title: "AI 스튜디오 활용법", description: "더 잘 쓰는 꿀팁 모음", color: "bg-violet-500/15 text-violet-500" },
-    ],
-  },
-  events: {
-    title: "이벤트 가이드",
-    subtitle: "놓치면 후회할 혜택",
-    articles: [
-      { icon: Gift, title: "이달의 파트너 혜택", description: "제휴 업체 특별 할인", color: "bg-amber-500/15 text-amber-500" },
-      { icon: Sparkles, title: "시즌 이벤트 총정리", description: "결혼 시즌 한정 이벤트", color: "bg-pink-500/15 text-pink-500" },
-      { icon: Heart, title: "커플 이벤트 모음", description: "둘이 함께하는 특별한 혜택", color: "bg-rose-500/15 text-rose-500" },
-      { icon: Lightbulb, title: "할인 꿀팁", description: "현명한 예산 관리법", color: "bg-emerald-500/15 text-emerald-500" },
-    ],
-  },
-  shopping: {
-    title: "쇼핑 가이드",
-    subtitle: "똑똑한 웨딩 쇼핑",
-    articles: [
-      { icon: ShoppingBag, title: "웨딩 소품 베스트", description: "인기 웨딩 소품 모음", color: "bg-sky-500/15 text-sky-500" },
-      { icon: Gift, title: "혼수 체크리스트", description: "품목별 혼수 준비 가이드", color: "bg-emerald-500/15 text-emerald-500" },
-      { icon: Lightbulb, title: "가전 구매 꿀팁", description: "할인 시즌 완벽 정리", color: "bg-amber-500/15 text-amber-500" },
-      { icon: CheckSquare, title: "구매 시기 꿀팁", description: "특가 시즌 완벽 정리", color: "bg-pink-500/15 text-pink-500" },
-    ],
-  },
-  tips: {
-    title: "웨딩 정보 매거진",
-    subtitle: "리얼 웨딩 스토리",
-    articles: [
-      { icon: Camera, title: "웨딩 촬영 비하인드", description: "리얼 촬영 비하인드", color: "bg-violet-500/15 text-violet-500" },
-      { icon: Heart, title: "전문가 추천템", description: "실제 사용 후기 모음", color: "bg-rose-500/15 text-rose-500" },
-      { icon: Sparkles, title: "웨딩 트렌드 2025", description: "전문가가 알려주는 트렌드", color: "bg-pink-500/15 text-pink-500" },
-      { icon: Lightbulb, title: "예산 절약 노하우", description: "현명한 결혼 준비 팁", color: "bg-amber-500/15 text-amber-500" },
-    ],
-  },
-};
 
 interface MagazineSectionProps {
   activeTab?: CategoryTab;
@@ -89,15 +75,32 @@ interface MagazineSectionProps {
 
 const MagazineSection = ({ activeTab = "ai-planner" }: MagazineSectionProps) => {
   const navigate = useNavigate();
-  const data = magazineDataMap[activeTab];
+  // Homepage 오늘의 꿀팁: top picks across all categories.
+  const { data: videos, isLoading } = useTipVideos({ limit: 12 });
+
+  const headerTitle = activeTab === "ai-planner" ? "오늘의 꿀팁" : "꿀팁 모아보기";
 
   return (
     <section className="pt-[10px] pb-[30px] px-[30px] bg-[hsl(var(--pink-200))]">
-      <h2 className="text-[16px] font-bold text-black mb-[10px]">{data.title}</h2>
+      <div className="flex items-center justify-between mb-[10px]">
+        <h2 className="text-[16px] font-bold text-black">{headerTitle}</h2>
+        <button
+          onClick={() => navigate("/magazine")}
+          className="text-[12px] text-muted-foreground hover:text-foreground"
+        >
+          전체보기
+        </button>
+      </div>
       <div className="flex gap-[10px] overflow-x-auto scrollbar-hide">
-        {data.articles.map((article, index) => (
-          <MagazineCard key={index} {...article} onClick={() => navigate("/magazine")} />
-        ))}
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
+        ) : videos && videos.length > 0 ? (
+          videos.map((v) => <VideoCard key={v.video_id} video={v} />)
+        ) : (
+          <p className="text-sm text-muted-foreground py-4">
+            꿀팁 영상을 수집하고 있어요. 잠시만 기다려주세요.
+          </p>
+        )}
       </div>
     </section>
   );
