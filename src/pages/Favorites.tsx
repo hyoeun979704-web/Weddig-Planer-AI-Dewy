@@ -16,15 +16,31 @@ const favTabs = [
 
 type FavTabId = (typeof favTabs)[number]["id"];
 
-const tableMap: Record<string, { table: string; detailPath: string }> = {
-  venue: { table: "venues", detailPath: "/venues" },
-  studio: { table: "studios", detailPath: "/studios" },
-  honeymoon: { table: "honeymoon", detailPath: "/honeymoon" },
-  honeymoon_gift: { table: "honeymoon_gifts", detailPath: "/honeymoon-gifts" },
-  appliance: { table: "appliances", detailPath: "/appliances" },
-  suit: { table: "suits", detailPath: "/suits" },
-  hanbok: { table: "hanbok", detailPath: "/hanbok" },
-  invitation_venues: { table: "invitation_venues", detailPath: "/invitation-venues" },
+// All vendor-side favorites resolve through the unified `places` table now.
+// item_type strings (set when the user toggles a favorite) map to the
+// `places.category` slug; the legacy per-category tables were dropped during
+// schema cleanup.
+const ITEM_TYPE_TO_PLACE_CATEGORY: Record<string, string> = {
+  venue: "wedding_hall",
+  studio: "studio",
+  honeymoon: "honeymoon",
+  honeymoon_gift: "appliance",
+  appliance: "appliance",
+  suit: "tailor_shop",
+  hanbok: "hanbok",
+  invitation_venues: "invitation_venue",
+};
+
+// Where the detail page lives. Most categories share /vendor/:id (places-uuid).
+const ITEM_TYPE_DETAIL_PATH: Record<string, string> = {
+  venue: "/venue",
+  studio: "/vendor",
+  honeymoon: "/vendor",
+  honeymoon_gift: "/vendor",
+  appliance: "/vendor",
+  suit: "/vendor",
+  hanbok: "/vendor",
+  invitation_venues: "/vendor",
 };
 
 interface FavItem {
@@ -46,46 +62,39 @@ const Favorites = () => {
   const currentTab = favTabs.find((t) => t.id === activeTab)!;
   const filteredFavs = favorites.filter((f) => (currentTab.types as string[]).includes(f.item_type));
 
-  // Fetch item details for filtered favorites
+  // Fetch item details for filtered favorites. Vendor-tab items all resolve
+  // through one places query (filtered by uuid); other tabs are stubs for now.
   const { data: items = [], isLoading: itemsLoading } = useQuery({
     queryKey: ["favorite-items", activeTab, filteredFavs.map((f) => f.item_id)],
     queryFn: async (): Promise<FavItem[]> => {
       if (filteredFavs.length === 0) return [];
 
-      const results: FavItem[] = [];
-
-      // Group by item_type for batch queries
-      const grouped: Record<string, string[]> = {};
-      for (const fav of filteredFavs) {
-        if (!grouped[fav.item_type]) grouped[fav.item_type] = [];
-        grouped[fav.item_type].push(fav.item_id);
-      }
-
-      for (const [type, ids] of Object.entries(grouped)) {
-        const config = tableMap[type];
-        if (!config) continue;
-
-        const { data } = await (supabase as any)
-          .from(config.table)
-          .select("id, name, thumbnail_url, rating")
-          .in("id", ids);
-
-        if (data) {
-          for (const item of data) {
-            const fav = filteredFavs.find((f) => f.item_id === item.id)!;
-            results.push({
-              id: fav.id,
-              item_id: item.id,
-              item_type: type,
-              name: item.name,
-              thumbnail_url: item.thumbnail_url,
-              rating: item.rating,
-            });
-          }
+      // Vendor tab: all item_types map to places (uuid place_id). One round-trip.
+      if (activeTab === "vendor") {
+        const ids = filteredFavs.map((f) => f.item_id);
+        const { data } = await supabase
+          .from("places")
+          .select("place_id, name, main_image_url, avg_rating, category")
+          .in("place_id", ids);
+        if (!data) return [];
+        const out: FavItem[] = [];
+        for (const p of data) {
+          const fav = filteredFavs.find((f) => f.item_id === p.place_id);
+          if (!fav) continue;
+          out.push({
+            id: fav.id,
+            item_id: p.place_id,
+            item_type: fav.item_type,
+            name: p.name,
+            thumbnail_url: p.main_image_url,
+            rating: p.avg_rating ?? undefined,
+          });
         }
+        return out;
       }
 
-      return results;
+      // Non-vendor tabs (event/shopping/info) — not yet implemented.
+      return [];
     },
     enabled: filteredFavs.length > 0,
   });
@@ -93,8 +102,8 @@ const Favorites = () => {
   const isLoading = favsLoading || itemsLoading;
 
   const getDetailPath = (item: FavItem) => {
-    const config = tableMap[item.item_type];
-    return config ? `${config.detailPath}/${item.item_id}` : "/";
+    const base = ITEM_TYPE_DETAIL_PATH[item.item_type] ?? "/vendor";
+    return `${base}/${item.item_id}`;
   };
 
   const handleTabChange = (href: string) => navigate(href);

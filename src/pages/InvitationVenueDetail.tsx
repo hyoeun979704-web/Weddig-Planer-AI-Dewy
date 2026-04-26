@@ -27,16 +27,44 @@ const InvitationVenueDetail = () => {
 
   const { data: venue, isLoading } = useQuery({
     queryKey: ['invitation-venue', id],
-    queryFn: async () => {
+    queryFn: async (): Promise<InvitationVenue | null> => {
       if (!id) throw new Error('No ID provided');
-      const { data, error } = await (supabase as any)
-        .from('invitation_venues')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
+      // Legacy `invitation_venues` table was dropped; rows live under places +
+      // place_invitation_venues now (1:1 via place_id).
+      const { data, error } = await supabase
+        .from('places')
+        .select(
+          'place_id,name,city,district,avg_rating,review_count,is_partner,main_image_url,place_invitation_venues(venue_types,capacity_min,capacity_max,price_per_person)'
+        )
+        .eq('place_id', id)
+        .maybeSingle();
+
       if (error) throw error;
-      return data as InvitationVenue;
+      if (!data) return null;
+      const row = data as any;
+      const card = row.place_invitation_venues ?? null;
+      const capacityRange =
+        card?.capacity_min != null && card?.capacity_max != null
+          ? `${card.capacity_min}~${card.capacity_max}명`
+          : card?.capacity_min != null
+            ? `${card.capacity_min}명 이상`
+            : '문의';
+      const priceRange =
+        card?.price_per_person != null ? `${card.price_per_person.toLocaleString()}원` : '문의';
+      return {
+        id: row.place_id,
+        name: row.name,
+        address: [row.city, row.district].filter(Boolean).join(' '),
+        price_range: priceRange,
+        capacity_range: capacityRange,
+        rating: row.avg_rating ?? 0,
+        review_count: row.review_count ?? 0,
+        is_partner: row.is_partner ?? false,
+        thumbnail_url: row.main_image_url,
+        venue_types: card?.venue_types ?? null,
+        amenity_options: null,
+        cuisine_options: null,
+      };
     },
     enabled: !!id,
   });
