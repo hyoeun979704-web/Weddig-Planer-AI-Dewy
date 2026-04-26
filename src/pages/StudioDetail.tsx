@@ -110,7 +110,7 @@ const StudioDetail = () => {
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">패키지 가격</span>
               <span className="text-xl font-bold text-primary">
-                {(studio.price_per_person / 10000).toFixed(0)}만원~
+                {studio.price_per_person ? `${(studio.price_per_person / 10000).toFixed(0)}만원~` : "가격 문의"}
               </span>
             </div>
             <div className="flex justify-between items-center">

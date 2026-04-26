@@ -27,7 +27,9 @@ const VendorDetailPage = () => {
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { data: vendor, isLoading } = useVendor(id || "");
-  const hallDetail: WeddingHallDetail | null = null;
+  // Stub: place_<wedding_hall> + review aggregation will land in a follow-up.
+  // Cast as the typed shape so member access type-checks; values stay null until wired.
+  const hallDetail = null as WeddingHallDetail | null;
   const reviews: VendorReview[] = [];
 
   if (isLoading) {

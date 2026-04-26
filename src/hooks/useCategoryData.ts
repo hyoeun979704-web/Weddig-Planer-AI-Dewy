@@ -130,8 +130,8 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
 }
 
 interface FetchParams {
-  region?: string;
-  minRating?: number;
+  region?: string | null;
+  minRating?: number | null;
   filterOptions1?: string[];
   filterOptions2?: string[];
   filterOptions3?: string[];
