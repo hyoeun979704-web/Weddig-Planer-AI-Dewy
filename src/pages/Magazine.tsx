@@ -117,6 +117,7 @@ const Magazine = () => {
   const location = useLocation();
   const [category, setCategory] = useState<string | null>(null);
   const [sort, setSort] = useState<SortKey>("popular");
+  const [format, setFormat] = useState<FormatKey>("all");
 
   // HOT row: published in last 7 days. Over-fetch (40) so the client filter
   // still has candidates when fresh content is sparse.
@@ -126,17 +127,28 @@ const Magazine = () => {
     freshOnly: false,
   });
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const hotList = (hotPool ?? [])
-    .filter((v) => v.published_at && new Date(v.published_at).getTime() >= sevenDaysAgo)
-    .slice(0, 8);
+  const freshList = (hotPool ?? []).filter(
+    (v) => v.published_at && new Date(v.published_at).getTime() >= sevenDaysAgo
+  );
+  // Always render HOT row: prefer last-7-days; fall back to top-by-views
+  // when no fresh content (HOT header should always be present per spec).
+  const hotList = (freshList.length > 0 ? freshList : (hotPool ?? [])).slice(0, 8);
+  const hotIsFallback = freshList.length === 0;
 
-  // Grid: full list filtered by category, client-sorted by user choice.
+  // Grid: full list filtered by category, then by format, client-sorted.
   const { data: allVideos, isLoading } = useTipVideos({
     category: category ?? undefined,
     limit: 60,
     freshOnly: false,
   });
-  const gridList = [...(allVideos ?? [])].sort((a, b) => {
+  const isShort = (v: TipVideo) =>
+    v.duration_seconds != null && v.duration_seconds <= SHORT_MAX_SECONDS;
+  const formatFiltered = (allVideos ?? []).filter((v) => {
+    if (format === "short") return isShort(v);
+    if (format === "long") return !isShort(v);
+    return true;
+  });
+  const gridList = [...formatFiltered].sort((a, b) => {
     if (sort === "popular") return b.view_count - a.view_count;
     const da = a.published_at ? new Date(a.published_at).getTime() : 0;
     const db = b.published_at ? new Date(b.published_at).getTime() : 0;
@@ -177,36 +189,63 @@ const Magazine = () => {
       </header>
 
       <main>
-        {hotList.length > 0 && (
-          <section className="pt-4 pb-2">
-            <div className="flex items-center gap-2 px-4 mb-3">
-              <Flame className="w-5 h-5 text-rose-500 fill-rose-500" />
-              <h2 className="text-base font-bold text-foreground">HOT</h2>
-              <span className="text-xs text-muted-foreground">최근 7일</span>
-            </div>
+        <section className="pt-4 pb-2">
+          <div className="flex items-center gap-2 px-4 mb-3">
+            <Flame className="w-5 h-5 text-rose-500 fill-rose-500" />
+            <h2 className="text-base font-bold text-foreground">HOT</h2>
+            <span className="text-xs text-muted-foreground">
+              {hotIsFallback ? "전체 인기" : "최근 7일"}
+            </span>
+          </div>
+          {hotList.length > 0 ? (
             <div className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4 pb-2">
               {hotList.map((v, i) => (
                 <HotCard key={v.video_id} video={v} rank={i + 1} />
               ))}
             </div>
-          </section>
-        )}
+          ) : (
+            <p className="text-sm text-muted-foreground px-4 py-6">
+              인기 영상을 모으는 중이에요.
+            </p>
+          )}
+        </section>
 
         <section className="pt-3 pb-6 border-t border-border/50">
-          <div className="flex items-center justify-between px-4 mb-3">
+          <div className="flex items-center justify-between px-4 mb-3 gap-2 flex-wrap">
             <h2 className="text-base font-bold text-foreground">전체 꿀팁</h2>
-            <div className="flex bg-muted rounded-full p-0.5">
-              {(["popular", "recent"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSort(s)}
-                  className={`px-3 h-7 rounded-full text-[11px] font-medium transition-colors ${
-                    sort === s ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-                  }`}
-                >
-                  {s === "popular" ? "인기순" : "최신순"}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              {/* Format filter — controls layout (long=full row 16:9, short=2-col 9:16, all=mixed) */}
+              <div className="flex bg-muted rounded-full p-0.5">
+                {(["all", "long", "short"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFormat(f)}
+                    className={`px-2.5 h-7 rounded-full text-[11px] font-medium transition-colors ${
+                      format === f
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {f === "all" ? "전체" : f === "long" ? "롱폼" : "숏폼"}
+                  </button>
+                ))}
+              </div>
+              {/* Sort */}
+              <div className="flex bg-muted rounded-full p-0.5">
+                {(["popular", "recent"] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSort(s)}
+                    className={`px-2.5 h-7 rounded-full text-[11px] font-medium transition-colors ${
+                      sort === s
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {s === "popular" ? "인기순" : "최신순"}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -214,7 +253,7 @@ const Magazine = () => {
             <div className="grid grid-cols-2 gap-2 px-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="rounded-[10px] overflow-hidden bg-card">
-                  <div className="aspect-video bg-muted animate-pulse" />
+                  <div className="aspect-[9/16] bg-muted animate-pulse" />
                   <div className="p-2 space-y-1.5">
                     <div className="h-3 bg-muted rounded animate-pulse" />
                     <div className="h-3 bg-muted rounded w-2/3 animate-pulse" />
@@ -224,13 +263,16 @@ const Magazine = () => {
             </div>
           ) : gridList.length > 0 ? (
             <div className="grid grid-cols-2 gap-2 px-4">
-              {gridList.map((v) => (
-                <GridCard key={v.video_id} video={v} />
-              ))}
+              {gridList.map((v) => {
+                // Layout: in 'long' format every card is wide; in 'short' none are;
+                // in 'all' long-form cards take a full row, shorts pair up.
+                const wide = format === "long" || (format === "all" && !isShort(v));
+                return <GridCard key={v.video_id} video={v} wide={wide} />;
+              })}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-12">
-              해당 카테고리의 영상이 아직 없어요.
+              해당 조건에 맞는 영상이 아직 없어요.
             </p>
           )}
         </section>
