@@ -240,13 +240,17 @@ async function main() {
       else descMsg = ` +desc`;
     }
     if (c.tags && c.tags.length > 0) {
-      // Merge with existing tags so seed-collection breadcrumb tags survive.
+      // Merge with existing tags so seed-collection breadcrumb tags survive,
+      // but drop Naver Local category-breadcrumb noise like "생활,편의" or
+      // "사진,스튜디오" — those come from Naver's API category field, not
+      // user-facing search tags.
+      const isBreadcrumb = (t: string) => /,/.test(t) || /^(임대\s*,?\s*대여|생활\s*,?\s*편의|사진\s*,?\s*스튜디오|음식점)$/.test(t);
       const { data: existingRow } = await supabase
         .from("places")
         .select("tags")
         .eq("place_id", p.place_id)
         .maybeSingle();
-      const existing = (existingRow?.tags as string[] | null) ?? [];
+      const existing = ((existingRow?.tags as string[] | null) ?? []).filter((t) => !isBreadcrumb(t));
       const merged = Array.from(new Set([...existing, ...c.tags])).slice(0, 16);
       const { error: tagsErr } = await supabase
         .from("places")
