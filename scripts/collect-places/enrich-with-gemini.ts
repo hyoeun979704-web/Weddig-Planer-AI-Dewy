@@ -19,6 +19,7 @@ import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import { enrichPlaceWithSearch, validateEnriched } from "./sources/gemini-enrich";
 import { CATEGORIES, CategoryLabel } from "./utils/categories";
+import { CATEGORY_PROMPTS, CARD_TABLE } from "./sources/category-prompts";
 
 // Reverse map for the prompt (slug → Korean label).
 const SLUG_TO_LABEL: Record<string, string> = Object.entries(CATEGORIES).reduce(
@@ -183,10 +184,39 @@ async function main() {
     if (c.event_info) detailsUpdate.event_info = c.event_info;
     if (c.contract_policy) detailsUpdate.contract_policy = c.contract_policy;
     if (c.amenities && c.amenities.length > 0) detailsUpdate.amenities = c.amenities;
+    // basic_services has no dedicated column; merge into amenities so the UI
+    // surface gets the universal-included items too. Order: amenities first,
+    // then basic_services. Dedupe.
+    if (c.basic_services && c.basic_services.length > 0) {
+      const merged = Array.from(new Set([...(c.amenities ?? []), ...c.basic_services]));
+      detailsUpdate.amenities = merged.slice(0, 16);
+    }
 
     const { error: detailsErr } = await supabase
       .from("place_details")
       .upsert(detailsUpdate, { onConflict: "place_id" });
+
+    // Card-table writeback for category_extras (filtered by allowed columns).
+    let cardMsg = "";
+    if (c.category_extras && typeof c.category_extras === "object") {
+      const spec = CATEGORY_PROMPTS[categoryLabel as CategoryLabel];
+      const tableName = CARD_TABLE[categoryLabel as CategoryLabel];
+      if (spec && tableName) {
+        const allowed = new Set(spec.cardColumns);
+        const cardUpdate: Record<string, unknown> = { place_id: p.place_id };
+        for (const [k, v] of Object.entries(c.category_extras)) {
+          if (allowed.has(k) && v != null) cardUpdate[k] = v;
+        }
+        const cardKeyCount = Object.keys(cardUpdate).length - 1; // minus place_id
+        if (cardKeyCount > 0) {
+          const { error: cardErr } = await supabase
+            .from(tableName)
+            .upsert(cardUpdate, { onConflict: "place_id" });
+          if (cardErr) cardMsg = ` card-fail(${cardErr.message.slice(0, 30)})`;
+          else cardMsg = ` +card(${cardKeyCount})`;
+        }
+      }
+    }
 
     // Description goes on places (only if currently null — preserve curator edits).
     let descMsg = "";
@@ -201,11 +231,11 @@ async function main() {
     }
 
     if (detailsErr) {
-      console.log(`upsert failed: ${detailsErr.message.slice(0, 60)}`);
+      console.log(`upsert failed: ${detailsErr.message.slice(0, 60)}${cardMsg}`);
       errored++;
     } else {
       const fields = Object.keys(detailsUpdate).filter((k) => k !== "place_id").length;
-      console.log(`✓ ${fields} fields${descMsg} [${c.source_urls?.length ?? 0} src]`);
+      console.log(`✓ ${fields} fields${descMsg}${cardMsg} [${c.source_urls?.length ?? 0} src]`);
       verified++;
     }
   }
