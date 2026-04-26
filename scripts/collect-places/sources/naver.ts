@@ -178,25 +178,51 @@ export interface ImageItem {
   sizewidth: string;
 }
 
-// Find a representative image for a place. Picks first non-tiny landscape result
-// (skip thumbnails < 200px wide and obvious portraits to avoid blog avatar shots).
+// Hosts that commonly serve referrer-locked or thumbnail-only assets which
+// later 403 in a browser. Skip these in favor of the next candidate.
+const IMAGE_HOST_BLOCKLIST = [
+  "instagram.com",
+  "fbcdn.net",
+  "pinimg.com", // Pinterest hotlinks break under referrer policy
+  "bing.net",
+];
+
+// Find a representative image for a place. Strategy: pull a wider candidate
+// pool, prefer reasonably-sized landscape/near-square photos, skip hosts that
+// commonly 403 when hotlinked, fall back through progressively looser tiers.
 export async function searchImage(
   query: string,
   env: NaverEnv,
-  limit = 5
+  limit = 20
 ): Promise<string | null> {
   try {
     const data = await call<{ items: ImageItem[] }>(ENDPOINTS.image, query, env, {
-      display: limit,
+      display: Math.min(limit, 50),
       sort: "sim",
     });
-    for (const it of data.items ?? []) {
+    const items = (data.items ?? []).filter((it) => {
+      const link = it.link ?? "";
+      return !IMAGE_HOST_BLOCKLIST.some((host) => link.includes(host));
+    });
+    // Tier 1: ≥600px wide, landscape-ish (not a sliver banner).
+    for (const it of items) {
       const w = +it.sizewidth || 0;
       const h = +it.sizeheight || 0;
-      if (w >= 300 && w >= h * 0.8) return it.link;
+      if (w >= 600 && h >= 360 && h <= w * 1.4 && w <= h * 3) return it.link;
     }
-    // No good landscape candidate; fall back to first thumbnail
-    return data.items?.[0]?.thumbnail ?? data.items?.[0]?.link ?? null;
+    // Tier 2: ≥400px wide, any reasonable aspect.
+    for (const it of items) {
+      const w = +it.sizewidth || 0;
+      const h = +it.sizeheight || 0;
+      if (w >= 400 && h >= 300) return it.link;
+    }
+    // Tier 3: anything ≥300px (last resort before thumbnail).
+    for (const it of items) {
+      const w = +it.sizewidth || 0;
+      if (w >= 300) return it.link;
+    }
+    // Final fallback: first item's thumbnail if all else fails.
+    return items[0]?.thumbnail ?? items[0]?.link ?? null;
   } catch {
     return null;
   }
