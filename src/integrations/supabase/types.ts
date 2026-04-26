@@ -171,15 +171,7 @@ export type Database = {
           vendor_id?: number | null
           verified_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "business_profiles_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendors"
-            referencedColumns: ["vendor_id"]
-          },
-        ]
+        Relationships: []
       }
       cart_items: {
         Row: {
@@ -918,9 +910,11 @@ export type Database = {
           advantage_3_title: string | null
           analyzed_at: string | null
           atmosphere: string[] | null
+          avg_total_estimate: number | null
           closed_days: string | null
           cons: string[] | null
           facebook_url: string | null
+          hidden_cost_tags: string[] | null
           hidden_costs: string[] | null
           holiday_notice: string | null
           hours_fri: string | null
@@ -937,13 +931,16 @@ export type Database = {
           kakao_channel_url: string | null
           naver_blog_url: string | null
           naver_place_url: string | null
+          ownership_change_recent: boolean | null
           parking_capacity: number | null
           parking_free_guest: string | null
           parking_free_parents: string | null
           parking_location: string | null
+          peak_season_months: string[] | null
           place_id: string
           pros: string[] | null
           recommended_for: string[] | null
+          refund_warning: boolean | null
           shuttle_bus_available: boolean | null
           shuttle_bus_info: string | null
           subway_line: string | null
@@ -953,6 +950,7 @@ export type Database = {
           updated_at: string | null
           walk_minutes: number | null
           website_url: string | null
+          weekend_premium_pct: number | null
           youtube_url: string | null
         }
         Insert: {
@@ -965,9 +963,11 @@ export type Database = {
           advantage_3_title?: string | null
           analyzed_at?: string | null
           atmosphere?: string[] | null
+          avg_total_estimate?: number | null
           closed_days?: string | null
           cons?: string[] | null
           facebook_url?: string | null
+          hidden_cost_tags?: string[] | null
           hidden_costs?: string[] | null
           holiday_notice?: string | null
           hours_fri?: string | null
@@ -984,13 +984,16 @@ export type Database = {
           kakao_channel_url?: string | null
           naver_blog_url?: string | null
           naver_place_url?: string | null
+          ownership_change_recent?: boolean | null
           parking_capacity?: number | null
           parking_free_guest?: string | null
           parking_free_parents?: string | null
           parking_location?: string | null
+          peak_season_months?: string[] | null
           place_id: string
           pros?: string[] | null
           recommended_for?: string[] | null
+          refund_warning?: boolean | null
           shuttle_bus_available?: boolean | null
           shuttle_bus_info?: string | null
           subway_line?: string | null
@@ -1000,6 +1003,7 @@ export type Database = {
           updated_at?: string | null
           walk_minutes?: number | null
           website_url?: string | null
+          weekend_premium_pct?: number | null
           youtube_url?: string | null
         }
         Update: {
@@ -1012,9 +1016,11 @@ export type Database = {
           advantage_3_title?: string | null
           analyzed_at?: string | null
           atmosphere?: string[] | null
+          avg_total_estimate?: number | null
           closed_days?: string | null
           cons?: string[] | null
           facebook_url?: string | null
+          hidden_cost_tags?: string[] | null
           hidden_costs?: string[] | null
           holiday_notice?: string | null
           hours_fri?: string | null
@@ -1031,13 +1037,16 @@ export type Database = {
           kakao_channel_url?: string | null
           naver_blog_url?: string | null
           naver_place_url?: string | null
+          ownership_change_recent?: boolean | null
           parking_capacity?: number | null
           parking_free_guest?: string | null
           parking_free_parents?: string | null
           parking_location?: string | null
+          peak_season_months?: string[] | null
           place_id?: string
           pros?: string[] | null
           recommended_for?: string[] | null
+          refund_warning?: boolean | null
           shuttle_bus_available?: boolean | null
           shuttle_bus_info?: string | null
           subway_line?: string | null
@@ -1047,6 +1056,7 @@ export type Database = {
           updated_at?: string | null
           walk_minutes?: number | null
           website_url?: string | null
+          weekend_premium_pct?: number | null
           youtube_url?: string | null
         }
         Relationships: [
@@ -1476,21 +1486,39 @@ export type Database = {
       }
       place_studios: {
         Row: {
+          album_extra_cost: number | null
+          author_tiers: string[] | null
+          base_retouch_count: number | null
+          base_shoot_hours: number | null
           includes_originals: boolean | null
+          per_retouch_cost: number | null
           place_id: string
           price_per_person: number | null
+          raw_file_extra_cost: number | null
           shoot_styles: string[] | null
         }
         Insert: {
+          album_extra_cost?: number | null
+          author_tiers?: string[] | null
+          base_retouch_count?: number | null
+          base_shoot_hours?: number | null
           includes_originals?: boolean | null
+          per_retouch_cost?: number | null
           place_id: string
           price_per_person?: number | null
+          raw_file_extra_cost?: number | null
           shoot_styles?: string[] | null
         }
         Update: {
+          album_extra_cost?: number | null
+          author_tiers?: string[] | null
+          base_retouch_count?: number | null
+          base_shoot_hours?: number | null
           includes_originals?: boolean | null
+          per_retouch_cost?: number | null
           place_id?: string
           price_per_person?: number | null
+          raw_file_extra_cost?: number | null
           shoot_styles?: string[] | null
         }
         Relationships: [
@@ -1771,6 +1799,63 @@ export type Database = {
         }
         Relationships: []
       }
+      tip_videos: {
+        Row: {
+          categories: string[] | null
+          channel_id: string | null
+          channel_name: string | null
+          collected_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          id: string
+          is_active: boolean | null
+          like_count: number | null
+          published_at: string | null
+          search_query: string | null
+          tags: string[] | null
+          thumbnail_url: string | null
+          title: string
+          video_id: string
+          view_count: number | null
+        }
+        Insert: {
+          categories?: string[] | null
+          channel_id?: string | null
+          channel_name?: string | null
+          collected_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean | null
+          like_count?: number | null
+          published_at?: string | null
+          search_query?: string | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title: string
+          video_id: string
+          view_count?: number | null
+        }
+        Update: {
+          categories?: string[] | null
+          channel_id?: string | null
+          channel_name?: string | null
+          collected_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean | null
+          like_count?: number | null
+          published_at?: string | null
+          search_query?: string | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title?: string
+          video_id?: string
+          view_count?: number | null
+        }
+        Relationships: []
+      }
       user_points: {
         Row: {
           id: string
@@ -1873,142 +1958,6 @@ export type Database = {
           user_id?: string
           wedding_date?: string | null
           wedding_region?: string | null
-        }
-        Relationships: []
-      }
-      vendor_gallery: {
-        Row: {
-          caption: string | null
-          created_at: string | null
-          display_order: number | null
-          id: string
-          image_type: string | null
-          image_url: string
-          storage_path: string
-          vendor_id: number
-        }
-        Insert: {
-          caption?: string | null
-          created_at?: string | null
-          display_order?: number | null
-          id?: string
-          image_type?: string | null
-          image_url: string
-          storage_path: string
-          vendor_id: number
-        }
-        Update: {
-          caption?: string | null
-          created_at?: string | null
-          display_order?: number | null
-          id?: string
-          image_type?: string | null
-          image_url?: string
-          storage_path?: string
-          vendor_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vendor_gallery_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendors"
-            referencedColumns: ["vendor_id"]
-          },
-        ]
-      }
-      vendor_highlights: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          display_order: number | null
-          icon: string | null
-          id: string
-          title: string
-          vendor_id: number
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          display_order?: number | null
-          icon?: string | null
-          id?: string
-          title: string
-          vendor_id: number
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          display_order?: number | null
-          icon?: string | null
-          id?: string
-          title?: string
-          vendor_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vendor_highlights_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendors"
-            referencedColumns: ["vendor_id"]
-          },
-        ]
-      }
-      vendors: {
-        Row: {
-          address: string | null
-          amenities: string | null
-          avg_rating: number | null
-          business_hours: string | null
-          category_type: string
-          keywords: string | null
-          name: string
-          owner_user_id: string | null
-          parking_hours: string | null
-          parking_location: string | null
-          region: string | null
-          review_count: number | null
-          sns_info: Json | null
-          tel: string | null
-          thumbnail_url: string | null
-          vendor_id: number
-        }
-        Insert: {
-          address?: string | null
-          amenities?: string | null
-          avg_rating?: number | null
-          business_hours?: string | null
-          category_type: string
-          keywords?: string | null
-          name: string
-          owner_user_id?: string | null
-          parking_hours?: string | null
-          parking_location?: string | null
-          region?: string | null
-          review_count?: number | null
-          sns_info?: Json | null
-          tel?: string | null
-          thumbnail_url?: string | null
-          vendor_id: number
-        }
-        Update: {
-          address?: string | null
-          amenities?: string | null
-          avg_rating?: number | null
-          business_hours?: string | null
-          category_type?: string
-          keywords?: string | null
-          name?: string
-          owner_user_id?: string | null
-          parking_hours?: string | null
-          parking_location?: string | null
-          region?: string | null
-          review_count?: number | null
-          sns_info?: Json | null
-          tel?: string | null
-          thumbnail_url?: string | null
-          vendor_id?: number
         }
         Relationships: []
       }
