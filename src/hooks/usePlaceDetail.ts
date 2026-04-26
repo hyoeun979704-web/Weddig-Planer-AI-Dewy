@@ -23,6 +23,24 @@ export interface LegacyDetail {
   brand?: string;
   created_at: string;
   updated_at: string;
+  description?: string | null;
+  // place_details fields (sparse — null when not collected yet)
+  tel?: string | null;
+  website_url?: string | null;
+  instagram_url?: string | null;
+  naver_blog_url?: string | null;
+  hours_mon?: string | null;
+  hours_tue?: string | null;
+  hours_wed?: string | null;
+  hours_thu?: string | null;
+  hours_fri?: string | null;
+  hours_sat?: string | null;
+  hours_sun?: string | null;
+  closed_days?: string | null;
+  parking_capacity?: number | null;
+  parking_location?: string | null;
+  parking_free_guest?: string | null;
+  advantages?: Array<{ title: string; content: string | null }>;
   hanbok_types?: string[] | null;
   suit_types?: string[] | null;
   package_types?: string[] | null;
