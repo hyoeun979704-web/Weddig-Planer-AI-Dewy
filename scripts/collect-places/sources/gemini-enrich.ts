@@ -27,6 +27,14 @@ function parseRetryDelay(errText: string): number {
   return 30_000;
 }
 
+export interface PricePackage {
+  name: string;
+  price_min: number | null; // KRW
+  price_max: number | null; // KRW
+  includes: string[] | null;
+  notes: string | null;
+}
+
 export interface EnrichedPlaceData {
   is_verified: boolean;
   tel: string | null;
@@ -47,6 +55,12 @@ export interface EnrichedPlaceData {
   advantage_2: { title: string; content: string } | null;
   advantage_3: { title: string; content: string } | null;
   description: string | null;
+  // Rich UX additions
+  image_urls: string[] | null;       // gallery — official photos only
+  price_packages: PricePackage[] | null;
+  event_info: string | null;         // current promotions / 시즌 할인
+  contract_policy: string | null;    // 계약/환불 정책
+  amenities: string[] | null;        // ["폐백실", "신부대기실", "주차"...]
   source_urls: string[];
 }
 
@@ -56,21 +70,51 @@ interface EnrichInput {
   region: string; // "서울특별시 강남구"
 }
 
-const SYSTEM = `당신은 한국 웨딩 업체 정보 검증기입니다. Google Search를 사용해 특정 업체의 실제 정보를 확인하고 JSON으로 반환합니다.
+const SYSTEM = `당신은 한국 웨딩 업체 정보 검증기입니다. Google Search로 특정 업체의 실제 정보를 확인하고 엄격한 스키마의 JSON으로 반환합니다.
 
 엄격한 규칙 (반드시 준수):
 1. **검색 결과에 명시된 정보만 사용** — 추측, 일반론, 모델 사전 지식만으로 답하지 말 것.
-2. **불확실하면 null 반환** — "아마도", "추측건대" 수준이면 무조건 null.
+2. **불확실하면 null** — "아마도", "추측건대" 수준이면 무조건 null. 50% 미만 확신은 null.
 3. **업체 동일성 확인 필수** — 검색 결과의 업체가 입력된 이름·지역과 정확히 일치하는지 먼저 확인. 다른 지역의 동명 업체는 무시.
-4. **전화번호**: 반드시 한국 형식 (예: "02-123-4567", "031-1234-5678", "1588-1234"). 휴대폰 번호 (010-)는 사업자번호가 아니면 거부.
-5. **website_url**: 업체의 공식 홈페이지만. naver.com / instagram.com / blog 도메인은 instagram_url / naver_place_url로 분리.
-6. **hours**: 명시적으로 영업시간이 검색 결과에 나와야만 채움. "보통 10시-19시" 같은 일반화는 거부.
-7. **advantage_1/2/3**: 이 업체에 *고유한* 장점/특징 1-2문장. "프리미엄 원단" 같은 일반 광고 카피 금지. 검색 결과에서 직접 인용/요약.
-8. **description**: 업체 한 줄 소개. 위치, 규모, 특징 포함.
-9. **source_urls**: 정보를 가져온 실제 검색 결과 URL을 모두 나열 (최소 1개).
-10. **is_verified**: source_urls가 1개 이상이고 업체 동일성 확인 완료시에만 true.
+4. **전화번호 (tel)**: 한국 형식 ("02-123-4567", "031-1234-5678", "1588-1234"). 010-은 사업자 등록 휴대폰이 아니면 거부.
+5. **website_url**: 공식 홈페이지만. naver.com / instagram.com / blog.naver.com / cafe.naver.com 도메인은 다른 필드로.
+6. **instagram_url / naver_place_url**: 업체 공식 계정/페이지만. 리뷰 블로그 링크는 거부.
+7. **hours**: "월: 10:00-19:00" 형식. 명시적 영업시간이 출처에 있을 때만. "보통 10시-19시" 같은 추측은 null.
+8. **advantage_1/2/3**: 이 업체에 *고유한* 장점 1-2문장. 일반 광고 카피 ("프리미엄", "최고급") 금지. 출처에서 직접 인용·요약.
+9. **description**: 업체 한 줄 소개 (위치, 규모, 특징). 광고 카피 금지.
 
-업체를 검색해서 못 찾거나 동일성 확인 실패 시 모든 필드 null + is_verified: false 반환.`;
+추가 필드:
+10. **image_urls**: 업체 공식 사진 URL 배열. 검색 결과에서 발견한 공식 사이트·인스타·네이버 플레이스의 사진만. 블로그 후기 사진은 제외. 최대 6장.
+11. **price_packages**: [{name, price_min, price_max, includes:[], notes}]. 가격이 출처에 명시된 경우만. price_min/max는 KRW 숫자 (예: 1500000). includes는 패키지에 포함된 항목 ("드레스 1벌", "본식 촬영", "원본 100컷" 등).
+12. **event_info**: 현재 진행 중인 프로모션/할인 한 줄. 없으면 null.
+13. **contract_policy**: 계약·환불 정책 요약 한 줄. 명시되어 있을 때만.
+14. **amenities**: 업체 보유 시설/편의 ["폐백실", "신부대기실", "발렛파킹", "주차" 등]. 출처에서 확인된 것만.
+
+15. **source_urls**: 정보를 가져온 실제 검색 결과 URL 모두 나열 (최소 1개, 최대 5개). 인용 가능한 출처만.
+16. **is_verified**: source_urls 1개 이상 + 업체 동일성 확인 완료시에만 true. 그 외엔 false (모든 필드 null로 반환).
+
+응답은 다음 형식의 단일 JSON 객체:
+{
+  "is_verified": boolean,
+  "tel": string|null,
+  "website_url": string|null,
+  "instagram_url": string|null,
+  "naver_place_url": string|null,
+  "hours": {"mon":string|null,"tue":...,"sun":...}|null,
+  "closed_days": string|null,
+  "advantage_1": {"title":string,"content":string}|null,
+  "advantage_2": {"title":string,"content":string}|null,
+  "advantage_3": {"title":string,"content":string}|null,
+  "description": string|null,
+  "image_urls": [string]|null,
+  "price_packages": [{"name":string,"price_min":number|null,"price_max":number|null,"includes":[string]|null,"notes":string|null}]|null,
+  "event_info": string|null,
+  "contract_policy": string|null,
+  "amenities": [string]|null,
+  "source_urls": [string]
+}
+
+업체 못 찾거나 동일성 확인 실패 시: 모든 필드 null + is_verified=false + source_urls=[]`;
 
 export async function enrichPlaceWithSearch(
   input: EnrichInput,
@@ -179,10 +223,45 @@ export function validateEnriched(d: EnrichedPlaceData): ValidationResult {
     if (a && a.title && a.content) cleaned[k] = a;
   }
   if (d.description && d.description.length >= 10) cleaned.description = d.description;
+  // Image gallery: keep only http(s) URLs, dedupe, cap at 6.
+  if (Array.isArray(d.image_urls)) {
+    const seen = new Set<string>();
+    const imgs = d.image_urls
+      .filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u))
+      .filter((u) => {
+        if (seen.has(u)) return false;
+        seen.add(u);
+        return true;
+      })
+      .slice(0, 6);
+    if (imgs.length > 0) cleaned.image_urls = imgs;
+  }
+  // Price packages: each must have a name + at least one of price_min/includes.
+  if (Array.isArray(d.price_packages)) {
+    const pkgs = d.price_packages.filter(
+      (p) =>
+        p && typeof p.name === "string" && p.name.length > 0 &&
+        (typeof p.price_min === "number" || (Array.isArray(p.includes) && p.includes.length > 0))
+    );
+    if (pkgs.length > 0) cleaned.price_packages = pkgs;
+  }
+  if (d.event_info && d.event_info.length >= 5 && d.event_info.length < 200) {
+    cleaned.event_info = d.event_info;
+  }
+  if (d.contract_policy && d.contract_policy.length >= 10 && d.contract_policy.length < 500) {
+    cleaned.contract_policy = d.contract_policy;
+  }
+  if (Array.isArray(d.amenities)) {
+    const amens = d.amenities.filter((a): a is string => typeof a === "string" && a.length > 0).slice(0, 12);
+    if (amens.length > 0) cleaned.amenities = amens;
+  }
   cleaned.source_urls = d.source_urls;
-  // At least one useful field must have survived to be worth persisting.
   const useful = Object.keys(cleaned).some((k) =>
-    ["tel", "website_url", "instagram_url", "advantage_1", "advantage_2", "advantage_3", "hours"].includes(k)
+    [
+      "tel", "website_url", "instagram_url", "advantage_1", "advantage_2",
+      "advantage_3", "hours", "image_urls", "price_packages", "amenities",
+      "event_info",
+    ].includes(k)
   );
   if (!useful) return { ok: false, reason: "no useful fields after cleaning" };
   return { ok: true, cleaned };

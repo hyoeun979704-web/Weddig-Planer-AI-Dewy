@@ -1,139 +1,86 @@
-import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Share2, Star, Phone, Calendar } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FavoriteButton } from "@/components/FavoriteButton";
-import { usePlaceDetail, LegacyDetail } from "@/hooks/usePlaceDetail";
-import VenueImageGallery from "@/components/venue/VenueImageGallery";
-import SuitInfoTab from "@/components/suit/SuitInfoTab";
-import SuitPhotoTab from "@/components/suit/SuitPhotoTab";
-import SuitReviewTab from "@/components/suit/SuitReviewTab";
-
-type Suit = LegacyDetail;
-type TabType = "info" | "photo" | "review";
+import { usePlaceDetail } from "@/hooks/usePlaceDetail";
+import PlaceDetailLayout from "@/components/detail/PlaceDetailLayout";
 
 const SuitDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>("info");
-
   const { data: suit, isLoading, error } = usePlaceDetail(id);
 
   if (isLoading) return <DetailSkeleton />;
-
   if (error || !suit) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center p-4">
         <span className="text-4xl mb-4">😢</span>
-        <p className="text-muted-foreground text-center mb-4">예복 정보를 찾을 수 없습니다.</p>
-        <Button onClick={() => navigate("/suit")}>목록으로 돌아가기</Button>
+        <p className="text-muted-foreground text-center mb-4">예복 정보를 찾을 수 없어요.</p>
+        <Button onClick={() => navigate("/suit")}>목록으로</Button>
       </div>
     );
   }
 
-  const tabs: { key: TabType; label: string }[] = [
-    { key: "info", label: "상세정보" },
-    { key: "photo", label: "사진" },
-    { key: "review", label: "리뷰" },
-  ];
+  // Per-category extra: show suit styles, designer brands, fitting count if present.
+  const hasExtras =
+    suit.suit_styles.length > 0 || suit.designer_brands.length > 0 || suit.fitting_count != null;
 
-  const galleryImages = suit.thumbnail_url
-    ? [suit.thumbnail_url, "/placeholder.svg", "/placeholder.svg"]
-    : [];
-
-  return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto animate-fade-in">
-      {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border max-w-[430px] mx-auto">
-        <div className="flex items-center justify-between px-4 h-14">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <div className="flex items-center gap-1">
-            <button className="w-10 h-10 flex items-center justify-center" onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("링크가 복사되었습니다."); }}>
-              <Share2 className="w-5 h-5" />
-            </button>
-            <FavoriteButton itemId={suit.id} itemType="suit" variant="default" />
-          </div>
-        </div>
-      </div>
-
-      <div className="pt-14">
-        <VenueImageGallery images={galleryImages} venueName={suit.name} />
-
-        {/* Name & Rating */}
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-xl font-bold text-foreground">{suit.name}</h1>
-            {suit.is_partner && (
-              <span className="px-2.5 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-full">파트너</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-bold">{suit.rating.toFixed(1)}</span>
-            </div>
-            <span className="text-muted-foreground text-sm">리뷰 {suit.review_count.toLocaleString()}개</span>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-border sticky top-14 bg-background z-40">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-3.5 text-sm font-medium transition-colors relative ${activeTab === tab.key ? "text-primary" : "text-muted-foreground"}`}
-            >
-              {tab.label}
-              {activeTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
-        <div className="pb-24">
-          {activeTab === "info" && <SuitInfoTab suit={suit} />}
-          {activeTab === "photo" && <SuitPhotoTab />}
-          {activeTab === "review" && <SuitReviewTab rating={suit.rating} reviewCount={suit.review_count} />}
-        </div>
-      </div>
-
-      {/* Fixed Bottom CTA */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 max-w-[430px] mx-auto">
-        <div className="flex gap-3">
-          <Button variant="outline" className="flex-1 h-12 gap-2" onClick={() => { toast.info("전화 연결 준비 중입니다."); window.location.href = "tel:02-1234-5678"; }}>
-            <Phone className="w-4 h-4" />
-            전화 문의
-          </Button>
-          <Button className="flex-1 h-12 gap-2" onClick={() => toast.success("예약 상담 신청이 완료되었습니다. 곧 연락드리겠습니다.")}>
-            <Calendar className="w-4 h-4" />
-            예약하기
-          </Button>
-        </div>
+  const extraSection = hasExtras ? (
+    <div className="space-y-3">
+      <h3 className="font-bold text-sm">예복 정보</h3>
+      {suit.suit_styles.length > 0 && (
+        <Tags label="스타일" items={suit.suit_styles} />
+      )}
+      {suit.designer_brands.length > 0 && (
+        <Tags label="브랜드" items={suit.designer_brands} />
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        {suit.fitting_count != null && (
+          <Stat label="가봉 횟수" value={`${suit.fitting_count}회`} />
+        )}
+        {suit.custom_available != null && (
+          <Stat label="맞춤 제작" value={suit.custom_available ? "가능" : "불가"} />
+        )}
       </div>
     </div>
+  ) : null;
+
+  return (
+    <PlaceDetailLayout
+      place={suit}
+      categoryLabel="예복"
+      favoriteType="suit"
+      extraSection={extraSection}
+    />
   );
 };
 
+const Tags = ({ label, items }: { label: string; items: string[] }) => (
+  <div>
+    <p className="text-xs text-muted-foreground mb-1.5">{label}</p>
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((it, i) => (
+        <span key={i} className="text-xs px-2.5 py-1 bg-primary/10 text-primary rounded-full">{it}</span>
+      ))}
+    </div>
+  </div>
+);
+
+const Stat = ({ label, value }: { label: string; value: string }) => (
+  <div className="bg-muted/50 rounded-xl p-3">
+    <p className="text-[11px] text-muted-foreground">{label}</p>
+    <p className="text-sm font-semibold text-foreground mt-0.5">{value}</p>
+  </div>
+);
+
 const DetailSkeleton = () => (
   <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-    <div className="h-14 border-b border-border flex items-center px-4"><Skeleton className="w-6 h-6 rounded" /></div>
+    <div className="h-14 border-b border-border flex items-center px-4">
+      <Skeleton className="w-6 h-6 rounded" />
+    </div>
     <Skeleton className="aspect-[4/3] w-full" />
-    <div className="p-4 space-y-3 border-b border-border">
+    <div className="p-4 space-y-3">
       <Skeleton className="h-6 w-48" />
       <Skeleton className="h-4 w-32" />
-    </div>
-    <div className="flex border-b border-border">
-      <Skeleton className="flex-1 h-12 rounded-none" />
-      <Skeleton className="flex-1 h-12 rounded-none" />
-      <Skeleton className="flex-1 h-12 rounded-none" />
-    </div>
-    <div className="p-4 space-y-4">
-      <Skeleton className="h-16 w-full rounded-xl" />
       <Skeleton className="h-16 w-full rounded-xl" />
     </div>
   </div>

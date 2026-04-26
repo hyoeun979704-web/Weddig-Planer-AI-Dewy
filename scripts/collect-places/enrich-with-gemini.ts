@@ -168,6 +168,14 @@ async function main() {
       detailsUpdate.advantage_3_title = c.advantage_3.title;
       detailsUpdate.advantage_3_content = c.advantage_3.content;
     }
+    // Rich UX fields
+    if (c.image_urls && c.image_urls.length > 0) detailsUpdate.image_urls = c.image_urls;
+    if (c.price_packages && c.price_packages.length > 0) {
+      detailsUpdate.price_packages = c.price_packages;
+    }
+    if (c.event_info) detailsUpdate.event_info = c.event_info;
+    if (c.contract_policy) detailsUpdate.contract_policy = c.contract_policy;
+    if (c.amenities && c.amenities.length > 0) detailsUpdate.amenities = c.amenities;
 
     const { error: detailsErr } = await supabase
       .from("place_details")
