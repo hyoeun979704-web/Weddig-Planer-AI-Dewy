@@ -4,6 +4,10 @@ import { ArrowLeft, Play, Flame } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useTipVideos, youTubeUrl, type TipVideo } from "@/hooks/useTipVideos";
 
+// Shorts threshold: YouTube classifies up to 3 min as Shorts. We use 180s.
+const SHORT_MAX_SECONDS = 180;
+type FormatKey = "all" | "short" | "long";
+
 const CATEGORY_CHIPS: Array<{ slug: string | null; label: string }> = [
   { slug: null, label: "전체" },
   { slug: "general", label: "일반" },
@@ -43,7 +47,7 @@ function HotCard({ video, rank }: { video: TipVideo; rank: number }) {
       rel="noopener noreferrer"
       className="flex-shrink-0 w-[180px] active:scale-[0.97] transition-transform"
     >
-      <div className="relative aspect-video bg-muted rounded-[10px] overflow-hidden">
+      <div className="relative aspect-[9/16] bg-muted rounded-[10px] overflow-hidden">
         {video.thumbnail_url && (
           <img
             src={video.thumbnail_url}
@@ -66,15 +70,19 @@ function HotCard({ video, rank }: { video: TipVideo; rank: number }) {
   );
 }
 
-function GridCard({ video }: { video: TipVideo }) {
+function GridCard({ video, wide }: { video: TipVideo; wide?: boolean }) {
+  // wide=true → long-form full-row card with 16:9 thumbnail.
+  // wide=false → short-form 2-col card with 9:16 portrait thumbnail.
   return (
     <a
       href={youTubeUrl(video.video_id)}
       target="_blank"
       rel="noopener noreferrer"
-      className="block bg-card rounded-[10px] overflow-hidden shadow-sm active:scale-[0.98] transition-transform"
+      className={`block bg-card rounded-[10px] overflow-hidden shadow-sm active:scale-[0.98] transition-transform ${
+        wide ? "col-span-2" : ""
+      }`}
     >
-      <div className="relative aspect-video bg-muted overflow-hidden">
+      <div className={`relative bg-muted overflow-hidden ${wide ? "aspect-video" : "aspect-[9/16]"}`}>
         {video.thumbnail_url && (
           <img
             src={video.thumbnail_url}
