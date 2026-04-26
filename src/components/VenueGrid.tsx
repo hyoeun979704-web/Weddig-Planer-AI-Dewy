@@ -10,7 +10,11 @@ interface VenueGridProps {
   partnersOnly?: boolean;
 }
 
-const VenueGrid = ({ onVenueClick, partnersOnly = true }: VenueGridProps) => {
+// partnersOnly opt-in (was the default), but no places have is_partner=true
+// yet — B2B onboarding lives in a future round. Defaulting to false so the
+// list isn't empty when no filter is active. Pages that need "partners only"
+// can opt back in explicitly once business_profiles starts marking partners.
+const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
   const { toast } = useToast();
   const { resetFilters, hasActiveFilters } = useFilterStore();
   const observerRef = useRef<IntersectionObserver | null>(null);

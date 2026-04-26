@@ -28,7 +28,7 @@ const Venues = () => {
         <FilterBar />
         <div className="px-4 pb-3">
           <h2 className="text-lg font-bold text-foreground">{hasActiveFilters() ? "검색 결과" : "인기 웨딩홀"}</h2>
-          <p className="text-sm text-muted-foreground mt-1">{hasActiveFilters() ? "필터 조건에 맞는 웨딩홀입니다" : "신뢰할 수 있는 파트너 웨딩홀을 만나보세요"}</p>
+          <p className="text-sm text-muted-foreground mt-1">{hasActiveFilters() ? "필터 조건에 맞는 웨딩홀입니다" : "지역별 인기 웨딩홀을 비교해 보세요"}</p>
         </div>
         <VenueGrid onVenueClick={handleVenueClick} />
       </main>
