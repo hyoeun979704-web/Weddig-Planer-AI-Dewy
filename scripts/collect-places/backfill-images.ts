@@ -14,6 +14,7 @@
 import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import { searchImage } from "./sources/naver";
+import { fetchOgImage, isCrawlableHomepage } from "./sources/og";
 import { CATEGORIES, CategoryLabel } from "./utils/categories";
 
 interface Args {
@@ -60,9 +61,12 @@ async function main() {
     `\n[backfill-images] category=${args.category ?? "all"} limit=${args.limit} dry-run=${args.dryRun}`
   );
 
+  // Pull source_refs too — we extract the official homepage URL from there
+  // and try og:image first (the photo the business itself chose to represent
+  // it). Naver Image Search is the fallback only.
   let q = supabase
     .from("places")
-    .select("place_id, name, category, city, district")
+    .select("place_id, name, category, city, district, source_refs")
     .eq("is_active", true)
     .is("deleted_at", null)
     .is("main_image_url", null);
@@ -77,28 +81,47 @@ async function main() {
 
   let filled = 0;
   let failed = 0;
+  let viaOg = 0;
+  let viaSearch = 0;
   for (let i = 0; i < (targets?.length ?? 0); i++) {
     const p = targets![i];
     const region = [p.city, p.district].filter(Boolean).join(" ");
     const fullQuery = `${p.name} ${region}`.trim();
     process.stdout.write(`  · [${i + 1}/${targets!.length}] ${p.name} ... `);
 
-    // First try: name + region. Most accurate match.
-    let url = await searchImage(fullQuery, naverEnv).catch(() => null);
-    // Fallback: long names with multi-token regions can drown the image
-    // search. Retry with just the place name when the full query yielded nothing.
-    if (!url && p.name) {
-      url = await searchImage(p.name, naverEnv).catch(() => null);
+    let url: string | null = null;
+    let source: "og" | "search" | null = null;
+
+    // 1) Official homepage og:image — only when source_refs has a real
+    //    homepage URL (not Instagram/Facebook/blog.naver). This is the
+    //    business's own representative photo.
+    const refs = (p.source_refs ?? []) as Array<{ url?: string }>;
+    const homepage = refs.map((r) => r?.url).find((u) => isCrawlableHomepage(u ?? ""));
+    if (homepage) {
+      url = await fetchOgImage(homepage).catch(() => null);
+      if (url) source = "og";
     }
+
+    // 2) Fallback: keyword image search (name + region, then name only).
     if (!url) {
+      url = await searchImage(fullQuery, naverEnv).catch(() => null);
+      if (!url && p.name) {
+        url = await searchImage(p.name, naverEnv).catch(() => null);
+      }
+      if (url) source = "search";
+    }
+
+    if (!url || !source) {
       console.log("no image");
       failed++;
       continue;
     }
 
     if (args.dryRun) {
-      console.log(`would set: ${url.slice(0, 60)}…`);
+      console.log(`would set [${source}]: ${url.slice(0, 60)}…`);
       filled++;
+      if (source === "og") viaOg++;
+      else viaSearch++;
       continue;
     }
 
@@ -111,12 +134,16 @@ async function main() {
       console.log(`update failed: ${updateErr.message.slice(0, 60)}`);
       failed++;
     } else {
-      console.log(`✓ ${url.slice(0, 60)}…`);
+      console.log(`✓ [${source}] ${url.slice(0, 60)}…`);
       filled++;
+      if (source === "og") viaOg++;
+      else viaSearch++;
     }
   }
 
-  console.log(`\n[backfill-images] filled=${filled} failed=${failed}`);
+  console.log(
+    `\n[backfill-images] filled=${filled} (og=${viaOg}, search=${viaSearch}) failed=${failed}`
+  );
 }
 
 main().catch((e) => {
