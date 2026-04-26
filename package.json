@@ -14,7 +14,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "collect": "tsx scripts/collect-places/index.ts"
+    "collect": "tsx scripts/collect-places/index.ts",
+    "backfill-images": "tsx scripts/collect-places/backfill-images.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",

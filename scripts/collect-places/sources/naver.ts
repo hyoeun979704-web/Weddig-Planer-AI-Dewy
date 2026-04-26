@@ -5,6 +5,7 @@ const ENDPOINTS = {
   blog: "https://openapi.naver.com/v1/search/blog.json",
   cafearticle: "https://openapi.naver.com/v1/search/cafearticle.json",
   local: "https://openapi.naver.com/v1/search/local.json",
+  image: "https://openapi.naver.com/v1/search/image",
 } as const;
 
 export type NaverSourceType = keyof typeof ENDPOINTS;
@@ -168,4 +169,35 @@ export async function searchAll(
     searchLocal(query, env, 5).catch(() => []),
   ]);
   return { blog, cafe, local };
+}
+
+export interface ImageItem {
+  link: string;
+  thumbnail: string;
+  sizeheight: string;
+  sizewidth: string;
+}
+
+// Find a representative image for a place. Picks first non-tiny landscape result
+// (skip thumbnails < 200px wide and obvious portraits to avoid blog avatar shots).
+export async function searchImage(
+  query: string,
+  env: NaverEnv,
+  limit = 5
+): Promise<string | null> {
+  try {
+    const data = await call<{ items: ImageItem[] }>(ENDPOINTS.image, query, env, {
+      display: limit,
+      sort: "sim",
+    });
+    for (const it of data.items ?? []) {
+      const w = +it.sizewidth || 0;
+      const h = +it.sizeheight || 0;
+      if (w >= 300 && w >= h * 0.8) return it.link;
+    }
+    // No good landscape candidate; fall back to first thumbnail
+    return data.items?.[0]?.thumbnail ?? data.items?.[0]?.link ?? null;
+  } catch {
+    return null;
+  }
 }

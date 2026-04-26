@@ -5,6 +5,7 @@ import {
   searchLocal,
   searchBlog,
   searchCafe,
+  searchImage,
   type LocalItem,
   type BlogItem,
 } from "./sources/naver";
@@ -235,6 +236,13 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
     const isWeddingHall = c.category === "wedding_hall";
     const minPrice = analysis.avg_price_estimate?.min ?? null;
 
+    // Fetch a representative image (1 extra Naver call). Failures are silent
+    // so an outage doesn't block the row.
+    let imageUrl: string | null = c.main_image_url;
+    if (!imageUrl) {
+      imageUrl = await searchImage(`${c.name} ${label}`, naverEnv).catch(() => null);
+    }
+
     const enhanced: CollectedPlace = {
       ...c,
       description: analysis.summary ?? c.description,
@@ -242,6 +250,7 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       data_source: "mixed",
       last_source_date: lastDate,
       source_refs: refs,
+      main_image_url: imageUrl,
       price_tier: analysis.price_tier ?? null,
       atmosphere: analysis.atmosphere ?? [],
       pros: analysis.pros ?? [],
