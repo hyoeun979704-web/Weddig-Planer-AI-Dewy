@@ -6,6 +6,7 @@ import { useTipVideos, youTubeUrl, type TipVideo } from "@/hooks/useTipVideos";
 
 // Shorts threshold: YouTube classifies up to 3 min as Shorts. We use 180s.
 const SHORT_MAX_SECONDS = 180;
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 type FormatKey = "all" | "short" | "long";
 
 const CATEGORY_CHIPS: Array<{ slug: string | null; label: string }> = [
@@ -91,10 +92,9 @@ function GridCard({ video, wide }: { video: TipVideo; wide?: boolean }) {
             loading="lazy"
           />
         )}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30">
-          <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
-            <Play className="w-4 h-4 text-black fill-black ml-0.5" />
-          </div>
+        {/* Always-visible play badge (corner) so mobile users see the video affordance */}
+        <div className="absolute bottom-1.5 left-1.5 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
+          <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
         </div>
       </div>
       <div className="p-2">
@@ -121,12 +121,12 @@ const Magazine = () => {
 
   // HOT row: published in last 7 days. Over-fetch (40) so the client filter
   // still has candidates when fresh content is sparse.
-  const { data: hotPool } = useTipVideos({
+  const { data: hotPool, isLoading: hotLoading } = useTipVideos({
     category: category ?? undefined,
     limit: 40,
     freshOnly: false,
   });
-  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const sevenDaysAgo = Date.now() - SEVEN_DAYS_MS;
   const freshList = (hotPool ?? []).filter(
     (v) => v.published_at && new Date(v.published_at).getTime() >= sevenDaysAgo
   );
@@ -197,7 +197,16 @@ const Magazine = () => {
               {hotIsFallback ? "전체 인기" : "최근 7일"}
             </span>
           </div>
-          {hotList.length > 0 ? (
+          {hotLoading ? (
+            <div className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4 pb-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-shrink-0 w-[180px] aspect-[9/16] bg-muted animate-pulse rounded-[10px]"
+                />
+              ))}
+            </div>
+          ) : hotList.length > 0 ? (
             <div className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4 pb-2">
               {hotList.map((v, i) => (
                 <HotCard key={v.video_id} video={v} rank={i + 1} />
@@ -262,7 +271,10 @@ const Magazine = () => {
               ))}
             </div>
           ) : gridList.length > 0 ? (
-            <div className="grid grid-cols-2 gap-2 px-4">
+            // grid-flow-row-dense lets the browser pack short cards into gaps
+            // a long-form (col-span-2) card would otherwise leave behind, so the
+            // mixed layout reads as [LONG]/[SHORT][SHORT] without empty cells.
+            <div className="grid grid-cols-2 gap-2 px-4 grid-flow-row-dense">
               {gridList.map((v) => {
                 // Layout: in 'long' format every card is wide; in 'short' none are;
                 // in 'all' long-form cards take a full row, shorts pair up.
