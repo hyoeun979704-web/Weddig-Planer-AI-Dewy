@@ -8,10 +8,23 @@ import { supabase } from "@/integrations/supabase/client";
  * stay in the UI layer — this hook never inserts placeholder/mock values.
  */
 
+export type PriceCurrency = "KRW" | "USD";
+export type PriceUnit =
+  | "per_person"
+  | "per_event"
+  | "per_package"
+  | "per_set"
+  | "per_couple"
+  | "per_rental"
+  | "per_custom"
+  | "per_session";
+
 export interface PricePackage {
   name: string;
   price_min: number | null;
   price_max: number | null;
+  currency: PriceCurrency | null;
+  unit: PriceUnit | null;
   includes: string[] | null;
   notes: string | null;
 }
@@ -32,6 +45,7 @@ export interface LegacyDetail {
   review_count: number;
   is_partner: boolean;
   description: string | null;
+  tags: string[];
   price_per_person: number | null;
   price_range: string;
 
@@ -62,6 +76,7 @@ export interface LegacyDetail {
   image_urls: string[];
   price_packages: PricePackage[];
   amenities: string[];
+  basic_services: string[];
   event_info: string | null;
   contract_policy: string | null;
   wedding_count: number | null;
@@ -199,6 +214,8 @@ function asPricePackages(v: unknown): PricePackage[] {
       name: typeof p.name === "string" ? p.name : "패키지",
       price_min: typeof p.price_min === "number" ? p.price_min : null,
       price_max: typeof p.price_max === "number" ? p.price_max : null,
+      currency: p.currency === "USD" ? "USD" : p.currency === "KRW" ? "KRW" : null,
+      unit: typeof p.unit === "string" && /^per_/.test(p.unit) ? (p.unit as PriceUnit) : null,
       includes: asStringArray(p.includes),
       notes: typeof p.notes === "string" ? p.notes : null,
     }));
@@ -264,6 +281,7 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         review_count: p.review_count ?? 0,
         is_partner: p.is_partner ?? false,
         description: p.description ?? null,
+        tags: asStringArray(p.tags),
         price_per_person: price,
         price_range: fmtPrice(price ?? null),
 
@@ -292,6 +310,7 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         image_urls: gallery,
         price_packages: asPricePackages(d?.price_packages),
         amenities: asStringArray(d?.amenities),
+        basic_services: asStringArray(d?.basic_services),
         event_info: (d?.event_info as string) ?? null,
         contract_policy: (d?.contract_policy as string) ?? null,
         wedding_count: (d?.wedding_count as number) ?? null,

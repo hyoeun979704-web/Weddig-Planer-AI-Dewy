@@ -42,11 +42,32 @@ const DAYS = [
   { key: "sun", label: "일" },
 ] as const;
 
-function fmtPrice(min: number | null, max?: number | null): string {
+// Suffix shown after a price, derived from PricePackage.unit.
+const UNIT_SUFFIX: Record<string, string> = {
+  per_person: "/인",
+  per_event: "/행사",
+  per_package: "/패키지",
+  per_set: "/세트",
+  per_couple: "/2인",
+  per_rental: "/대여",
+  per_custom: "/맞춤",
+  per_session: "/회",
+};
+
+function fmtPrice(
+  min: number | null,
+  max?: number | null,
+  currency?: string | null,
+  unit?: string | null
+): string {
   if (min == null) return "문의";
-  const minStr = `${(min / 10000).toFixed(0)}만원`;
-  if (max != null && max !== min) return `${minStr}~${(max / 10000).toFixed(0)}만원`;
-  return `${minStr}~`;
+  // USD doesn't divide by 10000 — display raw
+  const isUSD = currency === "USD";
+  const fmtOne = (n: number) =>
+    isUSD ? `$${n.toLocaleString()}` : `${(n / 10000).toFixed(0)}만원`;
+  const range = max != null && max !== min ? `${fmtOne(min)}~${fmtOne(max)}` : `${fmtOne(min)}~`;
+  const suffix = unit && UNIT_SUFFIX[unit] ? UNIT_SUFFIX[unit] : "";
+  return `${range}${suffix}`;
 }
 
 const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }: Props) => {
@@ -138,7 +159,32 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
           {place.description && (
             <p className="text-sm text-muted-foreground leading-relaxed">{place.description}</p>
           )}
+          {/* Tags chips — sorted with location/style first; max 8 visible */}
+          {place.tags && place.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {place.tags.slice(0, 8).map((t, i) => (
+                <span key={i} className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground rounded-full">
+                  #{t}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Recommended-for — "이런 분께 추천" — high consumer trust signal */}
+        {place.recommended_for.length > 0 && (
+          <section className="px-4 pt-3 pb-2">
+            <h3 className="font-bold text-sm mb-2">이런 분께 추천</h3>
+            <ul className="text-sm text-foreground space-y-1">
+              {place.recommended_for.slice(0, 4).map((r, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-primary">✓</span>
+                  <span>{r}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* Advantages carousel — only when there's real content */}
         {place.advantages.length > 0 && (
@@ -201,7 +247,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
                   <div className="flex justify-between items-center mb-1.5">
                     <span className="font-semibold text-foreground">{pkg.name}</span>
                     <span className="font-bold text-primary text-sm">
-                      {fmtPrice(pkg.price_min, pkg.price_max)}
+                      {fmtPrice(pkg.price_min, pkg.price_max, pkg.currency, pkg.unit)}
                     </span>
                   </div>
                   {pkg.includes && pkg.includes.length > 0 && (
@@ -210,7 +256,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
                     </ul>
                   )}
                   {pkg.notes && (
-                    <p className="text-xs text-muted-foreground mt-1.5 italic">{pkg.notes}</p>
+                    <p className="text-xs text-amber-700 mt-1.5 italic">⚠ {pkg.notes}</p>
                   )}
                 </div>
               ))}
@@ -307,7 +353,21 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
           </section>
         )}
 
-        {/* Amenities tag wrap */}
+        {/* Basic services — patrons get these regardless of package tier */}
+        {place.basic_services.length > 0 && (
+          <section className="px-4 pt-3 pb-2">
+            <h3 className="font-bold text-sm mb-2">기본 제공</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {place.basic_services.map((s, i) => (
+                <span key={i} className="text-xs px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
+                  ✓ {s}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Amenities — facilities present at the venue */}
         {place.amenities.length > 0 && (
           <section className="px-4 pt-3 pb-2">
             <h3 className="font-bold text-sm mb-2">편의시설</h3>
@@ -352,10 +412,10 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
           <section className="px-4 pt-3 pb-2">
             <h3 className="font-bold text-sm mb-2 flex items-center gap-1.5">
               <AlertCircle className="w-4 h-4 text-amber-600" />
-              숨겨진 비용
+              <span className="text-amber-700">계약 전 확인</span>
             </h3>
-            <ul className="text-xs text-muted-foreground space-y-0.5 bg-muted/50 rounded-xl p-3">
-              {place.hidden_costs.map((c, i) => <li key={i}>· {c}</li>)}
+            <ul className="text-xs text-amber-900 space-y-1 bg-amber-50 border border-amber-200 rounded-xl p-3">
+              {place.hidden_costs.map((c, i) => <li key={i} className="flex gap-1.5"><span>⚠</span><span>{c}</span></li>)}
             </ul>
           </section>
         )}

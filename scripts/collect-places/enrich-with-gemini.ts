@@ -193,12 +193,8 @@ async function main() {
     if (c.event_info) detailsUpdate.event_info = c.event_info;
     if (c.contract_policy) detailsUpdate.contract_policy = c.contract_policy;
     if (c.amenities && c.amenities.length > 0) detailsUpdate.amenities = c.amenities;
-    // basic_services has no dedicated column; merge into amenities so the UI
-    // surface gets the universal-included items too. Order: amenities first,
-    // then basic_services. Dedupe.
     if (c.basic_services && c.basic_services.length > 0) {
-      const merged = Array.from(new Set([...(c.amenities ?? []), ...c.basic_services]));
-      detailsUpdate.amenities = merged.slice(0, 16);
+      detailsUpdate.basic_services = c.basic_services;
     }
 
     const { error: detailsErr } = await supabase
