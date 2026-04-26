@@ -77,25 +77,34 @@ async function main() {
     .is("deleted_at", null);
   if (placeCategory) q = q.eq("category", placeCategory);
 
-  const { data: places, error } = await q.limit(effectiveLimit);
+  // Pre-filter: get IDs of already-enriched places (have tel + advantage_1).
+  // Doing this BEFORE the candidate select means pilot=N actually enriches N
+  // new rows instead of pulling N rows that all happen to be skipped.
+  let enrichedQ = supabase
+    .from("place_details")
+    .select("place_id, tel, advantage_1_title");
+  // PostgREST has no clean way to anti-join, so we just pull the candidate
+  // place_ids and exclude. For 1500 rows this is still fast.
+  const { data: enrichedRows } = await enrichedQ;
+  const enrichedIds = new Set(
+    (enrichedRows ?? [])
+      .filter((d) => d.tel && d.tel !== "" && d.advantage_1_title)
+      .map((d) => d.place_id as string)
+  );
+  console.log(`[enrich-with-gemini] ${enrichedIds.size} places already enriched (will skip)`);
+
+  // Pull candidates excluding the enriched set. Over-fetch (limit × 4) to
+  // give .filter() room when many rows are skipped, then slice to limit.
+  const overFetch = Math.min(effectiveLimit * 4 + 50, 5000);
+  const { data: pool, error } = await q.limit(overFetch);
   if (error) {
     console.error("places query failed:", error.message);
     process.exit(1);
   }
-
-  // Skip rows already enriched (place_details.tel non-empty AND has any advantage).
-  const placeIds = (places ?? []).map((p) => p.place_id);
-  const { data: existing } = await supabase
-    .from("place_details")
-    .select("place_id, tel, advantage_1_title")
-    .in("place_id", placeIds);
-  const alreadyEnriched = new Set(
-    (existing ?? [])
-      .filter((d) => d.tel && d.tel !== "" && d.advantage_1_title)
-      .map((d) => d.place_id)
-  );
-  const targets = (places ?? []).filter((p) => !alreadyEnriched.has(p.place_id));
-  console.log(`[enrich-with-gemini] ${targets.length} candidates (skipped ${alreadyEnriched.size} already enriched)`);
+  const targets = (pool ?? [])
+    .filter((p) => !enrichedIds.has(p.place_id))
+    .slice(0, effectiveLimit);
+  console.log(`[enrich-with-gemini] ${targets.length} candidates (from pool of ${pool?.length ?? 0})`);
 
   let verified = 0;
   let rejected = 0;
