@@ -80,10 +80,16 @@ async function main() {
   for (let i = 0; i < (targets?.length ?? 0); i++) {
     const p = targets![i];
     const region = [p.city, p.district].filter(Boolean).join(" ");
-    const query = `${p.name} ${region}`.trim();
+    const fullQuery = `${p.name} ${region}`.trim();
     process.stdout.write(`  · [${i + 1}/${targets!.length}] ${p.name} ... `);
 
-    const url = await searchImage(query, naverEnv).catch(() => null);
+    // First try: name + region. Most accurate match.
+    let url = await searchImage(fullQuery, naverEnv).catch(() => null);
+    // Fallback: long names with multi-token regions can drown the image
+    // search. Retry with just the place name when the full query yielded nothing.
+    if (!url && p.name) {
+      url = await searchImage(p.name, naverEnv).catch(() => null);
+    }
     if (!url) {
       console.log("no image");
       failed++;
