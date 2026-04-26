@@ -69,6 +69,31 @@ function isHanbokExperienceShop(name: string, naverCategory: string): boolean {
   return false;
 }
 
+// Naver Local returns geographically-near businesses for a seed query, not
+// strict category matches. e.g. searching "서울 웨딩홀" surfaces nearby
+// "수라메이크업" / "꾸밈네일" / "한복남". Each token below is a strong
+// signal that the place belongs to a different category than the seed; if
+// the seed isn't that category, drop the candidate.
+const NAME_CATEGORY_TOKENS: Array<{ tokens: RegExp; category: CategoryLabel }> = [
+  { tokens: /(메이크업|makeup)/i, category: "메이크업샵" },
+  { tokens: /한복/, category: "한복" },
+  { tokens: /(드레스|bridal|브라이드|브라이덜)/i, category: "드레스샵" },
+  { tokens: /(스튜디오|스냅|포토|사진관|photography)/i, category: "스튜디오" },
+  { tokens: /(턱시도|양복|예복)/, category: "예복" },
+];
+
+// Reject candidates whose name strongly indicates a different category than
+// the seed — they're noise from Naver Local's geo-bias.
+const HARD_REJECT_TOKENS = /(네일|nail|피부과|성형외과|마사지|미용실|왁싱)/i;
+
+function nameMismatchesSeed(name: string, seedLabel: CategoryLabel): boolean {
+  if (HARD_REJECT_TOKENS.test(name)) return true; // not a wedding business at all
+  for (const { tokens, category } of NAME_CATEGORY_TOKENS) {
+    if (tokens.test(name) && category !== seedLabel) return true;
+  }
+  return false;
+}
+
 function localToCandidate(l: LocalItem, label: CategoryLabel): CollectedPlace {
   const cleanTitle = stripTags(l.title);
   const addr = l.roadAddress || l.address || "";
@@ -112,15 +137,25 @@ async function discover(label: CategoryLabel, region: string | undefined, env: N
     process.stdout.write(`  · [${qi + 1}/${queries.length}] ${q} ... `);
     try {
       const local = await searchLocal(q, env, 5);
-      // Hanbok pre-filter: drop obvious tourist experience shops before Gemini analysis
-      const filtered =
+      // Hanbok-specific tourist-experience filter (pre-existing).
+      const afterHanbok =
         label === "한복"
           ? local.filter((l) => !isHanbokExperienceShop(stripTags(l.title), l.category || ""))
           : local;
-      const dropped = local.length - filtered.length;
+      // Name-token guard: drop candidates whose name strongly signals a
+      // different category than the seed (Naver Local geo-bias noise).
+      const filtered = afterHanbok.filter((l) => !nameMismatchesSeed(stripTags(l.title), label));
+      const droppedHanbok = local.length - afterHanbok.length;
+      const droppedMismatch = afterHanbok.length - filtered.length;
       const items = filtered.map((l) => localToCandidate(l, label));
       candidates.push(...items);
-      console.log(`+${items.length}${dropped > 0 ? ` (-${dropped} 체험)` : ""}`);
+      const tail = [
+        droppedHanbok > 0 ? `-${droppedHanbok} 체험` : "",
+        droppedMismatch > 0 ? `-${droppedMismatch} 카테고리미스매치` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      console.log(`+${items.length}${tail ? ` (${tail})` : ""}`);
     } catch (e) {
       console.log(`error: ${(e as Error).message.slice(0, 80)}`);
     }
