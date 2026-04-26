@@ -110,14 +110,21 @@ async function main() {
       apiKey
     );
     if (!data) {
-      console.log("API error");
+      console.log("API error (see [gemini] log above)");
       errored++;
       continue;
     }
 
     const v = validateEnriched(data);
     if (!v.ok || !v.cleaned) {
-      console.log(`rejected: ${v.reason}`);
+      // Surface the rejected payload so we can tune the prompt without re-running.
+      const preview = JSON.stringify({
+        is_verified: data.is_verified,
+        tel: data.tel,
+        source_count: Array.isArray(data.source_urls) ? data.source_urls.length : 0,
+        adv_count: [data.advantage_1, data.advantage_2, data.advantage_3].filter(Boolean).length,
+      });
+      console.log(`rejected: ${v.reason} | ${preview}`);
       rejected++;
       continue;
     }

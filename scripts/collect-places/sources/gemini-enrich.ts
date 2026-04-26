@@ -157,12 +157,21 @@ export async function enrichPlaceWithSearch(
     res = await callOnce();
   }
   if (!res.ok) {
-    console.warn("Gemini enrich failed:", res.status, (await res.text()).slice(0, 200));
+    const body = await res.text();
+    console.warn(`Gemini ${res.status}:`, body.slice(0, 400));
     return null;
   }
   const data = await res.json();
   const text: string | undefined = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) return null;
+  if (!text) {
+    // Surface what we got so the cause is visible in workflow logs.
+    const finishReason = data.candidates?.[0]?.finishReason;
+    const safety = data.candidates?.[0]?.safetyRatings;
+    console.warn(
+      `[gemini] empty parts. finishReason=${finishReason} safety=${JSON.stringify(safety)?.slice(0, 200)} raw=${JSON.stringify(data).slice(0, 400)}`
+    );
+    return null;
+  }
 
   // Model returns JSON inside markdown ```json fence sometimes. Extract.
   const jsonText = (() => {
@@ -179,7 +188,7 @@ export async function enrichPlaceWithSearch(
   try {
     return JSON.parse(jsonText) as EnrichedPlaceData;
   } catch (e) {
-    console.warn("Gemini JSON parse failed:", jsonText.slice(0, 200));
+    console.warn(`[gemini] JSON parse failed. raw text head: ${text.slice(0, 400)}`);
     return null;
   }
 }
