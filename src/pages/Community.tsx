@@ -1,26 +1,21 @@
 import { useState } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  MessageSquare, 
+import {
   Heart,
-  Eye,
   Search,
-  PenSquare,
-  Image,
-  TrendingUp,
-  Clock,
-  Bookmark
+  SquarePen,
+  StickyNote,
+  ChevronLeft,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import HomeHeader from "@/components/home/HomeHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
 
 interface Post {
@@ -35,17 +30,18 @@ interface Post {
   comments_count: number;
 }
 
-const categories = ["전체", "웨딩홀", "스드메", "혼수", "허니문", "자유"];
+const categories = ["전체", "웨딩홀", "스드메", "허니문", "혼수", "자유"];
+type SortKey = "latest" | "popular";
 
 const Community = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("전체");
+  const [sortBy, setSortBy] = useState<SortKey>("latest");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const tutorial = usePageTutorial("community");
 
-  // Fetch posts from database
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["community-posts"],
     queryFn: async () => {
@@ -56,7 +52,6 @@ const Community = () => {
 
       if (postsError) throw postsError;
 
-      // Fetch likes and comments counts for each post
       const postsWithCounts = await Promise.all(
         (postsData || []).map(async (post) => {
           const [likesResult, commentsResult] = await Promise.all([
@@ -82,208 +77,218 @@ const Community = () => {
     },
   });
 
-  // Get trending posts (sorted by likes)
   const trendingPosts = [...posts]
     .sort((a, b) => b.likes_count - a.likes_count)
-    .slice(0, 3);
+    .slice(0, 5);
 
-  const handleTabChange = (href: string) => {
-    navigate(href);
-  };
+  const filteredPosts =
+    selectedCategory === "전체"
+      ? posts
+      : posts.filter((post) => post.category === selectedCategory);
 
-  const filteredPosts = selectedCategory === "전체" 
-    ? posts 
-    : posts.filter(post => post.category === selectedCategory);
+  const sortedPosts = [...filteredPosts].sort((a, b) => {
+    if (sortBy === "popular") return b.likes_count - a.likes_count;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
 
-  const handlePostClick = (postId: string) => {
-    navigate(`/community/${postId}`);
-  };
+  const handleTabChange = (href: string) => navigate(href);
+  const handlePostClick = (postId: string) => navigate(`/community/${postId}`);
+  const handleWriteClick = () => navigate("/community/write");
 
-  const handleWriteClick = () => {
-    navigate("/community/write");
-  };
+  const getPreview = (content: string) =>
+    content.length > 40 ? content.slice(0, 40) + "..." : content;
 
-  const formatDate = (dateString: string) => {
-    return formatDistanceToNow(new Date(dateString), { 
-      addSuffix: true, 
-      locale: ko 
-    }).replace("약 ", "");
-  };
-
-  const getPreview = (content: string) => {
-    return content.length > 80 ? content.slice(0, 80) + "..." : content;
-  };
+  const renderPostCard = (post: Post) => (
+    <button
+      key={post.id}
+      onClick={() => handlePostClick(post.id)}
+      className="w-full text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
+    >
+      <span className="self-start px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+        {post.category}
+      </span>
+      <h3 className="mt-2 text-[16px] font-bold text-foreground line-clamp-1">
+        {post.title}
+      </h3>
+      <p className="mt-0.5 text-[13px] text-muted-foreground line-clamp-1">
+        {getPreview(post.content)}
+      </p>
+      <div className="mt-6 flex items-center justify-between text-[12px] text-muted-foreground">
+        <span>조회수 {post.views}</span>
+        <span className="flex items-center gap-1.5">
+          <span>{post.likes_count}</span>
+          <Heart className="w-4 h-4 text-primary fill-primary" />
+        </span>
+      </div>
+    </button>
+  );
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {!user && <LoginRequiredOverlay message="다른 예비부부들의 생생한 후기를 확인하세요" features={["실시간 후기", "웨딩 꿀팁", "업체 추천"]} />}
-      {/* Search Overlay */}
-      <CommunitySearchOverlay 
-        isOpen={isSearchOpen} 
-        onClose={() => setIsSearchOpen(false)} 
+    <div className="min-h-screen bg-[hsl(var(--pink-50))] max-w-[430px] mx-auto relative">
+      {!user && (
+        <LoginRequiredOverlay
+          message="다른 예비부부들의 생생한 후기를 확인하세요"
+          features={["실시간 후기", "웨딩 꿀팁", "업체 추천"]}
+        />
+      )}
+
+      <CommunitySearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
       />
 
-      {/* Header */}
-      <header data-tutorial="community-header" className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <HomeHeader />
+
+      <header
+        data-tutorial="community-header"
+        className="sticky top-14 z-30 bg-card border-b border-border"
+      >
         <div className="flex items-center justify-between px-4 h-14">
-          <h1 className="text-lg font-bold text-foreground">커뮤니티</h1>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="뒤로가기"
+            >
+              <ChevronLeft className="w-5 h-5 text-primary" />
+            </button>
+            <h1 className="text-[18px] font-bold text-foreground">커뮤니티</h1>
+          </div>
+          <div className="flex items-center gap-1">
             <button
               onClick={() => navigate("/community/bookmarks")}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="북마크"
             >
-              <Bookmark className="w-4.5 h-4.5 text-muted-foreground" />
+              <StickyNote className="w-5 h-5 text-muted-foreground" />
             </button>
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="검색"
             >
-              <Search className="w-4.5 h-4.5 text-muted-foreground" />
+              <Search className="w-5 h-5 text-muted-foreground" />
             </button>
             <button
               data-tutorial="community-write"
               onClick={handleWriteClick}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium"
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="글쓰기"
             >
-              <PenSquare className="w-3.5 h-3.5" />
-              글쓰기
+              <SquarePen className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
-        </div>
-        
-        {/* Category Tabs */}
-        <div data-tutorial="community-categories" className="flex overflow-x-auto scrollbar-hide px-4 pb-3 gap-2">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                selectedCategory === category 
-                  ? "bg-primary text-primary-foreground" 
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="pb-20">
-        {/* Trending Section */}
-        <div className="px-4 py-4">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="w-4 h-4 text-primary" />
-            <span className="text-sm font-bold text-foreground">인기 게시글</span>
-          </div>
+      <main className="pb-24">
+        <div
+          data-tutorial="community-categories"
+          className="flex overflow-x-auto scrollbar-hide gap-2 px-4 py-3 bg-card"
+        >
+          {categories.map((category) => {
+            const isActive = selectedCategory === category;
+            return (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {category}
+              </button>
+            );
+          })}
+        </div>
+
+        <section className="bg-[hsl(var(--pink-100))] px-4 pt-5 pb-6">
+          <h2 className="text-[18px] font-bold text-foreground mb-4">
+            오늘의 수다
+          </h2>
           {isLoading ? (
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="flex-shrink-0 w-[200px] h-24 rounded-xl" />
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
+              {[1, 2].map((i) => (
+                <Skeleton
+                  key={i}
+                  className="flex-shrink-0 w-[260px] h-[170px] rounded-2xl"
+                />
               ))}
             </div>
+          ) : trendingPosts.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">
+              아직 게시글이 없습니다.
+            </p>
           ) : (
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-              {trendingPosts.map((post, index) => (
-                <button 
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
+              {trendingPosts.map((post) => (
+                <button
                   key={post.id}
                   onClick={() => handlePostClick(post.id)}
-                  className="flex-shrink-0 w-[200px] p-3 bg-card rounded-xl border border-border text-left hover:border-primary/30 transition-colors"
+                  className="flex-shrink-0 w-[260px] text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
                 >
-                  <span className="text-xs text-primary font-medium">#{index + 1}</span>
-                  <p className="text-sm font-medium text-foreground line-clamp-2 mt-1">{post.title}</p>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Heart className="w-3 h-3" /> {post.likes_count}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MessageSquare className="w-3 h-3" /> {post.comments_count}
+                  <span className="self-start px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+                    {post.category}
+                  </span>
+                  <h3 className="mt-2 text-[16px] font-bold text-foreground line-clamp-1">
+                    {post.title}
+                  </h3>
+                  <p className="mt-0.5 text-[13px] text-muted-foreground line-clamp-1">
+                    {getPreview(post.content)}
+                  </p>
+                  <div className="mt-8 flex items-center justify-between text-[12px] text-muted-foreground">
+                    <span>조회수 {post.views}</span>
+                    <span className="flex items-center gap-1.5">
+                      <span>{post.likes_count}</span>
+                      <Heart className="w-4 h-4 text-primary fill-primary" />
                     </span>
                   </div>
                 </button>
               ))}
             </div>
           )}
+        </section>
+
+        <div className="px-4 pt-5 pb-3 flex items-baseline gap-3">
+          <button
+            onClick={() => setSortBy("latest")}
+            className={`text-[16px] transition-colors ${
+              sortBy === "latest"
+                ? "font-bold text-foreground"
+                : "font-medium text-muted-foreground"
+            }`}
+          >
+            최신순
+          </button>
+          <button
+            onClick={() => setSortBy("popular")}
+            className={`text-[14px] transition-colors ${
+              sortBy === "popular"
+                ? "font-bold text-foreground"
+                : "font-medium text-muted-foreground"
+            }`}
+          >
+            인기순
+          </button>
         </div>
 
-        {/* Post List */}
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">최신 글</span>
-            </div>
-            {selectedCategory !== "전체" && (
-              <span className="text-xs text-primary font-medium">{selectedCategory}</span>
-            )}
-          </div>
-          
+        <div className="px-4 pb-6 space-y-3">
           {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-32 rounded-2xl" />
-              ))}
-            </div>
-          ) : filteredPosts.length === 0 ? (
+            [1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-[120px] rounded-2xl" />
+            ))
+          ) : sortedPosts.length === 0 ? (
             <div className="py-12 text-center">
               <p className="text-muted-foreground text-sm">게시글이 없습니다.</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredPosts.map((post) => (
-                <button
-                  key={post.id}
-                  onClick={() => handlePostClick(post.id)}
-                  className="w-full p-4 bg-card rounded-2xl border border-border hover:border-primary/30 transition-colors text-left"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 bg-muted rounded text-[10px] font-medium text-muted-foreground">
-                          {post.category}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{formatDate(post.created_at)}</span>
-                      </div>
-                      <h4 className="font-semibold text-foreground text-sm mb-1 line-clamp-1">{post.title}</h4>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{getPreview(post.content)}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">익명</span>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Heart className="w-3 h-3" /> {post.likes_count}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3" /> {post.comments_count}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Eye className="w-3 h-3" /> {post.views}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    {post.has_image && (
-                      <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                        <Image className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
+            sortedPosts.map(renderPostCard)
           )}
         </div>
       </main>
 
-      {/* Floating Write Button */}
-      <button 
-        onClick={handleWriteClick}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center z-40 hover:bg-primary/90 transition-colors active:scale-95"
-      >
-        <PenSquare className="w-6 h-6 text-primary-foreground" />
-      </button>
-
-      {/* Bottom Navigation */}
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
 
       {tutorial.isActive && tutorial.currentStep && (
