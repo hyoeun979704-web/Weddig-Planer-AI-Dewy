@@ -210,7 +210,11 @@ const MyPage = () => {
           weddingDateTbd={weddingSettings.wedding_date_tbd}
         />
         <PremiumBanner />
-        <MenuSection user={user} onSignOut={handleSignOut} />
+        <MenuSection
+          user={user}
+          onSignOut={handleSignOut}
+          onEditWeddingInfo={weddingInfoPrompt.openManually}
+        />
 
         <div className="px-4 py-6">
           <div className="text-center text-[11px] text-muted-foreground">
