@@ -307,7 +307,17 @@ const Schedule = () => {
                     <CheckCircle2 className="w-4 h-4 text-transparent" />
                   </button>
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm text-foreground block truncate">{task.title}</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-sm text-foreground block truncate">{task.title}</span>
+                      {task.source === "template" && (
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium shrink-0"
+                          title="결혼 정보 등록 시 자동으로 추가된 추천 일정"
+                        >
+                          ✨ 추천
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <span className={`text-xs font-medium whitespace-nowrap ${getDateUrgency(task.scheduled_date)}`}>
                     {formatRelativeDate(task.scheduled_date)}

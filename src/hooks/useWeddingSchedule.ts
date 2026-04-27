@@ -10,6 +10,7 @@ export interface ScheduleItem {
   completed: boolean;
   notes: string | null;
   category: string | null;
+  source: "user" | "template";
 }
 
 interface WeddingSettings {
@@ -50,7 +51,7 @@ export const useWeddingSchedule = () => {
           .maybeSingle(),
         supabase
           .from("user_schedule_items")
-          .select("id, title, scheduled_date, completed, notes, category")
+          .select("id, title, scheduled_date, completed, notes, category, source")
           .eq("user_id", user.id)
           .order("scheduled_date", { ascending: true }),
       ]);
@@ -179,13 +180,13 @@ export const useWeddingSchedule = () => {
       if ((count ?? 0) > 0) {
         return 0; // already populated; nothing to do
       }
-      const rows = items.map((it) => ({ user_id: user.id, ...it }));
+      const rows = items.map((it) => ({ user_id: user.id, source: "template", ...it }));
       const { error } = await supabase.from("user_schedule_items").insert(rows);
       if (error) throw error;
       // Refresh local list so the page renders the new items immediately.
       const { data } = await supabase
         .from("user_schedule_items")
-        .select("id, title, scheduled_date, completed, notes, category")
+        .select("id, title, scheduled_date, completed, notes, category, source")
         .eq("user_id", user.id)
         .order("scheduled_date", { ascending: true });
       if (data) setScheduleItems(data);
@@ -207,7 +208,7 @@ export const useWeddingSchedule = () => {
       const { data, error } = await supabase
         .from("user_schedule_items")
         .insert({ user_id: user.id, title, scheduled_date: scheduledDate, category })
-        .select("id, title, scheduled_date, completed, notes, category")
+        .select("id, title, scheduled_date, completed, notes, category, source")
         .single();
 
       if (error) throw error;

@@ -231,9 +231,19 @@ const TimelineDetailSheet = ({
                         {item.completed && <Check className="w-4 h-4 text-primary-foreground" />}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <p className={`font-medium text-sm ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                          {item.title}
-                        </p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className={`font-medium text-sm ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                            {item.title}
+                          </p>
+                          {item.source === "template" && (
+                            <span
+                              className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium"
+                              title="결혼 정보 등록 시 자동으로 추가된 추천 일정"
+                            >
+                              ✨ 추천
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">{item.scheduled_date}</p>
                       </div>
                       {onUpdateItem && (
