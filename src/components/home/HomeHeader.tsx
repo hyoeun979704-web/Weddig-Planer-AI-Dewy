@@ -1,8 +1,12 @@
 import { useState } from "react";
-import { Search, Bell, Heart, ShoppingCart, HelpCircle } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SearchOverlay from "./SearchOverlay";
 import DewyLogo from "./DewyLogo";
+import searchIcon from "@/assets/community/search.svg";
+import bellIcon from "@/assets/community/bell.svg";
+import heartIcon from "@/assets/community/heart-outline.svg";
+import cartIcon from "@/assets/community/cart.svg";
 
 const HomeHeader = () => {
   const navigate = useNavigate();
@@ -35,30 +39,34 @@ const HomeHeader = () => {
 
           {/* Right Icons */}
           <div className="flex items-center gap-1">
-            <button 
+            <button
               onClick={() => setIsSearchOpen(true)}
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="검색"
             >
-              <Search className="w-5 h-5 text-muted-foreground" />
+              <img src={searchIcon} alt="" className="w-[18px] h-[18px]" />
             </button>
-            <button 
+            <button
               onClick={() => navigate("/notifications")}
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors relative"
+              aria-label="알림"
             >
-              <Bell className="w-5 h-5 text-muted-foreground" />
+              <img src={bellIcon} alt="" className="w-[18px] h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full" />
             </button>
-            <button 
+            <button
               onClick={() => navigate("/favorites")}
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="찜한 목록"
             >
-              <Heart className="w-5 h-5 text-muted-foreground" />
+              <img src={heartIcon} alt="" className="w-[21px] h-[18px]" />
             </button>
-            <button 
+            <button
               onClick={() => navigate("/cart")}
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="장바구니"
             >
-              <ShoppingCart className="w-5 h-5 text-muted-foreground" />
+              <img src={cartIcon} alt="" className="w-[21px] h-[21px]" />
             </button>
           </div>
         </div>

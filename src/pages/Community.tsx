@@ -5,18 +5,16 @@ import { useNavigate, useLocation } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Heart,
-  Search,
-  SquarePen,
-  StickyNote,
-  ChevronLeft,
-} from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
+import arrowLeftIcon from "@/assets/community/arrow-left.svg";
+import noteIcon from "@/assets/community/note.svg";
+import searchBoxIcon from "@/assets/community/search-box.svg";
+import editIcon from "@/assets/community/edit.svg";
+import heartFilledIcon from "@/assets/community/heart-filled.svg";
 
 interface Post {
   id: string;
@@ -117,7 +115,7 @@ const Community = () => {
         <span>조회수 {post.views}</span>
         <span className="flex items-center gap-1.5">
           <span>{post.likes_count}</span>
-          <Heart className="w-4 h-4 text-primary fill-primary" />
+          <img src={heartFilledIcon} alt="" className="w-[15px] h-[14px]" />
         </span>
       </div>
     </button>
@@ -150,7 +148,7 @@ const Community = () => {
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="뒤로가기"
             >
-              <ChevronLeft className="w-5 h-5 text-primary" />
+              <img src={arrowLeftIcon} alt="" className="w-[15px] h-[15px]" />
             </button>
             <h1 className="text-[18px] font-bold text-foreground">커뮤니티</h1>
           </div>
@@ -160,14 +158,14 @@ const Community = () => {
               className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="북마크"
             >
-              <StickyNote className="w-5 h-5 text-muted-foreground" />
+              <img src={noteIcon} alt="" className="w-[19px] h-[19px]" />
             </button>
             <button
               onClick={() => setIsSearchOpen(true)}
               className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="검색"
             >
-              <Search className="w-5 h-5 text-muted-foreground" />
+              <img src={searchBoxIcon} alt="" className="w-[19px] h-[19px]" />
             </button>
             <button
               data-tutorial="community-write"
@@ -175,7 +173,7 @@ const Community = () => {
               className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="글쓰기"
             >
-              <SquarePen className="w-5 h-5 text-muted-foreground" />
+              <img src={editIcon} alt="" className="w-[21px] h-[21px]" />
             </button>
           </div>
         </div>
@@ -242,7 +240,7 @@ const Community = () => {
                     <span>조회수 {post.views}</span>
                     <span className="flex items-center gap-1.5">
                       <span>{post.likes_count}</span>
-                      <Heart className="w-4 h-4 text-primary fill-primary" />
+                      <img src={heartFilledIcon} alt="" className="w-[15px] h-[14px]" />
                     </span>
                   </div>
                 </button>
