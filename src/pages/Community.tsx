@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -25,7 +25,6 @@ interface Post {
   views: number;
   created_at: string;
   likes_count: number;
-  comments_count: number;
 }
 
 const categories = ["전체", "웨딩홀", "스드메", "허니문", "혼수", "자유"];
@@ -52,21 +51,14 @@ const Community = () => {
 
       const postsWithCounts = await Promise.all(
         (postsData || []).map(async (post) => {
-          const [likesResult, commentsResult] = await Promise.all([
-            supabase
-              .from("community_likes")
-              .select("*", { count: "exact", head: true })
-              .eq("post_id", post.id),
-            supabase
-              .from("community_comments")
-              .select("*", { count: "exact", head: true })
-              .eq("post_id", post.id),
-          ]);
+          const likesResult = await supabase
+            .from("community_likes")
+            .select("*", { count: "exact", head: true })
+            .eq("post_id", post.id);
 
           return {
             ...post,
             likes_count: likesResult.count || 0,
-            comments_count: commentsResult.count || 0,
           };
         })
       );
@@ -75,19 +67,21 @@ const Community = () => {
     },
   });
 
-  const trendingPosts = [...posts]
-    .sort((a, b) => b.likes_count - a.likes_count)
-    .slice(0, 5);
+  const trendingPosts = useMemo(
+    () => [...posts].sort((a, b) => b.likes_count - a.likes_count).slice(0, 5),
+    [posts]
+  );
 
-  const filteredPosts =
-    selectedCategory === "전체"
-      ? posts
-      : posts.filter((post) => post.category === selectedCategory);
-
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
-    if (sortBy === "popular") return b.likes_count - a.likes_count;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  const sortedPosts = useMemo(() => {
+    const filtered =
+      selectedCategory === "전체"
+        ? posts
+        : posts.filter((post) => post.category === selectedCategory);
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "popular") return b.likes_count - a.likes_count;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [posts, selectedCategory, sortBy]);
 
   const handleTabChange = (href: string) => navigate(href);
   const handlePostClick = (postId: string) => navigate(`/community/${postId}`);
@@ -144,7 +138,7 @@ const Community = () => {
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-1">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="뒤로가기"
             >
@@ -190,6 +184,7 @@ const Community = () => {
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
+                aria-pressed={isActive}
                 className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
                   isActive
                     ? "bg-primary text-primary-foreground"
@@ -252,6 +247,7 @@ const Community = () => {
         <div className="px-4 pt-5 pb-3 flex items-baseline gap-3">
           <button
             onClick={() => setSortBy("latest")}
+            aria-pressed={sortBy === "latest"}
             className={`text-[16px] transition-colors ${
               sortBy === "latest"
                 ? "font-bold text-foreground"
@@ -262,6 +258,7 @@ const Community = () => {
           </button>
           <button
             onClick={() => setSortBy("popular")}
+            aria-pressed={sortBy === "popular"}
             className={`text-[14px] transition-colors ${
               sortBy === "popular"
                 ? "font-bold text-foreground"

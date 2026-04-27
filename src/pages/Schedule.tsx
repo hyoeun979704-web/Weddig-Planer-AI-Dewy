@@ -134,21 +134,6 @@ const Schedule = () => {
   const completedItems = scheduleItems.filter(i => i.completed).length;
   const overallProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
-  // D-Day based premium banners
-  const getDDayBanner = () => {
-    if (days === null || days <= 0) return null;
-    const banners = [
-      { min: 120, max: 180, msg: "📋 업체 비교 견적서 만들어보세요", route: "/premium/content" },
-      { min: 60, max: 90, msg: "📸 스냅 촬영 타임라인 준비할 때예요!", route: "/premium/content" },
-      { min: 30, max: 60, msg: "📊 예산 중간 점검 리포트를 확인하세요", route: "/premium/content" },
-      { min: 14, max: 30, msg: "💒 본식 타임라인 + 스태프 안내서를 준비하세요", route: "/premium/content" },
-      { min: 7, max: 14, msg: "👜 가방순이·축의대 안내서 전달하셨나요?", route: "/premium/content" },
-      { min: 1, max: 7, msg: "📱 하객에게 리마인드 메시지를 보내세요", route: "/premium/content" },
-    ];
-    return banners.find(b => days >= b.min && days <= b.max) || null;
-  };
-
-  const ddayBanner = getDDayBanner();
   const handleTabChange = (href: string) => {
     navigate(href);
   };
@@ -207,7 +192,7 @@ const Schedule = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex items-center justify-center">
+      <div className="min-h-screen bg-[hsl(var(--pink-50))] max-w-[430px] mx-auto relative flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -224,7 +209,7 @@ const Schedule = () => {
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-1">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="뒤로가기"
             >
@@ -286,7 +271,7 @@ const Schedule = () => {
         {/* ── Premium Banner ── */}
         <button
           onClick={() => isPremium ? navigate("/premium/content") : setShowUpgrade(true)}
-          className="mx-4 mb-6 w-[calc(100%-2rem)] px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left"
+          className="mx-4 mb-6 px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left"
         >
           <img src={clipboardIcon} alt="" className="w-[17px] h-5 shrink-0" />
           <div className="flex-1 min-w-0">
@@ -412,7 +397,7 @@ const Schedule = () => {
                         ? "bg-primary border-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]"
                         : isCompleted
                           ? "bg-green-500 border-green-500"
-                          : "bg-background border-border"
+                          : "bg-white border-border"
                     }`}>
                       {isCompleted ? (
                         <Check className="w-4 h-4 text-white" />
@@ -481,7 +466,7 @@ const Schedule = () => {
         {/* ── Couple Section ── */}
         <section className="px-4 mb-6" data-tutorial="schedule-couple">
           <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-            <Heart className="w-4 h-4 text-pink-500" />
+            <Heart className="w-4 h-4 text-primary" />
             커플 연결
           </h3>
           <CoupleInvite />
@@ -492,10 +477,10 @@ const Schedule = () => {
           <section className="px-4 mb-6">
             <button
               onClick={() => navigate("/couple-diary")}
-              className="w-full p-3.5 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 rounded-xl border border-pink-200/50 dark:border-pink-800/30 flex items-center gap-3"
+              className="w-full p-3.5 bg-[hsl(var(--pink-100))] rounded-xl border border-primary/20 flex items-center gap-3"
             >
-              <div className="w-9 h-9 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
-                <BookOpen className="w-4.5 h-4.5 text-pink-500" />
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                <BookOpen className="w-4.5 h-4.5 text-primary" />
               </div>
               <div className="flex-1 text-left">
                 <h3 className="font-semibold text-foreground text-sm">우리의 일기</h3>
