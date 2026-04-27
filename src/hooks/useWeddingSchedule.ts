@@ -69,7 +69,7 @@ export const useWeddingSchedule = () => {
       }
 
       if (itemsRes.data) {
-        setScheduleItems(itemsRes.data);
+        setScheduleItems(itemsRes.data as unknown as ScheduleItem[]);
       }
     } catch (error) {
       console.error("Error fetching wedding schedule:", error);
@@ -189,7 +189,7 @@ export const useWeddingSchedule = () => {
         .select("id, title, scheduled_date, completed, notes, category, source")
         .eq("user_id", user.id)
         .order("scheduled_date", { ascending: true });
-      if (data) setScheduleItems(data);
+      if (data) setScheduleItems(data as unknown as ScheduleItem[]);
       return rows.length;
     } catch (error) {
       console.error("Error seeding schedule:", error);
@@ -213,8 +213,8 @@ export const useWeddingSchedule = () => {
 
       if (error) throw error;
 
-      setScheduleItems(prev => 
-        [...prev, data].sort((a, b) => 
+      setScheduleItems(prev =>
+        ([...prev, data] as ScheduleItem[]).sort((a, b) =>
           new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
         )
       );
