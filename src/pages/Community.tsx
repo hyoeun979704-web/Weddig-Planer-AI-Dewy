@@ -10,7 +10,7 @@ import HomeHeader from "@/components/home/HomeHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
-import arrowLeftIcon from "@/assets/community/arrow-left.svg";
+import arrowLeftIcon from "@/assets/icons/arrow-left.svg";
 import noteIcon from "@/assets/community/note.svg";
 import searchBoxIcon from "@/assets/community/search-box.svg";
 import editIcon from "@/assets/community/edit.svg";
