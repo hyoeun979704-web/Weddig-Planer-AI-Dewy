@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useQuery } from "@tanstack/react-query";
-import BottomNav from "@/components/BottomNav";
-import HomeHeader from "@/components/home/HomeHeader";
+import AppLayout from "@/components/AppLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
@@ -32,7 +31,6 @@ type SortKey = "latest" | "popular";
 
 const Community = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [sortBy, setSortBy] = useState<SortKey>("latest");
@@ -83,7 +81,6 @@ const Community = () => {
     });
   }, [posts, selectedCategory, sortBy]);
 
-  const handleTabChange = (href: string) => navigate(href);
   const handlePostClick = (postId: string) => navigate(`/community/${postId}`);
   const handleWriteClick = () => navigate("/community/write");
 
@@ -116,7 +113,7 @@ const Community = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--pink-50))] max-w-[430px] mx-auto relative">
+    <AppLayout hideCategoryTabBar className="bg-[hsl(var(--pink-50))]" mainClassName="">
       {!user && (
         <LoginRequiredOverlay
           message="다른 예비부부들의 생생한 후기를 확인하세요"
@@ -128,8 +125,6 @@ const Community = () => {
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
       />
-
-      <HomeHeader />
 
       <header
         data-tutorial="community-header"
@@ -173,7 +168,7 @@ const Community = () => {
         </div>
       </header>
 
-      <main className="pb-24">
+      <div className="pb-24">
         <div
           data-tutorial="community-categories"
           className="flex overflow-x-auto scrollbar-hide gap-2 px-4 py-3 bg-card"
@@ -282,9 +277,7 @@ const Community = () => {
             sortedPosts.map(renderPostCard)
           )}
         </div>
-      </main>
-
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
+      </div>
 
       {tutorial.isActive && tutorial.currentStep && (
         <TutorialOverlay
@@ -297,7 +290,7 @@ const Community = () => {
           onSkip={tutorial.skipTutorial}
         />
       )}
-    </div>
+    </AppLayout>
   );
 };
 

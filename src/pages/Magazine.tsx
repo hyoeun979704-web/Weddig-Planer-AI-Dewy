@@ -1,18 +1,7 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { Play, Flame } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
-import HomeHeader from "@/components/home/HomeHeader";
-import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
+import AppLayout from "@/components/AppLayout";
 import { useTipVideos, youTubeUrl, type TipVideo } from "@/hooks/useTipVideos";
-
-const categoryTabRoutes: Record<CategoryTab, string> = {
-  "ai-planner": "/",
-  "ai-studio": "/ai-studio",
-  tips: "/magazine",
-  events: "/deals",
-  shopping: "/store",
-};
 
 // Shorts threshold: YouTube classifies up to 3 min as Shorts. We use 180s.
 const SHORT_MAX_SECONDS = 180;
@@ -123,8 +112,6 @@ function GridCard({ video, wide }: { video: TipVideo; wide?: boolean }) {
 }
 
 const Magazine = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const [category, setCategory] = useState<string | null>(null);
   const [sort, setSort] = useState<SortKey>("popular");
   const [format, setFormat] = useState<FormatKey>("all");
@@ -166,13 +153,7 @@ const Magazine = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-20">
-      <HomeHeader />
-      <CategoryTabBar
-        activeTab="tips"
-        onTabChange={(tab) => navigate(categoryTabRoutes[tab])}
-      />
-
+    <AppLayout activeCategoryTab="tips">
       <div className="sticky top-[112px] z-30 bg-card border-b border-border">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 py-3">
           {CATEGORY_CHIPS.map((c) => {
@@ -194,7 +175,6 @@ const Magazine = () => {
         </div>
       </div>
 
-      <main>
         <section className="pt-4 pb-2">
           <div className="flex items-center gap-2 px-4 mb-3">
             <Flame className="w-5 h-5 text-rose-500 fill-rose-500" />
@@ -294,10 +274,7 @@ const Magazine = () => {
             </p>
           )}
         </section>
-      </main>
-
-      <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
-    </div>
+    </AppLayout>
   );
 };
 

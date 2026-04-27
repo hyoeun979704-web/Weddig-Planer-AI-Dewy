@@ -1,17 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Tag, Star, ChevronRight, SlidersHorizontal } from "lucide-react";
-import HomeHeader from "@/components/home/HomeHeader";
-import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
-
-const categoryTabRoutes: Record<CategoryTab, string> = {
-  "ai-planner": "/",
-  "ai-studio": "/ai-studio",
-  tips: "/magazine",
-  events: "/deals",
-  shopping: "/store",
-};
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { Skeleton } from "@/components/ui/skeleton";
 import SortToggle, { SortMode } from "@/components/SortToggle";
@@ -27,7 +17,6 @@ const mainCategories = [
 
 const Deals = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortMode, setSortMode] = useState<SortMode>("popular");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -43,8 +32,6 @@ const Deals = () => {
   const { deals, featured, isLoading } = usePartnerDeals(selectedCategory);
 
   const hasActiveFilters = !!(filters.category || filters.region || filters.maxPrice || filters.keyword);
-
-  const handleTabChange = (href: string) => navigate(href);
 
   // Apply filters
   let filtered = [...deals];
@@ -65,13 +52,7 @@ const Deals = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <HomeHeader />
-      <CategoryTabBar
-        activeTab="events"
-        onTabChange={(tab) => navigate(categoryTabRoutes[tab])}
-      />
-
+    <AppLayout activeCategoryTab="events" mainClassName="">
       {/* Category Filter */}
       <div className="px-4 py-3 overflow-x-auto">
         <div className="flex gap-2">
@@ -180,7 +161,7 @@ const Deals = () => {
       )}
 
       {/* All Deals */}
-      <main className="px-4 pb-20">
+      <section className="px-4 pb-20">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-foreground flex items-center gap-2">
             <Tag className="w-4 h-4 text-muted-foreground" />
@@ -222,11 +203,10 @@ const Deals = () => {
             ))}
           </div>
         )}
-      </main>
+      </section>
 
       <DealFilterSheet open={filterOpen} onOpenChange={setFilterOpen} filters={filters} onApply={setFilters} />
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+    </AppLayout>
   );
 };
 

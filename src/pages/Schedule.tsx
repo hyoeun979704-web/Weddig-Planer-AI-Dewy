@@ -1,6 +1,6 @@
 import { useState, type ElementType } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useBudget } from "@/hooks/useBudget";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
@@ -16,8 +16,7 @@ import {
   Check,
   BookOpen,
 } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
-import HomeHeader from "@/components/home/HomeHeader";
+import AppLayout from "@/components/AppLayout";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
@@ -96,7 +95,6 @@ const timelinePhases: TimelinePhase[] = [
 
 const Schedule = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const { isLinked } = useCoupleLink();
   const { 
@@ -133,10 +131,6 @@ const Schedule = () => {
   const totalItems = scheduleItems.length;
   const completedItems = scheduleItems.filter(i => i.completed).length;
   const overallProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
-
-  const handleTabChange = (href: string) => {
-    navigate(href);
-  };
 
   // Get phase status based on D-Day
   const getPhaseStatus = (category: string): "completed" | "current" | "upcoming" => {
@@ -192,17 +186,17 @@ const Schedule = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[hsl(var(--pink-50))] max-w-[430px] mx-auto relative flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout hideCategoryTabBar className="bg-[hsl(var(--pink-50))]">
+        <div className="flex items-center justify-center pt-32">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--pink-50))] max-w-[430px] mx-auto relative">
+    <AppLayout hideCategoryTabBar className="bg-[hsl(var(--pink-50))]" mainClassName="">
       {!user && <LoginRequiredOverlay message="D-Day 카운트다운, 체크리스트까지 한눈에 관리하세요" features={["D-Day 카운트다운", "준비 체크리스트", "커플 일정 공유"]} />}
-
-      <HomeHeader />
 
       {/* Sub-header */}
       <header className="sticky top-14 z-30 bg-card border-b border-border">
@@ -228,7 +222,7 @@ const Schedule = () => {
       </header>
 
       {/* Main Content */}
-      <main className="pb-20">
+      <div className="pb-20">
         {/* ── Hero: D-Day Card ── */}
         <div
           data-tutorial="schedule-dday"
@@ -490,7 +484,7 @@ const Schedule = () => {
             </button>
           </section>
         )}
-      </main>
+      </div>
 
       {/* Timeline Detail Sheet */}
       <TimelineDetailSheet
@@ -513,9 +507,6 @@ const Schedule = () => {
         onClose={weddingInfoPrompt.dismiss}
       />
 
-      {/* Bottom Navigation */}
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-
       {tutorial.isActive && tutorial.currentStep && (
         <TutorialOverlay
           isActive={tutorial.isActive}
@@ -527,7 +518,7 @@ const Schedule = () => {
           onSkip={tutorial.skipTutorial}
         />
       )}
-    </div>
+    </AppLayout>
   );
 };
 

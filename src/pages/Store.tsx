@@ -1,17 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Star, Loader2, SlidersHorizontal, ShoppingCart } from "lucide-react";
-import HomeHeader from "@/components/home/HomeHeader";
-import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
-
-const categoryTabRoutes: Record<CategoryTab, string> = {
-  "ai-planner": "/",
-  "ai-studio": "/ai-studio",
-  tips: "/magazine",
-  events: "/deals",
-  shopping: "/store",
-};
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
@@ -44,7 +34,6 @@ const formatPrice = (price: number) => price.toLocaleString() + "원";
 
 const Store = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { itemCount } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -97,13 +86,7 @@ const Store = () => {
     filters.keyword !== "";
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <HomeHeader />
-      <CategoryTabBar
-        activeTab="shopping"
-        onTabChange={(tab) => navigate(categoryTabRoutes[tab])}
-      />
-
+    <AppLayout activeCategoryTab="shopping" mainClassName="">
       <header className="sticky top-[112px] z-30 bg-card border-b border-border">
         {/* Page-specific tabs + Filter button */}
         <div className="flex items-center gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
@@ -135,7 +118,7 @@ const Store = () => {
         </div>
       </header>
 
-      <main className="pb-20 px-4 py-4">
+      <section className="px-4 py-4">
         <div className="flex justify-end mb-3">
           <SortToggle value={sortMode} onChange={setSortMode} />
         </div>
@@ -192,11 +175,10 @@ const Store = () => {
             })}
           </div>
         )}
-      </main>
+      </section>
 
       <StoreFilterSheet open={filterOpen} onOpenChange={setFilterOpen} filters={filters} onApply={setFilters} />
-      <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
-    </div>
+    </AppLayout>
   );
 };
 
