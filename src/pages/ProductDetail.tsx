@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ShoppingCart, Star, Minus, Plus, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,7 +27,6 @@ const formatPrice = (price: number) => price.toLocaleString() + "원";
 
 const ProductDetail = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { addToCart, itemCount } = useCart();
@@ -81,21 +80,21 @@ const ProductDetail = () => {
     navigate("/cart");
   };
 
-  const handleTabChange = (href: string) => navigate(href);
-
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout hideCategoryTabBar>
+        <div className="flex items-center justify-center pt-32">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <p className="text-muted-foreground">상품을 찾을 수 없습니다</p>
-      </div>
+      <AppLayout hideCategoryTabBar>
+        <p className="text-muted-foreground text-center pt-32">상품을 찾을 수 없습니다</p>
+      </AppLayout>
     );
   }
 
@@ -105,9 +104,9 @@ const ProductDetail = () => {
   const finalPrice = product.sale_price ?? product.price;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout hideCategoryTabBar mainClassName="">
+      {/* Sub-header */}
+      <header className="sticky top-14 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -123,7 +122,7 @@ const ProductDetail = () => {
         </div>
       </header>
 
-      <main className="pb-36">
+      <div className="pb-36">
         {/* Image */}
         <div className="h-80 bg-muted flex items-center justify-center">
           {product.thumbnail_url ? (
@@ -199,7 +198,7 @@ const ProductDetail = () => {
           {/* Stock info */}
           <p className="text-xs text-muted-foreground mt-4">재고: {product.stock}개 남음</p>
         </div>
-      </main>
+      </div>
 
       {/* Fixed Bottom CTA */}
       <div className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto p-4 bg-background border-t border-border">
@@ -233,9 +232,7 @@ const ProductDetail = () => {
           </Button>
         </div>
       </div>
-
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+    </AppLayout>
   );
 };
 

@@ -1,20 +1,19 @@
-import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, Star, MapPin, Phone } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { useVendors, Vendor, categoryRouteMap } from "@/hooks/useVendors";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const VendorList = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { category } = useParams<{ category: string }>();
   const decodedCategory = category ? decodeURIComponent(category) : "";
   const config = categoryRouteMap[decodedCategory];
   const { data: vendors = [], isLoading } = useVendors(decodedCategory || undefined);
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout hideCategoryTabBar mainClassName="">
+      <header className="sticky top-14 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center px-4 h-14">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ChevronLeft className="w-5 h-5 text-foreground" />
@@ -25,7 +24,7 @@ const VendorList = () => {
         </div>
       </header>
 
-      <main className="pb-20">
+      <div className="pb-20">
         {/* Hero */}
         <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background px-4 py-6">
           <h2 className="text-xl font-bold text-foreground">
@@ -68,10 +67,8 @@ const VendorList = () => {
             </div>
           )}
         </div>
-      </main>
-
-      <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

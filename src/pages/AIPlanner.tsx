@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Send, ArrowLeft, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
@@ -11,7 +11,7 @@ import SdmeSurvey from "@/components/wedding-planner/SdmeSurvey";
 import TimelineSurvey from "@/components/wedding-planner/TimelineSurvey";
 import BudgetSurvey from "@/components/wedding-planner/BudgetSurvey";
 import UpgradeModal from "@/components/premium/UpgradeModal";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { motion, AnimatePresence } from "framer-motion";
 
 type ModalType = "venue" | "sdme" | "timeline" | "budget" | null;
@@ -32,7 +32,6 @@ const FOLLOW_UP_CHIPS = [
 
 const AIPlanner = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const { messages, isLoading, sendMessage, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
   const [input, setInput] = useState("");
@@ -100,10 +99,10 @@ const AIPlanner = () => {
   const showFollowUps = hasConversation && lastMessageIsAssistant && !isLoading;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
+    <AppLayout activeCategoryTab="ai-planner" mainClassName="flex flex-col">
       {!user && <LoginRequiredOverlay message="AI가 나만의 맞춤 웨딩 플랜을 설계해드려요" features={["맞춤 웨딩홀 추천", "예산 플래너", "준비 타임라인"]} />}
-      {/* Header */}
-      <header className="sticky top-0 bg-card/95 backdrop-blur-md border-b border-border z-40 px-4 py-3">
+      {/* Sub-header */}
+      <header className="sticky top-[112px] bg-card/95 backdrop-blur-md border-b border-border z-30 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground active:scale-95 transition-transform">
@@ -138,7 +137,7 @@ const AIPlanner = () => {
       </header>
 
       {/* Chat area */}
-      <main ref={scrollAreaRef} className="flex-1 overflow-y-auto pb-36 px-4">
+      <div ref={scrollAreaRef} className="flex-1 overflow-y-auto pb-36 px-4">
         <div className="space-y-4 py-4">
           {/* Welcome & Quick Questions - shown when no conversation */}
           {!hasConversation && (
@@ -211,7 +210,7 @@ const AIPlanner = () => {
 
           <div ref={messagesEndRef} />
         </div>
-      </main>
+      </div>
 
       {/* Scroll-to-bottom */}
       <AnimatePresence>
@@ -255,8 +254,6 @@ const AIPlanner = () => {
         </div>
       </div>
 
-      <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
-
       <VenueSurvey isOpen={activeModal === "venue"} onClose={() => setActiveModal(null)} onSubmit={handleVenueSubmit} />
       <SdmeSurvey isOpen={activeModal === "sdme"} onClose={() => setActiveModal(null)} onSubmit={handleSdmeSubmit} />
       <TimelineSurvey isOpen={activeModal === "timeline"} onClose={() => setActiveModal(null)} onSubmit={handleTimelineSubmit} />
@@ -266,7 +263,7 @@ const AIPlanner = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
       />
-    </div>
+    </AppLayout>
   );
 };
 
