@@ -1,23 +1,43 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import weddingHallImg from "@/assets/categories/wedding-hall.png";
-import studioImg from "@/assets/categories/studio.png";
-import honeymoonImg from "@/assets/categories/honeymoon.png";
-import jewelryImg from "@/assets/categories/jewelry.png";
-import invitationImg from "@/assets/categories/invitation.png";
 
 interface Slide {
-  image: string | { src: string };
   label: string;
   path: string;
+  background: string;
 }
 
 const slides: Slide[] = [
-  { image: weddingHallImg, label: "웨딩홀", path: "/venues" },
-  { image: studioImg, label: "스드메", path: "/studios" },
-  { image: honeymoonImg, label: "신혼여행", path: "/honeymoon" },
-  { image: jewelryImg, label: "예물·예단", path: "/honeymoon-gifts" },
-  { image: invitationImg, label: "청첩장 모임", path: "/invitation-venues" },
+  {
+    label: "AI 플래너 버튼 CTA",
+    path: "/ai-planner",
+    background:
+      "radial-gradient(circle at 20% 15%, #FFFFFF 0%, #FBD4DC 55%, #F6909B 110%)",
+  },
+  {
+    label: "AI 스튜디오 버튼 CTA",
+    path: "/ai-studio",
+    background:
+      "radial-gradient(circle at 20% 15%, #FFFFFF 0%, #FCE3BE 55%, #F5BE7A 110%)",
+  },
+  {
+    label: "포인트 게임 안내",
+    path: "/points",
+    background:
+      "radial-gradient(circle at 20% 15%, #FFFFFF 0%, #FBD0E0 55%, #F58FBC 110%)",
+  },
+  {
+    label: "공유 이벤트 안내",
+    path: "/events/share",
+    background:
+      "radial-gradient(circle at 20% 15%, #FFFFFF 0%, #DCEEFB 55%, #A8D2F0 110%)",
+  },
+  {
+    label: "신규가입 1달 유료혜택 안내",
+    path: "/events/welcome",
+    background:
+      "radial-gradient(circle at 20% 15%, #FFFFFF 0%, #DDEEDC 55%, #B6D8B2 110%)",
+  },
 ];
 
 const HeroBanner = () => {
@@ -31,41 +51,29 @@ const HeroBanner = () => {
     return () => clearInterval(id);
   }, [paused]);
 
-  const bg = "linear-gradient(155.47deg, #FFFFFF 21.36%, #F6909B 111.33%)";
-
   return (
     <div
       className="relative w-full h-[261px] overflow-hidden"
-      style={{ background: bg }}
       onPointerEnter={() => setPaused(true)}
       onPointerLeave={() => setPaused(false)}
       onTouchStart={() => setPaused(true)}
       onTouchEnd={() => setPaused(false)}
     >
-      {slides.map((slide, i) => {
-        const src = typeof slide.image === "string" ? slide.image : slide.image.src;
-        return (
-          <button
-            key={slide.label}
-            onClick={() => navigate(slide.path)}
-            aria-label={slide.label}
-            className={`absolute inset-0 transition-opacity duration-500 ${
-              i === index ? "opacity-100" : "opacity-0 pointer-events-none"
-            }`}
-          >
-            <img
-              src={src}
-              alt={slide.label}
-              className="w-full h-full object-cover"
-              loading={i === 0 ? "eager" : "lazy"}
-            />
-            <div
-              className="absolute inset-0"
-              style={{ background: bg, mixBlendMode: "soft-light", opacity: 0.6 }}
-            />
-          </button>
-        );
-      })}
+      {slides.map((slide, i) => (
+        <button
+          key={slide.label}
+          onClick={() => navigate(slide.path)}
+          aria-label={slide.label}
+          className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${
+            i === index ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+          style={{ background: slide.background }}
+        >
+          <span className="text-base font-medium text-black/80">
+            {slide.label}
+          </span>
+        </button>
+      ))}
 
       {/* Page control */}
       <div className="absolute left-1/2 -translate-x-1/2 bottom-2 flex items-center gap-5 px-3 py-2 rounded-full">
