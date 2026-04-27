@@ -1,14 +1,11 @@
-import { useState } from "react";
+import { useState, type ElementType } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useBudget } from "@/hooks/useBudget";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import {
-  Calendar,
   CheckCircle2,
-  Clock,
-  ChevronRight,
   Heart,
   Camera,
   Gift,
@@ -16,30 +13,35 @@ import {
   Home as HomeIcon,
   Loader2,
   Plus,
-  ListChecks,
-  Wallet,
-  Check
+  Check,
+  BookOpen,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import HomeHeader from "@/components/home/HomeHeader";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
 import CoupleInvite from "@/components/schedule/CoupleInvite";
 import { useCoupleLink } from "@/hooks/useCoupleLink";
-import { BookOpen } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
-import { format, differenceInDays, isToday, isTomorrow, isThisWeek } from "date-fns";
+import { format, differenceInDays, isToday, isTomorrow } from "date-fns";
 import { ko } from "date-fns/locale";
+import arrowLeftIcon from "@/assets/icons/arrow-left.svg";
+import chevronRightIcon from "@/assets/icons/chevron-right.svg";
+import clipboardIcon from "@/assets/icons/clipboard.svg";
+import clockIcon from "@/assets/icons/clock.svg";
+import calendarIcon from "@/assets/icons/calendar.svg";
+import walletGreenIcon from "@/assets/icons/wallet-green.svg";
 
 interface TimelinePhase {
   id: string;
   period: string;
   title: string;
   description: string;
-  icon: React.ElementType;
+  icon: ElementType;
   defaultTasks: string[];
   category: string;
 }
@@ -212,21 +214,28 @@ const Schedule = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-[hsl(var(--pink-50))] max-w-[430px] mx-auto relative">
       {!user && <LoginRequiredOverlay message="D-Day 카운트다운, 체크리스트까지 한눈에 관리하세요" features={["D-Day 카운트다운", "준비 체크리스트", "커플 일정 공유"]} />}
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+
+      <HomeHeader />
+
+      {/* Sub-header */}
+      <header className="sticky top-14 z-30 bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-2">
-            <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
-              <ChevronRight className="w-5 h-5 text-foreground rotate-180" />
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="뒤로가기"
+            >
+              <img src={arrowLeftIcon} alt="" className="w-[15px] h-[15px]" />
             </button>
-            <h1 className="text-lg font-bold text-foreground">스케줄</h1>
+            <h1 className="text-[18px] font-bold text-foreground">스케줄</h1>
           </div>
           <button
             data-tutorial="schedule-add"
             onClick={() => navigate("/my-schedule")}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium"
+            className="px-4 py-1.5 bg-primary/15 rounded-full text-primary text-[13px] font-semibold"
           >
             + 일정 관리
           </button>
@@ -241,14 +250,14 @@ const Schedule = () => {
           className="mx-4 mt-4 mb-4 rounded-2xl overflow-hidden cursor-pointer"
           onClick={() => navigate("/my-schedule")}
         >
-          <div className="bg-primary/10 p-5">
+          <div className="bg-[hsl(var(--pink-100))] p-5">
             <p className="text-sm text-muted-foreground mb-1">결혼식까지</p>
             {days !== null ? (
-              <h2 className="text-5xl font-extrabold tracking-tight text-primary mb-1">
+              <h2 className="text-[44px] leading-tight font-extrabold tracking-tight text-primary mb-1">
                 {days > 0 ? `D-${days}` : days === 0 ? "D-Day 🎉" : `D+${Math.abs(days)}`}
               </h2>
             ) : (
-              <h2 className="text-2xl font-bold text-primary mb-1">D-DAY</h2>
+              <h2 className="text-[44px] leading-tight font-extrabold text-primary mb-1">D-DAY</h2>
             )}
             {weddingSettings.wedding_date ? (
               <p className="text-sm text-muted-foreground mb-4">
@@ -260,11 +269,11 @@ const Schedule = () => {
                 <span className="text-xs text-muted-foreground">1년 후 기준 일정</span>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground mb-4">날짜를 설정해주세요</p>
+              <p className="text-sm text-muted-foreground mb-4">0000년 0월 0일 (0요일)</p>
             )}
-            <div>
+            <div className="bg-white rounded-xl px-4 py-3">
               <p className="text-xs font-medium text-foreground mb-1.5">준비 진행률</p>
-              <div className="h-2 bg-background/50 rounded-full overflow-hidden">
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500 bg-primary"
                   style={{ width: `${overallProgress}%` }}
@@ -277,33 +286,31 @@ const Schedule = () => {
         {/* ── Premium Banner ── */}
         <button
           onClick={() => isPremium ? navigate("/premium/content") : setShowUpgrade(true)}
-          className="mx-4 mb-4 w-[calc(100%-2rem)] p-4 bg-card rounded-2xl border border-border flex items-center gap-3 text-left"
+          className="mx-4 mb-6 w-[calc(100%-2rem)] px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left"
         >
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-            <ListChecks className="w-5 h-5 text-primary" />
-          </div>
+          <img src={clipboardIcon} alt="" className="w-[17px] h-5 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground">업체 비교 견적서 PDF</p>
+            <p className="text-[15px] font-bold text-foreground">업체 비교 견적서 PDF</p>
             <p className="text-xs text-muted-foreground">{isPremium ? "탭하여 시작하기" : "프리미엄 전용"}</p>
           </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
         </button>
 
         {/* ── Upcoming Tasks ── */}
         <section className="px-4 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-foreground flex items-center gap-2">
-              <Clock className="w-4 h-4 text-primary" />
+            <h3 className="font-bold text-foreground flex items-center gap-2 text-[16px]">
+              <img src={clockIcon} alt="" className="w-[17px] h-[17px]" />
               다가오는 일정
             </h3>
-            <button onClick={() => navigate("/my-schedule")} className="text-xs text-primary font-medium">전체보기</button>
+            <button onClick={() => navigate("/my-schedule")} className="text-[13px] text-primary font-semibold">전체보기</button>
           </div>
           {user && upcomingTasks.length > 0 ? (
             <div className="space-y-2">
               {upcomingTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border active:scale-[0.98] transition-transform"
+                  className="flex items-center gap-3 px-4 py-3.5 bg-white rounded-2xl border border-border active:scale-[0.98] transition-transform"
                 >
                   <button 
                     onClick={() => toggleItemCompletion(task.id)}
@@ -347,15 +354,13 @@ const Schedule = () => {
         <section className="px-4 mb-6">
           <button
             onClick={() => navigate("/budget")}
-            className="w-full p-4 bg-card rounded-2xl border border-border flex items-center gap-3"
+            className="w-full px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3"
           >
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-              <Wallet className="w-5 h-5 text-emerald-500" />
-            </div>
+            <img src={walletGreenIcon} alt="" className="w-[17px] h-[17px] shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-foreground">예산 사용 현황</span>
-                <span className="text-sm font-semibold text-primary">
+                <span className="text-[15px] font-bold text-foreground">예산 사용 현황</span>
+                <span className="text-[13px] font-semibold text-primary">
                   {budgetSettings && budgetSettings.total_budget > 0
                     ? `${budgetSummary.totalSpent.toLocaleString()} / ${budgetSettings.total_budget.toLocaleString()}만원`
                     : "예산 미설정"}
@@ -372,14 +377,14 @@ const Schedule = () => {
                 />
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
           </button>
         </section>
 
         {/* ── Wedding Timeline ── */}
         <section className="px-4 mb-6" data-tutorial="schedule-timeline">
-          <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-primary" />
+          <h3 className="font-bold text-foreground mb-4 flex items-center gap-2 text-[16px]">
+            <img src={calendarIcon} alt="" className="w-[17px] h-[19px]" />
             타임라인
           </h3>
           <div className="relative">
@@ -496,7 +501,7 @@ const Schedule = () => {
                 <h3 className="font-semibold text-foreground text-sm">우리의 일기</h3>
                 <p className="text-[11px] text-muted-foreground">함께 쓰는 웨딩 준비 일기</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px]" />
             </button>
           </section>
         )}

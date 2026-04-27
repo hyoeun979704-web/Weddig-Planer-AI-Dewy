@@ -1,25 +1,42 @@
-import { Calendar, Wallet, MessageSquare, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { CSSProperties } from "react";
+import scheduleIcon from "@/assets/icons/nav-schedule.svg";
+import budgetIcon from "@/assets/icons/nav-budget.svg";
+import communityIcon from "@/assets/icons/nav-community.svg";
+import mypageIcon from "@/assets/icons/nav-mypage.svg";
+import logoIcon from "@/assets/icons/logo.svg";
 
 interface NavItem {
-  icon?: React.ElementType;
+  icon?: string;
   label: string;
   href: string;
   isHome?: boolean;
+  tutorialId?: string;
 }
 
-const navItems: (NavItem & { tutorialId?: string })[] = [
-  { icon: Calendar, label: "스케줄", href: "/schedule", tutorialId: "nav-schedule" },
-  { icon: Wallet, label: "예산", href: "/budget", tutorialId: "nav-budget" },
+const navItems: NavItem[] = [
+  { icon: scheduleIcon, label: "스케줄", href: "/schedule", tutorialId: "nav-schedule" },
+  { icon: budgetIcon, label: "예산", href: "/budget", tutorialId: "nav-budget" },
   { isHome: true, label: "홈", href: "/" },
-  { icon: MessageSquare, label: "커뮤니티", href: "/community", tutorialId: "nav-community" },
-  { icon: User, label: "마이페이지", href: "/mypage", tutorialId: "nav-mypage" },
+  { icon: communityIcon, label: "커뮤니티", href: "/community", tutorialId: "nav-community" },
+  { icon: mypageIcon, label: "마이페이지", href: "/mypage", tutorialId: "nav-mypage" },
 ];
 
 interface BottomNavProps {
   activeTab?: string;
   onTabChange?: (href: string) => void;
 }
+
+const maskStyle = (url: string): CSSProperties => ({
+  WebkitMaskImage: `url(${url})`,
+  maskImage: `url(${url})`,
+  WebkitMaskRepeat: "no-repeat",
+  maskRepeat: "no-repeat",
+  WebkitMaskPosition: "center",
+  maskPosition: "center",
+  WebkitMaskSize: "contain",
+  maskSize: "contain",
+});
 
 const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
   return (
@@ -35,25 +52,30 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
                 onClick={() => onTabChange?.(item.href)}
                 className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2"
               >
-                <div className={cn(
-                  "w-10 h-10 rounded-[14px] flex items-center justify-center transition-all duration-200",
-                  isActive
-                    ? "bg-primary shadow-md shadow-primary/30"
-                    : "bg-muted"
-                )}>
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="w-5 h-5"
-                    fill={isActive ? "white" : "currentColor"}
-                    strokeWidth={0}
-                  >
-                    <path d="M12 2.5C11.3 2.5 10.7 2.8 10.2 3.3L3.7 9.2C3.3 9.6 3 10.2 3 10.8V19C3 20.1 3.9 21 5 21H9C9.6 21 10 20.6 10 20V15H14V20C14 20.6 14.4 21 15 21H19C20.1 21 21 20.1 21 19V10.8C21 10.2 20.7 9.6 20.3 9.2L13.8 3.3C13.3 2.8 12.7 2.5 12 2.5Z" />
-                  </svg>
+                <div
+                  className={cn(
+                    "w-10 h-10 rounded-[14px] flex items-center justify-center transition-all duration-200",
+                    isActive
+                      ? "bg-primary shadow-md shadow-primary/30"
+                      : "bg-muted"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "block w-6 h-5 transition-colors",
+                      isActive ? "bg-white" : "bg-[hsl(var(--inactive))]"
+                    )}
+                    style={maskStyle(logoIcon)}
+                  />
                 </div>
-                <span className={cn(
-                  "text-[10px] font-medium",
-                  isActive ? "text-primary font-bold" : "text-[hsl(var(--inactive))]"
-                )}>{item.label}</span>
+                <span
+                  className={cn(
+                    "text-[10px] font-medium",
+                    isActive ? "text-primary font-bold" : "text-[hsl(var(--inactive))]"
+                  )}
+                >
+                  {item.label}
+                </span>
               </button>
             );
           }
@@ -69,12 +91,13 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
               )}
             >
               {item.icon && (
-                <item.icon
+                <span
+                  aria-hidden
                   className={cn(
-                    "w-5 h-5 transition-transform duration-200",
+                    "block w-6 h-6 bg-current transition-transform duration-200",
                     isActive && "scale-110"
                   )}
-                  strokeWidth={isActive ? 2.5 : 2}
+                  style={maskStyle(item.icon)}
                 />
               )}
               <span className="text-[10px] font-medium">{item.label}</span>
