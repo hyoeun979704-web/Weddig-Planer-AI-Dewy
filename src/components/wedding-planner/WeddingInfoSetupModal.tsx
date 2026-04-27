@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -43,7 +43,7 @@ interface Props {
  */
 const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const navigate = useNavigate();
-  const { saveWeddingSettings, generateScheduleFromTemplate } = useWeddingSchedule();
+  const { saveWeddingSettings, generateScheduleFromTemplate, weddingSettings } = useWeddingSchedule();
 
   const [date, setDate] = useState<Date>();
   const [dateTbd, setDateTbd] = useState(false);
@@ -53,6 +53,33 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const [stage, setStage] = useState<PlanningStage>("just_started");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
+
+  // Prefill on open. Critical for the "edit later" path: when the user
+  // re-opens via 마이페이지 → 결혼 정보 수정, they should see their existing
+  // values, not a blank slate. Also clears errors.
+  useEffect(() => {
+    if (!isOpen) return;
+    setDate(weddingSettings.wedding_date ? new Date(weddingSettings.wedding_date) : undefined);
+    setDateTbd(weddingSettings.wedding_date_tbd);
+    setRegion(weddingSettings.wedding_region ?? "");
+    setRegionTbd(weddingSettings.wedding_region_tbd);
+    setPartnerName(weddingSettings.partner_name ?? "");
+    if (
+      weddingSettings.planning_stage &&
+      (STAGE_ORDER as readonly string[]).includes(weddingSettings.planning_stage)
+    ) {
+      setStage(weddingSettings.planning_stage as PlanningStage);
+    }
+    setErrors({});
+  }, [
+    isOpen,
+    weddingSettings.wedding_date,
+    weddingSettings.wedding_date_tbd,
+    weddingSettings.wedding_region,
+    weddingSettings.wedding_region_tbd,
+    weddingSettings.partner_name,
+    weddingSettings.planning_stage,
+  ]);
 
   const validate = () => {
     const e: Record<string, boolean> = {};

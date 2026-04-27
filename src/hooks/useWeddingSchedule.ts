@@ -35,7 +35,11 @@ export const useWeddingSchedule = () => {
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch wedding settings and schedule items
+  // Fetch wedding settings and schedule items.
+  // Depends on user.id (stable string), not the user object — useAuth may
+  // hand back a fresh-reference user on every render which would re-fire
+  // the query when nothing meaningful changed.
+  const userId = user?.id;
   const fetchData = useCallback(async () => {
     if (!user) {
       setIsLoading(false);
@@ -76,7 +80,8 @@ export const useWeddingSchedule = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   useEffect(() => {
     fetchData();

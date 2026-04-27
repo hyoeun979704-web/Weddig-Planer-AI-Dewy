@@ -17,6 +17,18 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+
+const handleTagClick = (tag: string) => {
+  // Tag-based filtering on the list pages isn't wired yet — the list hooks
+  // (useVenues, useCategoryData) don't read ?tag= from the query string.
+  // Until that lands, surface an honest "coming soon" rather than navigating
+  // to a list that visibly hasn't filtered. Routing-back-to-list when nothing
+  // changes is the worst of both worlds (user clicks, sees no effect, loses
+  // trust). This toast at least confirms the tag they tapped.
+  toast.info(`#${tag}`, {
+    description: "태그로 비슷한 업체 찾기 기능은 곧 출시될 예정이에요",
+  });
+};
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,21 +53,6 @@ const DAYS = [
   { key: "sat", label: "토" },
   { key: "sun", label: "일" },
 ] as const;
-
-// Tag-click destination: jump to the category's list page with the tag as
-// a query param so users can find similar vendors. Categories without a
-// dedicated list page fall back to the catch-all vendors page.
-const CATEGORY_LIST_PATH: Record<string, string> = {
-  wedding_hall: "/venues",
-  studio: "/studios",
-  dress_shop: "/vendors/스드메",
-  makeup_shop: "/vendors/스드메",
-  hanbok: "/hanbok",
-  tailor_shop: "/suit",
-  honeymoon: "/honeymoon",
-  appliance: "/appliances",
-  invitation_venue: "/invitation-venues",
-};
 
 // Suffix shown after a price, derived from PricePackage.unit.
 const UNIT_SUFFIX: Record<string, string> = {
@@ -177,18 +174,15 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
           {/* Tags chips — clickable; routes to the category list filtered by tag */}
           {place.tags && place.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
-              {place.tags.slice(0, 8).map((t, i) => {
-                const listPath = CATEGORY_LIST_PATH[place.category] ?? "/vendors";
-                return (
-                  <button
-                    key={i}
-                    onClick={() => navigate(`${listPath}?tag=${encodeURIComponent(t)}`)}
-                    className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-full transition-colors"
-                  >
-                    #{t}
-                  </button>
-                );
-              })}
+              {place.tags.slice(0, 8).map((t, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleTagClick(t)}
+                  className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-full transition-colors"
+                >
+                  #{t}
+                </button>
+              ))}
             </div>
           )}
         </div>
