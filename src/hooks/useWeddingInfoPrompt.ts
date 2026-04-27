@@ -27,9 +27,23 @@ export function useWeddingInfoPrompt() {
   useEffect(() => {
     if (!user || isLoading) return;
     if (sessionStorage.getItem(SESSION_DISMISS_KEY) === "1") return;
-    const missing = !weddingSettings.wedding_date && !weddingSettings.wedding_region;
-    if (missing) setOpen(true);
-  }, [user, isLoading, weddingSettings.wedding_date, weddingSettings.wedding_region]);
+    // Onboarded if EITHER concrete data is present OR the user has explicitly
+    // opted into "미정" (so we don't keep nagging early-stage planners). Also
+    // gate on planning_stage — if that's set, the user has gone through
+    // onboarding at least once.
+    const hasDateInfo = !!weddingSettings.wedding_date || weddingSettings.wedding_date_tbd;
+    const hasRegionInfo = !!weddingSettings.wedding_region || weddingSettings.wedding_region_tbd;
+    const onboarded = (hasDateInfo && hasRegionInfo) || !!weddingSettings.planning_stage;
+    if (!onboarded) setOpen(true);
+  }, [
+    user,
+    isLoading,
+    weddingSettings.wedding_date,
+    weddingSettings.wedding_region,
+    weddingSettings.wedding_date_tbd,
+    weddingSettings.wedding_region_tbd,
+    weddingSettings.planning_stage,
+  ]);
 
   const dismiss = () => {
     sessionStorage.setItem(SESSION_DISMISS_KEY, "1");

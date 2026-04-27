@@ -16,11 +16,21 @@ interface WeddingSettings {
   wedding_date: string | null;
   partner_name: string | null;
   wedding_region: string | null;
+  planning_stage: string | null;
+  wedding_date_tbd: boolean;
+  wedding_region_tbd: boolean;
 }
 
 export const useWeddingSchedule = () => {
   const { user } = useAuth();
-  const [weddingSettings, setWeddingSettings] = useState<WeddingSettings>({ wedding_date: null, partner_name: null, wedding_region: null });
+  const [weddingSettings, setWeddingSettings] = useState<WeddingSettings>({
+    wedding_date: null,
+    partner_name: null,
+    wedding_region: null,
+    planning_stage: null,
+    wedding_date_tbd: false,
+    wedding_region_tbd: false,
+  });
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,7 +45,7 @@ export const useWeddingSchedule = () => {
       const [settingsRes, itemsRes] = await Promise.all([
         supabase
           .from("user_wedding_settings")
-          .select("wedding_date, partner_name, wedding_region")
+          .select("wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd")
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
@@ -46,10 +56,14 @@ export const useWeddingSchedule = () => {
       ]);
 
       if (settingsRes.data) {
+        const s = settingsRes.data as any;
         setWeddingSettings({
-          wedding_date: settingsRes.data.wedding_date,
-          partner_name: settingsRes.data.partner_name,
-          wedding_region: (settingsRes.data as any).wedding_region || null,
+          wedding_date: s.wedding_date,
+          partner_name: s.partner_name,
+          wedding_region: s.wedding_region || null,
+          planning_stage: s.planning_stage || null,
+          wedding_date_tbd: !!s.wedding_date_tbd,
+          wedding_region_tbd: !!s.wedding_region_tbd,
         });
       }
 
@@ -102,11 +116,19 @@ export const useWeddingSchedule = () => {
     }
   };
 
-  // Bulk save (date + region + partner_name in one call). Used by the
-  // shared WeddingInfoSetupModal that auto-pops on Schedule/Budget/MyPage
-  // when the user hasn't entered basic wedding info yet.
+  // Bulk save (date + region + partner_name + planning_stage + tbd flags
+  // in one call). Used by the shared WeddingInfoSetupModal that auto-pops
+  // on Schedule/Budget/MyPage when the user hasn't entered basic wedding
+  // info yet.
   const saveWeddingSettings = async (
-    patch: Partial<{ wedding_date: string | null; partner_name: string | null; wedding_region: string | null }>
+    patch: Partial<{
+      wedding_date: string | null;
+      partner_name: string | null;
+      wedding_region: string | null;
+      planning_stage: string | null;
+      wedding_date_tbd: boolean;
+      wedding_region_tbd: boolean;
+    }>
   ) => {
     if (!user) {
       toast.error("로그인이 필요합니다");
@@ -135,6 +157,39 @@ export const useWeddingSchedule = () => {
     } catch (error) {
       console.error("Error saving wedding settings:", error);
       toast.error("저장에 실패했어요");
+      return false;
+    }
+  };
+
+  // Bulk-insert recommended schedule items from the standard checklist
+  // template. Skips inserting if the user already has any items (to avoid
+  // duplicates on re-onboarding).
+  const generateScheduleFromTemplate = async (
+    items: Array<{ title: string; scheduled_date: string; category: string; completed: boolean }>
+  ) => {
+    if (!user) return false;
+    try {
+      // Idempotency guard — if user already has any items, don't double-insert.
+      const { count } = await supabase
+        .from("user_schedule_items")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if ((count ?? 0) > 0) {
+        return true; // already populated; nothing to do
+      }
+      const rows = items.map((it) => ({ user_id: user.id, ...it }));
+      const { error } = await supabase.from("user_schedule_items").insert(rows);
+      if (error) throw error;
+      // Refresh local list so the page renders the new items immediately.
+      const { data } = await supabase
+        .from("user_schedule_items")
+        .select("id, title, scheduled_date, completed, notes, category")
+        .eq("user_id", user.id)
+        .order("scheduled_date", { ascending: true });
+      if (data) setScheduleItems(data);
+      return true;
+    } catch (error) {
+      console.error("Error seeding schedule:", error);
       return false;
     }
   };
@@ -248,6 +303,7 @@ export const useWeddingSchedule = () => {
     isLoading,
     saveWeddingDate,
     saveWeddingSettings,
+    generateScheduleFromTemplate,
     addScheduleItem,
     toggleItemCompletion,
     deleteScheduleItem,
