@@ -1,17 +1,14 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Minus, Plus, Trash2, ShoppingCart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { useCart } from "@/hooks/useCart";
 
 const formatPrice = (price: number) => price.toLocaleString() + "원";
 
 const Cart = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { items, isLoading, totalAmount, updateQuantity, removeItem } = useCart();
-
-  const handleTabChange = (href: string) => navigate(href);
 
   if (isLoading) {
     return (
@@ -22,9 +19,9 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <AppLayout mainClassName="pb-36">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -34,7 +31,7 @@ const Cart = () => {
         </div>
       </header>
 
-      <main className="pb-36 px-4 py-4">
+      <div className="px-4 py-4">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <ShoppingCart className="w-16 h-16 text-muted-foreground/30 mb-4" />
@@ -97,7 +94,7 @@ const Cart = () => {
             })}
           </div>
         )}
-      </main>
+      </div>
 
       {/* Fixed Bottom */}
       {items.length > 0 && (
@@ -111,9 +108,7 @@ const Cart = () => {
           </Button>
         </div>
       )}
-
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+    </AppLayout>
   );
 };
 

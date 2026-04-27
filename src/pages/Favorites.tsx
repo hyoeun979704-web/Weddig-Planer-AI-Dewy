@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Heart, ArrowLeft, Star } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { useFavorites, ItemType } from "@/hooks/useFavorites";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,7 +54,6 @@ interface FavItem {
 
 const Favorites = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const { favorites, isLoading: favsLoading, toggleFavorite } = useFavorites();
   const [activeTab, setActiveTab] = useState<FavTabId>("vendor");
@@ -106,12 +105,10 @@ const Favorites = () => {
     return `${base}/${item.item_id}`;
   };
 
-  const handleTabChange = (href: string) => navigate(href);
-
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -138,7 +135,7 @@ const Favorites = () => {
       </header>
 
       {/* Main Content */}
-      <main className="pb-20 px-4 py-4">
+      <div className="px-4 py-4">
         {!user ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -213,10 +210,8 @@ const Favorites = () => {
             ))}
           </div>
         )}
-      </main>
-
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Bell, MessageSquare, Tag, Calendar, Heart } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { Switch } from "@/components/ui/switch";
 
 const notificationSettings = [
@@ -27,8 +27,8 @@ const Notifications = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout>
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
@@ -37,7 +37,7 @@ const Notifications = () => {
         </div>
       </header>
 
-      <main className="pb-20">
+      <div>
         <div className="p-4">
           <div className="bg-card rounded-2xl border border-border overflow-hidden">
             {notificationSettings.map((item, index) => (
@@ -68,10 +68,8 @@ const Notifications = () => {
             알림 설정은 기기의 알림 권한에 따라 다르게 적용될 수 있습니다.
           </p>
         </div>
-      </main>
-
-      <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 
