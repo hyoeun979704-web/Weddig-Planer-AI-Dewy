@@ -42,6 +42,21 @@ const DAYS = [
   { key: "sun", label: "일" },
 ] as const;
 
+// Tag-click destination: jump to the category's list page with the tag as
+// a query param so users can find similar vendors. Categories without a
+// dedicated list page fall back to the catch-all vendors page.
+const CATEGORY_LIST_PATH: Record<string, string> = {
+  wedding_hall: "/venues",
+  studio: "/studios",
+  dress_shop: "/vendors/스드메",
+  makeup_shop: "/vendors/스드메",
+  hanbok: "/hanbok",
+  tailor_shop: "/suit",
+  honeymoon: "/honeymoon",
+  appliance: "/appliances",
+  invitation_venue: "/invitation-venues",
+};
+
 // Suffix shown after a price, derived from PricePackage.unit.
 const UNIT_SUFFIX: Record<string, string> = {
   per_person: "/인",
@@ -159,14 +174,21 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
           {place.description && (
             <p className="text-sm text-muted-foreground leading-relaxed">{place.description}</p>
           )}
-          {/* Tags chips — sorted with location/style first; max 8 visible */}
+          {/* Tags chips — clickable; routes to the category list filtered by tag */}
           {place.tags && place.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
-              {place.tags.slice(0, 8).map((t, i) => (
-                <span key={i} className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground rounded-full">
-                  #{t}
-                </span>
-              ))}
+              {place.tags.slice(0, 8).map((t, i) => {
+                const listPath = CATEGORY_LIST_PATH[place.category] ?? "/vendors";
+                return (
+                  <button
+                    key={i}
+                    onClick={() => navigate(`${listPath}?tag=${encodeURIComponent(t)}`)}
+                    className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-full transition-colors"
+                  >
+                    #{t}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

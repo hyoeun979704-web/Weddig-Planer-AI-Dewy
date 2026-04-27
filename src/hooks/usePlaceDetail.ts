@@ -83,7 +83,6 @@ export interface LegacyDetail {
   consultation_required: boolean | null;
 
   // Analyzer output (optional)
-  summary: string | null;
   pros: string[];
   cons: string[];
   atmosphere: string[];
@@ -255,21 +254,14 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         : null;
       const hasAnyHour = hours && Object.values(hours).some((v) => v && v !== "");
 
-      // Derive image gallery: prefer explicit jsonb array, else stitch the legacy
-      // image_url_1/2/3 columns, else fall back to main_image_url alone.
+      // Image gallery: prefer the explicit jsonb array; fall back to the
+      // place's main_image_url when the gallery isn't populated yet.
       const galleryFromJsonb = asStringArray(d?.image_urls);
-      const legacyGallery = d
-        ? [d.image_url_1, d.image_url_2, d.image_url_3].filter(
-            (u): u is string => typeof u === "string" && !!u
-          )
-        : [];
       const gallery = galleryFromJsonb.length
         ? galleryFromJsonb
-        : legacyGallery.length
-          ? legacyGallery
-          : p.main_image_url
-            ? [p.main_image_url as string]
-            : [];
+        : p.main_image_url
+          ? [p.main_image_url as string]
+          : [];
 
       return {
         id: p.place_id,
@@ -316,7 +308,6 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         wedding_count: (d?.wedding_count as number) ?? null,
         consultation_required: (d?.consultation_required as boolean) ?? null,
 
-        summary: (d?.summary as string) ?? null,
         pros: asStringArray(d?.pros),
         cons: asStringArray(d?.cons),
         atmosphere: asStringArray(d?.atmosphere),

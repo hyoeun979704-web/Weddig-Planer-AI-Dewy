@@ -97,9 +97,9 @@ function placeRow(p: CollectedPlace) {
 function detailsRow(placeId: string, p: CollectedPlace) {
   // Persist place_details when we have either Naver Local fields (tel/description)
   // or analyzer output. Skipping when both are empty keeps the table sparse
-  // instead of full of all-null rows.
+  // instead of full of all-null rows. Note: analyzer's summary is merged into
+  // places.description elsewhere — no need to duplicate it here.
   const hasAnalysis =
-    p.summary ||
     (p.atmosphere && p.atmosphere.length > 0) ||
     (p.pros && p.pros.length > 0) ||
     (p.cons && p.cons.length > 0);
@@ -108,8 +108,6 @@ function detailsRow(placeId: string, p: CollectedPlace) {
   return {
     place_id: placeId,
     tel: p.tel ?? null,
-    description: p.description ?? null,
-    summary: p.summary ?? null,
     atmosphere: p.atmosphere ?? [],
     pros: p.pros ?? [],
     cons: p.cons ?? [],

@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
 
 interface DdayCardProps {
   weddingDate: string | null;
@@ -9,6 +11,7 @@ interface DdayCardProps {
 
 const DdayCard = ({ weddingDate }: DdayCardProps) => {
   const navigate = useNavigate();
+  const [setupOpen, setSetupOpen] = useState(false);
 
   const daysUntilWedding = () => {
     if (!weddingDate) return null;
@@ -24,7 +27,7 @@ const DdayCard = ({ weddingDate }: DdayCardProps) => {
     return (
       <div className="px-4 py-2">
         <button
-          onClick={() => navigate("/my-schedule")}
+          onClick={() => setSetupOpen(true)}
           className="w-full p-4 bg-muted/50 rounded-2xl border border-dashed border-border flex items-center gap-3 active:scale-[0.98] transition-transform"
         >
           <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -36,6 +39,7 @@ const DdayCard = ({ weddingDate }: DdayCardProps) => {
           </div>
           <span className="text-xs font-medium text-primary">설정하기</span>
         </button>
+        <WeddingInfoSetupModal isOpen={setupOpen} onClose={() => setSetupOpen(false)} />
       </div>
     );
   }

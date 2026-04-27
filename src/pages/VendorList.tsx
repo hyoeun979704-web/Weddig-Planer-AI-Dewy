@@ -46,9 +46,21 @@ const VendorList = () => {
             </div>
           ) : vendors.length > 0 ? (
             <div className="grid grid-cols-1 gap-3">
-              {vendors.map((vendor) => (
-                <VendorListCard key={vendor.vendor_id} vendor={vendor} onClick={() => navigate(`/vendor/${vendor.vendor_id}`)} />
-              ))}
+              {vendors.map((vendor) => {
+                // Route to the category-specific detail path when available, so
+                // /studio/:id /hanbok/:id etc are used; the category list's own
+                // categoryRouteMap entry wins (e.g. "스드메" → /vendor catch-all
+                // because the combo can't pick a single route). Falls back to
+                // /vendor/:id (smart-router).
+                const detail = config?.detailPath ?? "/vendor";
+                return (
+                  <VendorListCard
+                    key={vendor.vendor_id}
+                    vendor={vendor}
+                    onClick={() => navigate(`${detail}/${vendor.vendor_id}`)}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="flex items-center justify-center py-16">
