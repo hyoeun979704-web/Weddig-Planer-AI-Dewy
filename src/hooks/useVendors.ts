@@ -62,7 +62,8 @@ export const useVendors = (categoryType?: string) => {
         .select("*")
         .eq("is_active", true)
         .is("deleted_at", null)
-        .order("avg_rating", { ascending: false });
+        .order("data_completeness", { ascending: false })
+        .order("avg_rating", { ascending: false, nullsFirst: false });
 
       if (categoryType) {
         const placeCat = KOREAN_TO_PLACE_CATEGORY[categoryType] || categoryType;
@@ -168,7 +169,8 @@ export const useRecommendedVendors = (limit = 6) => {
         .select("*")
         .eq("is_active", true)
         .is("deleted_at", null)
-        .order("avg_rating", { ascending: false })
+        .order("data_completeness", { ascending: false })
+        .order("avg_rating", { ascending: false, nullsFirst: false })
         .limit(limit);
       if (error) throw error;
       return (data ?? []).map(placeToVendor);
