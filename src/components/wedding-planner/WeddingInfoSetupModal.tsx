@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
@@ -40,6 +42,7 @@ interface Props {
  *      `completed=true` so the user doesn't see done items as todos.
  */
 const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
+  const navigate = useNavigate();
   const { saveWeddingSettings, generateScheduleFromTemplate } = useWeddingSchedule();
 
   const [date, setDate] = useState<Date>();
@@ -77,9 +80,23 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       // Seed schedule items. When wedding_date is unset, the template anchors
       // to today + 12 months so the checklist is still actionable.
       const items = buildScheduleFromTemplate(weddingDateStr, stage);
-      await generateScheduleFromTemplate(items);
+      const seeded = await generateScheduleFromTemplate(items);
       onSaved?.();
       onClose();
+
+      // Action toast — only when we actually seeded fresh items. A returning
+      // user with existing schedule items gets seeded=0; we don't want to
+      // claim "N개 만들어졌어요" when nothing happened.
+      if (seeded && seeded > 0) {
+        toast.success(`${seeded}개 추천 일정이 만들어졌어요`, {
+          description: "일정 탭에서 직접 추가·수정할 수 있어요",
+          action: {
+            label: "보러가기",
+            onClick: () => navigate("/my-schedule"),
+          },
+          duration: 6000,
+        });
+      }
     }
     setSubmitting(false);
   };

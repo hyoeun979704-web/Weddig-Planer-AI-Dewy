@@ -164,10 +164,12 @@ export const useWeddingSchedule = () => {
   // Bulk-insert recommended schedule items from the standard checklist
   // template. Skips inserting if the user already has any items (to avoid
   // duplicates on re-onboarding).
+  //
+  // Returns: number of rows actually inserted (0 when skipped) or null on error.
   const generateScheduleFromTemplate = async (
     items: Array<{ title: string; scheduled_date: string; category: string; completed: boolean }>
-  ) => {
-    if (!user) return false;
+  ): Promise<number | null> => {
+    if (!user) return null;
     try {
       // Idempotency guard — if user already has any items, don't double-insert.
       const { count } = await supabase
@@ -175,7 +177,7 @@ export const useWeddingSchedule = () => {
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id);
       if ((count ?? 0) > 0) {
-        return true; // already populated; nothing to do
+        return 0; // already populated; nothing to do
       }
       const rows = items.map((it) => ({ user_id: user.id, ...it }));
       const { error } = await supabase.from("user_schedule_items").insert(rows);
@@ -187,10 +189,10 @@ export const useWeddingSchedule = () => {
         .eq("user_id", user.id)
         .order("scheduled_date", { ascending: true });
       if (data) setScheduleItems(data);
-      return true;
+      return rows.length;
     } catch (error) {
       console.error("Error seeding schedule:", error);
-      return false;
+      return null;
     }
   };
 
