@@ -39,7 +39,6 @@ const BudgetHistory = lazy(() => import("./pages/BudgetHistory"));
 const BudgetCategoryDetail = lazy(() => import("./pages/BudgetCategoryDetail"));
 const Schedule = lazy(() => import("./pages/Schedule"));
 const AIStudio = lazy(() => import("./pages/AIStudio"));
-const AIStudioService = lazy(() => import("./pages/AIStudioService"));
 const Community = lazy(() => import("./pages/Community"));
 const CommunityWrite = lazy(() => import("./pages/CommunityWrite"));
 const CommunityEdit = lazy(() => import("./pages/CommunityEdit"));
@@ -146,7 +145,6 @@ const App = () => (
               <Route path="/budget/category/:category" element={<BudgetCategoryDetail />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/ai-studio" element={<AIStudio />} />
-              <Route path="/ai-studio/:service" element={<AIStudioService />} />
               <Route path="/community" element={<Community />} />
               <Route path="/community/write" element={<CommunityWrite />} />
               <Route path="/community/bookmarks" element={<BookmarkedPosts />} />
