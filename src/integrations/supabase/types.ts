@@ -1603,6 +1603,7 @@ export type Database = {
           confidence: number | null
           created_at: string | null
           currency: string | null
+          data_completeness: number | null
           data_source: string | null
           deleted_at: string | null
           description: string | null
@@ -1628,6 +1629,7 @@ export type Database = {
           confidence?: number | null
           created_at?: string | null
           currency?: string | null
+          data_completeness?: number | null
           data_source?: string | null
           deleted_at?: string | null
           description?: string | null
@@ -1653,6 +1655,7 @@ export type Database = {
           confidence?: number | null
           created_at?: string | null
           currency?: string | null
+          data_completeness?: number | null
           data_source?: string | null
           deleted_at?: string | null
           description?: string | null

@@ -160,8 +160,10 @@ async function fetchCategoryItems(
     query = query.gte("avg_rating", filters.minRating);
   }
 
+  // 신뢰도(채움도) 우선, 같으면 평점.
   const { data, error, count } = await query
-    .order("avg_rating", { ascending: false })
+    .order("data_completeness", { ascending: false })
+    .order("avg_rating", { ascending: false, nullsFirst: false })
     .range(from, to);
 
   if (error) throw error;
