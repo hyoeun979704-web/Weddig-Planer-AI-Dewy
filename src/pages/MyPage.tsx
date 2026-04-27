@@ -205,7 +205,10 @@ const MyPage = () => {
         <div className="mt-3">
           <QuickMenuGrid user={user} />
         </div>
-        <DdayCard weddingDate={weddingSettings.wedding_date} />
+        <DdayCard
+          weddingDate={weddingSettings.wedding_date}
+          weddingDateTbd={weddingSettings.wedding_date_tbd}
+        />
         <PremiumBanner />
         <MenuSection user={user} onSignOut={handleSignOut} />
 

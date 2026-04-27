@@ -254,6 +254,11 @@ const Schedule = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 {format(new Date(weddingSettings.wedding_date), "yyyy년 M월 d일 (EEEE)", { locale: ko })}
               </p>
+            ) : weddingSettings.wedding_date_tbd ? (
+              <div className="flex items-center gap-1.5 mb-4">
+                <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full font-medium">예정일 미정</span>
+                <span className="text-xs text-muted-foreground">1년 후 기준 일정</span>
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground mb-4">날짜를 설정해주세요</p>
             )}

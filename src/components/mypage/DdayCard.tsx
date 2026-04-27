@@ -7,9 +7,13 @@ import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetup
 
 interface DdayCardProps {
   weddingDate: string | null;
+  /** When true, the user explicitly checked 미정 during onboarding —
+   *  wedding_date is null but they DO have a seeded checklist anchored
+   *  to a virtual D-day. Show different copy than "no info at all". */
+  weddingDateTbd?: boolean;
 }
 
-const DdayCard = ({ weddingDate }: DdayCardProps) => {
+const DdayCard = ({ weddingDate, weddingDateTbd = false }: DdayCardProps) => {
   const navigate = useNavigate();
   const [setupOpen, setSetupOpen] = useState(false);
 
@@ -24,6 +28,29 @@ const DdayCard = ({ weddingDate }: DdayCardProps) => {
   const days = daysUntilWedding();
 
   if (!weddingDate) {
+    // Explicit "미정" — user has onboarded; nudge them to set the real
+    // date so the recommended timeline becomes actionable.
+    if (weddingDateTbd) {
+      return (
+        <div className="px-4 py-2">
+          <button
+            onClick={() => setSetupOpen(true)}
+            className="w-full p-4 bg-amber-50 rounded-2xl border border-amber-200 flex items-center gap-3 active:scale-[0.98] transition-transform"
+          >
+            <div className="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-amber-700" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-semibold text-amber-900">예정일 미정 · 1년 후 기준</p>
+              <p className="text-xs text-amber-700 mt-0.5">날짜가 정해지면 일정이 자동으로 맞춰져요</p>
+            </div>
+            <span className="text-xs font-medium text-amber-700">날짜 입력</span>
+          </button>
+          <WeddingInfoSetupModal isOpen={setupOpen} onClose={() => setSetupOpen(false)} />
+        </div>
+      );
+    }
+    // First-time visitor — encourage onboarding.
     return (
       <div className="px-4 py-2">
         <button
