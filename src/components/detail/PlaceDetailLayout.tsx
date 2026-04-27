@@ -470,7 +470,11 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
           </Button>
           <Button
             className="flex-1 h-11"
-            onClick={() => toast.success("예약 문의가 접수되었어요. 곧 연락드릴게요.")}
+            onClick={() =>
+              toast.info("견적 요청 기능 준비 중이에요", {
+                description: "곧 업체에게 직접 견적 받을 수 있게 만들어드릴게요",
+              })
+            }
           >
             예약 문의
           </Button>
