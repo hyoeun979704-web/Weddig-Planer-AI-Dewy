@@ -24,6 +24,16 @@ export const PLANNING_STAGE_LABELS: Record<PlanningStage, string> = {
   wrapping_up: "대부분 진행 완료했어요",
 };
 
+// One-line hint that fires under each stage option in the onboarding modal.
+// Helps the user pick — the labels alone are too abstract for someone who
+// hasn't done this before.
+export const PLANNING_STAGE_HINTS: Record<PlanningStage, string> = {
+  just_started: "결혼식 1년 이상 남음 · 비전·예산 합의 단계",
+  researching: "6~12개월 전 · 업체 비교·답사 중",
+  contracting: "3~6개월 전 · 핵심 업체 계약 완료",
+  wrapping_up: "2개월 이내 · 시연·시착·하객 안내 마무리",
+};
+
 // Order matters — used to compare stages.
 export const STAGE_ORDER: PlanningStage[] = [
   "just_started",

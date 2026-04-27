@@ -9,6 +9,7 @@ import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import {
   buildScheduleFromTemplate,
   PLANNING_STAGE_LABELS,
+  PLANNING_STAGE_HINTS,
   STAGE_ORDER,
   type PlanningStage,
 } from "@/data/checklistTemplate";
@@ -203,7 +204,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
               <label
                 key={s}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2.5 border rounded-xl text-sm cursor-pointer transition-colors",
+                  "flex items-start gap-2 px-3 py-2.5 border rounded-xl text-sm cursor-pointer transition-colors",
                   stage === s ? "border-[#C9A96E] bg-[#C9A96E]/5" : "border-gray-200",
                 )}
               >
@@ -212,9 +213,14 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
                   name="stage"
                   checked={stage === s}
                   onChange={() => setStage(s)}
-                  className="w-4 h-4 accent-[#C9A96E]"
+                  className="w-4 h-4 accent-[#C9A96E] mt-0.5"
                 />
-                <span className="text-gray-800">{PLANNING_STAGE_LABELS[s]}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-800">{PLANNING_STAGE_LABELS[s]}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">
+                    {PLANNING_STAGE_HINTS[s]}
+                  </p>
+                </div>
               </label>
             ))}
           </div>
