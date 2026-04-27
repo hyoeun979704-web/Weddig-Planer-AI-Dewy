@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { HelpCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SearchOverlay from "./SearchOverlay";
 import DewyLogo from "./DewyLogo";
-import searchIcon from "@/assets/community/search.svg";
-import bellIcon from "@/assets/community/bell.svg";
-import heartIcon from "@/assets/community/heart-outline.svg";
-import cartIcon from "@/assets/community/cart.svg";
+import searchIcon from "@/assets/icons/search.svg";
+import bellIcon from "@/assets/icons/bell.svg";
+import heartIcon from "@/assets/icons/heart.svg";
+import cartIcon from "@/assets/icons/cart.svg";
+import helpIcon from "@/assets/icons/help.svg";
 
 const HomeHeader = () => {
   const navigate = useNavigate();
@@ -33,7 +33,7 @@ const HomeHeader = () => {
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="튜토리얼"
             >
-              <HelpCircle className="w-4 h-4 text-muted-foreground" />
+              <img src={helpIcon} alt="" className="w-[14px] h-[15px]" />
             </button>
           </div>
 
@@ -48,25 +48,24 @@ const HomeHeader = () => {
             </button>
             <button
               onClick={() => navigate("/notifications")}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors relative"
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="알림"
             >
-              <img src={bellIcon} alt="" className="w-[18px] h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full" />
+              <img src={bellIcon} alt="" className="w-[19px] h-5" />
             </button>
             <button
               onClick={() => navigate("/favorites")}
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="찜한 목록"
             >
-              <img src={heartIcon} alt="" className="w-[21px] h-[18px]" />
+              <img src={heartIcon} alt="" className="w-5 h-[18px]" />
             </button>
             <button
               onClick={() => navigate("/cart")}
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="장바구니"
             >
-              <img src={cartIcon} alt="" className="w-[21px] h-[21px]" />
+              <img src={cartIcon} alt="" className="w-[22px] h-[22px]" />
             </button>
           </div>
         </div>
