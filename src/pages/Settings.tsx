@@ -10,7 +10,7 @@ import {
   LogOut,
   Trash2 
 } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -36,8 +36,8 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout>
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
@@ -46,7 +46,7 @@ const Settings = () => {
         </div>
       </header>
 
-      <main className="pb-20">
+      <div>
         {/* App Settings */}
         <div className="p-4">
           <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">앱 설정</h2>
@@ -129,10 +129,8 @@ const Settings = () => {
             <p className="mt-1">© 2025 웨딩 플래너</p>
           </div>
         </div>
-      </main>
-
-      <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

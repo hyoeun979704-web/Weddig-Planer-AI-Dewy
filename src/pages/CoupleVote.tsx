@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, MessageSquare, Check, Clock } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCoupleLink } from "@/hooks/useCoupleLink";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +20,6 @@ interface CoupleVoteItem {
 
 const CoupleVote = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const { isLinked } = useCoupleLink();
   const [votes, setVotes] = useState<CoupleVoteItem[]>([]);
@@ -84,8 +83,8 @@ const CoupleVote = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <AppLayout>
+        <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center gap-3 px-4 h-14">
             <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
             <h1 className="text-lg font-bold">의견 조율 보드</h1>
@@ -95,8 +94,7 @@ const CoupleVote = () => {
           <p className="text-muted-foreground text-sm mb-4">로그인 후 이용할 수 있어요</p>
           <button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground px-6 py-2 rounded-lg text-sm font-bold">로그인</button>
         </div>
-        <BottomNav activeTab={location.pathname} onTabChange={h => navigate(h)} />
-      </div>
+      </AppLayout>
     );
   }
 
@@ -112,15 +110,15 @@ const CoupleVote = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout mainClassName="pb-24">
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-lg font-bold">의견 조율 보드</h1>
         </div>
       </header>
 
-      <main className="pb-24 px-4 py-4">
+      <div className="px-4 py-4">
         {isLoading ? (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : votes.length === 0 ? (
@@ -152,7 +150,7 @@ const CoupleVote = () => {
             ))}
           </div>
         )}
-      </main>
+      </div>
 
       {/* FAB */}
       <button
@@ -195,9 +193,7 @@ const CoupleVote = () => {
           </div>
         </SheetContent>
       </Sheet>
-
-      <BottomNav activeTab={location.pathname} onTabChange={h => navigate(h)} />
-    </div>
+    </AppLayout>
   );
 };
 

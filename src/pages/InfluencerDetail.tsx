@@ -1,6 +1,6 @@
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ExternalLink, Users, Play, Image, FileText, Eye, Heart, Loader2 } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { useInfluencerDetail, useCategoryLabels } from "@/hooks/useInfluencers";
 import { Button } from "@/components/ui/button";
 
@@ -25,33 +25,34 @@ const formatCount = (n: number): string => {
 
 const InfluencerDetail = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const categoryLabels = useCategoryLabels();
   const { influencer, contents, isLoading } = useInfluencerDetail(id);
 
-  const handleTabChange = (href: string) => navigate(href);
-
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout hideCategoryTabBar>
+        <div className="flex items-center justify-center pt-32">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
   if (!influencer) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <p className="text-muted-foreground">인플루언서를 찾을 수 없습니다</p>
-      </div>
+      <AppLayout hideCategoryTabBar>
+        <div className="flex items-center justify-center pt-32">
+          <p className="text-muted-foreground">인플루언서를 찾을 수 없습니다</p>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout hideCategoryTabBar>
+      {/* Sub-header */}
+      <header className="sticky top-14 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -60,7 +61,7 @@ const InfluencerDetail = () => {
         </div>
       </header>
 
-      <main className="pb-20">
+      <div>
         {/* Profile Section */}
         <div className="relative">
           {/* Cover */}
@@ -188,10 +189,8 @@ const InfluencerDetail = () => {
             )}
           </div>
         </div>
-      </main>
-
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Ticket, Calendar, Tag } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 
 const coupons = [
   { id: 1, title: "웨딩홀 10% 할인", description: "모든 웨딩홀 예약 시 사용 가능", discount: "10%", expiry: "2025-03-31", minOrder: "500,000원" },
@@ -14,8 +14,8 @@ const Coupons = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout>
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
@@ -24,7 +24,7 @@ const Coupons = () => {
         </div>
       </header>
 
-      <main className="pb-20">
+      <div>
         {/* Coupon Count */}
         <div className="p-4 bg-primary/10 border-b border-border">
           <div className="flex items-center justify-between">
@@ -77,10 +77,8 @@ const Coupons = () => {
             </div>
           ))}
         </div>
-      </main>
-
-      <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

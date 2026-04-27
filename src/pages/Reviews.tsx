@@ -1,6 +1,6 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Star, Quote } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 
 const allReviews = [
   { rating: 5, review: "처음부터 끝까지 정말 만족스러웠어요. 특히 담당 플래너분이 꼼꼼하게 챙겨주셔서 너무 감사했습니다!", vendorName: "더채플앳청담", vendorType: "웨딩홀", userName: "김**님", date: "2025.01.15" },
@@ -15,16 +15,11 @@ const allReviews = [
 
 const Reviews = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const handleTabChange = (href: string) => {
-    navigate(href);
-  };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -34,7 +29,7 @@ const Reviews = () => {
       </header>
 
       {/* Main Content */}
-      <main className="pb-20 px-4 py-4">
+      <div className="px-4 py-4">
         <p className="text-sm text-muted-foreground mb-6">
           실제 이용 고객님들의 생생한 후기
         </p>
@@ -74,11 +69,8 @@ const Reviews = () => {
             </div>
           ))}
         </div>
-      </main>
-
-      {/* Bottom Navigation */}
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

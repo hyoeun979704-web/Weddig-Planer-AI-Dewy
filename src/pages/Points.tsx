@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Coins, Gift, Clock, Gamepad2, ChevronRight } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 
 const pointHistory = [
@@ -15,8 +15,8 @@ const Points = () => {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout>
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
@@ -25,7 +25,7 @@ const Points = () => {
         </div>
       </header>
 
-      <main className="pb-20">
+      <div>
         {/* Point Summary */}
         <div className="p-6 bg-gradient-to-br from-primary/20 to-primary/5">
           <div className="text-center">
@@ -81,10 +81,8 @@ const Points = () => {
             ))}
           </div>
         </div>
-      </main>
-
-      <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

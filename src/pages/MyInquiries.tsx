@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageSquare, Calendar, ChevronRight, Clock } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 
 const inquiries = [
   { 
@@ -41,8 +41,8 @@ const MyInquiries = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout>
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
@@ -51,7 +51,7 @@ const MyInquiries = () => {
         </div>
       </header>
 
-      <main className="pb-20">
+      <div>
         {/* Tabs */}
         <div className="flex border-b border-border">
           <button className="flex-1 py-3 text-sm font-medium text-primary border-b-2 border-primary">
@@ -106,10 +106,8 @@ const MyInquiries = () => {
             <p className="text-muted-foreground">문의/예약 내역이 없습니다</p>
           </div>
         )}
-      </main>
-
-      <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

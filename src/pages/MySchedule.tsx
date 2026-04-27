@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2, Pencil, X, Save } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -116,8 +116,8 @@ const MySchedule = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <AppLayout>
+        <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center h-14 px-4">
             <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
               <ArrowLeft className="w-5 h-5" />
@@ -133,22 +133,23 @@ const MySchedule = () => {
           </p>
           <Button onClick={() => navigate("/auth")}>로그인하기</Button>
         </div>
-        <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
-      </div>
+      </AppLayout>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout>
+        <div className="flex items-center justify-center pt-32">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout>
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
@@ -157,7 +158,7 @@ const MySchedule = () => {
         </div>
       </header>
 
-      <main className="pb-20">
+      <div>
         {/* D-Day Card */}
         <div className="p-4">
           <div className="p-6 bg-gradient-to-r from-primary/20 to-primary/5 rounded-2xl border border-primary/20">
@@ -348,10 +349,8 @@ const MySchedule = () => {
             </div>
           )}
         </div>
-      </main>
-
-      <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

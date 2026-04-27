@@ -1,6 +1,6 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 
 const galleryItems = [
   { imageUrl: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400", label: "더채플앳청담", category: "웨딩홀" },
@@ -19,16 +19,11 @@ const galleryItems = [
 
 const Gallery = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const handleTabChange = (href: string) => {
-    navigate(href);
-  };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -38,7 +33,7 @@ const Gallery = () => {
       </header>
 
       {/* Main Content */}
-      <main className="pb-20 px-4 py-4">
+      <div className="px-4 py-4">
         <p className="text-sm text-muted-foreground mb-6">
           실제 예식장 및 스튜디오 사진
         </p>
@@ -65,11 +60,8 @@ const Gallery = () => {
             </button>
           ))}
         </div>
-      </main>
-
-      {/* Bottom Navigation */}
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

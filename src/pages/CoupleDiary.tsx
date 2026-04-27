@@ -1,7 +1,7 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Heart, Loader2, BookOpen, Trash2 } from "lucide-react";
 import { useState } from "react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { useCoupleDiary, DiaryEntry } from "@/hooks/useCoupleDiary";
 import { useCoupleLink } from "@/hooks/useCoupleLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,7 +16,6 @@ const moodEmojis: Record<string, string> = {
 
 const CoupleDiary = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const { isLinked } = useCoupleLink();
   const { entries, isLoading, deleteEntry } = useCoupleDiary();
@@ -26,10 +25,6 @@ const CoupleDiary = () => {
     setDeletingId(id);
     await deleteEntry(id);
     setDeletingId(null);
-  };
-
-  const handleTabChange = (href: string) => {
-    navigate(href);
   };
 
   const formatDate = (dateStr: string) => {
@@ -43,16 +38,18 @@ const CoupleDiary = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout>
+        <div className="flex items-center justify-center pt-32">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate("/schedule")} className="p-1">
@@ -75,7 +72,7 @@ const CoupleDiary = () => {
         </div>
       </header>
 
-      <main className="pb-20 px-4 py-4">
+      <div className="px-4 py-4">
         {!isLinked ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center mb-4">
@@ -121,10 +118,8 @@ const CoupleDiary = () => {
             ))}
           </div>
         )}
-      </main>
-
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

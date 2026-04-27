@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,15 +82,15 @@ const Premium = () => {
   const trialExpired = plan !== "free" && !isPremium;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout>
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-lg font-bold">프리미엄</h1>
         </div>
       </header>
 
-      <main className="flex-1 pb-20 overflow-y-auto">
+      <div>
         {/* Current Plan Card */}
         <div className="px-4 pt-6 pb-2">
           {isPremium ? (
@@ -233,10 +233,8 @@ const Premium = () => {
             </AlertDialog>
           </div>
         )}
-      </main>
-
-      <BottomNav activeTab="/premium" onTabChange={(h) => navigate(h)} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

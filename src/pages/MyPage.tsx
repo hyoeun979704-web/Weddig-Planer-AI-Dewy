@@ -1,6 +1,6 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Star, Users, ArrowRight } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { toast } from "sonner";
@@ -30,15 +30,15 @@ const GuestMyPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout hideCategoryTabBar>
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
           <div className="w-5" />
         </div>
       </header>
 
-      <main className="pb-20">
+      <div>
         {/* Hero CTA */}
         <div className="px-4 pt-5 pb-3">
           <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-accent/20 border border-primary/20 p-5 relative overflow-hidden">
@@ -159,14 +159,13 @@ const GuestMyPage = () => {
             <p className="mt-0.5">© 2025 웨딩 플래너</p>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 
 const MyPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, isLoading, signOut } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
   const weddingInfoPrompt = useWeddingInfoPrompt();
@@ -181,17 +180,12 @@ const MyPage = () => {
   };
 
   if (!isLoading && !user) {
-    return (
-      <>
-        <GuestMyPage />
-        <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
-      </>
-    );
+    return <GuestMyPage />;
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout hideCategoryTabBar>
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
           <button onClick={() => navigate("/settings")} className="p-2 active:scale-90 transition-transform">
@@ -200,7 +194,7 @@ const MyPage = () => {
         </div>
       </header>
 
-      <main className="pb-20">
+      <div>
         <UserProfileSection user={user} isLoading={isLoading} />
         <div className="mt-3">
           <QuickMenuGrid user={user} />
@@ -222,15 +216,13 @@ const MyPage = () => {
             <p className="mt-0.5">© 2025 웨딩 플래너</p>
           </div>
         </div>
-      </main>
-
-      <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
+      </div>
 
       <WeddingInfoSetupModal
         isOpen={weddingInfoPrompt.open}
         onClose={weddingInfoPrompt.dismiss}
       />
-    </div>
+    </AppLayout>
   );
 };
 
