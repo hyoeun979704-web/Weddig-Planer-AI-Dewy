@@ -1,8 +1,18 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Play, Flame } from "lucide-react";
+import { Play, Flame } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import HomeHeader from "@/components/home/HomeHeader";
+import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
 import { useTipVideos, youTubeUrl, type TipVideo } from "@/hooks/useTipVideos";
+
+const categoryTabRoutes: Record<CategoryTab, string> = {
+  "ai-planner": "/",
+  "ai-studio": "/ai-studio",
+  tips: "/magazine",
+  events: "/deals",
+  shopping: "/store",
+};
 
 // Shorts threshold: YouTube classifies up to 3 min as Shorts. We use 180s.
 const SHORT_MAX_SECONDS = 180;
@@ -157,18 +167,14 @@ const Magazine = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-20">
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center px-4 h-14">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 flex items-center justify-center -ml-2"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-lg font-bold flex-1 text-center -mr-8">꿀팁</h1>
-        </div>
+      <HomeHeader />
+      <CategoryTabBar
+        activeTab="tips"
+        onTabChange={(tab) => navigate(categoryTabRoutes[tab])}
+      />
 
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-3">
+      <div className="sticky top-[112px] z-30 bg-card border-b border-border">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 py-3">
           {CATEGORY_CHIPS.map((c) => {
             const active = category === c.slug;
             return (
@@ -186,7 +192,7 @@ const Magazine = () => {
             );
           })}
         </div>
-      </header>
+      </div>
 
       <main>
         <section className="pt-4 pb-2">

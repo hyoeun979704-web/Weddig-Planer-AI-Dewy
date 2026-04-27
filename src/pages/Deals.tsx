@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Tag, Star, ChevronRight, SlidersHorizontal, Heart } from "lucide-react";
+import { Tag, Star, ChevronRight, SlidersHorizontal } from "lucide-react";
+import HomeHeader from "@/components/home/HomeHeader";
+import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
+
+const categoryTabRoutes: Record<CategoryTab, string> = {
+  "ai-planner": "/",
+  "ai-studio": "/ai-studio",
+  tips: "/magazine",
+  events: "/deals",
+  shopping: "/store",
+};
 import BottomNav from "@/components/BottomNav";
 import { usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -56,19 +66,11 @@ const Deals = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-1">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="text-lg font-bold text-foreground">파트너 혜택</h1>
-          </div>
-          <button onClick={() => navigate("/favorites")} className="p-2">
-            <Heart className="w-5 h-5 text-foreground" />
-          </button>
-        </div>
-      </header>
+      <HomeHeader />
+      <CategoryTabBar
+        activeTab="events"
+        onTabChange={(tab) => navigate(categoryTabRoutes[tab])}
+      />
 
       {/* Category Filter */}
       <div className="px-4 py-3 overflow-x-auto">
