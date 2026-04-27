@@ -168,14 +168,18 @@ async function main() {
     if (r.instagram_url) detailsUpdate.instagram_url = r.instagram_url;
     if (r.naver_place_url) detailsUpdate.naver_place_url = r.naver_place_url;
     if (r.hours) {
-      const h = r.hours;
-      detailsUpdate.hours_mon = h.mon ?? null;
-      detailsUpdate.hours_tue = h.tue ?? null;
-      detailsUpdate.hours_wed = h.wed ?? null;
-      detailsUpdate.hours_thu = h.thu ?? null;
-      detailsUpdate.hours_fri = h.fri ?? null;
-      detailsUpdate.hours_sat = h.sat ?? null;
-      detailsUpdate.hours_sun = h.sun ?? null;
+      // Gemini Pro web sometimes returns hours as {"mon-sun": "10:00-19:30"}
+      // (single value for the whole week) instead of per-day keys. Handle
+      // that shorthand by spreading the value across all seven days.
+      const h = r.hours as Record<string, string | null>;
+      const allDays = h["mon-sun"] ?? h["all"] ?? null;
+      detailsUpdate.hours_mon = h.mon ?? allDays ?? null;
+      detailsUpdate.hours_tue = h.tue ?? allDays ?? null;
+      detailsUpdate.hours_wed = h.wed ?? allDays ?? null;
+      detailsUpdate.hours_thu = h.thu ?? allDays ?? null;
+      detailsUpdate.hours_fri = h.fri ?? allDays ?? null;
+      detailsUpdate.hours_sat = h.sat ?? allDays ?? null;
+      detailsUpdate.hours_sun = h.sun ?? allDays ?? null;
     }
     if (r.closed_days) detailsUpdate.closed_days = r.closed_days;
     if (r.advantage_1?.title) {
