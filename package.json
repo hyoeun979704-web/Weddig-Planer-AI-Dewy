@@ -19,6 +19,7 @@
     "enrich-source-refs": "tsx scripts/collect-places/enrich-source-refs.ts",
     "enrich-place-details": "tsx scripts/collect-places/enrich-place-details.ts",
     "enrich-with-gemini": "tsx scripts/collect-places/enrich-with-gemini.ts",
+    "import-gemini-json": "tsx scripts/collect-places/import-from-json.ts",
     "collect-tips": "tsx scripts/collect-tips/index.ts"
   },
   "dependencies": {
