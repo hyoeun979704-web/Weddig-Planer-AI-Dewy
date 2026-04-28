@@ -3,6 +3,7 @@ import { Heart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCoupleFavorites } from "@/hooks/useCoupleFavorites";
 import type { ItemType } from "@/hooks/useFavorites";
+import { useHaptic } from "@/hooks/useHaptic";
 import { cn } from "@/lib/utils";
 
 interface FavoriteButtonProps {
@@ -28,6 +29,7 @@ export const FavoriteButton = ({
 }: FavoriteButtonProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const haptic = useHaptic();
   const { isFavorite, toggleFavorite, isToggling, isLinked, partnerLikes } =
     useCoupleFavorites();
 
@@ -45,6 +47,7 @@ export const FavoriteButton = ({
       return;
     }
 
+    haptic.light();
     await toggleFavorite(itemId, itemType);
   };
 

@@ -27,6 +27,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
+import { useHaptic } from "@/hooks/useHaptic";
 import { format, differenceInDays, isToday, isTomorrow } from "date-fns";
 import { ko } from "date-fns/locale";
 import arrowLeftIcon from "@/assets/icons/arrow-left.svg";
@@ -96,6 +97,7 @@ const timelinePhases: TimelinePhase[] = [
 
 const Schedule = () => {
   const navigate = useNavigate();
+  const haptic = useHaptic();
   const { user } = useAuth();
   const { isLinked } = useCoupleLink();
   const { 
@@ -312,8 +314,11 @@ const Schedule = () => {
                   key={task.id}
                   className="flex items-center gap-3 px-4 py-3.5 bg-white rounded-2xl border border-border active:scale-[0.98] transition-transform"
                 >
-                  <button 
-                    onClick={() => toggleItemCompletion(task.id)}
+                  <button
+                    onClick={() => {
+                      haptic.medium();
+                      toggleItemCompletion(task.id);
+                    }}
                     className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center hover:border-primary transition-colors shrink-0"
                   >
                     <CheckCircle2 className="w-4 h-4 text-transparent" />
