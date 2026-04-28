@@ -7,17 +7,43 @@ interface Template {
   name: string;
   thumbnail_url: string | null;
   tag: string;
+  description: string;
 }
 
 const TEMPLATES: Template[] = [
-  { id: "tpl-classic", name: "클래식 화이트", thumbnail_url: null, tag: "심플" },
-  { id: "tpl-floral", name: "플로럴 무드", thumbnail_url: null, tag: "로맨틱" },
-  { id: "tpl-modern", name: "모던 베이지", thumbnail_url: null, tag: "모던" },
-  { id: "tpl-luxe", name: "럭스 골드", thumbnail_url: null, tag: "럭셔리" },
+  {
+    id: "tpl-classic",
+    name: "템플릿 이름",
+    thumbnail_url: null,
+    tag: "심플",
+    description: "심플한 클래식 화이트 디자인",
+  },
+  {
+    id: "tpl-floral",
+    name: "템플릿 이름",
+    thumbnail_url: null,
+    tag: "로맨틱",
+    description: "은은한 플로럴 무드 디자인",
+  },
+  {
+    id: "tpl-modern",
+    name: "템플릿 이름",
+    thumbnail_url: null,
+    tag: "모던",
+    description: "깔끔한 모던 베이지 디자인",
+  },
+  {
+    id: "tpl-luxe",
+    name: "템플릿 이름",
+    thumbnail_url: null,
+    tag: "럭셔리",
+    description: "고급스러운 골드 라인 디자인",
+  },
 ];
 
-const CARD_W = 110;
-const THUMB_H = 130;
+const CARD_W = 100;
+const CARD_H = 165;
+const IMG_H = 100;
 
 const TemplateCard = ({ template, onClick }: { template: Template; onClick: () => void }) => {
   const [liked, setLiked] = useState(false);
@@ -26,13 +52,10 @@ const TemplateCard = ({ template, onClick }: { template: Template; onClick: () =
     <button
       onClick={onClick}
       aria-label={template.name}
-      className="flex-shrink-0 flex flex-col gap-1.5 active:scale-[0.97] text-left"
-      style={{ width: CARD_W }}
+      className="flex-shrink-0 flex flex-col bg-[#d9d9d9] rounded-[10px] overflow-hidden text-left active:scale-[0.97]"
+      style={{ width: CARD_W, height: CARD_H }}
     >
-      <div
-        className="relative w-full overflow-hidden rounded-[10px] bg-[#d9d9d9]"
-        style={{ height: THUMB_H }}
-      >
+      <div className="relative w-full" style={{ height: IMG_H }}>
         {template.thumbnail_url ? (
           <img
             src={template.thumbnail_url}
@@ -41,9 +64,7 @@ const TemplateCard = ({ template, onClick }: { template: Template; onClick: () =
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-            <span className="text-2xl">💌</span>
-          </div>
+          <div className="w-full h-full bg-gradient-to-br from-primary/15 to-primary/5" />
         )}
 
         <span
@@ -54,7 +75,7 @@ const TemplateCard = ({ template, onClick }: { template: Template; onClick: () =
             e.stopPropagation();
             setLiked((v) => !v);
           }}
-          className="absolute right-2 top-2 z-10 inline-flex"
+          className="absolute right-1.5 top-1.5 z-10 inline-flex"
         >
           <Heart
             className={
@@ -67,14 +88,16 @@ const TemplateCard = ({ template, onClick }: { template: Template; onClick: () =
         </span>
       </div>
 
-      <div className="flex flex-col gap-[2px] px-[2px]">
-        <p className="text-[11px] font-semibold leading-tight text-black line-clamp-1">
+      <div className="flex-1 flex flex-col gap-[3px] px-2 py-1.5">
+        <p className="text-[10px] font-bold leading-tight text-black line-clamp-1">
           {template.name}
         </p>
-        <p className="text-[10px] leading-tight text-black/55 line-clamp-1">
+        <p className="text-[9px] leading-[1.25] text-black/55 line-clamp-2">
+          {template.description}
+        </p>
+        <p className="text-[9px] font-semibold leading-tight text-[#f29aa3] line-clamp-1 mt-auto">
           {template.tag}
         </p>
-        <p className="text-[10px] font-medium leading-tight text-[#f29aa3]">무료</p>
       </div>
     </button>
   );
@@ -84,7 +107,7 @@ const InvitationTemplateSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="pt-[10px] pb-[30px] px-[30px] bg-[hsl(var(--pink-50))]">
+    <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-50))]">
       <div className="mb-[10px] flex items-center justify-between">
         <h2 className="text-[16px] font-bold text-black">5분 완성! 청첩장 만들기</h2>
         <button
@@ -95,7 +118,7 @@ const InvitationTemplateSection = () => {
           더보기
         </button>
       </div>
-      <div className="flex gap-[10px] overflow-x-auto scrollbar-hide">
+      <div className="flex gap-[8px] overflow-x-auto scrollbar-hide">
         {TEMPLATES.map((template) => (
           <TemplateCard
             key={template.id}
