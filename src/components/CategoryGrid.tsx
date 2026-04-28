@@ -37,7 +37,7 @@ function getKeywords(item: CategoryItem): string[] {
 // couple/set prices ÷ 2). Labels here are user-facing context only — they do
 // not change the underlying value.
 const PRICE_UNIT_LABEL: Record<CategoryType, string> = {
-  venues: "식대",
+  venues: "1인 식대",
   studios: "1인 기준",
   dress_shops: "1인 1벌",
   makeup_shops: "1인 기준",
@@ -49,17 +49,36 @@ const PRICE_UNIT_LABEL: Record<CategoryType, string> = {
   invitation_venues: "1인 식대",
 };
 
-function PriceRow({ price, label }: { price?: number; label: string }) {
+function PriceInline({ label, value, suffix = "", prefix = "" }: { label: string; value?: number | string | null; suffix?: string; prefix?: string }) {
+  if (value == null || value === 0) return null;
+  const formattedValue = typeof value === "number" ? (value >= 10000 ? `${(value / 10000).toFixed(0)}만원` : value) : value;
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-[11px] text-muted-foreground">{label}</span>
-      {price ? (
-        <span className="text-xs font-semibold text-primary">
-          {(price / 10000).toFixed(0)}만원~
-        </span>
-      ) : (
-        <span className="text-xs font-medium text-muted-foreground">(준비중)</span>
-      )}
+    <span className="text-[11px] font-medium text-foreground/70">
+      {label} <span className="text-[11px] font-semibold text-primary">{prefix}{formattedValue}{suffix}</span>
+    </span>
+  );
+}
+
+function PriceLine({ children }: { children: React.ReactNode }) {
+  const validChildren = React.Children.toArray(children).filter((child: any) => {
+    if (!child) return false;
+    // If it's a PriceInline, check if it has a value
+    if (React.isValidElement(child) && child.type === PriceInline) {
+      return child.props.value != null && child.props.value !== 0;
+    }
+    return true; // Keep other spans
+  });
+
+  if (validChildren.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-tight mt-0.5">
+      {validChildren.map((child, index) => (
+        <React.Fragment key={index}>
+          {index > 0 && <span className="text-[11px] text-muted-foreground/50">·</span>}
+          {child}
+        </React.Fragment>
+      ))}
     </div>
   );
 }
@@ -81,19 +100,22 @@ function CategoryCardContent({ item, category }: { item: CategoryItem; category:
 
   const priceLabel = PRICE_UNIT_LABEL[category];
 
-  // Render category-specific detail lines
   const renderDetails = () => {
     switch (category) {
       case "venues":
         return (
           <div className="space-y-0.5">
-            <PriceRow price={item.price_per_person} label={priceLabel} />
-            {item.min_guarantee && item.min_guarantee > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground">보증인원</span>
-                <span className="text-xs font-medium text-foreground">{item.min_guarantee}명</span>
-              </div>
-            )}
+            <PriceLine>
+              {/* Only showing meal price as rental_fee is not directly available on place_wedding_halls */}
+              <PriceInline label="식대" value={item.price_per_person} />
+            </PriceLine>
+            {(item.min_guarantee || item.max_guarantee) ? (
+              <PriceLine>
+                <span className="text-[11px] font-medium text-foreground/70 mr-0.5">보증인원</span>
+                <PriceInline label="최소" value={item.min_guarantee} />
+                <PriceInline label="최대" value={item.max_guarantee} />
+              </PriceLine>
+            ) : null}
           </div>
         );
 
@@ -101,19 +123,35 @@ function CategoryCardContent({ item, category }: { item: CategoryItem; category:
         return (
           <div className="space-y-0.5">
             {item.duration && (
-              <p className="text-[11px] text-muted-foreground">{item.duration}</p>
+              <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">{item.duration}</p>
             )}
-            <PriceRow price={item.price_per_person} label={priceLabel} />
+            <PriceLine>
+              <PriceInline label={priceLabel} value={item.price_per_person} suffix="~" />
+            </PriceLine>
           </div>
         );
 
       case "studios":
       case "hanbok":
       case "suits":
+      case "dress_shops":
+      case "makeup_shops":
+        return (
+          <div className="space-y-0.5">
+            <PriceLine>
+              <PriceInline label={priceLabel} value={item.price_per_person} suffix="~" />
+            </PriceLine>
+          </div>
+        );
+
       case "honeymoon_gifts":
       case "appliances":
       case "invitation_venues":
-        return <PriceRow price={item.price_per_person} label={priceLabel} />;
+        return (
+          <PriceLine>
+            <PriceInline label={priceLabel} value={item.price_per_person} />
+          </PriceLine>
+        );
 
       default:
         return null;
