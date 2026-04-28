@@ -3,8 +3,10 @@ import HeroBanner from "./HeroBanner";
 import TabHeroContent from "./TabHeroContent";
 import HomeCategoryGrid from "./HomeCategoryGrid";
 import RecommendedSection from "./RecommendedSection";
+import InvitationTemplateSection from "./InvitationTemplateSection";
 import StudioGallery from "./StudioGallery";
 import MagazineSection from "./MagazineSection";
+import CommunityChatterSection from "./CommunityChatterSection";
 import ReviewSection from "./ReviewSection";
 import PopularPostsSection from "./PopularPostsSection";
 
@@ -14,13 +16,14 @@ interface TabContentProps {
 
 const TabContent = ({ activeTab }: TabContentProps) => {
   if (activeTab === "ai-planner") {
-    // Figma home feed order: hero banner → categories → magazine → recommended → review
     return (
       <div className="animate-fade-in">
         <HeroBanner />
         <HomeCategoryGrid />
-        <MagazineSection activeTab={activeTab} />
         <RecommendedSection />
+        <InvitationTemplateSection />
+        <MagazineSection activeTab={activeTab} />
+        <CommunityChatterSection />
         <ReviewSection activeTab={activeTab} />
       </div>
     );
