@@ -1,6 +1,14 @@
 import type { Database } from "@/integrations/supabase/types";
+import {
+  buildVendorInfoLines,
+  collectKeywordTags,
+  type PlaceWithCategory,
+  type VendorInfoLine,
+} from "./vendorInfoLines";
 
 export type PlaceRow = Database["public"]["Tables"]["places"]["Row"];
+
+export type { VendorInfoLine };
 
 // Korean UI category label ↔ places.category snake_case (9 vendor categories)
 // 웨딩플래너는 이 앱의 핵심 제품(AI 플래너)이라 vendor 카테고리에서 제외.
@@ -61,6 +69,9 @@ export interface Vendor {
   avg_rating: number;
   review_count: number;
   min_price: number | null;
+  is_partner: boolean;
+  info_lines: VendorInfoLine[];
+  keyword_tags: string[];
 }
 
 const PRICE_LABEL_PREFIX: Record<string, string> = {
@@ -112,25 +123,31 @@ export interface Venue {
 const joinRegion = (city: string | null, district: string | null) =>
   [city, district].filter(Boolean).join(" ") || null;
 
-export const placeToVendor = (p: PlaceRow): Vendor => ({
-  vendor_id: p.place_id,
-  name: p.name,
-  category_type: PLACE_TO_KOREAN_CATEGORY[p.category] || p.category,
-  category_slug: p.category,
-  region: joinRegion(p.city, p.district),
-  address: joinRegion(p.city, p.district),
-  thumbnail_url: p.main_image_url,
-  tel: null,
-  business_hours: null,
-  parking_location: null,
-  parking_hours: null,
-  sns_info: null,
-  keywords: p.tags && p.tags.length > 0 ? p.tags.join(", ") : null,
-  amenities: null,
-  avg_rating: p.avg_rating ?? 0,
-  review_count: p.review_count ?? 0,
-  min_price: p.min_price ?? null,
-});
+export const placeToVendor = (p: PlaceRow | PlaceWithCategory): Vendor => {
+  const withCat = p as PlaceWithCategory;
+  return {
+    vendor_id: p.place_id,
+    name: p.name,
+    category_type: PLACE_TO_KOREAN_CATEGORY[p.category] || p.category,
+    category_slug: p.category,
+    region: joinRegion(p.city, p.district),
+    address: joinRegion(p.city, p.district),
+    thumbnail_url: p.main_image_url,
+    tel: null,
+    business_hours: null,
+    parking_location: null,
+    parking_hours: null,
+    sns_info: null,
+    keywords: p.tags && p.tags.length > 0 ? p.tags.join(", ") : null,
+    amenities: null,
+    avg_rating: p.avg_rating ?? 0,
+    review_count: p.review_count ?? 0,
+    min_price: p.min_price ?? null,
+    is_partner: p.is_partner ?? false,
+    info_lines: buildVendorInfoLines(withCat),
+    keyword_tags: collectKeywordTags(withCat),
+  };
+};
 
 export const placeToVenue = (p: PlaceRow): Venue => ({
   id: p.place_id,
