@@ -7,6 +7,7 @@ import {
   youTubeUrl,
   type TipVideo,
 } from "@/hooks/useTipVideos";
+import { PLACE_TO_KOREAN_CATEGORY } from "@/lib/placeMappers";
 
 const CARD_W = 120;
 const THUMB_H = Math.round((CARD_W * 16) / 9);
@@ -17,8 +18,15 @@ function formatViews(n: number): string {
   return n.toLocaleString();
 }
 
+const koreanCategoryLabel = (slug: string): string =>
+  PLACE_TO_KOREAN_CATEGORY[slug] ?? slug;
+
 function VideoCard({ video }: { video: TipVideo }) {
   const [liked, setLiked] = useState(false);
+
+  const [categoryTag, ...keywordSlugs] = video.categories ?? [];
+  const keywordTags = keywordSlugs.slice(0, 2).map(koreanCategoryLabel);
+  const categoryLabel = categoryTag ? koreanCategoryLabel(categoryTag) : null;
 
   return (
     <a
@@ -41,6 +49,12 @@ function VideoCard({ video }: { video: TipVideo }) {
           />
         ) : (
           <div className="h-full w-full bg-[#cfcfcf]" />
+        )}
+
+        {categoryLabel && (
+          <span className="absolute left-2 top-2 z-10 px-1 py-[1px] rounded bg-white/85 text-[8px] font-semibold text-[hsl(353,75%,55%)] leading-none">
+            {categoryLabel}
+          </span>
         )}
 
         <button
@@ -67,6 +81,11 @@ function VideoCard({ video }: { video: TipVideo }) {
           <p className="line-clamp-2 h-[26px] text-[10px] font-medium leading-[1.3] text-black">
             {video.title}
           </p>
+          {keywordTags.length > 0 && (
+            <p className="mt-1 line-clamp-1 h-[10px] text-[8px] leading-none text-[hsl(353,75%,55%)]/85">
+              {keywordTags.map((t) => `#${t}`).join(" ")}
+            </p>
+          )}
           <p className="mt-1 line-clamp-1 h-[10px] text-[9px] leading-none text-black/45">
             {video.channel_name ?? "채널명"}
           </p>
@@ -90,7 +109,8 @@ function CardSkeleton() {
         <div className="absolute inset-x-0 bottom-0 bg-white/65 px-2 py-2">
           <div className="h-[10px] w-full animate-pulse rounded bg-[#e5e5e5]" />
           <div className="mt-1 h-[10px] w-4/5 animate-pulse rounded bg-[#e5e5e5]" />
-          <div className="mt-2 h-[8px] w-1/3 animate-pulse rounded bg-[#ececec]" />
+          <div className="mt-1 h-[8px] w-2/5 animate-pulse rounded bg-[#ececec]" />
+          <div className="mt-1 h-[8px] w-1/3 animate-pulse rounded bg-[#ececec]" />
           <div className="mt-1 h-[8px] w-1/2 animate-pulse rounded bg-[#ececec]" />
         </div>
       </div>

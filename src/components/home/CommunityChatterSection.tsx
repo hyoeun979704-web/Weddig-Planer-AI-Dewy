@@ -5,13 +5,43 @@ import { Skeleton } from "@/components/ui/skeleton";
 import PostListCard, { PostListItem } from "./PostListCard";
 
 const PLACEHOLDERS: PostListItem[] = [
-  { id: "placeholder-1", title: "제목", content: "내용", views: 1246, like_count: 165 },
-  { id: "placeholder-2", title: "제목", content: "내용", views: 1246, like_count: 165 },
+  {
+    id: "placeholder-1",
+    title: "제목",
+    content: "내용",
+    views: 1246,
+    like_count: 165,
+    category_tag: "수다",
+    keyword_tags: ["일상", "공유"],
+  },
+  {
+    id: "placeholder-2",
+    title: "제목",
+    content: "내용",
+    views: 1246,
+    like_count: 165,
+    category_tag: "수다",
+    keyword_tags: ["일상", "공유"],
+  },
 ];
 
 const SkeletonCard = () => (
-  <Skeleton className="flex-1 min-w-0 h-[120px] rounded-[10px]" />
+  <Skeleton className="flex-1 min-w-0 h-[150px] rounded-[10px]" />
 );
+
+interface CommunityRow {
+  id: string;
+  title: string;
+  content: string;
+  views: number | null;
+  category: string | null;
+}
+
+const extractHashtags = (content: string): string[] => {
+  const matches = content.match(/#([\p{L}\p{N}_]+)/gu) ?? [];
+  const tags = matches.map((m) => m.slice(1));
+  return Array.from(new Set(tags)).slice(0, 2);
+};
 
 const CommunityChatterSection = () => {
   const navigate = useNavigate();
@@ -21,12 +51,17 @@ const CommunityChatterSection = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("community_posts")
-        .select("id, title, content, views")
+        .select("id, title, content, views, category")
         .order("created_at", { ascending: false })
         .limit(2);
-      return ((data ?? []) as Array<Omit<PostListItem, "like_count">>).map((p) => ({
-        ...p,
+      return ((data ?? []) as CommunityRow[]).map((p) => ({
+        id: p.id,
+        title: p.title,
+        content: p.content,
+        views: p.views,
         like_count: null,
+        category_tag: p.category,
+        keyword_tags: extractHashtags(p.content ?? ""),
       }));
     },
     staleTime: 5 * 60 * 1000,
