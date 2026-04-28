@@ -7,6 +7,8 @@ export interface PostListItem {
   content: string;
   views: number | null;
   like_count: number | null;
+  category_tag?: string | null;
+  keyword_tags?: string[];
 }
 
 function formatCount(n: number | null | undefined): string {
@@ -27,14 +29,28 @@ const PostListCard = ({ post, onClick }: PostListCardProps) => {
   return (
     <button
       onClick={onClick}
-      className="flex-1 min-w-0 h-[120px] flex flex-col bg-white rounded-[10px] p-[12px] text-left active:scale-[0.98] transition-transform"
+      className="flex-1 min-w-0 min-h-[150px] flex flex-col bg-white rounded-[10px] p-[12px] text-left active:scale-[0.98] transition-transform"
     >
+      {post.category_tag && (
+        <span className="self-start mb-1 px-1 py-[1px] rounded bg-[hsl(var(--pink-100))] text-[8px] font-semibold text-[hsl(353,75%,55%)] leading-none">
+          {post.category_tag}
+        </span>
+      )}
+
       <p className="text-[12px] font-bold leading-tight text-black line-clamp-1 mb-1">
         {post.title}
       </p>
+
+      {post.keyword_tags && post.keyword_tags.length > 0 && (
+        <p className="text-[8px] leading-tight text-black/45 line-clamp-1 mb-1">
+          {post.keyword_tags.map((t) => `#${t}`).join(" ")}
+        </p>
+      )}
+
       <p className="text-[10px] leading-[1.35] text-black/65 line-clamp-3 flex-1">
         {post.content}
       </p>
+
       <div className="flex items-center justify-between mt-2 text-[10px] text-black/55">
         <span>조회수 {formatCount(post.views)}</span>
         <span
