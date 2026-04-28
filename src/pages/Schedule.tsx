@@ -11,7 +11,6 @@ import {
   Gift,
   Plane,
   Home as HomeIcon,
-  Loader2,
   Plus,
   Check,
   BookOpen,
@@ -186,10 +185,24 @@ const Schedule = () => {
   };
 
   if (isLoading) {
+    // Layout-matching skeleton instead of a centered spinner — keeps the
+    // page silhouette stable so content doesn't pop in.
     return (
-      <AppLayout hideCategoryTabBar className="bg-[hsl(var(--pink-50))]">
-        <div className="flex items-center justify-center pt-32">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <AppLayout hideCategoryTabBar className="bg-[hsl(var(--pink-50))]" mainClassName="">
+        <div className="sticky top-14 z-30 bg-card border-b border-border h-14" />
+        <div className="px-4 pt-4 pb-2">
+          <div className="rounded-2xl bg-[hsl(var(--pink-100))] h-[180px] animate-pulse" />
+        </div>
+        <div className="px-4 mb-3">
+          <div className="rounded-2xl bg-white border border-border h-[68px] animate-pulse" />
+        </div>
+        <div className="px-4 mb-3 space-y-2">
+          <div className="h-5 w-32 rounded bg-muted animate-pulse" />
+          <div className="rounded-2xl bg-white border border-border h-14 animate-pulse" />
+          <div className="rounded-2xl bg-white border border-border h-14 animate-pulse" />
+        </div>
+        <div className="px-4 mb-3">
+          <div className="rounded-2xl bg-white border border-border h-[88px] animate-pulse" />
         </div>
       </AppLayout>
     );
