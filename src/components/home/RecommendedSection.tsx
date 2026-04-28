@@ -27,10 +27,12 @@ const RecommendedSection = () => {
               data={{
                 id: vendor.vendor_id,
                 thumbnail_url: vendor.thumbnail_url,
+                region: vendor.region,
                 name: vendor.name,
-                category_tag: vendor.category_type,
-                style_tags: vendor.style_tags,
-                keyword_tags: vendor.keyword_tags,
+                category: vendor.category_type,
+                concept: vendor.style_tags[0] ?? null,
+                mood: vendor.style_tags[1] ?? null,
+                strength: vendor.keyword_tags[0] ?? null,
                 is_partner: vendor.is_partner,
                 info_lines: vendor.info_lines,
               }}

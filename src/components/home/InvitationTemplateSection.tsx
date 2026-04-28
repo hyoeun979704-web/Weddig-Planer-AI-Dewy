@@ -5,9 +5,12 @@ const TEMPLATES: VendorMediaCardData[] = [
   {
     id: "tpl-classic",
     thumbnail_url: null,
+    region: "디지털 청첩장",
     name: "클래식 화이트",
-    category_tag: "심플",
-    keyword_tags: ["미니멀", "화이트"],
+    category: "청첩장",
+    concept: "심플",
+    mood: "화이트",
+    strength: "미니멀",
     info_lines: [
       { label: "가격", value: "무료", isPrice: true },
       { label: "발송", value: "100매" },
@@ -16,9 +19,12 @@ const TEMPLATES: VendorMediaCardData[] = [
   {
     id: "tpl-floral",
     thumbnail_url: null,
+    region: "디지털 청첩장",
     name: "플로럴 무드",
-    category_tag: "로맨틱",
-    keyword_tags: ["플라워", "로맨틱"],
+    category: "청첩장",
+    concept: "로맨틱",
+    mood: "플라워",
+    strength: "감성",
     info_lines: [
       { label: "가격", value: "무료", isPrice: true },
       { label: "발송", value: "100매" },
@@ -27,9 +33,12 @@ const TEMPLATES: VendorMediaCardData[] = [
   {
     id: "tpl-modern",
     thumbnail_url: null,
+    region: "디지털 청첩장",
     name: "모던 베이지",
-    category_tag: "모던",
-    keyword_tags: ["베이지", "트렌디"],
+    category: "청첩장",
+    concept: "모던",
+    mood: "베이지",
+    strength: "트렌디",
     info_lines: [
       { label: "가격", value: "무료", isPrice: true },
       { label: "발송", value: "100매" },
@@ -38,9 +47,12 @@ const TEMPLATES: VendorMediaCardData[] = [
   {
     id: "tpl-luxe",
     thumbnail_url: null,
+    region: "디지털 청첩장",
     name: "럭스 골드",
-    category_tag: "럭셔리",
-    keyword_tags: ["골드", "프리미엄"],
+    category: "청첩장",
+    concept: "럭셔리",
+    mood: "골드",
+    strength: "프리미엄",
     info_lines: [
       { label: "가격", value: "1만원~", isPrice: true },
       { label: "발송", value: "200매" },

@@ -6,10 +6,12 @@ import type { VendorInfoLine } from "@/lib/placeMappers";
 export interface VendorMediaCardData {
   id: string;
   thumbnail_url: string | null;
+  region?: string | null;
   name: string;
-  category_tag: string | null;
-  style_tags?: string[];
-  keyword_tags: string[];
+  category?: string | null;
+  concept?: string | null;
+  mood?: string | null;
+  strength?: string | null;
   is_partner?: boolean;
   info_lines: VendorInfoLine[];
 }
@@ -19,12 +21,25 @@ interface VendorMediaCardProps {
   onClick: () => void;
 }
 
-export const CARD_W = 110;
-export const CARD_H = 200;
-const IMG_H = 90;
+export const CARD_W = 120;
+export const CARD_H = 220;
+const IMG_H = 100;
+
+const KEYWORD_COLORS = {
+  category: "text-[#d35c75]",
+  concept: "text-[#3aa1d8]",
+  mood: "text-[#d4a843]",
+  strength: "text-[#a64bb8]",
+} as const;
 
 const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
   const [liked, setLiked] = useState(false);
+
+  const keywordChips: Array<{ value: string; className: string }> = [];
+  if (data.category) keywordChips.push({ value: data.category, className: KEYWORD_COLORS.category });
+  if (data.concept) keywordChips.push({ value: data.concept, className: KEYWORD_COLORS.concept });
+  if (data.mood) keywordChips.push({ value: data.mood, className: KEYWORD_COLORS.mood });
+  if (data.strength) keywordChips.push({ value: data.strength, className: KEYWORD_COLORS.strength });
 
   return (
     <button
@@ -73,48 +88,48 @@ const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
       </div>
 
       <div className="flex-1 flex flex-col gap-[3px] bg-white px-2 py-2">
-        {data.category_tag && (
-          <span className="self-start px-1 py-[1px] rounded bg-[hsl(var(--pink-100))] text-[8px] font-semibold text-[hsl(353,75%,55%)] leading-none">
-            {data.category_tag}
-          </span>
+        {data.region && (
+          <p className="text-[9px] leading-tight text-black/55 line-clamp-1">
+            {data.region}
+          </p>
         )}
 
-        <p className="text-[11px] font-bold leading-tight text-black line-clamp-1">
+        <p className="text-[12px] font-bold leading-tight text-black line-clamp-1">
           {data.name}
         </p>
 
-        {data.style_tags && data.style_tags.length > 0 && (
-          <p className="text-[8px] leading-tight text-black/45 line-clamp-1">
-            {data.style_tags.map((t) => `#${t}`).join(" ")}
-          </p>
-        )}
-
-        {data.keyword_tags.length > 0 && (
-          <p className="text-[8px] leading-tight text-[#5d9bf0] line-clamp-1">
-            {data.keyword_tags.map((t) => `#${t}`).join(" ")}
-          </p>
-        )}
-
-        <div className="mt-auto flex flex-col gap-[1px]">
-          {data.info_lines.map((line, idx) => (
-            <div
-              key={`${line.label}-${idx}`}
-              className="flex items-center justify-between gap-1 text-[9px] leading-tight"
-            >
-              <span className="text-black/55 shrink-0">{line.label}</span>
-              <span
-                className={cn(
-                  "truncate",
-                  line.isPrice
-                    ? "font-bold text-[hsl(353,75%,55%)]"
-                    : "text-black/75"
-                )}
+        {data.info_lines.length > 0 && (
+          <div className="flex flex-col gap-[1px]">
+            {data.info_lines.map((line, idx) => (
+              <div
+                key={`${line.label}-${idx}`}
+                className="flex items-center justify-between gap-1 text-[9px] leading-tight"
               >
-                {line.value}
+                <span className="text-black/55 shrink-0">{line.label}</span>
+                <span
+                  className={cn(
+                    "truncate",
+                    line.isPrice
+                      ? "font-bold text-[hsl(353,75%,55%)]"
+                      : "text-black/75"
+                  )}
+                >
+                  {line.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {keywordChips.length > 0 && (
+          <p className="mt-auto text-[8px] leading-tight line-clamp-2">
+            {keywordChips.map((chip, i) => (
+              <span key={i} className={cn(chip.className, "mr-1 font-medium")}>
+                #{chip.value}
               </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </p>
+        )}
       </div>
     </button>
   );
