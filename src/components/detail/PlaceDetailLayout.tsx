@@ -29,6 +29,7 @@ const handleTagClick = (tag: string) => {
     description: "태그로 비슷한 업체 찾기 기능은 곧 출시될 예정이에요",
   });
 };
+import AppLayout from "@/components/AppLayout";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -95,9 +96,10 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
   const gallery = place.image_urls.length > 0 ? place.image_urls : place.thumbnail_url ? [place.thumbnail_url] : [];
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24 relative">
-      {/* Sticky header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
+    <AppLayout hideCategoryTabBar mainClassName="pb-24">
+      {/* Sub-header — pinned just below HomeHeader (top-14) so the global
+          Dewy header + BottomNav stay fixed across detail pages too. */}
+      <header className="sticky top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between h-14 px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
@@ -109,7 +111,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
         </div>
       </header>
 
-      <main>
+      <div>
         {/* Hero gallery */}
         <div className="relative aspect-[4/3] bg-muted overflow-hidden">
           {gallery.length > 0 ? (
@@ -443,10 +445,10 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
             </p>
           </section>
         )}
-      </main>
+      </div>
 
-      {/* Fixed bottom CTA */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-background border-t border-border p-3 z-40">
+      {/* CTA bar — sits above the BottomNav (h-16) so both stay reachable. */}
+      <div className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto bg-background border-t border-border p-3 z-40">
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -474,7 +476,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
           </Button>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

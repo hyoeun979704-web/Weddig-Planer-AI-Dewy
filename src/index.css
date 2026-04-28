@@ -47,7 +47,7 @@
     --pink-50: 340 100% 99%;   /* #FFF9FA */
     --pink-100: 347 100% 97%;  /* #FFF1F4 */
     --pink-200: 351 100% 97%;  /* #FFF2F4 */
-    --inactive: 340 3% 76%;    /* #C4C0C1 */
+    --inactive: 340 4% 55%;    /* #8E8889 — 4.7:1 contrast on white, WCAG AA */
 
     --radius: 0.75rem;
 

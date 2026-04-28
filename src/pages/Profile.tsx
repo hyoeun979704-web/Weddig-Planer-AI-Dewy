@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Camera, User, Mail, Phone, Calendar, Save, Loader2, MapPin, CakeSlice } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { regions } from "@/data/budgetData";
@@ -149,8 +149,8 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <AppLayout>
+        <header className="sticky top-[112px] z-30 bg-background/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center h-14 px-4">
             <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
               <ArrowLeft className="w-5 h-5" />
@@ -158,19 +158,18 @@ const Profile = () => {
             <h1 className="flex-1 text-center font-semibold text-lg pr-10">내 정보</h1>
           </div>
         </header>
-        <main className="flex flex-col items-center justify-center py-20">
+        <div className="flex flex-col items-center justify-center py-20">
           <User className="w-16 h-16 text-muted-foreground/50 mb-4" />
           <p className="text-muted-foreground mb-4">로그인이 필요합니다</p>
           <Button onClick={() => navigate("/auth")}>로그인하기</Button>
-        </main>
-        <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
-      </div>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout>
+      <header className="sticky top-[112px] z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
@@ -179,7 +178,7 @@ const Profile = () => {
         </div>
       </header>
 
-      <main className="pb-20">
+      <div>
         {/* Avatar Section */}
         <div className="flex flex-col items-center py-8 bg-gradient-to-br from-primary/10 to-background">
           <div className="relative">
@@ -298,10 +297,8 @@ const Profile = () => {
             저장하기
           </Button>
         </div>
-      </main>
-
-      <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

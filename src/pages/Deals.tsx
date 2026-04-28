@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Tag, Star, ChevronRight, SlidersHorizontal, Heart } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import { useNavigate } from "react-router-dom";
+import { Tag, Star, ChevronRight, SlidersHorizontal } from "lucide-react";
+import AppLayout from "@/components/AppLayout";
 import { usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { Skeleton } from "@/components/ui/skeleton";
 import SortToggle, { SortMode } from "@/components/SortToggle";
@@ -17,7 +17,6 @@ const mainCategories = [
 
 const Deals = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortMode, setSortMode] = useState<SortMode>("popular");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -33,8 +32,6 @@ const Deals = () => {
   const { deals, featured, isLoading } = usePartnerDeals(selectedCategory);
 
   const hasActiveFilters = !!(filters.category || filters.region || filters.maxPrice || filters.keyword);
-
-  const handleTabChange = (href: string) => navigate(href);
 
   // Apply filters
   let filtered = [...deals];
@@ -55,21 +52,7 @@ const Deals = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-1">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="text-lg font-bold text-foreground">파트너 혜택</h1>
-          </div>
-          <button onClick={() => navigate("/favorites")} className="p-2">
-            <Heart className="w-5 h-5 text-foreground" />
-          </button>
-        </div>
-      </header>
-
+    <AppLayout activeCategoryTab="events" mainClassName="">
       {/* Category Filter */}
       <div className="px-4 py-3 overflow-x-auto">
         <div className="flex gap-2">
@@ -178,7 +161,7 @@ const Deals = () => {
       )}
 
       {/* All Deals */}
-      <main className="px-4 pb-20">
+      <section className="px-4 pb-20">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-foreground flex items-center gap-2">
             <Tag className="w-4 h-4 text-muted-foreground" />
@@ -193,8 +176,18 @@ const Deals = () => {
             ))}
           </div>
         ) : sorted.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">
-            해당 카테고리에 혜택이 없습니다
+          <div className="text-center py-12 px-4">
+            <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center mb-3">
+              <span className="text-2xl">🎁</span>
+            </div>
+            <p className="text-sm font-semibold text-foreground">이 카테고리는 잠시 비어있어요</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-4">곧 새로운 혜택이 추가될 예정이에요</p>
+            <button
+              onClick={() => setSelectedCategory("all")}
+              className="inline-flex items-center px-4 py-2 rounded-full bg-muted text-foreground text-sm font-semibold"
+            >
+              전체 혜택 보기
+            </button>
           </div>
         ) : (
           <div className="space-y-3">
@@ -220,11 +213,10 @@ const Deals = () => {
             ))}
           </div>
         )}
-      </main>
+      </section>
 
       <DealFilterSheet open={filterOpen} onOpenChange={setFilterOpen} filters={filters} onApply={setFilters} />
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+    </AppLayout>
   );
 };
 

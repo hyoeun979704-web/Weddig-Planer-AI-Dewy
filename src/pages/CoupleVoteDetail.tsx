@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Sparkles, Check } from "lucide-react";
+import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -126,23 +127,25 @@ const CoupleVoteDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
+      <AppLayout hideCategoryTabBar>
+        <div className="flex items-center justify-center pt-32">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </AppLayout>
     );
   }
 
   if (!vote) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <AppLayout hideCategoryTabBar mainClassName="">
+        <header className="sticky top-14 z-30 bg-background/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center gap-3 px-4 h-14">
             <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
             <h1 className="text-lg font-bold">의견 조율</h1>
           </div>
         </header>
         <p className="text-center text-muted-foreground py-20">투표를 찾을 수 없어요</p>
-      </div>
+      </AppLayout>
     );
   }
 
@@ -150,8 +153,8 @@ const CoupleVoteDetail = () => {
   const partnerCurrentPick = isCreator ? vote.partner_pick : vote.my_pick;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout hideCategoryTabBar mainClassName="">
+      <header className="sticky top-14 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-lg font-bold truncate">{vote.topic}</h1>
@@ -254,7 +257,7 @@ const CoupleVoteDetail = () => {
           </div>
         )}
       </main>
-    </div>
+    </AppLayout>
   );
 };
 

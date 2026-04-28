@@ -10,6 +10,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      // top-center keeps notifications away from thumb-zone CTAs and the
+      // bottom nav. The mobile offset pushes toasts below HomeHeader
+      // (h-14 = 56px) plus iOS notch / Android status bar so they don't
+      // overlap the search/bell/heart/cart row.
+      position="top-center"
+      mobileOffset={{ top: "calc(56px + env(safe-area-inset-top))" }}
+      offset={{ top: "calc(56px + env(safe-area-inset-top))" }}
       toastOptions={{
         classNames: {
           toast:

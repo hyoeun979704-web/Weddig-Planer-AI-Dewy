@@ -13,10 +13,23 @@ export const useAIPlanner = () => {
   const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
   const { toast } = useToast();
 
-  const sendMessage = useCallback(async (input: string) => {
+  const sendMessage = useCallback(async (input: string, systemContext?: string) => {
     const userMsg: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
+
+    // If the caller built a fresh context snapshot (budget / schedule /
+    // partner / favorites — see buildAIContext on AIPlanner.tsx), prepend
+    // it to the outgoing messages as a system role so the model can answer
+    // grounded questions like "내 예산 안에서 △△ 가능?" with real numbers
+    // instead of hand-waving. The local `messages` state stays clean
+    // (system block is rebuilt every send so context drift on stale data
+    // never poisons the conversation).
+    const outgoing: Array<Message | { role: "system"; content: string }> = [];
+    if (systemContext && systemContext.trim()) {
+      outgoing.push({ role: "system", content: systemContext });
+    }
+    outgoing.push(...messages, userMsg);
 
     let assistantSoFar = "";
     const upsertAssistant = (nextChunk: string) => {
@@ -40,7 +53,7 @@ export const useAIPlanner = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ messages: [...messages, userMsg] }),
+        body: JSON.stringify({ messages: outgoing }),
       });
 
       if (resp.status === 429) {

@@ -1,15 +1,15 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import { 
-  User, 
-  Settings, 
-  HelpCircle, 
-  FileText, 
-  Bell, 
+import { useNavigate } from "react-router-dom";
+import {
+  User,
+  Settings,
+  HelpCircle,
+  FileText,
+  Bell,
   MessageSquare,
   ChevronRight,
   LogIn
 } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 
 const menuItems = [
   { icon: User, title: "내 정보", description: "프로필 및 계정 관리", href: "/profile" },
@@ -22,23 +22,18 @@ const menuItems = [
 
 const More = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const handleTabChange = (href: string) => {
-    navigate(href);
-  };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-[112px] z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">더보기</h1>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="pb-20">
+      <div>
         {/* Login Section */}
         <div className="px-4 py-6 bg-gradient-to-br from-primary/10 via-accent to-background">
           <div className="flex items-center gap-4">
@@ -87,11 +82,8 @@ const More = () => {
             <p className="mt-1">© 2025 웨딩 플래너</p>
           </div>
         </div>
-      </main>
-
-      {/* Bottom Navigation */}
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

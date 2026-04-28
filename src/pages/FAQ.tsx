@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Search } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { Input } from "@/components/ui/input";
 import {
   Accordion,
@@ -66,8 +66,8 @@ const FAQ = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout mainClassName="">
+      <header className="sticky top-[112px] z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
@@ -76,7 +76,7 @@ const FAQ = () => {
         </div>
       </header>
 
-      <main className="pb-20">
+      <div className="pb-20">
         {/* Search */}
         <div className="p-4 border-b border-border">
           <div className="relative">
@@ -135,10 +135,8 @@ const FAQ = () => {
             </button>
           </div>
         </div>
-      </main>
-
-      <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Play, Flame } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import { Play, Flame } from "lucide-react";
+import AppLayout from "@/components/AppLayout";
 import { useTipVideos, youTubeUrl, type TipVideo } from "@/hooks/useTipVideos";
 
 // Shorts threshold: YouTube classifies up to 3 min as Shorts. We use 180s.
@@ -41,32 +40,35 @@ function formatDate(iso: string | null): string {
 }
 
 function HotCard({ video, rank }: { video: TipVideo; rank: number }) {
+  // Same card spec as MagazineSection's home card per design — 9:16
+  // aspect, full-bleed thumbnail, caption overlay with white/50%
+  // translucent strip across the bottom. Rank badge stays at top-left.
   return (
     <a
       href={youTubeUrl(video.video_id)}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex-shrink-0 w-[180px] active:scale-[0.97] transition-transform"
+      className="relative flex-shrink-0 w-[160px] aspect-[9/16] bg-[#d9d9d9] rounded-[10px] overflow-hidden active:scale-[0.97] transition-transform"
     >
-      <div className="relative aspect-[9/16] bg-muted rounded-[10px] overflow-hidden">
-        {video.thumbnail_url && (
-          <img
-            src={video.thumbnail_url}
-            alt={video.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        )}
-        <span className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center">
-          {rank}
-        </span>
-        <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/70 text-white text-[10px]">
-          {formatViews(video.view_count)}
-        </div>
+      {video.thumbnail_url && (
+        <img
+          src={video.thumbnail_url}
+          alt={video.title}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+      )}
+      <span className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center">
+        {rank}
+      </span>
+      <div className="absolute inset-x-0 bottom-0 px-2.5 py-2 bg-white/50 backdrop-blur-sm">
+        <p className="text-[12px] font-semibold text-black leading-snug line-clamp-2">
+          {video.title}
+        </p>
+        <p className="text-[10px] text-black/60 mt-0.5">
+          조회 {formatViews(video.view_count)}
+        </p>
       </div>
-      <p className="text-[12px] font-medium text-foreground leading-snug line-clamp-2 mt-1.5">
-        {video.title}
-      </p>
     </a>
   );
 }
@@ -113,8 +115,6 @@ function GridCard({ video, wide }: { video: TipVideo; wide?: boolean }) {
 }
 
 const Magazine = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const [category, setCategory] = useState<string | null>(null);
   const [sort, setSort] = useState<SortKey>("popular");
   const [format, setFormat] = useState<FormatKey>("all");
@@ -156,19 +156,9 @@ const Magazine = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-20">
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center px-4 h-14">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 flex items-center justify-center -ml-2"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-lg font-bold flex-1 text-center -mr-8">꿀팁</h1>
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-3">
+    <AppLayout activeCategoryTab="tips">
+      <div className="sticky top-[112px] z-30 bg-card border-b border-border">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 py-3">
           {CATEGORY_CHIPS.map((c) => {
             const active = category === c.slug;
             return (
@@ -186,9 +176,8 @@ const Magazine = () => {
             );
           })}
         </div>
-      </header>
+      </div>
 
-      <main>
         <section className="pt-4 pb-2">
           <div className="flex items-center gap-2 px-4 mb-3">
             <Flame className="w-5 h-5 text-rose-500 fill-rose-500" />
@@ -288,10 +277,7 @@ const Magazine = () => {
             </p>
           )}
         </section>
-      </main>
-
-      <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
-    </div>
+    </AppLayout>
   );
 };
 

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Play } from "lucide-react";
 import { FEATURE_GUIDES } from "@/hooks/useTutorial";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 
 const Tutorial = () => {
   const navigate = useNavigate();
@@ -11,9 +11,9 @@ const Tutorial = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <AppLayout mainClassName="pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border">
+      <header className="sticky top-[112px] z-30 bg-card/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center px-4 h-14">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ChevronLeft className="w-5 h-5 text-foreground" />
@@ -22,7 +22,7 @@ const Tutorial = () => {
         </div>
       </header>
 
-      <main className="px-4 py-6 pb-24 space-y-4">
+      <div className="px-4 py-6 space-y-4">
         <p className="text-sm text-muted-foreground mb-2">
           각 기능의 사용법을 코치마크 가이드로 확인해 보세요.
         </p>
@@ -46,10 +46,8 @@ const Tutorial = () => {
             </div>
           </button>
         ))}
-      </main>
-
-      <BottomNav activeTab="/" onTabChange={(href) => navigate(href)} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

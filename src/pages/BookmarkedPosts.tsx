@@ -1,14 +1,14 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  Bookmark, 
-  Heart, 
-  MessageSquare, 
-  Eye, 
+import {
+  Bookmark,
+  Heart,
+  MessageSquare,
+  Eye,
   Image,
   ArrowLeft
 } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,7 +30,6 @@ interface Post {
 
 const BookmarkedPosts = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const { favorites, isLoading: favoritesLoading } = useFavorites();
 
@@ -80,10 +79,6 @@ const BookmarkedPosts = () => {
     enabled: bookmarkedPostIds.length > 0,
   });
 
-  const handleTabChange = (href: string) => {
-    navigate(href);
-  };
-
   const handlePostClick = (postId: string) => {
     navigate(`/community/${postId}`);
   };
@@ -104,8 +99,8 @@ const BookmarkedPosts = () => {
   // If not logged in, show login prompt
   if (!user) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <AppLayout hideCategoryTabBar mainClassName="">
+        <header className="sticky top-14 z-30 bg-background/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center px-4 h-14 gap-3">
             <button onClick={() => navigate(-1)} className="p-1">
               <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -114,7 +109,7 @@ const BookmarkedPosts = () => {
           </div>
         </header>
 
-        <main className="pb-20 px-4">
+        <div className="pb-20 px-4">
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
               <Bookmark className="w-10 h-10 text-muted-foreground" />
@@ -131,17 +126,15 @@ const BookmarkedPosts = () => {
               로그인하기
             </button>
           </div>
-        </main>
-
-        <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-      </div>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout hideCategoryTabBar mainClassName="">
+      {/* Sub-header */}
+      <header className="sticky top-14 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center px-4 h-14 gap-3">
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -154,7 +147,7 @@ const BookmarkedPosts = () => {
       </header>
 
       {/* Main Content */}
-      <main className="pb-20">
+      <div className="pb-20">
         <div className="px-4 py-4">
           {isLoading ? (
             <div className="space-y-3">
@@ -224,11 +217,8 @@ const BookmarkedPosts = () => {
             </div>
           )}
         </div>
-      </main>
-
-      {/* Bottom Navigation */}
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

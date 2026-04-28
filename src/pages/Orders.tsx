@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck, CreditCard, Loader2 } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -64,15 +64,17 @@ const Orders = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout>
+        <div className="flex items-center justify-center pt-32">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout>
+      <header className="sticky top-[112px] z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
@@ -81,7 +83,7 @@ const Orders = () => {
         </div>
       </header>
 
-      <main className="pb-20">
+      <div>
         {orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Package className="w-16 h-16 text-muted-foreground/30 mb-4" />
@@ -157,10 +159,8 @@ const Orders = () => {
             })}
           </div>
         )}
-      </main>
-
-      <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

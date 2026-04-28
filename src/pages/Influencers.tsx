@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Star, Users, Loader2, SlidersHorizontal, Heart } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { useInfluencers, useCategoryLabels, Influencer } from "@/hooks/useInfluencers";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import InfoFilterSheet, { InfoFilters, initialInfoFilters } from "@/components/info/InfoFilterSheet";
@@ -27,14 +27,11 @@ const categories = [
 
 const Influencers = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortMode, setSortMode] = useState<SortMode>("popular");
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<InfoFilters>(initialInfoFilters);
   const { influencers, featured, isLoading } = useInfluencers(selectedCategory);
-
-  const handleTabChange = (href: string) => navigate(href);
 
   const hasActiveFilters =
     filters.category !== null ||
@@ -50,16 +47,18 @@ const Influencers = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout>
+        <div className="flex items-center justify-center pt-32">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <AppLayout>
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-[112px] z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="p-1">
@@ -102,7 +101,7 @@ const Influencers = () => {
         </div>
       </header>
 
-      <main className="pb-20 px-4 py-4">
+      <div className="px-4 py-4">
         {/* Sort Toggle */}
         <div className="flex justify-end mb-3">
           <SortToggle value={sortMode} onChange={setSortMode} />
@@ -136,11 +135,10 @@ const Influencers = () => {
             ))}
           </div>
         )}
-      </main>
+      </div>
 
       <InfoFilterSheet open={filterOpen} onOpenChange={setFilterOpen} filters={filters} onApply={setFilters} />
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+    </AppLayout>
   );
 };
 

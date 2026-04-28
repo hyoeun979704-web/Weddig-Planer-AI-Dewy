@@ -14,6 +14,7 @@ import {
   X,
   Bookmark
 } from "lucide-react";
+import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -350,8 +351,8 @@ const CommunityPostDetail = () => {
 
   if (postLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <AppLayout hideCategoryTabBar mainClassName="">
+        <header className="sticky top-14 z-30 bg-background/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center gap-3 px-4 h-14">
             <button onClick={() => navigate(-1)} className="p-2 -ml-2">
               <ArrowLeft className="w-5 h-5" />
@@ -364,23 +365,25 @@ const CommunityPostDetail = () => {
           <Skeleton className="h-4 w-1/2" />
           <Skeleton className="h-40 w-full" />
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   if (!post) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center">
-        <p className="text-muted-foreground mb-4">게시글을 찾을 수 없습니다.</p>
-        <Button onClick={() => navigate("/community")}>커뮤니티로 돌아가기</Button>
-      </div>
+      <AppLayout hideCategoryTabBar>
+        <div className="flex flex-col items-center justify-center pt-32">
+          <p className="text-muted-foreground mb-4">게시글을 찾을 수 없습니다.</p>
+          <Button onClick={() => navigate("/community")}>커뮤니티로 돌아가기</Button>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
+    <AppLayout hideCategoryTabBar mainClassName="pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-14 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="p-2 -ml-2">
@@ -590,8 +593,8 @@ const CommunityPostDetail = () => {
             className="min-h-[44px] max-h-[120px] resize-none flex-1"
             disabled={!user}
           />
-          <Button 
-            size="icon" 
+          <Button
+            size="icon"
             onClick={handleSubmitComment}
             disabled={!newComment.trim() || commentMutation.isPending}
             className="h-11 w-11 flex-shrink-0"
@@ -600,7 +603,7 @@ const CommunityPostDetail = () => {
           </Button>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, Star, Loader2, SlidersHorizontal, ArrowLeft, Heart } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+import { useNavigate } from "react-router-dom";
+import { Star, Loader2, SlidersHorizontal, ShoppingCart } from "lucide-react";
+import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
@@ -34,7 +34,6 @@ const formatPrice = (price: number) => price.toLocaleString() + "원";
 
 const Store = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { itemCount } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -87,33 +86,10 @@ const Store = () => {
     filters.keyword !== "";
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-1">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="text-lg font-bold text-foreground">듀이 스토어</h1>
-          </div>
-          <div className="flex items-center gap-1">
-            <button onClick={() => navigate("/favorites")} className="p-2">
-              <Heart className="w-5 h-5 text-foreground" />
-            </button>
-            <button onClick={() => navigate("/cart")} className="relative p-2">
-            <ShoppingCart className="w-5 h-5 text-foreground" />
-            {itemCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center min-w-[18px] h-[18px]">
-                {itemCount}
-              </span>
-            )}
-            </button>
-          </div>
-        </div>
-
-        {/* Tabs + Filter button */}
-        <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
+    <AppLayout activeCategoryTab="shopping" mainClassName="">
+      <header className="sticky top-[112px] z-30 bg-card border-b border-border">
+        {/* Page-specific tabs + Filter button */}
+        <div className="flex items-center gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -142,7 +118,7 @@ const Store = () => {
         </div>
       </header>
 
-      <main className="pb-20 px-4 py-4">
+      <section className="px-4 py-4">
         <div className="flex justify-end mb-3">
           <SortToggle value={sortMode} onChange={setSortMode} />
         </div>
@@ -151,8 +127,18 @@ const Store = () => {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : products.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground">상품이 없습니다</p>
+          <div className="text-center py-16 px-4">
+            <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center mb-3">
+              <span className="text-2xl">🛍️</span>
+            </div>
+            <p className="text-sm font-semibold text-foreground">조건에 맞는 상품이 없어요</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-4">필터를 조금 풀어보면 더 많이 보여요</p>
+            <button
+              onClick={() => setFilters(initialFilters)}
+              className="inline-flex items-center px-4 py-2 rounded-full bg-muted text-foreground text-sm font-semibold"
+            >
+              필터 초기화
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
@@ -199,11 +185,10 @@ const Store = () => {
             })}
           </div>
         )}
-      </main>
+      </section>
 
       <StoreFilterSheet open={filterOpen} onOpenChange={setFilterOpen} filters={filters} onApply={setFilters} />
-      <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
-    </div>
+    </AppLayout>
   );
 };
 

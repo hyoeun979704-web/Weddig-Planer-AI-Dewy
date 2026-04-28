@@ -185,10 +185,17 @@ export const useCoupleLink = () => {
   };
 
   const isLinked = coupleLink?.status === "linked";
+  const partnerUserId =
+    isLinked && coupleLink && user
+      ? coupleLink.user_id === user.id
+        ? coupleLink.partner_user_id
+        : coupleLink.user_id
+      : null;
 
   return {
     coupleLink,
     partnerProfile,
+    partnerUserId,
     isLinked,
     isLoading,
     generateInviteCode,

@@ -1,7 +1,8 @@
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Clock, ExternalLink, Tag, Copy, Check, Gift, Users, Eye, Loader2 } from "lucide-react";
 import { useState } from "react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
+import DetailPageSkeleton from "@/components/skeletons/DetailPageSkeleton";
 import { Button } from "@/components/ui/button";
 import { usePartnerDealDetail, usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,7 +27,6 @@ const formatDate = (dateStr: string | null): string => {
 
 const DealDetail = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { deal, isLoading } = usePartnerDealDetail(id);
@@ -54,23 +54,17 @@ const DealDetail = () => {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handleTabChange = (href: string) => navigate(href);
-
   const isClaimed = deal?.is_claimed || claimed;
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
   if (!deal) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <p className="text-muted-foreground">혜택을 찾을 수 없습니다</p>
-      </div>
+      <AppLayout hideCategoryTabBar>
+        <p className="text-muted-foreground text-center pt-32">혜택을 찾을 수 없습니다</p>
+      </AppLayout>
     );
   }
 
@@ -80,9 +74,9 @@ const DealDetail = () => {
       : null;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout hideCategoryTabBar mainClassName="">
+      {/* Sub-header */}
+      <header className="sticky top-14 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -91,7 +85,7 @@ const DealDetail = () => {
         </div>
       </header>
 
-      <main className="pb-32">
+      <div className="pb-32">
         {/* Banner */}
         {deal.banner_image_url ? (
           <img src={deal.banner_image_url} alt={deal.title} className="w-full h-48 object-cover" />
@@ -181,7 +175,7 @@ const DealDetail = () => {
             </span>
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Fixed Bottom CTA */}
       <div className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto p-4 bg-background border-t border-border">
@@ -214,9 +208,7 @@ const DealDetail = () => {
           </Button>
         </div>
       </div>
-
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-    </div>
+    </AppLayout>
   );
 };
 

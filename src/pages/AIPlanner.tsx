@@ -1,9 +1,12 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Send, ArrowLeft, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
+import { useBudget } from "@/hooks/useBudget";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useCoupleLink } from "@/hooks/useCoupleLink";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
 import TypingIndicator from "@/components/wedding-planner/TypingIndicator";
 import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
@@ -11,7 +14,7 @@ import SdmeSurvey from "@/components/wedding-planner/SdmeSurvey";
 import TimelineSurvey from "@/components/wedding-planner/TimelineSurvey";
 import BudgetSurvey from "@/components/wedding-planner/BudgetSurvey";
 import UpgradeModal from "@/components/premium/UpgradeModal";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { motion, AnimatePresence } from "framer-motion";
 
 type ModalType = "venue" | "sdme" | "timeline" | "budget" | null;
@@ -32,14 +35,70 @@ const FOLLOW_UP_CHIPS = [
 
 const AIPlanner = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const { messages, isLoading, sendMessage, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
+  const { settings: budgetSettings, summary: budgetSummary } = useBudget();
+  const { weddingSettings, scheduleItems } = useWeddingSchedule();
+  const { isLinked, partnerProfile } = useCoupleLink();
   const [input, setInput] = useState("");
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Build a fresh context snapshot for each AI send. The model receives
+   * this as a system message describing the user's actual state — wedding
+   * date / D-Day, total budget vs spent, schedule progress, partner link
+   * status — so answers like "내 예산 안에서 △△ 가능?" use real numbers
+   * instead of hand-waved generics. Other Korean wedding apps' AI chat
+   * is stateless; this is what makes Dewy's planner feel different.
+   */
+  const buildSystemContext = useCallback((): string => {
+    if (!user) return "";
+
+    const lines: string[] = ["다음은 사용자의 현재 결혼 준비 상황입니다. 답변할 때 이 정보를 참고하세요."];
+
+    if (weddingSettings?.wedding_date) {
+      const wedding = new Date(weddingSettings.wedding_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const days = Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      lines.push(
+        `- 결혼식: ${weddingSettings.wedding_date} (D-${days > 0 ? days : 0})`
+      );
+    } else if (weddingSettings?.wedding_date_tbd) {
+      lines.push("- 결혼식: 예정일 미정 (1년 후 기준 일정)");
+    }
+
+    if (budgetSettings && budgetSettings.total_budget > 0) {
+      const used = budgetSummary?.totalSpent ?? 0;
+      const total = budgetSettings.total_budget;
+      const pct = Math.round((used / total) * 100);
+      lines.push(`- 총 예산: ${total.toLocaleString()}만원 / 사용 ${used.toLocaleString()}만원 (${pct}%)`);
+    }
+
+    if (scheduleItems?.length) {
+      const completed = scheduleItems.filter((i) => i.completed).length;
+      const total = scheduleItems.length;
+      const upcoming = scheduleItems
+        .filter((i) => !i.completed)
+        .slice(0, 3)
+        .map((i) => i.title)
+        .join(", ");
+      lines.push(`- 일정: ${completed}/${total}개 완료. 다가오는 일정: ${upcoming || "없음"}`);
+    }
+
+    if (isLinked) {
+      lines.push(
+        `- 파트너 연결됨${partnerProfile?.display_name ? ` (${partnerProfile.display_name})` : ""}. 결정 시 둘 다 고려할 것.`
+      );
+    } else {
+      lines.push("- 파트너 미연결 상태. 솔로 사용자에게 답변.");
+    }
+
+    return lines.join("\n");
+  }, [user, weddingSettings, budgetSettings, budgetSummary, scheduleItems, isLinked, partnerProfile]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -60,7 +119,7 @@ const AIPlanner = () => {
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
-    sendMessage(input);
+    sendMessage(input, buildSystemContext());
     setInput("");
   };
 
@@ -73,26 +132,38 @@ const AIPlanner = () => {
 
   const handleChipClick = (text: string) => {
     if (isLoading) return;
-    sendMessage(text);
+    sendMessage(text, buildSystemContext());
   };
 
   const handleQuickClick = (item: typeof QUICK_QUESTIONS[0]) => setActiveModal(item.modal);
 
   const handleVenueSubmit = (data: Record<string, string>) => {
     setActiveModal(null);
-    sendMessage(`웨딩홀 추천해줘. 지역: ${data.region ?? "미정"}, 예산: ${data.budget ?? "미정"}, 하객수: ${data.guests ?? "미정"}명`);
+    sendMessage(
+      `웨딩홀 추천해줘. 지역: ${data.region ?? "미정"}, 예산: ${data.budget ?? "미정"}, 하객수: ${data.guests ?? "미정"}명`,
+      buildSystemContext()
+    );
   };
   const handleSdmeSubmit = (data: Record<string, string>) => {
     setActiveModal(null);
-    sendMessage(`스드메 견적 알려줘. 스타일: ${data.style ?? "미정"}, 예산: ${data.budget ?? "미정"}`);
+    sendMessage(
+      `스드메 견적 알려줘. 스타일: ${data.style ?? "미정"}, 예산: ${data.budget ?? "미정"}`,
+      buildSystemContext()
+    );
   };
   const handleTimelineSubmit = (data: Record<string, string>) => {
     setActiveModal(null);
-    sendMessage(`결혼 준비 타임라인 짜줘. 예식일: ${data.weddingDate ?? "미정"}, 현재 진행상황: ${data.progress ?? "초기단계"}`);
+    sendMessage(
+      `결혼 준비 타임라인 짜줘. 예식일: ${data.weddingDate ?? "미정"}, 현재 진행상황: ${data.progress ?? "초기단계"}`,
+      buildSystemContext()
+    );
   };
   const handleBudgetSubmit = (data: Record<string, string>) => {
     setActiveModal(null);
-    sendMessage(`결혼 예산 계획 세워줘. 총 예산: ${data.total ?? "미정"}, 우선순위: ${data.priority ?? "없음"}`);
+    sendMessage(
+      `결혼 예산 계획 세워줘. 총 예산: ${data.total ?? "미정"}, 우선순위: ${data.priority ?? "없음"}`,
+      buildSystemContext()
+    );
   };
 
   const hasConversation = messages.length > 0;
@@ -100,10 +171,10 @@ const AIPlanner = () => {
   const showFollowUps = hasConversation && lastMessageIsAssistant && !isLoading;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
+    <AppLayout activeCategoryTab="ai-planner" mainClassName="flex flex-col">
       {!user && <LoginRequiredOverlay message="AI가 나만의 맞춤 웨딩 플랜을 설계해드려요" features={["맞춤 웨딩홀 추천", "예산 플래너", "준비 타임라인"]} />}
-      {/* Header */}
-      <header className="sticky top-0 bg-card/95 backdrop-blur-md border-b border-border z-40 px-4 py-3">
+      {/* Sub-header */}
+      <header className="sticky top-[112px] bg-card/95 backdrop-blur-md border-b border-border z-30 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground active:scale-95 transition-transform">
@@ -138,7 +209,7 @@ const AIPlanner = () => {
       </header>
 
       {/* Chat area */}
-      <main ref={scrollAreaRef} className="flex-1 overflow-y-auto pb-36 px-4">
+      <div ref={scrollAreaRef} className="flex-1 overflow-y-auto pb-36 px-4">
         <div className="space-y-4 py-4">
           {/* Welcome & Quick Questions - shown when no conversation */}
           {!hasConversation && (
@@ -211,7 +282,7 @@ const AIPlanner = () => {
 
           <div ref={messagesEndRef} />
         </div>
-      </main>
+      </div>
 
       {/* Scroll-to-bottom */}
       <AnimatePresence>
@@ -255,8 +326,6 @@ const AIPlanner = () => {
         </div>
       </div>
 
-      <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
-
       <VenueSurvey isOpen={activeModal === "venue"} onClose={() => setActiveModal(null)} onSubmit={handleVenueSubmit} />
       <SdmeSurvey isOpen={activeModal === "sdme"} onClose={() => setActiveModal(null)} onSubmit={handleSdmeSubmit} />
       <TimelineSurvey isOpen={activeModal === "timeline"} onClose={() => setActiveModal(null)} onSubmit={handleTimelineSubmit} />
@@ -266,7 +335,7 @@ const AIPlanner = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
       />
-    </div>
+    </AppLayout>
   );
 };
 

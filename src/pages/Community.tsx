@@ -1,12 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useQuery } from "@tanstack/react-query";
-import BottomNav from "@/components/BottomNav";
-import HomeHeader from "@/components/home/HomeHeader";
+import AppLayout from "@/components/AppLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
@@ -25,7 +24,6 @@ interface Post {
   views: number;
   created_at: string;
   likes_count: number;
-  comments_count: number;
 }
 
 const categories = ["전체", "웨딩홀", "스드메", "허니문", "혼수", "자유"];
@@ -33,7 +31,6 @@ type SortKey = "latest" | "popular";
 
 const Community = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [sortBy, setSortBy] = useState<SortKey>("latest");
@@ -52,21 +49,14 @@ const Community = () => {
 
       const postsWithCounts = await Promise.all(
         (postsData || []).map(async (post) => {
-          const [likesResult, commentsResult] = await Promise.all([
-            supabase
-              .from("community_likes")
-              .select("*", { count: "exact", head: true })
-              .eq("post_id", post.id),
-            supabase
-              .from("community_comments")
-              .select("*", { count: "exact", head: true })
-              .eq("post_id", post.id),
-          ]);
+          const likesResult = await supabase
+            .from("community_likes")
+            .select("*", { count: "exact", head: true })
+            .eq("post_id", post.id);
 
           return {
             ...post,
             likes_count: likesResult.count || 0,
-            comments_count: commentsResult.count || 0,
           };
         })
       );
@@ -75,21 +65,22 @@ const Community = () => {
     },
   });
 
-  const trendingPosts = [...posts]
-    .sort((a, b) => b.likes_count - a.likes_count)
-    .slice(0, 5);
+  const trendingPosts = useMemo(
+    () => [...posts].sort((a, b) => b.likes_count - a.likes_count).slice(0, 5),
+    [posts]
+  );
 
-  const filteredPosts =
-    selectedCategory === "전체"
-      ? posts
-      : posts.filter((post) => post.category === selectedCategory);
+  const sortedPosts = useMemo(() => {
+    const filtered =
+      selectedCategory === "전체"
+        ? posts
+        : posts.filter((post) => post.category === selectedCategory);
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "popular") return b.likes_count - a.likes_count;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [posts, selectedCategory, sortBy]);
 
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
-    if (sortBy === "popular") return b.likes_count - a.likes_count;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
-
-  const handleTabChange = (href: string) => navigate(href);
   const handlePostClick = (postId: string) => navigate(`/community/${postId}`);
   const handleWriteClick = () => navigate("/community/write");
 
@@ -122,7 +113,7 @@ const Community = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--pink-50))] max-w-[430px] mx-auto relative">
+    <AppLayout hideCategoryTabBar className="bg-[hsl(var(--pink-50))]" mainClassName="">
       {!user && (
         <LoginRequiredOverlay
           message="다른 예비부부들의 생생한 후기를 확인하세요"
@@ -135,8 +126,6 @@ const Community = () => {
         onClose={() => setIsSearchOpen(false)}
       />
 
-      <HomeHeader />
-
       <header
         data-tutorial="community-header"
         className="sticky top-14 z-30 bg-card border-b border-border"
@@ -144,7 +133,7 @@ const Community = () => {
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-1">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="뒤로가기"
             >
@@ -179,7 +168,7 @@ const Community = () => {
         </div>
       </header>
 
-      <main className="pb-24">
+      <div className="pb-24">
         <div
           data-tutorial="community-categories"
           className="flex overflow-x-auto scrollbar-hide gap-2 px-4 py-3 bg-card"
@@ -190,6 +179,7 @@ const Community = () => {
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
+                aria-pressed={isActive}
                 className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
                   isActive
                     ? "bg-primary text-primary-foreground"
@@ -216,9 +206,16 @@ const Community = () => {
               ))}
             </div>
           ) : trendingPosts.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">
-              아직 게시글이 없습니다.
-            </p>
+            <button
+              onClick={handleWriteClick}
+              className="w-full flex flex-col items-center justify-center py-8 px-4 rounded-2xl bg-white border border-dashed border-primary/30 active:scale-[0.99] transition-transform"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                <span className="text-primary text-lg">💬</span>
+              </div>
+              <p className="text-sm font-semibold text-foreground">첫 글의 주인공이 되어보세요</p>
+              <p className="text-xs text-muted-foreground mt-1">작은 질문 하나가 누군가의 큰 도움이 됩니다</p>
+            </button>
           ) : (
             <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
               {trendingPosts.map((post) => (
@@ -252,6 +249,7 @@ const Community = () => {
         <div className="px-4 pt-5 pb-3 flex items-baseline gap-3">
           <button
             onClick={() => setSortBy("latest")}
+            aria-pressed={sortBy === "latest"}
             className={`text-[16px] transition-colors ${
               sortBy === "latest"
                 ? "font-bold text-foreground"
@@ -262,6 +260,7 @@ const Community = () => {
           </button>
           <button
             onClick={() => setSortBy("popular")}
+            aria-pressed={sortBy === "popular"}
             className={`text-[14px] transition-colors ${
               sortBy === "popular"
                 ? "font-bold text-foreground"
@@ -278,16 +277,28 @@ const Community = () => {
               <Skeleton key={i} className="h-[120px] rounded-2xl" />
             ))
           ) : sortedPosts.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="text-muted-foreground text-sm">게시글이 없습니다.</p>
+            <div className="py-12 px-4 text-center">
+              <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center mb-3">
+                <span className="text-2xl">🌱</span>
+              </div>
+              <p className="text-sm font-semibold text-foreground">
+                {selectedCategory === "전체"
+                  ? "이 커뮤니티의 첫 글을 남겨보세요"
+                  : `${selectedCategory} 카테고리에 아직 글이 없어요`}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 mb-4">먼저 시작하면 답글이 빠르게 달려요</p>
+              <button
+                onClick={handleWriteClick}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold"
+              >
+                글쓰기
+              </button>
             </div>
           ) : (
             sortedPosts.map(renderPostCard)
           )}
         </div>
-      </main>
-
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
+      </div>
 
       {tutorial.isActive && tutorial.currentStep && (
         <TutorialOverlay
@@ -300,7 +311,7 @@ const Community = () => {
           onSkip={tutorial.skipTutorial}
         />
       )}
-    </div>
+    </AppLayout>
   );
 };
 

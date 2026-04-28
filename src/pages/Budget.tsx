@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import { Plus, Settings, MapPin, AlertTriangle, ChevronRight, Trash2, Sparkles, Download, Clock, Bell } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useBudget } from "@/hooks/useBudget";
@@ -50,7 +50,6 @@ const DonutChart = ({ pct, size = 80, strokeWidth = 8 }: { pct: number; size?: n
 
 const Budget = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const { defaultRegion } = useDefaultRegion();
   const profileRegionKey = regionLabelToKey(defaultRegion);
@@ -94,10 +93,10 @@ const Budget = () => {
   const recentItems = items.slice(0, 10);
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <AppLayout hideCategoryTabBar mainClassName="pb-20">
       {showLoginOverlay && <LoginRequiredOverlay message="지역별 평균 비교, 양가 분담 현황까지 체계적으로 관리하세요" features={["지역별 평균 비교", "양가 분담 관리", "잔금 알림"]} />}
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
             <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
@@ -400,8 +399,6 @@ const Budget = () => {
         onClose={weddingInfoPrompt.dismiss}
       />
 
-      <BottomNav activeTab={location.pathname} onTabChange={href => navigate(href)} />
-
       {tutorial.isActive && tutorial.currentStep && (
         <TutorialOverlay
           isActive={tutorial.isActive}
@@ -413,7 +410,7 @@ const Budget = () => {
           onSkip={tutorial.skipTutorial}
         />
       )}
-    </div>
+    </AppLayout>
   );
 };
 

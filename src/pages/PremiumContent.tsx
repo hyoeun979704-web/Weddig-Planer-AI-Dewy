@@ -1,7 +1,7 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, FileText, BarChart3, Camera, Church, Users, Briefcase, DollarSign, Mic, UserCheck, MessageSquare, ChevronRight, Lock, Download } from "lucide-react";
 import { useState } from "react";
-import BottomNav from "@/components/BottomNav";
+import AppLayout from "@/components/AppLayout";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -44,7 +44,6 @@ const sections = [
 
 const PremiumContent = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { isPremium } = useSubscription();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [activeSheet, setActiveSheet] = useState<SheetType>(null);
@@ -59,8 +58,8 @@ const PremiumContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
-      <header data-tutorial="premium-header" className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <AppLayout>
+      <header data-tutorial="premium-header" className="sticky top-[112px] z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-lg font-bold">프리미엄 콘텐츠</h1>
@@ -68,7 +67,7 @@ const PremiumContent = () => {
         </div>
       </header>
 
-      <main className="flex-1 pb-20 px-4 py-4 space-y-6">
+      <div className="px-4 py-4 space-y-6">
         {!isPremium && (
           <div className="p-4 rounded-2xl bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/20 text-center">
             <p className="text-sm font-bold text-foreground">🔒 프리미엄 전용 기능입니다</p>
@@ -85,7 +84,7 @@ const PremiumContent = () => {
 ...
           </div>
         ))}
-      </main>
+      </div>
 
       <EstimateSheet open={activeSheet === "estimate"} onClose={() => setActiveSheet(null)} />
       <BudgetReportSheet open={activeSheet === "budget-report"} onClose={() => setActiveSheet(null)} />
@@ -103,8 +102,7 @@ const PremiumContent = () => {
         onPrev={tutorial.prevStep}
         onSkip={tutorial.skipTutorial}
       />
-      <BottomNav activeTab={location.pathname} onTabChange={(h) => navigate(h)} />
-    </div>
+    </AppLayout>
   );
 };
 

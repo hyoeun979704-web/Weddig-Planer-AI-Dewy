@@ -1,6 +1,6 @@
 import { useState, type ElementType } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useBudget } from "@/hooks/useBudget";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
@@ -11,13 +11,13 @@ import {
   Gift,
   Plane,
   Home as HomeIcon,
-  Loader2,
   Plus,
   Check,
   BookOpen,
 } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
-import HomeHeader from "@/components/home/HomeHeader";
+import AppLayout from "@/components/AppLayout";
+import PairedDecisionsWidget from "@/components/couple/PairedDecisionsWidget";
+import PairInvitationCard from "@/components/couple/PairInvitationCard";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +27,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
+import { useHaptic } from "@/hooks/useHaptic";
 import { format, differenceInDays, isToday, isTomorrow } from "date-fns";
 import { ko } from "date-fns/locale";
 import arrowLeftIcon from "@/assets/icons/arrow-left.svg";
@@ -96,7 +97,7 @@ const timelinePhases: TimelinePhase[] = [
 
 const Schedule = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const haptic = useHaptic();
   const { user } = useAuth();
   const { isLinked } = useCoupleLink();
   const { 
@@ -133,25 +134,6 @@ const Schedule = () => {
   const totalItems = scheduleItems.length;
   const completedItems = scheduleItems.filter(i => i.completed).length;
   const overallProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
-
-  // D-Day based premium banners
-  const getDDayBanner = () => {
-    if (days === null || days <= 0) return null;
-    const banners = [
-      { min: 120, max: 180, msg: "📋 업체 비교 견적서 만들어보세요", route: "/premium/content" },
-      { min: 60, max: 90, msg: "📸 스냅 촬영 타임라인 준비할 때예요!", route: "/premium/content" },
-      { min: 30, max: 60, msg: "📊 예산 중간 점검 리포트를 확인하세요", route: "/premium/content" },
-      { min: 14, max: 30, msg: "💒 본식 타임라인 + 스태프 안내서를 준비하세요", route: "/premium/content" },
-      { min: 7, max: 14, msg: "👜 가방순이·축의대 안내서 전달하셨나요?", route: "/premium/content" },
-      { min: 1, max: 7, msg: "📱 하객에게 리마인드 메시지를 보내세요", route: "/premium/content" },
-    ];
-    return banners.find(b => days >= b.min && days <= b.max) || null;
-  };
-
-  const ddayBanner = getDDayBanner();
-  const handleTabChange = (href: string) => {
-    navigate(href);
-  };
 
   // Get phase status based on D-Day
   const getPhaseStatus = (category: string): "completed" | "current" | "upcoming" => {
@@ -206,25 +188,39 @@ const Schedule = () => {
   };
 
   if (isLoading) {
+    // Layout-matching skeleton instead of a centered spinner — keeps the
+    // page silhouette stable so content doesn't pop in.
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout hideCategoryTabBar className="bg-[hsl(var(--pink-50))]" mainClassName="">
+        <div className="sticky top-14 z-30 bg-card border-b border-border h-14" />
+        <div className="px-4 pt-4 pb-2">
+          <div className="rounded-2xl bg-[hsl(var(--pink-100))] h-[180px] animate-pulse" />
+        </div>
+        <div className="px-4 mb-3">
+          <div className="rounded-2xl bg-white border border-border h-[68px] animate-pulse" />
+        </div>
+        <div className="px-4 mb-3 space-y-2">
+          <div className="h-5 w-32 rounded bg-muted animate-pulse" />
+          <div className="rounded-2xl bg-white border border-border h-14 animate-pulse" />
+          <div className="rounded-2xl bg-white border border-border h-14 animate-pulse" />
+        </div>
+        <div className="px-4 mb-3">
+          <div className="rounded-2xl bg-white border border-border h-[88px] animate-pulse" />
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--pink-50))] max-w-[430px] mx-auto relative">
+    <AppLayout hideCategoryTabBar className="bg-[hsl(var(--pink-50))]" mainClassName="">
       {!user && <LoginRequiredOverlay message="D-Day 카운트다운, 체크리스트까지 한눈에 관리하세요" features={["D-Day 카운트다운", "준비 체크리스트", "커플 일정 공유"]} />}
-
-      <HomeHeader />
 
       {/* Sub-header */}
       <header className="sticky top-14 z-30 bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-1">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="뒤로가기"
             >
@@ -243,7 +239,7 @@ const Schedule = () => {
       </header>
 
       {/* Main Content */}
-      <main className="pb-20">
+      <div className="pb-20">
         {/* ── Hero: D-Day Card ── */}
         <div
           data-tutorial="schedule-dday"
@@ -286,7 +282,7 @@ const Schedule = () => {
         {/* ── Premium Banner ── */}
         <button
           onClick={() => isPremium ? navigate("/premium/content") : setShowUpgrade(true)}
-          className="mx-4 mb-6 w-[calc(100%-2rem)] px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left"
+          className="mx-4 mb-6 px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left"
         >
           <img src={clipboardIcon} alt="" className="w-[17px] h-5 shrink-0" />
           <div className="flex-1 min-w-0">
@@ -295,6 +291,12 @@ const Schedule = () => {
           </div>
           <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
         </button>
+
+        {/* ── Pair widget slot — exactly one of these renders depending on link state ── */}
+        <div className="px-4 mb-6 space-y-3">
+          <PairedDecisionsWidget />
+          <PairInvitationCard />
+        </div>
 
         {/* ── Upcoming Tasks ── */}
         <section className="px-4 mb-6">
@@ -312,8 +314,11 @@ const Schedule = () => {
                   key={task.id}
                   className="flex items-center gap-3 px-4 py-3.5 bg-white rounded-2xl border border-border active:scale-[0.98] transition-transform"
                 >
-                  <button 
-                    onClick={() => toggleItemCompletion(task.id)}
+                  <button
+                    onClick={() => {
+                      haptic.medium();
+                      toggleItemCompletion(task.id);
+                    }}
                     className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center hover:border-primary transition-colors shrink-0"
                   >
                     <CheckCircle2 className="w-4 h-4 text-transparent" />
@@ -338,13 +343,18 @@ const Schedule = () => {
               ))}
             </div>
           ) : (
-            <div 
-              className="flex flex-col items-center justify-center py-8 bg-card rounded-xl border border-dashed border-border cursor-pointer hover:border-primary/50 transition-colors"
+            <div
+              className="flex flex-col items-center justify-center py-8 px-4 bg-white rounded-2xl border border-dashed border-primary/30 cursor-pointer hover:border-primary/50 transition-colors text-center"
               onClick={() => navigate("/my-schedule")}
             >
-              <Plus className="w-7 h-7 text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">
-                {user ? "일정을 추가해보세요" : "로그인하여 일정을 관리하세요"}
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                <Plus className="w-5 h-5 text-primary" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">
+                {user ? "오늘 한 가지부터 시작해볼까요?" : "로그인하고 일정 관리 시작하기"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {user ? "예: 웨딩홀 후보 3곳 비교하기" : "체크리스트가 가벼워져요"}
               </p>
             </div>
           )}
@@ -412,7 +422,7 @@ const Schedule = () => {
                         ? "bg-primary border-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]"
                         : isCompleted
                           ? "bg-green-500 border-green-500"
-                          : "bg-background border-border"
+                          : "bg-white border-border"
                     }`}>
                       {isCompleted ? (
                         <Check className="w-4 h-4 text-white" />
@@ -481,7 +491,7 @@ const Schedule = () => {
         {/* ── Couple Section ── */}
         <section className="px-4 mb-6" data-tutorial="schedule-couple">
           <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-            <Heart className="w-4 h-4 text-pink-500" />
+            <Heart className="w-4 h-4 text-primary" />
             커플 연결
           </h3>
           <CoupleInvite />
@@ -492,10 +502,10 @@ const Schedule = () => {
           <section className="px-4 mb-6">
             <button
               onClick={() => navigate("/couple-diary")}
-              className="w-full p-3.5 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 rounded-xl border border-pink-200/50 dark:border-pink-800/30 flex items-center gap-3"
+              className="w-full p-3.5 bg-[hsl(var(--pink-100))] rounded-xl border border-primary/20 flex items-center gap-3"
             >
-              <div className="w-9 h-9 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
-                <BookOpen className="w-4.5 h-4.5 text-pink-500" />
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                <BookOpen className="w-4.5 h-4.5 text-primary" />
               </div>
               <div className="flex-1 text-left">
                 <h3 className="font-semibold text-foreground text-sm">우리의 일기</h3>
@@ -505,7 +515,7 @@ const Schedule = () => {
             </button>
           </section>
         )}
-      </main>
+      </div>
 
       {/* Timeline Detail Sheet */}
       <TimelineDetailSheet
@@ -528,9 +538,6 @@ const Schedule = () => {
         onClose={weddingInfoPrompt.dismiss}
       />
 
-      {/* Bottom Navigation */}
-      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
-
       {tutorial.isActive && tutorial.currentStep && (
         <TutorialOverlay
           isActive={tutorial.isActive}
@@ -542,7 +549,7 @@ const Schedule = () => {
           onSkip={tutorial.skipTutorial}
         />
       )}
-    </div>
+    </AppLayout>
   );
 };
 
