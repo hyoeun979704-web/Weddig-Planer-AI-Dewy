@@ -1,13 +1,17 @@
+import type { ComponentType, SVGProps } from "react";
 import { cn } from "@/lib/utils";
-import type { CSSProperties } from "react";
-import scheduleIcon from "@/assets/icons/nav-schedule.svg";
-import budgetIcon from "@/assets/icons/nav-budget.svg";
-import communityIcon from "@/assets/icons/nav-community.svg";
-import mypageIcon from "@/assets/icons/nav-mypage.svg";
-import logoIcon from "@/assets/icons/logo.svg";
+import {
+  NavScheduleIcon,
+  NavBudgetIcon,
+  NavCommunityIcon,
+  NavMypageIcon,
+  NavHomeIcon,
+} from "@/components/icons/nav-icons";
+
+type IconComp = ComponentType<SVGProps<SVGSVGElement>>;
 
 interface NavItem {
-  icon?: string;
+  icon?: IconComp;
   label: string;
   href: string;
   isHome?: boolean;
@@ -15,28 +19,17 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { icon: scheduleIcon, label: "스케줄", href: "/schedule", tutorialId: "nav-schedule" },
-  { icon: budgetIcon, label: "예산", href: "/budget", tutorialId: "nav-budget" },
+  { icon: NavScheduleIcon, label: "스케줄", href: "/schedule", tutorialId: "nav-schedule" },
+  { icon: NavBudgetIcon, label: "예산", href: "/budget", tutorialId: "nav-budget" },
   { isHome: true, label: "홈", href: "/" },
-  { icon: communityIcon, label: "커뮤니티", href: "/community", tutorialId: "nav-community" },
-  { icon: mypageIcon, label: "마이페이지", href: "/mypage", tutorialId: "nav-mypage" },
+  { icon: NavCommunityIcon, label: "커뮤니티", href: "/community", tutorialId: "nav-community" },
+  { icon: NavMypageIcon, label: "마이페이지", href: "/mypage", tutorialId: "nav-mypage" },
 ];
 
 interface BottomNavProps {
   activeTab?: string;
   onTabChange?: (href: string) => void;
 }
-
-const maskStyle = (url: string): CSSProperties => ({
-  WebkitMaskImage: `url(${url})`,
-  maskImage: `url(${url})`,
-  WebkitMaskRepeat: "no-repeat",
-  maskRepeat: "no-repeat",
-  WebkitMaskPosition: "center",
-  maskPosition: "center",
-  WebkitMaskSize: "contain",
-  maskSize: "contain",
-});
 
 const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
   return (
@@ -53,19 +46,15 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
                 className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2"
               >
                 {isActive ? (
-                  <div className="w-10 h-10 rounded-[14px] flex items-center justify-center bg-primary shadow-md shadow-primary/30 transition-all duration-200">
-                    <span
-                      aria-hidden
-                      className="block w-6 h-5 bg-white"
-                      style={maskStyle(logoIcon)}
-                    />
+                  // Active: pink rounded pill + white logo silhouette inside.
+                  <div className="w-10 h-10 rounded-[14px] bg-primary shadow-md shadow-primary/30 flex items-center justify-center text-white transition-all duration-200">
+                    <NavHomeIcon className="w-6 h-5" />
                   </div>
                 ) : (
-                  <span
-                    aria-hidden
-                    className="block w-7 h-6 bg-[hsl(var(--inactive))] transition-colors"
-                    style={maskStyle(logoIcon)}
-                  />
+                  // Inactive: bare gray silhouette, no pill — matches the
+                  // user-provided fixed-tab spec (assets gray by default,
+                  // colored only when their menu is active).
+                  <NavHomeIcon className="w-7 h-6 text-[hsl(var(--inactive))] transition-colors" />
                 )}
                 <span
                   className={cn(
@@ -79,6 +68,7 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
             );
           }
 
+          const Icon = item.icon;
           return (
             <button
               key={item.href}
@@ -89,14 +79,13 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
                 isActive ? "text-primary font-bold" : "text-[hsl(var(--inactive))]"
               )}
             >
-              {item.icon && (
-                <span
+              {Icon && (
+                <Icon
                   aria-hidden
                   className={cn(
-                    "block w-6 h-6 bg-current transition-transform duration-200",
+                    "w-6 h-6 transition-transform duration-200",
                     isActive && "scale-110"
                   )}
-                  style={maskStyle(item.icon)}
                 />
               )}
               <span className="text-[10px] font-medium">{item.label}</span>
