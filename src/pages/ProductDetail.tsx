@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ShoppingCart, Star, Minus, Plus, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AppLayout from "@/components/AppLayout";
+import DetailPageSkeleton from "@/components/skeletons/DetailPageSkeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
@@ -81,13 +82,7 @@ const ProductDetail = () => {
   };
 
   if (isLoading) {
-    return (
-      <AppLayout hideCategoryTabBar>
-        <div className="flex items-center justify-center pt-32">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </AppLayout>
-    );
+    return <DetailPageSkeleton />;
   }
 
   if (!product) {

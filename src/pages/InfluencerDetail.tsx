@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ExternalLink, Users, Play, Image, FileText, Eye, Heart, Loader2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Users, Play, Image, FileText, Eye, Heart } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import DetailPageSkeleton from "@/components/skeletons/DetailPageSkeleton";
 import { useInfluencerDetail, useCategoryLabels } from "@/hooks/useInfluencers";
 import { Button } from "@/components/ui/button";
 
@@ -30,13 +31,7 @@ const InfluencerDetail = () => {
   const { influencer, contents, isLoading } = useInfluencerDetail(id);
 
   if (isLoading) {
-    return (
-      <AppLayout hideCategoryTabBar>
-        <div className="flex items-center justify-center pt-32">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </AppLayout>
-    );
+    return <DetailPageSkeleton />;
   }
 
   if (!influencer) {

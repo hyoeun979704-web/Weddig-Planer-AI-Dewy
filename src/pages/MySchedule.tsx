@@ -138,10 +138,18 @@ const MySchedule = () => {
   }
 
   if (isLoading) {
+    // Layout-matching skeleton — sub-header + a list of schedule rows so
+    // the page silhouette stays put while data resolves.
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center pt-32">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <AppLayout mainClassName="">
+        <div className="sticky top-[112px] z-30 bg-background/80 backdrop-blur-md border-b border-border h-14" />
+        <div className="px-4 py-4 space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl bg-white border border-border h-20 animate-pulse"
+            />
+          ))}
         </div>
       </AppLayout>
     );
