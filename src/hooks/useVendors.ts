@@ -160,20 +160,35 @@ export const useEvents = (_category?: string) => {
 };
 
 // Top recommended vendors for home page (no category filter)
+// Joins each per-category table so the card can render category-aware
+// info lines (식대/촬영/대여/...) without an N+1 fetch.
+const RECOMMENDED_SELECT = `
+  *,
+  place_wedding_halls(*),
+  place_studios(*),
+  place_dress_shops(*),
+  place_makeup_shops(*),
+  place_tailor_shops(*),
+  place_hanboks(*),
+  place_invitation_venues(*),
+  place_appliances(*),
+  place_honeymoons(*)
+`;
+
 export const useRecommendedVendors = (limit = 6) => {
   return useQuery({
     queryKey: ["recommended-vendors", limit],
     queryFn: async (): Promise<Vendor[]> => {
       const { data, error } = await supabase
         .from("places")
-        .select("*")
+        .select(RECOMMENDED_SELECT)
         .eq("is_active", true)
         .is("deleted_at", null)
         .order("data_completeness", { ascending: false })
         .order("avg_rating", { ascending: false, nullsFirst: false })
         .limit(limit);
       if (error) throw error;
-      return (data ?? []).map(placeToVendor);
+      return ((data ?? []) as unknown as Parameters<typeof placeToVendor>[0][]).map(placeToVendor);
     },
   });
 };
