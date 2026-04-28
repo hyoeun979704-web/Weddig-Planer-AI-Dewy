@@ -7,7 +7,7 @@ import { useTipVideos, youTubeUrl, type TipVideo } from "@/hooks/useTipVideos";
 // version; the height grows so videos with vertical subjects (most wedding
 // content) read well. object-cover crops 16:9 thumbs to the center.
 const CARD_W = 130;
-const THUMB_H = Math.round((CARD_W * 16) / 9); // 391
+const THUMB_H = Math.round((CARD_W * 9) / 16); // 391
 
 function formatViews(n: number): string {
   if (n >= 10_000) return `${(n / 10_000).toFixed(1).replace(/\.0$/, "")}만회`;
