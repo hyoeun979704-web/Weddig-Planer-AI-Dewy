@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { CategoryTab } from "./CategoryTabBar";
@@ -17,6 +18,8 @@ function formatViews(n: number): string {
 }
 
 function VideoCard({ video }: { video: TipVideo }) {
+  const [liked, setLiked] = useState(false);
+
   return (
     <a
       href={youTubeUrl(video.video_id)}
@@ -42,21 +45,32 @@ function VideoCard({ video }: { video: TipVideo }) {
 
         <button
           type="button"
-          aria-label="찜하기"
-          onClick={(e) => e.preventDefault()}
+          aria-label={liked ? "찜 해제" : "찜하기"}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setLiked((v) => !v);
+          }}
           className="absolute right-2 top-2 z-10"
         >
-          <Heart className="h-4 w-4 text-[#f29aa3]" strokeWidth={2} />
+          <Heart
+            className={
+              liked
+                ? "h-4 w-4 fill-[#f29aa3] text-[#f29aa3]"
+                : "h-4 w-4 text-white drop-shadow"
+            }
+            strokeWidth={2}
+          />
         </button>
 
-        <div className="absolute inset-x-0 bottom-0 bg-[#f4eef0]/78 px-2 py-2">
-          <p className="line-clamp-2 text-[10px] font-medium leading-[1.3] text-black">
+        <div className="absolute inset-x-0 bottom-0 bg-white/65 px-2 py-2">
+          <p className="line-clamp-2 h-[26px] text-[10px] font-medium leading-[1.3] text-black">
             {video.title}
           </p>
-          <p className="mt-1 line-clamp-1 text-[9px] leading-none text-black/45">
+          <p className="mt-1 line-clamp-1 h-[10px] text-[9px] leading-none text-black/45">
             {video.channel_name ?? "채널명"}
           </p>
-          <p className="mt-1 line-clamp-1 text-[9px] leading-none text-black/45">
+          <p className="mt-1 line-clamp-1 h-[10px] text-[9px] leading-none text-black/45">
             조회수 {formatViews(video.view_count)}
           </p>
         </div>
@@ -73,7 +87,7 @@ function CardSkeleton() {
         style={{ height: THUMB_H }}
       >
         <div className="h-full w-full animate-pulse bg-[#d8d8d8]" />
-        <div className="absolute inset-x-0 bottom-0 bg-[#f4eef0]/78 px-2 py-2">
+        <div className="absolute inset-x-0 bottom-0 bg-white/65 px-2 py-2">
           <div className="h-[10px] w-full animate-pulse rounded bg-[#e5e5e5]" />
           <div className="mt-1 h-[10px] w-4/5 animate-pulse rounded bg-[#e5e5e5]" />
           <div className="mt-2 h-[8px] w-1/3 animate-pulse rounded bg-[#ececec]" />
@@ -85,14 +99,12 @@ function CardSkeleton() {
 }
 
 type MagazineSectionProps = {
-  selectedCategory: CategoryTab;
+  activeTab: CategoryTab;
 };
 
-export default function MagazineSection({
-  selectedCategory,
-}: MagazineSectionProps) {
+export default function MagazineSection({ activeTab: _activeTab }: MagazineSectionProps) {
   const navigate = useNavigate();
-  const { data = [], isLoading, isError } = useTipVideos(selectedCategory);
+  const { data = [], isLoading, isError } = useTipVideos();
 
   return (
     <section className="bg-[#fff1f4] px-5 py-6">
@@ -112,7 +124,7 @@ export default function MagazineSection({
         </div>
 
         {isLoading ? (
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
             {Array.from({ length: 4 }).map((_, i) => (
               <CardSkeleton key={i} />
             ))}
@@ -126,7 +138,7 @@ export default function MagazineSection({
             표시할 영상이 아직 없어요.
           </div>
         ) : (
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
             {data.map((video) => (
               <VideoCard key={video.video_id} video={video} />
             ))}

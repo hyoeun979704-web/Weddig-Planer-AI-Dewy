@@ -47,6 +47,7 @@ export interface Vendor {
   vendor_id: string;
   name: string;
   category_type: string;
+  category_slug: string;
   region: string | null;
   address: string | null;
   thumbnail_url: string | null;
@@ -59,7 +60,37 @@ export interface Vendor {
   amenities: string | null;
   avg_rating: number;
   review_count: number;
+  min_price: number | null;
 }
+
+const PRICE_LABEL_PREFIX: Record<string, string> = {
+  wedding_hall: "인당",
+  studio: "패키지",
+  dress_shop: "대여",
+  makeup_shop: "이용",
+  hanbok: "대여",
+  tailor_shop: "대여",
+  honeymoon: "패키지",
+  appliance: "최저",
+  invitation_venue: "최저",
+};
+
+// Category-aware price preview shown on home recommendation cards.
+// Splits prefix vs amount so the UI can style them separately.
+export const formatVendorPrice = (
+  v: Pick<Vendor, "category_slug" | "min_price">
+): { prefix: string; amount: string } | null => {
+  if (v.min_price == null || v.min_price <= 0) return null;
+  const won = v.min_price;
+  const amount =
+    won >= 10000
+      ? `${(won / 10000).toFixed(0)}만원~`
+      : `${won.toLocaleString()}원~`;
+  return {
+    prefix: PRICE_LABEL_PREFIX[v.category_slug] ?? "",
+    amount,
+  };
+};
 
 export interface Venue {
   id: string;
@@ -85,6 +116,7 @@ export const placeToVendor = (p: PlaceRow): Vendor => ({
   vendor_id: p.place_id,
   name: p.name,
   category_type: PLACE_TO_KOREAN_CATEGORY[p.category] || p.category,
+  category_slug: p.category,
   region: joinRegion(p.city, p.district),
   address: joinRegion(p.city, p.district),
   thumbnail_url: p.main_image_url,
@@ -97,6 +129,7 @@ export const placeToVendor = (p: PlaceRow): Vendor => ({
   amenities: null,
   avg_rating: p.avg_rating ?? 0,
   review_count: p.review_count ?? 0,
+  min_price: p.min_price ?? null,
 });
 
 export const placeToVenue = (p: PlaceRow): Venue => ({
