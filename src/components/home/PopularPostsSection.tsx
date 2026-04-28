@@ -62,7 +62,7 @@ const PopularPostsSection = () => {
 
   if (isLoading) {
     return (
-      <section className="py-5">
+      <section className="py-5 bg-white">
         <div className="flex items-center justify-between px-4 mb-3">
           <Skeleton className="h-5 w-24" />
           <Skeleton className="h-4 w-12" />
@@ -79,7 +79,7 @@ const PopularPostsSection = () => {
   if (posts.length === 0) return null;
 
   return (
-    <section className="py-5">
+    <section className="py-5 bg-white">
       <div className="flex items-center justify-between px-4 mb-3">
         <h2 className="text-base font-bold text-foreground">오늘의 수다</h2>
         <button
