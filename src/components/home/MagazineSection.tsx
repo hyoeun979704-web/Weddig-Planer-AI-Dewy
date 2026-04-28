@@ -3,11 +3,10 @@ import { Play } from "lucide-react";
 import { CategoryTab } from "./CategoryTabBar";
 import { useTipVideos, youTubeUrl, type TipVideo } from "@/hooks/useTipVideos";
 
-// 9:16 portrait (Shorts-style) thumbnail. Width unchanged from prior 16:9
-// version; the height grows so videos with vertical subjects (most wedding
-// content) read well. object-cover crops 16:9 thumbs to the center.
-const CARD_W = 220;
-const THUMB_H = Math.round((CARD_W * 16) / 9); // 391
+// Per design spec: card itself is 9:16 portrait (not just the thumbnail).
+// Caption sits on top of the bottom of the thumbnail in a white/50%
+// translucent panel — no separate caption row beneath the card.
+const CARD_W = 160;
 
 function formatViews(n: number): string {
   if (n >= 10_000) return `${(n / 10_000).toFixed(1).replace(/\.0$/, "")}만회`;
@@ -20,34 +19,30 @@ function VideoCard({ video }: { video: TipVideo }) {
       href={youTubeUrl(video.video_id)}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex-shrink-0 rounded-[10px] overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow active:scale-[0.98]"
+      className="relative flex-shrink-0 aspect-[9/16] rounded-[10px] overflow-hidden bg-[#d9d9d9] shadow-sm hover:shadow-md transition-shadow active:scale-[0.98]"
       style={{ width: CARD_W }}
     >
-      <div
-        className="relative bg-[#d9d9d9] overflow-hidden"
-        style={{ height: THUMB_H }}
-      >
-        {video.thumbnail_url ? (
-          <img
-            src={video.thumbnail_url}
-            alt={video.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-3xl">🎥</div>
-        )}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30">
-          <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-            <Play className="w-5 h-5 text-black fill-black ml-0.5" />
-          </div>
+      {video.thumbnail_url ? (
+        <img
+          src={video.thumbnail_url}
+          alt={video.title}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-3xl">🎥</div>
+      )}
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30">
+        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+          <Play className="w-5 h-5 text-black fill-black ml-0.5" />
         </div>
       </div>
-      <div className="p-2.5">
-        <p className="text-[12px] font-semibold text-black leading-snug line-clamp-2 mb-1">
+      {/* Caption overlay — white/50% backdrop-blur strip across the bottom. */}
+      <div className="absolute inset-x-0 bottom-0 px-2.5 py-2 bg-white/50 backdrop-blur-sm">
+        <p className="text-[12px] font-semibold text-black leading-snug line-clamp-2">
           {video.title}
         </p>
-        <p className="text-[10px] text-muted-foreground line-clamp-1">
+        <p className="text-[10px] text-black/60 line-clamp-1 mt-0.5">
           {video.channel_name ?? ""} · 조회 {formatViews(video.view_count)}
         </p>
       </div>
@@ -58,15 +53,9 @@ function VideoCard({ video }: { video: TipVideo }) {
 function CardSkeleton() {
   return (
     <div
-      className="flex-shrink-0 rounded-[10px] overflow-hidden bg-white"
+      className="flex-shrink-0 aspect-[9/16] rounded-[10px] overflow-hidden bg-muted animate-pulse"
       style={{ width: CARD_W }}
-    >
-      <div className="bg-muted animate-pulse" style={{ height: THUMB_H }} />
-      <div className="p-2.5 space-y-1.5">
-        <div className="h-3 bg-muted rounded animate-pulse" />
-        <div className="h-3 bg-muted rounded w-2/3 animate-pulse" />
-      </div>
-    </div>
+    />
   );
 }
 

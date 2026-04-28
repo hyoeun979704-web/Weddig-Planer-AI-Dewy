@@ -40,32 +40,35 @@ function formatDate(iso: string | null): string {
 }
 
 function HotCard({ video, rank }: { video: TipVideo; rank: number }) {
+  // Same card spec as MagazineSection's home card per design — 9:16
+  // aspect, full-bleed thumbnail, caption overlay with white/50%
+  // translucent strip across the bottom. Rank badge stays at top-left.
   return (
     <a
       href={youTubeUrl(video.video_id)}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex-shrink-0 w-[180px] active:scale-[0.97] transition-transform"
+      className="relative flex-shrink-0 w-[160px] aspect-[9/16] bg-[#d9d9d9] rounded-[10px] overflow-hidden active:scale-[0.97] transition-transform"
     >
-      <div className="relative aspect-[9/16] bg-muted rounded-[10px] overflow-hidden">
-        {video.thumbnail_url && (
-          <img
-            src={video.thumbnail_url}
-            alt={video.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        )}
-        <span className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center">
-          {rank}
-        </span>
-        <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/70 text-white text-[10px]">
-          {formatViews(video.view_count)}
-        </div>
+      {video.thumbnail_url && (
+        <img
+          src={video.thumbnail_url}
+          alt={video.title}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+      )}
+      <span className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center">
+        {rank}
+      </span>
+      <div className="absolute inset-x-0 bottom-0 px-2.5 py-2 bg-white/50 backdrop-blur-sm">
+        <p className="text-[12px] font-semibold text-black leading-snug line-clamp-2">
+          {video.title}
+        </p>
+        <p className="text-[10px] text-black/60 mt-0.5">
+          조회 {formatViews(video.view_count)}
+        </p>
       </div>
-      <p className="text-[12px] font-medium text-foreground leading-snug line-clamp-2 mt-1.5">
-        {video.title}
-      </p>
     </a>
   );
 }
