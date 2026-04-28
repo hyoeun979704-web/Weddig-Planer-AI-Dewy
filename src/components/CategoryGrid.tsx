@@ -37,7 +37,7 @@ function getKeywords(item: CategoryItem): string[] {
 // couple/set prices ÷ 2). Labels here are user-facing context only — they do
 // not change the underlying value.
 const PRICE_UNIT_LABEL: Record<CategoryType, string> = {
-  venues: "1인 식대",
+  venues: "식대",
   studios: "1인 기준",
   dress_shops: "1인 1벌",
   makeup_shops: "1인 기준",
