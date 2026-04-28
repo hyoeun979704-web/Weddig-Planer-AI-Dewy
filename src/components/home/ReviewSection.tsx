@@ -1,5 +1,4 @@
-import { useNavigate } from "react-router-dom";
-import { ChevronRight, Star, Quote } from "lucide-react";
+import { Star } from "lucide-react";
 import { CategoryTab } from "./CategoryTabBar";
 
 interface ReviewCardProps {
@@ -12,19 +11,19 @@ interface ReviewCardProps {
 }
 
 const ReviewCard = ({ rating, review, vendorName }: ReviewCardProps) => (
-  <div className="flex-shrink-0 w-[200px] h-[120px] p-3 bg-[#d9d9d9] rounded-[10px] flex flex-col">
-    <div className="flex items-center gap-0.5 mb-1">
+  <div className="flex-shrink-0 w-[220px] p-3.5 bg-muted rounded-[10px] flex flex-col">
+    <div className="flex items-center gap-0.5 mb-1.5">
       {[...Array(5)].map((_, i) => (
         <Star
           key={i}
-          className={`w-3 h-3 ${i < rating ? "fill-amber-400 text-amber-400" : "fill-white/40 text-white/40"}`}
+          className={`w-3.5 h-3.5 ${i < rating ? "fill-amber-400 text-amber-400" : "fill-muted-foreground/20 text-muted-foreground/20"}`}
         />
       ))}
     </div>
-    <p className="text-[11px] text-black leading-tight line-clamp-3 flex-1">
+    <p className="text-[12px] text-foreground leading-snug line-clamp-3 flex-1 mb-2">
       {review}
     </p>
-    <p className="text-[10px] font-medium text-black/80 mt-1 truncate">
+    <p className="text-[11px] text-muted-foreground truncate">
       {vendorName}
     </p>
   </div>
@@ -89,13 +88,12 @@ interface ReviewSectionProps {
 }
 
 const ReviewSection = ({ activeTab = "ai-planner" }: ReviewSectionProps) => {
-  const navigate = useNavigate();
   const data = reviewDataMap[activeTab];
 
   return (
-    <section className="pt-[10px] pb-[30px] px-[30px] bg-[hsl(var(--pink-100))]">
+    <section className="px-4 py-5 bg-[hsl(var(--pink-100))]">
       <h2 className="text-[16px] font-bold text-black mb-[10px]">{data.title}</h2>
-      <div className="flex gap-[10px] overflow-x-auto scrollbar-hide">
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
         {data.reviews.map((review, index) => (
           <ReviewCard key={index} {...review} />
         ))}
