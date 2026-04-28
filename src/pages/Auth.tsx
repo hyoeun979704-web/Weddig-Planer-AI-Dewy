@@ -58,9 +58,28 @@ const Auth = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const translateAuthError = (raw: string): string => {
+    // Supabase only ships English error strings; map the ones the user
+    // actually hits in this app to Korean copy that says what to do next.
+    const m = raw.toLowerCase();
+    if (m.includes("already registered") || m.includes("user already"))
+      return "이미 가입된 이메일이에요. 로그인 탭에서 시도해주세요";
+    if (m.includes("invalid login") || m.includes("invalid credentials"))
+      return "이메일 또는 비밀번호가 올바르지 않아요";
+    if (m.includes("email not confirmed"))
+      return "아직 이메일 인증이 안 된 계정이에요. 메일함을 확인해주세요 (스팸함 포함)";
+    if (m.includes("rate limit") || m.includes("too many"))
+      return "요청이 너무 많아요. 잠시 후 다시 시도해주세요";
+    if (m.includes("password") && m.includes("weak"))
+      return "비밀번호가 너무 단순해요. 다른 조합을 시도해주세요";
+    if (m.includes("network") || m.includes("fetch"))
+      return "연결이 잠시 흐려요. 다시 시도해주세요";
+    return raw; // fallback so the user can at least screenshot it for support
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsSubmitting(true);
@@ -68,33 +87,57 @@ const Auth = () => {
     try {
       if (isSignUp) {
         const metadata = accountType === "business" ? { account_type: "business" } : undefined;
-        const { error } = await signUp(email, password, metadata);
+        const { data, error } = await signUp(email, password, metadata);
+
         if (error) {
-          if (error.message.includes("already registered")) {
-            toast.error("이미 가입된 이메일입니다");
-          } else {
-            toast.error(error.message);
-          }
-        } else {
-          toast.success("회원가입이 완료되었습니다!");
+          toast.error(translateAuthError(error.message));
+          return;
+        }
+
+        // Path A — auto-logged-in (Supabase project has email confirmation OFF):
+        // signUp returns both user and session; the AuthProvider's
+        // onAuthStateChange listener picks it up and the user-effect at the
+        // top of this component will navigate. We still toast so success is
+        // visible.
+        if (data.session) {
+          toast.success("회원가입이 완료되었어요 ✨");
           if (accountType === "business") {
             navigate("/business/onboard");
           } else {
             navigate("/");
           }
+          return;
         }
+
+        // Path B — needs email confirmation (user created but no session).
+        // Previously we'd toast "회원가입 완료" and redirect home, which left
+        // the user logged-out on the home page (the bug being reported).
+        // Instead: tell them to check email and flip to the login tab.
+        if (data.user) {
+          toast.success(
+            "가입 완료! 인증 메일을 보냈어요. 메일을 확인 후 로그인해주세요 (스팸함도 확인)"
+          );
+          setIsSignUp(false);
+          setPassword("");
+          setConfirmPassword("");
+          return;
+        }
+
+        // Path C — Supabase returned no error and no user. Some projects
+        // silently no-op duplicate signups to prevent enumeration; surface
+        // it so the user isn't left confused.
+        toast.error(
+          "가입 처리에 실패했어요. 이미 가입된 이메일일 수 있으니 로그인을 시도해보세요"
+        );
+        setIsSignUp(false);
       } else {
         const { error } = await signIn(email, password);
         if (error) {
-          if (error.message.includes("Invalid login")) {
-            toast.error("이메일 또는 비밀번호가 올바르지 않습니다");
-          } else {
-            toast.error(error.message);
-          }
-        } else {
-          toast.success("로그인되었습니다!");
-          navigate("/");
+          toast.error(translateAuthError(error.message));
+          return;
         }
+        toast.success("로그인되었어요 ✨");
+        navigate("/");
       }
     } finally {
       setIsSubmitting(false);
@@ -106,7 +149,13 @@ const Auth = () => {
     try {
       const { error } = await signInWithGoogle();
       if (error) {
-        toast.error("Google 로그인에 실패했습니다");
+        // The most common cause is that the deployment's domain isn't in
+        // Supabase's allowed Redirect URLs — surface that hint instead of a
+        // generic "failed".
+        toast.error(
+          "구글 로그인 연결에 실패했어요. 잠시 후 다시 시도하거나 이메일로 가입해주세요"
+        );
+        console.error("Google sign-in error:", error);
       }
     } finally {
       setIsGoogleLoading(false);

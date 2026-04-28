@@ -6,7 +6,23 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, metadata?: Record<string, string>) => Promise<{ error: Error | null }>;
+  /**
+   * Returns the full Supabase signUp response (user, session, error). The
+   * caller needs both:
+   *   - data.session to detect the "auto-logged-in" path (email confirmation
+   *     OFF on the project).
+   *   - data.user with no session to detect the "needs email confirmation"
+   *     path (email confirmation ON), which our previous toast logic was
+   *     mis-treating as a successful login.
+   */
+  signUp: (
+    email: string,
+    password: string,
+    metadata?: Record<string, string>
+  ) => Promise<{
+    data: { user: User | null; session: Session | null };
+    error: Error | null;
+  }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -49,17 +65,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, metadata?: Record<string, string>) => {
     const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
         data: metadata,
-      }
+      },
     });
-    
-    return { error: error as Error | null };
+
+    return {
+      data: { user: data?.user ?? null, session: data?.session ?? null },
+      error: error as Error | null,
+    };
   };
 
   const signIn = async (email: string, password: string) => {
