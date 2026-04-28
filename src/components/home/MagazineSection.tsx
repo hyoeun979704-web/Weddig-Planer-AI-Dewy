@@ -40,7 +40,6 @@ function VideoCard({ video }: { video: TipVideo }) {
           <div className="h-full w-full bg-[#cfcfcf]" />
         )}
 
-        {/* 찜 아이콘: 원 배경 없이 아이콘만 */}
         <button
           type="button"
           aria-label="찜하기"
@@ -50,13 +49,13 @@ function VideoCard({ video }: { video: TipVideo }) {
           <Heart className="h-4 w-4 text-[#f29aa3]" strokeWidth={2} />
         </button>
 
-        {/* 캡션: 썸네일 위에 겹침 */}
         <div className="absolute inset-x-0 bottom-0 px-2 pb-2">
-          <div className="bg-white/78 px-2 py-2">
+          <div className="bg-white/95 px-2 py-2">
             <p className="line-clamp-2 text-[10px] font-medium leading-[1.3] text-black">
               {video.title}
             </p>
             <p className="mt-1 line-clamp-1 text-[9px] leading-none text-black/45">
+              {video.channel_name ?? "채널명"}
             </p>
             <p className="mt-1 line-clamp-1 text-[9px] leading-none text-black/45">
               조회수 {formatViews(video.view_count)}
@@ -70,10 +69,7 @@ function VideoCard({ video }: { video: TipVideo }) {
 
 function CardSkeleton() {
   return (
-    <div
-      className="flex-shrink-0"
-      style={{ width: CARD_W }}
-    >
+    <div className="flex-shrink-0" style={{ width: CARD_W }}>
       <div
         className="relative overflow-hidden rounded-[12px] bg-[#cfcfcf]"
         style={{ height: THUMB_H }}
@@ -81,7 +77,7 @@ function CardSkeleton() {
         <div className="h-full w-full animate-pulse bg-[#d8d8d8]" />
 
         <div className="absolute inset-x-0 bottom-0 px-2 pb-2">
-          <div className="bg-white/78 px-2 py-2">
+          <div className="bg-white/95 px-2 py-2">
             <div className="h-[10px] w-full animate-pulse rounded bg-[#e5e5e5]" />
             <div className="mt-1 h-[10px] w-4/5 animate-pulse rounded bg-[#e5e5e5]" />
             <div className="mt-2 h-[8px] w-1/3 animate-pulse rounded bg-[#ececec]" />
@@ -104,7 +100,7 @@ export default function MagazineSection({
   const { data = [], isLoading, isError } = useTipVideos(selectedCategory);
 
   return (
-    <section className="bg-[#f3eaec] px-5 py-6">
+    <section className="bg-[#fff1f4] px-5 py-6">
       <div className="mx-auto max-w-[1200px]">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[24px] font-bold leading-none text-black">
