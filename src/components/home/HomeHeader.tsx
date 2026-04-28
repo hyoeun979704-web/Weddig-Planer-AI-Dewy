@@ -1,25 +1,15 @@
 import { useState } from "react";
-import type { CSSProperties } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import SearchOverlay from "./SearchOverlay";
 import DewyLogo from "./DewyLogo";
-import searchIcon from "@/assets/icons/search.svg";
-import bellIcon from "@/assets/icons/bell.svg";
-import heartIcon from "@/assets/icons/heart.svg";
-import cartIcon from "@/assets/icons/cart.svg";
-import helpIcon from "@/assets/icons/help.svg";
-
-const maskStyle = (url: string): CSSProperties => ({
-  WebkitMaskImage: `url(${url})`,
-  maskImage: `url(${url})`,
-  WebkitMaskRepeat: "no-repeat",
-  maskRepeat: "no-repeat",
-  WebkitMaskPosition: "center",
-  maskPosition: "center",
-  WebkitMaskSize: "contain",
-  maskSize: "contain",
-});
+import {
+  SearchIcon,
+  BellIcon,
+  HeartIcon,
+  CartIcon,
+  HelpIcon,
+} from "@/components/icons/header-icons";
 
 const HomeHeader = () => {
   const navigate = useNavigate();
@@ -28,11 +18,11 @@ const HomeHeader = () => {
 
   const isActive = (route: string) => location.pathname.startsWith(route);
 
-  const iconClass = (active: boolean) =>
-    cn(
-      "block transition-colors",
-      active ? "bg-primary" : "bg-[hsl(var(--inactive))]"
-    );
+  // Each icon is gray by default and turns brand-pink only when on the
+  // route it owns (or, for search, when the overlay is open). currentColor
+  // on the inline SVG paths picks this up automatically.
+  const colorClass = (active: boolean) =>
+    active ? "text-primary" : "text-[hsl(var(--inactive))]";
 
   return (
     <>
@@ -52,14 +42,13 @@ const HomeHeader = () => {
             </button>
             <button
               onClick={() => navigate("/tutorial")}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              className={cn(
+                "w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors",
+                colorClass(isActive("/tutorial"))
+              )}
               aria-label="튜토리얼"
             >
-              <span
-                aria-hidden
-                className={cn(iconClass(isActive("/tutorial")), "w-[14px] h-[15px]")}
-                style={maskStyle(helpIcon)}
-              />
+              <HelpIcon className="w-[14px] h-[15px]" />
             </button>
           </div>
 
@@ -67,47 +56,43 @@ const HomeHeader = () => {
           <div className="flex items-center gap-1">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              className={cn(
+                "w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors",
+                colorClass(isSearchOpen)
+              )}
               aria-label="검색"
             >
-              <span
-                aria-hidden
-                className={cn(iconClass(isSearchOpen), "w-[18px] h-[18px]")}
-                style={maskStyle(searchIcon)}
-              />
+              <SearchIcon className="w-[18px] h-[18px]" />
             </button>
             <button
               onClick={() => navigate("/notifications")}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              className={cn(
+                "w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors",
+                colorClass(isActive("/notifications"))
+              )}
               aria-label="알림"
             >
-              <span
-                aria-hidden
-                className={cn(iconClass(isActive("/notifications")), "w-[19px] h-5")}
-                style={maskStyle(bellIcon)}
-              />
+              <BellIcon className="w-[19px] h-5" />
             </button>
             <button
               onClick={() => navigate("/favorites")}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              className={cn(
+                "w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors",
+                colorClass(isActive("/favorites"))
+              )}
               aria-label="찜한 목록"
             >
-              <span
-                aria-hidden
-                className={cn(iconClass(isActive("/favorites")), "w-5 h-[18px]")}
-                style={maskStyle(heartIcon)}
-              />
+              <HeartIcon className="w-5 h-[18px]" />
             </button>
             <button
               onClick={() => navigate("/cart")}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              className={cn(
+                "w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors",
+                colorClass(isActive("/cart"))
+              )}
               aria-label="장바구니"
             >
-              <span
-                aria-hidden
-                className={cn(iconClass(isActive("/cart")), "w-[22px] h-[22px]")}
-                style={maskStyle(cartIcon)}
-              />
+              <CartIcon className="w-[22px] h-[22px]" />
             </button>
           </div>
         </div>
