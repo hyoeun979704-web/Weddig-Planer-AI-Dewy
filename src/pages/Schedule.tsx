@@ -17,6 +17,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import PairedDecisionsWidget from "@/components/couple/PairedDecisionsWidget";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
@@ -274,6 +275,11 @@ const Schedule = () => {
           </div>
           <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
         </button>
+
+        {/* ── Paired Decisions (only renders for linked couples) ── */}
+        <div className="px-4 mb-6">
+          <PairedDecisionsWidget />
+        </div>
 
         {/* ── Upcoming Tasks ── */}
         <section className="px-4 mb-6">
