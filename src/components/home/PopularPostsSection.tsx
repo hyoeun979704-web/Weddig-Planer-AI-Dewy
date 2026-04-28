@@ -40,7 +40,7 @@ const PopularPostsSection = () => {
   return (
     <section className="py-5">
       <div className="flex items-center justify-between px-4 mb-3">
-        <h2 className="text-base font-bold text-foreground">실시간 인기 게시물</h2>
+        <h2 className="text-base font-bold text-foreground">오늘의 수다</h2>
         <button
           onClick={() => navigate("/community")}
           className="flex items-center gap-0.5 text-xs text-primary font-medium"
