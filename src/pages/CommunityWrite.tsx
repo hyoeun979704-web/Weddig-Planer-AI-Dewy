@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, X, ImagePlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,18 +7,49 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFormDraft } from "@/hooks/useFormDraft";
 
 const categories = ["웨딩홀", "스드메", "혼수", "허니문", "자유"];
+
+interface DraftShape {
+  selectedCategory: string;
+  title: string;
+  content: string;
+}
 
 const CommunityWrite = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const draftDefaults: DraftShape = { selectedCategory: "", title: "", content: "" };
+  const {
+    draft,
+    hasDraft,
+    save: saveDraft,
+    clear: clearDraft,
+  } = useFormDraft<DraftShape>("community-write", draftDefaults);
+
+  const [selectedCategory, setSelectedCategory] = useState(draft.selectedCategory);
+  const [title, setTitle] = useState(draft.title);
+  const [content, setContent] = useState(draft.content);
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Persist text fields as a draft so accidental back / refresh / app
+  // switch doesn't lose what the user typed. Images are excluded — File
+  // objects don't survive serialization, and the user can re-attach.
+  useEffect(() => {
+    saveDraft({ selectedCategory, title, content });
+  }, [selectedCategory, title, content, saveDraft]);
+
+  // Show a one-time toast on mount when restoring a real draft so the
+  // user knows why their fields aren't blank.
+  useEffect(() => {
+    if (hasDraft && (draft.title || draft.content)) {
+      toast.success("이전에 작성하던 글을 불러왔어요");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -119,6 +150,7 @@ const CommunityWrite = () => {
 
       if (error) throw error;
 
+      clearDraft();
       toast.success("게시글이 작성되었습니다.");
       navigate(`/community/${data.id}`);
     } catch (error) {
