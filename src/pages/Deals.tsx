@@ -176,8 +176,18 @@ const Deals = () => {
             ))}
           </div>
         ) : sorted.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">
-            해당 카테고리에 혜택이 없습니다
+          <div className="text-center py-12 px-4">
+            <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center mb-3">
+              <span className="text-2xl">🎁</span>
+            </div>
+            <p className="text-sm font-semibold text-foreground">이 카테고리는 잠시 비어있어요</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-4">곧 새로운 혜택이 추가될 예정이에요</p>
+            <button
+              onClick={() => setSelectedCategory("all")}
+              className="inline-flex items-center px-4 py-2 rounded-full bg-muted text-foreground text-sm font-semibold"
+            >
+              전체 혜택 보기
+            </button>
           </div>
         ) : (
           <div className="space-y-3">

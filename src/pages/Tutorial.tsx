@@ -13,7 +13,7 @@ const Tutorial = () => {
   return (
     <AppLayout mainClassName="pb-24">
       {/* Header */}
-      <header className="sticky top-14 z-40 bg-card/95 backdrop-blur-md border-b border-border">
+      <header className="sticky top-[112px] z-30 bg-card/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center px-4 h-14">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ChevronLeft className="w-5 h-5 text-foreground" />

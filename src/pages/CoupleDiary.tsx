@@ -49,7 +49,7 @@ const CoupleDiary = () => {
   return (
     <AppLayout>
       {/* Header */}
-      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-[112px] z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate("/schedule")} className="p-1">

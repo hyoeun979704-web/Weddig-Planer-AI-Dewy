@@ -127,8 +127,18 @@ const Store = () => {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : products.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground">상품이 없습니다</p>
+          <div className="text-center py-16 px-4">
+            <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center mb-3">
+              <span className="text-2xl">🛍️</span>
+            </div>
+            <p className="text-sm font-semibold text-foreground">조건에 맞는 상품이 없어요</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-4">필터를 조금 풀어보면 더 많이 보여요</p>
+            <button
+              onClick={() => setFilters(initialFilters)}
+              className="inline-flex items-center px-4 py-2 rounded-full bg-muted text-foreground text-sm font-semibold"
+            >
+              필터 초기화
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">

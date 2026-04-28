@@ -16,12 +16,13 @@ interface Favorite {
 export const useFavorites = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const queryKey = ["favorites", user?.id];
 
   const { data: favorites = [], isLoading } = useQuery<Favorite[]>({
-    queryKey: ["favorites", user?.id],
+    queryKey,
     queryFn: async (): Promise<Favorite[]> => {
       if (!user) return [];
-      
+
       // Using type assertion due to types not being synced yet
       const { data, error } = await (supabase as any)
         .from("favorites")
@@ -46,13 +47,27 @@ export const useFavorites = () => {
 
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["favorites", user?.id] });
-      toast.success("찜 목록에 추가되었습니다");
+    onMutate: async ({ itemId, itemType }) => {
+      // Optimistic add: the heart should fill the instant the user taps it.
+      // Async server confirmation is a network detail, not UX.
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<Favorite[]>(queryKey) ?? [];
+      const optimistic: Favorite = {
+        id: `optimistic-${itemType}-${itemId}`,
+        user_id: user?.id ?? "",
+        item_id: itemId,
+        item_type: itemType,
+        created_at: new Date().toISOString(),
+      };
+      queryClient.setQueryData<Favorite[]>(queryKey, [...previous, optimistic]);
+      return { previous };
     },
-    onError: (error) => {
-      toast.error("찜하기에 실패했습니다");
-      console.error(error);
+    onError: (_error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+      toast.error("찜하기에 실패했어요. 잠시 후 다시 시도해주세요");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
     },
   });
 
@@ -69,13 +84,21 @@ export const useFavorites = () => {
 
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["favorites", user?.id] });
-      toast.success("찜 목록에서 제거되었습니다");
+    onMutate: async ({ itemId, itemType }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<Favorite[]>(queryKey) ?? [];
+      queryClient.setQueryData<Favorite[]>(
+        queryKey,
+        previous.filter((f) => !(f.item_id === itemId && f.item_type === itemType))
+      );
+      return { previous };
     },
-    onError: (error) => {
-      toast.error("찜 해제에 실패했습니다");
-      console.error(error);
+    onError: (_error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+      toast.error("찜 해제에 실패했어요. 잠시 후 다시 시도해주세요");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
     },
   });
 

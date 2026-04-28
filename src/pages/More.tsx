@@ -26,7 +26,7 @@ const More = () => {
   return (
     <AppLayout>
       {/* Header */}
-      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-[112px] z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">더보기</h1>
         </div>

@@ -206,9 +206,16 @@ const Community = () => {
               ))}
             </div>
           ) : trendingPosts.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">
-              아직 게시글이 없습니다.
-            </p>
+            <button
+              onClick={handleWriteClick}
+              className="w-full flex flex-col items-center justify-center py-8 px-4 rounded-2xl bg-white border border-dashed border-primary/30 active:scale-[0.99] transition-transform"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                <span className="text-primary text-lg">💬</span>
+              </div>
+              <p className="text-sm font-semibold text-foreground">첫 글의 주인공이 되어보세요</p>
+              <p className="text-xs text-muted-foreground mt-1">작은 질문 하나가 누군가의 큰 도움이 됩니다</p>
+            </button>
           ) : (
             <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
               {trendingPosts.map((post) => (
@@ -270,8 +277,22 @@ const Community = () => {
               <Skeleton key={i} className="h-[120px] rounded-2xl" />
             ))
           ) : sortedPosts.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="text-muted-foreground text-sm">게시글이 없습니다.</p>
+            <div className="py-12 px-4 text-center">
+              <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center mb-3">
+                <span className="text-2xl">🌱</span>
+              </div>
+              <p className="text-sm font-semibold text-foreground">
+                {selectedCategory === "전체"
+                  ? "이 커뮤니티의 첫 글을 남겨보세요"
+                  : `${selectedCategory} 카테고리에 아직 글이 없어요`}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 mb-4">먼저 시작하면 답글이 빠르게 달려요</p>
+              <button
+                onClick={handleWriteClick}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold"
+              >
+                글쓰기
+              </button>
             </div>
           ) : (
             sortedPosts.map(renderPostCard)

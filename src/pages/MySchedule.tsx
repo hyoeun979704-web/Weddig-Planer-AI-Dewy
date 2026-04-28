@@ -117,7 +117,7 @@ const MySchedule = () => {
   if (!user) {
     return (
       <AppLayout>
-        <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+        <header className="sticky top-[112px] z-30 bg-background/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center h-14 px-4">
             <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
               <ArrowLeft className="w-5 h-5" />
@@ -149,7 +149,7 @@ const MySchedule = () => {
 
   return (
     <AppLayout>
-      <header className="sticky top-14 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-[112px] z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />

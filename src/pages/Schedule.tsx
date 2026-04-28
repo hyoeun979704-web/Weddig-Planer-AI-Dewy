@@ -323,13 +323,18 @@ const Schedule = () => {
               ))}
             </div>
           ) : (
-            <div 
-              className="flex flex-col items-center justify-center py-8 bg-card rounded-xl border border-dashed border-border cursor-pointer hover:border-primary/50 transition-colors"
+            <div
+              className="flex flex-col items-center justify-center py-8 px-4 bg-white rounded-2xl border border-dashed border-primary/30 cursor-pointer hover:border-primary/50 transition-colors text-center"
               onClick={() => navigate("/my-schedule")}
             >
-              <Plus className="w-7 h-7 text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">
-                {user ? "일정을 추가해보세요" : "로그인하여 일정을 관리하세요"}
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                <Plus className="w-5 h-5 text-primary" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">
+                {user ? "오늘 한 가지부터 시작해볼까요?" : "로그인하고 일정 관리 시작하기"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {user ? "예: 웨딩홀 후보 3곳 비교하기" : "체크리스트가 가벼워져요"}
               </p>
             </div>
           )}
