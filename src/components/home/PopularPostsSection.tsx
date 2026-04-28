@@ -62,14 +62,14 @@ const PopularPostsSection = () => {
 
   if (isLoading) {
     return (
-      <section className="py-5 bg-white">
+      <section className="py-5">
         <div className="flex items-center justify-between px-4 mb-3">
           <Skeleton className="h-5 w-24" />
           <Skeleton className="h-4 w-12" />
         </div>
         <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
           {Array.from({ length: 2 }).map((_, i) => (
-            <Skeleton key={i} className="flex-shrink-0 w-[260px] h-[150px] rounded-2xl" />
+            <Skeleton key={i} className="flex-shrink-0 w-[180px] h-[150px] rounded-2xl" />
           ))}
         </div>
       </section>
@@ -79,7 +79,7 @@ const PopularPostsSection = () => {
   if (posts.length === 0) return null;
 
   return (
-    <section className="py-5 bg-white">
+    <section className="py-5">
       <div className="flex items-center justify-between px-4 mb-3">
         <h2 className="text-base font-bold text-foreground">오늘의 수다</h2>
         <button
@@ -96,7 +96,7 @@ const PopularPostsSection = () => {
           <button
             key={post.id}
             onClick={() => navigate(`/community/${post.id}`)}
-            className="flex-shrink-0 w-[260px] text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
+            className="flex-shrink-0 w-[180px] text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
           >
             <span className="self-start px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
               {post.category}

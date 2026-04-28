@@ -11,7 +11,7 @@ interface ReviewCardProps {
 }
 
 const ReviewCard = ({ rating, review, vendorName }: ReviewCardProps) => (
-  <div className="flex-shrink-0 w-[220px] p-3.5 bg-muted rounded-[10px] flex flex-col">
+  <div className="flex-shrink-0 w-[180px] p-3.5 bg-muted rounded-[10px] flex flex-col">
     <div className="flex items-center gap-0.5 mb-1.5">
       {[...Array(5)].map((_, i) => (
         <Star

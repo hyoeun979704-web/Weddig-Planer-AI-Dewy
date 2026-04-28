@@ -38,7 +38,7 @@ const QuickInvitationSection = () => {
           <button
             key={card.id}
             onClick={() => navigate("/ai-studio")}
-            className="flex-shrink-0 w-[140px] rounded-2xl overflow-hidden bg-white border border-border shadow-[var(--shadow-card)] active:scale-[0.98] transition-transform text-left"
+            className="flex-shrink-0 w-[120px] rounded-2xl overflow-hidden bg-white border border-border shadow-[var(--shadow-card)] active:scale-[0.98] transition-transform text-left"
             aria-label={`${card.name} — ${card.caption}`}
           >
             {/* Thumbnail placeholder — gray block per design. Actual template
