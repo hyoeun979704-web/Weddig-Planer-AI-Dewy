@@ -31,7 +31,7 @@ const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }
 );
 
 const CardSkeleton = () => (
-  <Skeleton className="flex-shrink-0 w-[90px] h-[90px] rounded-[10px]" />
+  <Skeleton className="flex-shrink-0 w-[110px] h-[165px] rounded-[10px]" />
 );
 
 const RecommendedSection = () => {
@@ -53,7 +53,7 @@ const RecommendedSection = () => {
             />
           ))
         ) : (
-          <div className="flex items-center justify-center w-full py-8">
+          <div className="flex items-center justify-center w-full py-15">
             <p className="text-sm text-muted-foreground">등록된 업체가 없습니다</p>
           </div>
         )}
