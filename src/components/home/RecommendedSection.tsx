@@ -5,8 +5,9 @@ import { useRecommendedVendors, Vendor } from "@/hooks/useVendors";
 import { formatVendorPrice } from "@/lib/placeMappers";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const CARD_W = 110;
-const THUMB_H = 130;
+const CARD_W = 100;
+const CARD_H = 165;
+const IMG_H = 100;
 
 const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }) => {
   const [liked, setLiked] = useState(false);
@@ -16,13 +17,10 @@ const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }
     <button
       onClick={onClick}
       aria-label={vendor.name}
-      className="flex-shrink-0 flex flex-col gap-1.5 active:scale-[0.97] text-left"
-      style={{ width: CARD_W }}
+      className="flex-shrink-0 flex flex-col bg-[#d9d9d9] rounded-[10px] overflow-hidden text-left active:scale-[0.97]"
+      style={{ width: CARD_W, height: CARD_H }}
     >
-      <div
-        className="relative w-full overflow-hidden rounded-[10px] bg-[#d9d9d9]"
-        style={{ height: THUMB_H }}
-      >
+      <div className="relative w-full" style={{ height: IMG_H }}>
         {vendor.thumbnail_url ? (
           <img
             src={vendor.thumbnail_url}
@@ -32,9 +30,7 @@ const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }
             onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-            <span className="text-2xl">🏛️</span>
-          </div>
+          <div className="w-full h-full bg-gradient-to-br from-primary/15 to-primary/5" />
         )}
 
         <span
@@ -45,7 +41,7 @@ const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }
             e.stopPropagation();
             setLiked((v) => !v);
           }}
-          className="absolute right-2 top-2 z-10 inline-flex"
+          className="absolute right-1.5 top-1.5 z-10 inline-flex"
         >
           <Heart
             className={
@@ -58,17 +54,21 @@ const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }
         </span>
       </div>
 
-      <div className="flex flex-col gap-[2px] px-[2px]">
-        <p className="text-[11px] font-semibold leading-tight text-black line-clamp-1">
+      <div className="flex-1 flex flex-col gap-[3px] px-2 py-1.5">
+        <p className="text-[10px] font-bold leading-tight text-black line-clamp-1">
           {vendor.name}
         </p>
-        <p className="text-[10px] leading-tight text-black/55 line-clamp-1">
-          {vendor.region ?? vendor.category_type}
+        <p className="text-[9px] leading-[1.25] text-black/55 line-clamp-2">
+          {[vendor.region, vendor.category_type].filter(Boolean).join(" · ")}
         </p>
-        {price && (
-          <p className="text-[10px] font-medium leading-tight text-[#f29aa3]">
-            {price.prefix && <span className="text-black/55 mr-0.5">{price.prefix}</span>}
+        {price ? (
+          <p className="text-[9px] font-semibold leading-tight text-[#f29aa3] line-clamp-1 mt-auto">
+            {price.prefix && <span className="mr-0.5">{price.prefix}</span>}
             {price.amount}
+          </p>
+        ) : (
+          <p className="text-[9px] font-semibold leading-tight text-[#f29aa3] line-clamp-1 mt-auto">
+            가격 문의
           </p>
         )}
       </div>
@@ -77,11 +77,16 @@ const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }
 };
 
 const CardSkeleton = () => (
-  <div className="flex-shrink-0 flex flex-col gap-1.5" style={{ width: CARD_W }}>
-    <Skeleton className="w-full rounded-[10px]" style={{ height: THUMB_H }} />
-    <Skeleton className="h-[11px] w-4/5" />
-    <Skeleton className="h-[10px] w-3/5" />
-    <Skeleton className="h-[10px] w-1/2" />
+  <div
+    className="flex-shrink-0 flex flex-col bg-[#d9d9d9] rounded-[10px] overflow-hidden"
+    style={{ width: CARD_W, height: CARD_H }}
+  >
+    <Skeleton className="w-full" style={{ height: IMG_H }} />
+    <div className="flex-1 flex flex-col gap-[3px] px-2 py-1.5">
+      <Skeleton className="h-[10px] w-4/5" />
+      <Skeleton className="h-[9px] w-3/5" />
+      <Skeleton className="h-[9px] w-1/2 mt-auto" />
+    </div>
   </div>
 );
 
@@ -90,9 +95,9 @@ const RecommendedSection = () => {
   const { data: vendors, isLoading } = useRecommendedVendors(8);
 
   return (
-    <section className="pt-[10px] pb-[30px] px-[30px] bg-[hsl(var(--pink-50))]">
+    <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-50))]">
       <h2 className="text-[16px] font-bold text-black mb-[10px]">맞춤 추천</h2>
-      <div className="flex gap-[10px] overflow-x-auto scrollbar-hide">
+      <div className="flex gap-[8px] overflow-x-auto scrollbar-hide">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
         ) : vendors && vendors.length > 0 ? (
