@@ -11,14 +11,13 @@ interface NavItem {
   icon?: string;
   label: string;
   href: string;
-  isHome?: boolean;
   tutorialId?: string;
 }
 
 const navItems: NavItem[] = [
   { icon: scheduleIcon, label: "스케줄", href: "/schedule", tutorialId: "nav-schedule" },
   { icon: budgetIcon, label: "예산", href: "/budget", tutorialId: "nav-budget" },
-  { ishome: true, icon: homeIcon, label: "홈", href: "/", tutorialId: "nav-home" },
+  { icon: homeIcon, label: "홈", href: "/", tutorialId: "nav-home" },
   { icon: communityIcon, label: "커뮤니티", href: "/community", tutorialId: "nav-community" },
   { icon: mypageIcon, label: "마이페이지", href: "/mypage", tutorialId: "nav-mypage" },
 ];
