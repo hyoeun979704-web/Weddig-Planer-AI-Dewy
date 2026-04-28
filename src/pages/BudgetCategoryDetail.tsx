@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Trash2, Lightbulb } from "lucide-react";
 import { useBudget } from "@/hooks/useBudget";
 import { categories, savingTips, regions, type BudgetCategory } from "@/data/budgetData";
+import AppLayout from "@/components/AppLayout";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -36,8 +37,8 @@ const BudgetCategoryDetail = () => {
   const tips = savingTips[cat] || [];
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <div className="sticky top-0 z-40 bg-card border-b border-border">
+    <AppLayout hideCategoryTabBar mainClassName="">
+      <div className="sticky top-14 z-30 bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <button onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5 text-foreground" /></button>
           <h1 className="text-base font-bold text-foreground">{catInfo.emoji} {catInfo.label}</h1>
@@ -143,7 +144,7 @@ const BudgetCategoryDetail = () => {
             addItem.mutate({ ...data, category: cat }, { onSuccess: () => toast({ title: "기록되었습니다" }) });
           }
         }} />
-    </div>
+    </AppLayout>
   );
 };
 
