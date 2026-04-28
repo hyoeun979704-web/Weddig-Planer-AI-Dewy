@@ -1,6 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { Star } from "lucide-react";
-import { useRecommendedVendors, Vendor, categoryRouteMap } from "@/hooks/useVendors";
+import {
+  useRecommendedVendors,
+  RecommendedVendor,
+  categoryRouteMap,
+} from "@/hooks/useVendors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import type { ItemType } from "@/hooks/useFavorites";
@@ -8,16 +12,19 @@ import type { ItemType } from "@/hooks/useFavorites";
 /**
  * "맞춤 추천" home section.
  *
- * Per the design feed, each card is a small portrait tile:
- *   - Square gray placeholder / thumbnail
- *   - Heart button overlay top-right (real <FavoriteButton>, so a tap
- *     toggles the user's favorite + surfaces the partner-pair indicator
- *     just like every other heart in the app)
- *   - Vendor name
- *   - Region + category meta line
- *   - Star rating + review count
+ * Per the design feed every card looks superficially similar — square
+ * thumbnail, heart top-right, name, rating — but the secondary meta
+ * line varies by vendor type so the card actually surfaces what the
+ * user is shopping for in that category:
  *
- * Three cards visible at a time, horizontally scrollable for the rest.
+ *   웨딩홀  → 평균 견적 (avg_total_estimate)
+ *   스드메   → 스튜디오 분위기 / 스타일 (atmosphere)
+ *   한복·예복 → 평균 견적 + 지역
+ *   허니문   → 추천 대상 (recommended_for)
+ *   혼수    → 분위기 / 강점 (atmosphere or pros[0])
+ *
+ * Falls back to vendor.region when the category-specific field is
+ * missing, so empty fields never leave a blank caption row.
  */
 
 const categoryToItemType = (category: string): ItemType => {
@@ -32,8 +39,44 @@ const categoryToItemType = (category: string): ItemType => {
   }
 };
 
-const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }) => {
+const formatEstimate = (n: number | null | undefined): string | null => {
+  if (n == null || n <= 0) return null;
+  if (n >= 10_000) return `${(n / 10_000).toFixed(1).replace(/\.0$/, "")}억~`;
+  return `${n.toLocaleString()}만원~`;
+};
+
+const subText = (v: RecommendedVendor): string => {
+  switch (v.category_type) {
+    case "웨딩홀": {
+      const price = formatEstimate(v.avg_total_estimate);
+      return price ? `평균 ${price}` : (v.region ?? "");
+    }
+    case "스드메": {
+      const mood = v.atmosphere?.[0];
+      return mood ? `분위기 · ${mood}` : (v.region ?? "");
+    }
+    case "한복":
+    case "예복": {
+      const price = formatEstimate(v.avg_total_estimate);
+      return price ? `대여 ${price}` : (v.region ?? "");
+    }
+    case "허니문": {
+      const target = v.recommended_for?.[0];
+      return target ? `추천 · ${target}` : (v.region ?? "");
+    }
+    case "혼수": {
+      const pro = v.pros?.[0] ?? v.atmosphere?.[0];
+      return pro ?? (v.region ?? "");
+    }
+    default:
+      return v.region ?? "";
+  }
+};
+
+const VendorCard = ({ vendor, onClick }: { vendor: RecommendedVendor; onClick: () => void }) => {
   const itemType = categoryToItemType(vendor.category_type);
+  const sub = subText(vendor);
+
   return (
     <article className="flex-shrink-0 w-[120px] rounded-2xl overflow-hidden bg-white border border-border shadow-[var(--shadow-card)]">
       <button
@@ -41,7 +84,6 @@ const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }
         aria-label={vendor.name}
         className="block w-full text-left active:scale-[0.98] transition-transform"
       >
-        {/* Thumbnail (square) — gray placeholder when no image. */}
         <div className="relative aspect-square bg-[#d9d9d9] overflow-hidden">
           {vendor.thumbnail_url && (
             <img
@@ -52,22 +94,23 @@ const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }
               onError={(e) => { e.currentTarget.style.display = "none"; }}
             />
           )}
-          {/* Heart overlay top-right — sits on top of the thumbnail.
-              Stop-propagation lives inside FavoriteButton's handler. */}
           <div className="absolute top-1 right-1">
             <FavoriteButton itemId={vendor.vendor_id} itemType={itemType} variant="overlay" />
           </div>
         </div>
 
-        {/* Caption block */}
         <div className="px-3 py-2.5">
-          <p className="text-[12px] text-muted-foreground line-clamp-1">
+          <p className="text-[11px] text-primary font-semibold">
             {vendor.category_type}
-            {vendor.region ? ` · ${vendor.region}` : ""}
           </p>
           <h3 className="text-[13px] font-bold text-foreground line-clamp-1 mt-0.5">
             {vendor.name}
           </h3>
+          {sub && (
+            <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+              {sub}
+            </p>
+          )}
           <div className="flex items-center gap-1 mt-1.5">
             <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
             <span className="text-[11px] font-semibold text-foreground">

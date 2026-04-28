@@ -159,21 +159,45 @@ export const useEvents = (_category?: string) => {
   });
 };
 
-// Top recommended vendors for home page (no category filter)
+/**
+ * Recommended-vendor card on the home feed needs more than the base
+ * Vendor row to render category-specific characteristics (price hint,
+ * atmosphere chips, pros). We enrich each vendor with a small slice of
+ * place_details so RecommendedSection can render a 웨딩홀 card with
+ * "평균 견적" and a 스튜디오 card with "분위기 키워드" without falling
+ * back to identical generic copy.
+ */
+export interface RecommendedVendor extends Vendor {
+  avg_total_estimate: number | null;
+  atmosphere: string[] | null;
+  pros: string[] | null;
+  recommended_for: string[] | null;
+}
+
 export const useRecommendedVendors = (limit = 6) => {
   return useQuery({
     queryKey: ["recommended-vendors", limit],
-    queryFn: async (): Promise<Vendor[]> => {
+    queryFn: async (): Promise<RecommendedVendor[]> => {
       const { data, error } = await supabase
         .from("places")
-        .select("*")
+        .select("*, place_details(avg_total_estimate, atmosphere, pros, recommended_for)")
         .eq("is_active", true)
         .is("deleted_at", null)
         .order("data_completeness", { ascending: false })
         .order("avg_rating", { ascending: false, nullsFirst: false })
         .limit(limit);
       if (error) throw error;
-      return (data ?? []).map(placeToVendor);
+      return (data ?? []).map((row: any) => {
+        const base = placeToVendor(row);
+        const d = row.place_details ?? null;
+        return {
+          ...base,
+          avg_total_estimate: d?.avg_total_estimate ?? null,
+          atmosphere: d?.atmosphere ?? null,
+          pros: d?.pros ?? null,
+          recommended_for: d?.recommended_for ?? null,
+        };
+      });
     },
   });
 };
