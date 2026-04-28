@@ -2,6 +2,7 @@ import type { Database } from "@/integrations/supabase/types";
 import {
   buildVendorInfoLines,
   collectKeywordTags,
+  collectStyleTags,
   type PlaceWithCategory,
   type VendorInfoLine,
 } from "./vendorInfoLines";
@@ -71,6 +72,7 @@ export interface Vendor {
   min_price: number | null;
   is_partner: boolean;
   info_lines: VendorInfoLine[];
+  style_tags: string[];
   keyword_tags: string[];
 }
 
@@ -145,6 +147,7 @@ export const placeToVendor = (p: PlaceRow | PlaceWithCategory): Vendor => {
     min_price: p.min_price ?? null,
     is_partner: p.is_partner ?? false,
     info_lines: buildVendorInfoLines(withCat),
+    style_tags: collectStyleTags(withCat),
     keyword_tags: collectKeywordTags(withCat),
   };
 };

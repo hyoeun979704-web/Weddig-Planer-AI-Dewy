@@ -8,6 +8,7 @@ export interface VendorMediaCardData {
   thumbnail_url: string | null;
   name: string;
   category_tag: string | null;
+  style_tags?: string[];
   keyword_tags: string[];
   is_partner?: boolean;
   info_lines: VendorInfoLine[];
@@ -82,8 +83,14 @@ const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
           {data.name}
         </p>
 
-        {data.keyword_tags.length > 0 && (
+        {data.style_tags && data.style_tags.length > 0 && (
           <p className="text-[8px] leading-tight text-black/45 line-clamp-1">
+            {data.style_tags.map((t) => `#${t}`).join(" ")}
+          </p>
+        )}
+
+        {data.keyword_tags.length > 0 && (
+          <p className="text-[8px] leading-tight text-[#5d9bf0] line-clamp-1">
             {data.keyword_tags.map((t) => `#${t}`).join(" ")}
           </p>
         )}

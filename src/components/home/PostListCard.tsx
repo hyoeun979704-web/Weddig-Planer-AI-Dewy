@@ -42,7 +42,7 @@ const PostListCard = ({ post, onClick }: PostListCardProps) => {
       </p>
 
       {post.keyword_tags && post.keyword_tags.length > 0 && (
-        <p className="text-[8px] leading-tight text-black/45 line-clamp-1 mb-1">
+        <p className="text-[8px] leading-tight text-[#5d9bf0] line-clamp-1 mb-1">
           {post.keyword_tags.map((t) => `#${t}`).join(" ")}
         </p>
       )}

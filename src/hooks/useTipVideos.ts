@@ -11,6 +11,7 @@ export interface TipVideo {
   like_count: number;
   published_at: string | null;
   categories: string[];
+  tags: string[] | null;
 }
 
 interface UseTipVideosOptions {
@@ -34,7 +35,7 @@ export function useTipVideos(opts: UseTipVideosOptions = {}) {
       let q = supabase
         .from("tip_videos")
         .select(
-          "video_id,title,channel_name,thumbnail_url,duration_seconds,view_count,like_count,published_at,categories"
+          "video_id,title,channel_name,thumbnail_url,duration_seconds,view_count,like_count,published_at,categories,tags"
         )
         .eq("is_active", true)
         .order("view_count", { ascending: false })
@@ -57,7 +58,7 @@ export function useTipVideos(opts: UseTipVideosOptions = {}) {
         const { data: all } = await supabase
           .from("tip_videos")
           .select(
-            "video_id,title,channel_name,thumbnail_url,duration_seconds,view_count,like_count,published_at,categories"
+            "video_id,title,channel_name,thumbnail_url,duration_seconds,view_count,like_count,published_at,categories,tags"
           )
           .eq("is_active", true)
           .order("view_count", { ascending: false })
