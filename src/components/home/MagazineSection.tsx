@@ -24,9 +24,10 @@ const koreanCategoryLabel = (slug: string): string =>
 function VideoCard({ video }: { video: TipVideo }) {
   const [liked, setLiked] = useState(false);
 
-  const [categoryTag, ...keywordSlugs] = video.categories ?? [];
-  const keywordTags = keywordSlugs.slice(0, 2).map(koreanCategoryLabel);
-  const categoryLabel = categoryTag ? koreanCategoryLabel(categoryTag) : null;
+  const [categorySlug, ...subCategorySlugs] = video.categories ?? [];
+  const categoryLabel = categorySlug ? koreanCategoryLabel(categorySlug) : null;
+  const subCategoryLabels = subCategorySlugs.slice(0, 2).map(koreanCategoryLabel);
+  const keywordTags = (video.tags ?? []).filter(Boolean).slice(0, 2);
 
   return (
     <a
@@ -81,8 +82,13 @@ function VideoCard({ video }: { video: TipVideo }) {
           <p className="line-clamp-2 h-[26px] text-[10px] font-medium leading-[1.3] text-black">
             {video.title}
           </p>
-          {keywordTags.length > 0 && (
+          {subCategoryLabels.length > 0 && (
             <p className="mt-1 line-clamp-1 h-[10px] text-[8px] leading-none text-[hsl(353,75%,55%)]/85">
+              {subCategoryLabels.map((t) => `#${t}`).join(" ")}
+            </p>
+          )}
+          {keywordTags.length > 0 && (
+            <p className="mt-1 line-clamp-1 h-[10px] text-[8px] leading-none text-[#5d9bf0]">
               {keywordTags.map((t) => `#${t}`).join(" ")}
             </p>
           )}

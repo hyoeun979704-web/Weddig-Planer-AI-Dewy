@@ -62,20 +62,21 @@ export const buildVendorInfoLines = (p: PlaceWithCategory): VendorInfoLine[] => 
     case "studio": {
       const st = p.place_studios ?? null;
       if (st?.price_per_person) {
-        lines.push({ label: "촬영", value: formatWon(st.price_per_person), isPrice: true });
+        lines.push({ label: "패키지", value: formatWon(st.price_per_person), isPrice: true });
       }
+      // *_extra_cost are surcharges on top of the package, not the price OF that item
       if (st?.raw_file_extra_cost) {
-        lines.push({ label: "원본", value: formatWon(st.raw_file_extra_cost), isPrice: true });
+        lines.push({ label: "원본+", value: formatWon(st.raw_file_extra_cost), isPrice: true });
       }
       if (st?.album_extra_cost) {
-        lines.push({ label: "앨범", value: formatWon(st.album_extra_cost), isPrice: true });
+        lines.push({ label: "앨범+", value: formatWon(st.album_extra_cost), isPrice: true });
       }
       break;
     }
     case "dress_shop": {
       const ds = p.place_dress_shops ?? null;
       if (ds?.price_per_person) {
-        const label = ds.rental_only ? "대여" : "본식";
+        const label = ds.rental_only ? "대여" : "기본";
         lines.push({ label, value: formatWon(ds.price_per_person), isPrice: true });
       }
       break;
@@ -92,17 +93,23 @@ export const buildVendorInfoLines = (p: PlaceWithCategory): VendorInfoLine[] => 
     }
     case "tailor_shop": {
       const tl = p.place_tailor_shops ?? null;
+      // schema only exposes a single price_per_person; can't tell if it's
+      // tailored vs rental, so use a neutral "기본" label.
       if (tl?.price_per_person) {
-        const label = tl.custom_available ? "맞춤" : "대여";
-        lines.push({ label, value: formatWon(tl.price_per_person), isPrice: true });
+        lines.push({ label: "기본", value: formatWon(tl.price_per_person), isPrice: true });
+      }
+      if (tl?.custom_available) {
+        lines.push({ label: "맞춤", value: "가능" });
       }
       break;
     }
     case "hanbok": {
       const hb = p.place_hanboks ?? null;
       if (hb?.price_per_person) {
-        const label = hb.custom_available ? "맞춤" : "대여";
-        lines.push({ label, value: formatWon(hb.price_per_person), isPrice: true });
+        lines.push({ label: "기본", value: formatWon(hb.price_per_person), isPrice: true });
+      }
+      if (hb?.custom_available) {
+        lines.push({ label: "맞춤", value: "가능" });
       }
       break;
     }
@@ -147,8 +154,8 @@ export const buildVendorInfoLines = (p: PlaceWithCategory): VendorInfoLine[] => 
   return lines.slice(0, 3);
 };
 
-// Aggregated style/keyword tags shown above the price block
-export const collectKeywordTags = (p: PlaceWithCategory): string[] => {
+// Style/type slugs (treated as category-ish classification, not free-form keywords)
+export const collectStyleTags = (p: PlaceWithCategory): string[] => {
   const lists: Array<string[] | null | undefined> = [
     p.place_wedding_halls?.hall_styles,
     p.place_studios?.shoot_styles,
@@ -159,12 +166,17 @@ export const collectKeywordTags = (p: PlaceWithCategory): string[] => {
     p.place_invitation_venues?.venue_types,
     p.place_appliances?.product_categories,
     p.place_honeymoons?.destinations,
-    p.tags,
   ];
   const flat = lists
     .filter((x): x is string[] => Array.isArray(x))
     .flat()
     .filter(Boolean);
-  // De-dupe preserving order
   return Array.from(new Set(flat)).slice(0, 2);
+};
+
+// Free-form keywords entered by the vendor (places.tags). Distinct from styles
+// so the UI can render them in a different color.
+export const collectKeywordTags = (p: PlaceWithCategory): string[] => {
+  const tags = (p.tags ?? []).filter(Boolean);
+  return Array.from(new Set(tags)).slice(0, 2);
 };

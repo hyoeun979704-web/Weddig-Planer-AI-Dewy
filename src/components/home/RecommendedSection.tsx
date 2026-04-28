@@ -29,6 +29,7 @@ const RecommendedSection = () => {
                 thumbnail_url: vendor.thumbnail_url,
                 name: vendor.name,
                 category_tag: vendor.category_type,
+                style_tags: vendor.style_tags,
                 keyword_tags: vendor.keyword_tags,
                 is_partner: vendor.is_partner,
                 info_lines: vendor.info_lines,
