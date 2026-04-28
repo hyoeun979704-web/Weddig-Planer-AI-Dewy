@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { CSSProperties } from "react";
+import homeIcon from "@/assets/icons/nav-home.svg";
 import scheduleIcon from "@/assets/icons/nav-schedule.svg";
 import budgetIcon from "@/assets/icons/nav-budget.svg";
 import communityIcon from "@/assets/icons/nav-community.svg";
@@ -17,7 +18,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { icon: scheduleIcon, label: "스케줄", href: "/schedule", tutorialId: "nav-schedule" },
   { icon: budgetIcon, label: "예산", href: "/budget", tutorialId: "nav-budget" },
-  { isHome: true, label: "홈", href: "/" },
+  { ishome: true, icon: homeIcon, label: "홈", href: "/", tutorialId: "nav-home" },
   { icon: communityIcon, label: "커뮤니티", href: "/community", tutorialId: "nav-community" },
   { icon: mypageIcon, label: "마이페이지", href: "/mypage", tutorialId: "nav-mypage" },
 ];
