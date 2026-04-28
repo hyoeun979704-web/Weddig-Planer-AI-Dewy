@@ -2,39 +2,49 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface Slide {
-  label: string;
+  /** Bold headline shown center-stage. */
+  headline: string;
+  /** Optional supporting line under the headline. */
+  sub?: string;
+  /** Where the slide navigates on tap. */
   path: string;
+  /** Inline radial gradient background. */
   background: string;
 }
 
 const slides: Slide[] = [
   {
-    label: "AI 플래너 버튼 CTA",
+    headline: "막막한 결혼 준비,\nAI가 같이 정리해드려요",
+    sub: "Dewy AI 플래너 →",
     path: "/ai-planner",
     background:
       "radial-gradient(circle at 20% 15%, #FFFFFF 0%, #FBD4DC 55%, #F6909B 110%)",
   },
   {
-    label: "AI 스튜디오 버튼 CTA",
+    headline: "청첩장 · 드레스 시안,\nAI로 5분 만에",
+    sub: "AI 스튜디오 둘러보기 →",
     path: "/ai-studio",
     background:
       "radial-gradient(circle at 20% 15%, #FFFFFF 0%, #FCE3BE 55%, #F5BE7A 110%)",
   },
   {
-    label: "포인트 게임 안내",
-    path: "/points",
+    headline: "꽃 모으면서\n진짜 포인트 적립",
+    sub: "포인트 게임 시작 →",
+    path: "/merge-game",
     background:
       "radial-gradient(circle at 20% 15%, #FFFFFF 0%, #FBD0E0 55%, #F58FBC 110%)",
   },
   {
-    label: "공유 이벤트 안내",
-    path: "/events/share",
+    headline: "친구 초대하면\n둘 다 포인트",
+    sub: "친구 초대 혜택 →",
+    path: "/points",
     background:
       "radial-gradient(circle at 20% 15%, #FFFFFF 0%, #DCEEFB 55%, #A8D2F0 110%)",
   },
   {
-    label: "신규가입 1달 유료혜택 안내",
-    path: "/events/welcome",
+    headline: "신규 가입 시\n1달 프리미엄 무료",
+    sub: "프리미엄 둘러보기 →",
+    path: "/premium",
     background:
       "radial-gradient(circle at 20% 15%, #FFFFFF 0%, #DDEEDC 55%, #B6D8B2 110%)",
   },
@@ -61,17 +71,22 @@ const HeroBanner = () => {
     >
       {slides.map((slide, i) => (
         <button
-          key={slide.label}
+          key={slide.headline}
           onClick={() => navigate(slide.path)}
-          aria-label={slide.label}
-          className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${
+          aria-label={slide.headline.replace(/\n/g, " ")}
+          className={`absolute inset-0 flex flex-col items-center justify-center px-6 transition-opacity duration-500 ${
             i === index ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
           style={{ background: slide.background }}
         >
-          <span className="text-base font-medium text-black/80">
-            {slide.label}
-          </span>
+          <p className="text-[19px] font-bold text-black/85 leading-tight whitespace-pre-line text-center">
+            {slide.headline}
+          </p>
+          {slide.sub && (
+            <span className="mt-3 inline-flex items-center text-[13px] font-medium text-black/70 px-3 py-1 rounded-full bg-white/40 backdrop-blur-sm">
+              {slide.sub}
+            </span>
+          )}
         </button>
       ))}
 
