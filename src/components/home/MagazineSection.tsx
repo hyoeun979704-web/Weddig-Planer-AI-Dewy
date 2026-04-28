@@ -6,7 +6,7 @@ import { useTipVideos, youTubeUrl, type TipVideo } from "@/hooks/useTipVideos";
 // 9:16 portrait (Shorts-style) thumbnail. Width unchanged from prior 16:9
 // version; the height grows so videos with vertical subjects (most wedding
 // content) read well. object-cover crops 16:9 thumbs to the center.
-const CARD_W = 220;
+const CARD_W = 130;
 const THUMB_H = Math.round((CARD_W * 16) / 9); // 391
 
 function formatViews(n: number): string {
