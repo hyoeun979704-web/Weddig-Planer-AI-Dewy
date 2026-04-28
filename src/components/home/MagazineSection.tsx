@@ -20,11 +20,12 @@ function VideoCard({ video }: { video: TipVideo }) {
       href={youTubeUrl(video.video_id)}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex-shrink-0 rounded-[10px] overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow active:scale-[0.98]"
+      className="flex-shrink-0 rounded-[18px] overflow-hidden bg-[#f6f0f2] shadow-sm hover:shadow-md transition-shadow active:scale-[0.98]"
       style={{ width: CARD_W }}
     >
+      {/* 상단 썸네일 영역 (9:16) */}
       <div
-        className="relative bg-[#d9d9d9] overflow-hidden"
+        className="relative bg-[#d9d9d9]"
         style={{ height: THUMB_H }}
       >
         {video.thumbnail_url ? (
@@ -35,7 +36,7 @@ function VideoCard({ video }: { video: TipVideo }) {
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-3xl">🎥</div>
+          <div className="w-full h-full flex items-center justify-center text-3xl">>🎥</div>
         )}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30">
           <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
@@ -43,12 +44,15 @@ function VideoCard({ video }: { video: TipVideo }) {
           </div>
         </div>
       </div>
-      <div className="p-2.5">
-        <p className="text-[12px] font-semibold text-black leading-snug line-clamp-2 mb-1">
+      <div className="bg-white/70 px-3 py-2.5">
+        <p className="text-[12px] font-semibold text-black leading-snug line-clamp-2">
           {video.title}
         </p>
         <p className="text-[10px] text-muted-foreground line-clamp-1">
-          {video.channel_name ?? ""} · 조회 {formatViews(video.view_count)}
+          {video.channel_name ?? ""}  
+        </p>
+        <p className="text-[11px] text-black/60">
+          조회수 {formatViews(video.view_count)}
         </p>
       </div>
     </a>
