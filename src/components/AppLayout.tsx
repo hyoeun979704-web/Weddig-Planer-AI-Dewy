@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import HomeHeader from "@/components/home/HomeHeader";
@@ -59,7 +60,20 @@ const AppLayout = ({
           onTabChange={(tab) => navigate(tabRoutes[tab])}
         />
       )}
-      <main className={cn("pb-20", mainClassName)}>{children}</main>
+      {/* Page-body fade — subtle 180ms upward slide on each route change so
+          navigation feels intentional rather than cut. Keyed on pathname so
+          Framer Motion treats route changes as remounts; HomeHeader /
+          CategoryTabBar / BottomNav stay outside the motion container so
+          they don't re-animate on every hop. */}
+      <motion.main
+        key={location.pathname}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+        className={cn("pb-20", mainClassName)}
+      >
+        {children}
+      </motion.main>
       <BottomNav
         activeTab={location.pathname}
         onTabChange={(href) => navigate(href)}
