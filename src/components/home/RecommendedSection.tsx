@@ -35,7 +35,7 @@ const categoryToItemType = (category: string): ItemType => {
 const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }) => {
   const itemType = categoryToItemType(vendor.category_type);
   return (
-    <article className="flex-shrink-0 w-[150px] rounded-2xl overflow-hidden bg-white border border-border shadow-[var(--shadow-card)]">
+    <article className="flex-shrink-0 w-[120px] rounded-2xl overflow-hidden bg-white border border-border shadow-[var(--shadow-card)]">
       <button
         onClick={onClick}
         aria-label={vendor.name}
@@ -84,7 +84,7 @@ const VendorCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }
 };
 
 const CardSkeleton = () => (
-  <div className="flex-shrink-0 w-[150px] rounded-2xl overflow-hidden bg-white border border-border">
+  <div className="flex-shrink-0 w-[120px] rounded-2xl overflow-hidden bg-white border border-border">
     <Skeleton className="aspect-square rounded-none" />
     <div className="p-3 space-y-1.5">
       <Skeleton className="h-3 w-2/3" />
