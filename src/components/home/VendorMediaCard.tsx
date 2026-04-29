@@ -122,12 +122,12 @@ const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
         )}
 
         {keywordChips.length > 0 && (
-          <div className="mt-auto flex flex-wrap gap-[3px]">
+          <div className="mt-auto flex flex-nowrap gap-[2px] overflow-hidden">
             {keywordChips.map((chip, i) => (
               <span
                 key={i}
                 className={cn(
-                  "px-1.5 py-[1px] rounded-full text-[8px] font-medium leading-tight whitespace-nowrap",
+                  "shrink-0 px-1 py-[1px] rounded-full text-[8px] font-medium leading-tight whitespace-nowrap",
                   chip.className
                 )}
               >
