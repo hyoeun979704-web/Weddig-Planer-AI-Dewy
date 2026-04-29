@@ -44,7 +44,7 @@ const buildCategoryItemInfoLines = (
           isPrice: true,
         },
       });
-      const guests = formatGuests(item.min_guarantee, item.max_guarantee as number | undefined);
+      const guests = formatGuests(item.min_guarantee, item.max_guarantee);
       if (guests) lines.push({ label: "보증", value: guests });
       break;
     }
@@ -88,7 +88,7 @@ const buildCategoryItemInfoLines = (
     }
     case "invitation_venues": {
       if (price) lines.push({ label: "1인", value: formatWon(price), isPrice: true });
-      const guests = formatGuests(item.min_guarantee, (item as { max_guarantee?: number }).max_guarantee);
+      const guests = formatGuests(item.min_guarantee, item.max_guarantee);
       if (guests) lines.push({ label: "정원", value: guests });
       break;
     }
@@ -102,6 +102,7 @@ export const categoryItemToCardData = (
 ): VendorMediaCardData => {
   const region = item.address || item.destination || item.brand || null;
   const keywords = item.keywords ?? [];
+  const tags = item.tags ?? [];
   return {
     id: item.id,
     thumbnail_url: item.thumbnail_url,
@@ -110,7 +111,8 @@ export const categoryItemToCardData = (
     category: CATEGORY_LABEL[category],
     concept: keywords[0] ?? null,
     mood: keywords[1] ?? null,
-    strength: keywords[2] ?? null,
+    // 홈탭과 동일한 매핑: 장점 = places.tags 의 4번째 (인덱스 3)
+    strength: tags[3] ?? null,
     is_partner: item.is_partner,
     info_lines: buildCategoryItemInfoLines(item, category),
   };
