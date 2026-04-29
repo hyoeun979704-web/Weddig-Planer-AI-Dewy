@@ -52,6 +52,21 @@ export const categoryRouteMap: Record<string, { listPath: string; detailPath: st
   "웨딩플래너": { listPath: "/vendors/웨딩플래너", detailPath: "/vendor", label: "웨딩플래너", emoji: "💐" },
 };
 
+// Joined select used by both useVendors and useRecommendedVendors so cards
+// can render category-aware info lines without an N+1 fetch per place.
+const VENDOR_WITH_CATEGORY_SELECT = `
+  *,
+  place_wedding_halls(*),
+  place_studios(*),
+  place_dress_shops(*),
+  place_makeup_shops(*),
+  place_tailor_shops(*),
+  place_hanboks(*),
+  place_invitation_venues(*),
+  place_appliances(*),
+  place_honeymoons(*)
+`;
+
 // Fetch vendors by category (Korean label)
 export const useVendors = (categoryType?: string) => {
   return useQuery({
@@ -59,7 +74,7 @@ export const useVendors = (categoryType?: string) => {
     queryFn: async (): Promise<Vendor[]> => {
       let query = supabase
         .from("places")
-        .select("*")
+        .select(VENDOR_WITH_CATEGORY_SELECT)
         .eq("is_active", true)
         .is("deleted_at", null)
         .order("data_completeness", { ascending: false })
@@ -72,7 +87,7 @@ export const useVendors = (categoryType?: string) => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []).map(placeToVendor);
+      return ((data ?? []) as unknown as Parameters<typeof placeToVendor>[0][]).map(placeToVendor);
     },
   });
 };
@@ -159,29 +174,14 @@ export const useEvents = (_category?: string) => {
   });
 };
 
-// Top recommended vendors for home page (no category filter)
-// Joins each per-category table so the card can render category-aware
-// info lines (식대/촬영/대여/...) without an N+1 fetch.
-const RECOMMENDED_SELECT = `
-  *,
-  place_wedding_halls(*),
-  place_studios(*),
-  place_dress_shops(*),
-  place_makeup_shops(*),
-  place_tailor_shops(*),
-  place_hanboks(*),
-  place_invitation_venues(*),
-  place_appliances(*),
-  place_honeymoons(*)
-`;
-
+// Top recommended vendors for home page (no category filter).
 export const useRecommendedVendors = (limit = 6) => {
   return useQuery({
     queryKey: ["recommended-vendors", limit],
     queryFn: async (): Promise<Vendor[]> => {
       const { data, error } = await supabase
         .from("places")
-        .select(RECOMMENDED_SELECT)
+        .select(VENDOR_WITH_CATEGORY_SELECT)
         .eq("is_active", true)
         .is("deleted_at", null)
         .order("data_completeness", { ascending: false })
