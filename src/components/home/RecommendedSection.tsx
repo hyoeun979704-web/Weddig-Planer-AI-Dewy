@@ -32,7 +32,7 @@ const RecommendedSection = () => {
                 category: vendor.category_type,
                 concept: vendor.style_tags[0] ?? null,
                 mood: vendor.style_tags[1] ?? null,
-                strength: vendor.keyword_tags[0] ?? null,
+                strength: vendor.keyword_tags[3] ?? null,
                 is_partner: vendor.is_partner,
                 info_lines: vendor.info_lines,
               }}
