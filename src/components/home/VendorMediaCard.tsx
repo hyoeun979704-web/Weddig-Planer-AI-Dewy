@@ -21,7 +21,7 @@ interface VendorMediaCardProps {
   onClick: () => void;
 }
 
-export const CARD_W = 120;
+export const CARD_W = 140;
 export const CARD_H = 220;
 const IMG_H = 100;
 
