@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useRecommendedVendors } from "@/hooks/useVendors";
 import { Skeleton } from "@/components/ui/skeleton";
-import VendorMediaCard, { CARD_W, CARD_H } from "./VendorMediaCard";
+import VendorMediaCard, { CARD_W, CARD_H, vendorToCardData } from "./VendorMediaCard";
 
 const CardSkeleton = () => (
   <Skeleton
@@ -24,18 +24,7 @@ const RecommendedSection = () => {
           vendors.map((vendor) => (
             <VendorMediaCard
               key={vendor.vendor_id}
-              data={{
-                id: vendor.vendor_id,
-                thumbnail_url: vendor.thumbnail_url,
-                region: vendor.region,
-                name: vendor.name,
-                category: vendor.category_type,
-                concept: vendor.style_tags[0] ?? null,
-                mood: vendor.style_tags[1] ?? null,
-                strength: vendor.keyword_tags[3] ?? null,
-                is_partner: vendor.is_partner,
-                info_lines: vendor.info_lines,
-              }}
+              data={vendorToCardData(vendor)}
               onClick={() => navigate(`/vendor/${vendor.vendor_id}`)}
             />
           ))

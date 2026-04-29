@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { VendorInfoLine } from "@/lib/placeMappers";
+import type { Vendor, VendorInfoLine } from "@/lib/placeMappers";
 
 export interface VendorMediaCardData {
   id: string;
@@ -15,6 +15,21 @@ export interface VendorMediaCardData {
   is_partner?: boolean;
   info_lines: VendorInfoLine[];
 }
+
+// Adapter so any Vendor (recommended/list/gallery) can feed VendorMediaCard
+// without callers having to remember the keyword positional mapping.
+export const vendorToCardData = (vendor: Vendor): VendorMediaCardData => ({
+  id: vendor.vendor_id,
+  thumbnail_url: vendor.thumbnail_url,
+  region: vendor.region,
+  name: vendor.name,
+  category: vendor.category_type,
+  concept: vendor.style_tags[0] ?? null,
+  mood: vendor.style_tags[1] ?? null,
+  strength: vendor.keyword_tags[3] ?? null,
+  is_partner: vendor.is_partner,
+  info_lines: vendor.info_lines,
+});
 
 interface VendorMediaCardProps {
   data: VendorMediaCardData;
