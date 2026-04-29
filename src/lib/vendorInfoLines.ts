@@ -28,6 +28,12 @@ export interface VendorInfoLine {
   label: string;
   value: string;
   isPrice?: boolean;
+  // Paired sibling rendered on the same row (e.g. 대관비 + 식대, 국내 + 수입).
+  pair?: {
+    label: string;
+    value: string;
+    isPrice?: boolean;
+  };
 }
 
 const formatWon = (won: number): string => {
@@ -52,9 +58,18 @@ export const buildVendorInfoLines = (p: PlaceWithCategory): VendorInfoLine[] => 
   switch (p.category) {
     case "wedding_hall": {
       const wh = p.place_wedding_halls ?? null;
-      if (wh?.price_per_person) {
-        lines.push({ label: "식대", value: formatWon(wh.price_per_person), isPrice: true });
-      }
+      // 대관비 컬럼이 schema 에 없어 항상 "업체문의". 식대(price_per_person) 와
+      // 같은 줄에 paired 로 노출.
+      lines.push({
+        label: "대관비",
+        value: "업체문의",
+        isPrice: true,
+        pair: {
+          label: "식대",
+          value: wh?.price_per_person ? formatWon(wh.price_per_person) : "업체문의",
+          isPrice: true,
+        },
+      });
       const guests = formatGuests(wh?.min_guarantee, wh?.max_guarantee);
       if (guests) lines.push({ label: "보증", value: guests });
       break;
@@ -93,11 +108,18 @@ export const buildVendorInfoLines = (p: PlaceWithCategory): VendorInfoLine[] => 
     }
     case "tailor_shop": {
       const tl = p.place_tailor_shops ?? null;
-      // schema only exposes a single price_per_person; can't tell if it's
-      // tailored vs rental, so use a neutral "기본" label.
-      if (tl?.price_per_person) {
-        lines.push({ label: "기본", value: formatWon(tl.price_per_person), isPrice: true });
-      }
+      // schema 상 국내/수입 분리 컬럼 부재 → 둘 다 "업체문의".
+      // price_per_person 이 있으면 "국내" 추정값으로 사용.
+      lines.push({
+        label: "국내",
+        value: tl?.price_per_person ? formatWon(tl.price_per_person) : "업체문의",
+        isPrice: true,
+        pair: {
+          label: "수입",
+          value: "업체문의",
+          isPrice: true,
+        },
+      });
       if (tl?.custom_available) {
         lines.push({ label: "맞춤", value: "가능" });
       }
