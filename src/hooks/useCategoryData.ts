@@ -47,7 +47,8 @@ const CATEGORY_DETAIL_SELECT: Record<CategoryType, string> = {
   makeup_shops: "place_makeup_shops(makeup_styles,includes_rehearsal,price_per_person)",
   hanbok: "place_hanboks(hanbok_types,custom_available,price_per_person)",
   suits: "place_tailor_shops(suit_styles,custom_available,price_per_person)",
-  honeymoon: "place_honeymoons(destinations,duration_days,price_per_person)",
+  honeymoon:
+    "place_honeymoons(agency_name,product_type,countries,cities,representative_city,nights,days,price_per_person,avg_budget,themes)",
   honeymoon_gifts: "place_jewelry(metals,product_categories,couple_set_available,price_per_person)",
   appliances: "place_appliances(product_categories,brand_options,price_per_person)",
   invitation_venues:
@@ -110,12 +111,33 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
       base.keywords = card?.suit_styles ?? [];
       base.custom_available = card?.custom_available ?? null;
       break;
-    case "honeymoon":
-      base.keywords = card?.destinations ?? [];
-      base.destination = card?.destinations?.join(", ");
+    case "honeymoon": {
+      // 행 단위 = 여행 "상품". 패키지명은 places.name, 여행사는 agency_name.
+      const PRODUCT_TYPE_LABEL: Record<string, string> = {
+        package: "패키지",
+        free_travel: "자유여행",
+        flight: "항공권",
+        pass: "이용권",
+      };
+      const country = (card?.countries as string[] | undefined)?.[0];
+      const cities = (card?.cities as string[] | undefined) ?? [];
+      const cityList = cities.join(", ");
+      base.brand = card?.agency_name ?? undefined;
+      base.destination =
+        country && cityList ? `${country} · ${cityList}` : country ?? cityList ?? undefined;
       base.duration =
-        card?.duration_days != null ? `${card.duration_days}일` : undefined;
+        card?.nights != null && card?.days != null
+          ? `${card.nights}박${card.days}일`
+          : undefined;
+      const typeLabel = card?.product_type ? PRODUCT_TYPE_LABEL[card.product_type] : undefined;
+      base.keywords = [
+        typeLabel,
+        card?.representative_city,
+        ...((card?.themes as string[] | undefined) ?? []),
+      ].filter((x): x is string => Boolean(x));
+      base.avg_budget = card?.avg_budget ?? undefined;
       break;
+    }
     case "honeymoon_gifts":
       // jewelry: product_categories=결혼반지/예물세트, metals=골드/플래티넘
       base.keywords = card?.product_categories ?? [];

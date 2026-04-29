@@ -64,7 +64,24 @@ const KEYWORD_TEMPLATES: Record<CategoryLabel, string[]> = {
     "{region} 폐백 한복",
   ],
   예복: ["{region} 신랑 예복", "{region} 턱시도", "{region} 맞춤 정장", "{region} 예복 대여"],
-  허니문: ["허니문 패키지", "신혼여행 추천", "유럽 허니문", "동남아 허니문"],
+  // 허니문은 "여행사"가 아니라 "여행 상품" 단위. region 토큰은 destination 도시명.
+  // {region}이 없는 항목은 일반/카테고리 검색 (자유여행/항공권/이용권/패스 등).
+  허니문: [
+    "{region} 허니문 패키지",
+    "{region} 신혼여행",
+    "{region} 자유여행 패키지",
+    "{region} 5박7일 패키지",
+    "{region} 풀빌라 패키지",
+    "{region} 항공권",
+    "{region} 자유여행",
+    "{region} 호텔 패키지",
+    "허니문 패키지 추천",
+    "신혼여행 패키지 비교",
+    "JR 패스",
+    "유레일 패스",
+    "Klook 이용권",
+    "디즈니랜드 자유이용권",
+  ],
   혼수: ["{region} 혼수 가전", "신혼 가전 세트", "{region} 혼수 가구", "혼수 침대"],
   예물: [
     "{region} 결혼반지",
@@ -76,9 +93,49 @@ const KEYWORD_TEMPLATES: Record<CategoryLabel, string[]> = {
   청첩장: ["{region} 청첩장 모임", "{region} 상견례 장소", "{region} 양가 상견례 식당"],
 };
 
+// 허니문은 국내 시·도가 아니라 해외 인기 신혼여행지 도시·국가가 region.
+// 한국에서 가장 검색 많은 허니문 destination 위주.
+export const HONEYMOON_REGIONS = [
+  // 동남아 휴양
+  "발리",
+  "푸켓",
+  "다낭",
+  "코타키나발루",
+  "보라카이",
+  "세부",
+  "몰디브",
+  "사이판",
+  // 일본
+  "일본",
+  "도쿄",
+  "오사카",
+  "교토",
+  "후쿠오카",
+  "오키나와",
+  "삿포로",
+  // 유럽
+  "유럽",
+  "파리",
+  "스위스",
+  "이탈리아",
+  "산토리니",
+  "런던",
+  // 미주·대양주
+  "괌",
+  "하와이",
+  "라스베가스",
+  "뉴욕",
+  "호주",
+  "뉴질랜드",
+  // 중화권
+  "타이페이",
+  "홍콩",
+];
+
 export function seedQueries(label: CategoryLabel, region?: string): string[] {
   const tpls = KEYWORD_TEMPLATES[label];
-  const regions = region ? [region] : REGIONS;
+  const baseRegions = label === "허니문" ? HONEYMOON_REGIONS : REGIONS;
+  const regions = region ? [region] : baseRegions;
   const out: string[] = [];
   for (const r of regions) {
     for (const t of tpls) {

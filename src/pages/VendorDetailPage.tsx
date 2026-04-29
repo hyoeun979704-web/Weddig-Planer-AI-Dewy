@@ -240,27 +240,69 @@ function TailorExtras({ place }: { place: LegacyDetail }) {
 }
 
 function HoneymoonExtras({ place }: { place: LegacyDetail }) {
+  const PRODUCT_TYPE_LABEL: Record<string, string> = {
+    package: "패키지",
+    free_travel: "자유여행",
+    flight: "항공권",
+    pass: "이용권",
+  };
   const has =
-    place.destinations.length > 0 || place.duration_days != null ||
-    place.includes_flights != null || place.includes_hotel != null ||
-    place.travel_agency_partner;
+    place.agency_name ||
+    place.product_type ||
+    place.countries.length > 0 ||
+    place.cities.length > 0 ||
+    place.nights != null ||
+    place.days != null ||
+    place.itinerary_summary ||
+    place.itinerary_highlights.length > 0 ||
+    place.avg_budget != null ||
+    place.airline ||
+    place.themes.length > 0;
   if (!has) return null;
   return (
     <div className="space-y-3">
-      <h3 className="font-bold text-sm">허니문 정보</h3>
-      <Tags label="여행지" items={place.destinations} />
+      <h3 className="font-bold text-sm">허니문 상품 정보</h3>
       <div className="grid grid-cols-2 gap-2">
-        {place.duration_days != null && <Stat label="기본 일수" value={`${place.duration_days}일`} />}
-        {place.includes_flights != null && (
-          <Stat label="항공편" value={place.includes_flights ? "포함" : "별도"} />
+        {place.agency_name && <Stat label="여행사" value={place.agency_name} />}
+        {place.product_type && (
+          <Stat label="상품 유형" value={PRODUCT_TYPE_LABEL[place.product_type] ?? place.product_type} />
         )}
-        {place.includes_hotel != null && (
-          <Stat label="숙박" value={place.includes_hotel ? "포함" : "별도"} />
+        {place.nights != null && place.days != null && (
+          <Stat label="일정" value={`${place.nights}박${place.days}일`} />
         )}
-        {place.travel_agency_partner && (
-          <Stat label="제휴 여행사" value={place.travel_agency_partner} />
+        {place.avg_budget != null && (
+          <Stat label="평균 경비" value={`${(place.avg_budget / 10000).toFixed(0)}만원~`} />
+        )}
+        {place.airline && (
+          <Stat
+            label="항공"
+            value={`${place.airline}${place.direct_flight ? " · 직항" : place.direct_flight === false ? " · 경유" : ""}`}
+          />
+        )}
+        {place.departure_airport && <Stat label="출발 공항" value={place.departure_airport} />}
+        {place.hotel_grade && <Stat label="숙소 등급" value={place.hotel_grade} />}
+        {place.meal_plan && <Stat label="식사" value={place.meal_plan} />}
+        {place.guide_included != null && (
+          <Stat label="가이드" value={place.guide_included ? "동행" : "미동행"} />
+        )}
+        {place.shopping_required != null && (
+          <Stat label="쇼핑 의무" value={place.shopping_required ? "있음" : "없음"} />
+        )}
+        {place.visa_required != null && (
+          <Stat label="비자" value={place.visa_required ? "필요" : "면제"} />
         )}
       </div>
+      <Tags label="방문 국가" items={place.countries} />
+      <Tags label="방문 도시" items={place.cities} />
+      <Tags label="테마" items={place.themes} />
+      <Tags label="포함 사항" items={place.price_includes} />
+      <Tags label="불포함 사항" items={place.price_excludes} />
+      <Tags label="주요 일정" items={place.itinerary_highlights} />
+      {place.itinerary_summary && (
+        <p className="text-xs text-muted-foreground whitespace-pre-line">
+          {place.itinerary_summary}
+        </p>
+      )}
     </div>
   );
 }

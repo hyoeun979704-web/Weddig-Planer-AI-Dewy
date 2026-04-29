@@ -138,30 +138,49 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
 
   허니문: {
     prompt:
-      `\n\n[허니문 — 카테고리 특성]\n` +
-      `★ 가격 모델: per_couple (2인 패키지 가격, 보통 200~1500만원)이 일반적. per_person으로 표기되어 있으면 그대로 per_person.\n` +
-      `★ 통화: KRW가 보통이지만 USD/EUR로 표기되어 있으면 그대로 USD/EUR. (currency 필드 명시 필수)\n` +
-      `★ 패키지는 보통 여행지+박일수 단위로 묶임 ("발리 5박 7일", "유럽 8박 10일").\n` +
-      `★ price_packages.includes 예: ["왕복 항공권 비즈니스", "리조트 5성 5박", "공항 픽업", "조식 포함", "투어 1일"].\n` +
-      `★ 항공사·직항/경유·보험·비자 처리·옵션투어 별도 비용은 여행사 비교 시 핵심.\n` +
+      `\n\n[허니문 — 카테고리 특성 (※ 행 단위 = 여행 "상품" 1개. 여행사가 아님!)]\n` +
+      `★ 한 행 = 한 패키지/상품. places.name = 패키지 상품명 (예: "발리 5박7일 풀빌라 허니문 with 가루다항공").\n` +
+      `★ category_extras.agency_name = 판매 여행사 (하나투어/모두투어/노랑풍선/마이리얼트립/클룩/인터파크투어 등).\n` +
+      `★ product_type 필수: ${ENUM(["package", "free_travel", "flight", "pass"])}\n` +
+      `   - package: 항공+숙박+가이드 묶음 패키지\n` +
+      `   - free_travel: 항공+숙박만 묶고 일정은 자유\n` +
+      `   - flight: 항공권 단품 (편도/왕복)\n` +
+      `   - pass: 교통패스(JR패스/유레일) 또는 관광지 이용권(디즈니/유니버설/Klook/KKday류)\n` +
+      `★ 가격 모델: 보통 per_person (1인 KRW). 통화 USD/EUR 표기되어 있으면 그대로 currency에 명시.\n` +
+      `★ price_packages.includes 예: ["왕복 항공권 비즈니스", "리조트 5성 5박", "공항 픽업", "조식 5회", "투어 1일"].\n` +
+      `★ price_packages.notes 에는 성수기/비수기 가격 차이, 유류할증료, 1인 객실 추가요금(싱글차지) 명시.\n` +
       `[추가 추출 필드 → category_extras]\n` +
-      `- destinations (배열): 여행지 (예: ["발리", "몰디브", "유럽"]).\n` +
-      `- duration_days (정수): 패키지 기본 일수.\n` +
-      `- includes_flights (bool): 항공편 포함.\n` +
-      `- includes_hotel (bool): 숙박 포함.\n` +
-      `- travel_agency_partner (문자열): 제휴 여행사명.\n` +
-      `- flight_class (문자열): 항공 등급 — "이코노미"/"프리미엄"/"비즈니스"/"퍼스트".\n` +
-      `- hotel_grade (문자열): 호텔 등급 — "3성"/"4성"/"5성"/"풀빌라"/"리조트".\n` +
-      `- meals_included (문자열): 식사 포함 옵션 — "조식만"/"2식(조·석)"/"3식"/"올인클루시브"/"미포함".\n` +
-      `- airline (문자열): 항공사명 — "대한항공"/"아시아나"/"베트남항공" 등.\n` +
-      `- direct_flight (bool): 직항 여부 (false면 경유).\n` +
-      `- insurance_included (bool): 여행자 보험 포함.\n` +
-      `- visa_included (bool): 비자 발급 비용·대행 포함.\n` +
-      `- optional_tours_extra (bool): 옵션 투어가 별도 비용 (기본 미포함).`,
+      `- agency_name (문자열): 판매 여행사명. 필수.\n` +
+      `- agency_product_url (문자열): 여행사 상품 상세 페이지 URL.\n` +
+      `- product_type (enum): ${ENUM(["package", "free_travel", "flight", "pass"])}.\n` +
+      `- countries (배열): 방문 국가. 예: ["일본"], ["프랑스","스위스","이탈리아"].\n` +
+      `- cities (배열): 방문 도시. 예: ["도쿄","교토","긴자"].\n` +
+      `- representative_city (문자열): 대표 도시(검색·필터 키). 보통 cities[0]이지만 패키지명상의 메인 도시.\n` +
+      `- region_group (문자열): ${ENUM(["일본", "동남아", "괌사이판", "유럽", "미주", "대양주", "중화권", "국내", "기타"])} 중.\n` +
+      `- nights (정수): 박. 예: 5박7일이면 5.\n` +
+      `- days (정수): 일. 예: 5박7일이면 7.\n` +
+      `- itinerary_summary (문자열): 일정 한 줄 요약 (예: "Day1 인천→발리, Day2-5 자유시간/풀빌라, Day6 우붓 투어, Day7 출국").\n` +
+      `- itinerary_highlights (배열): 주요 일정 (예: ["스미냑 비치 디너", "우붓 라이스테라스", "스파 1회"]).\n` +
+      `- avg_budget (정수): 1인 평균 경비 KRW (성수기 포함, 옵션 투어 1~2개 가정한 현실 비용).\n` +
+      `- price_includes (배열): 패키지 포함 항목 (예: ["왕복 직항 항공", "5성 호텔 5박", "조식 5회", "공항 픽업·샌딩"]).\n` +
+      `- price_excludes (배열): 불포함 항목 (예: ["선택관광", "기사·가이드 팁", "개인 경비", "유류할증료"]).\n` +
+      `- airline (문자열): 대표 항공사 (예: "대한항공", "아시아나", "가루다인도네시아").\n` +
+      `- direct_flight (bool): 직항 여부.\n` +
+      `- departure_airport (문자열): 출발 공항 — "인천"/"김포"/"부산"/"대구".\n` +
+      `- hotel_grade (문자열): "3성"/"4성"/"5성"/"풀빌라"/"리조트"/"부티크".\n` +
+      `- meal_plan (문자열): 식사 포함 — "조식 5회"/"2식 조·석"/"올인클루시브"/"미포함".\n` +
+      `- themes (배열): ${ENUM(["가성비", "럭셔리", "랜드마크", "휴양", "도심관광", "자연·액티비티", "미식", "쇼핑", "효도", "신혼", "가족"])} 중. 1~3개.\n` +
+      `- shopping_required (bool): 쇼핑센터 의무방문이 있는지 (패키지 단점 표시).\n` +
+      `- guide_included (bool): 한국어 인솔자/가이드 동행.\n` +
+      `- visa_required (bool): 한국 여권 기준 비자 필요 여부.`,
     cardColumns: [
-      "destinations", "duration_days", "includes_flights", "includes_hotel",
-      "travel_agency_partner", "flight_class", "hotel_grade", "meals_included",
-      "airline", "direct_flight", "insurance_included", "visa_included", "optional_tours_extra",
+      "agency_name", "agency_product_url", "product_type",
+      "countries", "cities", "representative_city", "region_group",
+      "nights", "days", "itinerary_summary", "itinerary_highlights",
+      "price_per_person", "avg_budget", "price_includes", "price_excludes",
+      "airline", "direct_flight", "departure_airport",
+      "hotel_grade", "meal_plan",
+      "themes", "shopping_required", "guide_included", "visa_required",
     ],
   },
 

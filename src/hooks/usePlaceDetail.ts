@@ -123,12 +123,30 @@ export interface LegacyDetail {
   rehearsal_count: number | null;
   // Hanbok
   hanbok_types: string[];
-  // Honeymoon
-  destinations: string[];
-  duration_days: number | null;
-  includes_flights: boolean | null;
-  includes_hotel: boolean | null;
-  travel_agency_partner: string | null;
+  // Honeymoon (product-based: 한 행 = 여행 상품 1개)
+  agency_name: string | null;
+  agency_product_url: string | null;
+  product_type: string | null; // package | free_travel | flight | pass
+  countries: string[];
+  cities: string[];
+  representative_city: string | null;
+  region_group: string | null;
+  nights: number | null;
+  days: number | null;
+  itinerary_summary: string | null;
+  itinerary_highlights: string[];
+  avg_budget: number | null;
+  price_includes: string[];
+  price_excludes: string[];
+  airline: string | null;
+  direct_flight: boolean | null;
+  departure_airport: string | null;
+  hotel_grade: string | null;
+  meal_plan: string | null;
+  themes: string[];
+  shopping_required: boolean | null;
+  guide_included: boolean | null;
+  visa_required: boolean | null;
   // Appliance
   product_categories: string[];
   brand_options: string[];
@@ -149,10 +167,10 @@ export interface LegacyDetail {
   delivery_options: string[];  // → empty (deprecated)
   included_services: string[]; // → empty (deprecated)
   accommodation_types: string[]; // → empty (deprecated)
-  trip_types: string[];        // → destinations
-  destination: string;         // → destinations.join(", ")
-  duration: string;            // → "{duration_days}일"
-  brand: string;               // → brand_options.join(", ")
+  trip_types: string[];        // → countries (legacy alias)
+  destination: string;         // → "{country} · {cities.join(', ')}"
+  duration: string;            // → "{nights}박{days}일"
+  brand: string;               // → brand_options.join(", ") | agency_name
 }
 
 const CARD_KEY: Record<string, string> = {
@@ -344,11 +362,29 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         hair_makeup_separate: (card?.hair_makeup_separate as boolean) ?? null,
         rehearsal_count: (card?.rehearsal_count as number) ?? null,
         hanbok_types: asStringArray(card?.hanbok_types),
-        destinations: asStringArray(card?.destinations),
-        duration_days: (card?.duration_days as number) ?? null,
-        includes_flights: (card?.includes_flights as boolean) ?? null,
-        includes_hotel: (card?.includes_hotel as boolean) ?? null,
-        travel_agency_partner: (card?.travel_agency_partner as string) ?? null,
+        agency_name: (card?.agency_name as string) ?? null,
+        agency_product_url: (card?.agency_product_url as string) ?? null,
+        product_type: (card?.product_type as string) ?? null,
+        countries: asStringArray(card?.countries),
+        cities: asStringArray(card?.cities),
+        representative_city: (card?.representative_city as string) ?? null,
+        region_group: (card?.region_group as string) ?? null,
+        nights: (card?.nights as number) ?? null,
+        days: (card?.days as number) ?? null,
+        itinerary_summary: (card?.itinerary_summary as string) ?? null,
+        itinerary_highlights: asStringArray(card?.itinerary_highlights),
+        avg_budget: (card?.avg_budget as number) ?? null,
+        price_includes: asStringArray(card?.price_includes),
+        price_excludes: asStringArray(card?.price_excludes),
+        airline: (card?.airline as string) ?? null,
+        direct_flight: (card?.direct_flight as boolean) ?? null,
+        departure_airport: (card?.departure_airport as string) ?? null,
+        hotel_grade: (card?.hotel_grade as string) ?? null,
+        meal_plan: (card?.meal_plan as string) ?? null,
+        themes: asStringArray(card?.themes),
+        shopping_required: (card?.shopping_required as boolean) ?? null,
+        guide_included: (card?.guide_included as boolean) ?? null,
+        visa_required: (card?.visa_required as boolean) ?? null,
         product_categories: asStringArray(card?.product_categories),
         brand_options: asStringArray(card?.brand_options),
         venue_types: asStringArray(card?.venue_types),
@@ -374,13 +410,18 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         delivery_options: [],
         included_services: [],
         accommodation_types: [],
-        trip_types: asStringArray(card?.destinations),
-        destination: asStringArray(card?.destinations).join(", "),
+        trip_types: asStringArray(card?.countries),
+        destination: (() => {
+          const c0 = asStringArray(card?.countries)[0];
+          const cities = asStringArray(card?.cities).join(", ");
+          if (c0 && cities) return `${c0} · ${cities}`;
+          return c0 ?? cities ?? "";
+        })(),
         duration:
-          (card?.duration_days as number | undefined) != null
-            ? `${card!.duration_days}일`
+          (card?.nights as number | undefined) != null && (card?.days as number | undefined) != null
+            ? `${card!.nights}박${card!.days}일`
             : "",
-        brand: asStringArray(card?.brand_options).join(", "),
+        brand: (card?.agency_name as string) ?? asStringArray(card?.brand_options).join(", "),
       };
     },
     enabled: !!placeId,
