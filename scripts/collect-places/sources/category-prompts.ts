@@ -53,10 +53,14 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- original_count (정수): 원본 제공 장수.\n` +
       `- retouching_included (bool): 보정 기본 포함.\n` +
       `- includes_originals (bool): 원본 제공.\n` +
-      `- dress_provided (bool): 드레스 대여 포함.`,
+      `- dress_provided (bool): 드레스 대여 포함.\n` +
+      `- frame_included (bool): 부모님 액자 기본 포함 (별도면 false).\n` +
+      `- photobook_pages (정수): 앨범 페이지 수.\n` +
+      `- editing_days (정수): 보정 후 결과물 받기까지 소요 일수.`,
     cardColumns: [
       "shoot_styles", "shoot_locations", "total_photos", "original_count",
       "retouching_included", "includes_originals", "dress_provided",
+      "frame_included", "photobook_pages", "editing_days",
     ],
   },
 
@@ -72,10 +76,14 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- rental_only (bool): 대여만 (false면 맞춤도 가능).\n` +
       `- fitting_count (정수): 가봉 횟수.\n` +
       `- rental_includes_alterations (bool): 대여에 가봉비 포함.\n` +
-      `- designer_brands (배열): 취급 디자이너/브랜드 (예: ["Vera Wang", "Pronovias", "Galia Lahav"]).`,
+      `- designer_brands (배열): 취급 디자이너/브랜드 (예: ["Vera Wang", "Pronovias", "Galia Lahav"]).\n` +
+      `- helper_included (bool): 헬퍼이모(당일 헬퍼) 비용 포함. 별도면 false (보통 별도 25~35만원).\n` +
+      `- inner_included (bool): 이너·페티코트·베일 등 소품 기본 포함.\n` +
+      `- dress_count_included (정수): 패키지에 포함된 드레스 벌수 (본식+리허설 합산).`,
     cardColumns: [
       "dress_styles", "rental_only", "fitting_count",
       "rental_includes_alterations", "designer_brands",
+      "helper_included", "inner_included", "dress_count_included",
     ],
   },
 
@@ -89,9 +97,13 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- makeup_styles (배열): [${ENUM(["내추럴", "글램", "로맨틱", "모던", "청순", "리허설"])}] 중.\n` +
       `- includes_rehearsal (bool): 본식 패키지에 리허설 포함.\n` +
       `- hair_makeup_separate (bool): 헤어/메이크업 분리 청구.\n` +
-      `- rehearsal_count (정수): 리허설 횟수.`,
+      `- rehearsal_count (정수): 리허설 횟수.\n` +
+      `- travel_fee_included (bool): 웨딩홀 출장비 포함 (한국 결혼식 거의 100% 출장이라 매우 중요).\n` +
+      `- director_level (문자열): 시술자 레벨 — "원장"/"실장"/"팀장"/"디렉터" 등.\n` +
+      `- early_morning_fee (정수): 새벽(7시 이전) 출장 추가비 KRW. 없으면 0.`,
     cardColumns: [
       "makeup_styles", "includes_rehearsal", "hair_makeup_separate", "rehearsal_count",
+      "travel_fee_included", "director_level", "early_morning_fee",
     ],
   },
 
@@ -103,8 +115,10 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `★ 보관비/세탁비/지방 배송비 등은 notes에.\n` +
       `[추가 추출 필드 → category_extras]\n` +
       `- hanbok_types (배열): 취급 한복 [${ENUM(["혼주", "신부", "신랑", "폐백", "어머님", "아버님", "맞춤", "대여"])}] 중.\n` +
-      `- custom_available (bool): 맞춤 제작 가능 (false면 대여만).`,
-    cardColumns: ["hanbok_types", "custom_available"],
+      `- custom_available (bool): 맞춤 제작 가능 (false면 대여만).\n` +
+      `- accessories_included (bool): 노리개·뒷꽂이·속바지·버선 등 액세서리 기본 포함.\n` +
+      `- delivery_available (bool): 지방 배송 / 택배 대여 가능.`,
+    cardColumns: ["hanbok_types", "custom_available", "accessories_included", "delivery_available"],
   },
 
   예복: {
@@ -117,8 +131,9 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- suit_styles (배열): [${ENUM(["턱시도", "정장", "모닝", "클래식", "모던", "슬림핏", "쓰리피스"])}] 중.\n` +
       `- custom_available (bool): 맞춤 제작 가능.\n` +
       `- fitting_count (정수): 가봉 횟수.\n` +
-      `- designer_brands (배열): 취급 브랜드.`,
-    cardColumns: ["suit_styles", "custom_available", "fitting_count", "designer_brands"],
+      `- designer_brands (배열): 취급 브랜드.\n` +
+      `- accessories_included (bool): 셔츠·구두·넥타이·커프스 등 액세서리 기본 포함.`,
+    cardColumns: ["suit_styles", "custom_available", "fitting_count", "designer_brands", "accessories_included"],
   },
 
   허니문: {
@@ -134,10 +149,13 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- duration_days (정수): 패키지 기본 일수.\n` +
       `- includes_flights (bool): 항공편 포함.\n` +
       `- includes_hotel (bool): 숙박 포함.\n` +
-      `- travel_agency_partner (문자열): 제휴 여행사명.`,
+      `- travel_agency_partner (문자열): 제휴 여행사명.\n` +
+      `- flight_class (문자열): 항공 등급 — "이코노미"/"프리미엄"/"비즈니스"/"퍼스트".\n` +
+      `- hotel_grade (문자열): 호텔 등급 — "3성"/"4성"/"5성"/"풀빌라"/"리조트".\n` +
+      `- meals_included (문자열): 식사 포함 옵션 — "조식만"/"2식(조·석)"/"3식"/"올인클루시브"/"미포함".`,
     cardColumns: [
       "destinations", "duration_days", "includes_flights", "includes_hotel",
-      "travel_agency_partner",
+      "travel_agency_partner", "flight_class", "hotel_grade", "meals_included",
     ],
   },
 
@@ -149,8 +167,10 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `★ 세트 할인율, 무이자 할부 개월수, 무료 배송/설치 여부는 notes에.\n` +
       `[추가 추출 필드 → category_extras]\n` +
       `- product_categories (배열): [${ENUM(["TV", "냉장고", "세탁기", "에어컨", "가구", "침대", "소파", "건조기"])}] 중.\n` +
-      `- brand_options (배열): 취급 브랜드 (예: ["LG", "삼성", "한샘", "에넥스"]).`,
-    cardColumns: ["product_categories", "brand_options"],
+      `- brand_options (배열): 취급 브랜드 (예: ["LG", "삼성", "한샘", "에넥스"]).\n` +
+      `- installment_months (정수): 무이자 할부 최대 개월수 (없으면 0).\n` +
+      `- warranty_years (정수): 기본 보증 기간 (년).`,
+    cardColumns: ["product_categories", "brand_options", "installment_months", "warranty_years"],
   },
 
   청첩장: {
@@ -162,8 +182,10 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `[추가 추출 필드 → category_extras]\n` +
       `- venue_types (배열): [${ENUM(["한식", "일식", "중식", "양식", "이탈리안", "코스", "프라이빗", "룸"])}] 중.\n` +
       `- capacity_min (정수): 룸 최소 수용 인원.\n` +
-      `- capacity_max (정수): 룸 최대 수용 인원.`,
-    cardColumns: ["venue_types", "capacity_min", "capacity_max"],
+      `- capacity_max (정수): 룸 최대 수용 인원.\n` +
+      `- room_charge_separate (bool): 룸 차지(룸 사용료)가 1인 코스값과 별도로 청구되는지.\n` +
+      `- drinks_included (bool): 음료/주류가 코스 가격에 포함되는지.`,
+    cardColumns: ["venue_types", "capacity_min", "capacity_max", "room_charge_separate", "drinks_included"],
   },
 };
 
