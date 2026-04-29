@@ -114,12 +114,14 @@ export interface Venue {
   review_count: number;
   price_per_person: number;
   min_guarantee: number;
+  max_guarantee: number;
   is_partner: boolean;
   created_at: string;
   updated_at: string;
   hall_types: string[] | null;
   meal_options: string[] | null;
   event_options: string[] | null;
+  tags: string[];
 }
 
 const joinRegion = (city: string | null, district: string | null) =>
@@ -152,22 +154,27 @@ export const placeToVendor = (p: PlaceRow | PlaceWithCategory): Vendor => {
   };
 };
 
-export const placeToVenue = (p: PlaceRow): Venue => ({
-  id: p.place_id,
-  name: p.name,
-  address: joinRegion(p.city, p.district) ?? "",
-  thumbnail_url: p.main_image_url,
-  rating: p.avg_rating ?? 0,
-  review_count: p.review_count ?? 0,
-  price_per_person: p.min_price ?? 0,
-  min_guarantee: 0,
-  is_partner: p.is_partner ?? false,
-  created_at: p.created_at ?? "",
-  updated_at: p.updated_at ?? "",
-  hall_types: null,
-  meal_options: null,
-  event_options: null,
-});
+export const placeToVenue = (p: PlaceRow | PlaceWithCategory): Venue => {
+  const wh = (p as PlaceWithCategory).place_wedding_halls ?? null;
+  return {
+    id: p.place_id,
+    name: p.name,
+    address: joinRegion(p.city, p.district) ?? "",
+    thumbnail_url: p.main_image_url,
+    rating: p.avg_rating ?? 0,
+    review_count: p.review_count ?? 0,
+    price_per_person: wh?.price_per_person ?? p.min_price ?? 0,
+    min_guarantee: wh?.min_guarantee ?? 0,
+    max_guarantee: wh?.max_guarantee ?? 0,
+    is_partner: p.is_partner ?? false,
+    created_at: p.created_at ?? "",
+    updated_at: p.updated_at ?? "",
+    hall_types: wh?.hall_styles ?? null,
+    meal_options: wh?.meal_types ?? null,
+    event_options: null,
+    tags: p.tags ?? [],
+  };
+};
 
 // Generic adapter for legacy detail pages (Hanbok/Studio/Suit/etc)
 // Synthesizes the old standalone-table shape from places + place_<category> data.
