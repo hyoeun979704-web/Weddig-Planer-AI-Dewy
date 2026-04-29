@@ -29,7 +29,7 @@ const AIStudio = () => {
 
   const handleCategoryTabChange = (tab: CategoryTab) => {
     const tabRoutes: Record<CategoryTab, string> = {
-      "ai-planner": "/",
+      "ai-planner": "/ai-planner",
       "ai-studio": "/ai-studio",
       tips: "/magazine",
       events: "/deals",
