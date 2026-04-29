@@ -22,7 +22,7 @@ interface VendorMediaCardProps {
 }
 
 export const CARD_W = 140;
-export const CARD_H = 220;
+export const CARD_H = 210;
 const IMG_H = 100;
 
 const KEYWORD_CHIP_CLASSES = {
