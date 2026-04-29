@@ -36,7 +36,7 @@ export interface VendorInfoLine {
   };
 }
 
-const formatWon = (won: number): string => {
+export const formatWon = (won: number): string => {
   if (won >= 100000000) return `${(won / 100000000).toFixed(1).replace(/\.0$/, "")}억원~`;
   if (won >= 10000) return `${(won / 10000).toFixed(0)}만원~`;
   return `${won.toLocaleString()}원~`;
