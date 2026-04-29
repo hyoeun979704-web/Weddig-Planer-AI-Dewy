@@ -48,7 +48,7 @@ const CATEGORY_DETAIL_SELECT: Record<CategoryType, string> = {
   hanbok: "place_hanboks(hanbok_types,custom_available,price_per_person)",
   suits: "place_tailor_shops(suit_styles,custom_available,price_per_person)",
   honeymoon:
-    "place_honeymoons(agency_name,product_type,countries,cities,representative_city,nights,days,price_per_person,avg_budget,themes)",
+    "place_honeymoons(agency_name,agency_product_url,product_type,countries,cities,representative_city,nights,days,price_per_person,avg_budget,themes)",
   honeymoon_gifts: "place_jewelry(metals,product_categories,couple_set_available,price_per_person)",
   appliances: "place_appliances(product_categories,brand_options,price_per_person)",
   invitation_venues:
@@ -136,6 +136,7 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
         ...((card?.themes as string[] | undefined) ?? []),
       ].filter((x): x is string => Boolean(x));
       base.avg_budget = card?.avg_budget ?? undefined;
+      base.agency_product_url = card?.agency_product_url ?? undefined;
       break;
     }
     case "honeymoon_gifts":

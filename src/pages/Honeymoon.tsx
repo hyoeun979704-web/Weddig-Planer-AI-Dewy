@@ -18,7 +18,16 @@ const Honeymoon = () => {
 
   useEffect(() => { if (isLoaded) initWithRegion(defaultRegion); }, [isLoaded]);
 
-  const handleItemClick = (item: CategoryItem) => { navigate(`/honeymoon/${item.id}`); };
+  // 허니문은 aggregator 모델 — 카드 클릭 시 여행사 상품 페이지로 이동.
+  // agency_product_url이 비어 있으면 fallback으로 내부 detail 페이지를 연다.
+  const handleItemClick = (item: CategoryItem) => {
+    const url = item.agency_product_url as string | undefined;
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    navigate(`/honeymoon/${item.id}`);
+  };
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
