@@ -1,19 +1,24 @@
 import { useEffect, useRef, useCallback } from "react";
-import VenueCard, { VenueCardSkeleton } from "./VenueCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import VendorMediaCard, { CARD_W, CARD_H } from "@/components/home/VendorMediaCard";
 import { useVenues, Venue } from "@/hooks/useVenues";
 import { useToast } from "@/hooks/use-toast";
 import { useFilterStore } from "@/stores/useFilterStore";
 import { Button } from "@/components/ui/button";
+import { venueToCardData } from "@/lib/categoryCardAdapter";
 
 interface VenueGridProps {
   onVenueClick?: (venue: Venue) => void;
   partnersOnly?: boolean;
 }
 
-// partnersOnly opt-in (was the default), but no places have is_partner=true
-// yet — B2B onboarding lives in a future round. Defaulting to false so the
-// list isn't empty when no filter is active. Pages that need "partners only"
-// can opt back in explicitly once business_profiles starts marking partners.
+const CardSkeleton = () => (
+  <Skeleton
+    className="rounded-[10px]"
+    style={{ width: CARD_W, height: CARD_H }}
+  />
+);
+
 const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
   const { toast } = useToast();
   const { resetFilters, hasActiveFilters } = useFilterStore();
@@ -72,9 +77,9 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-3 px-4 pb-20">
+      <div className="grid grid-cols-2 gap-2 px-[20px] pb-20 justify-items-center">
         {Array.from({ length: 6 }).map((_, i) => (
-          <VenueCardSkeleton key={i} />
+          <CardSkeleton key={i} />
         ))}
       </div>
     );
@@ -85,7 +90,7 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
       <div className="flex flex-col items-center justify-center py-12 px-4 animate-fade-in">
         <span className="text-4xl mb-4">{hasActiveFilters() ? "🔍" : "🏛️"}</span>
         <p className="text-muted-foreground text-center mb-4">
-          {hasActiveFilters() 
+          {hasActiveFilters()
             ? "검색 조건에 맞는 웨딩홀이 없습니다."
             : "등록된 웨딩홀이 없습니다."}
         </p>
@@ -100,27 +105,21 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
 
   return (
     <div className="pb-20">
-      <div className="grid grid-cols-2 gap-3 px-4">
+      <div className="grid grid-cols-2 gap-2 px-[20px] justify-items-center">
         {allVenues.map((venue) => (
-          <VenueCard
+          <VendorMediaCard
             key={venue.id}
-            id={venue.id}
-            name={venue.name}
-            address={venue.address}
-            pricePerPerson={venue.price_per_person}
-            rating={venue.rating}
-            thumbnailUrl={venue.thumbnail_url}
+            data={venueToCardData(venue)}
             onClick={() => onVenueClick?.(venue)}
           />
         ))}
       </div>
 
-      {/* Infinite scroll trigger */}
       <div ref={loadMoreRef} className="flex justify-center py-6">
         {isFetchingNextPage && (
-          <div className="grid grid-cols-2 gap-3 px-4 w-full">
-            <VenueCardSkeleton />
-            <VenueCardSkeleton />
+          <div className="grid grid-cols-2 gap-2 px-[20px] w-full justify-items-center">
+            <CardSkeleton />
+            <CardSkeleton />
           </div>
         )}
         {!hasNextPage && allVenues.length > 0 && (
