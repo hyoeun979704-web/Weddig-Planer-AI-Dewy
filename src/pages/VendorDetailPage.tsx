@@ -246,6 +246,8 @@ function HoneymoonExtras({ place }: { place: LegacyDetail }) {
     flight: "항공권",
     pass: "이용권",
   };
+  const isPass = place.product_type === "pass";
+  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
   const has =
     place.agency_name ||
     place.product_type ||
@@ -257,31 +259,99 @@ function HoneymoonExtras({ place }: { place: LegacyDetail }) {
     place.itinerary_highlights.length > 0 ||
     place.avg_budget != null ||
     place.airline ||
-    place.themes.length > 0;
+    place.themes.length > 0 ||
+    place.honeymoon_perks.length > 0 ||
+    place.hotel_names.length > 0;
   if (!has) return null;
   return (
-    <div className="space-y-3">
-      <h3 className="font-bold text-sm">허니문 상품 정보</h3>
+    <div className="space-y-4">
+      {/* 신혼 특전 — 페이지 최상단에 배치 (허니문 상품의 핵심 차별점) */}
+      {place.honeymoon_perks.length > 0 && (
+        <div className="space-y-2 rounded-lg bg-rose-50 p-3">
+          <h3 className="font-bold text-sm text-rose-900">허니문 특전</h3>
+          <Tags label="" items={place.honeymoon_perks} />
+        </div>
+      )}
+
+      {place.promotion_text && (
+        <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          🎁 {place.promotion_text}
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <h3 className="font-bold text-sm">허니문 상품 정보</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {place.agency_name && <Stat label="여행사" value={place.agency_name} />}
+          {place.product_type && (
+            <Stat label="상품 유형" value={PRODUCT_TYPE_LABEL[place.product_type] ?? place.product_type} />
+          )}
+          {place.product_code && <Stat label="상품 코드" value={place.product_code} />}
+          {place.departure_type && <Stat label="출발 형태" value={place.departure_type} />}
+          {!isPass && place.nights != null && place.days != null && (
+            <Stat label="일정" value={`${place.nights}박${place.days}일`} />
+          )}
+          {place.avg_budget != null && (
+            <Stat label="평균 경비" value={`${fmtMan(place.avg_budget)}~`} />
+          )}
+          {place.single_supplement != null && (
+            <Stat label="1인 1실 추가" value={`+${fmtMan(place.single_supplement)}`} />
+          )}
+          {place.child_price != null && (
+            <Stat label="아동가" value={fmtMan(place.child_price)} />
+          )}
+          {place.infant_price != null && (
+            <Stat label="유아가" value={fmtMan(place.infant_price)} />
+          )}
+          {isPass && place.validity_days != null && (
+            <Stat label="유효기간" value={`${place.validity_days}일`} />
+          )}
+          {isPass && place.usage_count != null && (
+            <Stat
+              label="사용 횟수"
+              value={place.usage_count === 0 ? "무제한" : `${place.usage_count}회`}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* 항공 정보 */}
+      {(place.airline || place.departure_airport || place.flight_hours != null || place.layover_cities.length > 0) && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm">항공</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.airline && (
+              <Stat
+                label="항공사"
+                value={`${place.airline}${place.direct_flight ? " · 직항" : place.direct_flight === false ? " · 경유" : ""}`}
+              />
+            )}
+            {place.departure_airport && <Stat label="출발 공항" value={place.departure_airport} />}
+            {place.flight_hours != null && (
+              <Stat label="비행시간" value={`약 ${place.flight_hours}시간`} />
+            )}
+          </div>
+          {place.layover_cities.length > 0 && (
+            <Tags label="경유" items={place.layover_cities} />
+          )}
+        </div>
+      )}
+
+      {/* 숙박 정보 */}
+      {(place.hotel_grade || place.room_type || place.hotel_names.length > 0 || place.meal_plan) && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm">숙박·식사</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.hotel_grade && <Stat label="등급" value={place.hotel_grade} />}
+            {place.room_type && <Stat label="객실" value={place.room_type} />}
+            {place.meal_plan && <Stat label="식사" value={place.meal_plan} />}
+          </div>
+          <Tags label="호텔" items={place.hotel_names} />
+        </div>
+      )}
+
+      {/* 정책 / 키워드 */}
       <div className="grid grid-cols-2 gap-2">
-        {place.agency_name && <Stat label="여행사" value={place.agency_name} />}
-        {place.product_type && (
-          <Stat label="상품 유형" value={PRODUCT_TYPE_LABEL[place.product_type] ?? place.product_type} />
-        )}
-        {place.nights != null && place.days != null && (
-          <Stat label="일정" value={`${place.nights}박${place.days}일`} />
-        )}
-        {place.avg_budget != null && (
-          <Stat label="평균 경비" value={`${(place.avg_budget / 10000).toFixed(0)}만원~`} />
-        )}
-        {place.airline && (
-          <Stat
-            label="항공"
-            value={`${place.airline}${place.direct_flight ? " · 직항" : place.direct_flight === false ? " · 경유" : ""}`}
-          />
-        )}
-        {place.departure_airport && <Stat label="출발 공항" value={place.departure_airport} />}
-        {place.hotel_grade && <Stat label="숙소 등급" value={place.hotel_grade} />}
-        {place.meal_plan && <Stat label="식사" value={place.meal_plan} />}
         {place.guide_included != null && (
           <Stat label="가이드" value={place.guide_included ? "동행" : "미동행"} />
         )}
@@ -292,6 +362,7 @@ function HoneymoonExtras({ place }: { place: LegacyDetail }) {
           <Stat label="비자" value={place.visa_required ? "필요" : "면제"} />
         )}
       </div>
+
       <Tags label="방문 국가" items={place.countries} />
       <Tags label="방문 도시" items={place.cities} />
       <Tags label="테마" items={place.themes} />

@@ -1300,26 +1300,39 @@ export type Database = {
           agency_product_url: string | null
           airline: string | null
           avg_budget: number | null
+          child_price: number | null
           cities: string[] | null
           countries: string[] | null
           days: number | null
           departure_airport: string | null
+          departure_type: string | null
           direct_flight: boolean | null
+          flight_hours: number | null
           guide_included: boolean | null
+          honeymoon_perks: string[] | null
           hotel_grade: string | null
+          hotel_names: string[] | null
+          infant_price: number | null
           itinerary_highlights: string[] | null
           itinerary_summary: string | null
+          layover_cities: string[] | null
           meal_plan: string | null
           nights: number | null
           place_id: string
           price_excludes: string[] | null
           price_includes: string[] | null
           price_per_person: number | null
+          product_code: string | null
           product_type: string | null
+          promotion_text: string | null
           region_group: string | null
           representative_city: string | null
+          room_type: string | null
           shopping_required: boolean | null
+          single_supplement: number | null
           themes: string[] | null
+          usage_count: number | null
+          validity_days: number | null
           visa_required: boolean | null
         }
         Insert: {
@@ -1327,26 +1340,39 @@ export type Database = {
           agency_product_url?: string | null
           airline?: string | null
           avg_budget?: number | null
+          child_price?: number | null
           cities?: string[] | null
           countries?: string[] | null
           days?: number | null
           departure_airport?: string | null
+          departure_type?: string | null
           direct_flight?: boolean | null
+          flight_hours?: number | null
           guide_included?: boolean | null
+          honeymoon_perks?: string[] | null
           hotel_grade?: string | null
+          hotel_names?: string[] | null
+          infant_price?: number | null
           itinerary_highlights?: string[] | null
           itinerary_summary?: string | null
+          layover_cities?: string[] | null
           meal_plan?: string | null
           nights?: number | null
           place_id: string
           price_excludes?: string[] | null
           price_includes?: string[] | null
           price_per_person?: number | null
+          product_code?: string | null
           product_type?: string | null
+          promotion_text?: string | null
           region_group?: string | null
           representative_city?: string | null
+          room_type?: string | null
           shopping_required?: boolean | null
+          single_supplement?: number | null
           themes?: string[] | null
+          usage_count?: number | null
+          validity_days?: number | null
           visa_required?: boolean | null
         }
         Update: {
@@ -1354,26 +1380,39 @@ export type Database = {
           agency_product_url?: string | null
           airline?: string | null
           avg_budget?: number | null
+          child_price?: number | null
           cities?: string[] | null
           countries?: string[] | null
           days?: number | null
           departure_airport?: string | null
+          departure_type?: string | null
           direct_flight?: boolean | null
+          flight_hours?: number | null
           guide_included?: boolean | null
+          honeymoon_perks?: string[] | null
           hotel_grade?: string | null
+          hotel_names?: string[] | null
+          infant_price?: number | null
           itinerary_highlights?: string[] | null
           itinerary_summary?: string | null
+          layover_cities?: string[] | null
           meal_plan?: string | null
           nights?: number | null
           place_id?: string
           price_excludes?: string[] | null
           price_includes?: string[] | null
           price_per_person?: number | null
+          product_code?: string | null
           product_type?: string | null
+          promotion_text?: string | null
           region_group?: string | null
           representative_city?: string | null
+          room_type?: string | null
           shopping_required?: boolean | null
+          single_supplement?: number | null
           themes?: string[] | null
+          usage_count?: number | null
+          validity_days?: number | null
           visa_required?: boolean | null
         }
         Relationships: [

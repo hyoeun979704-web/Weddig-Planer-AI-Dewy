@@ -127,6 +127,8 @@ export interface LegacyDetail {
   agency_name: string | null;
   agency_product_url: string | null;
   product_type: string | null; // package | free_travel | flight | pass
+  product_code: string | null;
+  departure_type: string | null;
   countries: string[];
   cities: string[];
   representative_city: string | null;
@@ -136,17 +138,28 @@ export interface LegacyDetail {
   itinerary_summary: string | null;
   itinerary_highlights: string[];
   avg_budget: number | null;
+  single_supplement: number | null;
+  child_price: number | null;
+  infant_price: number | null;
   price_includes: string[];
   price_excludes: string[];
+  promotion_text: string | null;
   airline: string | null;
   direct_flight: boolean | null;
   departure_airport: string | null;
+  layover_cities: string[];
+  flight_hours: number | null;
   hotel_grade: string | null;
+  room_type: string | null;
+  hotel_names: string[];
   meal_plan: string | null;
   themes: string[];
+  honeymoon_perks: string[];
   shopping_required: boolean | null;
   guide_included: boolean | null;
   visa_required: boolean | null;
+  validity_days: number | null;
+  usage_count: number | null;
   // Appliance
   product_categories: string[];
   brand_options: string[];
@@ -365,6 +378,8 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         agency_name: (card?.agency_name as string) ?? null,
         agency_product_url: (card?.agency_product_url as string) ?? null,
         product_type: (card?.product_type as string) ?? null,
+        product_code: (card?.product_code as string) ?? null,
+        departure_type: (card?.departure_type as string) ?? null,
         countries: asStringArray(card?.countries),
         cities: asStringArray(card?.cities),
         representative_city: (card?.representative_city as string) ?? null,
@@ -374,17 +389,28 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         itinerary_summary: (card?.itinerary_summary as string) ?? null,
         itinerary_highlights: asStringArray(card?.itinerary_highlights),
         avg_budget: (card?.avg_budget as number) ?? null,
+        single_supplement: (card?.single_supplement as number) ?? null,
+        child_price: (card?.child_price as number) ?? null,
+        infant_price: (card?.infant_price as number) ?? null,
         price_includes: asStringArray(card?.price_includes),
         price_excludes: asStringArray(card?.price_excludes),
+        promotion_text: (card?.promotion_text as string) ?? null,
         airline: (card?.airline as string) ?? null,
         direct_flight: (card?.direct_flight as boolean) ?? null,
         departure_airport: (card?.departure_airport as string) ?? null,
+        layover_cities: asStringArray(card?.layover_cities),
+        flight_hours: (card?.flight_hours as number) ?? null,
         hotel_grade: (card?.hotel_grade as string) ?? null,
+        room_type: (card?.room_type as string) ?? null,
+        hotel_names: asStringArray(card?.hotel_names),
         meal_plan: (card?.meal_plan as string) ?? null,
         themes: asStringArray(card?.themes),
+        honeymoon_perks: asStringArray(card?.honeymoon_perks),
         shopping_required: (card?.shopping_required as boolean) ?? null,
         guide_included: (card?.guide_included as boolean) ?? null,
         visa_required: (card?.visa_required as boolean) ?? null,
+        validity_days: (card?.validity_days as number) ?? null,
+        usage_count: (card?.usage_count as number) ?? null,
         product_categories: asStringArray(card?.product_categories),
         brand_options: asStringArray(card?.brand_options),
         venue_types: asStringArray(card?.venue_types),

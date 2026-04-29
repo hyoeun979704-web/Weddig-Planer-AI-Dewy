@@ -140,6 +140,10 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
     prompt:
       `\n\n[허니문 — 카테고리 특성 (※ 행 단위 = 여행 "상품" 1개. 여행사가 아님!)]\n` +
       `★ 한 행 = 한 패키지/상품. places.name = 패키지 상품명 (예: "발리 5박7일 풀빌라 허니문 with 가루다항공").\n` +
+      `★ ※ places.city / places.district 채우는 규칙 (필수):\n` +
+      `   - places.city = region_group 값 ("일본"/"동남아"/"유럽" 등 광역 구분)\n` +
+      `   - places.district = representative_city 값 ("도쿄"/"발리"/"파리" 등 대표 도시)\n` +
+      `   허니문은 "여행사 본사 위치"가 아니라 "여행하는 곳"이 검색 기준이 됨.\n` +
       `★ category_extras.agency_name = 판매 여행사 (하나투어/모두투어/노랑풍선/마이리얼트립/클룩/인터파크투어 등).\n` +
       `★ product_type 필수: ${ENUM(["package", "free_travel", "flight", "pass"])}\n` +
       `   - package: 항공+숙박+가이드 묶음 패키지\n` +
@@ -148,39 +152,62 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `   - pass: 교통패스(JR패스/유레일) 또는 관광지 이용권(디즈니/유니버설/Klook/KKday류)\n` +
       `★ 가격 모델: 보통 per_person (1인 KRW). 통화 USD/EUR 표기되어 있으면 그대로 currency에 명시.\n` +
       `★ price_packages.includes 예: ["왕복 항공권 비즈니스", "리조트 5성 5박", "공항 픽업", "조식 5회", "투어 1일"].\n` +
-      `★ price_packages.notes 에는 성수기/비수기 가격 차이, 유류할증료, 1인 객실 추가요금(싱글차지) 명시.\n` +
-      `[추가 추출 필드 → category_extras]\n` +
-      `- agency_name (문자열): 판매 여행사명. 필수.\n` +
+      `★ price_packages.notes 에는 성수기/비수기 가격 차이, 유류할증료 명시.\n` +
+      `[기본 식별/분류 → category_extras]\n` +
+      `- agency_name (문자열, 필수): 판매 여행사명.\n` +
       `- agency_product_url (문자열): 여행사 상품 상세 페이지 URL.\n` +
-      `- product_type (enum): ${ENUM(["package", "free_travel", "flight", "pass"])}.\n` +
+      `- product_code (문자열): 여행사 상품 코드 (예: "Q-BLI24001"). 예약·문의 시 사용.\n` +
+      `- product_type (enum, 필수): ${ENUM(["package", "free_travel", "flight", "pass"])}.\n` +
+      `- departure_type (enum): ${ENUM(["매일출발", "지정일출발", "단독출발"])}.\n` +
+      `[목적지]\n` +
       `- countries (배열): 방문 국가. 예: ["일본"], ["프랑스","스위스","이탈리아"].\n` +
       `- cities (배열): 방문 도시. 예: ["도쿄","교토","긴자"].\n` +
       `- representative_city (문자열): 대표 도시(검색·필터 키). 보통 cities[0]이지만 패키지명상의 메인 도시.\n` +
-      `- region_group (문자열): ${ENUM(["일본", "동남아", "괌사이판", "유럽", "미주", "대양주", "중화권", "국내", "기타"])} 중.\n` +
+      `- region_group (enum): ${ENUM(["일본", "동남아", "괌사이판", "유럽", "미주", "대양주", "중화권", "국내", "기타"])} 중.\n` +
+      `[일정]\n` +
       `- nights (정수): 박. 예: 5박7일이면 5.\n` +
       `- days (정수): 일. 예: 5박7일이면 7.\n` +
       `- itinerary_summary (문자열): 일정 한 줄 요약 (예: "Day1 인천→발리, Day2-5 자유시간/풀빌라, Day6 우붓 투어, Day7 출국").\n` +
       `- itinerary_highlights (배열): 주요 일정 (예: ["스미냑 비치 디너", "우붓 라이스테라스", "스파 1회"]).\n` +
+      `[가격]\n` +
+      `- price_per_person (정수): 최저가 KRW. (places.min_price와 동기화)\n` +
       `- avg_budget (정수): 1인 평균 경비 KRW (성수기 포함, 옵션 투어 1~2개 가정한 현실 비용).\n` +
-      `- price_includes (배열): 패키지 포함 항목 (예: ["왕복 직항 항공", "5성 호텔 5박", "조식 5회", "공항 픽업·샌딩"]).\n` +
-      `- price_excludes (배열): 불포함 항목 (예: ["선택관광", "기사·가이드 팁", "개인 경비", "유류할증료"]).\n` +
+      `- single_supplement (정수): 1인 1실 추가요금 KRW. 보통 50~150만원.\n` +
+      `- child_price (정수): 아동(만 2~12세) 가격 KRW.\n` +
+      `- infant_price (정수): 유아(만 0~2세) 가격 KRW.\n` +
+      `- price_includes (배열): 포함 항목 (예: ["왕복 직항 항공", "5성 호텔 5박", "조식 5회"]).\n` +
+      `- price_excludes (배열): 불포함 항목 (예: ["선택관광", "가이드 팁", "유류할증료"]).\n` +
+      `- promotion_text (문자열): 현재 진행 중인 시즌 프로모션 (예: "5월 출발 7만원 할인", "조기예약 15% 할인").\n` +
+      `[항공]\n` +
       `- airline (문자열): 대표 항공사 (예: "대한항공", "아시아나", "가루다인도네시아").\n` +
       `- direct_flight (bool): 직항 여부.\n` +
       `- departure_airport (문자열): 출발 공항 — "인천"/"김포"/"부산"/"대구".\n` +
+      `- layover_cities (배열): 경유 도시 (direct_flight=false일 때 필수). 예: ["나리타"].\n` +
+      `- flight_hours (정수): 편도 비행시간(시간 단위, 반올림). 경유면 환승 대기 포함.\n` +
+      `[숙박]\n` +
       `- hotel_grade (문자열): "3성"/"4성"/"5성"/"풀빌라"/"리조트"/"부티크".\n` +
-      `- meal_plan (문자열): 식사 포함 — "조식 5회"/"2식 조·석"/"올인클루시브"/"미포함".\n` +
+      `- room_type (문자열): 객실 타입 — "스탠다드"/"디럭스"/"스위트"/"풀빌라"/"오션뷰"/"파티오".\n` +
+      `- hotel_names (배열): 실제 사용 호텔명 (예: ["더 리츠칼튼 발리","아야나 리조트"]).\n` +
+      `- meal_plan (문자열): 식사 — "조식 5회"/"2식 조·석"/"올인클루시브"/"미포함".\n` +
+      `[키워드/특성]\n` +
       `- themes (배열): ${ENUM(["가성비", "럭셔리", "랜드마크", "휴양", "도심관광", "자연·액티비티", "미식", "쇼핑", "효도", "신혼", "가족"])} 중. 1~3개.\n` +
-      `- shopping_required (bool): 쇼핑센터 의무방문이 있는지 (패키지 단점 표시).\n` +
+      `- honeymoon_perks (배열, 허니문 패키지의 핵심 차별점): 신혼 특전 (예: ["룸 업그레이드","웰컴 케이크","허니문 디너","스파 1회","조식 인룸 서비스","꽃장식","샴페인"]).\n` +
+      `- shopping_required (bool): 쇼핑센터 의무방문 (패키지 단점).\n` +
       `- guide_included (bool): 한국어 인솔자/가이드 동행.\n` +
-      `- visa_required (bool): 한국 여권 기준 비자 필요 여부.`,
+      `- visa_required (bool): 한국 여권 기준 비자 필요 여부.\n` +
+      `[product_type=pass 전용]\n` +
+      `- validity_days (정수): 유효기간(일). 예: JR패스 7일권이면 7.\n` +
+      `- usage_count (정수): 사용 가능 횟수. 0=무제한, 1=1회 입장, 등.`,
     cardColumns: [
-      "agency_name", "agency_product_url", "product_type",
+      "agency_name", "agency_product_url", "product_type", "product_code",
       "countries", "cities", "representative_city", "region_group",
       "nights", "days", "itinerary_summary", "itinerary_highlights",
-      "price_per_person", "avg_budget", "price_includes", "price_excludes",
-      "airline", "direct_flight", "departure_airport",
-      "hotel_grade", "meal_plan",
-      "themes", "shopping_required", "guide_included", "visa_required",
+      "price_per_person", "avg_budget", "single_supplement", "child_price", "infant_price",
+      "price_includes", "price_excludes", "promotion_text",
+      "airline", "direct_flight", "departure_airport", "layover_cities", "flight_hours",
+      "hotel_grade", "room_type", "hotel_names", "meal_plan",
+      "themes", "honeymoon_perks", "shopping_required", "guide_included", "visa_required",
+      "departure_type", "validity_days", "usage_count",
     ],
   },
 
