@@ -131,9 +131,8 @@ export const venueToCardData = (venue: Venue): VendorMediaCardData => {
       },
     },
   ];
-  if (venue.min_guarantee) {
-    info_lines.push({ label: "보증", value: `${venue.min_guarantee}명` });
-  }
+  const guests = formatGuests(venue.min_guarantee, venue.max_guarantee);
+  if (guests) info_lines.push({ label: "보증", value: guests });
   return {
     id: venue.id,
     thumbnail_url: venue.thumbnail_url,
@@ -142,7 +141,8 @@ export const venueToCardData = (venue: Venue): VendorMediaCardData => {
     category: "웨딩홀",
     concept: venue.hall_types?.[0] ?? null,
     mood: venue.meal_options?.[0] ?? null,
-    strength: venue.event_options?.[0] ?? null,
+    // 홈탭과 동일: 장점 = places.tags 의 4번째
+    strength: venue.tags?.[3] ?? null,
     is_partner: venue.is_partner,
     info_lines,
   };
