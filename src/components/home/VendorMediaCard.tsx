@@ -22,7 +22,7 @@ interface VendorMediaCardProps {
 }
 
 export const CARD_W = 140;
-export const CARD_H = 210;
+export const CARD_H = 195;
 const IMG_H = 100;
 
 const KEYWORD_CHIP_CLASSES = {
@@ -103,7 +103,7 @@ const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
             {data.info_lines.map((line, idx) => (
               <div
                 key={`${line.label}-${idx}`}
-                className="flex items-center justify-between gap-1 text-[9px] leading-tight"
+                className="flex items-center gap-[3px] text-[9px] leading-tight overflow-hidden"
               >
                 <span className="text-black/55 shrink-0">{line.label}</span>
                 <span
@@ -116,6 +116,22 @@ const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
                 >
                   {line.value}
                 </span>
+                {line.pair && (
+                  <>
+                    <span className="text-black/30 shrink-0">·</span>
+                    <span className="text-black/55 shrink-0">{line.pair.label}</span>
+                    <span
+                      className={cn(
+                        "truncate",
+                        line.pair.isPrice
+                          ? "font-bold text-[hsl(353,75%,55%)]"
+                          : "text-black/75"
+                      )}
+                    >
+                      {line.pair.value}
+                    </span>
+                  </>
+                )}
               </div>
             ))}
           </div>
