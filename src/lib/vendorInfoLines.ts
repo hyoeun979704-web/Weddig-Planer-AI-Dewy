@@ -175,8 +175,9 @@ export const collectStyleTags = (p: PlaceWithCategory): string[] => {
 };
 
 // Free-form keywords entered by the vendor (places.tags). Distinct from styles
-// so the UI can render them in a different color.
+// so the UI can render them in a different color. Up to 4 so cards can pick
+// a specific positional tag (e.g. strength = tags[3]).
 export const collectKeywordTags = (p: PlaceWithCategory): string[] => {
   const tags = (p.tags ?? []).filter(Boolean);
-  return Array.from(new Set(tags)).slice(0, 2);
+  return Array.from(new Set(tags)).slice(0, 4);
 };

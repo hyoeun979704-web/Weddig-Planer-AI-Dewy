@@ -25,21 +25,21 @@ export const CARD_W = 120;
 export const CARD_H = 220;
 const IMG_H = 100;
 
-const KEYWORD_COLORS = {
-  category: "text-[#d35c75]",
-  concept: "text-[#3aa1d8]",
-  mood: "text-[#d4a843]",
-  strength: "text-[#a64bb8]",
+const KEYWORD_CHIP_CLASSES = {
+  category: "bg-[#fde7ec] text-[#d35c75]",
+  concept: "bg-[#dff0f9] text-[#3aa1d8]",
+  mood: "bg-[#fcf2d4] text-[#a87a14]",
+  strength: "bg-[#f1e3f5] text-[#a64bb8]",
 } as const;
 
 const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
   const [liked, setLiked] = useState(false);
 
   const keywordChips: Array<{ value: string; className: string }> = [];
-  if (data.category) keywordChips.push({ value: data.category, className: KEYWORD_COLORS.category });
-  if (data.concept) keywordChips.push({ value: data.concept, className: KEYWORD_COLORS.concept });
-  if (data.mood) keywordChips.push({ value: data.mood, className: KEYWORD_COLORS.mood });
-  if (data.strength) keywordChips.push({ value: data.strength, className: KEYWORD_COLORS.strength });
+  if (data.category) keywordChips.push({ value: data.category, className: KEYWORD_CHIP_CLASSES.category });
+  if (data.concept) keywordChips.push({ value: data.concept, className: KEYWORD_CHIP_CLASSES.concept });
+  if (data.mood) keywordChips.push({ value: data.mood, className: KEYWORD_CHIP_CLASSES.mood });
+  if (data.strength) keywordChips.push({ value: data.strength, className: KEYWORD_CHIP_CLASSES.strength });
 
   return (
     <button
@@ -122,13 +122,19 @@ const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
         )}
 
         {keywordChips.length > 0 && (
-          <p className="mt-auto text-[8px] leading-tight line-clamp-2">
+          <div className="mt-auto flex flex-wrap gap-[3px]">
             {keywordChips.map((chip, i) => (
-              <span key={i} className={cn(chip.className, "mr-1 font-medium")}>
-                #{chip.value}
+              <span
+                key={i}
+                className={cn(
+                  "px-1.5 py-[1px] rounded-full text-[8px] font-medium leading-tight whitespace-nowrap",
+                  chip.className
+                )}
+              >
+                {chip.value}
               </span>
             ))}
-          </p>
+          </div>
         )}
       </div>
     </button>
