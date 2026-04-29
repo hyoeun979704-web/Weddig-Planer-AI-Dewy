@@ -143,7 +143,7 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `★ 통화: KRW가 보통이지만 USD/EUR로 표기되어 있으면 그대로 USD/EUR. (currency 필드 명시 필수)\n` +
       `★ 패키지는 보통 여행지+박일수 단위로 묶임 ("발리 5박 7일", "유럽 8박 10일").\n` +
       `★ price_packages.includes 예: ["왕복 항공권 비즈니스", "리조트 5성 5박", "공항 픽업", "조식 포함", "투어 1일"].\n` +
-      `★ 항공편 등급(이코노미/비즈니스), 호텔 등급(3성/4성/5성), 보험 포함 여부는 notes 또는 includes에.\n` +
+      `★ 항공사·직항/경유·보험·비자 처리·옵션투어 별도 비용은 여행사 비교 시 핵심.\n` +
       `[추가 추출 필드 → category_extras]\n` +
       `- destinations (배열): 여행지 (예: ["발리", "몰디브", "유럽"]).\n` +
       `- duration_days (정수): 패키지 기본 일수.\n` +
@@ -152,10 +152,16 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- travel_agency_partner (문자열): 제휴 여행사명.\n` +
       `- flight_class (문자열): 항공 등급 — "이코노미"/"프리미엄"/"비즈니스"/"퍼스트".\n` +
       `- hotel_grade (문자열): 호텔 등급 — "3성"/"4성"/"5성"/"풀빌라"/"리조트".\n` +
-      `- meals_included (문자열): 식사 포함 옵션 — "조식만"/"2식(조·석)"/"3식"/"올인클루시브"/"미포함".`,
+      `- meals_included (문자열): 식사 포함 옵션 — "조식만"/"2식(조·석)"/"3식"/"올인클루시브"/"미포함".\n` +
+      `- airline (문자열): 항공사명 — "대한항공"/"아시아나"/"베트남항공" 등.\n` +
+      `- direct_flight (bool): 직항 여부 (false면 경유).\n` +
+      `- insurance_included (bool): 여행자 보험 포함.\n` +
+      `- visa_included (bool): 비자 발급 비용·대행 포함.\n` +
+      `- optional_tours_extra (bool): 옵션 투어가 별도 비용 (기본 미포함).`,
     cardColumns: [
       "destinations", "duration_days", "includes_flights", "includes_hotel",
       "travel_agency_partner", "flight_class", "hotel_grade", "meals_included",
+      "airline", "direct_flight", "insurance_included", "visa_included", "optional_tours_extra",
     ],
   },
 
@@ -164,13 +170,40 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `\n\n[혼수(가전·가구) — 카테고리 특성]\n` +
       `★ 가격 모델: per_set (세트 가격, 보통 500~3000만원). 단품 가격이면 per_event로.\n` +
       `★ price_packages.includes 예: ["냉장고", "세탁기", "건조기", "TV 65인치", "에어컨 2대", "무료 배송·설치"].\n` +
-      `★ 세트 할인율, 무이자 할부 개월수, 무료 배송/설치 여부는 notes에.\n` +
+      `★ 가전 업체 비교 시 무료 배송/설치, 폐가전 무료 수거, 카드 할인 등이 핵심.\n` +
       `[추가 추출 필드 → category_extras]\n` +
       `- product_categories (배열): [${ENUM(["TV", "냉장고", "세탁기", "에어컨", "가구", "침대", "소파", "건조기"])}] 중.\n` +
       `- brand_options (배열): 취급 브랜드 (예: ["LG", "삼성", "한샘", "에넥스"]).\n` +
       `- installment_months (정수): 무이자 할부 최대 개월수 (없으면 0).\n` +
-      `- warranty_years (정수): 기본 보증 기간 (년).`,
-    cardColumns: ["product_categories", "brand_options", "installment_months", "warranty_years"],
+      `- warranty_years (정수): 기본 보증 기간 (년).\n` +
+      `- free_delivery (bool): 무료 배송 제공.\n` +
+      `- free_installation (bool): 무료 설치 (예: 에어컨 설치 무료).\n` +
+      `- old_appliance_pickup (bool): 폐가전 무료 수거.\n` +
+      `- card_discount_available (bool): 카드사 제휴 할인 운영.`,
+    cardColumns: [
+      "product_categories", "brand_options", "installment_months", "warranty_years",
+      "free_delivery", "free_installation", "old_appliance_pickup", "card_discount_available",
+    ],
+  },
+
+  예물: {
+    prompt:
+      `\n\n[예물(주얼리/예물세트) — 카테고리 특성]\n` +
+      `★ 가격 모델: per_set (커플 세트 가격) 또는 per_event (단품). 결혼반지·예물세트가 주.\n` +
+      `★ price_packages.includes 예: ["결혼반지 2개 (남여)", "다이아몬드 0.3캐럿", "GIA 인증서", "사이즈 조절 평생 무료"].\n` +
+      `★ 메탈 종류, 다이아몬드 인증, 평생 A/S 여부는 주얼리 비교 시 가장 중요.\n` +
+      `[추가 추출 필드 → category_extras]\n` +
+      `- metals (배열): [${ENUM(["골드", "화이트골드", "로즈골드", "플래티넘", "실버"])}] 중.\n` +
+      `- product_categories (배열): [${ENUM(["결혼반지", "예물세트", "시계", "네크리스", "이어링", "팔찌"])}] 중.\n` +
+      `- diamond_certified (bool): GIA·IGI·HRD 등 다이아몬드 인증서 발급.\n` +
+      `- engraving_available (bool): 이니셜·문구 각인 가능.\n` +
+      `- size_resize_free (bool): 사이즈 조절(리사이징) 무료.\n` +
+      `- lifetime_warranty (bool): 평생 클리닝·A/S 제공.\n` +
+      `- couple_set_available (bool): 커플 세트 구성 가능.`,
+    cardColumns: [
+      "metals", "product_categories", "diamond_certified", "engraving_available",
+      "size_resize_free", "lifetime_warranty", "couple_set_available",
+    ],
   },
 
   청첩장: {
@@ -179,13 +212,22 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `★ 가격 모델: per_person (1인 코스 가격, 보통 5~15만원).\n` +
       `★ 룸 단위 운영이면 룸 최소 인원 / 룸 차지가 별도 있을 수 있음 → notes에.\n` +
       `★ price_packages.includes 예: ["1인 코스 7품", "음료 무제한", "프라이빗 룸 4시간"].\n` +
+      `★ 레스토랑 비교 시 분위기, 발렛파킹, 시그니처 메뉴, 콜키지가 핵심.\n` +
       `[추가 추출 필드 → category_extras]\n` +
       `- venue_types (배열): [${ENUM(["한식", "일식", "중식", "양식", "이탈리안", "코스", "프라이빗", "룸"])}] 중.\n` +
       `- capacity_min (정수): 룸 최소 수용 인원.\n` +
       `- capacity_max (정수): 룸 최대 수용 인원.\n` +
       `- room_charge_separate (bool): 룸 차지(룸 사용료)가 1인 코스값과 별도로 청구되는지.\n` +
-      `- drinks_included (bool): 음료/주류가 코스 가격에 포함되는지.`,
-    cardColumns: ["venue_types", "capacity_min", "capacity_max", "room_charge_separate", "drinks_included"],
+      `- drinks_included (bool): 음료/주류가 코스 가격에 포함되는지.\n` +
+      `- atmosphere (배열): 분위기 [${ENUM(["데이트", "비즈니스", "가족모임", "회식", "프라이빗", "캐주얼"])}] 중.\n` +
+      `- valet_parking (bool): 발렛파킹 제공.\n` +
+      `- signature_dishes (배열): 시그니처/대표 메뉴 (예: ["도미스시", "오마카세 코스"]).\n` +
+      `- corkage_fee_won (정수): 콜키지(외부 와인 반입) 비용 KRW. 무료면 0, 미허용이면 null.\n` +
+      `- private_room_count (정수): 단독 룸 개수.`,
+    cardColumns: [
+      "venue_types", "capacity_min", "capacity_max", "room_charge_separate", "drinks_included",
+      "atmosphere", "valet_parking", "signature_dishes", "corkage_fee_won", "private_room_count",
+    ],
   },
 };
 
@@ -198,5 +240,6 @@ export const CARD_TABLE: Record<CategoryLabel, string> = {
   예복: "place_tailor_shops",
   허니문: "place_honeymoons",
   혼수: "place_appliances",
+  예물: "place_jewelry",
   청첩장: "place_invitation_venues",
 };

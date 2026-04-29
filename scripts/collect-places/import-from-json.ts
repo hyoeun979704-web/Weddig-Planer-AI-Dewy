@@ -84,6 +84,7 @@ const CARD_TABLE: Record<string, string> = {
   tailor_shop: "place_tailor_shops",
   honeymoon: "place_honeymoons",
   appliance: "place_appliances",
+  jewelry: "place_jewelry",
   invitation_venue: "place_invitation_venues",
 };
 const ALLOWED_CARD_COLUMNS: Record<string, string[]> = {
@@ -103,10 +104,15 @@ const ALLOWED_CARD_COLUMNS: Record<string, string[]> = {
     "accessories_included"],
   honeymoon: ["destinations", "duration_days", "includes_flights",
     "includes_hotel", "travel_agency_partner",
-    "flight_class", "hotel_grade", "meals_included"],
-  appliance: ["product_categories", "brand_options", "installment_months", "warranty_years"],
+    "flight_class", "hotel_grade", "meals_included",
+    "airline", "direct_flight", "insurance_included", "visa_included", "optional_tours_extra"],
+  appliance: ["product_categories", "brand_options", "installment_months", "warranty_years",
+    "free_delivery", "free_installation", "old_appliance_pickup", "card_discount_available"],
+  jewelry: ["metals", "product_categories", "diamond_certified", "engraving_available",
+    "size_resize_free", "lifetime_warranty", "couple_set_available"],
   invitation_venue: ["venue_types", "capacity_min", "capacity_max",
-    "room_charge_separate", "drinks_included"],
+    "room_charge_separate", "drinks_included",
+    "atmosphere", "valet_parking", "signature_dishes", "corkage_fee_won", "private_room_count"],
 };
 
 async function main() {

@@ -30,7 +30,7 @@ const CATEGORY_TYPE_TO_PLACE: Record<CategoryType, string> = {
   dress_shops: "dress_shop",
   makeup_shops: "makeup_shop",
   honeymoon: "honeymoon",
-  honeymoon_gifts: "appliance",
+  honeymoon_gifts: "jewelry",
   appliances: "appliance",
   suits: "tailor_shop",
   hanbok: "hanbok",
@@ -48,7 +48,7 @@ const CATEGORY_DETAIL_SELECT: Record<CategoryType, string> = {
   hanbok: "place_hanboks(hanbok_types,custom_available,price_per_person)",
   suits: "place_tailor_shops(suit_styles,custom_available,price_per_person)",
   honeymoon: "place_honeymoons(destinations,duration_days,price_per_person)",
-  honeymoon_gifts: "place_appliances(product_categories,brand_options,price_per_person)",
+  honeymoon_gifts: "place_jewelry(metals,product_categories,couple_set_available,price_per_person)",
   appliances: "place_appliances(product_categories,brand_options,price_per_person)",
   invitation_venues:
     "place_invitation_venues(venue_types,capacity_min,capacity_max,price_per_person)",
@@ -62,7 +62,7 @@ const CARD_KEY: Record<CategoryType, string> = {
   hanbok: "place_hanboks",
   suits: "place_tailor_shops",
   honeymoon: "place_honeymoons",
-  honeymoon_gifts: "place_appliances",
+  honeymoon_gifts: "place_jewelry",
   appliances: "place_appliances",
   invitation_venues: "place_invitation_venues",
 };
@@ -117,6 +117,10 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
         card?.duration_days != null ? `${card.duration_days}일` : undefined;
       break;
     case "honeymoon_gifts":
+      // jewelry: product_categories=결혼반지/예물세트, metals=골드/플래티넘
+      base.keywords = card?.product_categories ?? [];
+      base.brand = card?.metals?.join(", ");
+      break;
     case "appliances":
       base.keywords = card?.product_categories ?? [];
       base.brand = card?.brand_options?.join(", ");

@@ -10,6 +10,7 @@ export const CATEGORIES = {
   예복: "tailor_shop",
   허니문: "honeymoon",
   혼수: "appliance",
+  예물: "jewelry",
   청첩장: "invitation_venue",
 } as const;
 
@@ -65,6 +66,13 @@ const KEYWORD_TEMPLATES: Record<CategoryLabel, string[]> = {
   예복: ["{region} 신랑 예복", "{region} 턱시도", "{region} 맞춤 정장", "{region} 예복 대여"],
   허니문: ["허니문 패키지", "신혼여행 추천", "유럽 허니문", "동남아 허니문"],
   혼수: ["{region} 혼수 가전", "신혼 가전 세트", "{region} 혼수 가구", "혼수 침대"],
+  예물: [
+    "{region} 결혼반지",
+    "{region} 예물 주얼리",
+    "{region} 다이아몬드 반지",
+    "{region} 예단 패물",
+    "{region} 커플링 매장",
+  ],
   청첩장: ["{region} 청첩장 모임", "{region} 상견례 장소", "{region} 양가 상견례 식당"],
 };
 
