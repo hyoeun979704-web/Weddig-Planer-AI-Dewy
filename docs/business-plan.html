@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>사업계획서 - 듀이(dewy)</title>
+<style>
+  @page {
+    size: A4;
+    margin: 22mm 20mm;
+    @bottom-center {
+      content: counter(page) " / " counter(pages);
+      font-family: 'Noto Sans CJK KR', sans-serif;
+      font-size: 9pt;
+      color: #666;
+    }
+  }
+  body {
+    font-family: 'Noto Sans CJK KR', 'Noto Sans KR', sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.65;
+    color: #222;
+  }
+  /* 표지 */
+  .cover {
+    page-break-after: always;
+    height: 240mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .cover h1 {
+    font-size: 28pt;
+    font-weight: 700;
+    margin: 0 0 80px 0;
+    letter-spacing: 0.4em;
+  }
+  .cover .brand {
+    font-size: 36pt;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+  }
+  .cover .subtitle {
+    font-size: 14pt;
+    color: #555;
+    margin: 0 0 100px 0;
+  }
+  .cover .meta {
+    font-size: 12pt;
+    line-height: 2;
+    color: #333;
+  }
+  /* 본문 헤딩 */
+  h1.section {
+    font-size: 18pt;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #222;
+    page-break-before: always;
+    page-break-after: avoid;
+  }
+  h1.section:first-of-type {
+    page-break-before: auto;
+  }
+  h2.subsection {
+    font-size: 13pt;
+    font-weight: 700;
+    margin: 18px 0 8px 0;
+    color: #1a1a1a;
+    page-break-after: avoid;
+  }
+  h3.sub3 {
+    font-size: 11.5pt;
+    font-weight: 700;
+    margin: 14px 0 6px 0;
+    page-break-after: avoid;
+  }
+  /* 본문 */
+  p { margin: 6px 0; }
+  ol, ul { margin: 6px 0 6px 22px; padding: 0; }
+  ol li, ul li { margin: 2px 0; }
+  /* 표 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 14px 0;
+    font-size: 10pt;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #999;
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #f0f0f0;
+    font-weight: 700;
+  }
+  td.num, th.num {
+    text-align: right;
+  }
+  td.center, th.center {
+    text-align: center;
+  }
+  /* 강조 박스 (사용 안 함, 보고서 톤) */
+  /* 페이지 분리 */
+  .page-break { page-break-after: always; }
+  /* 작성중 마커 */
+  .draft-note {
+    margin: 30px 0;
+    padding: 14px 16px;
+    background: #fff8e1;
+    border-left: 4px solid #f59e0b;
+    font-size: 10pt;
+    color: #555;
+  }
+</style>
+</head>
+<body>
+
+<!-- 표지 -->
+<section class="cover">
+  <h1>사 업 계 획 서</h1>
+  <div class="brand">듀이 (dewy)</div>
+  <div class="subtitle">AI 기반 통합 웨딩 플랫폼 사업 추진 계획</div>
+  <div class="meta">
+    작성일&nbsp;&nbsp;2026년 4월<br>
+    대표자&nbsp;&nbsp;김효은
+  </div>
+</section>
+
+<!-- 1. 사업 개요 -->
+<h1 class="section">1. 사업 개요</h1>
+
+<h2 class="subsection">가. 사업 명칭 및 목적</h2>
+<p>본 사업의 명칭은 '듀이(dewy)'이며, 인공지능(AI) 기술과 한국 결혼 문화 도메인 지식을 결합한 통합 웨딩 플랫폼 운영을 목적으로 한다. 브랜드명 '듀이(dewy)'는 'Duo(둘) + Easy(쉽게)'의 합성어로, "둘이서 쉽게 준비하는 웨딩"을 의미한다. 결혼을 준비하는 예비 부부에게 정보·플래닝 도구·AI 콘텐츠 생성 서비스를 제공한다. 서비스 도메인은 dewy-wedding.com이다.</p>
+
+<h2 class="subsection">나. 주요 사업 영역</h2>
+<ol>
+  <li>AI 챗봇 기반 웨딩 플래닝 상담 서비스</li>
+  <li>AI 이미지 생성을 활용한 드레스·메이크업 시뮬레이션</li>
+  <li>청첩장 및 시안 자동 생성 서비스</li>
+  <li>결혼식장·스튜디오·허니문 등 통합 정보 제공</li>
+  <li>예산·일정·체크리스트 디지털 관리 도구</li>
+</ol>
+
+<h2 class="subsection">다. 주요 특징</h2>
+<ol>
+  <li>한국 웨딩 절차·관습(스드메·예단·예물·보증인원 등)에 특화된 AI 컨텍스트 보유</li>
+  <li>사용자 사진 기반 AI 이미지 생성을 활용한 시각화 콘텐츠 제공</li>
+  <li>정보·플래닝·커뮤니티·커머스·AI 서비스를 단일 앱에서 제공하는 통합 구조</li>
+  <li>자동화 기반 1인 운영 모델</li>
+</ol>
+
+<h2 class="subsection">라. 운영 모델 (요약)</h2>
+<p>대표자 1인 부업 형태로 출시한다. 대표자는 본업에서 개발·디자인·UI/UX·마케팅·촬영·영상 편집 직무를 수행하고 있으며, 동 역량을 사업 운영에 직접 활용한다. 외부 자금·외부 인력 투입 없이 자체 자본 및 자체 매출을 기반으로 점진적으로 성장하는 구조이다.</p>
+
+<div class="draft-note">
+※ 본 문서는 단계별 작성 중이며, 시장환경·서비스·사업모델·일정·재무·운영·부록 섹션이 추가될 예정이다.
+</div>
+
+</body>
+</html>
