@@ -63,7 +63,7 @@ const categoryConfigs: Record<CategoryType, CategoryConfig> = {
     highlight: "text-sky-500",
     description: "발리, 몰디브, 유럽 등 인기 허니문 패키지",
   },
-  honeymoon_gifts: {
+  jewelry: {
     icon: Gem,
     iconColor: "text-amber-500",
     bgGradient: "from-amber-500/10 via-amber-500/5 to-background",

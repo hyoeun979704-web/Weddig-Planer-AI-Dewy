@@ -44,7 +44,7 @@ const PRICE_UNIT_LABEL: Record<CategoryType, string> = {
   hanbok: "1인 1세트",
   suits: "1인 1세트",
   honeymoon: "1인 기준",
-  honeymoon_gifts: "1인 분담",
+  jewelry: "1인 분담",
   appliances: "1인 분담",
   invitation_venues: "1인 식대",
 };
@@ -73,7 +73,7 @@ function CategoryCardContent({ item, category }: { item: CategoryItem; category:
   const getLocation = () => {
     switch (category) {
       case "honeymoon": return item.destination || "";
-      case "honeymoon_gifts":
+      case "jewelry":
       case "appliances": return item.brand || "";
       default: return item.address || "";
     }
@@ -110,7 +110,7 @@ function CategoryCardContent({ item, category }: { item: CategoryItem; category:
       case "studios":
       case "hanbok":
       case "suits":
-      case "honeymoon_gifts":
+      case "jewelry":
       case "appliances":
       case "invitation_venues":
         return <PriceRow price={item.price_per_person} label={priceLabel} />;

@@ -41,7 +41,7 @@ interface Props {
   /** Per-category extra section rendered below the common ones */
   extraSection?: React.ReactNode;
   /** Item type for FavoriteButton (venue / studio / hanbok / etc) */
-  favoriteType: "venue" | "studio" | "hanbok" | "suit" | "honeymoon" | "honeymoon_gift" | "appliance" | "invitation_venues";
+  favoriteType: "venue" | "studio" | "hanbok" | "suit" | "honeymoon" | "jewelry" | "appliance" | "invitation_venues";
 }
 
 const DAYS = [

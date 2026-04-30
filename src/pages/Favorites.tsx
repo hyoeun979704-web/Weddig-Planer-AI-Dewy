@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 const favTabs = [
-  { id: "vendor", label: "업체", types: ["venue", "studio", "honeymoon", "honeymoon_gift", "appliance", "suit", "hanbok", "invitation_venues"] as ItemType[] },
+  { id: "vendor", label: "업체", types: ["venue", "studio", "honeymoon", "jewelry", "appliance", "suit", "hanbok", "invitation_venues"] as ItemType[] },
   { id: "event", label: "이벤트", types: ["deal"] as ItemType[] },
   { id: "shopping", label: "쇼핑", types: ["product"] as ItemType[] },
   { id: "info", label: "정보", types: ["influencer"] as ItemType[] },
@@ -24,7 +24,7 @@ const ITEM_TYPE_TO_PLACE_CATEGORY: Record<string, string> = {
   venue: "wedding_hall",
   studio: "studio",
   honeymoon: "honeymoon",
-  honeymoon_gift: "appliance",
+  jewelry: "appliance",
   appliance: "appliance",
   suit: "tailor_shop",
   hanbok: "hanbok",
@@ -36,7 +36,7 @@ const ITEM_TYPE_DETAIL_PATH: Record<string, string> = {
   venue: "/venue",
   studio: "/vendor",
   honeymoon: "/vendor",
-  honeymoon_gift: "/vendor",
+  jewelry: "/vendor",
   appliance: "/vendor",
   suit: "/vendor",
   hanbok: "/vendor",

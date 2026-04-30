@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 
@@ -15,8 +15,8 @@ const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Studios = lazy(() => import("./pages/Studios"));
 const StudioDetail = lazy(() => import("./pages/StudioDetail"));
-const HoneymoonGifts = lazy(() => import("./pages/HoneymoonGifts"));
-const HoneymoonGiftDetail = lazy(() => import("./pages/HoneymoonGiftDetail"));
+const Jewelry = lazy(() => import("./pages/Jewelry"));
+const JewelryDetail = lazy(() => import("./pages/JewelryDetail"));
 const Honeymoon = lazy(() => import("./pages/Honeymoon"));
 const HoneymoonDetail = lazy(() => import("./pages/HoneymoonDetail"));
 const Appliances = lazy(() => import("./pages/Appliances"));
@@ -121,8 +121,11 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/studios" element={<Studios />} />
               <Route path="/studio/:id" element={<StudioDetail />} />
-              <Route path="/honeymoon-gifts" element={<HoneymoonGifts />} />
-              <Route path="/honeymoon-gifts/:id" element={<HoneymoonGiftDetail />} />
+              <Route path="/jewelry" element={<Jewelry />} />
+              <Route path="/jewelry/:id" element={<JewelryDetail />} />
+              {/* 옛 URL backward-compat redirect — 외부 링크/북마크 보호 */}
+              <Route path="/honeymoon-gifts" element={<Navigate to="/jewelry" replace />} />
+              <Route path="/honeymoon-gifts/:id" element={<Navigate to="/jewelry" replace />} />
               <Route path="/honeymoon" element={<Honeymoon />} />
               <Route path="/honeymoon/:id" element={<HoneymoonDetail />} />
               <Route path="/appliances" element={<Appliances />} />

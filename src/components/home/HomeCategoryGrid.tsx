@@ -27,7 +27,7 @@ const row1: CategoryItem[] = [
 const row2: CategoryItem[] = [
   { label: "청첩장 모임", image: invitationImg, path: "/invitation-venues", emoji: "💌" },
   { label: "가전·혼수", image: applianceImg, path: "/appliances", emoji: "🏠" },
-  { label: "예물·예단", image: jewelryImg, path: "/honeymoon-gifts", emoji: "💍" },
+  { label: "예물·예단", image: jewelryImg, path: "/jewelry", emoji: "💍" },
   { label: "신혼여행", image: honeymoonImg, path: "/honeymoon", emoji: "✈️" },
 ];
 

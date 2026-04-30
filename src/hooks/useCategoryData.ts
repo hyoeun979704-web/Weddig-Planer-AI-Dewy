@@ -30,7 +30,7 @@ const CATEGORY_TYPE_TO_PLACE: Record<CategoryType, string> = {
   dress_shops: "dress_shop",
   makeup_shops: "makeup_shop",
   honeymoon: "honeymoon",
-  honeymoon_gifts: "jewelry",
+  jewelry: "jewelry",
   appliances: "appliance",
   suits: "tailor_shop",
   hanbok: "hanbok",
@@ -49,7 +49,7 @@ const CATEGORY_DETAIL_SELECT: Record<CategoryType, string> = {
   suits: "place_tailor_shops(suit_styles,custom_available,price_per_person)",
   honeymoon:
     "place_honeymoons(agency_name,agency_product_url,product_type,countries,cities,representative_city,nights,days,price_per_person,avg_budget,themes)",
-  honeymoon_gifts:
+  jewelry:
     "place_jewelry(brand_name,product_url,product_type,sub_category,store_type,metals,product_categories,price_per_person,price_couple_set,carat_diamond,promotion_text)",
   appliances: "place_appliances(product_categories,brand_options,price_per_person)",
   invitation_venues:
@@ -64,7 +64,7 @@ const CARD_KEY: Record<CategoryType, string> = {
   hanbok: "place_hanboks",
   suits: "place_tailor_shops",
   honeymoon: "place_honeymoons",
-  honeymoon_gifts: "place_jewelry",
+  jewelry: "place_jewelry",
   appliances: "place_appliances",
   invitation_venues: "place_invitation_venues",
 };
@@ -140,7 +140,7 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
       base.agency_product_url = card?.agency_product_url ?? undefined;
       break;
     }
-    case "honeymoon_gifts": {
+    case "jewelry": {
       // jewelry — 한 행 = 1 브랜드 베스트셀러 컬렉션
       const STORE_TYPE_LABEL: Record<string, string> = {
         online: "온라인",
@@ -203,7 +203,12 @@ async function fetchCategoryItems(
     .is("deleted_at", null);
 
   if (filters.region) {
-    query = query.ilike("city", `%${filters.region}%`);
+    if (category === "jewelry") {
+      // jewelry: places.city는 매장 도시(서울 등). region 칩은 brand_tier로 필터.
+      query = query.eq("place_jewelry.brand_tier", filters.region);
+    } else {
+      query = query.ilike("city", `%${filters.region}%`);
+    }
   }
   if (filters.minRating) {
     query = query.gte("avg_rating", filters.minRating);
