@@ -18,7 +18,16 @@ const HoneymoonGifts = () => {
 
   useEffect(() => { if (isLoaded) initWithRegion(defaultRegion); }, [isLoaded]);
 
-  const handleItemClick = (item: CategoryItem) => { navigate(`/honeymoon-gifts/${item.id}`); };
+  // jewelry는 aggregator 모델 — 카드 클릭 시 브랜드 베스트셀러 상품 페이지로 이동.
+  // product_url이 비어 있으면 내부 detail 페이지로 fallback (거기서 website/naver_place로 이동).
+  const handleItemClick = (item: CategoryItem) => {
+    const url = item.product_url as string | undefined;
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    navigate(`/honeymoon-gifts/${item.id}`);
+  };
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">

@@ -49,7 +49,8 @@ const CATEGORY_DETAIL_SELECT: Record<CategoryType, string> = {
   suits: "place_tailor_shops(suit_styles,custom_available,price_per_person)",
   honeymoon:
     "place_honeymoons(agency_name,agency_product_url,product_type,countries,cities,representative_city,nights,days,price_per_person,avg_budget,themes)",
-  honeymoon_gifts: "place_jewelry(metals,product_categories,couple_set_available,price_per_person)",
+  honeymoon_gifts:
+    "place_jewelry(brand_name,product_url,product_type,sub_category,store_type,metals,product_categories,price_per_person,price_couple_set,carat_diamond,promotion_text)",
   appliances: "place_appliances(product_categories,brand_options,price_per_person)",
   invitation_venues:
     "place_invitation_venues(venue_types,capacity_min,capacity_max,price_per_person)",
@@ -139,11 +140,32 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
       base.agency_product_url = card?.agency_product_url ?? undefined;
       break;
     }
-    case "honeymoon_gifts":
-      // jewelry: product_categories=결혼반지/예물세트, metals=골드/플래티넘
-      base.keywords = card?.product_categories ?? [];
-      base.brand = card?.metals?.join(", ");
+    case "honeymoon_gifts": {
+      // jewelry — 한 행 = 1 브랜드 베스트셀러 컬렉션
+      const STORE_TYPE_LABEL: Record<string, string> = {
+        online: "온라인",
+        offline: "오프라인",
+        both: "온·오프라인",
+      };
+      base.brand = card?.brand_name ?? card?.metals?.join(", ");
+      base.product_url = card?.product_url ?? undefined;
+      base.product_type = card?.product_type ?? undefined;
+      base.sub_category = card?.sub_category ?? undefined;
+      base.store_type = card?.store_type ?? undefined;
+      base.price_couple_set = card?.price_couple_set ?? undefined;
+      base.carat_diamond = card?.carat_diamond ?? undefined;
+      base.promotion_text = card?.promotion_text ?? undefined;
+      const storeTypeLabel = card?.store_type
+        ? STORE_TYPE_LABEL[card.store_type]
+        : undefined;
+      base.keywords = [
+        card?.product_type,
+        card?.sub_category,
+        storeTypeLabel,
+        ...((card?.metals as string[] | undefined) ?? []),
+      ].filter((x): x is string => Boolean(x));
       break;
+    }
     case "appliances":
       base.keywords = card?.product_categories ?? [];
       base.brand = card?.brand_options?.join(", ");

@@ -167,6 +167,33 @@ export interface LegacyDetail {
   venue_types: string[];
   capacity_min: number | null;
   capacity_max: number | null;
+  // Jewelry (한 행 = 브랜드 베스트셀러 컬렉션)
+  brand_name: string | null;
+  product_url: string | null;
+  product_code_jewelry: string | null;
+  jewelry_product_type: string | null;
+  sub_category: string | null;
+  store_type: string | null;
+  metals: string[];
+  price_couple_set: number | null;
+  carat_diamond: number | null;
+  diamond_certified: boolean | null;
+  diamond_cert_org: string | null;
+  diamond_grade: string | null;
+  band_design: string | null;
+  stone_setting: string | null;
+  engraving_available: boolean | null;
+  size_resize_free: boolean | null;
+  custom_design_available: boolean | null;
+  delivery_days: number | null;
+  lifetime_warranty: boolean | null;
+  couple_set_available: boolean | null;
+  aftercare_includes: string[];
+  package_includes: string[];
+  brand_origin: string | null;
+  brand_history_year: number | null;
+  showroom_count: number | null;
+  jewelry_promotion_text: string | null;
 
   // ── Back-compat aliases ──
   // Earlier detail pages reference these names; aliasing here lets us keep
@@ -195,6 +222,7 @@ const CARD_KEY: Record<string, string> = {
   tailor_shop: "place_tailor_shops",
   honeymoon: "place_honeymoons",
   appliance: "place_appliances",
+  jewelry: "place_jewelry",
   invitation_venue: "place_invitation_venues",
 };
 
@@ -209,6 +237,7 @@ const SELECT = [
   "place_tailor_shops(*)",
   "place_honeymoons(*)",
   "place_appliances(*)",
+  "place_jewelry(*)",
   "place_invitation_venues(*)",
 ].join(",");
 
@@ -416,6 +445,34 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         venue_types: asStringArray(card?.venue_types),
         capacity_min: (card?.capacity_min as number) ?? null,
         capacity_max: (card?.capacity_max as number) ?? null,
+
+        // Jewelry (한 행 = 브랜드 베스트셀러 컬렉션)
+        brand_name: (card?.brand_name as string) ?? null,
+        product_url: (card?.product_url as string) ?? null,
+        product_code_jewelry: (card?.product_code as string) ?? null,
+        jewelry_product_type: p.category === "jewelry" ? ((card?.product_type as string) ?? null) : null,
+        sub_category: (card?.sub_category as string) ?? null,
+        store_type: (card?.store_type as string) ?? null,
+        metals: asStringArray(card?.metals),
+        price_couple_set: (card?.price_couple_set as number) ?? null,
+        carat_diamond: (card?.carat_diamond as number) ?? null,
+        diamond_certified: (card?.diamond_certified as boolean) ?? null,
+        diamond_cert_org: (card?.diamond_cert_org as string) ?? null,
+        diamond_grade: (card?.diamond_grade as string) ?? null,
+        band_design: (card?.band_design as string) ?? null,
+        stone_setting: (card?.stone_setting as string) ?? null,
+        engraving_available: (card?.engraving_available as boolean) ?? null,
+        size_resize_free: (card?.size_resize_free as boolean) ?? null,
+        custom_design_available: (card?.custom_design_available as boolean) ?? null,
+        delivery_days: p.category === "jewelry" ? ((card?.delivery_days as number) ?? null) : null,
+        lifetime_warranty: (card?.lifetime_warranty as boolean) ?? null,
+        couple_set_available: (card?.couple_set_available as boolean) ?? null,
+        aftercare_includes: asStringArray(card?.aftercare_includes),
+        package_includes: asStringArray(card?.package_includes),
+        brand_origin: (card?.brand_origin as string) ?? null,
+        brand_history_year: (card?.brand_history_year as number) ?? null,
+        showroom_count: (card?.showroom_count as number) ?? null,
+        jewelry_promotion_text: p.category === "jewelry" ? ((card?.promotion_text as string) ?? null) : null,
 
         // ── Back-compat aliases ──
         suit_types: asStringArray(card?.suit_styles),

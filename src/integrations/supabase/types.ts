@@ -1457,6 +1457,110 @@ export type Database = {
           },
         ]
       }
+      place_jewelry: {
+        Row: {
+          aftercare_includes: string[] | null
+          band_design: string | null
+          brand_history_year: number | null
+          brand_name: string | null
+          brand_origin: string | null
+          carat_diamond: number | null
+          couple_set_available: boolean | null
+          custom_design_available: boolean | null
+          delivery_days: number | null
+          diamond_cert_org: string | null
+          diamond_certified: boolean | null
+          diamond_grade: string | null
+          engraving_available: boolean | null
+          lifetime_warranty: boolean | null
+          metals: string[] | null
+          package_includes: string[] | null
+          place_id: string
+          price_couple_set: number | null
+          price_per_person: number | null
+          product_categories: string[] | null
+          product_code: string | null
+          product_type: string | null
+          product_url: string | null
+          promotion_text: string | null
+          showroom_count: number | null
+          size_resize_free: boolean | null
+          stone_setting: string | null
+          store_type: string | null
+          sub_category: string | null
+        }
+        Insert: {
+          aftercare_includes?: string[] | null
+          band_design?: string | null
+          brand_history_year?: number | null
+          brand_name?: string | null
+          brand_origin?: string | null
+          carat_diamond?: number | null
+          couple_set_available?: boolean | null
+          custom_design_available?: boolean | null
+          delivery_days?: number | null
+          diamond_cert_org?: string | null
+          diamond_certified?: boolean | null
+          diamond_grade?: string | null
+          engraving_available?: boolean | null
+          lifetime_warranty?: boolean | null
+          metals?: string[] | null
+          package_includes?: string[] | null
+          place_id: string
+          price_couple_set?: number | null
+          price_per_person?: number | null
+          product_categories?: string[] | null
+          product_code?: string | null
+          product_type?: string | null
+          product_url?: string | null
+          promotion_text?: string | null
+          showroom_count?: number | null
+          size_resize_free?: boolean | null
+          stone_setting?: string | null
+          store_type?: string | null
+          sub_category?: string | null
+        }
+        Update: {
+          aftercare_includes?: string[] | null
+          band_design?: string | null
+          brand_history_year?: number | null
+          brand_name?: string | null
+          brand_origin?: string | null
+          carat_diamond?: number | null
+          couple_set_available?: boolean | null
+          custom_design_available?: boolean | null
+          delivery_days?: number | null
+          diamond_cert_org?: string | null
+          diamond_certified?: boolean | null
+          diamond_grade?: string | null
+          engraving_available?: boolean | null
+          lifetime_warranty?: boolean | null
+          metals?: string[] | null
+          package_includes?: string[] | null
+          place_id?: string
+          price_couple_set?: number | null
+          price_per_person?: number | null
+          product_categories?: string[] | null
+          product_code?: string | null
+          product_type?: string | null
+          product_url?: string | null
+          promotion_text?: string | null
+          showroom_count?: number | null
+          size_resize_free?: boolean | null
+          stone_setting?: string | null
+          store_type?: string | null
+          sub_category?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_jewelry_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: true
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+        ]
+      }
       place_makeup_shops: {
         Row: {
           includes_rehearsal: boolean | null

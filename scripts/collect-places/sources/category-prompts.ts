@@ -234,21 +234,59 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
 
   예물: {
     prompt:
-      `\n\n[예물(주얼리/예물세트) — 카테고리 특성]\n` +
-      `★ 가격 모델: per_set (커플 세트 가격) 또는 per_event (단품). 결혼반지·예물세트가 주.\n` +
+      `\n\n[예물(주얼리/예물세트) — 카테고리 특성 (※ 행 단위 = 한 브랜드의 베스트셀러 1개)]\n` +
+      `★ 한 행 = 1 브랜드의 대표 베스트셀러 컬렉션/라인 (예: "제이에스티나 미니멀 결혼반지", "디디에두보 골든니클라스").\n` +
+      `★ places.name = 브랜드 + 컬렉션명. places.tel/places.address = 본사 또는 대표 매장.\n` +
+      `★ 매장 형태(store_type) 구분 필수: ${ENUM(["online", "offline", "both"])} \n` +
+      `   - online: 자체 사이트 또는 백화점몰만 운영 (오프라인 매장 X)\n` +
+      `   - offline: 오프라인 매장만 운영 (인터넷 판매 X)\n` +
+      `   - both: 양쪽 다\n` +
+      `★ 가격 모델: 1개 반지 가격(price_per_person)과 커플 2인 세트 가격(price_couple_set) 둘 다 베스트셀러 기준 추출.\n` +
       `★ price_packages.includes 예: ["결혼반지 2개 (남여)", "다이아몬드 0.3캐럿", "GIA 인증서", "사이즈 조절 평생 무료"].\n` +
-      `★ 메탈 종류, 다이아몬드 인증, 평생 A/S 여부는 주얼리 비교 시 가장 중요.\n` +
-      `[추가 추출 필드 → category_extras]\n` +
+      `★ ※ SNS 정보 채울 것 (places.tel, place_details: instagram_url, naver_place_url, naver_blog_url, kakao_channel_url, website_url, youtube_url, facebook_url).\n` +
+      `[식별 → category_extras]\n` +
+      `- brand_name (문자열, 필수): 브랜드명 (제이에스티나/골든듀/디디에두보/스톤헨지/티파니/까르띠에 등).\n` +
+      `- product_url (문자열, 필수): 베스트셀러 상품 페이지 URL — 브랜드 공식 사이트, 백화점몰, 또는 네이버 플레이스 매장 URL.\n` +
+      `- product_code (문자열): 브랜드 상품번호.\n` +
+      `- product_type (enum): ${ENUM(["결혼반지", "예물세트", "예단", "시계", "단품주얼리"])}.\n` +
+      `- sub_category (문자열): 컬렉션·라인명 (예: "솔리테어", "트리니티", "엔드리스", "라피네").\n` +
+      `- store_type (enum): online/offline/both.\n` +
+      `[가격 (베스트셀러 기준)]\n` +
+      `- price_per_person (정수): 1인 결혼반지 1개 가격 KRW.\n` +
+      `- price_couple_set (정수): 커플 2인 세트 가격 KRW.\n` +
+      `[다이아·디자인]\n` +
       `- metals (배열): [${ENUM(["골드", "화이트골드", "로즈골드", "플래티넘", "실버"])}] 중.\n` +
       `- product_categories (배열): [${ENUM(["결혼반지", "예물세트", "시계", "네크리스", "이어링", "팔찌"])}] 중.\n` +
-      `- diamond_certified (bool): GIA·IGI·HRD 등 다이아몬드 인증서 발급.\n` +
+      `- carat_diamond (소수): 다이아 캐럿 (0.3 / 0.5 / 1.0 ...). 다이아 없으면 null.\n` +
+      `- diamond_certified (bool): 인증서 발급 여부.\n` +
+      `- diamond_cert_org (문자열): 인증기관 ${ENUM(["GIA", "IGI", "HRD", "한국감정원", "현대주얼리"])}.\n` +
+      `- diamond_grade (문자열): 4C 요약 — 예: "G/VS1/Excellent" (Color/Clarity/Cut).\n` +
+      `- band_design (문자열): 밴드 형태 — 예: "심플밴드", "볼륨", "트위스트", "에터니티".\n` +
+      `- stone_setting (문자열): 세팅 방식 — 예: "프롱", "베젤", "채널", "파브".\n` +
+      `[서비스]\n` +
       `- engraving_available (bool): 이니셜·문구 각인 가능.\n` +
-      `- size_resize_free (bool): 사이즈 조절(리사이징) 무료.\n` +
-      `- lifetime_warranty (bool): 평생 클리닝·A/S 제공.\n` +
-      `- couple_set_available (bool): 커플 세트 구성 가능.`,
+      `- size_resize_free (bool): 사이즈 조절 무료.\n` +
+      `- custom_design_available (bool): 맞춤 디자인 가능.\n` +
+      `- delivery_days (정수): 제작·배송 소요 일수 (재고면 1, 주문제작이면 14~30 등).\n` +
+      `- lifetime_warranty (bool): 평생 A/S.\n` +
+      `- couple_set_available (bool): 커플 세트 구성 가능.\n` +
+      `- aftercare_includes (배열): 평생 케어 항목 (예: ["클리닝", "리폴리싱", "재세팅", "사이즈조절"]).\n` +
+      `- package_includes (배열): 패키지 포함 항목 (예: ["감정서", "벨벳 케이스", "예물함"]).\n` +
+      `[브랜드 메타]\n` +
+      `- brand_origin (문자열): 브랜드 국가 (한국/미국/프랑스/이탈리아 등).\n` +
+      `- brand_history_year (정수): 설립 연도 (예: 1837).\n` +
+      `- showroom_count (정수): 국내 오프라인 매장 수.\n` +
+      `- promotion_text (문자열): 시즌 프로모션/할인.`,
     cardColumns: [
-      "metals", "product_categories", "diamond_certified", "engraving_available",
-      "size_resize_free", "lifetime_warranty", "couple_set_available",
+      "brand_name", "product_url", "product_code", "product_type", "sub_category", "store_type",
+      "metals", "product_categories",
+      "price_per_person", "price_couple_set",
+      "carat_diamond", "diamond_certified", "diamond_cert_org", "diamond_grade",
+      "band_design", "stone_setting", "engraving_available",
+      "custom_design_available", "delivery_days", "size_resize_free",
+      "aftercare_includes", "package_includes",
+      "couple_set_available", "lifetime_warranty",
+      "brand_origin", "brand_history_year", "showroom_count", "promotion_text",
     ],
   },
 

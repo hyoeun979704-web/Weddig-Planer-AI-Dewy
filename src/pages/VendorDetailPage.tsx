@@ -85,6 +85,8 @@ function CategoryExtras({ place }: { place: LegacyDetail }) {
       return <HoneymoonExtras place={place} />;
     case "appliance":
       return <ApplianceExtras place={place} />;
+    case "jewelry":
+      return <JewelryExtras place={place} />;
     case "invitation_venue":
       return <InvitationVenueExtras place={place} />;
     default:
@@ -386,6 +388,144 @@ function ApplianceExtras({ place }: { place: LegacyDetail }) {
       <h3 className="font-bold text-sm">혼수 정보</h3>
       <Tags label="제품 카테고리" items={place.product_categories} />
       <Tags label="브랜드" items={place.brand_options} />
+    </div>
+  );
+}
+
+function JewelryExtras({ place }: { place: LegacyDetail }) {
+  const STORE_TYPE_LABEL: Record<string, string> = {
+    online: "온라인 판매",
+    offline: "오프라인 매장만",
+    both: "온·오프라인 모두",
+  };
+  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
+  // 구매하기 버튼: product_url > website_url > naver_place_url
+  const buyUrl =
+    place.product_url || place.website_url || place.naver_place_url || null;
+  const buyLabel = place.product_url
+    ? "공식 상품 페이지에서 구매"
+    : place.website_url
+      ? "브랜드 공식 사이트로 이동"
+      : place.naver_place_url
+        ? "네이버 플레이스에서 보기"
+        : null;
+  const has =
+    place.brand_name ||
+    place.metals.length > 0 ||
+    place.product_categories.length > 0 ||
+    place.carat_diamond != null ||
+    place.aftercare_includes.length > 0 ||
+    place.package_includes.length > 0;
+  if (!has && !buyUrl) return null;
+  return (
+    <div className="space-y-4">
+      {/* 시즌 프로모션 */}
+      {place.jewelry_promotion_text && (
+        <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          🎁 {place.jewelry_promotion_text}
+        </div>
+      )}
+
+      {/* 구매하기 CTA */}
+      {buyUrl && (
+        <a
+          href={buyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full rounded-lg bg-primary px-4 py-3 text-center text-sm font-bold text-primary-foreground active:scale-[0.98]"
+        >
+          구매하기 — {buyLabel}
+        </a>
+      )}
+
+      {/* 브랜드/상품 식별 */}
+      <div className="space-y-3">
+        <h3 className="font-bold text-sm">예물 정보</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {place.brand_name && <Stat label="브랜드" value={place.brand_name} />}
+          {place.jewelry_product_type && (
+            <Stat label="상품 유형" value={place.jewelry_product_type} />
+          )}
+          {place.sub_category && <Stat label="컬렉션" value={place.sub_category} />}
+          {place.store_type && (
+            <Stat label="판매 채널" value={STORE_TYPE_LABEL[place.store_type] ?? place.store_type} />
+          )}
+          {place.price_couple_set != null && (
+            <Stat label="커플 세트가" value={`${fmtMan(place.price_couple_set)}~`} />
+          )}
+          {place.delivery_days != null && (
+            <Stat label="제작 소요" value={`${place.delivery_days}일`} />
+          )}
+        </div>
+      </div>
+
+      {/* 다이아·디자인 */}
+      {(place.carat_diamond != null ||
+        place.diamond_certified != null ||
+        place.band_design ||
+        place.stone_setting) && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm">다이아·디자인</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.carat_diamond != null && (
+              <Stat label="캐럿" value={`${place.carat_diamond}ct`} />
+            )}
+            {place.diamond_certified != null && (
+              <Stat
+                label="인증"
+                value={
+                  place.diamond_certified
+                    ? `${place.diamond_cert_org ?? "발급"}`
+                    : "미발급"
+                }
+              />
+            )}
+            {place.diamond_grade && <Stat label="4C 등급" value={place.diamond_grade} />}
+            {place.band_design && <Stat label="밴드" value={place.band_design} />}
+            {place.stone_setting && <Stat label="세팅" value={place.stone_setting} />}
+          </div>
+        </div>
+      )}
+
+      {/* 서비스 */}
+      <div className="grid grid-cols-2 gap-2">
+        {place.engraving_available != null && (
+          <Stat label="각인" value={place.engraving_available ? "가능" : "불가"} />
+        )}
+        {place.size_resize_free != null && (
+          <Stat label="사이즈 조절" value={place.size_resize_free ? "무료" : "유료"} />
+        )}
+        {place.custom_design_available != null && (
+          <Stat label="맞춤 디자인" value={place.custom_design_available ? "가능" : "불가"} />
+        )}
+        {place.lifetime_warranty != null && (
+          <Stat label="평생 A/S" value={place.lifetime_warranty ? "제공" : "미제공"} />
+        )}
+        {place.couple_set_available != null && (
+          <Stat label="커플 세트" value={place.couple_set_available ? "가능" : "단품만"} />
+        )}
+      </div>
+
+      <Tags label="메탈" items={place.metals} />
+      <Tags label="제품 카테고리" items={place.product_categories} />
+      <Tags label="평생 케어" items={place.aftercare_includes} />
+      <Tags label="패키지 포함" items={place.package_includes} />
+
+      {/* 브랜드 메타 */}
+      {(place.brand_origin || place.brand_history_year || place.showroom_count != null) && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm">브랜드 정보</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.brand_origin && <Stat label="원산지" value={place.brand_origin} />}
+            {place.brand_history_year != null && (
+              <Stat label="설립" value={`${place.brand_history_year}년`} />
+            )}
+            {place.showroom_count != null && (
+              <Stat label="국내 매장" value={`${place.showroom_count}개`} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
