@@ -169,18 +169,30 @@ export interface LegacyDetail {
   capacity_max: number | null;
   // Jewelry (한 행 = 브랜드 베스트셀러 컬렉션)
   brand_name: string | null;
+  brand_tier: string | null;
   product_url: string | null;
   product_code_jewelry: string | null;
   jewelry_product_type: string | null;
   sub_category: string | null;
   store_type: string | null;
   metals: string[];
+  gold_karat: string | null;
   price_couple_set: number | null;
   carat_diamond: number | null;
   diamond_certified: boolean | null;
   diamond_cert_org: string | null;
-  diamond_grade: string | null;
+  diamond_color: string | null;
+  diamond_clarity: string | null;
+  diamond_cut: string | null;
+  diamond_shape: string | null;
+  diamond_origin: string | null;
+  side_stones_count: number | null;
+  side_stones_total_carat: number | null;
   band_design: string | null;
+  band_width_mm: number | null;
+  band_thickness_mm: number | null;
+  band_profile: string | null;
+  band_finishing: string | null;
   stone_setting: string | null;
   engraving_available: boolean | null;
   size_resize_free: boolean | null;
@@ -448,18 +460,30 @@ export const usePlaceDetail = (placeId: string | undefined) => {
 
         // Jewelry (한 행 = 브랜드 베스트셀러 컬렉션)
         brand_name: (card?.brand_name as string) ?? null,
+        brand_tier: (card?.brand_tier as string) ?? null,
         product_url: (card?.product_url as string) ?? null,
         product_code_jewelry: (card?.product_code as string) ?? null,
         jewelry_product_type: p.category === "jewelry" ? ((card?.product_type as string) ?? null) : null,
         sub_category: (card?.sub_category as string) ?? null,
         store_type: (card?.store_type as string) ?? null,
         metals: asStringArray(card?.metals),
+        gold_karat: (card?.gold_karat as string) ?? null,
         price_couple_set: (card?.price_couple_set as number) ?? null,
         carat_diamond: (card?.carat_diamond as number) ?? null,
         diamond_certified: (card?.diamond_certified as boolean) ?? null,
         diamond_cert_org: (card?.diamond_cert_org as string) ?? null,
-        diamond_grade: (card?.diamond_grade as string) ?? null,
+        diamond_color: (card?.diamond_color as string) ?? null,
+        diamond_clarity: (card?.diamond_clarity as string) ?? null,
+        diamond_cut: (card?.diamond_cut as string) ?? null,
+        diamond_shape: (card?.diamond_shape as string) ?? null,
+        diamond_origin: (card?.diamond_origin as string) ?? null,
+        side_stones_count: (card?.side_stones_count as number) ?? null,
+        side_stones_total_carat: (card?.side_stones_total_carat as number) ?? null,
         band_design: (card?.band_design as string) ?? null,
+        band_width_mm: (card?.band_width_mm as number) ?? null,
+        band_thickness_mm: (card?.band_thickness_mm as number) ?? null,
+        band_profile: (card?.band_profile as string) ?? null,
+        band_finishing: (card?.band_finishing as string) ?? null,
         stone_setting: (card?.stone_setting as string) ?? null,
         engraving_available: (card?.engraving_available as boolean) ?? null,
         size_resize_free: (card?.size_resize_free as boolean) ?? null,

@@ -1461,17 +1461,27 @@ export type Database = {
         Row: {
           aftercare_includes: string[] | null
           band_design: string | null
+          band_finishing: string | null
+          band_profile: string | null
+          band_thickness_mm: number | null
+          band_width_mm: number | null
           brand_history_year: number | null
           brand_name: string | null
           brand_origin: string | null
+          brand_tier: string | null
           carat_diamond: number | null
           couple_set_available: boolean | null
           custom_design_available: boolean | null
           delivery_days: number | null
           diamond_cert_org: string | null
           diamond_certified: boolean | null
-          diamond_grade: string | null
+          diamond_clarity: string | null
+          diamond_color: string | null
+          diamond_cut: string | null
+          diamond_origin: string | null
+          diamond_shape: string | null
           engraving_available: boolean | null
+          gold_karat: string | null
           lifetime_warranty: boolean | null
           metals: string[] | null
           package_includes: string[] | null
@@ -1484,6 +1494,8 @@ export type Database = {
           product_url: string | null
           promotion_text: string | null
           showroom_count: number | null
+          side_stones_count: number | null
+          side_stones_total_carat: number | null
           size_resize_free: boolean | null
           stone_setting: string | null
           store_type: string | null
@@ -1492,17 +1504,27 @@ export type Database = {
         Insert: {
           aftercare_includes?: string[] | null
           band_design?: string | null
+          band_finishing?: string | null
+          band_profile?: string | null
+          band_thickness_mm?: number | null
+          band_width_mm?: number | null
           brand_history_year?: number | null
           brand_name?: string | null
           brand_origin?: string | null
+          brand_tier?: string | null
           carat_diamond?: number | null
           couple_set_available?: boolean | null
           custom_design_available?: boolean | null
           delivery_days?: number | null
           diamond_cert_org?: string | null
           diamond_certified?: boolean | null
-          diamond_grade?: string | null
+          diamond_clarity?: string | null
+          diamond_color?: string | null
+          diamond_cut?: string | null
+          diamond_origin?: string | null
+          diamond_shape?: string | null
           engraving_available?: boolean | null
+          gold_karat?: string | null
           lifetime_warranty?: boolean | null
           metals?: string[] | null
           package_includes?: string[] | null
@@ -1515,6 +1537,8 @@ export type Database = {
           product_url?: string | null
           promotion_text?: string | null
           showroom_count?: number | null
+          side_stones_count?: number | null
+          side_stones_total_carat?: number | null
           size_resize_free?: boolean | null
           stone_setting?: string | null
           store_type?: string | null
@@ -1523,17 +1547,27 @@ export type Database = {
         Update: {
           aftercare_includes?: string[] | null
           band_design?: string | null
+          band_finishing?: string | null
+          band_profile?: string | null
+          band_thickness_mm?: number | null
+          band_width_mm?: number | null
           brand_history_year?: number | null
           brand_name?: string | null
           brand_origin?: string | null
+          brand_tier?: string | null
           carat_diamond?: number | null
           couple_set_available?: boolean | null
           custom_design_available?: boolean | null
           delivery_days?: number | null
           diamond_cert_org?: string | null
           diamond_certified?: boolean | null
-          diamond_grade?: string | null
+          diamond_clarity?: string | null
+          diamond_color?: string | null
+          diamond_cut?: string | null
+          diamond_origin?: string | null
+          diamond_shape?: string | null
           engraving_available?: boolean | null
+          gold_karat?: string | null
           lifetime_warranty?: boolean | null
           metals?: string[] | null
           package_includes?: string[] | null
@@ -1546,6 +1580,8 @@ export type Database = {
           product_url?: string | null
           promotion_text?: string | null
           showroom_count?: number | null
+          side_stones_count?: number | null
+          side_stones_total_carat?: number | null
           size_resize_free?: boolean | null
           stone_setting?: string | null
           store_type?: string | null

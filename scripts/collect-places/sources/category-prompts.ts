@@ -254,15 +254,28 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `[가격 (베스트셀러 기준)]\n` +
       `- price_per_person (정수): 1인 결혼반지 1개 가격 KRW.\n` +
       `- price_couple_set (정수): 커플 2인 세트 가격 KRW.\n` +
-      `[다이아·디자인]\n` +
+      `[메탈]\n` +
       `- metals (배열): [${ENUM(["골드", "화이트골드", "로즈골드", "플래티넘", "실버"])}] 중.\n` +
+      `- gold_karat (문자열): 금 함량 — ${ENUM(["14K", "18K", "24K", "플래티넘950", "플래티넘900"])}. 메탈 종류만큼 가격 차이 큼.\n` +
       `- product_categories (배열): [${ENUM(["결혼반지", "예물세트", "시계", "네크리스", "이어링", "팔찌"])}] 중.\n` +
-      `- carat_diamond (소수): 다이아 캐럿 (0.3 / 0.5 / 1.0 ...). 다이아 없으면 null.\n` +
+      `[다이아 (4C 분리 입력 — 비교사이트 표준)]\n` +
+      `- carat_diamond (소수): 메인 스톤 캐럿 (0.3/0.5/1.0…). 다이아 없으면 null.\n` +
       `- diamond_certified (bool): 인증서 발급 여부.\n` +
       `- diamond_cert_org (문자열): 인증기관 ${ENUM(["GIA", "IGI", "HRD", "한국감정원", "현대주얼리"])}.\n` +
-      `- diamond_grade (문자열): 4C 요약 — 예: "G/VS1/Excellent" (Color/Clarity/Cut).\n` +
+      `- diamond_color (문자열): 컬러 등급 — D/E/F/G/H/I/J… (D 무색에 가까울수록 고가).\n` +
+      `- diamond_clarity (문자열): 투명도 — ${ENUM(["FL", "IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1"])}.\n` +
+      `- diamond_cut (문자열): 컷 등급 — ${ENUM(["Excellent", "Very Good", "Good", "Fair", "Poor"])}.\n` +
+      `- diamond_shape (문자열): 형태 — ${ENUM(["라운드", "프린세스", "오벌", "페어", "마키스", "하트", "에메랄드", "쿠션"])}.\n` +
+      `- diamond_origin (enum): ${ENUM(["natural", "lab_grown"])} (천연/랩그로운). 랩그로운은 30~50% 저렴.\n` +
+      `- side_stones_count (정수): 사이드 스톤 개수. 솔리테어면 0, 멜리/할로면 5~30개 등.\n` +
+      `- side_stones_total_carat (소수): 사이드 스톤 총 캐럿.\n` +
+      `[밴드 (반지 치수·디자인)]\n` +
       `- band_design (문자열): 밴드 형태 — 예: "심플밴드", "볼륨", "트위스트", "에터니티".\n` +
-      `- stone_setting (문자열): 세팅 방식 — 예: "프롱", "베젤", "채널", "파브".\n` +
+      `- band_width_mm (소수): 반지 폭 mm. 결혼반지 보통 2~4mm.\n` +
+      `- band_thickness_mm (소수): 반지 두께 mm. 보통 1.5~2.5mm.\n` +
+      `- band_profile (문자열): 단면 — ${ENUM(["코트", "D-shape", "플랫"])}.\n` +
+      `- band_finishing (문자열): 마감 — ${ENUM(["폴리시", "매트", "해머링", "밀그레인"])}.\n` +
+      `- stone_setting (문자열): 세팅 방식 — ${ENUM(["프롱", "베젤", "채널", "파브"])}.\n` +
       `[서비스]\n` +
       `- engraving_available (bool): 이니셜·문구 각인 가능.\n` +
       `- size_resize_free (bool): 사이즈 조절 무료.\n` +
@@ -273,16 +286,24 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- aftercare_includes (배열): 평생 케어 항목 (예: ["클리닝", "리폴리싱", "재세팅", "사이즈조절"]).\n` +
       `- package_includes (배열): 패키지 포함 항목 (예: ["감정서", "벨벳 케이스", "예물함"]).\n` +
       `[브랜드 메타]\n` +
+      `- brand_tier (enum): ${ENUM(["대중", "프리미엄", "럭셔리", "하이엔드"])} 가격대 분류.\n` +
+      `   대중: 50~150만원 (제이에스티나/디디에두보 등)\n` +
+      `   프리미엄: 150~400만원 (스톤헨지/예작/예이츠 등)\n` +
+      `   럭셔리: 400~1000만원 (까르띠에/불가리/티파니 입문)\n` +
+      `   하이엔드: 1000만원+ (반클리프/쇼파드/그라프)\n` +
       `- brand_origin (문자열): 브랜드 국가 (한국/미국/프랑스/이탈리아 등).\n` +
       `- brand_history_year (정수): 설립 연도 (예: 1837).\n` +
       `- showroom_count (정수): 국내 오프라인 매장 수.\n` +
       `- promotion_text (문자열): 시즌 프로모션/할인.`,
     cardColumns: [
-      "brand_name", "product_url", "product_code", "product_type", "sub_category", "store_type",
-      "metals", "product_categories",
+      "brand_name", "brand_tier", "product_url", "product_code", "product_type", "sub_category", "store_type",
+      "metals", "gold_karat", "product_categories",
       "price_per_person", "price_couple_set",
-      "carat_diamond", "diamond_certified", "diamond_cert_org", "diamond_grade",
-      "band_design", "stone_setting", "engraving_available",
+      "carat_diamond", "diamond_certified", "diamond_cert_org",
+      "diamond_color", "diamond_clarity", "diamond_cut", "diamond_shape", "diamond_origin",
+      "side_stones_count", "side_stones_total_carat",
+      "band_design", "band_width_mm", "band_thickness_mm", "band_profile", "band_finishing",
+      "stone_setting", "engraving_available",
       "custom_design_available", "delivery_days", "size_resize_free",
       "aftercare_includes", "package_includes",
       "couple_set_available", "lifetime_warranty",

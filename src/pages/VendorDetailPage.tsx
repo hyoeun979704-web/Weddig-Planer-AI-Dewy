@@ -459,16 +459,29 @@ function JewelryExtras({ place }: { place: LegacyDetail }) {
         </div>
       </div>
 
-      {/* 다이아·디자인 */}
+      {/* 다이아 (4C + 형태 + 출처) */}
       {(place.carat_diamond != null ||
-        place.diamond_certified != null ||
-        place.band_design ||
-        place.stone_setting) && (
+        place.diamond_color ||
+        place.diamond_clarity ||
+        place.diamond_cut ||
+        place.diamond_shape ||
+        place.diamond_origin ||
+        place.side_stones_count != null) && (
         <div className="space-y-2">
-          <h3 className="font-bold text-sm">다이아·디자인</h3>
+          <h3 className="font-bold text-sm">다이아</h3>
           <div className="grid grid-cols-2 gap-2">
             {place.carat_diamond != null && (
               <Stat label="캐럿" value={`${place.carat_diamond}ct`} />
+            )}
+            {place.diamond_shape && <Stat label="형태" value={place.diamond_shape} />}
+            {place.diamond_color && <Stat label="컬러" value={place.diamond_color} />}
+            {place.diamond_clarity && <Stat label="투명도" value={place.diamond_clarity} />}
+            {place.diamond_cut && <Stat label="컷" value={place.diamond_cut} />}
+            {place.diamond_origin && (
+              <Stat
+                label="출처"
+                value={place.diamond_origin === "natural" ? "천연" : "랩그로운"}
+              />
             )}
             {place.diamond_certified != null && (
               <Stat
@@ -480,8 +493,41 @@ function JewelryExtras({ place }: { place: LegacyDetail }) {
                 }
               />
             )}
-            {place.diamond_grade && <Stat label="4C 등급" value={place.diamond_grade} />}
-            {place.band_design && <Stat label="밴드" value={place.band_design} />}
+            {place.side_stones_count != null && place.side_stones_count > 0 && (
+              <Stat
+                label="사이드 스톤"
+                value={
+                  place.side_stones_total_carat != null
+                    ? `${place.side_stones_count}개 · ${place.side_stones_total_carat}ct`
+                    : `${place.side_stones_count}개`
+                }
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 밴드 (치수·디자인·마감) */}
+      {(place.band_design ||
+        place.band_width_mm != null ||
+        place.band_thickness_mm != null ||
+        place.band_profile ||
+        place.band_finishing ||
+        place.stone_setting ||
+        place.gold_karat) && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm">밴드·세팅</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.gold_karat && <Stat label="함량" value={place.gold_karat} />}
+            {place.band_width_mm != null && (
+              <Stat label="폭" value={`${place.band_width_mm}mm`} />
+            )}
+            {place.band_thickness_mm != null && (
+              <Stat label="두께" value={`${place.band_thickness_mm}mm`} />
+            )}
+            {place.band_profile && <Stat label="단면" value={place.band_profile} />}
+            {place.band_design && <Stat label="디자인" value={place.band_design} />}
+            {place.band_finishing && <Stat label="마감" value={place.band_finishing} />}
             {place.stone_setting && <Stat label="세팅" value={place.stone_setting} />}
           </div>
         </div>
@@ -512,10 +558,11 @@ function JewelryExtras({ place }: { place: LegacyDetail }) {
       <Tags label="패키지 포함" items={place.package_includes} />
 
       {/* 브랜드 메타 */}
-      {(place.brand_origin || place.brand_history_year || place.showroom_count != null) && (
+      {(place.brand_tier || place.brand_origin || place.brand_history_year || place.showroom_count != null) && (
         <div className="space-y-2">
           <h3 className="font-bold text-sm">브랜드 정보</h3>
           <div className="grid grid-cols-2 gap-2">
+            {place.brand_tier && <Stat label="가격대" value={place.brand_tier} />}
             {place.brand_origin && <Stat label="원산지" value={place.brand_origin} />}
             {place.brand_history_year != null && (
               <Stat label="설립" value={`${place.brand_history_year}년`} />
