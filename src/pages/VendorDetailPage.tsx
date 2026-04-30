@@ -446,7 +446,10 @@ function JewelryExtras({ place }: { place: LegacyDetail }) {
           {place.jewelry_product_type && (
             <Stat label="상품 유형" value={place.jewelry_product_type} />
           )}
-          {place.sub_category && <Stat label="컬렉션" value={place.sub_category} />}
+          {place.sub_category && <Stat label="베스트셀러" value={place.sub_category} />}
+          {place.signature_collection && (
+            <Stat label="시그니처" value={place.signature_collection} />
+          )}
           {place.store_type && (
             <Stat label="판매 채널" value={STORE_TYPE_LABEL[place.store_type] ?? place.store_type} />
           )}
@@ -554,6 +557,7 @@ function JewelryExtras({ place }: { place: LegacyDetail }) {
 
       <Tags label="메탈" items={place.metals} />
       <Tags label="제품 카테고리" items={place.product_categories} />
+      <Tags label="입점 백화점" items={place.partnership_dept_stores} />
       <Tags label="평생 케어" items={place.aftercare_includes} />
       <Tags label="패키지 포함" items={place.package_includes} />
 

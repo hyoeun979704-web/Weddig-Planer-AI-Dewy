@@ -1485,6 +1485,7 @@ export type Database = {
           lifetime_warranty: boolean | null
           metals: string[] | null
           package_includes: string[] | null
+          partnership_dept_stores: string[] | null
           place_id: string
           price_couple_set: number | null
           price_per_person: number | null
@@ -1496,6 +1497,7 @@ export type Database = {
           showroom_count: number | null
           side_stones_count: number | null
           side_stones_total_carat: number | null
+          signature_collection: string | null
           size_resize_free: boolean | null
           stone_setting: string | null
           store_type: string | null
@@ -1528,6 +1530,7 @@ export type Database = {
           lifetime_warranty?: boolean | null
           metals?: string[] | null
           package_includes?: string[] | null
+          partnership_dept_stores?: string[] | null
           place_id: string
           price_couple_set?: number | null
           price_per_person?: number | null
@@ -1539,6 +1542,7 @@ export type Database = {
           showroom_count?: number | null
           side_stones_count?: number | null
           side_stones_total_carat?: number | null
+          signature_collection?: string | null
           size_resize_free?: boolean | null
           stone_setting?: string | null
           store_type?: string | null
@@ -1571,6 +1575,7 @@ export type Database = {
           lifetime_warranty?: boolean | null
           metals?: string[] | null
           package_includes?: string[] | null
+          partnership_dept_stores?: string[] | null
           place_id?: string
           price_couple_set?: number | null
           price_per_person?: number | null
@@ -1582,6 +1587,7 @@ export type Database = {
           showroom_count?: number | null
           side_stones_count?: number | null
           side_stones_total_carat?: number | null
+          signature_collection?: string | null
           size_resize_free?: boolean | null
           stone_setting?: string | null
           store_type?: string | null

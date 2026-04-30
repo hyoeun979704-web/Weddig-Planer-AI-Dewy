@@ -205,6 +205,8 @@ export interface LegacyDetail {
   brand_origin: string | null;
   brand_history_year: number | null;
   showroom_count: number | null;
+  partnership_dept_stores: string[];
+  signature_collection: string | null;
   jewelry_promotion_text: string | null;
 
   // ── Back-compat aliases ──
@@ -496,6 +498,8 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         brand_origin: (card?.brand_origin as string) ?? null,
         brand_history_year: (card?.brand_history_year as number) ?? null,
         showroom_count: (card?.showroom_count as number) ?? null,
+        partnership_dept_stores: asStringArray(card?.partnership_dept_stores),
+        signature_collection: (card?.signature_collection as string) ?? null,
         jewelry_promotion_text: p.category === "jewelry" ? ((card?.promotion_text as string) ?? null) : null,
 
         // ── Back-compat aliases ──

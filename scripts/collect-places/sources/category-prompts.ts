@@ -291,12 +291,15 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `   프리미엄: 150~400만원 (스톤헨지/예작/예이츠 등)\n` +
       `   럭셔리: 400~1000만원 (까르띠에/불가리/티파니 입문)\n` +
       `   하이엔드: 1000만원+ (반클리프/쇼파드/그라프)\n` +
+      `- signature_collection (문자열): 브랜드의 대표·시그니처 컬렉션명. sub_category(베스트셀러)와 다를 수 있음 (예: 까르띠에 sub_category="러브"여도 시그니처는 "트리니티").\n` +
       `- brand_origin (문자열): 브랜드 국가 (한국/미국/프랑스/이탈리아 등).\n` +
       `- brand_history_year (정수): 설립 연도 (예: 1837).\n` +
       `- showroom_count (정수): 국내 오프라인 매장 수.\n` +
+      `- partnership_dept_stores (배열): 입점 주요 백화점 — ${ENUM(["롯데", "신세계", "현대", "갤러리아", "AK플라자", "더현대"])} 중. 한국 사용자가 매장 가서 사기 위해 즉시 보고 싶어함.\n` +
       `- promotion_text (문자열): 시즌 프로모션/할인.`,
     cardColumns: [
-      "brand_name", "brand_tier", "product_url", "product_code", "product_type", "sub_category", "store_type",
+      "brand_name", "brand_tier", "signature_collection",
+      "product_url", "product_code", "product_type", "sub_category", "store_type",
       "metals", "gold_karat", "product_categories",
       "price_per_person", "price_couple_set",
       "carat_diamond", "diamond_certified", "diamond_cert_org",
@@ -307,7 +310,8 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       "custom_design_available", "delivery_days", "size_resize_free",
       "aftercare_includes", "package_includes",
       "couple_set_available", "lifetime_warranty",
-      "brand_origin", "brand_history_year", "showroom_count", "promotion_text",
+      "brand_origin", "brand_history_year", "showroom_count", "partnership_dept_stores",
+      "promotion_text",
     ],
   },
 
