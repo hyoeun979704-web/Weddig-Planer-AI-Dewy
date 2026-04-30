@@ -186,13 +186,16 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   honeymoon: {
     title: "허니문 필터",
+    // honeymoon places.city = region_group (일본/동남아/유럽 등). 사용자의 한국
+    // 거주지가 아니라 destination 광역 분류로 필터링.
     regions: [
-      { value: "몰디브", label: "몰디브" },
-      { value: "인도네시아", label: "발리" },
-      { value: "프랑스", label: "유럽" },
-      { value: "하와이", label: "하와이" },
-      { value: "그리스", label: "그리스" },
-      { value: "태국", label: "태국" },
+      { value: "일본", label: "일본" },
+      { value: "동남아", label: "동남아" },
+      { value: "괌사이판", label: "괌·사이판" },
+      { value: "유럽", label: "유럽" },
+      { value: "미주", label: "미주" },
+      { value: "대양주", label: "대양주" },
+      { value: "중화권", label: "중화권" },
     ],
     filterOptions1: {
       label: "여행 유형",

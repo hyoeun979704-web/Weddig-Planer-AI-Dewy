@@ -7,16 +7,17 @@ import CategoryFilterBar from "@/components/CategoryFilterBar";
 import CategoryGrid from "@/components/CategoryGrid";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
-import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 
 const Honeymoon = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const hasActiveFilters = useCategoryFilterStore((state) => state.hasActiveFilters);
   const initWithRegion = useCategoryFilterStore((state) => state.initWithRegion);
-  const { defaultRegion, isLoaded } = useDefaultRegion();
 
-  useEffect(() => { if (isLoaded) initWithRegion(defaultRegion); }, [isLoaded]);
+  // 허니문은 places.city가 "일본"/"동남아" 등 destination region_group으로 채워져
+  // 있어 사용자의 한국 거주지(wedding_region)를 region 필터로 쓰면 결과가 0건이 됨.
+  // 따라서 마운트 시 region을 비워두고 사용자가 직접 destination을 골라야 필터링.
+  useEffect(() => { initWithRegion(null); }, []);
 
   // 허니문은 aggregator 모델 — 카드 클릭 시 여행사 상품 페이지로 이동.
   // agency_product_url이 비어 있으면 fallback으로 내부 detail 페이지를 연다.
