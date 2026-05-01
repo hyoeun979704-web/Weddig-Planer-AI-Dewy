@@ -10,7 +10,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const FREE_DAILY_LIMIT = 3;
+const FREE_DAILY_LIMIT = 5;
 
 interface Message {
   role: "user" | "assistant";
@@ -87,7 +87,7 @@ serve(async (req) => {
             return new Response(
               JSON.stringify({
                 error: "daily_limit",
-                message: "오늘의 무료 질문 3회를 모두 사용했어요",
+                message: "오늘의 무료 질문 5회를 모두 사용했어요",
                 remaining: 0,
                 upgrade_url: "/premium",
               }),
