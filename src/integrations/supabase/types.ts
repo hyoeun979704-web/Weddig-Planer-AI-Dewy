@@ -873,21 +873,39 @@ export type Database = {
       place_appliances: {
         Row: {
           brand_options: string[] | null
+          card_discount_available: boolean | null
+          free_delivery: boolean | null
+          free_installation: boolean | null
+          installment_months: number | null
+          old_appliance_pickup: boolean | null
           place_id: string
           price_per_person: number | null
           product_categories: string[] | null
+          warranty_years: number | null
         }
         Insert: {
           brand_options?: string[] | null
+          card_discount_available?: boolean | null
+          free_delivery?: boolean | null
+          free_installation?: boolean | null
+          installment_months?: number | null
+          old_appliance_pickup?: boolean | null
           place_id: string
           price_per_person?: number | null
           product_categories?: string[] | null
+          warranty_years?: number | null
         }
         Update: {
           brand_options?: string[] | null
+          card_discount_available?: boolean | null
+          free_delivery?: boolean | null
+          free_installation?: boolean | null
+          installment_months?: number | null
+          old_appliance_pickup?: boolean | null
           place_id?: string
           price_per_person?: number | null
           product_categories?: string[] | null
+          warranty_years?: number | null
         }
         Relationships: [
           {
@@ -1071,21 +1089,39 @@ export type Database = {
       }
       place_dress_shops: {
         Row: {
+          designer_brands: string[] | null
+          dress_count_included: number | null
           dress_styles: string[] | null
+          fitting_count: number | null
+          helper_included: boolean | null
+          inner_included: boolean | null
           place_id: string
           price_per_person: number | null
+          rental_includes_alterations: boolean | null
           rental_only: boolean | null
         }
         Insert: {
+          designer_brands?: string[] | null
+          dress_count_included?: number | null
           dress_styles?: string[] | null
+          fitting_count?: number | null
+          helper_included?: boolean | null
+          inner_included?: boolean | null
           place_id: string
           price_per_person?: number | null
+          rental_includes_alterations?: boolean | null
           rental_only?: boolean | null
         }
         Update: {
+          designer_brands?: string[] | null
+          dress_count_included?: number | null
           dress_styles?: string[] | null
+          fitting_count?: number | null
+          helper_included?: boolean | null
+          inner_included?: boolean | null
           place_id?: string
           price_per_person?: number | null
+          rental_includes_alterations?: boolean | null
           rental_only?: boolean | null
         }
         Relationships: [
@@ -1267,19 +1303,25 @@ export type Database = {
       }
       place_hanboks: {
         Row: {
+          accessories_included: boolean | null
           custom_available: boolean | null
+          delivery_available: boolean | null
           hanbok_types: string[] | null
           place_id: string
           price_per_person: number | null
         }
         Insert: {
+          accessories_included?: boolean | null
           custom_available?: boolean | null
+          delivery_available?: boolean | null
           hanbok_types?: string[] | null
           place_id: string
           price_per_person?: number | null
         }
         Update: {
+          accessories_included?: boolean | null
           custom_available?: boolean | null
+          delivery_available?: boolean | null
           hanbok_types?: string[] | null
           place_id?: string
           price_per_person?: number | null
@@ -1427,24 +1469,45 @@ export type Database = {
       }
       place_invitation_venues: {
         Row: {
+          atmosphere: string[] | null
           capacity_max: number | null
           capacity_min: number | null
+          corkage_fee_won: number | null
+          drinks_included: boolean | null
           place_id: string
           price_per_person: number | null
+          private_room_count: number | null
+          room_charge_separate: boolean | null
+          signature_dishes: string[] | null
+          valet_parking: boolean | null
           venue_types: string[] | null
         }
         Insert: {
+          atmosphere?: string[] | null
           capacity_max?: number | null
           capacity_min?: number | null
+          corkage_fee_won?: number | null
+          drinks_included?: boolean | null
           place_id: string
           price_per_person?: number | null
+          private_room_count?: number | null
+          room_charge_separate?: boolean | null
+          signature_dishes?: string[] | null
+          valet_parking?: boolean | null
           venue_types?: string[] | null
         }
         Update: {
+          atmosphere?: string[] | null
           capacity_max?: number | null
           capacity_min?: number | null
+          corkage_fee_won?: number | null
+          drinks_included?: boolean | null
           place_id?: string
           price_per_person?: number | null
+          private_room_count?: number | null
+          room_charge_separate?: boolean | null
+          signature_dishes?: string[] | null
+          valet_parking?: boolean | null
           venue_types?: string[] | null
         }
         Relationships: [
@@ -1605,22 +1668,37 @@ export type Database = {
       }
       place_makeup_shops: {
         Row: {
+          director_level: string | null
+          early_morning_fee: number | null
+          hair_makeup_separate: boolean | null
           includes_rehearsal: boolean | null
           makeup_styles: string[] | null
           place_id: string
           price_per_person: number | null
+          rehearsal_count: number | null
+          travel_fee_included: boolean | null
         }
         Insert: {
+          director_level?: string | null
+          early_morning_fee?: number | null
+          hair_makeup_separate?: boolean | null
           includes_rehearsal?: boolean | null
           makeup_styles?: string[] | null
           place_id: string
           price_per_person?: number | null
+          rehearsal_count?: number | null
+          travel_fee_included?: boolean | null
         }
         Update: {
+          director_level?: string | null
+          early_morning_fee?: number | null
+          hair_makeup_separate?: boolean | null
           includes_rehearsal?: boolean | null
           makeup_styles?: string[] | null
           place_id?: string
           price_per_person?: number | null
+          rehearsal_count?: number | null
+          travel_fee_included?: boolean | null
         }
         Relationships: [
           {
@@ -1738,36 +1816,60 @@ export type Database = {
           author_tiers: string[] | null
           base_retouch_count: number | null
           base_shoot_hours: number | null
+          dress_provided: boolean | null
+          editing_days: number | null
+          frame_included: boolean | null
           includes_originals: boolean | null
+          original_count: number | null
           per_retouch_cost: number | null
+          photobook_pages: number | null
           place_id: string
           price_per_person: number | null
           raw_file_extra_cost: number | null
+          retouching_included: boolean | null
+          shoot_locations: string[] | null
           shoot_styles: string[] | null
+          total_photos: number | null
         }
         Insert: {
           album_extra_cost?: number | null
           author_tiers?: string[] | null
           base_retouch_count?: number | null
           base_shoot_hours?: number | null
+          dress_provided?: boolean | null
+          editing_days?: number | null
+          frame_included?: boolean | null
           includes_originals?: boolean | null
+          original_count?: number | null
           per_retouch_cost?: number | null
+          photobook_pages?: number | null
           place_id: string
           price_per_person?: number | null
           raw_file_extra_cost?: number | null
+          retouching_included?: boolean | null
+          shoot_locations?: string[] | null
           shoot_styles?: string[] | null
+          total_photos?: number | null
         }
         Update: {
           album_extra_cost?: number | null
           author_tiers?: string[] | null
           base_retouch_count?: number | null
           base_shoot_hours?: number | null
+          dress_provided?: boolean | null
+          editing_days?: number | null
+          frame_included?: boolean | null
           includes_originals?: boolean | null
+          original_count?: number | null
           per_retouch_cost?: number | null
+          photobook_pages?: number | null
           place_id?: string
           price_per_person?: number | null
           raw_file_extra_cost?: number | null
+          retouching_included?: boolean | null
+          shoot_locations?: string[] | null
           shoot_styles?: string[] | null
+          total_photos?: number | null
         }
         Relationships: [
           {
@@ -1781,19 +1883,28 @@ export type Database = {
       }
       place_tailor_shops: {
         Row: {
+          accessories_included: boolean | null
           custom_available: boolean | null
+          designer_brands: string[] | null
+          fitting_count: number | null
           place_id: string
           price_per_person: number | null
           suit_styles: string[] | null
         }
         Insert: {
+          accessories_included?: boolean | null
           custom_available?: boolean | null
+          designer_brands?: string[] | null
+          fitting_count?: number | null
           place_id: string
           price_per_person?: number | null
           suit_styles?: string[] | null
         }
         Update: {
+          accessories_included?: boolean | null
           custom_available?: boolean | null
+          designer_brands?: string[] | null
+          fitting_count?: number | null
           place_id?: string
           price_per_person?: number | null
           suit_styles?: string[] | null

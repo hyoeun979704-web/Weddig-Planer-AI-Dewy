@@ -108,6 +108,15 @@ export interface LegacyDetail {
   dress_provided: boolean | null;
   shoot_locations: string[];
   includes_originals: boolean | null;
+  raw_file_extra_cost: number | null;
+  per_retouch_cost: number | null;
+  album_extra_cost: number | null;
+  base_shoot_hours: number | null;
+  base_retouch_count: number | null;
+  author_tiers: string[];
+  frame_included: boolean | null;
+  photobook_pages: number | null;
+  editing_days: number | null;
   // Dress / tailor
   dress_styles: string[];
   suit_styles: string[];
@@ -116,13 +125,21 @@ export interface LegacyDetail {
   rental_includes_alterations: boolean | null;
   designer_brands: string[];
   custom_available: boolean | null;
+  helper_included: boolean | null;
+  inner_included: boolean | null;
+  dress_count_included: number | null;
+  accessories_included: boolean | null;
   // Makeup
   makeup_styles: string[];
   includes_rehearsal: boolean | null;
   hair_makeup_separate: boolean | null;
   rehearsal_count: number | null;
+  travel_fee_included: boolean | null;
+  director_level: string | null;
+  early_morning_fee: number | null;
   // Hanbok
   hanbok_types: string[];
+  delivery_available: boolean | null;
   // Honeymoon (product-based: 한 행 = 여행 상품 1개)
   agency_name: string | null;
   agency_product_url: string | null;
@@ -163,10 +180,23 @@ export interface LegacyDetail {
   // Appliance
   product_categories: string[];
   brand_options: string[];
+  installment_months: number | null;
+  warranty_years: number | null;
+  free_delivery: boolean | null;
+  free_installation: boolean | null;
+  old_appliance_pickup: boolean | null;
+  card_discount_available: boolean | null;
   // Invitation venue
   venue_types: string[];
   capacity_min: number | null;
   capacity_max: number | null;
+  room_charge_separate: boolean | null;
+  drinks_included: boolean | null;
+  venue_atmosphere: string[];          // place_invitation_venues.atmosphere (place_details.atmosphere와 별도)
+  valet_parking: boolean | null;
+  signature_dishes: string[];
+  corkage_fee_won: number | null;
+  private_room_count: number | null;
   // Jewelry (한 행 = 브랜드 베스트셀러 컬렉션)
   brand_name: string | null;
   brand_tier: string | null;
@@ -405,6 +435,15 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         dress_provided: (card?.dress_provided as boolean) ?? null,
         shoot_locations: asStringArray(card?.shoot_locations),
         includes_originals: (card?.includes_originals as boolean) ?? null,
+        raw_file_extra_cost: (card?.raw_file_extra_cost as number) ?? null,
+        per_retouch_cost: (card?.per_retouch_cost as number) ?? null,
+        album_extra_cost: (card?.album_extra_cost as number) ?? null,
+        base_shoot_hours: (card?.base_shoot_hours as number) ?? null,
+        base_retouch_count: (card?.base_retouch_count as number) ?? null,
+        author_tiers: asStringArray(card?.author_tiers),
+        frame_included: (card?.frame_included as boolean) ?? null,
+        photobook_pages: (card?.photobook_pages as number) ?? null,
+        editing_days: p.category === "studio" ? ((card?.editing_days as number) ?? null) : null,
         dress_styles: asStringArray(card?.dress_styles),
         suit_styles: asStringArray(card?.suit_styles),
         rental_only: (card?.rental_only as boolean) ?? null,
@@ -413,11 +452,19 @@ export const usePlaceDetail = (placeId: string | undefined) => {
           (card?.rental_includes_alterations as boolean) ?? null,
         designer_brands: asStringArray(card?.designer_brands),
         custom_available: (card?.custom_available as boolean) ?? null,
+        helper_included: (card?.helper_included as boolean) ?? null,
+        inner_included: (card?.inner_included as boolean) ?? null,
+        dress_count_included: (card?.dress_count_included as number) ?? null,
+        accessories_included: (card?.accessories_included as boolean) ?? null,
         makeup_styles: asStringArray(card?.makeup_styles),
         includes_rehearsal: (card?.includes_rehearsal as boolean) ?? null,
         hair_makeup_separate: (card?.hair_makeup_separate as boolean) ?? null,
         rehearsal_count: (card?.rehearsal_count as number) ?? null,
+        travel_fee_included: (card?.travel_fee_included as boolean) ?? null,
+        director_level: (card?.director_level as string) ?? null,
+        early_morning_fee: (card?.early_morning_fee as number) ?? null,
         hanbok_types: asStringArray(card?.hanbok_types),
+        delivery_available: (card?.delivery_available as boolean) ?? null,
         agency_name: (card?.agency_name as string) ?? null,
         agency_product_url: (card?.agency_product_url as string) ?? null,
         product_type: (card?.product_type as string) ?? null,
@@ -456,9 +503,22 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         usage_count: (card?.usage_count as number) ?? null,
         product_categories: asStringArray(card?.product_categories),
         brand_options: asStringArray(card?.brand_options),
+        installment_months: (card?.installment_months as number) ?? null,
+        warranty_years: (card?.warranty_years as number) ?? null,
+        free_delivery: (card?.free_delivery as boolean) ?? null,
+        free_installation: (card?.free_installation as boolean) ?? null,
+        old_appliance_pickup: (card?.old_appliance_pickup as boolean) ?? null,
+        card_discount_available: (card?.card_discount_available as boolean) ?? null,
         venue_types: asStringArray(card?.venue_types),
         capacity_min: (card?.capacity_min as number) ?? null,
         capacity_max: (card?.capacity_max as number) ?? null,
+        room_charge_separate: (card?.room_charge_separate as boolean) ?? null,
+        drinks_included: (card?.drinks_included as boolean) ?? null,
+        venue_atmosphere: p.category === "invitation_venue" ? asStringArray(card?.atmosphere) : [],
+        valet_parking: (card?.valet_parking as boolean) ?? null,
+        signature_dishes: asStringArray(card?.signature_dishes),
+        corkage_fee_won: (card?.corkage_fee_won as number) ?? null,
+        private_room_count: (card?.private_room_count as number) ?? null,
 
         // Jewelry (한 행 = 브랜드 베스트셀러 컬렉션)
         brand_name: (card?.brand_name as string) ?? null,
