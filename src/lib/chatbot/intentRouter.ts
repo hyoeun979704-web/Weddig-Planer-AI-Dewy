@@ -22,6 +22,12 @@ export type ChatIntent =
   | "schedule_today"
   | "schedule_upcoming"
   | "checklist_time"
+  | "favorites"
+  | "cart"
+  | "region"
+  | "hearts"
+  | "points"
+  | "wedding_info"
   | "service_intro"
   | "pricing"
   | "contact"
@@ -32,7 +38,18 @@ export interface IntentMatch {
   /** 즉답 가능 시 텍스트 */
   staticReply?: string;
   /** DB 조회 필요 시 핸들러 키 */
-  dbHandler?: "dday" | "budget" | "schedule_today" | "schedule_upcoming" | "checklist";
+  dbHandler?:
+    | "dday"
+    | "budget"
+    | "schedule_today"
+    | "schedule_upcoming"
+    | "checklist"
+    | "favorites"
+    | "cart"
+    | "region"
+    | "hearts"
+    | "points"
+    | "wedding_info";
   /** 매칭된 키워드 (디버깅·로그용) */
   matchedKeyword?: string;
 }
@@ -110,6 +127,77 @@ const PATTERNS: IntentPattern[] = [
       /지금.*해야|뭐.*해야/,
     ],
     dbHandler: "checklist",
+  },
+
+  // ── 찜 목록 ────────────────────────────────────
+  {
+    intent: "favorites",
+    patterns: [
+      /찜\s*(목록|한)?/,
+      /즐겨\s*찾기/,
+      /좋아요\s*(누른|한)/,
+      /북마크/,
+      /하트\s*누른/,
+    ],
+    dbHandler: "favorites",
+  },
+
+  // ── 장바구니 ───────────────────────────────────
+  {
+    intent: "cart",
+    patterns: [
+      /장바구니/,
+      /담은\s*상품|담아둔/,
+      /구매\s*예정/,
+      /카트/,
+    ],
+    dbHandler: "cart",
+  },
+
+  // ── 지역 정보 ──────────────────────────────────
+  {
+    intent: "region",
+    patterns: [
+      /내\s*지역|결혼\s*지역|예식\s*지역/,
+      /어디서\s*결혼/,
+      /지역.*(어디|뭐)/,
+      /근처.*식장/,
+    ],
+    dbHandler: "region",
+  },
+
+  // ── 하트 잔액 (AI Studio) ──────────────────────
+  {
+    intent: "hearts",
+    patterns: [
+      /하트\s*(잔액|얼마|남|있)/,
+      /토큰\s*(잔액|얼마|남|있)/,
+      /AI\s*Studio.*(잔|남|얼마)/i,
+      /드레스.*피팅.*몇/,
+    ],
+    dbHandler: "hearts",
+  },
+
+  // ── 포인트 ─────────────────────────────────────
+  {
+    intent: "points",
+    patterns: [
+      /포인트\s*(잔액|얼마|남|있|확인)/,
+      /적립.*얼마|적립.*확인/,
+    ],
+    dbHandler: "points",
+  },
+
+  // ── 결혼 정보 종합 ─────────────────────────────
+  {
+    intent: "wedding_info",
+    patterns: [
+      /내\s*(결혼|웨딩)\s*정보/,
+      /결혼\s*정보\s*(보여|확인|알려)/,
+      /내\s*예식|내\s*프로필/,
+      /파트너.*누구|배우자.*누구/,
+    ],
+    dbHandler: "wedding_info",
   },
 
   // ── 서비스 소개 ────────────────────────────────
