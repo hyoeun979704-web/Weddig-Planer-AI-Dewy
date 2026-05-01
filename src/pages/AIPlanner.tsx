@@ -34,7 +34,7 @@ const AIPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { messages, isLoading, sendMessage, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
+  const { messages, isLoading, sendMessage, sendStructured, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
   const [input, setInput] = useState("");
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -78,21 +78,47 @@ const AIPlanner = () => {
 
   const handleQuickClick = (item: typeof QUICK_QUESTIONS[0]) => setActiveModal(item.modal);
 
-  const handleVenueSubmit = (data: Record<string, string>) => {
+  // 모달 핸들러: 모든 입력 필드를 결정형 핸들러로 직접 전달 (LLM 호출 X)
+  const handleVenueSubmit = (data: Record<string, unknown>) => {
     setActiveModal(null);
-    sendMessage(`웨딩홀 추천해줘. 지역: ${data.region ?? "미정"}, 예산: ${data.budget ?? "미정"}, 하객수: ${data.guests ?? "미정"}명`);
+    const userText = `🏛️ 웨딩홀 추천 요청\n${[
+      data.region && `지역: ${data.region}`,
+      data.guests && `하객수: ${data.guests}명`,
+      data.budget && `예산: ${data.budget}만원`,
+      Array.isArray(data.styles) && data.styles.length > 0 && `스타일: ${(data.styles as string[]).join(", ")}`,
+    ].filter(Boolean).join(" · ")}`;
+    sendStructured(userText, { kind: "venue", params: data as never });
   };
-  const handleSdmeSubmit = (data: Record<string, string>) => {
+
+  const handleSdmeSubmit = (data: Record<string, unknown>) => {
     setActiveModal(null);
-    sendMessage(`스드메 견적 알려줘. 스타일: ${data.style ?? "미정"}, 예산: ${data.budget ?? "미정"}`);
+    const userText = `📸 스드메 가이드 요청\n${[
+      data.region && `지역: ${data.region}`,
+      data.budget && `예산: ${data.budget}만원`,
+      data.studioStyle && `스타일: ${data.studioStyle}`,
+      data.priority && `우선순위: ${data.priority}`,
+    ].filter(Boolean).join(" · ")}`;
+    sendStructured(userText, { kind: "sdme", params: data as never });
   };
-  const handleTimelineSubmit = (data: Record<string, string>) => {
+
+  const handleTimelineSubmit = (data: Record<string, unknown>) => {
     setActiveModal(null);
-    sendMessage(`결혼 준비 타임라인 짜줘. 예식일: ${data.weddingDate ?? "미정"}, 현재 진행상황: ${data.progress ?? "초기단계"}`);
+    const userText = `⏰ 본식 타임라인 요청\n${[
+      data.ceremonyTime && `예식: ${data.ceremonyTime}`,
+      data.duration && `소요: ${data.duration}`,
+      data.venueType && `식장 타입: ${data.venueType}`,
+    ].filter(Boolean).join(" · ")}`;
+    sendStructured(userText, { kind: "timeline", params: data as never });
   };
-  const handleBudgetSubmit = (data: Record<string, string>) => {
+
+  const handleBudgetSubmit = (data: Record<string, unknown>) => {
     setActiveModal(null);
-    sendMessage(`결혼 예산 계획 세워줘. 총 예산: ${data.total ?? "미정"}, 우선순위: ${data.priority ?? "없음"}`);
+    const userText = `💰 예산 분배 요청\n${[
+      data.totalBudget && `총 ${data.totalBudget}만원`,
+      data.region && `(${data.region})`,
+      Array.isArray(data.priorities) && data.priorities.length > 0 && `우선순위: ${(data.priorities as string[]).join(", ")}`,
+    ].filter(Boolean).join(" ")}`;
+    sendStructured(userText, { kind: "budget", params: data as never });
   };
 
   const hasConversation = messages.length > 0;

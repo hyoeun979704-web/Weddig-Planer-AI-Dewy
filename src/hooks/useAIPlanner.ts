@@ -4,6 +4,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { matchIntent } from "@/lib/chatbot/intentRouter";
 import { runDbHandler } from "@/lib/chatbot/dbHandlers";
+import {
+  handleVenueRecommendation,
+  handleSdmeGuide,
+  handleTimelinePlanning,
+  handleBudgetPlanning,
+  type VenueParams,
+  type SdmeParams,
+  type TimelineParams,
+  type BudgetParams,
+} from "@/lib/chatbot/handlers/quickQuestionHandlers";
+
+export type StructuredHandler =
+  | { kind: "venue"; params: VenueParams }
+  | { kind: "sdme"; params: SdmeParams }
+  | { kind: "timeline"; params: TimelineParams }
+  | { kind: "budget"; params: BudgetParams };
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -240,5 +256,56 @@ export const useAIPlanner = () => {
     setMessages([]);
   }, []);
 
-  return { messages, isLoading, sendMessage, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining };
+  /**
+   * 구조화된 입력 (모달 데이터)을 받아 LLM 호출 없이 즉답 처리.
+   * 사용자 메시지는 채팅에 표시하되, 응답은 결정형 핸들러가 생성.
+   */
+  const sendStructured = useCallback(async (
+    userMessageText: string,
+    handler: StructuredHandler,
+  ) => {
+    const userMsg: Message = { role: "user", content: userMessageText };
+    setMessages(prev => [...prev, userMsg]);
+    setIsLoading(true);
+
+    try {
+      let reply: string;
+      switch (handler.kind) {
+        case "venue":
+          reply = await handleVenueRecommendation(handler.params);
+          break;
+        case "sdme":
+          reply = await handleSdmeGuide(handler.params);
+          break;
+        case "timeline":
+          reply = await handleTimelinePlanning(handler.params);
+          break;
+        case "budget":
+          reply = await handleBudgetPlanning(handler.params);
+          break;
+      }
+      setMessages(prev => [...prev, { role: "assistant", content: reply }]);
+    } catch (e) {
+      console.error("Structured handler error:", e);
+      toast({
+        title: "응답 생성 실패",
+        description: "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+      setMessages(prev => prev.filter(m => m !== userMsg));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  return {
+    messages,
+    isLoading,
+    sendMessage,
+    sendStructured,
+    clearMessages,
+    showUpgradeModal,
+    setShowUpgradeModal,
+    dailyRemaining,
+  };
 };
