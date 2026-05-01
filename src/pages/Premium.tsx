@@ -21,7 +21,7 @@ const featureGroups = [
   {
     title: "AI 기능",
     items: [
-      { icon: "💬", text: "AI 플래너 무제한 대화", free: "3회/일", premium: "무제한" },
+      { icon: "💬", text: "AI 플래너 무제한 대화", free: "5회/일", premium: "무제한" },
       { icon: "📋", text: "AI 견적서 자동생성", free: "✕", premium: "PDF" },
       { icon: "📊", text: "예산 분석 리포트", free: "✕", premium: "PDF" },
     ],
@@ -114,7 +114,7 @@ const Premium = () => {
           ) : (
             <div className="p-5 bg-muted rounded-2xl border border-border">
               <p className="font-bold text-foreground">현재 플랜: 무료</p>
-              <p className="text-sm text-muted-foreground">AI 질문 3회/일</p>
+              <p className="text-sm text-muted-foreground">AI 질문 5회/일</p>
               {trialExpired && (
                 <p className="text-sm text-primary font-medium mt-2">체험이 종료되었어요. 구독을 시작해보세요!</p>
               )}

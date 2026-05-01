@@ -1,6 +1,9 @@
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { matchIntent } from "@/lib/chatbot/intentRouter";
+import { runDbHandler } from "@/lib/chatbot/dbHandlers";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -12,12 +15,46 @@ export const useAIPlanner = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const sendMessage = useCallback(async (input: string) => {
     const userMsg: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
+    // ── 1. 클라이언트 사이드 인텐트 게이트 ──────────────────
+    // LLM 호출 전에 키워드 매칭으로 즉답 가능한지 먼저 확인.
+    // 매칭되면 외부 API 호출 없이 응답 생성 → 일일 한도 차감 X, 비용 X.
+    try {
+      const intent = matchIntent(input);
+      if (intent) {
+        let reply: string | null = null;
+
+        // (a) 정적 응답 — 인사·도움말·가격 안내 등
+        if (intent.staticReply) {
+          reply = intent.staticReply;
+        }
+        // (b) DB 조회 응답 — 디데이·예산·일정 등 (로그인 필요)
+        else if (intent.dbHandler && user) {
+          reply = await runDbHandler(intent.dbHandler, { userId: user.id }, input);
+        }
+        // (c) DB 조회 필요한데 비로그인 — 로그인 안내
+        else if (intent.dbHandler && !user) {
+          reply = "이 정보는 로그인 후 확인할 수 있어요 🌿\n[로그인 페이지](/auth)에서 가입·로그인 부탁드려요.";
+        }
+
+        if (reply) {
+          setMessages(prev => [...prev, { role: "assistant", content: reply! }]);
+          setIsLoading(false);
+          return;
+        }
+      }
+    } catch (gateError) {
+      // 게이트 실패는 무시하고 LLM fallback으로 진행
+      console.warn("Intent gate error, falling back to LLM:", gateError);
+    }
+
+    // ── 2. LLM 호출 (Edge Function) ─────────────────────────
     let assistantSoFar = "";
     const upsertAssistant = (nextChunk: string) => {
       assistantSoFar += nextChunk;
@@ -164,7 +201,7 @@ export const useAIPlanner = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, toast]);
+  }, [messages, toast, user]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
