@@ -70,6 +70,8 @@ const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const LocationTerms = lazy(() => import("./pages/LocationTerms"));
 const DressFitting = lazy(() => import("./pages/DressFitting"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
 const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
@@ -216,6 +218,8 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/dress-tour" element={<DressFitting />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/dress-samples" element={<AdminDressSamples />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
