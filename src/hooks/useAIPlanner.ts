@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { matchIntent } from "@/lib/chatbot/intentRouter";
 import { runDbHandler } from "@/lib/chatbot/dbHandlers";
+import { runGuideHandler } from "@/lib/chatbot/handlers/staticGuideHandlers";
 import {
   handleVenueRecommendation,
   handleSdmeGuide,
@@ -51,6 +52,14 @@ export const useAIPlanner = () => {
         // (a) 정적 응답 — 인사·도움말·가격 안내 등
         if (intent.staticReply) {
           setMessages(prev => [...prev, { role: "assistant", content: intent.staticReply! }]);
+          setIsLoading(false);
+          return;
+        }
+
+        // (a') 정적 가이드 핸들러 — 시기·매너·계약 등 지식 응답
+        if (intent.guideKey) {
+          const reply = runGuideHandler(intent.guideKey);
+          setMessages(prev => [...prev, { role: "assistant", content: reply }]);
           setIsLoading(false);
           return;
         }

@@ -221,6 +221,106 @@ export const SUGGESTED_QUESTIONS: SuggestedQuestion[] = [
     category: "summary",
   },
 
+  // ── 진단·통계 (planning/info) ──────────────────
+  {
+    text: "예산 잘 짜고 있어?",
+    emoji: "📊",
+    keywords: ["예산", "진단", "분석", "비율", "잘"],
+    category: "planning",
+  },
+  {
+    text: "놓친 일정 있어?",
+    emoji: "⏰",
+    keywords: ["놓친", "일정", "골든타임", "지금"],
+    category: "planning",
+  },
+  {
+    text: "계약 어디까지 했어?",
+    emoji: "📋",
+    keywords: ["계약", "진척", "어디까지", "진행"],
+    category: "planning",
+  },
+  {
+    text: "체크리스트 진행률",
+    emoji: "✅",
+    keywords: ["체크리스트", "진행률", "완료", "퍼센트"],
+    category: "planning",
+  },
+  {
+    text: "강남 식장 추천",
+    emoji: "🏛️",
+    keywords: ["강남", "식장", "웨딩홀"],
+    category: "planning",
+  },
+  {
+    text: "웨딩홀 평균 시세",
+    emoji: "💰",
+    keywords: ["평균", "시세", "웨딩홀", "가격"],
+    category: "info",
+  },
+  {
+    text: "인기 스튜디오",
+    emoji: "🌟",
+    keywords: ["인기", "스튜디오", "TOP"],
+    category: "info",
+  },
+
+  // ── 정적 가이드 (info) ─────────────────────────
+  {
+    text: "스드메 언제 예약?",
+    emoji: "📸",
+    keywords: ["스드메", "언제", "예약", "시기"],
+    category: "info",
+  },
+  {
+    text: "청첩장 언제 발송?",
+    emoji: "💌",
+    keywords: ["청첩장", "언제", "발송"],
+    category: "info",
+  },
+  {
+    text: "메이크업 시연 가이드",
+    emoji: "💄",
+    keywords: ["메이크업", "시연", "리허설"],
+    category: "info",
+  },
+  {
+    text: "신혼여행 예약 시기",
+    emoji: "✈️",
+    keywords: ["신혼여행", "허니문", "언제"],
+    category: "info",
+  },
+  {
+    text: "계약 시 체크포인트",
+    emoji: "📋",
+    keywords: ["계약", "체크", "주의", "포인트"],
+    category: "info",
+  },
+  {
+    text: "예단·예물 가이드",
+    emoji: "💍",
+    keywords: ["예단", "예물", "상견례", "양가"],
+    category: "info",
+  },
+  {
+    text: "축의금·답례품",
+    emoji: "🎁",
+    keywords: ["축의금", "답례품", "부조"],
+    category: "info",
+  },
+  {
+    text: "신혼집 준비 체크",
+    emoji: "🏠",
+    keywords: ["신혼집", "가전", "혼수"],
+    category: "info",
+  },
+  {
+    text: "본식 식순 알려줘",
+    emoji: "🎉",
+    keywords: ["식순", "본식", "예식", "순서"],
+    category: "info",
+  },
+
   // ── 정보 (info) ────────────────────────────────
   {
     text: "도움말 보여줘",

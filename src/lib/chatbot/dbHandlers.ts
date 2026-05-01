@@ -45,6 +45,17 @@ import {
   handleActivitySummary,
   handleThisWeek,
 } from "./handlers/summaryHandlers";
+import {
+  handleBudgetDiagnosis,
+  handleScheduleDiagnosis,
+  handleContractProgress,
+  handleChecklistProgress,
+} from "./handlers/diagnosticHandlers";
+import {
+  handleFreeTextSearch,
+  handleAveragePrice,
+  handlePopularPlaces,
+} from "./handlers/searchHandlers";
 
 export interface DbHandlerContext {
   userId: string;
@@ -501,7 +512,14 @@ export type DbHandlerKey =
   | "dress_fitting_history"
   | "heart_history"
   | "activity_summary"
-  | "this_week";
+  | "this_week"
+  | "budget_diagnosis"
+  | "schedule_diagnosis"
+  | "contract_progress"
+  | "checklist_progress"
+  | "free_search"
+  | "average_price"
+  | "popular_places";
 
 const isItemTypeKey = (s: string | undefined): s is ItemTypeKey =>
   !!s && s in ITEM_TYPE_MAP;
@@ -566,6 +584,14 @@ export const runDbHandler = async (
     case "heart_history": return { reply: await handleHeartHistory(ctx.userId) };
     case "activity_summary": return { reply: await handleActivitySummary(ctx.userId) };
     case "this_week": return { reply: await handleThisWeek(ctx.userId) };
+    // Phase h - 진단·통계·검색
+    case "budget_diagnosis": return { reply: await handleBudgetDiagnosis(ctx.userId) };
+    case "schedule_diagnosis": return { reply: await handleScheduleDiagnosis(ctx.userId) };
+    case "contract_progress": return { reply: await handleContractProgress(ctx.userId) };
+    case "checklist_progress": return { reply: await handleChecklistProgress(ctx.userId) };
+    case "free_search": return { reply: await handleFreeTextSearch(userMessage) };
+    case "average_price": return { reply: await handleAveragePrice(userMessage) };
+    case "popular_places": return { reply: await handlePopularPlaces(userMessage) };
     default:
       return { reply: "요청을 처리할 수 없어요. 다시 한 번 말씀해주시겠어요?" };
   }

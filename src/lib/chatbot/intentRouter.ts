@@ -54,6 +54,17 @@ export interface IntentMatch {
   intent: ChatIntent;
   /** 즉답 가능 시 텍스트 */
   staticReply?: string;
+  /** 정적 가이드 핸들러 키 (staticGuideHandlers의 GuideKey) */
+  guideKey?:
+    | "sdme_timing"
+    | "invitation_timing"
+    | "makeup_trial"
+    | "honeymoon_timing"
+    | "contract_check"
+    | "etiquette"
+    | "gift_etiquette"
+    | "new_home"
+    | "ceremony_progress";
   /** DB 조회 필요 시 핸들러 키 */
   dbHandler?:
     | "dday"
@@ -82,7 +93,14 @@ export interface IntentMatch {
     | "dress_fitting_history"
     | "heart_history"
     | "activity_summary"
-    | "this_week";
+    | "this_week"
+    | "budget_diagnosis"
+    | "schedule_diagnosis"
+    | "contract_progress"
+    | "checklist_progress"
+    | "free_search"
+    | "average_price"
+    | "popular_places";
   /** 매칭된 키워드 (디버깅·로그용) */
   matchedKeyword?: string;
   /** 동적으로 추출된 인자 (검색 키워드·종류 등) */
@@ -100,6 +118,8 @@ interface IntentPattern {
   staticReply?: string;
   /** DB 조회 핸들러 */
   dbHandler?: IntentMatch["dbHandler"];
+  /** 정적 가이드 핸들러 키 */
+  guideKey?: IntentMatch["guideKey"];
 }
 
 const PATTERNS: IntentPattern[] = [
@@ -341,6 +361,100 @@ const PATTERNS: IntentPattern[] = [
     patterns: [/이번\s*주.*활동/, /이번\s*주.*뭐/, /최근\s*7일/, /주간\s*요약/],
     dbHandler: "this_week",
   },
+
+  // ════════════════════════════════════════════════════════════
+  // Phase h — 진단·통계·검색·정적 가이드
+  // ════════════════════════════════════════════════════════════
+
+  // 진단 (사용자 데이터 분석)
+  {
+    intent: "budget_diagnosis" as ChatIntent,
+    patterns: [/예산.*(분석|진단|비율|점검)/, /예산\s*잘.*(짜|쓰)/, /예산\s*괜찮/],
+    dbHandler: "budget_diagnosis",
+  },
+  {
+    intent: "schedule_diagnosis" as ChatIntent,
+    patterns: [/일정.*(진단|점검|확인|체크)/, /놓친\s*(일정|골든)/, /지금.*잘/, /일정.*잘.*가/],
+    dbHandler: "schedule_diagnosis",
+  },
+  {
+    intent: "contract_progress" as ChatIntent,
+    patterns: [/계약.*(진척|진행|상황|얼마나)/, /진행\s*(상황|률|상태)/, /어디까지/],
+    dbHandler: "contract_progress",
+  },
+  {
+    intent: "checklist_progress" as ChatIntent,
+    patterns: [/체크리스트.*(완료|진행|진척|얼마)/, /몇\s*(%|퍼센트).*했/, /진척률/],
+    dbHandler: "checklist_progress",
+  },
+
+  // 통계·검색 (자유 텍스트)
+  {
+    intent: "free_search" as ChatIntent,
+    patterns: [
+      /(강남|강북|서초|마포|용산|종로|부산|대구|인천|성남|수원|천안|청주|경기|제주).*(식장|웨딩홀|스튜디오|드레스|메이크업)/,
+      /(식장|웨딩홀|스튜디오|드레스샵|메이크업).*추천/,
+      /(찾|검색).*(웨딩홀|식장|스튜디오)/,
+    ],
+    dbHandler: "free_search",
+  },
+  {
+    intent: "average_price" as ChatIntent,
+    patterns: [/평균.*(가격|시세|얼마|비용)/, /시세.*(어때|얼마|얼만)/, /(웨딩홀|식장|스튜디오|드레스).*시세/],
+    dbHandler: "average_price",
+  },
+  {
+    intent: "popular_places" as ChatIntent,
+    patterns: [/인기.*(업체|식장|스튜디오|드레스)/, /(평점|별점).*(높은|좋은)/, /TOP|랭킹/i],
+    dbHandler: "popular_places",
+  },
+
+  // 정적 가이드 (지식 기반)
+  {
+    intent: "guide_sdme_timing" as ChatIntent,
+    patterns: [/스드메.*(언제|시기|예약)/, /스튜디오.*(언제|시기)/, /드레스.*(언제|예약)/],
+    guideKey: "sdme_timing",
+  },
+  {
+    intent: "guide_invitation_timing" as ChatIntent,
+    patterns: [/청첩장.*(언제|발송|시기)/, /청첩장.*보내|돌리/],
+    guideKey: "invitation_timing",
+  },
+  {
+    intent: "guide_makeup_trial" as ChatIntent,
+    patterns: [/메이크업.*(시연|리허설|트라이)/, /시연.*(언제|메이크업)/],
+    guideKey: "makeup_trial",
+  },
+  {
+    intent: "guide_honeymoon_timing" as ChatIntent,
+    patterns: [/신혼여행.*(언제|예약|준비)/, /허니문.*(언제|예약)/, /항공권.*(언제|예약)/],
+    guideKey: "honeymoon_timing",
+  },
+  {
+    intent: "guide_contract" as ChatIntent,
+    patterns: [/계약.*(체크|주의|확인|포인트)/, /계약.*(할\s*때|조심)/, /계약서/],
+    guideKey: "contract_check",
+  },
+  {
+    intent: "guide_etiquette" as ChatIntent,
+    patterns: [/(예단|예물).*(매너|얼마|준비)/, /상견례/, /양가\s*인사/, /시부모|장모|장인/],
+    guideKey: "etiquette",
+  },
+  {
+    intent: "guide_gift" as ChatIntent,
+    patterns: [/답례품/, /축의금.*(얼마|봉투)/, /부조/],
+    guideKey: "gift_etiquette",
+  },
+  {
+    intent: "guide_new_home" as ChatIntent,
+    patterns: [/신혼집.*(준비|체크|구하|구함)/, /(가전|혼수).*(언제|준비|구매)/],
+    guideKey: "new_home",
+  },
+  {
+    intent: "guide_ceremony_progress" as ChatIntent,
+    patterns: [/식순.*(어떻|보여|알려)/, /본식.*(진행|식순)/, /예식.*순서/],
+    guideKey: "ceremony_progress",
+  },
 ];
 
 /**
@@ -366,6 +480,7 @@ export const matchIntent = (message: string): IntentMatch | null => {
           intent: pattern.intent,
           staticReply: pattern.staticReply,
           dbHandler: pattern.dbHandler,
+          guideKey: pattern.guideKey,
           matchedKeyword: typeof p === "string" ? p : p.source,
         };
       }
