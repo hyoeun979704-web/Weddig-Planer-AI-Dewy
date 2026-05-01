@@ -33,6 +33,21 @@ export type ChatIntent =
   | "service_intro"
   | "pricing"
   | "contact"
+  // ── Phase e: 사용자 데이터·이력 확장 ──
+  | "orders"
+  | "payments"
+  | "my_posts"
+  | "my_comments"
+  | "ai_usage"
+  | "deal_claims"
+  | "couple_status"
+  | "diary"
+  | "votes"
+  | "subscription_status"
+  | "dress_fitting_history"
+  | "heart_history"
+  | "activity_summary"
+  | "this_week"
   | null;
 
 export interface IntentMatch {
@@ -53,7 +68,21 @@ export interface IntentMatch {
     | "region"
     | "hearts"
     | "points"
-    | "wedding_info";
+    | "wedding_info"
+    | "orders"
+    | "payments"
+    | "my_posts"
+    | "my_comments"
+    | "ai_usage"
+    | "deal_claims"
+    | "couple_status"
+    | "diary"
+    | "votes"
+    | "subscription_status"
+    | "dress_fitting_history"
+    | "heart_history"
+    | "activity_summary"
+    | "this_week";
   /** 매칭된 키워드 (디버깅·로그용) */
   matchedKeyword?: string;
   /** 동적으로 추출된 인자 (검색 키워드·종류 등) */
@@ -229,6 +258,88 @@ const PATTERNS: IntentPattern[] = [
     patterns: [/문의|연락|이메일|메일|고객.*센터|cs/i],
     staticReply:
       "고객 문의는 다음 채널로 받고 있어요 📬\n\n• 이메일: help@dewy-wedding.com\n• 1:1 문의: [고객센터](/contact)\n• FAQ: [자주 묻는 질문](/faq)\n\n결혼 준비 관련 질문은 저(듀이)에게 바로 물어봐 주셔도 돼요 ✨",
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // Phase e — 사용자 데이터·이력 확장 인텐트
+  // ════════════════════════════════════════════════════════════
+
+  // ── 주문·결제 ──────────────────────────────────
+  { intent: "orders", patterns: [/주문\s*(내역|보여|뭐)/, /구매\s*(내역|이력)/, /내가.*산\s*거/], dbHandler: "orders" },
+  { intent: "payments", patterns: [/결제\s*(내역|이력|기록)/, /최근\s*결제/, /결제한\s*거/], dbHandler: "payments" },
+
+  // ── 커뮤니티 활동 ──────────────────────────────
+  { intent: "my_posts", patterns: [/내가\s*쓴\s*(글|게시글|포스트)/, /내\s*글/, /내\s*게시글/], dbHandler: "my_posts" },
+  { intent: "my_comments", patterns: [/내가\s*쓴\s*댓글/, /내\s*댓글/], dbHandler: "my_comments" },
+
+  // ── AI 사용량 ──────────────────────────────────
+  {
+    intent: "ai_usage",
+    patterns: [/AI.*몇\s*번/i, /챗봇.*몇\s*번/, /(AI|챗봇)\s*사용\s*(량|횟수|기록)/, /오늘.*몇\s*(번|회)/],
+    dbHandler: "ai_usage",
+  },
+
+  // ── 받은 특가/쿠폰 ─────────────────────────────
+  {
+    intent: "deal_claims",
+    patterns: [/받은\s*(특가|쿠폰|혜택|딜)/, /내\s*(쿠폰|특가|혜택)/, /클레임/],
+    dbHandler: "deal_claims",
+  },
+
+  // ── 커플 연동 상태 ─────────────────────────────
+  {
+    intent: "couple_status",
+    patterns: [/파트너.*(연결|연동|상태)/, /커플\s*연동/, /초대\s*코드/, /(애인|배우자|남편|아내).*연결/],
+    dbHandler: "couple_status",
+  },
+
+  // ── 다이어리 ───────────────────────────────────
+  {
+    intent: "diary",
+    patterns: [/다이어리/, /일기.*몇/, /(최근|오늘).*일기/],
+    dbHandler: "diary",
+  },
+
+  // ── 투표 ───────────────────────────────────────
+  {
+    intent: "votes",
+    patterns: [/투표.*(진행|상황|결과|미정|남)/, /결정.*못한.*거/, /커플\s*투표/, /진행.*중.*투표/],
+    dbHandler: "votes",
+  },
+
+  // ── 구독 상태 ──────────────────────────────────
+  {
+    intent: "subscription_status",
+    patterns: [/구독\s*(상태|확인|만료)/, /Premium\s*(상태|언제|만료)/i, /프리미엄\s*(상태|언제)/],
+    dbHandler: "subscription_status",
+  },
+
+  // ── 드레스 피팅 기록 ───────────────────────────
+  {
+    intent: "dress_fitting_history",
+    patterns: [/드레스\s*(피팅|갤러리)\s*(기록|이력|몇)/, /피팅\s*몇\s*장/, /내\s*드레스/, /드레스\s*투어\s*(기록|이력)/],
+    dbHandler: "dress_fitting_history",
+  },
+
+  // ── 하트 거래 이력 ─────────────────────────────
+  {
+    intent: "heart_history",
+    patterns: [/하트\s*(이력|거래|내역|어디|쓴)/, /하트\s*충전\s*(이력|기록)/],
+    dbHandler: "heart_history",
+  },
+
+  // ── 활동 종합 요약 ─────────────────────────────
+  {
+    intent: "activity_summary",
+    patterns: [/내\s*활동\s*(요약|보여|확인|전체|모두)/, /활동\s*요약/, /현황\s*(보여|알려)/, /지금\s*상태/, /대시보드/],
+    dbHandler: "activity_summary",
+  },
+
+  // ── 이번 주 활동 ───────────────────────────────
+  {
+    intent: "this_week",
+    patterns: [/이번\s*주.*활동/, /이번\s*주.*뭐/, /최근\s*7일/, /주간\s*요약/],
+    dbHandler: "this_week",
   },
 ];
 

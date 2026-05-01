@@ -23,6 +23,28 @@ import {
   ITEM_TYPE_MAP,
   type ItemTypeKey,
 } from "./favoritesHandler";
+import {
+  handleOrders,
+  handlePayments,
+  handleMyPosts,
+  handleMyComments,
+  handleAiUsage,
+  handleDealClaims,
+} from "./handlers/userActivityHandlers";
+import {
+  handleCoupleStatus,
+  handleDiary,
+  handleVotes,
+} from "./handlers/coupleHandlers";
+import {
+  handleSubscriptionStatus,
+  handleDressFittingHistory,
+  handleHeartHistory,
+} from "./handlers/aiStudioHandlers";
+import {
+  handleActivitySummary,
+  handleThisWeek,
+} from "./handlers/summaryHandlers";
 
 export interface DbHandlerContext {
   userId: string;
@@ -465,7 +487,21 @@ export type DbHandlerKey =
   | "region"
   | "hearts"
   | "points"
-  | "wedding_info";
+  | "wedding_info"
+  | "orders"
+  | "payments"
+  | "my_posts"
+  | "my_comments"
+  | "ai_usage"
+  | "deal_claims"
+  | "couple_status"
+  | "diary"
+  | "votes"
+  | "subscription_status"
+  | "dress_fitting_history"
+  | "heart_history"
+  | "activity_summary"
+  | "this_week";
 
 const isItemTypeKey = (s: string | undefined): s is ItemTypeKey =>
   !!s && s in ITEM_TYPE_MAP;
@@ -515,6 +551,21 @@ export const runDbHandler = async (
     case "hearts": return { reply: await handleHearts(ctx) };
     case "points": return { reply: await handlePoints(ctx) };
     case "wedding_info": return { reply: await handleWeddingInfo(ctx) };
+    // Phase e
+    case "orders": return { reply: await handleOrders(ctx.userId) };
+    case "payments": return { reply: await handlePayments(ctx.userId) };
+    case "my_posts": return { reply: await handleMyPosts(ctx.userId) };
+    case "my_comments": return { reply: await handleMyComments(ctx.userId) };
+    case "ai_usage": return { reply: await handleAiUsage(ctx.userId) };
+    case "deal_claims": return { reply: await handleDealClaims(ctx.userId) };
+    case "couple_status": return { reply: await handleCoupleStatus(ctx.userId) };
+    case "diary": return { reply: await handleDiary(ctx.userId) };
+    case "votes": return { reply: await handleVotes(ctx.userId) };
+    case "subscription_status": return { reply: await handleSubscriptionStatus(ctx.userId) };
+    case "dress_fitting_history": return { reply: await handleDressFittingHistory(ctx.userId) };
+    case "heart_history": return { reply: await handleHeartHistory(ctx.userId) };
+    case "activity_summary": return { reply: await handleActivitySummary(ctx.userId) };
+    case "this_week": return { reply: await handleThisWeek(ctx.userId) };
     default:
       return { reply: "요청을 처리할 수 없어요. 다시 한 번 말씀해주시겠어요?" };
   }
