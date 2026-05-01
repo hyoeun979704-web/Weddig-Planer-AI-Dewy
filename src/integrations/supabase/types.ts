@@ -1161,40 +1161,97 @@ export type Database = {
       }
       place_dress_shops: {
         Row: {
+          alteration_count: number | null
+          bestseller_designer: string | null
+          bouquet_included: boolean | null
+          card_partners: string[] | null
           designer_brands: string[] | null
           dress_count_included: number | null
+          dress_size_range: string | null
           dress_styles: string[] | null
           fitting_count: number | null
+          gift_items: string[] | null
+          gloves_included: boolean | null
           helper_included: boolean | null
           inner_included: boolean | null
+          installment_months: number | null
+          is_bestseller: boolean | null
+          is_new: boolean | null
+          main_dress_count: number | null
+          mother_dress_available: boolean | null
+          package_url: string | null
           place_id: string
           price_per_person: number | null
+          private_room: boolean | null
+          promotion_text: string | null
           rental_includes_alterations: boolean | null
           rental_only: boolean | null
+          shoes_included: boolean | null
+          sub_dress_count: number | null
+          tiara_included: boolean | null
+          veil_included: boolean | null
         }
         Insert: {
+          alteration_count?: number | null
+          bestseller_designer?: string | null
+          bouquet_included?: boolean | null
+          card_partners?: string[] | null
           designer_brands?: string[] | null
           dress_count_included?: number | null
+          dress_size_range?: string | null
           dress_styles?: string[] | null
           fitting_count?: number | null
+          gift_items?: string[] | null
+          gloves_included?: boolean | null
           helper_included?: boolean | null
           inner_included?: boolean | null
+          installment_months?: number | null
+          is_bestseller?: boolean | null
+          is_new?: boolean | null
+          main_dress_count?: number | null
+          mother_dress_available?: boolean | null
+          package_url?: string | null
           place_id: string
           price_per_person?: number | null
+          private_room?: boolean | null
+          promotion_text?: string | null
           rental_includes_alterations?: boolean | null
           rental_only?: boolean | null
+          shoes_included?: boolean | null
+          sub_dress_count?: number | null
+          tiara_included?: boolean | null
+          veil_included?: boolean | null
         }
         Update: {
+          alteration_count?: number | null
+          bestseller_designer?: string | null
+          bouquet_included?: boolean | null
+          card_partners?: string[] | null
           designer_brands?: string[] | null
           dress_count_included?: number | null
+          dress_size_range?: string | null
           dress_styles?: string[] | null
           fitting_count?: number | null
+          gift_items?: string[] | null
+          gloves_included?: boolean | null
           helper_included?: boolean | null
           inner_included?: boolean | null
+          installment_months?: number | null
+          is_bestseller?: boolean | null
+          is_new?: boolean | null
+          main_dress_count?: number | null
+          mother_dress_available?: boolean | null
+          package_url?: string | null
           place_id?: string
           price_per_person?: number | null
+          private_room?: boolean | null
+          promotion_text?: string | null
           rental_includes_alterations?: boolean | null
           rental_only?: boolean | null
+          shoes_included?: boolean | null
+          sub_dress_count?: number | null
+          tiara_included?: boolean | null
+          veil_included?: boolean | null
         }
         Relationships: [
           {
@@ -1740,37 +1797,91 @@ export type Database = {
       }
       place_makeup_shops: {
         Row: {
+          bestseller_designer: string | null
+          bridesmaid_makeup_available: boolean | null
+          card_partners: string[] | null
           director_level: string | null
           early_morning_fee: number | null
+          eyelash_extension_available: boolean | null
+          false_lashes_included: boolean | null
+          gift_items: string[] | null
+          groom_grooming_available: boolean | null
+          groom_grooming_price: number | null
           hair_makeup_separate: boolean | null
           includes_rehearsal: boolean | null
+          installment_months: number | null
+          is_bestseller: boolean | null
+          is_new: boolean | null
           makeup_styles: string[] | null
+          package_url: string | null
+          parents_makeup_available: boolean | null
+          parents_makeup_price: number | null
           place_id: string
           price_per_person: number | null
+          promotion_text: string | null
           rehearsal_count: number | null
+          semi_permanent_makeup: boolean | null
           travel_fee_included: boolean | null
+          travel_zones: string[] | null
+          wedding_day_helper: boolean | null
         }
         Insert: {
+          bestseller_designer?: string | null
+          bridesmaid_makeup_available?: boolean | null
+          card_partners?: string[] | null
           director_level?: string | null
           early_morning_fee?: number | null
+          eyelash_extension_available?: boolean | null
+          false_lashes_included?: boolean | null
+          gift_items?: string[] | null
+          groom_grooming_available?: boolean | null
+          groom_grooming_price?: number | null
           hair_makeup_separate?: boolean | null
           includes_rehearsal?: boolean | null
+          installment_months?: number | null
+          is_bestseller?: boolean | null
+          is_new?: boolean | null
           makeup_styles?: string[] | null
+          package_url?: string | null
+          parents_makeup_available?: boolean | null
+          parents_makeup_price?: number | null
           place_id: string
           price_per_person?: number | null
+          promotion_text?: string | null
           rehearsal_count?: number | null
+          semi_permanent_makeup?: boolean | null
           travel_fee_included?: boolean | null
+          travel_zones?: string[] | null
+          wedding_day_helper?: boolean | null
         }
         Update: {
+          bestseller_designer?: string | null
+          bridesmaid_makeup_available?: boolean | null
+          card_partners?: string[] | null
           director_level?: string | null
           early_morning_fee?: number | null
+          eyelash_extension_available?: boolean | null
+          false_lashes_included?: boolean | null
+          gift_items?: string[] | null
+          groom_grooming_available?: boolean | null
+          groom_grooming_price?: number | null
           hair_makeup_separate?: boolean | null
           includes_rehearsal?: boolean | null
+          installment_months?: number | null
+          is_bestseller?: boolean | null
+          is_new?: boolean | null
           makeup_styles?: string[] | null
+          package_url?: string | null
+          parents_makeup_available?: boolean | null
+          parents_makeup_price?: number | null
           place_id?: string
           price_per_person?: number | null
+          promotion_text?: string | null
           rehearsal_count?: number | null
+          semi_permanent_makeup?: boolean | null
           travel_fee_included?: boolean | null
+          travel_zones?: string[] | null
+          wedding_day_helper?: boolean | null
         }
         Relationships: [
           {
@@ -1888,60 +1999,114 @@ export type Database = {
           author_tiers: string[] | null
           base_retouch_count: number | null
           base_shoot_hours: number | null
+          card_partners: string[] | null
           dress_provided: boolean | null
           editing_days: number | null
+          file_format: string[] | null
           frame_included: boolean | null
+          gift_items: string[] | null
+          hair_makeup_included: boolean | null
+          hanbok_shooting_included: boolean | null
           includes_originals: boolean | null
+          installment_months: number | null
+          instagram_discount_available: boolean | null
+          is_bestseller: boolean | null
+          is_new: boolean | null
           original_count: number | null
+          outdoor_available: boolean | null
+          outfit_count: number | null
+          package_types: string[] | null
+          package_url: string | null
+          parents_photo_included: boolean | null
           per_retouch_cost: number | null
           photobook_pages: number | null
+          photographer_choice: boolean | null
           place_id: string
           price_per_person: number | null
+          promotion_text: string | null
           raw_file_extra_cost: number | null
           retouching_included: boolean | null
           shoot_locations: string[] | null
           shoot_styles: string[] | null
           total_photos: number | null
+          video_extra_cost: number | null
+          video_included: boolean | null
         }
         Insert: {
           album_extra_cost?: number | null
           author_tiers?: string[] | null
           base_retouch_count?: number | null
           base_shoot_hours?: number | null
+          card_partners?: string[] | null
           dress_provided?: boolean | null
           editing_days?: number | null
+          file_format?: string[] | null
           frame_included?: boolean | null
+          gift_items?: string[] | null
+          hair_makeup_included?: boolean | null
+          hanbok_shooting_included?: boolean | null
           includes_originals?: boolean | null
+          installment_months?: number | null
+          instagram_discount_available?: boolean | null
+          is_bestseller?: boolean | null
+          is_new?: boolean | null
           original_count?: number | null
+          outdoor_available?: boolean | null
+          outfit_count?: number | null
+          package_types?: string[] | null
+          package_url?: string | null
+          parents_photo_included?: boolean | null
           per_retouch_cost?: number | null
           photobook_pages?: number | null
+          photographer_choice?: boolean | null
           place_id: string
           price_per_person?: number | null
+          promotion_text?: string | null
           raw_file_extra_cost?: number | null
           retouching_included?: boolean | null
           shoot_locations?: string[] | null
           shoot_styles?: string[] | null
           total_photos?: number | null
+          video_extra_cost?: number | null
+          video_included?: boolean | null
         }
         Update: {
           album_extra_cost?: number | null
           author_tiers?: string[] | null
           base_retouch_count?: number | null
           base_shoot_hours?: number | null
+          card_partners?: string[] | null
           dress_provided?: boolean | null
           editing_days?: number | null
+          file_format?: string[] | null
           frame_included?: boolean | null
+          gift_items?: string[] | null
+          hair_makeup_included?: boolean | null
+          hanbok_shooting_included?: boolean | null
           includes_originals?: boolean | null
+          installment_months?: number | null
+          instagram_discount_available?: boolean | null
+          is_bestseller?: boolean | null
+          is_new?: boolean | null
           original_count?: number | null
+          outdoor_available?: boolean | null
+          outfit_count?: number | null
+          package_types?: string[] | null
+          package_url?: string | null
+          parents_photo_included?: boolean | null
           per_retouch_cost?: number | null
           photobook_pages?: number | null
+          photographer_choice?: boolean | null
           place_id?: string
           price_per_person?: number | null
+          promotion_text?: string | null
           raw_file_extra_cost?: number | null
           retouching_included?: boolean | null
           shoot_locations?: string[] | null
           shoot_styles?: string[] | null
           total_photos?: number | null
+          video_extra_cost?: number | null
+          video_included?: boolean | null
         }
         Relationships: [
           {

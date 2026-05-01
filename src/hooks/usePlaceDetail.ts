@@ -117,6 +117,17 @@ export interface LegacyDetail {
   frame_included: boolean | null;
   photobook_pages: number | null;
   editing_days: number | null;
+  studio_package_types: string[];
+  studio_outdoor_available: boolean | null;
+  hanbok_shooting_included: boolean | null;
+  outfit_count: number | null;
+  hair_makeup_included: boolean | null;
+  video_included: boolean | null;
+  video_extra_cost: number | null;
+  parents_photo_included: boolean | null;
+  photographer_choice: boolean | null;
+  file_format: string[];
+  instagram_discount_available: boolean | null;
   // Dress / tailor
   dress_styles: string[];
   suit_styles: string[];
@@ -129,6 +140,18 @@ export interface LegacyDetail {
   inner_included: boolean | null;
   dress_count_included: number | null;
   accessories_included: boolean | null;
+  main_dress_count: number | null;
+  sub_dress_count: number | null;
+  dress_size_range: string | null;
+  alteration_count: number | null;
+  veil_included: boolean | null;
+  gloves_included: boolean | null;
+  shoes_included: boolean | null;
+  bouquet_included: boolean | null;
+  tiara_included: boolean | null;
+  mother_dress_available: boolean | null;
+  private_room: boolean | null;
+  bestseller_designer: string | null;
   // Makeup
   makeup_styles: string[];
   includes_rehearsal: boolean | null;
@@ -137,6 +160,24 @@ export interface LegacyDetail {
   travel_fee_included: boolean | null;
   director_level: string | null;
   early_morning_fee: number | null;
+  parents_makeup_available: boolean | null;
+  parents_makeup_price: number | null;
+  groom_grooming_available: boolean | null;
+  groom_grooming_price: number | null;
+  bridesmaid_makeup_available: boolean | null;
+  travel_zones: string[];
+  wedding_day_helper: boolean | null;
+  false_lashes_included: boolean | null;
+  eyelash_extension_available: boolean | null;
+  semi_permanent_makeup: boolean | null;
+  // 스드메 공통 메타 (studio/dress/makeup 셋이 동일 컬럼명 사용 — card 매칭 1개라 충돌 없음)
+  sdm_card_partners: string[];
+  sdm_installment_months: number | null;
+  sdm_gift_items: string[];
+  sdm_promotion_text: string | null;
+  sdm_package_url: string | null;
+  sdm_is_bestseller: boolean | null;
+  sdm_is_new: boolean | null;
   // Hanbok
   hanbok_types: string[];
   delivery_available: boolean | null;
@@ -469,6 +510,17 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         frame_included: (card?.frame_included as boolean) ?? null,
         photobook_pages: (card?.photobook_pages as number) ?? null,
         editing_days: p.category === "studio" ? ((card?.editing_days as number) ?? null) : null,
+        studio_package_types: p.category === "studio" ? asStringArray(card?.package_types) : [],
+        studio_outdoor_available: p.category === "studio" ? ((card?.outdoor_available as boolean) ?? null) : null,
+        hanbok_shooting_included: p.category === "studio" ? ((card?.hanbok_shooting_included as boolean) ?? null) : null,
+        outfit_count: p.category === "studio" ? ((card?.outfit_count as number) ?? null) : null,
+        hair_makeup_included: p.category === "studio" ? ((card?.hair_makeup_included as boolean) ?? null) : null,
+        video_included: p.category === "studio" ? ((card?.video_included as boolean) ?? null) : null,
+        video_extra_cost: p.category === "studio" ? ((card?.video_extra_cost as number) ?? null) : null,
+        parents_photo_included: p.category === "studio" ? ((card?.parents_photo_included as boolean) ?? null) : null,
+        photographer_choice: p.category === "studio" ? ((card?.photographer_choice as boolean) ?? null) : null,
+        file_format: p.category === "studio" ? asStringArray(card?.file_format) : [],
+        instagram_discount_available: p.category === "studio" ? ((card?.instagram_discount_available as boolean) ?? null) : null,
         dress_styles: asStringArray(card?.dress_styles),
         suit_styles: asStringArray(card?.suit_styles),
         rental_only: (card?.rental_only as boolean) ?? null,
@@ -481,6 +533,20 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         inner_included: (card?.inner_included as boolean) ?? null,
         dress_count_included: (card?.dress_count_included as number) ?? null,
         accessories_included: (card?.accessories_included as boolean) ?? null,
+        main_dress_count: p.category === "dress_shop" ? ((card?.main_dress_count as number) ?? null) : null,
+        sub_dress_count: p.category === "dress_shop" ? ((card?.sub_dress_count as number) ?? null) : null,
+        dress_size_range: p.category === "dress_shop" ? ((card?.dress_size_range as string) ?? null) : null,
+        alteration_count: p.category === "dress_shop" ? ((card?.alteration_count as number) ?? null) : null,
+        veil_included: p.category === "dress_shop" ? ((card?.veil_included as boolean) ?? null) : null,
+        gloves_included: p.category === "dress_shop" ? ((card?.gloves_included as boolean) ?? null) : null,
+        shoes_included: p.category === "dress_shop" ? ((card?.shoes_included as boolean) ?? null) : null,
+        bouquet_included: p.category === "dress_shop" ? ((card?.bouquet_included as boolean) ?? null) : null,
+        tiara_included: p.category === "dress_shop" ? ((card?.tiara_included as boolean) ?? null) : null,
+        mother_dress_available: p.category === "dress_shop" ? ((card?.mother_dress_available as boolean) ?? null) : null,
+        private_room: p.category === "dress_shop" ? ((card?.private_room as boolean) ?? null) : null,
+        bestseller_designer:
+          (p.category === "dress_shop" || p.category === "makeup_shop")
+            ? ((card?.bestseller_designer as string) ?? null) : null,
         makeup_styles: asStringArray(card?.makeup_styles),
         includes_rehearsal: (card?.includes_rehearsal as boolean) ?? null,
         hair_makeup_separate: (card?.hair_makeup_separate as boolean) ?? null,
@@ -488,6 +554,38 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         travel_fee_included: (card?.travel_fee_included as boolean) ?? null,
         director_level: (card?.director_level as string) ?? null,
         early_morning_fee: (card?.early_morning_fee as number) ?? null,
+        parents_makeup_available: p.category === "makeup_shop" ? ((card?.parents_makeup_available as boolean) ?? null) : null,
+        parents_makeup_price: p.category === "makeup_shop" ? ((card?.parents_makeup_price as number) ?? null) : null,
+        groom_grooming_available: p.category === "makeup_shop" ? ((card?.groom_grooming_available as boolean) ?? null) : null,
+        groom_grooming_price: p.category === "makeup_shop" ? ((card?.groom_grooming_price as number) ?? null) : null,
+        bridesmaid_makeup_available: p.category === "makeup_shop" ? ((card?.bridesmaid_makeup_available as boolean) ?? null) : null,
+        travel_zones: p.category === "makeup_shop" ? asStringArray(card?.travel_zones) : [],
+        wedding_day_helper: p.category === "makeup_shop" ? ((card?.wedding_day_helper as boolean) ?? null) : null,
+        false_lashes_included: p.category === "makeup_shop" ? ((card?.false_lashes_included as boolean) ?? null) : null,
+        eyelash_extension_available: p.category === "makeup_shop" ? ((card?.eyelash_extension_available as boolean) ?? null) : null,
+        semi_permanent_makeup: p.category === "makeup_shop" ? ((card?.semi_permanent_makeup as boolean) ?? null) : null,
+        // 스드메 공통 메타 — 셋 모두 같은 컬럼명. 카테고리 일치 시에만 채움.
+        sdm_card_partners:
+          (p.category === "studio" || p.category === "dress_shop" || p.category === "makeup_shop")
+            ? asStringArray(card?.card_partners) : [],
+        sdm_installment_months:
+          (p.category === "studio" || p.category === "dress_shop" || p.category === "makeup_shop")
+            ? ((card?.installment_months as number) ?? null) : null,
+        sdm_gift_items:
+          (p.category === "studio" || p.category === "dress_shop" || p.category === "makeup_shop")
+            ? asStringArray(card?.gift_items) : [],
+        sdm_promotion_text:
+          (p.category === "studio" || p.category === "dress_shop" || p.category === "makeup_shop")
+            ? ((card?.promotion_text as string) ?? null) : null,
+        sdm_package_url:
+          (p.category === "studio" || p.category === "dress_shop" || p.category === "makeup_shop")
+            ? ((card?.package_url as string) ?? null) : null,
+        sdm_is_bestseller:
+          (p.category === "studio" || p.category === "dress_shop" || p.category === "makeup_shop")
+            ? ((card?.is_bestseller as boolean) ?? null) : null,
+        sdm_is_new:
+          (p.category === "studio" || p.category === "dress_shop" || p.category === "makeup_shop")
+            ? ((card?.is_new as boolean) ?? null) : null,
         hanbok_types: asStringArray(card?.hanbok_types),
         delivery_available: (card?.delivery_available as boolean) ?? null,
         agency_name: (card?.agency_name as string) ?? null,
