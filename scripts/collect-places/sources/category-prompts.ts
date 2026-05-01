@@ -15,6 +15,23 @@ export interface CategoryPromptSpec {
 
 const ENUM = (arr: string[]) => arr.map((v) => `"${v}"`).join("/");
 
+// 스드메(스튜디오/드레스/메이크업) 공통 프로모·결제·뱃지 컬럼.
+// 세 카테고리가 동일한 컬럼명을 공유 — 프롬프트도 동일한 블록을 append.
+const SDM_COMMON_BLOCK =
+  `[★ 스드메 공통 — 프로모션/결제/뱃지]\n` +
+  `- card_partners (배열): 제휴 카드사 — ${["삼성","현대","우리","KB국민","신한","롯데","BC","NH농협","하나","씨티"].map((v) => `"${v}"`).join("/")} 중. 카드사 무이자 할부 운영 시.\n` +
+  `- installment_months (정수): 최대 무이자 할부 개월 (없으면 0).\n` +
+  `- gift_items (배열): 계약 시 사은품 — 예: ["부케","웰컴기프트","예약금 5만원 할인쿠폰"].\n` +
+  `- promotion_text (문자열): 현재 진행 중인 시즌/이벤트 프로모션 한 줄. 없으면 null.\n` +
+  `- package_url (문자열): 대표 패키지 상세 페이지 URL (자체 사이트·웨딩북·디테일웨딩 등). 없으면 null.\n` +
+  `- is_bestseller (bool): 한국 웨딩 어플(웨딩북/디테일웨딩 등)에서 베스트셀러/인기 표기.\n` +
+  `- is_new (bool): 신규 입점 / 신규 컬렉션 (출시 1년 이내).`;
+
+const SDM_COMMON_COLUMNS = [
+  "card_partners", "installment_months", "gift_items",
+  "promotion_text", "package_url", "is_bestseller", "is_new",
+];
+
 export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
   웨딩홀: {
     prompt:
@@ -56,11 +73,30 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- dress_provided (bool): 드레스 대여 포함.\n` +
       `- frame_included (bool): 부모님 액자 기본 포함 (별도면 false).\n` +
       `- photobook_pages (정수): 앨범 페이지 수.\n` +
-      `- editing_days (정수): 보정 후 결과물 받기까지 소요 일수.`,
+      `- editing_days (정수): 보정 후 결과물 받기까지 소요 일수.\n` +
+      `[★ 신규 — 스튜디오 상세]\n` +
+      `- package_types (배열): 운영 패키지 종류 — [${ENUM(["본식","리허설","본식+리허설","풀패키지","스냅","데이트스냅","해외","웨딩화보"])}] 중. 가격표에 등장하는 것만.\n` +
+      `- outdoor_available (bool): 야외 촬영 운영. 실내 전용이면 false.\n` +
+      `- hanbok_shooting_included (bool): 한복 촬영이 기본 패키지에 포함.\n` +
+      `- outfit_count (정수): 기본 패키지에 포함된 의상 갈아입는 횟수(벌수). 보통 2~5벌.\n` +
+      `- hair_makeup_included (bool): 헤어메이크업이 패키지에 포함 (별도 메이크업샵 가지 않아도 됨).\n` +
+      `- video_included (bool): 영상 촬영(비하인드/시네마틱)이 기본 포함.\n` +
+      `- video_extra_cost (정수): 영상 추가 옵션 비용 KRW (별도 옵션일 때).\n` +
+      `- parents_photo_included (bool): 부모님 함께 사진 촬영이 기본 포함.\n` +
+      `- photographer_choice (bool): 촬영 작가 선택 가능 (false면 지정).\n` +
+      `- file_format (배열): 제공 파일 포맷 — [${ENUM(["JPG","RAW","TIFF","PNG"])}] 중.\n` +
+      `- instagram_discount_available (bool): 인스타 후기 작성 시 할인/이벤트 운영.\n` +
+      SDM_COMMON_BLOCK,
     cardColumns: [
       "shoot_styles", "shoot_locations", "total_photos", "original_count",
       "retouching_included", "includes_originals", "dress_provided",
       "frame_included", "photobook_pages", "editing_days",
+      // 신규
+      "package_types", "outdoor_available", "hanbok_shooting_included",
+      "outfit_count", "hair_makeup_included", "video_included", "video_extra_cost",
+      "parents_photo_included", "photographer_choice", "file_format",
+      "instagram_discount_available",
+      ...SDM_COMMON_COLUMNS,
     ],
   },
 
@@ -79,11 +115,31 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- designer_brands (배열): 취급 디자이너/브랜드 (예: ["Vera Wang", "Pronovias", "Galia Lahav"]).\n` +
       `- helper_included (bool): 헬퍼이모(당일 헬퍼) 비용 포함. 별도면 false (보통 별도 25~35만원).\n` +
       `- inner_included (bool): 이너·페티코트·베일 등 소품 기본 포함.\n` +
-      `- dress_count_included (정수): 패키지에 포함된 드레스 벌수 (본식+리허설 합산).`,
+      `- dress_count_included (정수): 패키지에 포함된 드레스 벌수 (본식+리허설 합산).\n` +
+      `[★ 신규 — 드레스샵 상세]\n` +
+      `- main_dress_count (정수): 본식 드레스 보유 벌수 (전체 컬렉션 규모, 1~3 정도가 일반).\n` +
+      `- sub_dress_count (정수): 2부·리허설 등 서브 드레스 보유 벌수.\n` +
+      `- dress_size_range (문자열): 사이즈 범위 — 예: "44~66", "55~88", "XS~XL".\n` +
+      `- alteration_count (정수): 수선 가능 횟수 (가봉과 별개로 계약 후 무료 수선 횟수).\n` +
+      `- veil_included (bool): 베일 기본 포함.\n` +
+      `- gloves_included (bool): 장갑 기본 포함.\n` +
+      `- shoes_included (bool): 구두 대여 기본 포함.\n` +
+      `- bouquet_included (bool): 부케 기본 포함.\n` +
+      `- tiara_included (bool): 티아라/헤어피스 기본 포함.\n` +
+      `- mother_dress_available (bool): 혼주복(어머니 드레스) 대여/취급 가능.\n` +
+      `- private_room (bool): 프라이빗 피팅룸/단독룸 운영.\n` +
+      `- bestseller_designer (문자열): 이 샵의 베스트셀러 디자이너/브랜드 1명 (예: "Vera Wang", "베라하우스").\n` +
+      SDM_COMMON_BLOCK,
     cardColumns: [
       "dress_styles", "rental_only", "fitting_count",
       "rental_includes_alterations", "designer_brands",
       "helper_included", "inner_included", "dress_count_included",
+      // 신규
+      "main_dress_count", "sub_dress_count", "dress_size_range",
+      "alteration_count", "veil_included", "gloves_included", "shoes_included",
+      "bouquet_included", "tiara_included", "mother_dress_available",
+      "private_room", "bestseller_designer",
+      ...SDM_COMMON_COLUMNS,
     ],
   },
 
@@ -100,10 +156,30 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- rehearsal_count (정수): 리허설 횟수.\n` +
       `- travel_fee_included (bool): 웨딩홀 출장비 포함 (한국 결혼식 거의 100% 출장이라 매우 중요).\n` +
       `- director_level (문자열): 시술자 레벨 — "원장"/"실장"/"팀장"/"디렉터" 등.\n` +
-      `- early_morning_fee (정수): 새벽(7시 이전) 출장 추가비 KRW. 없으면 0.`,
+      `- early_morning_fee (정수): 새벽(7시 이전) 출장 추가비 KRW. 없으면 0.\n` +
+      `[★ 신규 — 메이크업샵 상세]\n` +
+      `- parents_makeup_available (bool): 혼주(어머니/시어머니) 메이크업 가능.\n` +
+      `- parents_makeup_price (정수): 혼주 1인 메이크업 가격 KRW (별도 청구 시).\n` +
+      `- groom_grooming_available (bool): 신랑 그루밍(메이크업·헤어) 가능.\n` +
+      `- groom_grooming_price (정수): 신랑 그루밍 가격 KRW.\n` +
+      `- bridesmaid_makeup_available (bool): 들러리 메이크업 가능.\n` +
+      `- travel_zones (배열): 출장 가능 지역 — 예: ["강남구","서초구","송파구"] 또는 ["수도권","경기"].\n` +
+      `- wedding_day_helper (bool): 당일 헬퍼/터치업 동행 포함.\n` +
+      `- false_lashes_included (bool): 인조 속눈썹 기본 포함.\n` +
+      `- eyelash_extension_available (bool): 속눈썹 연장 시술 가능.\n` +
+      `- semi_permanent_makeup (bool): 반영구(눈썹/아이라인/입술) 시술 가능.\n` +
+      `- bestseller_designer (문자열): 이 샵의 시그니처/예약 1순위 원장님 이름 1명 (예: "김미정 원장").\n` +
+      SDM_COMMON_BLOCK,
     cardColumns: [
       "makeup_styles", "includes_rehearsal", "hair_makeup_separate", "rehearsal_count",
       "travel_fee_included", "director_level", "early_morning_fee",
+      // 신규
+      "parents_makeup_available", "parents_makeup_price",
+      "groom_grooming_available", "groom_grooming_price",
+      "bridesmaid_makeup_available", "travel_zones", "wedding_day_helper",
+      "false_lashes_included", "eyelash_extension_available", "semi_permanent_makeup",
+      "bestseller_designer",
+      ...SDM_COMMON_COLUMNS,
     ],
   },
 
