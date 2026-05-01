@@ -44,8 +44,9 @@ interface VendorMediaCardProps {
 export const CARD_W = 140;
 export const CARD_H = 195;
 const IMG_H = 100;
-// Fluid mode aspect ratio for the image area (matches 140:100 = 7:5).
-const FLUID_IMG_ASPECT = "aspect-[7/5]";
+// Fluid mode keeps the same total height as the fixed card so list-page rows
+// stay compact and consistent across categories. Width follows the grid cell.
+const FLUID_TEXT_H = 95;
 
 const KEYWORD_CHIP_CLASSES = {
   category: "bg-[#fde7ec] text-[#d35c75]",
@@ -71,11 +72,11 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
         "flex flex-col bg-[#d9d9d9] rounded-[10px] overflow-hidden text-left active:scale-[0.97]",
         fluid ? "w-full" : "flex-shrink-0"
       )}
-      style={fluid ? undefined : { width: CARD_W, height: CARD_H }}
+      style={fluid ? { height: CARD_H } : { width: CARD_W, height: CARD_H }}
     >
       <div
-        className={cn("relative w-full", fluid && FLUID_IMG_ASPECT)}
-        style={fluid ? undefined : { height: IMG_H }}
+        className="relative w-full"
+        style={{ height: IMG_H }}
       >
         {data.thumbnail_url ? (
           <img
@@ -116,13 +117,8 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
       </div>
 
       <div
-        className={cn(
-          "flex flex-col gap-[3px] bg-white px-2 py-2 overflow-hidden",
-          // fluid 모드에서는 텍스트 섹션 높이를 고정해서 그리드 카드 간 높이를 맞춤.
-          // (카테고리마다 info_lines 개수가 달라 들쭉날쭉했음.) 고정 모드는
-          // 기존대로 flex-1로 카드 안쪽 공간을 채움.
-          fluid ? "h-[110px] flex-shrink-0" : "flex-1"
-        )}
+        className="flex-1 flex flex-col gap-[3px] bg-white px-2 py-2 overflow-hidden"
+        style={fluid ? { height: FLUID_TEXT_H } : undefined}
       >
         {data.region && (
           <p className="text-[9px] leading-tight text-black/55 line-clamp-1">

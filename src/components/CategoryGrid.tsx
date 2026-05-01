@@ -12,11 +12,11 @@ interface CategoryGridProps {
   onItemClick?: (item: CategoryItem) => void;
 }
 
-// Fluid card placeholder — 7:5 image area + room for ~5 lines of text below.
+// Fluid card placeholder — matches the 195px fluid card (100 image + 95 text).
 const CardSkeleton = () => (
-  <div className="w-full">
-    <Skeleton className="w-full aspect-[7/5] rounded-t-[10px]" />
-    <div className="bg-card rounded-b-[10px] p-2 space-y-1">
+  <div className="w-full h-[195px] flex flex-col rounded-[10px] overflow-hidden bg-card">
+    <Skeleton className="w-full h-[100px] rounded-none" />
+    <div className="flex-1 p-2 space-y-1">
       <Skeleton className="h-2 w-2/3" />
       <Skeleton className="h-3 w-full" />
       <Skeleton className="h-2 w-3/4" />
