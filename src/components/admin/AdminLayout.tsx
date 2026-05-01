@@ -29,17 +29,17 @@ interface NavItem {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
-  status?: "active" | "soon";
+  badge?: string;
 }
 
 const navItems: NavItem[] = [
-  { label: "대시보드", href: "/admin", icon: LayoutDashboard, status: "active" },
-  { label: "드레스 카탈로그", href: "/admin/dress-samples", icon: Shirt, status: "active" },
-  { label: "메이크업 카탈로그", href: "/admin/makeup-samples", icon: Sparkles, status: "soon" },
-  { label: "청첩장 템플릿", href: "/admin/invitation-templates", icon: FileText, status: "soon" },
-  { label: "촬영 시안", href: "/admin/wedding-photo-refs", icon: Camera, status: "soon" },
-  { label: "사전알림 신청", href: "/admin/service-waitlist", icon: Bell, status: "soon" },
-  { label: "사용자 관리", href: "/admin/users", icon: Users, status: "soon" },
+  { label: "대시보드", href: "/admin", icon: LayoutDashboard },
+  { label: "드레스 카탈로그", href: "/admin/dress-samples", icon: Shirt },
+  { label: "메이크업 카탈로그", href: "/admin/makeup-samples", icon: Sparkles, badge: "준비중" },
+  { label: "청첩장 템플릿", href: "/admin/invitation-templates", icon: FileText, badge: "준비중" },
+  { label: "촬영 시안", href: "/admin/wedding-photo-refs", icon: Camera, badge: "준비중" },
+  { label: "사전알림 신청", href: "/admin/service-waitlist", icon: Bell },
+  { label: "사용자 관리", href: "/admin/users", icon: Users },
 ];
 
 const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutProps) => {
@@ -88,28 +88,26 @@ const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutP
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
-            const isDisabled = item.status === "soon";
             return (
               <Link
                 key={item.href}
-                to={isDisabled ? "#" : item.href}
-                onClick={(e) => {
-                  if (isDisabled) e.preventDefault();
-                  setSidebarOpen(false);
-                }}
+                to={item.href}
+                onClick={() => setSidebarOpen(false)}
                 className={cn(
                   "flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                  isActive && "bg-primary/10 text-primary",
-                  !isActive && !isDisabled && "text-foreground hover:bg-muted",
-                  isDisabled && "text-muted-foreground cursor-not-allowed",
+                  isActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-muted",
                 )}
               >
                 <span className="flex items-center gap-2">
                   <Icon className="w-4 h-4" />
                   {item.label}
                 </span>
-                {isDisabled && (
-                  <span className="text-[10px] bg-muted px-2 py-0.5 rounded">준비중</span>
+                {item.badge && (
+                  <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground">
+                    {item.badge}
+                  </span>
                 )}
               </Link>
             );
