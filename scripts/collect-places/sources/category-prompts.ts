@@ -233,18 +233,41 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `[package 전용]\n` +
       `- package_items (배열): 포함 모델 (예: ["LG 시그니처 OLED 65인치","비스포크 4도어 냉장고","트롬 워시타워","휘센 에어컨"]).\n` +
       `- package_set_price (정수): 세트 총가 KRW.\n` +
-      `[혜택]\n` +
+      `[가전 사양 (single·package 공통, store는 null)]\n` +
+      `- energy_rating (문자열): 에너지소비효율 등급 — "1등급"/"2등급"/"3등급"/"4등급"/"5등급". 다나와·에누리 표준.\n` +
+      `- model_release_year (정수): 모델 출시 연도. 신모델 vs 구모델 가격차 핵심.\n` +
+      `- capacity_text (문자열): 용량 통합 표기 — 예: "85인치 OLED","850L 4도어","23kg 워시타워".\n` +
+      `- target_household (문자열): 권장 가구원 수 — "1인","2~3인","4인 이상".\n` +
+      `[혜택·결제]\n` +
       `- installment_months (정수): 무이자 할부 최대 개월수 (없으면 0).\n` +
       `- warranty_years (정수): 기본 보증 기간 (년).\n` +
+      `- total_discount_percent (소수): 시즌 통합 최대 할인율 — 예: 15.5 (없으면 null).\n` +
+      `- card_partners (배열): 제휴 카드사 — ${ENUM(["삼성","현대","우리","KB국민","신한","롯데","BC","NH농협","하나","씨티"])} 중.\n` +
+      `- payment_options (배열): 결제 방식 — ["카드","현금","장기할부","리스","상품권"] 중.\n` +
       `- free_delivery (bool): 무료 배송.\n` +
-      `- free_installation (bool): 무료 설치.\n` +
+      `- free_installation (bool): 무료 설치 (특히 에어컨).\n` +
       `- old_appliance_pickup (bool): 폐가전 무료 수거.\n` +
-      `- card_discount_available (bool): 카드사 제휴 할인.`,
+      `- card_discount_available (bool): 카드사 제휴 할인 운영 (정도는 total_discount_percent 참조).\n` +
+      `[견적·매장 부가 정보 (store 위주)]\n` +
+      `- negotiable (bool): 가격 협상 가능 (양판점·매장).\n` +
+      `- quote_request_url (문자열): 견적 요청 URL.\n` +
+      `- floor_location (문자열): 백화점 N층 가전관 — 예: "본점 9층 가전관".\n` +
+      `- home_visit_quote (bool): 출장 견적 가능 (LG베스트샵·삼성디지털프라자 일부).\n` +
+      `[사은품 — 한국 혼수 핵심 차별점]\n` +
+      `- gift_items (배열): 패키지·구매 시 증정품 — 예: ["커피머신","에어프라이어","상품권 50만원","청소기","피규어"].\n` +
+      `[인기/시즌]\n` +
+      `- is_bestseller (bool): 다나와·에누리 등에서 베스트셀러 표기.\n` +
+      `- is_new_model (bool): 출시 1년 미만 신모델.`,
     cardColumns: [
       "product_type", "product_url", "product_code", "store_chain", "specialties",
       "package_items", "package_set_price",
-      "product_categories", "brand_options", "installment_months", "warranty_years",
-      "free_delivery", "free_installation", "old_appliance_pickup", "card_discount_available",
+      "product_categories", "brand_options",
+      "energy_rating", "model_release_year", "capacity_text", "target_household",
+      "installment_months", "warranty_years", "total_discount_percent",
+      "free_delivery", "free_installation", "old_appliance_pickup",
+      "card_discount_available", "card_partners", "payment_options",
+      "negotiable", "quote_request_url", "floor_location", "home_visit_quote",
+      "gift_items", "is_bestseller", "is_new_model",
       "promotion_text",
     ],
   },

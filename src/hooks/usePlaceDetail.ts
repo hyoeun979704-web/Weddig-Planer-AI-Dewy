@@ -194,6 +194,21 @@ export interface LegacyDetail {
   package_items: string[];
   package_set_price: number | null;
   appliance_promotion_text: string | null;
+  // Appliance v2 — 비교사이트 표준 필드
+  energy_rating: string | null;
+  model_release_year: number | null;
+  capacity_text: string | null;
+  card_partners: string[];
+  total_discount_percent: number | null;
+  gift_items: string[];
+  payment_options: string[];
+  negotiable: boolean | null;
+  quote_request_url: string | null;
+  floor_location: string | null;
+  home_visit_quote: boolean | null;
+  is_bestseller: boolean | null;
+  is_new_model: boolean | null;
+  target_household: string | null;
   // Invitation venue
   venue_types: string[];
   capacity_min: number | null;
@@ -525,6 +540,20 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         package_items: asStringArray(card?.package_items),
         package_set_price: (card?.package_set_price as number) ?? null,
         appliance_promotion_text: p.category === "appliance" ? ((card?.promotion_text as string) ?? null) : null,
+        energy_rating: (card?.energy_rating as string) ?? null,
+        model_release_year: (card?.model_release_year as number) ?? null,
+        capacity_text: (card?.capacity_text as string) ?? null,
+        card_partners: asStringArray(card?.card_partners),
+        total_discount_percent: (card?.total_discount_percent as number) ?? null,
+        gift_items: asStringArray(card?.gift_items),
+        payment_options: asStringArray(card?.payment_options),
+        negotiable: (card?.negotiable as boolean) ?? null,
+        quote_request_url: (card?.quote_request_url as string) ?? null,
+        floor_location: (card?.floor_location as string) ?? null,
+        home_visit_quote: (card?.home_visit_quote as boolean) ?? null,
+        is_bestseller: p.category === "appliance" ? ((card?.is_bestseller as boolean) ?? null) : null,
+        is_new_model: (card?.is_new_model as boolean) ?? null,
+        target_household: (card?.target_household as string) ?? null,
         venue_types: asStringArray(card?.venue_types),
         capacity_min: (card?.capacity_min as number) ?? null,
         capacity_max: (card?.capacity_max as number) ?? null,

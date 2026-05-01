@@ -515,8 +515,25 @@ function ApplianceExtras({ place }: { place: LegacyDetail }) {
           {place.appliance_product_code && (
             <Stat label="모델 코드" value={place.appliance_product_code} />
           )}
+          {place.capacity_text && <Stat label="용량" value={place.capacity_text} />}
+          {place.energy_rating && <Stat label="에너지 등급" value={place.energy_rating} />}
+          {place.model_release_year != null && (
+            <Stat label="출시 연도" value={`${place.model_release_year}년`} />
+          )}
+          {place.target_household && (
+            <Stat label="권장 가구" value={place.target_household} />
+          )}
           {place.package_set_price != null && (
             <Stat label="세트 가격" value={`${fmtMan(place.package_set_price)}~`} />
+          )}
+          {place.floor_location && (
+            <Stat label="매장 위치" value={place.floor_location} />
+          )}
+          {place.is_bestseller && (
+            <Stat label="구분" value="🏆 베스트셀러" />
+          )}
+          {place.is_new_model && (
+            <Stat label="구분" value="✨ 신모델" />
           )}
         </div>
 
@@ -526,18 +543,32 @@ function ApplianceExtras({ place }: { place: LegacyDetail }) {
         <Tags label="패키지 구성" items={place.package_items} />
       </div>
 
+      {/* 사은품 — 한국 혼수의 핵심 차별점 */}
+      {place.gift_items.length > 0 && (
+        <div className="space-y-2 rounded-lg bg-pink-50 p-3">
+          <h3 className="font-bold text-sm text-pink-900">🎁 사은품</h3>
+          <Tags label="" items={place.gift_items} />
+        </div>
+      )}
+
       {/* 결제·배송·서비스 혜택 */}
       {(place.installment_months != null ||
         place.warranty_years != null ||
         place.free_delivery != null ||
         place.free_installation != null ||
         place.old_appliance_pickup != null ||
-        place.card_discount_available != null) && (
+        place.card_discount_available != null ||
+        place.total_discount_percent != null ||
+        place.card_partners.length > 0 ||
+        place.payment_options.length > 0) && (
         <div className="space-y-2">
           <h3 className="font-bold text-sm">결제·배송 혜택</h3>
           <div className="grid grid-cols-2 gap-2">
             {place.installment_months != null && (
               <Stat label="무이자 할부" value={place.installment_months > 0 ? `최대 ${place.installment_months}개월` : "없음"} />
+            )}
+            {place.total_discount_percent != null && (
+              <Stat label="최대 할인" value={`${place.total_discount_percent}%`} />
             )}
             {place.warranty_years != null && (
               <Stat label="기본 보증" value={`${place.warranty_years}년`} />
@@ -554,7 +585,25 @@ function ApplianceExtras({ place }: { place: LegacyDetail }) {
             {place.card_discount_available != null && (
               <Stat label="카드 할인" value={place.card_discount_available ? "있음" : "없음"} />
             )}
+            {place.negotiable != null && (
+              <Stat label="가격 협상" value={place.negotiable ? "가능" : "불가"} />
+            )}
+            {place.home_visit_quote != null && (
+              <Stat label="출장 견적" value={place.home_visit_quote ? "가능" : "매장만"} />
+            )}
           </div>
+          <Tags label="제휴 카드" items={place.card_partners} />
+          <Tags label="결제 옵션" items={place.payment_options} />
+          {place.quote_request_url && (
+            <a
+              href={place.quote_request_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-center text-xs text-primary underline mt-1"
+            >
+              견적 요청하기 →
+            </a>
+          )}
         </div>
       )}
     </div>

@@ -873,13 +873,24 @@ export type Database = {
       place_appliances: {
         Row: {
           brand_options: string[] | null
+          capacity_text: string | null
           card_discount_available: boolean | null
+          card_partners: string[] | null
+          energy_rating: string | null
+          floor_location: string | null
           free_delivery: boolean | null
           free_installation: boolean | null
+          gift_items: string[] | null
+          home_visit_quote: boolean | null
           installment_months: number | null
+          is_bestseller: boolean | null
+          is_new_model: boolean | null
+          model_release_year: number | null
+          negotiable: boolean | null
           old_appliance_pickup: boolean | null
           package_items: string[] | null
           package_set_price: number | null
+          payment_options: string[] | null
           place_id: string
           price_per_person: number | null
           product_categories: string[] | null
@@ -887,19 +898,33 @@ export type Database = {
           product_type: string | null
           product_url: string | null
           promotion_text: string | null
+          quote_request_url: string | null
           specialties: string[] | null
           store_chain: string | null
+          target_household: string | null
+          total_discount_percent: number | null
           warranty_years: number | null
         }
         Insert: {
           brand_options?: string[] | null
+          capacity_text?: string | null
           card_discount_available?: boolean | null
+          card_partners?: string[] | null
+          energy_rating?: string | null
+          floor_location?: string | null
           free_delivery?: boolean | null
           free_installation?: boolean | null
+          gift_items?: string[] | null
+          home_visit_quote?: boolean | null
           installment_months?: number | null
+          is_bestseller?: boolean | null
+          is_new_model?: boolean | null
+          model_release_year?: number | null
+          negotiable?: boolean | null
           old_appliance_pickup?: boolean | null
           package_items?: string[] | null
           package_set_price?: number | null
+          payment_options?: string[] | null
           place_id: string
           price_per_person?: number | null
           product_categories?: string[] | null
@@ -907,19 +932,33 @@ export type Database = {
           product_type?: string | null
           product_url?: string | null
           promotion_text?: string | null
+          quote_request_url?: string | null
           specialties?: string[] | null
           store_chain?: string | null
+          target_household?: string | null
+          total_discount_percent?: number | null
           warranty_years?: number | null
         }
         Update: {
           brand_options?: string[] | null
+          capacity_text?: string | null
           card_discount_available?: boolean | null
+          card_partners?: string[] | null
+          energy_rating?: string | null
+          floor_location?: string | null
           free_delivery?: boolean | null
           free_installation?: boolean | null
+          gift_items?: string[] | null
+          home_visit_quote?: boolean | null
           installment_months?: number | null
+          is_bestseller?: boolean | null
+          is_new_model?: boolean | null
+          model_release_year?: number | null
+          negotiable?: boolean | null
           old_appliance_pickup?: boolean | null
           package_items?: string[] | null
           package_set_price?: number | null
+          payment_options?: string[] | null
           place_id?: string
           price_per_person?: number | null
           product_categories?: string[] | null
@@ -927,8 +966,11 @@ export type Database = {
           product_type?: string | null
           product_url?: string | null
           promotion_text?: string | null
+          quote_request_url?: string | null
           specialties?: string[] | null
           store_chain?: string | null
+          target_household?: string | null
+          total_discount_percent?: number | null
           warranty_years?: number | null
         }
         Relationships: [
