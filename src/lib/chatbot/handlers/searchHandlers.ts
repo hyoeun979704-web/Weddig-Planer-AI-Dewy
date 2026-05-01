@@ -146,7 +146,7 @@ export const handleAveragePrice = async (userMessage: string): Promise<string> =
 
   let query = (supabase as any)
     .from("places")
-    .select("min_price, district")
+    .select("min_price, district, updated_at")
     .eq("category", category)
     .eq("is_active", true)
     .not("min_price", "is", null);
@@ -165,7 +165,19 @@ export const handleAveragePrice = async (userMessage: string): Promise<string> =
   const min = prices[0];
   const max = prices[prices.length - 1];
 
-  return `**${region ?? "전국"} ${PLACE_CATEGORY_LABEL[category]} 시세** 💰\n표본 ${data.length}곳 기준\n\n` +
+  // 신선도 계산
+  const updateDays = data
+    .filter((d: any) => d.updated_at)
+    .map((d: any) => Math.floor((Date.now() - new Date(d.updated_at).getTime()) / 86400000));
+  const daysMedian = updateDays.length > 0
+    ? [...updateDays].sort((a, b) => a - b)[Math.floor(updateDays.length / 2)]
+    : 0;
+  const freshLabel = daysMedian <= 14 ? "🟢 최근 2주 내 갱신"
+    : daysMedian <= 30 ? "🟡 최근 1달 내 갱신"
+    : daysMedian <= 60 ? "🟡 최근 2달 내 갱신"
+    : `🔴 약 ${Math.round(daysMedian / 30)}달 전 갱신 (오래됨)`;
+
+  return `**${region ?? "전국"} ${PLACE_CATEGORY_LABEL[category]} 시세** 💰\n표본 ${data.length}곳 · ${freshLabel}\n\n` +
     `• 평균: ${(avg / 10000).toLocaleString()}만원~\n` +
     `• 중간값: ${(median / 10000).toLocaleString()}만원~\n` +
     `• 최저: ${(min / 10000).toLocaleString()}만원~\n` +

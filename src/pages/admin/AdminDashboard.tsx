@@ -47,6 +47,25 @@ interface RecentItem {
   createdAt: string;
 }
 
+interface FreshnessRow {
+  category: string;
+  label: string;
+  total: number;
+  daysSinceMedian: number;
+  staleCount: number; // 60일+ 안 된 항목
+}
+
+const PLACE_CATEGORIES = [
+  { key: "wedding_hall", label: "웨딩홀" },
+  { key: "studio", label: "스튜디오" },
+  { key: "dress_shop", label: "드레스샵" },
+  { key: "makeup_shop", label: "메이크업샵" },
+  { key: "honeymoon", label: "신혼여행" },
+  { key: "hanbok", label: "한복" },
+  { key: "suit", label: "예복" },
+  { key: "jewelry", label: "예물·반지" },
+];
+
 const startOfToday = () => {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -73,6 +92,7 @@ const formatRelative = (iso: string) => {
 const AdminDashboard = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recent, setRecent] = useState<RecentItem[]>([]);
+  const [freshness, setFreshness] = useState<FreshnessRow[]>([]);
   const today = startOfToday();
   const weekAgo = startOfWeek();
 
@@ -192,6 +212,34 @@ const AdminDashboard = () => {
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
       setRecent(activities.slice(0, 10));
+
+      // 데이터 신선도 (places 카테고리별)
+      const freshRows = await Promise.all(
+        PLACE_CATEGORIES.map(async (c) => {
+          const { data } = await (supabase as any)
+            .from("places")
+            .select("updated_at")
+            .eq("category", c.key)
+            .eq("is_active", true);
+          if (!data || data.length === 0) {
+            return { category: c.key, label: c.label, total: 0, daysSinceMedian: 0, staleCount: 0 };
+          }
+          const days = data
+            .filter((d: any) => d.updated_at)
+            .map((d: any) => Math.floor((Date.now() - new Date(d.updated_at).getTime()) / 86400000))
+            .sort((a: number, b: number) => a - b);
+          const med = days.length > 0 ? days[Math.floor(days.length / 2)] : 0;
+          const stale = days.filter((d: number) => d > 60).length;
+          return {
+            category: c.key,
+            label: c.label,
+            total: data.length,
+            daysSinceMedian: med,
+            staleCount: stale,
+          };
+        }),
+      );
+      setFreshness(freshRows);
     };
 
     fetchAll();
@@ -304,6 +352,65 @@ const AdminDashboard = () => {
             <QuickActionCard to="/admin/users" label="사용자 관리" icon={Users} />
             <QuickActionCard to="/" label="앱으로 돌아가기" icon={Sparkles} />
           </div>
+        </section>
+
+        {/* 데이터 신선도 (places 카테고리별) */}
+        <section className="mb-6">
+          <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            데이터 신선도
+          </h2>
+          <div className="bg-background rounded-lg border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted text-xs text-muted-foreground">
+                <tr>
+                  <th className="text-left px-4 py-2 font-semibold">카테고리</th>
+                  <th className="text-right px-4 py-2 font-semibold">등록</th>
+                  <th className="text-right px-4 py-2 font-semibold">중앙값 갱신</th>
+                  <th className="text-right px-4 py-2 font-semibold">상태</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {freshness.map((row) => {
+                  let status: { icon: string; label: string; color: string };
+                  if (row.total === 0) {
+                    status = { icon: "⚪", label: "미등록", color: "text-muted-foreground" };
+                  } else if (row.daysSinceMedian <= 14) {
+                    status = { icon: "🟢", label: "신선", color: "text-emerald-600" };
+                  } else if (row.daysSinceMedian <= 30) {
+                    status = { icon: "🟡", label: "보통", color: "text-amber-600" };
+                  } else if (row.daysSinceMedian <= 60) {
+                    status = { icon: "🟡", label: "갱신 권장", color: "text-amber-600" };
+                  } else {
+                    status = { icon: "🔴", label: "오래됨", color: "text-rose-600" };
+                  }
+                  return (
+                    <tr key={row.category} className="hover:bg-muted/50">
+                      <td className="px-4 py-3 text-foreground">{row.label}</td>
+                      <td className="px-4 py-3 text-right text-muted-foreground">{row.total}곳</td>
+                      <td className="px-4 py-3 text-right text-muted-foreground">
+                        {row.total === 0 ? "-" :
+                         row.daysSinceMedian <= 7 ? `${row.daysSinceMedian}일 전` :
+                         row.daysSinceMedian <= 30 ? `${row.daysSinceMedian}일 전` :
+                         `${Math.round(row.daysSinceMedian / 30)}달 전`}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className={`text-xs font-medium ${status.color}`}>
+                          {status.icon} {status.label}
+                          {row.staleCount > 0 && row.total > 0 && (
+                            <span className="ml-1 text-muted-foreground">({row.staleCount}곳 60일+)</span>
+                          )}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            챗봇이 시세 답변 시 이 데이터를 사용해요. 1주~1달 주기로 갱신 시 챗봇 답변 품질도 자동으로 향상돼요.
+          </p>
         </section>
 
         {/* 최근 활동 */}
