@@ -3,12 +3,13 @@ import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
 import LockedCard from "@/components/LockedCard";
+import { toast } from "@/hooks/use-toast";
 
 interface StudioCard {
   id: string;
   title: string;
   description: string;
-  status: "active" | "coming_v1_5" | "coming_v2" | "coming_v3";
+  status: "active" | "coming_soon" | "coming_v2" | "coming_v3";
   href?: string;
 }
 
@@ -24,19 +25,19 @@ const cards: StudioCard[] = [
     id: "makeup-finder",
     title: "착붙 메이크업 찾기",
     description: "나에게 어울리는 신부 메이크업 시연",
-    status: "coming_v1_5",
+    status: "coming_soon",
   },
   {
     id: "mobile-invitation",
     title: "간편 모바일 청첩장",
     description: "정보 입력만으로 모바일 청첩장 자동 생성",
-    status: "coming_v1_5",
+    status: "coming_soon",
   },
   {
     id: "paper-invitation",
     title: "정성가득 종이 청첩장",
     description: "인쇄용 PDF로 받는 종이 청첩장",
-    status: "coming_v1_5",
+    status: "coming_soon",
   },
   {
     id: "wedding-photo",
@@ -52,9 +53,7 @@ const cards: StudioCard[] = [
   },
 ];
 
-const statusBadge: Record<StudioCard["status"], string | undefined> = {
-  active: undefined,
-  coming_v1_5: "곧 출시",
+const lockedBadge: Partial<Record<StudioCard["status"], string>> = {
   coming_v2: "준비중",
   coming_v3: "한정 외주",
 };
@@ -79,6 +78,13 @@ const AIStudio = () => {
     navigate(tabRoutes[tab]);
   };
 
+  const handleComingSoonClick = (title: string) => {
+    toast({
+      title: "곧 만나요 ✨",
+      description: `${title}는 준비 중이에요. 출시 시 알림으로 알려드릴게요.`,
+    });
+  };
+
   const handleLockedCardClick = (cardId: string) => {
     // Phase b-7에서 사전알림 모달 연결 예정
     console.log("waitlist signup for:", cardId);
@@ -92,6 +98,7 @@ const AIStudio = () => {
       <main className="pb-24">
         <div className="grid grid-cols-2 gap-3 px-4 py-5">
           {cards.map((card) => {
+            // 활성 카드 (실제 동작)
             if (card.status === "active" && card.href) {
               return (
                 <button
@@ -115,12 +122,41 @@ const AIStudio = () => {
                 </button>
               );
             }
+            // 곧 출시 카드 (시각적으론 활성, 클릭 시 토스트)
+            if (card.status === "coming_soon") {
+              return (
+                <button
+                  key={card.id}
+                  type="button"
+                  onClick={() => handleComingSoonClick(card.title)}
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
+                >
+                  <div className="relative aspect-square bg-gradient-to-br from-pink-50 to-pink-100">
+                    <span className="absolute top-2 right-2 text-[10px] font-semibold bg-white/95 text-primary px-2 py-0.5 rounded-full shadow-sm">
+                      곧 출시
+                    </span>
+                  </div>
+                  <div className="px-4 py-3">
+                    <h3 className="text-[15px] font-bold text-foreground leading-tight">
+                      {card.title}
+                    </h3>
+                    <p className="mt-1 text-[12px] text-muted-foreground line-clamp-2">
+                      {card.description}
+                    </p>
+                    <p className="mt-1.5 text-[11px] text-muted-foreground font-medium">
+                      준비 중이에요
+                    </p>
+                  </div>
+                </button>
+              );
+            }
+            // 잠금 카드 (시안·식전영상)
             return (
               <LockedCard
                 key={card.id}
                 title={card.title}
                 description={card.description}
-                badge={statusBadge[card.status]}
+                badge={lockedBadge[card.status]}
                 onClick={() => handleLockedCardClick(card.id)}
               />
             );
