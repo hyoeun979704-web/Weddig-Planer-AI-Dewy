@@ -1,8 +1,9 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Star, Users, ArrowRight } from "lucide-react";
+import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Star, Users, ArrowRight, Crown } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
 import UserProfileSection from "@/components/mypage/UserProfileSection";
 import DdayCard from "@/components/mypage/DdayCard";
@@ -169,6 +170,7 @@ const MyPage = () => {
   const location = useLocation();
   const { user, isLoading, signOut } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
+  const { isAdmin } = useUserRole();
   const weddingInfoPrompt = useWeddingInfoPrompt();
 
   const handleSignOut = async () => {
@@ -209,6 +211,28 @@ const MyPage = () => {
           weddingDate={weddingSettings.wedding_date}
           weddingDateTbd={weddingSettings.wedding_date_tbd}
         />
+
+        {isAdmin && (
+          <div className="px-4 mt-3">
+            <button
+              type="button"
+              onClick={() => navigate("/admin")}
+              className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl active:scale-[0.98] transition-transform shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Crown className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-bold">운영자 대시보드</div>
+                  <div className="text-[11px] opacity-90">듀이 관리자 전용 도구</div>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 opacity-80" />
+            </button>
+          </div>
+        )}
+
         <PremiumBanner />
         <MenuSection
           user={user}
