@@ -1,6 +1,15 @@
 import type { Database } from "@/integrations/supabase/types";
+import {
+  buildVendorInfoLines,
+  collectKeywordTags,
+  collectStyleTags,
+  type PlaceWithCategory,
+  type VendorInfoLine,
+} from "./vendorInfoLines";
 
 export type PlaceRow = Database["public"]["Tables"]["places"]["Row"];
+
+export type { VendorInfoLine };
 
 // Korean UI category label ↔ places.category snake_case (9 vendor categories)
 // 웨딩플래너는 이 앱의 핵심 제품(AI 플래너)이라 vendor 카테고리에서 제외.
@@ -47,6 +56,7 @@ export interface Vendor {
   vendor_id: string;
   name: string;
   category_type: string;
+  category_slug: string;
   region: string | null;
   address: string | null;
   thumbnail_url: string | null;
@@ -59,7 +69,41 @@ export interface Vendor {
   amenities: string | null;
   avg_rating: number;
   review_count: number;
+  min_price: number | null;
+  is_partner: boolean;
+  info_lines: VendorInfoLine[];
+  style_tags: string[];
+  keyword_tags: string[];
 }
+
+const PRICE_LABEL_PREFIX: Record<string, string> = {
+  wedding_hall: "인당",
+  studio: "패키지",
+  dress_shop: "대여",
+  makeup_shop: "이용",
+  hanbok: "대여",
+  tailor_shop: "대여",
+  honeymoon: "패키지",
+  appliance: "최저",
+  invitation_venue: "최저",
+};
+
+// Category-aware price preview shown on home recommendation cards.
+// Splits prefix vs amount so the UI can style them separately.
+export const formatVendorPrice = (
+  v: Pick<Vendor, "category_slug" | "min_price">
+): { prefix: string; amount: string } | null => {
+  if (v.min_price == null || v.min_price <= 0) return null;
+  const won = v.min_price;
+  const amount =
+    won >= 10000
+      ? `${(won / 10000).toFixed(0)}만원~`
+      : `${won.toLocaleString()}원~`;
+  return {
+    prefix: PRICE_LABEL_PREFIX[v.category_slug] ?? "",
+    amount,
+  };
+};
 
 export interface Venue {
   id: string;
@@ -70,51 +114,67 @@ export interface Venue {
   review_count: number;
   price_per_person: number;
   min_guarantee: number;
+  max_guarantee: number;
   is_partner: boolean;
   created_at: string;
   updated_at: string;
   hall_types: string[] | null;
   meal_options: string[] | null;
   event_options: string[] | null;
+  tags: string[];
 }
 
 const joinRegion = (city: string | null, district: string | null) =>
   [city, district].filter(Boolean).join(" ") || null;
 
-export const placeToVendor = (p: PlaceRow): Vendor => ({
-  vendor_id: p.place_id,
-  name: p.name,
-  category_type: PLACE_TO_KOREAN_CATEGORY[p.category] || p.category,
-  region: joinRegion(p.city, p.district),
-  address: joinRegion(p.city, p.district),
-  thumbnail_url: p.main_image_url,
-  tel: null,
-  business_hours: null,
-  parking_location: null,
-  parking_hours: null,
-  sns_info: null,
-  keywords: p.tags && p.tags.length > 0 ? p.tags.join(", ") : null,
-  amenities: null,
-  avg_rating: p.avg_rating ?? 0,
-  review_count: p.review_count ?? 0,
-});
+export const placeToVendor = (p: PlaceRow | PlaceWithCategory): Vendor => {
+  const withCat = p as PlaceWithCategory;
+  return {
+    vendor_id: p.place_id,
+    name: p.name,
+    category_type: PLACE_TO_KOREAN_CATEGORY[p.category] || p.category,
+    category_slug: p.category,
+    region: joinRegion(p.city, p.district),
+    address: joinRegion(p.city, p.district),
+    thumbnail_url: p.main_image_url,
+    tel: null,
+    business_hours: null,
+    parking_location: null,
+    parking_hours: null,
+    sns_info: null,
+    keywords: p.tags && p.tags.length > 0 ? p.tags.join(", ") : null,
+    amenities: null,
+    avg_rating: p.avg_rating ?? 0,
+    review_count: p.review_count ?? 0,
+    min_price: p.min_price ?? null,
+    is_partner: p.is_partner ?? false,
+    info_lines: buildVendorInfoLines(withCat),
+    style_tags: collectStyleTags(withCat),
+    keyword_tags: collectKeywordTags(withCat),
+  };
+};
 
-export const placeToVenue = (p: PlaceRow): Venue => ({
-  id: p.place_id,
-  name: p.name,
-  address: joinRegion(p.city, p.district) ?? "",
-  thumbnail_url: p.main_image_url,
-  rating: p.avg_rating ?? 0,
-  review_count: p.review_count ?? 0,
-  price_per_person: p.min_price ?? 0,
-  min_guarantee: 0,
-  is_partner: p.is_partner ?? false,
-  created_at: p.created_at ?? "",
-  updated_at: p.updated_at ?? "",
-  hall_types: null,
-  meal_options: null,
-  event_options: null,
-});
+export const placeToVenue = (p: PlaceRow | PlaceWithCategory): Venue => {
+  const wh = (p as PlaceWithCategory).place_wedding_halls ?? null;
+  return {
+    id: p.place_id,
+    name: p.name,
+    address: joinRegion(p.city, p.district) ?? "",
+    thumbnail_url: p.main_image_url,
+    rating: p.avg_rating ?? 0,
+    review_count: p.review_count ?? 0,
+    price_per_person: wh?.price_per_person ?? p.min_price ?? 0,
+    min_guarantee: wh?.min_guarantee ?? 0,
+    max_guarantee: wh?.max_guarantee ?? 0,
+    is_partner: p.is_partner ?? false,
+    created_at: p.created_at ?? "",
+    updated_at: p.updated_at ?? "",
+    hall_types: wh?.hall_styles ?? null,
+    meal_options: wh?.meal_types ?? null,
+    event_options: null,
+    tags: p.tags ?? [],
+  };
+};
 
 // Generic adapter for legacy detail pages (Hanbok/Studio/Suit/etc)
 // Synthesizes the old standalone-table shape from places + place_<category> data.

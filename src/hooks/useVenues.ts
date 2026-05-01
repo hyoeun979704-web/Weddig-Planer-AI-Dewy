@@ -19,7 +19,7 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
 
   let query = supabase
     .from("places")
-    .select("*", { count: "exact" })
+    .select("*, place_wedding_halls(*)", { count: "exact" })
     .eq("category", "wedding_hall")
     .eq("is_active", true)
     .is("deleted_at", null);
@@ -49,7 +49,7 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
   if (error) throw error;
 
   return {
-    venues: (data ?? []).map(placeToVenue),
+    venues: ((data ?? []) as unknown as Parameters<typeof placeToVenue>[0][]).map(placeToVenue),
     nextPage: to < (count ?? 0) - 1 ? pageParam + 1 : undefined,
     totalCount: count ?? 0,
   };

@@ -1,8 +1,20 @@
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { ChevronLeft, Star, MapPin, Phone } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import { useVendors, Vendor, categoryRouteMap } from "@/hooks/useVendors";
+import { useVendors, categoryRouteMap } from "@/hooks/useVendors";
 import { Skeleton } from "@/components/ui/skeleton";
+import VendorMediaCard, {
+  CARD_W,
+  CARD_H,
+  vendorToCardData,
+} from "@/components/home/VendorMediaCard";
+
+const CardSkeleton = () => (
+  <Skeleton
+    className="rounded-[10px] mx-auto"
+    style={{ width: CARD_W, height: CARD_H }}
+  />
+);
 
 const VendorList = () => {
   const navigate = useNavigate();
@@ -26,7 +38,6 @@ const VendorList = () => {
       </header>
 
       <main className="pb-20">
-        {/* Hero */}
         <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background px-4 py-6">
           <h2 className="text-xl font-bold text-foreground">
             {config?.emoji} {config?.label || decodedCategory}
@@ -36,27 +47,21 @@ const VendorList = () => {
           </p>
         </div>
 
-        {/* Vendor Grid */}
-        <div className="px-4 py-4">
+        <div className="px-[20px] py-4">
           {isLoading ? (
-            <div className="grid grid-cols-1 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-28 w-full rounded-xl" />
+            <div className="grid grid-cols-2 gap-2 justify-items-center">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <CardSkeleton key={i} />
               ))}
             </div>
           ) : vendors.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-2 gap-2 justify-items-center">
               {vendors.map((vendor) => {
-                // Route to the category-specific detail path when available, so
-                // /studio/:id /hanbok/:id etc are used; the category list's own
-                // categoryRouteMap entry wins (e.g. "스드메" → /vendor catch-all
-                // because the combo can't pick a single route). Falls back to
-                // /vendor/:id (smart-router).
                 const detail = config?.detailPath ?? "/vendor";
                 return (
-                  <VendorListCard
+                  <VendorMediaCard
                     key={vendor.vendor_id}
-                    vendor={vendor}
+                    data={vendorToCardData(vendor)}
                     onClick={() => navigate(`${detail}/${vendor.vendor_id}`)}
                   />
                 );
@@ -74,46 +79,5 @@ const VendorList = () => {
     </div>
   );
 };
-
-const VendorListCard = ({ vendor, onClick }: { vendor: Vendor; onClick: () => void }) => (
-  <button
-    onClick={onClick}
-    className="flex gap-3 bg-card rounded-xl border border-border p-3 hover:shadow-md transition-shadow text-left w-full"
-  >
-    <div className="w-24 h-24 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-      {vendor.thumbnail_url ? (
-        <img
-          src={vendor.thumbnail_url}
-          alt={vendor.name}
-          className="w-full h-full object-cover"
-          onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
-        />
-      ) : (
-        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-          <span className="text-2xl">{categoryRouteMap[vendor.category_type]?.emoji || "🏢"}</span>
-        </div>
-      )}
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-1.5 mb-1">
-        <span className="text-[10px] font-medium px-1.5 py-0.5 bg-primary/10 text-primary rounded-full">
-          {vendor.category_type}
-        </span>
-      </div>
-      <h3 className="font-semibold text-foreground text-sm truncate">{vendor.name}</h3>
-      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-        <MapPin className="w-3 h-3" />
-        <span className="truncate">{vendor.region || vendor.address || "위치 정보 없음"}</span>
-      </div>
-      <div className="flex items-center gap-2 mt-2">
-        <div className="flex items-center gap-0.5">
-          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-          <span className="text-xs font-medium">{vendor.avg_rating?.toFixed(1)}</span>
-        </div>
-        <span className="text-xs text-muted-foreground">리뷰 {vendor.review_count}</span>
-      </div>
-    </div>
-  </button>
-);
 
 export default VendorList;

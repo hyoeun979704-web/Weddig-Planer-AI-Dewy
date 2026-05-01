@@ -12,11 +12,13 @@ export interface CategoryItem {
   price_range?: string;
   duration?: string;
   min_guarantee?: number;
+  max_guarantee?: number;
   rating: number;
   review_count: number;
   is_partner: boolean;
   thumbnail_url: string | null;
   keywords?: string[];
+  tags?: string[];
   custom_available?: boolean | null;
   [key: string]: unknown;
 }
@@ -88,12 +90,14 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
     is_partner: p.is_partner ?? false,
     thumbnail_url: p.main_image_url,
     keywords: [],
+    tags: p.tags ?? [],
   };
 
   switch (category) {
     case "venues":
       base.keywords = card?.hall_styles ?? [];
       base.min_guarantee = card?.min_guarantee ?? 0;
+      base.max_guarantee = card?.max_guarantee ?? 0;
       break;
     case "studios":
       base.keywords = card?.shoot_styles ?? [];
@@ -173,6 +177,7 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
     case "invitation_venues":
       base.keywords = card?.venue_types ?? [];
       base.min_guarantee = card?.capacity_min ?? 0;
+      base.max_guarantee = card?.capacity_max ?? 0;
       break;
   }
   return base;

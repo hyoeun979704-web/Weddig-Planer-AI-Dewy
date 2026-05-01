@@ -1,0 +1,87 @@
+import { useNavigate } from "react-router-dom";
+import VendorMediaCard, { type VendorMediaCardData } from "./VendorMediaCard";
+
+const TEMPLATES: VendorMediaCardData[] = [
+  {
+    id: "tpl-classic",
+    thumbnail_url: null,
+    name: "클래식 화이트",
+    category: "모바일",
+    concept: "심플",
+    mood: "화이트",
+    strength: "미니멀",
+    info_lines: [
+      { label: "가격", value: "무료", isPrice: true },
+      { label: "발송", value: "100매" },
+    ],
+  },
+  {
+    id: "tpl-floral",
+    thumbnail_url: null,
+    name: "플로럴 무드",
+    category: "모바일",
+    concept: "로맨틱",
+    mood: "플라워",
+    strength: "감성",
+    info_lines: [
+      { label: "가격", value: "무료", isPrice: true },
+      { label: "발송", value: "100매" },
+    ],
+  },
+  {
+    id: "tpl-modern",
+    thumbnail_url: null,
+    name: "모던 베이지",
+    category: "종이",
+    concept: "모던",
+    mood: "베이지",
+    strength: "트렌디",
+    info_lines: [
+      { label: "가격", value: "1만원~", isPrice: true },
+      { label: "최소", value: "100매" },
+    ],
+  },
+  {
+    id: "tpl-luxe",
+    thumbnail_url: null,
+    name: "럭스 골드",
+    category: "종이",
+    concept: "럭셔리",
+    mood: "골드",
+    strength: "프리미엄",
+    info_lines: [
+      { label: "가격", value: "3만원~", isPrice: true },
+      { label: "최소", value: "200매" },
+    ],
+  },
+];
+
+const InvitationTemplateSection = () => {
+  const navigate = useNavigate();
+
+  return (
+    <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-50))]">
+      <div className="mb-[10px] flex items-center justify-between">
+        <h2 className="text-[16px] font-bold text-black">5분 완성! 청첩장 만들기</h2>
+        <button
+          type="button"
+          onClick={() => navigate("/invitation-venues")}
+          className="text-[12px] text-black/50"
+        >
+          더보기
+        </button>
+      </div>
+      <div className="flex gap-[8px] overflow-x-auto scrollbar-hide">
+        {TEMPLATES.map((template) => (
+          <VendorMediaCard
+            key={template.id}
+            data={template}
+            onClick={() => navigate("/invitation-venues")}
+          />
+        ))}
+      </div>
+    </section>
+  );
+};
+
+export default InvitationTemplateSection;
