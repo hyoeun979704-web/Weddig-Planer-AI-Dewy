@@ -33,12 +33,38 @@ export type ChatIntent =
   | "service_intro"
   | "pricing"
   | "contact"
+  // ── Phase e: 사용자 데이터·이력 확장 ──
+  | "orders"
+  | "payments"
+  | "my_posts"
+  | "my_comments"
+  | "ai_usage"
+  | "deal_claims"
+  | "couple_status"
+  | "diary"
+  | "votes"
+  | "subscription_status"
+  | "dress_fitting_history"
+  | "heart_history"
+  | "activity_summary"
+  | "this_week"
   | null;
 
 export interface IntentMatch {
   intent: ChatIntent;
   /** 즉답 가능 시 텍스트 */
   staticReply?: string;
+  /** 정적 가이드 핸들러 키 (staticGuideHandlers의 GuideKey) */
+  guideKey?:
+    | "sdme_timing"
+    | "invitation_timing"
+    | "makeup_trial"
+    | "honeymoon_timing"
+    | "contract_check"
+    | "etiquette"
+    | "gift_etiquette"
+    | "new_home"
+    | "ceremony_progress";
   /** DB 조회 필요 시 핸들러 키 */
   dbHandler?:
     | "dday"
@@ -53,7 +79,28 @@ export interface IntentMatch {
     | "region"
     | "hearts"
     | "points"
-    | "wedding_info";
+    | "wedding_info"
+    | "orders"
+    | "payments"
+    | "my_posts"
+    | "my_comments"
+    | "ai_usage"
+    | "deal_claims"
+    | "couple_status"
+    | "diary"
+    | "votes"
+    | "subscription_status"
+    | "dress_fitting_history"
+    | "heart_history"
+    | "activity_summary"
+    | "this_week"
+    | "budget_diagnosis"
+    | "schedule_diagnosis"
+    | "contract_progress"
+    | "checklist_progress"
+    | "free_search"
+    | "average_price"
+    | "popular_places";
   /** 매칭된 키워드 (디버깅·로그용) */
   matchedKeyword?: string;
   /** 동적으로 추출된 인자 (검색 키워드·종류 등) */
@@ -71,6 +118,8 @@ interface IntentPattern {
   staticReply?: string;
   /** DB 조회 핸들러 */
   dbHandler?: IntentMatch["dbHandler"];
+  /** 정적 가이드 핸들러 키 */
+  guideKey?: IntentMatch["guideKey"];
 }
 
 const PATTERNS: IntentPattern[] = [
@@ -230,6 +279,182 @@ const PATTERNS: IntentPattern[] = [
     staticReply:
       "고객 문의는 다음 채널로 받고 있어요 📬\n\n• 이메일: help@dewy-wedding.com\n• 1:1 문의: [고객센터](/contact)\n• FAQ: [자주 묻는 질문](/faq)\n\n결혼 준비 관련 질문은 저(듀이)에게 바로 물어봐 주셔도 돼요 ✨",
   },
+
+  // ════════════════════════════════════════════════════════════
+  // Phase e — 사용자 데이터·이력 확장 인텐트
+  // ════════════════════════════════════════════════════════════
+
+  // ── 주문·결제 ──────────────────────────────────
+  { intent: "orders", patterns: [/주문\s*(내역|보여|뭐)/, /구매\s*(내역|이력)/, /내가.*산\s*거/], dbHandler: "orders" },
+  { intent: "payments", patterns: [/결제\s*(내역|이력|기록)/, /최근\s*결제/, /결제한\s*거/], dbHandler: "payments" },
+
+  // ── 커뮤니티 활동 ──────────────────────────────
+  { intent: "my_posts", patterns: [/내가\s*쓴\s*(글|게시글|포스트)/, /내\s*글/, /내\s*게시글/], dbHandler: "my_posts" },
+  { intent: "my_comments", patterns: [/내가\s*쓴\s*댓글/, /내\s*댓글/], dbHandler: "my_comments" },
+
+  // ── AI 사용량 ──────────────────────────────────
+  {
+    intent: "ai_usage",
+    patterns: [/AI.*몇\s*번/i, /챗봇.*몇\s*번/, /(AI|챗봇)\s*사용\s*(량|횟수|기록)/, /오늘.*몇\s*(번|회)/],
+    dbHandler: "ai_usage",
+  },
+
+  // ── 받은 특가/쿠폰 ─────────────────────────────
+  {
+    intent: "deal_claims",
+    patterns: [/받은\s*(특가|쿠폰|혜택|딜)/, /내\s*(쿠폰|특가|혜택)/, /클레임/],
+    dbHandler: "deal_claims",
+  },
+
+  // ── 커플 연동 상태 ─────────────────────────────
+  {
+    intent: "couple_status",
+    patterns: [/파트너.*(연결|연동|상태)/, /커플\s*연동/, /초대\s*코드/, /(애인|배우자|남편|아내).*연결/],
+    dbHandler: "couple_status",
+  },
+
+  // ── 다이어리 ───────────────────────────────────
+  {
+    intent: "diary",
+    patterns: [/다이어리/, /일기.*몇/, /(최근|오늘).*일기/],
+    dbHandler: "diary",
+  },
+
+  // ── 투표 ───────────────────────────────────────
+  {
+    intent: "votes",
+    patterns: [/투표.*(진행|상황|결과|미정|남)/, /결정.*못한.*거/, /커플\s*투표/, /진행.*중.*투표/],
+    dbHandler: "votes",
+  },
+
+  // ── 구독 상태 ──────────────────────────────────
+  {
+    intent: "subscription_status",
+    patterns: [/구독\s*(상태|확인|만료)/, /Premium\s*(상태|언제|만료)/i, /프리미엄\s*(상태|언제)/],
+    dbHandler: "subscription_status",
+  },
+
+  // ── 드레스 피팅 기록 ───────────────────────────
+  {
+    intent: "dress_fitting_history",
+    patterns: [/드레스\s*(피팅|갤러리)\s*(기록|이력|몇)/, /피팅\s*몇\s*장/, /내\s*드레스/, /드레스\s*투어\s*(기록|이력)/],
+    dbHandler: "dress_fitting_history",
+  },
+
+  // ── 하트 거래 이력 ─────────────────────────────
+  {
+    intent: "heart_history",
+    patterns: [/하트\s*(이력|거래|내역|어디|쓴)/, /하트\s*충전\s*(이력|기록)/],
+    dbHandler: "heart_history",
+  },
+
+  // ── 활동 종합 요약 ─────────────────────────────
+  {
+    intent: "activity_summary",
+    patterns: [/내\s*활동\s*(요약|보여|확인|전체|모두)/, /활동\s*요약/, /현황\s*(보여|알려)/, /지금\s*상태/, /대시보드/],
+    dbHandler: "activity_summary",
+  },
+
+  // ── 이번 주 활동 ───────────────────────────────
+  {
+    intent: "this_week",
+    patterns: [/이번\s*주.*활동/, /이번\s*주.*뭐/, /최근\s*7일/, /주간\s*요약/],
+    dbHandler: "this_week",
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // Phase h — 진단·통계·검색·정적 가이드
+  // ════════════════════════════════════════════════════════════
+
+  // 진단 (사용자 데이터 분석)
+  {
+    intent: "budget_diagnosis" as ChatIntent,
+    patterns: [/예산.*(분석|진단|비율|점검)/, /예산\s*잘.*(짜|쓰)/, /예산\s*괜찮/],
+    dbHandler: "budget_diagnosis",
+  },
+  {
+    intent: "schedule_diagnosis" as ChatIntent,
+    patterns: [/일정.*(진단|점검|확인|체크)/, /놓친\s*(일정|골든)/, /지금.*잘/, /일정.*잘.*가/],
+    dbHandler: "schedule_diagnosis",
+  },
+  {
+    intent: "contract_progress" as ChatIntent,
+    patterns: [/계약.*(진척|진행|상황|얼마나)/, /진행\s*(상황|률|상태)/, /어디까지/],
+    dbHandler: "contract_progress",
+  },
+  {
+    intent: "checklist_progress" as ChatIntent,
+    patterns: [/체크리스트.*(완료|진행|진척|얼마)/, /몇\s*(%|퍼센트).*했/, /진척률/],
+    dbHandler: "checklist_progress",
+  },
+
+  // 통계·검색 (자유 텍스트)
+  {
+    intent: "free_search" as ChatIntent,
+    patterns: [
+      /(강남|강북|서초|마포|용산|종로|부산|대구|인천|성남|수원|천안|청주|경기|제주).*(식장|웨딩홀|스튜디오|드레스|메이크업)/,
+      /(식장|웨딩홀|스튜디오|드레스샵|메이크업).*추천/,
+      /(찾|검색).*(웨딩홀|식장|스튜디오)/,
+    ],
+    dbHandler: "free_search",
+  },
+  {
+    intent: "average_price" as ChatIntent,
+    patterns: [/평균.*(가격|시세|얼마|비용)/, /시세.*(어때|얼마|얼만)/, /(웨딩홀|식장|스튜디오|드레스).*시세/],
+    dbHandler: "average_price",
+  },
+  {
+    intent: "popular_places" as ChatIntent,
+    patterns: [/인기.*(업체|식장|스튜디오|드레스)/, /(평점|별점).*(높은|좋은)/, /TOP|랭킹/i],
+    dbHandler: "popular_places",
+  },
+
+  // 정적 가이드 (지식 기반)
+  {
+    intent: "guide_sdme_timing" as ChatIntent,
+    patterns: [/스드메.*(언제|시기|예약)/, /스튜디오.*(언제|시기)/, /드레스.*(언제|예약)/],
+    guideKey: "sdme_timing",
+  },
+  {
+    intent: "guide_invitation_timing" as ChatIntent,
+    patterns: [/청첩장.*(언제|발송|시기)/, /청첩장.*보내|돌리/],
+    guideKey: "invitation_timing",
+  },
+  {
+    intent: "guide_makeup_trial" as ChatIntent,
+    patterns: [/메이크업.*(시연|리허설|트라이)/, /시연.*(언제|메이크업)/],
+    guideKey: "makeup_trial",
+  },
+  {
+    intent: "guide_honeymoon_timing" as ChatIntent,
+    patterns: [/신혼여행.*(언제|예약|준비)/, /허니문.*(언제|예약)/, /항공권.*(언제|예약)/],
+    guideKey: "honeymoon_timing",
+  },
+  {
+    intent: "guide_contract" as ChatIntent,
+    patterns: [/계약.*(체크|주의|확인|포인트)/, /계약.*(할\s*때|조심)/, /계약서/],
+    guideKey: "contract_check",
+  },
+  {
+    intent: "guide_etiquette" as ChatIntent,
+    patterns: [/(예단|예물).*(매너|얼마|준비)/, /상견례/, /양가\s*인사/, /시부모|장모|장인/],
+    guideKey: "etiquette",
+  },
+  {
+    intent: "guide_gift" as ChatIntent,
+    patterns: [/답례품/, /축의금.*(얼마|봉투)/, /부조/],
+    guideKey: "gift_etiquette",
+  },
+  {
+    intent: "guide_new_home" as ChatIntent,
+    patterns: [/신혼집.*(준비|체크|구하|구함)/, /(가전|혼수).*(언제|준비|구매)/],
+    guideKey: "new_home",
+  },
+  {
+    intent: "guide_ceremony_progress" as ChatIntent,
+    patterns: [/식순.*(어떻|보여|알려)/, /본식.*(진행|식순)/, /예식.*순서/],
+    guideKey: "ceremony_progress",
+  },
 ];
 
 /**
@@ -255,6 +480,7 @@ export const matchIntent = (message: string): IntentMatch | null => {
           intent: pattern.intent,
           staticReply: pattern.staticReply,
           dbHandler: pattern.dbHandler,
+          guideKey: pattern.guideKey,
           matchedKeyword: typeof p === "string" ? p : p.source,
         };
       }
