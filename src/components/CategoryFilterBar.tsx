@@ -693,7 +693,9 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
                 active={!!region}
                 onClear={() => setRegion(null)}
               >
-                {region || config.regionLabel}
+                {region
+                  ? (config.regions.find((r) => r.value === region)?.label ?? region)
+                  : config.regionLabel}
               </FilterChip>
             </div>
           </PopoverTrigger>

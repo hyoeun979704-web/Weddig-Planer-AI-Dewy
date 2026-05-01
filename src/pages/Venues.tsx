@@ -8,6 +8,7 @@ import FilterBar from "@/components/FilterBar";
 import { Venue } from "@/hooks/useVenues";
 import { useFilterStore } from "@/stores/useFilterStore";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
+import { normalizeRegion } from "@/lib/regions";
 
 const Venues = () => {
   const navigate = useNavigate();
@@ -16,7 +17,9 @@ const Venues = () => {
   const initWithRegion = useFilterStore((state) => state.initWithRegion);
   const { defaultRegion, isLoaded } = useDefaultRegion();
 
-  useEffect(() => { if (isLoaded) initWithRegion(defaultRegion); }, [isLoaded]);
+  // wedding_region이 라벨 형태("충남","제주")로 저장되면 ILIKE %충남% 가
+  // DB의 "충청남도" 와 매칭 안됨. value 형태("충청남")로 정규화 후 적용.
+  useEffect(() => { if (isLoaded) initWithRegion(normalizeRegion(defaultRegion)); }, [isLoaded]);
 
   const handleVenueClick = (venue: Venue) => { navigate(`/venue/${venue.id}`); };
 
