@@ -34,11 +34,18 @@ export const vendorToCardData = (vendor: Vendor): VendorMediaCardData => ({
 interface VendorMediaCardProps {
   data: VendorMediaCardData;
   onClick: () => void;
+  /** When true, the card fills its parent's width (used in 2-col grid lists)
+   *  and the image area uses an aspect ratio instead of a fixed pixel height.
+   *  Defaults to false so home-page horizontal scroll keeps its 140×195 size. */
+  fluid?: boolean;
 }
 
+// Fixed home-page horizontal scroll size — keep stable so home cards don't shift.
 export const CARD_W = 140;
 export const CARD_H = 195;
 const IMG_H = 100;
+// Fluid mode aspect ratio for the image area (matches 140:100 = 7:5).
+const FLUID_IMG_ASPECT = "aspect-[7/5]";
 
 const KEYWORD_CHIP_CLASSES = {
   category: "bg-[#fde7ec] text-[#d35c75]",
@@ -47,7 +54,7 @@ const KEYWORD_CHIP_CLASSES = {
   strength: "bg-[#f1e3f5] text-[#a64bb8]",
 } as const;
 
-const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
+const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps) => {
   const [liked, setLiked] = useState(false);
 
   const keywordChips: Array<{ value: string; className: string }> = [];
@@ -60,10 +67,16 @@ const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
     <button
       onClick={onClick}
       aria-label={data.name}
-      className="flex-shrink-0 flex flex-col bg-[#d9d9d9] rounded-[10px] overflow-hidden text-left active:scale-[0.97]"
-      style={{ width: CARD_W, height: CARD_H }}
+      className={cn(
+        "flex flex-col bg-[#d9d9d9] rounded-[10px] overflow-hidden text-left active:scale-[0.97]",
+        fluid ? "w-full" : "flex-shrink-0"
+      )}
+      style={fluid ? undefined : { width: CARD_W, height: CARD_H }}
     >
-      <div className="relative w-full" style={{ height: IMG_H }}>
+      <div
+        className={cn("relative w-full", fluid && FLUID_IMG_ASPECT)}
+        style={fluid ? undefined : { height: IMG_H }}
+      >
         {data.thumbnail_url ? (
           <img
             src={data.thumbnail_url}
