@@ -76,12 +76,11 @@ const AIPlanner = () => {
     sendMessage(text);
   };
 
-  // 패널 표시 조건: 포커스 + (대화 없음 OR 사용자가 타이핑 중) + 매칭 결과 있음
+  // 패널 표시 조건: 입력창 포커스됐을 때만 (첫 진입 시 Quick Question 카드와 중복 회피)
   const showSuggestionPanel =
     isInputFocused &&
     !isLoading &&
-    suggestions.length > 0 &&
-    (input.trim().length > 0 || messages.length === 0);
+    suggestions.length > 0;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
