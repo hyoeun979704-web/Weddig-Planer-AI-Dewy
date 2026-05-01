@@ -115,7 +115,15 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
         </span>
       </div>
 
-      <div className="flex-1 flex flex-col gap-[3px] bg-white px-2 py-2">
+      <div
+        className={cn(
+          "flex flex-col gap-[3px] bg-white px-2 py-2 overflow-hidden",
+          // fluid 모드에서는 텍스트 섹션 높이를 고정해서 그리드 카드 간 높이를 맞춤.
+          // (카테고리마다 info_lines 개수가 달라 들쭉날쭉했음.) 고정 모드는
+          // 기존대로 flex-1로 카드 안쪽 공간을 채움.
+          fluid ? "h-[110px] flex-shrink-0" : "flex-1"
+        )}
+      >
         {data.region && (
           <p className="text-[9px] leading-tight text-black/55 line-clamp-1">
             {data.region}
@@ -128,7 +136,7 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
 
         {data.info_lines.length > 0 && (
           <div className="flex flex-col gap-[1px]">
-            {data.info_lines.map((line, idx) => (
+            {data.info_lines.slice(0, 2).map((line, idx) => (
               <div
                 key={`${line.label}-${idx}`}
                 className="flex items-center gap-[3px] text-[9px] leading-tight overflow-hidden"
