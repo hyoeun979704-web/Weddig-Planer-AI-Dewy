@@ -9,6 +9,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { CHECKLIST_TEMPLATE } from "@/data/checklistTemplate";
+import { fetchPriceStats, formatPriceStatsLine } from "./priceStats";
 
 // ════════════════════════════════════════════════════════════
 // 1. 웨딩홀 추천
@@ -122,8 +123,18 @@ export interface SdmeParams {
 export const handleSdmeGuide = async (params: SdmeParams): Promise<string> => {
   const budget = parseNumber(params.budget);
 
-  // 정적 가이드 - 일반 시세
-  const guide = `**스드메 일반 시세** 📸\n• 스튜디오: 30~150만원 (원본·보정·앨범 포함 여부 차이 큼)\n• 드레스: 본식+촬영 50~200만원\n• 메이크업: 신부 본식 25~50만원, 양가 어머니 +25~50만원\n• 헤어: 신부 본식 8~20만원\n• 본식 스냅: 30~60만원 (별도)\n• DVD: 20~40만원 (별도)`;
+  // 실제 등록 업체 가격 통계 (places 카테고리별)
+  const [studioStats, dressStats, makeupStats] = await Promise.all([
+    fetchPriceStats("studio", params.region),
+    fetchPriceStats("dress_shop", params.region),
+    fetchPriceStats("makeup_shop", params.region),
+  ]);
+
+  const guide = `**스드메 시세** 📸 ${params.region ? `(${params.region})` : "(전국)"}\n` +
+    `${formatPriceStatsLine("스튜디오", studioStats, "30~150만원")}\n` +
+    `${formatPriceStatsLine("드레스샵", dressStats, "50~200만원")}\n` +
+    `${formatPriceStatsLine("메이크업샵", makeupStats, "25~50만원")}\n` +
+    `* 표본은 듀이에 등록된 업체의 시작가(min_price) 기준이에요. 옵션·시즌에 따라 변동 있을 수 있어요.`;
 
   // 추가금 방어
   const guard = `**숨은 추가금 주의** ⚠️\n• 원본 데이터: 30~50만원\n• 헬퍼 이모님(드레스 도와주는 분): 15~25만원\n• 얼리 스타트(이른 시간 메이크업): 5~10만원\n• 드레스 가봉 추가: 5~10만원\n• 부속품(베일·티아라·신발): 별도`;

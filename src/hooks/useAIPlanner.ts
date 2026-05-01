@@ -57,8 +57,9 @@ export const useAIPlanner = () => {
         }
 
         // (a') 정적 가이드 핸들러 — 시기·매너·계약 등 지식 응답
+        // 일부는 places 통계로 동적 산출하므로 async
         if (intent.guideKey) {
-          const reply = runGuideHandler(intent.guideKey);
+          const reply = await runGuideHandler(intent.guideKey);
           setMessages(prev => [...prev, { role: "assistant", content: reply }]);
           setIsLoading(false);
           return;
