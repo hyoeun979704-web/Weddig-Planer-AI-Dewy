@@ -25,26 +25,46 @@ export const useAIPlanner = () => {
     // ── 1. 클라이언트 사이드 인텐트 게이트 ──────────────────
     // LLM 호출 전에 키워드 매칭으로 즉답 가능한지 먼저 확인.
     // 매칭되면 외부 API 호출 없이 응답 생성 → 일일 한도 차감 X, 비용 X.
+    //
+    // 게이트 응답이 즉답이면 거기서 종료, LLM 컨텍스트가 함께 오면
+    // (B+C 하이브리드) 그 컨텍스트를 LLM 호출 시 시스템 정보로 주입.
+    let llmContextInjection: string | null = null;
     try {
       const intent = matchIntent(input);
       if (intent) {
-        let reply: string | null = null;
-
         // (a) 정적 응답 — 인사·도움말·가격 안내 등
         if (intent.staticReply) {
-          reply = intent.staticReply;
+          setMessages(prev => [...prev, { role: "assistant", content: intent.staticReply! }]);
+          setIsLoading(false);
+          return;
         }
-        // (b) DB 조회 응답 — 디데이·예산·일정 등 (로그인 필요)
-        else if (intent.dbHandler && user) {
-          reply = await runDbHandler(intent.dbHandler, { userId: user.id }, input);
+
+        // (b) DB 조회 응답 — 디데이·예산·일정·찜 등 (로그인 필요)
+        if (intent.dbHandler && user) {
+          const result = await runDbHandler(
+            intent.dbHandler,
+            { userId: user.id },
+            input,
+            intent.args,
+          );
+
+          // 즉답 + LLM 컨텍스트 동시 → reply는 일단 안 보여주고 LLM이 정리
+          if (result.llmContext) {
+            llmContextInjection = result.llmContext;
+            // LLM 호출 흐름으로 fallthrough
+          } else if (result.reply) {
+            // 즉답만 — 거기서 종료
+            setMessages(prev => [...prev, { role: "assistant", content: result.reply! }]);
+            setIsLoading(false);
+            return;
+          }
         }
         // (c) DB 조회 필요한데 비로그인 — 로그인 안내
         else if (intent.dbHandler && !user) {
-          reply = "이 정보는 로그인 후 확인할 수 있어요 🌿\n[로그인 페이지](/auth)에서 가입·로그인 부탁드려요.";
-        }
-
-        if (reply) {
-          setMessages(prev => [...prev, { role: "assistant", content: reply! }]);
+          setMessages(prev => [...prev, {
+            role: "assistant",
+            content: "이 정보는 로그인 후 확인할 수 있어요 🌿\n[로그인 페이지](/auth)에서 가입·로그인 부탁드려요.",
+          }]);
           setIsLoading(false);
           return;
         }
@@ -71,13 +91,26 @@ export const useAIPlanner = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token || ((import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ?? "");
 
+      // 게이트가 추출한 컨텍스트(B+C 하이브리드)가 있다면 시스템 메시지로 주입.
+      // LLM이 이 정보를 활용해 자연어로 정리한 답변을 만든다.
+      const messagesToSend: Message[] = llmContextInjection
+        ? [
+            {
+              role: "user",
+              content: `[참고 컨텍스트 - 사용자 데이터에서 추출됨, 이 정보를 자연스럽게 활용해 답변해주세요]\n${llmContextInjection}`,
+            },
+            ...messages,
+            userMsg,
+          ]
+        : [...messages, userMsg];
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ messages: [...messages, userMsg] }),
+        body: JSON.stringify({ messages: messagesToSend }),
       });
 
       if (resp.status === 429) {

@@ -23,6 +23,8 @@ export type ChatIntent =
   | "schedule_upcoming"
   | "checklist_time"
   | "favorites"
+  | "favorites_by_type"
+  | "favorites_search"
   | "cart"
   | "region"
   | "hearts"
@@ -45,6 +47,8 @@ export interface IntentMatch {
     | "schedule_upcoming"
     | "checklist"
     | "favorites"
+    | "favorites_by_type"
+    | "favorites_search"
     | "cart"
     | "region"
     | "hearts"
@@ -52,6 +56,11 @@ export interface IntentMatch {
     | "wedding_info";
   /** 매칭된 키워드 (디버깅·로그용) */
   matchedKeyword?: string;
+  /** 동적으로 추출된 인자 (검색 키워드·종류 등) */
+  args?: {
+    keyword?: string;
+    itemType?: string;
+  };
 }
 
 interface IntentPattern {
@@ -129,15 +138,13 @@ const PATTERNS: IntentPattern[] = [
     dbHandler: "checklist",
   },
 
-  // ── 찜 목록 ────────────────────────────────────
+  // ── 찜 목록 (전체 카테고리 분포) ────────────────
   {
     intent: "favorites",
     patterns: [
-      /찜\s*(목록|한)?/,
-      /즐겨\s*찾기/,
-      /좋아요\s*(누른|한)/,
-      /북마크/,
-      /하트\s*누른/,
+      /^찜\s*(목록|한)?\s*[?!]?$/,
+      /^즐겨\s*찾기\s*[?!]?$/,
+      /북마크\s*(목록)?\s*[?!]?$/,
     ],
     dbHandler: "favorites",
   },
@@ -227,12 +234,15 @@ const PATTERNS: IntentPattern[] = [
 
 /**
  * 사용자 메시지에서 의도를 매칭한다.
+ * 1) 정적 패턴 매칭
+ * 2) 동적 매칭 (찜 검색·키워드 추출)
  * 매칭 실패 시 null 반환 → 기존 LLM 호출 흐름으로 fallback.
  */
 export const matchIntent = (message: string): IntentMatch | null => {
   const trimmed = message.trim();
   if (!trimmed) return null;
 
+  // 1) 정적 패턴 매칭
   for (const pattern of PATTERNS) {
     for (const p of pattern.patterns) {
       const matched =
@@ -251,5 +261,84 @@ export const matchIntent = (message: string): IntentMatch | null => {
     }
   }
 
+  // 2) 동적 매칭 — 찜 검색·종류별 찜
+  const dynamic = matchDynamicIntents(trimmed);
+  if (dynamic) return dynamic;
+
+  return null;
+};
+
+// ════════════════════════════════════════════════════════════
+// 동적 매칭 — 찜 + 키워드/종류
+// ════════════════════════════════════════════════════════════
+
+const FAVORITE_VERBS = /(찜|즐겨\s*찾기|북마크|좋아요)/;
+
+/** 사용자 자연어에서 카테고리 키워드 → item_type 추론 */
+const inferItemType = (text: string): string | "any" => {
+  const lower = text.toLowerCase();
+  if (/영상|비디오|video|유튜브|youtube|채널/.test(lower)) return "tip_video";
+  if (/식장|웨딩홀|스튜디오|드레스샵|메이크업|한복|예복|신혼여행|예물|업체|샵/.test(lower)) return "place";
+  if (/상품|제품|쇼핑/.test(lower)) return "product";
+  if (/특가|할인|쿠폰|딜/.test(lower)) return "deal";
+  if (/게시글|커뮤니티|후기/.test(lower)) return "community_post";
+  return "any";
+};
+
+// 키워드 추출 시 제거할 stop-words (찜·동사·조사·종류)
+const STOP_WORDS = new Set([
+  "찜", "찜한", "찜에서", "즐겨찾기", "즐겨", "찾기", "북마크", "좋아요", "목록",
+  "보여줘", "보여", "알려줘", "알려", "찾아줘", "찾아", "추천", "추천하던",
+  "뭐", "뭐야", "뭐더라", "어떤", "있어", "있는", "있던", "있음",
+  "는", "은", "이", "가", "을", "를", "에서", "에", "중에", "중에서", "한", "하던", "하는",
+  "영상", "비디오", "유튜브", "채널",
+  "식장", "웨딩홀", "스튜디오", "드레스샵", "메이크업샵", "한복샵", "예복샵",
+  "메이크업", "한복", "예복", "신혼여행", "예물", "업체", "샵", "상품", "제품",
+  "쇼핑", "특가", "할인", "쿠폰", "딜", "게시글", "커뮤니티", "후기",
+]);
+
+const extractKeyword = (text: string): string | null => {
+  const tokens = text
+    .replace(/[?!.,]/g, " ")
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter((t) => t && !STOP_WORDS.has(t));
+  if (tokens.length === 0) return null;
+  // 숫자만이면 의미 없음
+  if (tokens.every((t) => /^\d+$/.test(t))) return null;
+  return tokens.join(" ").trim();
+};
+
+const matchDynamicIntents = (text: string): IntentMatch | null => {
+  // 찜 관련 동사가 포함된 경우만 동적 매칭
+  if (!FAVORITE_VERBS.test(text)) return null;
+
+  const itemType = inferItemType(text);
+  const keyword = extractKeyword(text);
+
+  // 키워드 + 종류 또는 키워드만 → 검색
+  if (keyword) {
+    return {
+      intent: "favorites_search",
+      dbHandler: "favorites_search",
+      matchedKeyword: "favorites_search:dynamic",
+      args: {
+        keyword,
+        itemType: itemType !== "any" ? itemType : undefined,
+      },
+    };
+  }
+
+  // 종류만 명시 (예: "찜한 영상", "찜한 식장")
+  if (itemType !== "any") {
+    return {
+      intent: "favorites_by_type",
+      dbHandler: "favorites_by_type",
+      matchedKeyword: "favorites_by_type:dynamic",
+      args: { itemType },
+    };
+  }
+
+  // "찜" 만 단독 — 정적 PATTERNS의 favorites가 안 매칭된 경우 (드물지만 안전망)
   return null;
 };

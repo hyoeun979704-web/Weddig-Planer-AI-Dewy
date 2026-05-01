@@ -17,9 +17,30 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { CHECKLIST_TEMPLATE } from "@/data/checklistTemplate";
+import {
+  handleFavoritesByType,
+  handleFavoritesSearch,
+  ITEM_TYPE_MAP,
+  type ItemTypeKey,
+} from "./favoritesHandler";
 
 export interface DbHandlerContext {
   userId: string;
+}
+
+export interface DbHandlerArgs {
+  keyword?: string;
+  itemType?: string;
+}
+
+/**
+ * 게이트 응답 — 즉답이거나, LLM에 위임할 컨텍스트.
+ */
+export interface GateResponse {
+  /** 사용자에게 보여줄 텍스트 (즉답 시) */
+  reply?: string;
+  /** LLM에 위임 시 시스템 컨텍스트로 주입할 데이터 */
+  llmContext?: string;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -438,29 +459,63 @@ export type DbHandlerKey =
   | "schedule_upcoming"
   | "checklist"
   | "favorites"
+  | "favorites_by_type"
+  | "favorites_search"
   | "cart"
   | "region"
   | "hearts"
   | "points"
   | "wedding_info";
 
+const isItemTypeKey = (s: string | undefined): s is ItemTypeKey =>
+  !!s && s in ITEM_TYPE_MAP;
+
+/**
+ * 핸들러 실행. 결과는 GateResponse 형태로,
+ *  - reply: 사용자에게 즉시 보여줄 텍스트
+ *  - llmContext: LLM에 위임 시 시스템 컨텍스트로 주입할 데이터
+ * 둘 다 있는 경우는 reply 우선.
+ */
 export const runDbHandler = async (
   handler: DbHandlerKey,
   ctx: DbHandlerContext,
   userMessage: string,
-): Promise<string> => {
+  args?: DbHandlerArgs,
+): Promise<GateResponse> => {
   switch (handler) {
-    case "dday": return handleDday(ctx);
-    case "budget": return handleBudget(ctx);
-    case "schedule_today": return handleScheduleToday(ctx);
-    case "schedule_upcoming": return handleScheduleUpcoming(ctx);
-    case "checklist": return handleChecklist(ctx, userMessage);
-    case "favorites": return handleFavorites(ctx);
-    case "cart": return handleCart(ctx);
-    case "region": return handleRegion(ctx);
-    case "hearts": return handleHearts(ctx);
-    case "points": return handlePoints(ctx);
-    case "wedding_info": return handleWeddingInfo(ctx);
-    default: return "요청을 처리할 수 없어요. 다시 한 번 말씀해주시겠어요?";
+    case "dday": return { reply: await handleDday(ctx) };
+    case "budget": return { reply: await handleBudget(ctx) };
+    case "schedule_today": return { reply: await handleScheduleToday(ctx) };
+    case "schedule_upcoming": return { reply: await handleScheduleUpcoming(ctx) };
+    case "checklist": return { reply: await handleChecklist(ctx, userMessage) };
+    case "favorites": return { reply: await handleFavorites(ctx) };
+    case "favorites_by_type": {
+      const type = isItemTypeKey(args?.itemType) ? args!.itemType! : "place";
+      return { reply: await handleFavoritesByType(ctx.userId, type as ItemTypeKey) };
+    }
+    case "favorites_search": {
+      const keyword = args?.keyword ?? userMessage;
+      const itemType = isItemTypeKey(args?.itemType) ? (args!.itemType as ItemTypeKey) : "any";
+      const result = await handleFavoritesSearch(ctx.userId, keyword, itemType);
+      // 결과가 너무 많아 LLM 위임이 필요한 경우 raw 데이터를 컨텍스트로 첨부
+      if (result.needsLlmContext && result.rawResults) {
+        const lines = result.rawResults
+          .slice(0, 30)
+          .map((r) => `- [${r.itemType}] ${r.title}${r.subtitle ? ` (${r.subtitle})` : ""}`)
+          .join("\n");
+        return {
+          reply: result.reply,
+          llmContext: `[사용자가 찜한 항목 중 "${keyword}" 키워드로 검색된 결과 ${result.rawResults.length}건]\n${lines}`,
+        };
+      }
+      return { reply: result.reply };
+    }
+    case "cart": return { reply: await handleCart(ctx) };
+    case "region": return { reply: await handleRegion(ctx) };
+    case "hearts": return { reply: await handleHearts(ctx) };
+    case "points": return { reply: await handlePoints(ctx) };
+    case "wedding_info": return { reply: await handleWeddingInfo(ctx) };
+    default:
+      return { reply: "요청을 처리할 수 없어요. 다시 한 번 말씀해주시겠어요?" };
   }
 };
