@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -10,9 +10,11 @@ import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
 import SdmeSurvey from "@/components/wedding-planner/SdmeSurvey";
 import TimelineSurvey from "@/components/wedding-planner/TimelineSurvey";
 import BudgetSurvey from "@/components/wedding-planner/BudgetSurvey";
+import SuggestionPanel from "@/components/wedding-planner/SuggestionPanel";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import BottomNav from "@/components/BottomNav";
 import { motion, AnimatePresence } from "framer-motion";
+import { findSuggestions } from "@/data/chatbotSuggestions";
 
 type ModalType = "venue" | "sdme" | "timeline" | "budget" | null;
 
@@ -38,6 +40,7 @@ const AIPlanner = () => {
   const [input, setInput] = useState("");
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -63,6 +66,22 @@ const AIPlanner = () => {
     sendMessage(input);
     setInput("");
   };
+
+  // 추천 질문 매칭 (입력 변화 시 메모이제이션)
+  const suggestions = useMemo(() => findSuggestions(input, 5), [input]);
+
+  const handleSuggestionSelect = (text: string) => {
+    setInput("");
+    setIsInputFocused(false);
+    sendMessage(text);
+  };
+
+  // 패널 표시 조건: 포커스 + (대화 없음 OR 사용자가 타이핑 중) + 매칭 결과 있음
+  const showSuggestionPanel =
+    isInputFocused &&
+    !isLoading &&
+    suggestions.length > 0 &&
+    (input.trim().length > 0 || messages.length === 0);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -255,29 +274,45 @@ const AIPlanner = () => {
       </AnimatePresence>
 
       {/* Input area */}
-      <div className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto bg-card/95 backdrop-blur-md border-t border-border p-3 z-40">
-        <div className="flex items-end gap-2">
-          <textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="결혼 준비에 대해 무엇이든 물어보세요..."
-            rows={1}
-            className="flex-1 bg-muted border-none outline-none rounded-xl px-4 py-2.5 text-sm placeholder:text-muted-foreground resize-none max-h-24 leading-relaxed"
-            style={{ height: "auto", minHeight: "40px" }}
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = "auto";
-              target.style.height = Math.min(target.scrollHeight, 96) + "px";
-            }}
+      <div className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto z-40">
+        {/* 추천 질문 패널 (입력창 위) */}
+        <div className="px-3 pb-2">
+          <SuggestionPanel
+            suggestions={suggestions}
+            isVisible={showSuggestionPanel}
+            isInputEmpty={input.trim().length === 0}
+            onSelect={handleSuggestionSelect}
           />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center transition-all disabled:opacity-30 active:scale-90 flex-shrink-0"
-          >
-            <Send className="w-4 h-4 text-primary-foreground" />
-          </button>
+        </div>
+        <div className="bg-card/95 backdrop-blur-md border-t border-border p-3">
+          <div className="flex items-end gap-2">
+            <textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => {
+                // 추천 클릭이 onBlur보다 먼저 발생하도록 약간의 delay
+                setTimeout(() => setIsInputFocused(false), 150);
+              }}
+              placeholder="결혼 준비에 대해 무엇이든 물어보세요..."
+              rows={1}
+              className="flex-1 bg-muted border-none outline-none rounded-xl px-4 py-2.5 text-sm placeholder:text-muted-foreground resize-none max-h-24 leading-relaxed"
+              style={{ height: "auto", minHeight: "40px" }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = "auto";
+                target.style.height = Math.min(target.scrollHeight, 96) + "px";
+              }}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || isLoading}
+              className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center transition-all disabled:opacity-30 active:scale-90 flex-shrink-0"
+            >
+              <Send className="w-4 h-4 text-primary-foreground" />
+            </button>
+          </div>
         </div>
       </div>
 
