@@ -213,22 +213,39 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
 
   혼수: {
     prompt:
-      `\n\n[혼수(가전·가구) — 카테고리 특성]\n` +
-      `★ 가격 모델: per_set (세트 가격, 보통 500~3000만원). 단품 가격이면 per_event로.\n` +
-      `★ price_packages.includes 예: ["냉장고", "세탁기", "건조기", "TV 65인치", "에어컨 2대", "무료 배송·설치"].\n` +
-      `★ 가전 업체 비교 시 무료 배송/설치, 폐가전 무료 수거, 카드 할인 등이 핵심.\n` +
-      `[추가 추출 필드 → category_extras]\n` +
-      `- product_categories (배열): [${ENUM(["TV", "냉장고", "세탁기", "에어컨", "가구", "침대", "소파", "건조기"])}] 중.\n` +
-      `- brand_options (배열): 취급 브랜드 (예: ["LG", "삼성", "한샘", "에넥스"]).\n` +
+      `\n\n[혼수(가전·가구) — 카테고리 특성 (★ hybrid: 한 행 = 매장 / 패키지 / 단품 모델 중 하나)]\n` +
+      `★ product_type 필수: ${ENUM(["store", "package", "single"])}\n` +
+      `   - store: LG베스트샵·삼성디지털프라자·하이마트·롯데하이마트·전자랜드·백화점 가전관 등 매장.\n` +
+      `   - package: 신혼 가전 N종 패키지 (예: "LG 비스포크 신혼 5종 세트", "삼성 그랑데 패키지").\n` +
+      `   - single: 단일 모델 (예: "LG 시그니처 OLED 65", "삼성 비스포크 4도어").\n` +
+      `★ 가격 모델: store는 매장 통상가, package는 세트 가격(price_packages 1번 행 + package_set_price), single은 모델가.\n` +
+      `★ store_chain (store 전용): "LG베스트샵","삼성디지털프라자","하이마트","롯데하이마트","전자랜드","신세계 가전관","롯데 가전관","현대 가전관","갤러리아 가전관" 등.\n` +
+      `[공통 → category_extras]\n` +
+      `- product_type (enum, 필수): store/package/single.\n` +
+      `- product_url (문자열): package/single은 필수 (브랜드몰·백화점몰 상품 URL).\n` +
+      `- product_code (문자열): single 모델 SKU (예: RF85B941...).\n` +
+      `- product_categories (배열): [${ENUM(["TV", "냉장고", "세탁기", "에어컨", "가구", "침대", "소파", "건조기", "공기청정기", "스타일러"])}] 중.\n` +
+      `- brand_options (배열): 취급/판매 브랜드 (예: ["LG", "삼성", "한샘", "이케아"]).\n` +
+      `- promotion_text (문자열): 시즌 프로모션 (예: "5종 세트 1,200만원~", "삼성카드 12개월 무이자").\n` +
+      `[store 전용]\n` +
+      `- store_chain (문자열, 위 enum 중).\n` +
+      `- specialties (배열): 강점 카테고리 — 예: ["프리미엄 TV","에어컨 설치"].\n` +
+      `[package 전용]\n` +
+      `- package_items (배열): 포함 모델 (예: ["LG 시그니처 OLED 65인치","비스포크 4도어 냉장고","트롬 워시타워","휘센 에어컨"]).\n` +
+      `- package_set_price (정수): 세트 총가 KRW.\n` +
+      `[혜택]\n` +
       `- installment_months (정수): 무이자 할부 최대 개월수 (없으면 0).\n` +
       `- warranty_years (정수): 기본 보증 기간 (년).\n` +
-      `- free_delivery (bool): 무료 배송 제공.\n` +
-      `- free_installation (bool): 무료 설치 (예: 에어컨 설치 무료).\n` +
+      `- free_delivery (bool): 무료 배송.\n` +
+      `- free_installation (bool): 무료 설치.\n` +
       `- old_appliance_pickup (bool): 폐가전 무료 수거.\n` +
-      `- card_discount_available (bool): 카드사 제휴 할인 운영.`,
+      `- card_discount_available (bool): 카드사 제휴 할인.`,
     cardColumns: [
+      "product_type", "product_url", "product_code", "store_chain", "specialties",
+      "package_items", "package_set_price",
       "product_categories", "brand_options", "installment_months", "warranty_years",
       "free_delivery", "free_installation", "old_appliance_pickup", "card_discount_available",
+      "promotion_text",
     ],
   },
 

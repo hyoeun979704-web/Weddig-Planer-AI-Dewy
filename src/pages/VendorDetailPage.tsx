@@ -456,6 +456,21 @@ function HoneymoonExtras({ place }: { place: LegacyDetail }) {
 }
 
 function ApplianceExtras({ place }: { place: LegacyDetail }) {
+  const APPL_TYPE_LABEL: Record<string, string> = {
+    store: "매장",
+    package: "신혼 패키지",
+    single: "단품 모델",
+  };
+  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
+  const buyUrl =
+    place.appliance_product_url || place.website_url || place.naver_place_url || null;
+  const buyLabel = place.appliance_product_url
+    ? "구매 페이지로 이동"
+    : place.website_url
+      ? "공식 사이트로 이동"
+      : place.naver_place_url
+        ? "네이버 플레이스에서 보기"
+        : null;
   const has =
     place.product_categories.length > 0 ||
     place.brand_options.length > 0 ||
@@ -464,33 +479,84 @@ function ApplianceExtras({ place }: { place: LegacyDetail }) {
     place.free_delivery != null ||
     place.free_installation != null ||
     place.old_appliance_pickup != null ||
-    place.card_discount_available != null;
-  if (!has) return null;
+    place.card_discount_available != null ||
+    place.store_chain ||
+    place.specialties.length > 0 ||
+    place.package_items.length > 0 ||
+    place.package_set_price != null;
+  if (!has && !buyUrl) return null;
   return (
-    <div className="space-y-3">
-      <h3 className="font-bold text-sm">혼수 정보</h3>
-      <Tags label="제품 카테고리" items={place.product_categories} />
-      <Tags label="브랜드" items={place.brand_options} />
-      <div className="grid grid-cols-2 gap-2">
-        {place.installment_months != null && (
-          <Stat label="무이자 할부" value={place.installment_months > 0 ? `최대 ${place.installment_months}개월` : "없음"} />
-        )}
-        {place.warranty_years != null && (
-          <Stat label="기본 보증" value={`${place.warranty_years}년`} />
-        )}
-        {place.free_delivery != null && (
-          <Stat label="배송" value={place.free_delivery ? "무료" : "유료"} />
-        )}
-        {place.free_installation != null && (
-          <Stat label="설치" value={place.free_installation ? "무료" : "유료"} />
-        )}
-        {place.old_appliance_pickup != null && (
-          <Stat label="폐가전 수거" value={place.old_appliance_pickup ? "무료" : "별도"} />
-        )}
-        {place.card_discount_available != null && (
-          <Stat label="카드 할인" value={place.card_discount_available ? "있음" : "없음"} />
-        )}
+    <div className="space-y-4">
+      {place.appliance_promotion_text && (
+        <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          🎁 {place.appliance_promotion_text}
+        </div>
+      )}
+
+      {/* 매장이 아닌 경우 (package/single) 외부 구매하기 CTA */}
+      {(place.appliance_product_type === "package" || place.appliance_product_type === "single") && buyUrl && (
+        <a
+          href={buyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full rounded-lg bg-primary px-4 py-3 text-center text-sm font-bold text-primary-foreground active:scale-[0.98]"
+        >
+          구매하기 — {buyLabel}
+        </a>
+      )}
+
+      <div className="space-y-3">
+        <h3 className="font-bold text-sm">혼수 정보</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {place.appliance_product_type && (
+            <Stat label="유형" value={APPL_TYPE_LABEL[place.appliance_product_type] ?? place.appliance_product_type} />
+          )}
+          {place.store_chain && <Stat label="체인" value={place.store_chain} />}
+          {place.appliance_product_code && (
+            <Stat label="모델 코드" value={place.appliance_product_code} />
+          )}
+          {place.package_set_price != null && (
+            <Stat label="세트 가격" value={`${fmtMan(place.package_set_price)}~`} />
+          )}
+        </div>
+
+        <Tags label="제품 카테고리" items={place.product_categories} />
+        <Tags label="브랜드" items={place.brand_options} />
+        <Tags label="강점 카테고리" items={place.specialties} />
+        <Tags label="패키지 구성" items={place.package_items} />
       </div>
+
+      {/* 결제·배송·서비스 혜택 */}
+      {(place.installment_months != null ||
+        place.warranty_years != null ||
+        place.free_delivery != null ||
+        place.free_installation != null ||
+        place.old_appliance_pickup != null ||
+        place.card_discount_available != null) && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm">결제·배송 혜택</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.installment_months != null && (
+              <Stat label="무이자 할부" value={place.installment_months > 0 ? `최대 ${place.installment_months}개월` : "없음"} />
+            )}
+            {place.warranty_years != null && (
+              <Stat label="기본 보증" value={`${place.warranty_years}년`} />
+            )}
+            {place.free_delivery != null && (
+              <Stat label="배송" value={place.free_delivery ? "무료" : "유료"} />
+            )}
+            {place.free_installation != null && (
+              <Stat label="설치" value={place.free_installation ? "무료" : "유료"} />
+            )}
+            {place.old_appliance_pickup != null && (
+              <Stat label="폐가전 수거" value={place.old_appliance_pickup ? "무료" : "별도"} />
+            )}
+            {place.card_discount_available != null && (
+              <Stat label="카드 할인" value={place.card_discount_available ? "있음" : "없음"} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

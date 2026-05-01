@@ -53,7 +53,8 @@ const CATEGORY_DETAIL_SELECT: Record<CategoryType, string> = {
     "place_honeymoons(agency_name,agency_product_url,product_type,countries,cities,representative_city,nights,days,price_per_person,avg_budget,themes)",
   jewelry:
     "place_jewelry(brand_name,product_url,product_type,sub_category,store_type,metals,product_categories,price_per_person,price_couple_set,carat_diamond,promotion_text)",
-  appliances: "place_appliances(product_categories,brand_options,price_per_person)",
+  appliances:
+    "place_appliances(product_type,product_url,store_chain,specialties,package_items,package_set_price,product_categories,brand_options,price_per_person,promotion_text)",
   invitation_venues:
     "place_invitation_venues(venue_types,capacity_min,capacity_max,price_per_person)",
 };
@@ -170,10 +171,31 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
       ].filter((x): x is string => Boolean(x));
       break;
     }
-    case "appliances":
-      base.keywords = card?.product_categories ?? [];
-      base.brand = card?.brand_options?.join(", ");
+    case "appliances": {
+      // hybrid: product_type ∈ {store, package, single}
+      const APPL_TYPE_LABEL: Record<string, string> = {
+        store: "매장",
+        package: "패키지",
+        single: "단품",
+      };
+      base.product_type = card?.product_type ?? undefined;
+      base.product_url = card?.product_url ?? undefined;
+      base.store_chain = card?.store_chain ?? undefined;
+      base.package_set_price = card?.package_set_price ?? undefined;
+      base.promotion_text = card?.promotion_text ?? undefined;
+      // store: 체인을 brand로 / package·single: brand_options 첫 항목
+      base.brand =
+        card?.product_type === "store"
+          ? card?.store_chain
+          : card?.brand_options?.[0] ?? card?.brand_options?.join(", ");
+      const typeLabel = card?.product_type ? APPL_TYPE_LABEL[card.product_type] : undefined;
+      base.keywords = [
+        typeLabel,
+        ...((card?.product_categories as string[] | undefined) ?? []),
+        ...((card?.specialties as string[] | undefined) ?? []),
+      ].filter((x): x is string => Boolean(x));
       break;
+    }
     case "invitation_venues":
       base.keywords = card?.venue_types ?? [];
       base.min_guarantee = card?.capacity_min ?? 0;
@@ -211,6 +233,9 @@ async function fetchCategoryItems(
     if (category === "jewelry") {
       // jewelry: places.city는 매장 도시(서울 등). region 칩은 brand_tier로 필터.
       query = query.eq("place_jewelry.brand_tier", filters.region);
+    } else if (category === "appliances") {
+      // appliance: hybrid (store/package/single). region 칩 = product_type.
+      query = query.eq("place_appliances.product_type", filters.region);
     } else {
       query = query.ilike("city", `%${filters.region}%`);
     }

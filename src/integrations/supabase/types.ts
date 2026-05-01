@@ -878,9 +878,17 @@ export type Database = {
           free_installation: boolean | null
           installment_months: number | null
           old_appliance_pickup: boolean | null
+          package_items: string[] | null
+          package_set_price: number | null
           place_id: string
           price_per_person: number | null
           product_categories: string[] | null
+          product_code: string | null
+          product_type: string | null
+          product_url: string | null
+          promotion_text: string | null
+          specialties: string[] | null
+          store_chain: string | null
           warranty_years: number | null
         }
         Insert: {
@@ -890,9 +898,17 @@ export type Database = {
           free_installation?: boolean | null
           installment_months?: number | null
           old_appliance_pickup?: boolean | null
+          package_items?: string[] | null
+          package_set_price?: number | null
           place_id: string
           price_per_person?: number | null
           product_categories?: string[] | null
+          product_code?: string | null
+          product_type?: string | null
+          product_url?: string | null
+          promotion_text?: string | null
+          specialties?: string[] | null
+          store_chain?: string | null
           warranty_years?: number | null
         }
         Update: {
@@ -902,9 +918,17 @@ export type Database = {
           free_installation?: boolean | null
           installment_months?: number | null
           old_appliance_pickup?: boolean | null
+          package_items?: string[] | null
+          package_set_price?: number | null
           place_id?: string
           price_per_person?: number | null
           product_categories?: string[] | null
+          product_code?: string | null
+          product_type?: string | null
+          product_url?: string | null
+          promotion_text?: string | null
+          specialties?: string[] | null
+          store_chain?: string | null
           warranty_years?: number | null
         }
         Relationships: [

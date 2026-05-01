@@ -177,7 +177,7 @@ export interface LegacyDetail {
   visa_required: boolean | null;
   validity_days: number | null;
   usage_count: number | null;
-  // Appliance
+  // Appliance (hybrid: store/package/single)
   product_categories: string[];
   brand_options: string[];
   installment_months: number | null;
@@ -186,6 +186,14 @@ export interface LegacyDetail {
   free_installation: boolean | null;
   old_appliance_pickup: boolean | null;
   card_discount_available: boolean | null;
+  appliance_product_type: string | null; // store | package | single
+  appliance_product_url: string | null;
+  appliance_product_code: string | null;
+  store_chain: string | null;
+  specialties: string[];
+  package_items: string[];
+  package_set_price: number | null;
+  appliance_promotion_text: string | null;
   // Invitation venue
   venue_types: string[];
   capacity_min: number | null;
@@ -509,6 +517,14 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         free_installation: (card?.free_installation as boolean) ?? null,
         old_appliance_pickup: (card?.old_appliance_pickup as boolean) ?? null,
         card_discount_available: (card?.card_discount_available as boolean) ?? null,
+        appliance_product_type: p.category === "appliance" ? ((card?.product_type as string) ?? null) : null,
+        appliance_product_url: p.category === "appliance" ? ((card?.product_url as string) ?? null) : null,
+        appliance_product_code: p.category === "appliance" ? ((card?.product_code as string) ?? null) : null,
+        store_chain: (card?.store_chain as string) ?? null,
+        specialties: asStringArray(card?.specialties),
+        package_items: asStringArray(card?.package_items),
+        package_set_price: (card?.package_set_price as number) ?? null,
+        appliance_promotion_text: p.category === "appliance" ? ((card?.promotion_text as string) ?? null) : null,
         venue_types: asStringArray(card?.venue_types),
         capacity_min: (card?.capacity_min as number) ?? null,
         capacity_max: (card?.capacity_max as number) ?? null,
