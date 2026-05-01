@@ -7,6 +7,9 @@ import React, { useState, forwardRef } from "react";
 
 interface FilterConfig {
   title: string;
+  /** 첫 번째 필터 칩 라벨 — 대부분 "지역"이지만 honeymoon은 "여행지", jewelry는 "가격대",
+   *  appliances는 "유형"처럼 카테고리 의미에 맞게 사용. */
+  regionLabel: string;
   regions: { value: string; label: string }[];
   filterOptions1: { label: string; options: { value: string; label: string }[] };
   filterOptions2: { label: string; options: { value: string; label: string }[] };
@@ -16,6 +19,7 @@ interface FilterConfig {
 const filterConfigs: Record<CategoryType, FilterConfig> = {
   venues: {
     title: "웨딩홀 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -63,6 +67,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   studios: {
     title: "스드메 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -115,6 +120,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   dress_shops: {
     title: "드레스샵 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -150,6 +156,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   makeup_shops: {
     title: "메이크업샵 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -186,6 +193,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   honeymoon: {
     title: "허니문 필터",
+    regionLabel: "여행지",
     // honeymoon places.city = region_group (일본/동남아/유럽 등). 사용자의 한국
     // 거주지가 아니라 destination 광역 분류로 필터링.
     regions: [
@@ -230,6 +238,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   jewelry: {
     title: "예물 필터",
+    regionLabel: "가격대",
     // jewelry는 places.city가 본사·대표매장 도시 (서울 위주). region 필터는 brand_tier로 활용.
     regions: [
       { value: "대중", label: "대중 (50~150만원)" },
@@ -267,6 +276,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   appliances: {
     title: "혼수 필터",
+    regionLabel: "유형",
     // appliance places.city는 매장 주소 (서울 강남구 등). region 칩은
     // product_type (매장/패키지/단품)으로 사용해 hybrid 모델을 노출.
     regions: [
@@ -312,6 +322,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   suits: {
     title: "예복 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -363,6 +374,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   hanbok: {
     title: "한복 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -418,6 +430,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   invitation_venues: {
     title: "청첩장 모임 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -570,7 +583,7 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
             <div className="overflow-y-auto py-4 space-y-6 max-h-[calc(80vh-80px)]">
               {/* Region Filter */}
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-3">지역/브랜드</h3>
+                <h3 className="text-sm font-semibold text-foreground mb-3">{config.regionLabel}</h3>
                 <div className="flex flex-wrap gap-2">
                   {config.regions.map((r) => (
                     <button
@@ -680,7 +693,7 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
                 active={!!region}
                 onClear={() => setRegion(null)}
               >
-                {region || "지역"}
+                {region || config.regionLabel}
               </FilterChip>
             </div>
           </PopoverTrigger>
