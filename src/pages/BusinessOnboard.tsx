@@ -17,7 +17,7 @@ const SERVICE_CATEGORIES = [
   { value: "suit", label: "예복", emoji: "🤵" },
   { value: "honeymoon", label: "허니문", emoji: "✈️" },
   { value: "appliance", label: "혼수가전", emoji: "🏠" },
-  { value: "honeymoon_gift", label: "예물/예단", emoji: "💍" },
+  { value: "jewelry", label: "예물/예단", emoji: "💍" },
   { value: "invitation_venue", label: "상견례 장소", emoji: "🍽️" },
 ];
 

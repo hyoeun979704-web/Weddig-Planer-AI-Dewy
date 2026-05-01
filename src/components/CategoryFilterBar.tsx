@@ -7,6 +7,9 @@ import React, { useState, forwardRef } from "react";
 
 interface FilterConfig {
   title: string;
+  /** 첫 번째 필터 칩 라벨 — 대부분 "지역"이지만 honeymoon은 "여행지", jewelry는 "가격대",
+   *  appliances는 "유형"처럼 카테고리 의미에 맞게 사용. */
+  regionLabel: string;
   regions: { value: string; label: string }[];
   filterOptions1: { label: string; options: { value: string; label: string }[] };
   filterOptions2: { label: string; options: { value: string; label: string }[] };
@@ -16,6 +19,7 @@ interface FilterConfig {
 const filterConfigs: Record<CategoryType, FilterConfig> = {
   venues: {
     title: "웨딩홀 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -63,6 +67,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   studios: {
     title: "스드메 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -115,6 +120,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   dress_shops: {
     title: "드레스샵 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -150,6 +156,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   makeup_shops: {
     title: "메이크업샵 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -186,13 +193,17 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   honeymoon: {
     title: "허니문 필터",
+    regionLabel: "여행지",
+    // honeymoon places.city = region_group (일본/동남아/유럽 등). 사용자의 한국
+    // 거주지가 아니라 destination 광역 분류로 필터링.
     regions: [
-      { value: "몰디브", label: "몰디브" },
-      { value: "인도네시아", label: "발리" },
-      { value: "프랑스", label: "유럽" },
-      { value: "하와이", label: "하와이" },
-      { value: "그리스", label: "그리스" },
-      { value: "태국", label: "태국" },
+      { value: "일본", label: "일본" },
+      { value: "동남아", label: "동남아" },
+      { value: "괌사이판", label: "괌·사이판" },
+      { value: "유럽", label: "유럽" },
+      { value: "미주", label: "미주" },
+      { value: "대양주", label: "대양주" },
+      { value: "중화권", label: "중화권" },
     ],
     filterOptions1: {
       label: "여행 유형",
@@ -225,95 +236,93 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
       ],
     },
   },
-  honeymoon_gifts: {
-    title: "혼수 필터",
+  jewelry: {
+    title: "예물 필터",
+    regionLabel: "가격대",
+    // jewelry는 places.city가 본사·대표매장 도시 (서울 위주). region 필터는 brand_tier로 활용.
     regions: [
-      { value: "삼성", label: "삼성" },
-      { value: "LG", label: "LG" },
-      { value: "시몬스", label: "시몬스" },
-      { value: "한샘", label: "한샘" },
-      { value: "에이스", label: "에이스" },
-      { value: "다이슨", label: "다이슨" },
+      { value: "대중", label: "대중 (50~150만원)" },
+      { value: "프리미엄", label: "프리미엄 (150~400만원)" },
+      { value: "럭셔리", label: "럭셔리 (400~1000만원)" },
+      { value: "하이엔드", label: "하이엔드 (1000만원+)" },
     ],
     filterOptions1: {
-      label: "카테고리",
+      label: "상품 유형",
       options: [
-        { value: "가전", label: "가전" },
-        { value: "가구", label: "가구" },
-        { value: "인테리어", label: "인테리어" },
-        { value: "침대", label: "침대" },
-        { value: "냉장고", label: "냉장고" },
-        { value: "세탁기", label: "세탁기" },
-        { value: "청소기", label: "청소기" },
+        { value: "결혼반지", label: "결혼반지" },
+        { value: "예물세트", label: "예물세트" },
+        { value: "예단", label: "예단" },
+        { value: "시계", label: "시계" },
+        { value: "단품주얼리", label: "단품 주얼리" },
       ],
     },
     filterOptions2: {
-      label: "브랜드",
+      label: "메탈",
       options: [
-        { value: "삼성", label: "삼성" },
-        { value: "LG", label: "LG" },
-        { value: "비스포크", label: "비스포크" },
-        { value: "오브제", label: "오브제" },
-        { value: "시몬스", label: "시몬스" },
-        { value: "한샘", label: "한샘" },
-        { value: "다이슨", label: "다이슨" },
+        { value: "골드", label: "골드" },
+        { value: "화이트골드", label: "화이트골드" },
+        { value: "로즈골드", label: "로즈골드" },
+        { value: "플래티넘", label: "플래티넘" },
       ],
     },
     filterOptions3: {
-      label: "배송 옵션",
+      label: "판매 채널",
       options: [
-        { value: "무료배송", label: "무료배송" },
-        { value: "설치포함", label: "설치포함" },
+        { value: "online", label: "온라인" },
+        { value: "offline", label: "오프라인 매장" },
+        { value: "both", label: "온·오프라인" },
       ],
     },
   },
   appliances: {
-    title: "가전·예물 필터",
+    title: "혼수 필터",
+    regionLabel: "유형",
+    // appliance places.city는 매장 주소 (서울 강남구 등). region 칩은
+    // product_type (매장/패키지/단품)으로 사용해 hybrid 모델을 노출.
     regions: [
-      { value: "삼성", label: "삼성" },
-      { value: "LG", label: "LG" },
-      { value: "까르띠에", label: "까르띠에" },
-      { value: "티파니", label: "티파니" },
-      { value: "발뮤다", label: "발뮤다" },
-      { value: "루이비통", label: "루이비통" },
+      { value: "store", label: "매장" },
+      { value: "package", label: "신혼 패키지" },
+      { value: "single", label: "단품 모델" },
     ],
     filterOptions1: {
       label: "카테고리",
       options: [
-        { value: "예물", label: "예물" },
-        { value: "가전", label: "가전" },
-        { value: "시계", label: "시계" },
-        { value: "반지", label: "반지" },
         { value: "TV", label: "TV" },
-        { value: "주방", label: "주방" },
-        { value: "가방", label: "가방" },
+        { value: "냉장고", label: "냉장고" },
+        { value: "세탁기", label: "세탁기" },
+        { value: "건조기", label: "건조기" },
+        { value: "에어컨", label: "에어컨" },
+        { value: "가구", label: "가구" },
+        { value: "침대", label: "침대" },
+        { value: "소파", label: "소파" },
       ],
     },
     filterOptions2: {
       label: "브랜드",
       options: [
-        { value: "삼성", label: "삼성" },
         { value: "LG", label: "LG" },
-        { value: "까르띠에", label: "까르띠에" },
-        { value: "티파니", label: "티파니" },
-        { value: "발뮤다", label: "발뮤다" },
-        { value: "루이비통", label: "루이비통" },
+        { value: "삼성", label: "삼성" },
+        { value: "비스포크", label: "비스포크" },
+        { value: "오브제", label: "오브제" },
+        { value: "한샘", label: "한샘" },
+        { value: "이케아", label: "이케아" },
+        { value: "시몬스", label: "시몬스" },
+        { value: "다이슨", label: "다이슨" },
       ],
     },
     filterOptions3: {
-      label: "특징",
+      label: "혜택",
       options: [
-        { value: "스마트워치", label: "스마트워치" },
-        { value: "다이아몬드", label: "다이아몬드" },
-        { value: "18K", label: "18K" },
-        { value: "플래티넘", label: "플래티넘" },
-        { value: "명품", label: "명품" },
-        { value: "프리미엄", label: "프리미엄" },
+        { value: "free_delivery", label: "무료 배송" },
+        { value: "free_installation", label: "무료 설치" },
+        { value: "old_appliance_pickup", label: "폐가전 수거" },
+        { value: "card_discount_available", label: "카드 할인" },
       ],
     },
   },
   suits: {
     title: "예복 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -365,6 +374,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   hanbok: {
     title: "한복 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -420,6 +430,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   },
   invitation_venues: {
     title: "청첩장 모임 필터",
+    regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
       { value: "경기도", label: "경기" },
@@ -569,10 +580,10 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
                 </Button>
               </div>
             </SheetHeader>
-            <div className="overflow-y-auto py-4 space-y-6 max-h-[calc(80vh-80px)]">
+            <div className="overflow-y-auto overscroll-contain py-4 space-y-6 max-h-[calc(80vh-80px)]">
               {/* Region Filter */}
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-3">지역/브랜드</h3>
+                <h3 className="text-sm font-semibold text-foreground mb-3">{config.regionLabel}</h3>
                 <div className="flex flex-wrap gap-2">
                   {config.regions.map((r) => (
                     <button
@@ -682,11 +693,13 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
                 active={!!region}
                 onClear={() => setRegion(null)}
               >
-                {region || "지역"}
+                {region
+                  ? (config.regions.find((r) => r.value === region)?.label ?? region)
+                  : config.regionLabel}
               </FilterChip>
             </div>
           </PopoverTrigger>
-          <PopoverContent className="w-48 p-2" align="start">
+          <PopoverContent className="w-48 p-2 max-h-[60vh] overflow-y-auto overscroll-contain" align="start">
             {config.regions.map((r) => (
               <button
                 key={r.value}
@@ -712,7 +725,7 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
               </FilterChip>
             </div>
           </PopoverTrigger>
-          <PopoverContent className="w-40 p-2" align="start">
+          <PopoverContent className="w-40 p-2 max-h-[60vh] overflow-y-auto overscroll-contain" align="start">
             {ratingOptions.map((r) => (
               <button
                 key={r.value}
@@ -739,7 +752,7 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
               </FilterChip>
             </div>
           </PopoverTrigger>
-          <PopoverContent className="w-48 p-2" align="start">
+          <PopoverContent className="w-48 p-2 max-h-[60vh] overflow-y-auto overscroll-contain" align="start">
             {config.filterOptions1.options.map((opt) => (
               <button
                 key={opt.value}

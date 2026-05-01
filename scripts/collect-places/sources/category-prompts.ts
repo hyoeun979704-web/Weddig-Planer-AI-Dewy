@@ -53,10 +53,14 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- original_count (정수): 원본 제공 장수.\n` +
       `- retouching_included (bool): 보정 기본 포함.\n` +
       `- includes_originals (bool): 원본 제공.\n` +
-      `- dress_provided (bool): 드레스 대여 포함.`,
+      `- dress_provided (bool): 드레스 대여 포함.\n` +
+      `- frame_included (bool): 부모님 액자 기본 포함 (별도면 false).\n` +
+      `- photobook_pages (정수): 앨범 페이지 수.\n` +
+      `- editing_days (정수): 보정 후 결과물 받기까지 소요 일수.`,
     cardColumns: [
       "shoot_styles", "shoot_locations", "total_photos", "original_count",
       "retouching_included", "includes_originals", "dress_provided",
+      "frame_included", "photobook_pages", "editing_days",
     ],
   },
 
@@ -72,10 +76,14 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- rental_only (bool): 대여만 (false면 맞춤도 가능).\n` +
       `- fitting_count (정수): 가봉 횟수.\n` +
       `- rental_includes_alterations (bool): 대여에 가봉비 포함.\n` +
-      `- designer_brands (배열): 취급 디자이너/브랜드 (예: ["Vera Wang", "Pronovias", "Galia Lahav"]).`,
+      `- designer_brands (배열): 취급 디자이너/브랜드 (예: ["Vera Wang", "Pronovias", "Galia Lahav"]).\n` +
+      `- helper_included (bool): 헬퍼이모(당일 헬퍼) 비용 포함. 별도면 false (보통 별도 25~35만원).\n` +
+      `- inner_included (bool): 이너·페티코트·베일 등 소품 기본 포함.\n` +
+      `- dress_count_included (정수): 패키지에 포함된 드레스 벌수 (본식+리허설 합산).`,
     cardColumns: [
       "dress_styles", "rental_only", "fitting_count",
       "rental_includes_alterations", "designer_brands",
+      "helper_included", "inner_included", "dress_count_included",
     ],
   },
 
@@ -89,9 +97,13 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- makeup_styles (배열): [${ENUM(["내추럴", "글램", "로맨틱", "모던", "청순", "리허설"])}] 중.\n` +
       `- includes_rehearsal (bool): 본식 패키지에 리허설 포함.\n` +
       `- hair_makeup_separate (bool): 헤어/메이크업 분리 청구.\n` +
-      `- rehearsal_count (정수): 리허설 횟수.`,
+      `- rehearsal_count (정수): 리허설 횟수.\n` +
+      `- travel_fee_included (bool): 웨딩홀 출장비 포함 (한국 결혼식 거의 100% 출장이라 매우 중요).\n` +
+      `- director_level (문자열): 시술자 레벨 — "원장"/"실장"/"팀장"/"디렉터" 등.\n` +
+      `- early_morning_fee (정수): 새벽(7시 이전) 출장 추가비 KRW. 없으면 0.`,
     cardColumns: [
       "makeup_styles", "includes_rehearsal", "hair_makeup_separate", "rehearsal_count",
+      "travel_fee_included", "director_level", "early_morning_fee",
     ],
   },
 
@@ -103,8 +115,10 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `★ 보관비/세탁비/지방 배송비 등은 notes에.\n` +
       `[추가 추출 필드 → category_extras]\n` +
       `- hanbok_types (배열): 취급 한복 [${ENUM(["혼주", "신부", "신랑", "폐백", "어머님", "아버님", "맞춤", "대여"])}] 중.\n` +
-      `- custom_available (bool): 맞춤 제작 가능 (false면 대여만).`,
-    cardColumns: ["hanbok_types", "custom_available"],
+      `- custom_available (bool): 맞춤 제작 가능 (false면 대여만).\n` +
+      `- accessories_included (bool): 노리개·뒷꽂이·속바지·버선 등 액세서리 기본 포함.\n` +
+      `- delivery_available (bool): 지방 배송 / 택배 대여 가능.`,
+    cardColumns: ["hanbok_types", "custom_available", "accessories_included", "delivery_available"],
   },
 
   예복: {
@@ -117,40 +131,230 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- suit_styles (배열): [${ENUM(["턱시도", "정장", "모닝", "클래식", "모던", "슬림핏", "쓰리피스"])}] 중.\n` +
       `- custom_available (bool): 맞춤 제작 가능.\n` +
       `- fitting_count (정수): 가봉 횟수.\n` +
-      `- designer_brands (배열): 취급 브랜드.`,
-    cardColumns: ["suit_styles", "custom_available", "fitting_count", "designer_brands"],
+      `- designer_brands (배열): 취급 브랜드.\n` +
+      `- accessories_included (bool): 셔츠·구두·넥타이·커프스 등 액세서리 기본 포함.`,
+    cardColumns: ["suit_styles", "custom_available", "fitting_count", "designer_brands", "accessories_included"],
   },
 
   허니문: {
     prompt:
-      `\n\n[허니문 — 카테고리 특성]\n` +
-      `★ 가격 모델: per_couple (2인 패키지 가격, 보통 200~1500만원)이 일반적. per_person으로 표기되어 있으면 그대로 per_person.\n` +
-      `★ 통화: KRW가 보통이지만 USD/EUR로 표기되어 있으면 그대로 USD/EUR. (currency 필드 명시 필수)\n` +
-      `★ 패키지는 보통 여행지+박일수 단위로 묶임 ("발리 5박 7일", "유럽 8박 10일").\n` +
-      `★ price_packages.includes 예: ["왕복 항공권 비즈니스", "리조트 5성 5박", "공항 픽업", "조식 포함", "투어 1일"].\n` +
-      `★ 항공편 등급(이코노미/비즈니스), 호텔 등급(3성/4성/5성), 보험 포함 여부는 notes 또는 includes에.\n` +
-      `[추가 추출 필드 → category_extras]\n` +
-      `- destinations (배열): 여행지 (예: ["발리", "몰디브", "유럽"]).\n` +
-      `- duration_days (정수): 패키지 기본 일수.\n` +
-      `- includes_flights (bool): 항공편 포함.\n` +
-      `- includes_hotel (bool): 숙박 포함.\n` +
-      `- travel_agency_partner (문자열): 제휴 여행사명.`,
+      `\n\n[허니문 — 카테고리 특성 (※ 행 단위 = 여행 "상품" 1개. 여행사가 아님!)]\n` +
+      `★ 한 행 = 한 패키지/상품. places.name = 패키지 상품명 (예: "발리 5박7일 풀빌라 허니문 with 가루다항공").\n` +
+      `★ ※ places.city / places.district 채우는 규칙 (필수):\n` +
+      `   - places.city = region_group 값 ("일본"/"동남아"/"유럽" 등 광역 구분)\n` +
+      `   - places.district = representative_city 값 ("도쿄"/"발리"/"파리" 등 대표 도시)\n` +
+      `   허니문은 "여행사 본사 위치"가 아니라 "여행하는 곳"이 검색 기준이 됨.\n` +
+      `★ category_extras.agency_name = 판매 여행사 (하나투어/모두투어/노랑풍선/마이리얼트립/클룩/인터파크투어 등).\n` +
+      `★ product_type 필수: ${ENUM(["package", "free_travel", "flight", "pass"])}\n` +
+      `   - package: 항공+숙박+가이드 묶음 패키지\n` +
+      `   - free_travel: 항공+숙박만 묶고 일정은 자유\n` +
+      `   - flight: 항공권 단품 (편도/왕복)\n` +
+      `   - pass: 교통패스(JR패스/유레일) 또는 관광지 이용권(디즈니/유니버설/Klook/KKday류)\n` +
+      `★ 가격 모델: 보통 per_person (1인 KRW). 통화 USD/EUR 표기되어 있으면 그대로 currency에 명시.\n` +
+      `★ price_packages.includes 예: ["왕복 항공권 비즈니스", "리조트 5성 5박", "공항 픽업", "조식 5회", "투어 1일"].\n` +
+      `★ price_packages.notes 에는 성수기/비수기 가격 차이, 유류할증료 명시.\n` +
+      `[기본 식별/분류 → category_extras]\n` +
+      `- agency_name (문자열, 필수): 판매 여행사명.\n` +
+      `- agency_product_url (문자열): 여행사 상품 상세 페이지 URL.\n` +
+      `- product_code (문자열): 여행사 상품 코드 (예: "Q-BLI24001"). 예약·문의 시 사용.\n` +
+      `- product_type (enum, 필수): ${ENUM(["package", "free_travel", "flight", "pass"])}.\n` +
+      `- departure_type (enum): ${ENUM(["매일출발", "지정일출발", "단독출발"])}.\n` +
+      `[목적지]\n` +
+      `- countries (배열): 방문 국가. 예: ["일본"], ["프랑스","스위스","이탈리아"].\n` +
+      `- cities (배열): 방문 도시. 예: ["도쿄","교토","긴자"].\n` +
+      `- representative_city (문자열): 대표 도시(검색·필터 키). 보통 cities[0]이지만 패키지명상의 메인 도시.\n` +
+      `- region_group (enum): ${ENUM(["일본", "동남아", "괌사이판", "유럽", "미주", "대양주", "중화권", "국내", "기타"])} 중.\n` +
+      `[일정]\n` +
+      `- nights (정수): 박. 예: 5박7일이면 5.\n` +
+      `- days (정수): 일. 예: 5박7일이면 7.\n` +
+      `- itinerary_summary (문자열): 일정 한 줄 요약 (예: "Day1 인천→발리, Day2-5 자유시간/풀빌라, Day6 우붓 투어, Day7 출국").\n` +
+      `- itinerary_highlights (배열): 주요 일정 (예: ["스미냑 비치 디너", "우붓 라이스테라스", "스파 1회"]).\n` +
+      `[가격]\n` +
+      `- price_per_person (정수): 최저가 KRW. (places.min_price와 동기화)\n` +
+      `- avg_budget (정수): 1인 평균 경비 KRW (성수기 포함, 옵션 투어 1~2개 가정한 현실 비용).\n` +
+      `- single_supplement (정수): 1인 1실 추가요금 KRW. 보통 50~150만원.\n` +
+      `- child_price (정수): 아동(만 2~12세) 가격 KRW.\n` +
+      `- infant_price (정수): 유아(만 0~2세) 가격 KRW.\n` +
+      `- price_includes (배열): 포함 항목 (예: ["왕복 직항 항공", "5성 호텔 5박", "조식 5회"]).\n` +
+      `- price_excludes (배열): 불포함 항목 (예: ["선택관광", "가이드 팁", "유류할증료"]).\n` +
+      `- promotion_text (문자열): 현재 진행 중인 시즌 프로모션 (예: "5월 출발 7만원 할인", "조기예약 15% 할인").\n` +
+      `[항공]\n` +
+      `- airline (문자열): 대표 항공사 (예: "대한항공", "아시아나", "가루다인도네시아").\n` +
+      `- direct_flight (bool): 직항 여부.\n` +
+      `- departure_airport (문자열): 출발 공항 — "인천"/"김포"/"부산"/"대구".\n` +
+      `- layover_cities (배열): 경유 도시 (direct_flight=false일 때 필수). 예: ["나리타"].\n` +
+      `- flight_hours (정수): 편도 비행시간(시간 단위, 반올림). 경유면 환승 대기 포함.\n` +
+      `[숙박]\n` +
+      `- hotel_grade (문자열): "3성"/"4성"/"5성"/"풀빌라"/"리조트"/"부티크".\n` +
+      `- room_type (문자열): 객실 타입 — "스탠다드"/"디럭스"/"스위트"/"풀빌라"/"오션뷰"/"파티오".\n` +
+      `- hotel_names (배열): 실제 사용 호텔명 (예: ["더 리츠칼튼 발리","아야나 리조트"]).\n` +
+      `- meal_plan (문자열): 식사 — "조식 5회"/"2식 조·석"/"올인클루시브"/"미포함".\n` +
+      `[키워드/특성]\n` +
+      `- themes (배열): ${ENUM(["가성비", "럭셔리", "랜드마크", "휴양", "도심관광", "자연·액티비티", "미식", "쇼핑", "효도", "신혼", "가족"])} 중. 1~3개.\n` +
+      `- honeymoon_perks (배열, 허니문 패키지의 핵심 차별점): 신혼 특전 (예: ["룸 업그레이드","웰컴 케이크","허니문 디너","스파 1회","조식 인룸 서비스","꽃장식","샴페인"]).\n` +
+      `- shopping_required (bool): 쇼핑센터 의무방문 (패키지 단점).\n` +
+      `- guide_included (bool): 한국어 인솔자/가이드 동행.\n` +
+      `- visa_required (bool): 한국 여권 기준 비자 필요 여부.\n` +
+      `[product_type=pass 전용]\n` +
+      `- validity_days (정수): 유효기간(일). 예: JR패스 7일권이면 7.\n` +
+      `- usage_count (정수): 사용 가능 횟수. 0=무제한, 1=1회 입장, 등.`,
     cardColumns: [
-      "destinations", "duration_days", "includes_flights", "includes_hotel",
-      "travel_agency_partner",
+      "agency_name", "agency_product_url", "product_type", "product_code",
+      "countries", "cities", "representative_city", "region_group",
+      "nights", "days", "itinerary_summary", "itinerary_highlights",
+      "price_per_person", "avg_budget", "single_supplement", "child_price", "infant_price",
+      "price_includes", "price_excludes", "promotion_text",
+      "airline", "direct_flight", "departure_airport", "layover_cities", "flight_hours",
+      "hotel_grade", "room_type", "hotel_names", "meal_plan",
+      "themes", "honeymoon_perks", "shopping_required", "guide_included", "visa_required",
+      "departure_type", "validity_days", "usage_count",
     ],
   },
 
   혼수: {
     prompt:
-      `\n\n[혼수(가전·가구) — 카테고리 특성]\n` +
-      `★ 가격 모델: per_set (세트 가격, 보통 500~3000만원). 단품 가격이면 per_event로.\n` +
-      `★ price_packages.includes 예: ["냉장고", "세탁기", "건조기", "TV 65인치", "에어컨 2대", "무료 배송·설치"].\n` +
-      `★ 세트 할인율, 무이자 할부 개월수, 무료 배송/설치 여부는 notes에.\n` +
-      `[추가 추출 필드 → category_extras]\n` +
-      `- product_categories (배열): [${ENUM(["TV", "냉장고", "세탁기", "에어컨", "가구", "침대", "소파", "건조기"])}] 중.\n` +
-      `- brand_options (배열): 취급 브랜드 (예: ["LG", "삼성", "한샘", "에넥스"]).`,
-    cardColumns: ["product_categories", "brand_options"],
+      `\n\n[혼수(가전·가구) — 카테고리 특성 (★ hybrid: 한 행 = 매장 / 패키지 / 단품 모델 중 하나)]\n` +
+      `★ product_type 필수: ${ENUM(["store", "package", "single"])}\n` +
+      `   - store: LG베스트샵·삼성디지털프라자·하이마트·롯데하이마트·전자랜드·백화점 가전관 등 매장.\n` +
+      `   - package: 신혼 가전 N종 패키지 (예: "LG 비스포크 신혼 5종 세트", "삼성 그랑데 패키지").\n` +
+      `   - single: 단일 모델 (예: "LG 시그니처 OLED 65", "삼성 비스포크 4도어").\n` +
+      `★ 가격 모델: store는 매장 통상가, package는 세트 가격(price_packages 1번 행 + package_set_price), single은 모델가.\n` +
+      `★ store_chain (store 전용): "LG베스트샵","삼성디지털프라자","하이마트","롯데하이마트","전자랜드","신세계 가전관","롯데 가전관","현대 가전관","갤러리아 가전관" 등.\n` +
+      `[공통 → category_extras]\n` +
+      `- product_type (enum, 필수): store/package/single.\n` +
+      `- product_url (문자열): package/single은 필수 (브랜드몰·백화점몰 상품 URL).\n` +
+      `- product_code (문자열): single 모델 SKU (예: RF85B941...).\n` +
+      `- product_categories (배열): [${ENUM(["TV", "냉장고", "세탁기", "에어컨", "가구", "침대", "소파", "건조기", "공기청정기", "스타일러"])}] 중.\n` +
+      `- brand_options (배열): 취급/판매 브랜드 (예: ["LG", "삼성", "한샘", "이케아"]).\n` +
+      `- promotion_text (문자열): 시즌 프로모션 (예: "5종 세트 1,200만원~", "삼성카드 12개월 무이자").\n` +
+      `[store 전용]\n` +
+      `- store_chain (문자열, 위 enum 중).\n` +
+      `- specialties (배열): 강점 카테고리 — 예: ["프리미엄 TV","에어컨 설치"].\n` +
+      `- package_examples (배열): 이 매장에서 제공하는 대표 신혼 패키지명 — 예: ["LG 비스포크 5종","삼성 그랑데 패키지","에이스 침대 콜라보"].\n` +
+      `- package_price_range (문자열): 패키지 가격대 — 예: "500~1500만원".\n` +
+      `[package 전용]\n` +
+      `- package_items (배열): 포함 모델 (예: ["LG 시그니처 OLED 65인치","비스포크 4도어 냉장고","트롬 워시타워","휘센 에어컨"]).\n` +
+      `- package_set_price (정수): 세트 총가 KRW.\n` +
+      `[가전 사양 (single·package 공통, store는 null)]\n` +
+      `- energy_rating (문자열): 에너지소비효율 등급 — "1등급"/"2등급"/"3등급"/"4등급"/"5등급". 다나와·에누리 표준.\n` +
+      `- model_release_year (정수): 모델 출시 연도. 신모델 vs 구모델 가격차 핵심.\n` +
+      `- capacity_text (문자열): 용량 통합 표기 — 예: "85인치 OLED","850L 4도어","23kg 워시타워".\n` +
+      `- target_household (문자열): 권장 가구원 수 — "1인","2~3인","4인 이상".\n` +
+      `[혜택·결제]\n` +
+      `- installment_months (정수): 무이자 할부 최대 개월수 (없으면 0).\n` +
+      `- warranty_years (정수): 기본 보증 기간 (년).\n` +
+      `- total_discount_percent (소수): 시즌 통합 최대 할인율 — 예: 15.5 (없으면 null).\n` +
+      `- card_partners (배열): 제휴 카드사 — ${ENUM(["삼성","현대","우리","KB국민","신한","롯데","BC","NH농협","하나","씨티"])} 중.\n` +
+      `- payment_options (배열): 결제 방식 — ["카드","현금","장기할부","리스","상품권"] 중.\n` +
+      `- free_delivery (bool): 무료 배송.\n` +
+      `- free_installation (bool): 무료 설치 (특히 에어컨).\n` +
+      `- old_appliance_pickup (bool): 폐가전 무료 수거.\n` +
+      `- card_discount_available (bool): 카드사 제휴 할인 운영 (정도는 total_discount_percent 참조).\n` +
+      `[견적·매장 부가 정보 (store 위주)]\n` +
+      `- negotiable (bool): 가격 협상 가능 (양판점·매장).\n` +
+      `- quote_request_url (문자열): 견적 요청 URL.\n` +
+      `- floor_location (문자열): 백화점 N층 가전관 — 예: "본점 9층 가전관".\n` +
+      `- home_visit_quote (bool): 출장 견적 가능 (LG베스트샵·삼성디지털프라자 일부).\n` +
+      `[사은품 — 한국 혼수 핵심 차별점]\n` +
+      `- gift_items (배열): 패키지·구매 시 증정품 — 예: ["커피머신","에어프라이어","상품권 50만원","청소기","피규어"].\n` +
+      `[인기/시즌]\n` +
+      `- is_bestseller (bool): 다나와·에누리 등에서 베스트셀러 표기.\n` +
+      `- is_new_model (bool): 출시 1년 미만 신모델.`,
+    cardColumns: [
+      "product_type", "product_url", "product_code", "store_chain", "specialties",
+      "package_items", "package_set_price", "package_examples", "package_price_range",
+      "product_categories", "brand_options",
+      "energy_rating", "model_release_year", "capacity_text", "target_household",
+      "installment_months", "warranty_years", "total_discount_percent",
+      "free_delivery", "free_installation", "old_appliance_pickup",
+      "card_discount_available", "card_partners", "payment_options",
+      "negotiable", "quote_request_url", "floor_location", "home_visit_quote",
+      "gift_items", "is_bestseller", "is_new_model",
+      "promotion_text",
+    ],
+  },
+
+  예물: {
+    prompt:
+      `\n\n[예물(주얼리/예물세트) — 카테고리 특성 (※ 행 단위 = 한 브랜드의 베스트셀러 1개)]\n` +
+      `★ 한 행 = 1 브랜드의 대표 베스트셀러 컬렉션/라인 (예: "제이에스티나 미니멀 결혼반지", "디디에두보 골든니클라스").\n` +
+      `★ places.name = 브랜드 + 컬렉션명. places.tel/places.address = 본사 또는 대표 매장.\n` +
+      `★ 매장 형태(store_type) 구분 필수: ${ENUM(["online", "offline", "both"])} \n` +
+      `   - online: 자체 사이트 또는 백화점몰만 운영 (오프라인 매장 X)\n` +
+      `   - offline: 오프라인 매장만 운영 (인터넷 판매 X)\n` +
+      `   - both: 양쪽 다\n` +
+      `★ 가격 모델: 1개 반지 가격(price_per_person)과 커플 2인 세트 가격(price_couple_set) 둘 다 베스트셀러 기준 추출.\n` +
+      `★ price_packages.includes 예: ["결혼반지 2개 (남여)", "다이아몬드 0.3캐럿", "GIA 인증서", "사이즈 조절 평생 무료"].\n` +
+      `★ ※ SNS 정보 채울 것 (places.tel, place_details: instagram_url, naver_place_url, naver_blog_url, kakao_channel_url, website_url, youtube_url, facebook_url).\n` +
+      `[식별 → category_extras]\n` +
+      `- brand_name (문자열, 필수): 브랜드명 (제이에스티나/골든듀/디디에두보/스톤헨지/티파니/까르띠에 등).\n` +
+      `- product_url (문자열, 필수): 베스트셀러 상품 페이지 URL — 브랜드 공식 사이트, 백화점몰, 또는 네이버 플레이스 매장 URL.\n` +
+      `- product_code (문자열): 브랜드 상품번호.\n` +
+      `- product_type (enum): ${ENUM(["결혼반지", "예물세트", "예단", "시계", "단품주얼리"])}.\n` +
+      `- sub_category (문자열): 컬렉션·라인명 (예: "솔리테어", "트리니티", "엔드리스", "라피네").\n` +
+      `- store_type (enum): online/offline/both.\n` +
+      `[가격 (베스트셀러 기준)]\n` +
+      `- price_per_person (정수): 1인 결혼반지 1개 가격 KRW.\n` +
+      `- price_couple_set (정수): 커플 2인 세트 가격 KRW.\n` +
+      `[메탈]\n` +
+      `- metals (배열): [${ENUM(["골드", "화이트골드", "로즈골드", "플래티넘", "실버"])}] 중.\n` +
+      `- gold_karat (문자열): 금 함량 — ${ENUM(["14K", "18K", "24K", "플래티넘950", "플래티넘900"])}. 메탈 종류만큼 가격 차이 큼.\n` +
+      `- product_categories (배열): [${ENUM(["결혼반지", "예물세트", "시계", "네크리스", "이어링", "팔찌"])}] 중.\n` +
+      `[다이아 (4C 분리 입력 — 비교사이트 표준)]\n` +
+      `- carat_diamond (소수): 메인 스톤 캐럿 (0.3/0.5/1.0…). 다이아 없으면 null.\n` +
+      `- diamond_certified (bool): 인증서 발급 여부.\n` +
+      `- diamond_cert_org (문자열): 인증기관 ${ENUM(["GIA", "IGI", "HRD", "한국감정원", "현대주얼리"])}.\n` +
+      `- diamond_color (문자열): 컬러 등급 — D/E/F/G/H/I/J… (D 무색에 가까울수록 고가).\n` +
+      `- diamond_clarity (문자열): 투명도 — ${ENUM(["FL", "IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1"])}.\n` +
+      `- diamond_cut (문자열): 컷 등급 — ${ENUM(["Excellent", "Very Good", "Good", "Fair", "Poor"])}.\n` +
+      `- diamond_shape (문자열): 형태 — ${ENUM(["라운드", "프린세스", "오벌", "페어", "마키스", "하트", "에메랄드", "쿠션"])}.\n` +
+      `- diamond_origin (enum): ${ENUM(["natural", "lab_grown"])} (천연/랩그로운). 랩그로운은 30~50% 저렴.\n` +
+      `- side_stones_count (정수): 사이드 스톤 개수. 솔리테어면 0, 멜리/할로면 5~30개 등.\n` +
+      `- side_stones_total_carat (소수): 사이드 스톤 총 캐럿.\n` +
+      `[밴드 (반지 치수·디자인)]\n` +
+      `- band_design (문자열): 밴드 형태 — 예: "심플밴드", "볼륨", "트위스트", "에터니티".\n` +
+      `- band_width_mm (소수): 반지 폭 mm. 결혼반지 보통 2~4mm.\n` +
+      `- band_thickness_mm (소수): 반지 두께 mm. 보통 1.5~2.5mm.\n` +
+      `- band_profile (문자열): 단면 — ${ENUM(["코트", "D-shape", "플랫"])}.\n` +
+      `- band_finishing (문자열): 마감 — ${ENUM(["폴리시", "매트", "해머링", "밀그레인"])}.\n` +
+      `- stone_setting (문자열): 세팅 방식 — ${ENUM(["프롱", "베젤", "채널", "파브"])}.\n` +
+      `[서비스]\n` +
+      `- engraving_available (bool): 이니셜·문구 각인 가능.\n` +
+      `- size_resize_free (bool): 사이즈 조절 무료.\n` +
+      `- custom_design_available (bool): 맞춤 디자인 가능.\n` +
+      `- delivery_days (정수): 제작·배송 소요 일수 (재고면 1, 주문제작이면 14~30 등).\n` +
+      `- lifetime_warranty (bool): 평생 A/S.\n` +
+      `- couple_set_available (bool): 커플 세트 구성 가능.\n` +
+      `- aftercare_includes (배열): 평생 케어 항목 (예: ["클리닝", "리폴리싱", "재세팅", "사이즈조절"]).\n` +
+      `- package_includes (배열): 패키지 포함 항목 (예: ["감정서", "벨벳 케이스", "예물함"]).\n` +
+      `[브랜드 메타]\n` +
+      `- brand_tier (enum): ${ENUM(["대중", "프리미엄", "럭셔리", "하이엔드"])} 가격대 분류.\n` +
+      `   대중: 50~150만원 (제이에스티나/디디에두보 등)\n` +
+      `   프리미엄: 150~400만원 (스톤헨지/예작/예이츠 등)\n` +
+      `   럭셔리: 400~1000만원 (까르띠에/불가리/티파니 입문)\n` +
+      `   하이엔드: 1000만원+ (반클리프/쇼파드/그라프)\n` +
+      `- signature_collection (문자열): 브랜드의 대표·시그니처 컬렉션명. sub_category(베스트셀러)와 다를 수 있음 (예: 까르띠에 sub_category="러브"여도 시그니처는 "트리니티").\n` +
+      `- brand_origin (문자열): 브랜드 국가 (한국/미국/프랑스/이탈리아 등).\n` +
+      `- brand_history_year (정수): 설립 연도 (예: 1837).\n` +
+      `- showroom_count (정수): 국내 오프라인 매장 수.\n` +
+      `- partnership_dept_stores (배열): 입점 주요 백화점 — ${ENUM(["롯데", "신세계", "현대", "갤러리아", "AK플라자", "더현대"])} 중. 한국 사용자가 매장 가서 사기 위해 즉시 보고 싶어함.\n` +
+      `- promotion_text (문자열): 시즌 프로모션/할인.`,
+    cardColumns: [
+      "brand_name", "brand_tier", "signature_collection",
+      "product_url", "product_code", "product_type", "sub_category", "store_type",
+      "metals", "gold_karat", "product_categories",
+      "price_per_person", "price_couple_set",
+      "carat_diamond", "diamond_certified", "diamond_cert_org",
+      "diamond_color", "diamond_clarity", "diamond_cut", "diamond_shape", "diamond_origin",
+      "side_stones_count", "side_stones_total_carat",
+      "band_design", "band_width_mm", "band_thickness_mm", "band_profile", "band_finishing",
+      "stone_setting", "engraving_available",
+      "custom_design_available", "delivery_days", "size_resize_free",
+      "aftercare_includes", "package_includes",
+      "couple_set_available", "lifetime_warranty",
+      "brand_origin", "brand_history_year", "showroom_count", "partnership_dept_stores",
+      "promotion_text",
+    ],
   },
 
   청첩장: {
@@ -159,11 +363,22 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `★ 가격 모델: per_person (1인 코스 가격, 보통 5~15만원).\n` +
       `★ 룸 단위 운영이면 룸 최소 인원 / 룸 차지가 별도 있을 수 있음 → notes에.\n` +
       `★ price_packages.includes 예: ["1인 코스 7품", "음료 무제한", "프라이빗 룸 4시간"].\n` +
+      `★ 레스토랑 비교 시 분위기, 발렛파킹, 시그니처 메뉴, 콜키지가 핵심.\n` +
       `[추가 추출 필드 → category_extras]\n` +
       `- venue_types (배열): [${ENUM(["한식", "일식", "중식", "양식", "이탈리안", "코스", "프라이빗", "룸"])}] 중.\n` +
       `- capacity_min (정수): 룸 최소 수용 인원.\n` +
-      `- capacity_max (정수): 룸 최대 수용 인원.`,
-    cardColumns: ["venue_types", "capacity_min", "capacity_max"],
+      `- capacity_max (정수): 룸 최대 수용 인원.\n` +
+      `- room_charge_separate (bool): 룸 차지(룸 사용료)가 1인 코스값과 별도로 청구되는지.\n` +
+      `- drinks_included (bool): 음료/주류가 코스 가격에 포함되는지.\n` +
+      `- atmosphere (배열): 분위기 [${ENUM(["데이트", "비즈니스", "가족모임", "회식", "프라이빗", "캐주얼"])}] 중.\n` +
+      `- valet_parking (bool): 발렛파킹 제공.\n` +
+      `- signature_dishes (배열): 시그니처/대표 메뉴 (예: ["도미스시", "오마카세 코스"]).\n` +
+      `- corkage_fee_won (정수): 콜키지(외부 와인 반입) 비용 KRW. 무료면 0, 미허용이면 null.\n` +
+      `- private_room_count (정수): 단독 룸 개수.`,
+    cardColumns: [
+      "venue_types", "capacity_min", "capacity_max", "room_charge_separate", "drinks_included",
+      "atmosphere", "valet_parking", "signature_dishes", "corkage_fee_won", "private_room_count",
+    ],
   },
 };
 
@@ -176,5 +391,6 @@ export const CARD_TABLE: Record<CategoryLabel, string> = {
   예복: "place_tailor_shops",
   허니문: "place_honeymoons",
   혼수: "place_appliances",
+  예물: "place_jewelry",
   청첩장: "place_invitation_venues",
 };

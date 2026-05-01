@@ -8,6 +8,7 @@ import CategoryGrid from "@/components/CategoryGrid";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
+import { normalizeRegion } from "@/lib/regions";
 
 const Suit = () => {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ const Suit = () => {
   const initWithRegion = useCategoryFilterStore((state) => state.initWithRegion);
   const { defaultRegion, isLoaded } = useDefaultRegion();
 
-  useEffect(() => { if (isLoaded) initWithRegion(defaultRegion); }, [isLoaded]);
+  useEffect(() => { if (isLoaded) initWithRegion(normalizeRegion(defaultRegion)); }, [isLoaded]);
 
   const handleItemClick = (item: CategoryItem) => { navigate(`/suit/${item.id}`); };
 

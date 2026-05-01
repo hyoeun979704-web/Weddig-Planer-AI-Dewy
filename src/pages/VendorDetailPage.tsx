@@ -85,6 +85,8 @@ function CategoryExtras({ place }: { place: LegacyDetail }) {
       return <HoneymoonExtras place={place} />;
     case "appliance":
       return <ApplianceExtras place={place} />;
+    case "jewelry":
+      return <JewelryExtras place={place} />;
     case "invitation_venue":
       return <InvitationVenueExtras place={place} />;
     default:
@@ -136,24 +138,65 @@ function WeddingHallExtras({ place }: { place: LegacyDetail }) {
 }
 
 function StudioExtras({ place }: { place: LegacyDetail }) {
+  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
   const has =
     place.shoot_styles.length > 0 || place.shoot_locations.length > 0 ||
     place.total_photos != null || place.original_count != null ||
     place.retouching_included != null || place.dress_provided != null ||
-    place.includes_originals != null;
+    place.includes_originals != null || place.frame_included != null ||
+    place.photobook_pages != null || place.editing_days != null ||
+    place.base_shoot_hours != null || place.base_retouch_count != null ||
+    place.author_tiers.length > 0 ||
+    place.raw_file_extra_cost != null || place.per_retouch_cost != null ||
+    place.album_extra_cost != null;
   if (!has) return null;
   return (
-    <div className="space-y-3">
-      <h3 className="font-bold text-sm">촬영 정보</h3>
-      <Tags label="스타일" items={place.shoot_styles} />
-      <Tags label="촬영 장소" items={place.shoot_locations} />
-      <div className="grid grid-cols-2 gap-2">
-        {place.total_photos != null && <Stat label="총 사진" value={`${place.total_photos}장`} />}
-        {place.original_count != null && <Stat label="원본" value={`${place.original_count}장`} />}
-        {place.retouching_included != null && <Stat label="보정" value={place.retouching_included ? "포함" : "별도"} />}
-        {place.includes_originals != null && <Stat label="원본 제공" value={place.includes_originals ? "제공" : "미제공"} />}
-        {place.dress_provided != null && <Stat label="드레스 대여" value={place.dress_provided ? "포함" : "별도"} />}
+    <div className="space-y-4">
+      <div className="space-y-3">
+        <h3 className="font-bold text-sm">촬영 정보</h3>
+        <Tags label="스타일" items={place.shoot_styles} />
+        <Tags label="촬영 장소" items={place.shoot_locations} />
+        <Tags label="작가 등급" items={place.author_tiers} />
+        <div className="grid grid-cols-2 gap-2">
+          {place.total_photos != null && <Stat label="총 사진" value={`${place.total_photos}장`} />}
+          {place.original_count != null && <Stat label="원본" value={`${place.original_count}장`} />}
+          {place.base_shoot_hours != null && (
+            <Stat label="기본 촬영" value={`${place.base_shoot_hours}시간`} />
+          )}
+          {place.base_retouch_count != null && (
+            <Stat label="기본 보정" value={`${place.base_retouch_count}장`} />
+          )}
+          {place.editing_days != null && (
+            <Stat label="보정 소요" value={`${place.editing_days}일`} />
+          )}
+          {place.photobook_pages != null && (
+            <Stat label="앨범" value={`${place.photobook_pages}p`} />
+          )}
+          {place.retouching_included != null && <Stat label="보정" value={place.retouching_included ? "포함" : "별도"} />}
+          {place.includes_originals != null && <Stat label="원본 제공" value={place.includes_originals ? "제공" : "미제공"} />}
+          {place.frame_included != null && <Stat label="액자" value={place.frame_included ? "포함" : "별도"} />}
+          {place.dress_provided != null && <Stat label="드레스 대여" value={place.dress_provided ? "포함" : "별도"} />}
+        </div>
       </div>
+
+      {(place.raw_file_extra_cost != null ||
+        place.per_retouch_cost != null ||
+        place.album_extra_cost != null) && (
+        <div className="space-y-2 rounded-lg bg-muted/50 p-3">
+          <h3 className="font-bold text-sm">추가 옵션 비용</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.raw_file_extra_cost != null && (
+              <Stat label="원본 추가" value={fmtMan(place.raw_file_extra_cost)} />
+            )}
+            {place.per_retouch_cost != null && (
+              <Stat label="보정 1장" value={fmtMan(place.per_retouch_cost)} />
+            )}
+            {place.album_extra_cost != null && (
+              <Stat label="앨범 추가" value={fmtMan(place.album_extra_cost)} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -162,7 +205,9 @@ function DressShopExtras({ place }: { place: LegacyDetail }) {
   const has =
     place.dress_styles.length > 0 || place.designer_brands.length > 0 ||
     place.rental_only != null || place.fitting_count != null ||
-    place.rental_includes_alterations != null;
+    place.rental_includes_alterations != null ||
+    place.helper_included != null || place.inner_included != null ||
+    place.dress_count_included != null;
   if (!has) return null;
   return (
     <div className="space-y-3">
@@ -175,22 +220,34 @@ function DressShopExtras({ place }: { place: LegacyDetail }) {
         {place.rental_includes_alterations != null && (
           <Stat label="가봉비" value={place.rental_includes_alterations ? "포함" : "별도"} />
         )}
+        {place.dress_count_included != null && (
+          <Stat label="포함 벌수" value={`${place.dress_count_included}벌`} />
+        )}
+        {place.helper_included != null && (
+          <Stat label="헬퍼이모" value={place.helper_included ? "포함" : "별도"} />
+        )}
+        {place.inner_included != null && (
+          <Stat label="이너·베일" value={place.inner_included ? "포함" : "별도"} />
+        )}
       </div>
     </div>
   );
 }
 
 function MakeupExtras({ place }: { place: LegacyDetail }) {
+  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
   const has =
     place.makeup_styles.length > 0 ||
     place.includes_rehearsal != null || place.hair_makeup_separate != null ||
-    place.rehearsal_count != null;
+    place.rehearsal_count != null || place.travel_fee_included != null ||
+    place.director_level || place.early_morning_fee != null;
   if (!has) return null;
   return (
     <div className="space-y-3">
       <h3 className="font-bold text-sm">메이크업 정보</h3>
       <Tags label="스타일" items={place.makeup_styles} />
       <div className="grid grid-cols-2 gap-2">
+        {place.director_level && <Stat label="시술자" value={place.director_level} />}
         {place.includes_rehearsal != null && (
           <Stat label="리허설 포함" value={place.includes_rehearsal ? "포함" : "별도"} />
         )}
@@ -200,21 +257,37 @@ function MakeupExtras({ place }: { place: LegacyDetail }) {
         {place.rehearsal_count != null && (
           <Stat label="리허설 횟수" value={`${place.rehearsal_count}회`} />
         )}
+        {place.travel_fee_included != null && (
+          <Stat label="출장비" value={place.travel_fee_included ? "포함" : "별도"} />
+        )}
+        {place.early_morning_fee != null && place.early_morning_fee > 0 && (
+          <Stat label="새벽 출장 추가" value={`+${fmtMan(place.early_morning_fee)}`} />
+        )}
       </div>
     </div>
   );
 }
 
 function HanbokExtras({ place }: { place: LegacyDetail }) {
-  const has = place.hanbok_types.length > 0 || place.custom_available != null;
+  const has =
+    place.hanbok_types.length > 0 || place.custom_available != null ||
+    place.accessories_included != null || place.delivery_available != null;
   if (!has) return null;
   return (
     <div className="space-y-3">
       <h3 className="font-bold text-sm">한복 정보</h3>
       <Tags label="한복 유형" items={place.hanbok_types} />
-      {place.custom_available != null && (
-        <Stat label="맞춤 제작" value={place.custom_available ? "가능" : "대여만"} />
-      )}
+      <div className="grid grid-cols-2 gap-2">
+        {place.custom_available != null && (
+          <Stat label="맞춤 제작" value={place.custom_available ? "가능" : "대여만"} />
+        )}
+        {place.accessories_included != null && (
+          <Stat label="액세서리" value={place.accessories_included ? "포함" : "별도"} />
+        )}
+        {place.delivery_available != null && (
+          <Stat label="지방 배송" value={place.delivery_available ? "가능" : "불가"} />
+        )}
+      </div>
     </div>
   );
 }
@@ -222,7 +295,8 @@ function HanbokExtras({ place }: { place: LegacyDetail }) {
 function TailorExtras({ place }: { place: LegacyDetail }) {
   const has =
     place.suit_styles.length > 0 || place.designer_brands.length > 0 ||
-    place.fitting_count != null || place.custom_available != null;
+    place.fitting_count != null || place.custom_available != null ||
+    place.accessories_included != null;
   if (!has) return null;
   return (
     <div className="space-y-3">
@@ -234,61 +308,549 @@ function TailorExtras({ place }: { place: LegacyDetail }) {
         {place.custom_available != null && (
           <Stat label="맞춤 제작" value={place.custom_available ? "가능" : "대여만"} />
         )}
+        {place.accessories_included != null && (
+          <Stat label="셔츠·구두·넥타이" value={place.accessories_included ? "포함" : "별도"} />
+        )}
       </div>
     </div>
   );
 }
 
 function HoneymoonExtras({ place }: { place: LegacyDetail }) {
+  const PRODUCT_TYPE_LABEL: Record<string, string> = {
+    package: "패키지",
+    free_travel: "자유여행",
+    flight: "항공권",
+    pass: "이용권",
+  };
+  const isPass = place.product_type === "pass";
+  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
   const has =
-    place.destinations.length > 0 || place.duration_days != null ||
-    place.includes_flights != null || place.includes_hotel != null ||
-    place.travel_agency_partner;
+    place.agency_name ||
+    place.product_type ||
+    place.countries.length > 0 ||
+    place.cities.length > 0 ||
+    place.nights != null ||
+    place.days != null ||
+    place.itinerary_summary ||
+    place.itinerary_highlights.length > 0 ||
+    place.avg_budget != null ||
+    place.airline ||
+    place.themes.length > 0 ||
+    place.honeymoon_perks.length > 0 ||
+    place.hotel_names.length > 0;
   if (!has) return null;
   return (
-    <div className="space-y-3">
-      <h3 className="font-bold text-sm">허니문 정보</h3>
-      <Tags label="여행지" items={place.destinations} />
+    <div className="space-y-4">
+      {/* 신혼 특전 — 페이지 최상단에 배치 (허니문 상품의 핵심 차별점) */}
+      {place.honeymoon_perks.length > 0 && (
+        <div className="space-y-2 rounded-lg bg-rose-50 p-3">
+          <h3 className="font-bold text-sm text-rose-900">허니문 특전</h3>
+          <Tags label="" items={place.honeymoon_perks} />
+        </div>
+      )}
+
+      {place.promotion_text && (
+        <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          🎁 {place.promotion_text}
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <h3 className="font-bold text-sm">허니문 상품 정보</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {place.agency_name && <Stat label="여행사" value={place.agency_name} />}
+          {place.product_type && (
+            <Stat label="상품 유형" value={PRODUCT_TYPE_LABEL[place.product_type] ?? place.product_type} />
+          )}
+          {place.product_code && <Stat label="상품 코드" value={place.product_code} />}
+          {place.departure_type && <Stat label="출발 형태" value={place.departure_type} />}
+          {!isPass && place.nights != null && place.days != null && (
+            <Stat label="일정" value={`${place.nights}박${place.days}일`} />
+          )}
+          {place.avg_budget != null && (
+            <Stat label="평균 경비" value={`${fmtMan(place.avg_budget)}~`} />
+          )}
+          {place.single_supplement != null && (
+            <Stat label="1인 1실 추가" value={`+${fmtMan(place.single_supplement)}`} />
+          )}
+          {place.child_price != null && (
+            <Stat label="아동가" value={fmtMan(place.child_price)} />
+          )}
+          {place.infant_price != null && (
+            <Stat label="유아가" value={fmtMan(place.infant_price)} />
+          )}
+          {isPass && place.validity_days != null && (
+            <Stat label="유효기간" value={`${place.validity_days}일`} />
+          )}
+          {isPass && place.usage_count != null && (
+            <Stat
+              label="사용 횟수"
+              value={place.usage_count === 0 ? "무제한" : `${place.usage_count}회`}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* 항공 정보 */}
+      {(place.airline || place.departure_airport || place.flight_hours != null || place.layover_cities.length > 0) && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm">항공</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.airline && (
+              <Stat
+                label="항공사"
+                value={`${place.airline}${place.direct_flight ? " · 직항" : place.direct_flight === false ? " · 경유" : ""}`}
+              />
+            )}
+            {place.departure_airport && <Stat label="출발 공항" value={place.departure_airport} />}
+            {place.flight_hours != null && (
+              <Stat label="비행시간" value={`약 ${place.flight_hours}시간`} />
+            )}
+          </div>
+          {place.layover_cities.length > 0 && (
+            <Tags label="경유" items={place.layover_cities} />
+          )}
+        </div>
+      )}
+
+      {/* 숙박 정보 */}
+      {(place.hotel_grade || place.room_type || place.hotel_names.length > 0 || place.meal_plan) && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm">숙박·식사</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.hotel_grade && <Stat label="등급" value={place.hotel_grade} />}
+            {place.room_type && <Stat label="객실" value={place.room_type} />}
+            {place.meal_plan && <Stat label="식사" value={place.meal_plan} />}
+          </div>
+          <Tags label="호텔" items={place.hotel_names} />
+        </div>
+      )}
+
+      {/* 정책 / 키워드 */}
       <div className="grid grid-cols-2 gap-2">
-        {place.duration_days != null && <Stat label="기본 일수" value={`${place.duration_days}일`} />}
-        {place.includes_flights != null && (
-          <Stat label="항공편" value={place.includes_flights ? "포함" : "별도"} />
+        {place.guide_included != null && (
+          <Stat label="가이드" value={place.guide_included ? "동행" : "미동행"} />
         )}
-        {place.includes_hotel != null && (
-          <Stat label="숙박" value={place.includes_hotel ? "포함" : "별도"} />
+        {place.shopping_required != null && (
+          <Stat label="쇼핑 의무" value={place.shopping_required ? "있음" : "없음"} />
         )}
-        {place.travel_agency_partner && (
-          <Stat label="제휴 여행사" value={place.travel_agency_partner} />
+        {place.visa_required != null && (
+          <Stat label="비자" value={place.visa_required ? "필요" : "면제"} />
         )}
       </div>
+
+      <Tags label="방문 국가" items={place.countries} />
+      <Tags label="방문 도시" items={place.cities} />
+      <Tags label="테마" items={place.themes} />
+      <Tags label="포함 사항" items={place.price_includes} />
+      <Tags label="불포함 사항" items={place.price_excludes} />
+      <Tags label="주요 일정" items={place.itinerary_highlights} />
+      {place.itinerary_summary && (
+        <p className="text-xs text-muted-foreground whitespace-pre-line">
+          {place.itinerary_summary}
+        </p>
+      )}
     </div>
   );
 }
 
 function ApplianceExtras({ place }: { place: LegacyDetail }) {
-  const has = place.product_categories.length > 0 || place.brand_options.length > 0;
-  if (!has) return null;
+  const APPL_TYPE_LABEL: Record<string, string> = {
+    store: "매장",
+    package: "신혼 패키지",
+    single: "단품 모델",
+  };
+  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
+  const buyUrl =
+    place.appliance_product_url || place.website_url || place.naver_place_url || null;
+  const buyLabel = place.appliance_product_url
+    ? "구매 페이지로 이동"
+    : place.website_url
+      ? "공식 사이트로 이동"
+      : place.naver_place_url
+        ? "네이버 플레이스에서 보기"
+        : null;
+  const has =
+    place.product_categories.length > 0 ||
+    place.brand_options.length > 0 ||
+    place.installment_months != null ||
+    place.warranty_years != null ||
+    place.free_delivery != null ||
+    place.free_installation != null ||
+    place.old_appliance_pickup != null ||
+    place.card_discount_available != null ||
+    place.store_chain ||
+    place.specialties.length > 0 ||
+    place.package_items.length > 0 ||
+    place.package_set_price != null;
+  if (!has && !buyUrl) return null;
   return (
-    <div className="space-y-3">
-      <h3 className="font-bold text-sm">혼수 정보</h3>
+    <div className="space-y-4">
+      {place.appliance_promotion_text && (
+        <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          🎁 {place.appliance_promotion_text}
+        </div>
+      )}
+
+      {/* 매장이 아닌 경우 (package/single) 외부 구매하기 CTA */}
+      {(place.appliance_product_type === "package" || place.appliance_product_type === "single") && buyUrl && (
+        <a
+          href={buyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full rounded-lg bg-primary px-4 py-3 text-center text-sm font-bold text-primary-foreground active:scale-[0.98]"
+        >
+          구매하기 — {buyLabel}
+        </a>
+      )}
+
+      <div className="space-y-3">
+        <h3 className="font-bold text-sm">혼수 정보</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {place.appliance_product_type && (
+            <Stat label="유형" value={APPL_TYPE_LABEL[place.appliance_product_type] ?? place.appliance_product_type} />
+          )}
+          {place.store_chain && <Stat label="체인" value={place.store_chain} />}
+          {place.appliance_product_code && (
+            <Stat label="모델 코드" value={place.appliance_product_code} />
+          )}
+          {place.capacity_text && <Stat label="용량" value={place.capacity_text} />}
+          {place.energy_rating && <Stat label="에너지 등급" value={place.energy_rating} />}
+          {place.model_release_year != null && (
+            <Stat label="출시 연도" value={`${place.model_release_year}년`} />
+          )}
+          {place.target_household && (
+            <Stat label="권장 가구" value={place.target_household} />
+          )}
+          {place.package_set_price != null && (
+            <Stat label="세트 가격" value={`${fmtMan(place.package_set_price)}~`} />
+          )}
+          {place.floor_location && (
+            <Stat label="매장 위치" value={place.floor_location} />
+          )}
+          {place.is_bestseller && (
+            <Stat label="구분" value="🏆 베스트셀러" />
+          )}
+          {place.is_new_model && (
+            <Stat label="구분" value="✨ 신모델" />
+          )}
+        </div>
+
+        <Tags label="제품 카테고리" items={place.product_categories} />
+        <Tags label="브랜드" items={place.brand_options} />
+        <Tags label="강점 카테고리" items={place.specialties} />
+        <Tags label="패키지 구성" items={place.package_items} />
+      </div>
+
+      {/* 사은품 — 한국 혼수의 핵심 차별점 */}
+      {place.gift_items.length > 0 && (
+        <div className="space-y-2 rounded-lg bg-pink-50 p-3">
+          <h3 className="font-bold text-sm text-pink-900">🎁 사은품</h3>
+          <Tags label="" items={place.gift_items} />
+        </div>
+      )}
+
+      {/* 매장 전용 — 이 매장에서 제공하는 대표 패키지 안내 */}
+      {place.appliance_product_type === "store" &&
+        (place.package_examples.length > 0 || place.package_price_range) && (
+        <div className="space-y-2 rounded-lg bg-blue-50 p-3">
+          <h3 className="font-bold text-sm text-blue-900">📦 이 매장의 대표 패키지</h3>
+          {place.package_price_range && (
+            <p className="text-xs text-blue-700">가격대: {place.package_price_range}</p>
+          )}
+          <Tags label="" items={place.package_examples} />
+          <p className="text-[11px] text-blue-700/80 mt-1">
+            매장 방문 시 청첩장·예식 일정 제시하면 추가 할인이나 사은품 협상 가능합니다.
+          </p>
+        </div>
+      )}
+
+      {/* 결제·배송·서비스 혜택 */}
+      {(place.installment_months != null ||
+        place.warranty_years != null ||
+        place.free_delivery != null ||
+        place.free_installation != null ||
+        place.old_appliance_pickup != null ||
+        place.card_discount_available != null ||
+        place.total_discount_percent != null ||
+        place.card_partners.length > 0 ||
+        place.payment_options.length > 0) && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm">결제·배송 혜택</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.installment_months != null && (
+              <Stat label="무이자 할부" value={place.installment_months > 0 ? `최대 ${place.installment_months}개월` : "없음"} />
+            )}
+            {place.total_discount_percent != null && (
+              <Stat label="최대 할인" value={`${place.total_discount_percent}%`} />
+            )}
+            {place.warranty_years != null && (
+              <Stat label="기본 보증" value={`${place.warranty_years}년`} />
+            )}
+            {place.free_delivery != null && (
+              <Stat label="배송" value={place.free_delivery ? "무료" : "유료"} />
+            )}
+            {place.free_installation != null && (
+              <Stat label="설치" value={place.free_installation ? "무료" : "유료"} />
+            )}
+            {place.old_appliance_pickup != null && (
+              <Stat label="폐가전 수거" value={place.old_appliance_pickup ? "무료" : "별도"} />
+            )}
+            {place.card_discount_available != null && (
+              <Stat label="카드 할인" value={place.card_discount_available ? "있음" : "없음"} />
+            )}
+            {place.negotiable != null && (
+              <Stat label="가격 협상" value={place.negotiable ? "가능" : "불가"} />
+            )}
+            {place.home_visit_quote != null && (
+              <Stat label="출장 견적" value={place.home_visit_quote ? "가능" : "매장만"} />
+            )}
+          </div>
+          <Tags label="제휴 카드" items={place.card_partners} />
+          <Tags label="결제 옵션" items={place.payment_options} />
+          {place.quote_request_url && (
+            <a
+              href={place.quote_request_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-center text-xs text-primary underline mt-1"
+            >
+              견적 요청하기 →
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function JewelryExtras({ place }: { place: LegacyDetail }) {
+  const STORE_TYPE_LABEL: Record<string, string> = {
+    online: "온라인 판매",
+    offline: "오프라인 매장만",
+    both: "온·오프라인 모두",
+  };
+  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
+  // 구매하기 버튼: product_url > website_url > naver_place_url
+  const buyUrl =
+    place.product_url || place.website_url || place.naver_place_url || null;
+  const buyLabel = place.product_url
+    ? "공식 상품 페이지에서 구매"
+    : place.website_url
+      ? "브랜드 공식 사이트로 이동"
+      : place.naver_place_url
+        ? "네이버 플레이스에서 보기"
+        : null;
+  const has =
+    place.brand_name ||
+    place.metals.length > 0 ||
+    place.product_categories.length > 0 ||
+    place.carat_diamond != null ||
+    place.aftercare_includes.length > 0 ||
+    place.package_includes.length > 0;
+  if (!has && !buyUrl) return null;
+  return (
+    <div className="space-y-4">
+      {/* 시즌 프로모션 */}
+      {place.jewelry_promotion_text && (
+        <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          🎁 {place.jewelry_promotion_text}
+        </div>
+      )}
+
+      {/* 구매하기 CTA */}
+      {buyUrl && (
+        <a
+          href={buyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full rounded-lg bg-primary px-4 py-3 text-center text-sm font-bold text-primary-foreground active:scale-[0.98]"
+        >
+          구매하기 — {buyLabel}
+        </a>
+      )}
+
+      {/* 브랜드/상품 식별 */}
+      <div className="space-y-3">
+        <h3 className="font-bold text-sm">예물 정보</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {place.brand_name && <Stat label="브랜드" value={place.brand_name} />}
+          {place.jewelry_product_type && (
+            <Stat label="상품 유형" value={place.jewelry_product_type} />
+          )}
+          {place.sub_category && <Stat label="베스트셀러" value={place.sub_category} />}
+          {place.signature_collection && (
+            <Stat label="시그니처" value={place.signature_collection} />
+          )}
+          {place.store_type && (
+            <Stat label="판매 채널" value={STORE_TYPE_LABEL[place.store_type] ?? place.store_type} />
+          )}
+          {place.price_couple_set != null && (
+            <Stat label="커플 세트가" value={`${fmtMan(place.price_couple_set)}~`} />
+          )}
+          {place.delivery_days != null && (
+            <Stat label="제작 소요" value={`${place.delivery_days}일`} />
+          )}
+        </div>
+      </div>
+
+      {/* 다이아 (4C + 형태 + 출처) */}
+      {(place.carat_diamond != null ||
+        place.diamond_color ||
+        place.diamond_clarity ||
+        place.diamond_cut ||
+        place.diamond_shape ||
+        place.diamond_origin ||
+        place.side_stones_count != null) && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm">다이아</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.carat_diamond != null && (
+              <Stat label="캐럿" value={`${place.carat_diamond}ct`} />
+            )}
+            {place.diamond_shape && <Stat label="형태" value={place.diamond_shape} />}
+            {place.diamond_color && <Stat label="컬러" value={place.diamond_color} />}
+            {place.diamond_clarity && <Stat label="투명도" value={place.diamond_clarity} />}
+            {place.diamond_cut && <Stat label="컷" value={place.diamond_cut} />}
+            {place.diamond_origin && (
+              <Stat
+                label="출처"
+                value={place.diamond_origin === "natural" ? "천연" : "랩그로운"}
+              />
+            )}
+            {place.diamond_certified != null && (
+              <Stat
+                label="인증"
+                value={
+                  place.diamond_certified
+                    ? `${place.diamond_cert_org ?? "발급"}`
+                    : "미발급"
+                }
+              />
+            )}
+            {place.side_stones_count != null && place.side_stones_count > 0 && (
+              <Stat
+                label="사이드 스톤"
+                value={
+                  place.side_stones_total_carat != null
+                    ? `${place.side_stones_count}개 · ${place.side_stones_total_carat}ct`
+                    : `${place.side_stones_count}개`
+                }
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 밴드 (치수·디자인·마감) */}
+      {(place.band_design ||
+        place.band_width_mm != null ||
+        place.band_thickness_mm != null ||
+        place.band_profile ||
+        place.band_finishing ||
+        place.stone_setting ||
+        place.gold_karat) && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm">밴드·세팅</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.gold_karat && <Stat label="함량" value={place.gold_karat} />}
+            {place.band_width_mm != null && (
+              <Stat label="폭" value={`${place.band_width_mm}mm`} />
+            )}
+            {place.band_thickness_mm != null && (
+              <Stat label="두께" value={`${place.band_thickness_mm}mm`} />
+            )}
+            {place.band_profile && <Stat label="단면" value={place.band_profile} />}
+            {place.band_design && <Stat label="디자인" value={place.band_design} />}
+            {place.band_finishing && <Stat label="마감" value={place.band_finishing} />}
+            {place.stone_setting && <Stat label="세팅" value={place.stone_setting} />}
+          </div>
+        </div>
+      )}
+
+      {/* 서비스 */}
+      <div className="grid grid-cols-2 gap-2">
+        {place.engraving_available != null && (
+          <Stat label="각인" value={place.engraving_available ? "가능" : "불가"} />
+        )}
+        {place.size_resize_free != null && (
+          <Stat label="사이즈 조절" value={place.size_resize_free ? "무료" : "유료"} />
+        )}
+        {place.custom_design_available != null && (
+          <Stat label="맞춤 디자인" value={place.custom_design_available ? "가능" : "불가"} />
+        )}
+        {place.lifetime_warranty != null && (
+          <Stat label="평생 A/S" value={place.lifetime_warranty ? "제공" : "미제공"} />
+        )}
+        {place.couple_set_available != null && (
+          <Stat label="커플 세트" value={place.couple_set_available ? "가능" : "단품만"} />
+        )}
+      </div>
+
+      <Tags label="메탈" items={place.metals} />
       <Tags label="제품 카테고리" items={place.product_categories} />
-      <Tags label="브랜드" items={place.brand_options} />
+      <Tags label="입점 백화점" items={place.partnership_dept_stores} />
+      <Tags label="평생 케어" items={place.aftercare_includes} />
+      <Tags label="패키지 포함" items={place.package_includes} />
+
+      {/* 브랜드 메타 */}
+      {(place.brand_tier || place.brand_origin || place.brand_history_year || place.showroom_count != null) && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm">브랜드 정보</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {place.brand_tier && <Stat label="가격대" value={place.brand_tier} />}
+            {place.brand_origin && <Stat label="원산지" value={place.brand_origin} />}
+            {place.brand_history_year != null && (
+              <Stat label="설립" value={`${place.brand_history_year}년`} />
+            )}
+            {place.showroom_count != null && (
+              <Stat label="국내 매장" value={`${place.showroom_count}개`} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function InvitationVenueExtras({ place }: { place: LegacyDetail }) {
+  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
   const has =
     place.venue_types.length > 0 ||
-    place.capacity_min != null || place.capacity_max != null;
+    place.capacity_min != null || place.capacity_max != null ||
+    place.venue_atmosphere.length > 0 ||
+    place.signature_dishes.length > 0 ||
+    place.corkage_fee_won != null ||
+    place.private_room_count != null ||
+    place.room_charge_separate != null ||
+    place.drinks_included != null ||
+    place.valet_parking != null;
   if (!has) return null;
   return (
     <div className="space-y-3">
       <h3 className="font-bold text-sm">모임장소 정보</h3>
       <Tags label="유형" items={place.venue_types} />
+      <Tags label="분위기" items={place.venue_atmosphere} />
+      <Tags label="시그니처 메뉴" items={place.signature_dishes} />
       <div className="grid grid-cols-2 gap-2">
         {place.capacity_min != null && <Stat label="최소 인원" value={`${place.capacity_min}명`} />}
         {place.capacity_max != null && <Stat label="최대 인원" value={`${place.capacity_max}명`} />}
+        {place.private_room_count != null && (
+          <Stat label="단독 룸" value={`${place.private_room_count}개`} />
+        )}
+        {place.room_charge_separate != null && (
+          <Stat label="룸 차지" value={place.room_charge_separate ? "별도 청구" : "포함"} />
+        )}
+        {place.drinks_included != null && (
+          <Stat label="음료" value={place.drinks_included ? "포함" : "별도"} />
+        )}
+        {place.valet_parking != null && (
+          <Stat label="발렛파킹" value={place.valet_parking ? "제공" : "미제공"} />
+        )}
+        {place.corkage_fee_won != null && (
+          <Stat label="콜키지" value={place.corkage_fee_won === 0 ? "무료" : fmtMan(place.corkage_fee_won)} />
+        )}
       </div>
     </div>
   );

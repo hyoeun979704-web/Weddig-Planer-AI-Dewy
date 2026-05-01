@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface SearchResult {
   id: string;
   name: string;
-  type: "venue" | "studio" | "honeymoon" | "honeymoon_gift" | "appliance" | "suit" | "hanbok" | "invitation_venue";
+  type: "venue" | "studio" | "honeymoon" | "jewelry" | "appliance" | "suit" | "hanbok" | "invitation_venue";
   address?: string;
   brand?: string;
   destination?: string;
@@ -17,7 +17,7 @@ const TYPE_LABELS: Record<SearchResult["type"], string> = {
   venue: "웨딩홀",
   studio: "스드메",
   honeymoon: "신혼여행",
-  honeymoon_gift: "혼수",
+  jewelry: "예물·예단",
   appliance: "가전",
   suit: "예복",
   hanbok: "한복",
@@ -28,7 +28,7 @@ const TYPE_ROUTES: Record<SearchResult["type"], string> = {
   venue: "/venue",
   studio: "/studio",
   honeymoon: "/honeymoon",
-  honeymoon_gift: "/honeymoon-gifts",
+  jewelry: "/jewelry",
   appliance: "/appliances",
   suit: "/suit",
   hanbok: "/hanbok",
@@ -109,6 +109,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
           hanbok: "hanbok",
           tailor_shop: "suit",
           honeymoon: "honeymoon",
+          jewelry: "jewelry",
           appliance: "appliance",
           invitation_venue: "invitation_venue",
           planner: "venue",

@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useCategoryData, CategoryItem } from "@/hooks/useCategoryData";
 import { useCategoryFilterStore, CategoryType } from "@/stores/useCategoryFilterStore";
-import VendorMediaCard, { CARD_W, CARD_H } from "@/components/home/VendorMediaCard";
+import VendorMediaCard from "@/components/home/VendorMediaCard";
 import { categoryItemToCardData } from "@/lib/categoryCardAdapter";
 
 interface CategoryGridProps {
@@ -12,11 +12,16 @@ interface CategoryGridProps {
   onItemClick?: (item: CategoryItem) => void;
 }
 
+// Fluid card placeholder — matches the 195px fluid card (100 image + 95 text).
 const CardSkeleton = () => (
-  <Skeleton
-    className="rounded-[10px]"
-    style={{ width: CARD_W, height: CARD_H }}
-  />
+  <div className="w-full h-[195px] flex flex-col rounded-[10px] overflow-hidden bg-card">
+    <Skeleton className="w-full h-[100px] rounded-none" />
+    <div className="flex-1 p-2 space-y-1">
+      <Skeleton className="h-2 w-2/3" />
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-2 w-3/4" />
+    </div>
+  </div>
 );
 
 const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function CategoryGrid({ category, onItemClick }, ref) {
@@ -65,7 +70,7 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-2 px-[20px] justify-items-center">
+      <div className="grid grid-cols-2 gap-5 px-5">
         {[...Array(6)].map((_, i) => (
           <CardSkeleton key={i} />
         ))}
@@ -91,8 +96,8 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
   }
 
   return (
-    <div className="px-[20px]" ref={ref}>
-      <div className="grid grid-cols-2 gap-2 justify-items-center">
+    <div ref={ref}>
+      <div className="grid grid-cols-2 gap-5 px-5">
         {allItems.map((item) => {
           const itemId = item.id || String((item as { number?: string | number }).number);
           return (
@@ -100,6 +105,7 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
               key={itemId}
               data={categoryItemToCardData(item, category)}
               onClick={() => onItemClick?.(item)}
+              fluid
             />
           );
         })}
@@ -107,7 +113,7 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
 
       <div ref={loadMoreRef} className="py-4">
         {isFetchingNextPage && (
-          <div className="grid grid-cols-2 gap-2 justify-items-center">
+          <div className="grid grid-cols-2 gap-5 px-5">
             <CardSkeleton />
             <CardSkeleton />
           </div>

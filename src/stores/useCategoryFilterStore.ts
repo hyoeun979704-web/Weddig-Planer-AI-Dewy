@@ -6,7 +6,7 @@ export type CategoryType =
   | 'dress_shops'
   | 'makeup_shops'
   | 'honeymoon'
-  | 'honeymoon_gifts'
+  | 'jewelry'
   | 'appliances'
   | 'suits'
   | 'hanbok'

@@ -32,7 +32,7 @@ const CATEGORY_TYPE_TO_PLACE: Record<CategoryType, string> = {
   dress_shops: "dress_shop",
   makeup_shops: "makeup_shop",
   honeymoon: "honeymoon",
-  honeymoon_gifts: "appliance",
+  jewelry: "jewelry",
   appliances: "appliance",
   suits: "tailor_shop",
   hanbok: "hanbok",
@@ -49,9 +49,12 @@ const CATEGORY_DETAIL_SELECT: Record<CategoryType, string> = {
   makeup_shops: "place_makeup_shops(makeup_styles,includes_rehearsal,price_per_person)",
   hanbok: "place_hanboks(hanbok_types,custom_available,price_per_person)",
   suits: "place_tailor_shops(suit_styles,custom_available,price_per_person)",
-  honeymoon: "place_honeymoons(destinations,duration_days,price_per_person)",
-  honeymoon_gifts: "place_appliances(product_categories,brand_options,price_per_person)",
-  appliances: "place_appliances(product_categories,brand_options,price_per_person)",
+  honeymoon:
+    "place_honeymoons(agency_name,agency_product_url,product_type,countries,cities,representative_city,nights,days,price_per_person,avg_budget,themes)",
+  jewelry:
+    "place_jewelry(brand_name,product_url,product_type,sub_category,store_type,metals,product_categories,price_per_person,price_couple_set,carat_diamond,promotion_text)",
+  appliances:
+    "place_appliances(product_type,product_url,store_chain,specialties,package_items,package_set_price,product_categories,brand_options,price_per_person,promotion_text)",
   invitation_venues:
     "place_invitation_venues(venue_types,capacity_min,capacity_max,price_per_person)",
 };
@@ -64,7 +67,7 @@ const CARD_KEY: Record<CategoryType, string> = {
   hanbok: "place_hanboks",
   suits: "place_tailor_shops",
   honeymoon: "place_honeymoons",
-  honeymoon_gifts: "place_appliances",
+  jewelry: "place_jewelry",
   appliances: "place_appliances",
   invitation_venues: "place_invitation_venues",
 };
@@ -114,17 +117,85 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
       base.keywords = card?.suit_styles ?? [];
       base.custom_available = card?.custom_available ?? null;
       break;
-    case "honeymoon":
-      base.keywords = card?.destinations ?? [];
-      base.destination = card?.destinations?.join(", ");
+    case "honeymoon": {
+      // 행 단위 = 여행 "상품". 패키지명은 places.name, 여행사는 agency_name.
+      const PRODUCT_TYPE_LABEL: Record<string, string> = {
+        package: "패키지",
+        free_travel: "자유여행",
+        flight: "항공권",
+        pass: "이용권",
+      };
+      const country = (card?.countries as string[] | undefined)?.[0];
+      const cities = (card?.cities as string[] | undefined) ?? [];
+      const cityList = cities.join(", ");
+      base.brand = card?.agency_name ?? undefined;
+      base.destination =
+        country && cityList ? `${country} · ${cityList}` : country ?? cityList ?? undefined;
       base.duration =
-        card?.duration_days != null ? `${card.duration_days}일` : undefined;
+        card?.nights != null && card?.days != null
+          ? `${card.nights}박${card.days}일`
+          : undefined;
+      const typeLabel = card?.product_type ? PRODUCT_TYPE_LABEL[card.product_type] : undefined;
+      base.keywords = [
+        typeLabel,
+        card?.representative_city,
+        ...((card?.themes as string[] | undefined) ?? []),
+      ].filter((x): x is string => Boolean(x));
+      base.avg_budget = card?.avg_budget ?? undefined;
+      base.agency_product_url = card?.agency_product_url ?? undefined;
       break;
-    case "honeymoon_gifts":
-    case "appliances":
-      base.keywords = card?.product_categories ?? [];
-      base.brand = card?.brand_options?.join(", ");
+    }
+    case "jewelry": {
+      // jewelry — 한 행 = 1 브랜드 베스트셀러 컬렉션
+      const STORE_TYPE_LABEL: Record<string, string> = {
+        online: "온라인",
+        offline: "오프라인",
+        both: "온·오프라인",
+      };
+      base.brand = card?.brand_name ?? card?.metals?.join(", ");
+      base.product_url = card?.product_url ?? undefined;
+      base.product_type = card?.product_type ?? undefined;
+      base.sub_category = card?.sub_category ?? undefined;
+      base.store_type = card?.store_type ?? undefined;
+      base.price_couple_set = card?.price_couple_set ?? undefined;
+      base.carat_diamond = card?.carat_diamond ?? undefined;
+      base.promotion_text = card?.promotion_text ?? undefined;
+      const storeTypeLabel = card?.store_type
+        ? STORE_TYPE_LABEL[card.store_type]
+        : undefined;
+      base.keywords = [
+        card?.product_type,
+        card?.sub_category,
+        storeTypeLabel,
+        ...((card?.metals as string[] | undefined) ?? []),
+      ].filter((x): x is string => Boolean(x));
       break;
+    }
+    case "appliances": {
+      // hybrid: product_type ∈ {store, package, single}
+      const APPL_TYPE_LABEL: Record<string, string> = {
+        store: "매장",
+        package: "패키지",
+        single: "단품",
+      };
+      base.product_type = card?.product_type ?? undefined;
+      base.product_url = card?.product_url ?? undefined;
+      base.store_chain = card?.store_chain ?? undefined;
+      base.package_set_price = card?.package_set_price ?? undefined;
+      base.promotion_text = card?.promotion_text ?? undefined;
+      // store: 체인을 brand로 / package·single: brand_options 첫 항목
+      base.brand =
+        card?.product_type === "store"
+          ? card?.store_chain
+          : card?.brand_options?.[0] ?? card?.brand_options?.join(", ");
+      const typeLabel = card?.product_type ? APPL_TYPE_LABEL[card.product_type] : undefined;
+      base.keywords = [
+        typeLabel,
+        ...((card?.product_categories as string[] | undefined) ?? []),
+        ...((card?.specialties as string[] | undefined) ?? []),
+      ].filter((x): x is string => Boolean(x));
+      break;
+    }
     case "invitation_venues":
       base.keywords = card?.venue_types ?? [];
       base.min_guarantee = card?.capacity_min ?? 0;
@@ -159,7 +230,15 @@ async function fetchCategoryItems(
     .is("deleted_at", null);
 
   if (filters.region) {
-    query = query.ilike("city", `%${filters.region}%`);
+    if (category === "jewelry") {
+      // jewelry: places.city는 매장 도시(서울 등). region 칩은 brand_tier로 필터.
+      query = query.eq("place_jewelry.brand_tier", filters.region);
+    } else if (category === "appliances") {
+      // appliance: hybrid (store/package/single). region 칩 = product_type.
+      query = query.eq("place_appliances.product_type", filters.region);
+    } else {
+      query = query.ilike("city", `%${filters.region}%`);
+    }
   }
   if (filters.minRating) {
     query = query.gte("avg_rating", filters.minRating);

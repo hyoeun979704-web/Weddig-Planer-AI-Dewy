@@ -12,7 +12,7 @@ const CATEGORY_LABEL: Record<CategoryType, string> = {
   hanbok: "한복",
   suits: "예복",
   honeymoon: "신혼여행",
-  honeymoon_gifts: "예물·예단",
+  jewelry: "예물·예단",
   appliances: "혼수·가전",
   invitation_venues: "청첩장",
 };
@@ -80,7 +80,14 @@ const buildCategoryItemInfoLines = (
       if (item.duration) lines.push({ label: "기간", value: item.duration });
       break;
     }
-    case "honeymoon_gifts":
+    case "jewelry": {
+      // jewelry는 baseline price + couple set price를 두 줄로 보여줘야 비교가 쉬움.
+      const couple = item.price_couple_set as number | undefined;
+      if (price) lines.push({ label: "1인", value: formatWon(price), isPrice: true });
+      if (couple) lines.push({ label: "커플", value: formatWon(couple), isPrice: true });
+      if (item.carat_diamond) lines.push({ label: "다이아", value: `${item.carat_diamond}ct` });
+      break;
+    }
     case "appliances": {
       if (item.brand) lines.push({ label: "판매처", value: item.brand });
       if (price) lines.push({ label: "최저", value: formatWon(price), isPrice: true });

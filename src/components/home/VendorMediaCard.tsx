@@ -34,11 +34,19 @@ export const vendorToCardData = (vendor: Vendor): VendorMediaCardData => ({
 interface VendorMediaCardProps {
   data: VendorMediaCardData;
   onClick: () => void;
+  /** When true, the card fills its parent's width (used in 2-col grid lists)
+   *  and the image area uses an aspect ratio instead of a fixed pixel height.
+   *  Defaults to false so home-page horizontal scroll keeps its 140×195 size. */
+  fluid?: boolean;
 }
 
+// Fixed home-page horizontal scroll size — keep stable so home cards don't shift.
 export const CARD_W = 140;
 export const CARD_H = 195;
 const IMG_H = 100;
+// Fluid mode keeps the same total height as the fixed card so list-page rows
+// stay compact and consistent across categories. Width follows the grid cell.
+const FLUID_TEXT_H = 95;
 
 const KEYWORD_CHIP_CLASSES = {
   category: "bg-[#fde7ec] text-[#d35c75]",
@@ -47,7 +55,7 @@ const KEYWORD_CHIP_CLASSES = {
   strength: "bg-[#f1e3f5] text-[#a64bb8]",
 } as const;
 
-const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
+const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps) => {
   const [liked, setLiked] = useState(false);
 
   const keywordChips: Array<{ value: string; className: string }> = [];
@@ -60,10 +68,16 @@ const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
     <button
       onClick={onClick}
       aria-label={data.name}
-      className="flex-shrink-0 flex flex-col bg-[#d9d9d9] rounded-[10px] overflow-hidden text-left active:scale-[0.97]"
-      style={{ width: CARD_W, height: CARD_H }}
+      className={cn(
+        "flex flex-col bg-[#d9d9d9] rounded-[10px] overflow-hidden text-left active:scale-[0.97]",
+        fluid ? "w-full" : "flex-shrink-0"
+      )}
+      style={fluid ? { height: CARD_H } : { width: CARD_W, height: CARD_H }}
     >
-      <div className="relative w-full" style={{ height: IMG_H }}>
+      <div
+        className="relative w-full"
+        style={{ height: IMG_H }}
+      >
         {data.thumbnail_url ? (
           <img
             src={data.thumbnail_url}
@@ -102,7 +116,10 @@ const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
         </span>
       </div>
 
-      <div className="flex-1 flex flex-col gap-[3px] bg-white px-2 py-2">
+      <div
+        className="flex-1 flex flex-col gap-[3px] bg-white px-2 py-2 overflow-hidden"
+        style={fluid ? { height: FLUID_TEXT_H } : undefined}
+      >
         {data.region && (
           <p className="text-[9px] leading-tight text-black/55 line-clamp-1">
             {data.region}
@@ -115,7 +132,7 @@ const VendorMediaCard = ({ data, onClick }: VendorMediaCardProps) => {
 
         {data.info_lines.length > 0 && (
           <div className="flex flex-col gap-[1px]">
-            {data.info_lines.map((line, idx) => (
+            {data.info_lines.slice(0, 2).map((line, idx) => (
               <div
                 key={`${line.label}-${idx}`}
                 className="flex items-center gap-[3px] text-[9px] leading-tight overflow-hidden"

@@ -154,14 +154,16 @@ export const buildVendorInfoLines = (p: PlaceWithCategory): VendorInfoLine[] => 
       break;
     }
     case "honeymoon": {
+      // 새 product-based 스키마: destinations/duration_days → cities/nights+days로 교체.
       const hm = p.place_honeymoons ?? null;
       if (hm?.price_per_person) {
         lines.push({ label: "패키지", value: formatWon(hm.price_per_person), isPrice: true });
       }
-      if (hm?.duration_days) {
-        lines.push({ label: "기간", value: `${hm.duration_days}일` });
+      if (hm?.nights != null && hm?.days != null) {
+        lines.push({ label: "기간", value: `${hm.nights}박${hm.days}일` });
       }
-      const dest = hm?.destinations?.[0];
+      const country = hm?.countries?.[0];
+      const dest = country ?? hm?.cities?.[0] ?? hm?.representative_city ?? null;
       if (dest) lines.push({ label: "지역", value: dest });
       break;
     }
@@ -187,7 +189,8 @@ export const collectStyleTags = (p: PlaceWithCategory): string[] => {
     p.place_hanboks?.hanbok_types,
     p.place_invitation_venues?.venue_types,
     p.place_appliances?.product_categories,
-    p.place_honeymoons?.destinations,
+    p.place_honeymoons?.countries,
+    p.place_honeymoons?.cities,
   ];
   const flat = lists
     .filter((x): x is string[] => Array.isArray(x))

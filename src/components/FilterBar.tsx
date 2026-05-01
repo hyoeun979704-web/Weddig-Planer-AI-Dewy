@@ -11,25 +11,7 @@ import { useFilterStore } from "@/stores/useFilterStore";
 // (e.g. "충청북" matches both "충청북도" and any abbreviated form). The
 // useVenues / useCategoryData query is `city ILIKE %value%`, so we just
 // need a substring that hits the canonical DB form.
-const regions = [
-  { value: "서울특별시", label: "서울" },
-  { value: "경기도", label: "경기" },
-  { value: "인천광역시", label: "인천" },
-  { value: "부산광역시", label: "부산" },
-  { value: "대구광역시", label: "대구" },
-  { value: "대전광역시", label: "대전" },
-  { value: "광주광역시", label: "광주" },
-  { value: "울산광역시", label: "울산" },
-  { value: "세종", label: "세종" },             // 세종특별자치시
-  { value: "강원", label: "강원" },             // 강원특별자치도
-  { value: "충청북", label: "충북" },           // 충청북도
-  { value: "충청남", label: "충남" },           // 충청남도
-  { value: "전북", label: "전북" },             // 전북특별자치도 — "전북" 부분 매칭
-  { value: "전라남", label: "전남" },           // 전라남도
-  { value: "경상북", label: "경북" },           // 경상북도
-  { value: "경상남", label: "경남" },           // 경상남도
-  { value: "제주", label: "제주" },             // 제주특별자치도
-];
+import { REGIONS as regions, regionLabel } from "@/lib/regions";
 
 const ratingOptions = [
   { value: 4.5, label: "4.5점 이상" },
@@ -131,8 +113,8 @@ const QuickFilterChip = ({ label, defaultLabel, isActive, icon, onClear, childre
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="w-auto p-2 min-w-[140px]" 
+      <PopoverContent
+        className="w-auto p-2 min-w-[140px] max-h-[60vh] overflow-y-auto overscroll-contain"
         align="start"
         sideOffset={8}
       >
@@ -292,7 +274,7 @@ const FilterBar = () => {
               </div>
             </SheetHeader>
 
-            <div className="flex-1 overflow-y-auto space-y-6 pb-24">
+            <div className="flex-1 overflow-y-auto overscroll-contain space-y-6 pb-24">
               {/* Region Filter */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -449,7 +431,7 @@ const FilterBar = () => {
 
         {/* Quick filter chips with dropdowns */}
         <QuickFilterChip
-          label={region || ""}
+          label={regionLabel(region)}
           defaultLabel="지역"
           isActive={!!region}
           icon={<MapPin className="w-3.5 h-3.5" />}

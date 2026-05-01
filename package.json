@@ -21,6 +21,8 @@
     "enrich-with-gemini": "tsx scripts/collect-places/enrich-with-gemini.ts",
     "import-gemini-json": "tsx scripts/collect-places/import-from-json.ts",
     "fix-naver-urls": "tsx scripts/collect-places/fix-naver-place-urls.ts",
+    "fetch-honeymoon-og-images": "tsx scripts/collect-places/fetch-honeymoon-og-images.ts",
+    "fetch-jewelry-og-images": "tsx scripts/collect-places/fetch-jewelry-og-images.ts",
     "collect-tips": "tsx scripts/collect-tips/index.ts"
   },
   "dependencies": {

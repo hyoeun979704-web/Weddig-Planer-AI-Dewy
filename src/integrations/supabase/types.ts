@@ -873,21 +873,111 @@ export type Database = {
       place_appliances: {
         Row: {
           brand_options: string[] | null
+          capacity_text: string | null
+          card_discount_available: boolean | null
+          card_partners: string[] | null
+          energy_rating: string | null
+          floor_location: string | null
+          free_delivery: boolean | null
+          free_installation: boolean | null
+          gift_items: string[] | null
+          home_visit_quote: boolean | null
+          installment_months: number | null
+          is_bestseller: boolean | null
+          is_new_model: boolean | null
+          model_release_year: number | null
+          negotiable: boolean | null
+          old_appliance_pickup: boolean | null
+          package_examples: string[] | null
+          package_items: string[] | null
+          package_price_range: string | null
+          package_set_price: number | null
+          payment_options: string[] | null
           place_id: string
           price_per_person: number | null
           product_categories: string[] | null
+          product_code: string | null
+          product_type: string | null
+          product_url: string | null
+          promotion_text: string | null
+          quote_request_url: string | null
+          specialties: string[] | null
+          store_chain: string | null
+          target_household: string | null
+          total_discount_percent: number | null
+          warranty_years: number | null
         }
         Insert: {
           brand_options?: string[] | null
+          capacity_text?: string | null
+          card_discount_available?: boolean | null
+          card_partners?: string[] | null
+          energy_rating?: string | null
+          floor_location?: string | null
+          free_delivery?: boolean | null
+          free_installation?: boolean | null
+          gift_items?: string[] | null
+          home_visit_quote?: boolean | null
+          installment_months?: number | null
+          is_bestseller?: boolean | null
+          is_new_model?: boolean | null
+          model_release_year?: number | null
+          negotiable?: boolean | null
+          old_appliance_pickup?: boolean | null
+          package_examples?: string[] | null
+          package_items?: string[] | null
+          package_price_range?: string | null
+          package_set_price?: number | null
+          payment_options?: string[] | null
           place_id: string
           price_per_person?: number | null
           product_categories?: string[] | null
+          product_code?: string | null
+          product_type?: string | null
+          product_url?: string | null
+          promotion_text?: string | null
+          quote_request_url?: string | null
+          specialties?: string[] | null
+          store_chain?: string | null
+          target_household?: string | null
+          total_discount_percent?: number | null
+          warranty_years?: number | null
         }
         Update: {
           brand_options?: string[] | null
+          capacity_text?: string | null
+          card_discount_available?: boolean | null
+          card_partners?: string[] | null
+          energy_rating?: string | null
+          floor_location?: string | null
+          free_delivery?: boolean | null
+          free_installation?: boolean | null
+          gift_items?: string[] | null
+          home_visit_quote?: boolean | null
+          installment_months?: number | null
+          is_bestseller?: boolean | null
+          is_new_model?: boolean | null
+          model_release_year?: number | null
+          negotiable?: boolean | null
+          old_appliance_pickup?: boolean | null
+          package_examples?: string[] | null
+          package_items?: string[] | null
+          package_price_range?: string | null
+          package_set_price?: number | null
+          payment_options?: string[] | null
           place_id?: string
           price_per_person?: number | null
           product_categories?: string[] | null
+          product_code?: string | null
+          product_type?: string | null
+          product_url?: string | null
+          promotion_text?: string | null
+          quote_request_url?: string | null
+          specialties?: string[] | null
+          store_chain?: string | null
+          target_household?: string | null
+          total_discount_percent?: number | null
+          warranty_years?: number | null
         }
         Relationships: [
           {
@@ -1071,21 +1161,39 @@ export type Database = {
       }
       place_dress_shops: {
         Row: {
+          designer_brands: string[] | null
+          dress_count_included: number | null
           dress_styles: string[] | null
+          fitting_count: number | null
+          helper_included: boolean | null
+          inner_included: boolean | null
           place_id: string
           price_per_person: number | null
+          rental_includes_alterations: boolean | null
           rental_only: boolean | null
         }
         Insert: {
+          designer_brands?: string[] | null
+          dress_count_included?: number | null
           dress_styles?: string[] | null
+          fitting_count?: number | null
+          helper_included?: boolean | null
+          inner_included?: boolean | null
           place_id: string
           price_per_person?: number | null
+          rental_includes_alterations?: boolean | null
           rental_only?: boolean | null
         }
         Update: {
+          designer_brands?: string[] | null
+          dress_count_included?: number | null
           dress_styles?: string[] | null
+          fitting_count?: number | null
+          helper_included?: boolean | null
+          inner_included?: boolean | null
           place_id?: string
           price_per_person?: number | null
+          rental_includes_alterations?: boolean | null
           rental_only?: boolean | null
         }
         Relationships: [
@@ -1267,19 +1375,25 @@ export type Database = {
       }
       place_hanboks: {
         Row: {
+          accessories_included: boolean | null
           custom_available: boolean | null
+          delivery_available: boolean | null
           hanbok_types: string[] | null
           place_id: string
           price_per_person: number | null
         }
         Insert: {
+          accessories_included?: boolean | null
           custom_available?: boolean | null
+          delivery_available?: boolean | null
           hanbok_types?: string[] | null
           place_id: string
           price_per_person?: number | null
         }
         Update: {
+          accessories_included?: boolean | null
           custom_available?: boolean | null
+          delivery_available?: boolean | null
           hanbok_types?: string[] | null
           place_id?: string
           price_per_person?: number | null
@@ -1296,22 +1410,124 @@ export type Database = {
       }
       place_honeymoons: {
         Row: {
-          destinations: string[] | null
-          duration_days: number | null
+          agency_name: string | null
+          agency_product_url: string | null
+          airline: string | null
+          avg_budget: number | null
+          child_price: number | null
+          cities: string[] | null
+          countries: string[] | null
+          days: number | null
+          departure_airport: string | null
+          departure_type: string | null
+          direct_flight: boolean | null
+          flight_hours: number | null
+          guide_included: boolean | null
+          honeymoon_perks: string[] | null
+          hotel_grade: string | null
+          hotel_names: string[] | null
+          infant_price: number | null
+          itinerary_highlights: string[] | null
+          itinerary_summary: string | null
+          layover_cities: string[] | null
+          meal_plan: string | null
+          nights: number | null
           place_id: string
+          price_excludes: string[] | null
+          price_includes: string[] | null
           price_per_person: number | null
+          product_code: string | null
+          product_type: string | null
+          promotion_text: string | null
+          region_group: string | null
+          representative_city: string | null
+          room_type: string | null
+          shopping_required: boolean | null
+          single_supplement: number | null
+          themes: string[] | null
+          usage_count: number | null
+          validity_days: number | null
+          visa_required: boolean | null
         }
         Insert: {
-          destinations?: string[] | null
-          duration_days?: number | null
+          agency_name?: string | null
+          agency_product_url?: string | null
+          airline?: string | null
+          avg_budget?: number | null
+          child_price?: number | null
+          cities?: string[] | null
+          countries?: string[] | null
+          days?: number | null
+          departure_airport?: string | null
+          departure_type?: string | null
+          direct_flight?: boolean | null
+          flight_hours?: number | null
+          guide_included?: boolean | null
+          honeymoon_perks?: string[] | null
+          hotel_grade?: string | null
+          hotel_names?: string[] | null
+          infant_price?: number | null
+          itinerary_highlights?: string[] | null
+          itinerary_summary?: string | null
+          layover_cities?: string[] | null
+          meal_plan?: string | null
+          nights?: number | null
           place_id: string
+          price_excludes?: string[] | null
+          price_includes?: string[] | null
           price_per_person?: number | null
+          product_code?: string | null
+          product_type?: string | null
+          promotion_text?: string | null
+          region_group?: string | null
+          representative_city?: string | null
+          room_type?: string | null
+          shopping_required?: boolean | null
+          single_supplement?: number | null
+          themes?: string[] | null
+          usage_count?: number | null
+          validity_days?: number | null
+          visa_required?: boolean | null
         }
         Update: {
-          destinations?: string[] | null
-          duration_days?: number | null
+          agency_name?: string | null
+          agency_product_url?: string | null
+          airline?: string | null
+          avg_budget?: number | null
+          child_price?: number | null
+          cities?: string[] | null
+          countries?: string[] | null
+          days?: number | null
+          departure_airport?: string | null
+          departure_type?: string | null
+          direct_flight?: boolean | null
+          flight_hours?: number | null
+          guide_included?: boolean | null
+          honeymoon_perks?: string[] | null
+          hotel_grade?: string | null
+          hotel_names?: string[] | null
+          infant_price?: number | null
+          itinerary_highlights?: string[] | null
+          itinerary_summary?: string | null
+          layover_cities?: string[] | null
+          meal_plan?: string | null
+          nights?: number | null
           place_id?: string
+          price_excludes?: string[] | null
+          price_includes?: string[] | null
           price_per_person?: number | null
+          product_code?: string | null
+          product_type?: string | null
+          promotion_text?: string | null
+          region_group?: string | null
+          representative_city?: string | null
+          room_type?: string | null
+          shopping_required?: boolean | null
+          single_supplement?: number | null
+          themes?: string[] | null
+          usage_count?: number | null
+          validity_days?: number | null
+          visa_required?: boolean | null
         }
         Relationships: [
           {
@@ -1325,24 +1541,45 @@ export type Database = {
       }
       place_invitation_venues: {
         Row: {
+          atmosphere: string[] | null
           capacity_max: number | null
           capacity_min: number | null
+          corkage_fee_won: number | null
+          drinks_included: boolean | null
           place_id: string
           price_per_person: number | null
+          private_room_count: number | null
+          room_charge_separate: boolean | null
+          signature_dishes: string[] | null
+          valet_parking: boolean | null
           venue_types: string[] | null
         }
         Insert: {
+          atmosphere?: string[] | null
           capacity_max?: number | null
           capacity_min?: number | null
+          corkage_fee_won?: number | null
+          drinks_included?: boolean | null
           place_id: string
           price_per_person?: number | null
+          private_room_count?: number | null
+          room_charge_separate?: boolean | null
+          signature_dishes?: string[] | null
+          valet_parking?: boolean | null
           venue_types?: string[] | null
         }
         Update: {
+          atmosphere?: string[] | null
           capacity_max?: number | null
           capacity_min?: number | null
+          corkage_fee_won?: number | null
+          drinks_included?: boolean | null
           place_id?: string
           price_per_person?: number | null
+          private_room_count?: number | null
+          room_charge_separate?: boolean | null
+          signature_dishes?: string[] | null
+          valet_parking?: boolean | null
           venue_types?: string[] | null
         }
         Relationships: [
@@ -1355,24 +1592,185 @@ export type Database = {
           },
         ]
       }
+      place_jewelry: {
+        Row: {
+          aftercare_includes: string[] | null
+          band_design: string | null
+          band_finishing: string | null
+          band_profile: string | null
+          band_thickness_mm: number | null
+          band_width_mm: number | null
+          brand_history_year: number | null
+          brand_name: string | null
+          brand_origin: string | null
+          brand_tier: string | null
+          carat_diamond: number | null
+          couple_set_available: boolean | null
+          custom_design_available: boolean | null
+          delivery_days: number | null
+          diamond_cert_org: string | null
+          diamond_certified: boolean | null
+          diamond_clarity: string | null
+          diamond_color: string | null
+          diamond_cut: string | null
+          diamond_origin: string | null
+          diamond_shape: string | null
+          engraving_available: boolean | null
+          gold_karat: string | null
+          lifetime_warranty: boolean | null
+          metals: string[] | null
+          package_includes: string[] | null
+          partnership_dept_stores: string[] | null
+          place_id: string
+          price_couple_set: number | null
+          price_per_person: number | null
+          product_categories: string[] | null
+          product_code: string | null
+          product_type: string | null
+          product_url: string | null
+          promotion_text: string | null
+          showroom_count: number | null
+          side_stones_count: number | null
+          side_stones_total_carat: number | null
+          signature_collection: string | null
+          size_resize_free: boolean | null
+          stone_setting: string | null
+          store_type: string | null
+          sub_category: string | null
+        }
+        Insert: {
+          aftercare_includes?: string[] | null
+          band_design?: string | null
+          band_finishing?: string | null
+          band_profile?: string | null
+          band_thickness_mm?: number | null
+          band_width_mm?: number | null
+          brand_history_year?: number | null
+          brand_name?: string | null
+          brand_origin?: string | null
+          brand_tier?: string | null
+          carat_diamond?: number | null
+          couple_set_available?: boolean | null
+          custom_design_available?: boolean | null
+          delivery_days?: number | null
+          diamond_cert_org?: string | null
+          diamond_certified?: boolean | null
+          diamond_clarity?: string | null
+          diamond_color?: string | null
+          diamond_cut?: string | null
+          diamond_origin?: string | null
+          diamond_shape?: string | null
+          engraving_available?: boolean | null
+          gold_karat?: string | null
+          lifetime_warranty?: boolean | null
+          metals?: string[] | null
+          package_includes?: string[] | null
+          partnership_dept_stores?: string[] | null
+          place_id: string
+          price_couple_set?: number | null
+          price_per_person?: number | null
+          product_categories?: string[] | null
+          product_code?: string | null
+          product_type?: string | null
+          product_url?: string | null
+          promotion_text?: string | null
+          showroom_count?: number | null
+          side_stones_count?: number | null
+          side_stones_total_carat?: number | null
+          signature_collection?: string | null
+          size_resize_free?: boolean | null
+          stone_setting?: string | null
+          store_type?: string | null
+          sub_category?: string | null
+        }
+        Update: {
+          aftercare_includes?: string[] | null
+          band_design?: string | null
+          band_finishing?: string | null
+          band_profile?: string | null
+          band_thickness_mm?: number | null
+          band_width_mm?: number | null
+          brand_history_year?: number | null
+          brand_name?: string | null
+          brand_origin?: string | null
+          brand_tier?: string | null
+          carat_diamond?: number | null
+          couple_set_available?: boolean | null
+          custom_design_available?: boolean | null
+          delivery_days?: number | null
+          diamond_cert_org?: string | null
+          diamond_certified?: boolean | null
+          diamond_clarity?: string | null
+          diamond_color?: string | null
+          diamond_cut?: string | null
+          diamond_origin?: string | null
+          diamond_shape?: string | null
+          engraving_available?: boolean | null
+          gold_karat?: string | null
+          lifetime_warranty?: boolean | null
+          metals?: string[] | null
+          package_includes?: string[] | null
+          partnership_dept_stores?: string[] | null
+          place_id?: string
+          price_couple_set?: number | null
+          price_per_person?: number | null
+          product_categories?: string[] | null
+          product_code?: string | null
+          product_type?: string | null
+          product_url?: string | null
+          promotion_text?: string | null
+          showroom_count?: number | null
+          side_stones_count?: number | null
+          side_stones_total_carat?: number | null
+          signature_collection?: string | null
+          size_resize_free?: boolean | null
+          stone_setting?: string | null
+          store_type?: string | null
+          sub_category?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_jewelry_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: true
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+        ]
+      }
       place_makeup_shops: {
         Row: {
+          director_level: string | null
+          early_morning_fee: number | null
+          hair_makeup_separate: boolean | null
           includes_rehearsal: boolean | null
           makeup_styles: string[] | null
           place_id: string
           price_per_person: number | null
+          rehearsal_count: number | null
+          travel_fee_included: boolean | null
         }
         Insert: {
+          director_level?: string | null
+          early_morning_fee?: number | null
+          hair_makeup_separate?: boolean | null
           includes_rehearsal?: boolean | null
           makeup_styles?: string[] | null
           place_id: string
           price_per_person?: number | null
+          rehearsal_count?: number | null
+          travel_fee_included?: boolean | null
         }
         Update: {
+          director_level?: string | null
+          early_morning_fee?: number | null
+          hair_makeup_separate?: boolean | null
           includes_rehearsal?: boolean | null
           makeup_styles?: string[] | null
           place_id?: string
           price_per_person?: number | null
+          rehearsal_count?: number | null
+          travel_fee_included?: boolean | null
         }
         Relationships: [
           {
@@ -1490,36 +1888,60 @@ export type Database = {
           author_tiers: string[] | null
           base_retouch_count: number | null
           base_shoot_hours: number | null
+          dress_provided: boolean | null
+          editing_days: number | null
+          frame_included: boolean | null
           includes_originals: boolean | null
+          original_count: number | null
           per_retouch_cost: number | null
+          photobook_pages: number | null
           place_id: string
           price_per_person: number | null
           raw_file_extra_cost: number | null
+          retouching_included: boolean | null
+          shoot_locations: string[] | null
           shoot_styles: string[] | null
+          total_photos: number | null
         }
         Insert: {
           album_extra_cost?: number | null
           author_tiers?: string[] | null
           base_retouch_count?: number | null
           base_shoot_hours?: number | null
+          dress_provided?: boolean | null
+          editing_days?: number | null
+          frame_included?: boolean | null
           includes_originals?: boolean | null
+          original_count?: number | null
           per_retouch_cost?: number | null
+          photobook_pages?: number | null
           place_id: string
           price_per_person?: number | null
           raw_file_extra_cost?: number | null
+          retouching_included?: boolean | null
+          shoot_locations?: string[] | null
           shoot_styles?: string[] | null
+          total_photos?: number | null
         }
         Update: {
           album_extra_cost?: number | null
           author_tiers?: string[] | null
           base_retouch_count?: number | null
           base_shoot_hours?: number | null
+          dress_provided?: boolean | null
+          editing_days?: number | null
+          frame_included?: boolean | null
           includes_originals?: boolean | null
+          original_count?: number | null
           per_retouch_cost?: number | null
+          photobook_pages?: number | null
           place_id?: string
           price_per_person?: number | null
           raw_file_extra_cost?: number | null
+          retouching_included?: boolean | null
+          shoot_locations?: string[] | null
           shoot_styles?: string[] | null
+          total_photos?: number | null
         }
         Relationships: [
           {
@@ -1533,19 +1955,28 @@ export type Database = {
       }
       place_tailor_shops: {
         Row: {
+          accessories_included: boolean | null
           custom_available: boolean | null
+          designer_brands: string[] | null
+          fitting_count: number | null
           place_id: string
           price_per_person: number | null
           suit_styles: string[] | null
         }
         Insert: {
+          accessories_included?: boolean | null
           custom_available?: boolean | null
+          designer_brands?: string[] | null
+          fitting_count?: number | null
           place_id: string
           price_per_person?: number | null
           suit_styles?: string[] | null
         }
         Update: {
+          accessories_included?: boolean | null
           custom_available?: boolean | null
+          designer_brands?: string[] | null
+          fitting_count?: number | null
           place_id?: string
           price_per_person?: number | null
           suit_styles?: string[] | null

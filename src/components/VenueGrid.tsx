@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import VendorMediaCard, { CARD_W, CARD_H } from "@/components/home/VendorMediaCard";
+import VendorMediaCard from "@/components/home/VendorMediaCard";
 import { useVenues, Venue } from "@/hooks/useVenues";
 import { useToast } from "@/hooks/use-toast";
 import { useFilterStore } from "@/stores/useFilterStore";
@@ -13,10 +13,14 @@ interface VenueGridProps {
 }
 
 const CardSkeleton = () => (
-  <Skeleton
-    className="rounded-[10px]"
-    style={{ width: CARD_W, height: CARD_H }}
-  />
+  <div className="w-full h-[195px] flex flex-col rounded-[10px] overflow-hidden bg-card">
+    <Skeleton className="w-full h-[100px] rounded-none" />
+    <div className="flex-1 p-2 space-y-1">
+      <Skeleton className="h-2 w-2/3" />
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-2 w-3/4" />
+    </div>
+  </div>
 );
 
 const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
@@ -77,7 +81,7 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-2 px-[20px] pb-20 justify-items-center">
+      <div className="grid grid-cols-2 gap-5 px-5 pb-20">
         {Array.from({ length: 6 }).map((_, i) => (
           <CardSkeleton key={i} />
         ))}
@@ -105,19 +109,20 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
 
   return (
     <div className="pb-20">
-      <div className="grid grid-cols-2 gap-2 px-[20px] justify-items-center">
+      <div className="grid grid-cols-2 gap-5 px-5">
         {allVenues.map((venue) => (
           <VendorMediaCard
             key={venue.id}
             data={venueToCardData(venue)}
             onClick={() => onVenueClick?.(venue)}
+            fluid
           />
         ))}
       </div>
 
       <div ref={loadMoreRef} className="flex justify-center py-6">
         {isFetchingNextPage && (
-          <div className="grid grid-cols-2 gap-2 px-[20px] w-full justify-items-center">
+          <div className="grid grid-cols-2 gap-5 px-5 w-full">
             <CardSkeleton />
             <CardSkeleton />
           </div>
