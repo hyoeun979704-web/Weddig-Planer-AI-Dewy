@@ -551,6 +551,21 @@ function ApplianceExtras({ place }: { place: LegacyDetail }) {
         </div>
       )}
 
+      {/* 매장 전용 — 이 매장에서 제공하는 대표 패키지 안내 */}
+      {place.appliance_product_type === "store" &&
+        (place.package_examples.length > 0 || place.package_price_range) && (
+        <div className="space-y-2 rounded-lg bg-blue-50 p-3">
+          <h3 className="font-bold text-sm text-blue-900">📦 이 매장의 대표 패키지</h3>
+          {place.package_price_range && (
+            <p className="text-xs text-blue-700">가격대: {place.package_price_range}</p>
+          )}
+          <Tags label="" items={place.package_examples} />
+          <p className="text-[11px] text-blue-700/80 mt-1">
+            매장 방문 시 청첩장·예식 일정 제시하면 추가 할인이나 사은품 협상 가능합니다.
+          </p>
+        </div>
+      )}
+
       {/* 결제·배송·서비스 혜택 */}
       {(place.installment_months != null ||
         place.warranty_years != null ||

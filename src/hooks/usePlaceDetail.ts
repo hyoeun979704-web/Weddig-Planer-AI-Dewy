@@ -193,6 +193,8 @@ export interface LegacyDetail {
   specialties: string[];
   package_items: string[];
   package_set_price: number | null;
+  package_examples: string[];          // store 전용 — 이 매장에서 제공하는 대표 패키지명 목록
+  package_price_range: string | null;  // store 전용 — "500~1500만원" 등
   appliance_promotion_text: string | null;
   // Appliance v2 — 비교사이트 표준 필드
   energy_rating: string | null;
@@ -539,6 +541,8 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         specialties: asStringArray(card?.specialties),
         package_items: asStringArray(card?.package_items),
         package_set_price: (card?.package_set_price as number) ?? null,
+        package_examples: asStringArray(card?.package_examples),
+        package_price_range: (card?.package_price_range as string) ?? null,
         appliance_promotion_text: p.category === "appliance" ? ((card?.promotion_text as string) ?? null) : null,
         energy_rating: (card?.energy_rating as string) ?? null,
         model_release_year: (card?.model_release_year as number) ?? null,

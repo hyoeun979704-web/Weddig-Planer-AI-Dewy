@@ -888,7 +888,9 @@ export type Database = {
           model_release_year: number | null
           negotiable: boolean | null
           old_appliance_pickup: boolean | null
+          package_examples: string[] | null
           package_items: string[] | null
+          package_price_range: string | null
           package_set_price: number | null
           payment_options: string[] | null
           place_id: string
@@ -922,7 +924,9 @@ export type Database = {
           model_release_year?: number | null
           negotiable?: boolean | null
           old_appliance_pickup?: boolean | null
+          package_examples?: string[] | null
           package_items?: string[] | null
+          package_price_range?: string | null
           package_set_price?: number | null
           payment_options?: string[] | null
           place_id: string
@@ -956,7 +960,9 @@ export type Database = {
           model_release_year?: number | null
           negotiable?: boolean | null
           old_appliance_pickup?: boolean | null
+          package_examples?: string[] | null
           package_items?: string[] | null
+          package_price_range?: string | null
           package_set_price?: number | null
           payment_options?: string[] | null
           place_id?: string

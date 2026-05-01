@@ -230,6 +230,8 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `[store 전용]\n` +
       `- store_chain (문자열, 위 enum 중).\n` +
       `- specialties (배열): 강점 카테고리 — 예: ["프리미엄 TV","에어컨 설치"].\n` +
+      `- package_examples (배열): 이 매장에서 제공하는 대표 신혼 패키지명 — 예: ["LG 비스포크 5종","삼성 그랑데 패키지","에이스 침대 콜라보"].\n` +
+      `- package_price_range (문자열): 패키지 가격대 — 예: "500~1500만원".\n` +
       `[package 전용]\n` +
       `- package_items (배열): 포함 모델 (예: ["LG 시그니처 OLED 65인치","비스포크 4도어 냉장고","트롬 워시타워","휘센 에어컨"]).\n` +
       `- package_set_price (정수): 세트 총가 KRW.\n` +
@@ -260,7 +262,7 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- is_new_model (bool): 출시 1년 미만 신모델.`,
     cardColumns: [
       "product_type", "product_url", "product_code", "store_chain", "specialties",
-      "package_items", "package_set_price",
+      "package_items", "package_set_price", "package_examples", "package_price_range",
       "product_categories", "brand_options",
       "energy_rating", "model_release_year", "capacity_text", "target_household",
       "installment_months", "warranty_years", "total_discount_percent",

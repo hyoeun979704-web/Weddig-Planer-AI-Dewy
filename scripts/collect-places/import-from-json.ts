@@ -112,7 +112,7 @@ const ALLOWED_CARD_COLUMNS: Record<string, string[]> = {
     "themes", "honeymoon_perks", "shopping_required", "guide_included", "visa_required",
     "departure_type", "validity_days", "usage_count"],
   appliance: ["product_type", "product_url", "product_code", "store_chain", "specialties",
-    "package_items", "package_set_price",
+    "package_items", "package_set_price", "package_examples", "package_price_range",
     "product_categories", "brand_options",
     "energy_rating", "model_release_year", "capacity_text", "target_household",
     "installment_months", "warranty_years", "total_discount_percent",
