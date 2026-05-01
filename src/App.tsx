@@ -66,6 +66,17 @@ const CoupleVote = lazy(() => import("./pages/CoupleVote"));
 const CoupleVoteDetail = lazy(() => import("./pages/CoupleVoteDetail"));
 const BudgetSplitSimulator = lazy(() => import("./pages/BudgetSplitSimulator"));
 const Tutorial = lazy(() => import("./pages/Tutorial"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const LocationTerms = lazy(() => import("./pages/LocationTerms"));
+const DressFitting = lazy(() => import("./pages/DressFitting"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
+const AdminMakeupSamples = lazy(() => import("./pages/admin/AdminMakeupSamples"));
+const AdminInvitationTemplates = lazy(() => import("./pages/admin/AdminInvitationTemplates"));
+const AdminWeddingPhotoRefs = lazy(() => import("./pages/admin/AdminWeddingPhotoRefs"));
+const AdminServiceWaitlist = lazy(() => import("./pages/admin/AdminServiceWaitlist"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
 const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
@@ -207,6 +218,18 @@ const App = () => (
               <Route path="/business/edit" element={<BusinessVendorEdit />} />
               <Route path="/business/gallery" element={<BusinessGallery />} />
               <Route path="/business/inquiries" element={<BusinessInquiries />} />
+
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/location-terms" element={<LocationTerms />} />
+              <Route path="/ai-studio/dress-tour" element={<DressFitting />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/dress-samples" element={<AdminDressSamples />} />
+              <Route path="/admin/makeup-samples" element={<AdminMakeupSamples />} />
+              <Route path="/admin/invitation-templates" element={<AdminInvitationTemplates />} />
+              <Route path="/admin/wedding-photo-refs" element={<AdminWeddingPhotoRefs />} />
+              <Route path="/admin/service-waitlist" element={<AdminServiceWaitlist />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
