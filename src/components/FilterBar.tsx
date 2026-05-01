@@ -113,8 +113,8 @@ const QuickFilterChip = ({ label, defaultLabel, isActive, icon, onClear, childre
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="w-auto p-2 min-w-[140px]" 
+      <PopoverContent
+        className="w-auto p-2 min-w-[140px] max-h-[60vh] overflow-y-auto overscroll-contain"
         align="start"
         sideOffset={8}
       >
@@ -274,7 +274,7 @@ const FilterBar = () => {
               </div>
             </SheetHeader>
 
-            <div className="flex-1 overflow-y-auto space-y-6 pb-24">
+            <div className="flex-1 overflow-y-auto overscroll-contain space-y-6 pb-24">
               {/* Region Filter */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">

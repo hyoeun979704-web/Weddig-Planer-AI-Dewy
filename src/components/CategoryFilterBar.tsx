@@ -580,7 +580,7 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
                 </Button>
               </div>
             </SheetHeader>
-            <div className="overflow-y-auto py-4 space-y-6 max-h-[calc(80vh-80px)]">
+            <div className="overflow-y-auto overscroll-contain py-4 space-y-6 max-h-[calc(80vh-80px)]">
               {/* Region Filter */}
               <div>
                 <h3 className="text-sm font-semibold text-foreground mb-3">{config.regionLabel}</h3>
@@ -699,7 +699,7 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
               </FilterChip>
             </div>
           </PopoverTrigger>
-          <PopoverContent className="w-48 p-2" align="start">
+          <PopoverContent className="w-48 p-2 max-h-[60vh] overflow-y-auto overscroll-contain" align="start">
             {config.regions.map((r) => (
               <button
                 key={r.value}
@@ -725,7 +725,7 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
               </FilterChip>
             </div>
           </PopoverTrigger>
-          <PopoverContent className="w-40 p-2" align="start">
+          <PopoverContent className="w-40 p-2 max-h-[60vh] overflow-y-auto overscroll-contain" align="start">
             {ratingOptions.map((r) => (
               <button
                 key={r.value}
@@ -752,7 +752,7 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
               </FilterChip>
             </div>
           </PopoverTrigger>
-          <PopoverContent className="w-48 p-2" align="start">
+          <PopoverContent className="w-48 p-2 max-h-[60vh] overflow-y-auto overscroll-contain" align="start">
             {config.filterOptions1.options.map((opt) => (
               <button
                 key={opt.value}
