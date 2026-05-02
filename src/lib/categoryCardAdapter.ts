@@ -49,15 +49,27 @@ const buildCategoryItemInfoLines = (
       break;
     }
     case "studios": {
-      if (price) lines.push({ label: "패키지", value: formatWon(price), isPrice: true });
+      lines.push({
+        label: "패키지",
+        value: price ? formatWon(price) : "업체문의",
+        isPrice: true,
+      });
       break;
     }
     case "dress_shops": {
-      if (price) lines.push({ label: "기본", value: formatWon(price), isPrice: true });
+      lines.push({
+        label: "기본",
+        value: price ? formatWon(price) : "업체문의",
+        isPrice: true,
+      });
       break;
     }
     case "makeup_shops": {
-      if (price) lines.push({ label: "신부", value: formatWon(price), isPrice: true });
+      lines.push({
+        label: "신부",
+        value: price ? formatWon(price) : "업체문의",
+        isPrice: true,
+      });
       break;
     }
     case "suits": {
@@ -71,30 +83,54 @@ const buildCategoryItemInfoLines = (
       break;
     }
     case "hanbok": {
-      if (price) lines.push({ label: "기본", value: formatWon(price), isPrice: true });
+      lines.push({
+        label: "기본",
+        value: price ? formatWon(price) : "업체문의",
+        isPrice: true,
+      });
       if (item.custom_available) lines.push({ label: "맞춤", value: "가능" });
       break;
     }
     case "honeymoon": {
-      if (price) lines.push({ label: "패키지", value: formatWon(price), isPrice: true });
+      lines.push({
+        label: "패키지",
+        value: price ? formatWon(price) : "업체문의",
+        isPrice: true,
+      });
       if (item.duration) lines.push({ label: "기간", value: item.duration });
       break;
     }
     case "jewelry": {
       // jewelry는 baseline price + couple set price를 두 줄로 보여줘야 비교가 쉬움.
       const couple = item.price_couple_set as number | undefined;
-      if (price) lines.push({ label: "1인", value: formatWon(price), isPrice: true });
-      if (couple) lines.push({ label: "커플", value: formatWon(couple), isPrice: true });
+      lines.push({
+        label: "1인",
+        value: price ? formatWon(price) : "업체문의",
+        isPrice: true,
+      });
+      lines.push({
+        label: "커플",
+        value: couple ? formatWon(couple) : "업체문의",
+        isPrice: true,
+      });
       if (item.carat_diamond) lines.push({ label: "다이아", value: `${item.carat_diamond}ct` });
       break;
     }
     case "appliances": {
       if (item.brand) lines.push({ label: "판매처", value: item.brand });
-      if (price) lines.push({ label: "최저", value: formatWon(price), isPrice: true });
+      lines.push({
+        label: "최저",
+        value: price ? formatWon(price) : "업체문의",
+        isPrice: true,
+      });
       break;
     }
     case "invitation_venues": {
-      if (price) lines.push({ label: "1인", value: formatWon(price), isPrice: true });
+      lines.push({
+        label: "1인",
+        value: price ? formatWon(price) : "업체문의",
+        isPrice: true,
+      });
       const guests = formatGuests(item.min_guarantee, item.max_guarantee);
       if (guests) lines.push({ label: "정원", value: guests });
       break;

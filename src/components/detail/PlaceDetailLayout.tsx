@@ -459,10 +459,17 @@ function DetailTab({
 
   return (
     <>
-      {/* Price packages */}
-      {place.price_packages.length > 0 && (
-        <section className="px-4 pt-4 pb-2">
-          <h3 className="font-bold text-sm mb-2">가격 패키지</h3>
+      {/* Price packages — 데이터 없으면 "업체문의" 안내 */}
+      <section className="px-4 pt-4 pb-2">
+        <h3 className="font-bold text-sm mb-2">가격 패키지</h3>
+        {place.price_packages.length === 0 ? (
+          <div className="bg-muted/50 border border-border rounded-xl p-4 text-center">
+            <p className="text-sm font-semibold text-foreground mb-1">가격 업체문의</p>
+            <p className="text-xs text-muted-foreground">
+              상세 패키지·가격은 업체에 직접 문의해 주세요.
+            </p>
+          </div>
+        ) : (
           <div className="space-y-2">
             {place.price_packages.map((pkg, i) => (
               <div key={i} className="bg-card border border-border rounded-xl p-3">
@@ -483,8 +490,8 @@ function DetailTab({
               </div>
             ))}
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* Basic services */}
       {place.basic_services.length > 0 && (
