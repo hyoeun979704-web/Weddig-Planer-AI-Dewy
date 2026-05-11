@@ -128,6 +128,8 @@ export const DRESS_FILTERS: FilterAxis[] = [
       { value: "CHIFFON", label: "시폰", description: "가볍고 흐르는 듯한 질감" },
       { value: "ORGANZA", label: "오간자", description: "빳빳하고 비치는 질감" },
       { value: "MIKADO", label: "미카도", description: "두껍고 구조적인 질감" },
+      { value: "SEQUIN", label: "시퀸/스팽글", description: "전체적으로 반짝이는 시퀸 소재" },
+      { value: "METALLIC", label: "메탈릭", description: "금속 광택 (실버·골드 등)" },
     ],
   },
   {
@@ -143,6 +145,13 @@ export const DRESS_FILTERS: FilterAxis[] = [
       { value: "EMBROIDERY", label: "자수" },
       { value: "FLORAL", label: "플라워" },
       { value: "HANDWORK", label: "핸드워크" },
+      { value: "TIERED", label: "티어드 (계단식)" },
+      { value: "RUFFLES", label: "러플" },
+      { value: "FEATHERS", label: "페더" },
+      { value: "PEPLUM", label: "페플럼" },
+      { value: "SLIT", label: "슬릿 (사이드 트임)" },
+      { value: "OMBRE", label: "옴브레/그라데이션" },
+      { value: "BELT", label: "벨트/새시" },
     ],
   },
   {
@@ -181,6 +190,8 @@ export const DRESS_FILTERS: FilterAxis[] = [
       { value: "GRAY", label: "그레이", swatch: "#C0C0C0" },
       { value: "RED", label: "레드", swatch: "#B22222" },
       { value: "BLACK", label: "블랙", swatch: "#2C2C2C" },
+      { value: "SILVER", label: "실버", swatch: "#BFC4C9" },
+      { value: "MULTI", label: "멀티/그라데이션", swatch: "#D4B4C4" },
     ],
   },
   {
