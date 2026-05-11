@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Loader2, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Loader2, Trash2, Eye, EyeOff, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -70,6 +70,7 @@ const AdminDressSamples = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [form, setForm] = useState<SampleForm>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchSamples = useCallback(async () => {
     setIsLoading(true);
@@ -100,20 +101,56 @@ const AdminDressSamples = () => {
       return;
     }
     setIsSaving(true);
-    const { error } = await (supabase as any).from("dress_samples").insert({
+    const payload = {
       ...form,
       details: form.details ?? [],
       mood: form.mood ?? [],
-    });
+    };
+    const { error } = editingId
+      ? await (supabase as any)
+          .from("dress_samples")
+          .update(payload)
+          .eq("id", editingId)
+      : await (supabase as any).from("dress_samples").insert(payload);
     if (error) {
       toast({ title: "저장 실패", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "저장 완료" });
+      toast({ title: editingId ? "수정 완료" : "저장 완료" });
       setForm(emptyForm);
+      setEditingId(null);
       setIsDialogOpen(false);
       fetchSamples();
     }
     setIsSaving(false);
+  };
+
+  const handleEdit = (sample: DressSample) => {
+    setEditingId(sample.id);
+    setForm({
+      name: sample.name,
+      image_url: sample.image_url,
+      silhouette: sample.silhouette,
+      neckline: sample.neckline,
+      sleeve: sample.sleeve,
+      length: sample.length,
+      fabric: sample.fabric,
+      details: sample.details ?? [],
+      back_design: sample.back_design,
+      color: sample.color,
+      waist: sample.waist,
+      mood: sample.mood ?? [],
+      is_active: sample.is_active,
+      display_order: sample.display_order,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingId(null);
+      setForm(emptyForm);
+    }
   };
 
   const handleToggleActive = async (sample: DressSample) => {
@@ -162,7 +199,7 @@ const AdminDressSamples = () => {
         title="드레스 카탈로그"
         description="마네킹 드레스 샘플 관리"
         rightAction={
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
                 <Plus className="w-4 h-4" />
@@ -171,7 +208,9 @@ const AdminDressSamples = () => {
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>새 드레스 샘플 등록</DialogTitle>
+                <DialogTitle>
+                  {editingId ? "드레스 샘플 수정" : "새 드레스 샘플 등록"}
+                </DialogTitle>
               </DialogHeader>
 
               <div className="grid sm:grid-cols-2 gap-6">
@@ -179,7 +218,9 @@ const AdminDressSamples = () => {
                 <div>
                   <Label className="mb-2 block">마네킹 이미지</Label>
                   <ImageUploader
+                    key={editingId ?? "new"}
                     bucket="dress-samples"
+                    initialUrl={form.image_url || undefined}
                     onUploaded={(_, url) => setForm((prev) => ({ ...prev, image_url: url }))}
                   />
                 </div>
@@ -222,12 +263,12 @@ const AdminDressSamples = () => {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>
                   취소
                 </Button>
                 <Button onClick={handleSave} disabled={isSaving}>
                   {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  저장
+                  {editingId ? "수정 저장" : "저장"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -283,6 +324,15 @@ const AdminDressSamples = () => {
                         <EyeOff className="w-3 h-3 mr-1" />
                       )}
                       {s.is_active ? "노출" : "숨김"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(s)}
+                      className="h-8 w-8 p-0"
+                      aria-label="수정"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
