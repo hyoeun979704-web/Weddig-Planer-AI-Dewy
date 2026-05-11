@@ -57,12 +57,15 @@ export const DRESS_FILTERS: FilterAxis[] = [
     type: "single",
     defaultExpanded: true,
     options: [
+      { value: "FIT_AND_FLARE", label: "핏앤플레어", icon: "/dress-filters/silhouette-fit-and-flare.png" },
+      { value: "COLUMN", label: "컬럼", icon: "/dress-filters/silhouette-column.png" },
       { value: "A_LINE", label: "A라인", icon: "/dress-filters/silhouette-a-line.png" },
+      { value: "SHEATH", label: "시스", icon: "/dress-filters/silhouette-sheath.png" },
       { value: "MERMAID", label: "머메이드", icon: "/dress-filters/silhouette-mermaid.png" },
-      { value: "BALL", label: "볼 가운", icon: "/dress-filters/silhouette-ball.png" },
-      { value: "EMPIRE", label: "엠파이어", icon: "/dress-filters/silhouette-empire.png" },
-      { value: "SHEATH", label: "시스 (직선)", icon: "/dress-filters/silhouette-sheath.png" },
       { value: "TRUMPET", label: "트럼펫", icon: "/dress-filters/silhouette-trumpet.png" },
+      { value: "TAPERED", label: "테이퍼드", icon: "/dress-filters/silhouette-tapered.png" },
+      { value: "BALL_GOWN", label: "볼가운", icon: "/dress-filters/silhouette-ball-gown.png" },
+      { value: "DROP_WAIST", label: "드롭웨이스트", icon: "/dress-filters/silhouette-drop-waist.png" },
     ],
   },
   {
