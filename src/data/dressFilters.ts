@@ -190,7 +190,7 @@ export const DRESS_FILTERS: FilterAxis[] = [
     type: "single",
     defaultExpanded: false,
     options: [
-      { value: "NONE", label: "절개선 없음", icon: "/dress-filters/waist-none.png" },
+      { value: "NONE", label: "절개라인 없음", icon: "/dress-filters/waist-none.png" },
       { value: "EMPIRE", label: "엠파이어 (가슴 아래)", icon: "/dress-filters/waist-empire.png" },
       { value: "HIGH", label: "하이 웨이스트", icon: "/dress-filters/waist-high.png" },
       { value: "NATURAL", label: "내추럴 (자연 허리선)", icon: "/dress-filters/waist-natural.png" },
