@@ -78,7 +78,7 @@ const PhotoUploadConsent = ({
           checked={agreeProcessing}
           onChange={setAgreeProcessing}
           label="사진의 AI 처리·외부 전송에 동의합니다"
-          description="업로드한 사진은 AI 결과 생성을 위해 Google AI 서비스(Nano Banana Pro 2)로 전송됩니다."
+          description="업로드한 사진은 AI 결과 생성을 위해 OpenAI GPT-4o 이미지 모델로 전송됩니다."
         />
 
         <ConsentItem

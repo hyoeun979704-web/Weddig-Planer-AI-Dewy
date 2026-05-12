@@ -70,6 +70,8 @@ const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const LocationTerms = lazy(() => import("./pages/LocationTerms"));
 const DressFitting = lazy(() => import("./pages/DressFitting"));
+const DressFittingResult = lazy(() => import("./pages/DressFittingResult"));
+const DressFittingGallery = lazy(() => import("./pages/DressFittingGallery"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
 const AdminMakeupSamples = lazy(() => import("./pages/admin/AdminMakeupSamples"));
@@ -226,6 +228,8 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/dress-tour" element={<DressFitting />} />
+              <Route path="/ai-studio/dress-tour/result/:id" element={<DressFittingResult />} />
+              <Route path="/ai-studio/dress-tour/gallery" element={<DressFittingGallery />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/dress-samples" element={<AdminDressSamples />} />
               <Route path="/admin/makeup-samples" element={<AdminMakeupSamples />} />
