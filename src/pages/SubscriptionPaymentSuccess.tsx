@@ -15,6 +15,7 @@ const SubscriptionPaymentSuccess = () => {
   const { startTrial, subscribe, refetch } = useSubscription();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const [heartsGranted, setHeartsGranted] = useState(0);
 
   useEffect(() => {
     const confirmAndActivate = async () => {
@@ -57,6 +58,10 @@ const SubscriptionPaymentSuccess = () => {
 
         if (error || !data?.success) {
           throw new Error(data?.error || error?.message || "결제 승인 실패");
+        }
+
+        if (data.heartsGranted) {
+          setHeartsGranted(data.heartsGranted);
         }
 
         if (type === "trial") {
@@ -116,11 +121,16 @@ const SubscriptionPaymentSuccess = () => {
       <h2 className="text-lg font-bold text-foreground mb-2">
         {type === "trial" ? "무료 체험이 시작되었습니다!" : "구독이 완료되었습니다!"}
       </h2>
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="text-sm text-muted-foreground mb-3">
         {type === "trial"
           ? "1개월간 모든 프리미엄 기능을 이용하실 수 있습니다."
           : "프리미엄 기능을 바로 이용해보세요."}
       </p>
+      {heartsGranted > 0 && (
+        <div className="mb-6 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold">
+          💗 초기 이용자 특전 하트 {heartsGranted}개 지급 완료
+        </div>
+      )}
       <div className="flex gap-3">
         <button onClick={() => navigate("/premium/content")} className="px-5 py-3 bg-primary text-primary-foreground rounded-2xl font-medium">
           프리미엄 콘텐츠 보기

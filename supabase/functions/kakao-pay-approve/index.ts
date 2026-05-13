@@ -6,6 +6,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const EARLY_BIRD_END = new Date("2026-08-01T00:00:00+09:00").getTime();
+const HEART_REWARDS: Record<string, { amount: number; reason: string }> = {
+  trial: { amount: 5, reason: "early_bird_trial" },
+  monthly: { amount: 10, reason: "early_bird_monthly" },
+  yearly: { amount: 50, reason: "early_bird_yearly" },
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -115,6 +122,22 @@ Deno.serve(async (req) => {
       })
       .eq("user_id", userId);
 
+    let heartsGranted = 0;
+    const reward = HEART_REWARDS[type as string];
+    if (reward && Date.now() < EARLY_BIRD_END) {
+      const { error: heartError } = await supabase.rpc("earn_hearts", {
+        p_user_id: userId,
+        p_amount: reward.amount,
+        p_reason: reward.reason,
+        p_ref_id: null,
+      });
+      if (heartError) {
+        console.error("Heart grant failed:", heartError);
+      } else {
+        heartsGranted = reward.amount;
+      }
+    }
+
     let refunded = false;
     if (type === "trial" && paidAmount === 100) {
       try {
@@ -150,7 +173,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, payment: approveData, refunded }),
+      JSON.stringify({ success: true, payment: approveData, refunded, heartsGranted }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

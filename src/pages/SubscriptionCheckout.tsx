@@ -23,6 +23,8 @@ const SubscriptionCheckout = () => {
       : type === "yearly"
       ? "연간 구독 (39,000원/년)"
       : "월간 구독 (4,900원/월)";
+  const heartBonus = type === "trial" ? 5 : type === "yearly" ? 50 : 10;
+  const isEarlyBird = Date.now() < new Date("2026-08-01T00:00:00+09:00").getTime();
 
   useEffect(() => {
     if (!user) navigate("/auth");
@@ -98,6 +100,21 @@ const SubscriptionCheckout = () => {
             </p>
           )}
         </div>
+
+        {isEarlyBird && (
+          <div className="p-4 rounded-2xl border border-primary/30 bg-primary/5">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🎉</span>
+              <p className="font-semibold text-foreground text-sm">초기 이용자 특전</p>
+            </div>
+            <p className="text-sm text-foreground mt-2">
+              결제 완료 시 AI 스튜디오 하트 <span className="font-bold text-primary">{heartBonus}개</span> 지급
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              2026년 7월까지 결제 시 한정 · 가입 기념 5하트와 별도 지급
+            </p>
+          </div>
+        )}
 
         <div className="p-4 bg-card rounded-2xl border border-border">
           <p className="text-sm font-semibold text-foreground mb-2">결제 수단</p>
