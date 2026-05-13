@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { categories, categoryKeys, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { BudgetItem } from "@/hooks/useBudget";
@@ -19,10 +19,19 @@ interface BudgetAddSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editItem?: BudgetItem | null;
+  initialCategory?: BudgetCategory;
   onSave: (item: Omit<BudgetItem, "id" | "user_id" | "created_at">) => void;
 }
 
-export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }: BudgetAddSheetProps) {
+const LAST_CATEGORY_KEY = "dewy.budget.lastCategory";
+
+const getRememberedCategory = (): BudgetCategory => {
+  if (typeof window === "undefined") return "venue";
+  const stored = window.localStorage.getItem(LAST_CATEGORY_KEY) as BudgetCategory | null;
+  return stored && categoryKeys.includes(stored) ? stored : "venue";
+};
+
+export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCategory, onSave }: BudgetAddSheetProps) {
   const [amount, setAmount] = useState(0);
   const [category, setCategory] = useState<BudgetCategory>("venue");
   const [title, setTitle] = useState("");
@@ -36,6 +45,7 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
   const [balanceDueDate, setBalanceDueDate] = useState<Date | undefined>();
   const [dateOpen, setDateOpen] = useState(false);
   const [balanceDateOpen, setBalanceDateOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   useEffect(() => {
     if (open && editItem) {
@@ -50,17 +60,28 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
       setHasBalance(editItem.has_balance);
       setBalanceAmount(editItem.balance_amount || 0);
       setBalanceDueDate(editItem.balance_due_date ? new Date(editItem.balance_due_date) : undefined);
+      const hasNonDefault =
+        (editItem.payment_stage && editItem.payment_stage !== "full") ||
+        (editItem.payment_method && editItem.payment_method !== "cash") ||
+        !!editItem.memo;
+      setAdvancedOpen(!!hasNonDefault);
     } else if (open) {
-      setAmount(0); setCategory("venue"); setTitle(""); setItemDate(new Date());
+      setAmount(0);
+      setCategory(initialCategory || getRememberedCategory());
+      setTitle(""); setItemDate(new Date());
       setPaidBy("shared"); setPaymentStage("full"); setPaymentMethod("cash");
       setMemo(""); setHasBalance(false); setBalanceAmount(0); setBalanceDueDate(undefined);
+      setAdvancedOpen(false);
     }
-  }, [open, editItem]);
+  }, [open, editItem, initialCategory]);
 
   const subItems = categories[category]?.sub_items || [];
 
   const handleSave = () => {
     if (!title || amount <= 0) return;
+    if (typeof window !== "undefined" && !editItem) {
+      window.localStorage.setItem(LAST_CATEGORY_KEY, category);
+    }
     onSave({
       category, title, amount, paid_by: paidBy,
       payment_stage: paymentStage,
@@ -166,46 +187,62 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
           </div>
         </div>
 
-        {/* Payment Stage */}
         <div className="mb-4">
-          <Label className="text-sm font-semibold mb-1.5 block">결제 단계</Label>
-          <div className="flex gap-2">
-            {paymentStageOptions.map(opt => (
-              <button key={opt.value} type="button" onClick={() => setPaymentStage(opt.value)}
-                className={cn(
-                  "flex-1 text-xs py-2 rounded-lg border transition-all active:scale-95",
-                  paymentStage === opt.value
-                    ? "border-primary bg-primary/10 font-bold"
-                    : "border-border text-muted-foreground"
-                )}>
-                {opt.emoji} {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen(o => !o)}
+            className="flex items-center justify-between w-full text-left py-1"
+          >
+            <span className="text-xs font-medium text-muted-foreground">
+              결제 단계 · 결제수단 · 메모
+            </span>
+            {advancedOpen
+              ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
+              : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+          </button>
+          {advancedOpen && (
+            <div className="mt-3 space-y-4">
+              <div>
+                <Label className="text-xs font-semibold mb-1.5 block">결제 단계</Label>
+                <div className="flex gap-2">
+                  {paymentStageOptions.map(opt => (
+                    <button key={opt.value} type="button" onClick={() => setPaymentStage(opt.value)}
+                      className={cn(
+                        "flex-1 text-xs py-2 rounded-lg border transition-all active:scale-95",
+                        paymentStage === opt.value
+                          ? "border-primary bg-primary/10 font-bold"
+                          : "border-border text-muted-foreground"
+                      )}>
+                      {opt.emoji} {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        {/* Payment Method */}
-        <div className="mb-4">
-          <Label className="text-sm font-semibold mb-1.5 block">결제수단</Label>
-          <div className="flex gap-1.5 flex-wrap">
-            {paymentMethodOptions.map(opt => (
-              <button key={opt.value} type="button" onClick={() => setPaymentMethod(opt.value)}
-                className={cn(
-                  "text-xs py-1.5 px-3 rounded-full border transition-all active:scale-95",
-                  paymentMethod === opt.value
-                    ? "border-primary bg-primary/10 font-bold"
-                    : "border-border text-muted-foreground"
-                )}>
-                {opt.emoji} {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+              <div>
+                <Label className="text-xs font-semibold mb-1.5 block">결제수단</Label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {paymentMethodOptions.map(opt => (
+                    <button key={opt.value} type="button" onClick={() => setPaymentMethod(opt.value)}
+                      className={cn(
+                        "text-xs py-1.5 px-3 rounded-full border transition-all active:scale-95",
+                        paymentMethod === opt.value
+                          ? "border-primary bg-primary/10 font-bold"
+                          : "border-border text-muted-foreground"
+                      )}>
+                      {opt.emoji} {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        <div className="mb-4">
-          <Label className="text-sm font-semibold mb-1.5 block">메모 (선택)</Label>
-          <Textarea value={memo} onChange={e => setMemo(e.target.value)}
-            placeholder="예: 잔금 200만원 D-30 전까지" rows={2} />
+              <div>
+                <Label className="text-xs font-semibold mb-1.5 block">메모</Label>
+                <Textarea value={memo} onChange={e => setMemo(e.target.value)}
+                  placeholder="예: 잔금 200만원 D-30 전까지" rows={2} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Balance toggle */}

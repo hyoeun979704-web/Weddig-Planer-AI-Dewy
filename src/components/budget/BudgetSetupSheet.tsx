@@ -158,13 +158,22 @@ export default function BudgetSetupSheet({
         {/* Guest count */}
         <div className="mb-5">
           <Label className="text-sm font-semibold mb-2 block">👥 예상 하객 수</Label>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="icon" className="h-9 w-9"
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" className="h-10 w-10 shrink-0"
               onClick={() => setGuestCountWithMealSync(guestCount - 10)}>
               <Minus className="w-4 h-4" />
             </Button>
-            <span className="text-lg font-bold min-w-[60px] text-center">{guestCount}명</span>
-            <Button variant="outline" size="icon" className="h-9 w-9"
+            <div className="flex-1 flex items-center gap-1">
+              <Input
+                type="number"
+                inputMode="numeric"
+                value={guestCount || ""}
+                onChange={e => setGuestCountWithMealSync(Number(e.target.value) || 0)}
+                className="text-center text-lg font-bold h-10 no-spinner"
+              />
+              <span className="text-sm text-muted-foreground shrink-0">명</span>
+            </div>
+            <Button variant="outline" size="icon" className="h-10 w-10 shrink-0"
               onClick={() => setGuestCountWithMealSync(guestCount + 10)}>
               <Plus className="w-4 h-4" />
             </Button>
@@ -243,6 +252,9 @@ export default function BudgetSetupSheet({
               <p>· <b>기타</b>에 청첩장·답례품·축가비 등을 미리 잡아두는 게 좋아요</p>
             </div>
           </div>
+          <p className="text-[10px] text-muted-foreground/70 mt-2 text-center">
+            * 평균 데이터는 2025년 상반기 기준 · 실제 견적은 업체마다 다를 수 있어요
+          </p>
         </div>
         </div>
 

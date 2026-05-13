@@ -94,7 +94,7 @@ export const categories: Record<BudgetCategory, CategoryInfo> = {
 };
 
 export const paidByOptions = [
-  { value: "shared", label: "공동", emoji: "🤝" },
+  { value: "shared", label: "부부 공동", emoji: "🤝" },
   { value: "groom", label: "신랑측", emoji: "🤵" },
   { value: "bride", label: "신부측", emoji: "👰" },
 ] as const;

@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import BottomNav from "@/components/BottomNav";
-import { Plus, MapPin, AlertTriangle, ChevronRight, Trash2, Sparkles, Download, Bell } from "lucide-react";
+import { Plus, MapPin, AlertTriangle, ChevronRight, Trash2, Sparkles, Download, Bell, Check, Share2, Users } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +30,7 @@ import { format, differenceInDays } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import type { BudgetItem } from "@/hooks/useBudget";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 const regionLabelToKey = (label: string | null): string | undefined => {
   if (!label) return undefined;
@@ -62,6 +63,7 @@ const Budget = () => {
   const { defaultRegion } = useDefaultRegion();
   const profileRegionKey = regionLabelToKey(defaultRegion);
   const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem } = useBudget(profileRegionKey);
+  const { weddingSettings } = useWeddingSchedule();
 
   const [setupOpen, setSetupOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -69,6 +71,7 @@ const Budget = () => {
   const [reportOpen, setReportOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<BudgetItem | null>(null);
+  const [payBalanceTarget, setPayBalanceTarget] = useState<BudgetItem | null>(null);
   const tutorial = usePageTutorial("budget");
   const { isPremium } = useSubscription();
   const weddingInfoPrompt = useWeddingInfoPrompt();
@@ -102,6 +105,86 @@ const Budget = () => {
 
   const fmt = (n: number) => n.toLocaleString();
 
+  // D-day pace
+  const weddingDate = weddingSettings?.wedding_date;
+  const daysToWedding = weddingDate ? differenceInDays(new Date(weddingDate), new Date()) : null;
+  const remainingBudget = summary.remaining;
+  const dailyPace = daysToWedding !== null && daysToWedding > 0 && remainingBudget > 0
+    ? Math.round(remainingBudget / daysToWedding)
+    : null;
+
+  /**
+   * Builds a plain-text summary and shares via Web Share API; falls back to
+   * clipboard copy when share is unavailable (most desktop browsers).
+   */
+  const handleShare = async () => {
+    const lines: string[] = [];
+    lines.push(`💍 우리 결혼 예산 현황${settings?.region ? ` (${regions[settings.region]?.label})` : ""}`);
+    lines.push(`총 예산: ${fmt(totalBudget)}만원`);
+    lines.push(`사용: ${fmt(summary.totalSpent)}만원 (${Math.round(pct)}%)`);
+    lines.push(`남은 예산: ${fmt(summary.remaining)}만원`);
+    if (daysToWedding !== null && daysToWedding >= 0) {
+      lines.push(`결혼식까지: D-${daysToWedding}일`);
+    }
+    lines.push("");
+    lines.push("[카테고리별 사용]");
+    for (const key of categoryKeys) {
+      const spent = summary.categoryTotals[key] || 0;
+      const budget = catBudgets[key] || 0;
+      if (spent === 0 && budget === 0) continue;
+      lines.push(`${categories[key].emoji} ${categories[key].label}: ${fmt(spent)}/${fmt(budget)}만원`);
+    }
+    const text = lines.join("\n");
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: "우리 결혼 예산", text });
+        return;
+      }
+    } catch {
+      // user cancelled or share failed — fall through to clipboard
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "요약을 복사했어요. 카톡 등에 붙여넣기 하세요." });
+    } catch {
+      toast({ title: "공유에 실패했어요", variant: "destructive" });
+    }
+  };
+
+  /**
+   * Marks a balance as paid by creating a new "잔금" expense item dated today,
+   * then clears has_balance on the original item. Preserves payment history.
+   */
+  const handleMarkBalancePaid = (item: BudgetItem) => {
+    if (!item.balance_amount) return;
+    addItem.mutate({
+      category: item.category,
+      title: `${item.title} 잔금`,
+      amount: item.balance_amount,
+      paid_by: item.paid_by,
+      payment_stage: "full",
+      payment_method: item.payment_method || "cash",
+      item_date: format(new Date(), "yyyy-MM-dd"),
+      memo: null,
+      has_balance: false,
+      balance_amount: null,
+      balance_due_date: null,
+    }, {
+      onSuccess: () => {
+        updateItem.mutate({
+          id: item.id,
+          has_balance: false,
+          balance_amount: null,
+          balance_due_date: null,
+        } as any, {
+          onSuccess: () => toast({ title: "잔금 결제가 기록되었습니다" }),
+        });
+      },
+    });
+    setPayBalanceTarget(null);
+  };
+
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       {showLoginOverlay && <LoginRequiredOverlay message="지역별 평균 비교, 양가 분담 현황까지 체계적으로 관리하세요" features={["지역별 평균 비교", "양가 분담 관리", "잔금 알림"]} />}
@@ -114,13 +197,24 @@ const Budget = () => {
             </button>
             <h1 className="text-lg font-bold text-foreground">예산</h1>
           </div>
-          <button
-            data-tutorial="budget-settings"
-            onClick={() => setSetupOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium active:scale-95 transition-transform"
-          >
-            예산 설정
-          </button>
+          <div className="flex items-center gap-2">
+            {totalBudget > 0 && (
+              <button
+                onClick={handleShare}
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted active:scale-95 transition-all"
+                aria-label="예산 요약 공유"
+              >
+                <Share2 className="w-4 h-4 text-foreground" />
+              </button>
+            )}
+            <button
+              data-tutorial="budget-settings"
+              onClick={() => setSetupOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium active:scale-95 transition-transform"
+            >
+              예산 설정
+            </button>
+          </div>
         </div>
       </header>
 
@@ -162,6 +256,18 @@ const Budget = () => {
                   </div>
                 </div>
               </div>
+              {daysToWedding !== null && daysToWedding >= 0 && (
+                <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">결혼식까지 <span className="font-bold text-foreground">D-{daysToWedding}일</span></span>
+                  {dailyPace !== null ? (
+                    <span className="text-muted-foreground">
+                      남은 예산 페이스 <span className="font-bold text-foreground tabular-nums">{fmt(dailyPace)}만원/일</span>
+                    </span>
+                  ) : summary.remaining < 0 ? (
+                    <span className="text-destructive font-medium">예산 초과 상태</span>
+                  ) : null}
+                </div>
+              )}
               {/* Mini category bar */}
               <div className="mt-4 flex h-2 rounded-full overflow-hidden bg-muted">
                 {categoryKeys.map(key => {
@@ -203,17 +309,17 @@ const Budget = () => {
             <p className="text-xs font-semibold text-foreground mb-2.5 flex items-center gap-1.5">
               <Bell className="w-3.5 h-3.5 text-primary" /> 다가오는 잔금 일정
             </p>
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {upcomingBalances.map(item => {
                 const overdue = item.daysLeft < 0;
                 return (
-                  <div key={item.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
+                  <div key={item.id} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <span className="text-sm">{categories[item.category as BudgetCategory]?.emoji || "📋"}</span>
                       <span className="text-xs text-foreground truncate">{item.title}</span>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs font-bold text-foreground">{fmt(item.balance_amount!)}만원</span>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className="text-xs font-bold text-foreground tabular-nums">{fmt(item.balance_amount!)}만원</span>
                       <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium",
                         overdue ? "bg-destructive/15 text-destructive" :
                         item.daysLeft <= 7 ? "bg-destructive/10 text-destructive" :
@@ -222,6 +328,13 @@ const Budget = () => {
                       )}>
                         {overdue ? `${-item.daysLeft}일 연체` : `D-${item.daysLeft}`}
                       </span>
+                      <button
+                        onClick={() => setPayBalanceTarget(item)}
+                        className="text-[10px] bg-primary text-primary-foreground px-2 py-1 rounded-full font-bold flex items-center gap-0.5 active:scale-95 transition-transform"
+                        aria-label="잔금 결제 완료"
+                      >
+                        <Check className="w-2.5 h-2.5" />결제
+                      </button>
                     </div>
                   </div>
                 );
@@ -231,11 +344,18 @@ const Budget = () => {
         )}
 
         {/* Paid-by bar */}
-        {paidTotal > 0 && (
-          <div className="rounded-2xl bg-card border border-border p-4">
+        {paidTotal > 0 ? (
+          <button
+            onClick={() => navigate("/budget/split-simulator")}
+            className="w-full text-left rounded-2xl bg-card border border-border p-4 active:scale-[0.99] transition-transform"
+          >
             <div className="flex items-center justify-between mb-2.5">
-              <p className="text-xs font-semibold text-foreground">양가 분담 현황</p>
-              <button onClick={() => navigate("/budget/split-simulator")} className="text-[10px] text-primary font-bold">시뮬레이션 →</button>
+              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-primary" />양가 분담 현황
+              </p>
+              <span className="text-[10px] text-primary font-bold flex items-center gap-0.5">
+                시뮬레이션 <ChevronRight className="w-2.5 h-2.5" />
+              </span>
             </div>
             <div className="h-3 rounded-full overflow-hidden flex bg-muted">
               {paidShared > 0 && <div className="bg-muted-foreground/40 h-full transition-all" style={{ width: `${(paidShared / paidTotal) * 100}%` }} />}
@@ -244,7 +364,7 @@ const Budget = () => {
             </div>
             <div className="flex justify-between mt-2 text-[10px]">
               <span className="text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-muted-foreground/40" /> 공동 {fmt(paidShared)}만원
+                <span className="w-2 h-2 rounded-full bg-muted-foreground/40" /> 부부 공동 {fmt(paidShared)}만원
               </span>
               <span className="text-muted-foreground flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-blue-400" /> 신랑측 {fmt(paidGroom)}만원
@@ -253,20 +373,41 @@ const Budget = () => {
                 <span className="w-2 h-2 rounded-full bg-primary" /> 신부측 {fmt(paidBride)}만원
               </span>
             </div>
-          </div>
+          </button>
+        ) : items.length > 0 && (
+          <button
+            onClick={() => navigate("/budget/split-simulator")}
+            className="w-full rounded-2xl bg-card border border-border p-4 flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Users className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">양가 분담 시뮬레이션</p>
+              <p className="text-xs text-muted-foreground">미리 가상으로 분담안 맞춰보기</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </button>
         )}
 
-        {/* Category progress */}
+        {/* Category progress — sorted: over-budget first, then by spent desc, then by budget desc */}
         <div data-tutorial="budget-categories" className="rounded-2xl bg-card border border-border p-4">
           <p className="text-xs font-semibold text-foreground mb-3">카테고리별 현황</p>
           <div className="space-y-3">
-            {categoryKeys.map(key => {
-              const spent = summary.categoryTotals[key] || 0;
-              const budget = catBudgets[key] || 0;
-              const catPct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
-              const over = spent > budget && budget > 0;
-
-              return (
+            {[...categoryKeys]
+              .map(key => {
+                const spent = summary.categoryTotals[key] || 0;
+                const budget = catBudgets[key] || 0;
+                const catPct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+                const over = spent > budget && budget > 0;
+                return { key, spent, budget, catPct, over };
+              })
+              .sort((a, b) => {
+                if (a.over !== b.over) return a.over ? -1 : 1;
+                if (b.spent !== a.spent) return b.spent - a.spent;
+                return b.budget - a.budget;
+              })
+              .map(({ key, spent, budget, catPct, over }) => (
                 <button key={key} className="w-full text-left group" onClick={() => navigate(`/budget/category/${key}`)}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium flex items-center gap-1">
@@ -289,8 +430,7 @@ const Budget = () => {
                     }} />
                   </div>
                 </button>
-              );
-            })}
+              ))}
           </div>
         </div>
 
@@ -409,6 +549,29 @@ const Budget = () => {
 
       <BudgetReportSheet open={reportOpen} onClose={() => setReportOpen(false)} />
       <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} trigger="pdf_feature" />
+
+      <AlertDialog open={!!payBalanceTarget} onOpenChange={open => { if (!open) setPayBalanceTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>잔금을 결제 완료로 처리할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {payBalanceTarget && (
+                <>
+                  <span className="font-medium text-foreground">{payBalanceTarget.title}</span>의 잔금
+                  {" "}{fmt(payBalanceTarget.balance_amount || 0)}만원을 오늘 날짜로 새 지출 항목으로 기록하고,
+                  원래 항목의 잔금 표시를 해제해요.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={() => payBalanceTarget && handleMarkBalancePaid(payBalanceTarget)}>
+              결제 완료
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>

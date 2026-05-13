@@ -3,6 +3,16 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Trash2, Lightbulb } from "lucide-react";
 import { useBudget } from "@/hooks/useBudget";
 import { categories, savingTips, regions, getRegionalAvgWithMeal, type BudgetCategory } from "@/data/budgetData";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const fmt = (n: number) => n.toLocaleString();
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
@@ -24,6 +34,7 @@ const BudgetCategoryDetail = () => {
   const { settings, items, summary, regionalAverage, updateItem, deleteItem, addItem } = useBudget(profileRegionKey);
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BudgetItem | null>(null);
 
   const catInfo = categories[cat];
   if (!catInfo) return null;
@@ -128,8 +139,9 @@ const BudgetCategoryDetail = () => {
                     </div>
                     <span className="text-sm font-bold text-foreground">{item.amount}만원</span>
                   </button>
-                  <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                    onClick={() => deleteItem.mutate(item.id, { onSuccess: () => toast({ title: "삭제되었습니다" }) })}>
+                  <button className="p-1.5 rounded-lg hover:bg-muted transition-colors md:opacity-0 md:group-hover:opacity-100"
+                    onClick={() => setDeleteTarget(item)}
+                    aria-label="삭제">
                     <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
                   </button>
                 </div>
@@ -148,6 +160,7 @@ const BudgetCategoryDetail = () => {
       </div>
 
       <BudgetAddSheet open={addOpen} onOpenChange={setAddOpen} editItem={editItem}
+        initialCategory={cat}
         onSave={data => {
           if (editItem) {
             updateItem.mutate({ id: editItem.id, ...data } as any, { onSuccess: () => toast({ title: "수정되었습니다" }) });
@@ -155,6 +168,37 @@ const BudgetCategoryDetail = () => {
             addItem.mutate({ ...data, category: cat }, { onSuccess: () => toast({ title: "기록되었습니다" }) });
           }
         }} />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>이 지출을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>
+                  <span className="font-medium text-foreground">{deleteTarget.title}</span>
+                  {" "}({fmt(deleteTarget.amount)}만원)을 삭제하면 복구할 수 없어요.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!deleteTarget) return;
+                deleteItem.mutate(deleteTarget.id, {
+                  onSuccess: () => toast({ title: "삭제되었습니다" }),
+                });
+                setDeleteTarget(null);
+              }}
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
