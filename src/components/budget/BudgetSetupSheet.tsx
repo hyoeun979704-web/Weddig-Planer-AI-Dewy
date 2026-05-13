@@ -85,12 +85,19 @@ export default function BudgetSetupSheet({
     commitSave();
   };
 
+  const sumPct = totalBudget > 0 ? Math.min((catSum / totalBudget) * 100, 100) : 0;
+  const sumBarColor = !totalBudget ? "bg-muted" :
+    catSum === totalBudget ? "bg-emerald-500" :
+    catSum > totalBudget ? "bg-destructive" : "bg-yellow-500";
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[85vh] overflow-y-auto pb-8">
-        <SheetHeader className="mb-4">
+      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[90vh] p-0 flex flex-col">
+        <SheetHeader className="px-6 pt-6 pb-3 shrink-0">
           <SheetTitle className="text-base">예산 설정</SheetTitle>
         </SheetHeader>
+
+        <div className="flex-1 overflow-y-auto px-6 pb-4">
 
         {/* Region select */}
         <div className="mb-5">
@@ -99,9 +106,10 @@ export default function BudgetSetupSheet({
             {Object.entries(regions).map(([key, r]) => (
               <button
                 key={key}
+                type="button"
                 onClick={() => setRegion(key)}
                 className={cn(
-                  "text-xs py-2 px-1 rounded-lg border transition-all",
+                  "text-xs py-2 px-1 rounded-lg border transition-all active:scale-95",
                   region === key
                     ? "bg-primary text-primary-foreground border-primary font-bold"
                     : "bg-card border-border text-muted-foreground hover:border-primary/50"
@@ -134,9 +142,9 @@ export default function BudgetSetupSheet({
           <Label className="text-sm font-semibold mb-2 block">💰 총 예산</Label>
           <div className="flex gap-1.5 mb-2 flex-wrap">
             {quickBudgets.map(v => (
-              <button key={v} onClick={() => setTotalBudget(v)}
+              <button key={v} type="button" onClick={() => setTotalBudget(v)}
                 className={cn(
-                  "text-xs py-1.5 px-3 rounded-full border",
+                  "text-xs py-1.5 px-3 rounded-full border transition-all active:scale-95",
                   totalBudget === v ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"
                 )}>
                 {fmt(v)}만
@@ -159,7 +167,9 @@ export default function BudgetSetupSheet({
         <div className="mb-5">
           <div className="flex items-center justify-between mb-2">
             <Label className="text-sm font-semibold">카테고리별 배분</Label>
-            <button onClick={applyRegionalAvg} className="text-xs text-primary">지역 평균으로 채우기</button>
+            <button type="button" onClick={applyRegionalAvg} className="text-xs text-primary active:scale-95 transition-transform">
+              지역 평균으로 채우기
+            </button>
           </div>
           <div className="space-y-2">
             {categoryKeys.map(key => (
@@ -172,16 +182,41 @@ export default function BudgetSetupSheet({
               </div>
             ))}
           </div>
-          {hasMismatch && (
-            <p className="text-xs text-destructive mt-1.5">
-              합계 {fmt(catSum)}만원 (총 예산과 {catSum > totalBudget ? `${fmt(catSum - totalBudget)}만원 초과` : `${fmt(totalBudget - catSum)}만원 부족`})
-            </p>
-          )}
+        </div>
         </div>
 
-        <Button className="w-full" onClick={handleSaveClick}>
-          설정 완료
-        </Button>
+        {/* Sticky footer with live sum bar + save */}
+        <div className="shrink-0 border-t border-border bg-background px-6 pt-3 pb-6">
+          {totalBudget > 0 && (
+            <div className="mb-3">
+              <div className="flex items-center justify-between text-xs mb-1.5 tabular-nums">
+                <span className="text-muted-foreground">
+                  합계 <span className={cn("font-bold",
+                    catSum === totalBudget ? "text-emerald-600" :
+                    catSum > totalBudget ? "text-destructive" : "text-foreground"
+                  )}>{fmt(catSum)}만원</span>
+                  <span className="text-muted-foreground"> / {fmt(totalBudget)}만원</span>
+                </span>
+                {hasMismatch && (
+                  <span className={cn("text-[11px] font-medium",
+                    catSum > totalBudget ? "text-destructive" : "text-yellow-700"
+                  )}>
+                    {catSum > totalBudget
+                      ? `${fmt(catSum - totalBudget)}만원 초과`
+                      : `${fmt(totalBudget - catSum)}만원 남음`}
+                  </span>
+                )}
+              </div>
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                <div className={cn("h-full transition-all", sumBarColor)}
+                  style={{ width: `${sumPct}%` }} />
+              </div>
+            </div>
+          )}
+          <Button className="w-full" onClick={handleSaveClick}>
+            설정 완료
+          </Button>
+        </div>
       </SheetContent>
 
       <AlertDialog open={confirmMismatch} onOpenChange={setConfirmMismatch}>

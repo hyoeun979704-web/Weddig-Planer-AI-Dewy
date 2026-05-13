@@ -50,38 +50,62 @@ const BudgetHistory = () => {
     grouped[key].push(item);
   });
 
+  const filteredTotal = filtered.reduce((s, i) => s + i.amount, 0);
+  const filteredAvg = filtered.length > 0 ? Math.round(filteredTotal / filtered.length) : 0;
+  const isFiltering = catFilter !== "all" || paidFilter !== "all";
+
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <div className="sticky top-0 z-40 bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
-          <button onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5 text-foreground" /></button>
+          <button onClick={() => navigate(-1)} className="active:scale-90 transition-transform">
+            <ArrowLeft className="w-5 h-5 text-foreground" />
+          </button>
           <h1 className="text-base font-bold text-foreground">지출 내역</h1>
           <div className="w-5" />
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div className="px-4 pt-3">
+        <div className="rounded-2xl bg-card border border-border p-3 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">
+              {isFiltering ? "필터 합계" : "전체 합계"} · {filtered.length}건
+            </p>
+            <p className="text-lg font-bold text-foreground tabular-nums">{fmt(filteredTotal)}만원</p>
+          </div>
+          {filtered.length > 0 && (
+            <div className="text-right">
+              <p className="text-[11px] text-muted-foreground">건당 평균</p>
+              <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(filteredAvg)}만원</p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Filters */}
       <div className="px-4 pt-3 pb-2 space-y-2">
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-          <button onClick={() => setCatFilter("all")}
-            className={cn("text-xs py-1 px-3 rounded-full border whitespace-nowrap",
+          <button type="button" onClick={() => setCatFilter("all")}
+            className={cn("text-xs py-1 px-3 rounded-full border whitespace-nowrap transition-all active:scale-95",
               catFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground")}>
             전체
           </button>
           {categoryKeys.map(k => (
-            <button key={k} onClick={() => setCatFilter(k)}
-              className={cn("text-xs py-1 px-3 rounded-full border whitespace-nowrap",
+            <button key={k} type="button" onClick={() => setCatFilter(k)}
+              className={cn("text-xs py-1 px-3 rounded-full border whitespace-nowrap transition-all active:scale-95",
                 catFilter === k ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground")}>
               {categories[k].emoji} {categories[k].label}
             </button>
           ))}
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 flex-wrap">
           {["all", ...paidByOptions.map(p => p.value)].map(v => {
             const opt = paidByOptions.find(p => p.value === v);
             return (
-              <button key={v} onClick={() => setPaidFilter(v)}
-                className={cn("text-xs py-1 px-3 rounded-full border",
+              <button key={v} type="button" onClick={() => setPaidFilter(v)}
+                className={cn("text-xs py-1 px-3 rounded-full border transition-all active:scale-95",
                   paidFilter === v ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground")}>
                 {v === "all" ? "전체" : `${opt?.emoji} ${opt?.label}`}
               </button>
@@ -90,8 +114,8 @@ const BudgetHistory = () => {
         </div>
         <div className="flex gap-1.5">
           {sortOptions.map(s => (
-            <button key={s} onClick={() => setSortBy(s)}
-              className={cn("text-[10px] py-1 px-2 rounded-full border",
+            <button key={s} type="button" onClick={() => setSortBy(s)}
+              className={cn("text-[10px] py-1 px-2 rounded-full border transition-all active:scale-95",
                 sortBy === s ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground")}>
               {s}
             </button>

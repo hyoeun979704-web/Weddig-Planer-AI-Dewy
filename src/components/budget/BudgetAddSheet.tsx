@@ -13,6 +13,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { BudgetItem } from "@/hooks/useBudget";
 
+const fmt = (n: number) => n.toLocaleString();
+
 interface BudgetAddSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -34,6 +36,8 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
   const [hasBalance, setHasBalance] = useState(false);
   const [balanceAmount, setBalanceAmount] = useState(0);
   const [balanceDueDate, setBalanceDueDate] = useState<Date | undefined>();
+  const [dateOpen, setDateOpen] = useState(false);
+  const [balanceDateOpen, setBalanceDateOpen] = useState(false);
 
   useEffect(() => {
     if (open && editItem) {
@@ -89,7 +93,7 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
           </div>
           {amount > 0 && (
             <p className="text-[10px] text-muted-foreground mt-1 text-right tabular-nums">
-              {amount.toLocaleString()}만원
+              {fmt(amount)}만원
             </p>
           )}
         </div>
@@ -99,9 +103,9 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
           <Label className="text-sm font-semibold mb-1.5 block">카테고리</Label>
           <div className="flex gap-1.5 flex-wrap">
             {categoryKeys.map(key => (
-              <button key={key} onClick={() => setCategory(key)}
+              <button key={key} type="button" onClick={() => setCategory(key)}
                 className={cn(
-                  "text-xs py-1.5 px-3 rounded-full border transition-all",
+                  "text-xs py-1.5 px-3 rounded-full border transition-all active:scale-95",
                   category === key
                     ? "border-primary bg-primary/10 text-foreground font-bold"
                     : "border-border text-muted-foreground"
@@ -131,7 +135,7 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
         {/* Date */}
         <div className="mb-4">
           <Label className="text-sm font-semibold mb-1.5 block">날짜</Label>
-          <Popover>
+          <Popover open={dateOpen} onOpenChange={setDateOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" className="w-full justify-start text-left font-normal">
                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -139,7 +143,8 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={itemDate} onSelect={d => d && setItemDate(d)}
+              <Calendar mode="single" selected={itemDate}
+                onSelect={d => { if (d) { setItemDate(d); setDateOpen(false); } }}
                 className={cn("p-3 pointer-events-auto")} />
             </PopoverContent>
           </Popover>
@@ -150,9 +155,9 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
           <Label className="text-sm font-semibold mb-1.5 block">누가 냈나요?</Label>
           <div className="flex gap-2">
             {paidByOptions.map(opt => (
-              <button key={opt.value} onClick={() => setPaidBy(opt.value)}
+              <button key={opt.value} type="button" onClick={() => setPaidBy(opt.value)}
                 className={cn(
-                  "flex-1 text-xs py-2 rounded-lg border transition-all",
+                  "flex-1 text-xs py-2 rounded-lg border transition-all active:scale-95",
                   paidBy === opt.value
                     ? "border-primary bg-primary/10 font-bold"
                     : "border-border text-muted-foreground"
@@ -168,9 +173,9 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
           <Label className="text-sm font-semibold mb-1.5 block">결제 단계</Label>
           <div className="flex gap-2">
             {paymentStageOptions.map(opt => (
-              <button key={opt.value} onClick={() => setPaymentStage(opt.value)}
+              <button key={opt.value} type="button" onClick={() => setPaymentStage(opt.value)}
                 className={cn(
-                  "flex-1 text-xs py-2 rounded-lg border transition-all",
+                  "flex-1 text-xs py-2 rounded-lg border transition-all active:scale-95",
                   paymentStage === opt.value
                     ? "border-primary bg-primary/10 font-bold"
                     : "border-border text-muted-foreground"
@@ -186,9 +191,9 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
           <Label className="text-sm font-semibold mb-1.5 block">결제수단</Label>
           <div className="flex gap-1.5 flex-wrap">
             {paymentMethodOptions.map(opt => (
-              <button key={opt.value} onClick={() => setPaymentMethod(opt.value)}
+              <button key={opt.value} type="button" onClick={() => setPaymentMethod(opt.value)}
                 className={cn(
-                  "text-xs py-1.5 px-3 rounded-full border transition-all",
+                  "text-xs py-1.5 px-3 rounded-full border transition-all active:scale-95",
                   paymentMethod === opt.value
                     ? "border-primary bg-primary/10 font-bold"
                     : "border-border text-muted-foreground"
@@ -218,7 +223,7 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
                   placeholder="잔금 금액" className="text-right no-spinner" />
                 <span className="text-sm text-muted-foreground">만원</span>
               </div>
-              <Popover>
+              <Popover open={balanceDateOpen} onOpenChange={setBalanceDateOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal text-sm">
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -226,10 +231,16 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={balanceDueDate} onSelect={setBalanceDueDate}
+                  <Calendar mode="single" selected={balanceDueDate}
+                    onSelect={d => { setBalanceDueDate(d); if (d) setBalanceDateOpen(false); }}
                     className={cn("p-3 pointer-events-auto")} />
                 </PopoverContent>
               </Popover>
+              {balanceAmount > 0 && amount > 0 && balanceAmount > amount && (
+                <p className="text-[11px] text-yellow-700 bg-yellow-100 px-2 py-1 rounded">
+                  잔금({fmt(balanceAmount)}만원)이 본 지출 금액({fmt(amount)}만원)보다 커요. 본 금액에 잔금이 포함되어 있는지 확인해주세요.
+                </p>
+              )}
             </div>
           )}
         </div>

@@ -119,7 +119,7 @@ const Budget = () => {
           <button
             data-tutorial="budget-settings"
             onClick={() => setSetupOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium"
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium active:scale-95 transition-transform"
           >
             예산 설정
           </button>
