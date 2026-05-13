@@ -2350,6 +2350,24 @@ export type Database = {
         }
         Relationships: []
       }
+      tutorial_completions: {
+        Row: {
+          completed_at: string
+          tour_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          tour_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          tour_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_attendance: {
         Row: {
           current_streak: number

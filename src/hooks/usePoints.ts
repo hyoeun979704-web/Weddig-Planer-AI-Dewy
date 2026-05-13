@@ -22,6 +22,15 @@ const REASON_LABELS: Record<string, string> = {
   heart_charge: "하트 충전",
   voucher_exchange: "상품권 교환",
   shop_purchase: "쇼핑 구매",
+  first_post: "첫 게시물 작성",
+  first_like: "첫 좋아요",
+  first_comment: "첫 댓글",
+  feature_schedule: "튜토리얼: 스케줄",
+  feature_budget: "튜토리얼: 예산",
+  feature_ai: "튜토리얼: AI 플래너",
+  feature_community: "튜토리얼: 커뮤니티",
+  feature_premium: "튜토리얼: 프리미엄",
+  tutorial_master: "튜토리얼 마스터 보너스",
 };
 
 export const labelForReason = (reason: string): string =>

@@ -1,4 +1,6 @@
 import { useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface TutorialStep {
   id: string;
@@ -147,14 +149,49 @@ export const useTutorial = () => {
   const [isActive, setIsActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [steps, setSteps] = useState<TutorialStep[]>(APP_TOUR_STEPS);
+  const [tourId, setTourId] = useState<string | null>(null);
 
   const hasSeen = localStorage.getItem(TUTORIAL_SEEN_KEY) === "true";
 
-  const startTutorial = useCallback((customSteps?: TutorialStep[]) => {
-    setSteps(customSteps || APP_TOUR_STEPS);
-    setCurrentStepIndex(0);
-    setIsActive(true);
+  const startTutorial = useCallback(
+    (customSteps?: TutorialStep[], guideId?: string) => {
+      setSteps(customSteps || APP_TOUR_STEPS);
+      setTourId(guideId ?? null);
+      setCurrentStepIndex(0);
+      setIsActive(true);
+    },
+    []
+  );
+
+  const awardCompletion = useCallback(async (id: string) => {
+    try {
+      const { data, error } = await supabase.rpc("complete_tutorial" as any, {
+        p_tour_id: `feature_${id}`,
+      });
+      if (error) return;
+      const row = Array.isArray(data) ? data[0] : (data as any);
+      if (!row?.awarded) return;
+      if (row.bonus_amount > 0) {
+        toast.success(
+          `🎓 튜토리얼 마스터! ${row.base_amount + row.bonus_amount}P 적립`
+        );
+      } else if (row.base_amount > 0) {
+        toast.success(`튜토리얼 완료! ${row.base_amount}P 적립`);
+      }
+    } catch {
+      // 적립 실패해도 튜토리얼은 정상 종료
+    }
   }, []);
+
+  const endTutorial = useCallback(() => {
+    setIsActive(false);
+    setCurrentStepIndex(0);
+    localStorage.setItem(TUTORIAL_SEEN_KEY, "true");
+    if (tourId) {
+      awardCompletion(tourId);
+      setTourId(null);
+    }
+  }, [tourId, awardCompletion]);
 
   const nextStep = useCallback(() => {
     if (currentStepIndex < steps.length - 1) {
@@ -162,19 +199,13 @@ export const useTutorial = () => {
     } else {
       endTutorial();
     }
-  }, [currentStepIndex, steps.length]);
+  }, [currentStepIndex, steps.length, endTutorial]);
 
   const prevStep = useCallback(() => {
     if (currentStepIndex > 0) {
       setCurrentStepIndex((i) => i - 1);
     }
   }, [currentStepIndex]);
-
-  const endTutorial = useCallback(() => {
-    setIsActive(false);
-    setCurrentStepIndex(0);
-    localStorage.setItem(TUTORIAL_SEEN_KEY, "true");
-  }, []);
 
   const skipTutorial = useCallback(() => {
     endTutorial();
