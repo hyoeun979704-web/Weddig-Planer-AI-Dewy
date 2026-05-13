@@ -26,7 +26,7 @@ import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetup
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import { useSubscription } from "@/hooks/useSubscription";
 import { cn } from "@/lib/utils";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, startOfMonth, subMonths, isSameMonth } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import type { BudgetItem } from "@/hooks/useBudget";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
@@ -104,6 +104,24 @@ const Budget = () => {
   const recentItems = items.slice(0, 10);
 
   const fmt = (n: number) => n.toLocaleString();
+
+  // Monthly trend — last 6 months including current
+  const monthlyTrend = (() => {
+    const today = new Date();
+    const buckets: { monthDate: Date; label: string; total: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = startOfMonth(subMonths(today, i));
+      buckets.push({ monthDate, label: format(monthDate, "M월"), total: 0 });
+    }
+    for (const item of items) {
+      const d = new Date(item.item_date);
+      const bucket = buckets.find(b => isSameMonth(b.monthDate, d));
+      if (bucket) bucket.total += item.amount;
+    }
+    return buckets;
+  })();
+  const trendMax = Math.max(...monthlyTrend.map(b => b.total), 1);
+  const trendActiveCount = monthlyTrend.filter(b => b.total > 0).length;
 
   // D-day pace
   const weddingDate = weddingSettings?.wedding_date;
@@ -433,6 +451,56 @@ const Budget = () => {
               ))}
           </div>
         </div>
+
+        {/* Monthly trend */}
+        {trendActiveCount >= 2 && (
+          <div className="rounded-2xl bg-card border border-border p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-foreground">월별 지출 추이</p>
+              <p className="text-[10px] text-muted-foreground">최근 6개월</p>
+            </div>
+            <div className="flex items-end justify-between gap-2 h-24">
+              {monthlyTrend.map((b, i) => {
+                const isCurrent = i === monthlyTrend.length - 1;
+                const heightPct = trendMax > 0 ? (b.total / trendMax) * 100 : 0;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+                    <span className={cn("text-[9px] tabular-nums",
+                      b.total > 0 ? "text-foreground font-bold" : "text-muted-foreground"
+                    )}>
+                      {b.total > 0 ? fmt(b.total) : "·"}
+                    </span>
+                    <div className="w-full flex items-end h-14">
+                      <div
+                        className={cn("w-full rounded-t-md transition-all duration-500",
+                          isCurrent ? "bg-primary" : "bg-primary/30"
+                        )}
+                        style={{ height: `${Math.max(heightPct, b.total > 0 ? 6 : 0)}%` }}
+                      />
+                    </div>
+                    <span className={cn("text-[10px]",
+                      isCurrent ? "text-foreground font-bold" : "text-muted-foreground"
+                    )}>{b.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {(() => {
+              const cur = monthlyTrend[monthlyTrend.length - 1].total;
+              const prev = monthlyTrend[monthlyTrend.length - 2].total;
+              if (prev === 0) return null;
+              const diff = cur - prev;
+              const diffPct = Math.round((Math.abs(diff) / prev) * 100);
+              return (
+                <p className={cn("text-[11px] mt-2 text-center",
+                  diff > 0 ? "text-destructive" : diff < 0 ? "text-emerald-600" : "text-muted-foreground"
+                )}>
+                  이번 달은 지난 달보다 {diff === 0 ? "동일" : `${diffPct}% ${diff > 0 ? "더 썼어요" : "덜 썼어요"}`}
+                </p>
+              );
+            })()}
+          </div>
+        )}
 
         {/* Premium Report Banner */}
         <button

@@ -104,15 +104,21 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
 
         {/* Amount */}
         <div className="mb-4">
-          <Label className="text-sm font-semibold mb-1.5 block">금액</Label>
+          <div className="flex items-center justify-between mb-1.5">
+            <Label className="text-sm font-semibold">금액</Label>
+            <span className="text-[10px] text-muted-foreground">1만원 단위 · 32만 5천원 → 32.5</span>
+          </div>
           <div className="flex items-center gap-2">
-            <Input type="number" inputMode="numeric" value={amount || ""} onChange={e => setAmount(Number(e.target.value))}
+            <Input type="number" inputMode="decimal" step="0.1" value={amount || ""}
+              onChange={e => setAmount(Number(e.target.value))}
               placeholder="0" className="text-right text-lg font-bold no-spinner" />
             <span className="text-sm text-muted-foreground">만원</span>
           </div>
           {amount > 0 && (
             <p className="text-[10px] text-muted-foreground mt-1 text-right tabular-nums">
-              {fmt(amount)}만원
+              = {Math.round(amount * 10000).toLocaleString()}원
+              {amount >= 10000 && <span className="text-yellow-700"> · 금액이 너무 큰 건 아닌가요?</span>}
+              {amount > 0 && amount < 0.1 && <span className="text-yellow-700"> · 금액이 너무 작은 건 아닌가요?</span>}
             </p>
           )}
         </div>
@@ -253,10 +259,18 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
           </div>
           {hasBalance && (
             <div className="space-y-3 pl-2 border-l-2 border-primary/20">
-              <div className="flex items-center gap-2">
-                <Input type="number" inputMode="numeric" value={balanceAmount || ""} onChange={e => setBalanceAmount(Number(e.target.value))}
-                  placeholder="잔금 금액" className="text-right no-spinner" />
-                <span className="text-sm text-muted-foreground">만원</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Input type="number" inputMode="decimal" step="0.1" value={balanceAmount || ""}
+                    onChange={e => setBalanceAmount(Number(e.target.value))}
+                    placeholder="잔금 금액 (만원)" className="text-right no-spinner" />
+                  <span className="text-sm text-muted-foreground">만원</span>
+                </div>
+                {balanceAmount > 0 && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5 text-right tabular-nums">
+                    = {Math.round(balanceAmount * 10000).toLocaleString()}원
+                  </p>
+                )}
               </div>
               <Popover open={balanceDateOpen} onOpenChange={setBalanceDateOpen}>
                 <PopoverTrigger asChild>
