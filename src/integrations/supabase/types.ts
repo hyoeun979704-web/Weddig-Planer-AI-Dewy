@@ -2350,6 +2350,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_attendance: {
+        Row: {
+          current_streak: number
+          last_date: string
+          longest_streak: number
+          total_check_ins: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          last_date: string
+          longest_streak?: number
+          total_check_ins?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          last_date?: string
+          longest_streak?: number
+          total_check_ins?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

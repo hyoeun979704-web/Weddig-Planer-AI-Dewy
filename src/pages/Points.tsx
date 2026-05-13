@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Coins, Clock, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, Coins, Clock, ChevronRight, Loader2, Check, Flame } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePoints, labelForReason } from "@/hooks/usePoints";
+import { useAttendance } from "@/hooks/useAttendance";
+import { toast } from "sonner";
 
 const formatDate = (iso: string): string => {
   const d = new Date(iso);
@@ -12,9 +14,26 @@ const formatDate = (iso: string): string => {
 const Points = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { balance, transactions, isLoading } = usePoints();
+  const { balance, transactions, isLoading, refetch: refetchPoints } = usePoints();
+  const attendance = useAttendance();
 
   const cashValue = Math.floor(balance * 0.2); // 1P = 0.2원
+
+  const handleAttendance = async () => {
+    if (attendance.alreadyClaimedToday) return;
+    const result = await attendance.claim();
+    if (!result) {
+      toast.error("출석 처리에 실패했어요. 다시 시도해주세요.");
+      return;
+    }
+    if (!result.claimed) {
+      toast.info("오늘은 이미 출석을 완료했어요.");
+      return;
+    }
+    await refetchPoints();
+    const bonusText = result.bonusAmount > 0 ? ` + 연속 ${result.currentStreak}일 보너스 ${result.bonusAmount}P!` : "";
+    toast.success(`출석 완료! ${result.baseAmount}P 적립${bonusText}`);
+  };
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
@@ -57,6 +76,44 @@ const Points = () => {
             </button>
           </div>
         </div>
+
+        {/* 출석 체크 카드 */}
+        {user && (
+          <div className="px-4 pt-4">
+            <button
+              onClick={handleAttendance}
+              disabled={attendance.alreadyClaimedToday || attendance.isClaiming}
+              className={`w-full p-4 rounded-2xl border flex items-center gap-4 text-left transition-shadow ${
+                attendance.alreadyClaimedToday
+                  ? "bg-muted border-border"
+                  : "bg-gradient-to-r from-primary/15 to-primary/5 border-primary/30 hover:shadow-md"
+              }`}
+            >
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                attendance.alreadyClaimedToday ? "bg-muted-foreground/20" : "bg-primary/20"
+              }`}>
+                {attendance.alreadyClaimedToday ? (
+                  <Check className="w-5 h-5 text-muted-foreground" />
+                ) : (
+                  <Flame className="w-5 h-5 text-primary" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-foreground text-sm">
+                  {attendance.alreadyClaimedToday ? "오늘 출석 완료" : "오늘 출석하고 50P 받기"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {attendance.currentStreak > 0
+                    ? `🔥 ${attendance.currentStreak}일 연속 출석 중 · 7일마다 +200P / 30일마다 +1,000P`
+                    : "매일 들어와서 포인트 받기"}
+                </p>
+              </div>
+              {!attendance.alreadyClaimedToday && (
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              )}
+            </button>
+          </div>
+        )}
 
         {/* 게임 카드 */}
         <div className="px-4 pt-4">
