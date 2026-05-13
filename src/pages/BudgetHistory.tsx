@@ -4,10 +4,22 @@ import { ArrowLeft, Trash2 } from "lucide-react";
 import { useBudget } from "@/hooks/useBudget";
 import { categories, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import type { BudgetItem } from "@/hooks/useBudget";
+
+const fmt = (n: number) => n.toLocaleString();
 
 const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 const sortOptions = ["최신순", "오래된순", "금액 높은순", "금액 낮은순"] as const;
@@ -20,6 +32,7 @@ const BudgetHistory = () => {
   const [sortBy, setSortBy] = useState<typeof sortOptions[number]>("최신순");
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BudgetItem | null>(null);
 
   let filtered = [...items];
   if (catFilter !== "all") filtered = filtered.filter(i => i.category === catFilter);
@@ -92,8 +105,8 @@ const BudgetHistory = () => {
           <div key={month} className="mb-4">
             <div className="flex items-center justify-between py-2">
               <span className="text-xs font-bold text-muted-foreground">{month}</span>
-              <span className="text-xs text-muted-foreground">
-                {monthItems.reduce((s, i) => s + i.amount, 0).toLocaleString()}만원
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {fmt(monthItems.reduce((s, i) => s + i.amount, 0))}만원
               </span>
             </div>
             <div className="space-y-1">
@@ -122,10 +135,11 @@ const BudgetHistory = () => {
                           {item.memo && ` · ${item.memo}`}
                         </p>
                       </div>
-                      <span className="text-sm font-bold text-foreground">{item.amount}만원</span>
+                      <span className="text-sm font-bold text-foreground tabular-nums">{fmt(item.amount)}만원</span>
                     </button>
-                    <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                      onClick={() => deleteItem.mutate(item.id, { onSuccess: () => toast({ title: "삭제되었습니다" }) })}>
+                    <button className="p-1.5 rounded-lg hover:bg-muted transition-colors md:opacity-0 md:group-hover:opacity-100"
+                      onClick={() => setDeleteTarget(item)}
+                      aria-label="삭제">
                       <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
                   </div>
@@ -147,6 +161,37 @@ const BudgetHistory = () => {
             addItem.mutate(data, { onSuccess: () => toast({ title: "기록되었습니다" }) });
           }
         }} />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>이 지출을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>
+                  <span className="font-medium text-foreground">{deleteTarget.title}</span>
+                  {" "}({fmt(deleteTarget.amount)}만원)을 삭제하면 복구할 수 없어요.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!deleteTarget) return;
+                deleteItem.mutate(deleteTarget.id, {
+                  onSuccess: () => toast({ title: "삭제되었습니다" }),
+                });
+                setDeleteTarget(null);
+              }}
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

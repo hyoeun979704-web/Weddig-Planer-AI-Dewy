@@ -83,10 +83,15 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
         <div className="mb-4">
           <Label className="text-sm font-semibold mb-1.5 block">금액</Label>
           <div className="flex items-center gap-2">
-            <Input type="number" value={amount || ""} onChange={e => setAmount(Number(e.target.value))}
-              placeholder="0" className="text-right text-lg font-bold" />
+            <Input type="number" inputMode="numeric" value={amount || ""} onChange={e => setAmount(Number(e.target.value))}
+              placeholder="0" className="text-right text-lg font-bold no-spinner" />
             <span className="text-sm text-muted-foreground">만원</span>
           </div>
+          {amount > 0 && (
+            <p className="text-[10px] text-muted-foreground mt-1 text-right tabular-nums">
+              {amount.toLocaleString()}만원
+            </p>
+          )}
         </div>
 
         {/* Category */}
@@ -209,8 +214,8 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
           {hasBalance && (
             <div className="space-y-3 pl-2 border-l-2 border-primary/20">
               <div className="flex items-center gap-2">
-                <Input type="number" value={balanceAmount || ""} onChange={e => setBalanceAmount(Number(e.target.value))}
-                  placeholder="잔금 금액" className="text-right" />
+                <Input type="number" inputMode="numeric" value={balanceAmount || ""} onChange={e => setBalanceAmount(Number(e.target.value))}
+                  placeholder="잔금 금액" className="text-right no-spinner" />
                 <span className="text-sm text-muted-foreground">만원</span>
               </div>
               <Popover>

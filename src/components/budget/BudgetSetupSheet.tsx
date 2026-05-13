@@ -3,9 +3,21 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { regions, regionalAverages, categories, type BudgetCategory } from "@/data/budgetData";
 import { Minus, Plus, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const fmt = (n: number) => n.toLocaleString();
 
 interface BudgetSetupSheetProps {
   open: boolean;
@@ -22,7 +34,7 @@ interface BudgetSetupSheetProps {
   }) => void;
 }
 
-const quickBudgets = [2000, 2500, 3000, 3500, 4000];
+const quickBudgets = [2000, 3000, 4000, 5000, 6000];
 const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 
 export default function BudgetSetupSheet({
@@ -35,6 +47,7 @@ export default function BudgetSetupSheet({
   const [catBudgets, setCatBudgets] = useState<Record<BudgetCategory, number>>(
     initialCategoryBudgets || { venue: 0, sdm: 0, ring: 0, house: 0, honeymoon: 0, etc: 0 }
   );
+  const [confirmMismatch, setConfirmMismatch] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -43,7 +56,7 @@ export default function BudgetSetupSheet({
       setTotalBudget(initialTotalBudget);
       if (initialCategoryBudgets) setCatBudgets(initialCategoryBudgets);
     }
-  }, [open]);
+  }, [open, initialRegion, initialGuestCount, initialTotalBudget, initialCategoryBudgets]);
 
   const applyRegionalAvg = () => {
     const avg = regionalAverages[region];
@@ -57,6 +70,20 @@ export default function BudgetSetupSheet({
 
   const catSum = Object.values(catBudgets).reduce((a, b) => a + b, 0);
   const avg = regionalAverages[region];
+  const hasMismatch = totalBudget > 0 && catSum !== totalBudget;
+
+  const commitSave = () => {
+    onSave({ region, guest_count: guestCount, total_budget: totalBudget, category_budgets: catBudgets });
+    onOpenChange(false);
+  };
+
+  const handleSaveClick = () => {
+    if (hasMismatch) {
+      setConfirmMismatch(true);
+      return;
+    }
+    commitSave();
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -112,18 +139,18 @@ export default function BudgetSetupSheet({
                   "text-xs py-1.5 px-3 rounded-full border",
                   totalBudget === v ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"
                 )}>
-                {v}만
+                {fmt(v)}만
               </button>
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <Input type="number" value={totalBudget || ""} onChange={e => setTotalBudget(Number(e.target.value))}
-              placeholder="직접 입력" className="text-right" />
+            <Input type="number" inputMode="numeric" value={totalBudget || ""} onChange={e => setTotalBudget(Number(e.target.value))}
+              placeholder="직접 입력" className="text-right no-spinner" />
             <span className="text-sm text-muted-foreground whitespace-nowrap">만원</span>
           </div>
           {avg && (
             <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-              <MapPin className="w-3 h-3" /> {regions[region]?.label} {guestCount}명 기준 평균 {avg.total}만원
+              <MapPin className="w-3 h-3" /> {regions[region]?.label} {guestCount}명 기준 평균 {fmt(avg.total)}만원
             </p>
           )}
         </div>
@@ -138,27 +165,42 @@ export default function BudgetSetupSheet({
             {categoryKeys.map(key => (
               <div key={key} className="flex items-center gap-2">
                 <span className="text-sm w-20 shrink-0">{categories[key].emoji} {categories[key].label}</span>
-                <Input type="number" value={catBudgets[key] || ""}
+                <Input type="number" inputMode="numeric" value={catBudgets[key] || ""}
                   onChange={e => setCatBudgets(prev => ({ ...prev, [key]: Number(e.target.value) }))}
-                  className="text-right text-sm h-9" />
+                  className="text-right text-sm h-9 no-spinner" />
                 <span className="text-xs text-muted-foreground w-8">만원</span>
               </div>
             ))}
           </div>
-          {catSum !== totalBudget && totalBudget > 0 && (
+          {hasMismatch && (
             <p className="text-xs text-destructive mt-1.5">
-              합계 {catSum}만원 (총 예산과 {catSum > totalBudget ? `${catSum - totalBudget}만원 초과` : `${totalBudget - catSum}만원 부족`})
+              합계 {fmt(catSum)}만원 (총 예산과 {catSum > totalBudget ? `${fmt(catSum - totalBudget)}만원 초과` : `${fmt(totalBudget - catSum)}만원 부족`})
             </p>
           )}
         </div>
 
-        <Button className="w-full" onClick={() => {
-          onSave({ region, guest_count: guestCount, total_budget: totalBudget, category_budgets: catBudgets });
-          onOpenChange(false);
-        }}>
+        <Button className="w-full" onClick={handleSaveClick}>
           설정 완료
         </Button>
       </SheetContent>
+
+      <AlertDialog open={confirmMismatch} onOpenChange={setConfirmMismatch}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>합계가 총 예산과 달라요</AlertDialogTitle>
+            <AlertDialogDescription>
+              카테고리 합계는 {fmt(catSum)}만원, 총 예산은 {fmt(totalBudget)}만원이에요.
+              {catSum > totalBudget
+                ? ` ${fmt(catSum - totalBudget)}만원 초과된 상태로 저장할까요?`
+                : ` ${fmt(totalBudget - catSum)}만원이 비어있어요. 그대로 저장할까요?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>다시 확인</AlertDialogCancel>
+            <AlertDialogAction onClick={commitSave}>저장</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }

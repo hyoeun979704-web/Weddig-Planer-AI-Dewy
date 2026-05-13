@@ -4,11 +4,20 @@ import { useNavigate, useLocation } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import BottomNav from "@/components/BottomNav";
-import { Plus, Settings, MapPin, AlertTriangle, ChevronRight, Trash2, Sparkles, Download, Clock, Bell } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Plus, MapPin, AlertTriangle, ChevronRight, Trash2, Sparkles, Download, Bell } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useBudget } from "@/hooks/useBudget";
 import { useAuth } from "@/contexts/AuthContext";
-import { categories, regions, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
+import { categories, regions, paidByOptions, paymentStageOptions, type BudgetCategory } from "@/data/budgetData";
 import BudgetSetupSheet from "@/components/budget/BudgetSetupSheet";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import BudgetReportSheet from "@/components/premium/BudgetReportSheet";
@@ -61,6 +70,7 @@ const Budget = () => {
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<BudgetItem | null>(null);
   const tutorial = usePageTutorial("budget");
   const { isPremium } = useSubscription();
   const weddingInfoPrompt = useWeddingInfoPrompt();
@@ -83,15 +93,16 @@ const Budget = () => {
   const paidBride = summary.paidByTotals["bride"] || 0;
   const paidTotal = paidShared + paidGroom + paidBride;
 
-  // Upcoming balances
+  // Upcoming balances (overdue items appear first)
   const upcomingBalances = items
     .filter(i => i.has_balance && i.balance_amount && i.balance_amount > 0 && i.balance_due_date)
     .map(i => ({ ...i, daysLeft: differenceInDays(new Date(i.balance_due_date!), new Date()) }))
-    .filter(i => i.daysLeft >= 0)
     .sort((a, b) => a.daysLeft - b.daysLeft)
     .slice(0, 3);
 
   const recentItems = items.slice(0, 10);
+
+  const fmt = (n: number) => n.toLocaleString();
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
@@ -131,7 +142,7 @@ const Budget = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-lg font-bold text-foreground">{totalBudget.toLocaleString()}만원</span>
+                    <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalBudget)}만원</span>
                     {settings?.region && (
                       <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full flex items-center gap-0.5">
                         <MapPin className="w-2.5 h-2.5" /> {regions[settings.region]?.label}
@@ -141,11 +152,14 @@ const Budget = () => {
                   <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                     <div>
                       <p className="text-[10px] text-muted-foreground">사용</p>
-                      <p className="text-sm font-bold text-foreground">{summary.totalSpent.toLocaleString()}만원</p>
+                      <p className="text-sm font-bold text-foreground tabular-nums">{fmt(summary.totalSpent)}만원</p>
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground">남은 예산</p>
-                      <p className="text-sm font-bold text-foreground">{summary.remaining.toLocaleString()}만원</p>
+                      <p className={cn(
+                        "text-sm font-bold tabular-nums",
+                        summary.remaining < 0 ? "text-destructive" : "text-foreground"
+                      )}>{fmt(summary.remaining)}만원</p>
                     </div>
                   </div>
                 </div>
@@ -192,24 +206,28 @@ const Budget = () => {
               <Bell className="w-3.5 h-3.5 text-primary" /> 다가오는 잔금 일정
             </p>
             <div className="space-y-2">
-              {upcomingBalances.map(item => (
-                <div key={item.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm">{categories[item.category as BudgetCategory]?.emoji || "📋"}</span>
-                    <span className="text-xs text-foreground truncate">{item.title}</span>
+              {upcomingBalances.map(item => {
+                const overdue = item.daysLeft < 0;
+                return (
+                  <div key={item.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm">{categories[item.category as BudgetCategory]?.emoji || "📋"}</span>
+                      <span className="text-xs text-foreground truncate">{item.title}</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs font-bold text-foreground">{fmt(item.balance_amount!)}만원</span>
+                      <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                        overdue ? "bg-destructive/15 text-destructive" :
+                        item.daysLeft <= 7 ? "bg-destructive/10 text-destructive" :
+                        item.daysLeft <= 30 ? "bg-yellow-100 text-yellow-700" :
+                        "bg-muted text-muted-foreground"
+                      )}>
+                        {overdue ? `${-item.daysLeft}일 연체` : `D-${item.daysLeft}`}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-xs font-bold text-foreground">{item.balance_amount}만원</span>
-                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium",
-                      item.daysLeft <= 7 ? "bg-destructive/10 text-destructive" :
-                      item.daysLeft <= 30 ? "bg-yellow-100 text-yellow-700" :
-                      "bg-muted text-muted-foreground"
-                    )}>
-                      D-{item.daysLeft}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -228,13 +246,13 @@ const Budget = () => {
             </div>
             <div className="flex justify-between mt-2 text-[10px]">
               <span className="text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-muted-foreground/40" /> 공동 {paidShared}만원
+                <span className="w-2 h-2 rounded-full bg-muted-foreground/40" /> 공동 {fmt(paidShared)}만원
               </span>
               <span className="text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-blue-400" /> 신랑측 {paidGroom}만원
+                <span className="w-2 h-2 rounded-full bg-blue-400" /> 신랑측 {fmt(paidGroom)}만원
               </span>
               <span className="text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-primary" /> 신부측 {paidBride}만원
+                <span className="w-2 h-2 rounded-full bg-primary" /> 신부측 {fmt(paidBride)}만원
               </span>
             </div>
           </div>
@@ -258,10 +276,10 @@ const Budget = () => {
                       {catPct >= 90 && <AlertTriangle className="w-3 h-3 text-destructive" />}
                     </span>
                     <div className="flex items-center gap-1.5 text-xs">
-                      <span className={cn("font-bold", over ? "text-destructive" : "text-foreground")}>
-                        {spent}만원
+                      <span className={cn("font-bold tabular-nums", over ? "text-destructive" : "text-foreground")}>
+                        {fmt(spent)}만원
                       </span>
-                      {budget > 0 && <span className="text-muted-foreground">/ {budget}만원</span>}
+                      {budget > 0 && <span className="text-muted-foreground tabular-nums">/ {fmt(budget)}만원</span>}
                       {over && <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full">초과</span>}
                       <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
@@ -301,8 +319,10 @@ const Budget = () => {
         {/* Recent items */}
         <div className="rounded-2xl bg-card border border-border p-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-foreground">최근 지출</p>
-            {items.length > 10 && (
+            <p className="text-xs font-semibold text-foreground">
+              최근 지출 {items.length > 0 && <span className="text-muted-foreground font-normal">({items.length})</span>}
+            </p>
+            {items.length > 0 && (
               <button onClick={() => navigate("/budget/history")} className="text-xs text-primary font-medium">전체보기 →</button>
             )}
           </div>
@@ -337,14 +357,11 @@ const Budget = () => {
                           )}
                         </p>
                       </div>
-                      <span className="text-sm font-bold text-foreground flex-shrink-0">{item.amount}만원</span>
+                      <span className="text-sm font-bold text-foreground flex-shrink-0 tabular-nums">{fmt(item.amount)}만원</span>
                     </button>
                     <button className="p-1.5 rounded-lg hover:bg-muted transition-colors flex-shrink-0"
-                      onClick={() => {
-                        deleteItem.mutate(item.id, {
-                          onSuccess: () => toast({ title: "삭제되었습니다" }),
-                        });
-                      }}>
+                      onClick={() => setDeleteTarget(item)}
+                      aria-label="삭제">
                       <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
                   </div>
@@ -394,6 +411,37 @@ const Budget = () => {
 
       <BudgetReportSheet open={reportOpen} onClose={() => setReportOpen(false)} />
       <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} trigger="pdf_feature" />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>이 지출을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>
+                  <span className="font-medium text-foreground">{deleteTarget.title}</span>
+                  {" "}({fmt(deleteTarget.amount)}만원)을 삭제하면 복구할 수 없어요.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!deleteTarget) return;
+                deleteItem.mutate(deleteTarget.id, {
+                  onSuccess: () => toast({ title: "삭제되었습니다" }),
+                });
+                setDeleteTarget(null);
+              }}
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <WeddingInfoSetupModal
         isOpen={weddingInfoPrompt.open}
