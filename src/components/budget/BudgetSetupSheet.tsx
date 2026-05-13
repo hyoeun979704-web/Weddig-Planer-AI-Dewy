@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { regions, getRegionalAvgWithMeal, categories, categoryKeys, type BudgetCategory } from "@/data/budgetData";
+import { regions, regionalAverages, getRegionalAvgWithMeal, categories, categoryKeys, type BudgetCategory } from "@/data/budgetData";
 import { Minus, Plus, MapPin, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +48,7 @@ export default function BudgetSetupSheet({
     initialCategoryBudgets ? { ...emptyCatBudgets, ...initialCategoryBudgets } : emptyCatBudgets
   );
   const [confirmMismatch, setConfirmMismatch] = useState(false);
+  const [pendingMealRecalc, setPendingMealRecalc] = useState<{ newGuestCount: number; newMeal: number } | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -69,6 +70,36 @@ export default function BudgetSetupSheet({
       venue: avg.venue, meal: avg.meal, sdm: avg.sdm, ring: avg.ring,
       house: avg.house, honeymoon: avg.honeymoon, etc: avg.etc,
     });
+  };
+
+  /**
+   * Adjusts guest count and keeps meal budget in sync.
+   * If the current meal value matches the auto-computed amount for the *previous*
+   * guest count (i.e. user hasn't customized it), we silently recalculate.
+   * If it differs, we ask before overwriting so we don't blow away manual input.
+   */
+  const setGuestCountWithMealSync = (newCount: number) => {
+    const clamped = Math.max(50, Math.min(500, newCount));
+    if (clamped === guestCount) return;
+
+    const perGuestMeal = regionalAverages[region]?.per_guest_meal;
+    if (!perGuestMeal) {
+      setGuestCount(clamped);
+      return;
+    }
+
+    const newMeal = Math.round(perGuestMeal * clamped);
+    const currentMeal = catBudgets.meal;
+    const previousAutoMeal = Math.round(perGuestMeal * guestCount);
+    const isUntouched = currentMeal === 0 || currentMeal === previousAutoMeal;
+
+    if (isUntouched) {
+      setGuestCount(clamped);
+      setCatBudgets(prev => ({ ...prev, meal: newMeal }));
+    } else {
+      setGuestCount(clamped);
+      setPendingMealRecalc({ newGuestCount: clamped, newMeal });
+    }
   };
 
   const catSum = Object.values(catBudgets).reduce((a, b) => a + b, 0);
@@ -129,15 +160,20 @@ export default function BudgetSetupSheet({
           <Label className="text-sm font-semibold mb-2 block">👥 예상 하객 수</Label>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="icon" className="h-9 w-9"
-              onClick={() => setGuestCount(Math.max(50, guestCount - 10))}>
+              onClick={() => setGuestCountWithMealSync(guestCount - 10)}>
               <Minus className="w-4 h-4" />
             </Button>
             <span className="text-lg font-bold min-w-[60px] text-center">{guestCount}명</span>
             <Button variant="outline" size="icon" className="h-9 w-9"
-              onClick={() => setGuestCount(Math.min(500, guestCount + 10))}>
+              onClick={() => setGuestCountWithMealSync(guestCount + 10)}>
               <Plus className="w-4 h-4" />
             </Button>
           </div>
+          {avg && catBudgets.meal > 0 && (
+            <p className="text-[10px] text-muted-foreground mt-1.5">
+              식대는 하객 수 × {avg.per_guest_meal}만원으로 자동 계산돼요
+            </p>
+          )}
         </div>
 
         {/* Total budget */}
@@ -243,6 +279,36 @@ export default function BudgetSetupSheet({
           </Button>
         </div>
       </SheetContent>
+
+      <AlertDialog
+        open={!!pendingMealRecalc}
+        onOpenChange={open => { if (!open) setPendingMealRecalc(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>식대를 다시 계산할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              직접 입력하신 식대 {fmt(catBudgets.meal)}만원이 있어요.
+              {pendingMealRecalc && (
+                <> {pendingMealRecalc.newGuestCount}명 기준 평균은 {fmt(pendingMealRecalc.newMeal)}만원이에요.</>
+              )}
+              <br />
+              자동 계산으로 바꾸시면 직접 입력하신 금액이 덮어써져요.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingMealRecalc(null)}>입력 금액 유지</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (pendingMealRecalc) {
+                setCatBudgets(prev => ({ ...prev, meal: pendingMealRecalc.newMeal }));
+              }
+              setPendingMealRecalc(null);
+            }}>
+              자동 계산으로 변경
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={confirmMismatch} onOpenChange={setConfirmMismatch}>
         <AlertDialogContent>
