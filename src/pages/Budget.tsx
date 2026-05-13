@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { categories, categoryKeys, regions, paidByOptions, paymentStageOptions, type BudgetCategory } from "@/data/budgetData";
 import BudgetSetupSheet from "@/components/budget/BudgetSetupSheet";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
+import PayBalanceSheet from "@/components/budget/PayBalanceSheet";
 import BudgetReportSheet from "@/components/premium/BudgetReportSheet";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
@@ -171,10 +172,14 @@ const Budget = () => {
   };
 
   /**
-   * Marks a balance as paid by creating a new "잔금" expense item dated today,
-   * then clears has_balance on the original item. Preserves payment history.
+   * Marks a balance as paid by creating a new "잔금" expense item with the
+   * user-supplied date/method/memo, then clears has_balance on the original
+   * item. Preserves payment history.
    */
-  const handleMarkBalancePaid = (item: BudgetItem) => {
+  const handleMarkBalancePaid = (
+    item: BudgetItem,
+    payload: { payDate: string; paymentMethod: string; memo: string | null }
+  ) => {
     if (!item.balance_amount) return;
     addItem.mutate({
       category: item.category,
@@ -182,9 +187,9 @@ const Budget = () => {
       amount: item.balance_amount,
       paid_by: item.paid_by,
       payment_stage: "full",
-      payment_method: item.payment_method || "cash",
-      item_date: format(new Date(), "yyyy-MM-dd"),
-      memo: null,
+      payment_method: payload.paymentMethod,
+      item_date: payload.payDate,
+      memo: payload.memo,
       has_balance: false,
       balance_amount: null,
       balance_due_date: null,
@@ -618,28 +623,13 @@ const Budget = () => {
       <BudgetReportSheet open={reportOpen} onClose={() => setReportOpen(false)} />
       <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} trigger="pdf_feature" />
 
-      <AlertDialog open={!!payBalanceTarget} onOpenChange={open => { if (!open) setPayBalanceTarget(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>잔금을 결제 완료로 처리할까요?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {payBalanceTarget && (
-                <>
-                  <span className="font-medium text-foreground">{payBalanceTarget.title}</span>의 잔금
-                  {" "}{fmt(payBalanceTarget.balance_amount || 0)}만원을 오늘 날짜로 새 지출 항목으로 기록하고,
-                  원래 항목의 잔금 표시를 해제해요.
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={() => payBalanceTarget && handleMarkBalancePaid(payBalanceTarget)}>
-              결제 완료
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <PayBalanceSheet
+        item={payBalanceTarget}
+        onOpenChange={open => { if (!open) setPayBalanceTarget(null); }}
+        onConfirm={payload => {
+          if (payBalanceTarget) handleMarkBalancePaid(payBalanceTarget, payload);
+        }}
+      />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>

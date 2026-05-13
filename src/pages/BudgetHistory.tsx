@@ -21,6 +21,19 @@ import type { BudgetItem } from "@/hooks/useBudget";
 
 const fmt = (n: number) => n.toLocaleString();
 
+const relativeTime = (iso: string): string => {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  if (diffMs < 0) return "방금";
+  const m = Math.round(diffMs / 60_000);
+  if (m < 60) return m <= 1 ? "방금" : `${m}분 전`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}시간 전`;
+  const d = Math.round(h / 24);
+  if (d < 30) return `${d}일 전`;
+  const mo = Math.round(d / 30);
+  return `${mo}개월 전`;
+};
+
 const sortOptions = ["최신순", "오래된순", "금액 높은순", "금액 낮은순"] as const;
 type GroupMode = "month" | "vendor";
 
@@ -124,6 +137,9 @@ const BudgetHistory = () => {
   const renderItemRow = (item: BudgetItem, compact = false) => {
     const cat = categories[item.category as BudgetCategory];
     const pb = paidByOptions.find(p => p.value === item.paid_by);
+    const wasEdited = !!item.updated_at && !!item.created_at &&
+      new Date(item.updated_at).getTime() - new Date(item.created_at).getTime() > 60_000;
+    const editedAgo = wasEdited ? relativeTime(item.updated_at!) : null;
     return (
       <div key={item.id} className="flex items-center gap-3 py-2.5 border-b border-border last:border-0 group">
         <button className="flex-1 flex items-center gap-3 text-left min-w-0"
@@ -147,6 +163,9 @@ const BudgetHistory = () => {
                 <span className="bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
                   잔금 {fmt(item.balance_amount)}만
                 </span>
+              )}
+              {editedAgo && (
+                <span className="text-muted-foreground/70 italic">· 수정 {editedAgo}</span>
               )}
               {item.memo && ` · ${item.memo}`}
             </p>

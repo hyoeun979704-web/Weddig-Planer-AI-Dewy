@@ -126,7 +126,7 @@ export default function BudgetSetupSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[90vh] p-0 flex flex-col">
+      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[90dvh] p-0 flex flex-col">
         <SheetHeader className="px-6 pt-6 pb-3 shrink-0">
           <SheetTitle className="text-base">예산 설정</SheetTitle>
         </SheetHeader>
@@ -224,6 +224,26 @@ export default function BudgetSetupSheet({
               지역 평균으로 채우기
             </button>
           </div>
+          {totalBudget > 0 && (
+            <div className="mb-2 flex items-center justify-between text-[11px] tabular-nums">
+              <span className="text-muted-foreground">
+                합계 <span className={cn("font-bold",
+                  catSum === totalBudget ? "text-emerald-600" :
+                  catSum > totalBudget ? "text-destructive" : "text-foreground"
+                )}>{fmt(catSum)}만원</span>
+                <span> / {fmt(totalBudget)}만원</span>
+              </span>
+              {hasMismatch && (
+                <span className={cn("font-medium",
+                  catSum > totalBudget ? "text-destructive" : "text-yellow-700"
+                )}>
+                  {catSum > totalBudget
+                    ? `${fmt(catSum - totalBudget)}만원 초과`
+                    : `${fmt(totalBudget - catSum)}만원 남음`}
+                </span>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
             {categoryKeys.map(key => (
               <div key={key}>

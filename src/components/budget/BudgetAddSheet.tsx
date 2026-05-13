@@ -7,11 +7,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { categories, categoryKeys, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
-import { CalendarIcon, ChevronDown, ChevronUp } from "lucide-react";
-import { format } from "date-fns";
+import { CalendarIcon, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { format, differenceInDays, isAfter, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { BudgetItem } from "@/hooks/useBudget";
+
+const LARGE_AMOUNT_THRESHOLD = 100000; // 10억원 = 1억 ÷ 1만 × 10
+const FAR_FUTURE_THRESHOLD_DAYS = 365;
 
 const fmt = (n: number) => n.toLocaleString();
 
@@ -46,6 +59,7 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
   const [dateOpen, setDateOpen] = useState(false);
   const [balanceDateOpen, setBalanceDateOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
 
   useEffect(() => {
     if (open && editItem) {
@@ -77,8 +91,15 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
 
   const subItems = categories[category]?.sub_items || [];
 
-  const handleSave = () => {
-    if (!title || amount <= 0) return;
+  // Validation flags
+  const today = startOfDay(new Date());
+  const itemDateIsFuture = isAfter(startOfDay(itemDate), today);
+  const itemDateDaysAhead = itemDateIsFuture ? differenceInDays(startOfDay(itemDate), today) : 0;
+  const isLargeAmount = amount >= LARGE_AMOUNT_THRESHOLD;
+  const isFarFuture = itemDateDaysAhead > FAR_FUTURE_THRESHOLD_DAYS;
+  const needsConfirmation = isLargeAmount || isFarFuture;
+
+  const commitSave = () => {
     if (typeof window !== "undefined" && !editItem) {
       window.localStorage.setItem(LAST_CATEGORY_KEY, category);
     }
@@ -95,9 +116,18 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
     onOpenChange(false);
   };
 
+  const handleSave = () => {
+    if (!title || amount <= 0) return;
+    if (needsConfirmation) {
+      setConfirmSaveOpen(true);
+      return;
+    }
+    commitSave();
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[85vh] overflow-y-auto pb-8">
+      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[85dvh] overflow-y-auto pb-8">
         <SheetHeader className="mb-4">
           <SheetTitle className="text-base">{editItem ? "지출 수정" : "지출 기록하기"}</SheetTitle>
         </SheetHeader>
@@ -162,7 +192,10 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
           <Label className="text-sm font-semibold mb-1.5 block">날짜</Label>
           <Popover open={dateOpen} onOpenChange={setDateOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-start text-left font-normal">
+              <Button variant="outline" className={cn(
+                "w-full justify-start text-left font-normal",
+                itemDateIsFuture && "border-yellow-400 bg-yellow-50"
+              )}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {format(itemDate, "yyyy-MM-dd")}
               </Button>
@@ -173,6 +206,12 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
                 className={cn("p-3 pointer-events-auto")} />
             </PopoverContent>
           </Popover>
+          {itemDateIsFuture && (
+            <p className="text-[11px] text-yellow-700 mt-1 flex items-start gap-1">
+              <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+              미래 날짜({itemDateDaysAhead}일 뒤)예요. 실제 결제일이 맞나요?
+            </p>
+          )}
         </div>
 
         {/* Paid by */}
@@ -298,6 +337,34 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
           {editItem ? "수정 완료" : "기록하기"}
         </Button>
       </SheetContent>
+
+      <AlertDialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>입력 내용을 다시 확인해주세요</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-1.5">
+              {isLargeAmount && (
+                <span className="block">
+                  · 금액이 <b className="text-foreground">{fmt(amount)}만원</b> ({(amount * 10000).toLocaleString()}원)이에요.
+                  단위가 맞나요? (1만원 단위 입력)
+                </span>
+              )}
+              {isFarFuture && (
+                <span className="block">
+                  · 날짜가 <b className="text-foreground">{itemDateDaysAhead}일 뒤</b>({format(itemDate, "yyyy-MM-dd")})로
+                  설정돼 있어요. 너무 먼 미래는 아닌가요?
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>다시 확인</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmSaveOpen(false); commitSave(); }}>
+              이대로 저장
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }

@@ -29,6 +29,7 @@ export interface BudgetItem {
   payment_stage: string;
   payment_method: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface BudgetSummary {
