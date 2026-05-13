@@ -77,8 +77,14 @@ const BudgetCategoryDetail = () => {
     if (cat === "meal" && isSmall) {
       out.push("50인 이하는 인당 단가 협상 여지가 적어요. 어린이/축의금 답례 식대 인원도 포함해 카운트하세요");
     }
-    if (cat === "ring" && excluded.includes("hanbok")) {
-      out.push("한복을 제외하셨으니 결혼반지·예물 위주로만 잡으셔도 충분해요");
+    if (cat === "suit" && isSelf) {
+      out.push("셀프웨딩에서도 신랑 예복은 살리는 경우가 많아요. 본식+신혼여행에 다시 입을 정장이라면 구매가 합리적");
+    }
+    if (cat === "hanbok" && isSmall) {
+      out.push("스몰웨딩은 신부·신랑만 한복 입고 양가 부모는 정장으로 가는 경우도 많아요");
+    }
+    if (cat === "meetup") {
+      out.push("상견례 시기를 결혼식 6~9개월 전으로 잡으면 양가가 부담 없이 일정 조율할 수 있어요");
     }
     if (cat === "house" && excluded.includes("appliance")) {
       out.push("가전 구매를 생략한다면 가구·생활용품·인테리어 비중이 늘어날 수 있어요");

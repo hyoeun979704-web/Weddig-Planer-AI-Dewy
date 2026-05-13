@@ -48,7 +48,10 @@ export default function BudgetSetupSheet({
 }: BudgetSetupSheetProps) {
   const styleDefaultGuests = weddingStyle === "small" ? 50 : 200;
   const effectiveInitialGuests = initialGuestCount ?? styleDefaultGuests;
-  const emptyCatBudgets: Record<BudgetCategory, number> = { venue: 0, meal: 0, sdm: 0, ring: 0, house: 0, honeymoon: 0, etc: 0 };
+  const emptyCatBudgets: Record<BudgetCategory, number> = {
+    venue: 0, meal: 0, sdm: 0, suit: 0, hanbok: 0, ring: 0,
+    meetup: 0, house: 0, honeymoon: 0, etc: 0,
+  };
   const [region, setRegion] = useState(initialRegion);
   const [guestCount, setGuestCount] = useState(effectiveInitialGuests);
   const [totalBudget, setTotalBudget] = useState(initialTotalBudget);
@@ -74,11 +77,14 @@ export default function BudgetSetupSheet({
    * Apply regional averages to all category inputs, adjusting for the user's
    * wedding style + excluded shop categories:
    *
-   *  - small wedding: venue × 0.7 (가든/하우스 가정), ring × 0.85 if hanbok
-   *    excluded. Meal already scales with the smaller guestCount default.
-   *  - self / excluded sub-categories: drop sdm proportionally based on which
-   *    of studio/dress_shop/makeup_shop is excluded (each ≈ 1/4 of sdm).
-   *    Avoids blanket 50% cuts that misprice when only one piece is DIY.
+   *  - small wedding: venue × 0.7 (가든/하우스 가정). Meal already scales
+   *    with the smaller guestCount default.
+   *  - self / excluded sub-categories: drop sdm proportionally based on
+   *    which of studio/dress_shop/makeup_shop is excluded (each ≈ 1/3 of
+   *    sdm now that tailor_shop has its own budget row). Avoids blanket
+   *    50% cuts that misprice when only one piece is DIY.
+   *  - excluded tailor_shop → suit = 0
+   *  - excluded hanbok → hanbok = 0
    *  - excluded honeymoon → honeymoon = 0
    *  - excluded appliance → house × 0.5 (house also covers furniture/move-in)
    */
@@ -88,23 +94,25 @@ export default function BudgetSetupSheet({
     const excludedSet = new Set(excludedCategories);
     const isSmall = weddingStyle === "small";
 
-    // sdm sub-share: 4 main pieces (studio + dress + makeup + tailor/extras)
+    // sdm sub-share: studio + dress + makeup (~1/3 each after tailor_shop
+    // moved out into its own 'suit' budget row).
     const sdmDrop = ["studio", "dress_shop", "makeup_shop"]
-      .filter(c => excludedSet.has(c)).length * 0.25;
-    const sdmAdjust = Math.max(0.25, 1 - sdmDrop);
+      .filter(c => excludedSet.has(c)).length * (1 / 3);
+    const sdmAdjust = Math.max(0.2, 1 - sdmDrop);
 
     const venueAdjust = isSmall ? 0.7 : 1;
-    const ringAdjust = isSmall || excludedSet.has("hanbok") ? 0.85 : 1;
     const houseAdjust = excludedSet.has("appliance") ? 0.5 : 1;
-    const honeymoonValue = excludedSet.has("honeymoon") ? 0 : avg.honeymoon;
 
     const next = {
       venue: Math.round(avg.venue * venueAdjust),
       meal: avg.meal,
       sdm: Math.round(avg.sdm * sdmAdjust),
-      ring: Math.round(avg.ring * ringAdjust),
+      suit: excludedSet.has("tailor_shop") ? 0 : avg.suit,
+      hanbok: excludedSet.has("hanbok") ? 0 : avg.hanbok,
+      ring: avg.ring,
+      meetup: avg.meetup,
       house: Math.round(avg.house * houseAdjust),
-      honeymoon: honeymoonValue,
+      honeymoon: excludedSet.has("honeymoon") ? 0 : avg.honeymoon,
       etc: avg.etc,
     };
     setTotalBudget(Object.values(next).reduce((a, b) => a + b, 0));

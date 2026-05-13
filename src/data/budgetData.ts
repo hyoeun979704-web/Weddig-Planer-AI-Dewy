@@ -11,7 +11,10 @@ export interface RegionalAverage {
   total: number;
   venue: number;
   sdm: number;
+  suit: number;
+  hanbok: number;
   ring: number;
+  meetup: number;
   house: number;
   honeymoon: number;
   etc: number;
@@ -55,24 +58,33 @@ export const resolveRegionKey = (value: string | null | undefined): string | und
   return undefined;
 };
 
+/**
+ * Regional averages (KRW × 10,000). Calibrated so suit/hanbok/meetup are
+ * surfaced as their own line items rather than being lumped into ring/sdm/etc.
+ * Numbers reflect Seoul → other-region scaling on a percentage split:
+ *   venue 15.6% · sdm 8.8% · suit 3.1% · hanbok 4.7% · ring 7.8% ·
+ *   meetup 2.5% · house 25% · honeymoon 10.9% · etc 22.5%.
+ * `total` is the sum of these (excludes meal — meal scales with guest count
+ * and is added by getRegionalAvgWithMeal).
+ */
 export const regionalAverages: Record<string, RegionalAverage> = {
-  seoul: { total: 3200, venue: 500, sdm: 350, ring: 400, house: 800, honeymoon: 350, etc: 800, per_guest_meal: 8.5, note: "서울은 전국 평균 대비 약 20~30% 높음" },
-  gyeonggi: { total: 2800, venue: 420, sdm: 300, ring: 350, house: 700, honeymoon: 330, etc: 700, per_guest_meal: 7.5, note: "분당/판교 등 일부 지역은 서울급" },
-  incheon: { total: 2500, venue: 380, sdm: 280, ring: 300, house: 600, honeymoon: 300, etc: 640, per_guest_meal: 7.0, note: "" },
-  busan: { total: 2600, venue: 400, sdm: 300, ring: 350, house: 650, honeymoon: 300, etc: 600, per_guest_meal: 7.0, note: "해운대/수영구는 서울급 비용" },
-  daegu: { total: 2400, venue: 370, sdm: 270, ring: 300, house: 600, honeymoon: 280, etc: 580, per_guest_meal: 6.5, note: "" },
-  daejeon: { total: 2300, venue: 350, sdm: 260, ring: 280, house: 550, honeymoon: 280, etc: 580, per_guest_meal: 6.5, note: "" },
-  gwangju: { total: 2200, venue: 330, sdm: 250, ring: 270, house: 530, honeymoon: 270, etc: 550, per_guest_meal: 6.0, note: "" },
-  ulsan: { total: 2500, venue: 380, sdm: 280, ring: 320, house: 630, honeymoon: 290, etc: 600, per_guest_meal: 7.0, note: "" },
-  sejong: { total: 2400, venue: 360, sdm: 270, ring: 290, house: 580, honeymoon: 280, etc: 620, per_guest_meal: 6.5, note: "신도시 특성상 상승 추세" },
-  gangwon: { total: 2000, venue: 300, sdm: 230, ring: 250, house: 450, honeymoon: 250, etc: 520, per_guest_meal: 6.0, note: "" },
-  chungbuk: { total: 2100, venue: 310, sdm: 240, ring: 260, house: 480, honeymoon: 260, etc: 550, per_guest_meal: 6.0, note: "" },
-  chungnam: { total: 2200, venue: 330, sdm: 250, ring: 270, house: 510, honeymoon: 270, etc: 570, per_guest_meal: 6.0, note: "천안/아산은 수도권 영향" },
-  jeonbuk: { total: 2000, venue: 300, sdm: 230, ring: 240, house: 450, honeymoon: 250, etc: 530, per_guest_meal: 5.5, note: "" },
-  jeonnam: { total: 1900, venue: 280, sdm: 220, ring: 230, house: 420, honeymoon: 240, etc: 510, per_guest_meal: 5.5, note: "" },
-  gyeongbuk: { total: 2100, venue: 320, sdm: 240, ring: 260, house: 480, honeymoon: 260, etc: 540, per_guest_meal: 6.0, note: "" },
-  gyeongnam: { total: 2300, venue: 350, sdm: 260, ring: 290, house: 550, honeymoon: 280, etc: 570, per_guest_meal: 6.5, note: "" },
-  jeju: { total: 2200, venue: 350, sdm: 260, ring: 260, house: 500, honeymoon: 250, etc: 580, per_guest_meal: 6.5, note: "스몰웨딩/야외 비율 높음" },
+  seoul:     { total: 3230, venue: 500, sdm: 280, suit: 100, hanbok: 150, ring: 250, meetup: 80, house: 800, honeymoon: 350, etc: 720, per_guest_meal: 8.5, note: "서울은 전국 평균 대비 약 20~30% 높음" },
+  gyeonggi:  { total: 2840, venue: 440, sdm: 250, suit: 90,  hanbok: 130, ring: 220, meetup: 70, house: 700, honeymoon: 310, etc: 630, per_guest_meal: 7.5, note: "분당/판교 등 일부 지역은 서울급" },
+  incheon:   { total: 2540, venue: 390, sdm: 220, suit: 80,  hanbok: 120, ring: 200, meetup: 65, house: 625, honeymoon: 275, etc: 565, per_guest_meal: 7.0, note: "" },
+  busan:     { total: 2615, venue: 400, sdm: 230, suit: 80,  hanbok: 120, ring: 200, meetup: 65, house: 650, honeymoon: 285, etc: 585, per_guest_meal: 7.0, note: "해운대/수영구는 서울급 비용" },
+  daegu:     { total: 2420, venue: 370, sdm: 210, suit: 75,  hanbok: 110, ring: 190, meetup: 60, house: 600, honeymoon: 265, etc: 540, per_guest_meal: 6.5, note: "" },
+  daejeon:   { total: 2325, venue: 360, sdm: 200, suit: 70,  hanbok: 110, ring: 180, meetup: 60, house: 575, honeymoon: 250, etc: 520, per_guest_meal: 6.5, note: "" },
+  gwangju:   { total: 2210, venue: 340, sdm: 190, suit: 70,  hanbok: 100, ring: 170, meetup: 55, house: 550, honeymoon: 240, etc: 495, per_guest_meal: 6.0, note: "" },
+  ulsan:     { total: 2540, venue: 390, sdm: 220, suit: 80,  hanbok: 120, ring: 200, meetup: 65, house: 625, honeymoon: 275, etc: 565, per_guest_meal: 7.0, note: "" },
+  sejong:    { total: 2420, venue: 370, sdm: 210, suit: 75,  hanbok: 110, ring: 190, meetup: 60, house: 600, honeymoon: 265, etc: 540, per_guest_meal: 6.5, note: "신도시 특성상 상승 추세" },
+  gangwon:   { total: 2020, venue: 310, sdm: 175, suit: 65,  hanbok: 95,  ring: 155, meetup: 50, house: 500, honeymoon: 220, etc: 450, per_guest_meal: 6.0, note: "" },
+  chungbuk:  { total: 2125, venue: 330, sdm: 185, suit: 65,  hanbok: 100, ring: 165, meetup: 50, house: 525, honeymoon: 230, etc: 475, per_guest_meal: 6.0, note: "" },
+  chungnam:  { total: 2210, venue: 340, sdm: 190, suit: 70,  hanbok: 100, ring: 170, meetup: 55, house: 550, honeymoon: 240, etc: 495, per_guest_meal: 6.0, note: "천안/아산은 수도권 영향" },
+  jeonbuk:   { total: 2020, venue: 310, sdm: 175, suit: 65,  hanbok: 95,  ring: 155, meetup: 50, house: 500, honeymoon: 220, etc: 450, per_guest_meal: 5.5, note: "" },
+  jeonnam:   { total: 1925, venue: 295, sdm: 165, suit: 60,  hanbok: 90,  ring: 150, meetup: 50, house: 475, honeymoon: 210, etc: 430, per_guest_meal: 5.5, note: "" },
+  gyeongbuk: { total: 2125, venue: 330, sdm: 185, suit: 65,  hanbok: 100, ring: 165, meetup: 50, house: 525, honeymoon: 230, etc: 475, per_guest_meal: 6.0, note: "" },
+  gyeongnam: { total: 2325, venue: 360, sdm: 200, suit: 70,  hanbok: 110, ring: 180, meetup: 60, house: 575, honeymoon: 250, etc: 520, per_guest_meal: 6.5, note: "" },
+  jeju:      { total: 2210, venue: 340, sdm: 190, suit: 70,  hanbok: 100, ring: 170, meetup: 55, house: 550, honeymoon: 240, etc: 495, per_guest_meal: 6.5, note: "스몰웨딩/야외 비율 높음" },
 };
 
 /**
@@ -92,28 +104,41 @@ export const getRegionalAvgWithMeal = (regionKey: string, guestCount: number) =>
   };
 };
 
-export type BudgetCategory = "venue" | "meal" | "sdm" | "ring" | "house" | "honeymoon" | "etc";
+export type BudgetCategory =
+  | "venue"
+  | "meal"
+  | "sdm"
+  | "suit"
+  | "hanbok"
+  | "ring"
+  | "meetup"
+  | "house"
+  | "honeymoon"
+  | "etc";
 
-export const categoryKeys: BudgetCategory[] = ["venue", "meal", "sdm", "ring", "house", "honeymoon", "etc"];
+/** Render order on the main page. Big-spend (venue/meal/house) up top,
+ *  attire (sdm/suit/hanbok) grouped, then 예물/상견례, then trailing items. */
+export const categoryKeys: BudgetCategory[] = [
+  "venue", "meal", "sdm", "suit", "hanbok", "ring", "meetup", "house", "honeymoon", "etc",
+];
 
 /**
  * Shop-style schedule categories that map cleanly to a single budget
- * category (the budget category is fully accounted for by this schedule
- * piece). Excluding any of these in the schedule's style picker → the
- * matching budget category should dim out when unspent.
+ * category. After splitting hanbok and suit into their own budget rows,
+ * both tailor_shop and hanbok are now FULL-mapped.
  */
 export const FULL_MAPPED_SCHEDULE_CATEGORIES = [
   "wedding_hall", "studio", "dress_shop", "makeup_shop",
-  "tailor_shop", "appliance", "honeymoon",
+  "tailor_shop", "hanbok", "appliance", "honeymoon",
 ] as const;
 
 /**
- * Schedule categories that map to a budget category but only cover part of
- * it (e.g. hanbok is one of several things in 예물/예단). Excluding these
- * shouldn't dim the whole budget row — we surface a small "X 제외" label
- * instead so the user can still log the remaining sub-items.
+ * Schedule categories that only cover part of their budget row. Excluding
+ * these surfaces a small "X 제외" label instead of dimming the whole row,
+ * since the user may still log other sub-items there (e.g. 모바일 청첩장
+ * 디자인비는 따로 발생할 수 있음).
  */
-export const PARTIAL_MAPPED_SCHEDULE_CATEGORIES = ["hanbok", "invitation_venue"] as const;
+export const PARTIAL_MAPPED_SCHEDULE_CATEGORIES = ["invitation_venue"] as const;
 
 /**
  * Maps the shop-style category values used in `user_schedule_items.category`
@@ -131,14 +156,15 @@ export const scheduleCategoryToBudget = (scheduleCategory: string | null | undef
     case "studio":
     case "dress_shop":
     case "makeup_shop":
-    case "tailor_shop":
       return "sdm";
+    case "tailor_shop":
+      return "suit";
+    case "hanbok":
+      return "hanbok";
     case "appliance":
       return "house";
     case "honeymoon":
       return "honeymoon";
-    case "hanbok":
-      return "ring";
     case "invitation_venue":
       return "etc";
     default:
@@ -157,7 +183,10 @@ export const categories: Record<BudgetCategory, CategoryInfo> = {
   venue: { label: "웨딩홀", emoji: "💒", color: "#F4A7B9", sub_items: ["웨딩홀 대관료", "세팅비", "주차비", "폐백실", "포토존", "추가 시간", "기타"] },
   meal: { label: "식대", emoji: "🍽️", color: "#F97316", sub_items: ["성인 식대(뷔페/코스)", "어린이 식대", "주류/음료", "추가 인원 식대", "케이크/디저트", "기타"] },
   sdm: { label: "스드메", emoji: "📸", color: "#A78BFA", sub_items: ["스튜디오 촬영", "드레스 대여", "메이크업", "본식스냅", "영상 촬영", "원본 데이터", "앨범 추가", "헬퍼", "부케", "기타"] },
-  ring: { label: "예물/예단", emoji: "💍", color: "#F59E0B", sub_items: ["결혼반지", "예물(시계/주얼리)", "예단(한복/이불)", "함/폐백음식", "기타"] },
+  suit: { label: "예복", emoji: "👔", color: "#1E40AF", sub_items: ["신랑 예복(턱시도/정장)", "구두·셔츠·타이", "신부측 부모 예복", "신랑측 부모 예복", "맞춤·가봉비", "기타"] },
+  hanbok: { label: "한복", emoji: "👘", color: "#BE185D", sub_items: ["신부 한복", "신랑 한복", "신부측 부모 한복", "신랑측 부모 한복", "한복 대여 vs 구매", "보관/세탁", "기타"] },
+  ring: { label: "예물/예단", emoji: "💍", color: "#F59E0B", sub_items: ["결혼반지", "예물(시계/주얼리)", "예단(이불/혼수품)", "함/폐백음식", "기타"] },
+  meetup: { label: "상견례", emoji: "🥂", color: "#B45309", sub_items: ["상견례 식사", "양가 선물", "교통·숙박(원거리)", "기타"] },
   house: { label: "혼수", emoji: "🏠", color: "#10B981", sub_items: ["가전(TV/냉장고/세탁기 등)", "가구(침대/소파/식탁 등)", "생활용품", "인테리어/리모델링", "이사비", "기타"] },
   honeymoon: { label: "허니문", emoji: "✈️", color: "#3B82F6", sub_items: ["항공권", "숙소", "여행자보험", "현지경비", "기타"] },
   etc: { label: "기타", emoji: "🎁", color: "#6B7280", sub_items: ["청첩장(종이/모바일)", "축의금 답례품", "결혼식 소품/데코", "사회자/축가", "감사선물", "기타"] },
@@ -201,10 +230,28 @@ export const savingTips: Record<BudgetCategory, string[]> = {
     "스드메 패키지는 개별 계약보다 평균 15% 절약돼요",
     "헬퍼비, 얼리스타트비 등 숨겨진 추가금을 미리 확인하세요",
   ],
+  suit: [
+    "예복은 대여 + 셔츠/타이 구매 조합이 풀구매 대비 40~60% 저렴해요",
+    "본식·신혼여행에 다시 입을 정장이라면 구매도 합리적이에요",
+    "양가 부모님 예복은 함께 맞추면 패키지 할인 받기 좋아요",
+    "가봉비·이염비가 별도인지 견적 단계에서 확인하세요",
+  ],
+  hanbok: [
+    "대여는 신부 한복 기준 15~30만원, 구매는 80~200만원으로 격차 큼",
+    "양가 부모 한복은 평소 입을 일이 적다면 대여가 합리적이에요",
+    "본식만 입을지·폐백까지 입을지에 따라 대여 시간 옵션이 달라져요",
+    "한복 보관·세탁비도 견적에 포함되는지 확인하세요",
+  ],
   ring: [
     "예물은 시즌 세일(연말, 발렌타인) 때 구매하면 10~15% 절약",
     "브랜드 정가보다 백화점 카드 할인 + 상품권 활용이 효과적이에요",
     "예단 범위는 양가가 미리 협의하면 불필요한 지출을 줄일 수 있어요",
+  ],
+  meetup: [
+    "상견례는 위치 절충(중간 지점)으로 양가 교통비 부담 최소화하세요",
+    "코스 1인 5~8만원대 한정식이 일반적이에요",
+    "양가 선물은 양 측 협의로 비슷한 가격대 맞추면 부담 적어요",
+    "원거리(KTX/항공) 시 숙박비도 미리 잡아두세요",
   ],
   house: [
     "가전은 결합 패키지로 구매하면 개별보다 15~20% 절약돼요",

@@ -46,8 +46,11 @@ describe("scheduleCategoryToBudget", () => {
     expect(scheduleCategoryToBudget("studio")).toBe("sdm");
     expect(scheduleCategoryToBudget("dress_shop")).toBe("sdm");
     expect(scheduleCategoryToBudget("makeup_shop")).toBe("sdm");
+    expect(scheduleCategoryToBudget("tailor_shop")).toBe("suit");
+    expect(scheduleCategoryToBudget("hanbok")).toBe("hanbok");
     expect(scheduleCategoryToBudget("appliance")).toBe("house");
     expect(scheduleCategoryToBudget("honeymoon")).toBe("honeymoon");
+    expect(scheduleCategoryToBudget("invitation_venue")).toBe("etc");
   });
 
   it("returns null for unmapped / general", () => {
@@ -79,7 +82,8 @@ describe("getRegionalAvgWithMeal", () => {
     const avg = getRegionalAvgWithMeal("seoul", 200);
     expect(avg).not.toBeNull();
     expect(avg!.meal).toBe(Math.round(8.5 * 200)); // 1700
-    expect(avg!.total).toBe(3200 + 1700); // base total + meal
+    // Seoul base total (sum of category fields) + meal
+    expect(avg!.total).toBe(3230 + 1700);
   });
 
   it("scales meal linearly with guest count", () => {
@@ -91,5 +95,12 @@ describe("getRegionalAvgWithMeal", () => {
   it("preserves the base venue value (not folded with meal)", () => {
     const avg = getRegionalAvgWithMeal("seoul", 200);
     expect(avg!.venue).toBe(500); // dry venue, no meal absorbed
+  });
+
+  it("exposes new categories (suit/hanbok/meetup) on the returned shape", () => {
+    const avg = getRegionalAvgWithMeal("seoul", 200);
+    expect(avg!.suit).toBeGreaterThan(0);
+    expect(avg!.hanbok).toBeGreaterThan(0);
+    expect(avg!.meetup).toBeGreaterThan(0);
   });
 });
