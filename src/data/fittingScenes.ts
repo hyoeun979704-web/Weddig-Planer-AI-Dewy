@@ -225,9 +225,11 @@ BRIDE — keep exactly from Image 1
 - Hair color and natural texture (bridal updos/waves okay, identity
   stays)
 - Body proportions:
-  · Full-body input → copy actual height, build, torso/leg ratio
-  · Upper-body input → infer plausible body from visible torso;
-    do not default to a generic slim model
+  · Full-body input → COPY EVERYTHING from the photo (height, build,
+    torso/leg ratio, shoulder width, hand size). The photo is the
+    source of truth, NOT a generic ideal.
+  · Upper-body input → infer a plausible body from the visible
+    torso and head; do not default to a generic slim model
 
 DRESS — keep exactly from Image 2
 - Silhouette, fit, length, train, neckline, sleeves, back design
@@ -237,16 +239,19 @@ DRESS — keep exactly from Image 2
 - Drapes naturally; visible skin matches the dress's coverage
 ${dressSchemaBlock}
 BODY PROPORTIONS
-- Realistic adult Korean woman proportions: total height ~7 to 7.5
-  heads tall.
-- Shoulders width approximately 1.5–1.8 times the head width.
-- Hands sized to face: a closed fist is roughly the size of the
-  face from chin to hairline; fingers proportionate.
-- Arms reach to mid-thigh when relaxed at the sides.
-- Waist sits at the natural waistline (between ribs and hips).
-- Do not produce doll-like or chibi proportions (oversized head,
-  tiny hands, shortened torso, missing neck). Do not stretch the
-  body to fashion-illustration 9-head proportions.
+- PRIMARY RULE — if Image 1 shows the bride's full body (head to
+  feet or close to it), the PHOTO WINS. Copy her actual height,
+  leg-to-torso ratio, shoulder width, arm length, hand size, and
+  waistline position exactly as visible in Image 1. Do not normalize
+  toward an "ideal" body. Do not slim, lengthen, or stretch her.
+- FALLBACK — only when Image 1 is a head/upper-body crop and the
+  lower body is not visible, infer realistic adult Korean woman
+  proportions: ~7 to 7.5 heads tall, shoulders ~1.5–1.8× head width,
+  hands sized to face (closed fist ≈ face from chin to hairline),
+  arms reach mid-thigh.
+- ALWAYS — never produce doll-like / chibi proportions (oversized
+  head, tiny hands, shortened torso, missing neck). Never stretch
+  the body to 9-head fashion-illustration proportions.
 
 VENUE
 ${scene.promptBlock}

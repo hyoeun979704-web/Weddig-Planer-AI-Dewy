@@ -13,20 +13,29 @@ import { Loader2, Sparkles, Gamepad2 } from "lucide-react";
  */
 
 const STAGES = [
-  { label: "사진 분석 중", emoji: "📸", durationMs: 6_000 },
-  { label: "얼굴 식별 매칭", emoji: "🪞", durationMs: 8_000 },
-  { label: "드레스 적용 중", emoji: "👰", durationMs: 12_000 },
-  { label: "배경 합성 중", emoji: "✨", durationMs: 12_000 },
-  { label: "마무리 보정", emoji: "🎨", durationMs: 8_000 },
+  { label: "당신의 모습을 곰곰이 들여다보고 있어요", emoji: "📸", durationMs: 6_000 },
+  { label: "당신만의 표정과 분위기를 기억해요", emoji: "💞", durationMs: 8_000 },
+  { label: "꿈에 그리던 드레스를 정성스럽게 입혀드릴게요", emoji: "👰‍♀️", durationMs: 12_000 },
+  { label: "당신을 위한 장면을 한 컷, 그려보는 중", emoji: "🌸", durationMs: 12_000 },
+  { label: "마지막 빛결을 더해 가장 빛나는 순간으로", emoji: "✨", durationMs: 8_000 },
 ];
 
 const TIPS = [
-  "전신 사진일수록 신부 비율이 정확하게 그려져요.",
-  "정면을 보는 자연스러운 표정이 가장 잘 인식돼요.",
-  "선명한 사진을 쓰면 얼굴 식별 성공률이 올라가요.",
-  "드레스 디자인은 카탈로그 메타데이터까지 함께 전달돼요.",
-  "본식 씬은 빈 홀에 신부만 단독으로 생성됩니다.",
-  "결과가 마음에 들지 않으면 다른 씬으로 한 번 더 도전해보세요.",
+  "A라인 실루엣은 알파벳 A를 닮은 라인으로, 거의 모든 체형에 잘 어울리는 만능 디자인이에요.",
+  "머메이드는 글래머러스한 매력을, 볼 가운은 동화 같은 분위기를 만들어요.",
+  "오프숄더는 어깨선을 드러내 우아한 쇄골 라인을 살려주는 클래식한 네크라인이에요.",
+  "스위트하트 네크라인은 하트 모양처럼 부드럽게 파여 사랑스러운 분위기를 더해줘요.",
+  "튤은 풍성한 볼륨감, 사틴은 매끄러운 광택, 시폰은 가볍고 우아한 드레이프를 만들어요.",
+  "퓨어 화이트는 화사한 봄·여름에, 아이보리·샴페인은 따뜻한 가을·겨울에 잘 어울려요.",
+  "코르셋 백은 허리를 잡아주면서 등 라인을 강조해 본식에서 가장 사랑받는 백 디자인이에요.",
+  "샴페인 톤 드레스는 따뜻한 피부톤에, 퓨어 화이트는 쿨톤에 특히 잘 어울려요.",
+  "본식 드레스는 짧은 트레인, 야외 촬영은 긴 트레인이 사진에 더 잘 담겨요.",
+  "비딩(beading)은 빛을 받으면 반짝이며 신부의 동선을 따라 빛나는 효과를 만들어요.",
+  "한국 웨딩에서는 본식 드레스와 야외 촬영 드레스를 따로 고르는 경우가 많아요.",
+  "튤 베일 1단은 가볍고 모던, 2단은 클래식하고 격식 있는 느낌을 줘요.",
+  "꽃다발은 드레스 라인을 가리지 않을 정도의 크기가 사진에 가장 예뻐요.",
+  "허리 라인이 자연스럽게 잡힌 드레스가 어떤 키에서도 가장 안정감 있어 보여요.",
+  "오프숄더 드레스에는 짧은 헤어 또는 업스타일이, 홀터넥에는 다운 스타일이 잘 어울려요.",
 ];
 
 const TOTAL_MS = STAGES.reduce((a, s) => a + s.durationMs, 0);
@@ -82,12 +91,13 @@ export const FittingProgress = ({ active }: Props) => {
     <div className="mt-4 p-4 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 space-y-4">
       {/* 단계 표시 */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-[12px] text-muted-foreground">
-          <span className="flex items-center gap-1.5 font-medium text-foreground">
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="flex items-center gap-2 font-medium text-foreground">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-            {STAGES[currentStageIdx].emoji} {STAGES[currentStageIdx].label}…
+            <span className="text-lg leading-none">{STAGES[currentStageIdx].emoji}</span>
+            <span>{STAGES[currentStageIdx].label}</span>
           </span>
-          <span className="tabular-nums">{percent}%</span>
+          <span className="tabular-nums text-muted-foreground">{percent}%</span>
         </div>
         <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
           <div
@@ -107,13 +117,14 @@ export const FittingProgress = ({ active }: Props) => {
         </div>
       </div>
 
-      {/* 꿀팁 캐러셀 */}
-      <div className="p-3 rounded-xl bg-background/60 border border-border">
-        <div className="flex items-start gap-2">
+      {/* 드레스 팁 캐러셀 */}
+      <div className="p-4 rounded-xl bg-background/70 border border-primary/15">
+        <div className="flex items-start gap-2.5">
           <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-          <p className="text-[12px] text-foreground leading-relaxed">
-            <span className="font-semibold">TIP.</span> {TIPS[tipIndex]}
-          </p>
+          <div className="flex-1">
+            <p className="text-[11px] font-semibold text-primary mb-1">알아두면 좋은 드레스 이야기</p>
+            <p className="text-[13px] text-foreground leading-relaxed">{TIPS[tipIndex]}</p>
+          </div>
         </div>
       </div>
 
@@ -127,16 +138,18 @@ export const FittingProgress = ({ active }: Props) => {
         </div>
         <div className="flex-1 text-left">
           <p className="font-bold text-foreground text-sm">
-            기다리는 동안 게임으로 P 받기
+            기다리는 동안 게임 한판 어때요?
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            꽃 머지 게임 · 광고 시청 시 2배 적립
+            꽃 머지 게임으로 포인트도 모으고, 시간도 잊어요 🌸
           </p>
         </div>
       </button>
 
-      <p className="text-[11px] text-center text-muted-foreground">
-        결과는 자동으로 저장됩니다. 페이지를 닫아도 「프리미엄 콘텐츠 → 갤러리」에서 확인할 수 있어요.
+      <p className="text-[11px] text-center text-muted-foreground leading-relaxed">
+        완성된 모습은 자동으로 저장돼요. 잠시 다른 일을 보다 오셔도
+        <br />
+        「프리미엄 콘텐츠 → 갤러리」에서 확인하실 수 있어요 💌
       </p>
     </div>
   );
