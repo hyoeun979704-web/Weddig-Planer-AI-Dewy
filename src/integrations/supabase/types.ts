@@ -2350,6 +2350,48 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          code: string
+          id: string
+          redeemed_at: string
+          referee_user_id: string
+          referrer_user_id: string
+        }
+        Insert: {
+          code: string
+          id?: string
+          redeemed_at?: string
+          referee_user_id: string
+          referrer_user_id: string
+        }
+        Update: {
+          code?: string
+          id?: string
+          redeemed_at?: string
+          referee_user_id?: string
+          referrer_user_id?: string
+        }
+        Relationships: []
+      }
       tutorial_completions: {
         Row: {
           completed_at: string

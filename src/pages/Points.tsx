@@ -132,6 +132,23 @@ const Points = () => {
           </button>
         </div>
 
+        {/* 친구 초대 카드 */}
+        <div className="px-4 pt-3">
+          <button
+            onClick={() => navigate('/referral')}
+            className="w-full p-4 bg-card border border-border rounded-2xl flex items-center gap-4 text-left hover:shadow-md transition-shadow"
+          >
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
+              🎁
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-foreground text-sm">친구 초대하기</p>
+              <p className="text-xs text-muted-foreground mt-0.5">친구 가입 시 1,000P · 코드 입력자 500P</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </button>
+        </div>
+
         {/* Point History */}
         <div className="p-4">
           <h2 className="font-bold text-foreground mb-4 flex items-center gap-2">

@@ -19,6 +19,8 @@ const REASON_LABELS: Record<string, string> = {
   daily_attendance: "출석 체크",
   attendance_streak_bonus: "연속 출석 보너스",
   invite_friend: "친구 초대",
+  referral_redeemed: "초대 코드 입력",
+  referral_reward: "친구 초대 보상",
   heart_charge: "하트 충전",
   voucher_exchange: "상품권 교환",
   shop_purchase: "쇼핑 구매",
