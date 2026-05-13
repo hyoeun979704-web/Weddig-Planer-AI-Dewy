@@ -40,18 +40,21 @@ const SCENES: FittingScene[] = [
     shortLabel: "어두운 홀",
     description: "샹들리에 럭셔리 홀의 버진로드 입장",
     thumbnailUrl: "/fitting-scenes/ceremony-dark.jpg",
-    promptBlock: `A modern luxury wedding ceremony hall in the evening, captured from
-the altar's perspective. The bride is walking down the white aisle
-runner (virgin road) TOWARD the camera — mid-entrance moment, dress
-train flowing gently behind her. She may hold a small bouquet, or
-her hands rest naturally. Rows of white ceremony chairs and floral
-arrangements line both sides, softly blurred. Warm light from
-contemporary crystal chandeliers overhead, neutral cream walls,
-polished dark floor. NOT antique, NOT Baroque.
-Atmosphere: opulent, ceremonial, the iconic moment of the bride's
-entrance.
-Lighting: warm key from above-front (chandelier glow), soft fill.
-Mood: bride's grand entrance.`,
+    promptBlock: `A modern luxury indoor wedding ceremony hall in the evening,
+captured from the altar's perspective. The hall is EMPTY OF GUESTS —
+only the bride is present, walking down the white aisle runner
+(virgin road) TOWARD the camera, mid-entrance moment, dress train
+flowing gently behind her. She may hold a small bouquet, or her
+hands rest naturally. Rows of UNOCCUPIED white ceremony chairs and
+floral arrangements line both sides, softly blurred. The chairs MUST
+be empty — no audience, no photographers, no staff, no human silhouettes.
+Dim ambient warm light from contemporary crystal chandeliers overhead
+is the only illumination. Neutral cream walls, polished dark floor.
+No daylight, no large windows, no exterior light entering.
+Atmosphere: opulent, quiet, intimate — solo bridal entrance.
+Lighting: warm chandelier key from above-front only, deep shadows in
+the seating area, NO bright daylight.
+Mood: bride alone in an empty ceremony hall.`,
   },
   {
     code: "CEREMONY_BRIGHT",
@@ -61,16 +64,18 @@ Mood: bride's grand entrance.`,
     shortLabel: "밝은 홀",
     description: "햇살 가득한 모던 홀의 버진로드 입장",
     thumbnailUrl: "/fitting-scenes/ceremony-bright.jpg",
-    promptBlock: `A bright modern Korean-style wedding ceremony hall in the daytime,
-captured from the altar's perspective. The bride is walking down
-the white aisle runner TOWARD the camera — mid-entrance moment, train
-flowing softly behind her, holding a small bouquet or hands resting
-naturally. Rows of white chairs and elegant white floral
-arrangements line both sides, softly blurred. Tall arched windows
+    promptBlock: `A bright modern Korean-style indoor wedding ceremony hall in the
+daytime, captured from the altar's perspective. The hall is EMPTY OF
+GUESTS — only the bride is present, walking down the white aisle
+runner TOWARD the camera, mid-entrance moment, train flowing softly
+behind her, holding a small bouquet or hands resting naturally. Rows
+of UNOCCUPIED white chairs and elegant white floral arrangements line
+both sides, softly blurred. The chairs MUST be empty — no audience,
+no photographers, no staff, no human silhouettes. Tall arched windows
 with sheer curtains let bright natural light flood the aisle.
-Atmosphere: airy, clean, the iconic moment of the bride's entrance.
+Atmosphere: airy, clean, quiet — solo bridal entrance.
 Lighting: soft diffused daylight from windows, even fill.
-Mood: bright bridal entrance.`,
+Mood: bride alone in a sunlit ceremony hall.`,
   },
   {
     code: "CEREMONY_GARDEN",
@@ -81,16 +86,18 @@ Mood: bright bridal entrance.`,
     description: "꽃 아치와 야외 버진로드 입장",
     thumbnailUrl: "/fitting-scenes/ceremony-garden.jpg",
     promptBlock: `An outdoor garden wedding ceremony in golden hour, captured from
-the altar's perspective. The bride is walking down a white aisle
-runner TOWARD the camera — mid-entrance moment, dress train trailing
-through lush greenery and pastel blooming flowers. White ceremony
-chairs and floral arrangements on both sides, softly blurred. A
-floral arch with cascading roses and hydrangeas in the distance
-behind her. Warm sunlight filters through trees.
-Atmosphere: natural, romantic, the iconic moment of the bride's
-outdoor entrance.
+the altar's perspective. The ceremony space is EMPTY OF GUESTS —
+only the bride is present, walking down a white aisle runner TOWARD
+the camera, mid-entrance moment, dress train trailing through lush
+greenery and pastel blooming flowers. Rows of UNOCCUPIED white
+ceremony chairs and floral arrangements on both sides, softly
+blurred. The chairs MUST be empty — no audience, no photographers,
+no staff, no human silhouettes. A floral arch with cascading roses
+and hydrangeas in the distance behind her. Warm sunlight filters
+through trees.
+Atmosphere: natural, romantic, quiet — solo outdoor bridal entrance.
 Lighting: warm golden-hour, rim light through foliage.
-Mood: garden bridal entrance.`,
+Mood: bride alone in an empty garden ceremony.`,
   },
 
   // ═══════════════════════════════════════════════
@@ -248,7 +255,15 @@ DO NOT
 - Show a mannequin, stand, or pole
 - Add watermarks, text, logos, sparkle marks
 - Stylize (cartoon, illustration, anime)
-${isCeremony ? "" : "- Place the bride on a wedding aisle (this is a studio shoot)"}
+${
+  isCeremony
+    ? `- Add guests, audience, photographers, officiants, staff, or any
+  other people besides the bride. The ceremony space must be EMPTY
+  except for her.
+- Place anyone in the ceremony chairs — every chair must be UNOCCUPIED.
+- Show silhouettes, blurred crowds, or human shapes in the background.`
+    : "- Place the bride on a wedding aisle (this is a studio shoot)"
+}
 
 Output: one photorealistic 3:4 vertical image.`;
 };
