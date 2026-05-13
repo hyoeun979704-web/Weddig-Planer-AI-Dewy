@@ -5,7 +5,7 @@
 //   2. 입력 검증 (source_image_path, dress_sample_id, scene_code)
 //   3. spend_hearts(5) 차감
 //   4. dress_fittings row 생성 (status=pending)
-//   5. OpenAI gpt-image-1 호출 (사용자 사진 + 드레스 이미지)
+//   5. OpenAI gpt-image-2 호출 (사용자 사진 + 드레스 이미지)
 //   6. 결과 이미지를 dress-results 버킷에 업로드
 //   7. dress_fittings 업데이트 (status=done, result_image_path)
 //   8. 실패 시 earn_hearts 환불 + status=refunded
@@ -160,7 +160,7 @@ serve(async (req) => {
 
       // OpenAI images.edit — multipart/form-data
       const form = new FormData();
-      form.append("model", "gpt-image-1");
+      form.append("model", "gpt-image-2");
       form.append("prompt", body.prompt);
       form.append("size", "1024x1536");
       form.append("quality", "medium");
