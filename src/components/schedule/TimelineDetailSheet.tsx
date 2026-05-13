@@ -1,21 +1,14 @@
 import { useState } from "react";
 import { X, Plus, Check, Trash2, MessageSquare, Loader2, Pencil, Save } from "lucide-react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScheduleItem } from "@/hooks/useWeddingSchedule";
-
-interface TimelinePhase {
-  id: string;
-  period: string;
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  defaultTasks: string[];
-  category: string;
-}
+import { CATEGORY_OPTIONS, parseLocalDate, type TimelinePhase } from "@/lib/schedule";
 
 interface TimelineDetailSheetProps {
   open: boolean;
@@ -25,7 +18,7 @@ interface TimelineDetailSheetProps {
   onAddItem: (title: string, date: string, category: string) => Promise<boolean>;
   onToggleItem: (id: string) => void;
   onDeleteItem: (id: string) => void;
-  onUpdateNotes: (id: string, notes: string) => void;
+  onUpdateNotes: (id: string, notes: string) => Promise<boolean>;
   onUpdateItem?: (id: string, updates: { title?: string; scheduled_date?: string; category?: string }) => Promise<boolean>;
   weddingDate: string | null;
 }
@@ -49,15 +42,7 @@ const TimelineDetailSheet = ({
   const [editingNotes, setEditingNotes] = useState<{ id: string; notes: string } | null>(null);
   const [editingItem, setEditingItem] = useState<{ id: string; title: string; scheduled_date: string; category: string } | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
-
-  const categoryOptions = [
-    { value: "general", label: "일반" },
-    { value: "phase-1", label: "D-365~180: 웨딩 준비 시작" },
-    { value: "phase-2", label: "D-180~120: 웨딩홀 & 스드메" },
-    { value: "phase-3", label: "D-120~60: 혼수 및 예물" },
-    { value: "phase-4", label: "D-60~30: 허니문 & 청첩장" },
-    { value: "phase-5", label: "D-30~Day: 최종 점검" },
-  ];
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
 
   if (!phase) return null;
 
@@ -76,9 +61,11 @@ const TimelineDetailSheet = ({
     setIsAdding(false);
   };
 
-  const handleSaveNotes = (id: string, notes: string) => {
-    onUpdateNotes(id, notes);
-    setEditingNotes(null);
+  const handleSaveNotes = async (id: string, notes: string) => {
+    setIsSavingNotes(true);
+    const success = await onUpdateNotes(id, notes);
+    setIsSavingNotes(false);
+    if (success) setEditingNotes(null);
   };
 
   const handleStartEdit = (item: ScheduleItem) => {
@@ -98,22 +85,13 @@ const TimelineDetailSheet = ({
   };
 
   const handleAddDefaultTask = async (task: string) => {
-    // Calculate a default date based on wedding date and phase
-    let defaultDate = new Date().toISOString().split('T')[0];
+    const toLocalISODate = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    let defaultDate = toLocalISODate(new Date());
     if (weddingDate) {
-      const wedding = new Date(weddingDate);
-      // Estimate date based on phase category
-      const daysMap: Record<string, number> = {
-        'phase-1': 270,
-        'phase-2': 150,
-        'phase-3': 90,
-        'phase-4': 45,
-        'phase-5': 15,
-      };
-      const daysBeforeWedding = daysMap[phase.category] || 90;
-      const taskDate = new Date(wedding);
-      taskDate.setDate(taskDate.getDate() - daysBeforeWedding);
-      defaultDate = taskDate.toISOString().split('T')[0];
+      const taskDate = parseLocalDate(weddingDate);
+      taskDate.setDate(taskDate.getDate() - phase.defaultDaysBeforeWedding);
+      defaultDate = toLocalISODate(taskDate);
     }
     await onAddItem(task, defaultDate, phase.category);
   };
@@ -131,16 +109,20 @@ const TimelineDetailSheet = ({
               <p className="text-sm text-muted-foreground">{phase.period}</p>
             </div>
           </div>
-          {/* Progress bar */}
-          <div className="flex items-center gap-2 mt-3">
-            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary rounded-full transition-all" 
-                style={{ width: `${progress}%` }} 
-              />
+          {/* Progress bar — only when this phase has items */}
+          {phaseItems.length > 0 ? (
+            <div className="flex items-center gap-2 mt-3">
+              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="text-sm font-medium text-primary">{completedCount}/{phaseItems.length}</span>
             </div>
-            <span className="text-sm font-medium text-primary">{completedCount}/{phaseItems.length}</span>
-          </div>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-3">{phase.description}</p>
+          )}
         </SheetHeader>
 
         <div className="overflow-y-auto h-[calc(100%-120px)] -mx-6 px-6">
@@ -192,7 +174,7 @@ const TimelineDetailSheet = ({
                           <SelectValue placeholder="타임라인 단계 선택" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categoryOptions.map((option) => (
+                          {CATEGORY_OPTIONS.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
                             </SelectItem>
@@ -244,7 +226,9 @@ const TimelineDetailSheet = ({
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground">{item.scheduled_date}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(parseLocalDate(item.scheduled_date), "yyyy.M.d (EEE)", { locale: ko })}
+                        </p>
                       </div>
                       {onUpdateItem && (
                         <button
@@ -283,11 +267,11 @@ const TimelineDetailSheet = ({
                             className="min-h-[80px]"
                           />
                           <div className="flex gap-2 justify-end">
-                            <Button variant="outline" size="sm" onClick={() => setEditingNotes(null)}>
+                            <Button variant="outline" size="sm" onClick={() => setEditingNotes(null)} disabled={isSavingNotes}>
                               취소
                             </Button>
-                            <Button size="sm" onClick={() => handleSaveNotes(item.id, editingNotes.notes)}>
-                              저장
+                            <Button size="sm" onClick={() => handleSaveNotes(item.id, editingNotes.notes)} disabled={isSavingNotes}>
+                              {isSavingNotes ? <Loader2 className="w-4 h-4 animate-spin" /> : "저장"}
                             </Button>
                           </div>
                         </div>
