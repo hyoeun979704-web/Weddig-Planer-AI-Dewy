@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useBudget } from "@/hooks/useBudget";
 import { useAuth } from "@/contexts/AuthContext";
-import { categories, categoryKeys, regions, paidByOptions, paymentStageOptions, scheduleCategoryToBudget, type BudgetCategory } from "@/data/budgetData";
+import { categories, categoryKeys, regions, paidByOptions, paymentStageOptions, scheduleCategoryToBudget, resolveRegionKey, type BudgetCategory } from "@/data/budgetData";
 import BudgetSetupSheet from "@/components/budget/BudgetSetupSheet";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import PayBalanceSheet from "@/components/budget/PayBalanceSheet";
@@ -33,11 +33,6 @@ import type { BudgetItem } from "@/hooks/useBudget";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { WEDDING_STYLE_PRESETS, WEDDING_STYLE_LABEL } from "@/lib/weddingStyle";
-
-const regionLabelToKey = (label: string | null): string | undefined => {
-  if (!label) return undefined;
-  return Object.entries(regions).find(([_, r]) => r.label === label)?.[0];
-};
 
 /** SVG donut chart for budget usage */
 const DonutChart = ({ pct, size = 80, strokeWidth = 8 }: { pct: number; size?: number; strokeWidth?: number }) => {
@@ -63,7 +58,7 @@ const Budget = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { defaultRegion } = useDefaultRegion();
-  const profileRegionKey = regionLabelToKey(defaultRegion);
+  const profileRegionKey = resolveRegionKey(defaultRegion);
   const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem } = useBudget(profileRegionKey);
   const { weddingSettings, scheduleItems } = useWeddingSchedule();
 
@@ -392,6 +387,23 @@ const Budget = () => {
             <span className="text-base">{stageGuide.icon}</span>
             <p className="text-xs text-foreground flex-1">{stageGuide.text}</p>
           </div>
+        )}
+
+        {/* Wedding info gap — surface when budget is set but the user hasn't
+            filled in their wedding date/region/stage yet. Tapping opens the
+            shared onboarding modal so the two pages stay in sync. */}
+        {totalBudget > 0 && !weddingSettings.wedding_date && !weddingSettings.wedding_date_tbd && (
+          <button
+            onClick={() => weddingInfoPrompt.openManually()}
+            className="w-full rounded-xl bg-yellow-50 border border-yellow-200 px-3 py-2.5 flex items-center gap-2 text-left active:scale-[0.99] transition-transform"
+          >
+            <CalendarClock className="w-4 h-4 text-yellow-700 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-yellow-900">결혼식 날짜를 알려주세요</p>
+              <p className="text-[10px] text-yellow-800">D-day 페이스와 다가오는 일정이 함께 표시돼요</p>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 text-yellow-700 shrink-0" />
+          </button>
         )}
 
         {/* Wedding style banner — small/self get specific budget tips */}

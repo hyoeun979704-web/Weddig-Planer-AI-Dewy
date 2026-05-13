@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { WeddingStyle } from "@/lib/weddingStyle";
+import { resolveRegionKey } from "@/data/budgetData";
 
 export interface ScheduleItem {
   id: string;
@@ -167,6 +168,28 @@ export const useWeddingSchedule = () => {
           .insert({ user_id: user.id, ...patch });
       }
       setWeddingSettings(prev => ({ ...prev, ...patch }));
+
+      // Mirror region into budget_settings if the user has already set up a
+      // budget. Keeps the two pages from drifting when the user updates their
+      // region from the Schedule onboarding modal first vs the Budget setup
+      // sheet first.
+      if (patch.wedding_region) {
+        const regionKey = resolveRegionKey(patch.wedding_region);
+        if (regionKey) {
+          const { data: budget } = await (supabase as any)
+            .from("budget_settings")
+            .select("id, region")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (budget && budget.region !== regionKey) {
+            await (supabase as any)
+              .from("budget_settings")
+              .update({ region: regionKey })
+              .eq("id", budget.id);
+          }
+        }
+      }
+
       toast.success("결혼 정보가 저장되었어요");
       return true;
     } catch (error) {

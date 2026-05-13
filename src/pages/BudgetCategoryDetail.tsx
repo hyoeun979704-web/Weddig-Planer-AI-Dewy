@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Trash2, Lightbulb } from "lucide-react";
 import { useBudget } from "@/hooks/useBudget";
-import { categories, savingTips, regions, getRegionalAvgWithMeal, type BudgetCategory } from "@/data/budgetData";
+import { categories, savingTips, regions, getRegionalAvgWithMeal, resolveRegionKey, type BudgetCategory } from "@/data/budgetData";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,9 +28,7 @@ const BudgetCategoryDetail = () => {
   const { category } = useParams<{ category: string }>();
   const cat = category as BudgetCategory;
   const { defaultRegion } = useDefaultRegion();
-  const profileRegionKey = defaultRegion
-    ? Object.entries(regions).find(([_, r]) => r.label === defaultRegion)?.[0]
-    : undefined;
+  const profileRegionKey = resolveRegionKey(defaultRegion);
   const { settings, items, summary, regionalAverage, updateItem, deleteItem, addItem } = useBudget(profileRegionKey);
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);

@@ -3,15 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useBudget } from "@/hooks/useBudget";
 import { useAuth } from "@/contexts/AuthContext";
-import { categories, categoryKeys, type BudgetCategory } from "@/data/budgetData";
+import { categories, categoryKeys, resolveRegionKey, type BudgetCategory } from "@/data/budgetData";
 import { Slider } from "@/components/ui/slider";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
-import { regions } from "@/data/budgetData";
-
-const regionLabelToKey = (label: string | null): string | undefined => {
-  if (!label) return undefined;
-  return Object.entries(regions).find(([_, r]) => r.label === label)?.[0];
-};
 
 const traditionalSplit: Record<BudgetCategory, { groom: number; bride: number; label: string }> = {
   venue: { groom: 0, bride: 100, label: "전통적 신부측" },
@@ -35,7 +29,7 @@ const BudgetSplitSimulator = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { defaultRegion } = useDefaultRegion();
-  const profileRegionKey = regionLabelToKey(defaultRegion);
+  const profileRegionKey = resolveRegionKey(defaultRegion);
   const { settings } = useBudget(profileRegionKey);
 
   const totalBudget = settings?.total_budget || 0;

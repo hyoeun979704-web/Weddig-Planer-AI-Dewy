@@ -109,10 +109,11 @@ export function useBudget(profileRegionKey?: string) {
         if (error) throw error;
       }
 
-      // Sync region to user_wedding_settings
+      // Sync region to user_wedding_settings using the official long label,
+      // so the Schedule page's region picker (which lists long forms) matches.
       if (s.region) {
-        const regionLabel = regions[s.region]?.label;
-        if (regionLabel) {
+        const officialLabel = regions[s.region]?.officialLabel;
+        if (officialLabel) {
           const { data: existing } = await supabase
             .from("user_wedding_settings")
             .select("id")
@@ -122,12 +123,12 @@ export function useBudget(profileRegionKey?: string) {
           if (existing) {
             await supabase
               .from("user_wedding_settings")
-              .update({ wedding_region: regionLabel } as any)
+              .update({ wedding_region: officialLabel } as any)
               .eq("user_id", user.id);
           } else {
             await supabase
               .from("user_wedding_settings")
-              .insert({ user_id: user.id, wedding_region: regionLabel } as any);
+              .insert({ user_id: user.id, wedding_region: officialLabel } as any);
           }
         }
       }

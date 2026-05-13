@@ -1,5 +1,9 @@
 export interface RegionData {
   label: string;
+  /** Long-form label that matches WeddingInfoSetupModal's REGIONS list.
+   *  Stored canonically in user_wedding_settings.wedding_region so both
+   *  the Budget and Schedule pages can read/write the same value. */
+  officialLabel: string;
   sub_regions: string[];
 }
 
@@ -16,23 +20,39 @@ export interface RegionalAverage {
 }
 
 export const regions: Record<string, RegionData> = {
-  seoul: { label: "서울", sub_regions: ["강남/서초", "강동/송파", "강서/영등포", "마포/용산", "종로/중구", "기타"] },
-  gyeonggi: { label: "경기", sub_regions: ["수원/화성", "성남/분당", "고양/파주", "용인", "안양/군포", "기타"] },
-  incheon: { label: "인천", sub_regions: ["남동/연수", "부평/계양", "서구/중구", "기타"] },
-  busan: { label: "부산", sub_regions: ["해운대/수영", "부산진/동래", "서면/남포동", "기타"] },
-  daegu: { label: "대구", sub_regions: ["수성구", "달서구", "중구/동구", "기타"] },
-  daejeon: { label: "대전", sub_regions: ["유성구", "서구", "중구/동구", "기타"] },
-  gwangju: { label: "광주", sub_regions: ["서구/남구", "북구/광산구", "기타"] },
-  ulsan: { label: "울산", sub_regions: ["남구", "중구", "기타"] },
-  sejong: { label: "세종", sub_regions: ["세종시"] },
-  gangwon: { label: "강원", sub_regions: ["춘천", "원주", "강릉", "기타"] },
-  chungbuk: { label: "충북", sub_regions: ["청주", "충주", "기타"] },
-  chungnam: { label: "충남", sub_regions: ["천안/아산", "서산/당진", "기타"] },
-  jeonbuk: { label: "전북", sub_regions: ["전주", "익산/군산", "기타"] },
-  jeonnam: { label: "전남", sub_regions: ["여수/순천", "목포/무안", "기타"] },
-  gyeongbuk: { label: "경북", sub_regions: ["포항", "구미/김천", "경주", "기타"] },
-  gyeongnam: { label: "경남", sub_regions: ["창원/마산", "김해/양산", "진주", "기타"] },
-  jeju: { label: "제주", sub_regions: ["제주시", "서귀포시"] },
+  seoul: { label: "서울", officialLabel: "서울특별시", sub_regions: ["강남/서초", "강동/송파", "강서/영등포", "마포/용산", "종로/중구", "기타"] },
+  gyeonggi: { label: "경기", officialLabel: "경기도", sub_regions: ["수원/화성", "성남/분당", "고양/파주", "용인", "안양/군포", "기타"] },
+  incheon: { label: "인천", officialLabel: "인천광역시", sub_regions: ["남동/연수", "부평/계양", "서구/중구", "기타"] },
+  busan: { label: "부산", officialLabel: "부산광역시", sub_regions: ["해운대/수영", "부산진/동래", "서면/남포동", "기타"] },
+  daegu: { label: "대구", officialLabel: "대구광역시", sub_regions: ["수성구", "달서구", "중구/동구", "기타"] },
+  daejeon: { label: "대전", officialLabel: "대전광역시", sub_regions: ["유성구", "서구", "중구/동구", "기타"] },
+  gwangju: { label: "광주", officialLabel: "광주광역시", sub_regions: ["서구/남구", "북구/광산구", "기타"] },
+  ulsan: { label: "울산", officialLabel: "울산광역시", sub_regions: ["남구", "중구", "기타"] },
+  sejong: { label: "세종", officialLabel: "세종특별자치시", sub_regions: ["세종시"] },
+  gangwon: { label: "강원", officialLabel: "강원특별자치도", sub_regions: ["춘천", "원주", "강릉", "기타"] },
+  chungbuk: { label: "충북", officialLabel: "충청북도", sub_regions: ["청주", "충주", "기타"] },
+  chungnam: { label: "충남", officialLabel: "충청남도", sub_regions: ["천안/아산", "서산/당진", "기타"] },
+  jeonbuk: { label: "전북", officialLabel: "전북특별자치도", sub_regions: ["전주", "익산/군산", "기타"] },
+  jeonnam: { label: "전남", officialLabel: "전라남도", sub_regions: ["여수/순천", "목포/무안", "기타"] },
+  gyeongbuk: { label: "경북", officialLabel: "경상북도", sub_regions: ["포항", "구미/김천", "경주", "기타"] },
+  gyeongnam: { label: "경남", officialLabel: "경상남도", sub_regions: ["창원/마산", "김해/양산", "진주", "기타"] },
+  jeju: { label: "제주", officialLabel: "제주특별자치도", sub_regions: ["제주시", "서귀포시"] },
+};
+
+/**
+ * Resolves any of {budget key, short label, official long label} to the
+ * canonical budget region key. Used by consumers that read
+ * user_wedding_settings.wedding_region — historically it's been stored as
+ * either short ("서울") or long ("서울특별시") form depending on which page
+ * wrote it. This makes the lookup tolerant in both directions.
+ */
+export const resolveRegionKey = (value: string | null | undefined): string | undefined => {
+  if (!value) return undefined;
+  if (regions[value]) return value;
+  for (const [key, r] of Object.entries(regions)) {
+    if (r.label === value || r.officialLabel === value) return key;
+  }
+  return undefined;
 };
 
 export const regionalAverages: Record<string, RegionalAverage> = {
