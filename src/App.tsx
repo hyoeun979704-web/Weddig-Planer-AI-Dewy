@@ -46,6 +46,9 @@ const CommunityPostDetail = lazy(() => import("./pages/CommunityPostDetail"));
 const BookmarkedPosts = lazy(() => import("./pages/BookmarkedPosts"));
 const MyPage = lazy(() => import("./pages/MyPage"));
 const Points = lazy(() => import("./pages/Points"));
+const HeartCharge = lazy(() => import("./pages/HeartCharge"));
+const HeartChargeSuccess = lazy(() => import("./pages/HeartChargeSuccess"));
+const HeartChargeFail = lazy(() => import("./pages/HeartChargeFail"));
 const Coupons = lazy(() => import("./pages/Coupons"));
 const Orders = lazy(() => import("./pages/Orders"));
 const MySchedule = lazy(() => import("./pages/MySchedule"));
@@ -168,6 +171,9 @@ const App = () => (
               <Route path="/community/:id/edit" element={<CommunityEdit />} />
               <Route path="/mypage" element={<MyPage />} />
               <Route path="/points" element={<Points />} />
+              <Route path="/points/charge" element={<HeartCharge />} />
+              <Route path="/points/charge/success" element={<HeartChargeSuccess />} />
+              <Route path="/points/charge/fail" element={<HeartChargeFail />} />
               <Route path="/coupons" element={<Coupons />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/my-schedule" element={<MySchedule />} />
