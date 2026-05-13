@@ -76,6 +76,37 @@ export type BudgetCategory = "venue" | "meal" | "sdm" | "ring" | "house" | "hone
 
 export const categoryKeys: BudgetCategory[] = ["venue", "meal", "sdm", "ring", "house", "honeymoon", "etc"];
 
+/**
+ * Maps the shop-style category values used in `user_schedule_items.category`
+ * (wedding_hall, studio, dress_shop, etc.) to the budget category they
+ * correspond to. Used to surface schedule tasks as budget records and
+ * pre-fill the category when the user records an expense from a task.
+ *
+ * Returns null for non-expense categories like "general" or unrecognized
+ * values so callers can skip them.
+ */
+export const scheduleCategoryToBudget = (scheduleCategory: string | null | undefined): BudgetCategory | null => {
+  if (!scheduleCategory) return null;
+  switch (scheduleCategory) {
+    case "wedding_hall": return "venue";
+    case "studio":
+    case "dress_shop":
+    case "makeup_shop":
+    case "tailor_shop":
+      return "sdm";
+    case "appliance":
+      return "house";
+    case "honeymoon":
+      return "honeymoon";
+    case "hanbok":
+      return "ring";
+    case "invitation_venue":
+      return "etc";
+    default:
+      return null;
+  }
+};
+
 export interface CategoryInfo {
   label: string;
   emoji: string;

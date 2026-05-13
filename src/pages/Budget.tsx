@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import BottomNav from "@/components/BottomNav";
-import { Plus, MapPin, AlertTriangle, ChevronRight, Trash2, Sparkles, Download, Bell, Check, Share2, Users } from "lucide-react";
+import { Plus, MapPin, AlertTriangle, ChevronRight, Trash2, Sparkles, Download, Bell, Check, Share2, Users, CalendarClock, Sparkle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useBudget } from "@/hooks/useBudget";
 import { useAuth } from "@/contexts/AuthContext";
-import { categories, categoryKeys, regions, paidByOptions, paymentStageOptions, type BudgetCategory } from "@/data/budgetData";
+import { categories, categoryKeys, regions, paidByOptions, paymentStageOptions, scheduleCategoryToBudget, type BudgetCategory } from "@/data/budgetData";
 import BudgetSetupSheet from "@/components/budget/BudgetSetupSheet";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import PayBalanceSheet from "@/components/budget/PayBalanceSheet";
@@ -64,7 +64,7 @@ const Budget = () => {
   const { defaultRegion } = useDefaultRegion();
   const profileRegionKey = regionLabelToKey(defaultRegion);
   const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem } = useBudget(profileRegionKey);
-  const { weddingSettings } = useWeddingSchedule();
+  const { weddingSettings, scheduleItems } = useWeddingSchedule();
 
   const [setupOpen, setSetupOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -73,6 +73,7 @@ const Budget = () => {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<BudgetItem | null>(null);
   const [payBalanceTarget, setPayBalanceTarget] = useState<BudgetItem | null>(null);
+  const [addPrefill, setAddPrefill] = useState<{ title: string; category: BudgetCategory } | null>(null);
   const tutorial = usePageTutorial("budget");
   const { isPremium } = useSubscription();
   const weddingInfoPrompt = useWeddingInfoPrompt();
@@ -123,6 +124,39 @@ const Budget = () => {
   })();
   const trendMax = Math.max(...monthlyTrend.map(b => b.total), 1);
   const trendActiveCount = monthlyTrend.filter(b => b.total > 0).length;
+
+  /**
+   * Schedule tasks that map to a budget category, are still open, and are due
+   * within 30 days (or already overdue). These surface as "next payments" so
+   * the user can record them in budget without retyping.
+   */
+  const upcomingExpenseTasks = scheduleItems
+    .filter(t => !t.completed)
+    .map(t => ({ task: t, budgetCat: scheduleCategoryToBudget(t.category) }))
+    .filter((x): x is { task: typeof scheduleItems[number]; budgetCat: BudgetCategory } => x.budgetCat !== null)
+    .map(x => ({
+      ...x,
+      daysLeft: differenceInDays(new Date(x.task.scheduled_date), new Date()),
+    }))
+    .filter(x => x.daysLeft <= 30)
+    .sort((a, b) => a.daysLeft - b.daysLeft)
+    .slice(0, 4);
+
+  const planningStageGuide: Record<string, { icon: string; text: string }> = {
+    just_started: { icon: "🌱", text: "이제 시작했다면 총 예산부터 잡아보세요" },
+    researching: { icon: "🔍", text: "지역 평균과 비교하며 카테고리별로 배분해보세요" },
+    contracting: { icon: "📝", text: "계약금/잔금 일정을 빠짐없이 기록해두세요" },
+    wrapping_up: { icon: "✅", text: "결제 완료 표시로 마무리하고 최종 합계를 확인해보세요" },
+  };
+  const stageGuide = weddingSettings.planning_stage
+    ? planningStageGuide[weddingSettings.planning_stage]
+    : null;
+
+  const openAddWithPrefill = (title: string, category: BudgetCategory) => {
+    setEditItem(null);
+    setAddPrefill({ title, category });
+    setAddOpen(true);
+  };
 
   // D-day pace
   const weddingDate = weddingSettings?.wedding_date;
