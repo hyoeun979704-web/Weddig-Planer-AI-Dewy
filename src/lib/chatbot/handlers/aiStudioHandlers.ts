@@ -79,7 +79,7 @@ export const handleDressFittingHistory = async (userId: string): Promise<string>
     .limit(20);
 
   if (error || !data || data.length === 0) {
-    return "아직 생성하신 드레스 피팅이 없어요 👗\n\n[방구석 드레스 투어](/ai-studio/dress-tour)에서 첫 피팅을 시작해보세요. 신규 가입 5 하트로 한 장 무료 체험이 가능해요.";
+    return "아직 생성하신 드레스 피팅이 없어요 👗\n\n[방구석 드레스 투어](/ai-studio/dress-tour)에서 첫 피팅을 시작해보세요. [프리미엄 구독](/premium) 또는 [포인트](/points) 충전으로 하트를 마련할 수 있어요.";
   }
 
   const done = data.filter((d: any) => d.status === "done").length;
@@ -117,7 +117,7 @@ export const handleHeartHistory = async (userId: string): Promise<string> => {
     .limit(10);
 
   if (error || !data || data.length === 0) {
-    return "하트 거래 내역이 없어요 💗\n[AI 스튜디오](/ai-studio) 첫 진입 시 5 하트가 자동 적립됩니다.";
+    return "하트 거래 내역이 없어요 💗\n[프리미엄 구독](/premium) 또는 [포인트](/points) 충전으로 하트를 받을 수 있어요.";
   }
 
   const earned = data

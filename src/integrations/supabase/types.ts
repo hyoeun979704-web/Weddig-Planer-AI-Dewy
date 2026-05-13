@@ -2292,20 +2292,146 @@ export type Database = {
       }
       user_points: {
         Row: {
+          balance: number
           id: string
+          total_earned: number
           total_points: number
+          total_spent: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          balance?: number
           id?: string
+          total_earned?: number
           total_points?: number
+          total_spent?: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          balance?: number
           id?: string
+          total_earned?: number
           total_points?: number
+          total_spent?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      point_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          id: string
+          reason: string
+          ref_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          id?: string
+          reason: string
+          ref_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          id?: string
+          reason?: string
+          ref_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          code: string
+          id: string
+          redeemed_at: string
+          referee_user_id: string
+          referrer_user_id: string
+        }
+        Insert: {
+          code: string
+          id?: string
+          redeemed_at?: string
+          referee_user_id: string
+          referrer_user_id: string
+        }
+        Update: {
+          code?: string
+          id?: string
+          redeemed_at?: string
+          referee_user_id?: string
+          referrer_user_id?: string
+        }
+        Relationships: []
+      }
+      tutorial_completions: {
+        Row: {
+          completed_at: string
+          tour_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          tour_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          tour_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_attendance: {
+        Row: {
+          current_streak: number
+          last_date: string
+          longest_streak: number
+          total_check_ins: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          last_date: string
+          longest_streak?: number
+          total_check_ins?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          last_date?: string
+          longest_streak?: number
+          total_check_ins?: number
           updated_at?: string
           user_id?: string
         }

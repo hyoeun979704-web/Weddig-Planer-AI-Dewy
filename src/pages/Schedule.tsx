@@ -1,21 +1,10 @@
-import { useState, type ElementType } from "react";
+import { useState } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useBudget } from "@/hooks/useBudget";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
-import {
-  CheckCircle2,
-  Heart,
-  Camera,
-  Gift,
-  Plane,
-  Home as HomeIcon,
-  Loader2,
-  Plus,
-  Check,
-  BookOpen,
-} from "lucide-react";
+import { Heart, Loader2, Plus, Check, BookOpen } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
@@ -29,70 +18,19 @@ import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetup
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import { format, differenceInDays, isToday, isTomorrow } from "date-fns";
 import { ko } from "date-fns/locale";
+import {
+  TIMELINE_PHASES,
+  type TimelinePhase,
+  daysUntilWedding,
+  parseLocalDate,
+} from "@/lib/schedule";
+import { isHiddenByExclusion } from "@/lib/weddingStyle";
 import arrowLeftIcon from "@/assets/icons/arrow-left.svg";
 import chevronRightIcon from "@/assets/icons/chevron-right.svg";
 import clipboardIcon from "@/assets/icons/clipboard.svg";
 import clockIcon from "@/assets/icons/clock.svg";
 import calendarIcon from "@/assets/icons/calendar.svg";
 import walletGreenIcon from "@/assets/icons/wallet-green.svg";
-
-interface TimelinePhase {
-  id: string;
-  period: string;
-  title: string;
-  description: string;
-  icon: ElementType;
-  defaultTasks: string[];
-  category: string;
-}
-
-const timelinePhases: TimelinePhase[] = [
-  {
-    id: "1",
-    period: "D-365 ~ D-180",
-    title: "웨딩 준비 시작",
-    description: "예산 설정 및 웨딩홀 탐색",
-    icon: Heart,
-    defaultTasks: ["전체 예산 설정하기", "웨딩 스타일 결정하기", "웨딩홀 리스트업", "웨딩플래너 상담"],
-    category: "phase-1"
-  },
-  {
-    id: "2",
-    period: "D-180 ~ D-120",
-    title: "웨딩홀 & 스드메 계약",
-    description: "본격적인 업체 선정 및 계약",
-    icon: Camera,
-    defaultTasks: ["웨딩홀 계약하기", "스튜디오 선정", "드레스샵 예약", "메이크업샵 예약"],
-    category: "phase-2"
-  },
-  {
-    id: "3",
-    period: "D-120 ~ D-60",
-    title: "혼수 및 예물 준비",
-    description: "신혼집 준비와 예물 선택",
-    icon: Gift,
-    defaultTasks: ["신혼집 계약", "가전제품 구매", "예물 선택", "한복/예복 맞춤"],
-    category: "phase-3"
-  },
-  {
-    id: "4",
-    period: "D-60 ~ D-30",
-    title: "허니문 & 청첩장",
-    description: "신혼여행 예약 및 청첩장 발송",
-    icon: Plane,
-    defaultTasks: ["허니문 예약", "청첩장 제작", "모바일 청첩장 발송", "하객 리스트 정리"],
-    category: "phase-4"
-  },
-  {
-    id: "5",
-    period: "D-30 ~ D-Day",
-    title: "최종 점검",
-    description: "마지막 피팅과 리허설",
-    icon: HomeIcon,
-    defaultTasks: ["드레스 최종 피팅", "웨딩 리허설", "식순 확인", "답례품 준비"],
-    category: "phase-5"
-  }
-];
 
 const Schedule = () => {
   const navigate = useNavigate();
@@ -117,21 +55,17 @@ const Schedule = () => {
   const tutorial = usePageTutorial("schedule");
   const weddingInfoPrompt = useWeddingInfoPrompt();
 
-  // Calculate D-Day
-  const daysUntilWedding = () => {
-    if (!weddingSettings.wedding_date) return null;
-    const wedding = new Date(weddingSettings.wedding_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diff = Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return diff;
-  };
+  const days = daysUntilWedding(weddingSettings.wedding_date);
 
-  const days = daysUntilWedding();
+  // Filter out items in user-excluded categories. The DB still has them, but
+  // the schedule UI hides them — re-enabling the category brings them back.
+  const visibleItems = scheduleItems.filter(
+    i => !isHiddenByExclusion(i.category, weddingSettings.excluded_categories)
+  );
 
   // Overall completion
-  const totalItems = scheduleItems.length;
-  const completedItems = scheduleItems.filter(i => i.completed).length;
+  const totalItems = visibleItems.length;
+  const completedItems = visibleItems.filter(i => i.completed).length;
   const overallProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
   // D-Day based premium banners
@@ -139,10 +73,10 @@ const Schedule = () => {
     if (days === null || days <= 0) return null;
     const banners = [
       { min: 120, max: 180, msg: "📋 업체 비교 견적서 만들어보세요", route: "/premium/content" },
-      { min: 60, max: 90, msg: "📸 스냅 촬영 타임라인 준비할 때예요!", route: "/premium/content" },
-      { min: 30, max: 60, msg: "📊 예산 중간 점검 리포트를 확인하세요", route: "/premium/content" },
-      { min: 14, max: 30, msg: "💒 본식 타임라인 + 스태프 안내서를 준비하세요", route: "/premium/content" },
-      { min: 7, max: 14, msg: "👜 가방순이·축의대 안내서 전달하셨나요?", route: "/premium/content" },
+      { min: 60, max: 119, msg: "📸 스냅 촬영 타임라인 준비할 때예요!", route: "/premium/content" },
+      { min: 31, max: 59, msg: "📊 예산 중간 점검 리포트를 확인하세요", route: "/premium/content" },
+      { min: 15, max: 30, msg: "💒 본식 타임라인 + 스태프 안내서를 준비하세요", route: "/premium/content" },
+      { min: 8, max: 14, msg: "👜 가방순이·축의대 안내서 전달하셨나요?", route: "/premium/content" },
       { min: 1, max: 7, msg: "📱 하객에게 리마인드 메시지를 보내세요", route: "/premium/content" },
     ];
     return banners.find(b => days >= b.min && days <= b.max) || null;
@@ -176,30 +110,35 @@ const Schedule = () => {
 
   // Get phase progress
   const getPhaseProgress = (category: string) => {
-    const phaseItems = scheduleItems.filter(item => item.category === category);
+    const phaseItems = visibleItems.filter(item => item.category === category);
     if (phaseItems.length === 0) return 0;
     const completed = phaseItems.filter(item => item.completed).length;
     return Math.round((completed / phaseItems.length) * 100);
   };
 
   // Get upcoming tasks (not completed, sorted by date)
-  const upcomingTasks = scheduleItems
+  const upcomingTasks = visibleItems
     .filter(item => !item.completed)
     .slice(0, 4);
 
-  // Format relative date
   const formatRelativeDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    const date = parseLocalDate(dateStr);
     if (isToday(date)) return "오늘";
     if (isTomorrow(date)) return "내일";
-    const daysLeft = differenceInDays(date, new Date());
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysLeft = differenceInDays(date, today);
     if (daysLeft >= 0 && daysLeft <= 6) return format(date, "EEEE", { locale: ko });
     return format(date, "M월 d일", { locale: ko });
   };
 
   const getDateUrgency = (dateStr: string) => {
-    const daysLeft = differenceInDays(new Date(dateStr), new Date());
-    if (daysLeft <= 0) return "text-destructive";
+    const target = parseLocalDate(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysLeft = differenceInDays(target, today);
+    if (daysLeft < 0) return "text-destructive";
+    if (daysLeft === 0) return "text-primary font-bold";
     if (daysLeft <= 3) return "text-orange-500";
     if (daysLeft <= 7) return "text-yellow-600";
     return "text-muted-foreground";
@@ -261,7 +200,7 @@ const Schedule = () => {
             )}
             {weddingSettings.wedding_date ? (
               <p className="text-sm text-muted-foreground mb-4">
-                {format(new Date(weddingSettings.wedding_date), "yyyy년 M월 d일 (EEEE)", { locale: ko })}
+                {format(parseLocalDate(weddingSettings.wedding_date), "yyyy년 M월 d일 (EEEE)", { locale: ko })}
               </p>
             ) : weddingSettings.wedding_date_tbd ? (
               <div className="flex items-center gap-1.5 mb-4">
@@ -312,12 +251,11 @@ const Schedule = () => {
                   key={task.id}
                   className="flex items-center gap-3 px-4 py-3.5 bg-white rounded-2xl border border-border active:scale-[0.98] transition-transform"
                 >
-                  <button 
+                  <button
                     onClick={() => toggleItemCompletion(task.id)}
-                    className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center hover:border-primary transition-colors shrink-0"
-                  >
-                    <CheckCircle2 className="w-4 h-4 text-transparent" />
-                  </button>
+                    aria-label="완료 처리"
+                    className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 hover:border-primary hover:bg-primary/5 active:bg-primary/10 transition-colors shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="text-sm text-foreground block truncate">{task.title}</span>
@@ -392,11 +330,11 @@ const Schedule = () => {
             <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-border" />
 
             <div className="space-y-3">
-              {timelinePhases.map((phase) => {
+              {TIMELINE_PHASES.map((phase) => {
                 const status = getPhaseStatus(phase.category);
                 const phaseProgress = getPhaseProgress(phase.category);
-                const phaseItemCount = scheduleItems.filter(item => item.category === phase.category).length;
-                const phaseCompleted = scheduleItems.filter(item => item.category === phase.category && item.completed).length;
+                const phaseItemCount = visibleItems.filter(item => item.category === phase.category).length;
+                const phaseCompleted = visibleItems.filter(item => item.category === phase.category && item.completed).length;
                 const isCurrent = status === "current";
                 const isCompleted = status === "completed";
                 
@@ -512,7 +450,7 @@ const Schedule = () => {
         open={selectedPhase !== null}
         onOpenChange={(open) => !open && setSelectedPhase(null)}
         phase={selectedPhase}
-        items={scheduleItems}
+        items={visibleItems}
         onAddItem={addScheduleItem}
         onToggleItem={toggleItemCompletion}
         onDeleteItem={deleteScheduleItem}

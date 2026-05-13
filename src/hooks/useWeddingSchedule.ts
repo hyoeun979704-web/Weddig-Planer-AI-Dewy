@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import type { WeddingStyle } from "@/lib/weddingStyle";
 
 export interface ScheduleItem {
   id: string;
@@ -20,6 +21,8 @@ interface WeddingSettings {
   planning_stage: string | null;
   wedding_date_tbd: boolean;
   wedding_region_tbd: boolean;
+  wedding_style: WeddingStyle | null;
+  excluded_categories: string[];
 }
 
 export const useWeddingSchedule = () => {
@@ -31,6 +34,8 @@ export const useWeddingSchedule = () => {
     planning_stage: null,
     wedding_date_tbd: false,
     wedding_region_tbd: false,
+    wedding_style: null,
+    excluded_categories: [],
   });
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,7 +55,7 @@ export const useWeddingSchedule = () => {
       const [settingsRes, itemsRes] = await Promise.all([
         supabase
           .from("user_wedding_settings")
-          .select("wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd")
+          .select("wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories")
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
@@ -69,6 +74,8 @@ export const useWeddingSchedule = () => {
           planning_stage: s.planning_stage || null,
           wedding_date_tbd: !!s.wedding_date_tbd,
           wedding_region_tbd: !!s.wedding_region_tbd,
+          wedding_style: (s.wedding_style ?? null) as WeddingStyle | null,
+          excluded_categories: Array.isArray(s.excluded_categories) ? s.excluded_categories : [],
         });
       }
 
@@ -134,6 +141,8 @@ export const useWeddingSchedule = () => {
       planning_stage: string | null;
       wedding_date_tbd: boolean;
       wedding_region_tbd: boolean;
+      wedding_style: WeddingStyle | null;
+      excluded_categories: string[];
     }>
   ) => {
     if (!user) {
@@ -233,20 +242,24 @@ export const useWeddingSchedule = () => {
   };
 
   // Update item notes
-  const updateItemNotes = async (id: string, notes: string) => {
+  const updateItemNotes = async (id: string, notes: string): Promise<boolean> => {
     try {
-      await supabase
+      const { error } = await supabase
         .from("user_schedule_items")
         .update({ notes })
         .eq("id", id);
+
+      if (error) throw error;
 
       setScheduleItems(prev =>
         prev.map(i => (i.id === id ? { ...i, notes } : i))
       );
       toast.success("메모가 저장되었습니다");
+      return true;
     } catch (error) {
       console.error("Error updating notes:", error);
       toast.error("메모 저장에 실패했습니다");
+      return false;
     }
   };
 

@@ -1,21 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2, Pencil, X, Save } from "lucide-react";
+import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2, Pencil, X, Save, Settings2 } from "lucide-react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
-
-const categoryOptions = [
-  { value: "general", label: "일반" },
-  { value: "phase-1", label: "D-365~180: 웨딩 준비 시작" },
-  { value: "phase-2", label: "D-180~120: 웨딩홀 & 스드메" },
-  { value: "phase-3", label: "D-120~60: 혼수 및 예물" },
-  { value: "phase-4", label: "D-60~30: 허니문 & 청첩장" },
-  { value: "phase-5", label: "D-30~Day: 최종 점검" },
-];
+import { CATEGORY_OPTIONS, daysUntilWedding, parseLocalDate } from "@/lib/schedule";
+import {
+  CATEGORY_LABELS,
+  WEDDING_STYLE_LABEL,
+  isHiddenByExclusion,
+  type SkippableCategory,
+} from "@/lib/weddingStyle";
+import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
 
 const MySchedule = () => {
   const navigate = useNavigate();
@@ -43,15 +44,7 @@ const MySchedule = () => {
     scheduled_date: string;
     category: string;
   } | null>(null);
-
-  const daysUntilWedding = () => {
-    if (!weddingSettings.wedding_date) return null;
-    const wedding = new Date(weddingSettings.wedding_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diff = Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return diff;
-  };
+  const [styleModalOpen, setStyleModalOpen] = useState(false);
 
   const handleStartEditing = () => {
     setWeddingDateInput(weddingSettings.wedding_date || "");
@@ -81,7 +74,7 @@ const MySchedule = () => {
   };
 
   const getCategoryLabel = (category: string) => {
-    const found = categoryOptions.find(c => c.value === category);
+    const found = CATEGORY_OPTIONS.find(c => c.value === category);
     return found ? found.label : "일반";
   };
 
@@ -112,7 +105,16 @@ const MySchedule = () => {
     setEditingItem(null);
   };
 
-  const days = daysUntilWedding();
+  const days = daysUntilWedding(weddingSettings.wedding_date);
+
+  const formattedWeddingDate = weddingSettings.wedding_date
+    ? format(parseLocalDate(weddingSettings.wedding_date), "yyyy년 M월 d일 (EEEE)", { locale: ko })
+    : null;
+
+  const visibleItems = scheduleItems.filter(
+    i => !isHiddenByExclusion(i.category, weddingSettings.excluded_categories)
+  );
+  const hiddenCount = scheduleItems.length - visibleItems.length;
 
   if (!user) {
     return (
@@ -166,15 +168,22 @@ const MySchedule = () => {
                 <p className="text-sm text-muted-foreground">결혼식까지</p>
                 {days !== null ? (
                   <p className="text-4xl font-bold text-primary">
-                    {days > 0 ? `D-${days}` : days === 0 ? "D-Day!" : `D+${Math.abs(days)}`}
+                    {days > 0 ? `D-${days}` : days === 0 ? "D-Day 🎉" : `D+${Math.abs(days)}`}
                   </p>
+                ) : weddingSettings.wedding_date_tbd ? (
+                  <div className="space-y-1">
+                    <p className="text-2xl font-bold text-primary">D-Day</p>
+                    <span className="inline-block text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full font-medium">
+                      예정일 미정
+                    </span>
+                  </div>
                 ) : (
                   <p className="text-2xl font-bold text-muted-foreground">날짜를 설정해주세요</p>
                 )}
               </div>
               <Calendar className="w-12 h-12 text-primary/50" />
             </div>
-            
+
             {isEditing ? (
               <div className="flex gap-2">
                 <Input
@@ -191,16 +200,55 @@ const MySchedule = () => {
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">
-                  {weddingSettings.wedding_date || "아직 설정되지 않음"}
+                  {formattedWeddingDate
+                    ?? (weddingSettings.wedding_date_tbd ? "1년 후 기준으로 일정이 잡혀요" : "아직 설정되지 않음")}
                 </p>
-                <Button variant="outline" size="sm" onClick={handleStartEditing}>
+                <Button variant="outline" size="sm" onClick={handleStartEditing} className="shrink-0">
                   {weddingSettings.wedding_date ? "날짜 변경" : "날짜 설정"}
                 </Button>
               </div>
             )}
           </div>
+        </div>
+
+        {/* Wedding Style Card */}
+        <div className="px-4 pb-2">
+          <button
+            type="button"
+            onClick={() => setStyleModalOpen(true)}
+            className="w-full p-4 bg-card rounded-2xl border border-border text-left active:scale-[0.99] transition-transform"
+          >
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Settings2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="text-sm font-semibold text-foreground truncate">
+                  결혼 스타일 · {WEDDING_STYLE_LABEL[weddingSettings.wedding_style ?? "general"]}
+                </span>
+              </div>
+              <span className="text-xs text-primary font-semibold shrink-0">변경</span>
+            </div>
+            {weddingSettings.excluded_categories.length === 0 ? (
+              <p className="text-xs text-muted-foreground">제외한 카테고리 없음 · 모든 추천 일정 표시</p>
+            ) : (
+              <div className="flex flex-wrap gap-1">
+                {weddingSettings.excluded_categories.map((c) => (
+                  <span
+                    key={c}
+                    className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground rounded-full"
+                  >
+                    {CATEGORY_LABELS[c as SkippableCategory]?.label ?? c} 제외
+                  </span>
+                ))}
+              </div>
+            )}
+            {hiddenCount > 0 && (
+              <p className="text-[11px] text-muted-foreground mt-2">
+                숨겨진 일정 {hiddenCount}개 (DB에는 남아있어요)
+              </p>
+            )}
+          </button>
         </div>
 
         {/* Add Task */}
@@ -221,7 +269,7 @@ const MySchedule = () => {
                   <SelectValue placeholder="타임라인 단계 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categoryOptions.map((option) => (
+                  {CATEGORY_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -246,7 +294,7 @@ const MySchedule = () => {
         {/* Schedule List */}
         <div className="p-4">
           <h2 className="font-bold text-foreground mb-4">웨딩 체크리스트</h2>
-          {scheduleItems.length === 0 ? (
+          {visibleItems.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p className="text-sm">아직 등록된 일정이 없습니다</p>
@@ -254,7 +302,7 @@ const MySchedule = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {scheduleItems.map((item) => (
+              {visibleItems.map((item) => (
                 <div
                   key={item.id}
                   className={`p-4 bg-card rounded-xl border border-border ${
@@ -277,7 +325,7 @@ const MySchedule = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {categoryOptions.map((option) => (
+                          {CATEGORY_OPTIONS.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
                             </SelectItem>
@@ -321,7 +369,9 @@ const MySchedule = () => {
                           {item.title}
                         </p>
                         <div className="flex items-center gap-2">
-                          <p className="text-xs text-muted-foreground">{item.scheduled_date}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(parseLocalDate(item.scheduled_date), "yyyy.M.d (EEE)", { locale: ko })}
+                          </p>
                           {item.category && item.category !== "general" && (
                             <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
                               {getCategoryLabel(item.category)}
@@ -349,6 +399,8 @@ const MySchedule = () => {
           )}
         </div>
       </main>
+
+      <WeddingInfoSetupModal isOpen={styleModalOpen} onClose={() => setStyleModalOpen(false)} />
 
       <BottomNav activeTab="/mypage" onTabChange={(href) => navigate(href)} />
     </div>
