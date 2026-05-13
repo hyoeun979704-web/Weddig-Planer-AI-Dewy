@@ -9,15 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
-
-const categoryOptions = [
-  { value: "general", label: "일반" },
-  { value: "phase-1", label: "D-365~180: 웨딩 준비 시작" },
-  { value: "phase-2", label: "D-180~120: 웨딩홀 & 스드메" },
-  { value: "phase-3", label: "D-120~60: 혼수 및 예물" },
-  { value: "phase-4", label: "D-60~30: 허니문 & 청첩장" },
-  { value: "phase-5", label: "D-30~Day: 최종 점검" },
-];
+import { CATEGORY_OPTIONS, daysUntilWedding, parseLocalDate } from "@/lib/schedule";
 
 const MySchedule = () => {
   const navigate = useNavigate();
@@ -45,15 +37,6 @@ const MySchedule = () => {
     scheduled_date: string;
     category: string;
   } | null>(null);
-
-  const daysUntilWedding = () => {
-    if (!weddingSettings.wedding_date) return null;
-    const wedding = new Date(weddingSettings.wedding_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diff = Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return diff;
-  };
 
   const handleStartEditing = () => {
     setWeddingDateInput(weddingSettings.wedding_date || "");
@@ -83,7 +66,7 @@ const MySchedule = () => {
   };
 
   const getCategoryLabel = (category: string) => {
-    const found = categoryOptions.find(c => c.value === category);
+    const found = CATEGORY_OPTIONS.find(c => c.value === category);
     return found ? found.label : "일반";
   };
 
@@ -114,10 +97,10 @@ const MySchedule = () => {
     setEditingItem(null);
   };
 
-  const days = daysUntilWedding();
+  const days = daysUntilWedding(weddingSettings.wedding_date);
 
   const formattedWeddingDate = weddingSettings.wedding_date
-    ? format(new Date(weddingSettings.wedding_date), "yyyy년 M월 d일 (EEEE)", { locale: ko })
+    ? format(parseLocalDate(weddingSettings.wedding_date), "yyyy년 M월 d일 (EEEE)", { locale: ko })
     : null;
 
   if (!user) {
@@ -235,7 +218,7 @@ const MySchedule = () => {
                   <SelectValue placeholder="타임라인 단계 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categoryOptions.map((option) => (
+                  {CATEGORY_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -291,7 +274,7 @@ const MySchedule = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {categoryOptions.map((option) => (
+                          {CATEGORY_OPTIONS.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
                             </SelectItem>
@@ -336,7 +319,7 @@ const MySchedule = () => {
                         </p>
                         <div className="flex items-center gap-2">
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(item.scheduled_date), "yyyy.M.d (EEE)", { locale: ko })}
+                            {format(parseLocalDate(item.scheduled_date), "yyyy.M.d (EEE)", { locale: ko })}
                           </p>
                           {item.category && item.category !== "general" && (
                             <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">

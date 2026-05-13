@@ -8,16 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScheduleItem } from "@/hooks/useWeddingSchedule";
-
-interface TimelinePhase {
-  id: string;
-  period: string;
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  defaultTasks: string[];
-  category: string;
-}
+import { CATEGORY_OPTIONS, parseLocalDate, type TimelinePhase } from "@/lib/schedule";
 
 interface TimelineDetailSheetProps {
   open: boolean;
@@ -52,15 +43,6 @@ const TimelineDetailSheet = ({
   const [editingItem, setEditingItem] = useState<{ id: string; title: string; scheduled_date: string; category: string } | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
-
-  const categoryOptions = [
-    { value: "general", label: "일반" },
-    { value: "phase-1", label: "D-365~180: 웨딩 준비 시작" },
-    { value: "phase-2", label: "D-180~120: 웨딩홀 & 스드메" },
-    { value: "phase-3", label: "D-120~60: 혼수 및 예물" },
-    { value: "phase-4", label: "D-60~30: 허니문 & 청첩장" },
-    { value: "phase-5", label: "D-30~Day: 최종 점검" },
-  ];
 
   if (!phase) return null;
 
@@ -103,22 +85,13 @@ const TimelineDetailSheet = ({
   };
 
   const handleAddDefaultTask = async (task: string) => {
-    // Calculate a default date based on wedding date and phase
-    let defaultDate = new Date().toISOString().split('T')[0];
+    const toLocalISODate = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    let defaultDate = toLocalISODate(new Date());
     if (weddingDate) {
-      const wedding = new Date(weddingDate);
-      // Estimate date based on phase category
-      const daysMap: Record<string, number> = {
-        'phase-1': 270,
-        'phase-2': 150,
-        'phase-3': 90,
-        'phase-4': 45,
-        'phase-5': 15,
-      };
-      const daysBeforeWedding = daysMap[phase.category] || 90;
-      const taskDate = new Date(wedding);
-      taskDate.setDate(taskDate.getDate() - daysBeforeWedding);
-      defaultDate = taskDate.toISOString().split('T')[0];
+      const taskDate = parseLocalDate(weddingDate);
+      taskDate.setDate(taskDate.getDate() - phase.defaultDaysBeforeWedding);
+      defaultDate = toLocalISODate(taskDate);
     }
     await onAddItem(task, defaultDate, phase.category);
   };
@@ -201,7 +174,7 @@ const TimelineDetailSheet = ({
                           <SelectValue placeholder="타임라인 단계 선택" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categoryOptions.map((option) => (
+                          {CATEGORY_OPTIONS.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
                             </SelectItem>
@@ -254,7 +227,7 @@ const TimelineDetailSheet = ({
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(item.scheduled_date), "yyyy.M.d (EEE)", { locale: ko })}
+                          {format(parseLocalDate(item.scheduled_date), "yyyy.M.d (EEE)", { locale: ko })}
                         </p>
                       </div>
                       {onUpdateItem && (
