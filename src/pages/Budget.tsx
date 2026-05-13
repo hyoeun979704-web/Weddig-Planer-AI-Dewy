@@ -32,6 +32,7 @@ import { toast } from "@/hooks/use-toast";
 import type { BudgetItem } from "@/hooks/useBudget";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { WEDDING_STYLE_PRESETS, WEDDING_STYLE_LABEL } from "@/lib/weddingStyle";
 
 const regionLabelToKey = (label: string | null): string | undefined => {
   if (!label) return undefined;
@@ -126,12 +127,15 @@ const Budget = () => {
   const trendActiveCount = monthlyTrend.filter(b => b.total > 0).length;
 
   /**
-   * Schedule tasks that map to a budget category, are still open, and are due
-   * within 30 days (or already overdue). These surface as "next payments" so
-   * the user can record them in budget without retyping.
+   * Schedule tasks that map to a budget category, are still open, due within
+   * 30 days (or already overdue), and not in the user's excluded list. These
+   * surface as "next payments" so the user can record them in budget without
+   * retyping. Schedule items the user already turned off via the style picker
+   * shouldn't nag them here.
    */
+  const excludedSet = new Set(weddingSettings.excluded_categories || []);
   const upcomingExpenseTasks = scheduleItems
-    .filter(t => !t.completed)
+    .filter(t => !t.completed && !excludedSet.has(t.category || ""))
     .map(t => ({ task: t, budgetCat: scheduleCategoryToBudget(t.category) }))
     .filter((x): x is { task: typeof scheduleItems[number]; budgetCat: BudgetCategory } => x.budgetCat !== null)
     .map(x => ({
@@ -151,6 +155,28 @@ const Budget = () => {
   const stageGuide = weddingSettings.planning_stage
     ? planningStageGuide[weddingSettings.planning_stage]
     : null;
+
+  /**
+   * Budget categories the user has implicitly opted out of via excluded
+   * schedule categories. We map shop-style schedule keys back to budget
+   * keys so the UI can dim them. A budget category is only considered
+   * excluded when EVERY schedule key that maps to it is excluded.
+   */
+  const dimmedBudgetCategories = (() => {
+    const groupedByBudget: Partial<Record<BudgetCategory, string[]>> = {};
+    for (const scheduleCat of ["wedding_hall", "studio", "dress_shop", "makeup_shop", "tailor_shop", "appliance", "honeymoon", "hanbok", "invitation_venue"]) {
+      const bc = scheduleCategoryToBudget(scheduleCat);
+      if (!bc) continue;
+      (groupedByBudget[bc] ||= []).push(scheduleCat);
+    }
+    const dim = new Set<BudgetCategory>();
+    for (const [bc, scheduleCats] of Object.entries(groupedByBudget) as [BudgetCategory, string[]][]) {
+      if (scheduleCats.length > 0 && scheduleCats.every(c => excludedSet.has(c))) {
+        dim.add(bc);
+      }
+    }
+    return dim;
+  })();
 
   const openAddWithPrefill = (title: string, category: BudgetCategory) => {
     setEditItem(null);
@@ -360,6 +386,76 @@ const Budget = () => {
           )}
         </div>
 
+        {/* Planning stage guide */}
+        {stageGuide && totalBudget > 0 && (
+          <div className="rounded-xl bg-primary/5 border border-primary/15 px-3 py-2 flex items-center gap-2">
+            <span className="text-base">{stageGuide.icon}</span>
+            <p className="text-xs text-foreground flex-1">{stageGuide.text}</p>
+          </div>
+        )}
+
+        {/* Wedding style banner — small/self get specific budget tips */}
+        {weddingSettings.wedding_style && weddingSettings.wedding_style !== "general" && weddingSettings.wedding_style !== "custom" && (
+          <div className="rounded-xl bg-card border border-border px-3 py-2.5">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkle className="w-3.5 h-3.5 text-primary" />
+              <p className="text-xs font-bold text-foreground">
+                {WEDDING_STYLE_LABEL[weddingSettings.wedding_style]} 모드
+              </p>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {weddingSettings.wedding_style === "small"
+                ? "하객 수가 적으니 식대 부담이 크게 줄어요. 대신 가까운 분들에게 답례품·식대 단가는 더 신경 쓰는 게 좋아요."
+                : "스튜디오·드레스·메이크업을 직접 진행하시면 스드메 예산을 30~50% 절감할 수 있어요. 셀프 진행에 필요한 소품 비용은 기타에 잡아두세요."}
+            </p>
+          </div>
+        )}
+
+        {/* Upcoming schedule payments — open tasks with budget mapping due ≤ 30 days */}
+        {upcomingExpenseTasks.length > 0 && (
+          <div className="rounded-2xl bg-card border border-border p-4">
+            <div className="flex items-center justify-between mb-2.5">
+              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <CalendarClock className="w-3.5 h-3.5 text-primary" /> 다가오는 결제 예정
+              </p>
+              <button onClick={() => navigate("/schedule")} className="text-[10px] text-muted-foreground">
+                일정 →
+              </button>
+            </div>
+            <div className="space-y-2.5">
+              {upcomingExpenseTasks.map(({ task, budgetCat, daysLeft }) => {
+                const cat = categories[budgetCat];
+                const overdue = daysLeft < 0;
+                return (
+                  <div key={task.id} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="text-sm">{cat.emoji}</span>
+                      <span className="text-xs text-foreground truncate">{task.title}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                        overdue ? "bg-destructive/15 text-destructive" :
+                        daysLeft <= 7 ? "bg-destructive/10 text-destructive" :
+                        daysLeft <= 30 ? "bg-yellow-100 text-yellow-700" :
+                        "bg-muted text-muted-foreground"
+                      )}>
+                        {overdue ? `${-daysLeft}일 지남` : `D-${daysLeft}`}
+                      </span>
+                      <button
+                        onClick={() => openAddWithPrefill(task.title, budgetCat)}
+                        className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded-full font-bold flex items-center gap-0.5 active:scale-95 transition-transform"
+                        aria-label="예산 기록"
+                      >
+                        <Plus className="w-2.5 h-2.5" />기록
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Upcoming balance reminders */}
         {upcomingBalances.length > 0 && (
           <div className="rounded-2xl bg-accent border border-primary/15 p-4">
@@ -449,7 +545,14 @@ const Budget = () => {
 
         {/* Category progress — sorted: over-budget first, then by spent desc, then by budget desc */}
         <div data-tutorial="budget-categories" className="rounded-2xl bg-card border border-border p-4">
-          <p className="text-xs font-semibold text-foreground mb-3">카테고리별 현황</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-foreground">카테고리별 현황</p>
+            {dimmedBudgetCategories.size > 0 && (
+              <p className="text-[10px] text-muted-foreground">
+                흐린 카테고리는 스케줄에서 제외
+              </p>
+            )}
+          </div>
           <div className="space-y-3">
             {[...categoryKeys]
               .map(key => {
@@ -457,15 +560,17 @@ const Budget = () => {
                 const budget = catBudgets[key] || 0;
                 const catPct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
                 const over = spent > budget && budget > 0;
-                return { key, spent, budget, catPct, over };
+                const dimmed = dimmedBudgetCategories.has(key) && spent === 0;
+                return { key, spent, budget, catPct, over, dimmed };
               })
               .sort((a, b) => {
+                if (a.dimmed !== b.dimmed) return a.dimmed ? 1 : -1;
                 if (a.over !== b.over) return a.over ? -1 : 1;
                 if (b.spent !== a.spent) return b.spent - a.spent;
                 return b.budget - a.budget;
               })
-              .map(({ key, spent, budget, catPct, over }) => (
-                <button key={key} className="w-full text-left group" onClick={() => navigate(`/budget/category/${key}`)}>
+              .map(({ key, spent, budget, catPct, over, dimmed }) => (
+                <button key={key} className={cn("w-full text-left group", dimmed && "opacity-40")} onClick={() => navigate(`/budget/category/${key}`)}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium flex items-center gap-1">
                       {categories[key].emoji} {categories[key].label}
@@ -631,6 +736,7 @@ const Budget = () => {
         initialGuestCount={settings?.guest_count}
         initialTotalBudget={settings?.total_budget}
         initialCategoryBudgets={settings?.category_budgets}
+        weddingStyle={weddingSettings.wedding_style}
         onSave={data => {
           saveSettings.mutate(data, {
             onSuccess: () => toast({ title: "예산 설정이 저장되었습니다" }),
@@ -639,8 +745,14 @@ const Budget = () => {
       />
 
       <BudgetAddSheet
-        open={addOpen} onOpenChange={setAddOpen}
+        open={addOpen}
+        onOpenChange={open => {
+          setAddOpen(open);
+          if (!open) setAddPrefill(null);
+        }}
         editItem={editItem}
+        initialCategory={addPrefill?.category}
+        initialTitle={addPrefill?.title}
         onSave={data => {
           if (editItem) {
             updateItem.mutate({ id: editItem.id, ...data } as any, {

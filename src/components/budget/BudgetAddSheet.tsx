@@ -33,6 +33,7 @@ interface BudgetAddSheetProps {
   onOpenChange: (open: boolean) => void;
   editItem?: BudgetItem | null;
   initialCategory?: BudgetCategory;
+  initialTitle?: string;
   onSave: (item: Omit<BudgetItem, "id" | "user_id" | "created_at">) => void;
 }
 
@@ -44,7 +45,7 @@ const getRememberedCategory = (): BudgetCategory => {
   return stored && categoryKeys.includes(stored) ? stored : "venue";
 };
 
-export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCategory, onSave }: BudgetAddSheetProps) {
+export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCategory, initialTitle, onSave }: BudgetAddSheetProps) {
   const [amount, setAmount] = useState(0);
   const [category, setCategory] = useState<BudgetCategory>("venue");
   const [title, setTitle] = useState("");
@@ -82,12 +83,12 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
     } else if (open) {
       setAmount(0);
       setCategory(initialCategory || getRememberedCategory());
-      setTitle(""); setItemDate(new Date());
+      setTitle(initialTitle || ""); setItemDate(new Date());
       setPaidBy("shared"); setPaymentStage("full"); setPaymentMethod("cash");
       setMemo(""); setHasBalance(false); setBalanceAmount(0); setBalanceDueDate(undefined);
       setAdvancedOpen(false);
     }
-  }, [open, editItem, initialCategory]);
+  }, [open, editItem, initialCategory, initialTitle]);
 
   const subItems = categories[category]?.sub_items || [];
 

@@ -14,7 +14,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { regions, regionalAverages, getRegionalAvgWithMeal, categories, categoryKeys, type BudgetCategory } from "@/data/budgetData";
-import { Minus, Plus, MapPin, Info } from "lucide-react";
+import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
+import { Minus, Plus, MapPin, Info, Sparkle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const fmt = (n: number) => n.toLocaleString();
@@ -23,6 +24,7 @@ interface BudgetSetupSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialRegion?: string;
+  weddingStyle?: WeddingStyle | null;
   initialGuestCount?: number;
   initialTotalBudget?: number;
   initialCategoryBudgets?: Record<BudgetCategory, number>;
@@ -37,12 +39,14 @@ interface BudgetSetupSheetProps {
 const quickBudgets = [2000, 3000, 4000, 5000, 6000];
 
 export default function BudgetSetupSheet({
-  open, onOpenChange, initialRegion = "seoul", initialGuestCount = 200,
-  initialTotalBudget = 0, initialCategoryBudgets, onSave,
+  open, onOpenChange, initialRegion = "seoul", initialGuestCount,
+  initialTotalBudget = 0, initialCategoryBudgets, weddingStyle, onSave,
 }: BudgetSetupSheetProps) {
+  const styleDefaultGuests = weddingStyle === "small" ? 50 : 200;
+  const effectiveInitialGuests = initialGuestCount ?? styleDefaultGuests;
   const emptyCatBudgets: Record<BudgetCategory, number> = { venue: 0, meal: 0, sdm: 0, ring: 0, house: 0, honeymoon: 0, etc: 0 };
   const [region, setRegion] = useState(initialRegion);
-  const [guestCount, setGuestCount] = useState(initialGuestCount);
+  const [guestCount, setGuestCount] = useState(effectiveInitialGuests);
   const [totalBudget, setTotalBudget] = useState(initialTotalBudget);
   const [catBudgets, setCatBudgets] = useState<Record<BudgetCategory, number>>(
     initialCategoryBudgets ? { ...emptyCatBudgets, ...initialCategoryBudgets } : emptyCatBudgets
@@ -53,23 +57,33 @@ export default function BudgetSetupSheet({
   useEffect(() => {
     if (open) {
       setRegion(initialRegion);
-      setGuestCount(initialGuestCount);
+      setGuestCount(effectiveInitialGuests);
       setTotalBudget(initialTotalBudget);
       if (initialCategoryBudgets) {
         setCatBudgets({ ...emptyCatBudgets, ...initialCategoryBudgets });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialRegion, initialGuestCount, initialTotalBudget, initialCategoryBudgets]);
+  }, [open, initialRegion, effectiveInitialGuests, initialTotalBudget, initialCategoryBudgets]);
 
+  /**
+   * Apply regional averages to all category inputs, with optional style-based
+   * adjustments. 'self' style assumes the couple handles studio/dress/makeup
+   * directly, so we halve the sdm average. 'small' uses the meal-inclusive
+   * average as-is (guestCount is already small).
+   */
   const applyRegionalAvg = () => {
     const avg = getRegionalAvgWithMeal(region, guestCount);
     if (!avg) return;
-    setTotalBudget(avg.total);
-    setCatBudgets({
-      venue: avg.venue, meal: avg.meal, sdm: avg.sdm, ring: avg.ring,
-      house: avg.house, honeymoon: avg.honeymoon, etc: avg.etc,
-    });
+    const sdmAdjust = weddingStyle === "self" ? 0.5 : 1;
+    const sdm = Math.round(avg.sdm * sdmAdjust);
+    const next = {
+      venue: avg.venue, meal: avg.meal, sdm,
+      ring: avg.ring, house: avg.house,
+      honeymoon: avg.honeymoon, etc: avg.etc,
+    };
+    setTotalBudget(Object.values(next).reduce((a, b) => a + b, 0));
+    setCatBudgets(next);
   };
 
   /**
@@ -128,7 +142,14 @@ export default function BudgetSetupSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[90dvh] p-0 flex flex-col">
         <SheetHeader className="px-6 pt-6 pb-3 shrink-0">
-          <SheetTitle className="text-base">예산 설정</SheetTitle>
+          <SheetTitle className="text-base flex items-center gap-2">
+            예산 설정
+            {weddingStyle && weddingStyle !== "general" && weddingStyle !== "custom" && (
+              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+                <Sparkle className="w-2.5 h-2.5" /> {WEDDING_STYLE_LABEL[weddingStyle]} 모드
+              </span>
+            )}
+          </SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 pb-4">
