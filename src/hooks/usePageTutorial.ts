@@ -19,7 +19,7 @@ export const usePageTutorial = (pageGuideId?: string) => {
     if (tutorialParam) {
       const guide = FEATURE_GUIDES.find((g) => g.id === tutorialParam);
       if (guide) {
-        const timer = setTimeout(() => tutorial.startTutorial(guide.steps), 500);
+        const timer = setTimeout(() => tutorial.startTutorial(guide.steps, guide.id), 500);
         searchParams.delete("tutorial");
         setSearchParams(searchParams, { replace: true });
         return () => clearTimeout(timer);
@@ -34,7 +34,7 @@ export const usePageTutorial = (pageGuideId?: string) => {
         const guide = FEATURE_GUIDES.find((g) => g.id === pageGuideId);
         if (guide) {
           const timer = setTimeout(() => {
-            tutorial.startTutorial(guide.steps);
+            tutorial.startTutorial(guide.steps, guide.id);
             localStorage.setItem(seenKey, "true");
           }, 800);
           return () => clearTimeout(timer);
