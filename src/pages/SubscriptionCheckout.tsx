@@ -116,10 +116,13 @@ const SubscriptionCheckout = () => {
               <p className="font-semibold text-foreground text-sm">초기 이용자 특전</p>
             </div>
             <p className="text-sm text-foreground mt-2">
-              결제 완료 시 AI 스튜디오 하트 <span className="font-bold text-primary">{heartBonus}개</span> 지급
+              결제 완료 시 AI 스튜디오 하트 <span className="font-bold text-primary">{heartBonus}개</span> 즉시 지급
             </p>
             <p className="text-[11px] text-muted-foreground mt-1">
               2026년 7월까지 결제 시 한정 · 가입 기념 혜택과 별도 지급
+            </p>
+            <p className="text-[11px] text-destructive mt-2 bg-destructive/5 rounded-lg p-2">
+              ⚠ 보너스 하트를 1개라도 사용하면 해당 결제는 환불이 제한됩니다.
             </p>
           </div>
         )}
