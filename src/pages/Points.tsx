@@ -1,18 +1,20 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Coins, Gift, Clock, Gamepad2, ChevronRight } from "lucide-react";
+import { ArrowLeft, Coins, Clock, ChevronRight, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePoints, labelForReason } from "@/hooks/usePoints";
 
-const pointHistory = [
-  { id: 1, type: "earn", title: "웨딩홀 예약 적립", points: 1000, date: "2025-01-20" },
-  { id: 2, type: "earn", title: "리뷰 작성 적립", points: 500, date: "2025-01-18" },
-  { id: 3, type: "use", title: "스튜디오 예약 사용", points: -2000, date: "2025-01-15" },
-  { id: 4, type: "earn", title: "회원가입 축하 포인트", points: 3000, date: "2025-01-10" },
-];
+const formatDate = (iso: string): string => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+};
 
 const Points = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { balance, transactions, isLoading } = usePoints();
+
+  const cashValue = Math.floor(balance * 0.2); // 1P = 0.2원
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
@@ -30,18 +32,22 @@ const Points = () => {
         <div className="p-6 bg-gradient-to-br from-primary/20 to-primary/5">
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-2">보유 포인트</p>
-            <p className="text-4xl font-bold text-primary">3,500P</p>
+            {isLoading ? (
+              <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
+            ) : (
+              <>
+                <p className="text-4xl font-bold text-primary">{balance.toLocaleString()}P</p>
+                <p className="text-xs text-muted-foreground mt-1">≈ {cashValue.toLocaleString()}원 상당</p>
+              </>
+            )}
           </div>
-          <div className="flex gap-3 mt-6">
-            <button className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2">
-              <Gift className="w-4 h-4" />
-              포인트 선물
-            </button>
-            <button className="flex-1 py-3 bg-card border border-border text-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2">
-              <Coins className="w-4 h-4" />
-              포인트 충전
-            </button>
-          </div>
+          <button
+            onClick={() => navigate("/merge-game")}
+            className="w-full mt-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2"
+          >
+            <Coins className="w-4 h-4" />
+            게임으로 적립하기
+          </button>
         </div>
 
         {/* 게임 카드 */}
@@ -67,19 +73,29 @@ const Points = () => {
             <Clock className="w-4 h-4" />
             포인트 내역
           </h2>
-          <div className="space-y-3">
-            {pointHistory.map((item) => (
-              <div key={item.id} className="flex items-center justify-between p-4 bg-card rounded-xl border border-border">
-                <div>
-                  <p className="font-medium text-foreground text-sm">{item.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{item.date}</p>
+          {!user ? (
+            <p className="text-sm text-muted-foreground text-center py-8">로그인 후 이용 가능합니다.</p>
+          ) : isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 text-primary animate-spin" />
+            </div>
+          ) : transactions.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">아직 적립 내역이 없어요. 게임으로 시작해보세요!</p>
+          ) : (
+            <div className="space-y-3">
+              {transactions.map((tx) => (
+                <div key={tx.id} className="flex items-center justify-between p-4 bg-card rounded-xl border border-border">
+                  <div>
+                    <p className="font-medium text-foreground text-sm">{labelForReason(tx.reason)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{formatDate(tx.created_at)}</p>
+                  </div>
+                  <p className={`font-bold ${tx.amount > 0 ? "text-primary" : "text-destructive"}`}>
+                    {tx.amount > 0 ? "+" : ""}{tx.amount.toLocaleString()}P
+                  </p>
                 </div>
-                <p className={`font-bold ${item.type === "earn" ? "text-primary" : "text-destructive"}`}>
-                  {item.points > 0 ? "+" : ""}{item.points.toLocaleString()}P
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 

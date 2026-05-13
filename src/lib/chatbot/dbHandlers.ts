@@ -392,7 +392,7 @@ export const handleHearts = async (ctx: DbHandlerContext): Promise<string> => {
     .maybeSingle();
 
   if (error || !data) {
-    return "하트 정보를 불러올 수 없어요 💗\n[AI 스튜디오](/ai-studio) 첫 진입 시 5 하트가 자동 적립됩니다.";
+    return "하트 정보를 불러올 수 없어요 💗\n월간·연간 [프리미엄 구독](/premium) 결제 시 보너스 하트가 적립됩니다.";
   }
 
   const balance = data.balance ?? 0;

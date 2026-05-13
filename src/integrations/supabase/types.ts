@@ -2292,21 +2292,60 @@ export type Database = {
       }
       user_points: {
         Row: {
+          balance: number
           id: string
+          total_earned: number
           total_points: number
+          total_spent: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          balance?: number
           id?: string
+          total_earned?: number
           total_points?: number
+          total_spent?: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          balance?: number
           id?: string
+          total_earned?: number
           total_points?: number
+          total_spent?: number
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      point_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          id: string
+          reason: string
+          ref_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          id?: string
+          reason: string
+          ref_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          id?: string
+          reason?: string
+          ref_id?: string | null
           user_id?: string
         }
         Relationships: []
