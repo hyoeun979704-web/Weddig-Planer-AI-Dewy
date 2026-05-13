@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SurveyModal from "@/components/wedding-planner/SurveyModal";
+import WeddingStylePicker from "@/components/schedule/WeddingStylePicker";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import {
   buildScheduleFromTemplate,
@@ -15,6 +16,10 @@ import {
   STAGE_ORDER,
   type PlanningStage,
 } from "@/data/checklistTemplate";
+import {
+  defaultExclusionsFor,
+  type WeddingStyle,
+} from "@/lib/weddingStyle";
 
 const REGIONS = [
   "서울특별시", "경기도", "인천광역시", "부산광역시", "대구광역시",
@@ -51,6 +56,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const [regionTbd, setRegionTbd] = useState(false);
   const [partnerName, setPartnerName] = useState("");
   const [stage, setStage] = useState<PlanningStage>("just_started");
+  const [weddingStyle, setWeddingStyle] = useState<WeddingStyle>("general");
+  const [excludedCategories, setExcludedCategories] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -70,6 +77,14 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     ) {
       setStage(weddingSettings.planning_stage as PlanningStage);
     }
+    // Wedding style + exclusions: prefer saved values; otherwise default to
+    // 'general' (no exclusions).
+    setWeddingStyle((weddingSettings.wedding_style ?? "general") as WeddingStyle);
+    setExcludedCategories(
+      weddingSettings.excluded_categories.length > 0
+        ? weddingSettings.excluded_categories
+        : defaultExclusionsFor((weddingSettings.wedding_style ?? "general") as WeddingStyle)
+    );
     setErrors({});
   }, [
     isOpen,
@@ -79,6 +94,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     weddingSettings.wedding_region_tbd,
     weddingSettings.partner_name,
     weddingSettings.planning_stage,
+    weddingSettings.wedding_style,
+    weddingSettings.excluded_categories,
   ]);
 
   const validate = () => {
@@ -101,12 +118,16 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       planning_stage: stage,
       wedding_date_tbd: dateTbd,
       wedding_region_tbd: regionTbd,
+      wedding_style: weddingStyle,
+      excluded_categories: excludedCategories,
     });
 
     if (ok) {
       // Seed schedule items. When wedding_date is unset, the template anchors
-      // to today + 12 months so the checklist is still actionable.
-      const items = buildScheduleFromTemplate(weddingDateStr, stage);
+      // to today + 12 months so the checklist is still actionable. Exclusions
+      // are applied here so the user never sees seeded items for categories
+      // they opted out of.
+      const items = buildScheduleFromTemplate(weddingDateStr, stage, excludedCategories);
       const seeded = await generateScheduleFromTemplate(items);
       onSaved?.();
       onClose();
@@ -271,6 +292,21 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
           <p className="text-[11px] text-gray-400 mt-1.5">
             이전 단계 항목들은 자동으로 완료 처리돼요 (나중에 수동 조정 가능)
           </p>
+        </div>
+
+        {/* 결혼 스타일 + 카테고리 제외 */}
+        <div>
+          <label className={labelCls}>
+            결혼 스타일 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <WeddingStylePicker
+            style={weddingStyle}
+            excluded={excludedCategories}
+            onChange={({ style: s, excluded }) => {
+              setWeddingStyle(s);
+              setExcludedCategories(excluded);
+            }}
+          />
         </div>
 
         <div className="flex gap-2 pt-2">

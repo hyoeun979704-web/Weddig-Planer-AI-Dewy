@@ -24,6 +24,7 @@ import {
   daysUntilWedding,
   parseLocalDate,
 } from "@/lib/schedule";
+import { isHiddenByExclusion } from "@/lib/weddingStyle";
 import arrowLeftIcon from "@/assets/icons/arrow-left.svg";
 import chevronRightIcon from "@/assets/icons/chevron-right.svg";
 import clipboardIcon from "@/assets/icons/clipboard.svg";
@@ -56,9 +57,15 @@ const Schedule = () => {
 
   const days = daysUntilWedding(weddingSettings.wedding_date);
 
+  // Filter out items in user-excluded categories. The DB still has them, but
+  // the schedule UI hides them — re-enabling the category brings them back.
+  const visibleItems = scheduleItems.filter(
+    i => !isHiddenByExclusion(i.category, weddingSettings.excluded_categories)
+  );
+
   // Overall completion
-  const totalItems = scheduleItems.length;
-  const completedItems = scheduleItems.filter(i => i.completed).length;
+  const totalItems = visibleItems.length;
+  const completedItems = visibleItems.filter(i => i.completed).length;
   const overallProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
   // D-Day based premium banners
@@ -103,14 +110,14 @@ const Schedule = () => {
 
   // Get phase progress
   const getPhaseProgress = (category: string) => {
-    const phaseItems = scheduleItems.filter(item => item.category === category);
+    const phaseItems = visibleItems.filter(item => item.category === category);
     if (phaseItems.length === 0) return 0;
     const completed = phaseItems.filter(item => item.completed).length;
     return Math.round((completed / phaseItems.length) * 100);
   };
 
   // Get upcoming tasks (not completed, sorted by date)
-  const upcomingTasks = scheduleItems
+  const upcomingTasks = visibleItems
     .filter(item => !item.completed)
     .slice(0, 4);
 
@@ -326,8 +333,8 @@ const Schedule = () => {
               {TIMELINE_PHASES.map((phase) => {
                 const status = getPhaseStatus(phase.category);
                 const phaseProgress = getPhaseProgress(phase.category);
-                const phaseItemCount = scheduleItems.filter(item => item.category === phase.category).length;
-                const phaseCompleted = scheduleItems.filter(item => item.category === phase.category && item.completed).length;
+                const phaseItemCount = visibleItems.filter(item => item.category === phase.category).length;
+                const phaseCompleted = visibleItems.filter(item => item.category === phase.category && item.completed).length;
                 const isCurrent = status === "current";
                 const isCompleted = status === "completed";
                 
@@ -443,7 +450,7 @@ const Schedule = () => {
         open={selectedPhase !== null}
         onOpenChange={(open) => !open && setSelectedPhase(null)}
         phase={selectedPhase}
-        items={scheduleItems}
+        items={visibleItems}
         onAddItem={addScheduleItem}
         onToggleItem={toggleItemCompletion}
         onDeleteItem={deleteScheduleItem}

@@ -95,27 +95,34 @@ export const CHECKLIST_TEMPLATE: ChecklistTask[] = [
  * Generate scheduled_date strings for each template task, anchored to the
  * given weddingDate. When weddingDate is null, we anchor to (today + 12 months)
  * so the user still gets a usable timeline they can shift later.
+ *
+ * `excludedCategories` lets the caller skip seeding tasks the user opted out
+ * of (e.g. self-wedding skips studio/dress_shop/makeup_shop).
  */
 export function buildScheduleFromTemplate(
   weddingDate: string | null,
   selectedStage: PlanningStage,
+  excludedCategories: readonly string[] = [],
 ): Array<{ title: string; scheduled_date: string; category: string; completed: boolean }> {
   const anchor = weddingDate ? new Date(weddingDate) : addMonths(new Date(), 12);
   const selectedIdx = STAGE_ORDER.indexOf(selectedStage);
+  const excludedSet = new Set(excludedCategories);
 
-  return CHECKLIST_TEMPLATE.map((task) => {
-    const due = new Date(anchor);
-    due.setDate(due.getDate() - task.daysBeforeWedding);
-    const taskStageIdx = STAGE_ORDER.indexOf(task.stage);
-    return {
-      title: task.title,
-      scheduled_date: due.toISOString().slice(0, 10), // YYYY-MM-DD
-      category: task.category,
-      // Anything from a stage strictly before the user's current stage is
-      // assumed already done. Same-stage tasks stay open.
-      completed: taskStageIdx < selectedIdx,
-    };
-  });
+  return CHECKLIST_TEMPLATE
+    .filter((task) => !excludedSet.has(task.category))
+    .map((task) => {
+      const due = new Date(anchor);
+      due.setDate(due.getDate() - task.daysBeforeWedding);
+      const taskStageIdx = STAGE_ORDER.indexOf(task.stage);
+      return {
+        title: task.title,
+        scheduled_date: due.toISOString().slice(0, 10), // YYYY-MM-DD
+        category: task.category,
+        // Anything from a stage strictly before the user's current stage is
+        // assumed already done. Same-stage tasks stay open.
+        completed: taskStageIdx < selectedIdx,
+      };
+    });
 }
 
 function addMonths(date: Date, months: number): Date {
