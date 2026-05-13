@@ -1,7 +1,8 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useState } from "react";
-import { Loader2, Download } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, Download, Sparkles } from "lucide-react";
 import { generatePdfHeader, generatePdfFooter, downloadPdf } from "@/lib/pdfGenerator";
+import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { toast } from "sonner";
 
 type TimelineType = "timeline-snap" | "timeline-ceremony" | "timeline-guest";
@@ -181,6 +182,7 @@ const buildTimeline = (type: TimelineType, input: TimelineInput): {
 };
 
 const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
+  const profile = useWeddingProfile();
   const [step, setStep] = useState<"input" | "loading" | "done">("input");
   const [date, setDate] = useState("");
   const [venueName, setVenueName] = useState("");
@@ -191,10 +193,24 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
   const [hasPyebaek, setHasPyebaek] = useState(true);
   const [hasOutdoor, setHasOutdoor] = useState(false);
   const [extraNotes, setExtraNotes] = useState("");
+  const [prefillApplied, setPrefillApplied] = useState(false);
+
+  useEffect(() => {
+    if (!open || prefillApplied || !profile.isLoaded) return;
+    if (profile.weddingDate) setDate(profile.weddingDate);
+    if (profile.displayName) setGroomName(profile.displayName);
+    if (profile.partnerName) setBrideName(profile.partnerName);
+    setPrefillApplied(true);
+  }, [open, prefillApplied, profile]);
+
+  useEffect(() => {
+    if (!open) setPrefillApplied(false);
+  }, [open]);
 
   if (!open) return null;
   const type = open as TimelineType;
   const meta = typeLabels[type];
+  const hasPrefill = profile.isLoaded && (!!profile.weddingDate || !!profile.partnerName || !!profile.displayName);
 
   const handleGenerate = () => {
     setStep("loading");
@@ -261,6 +277,14 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
 
         {step === "input" && (
           <div className="mt-4 space-y-3">
+            {hasPrefill && (
+              <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-primary/5 border border-primary/15">
+                <Sparkles className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                <p className="text-[11px] text-primary leading-relaxed">
+                  등록된 결혼 정보(예식일·이름)를 자동으로 불러왔어요. 필요하면 수정해주세요.
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium text-foreground mb-1 block">신랑 이름</label>

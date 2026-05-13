@@ -1,8 +1,9 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useState } from "react";
-import { Loader2, Download } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, Download, Sparkles } from "lucide-react";
 import { generatePdfHeader, generatePdfFooter, downloadPdf } from "@/lib/pdfGenerator";
 import { regions, regionalAverages, categories, savingTips, type BudgetCategory } from "@/data/budgetData";
+import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { toast } from "sonner";
 
 interface EstimateSheetProps {
@@ -201,6 +202,7 @@ const buildEstimateHtml = (params: {
 };
 
 const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
+  const profile = useWeddingProfile();
   const [step, setStep] = useState<"input" | "loading" | "preview">("input");
   const [region, setRegion] = useState("seoul");
   const [guestCount, setGuestCount] = useState(200);
@@ -209,6 +211,23 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
   const [priorities, setPriorities] = useState<string[]>([]);
   const [htmlResult, setHtmlResult] = useState("");
   const [summary, setSummary] = useState<{ recommended: number; min: number; max: number } | null>(null);
+  const [prefillApplied, setPrefillApplied] = useState(false);
+
+  // Prefill from registered budget/wedding info once loaded
+  useEffect(() => {
+    if (!open || prefillApplied || !profile.isLoaded) return;
+    if (profile.region && regions[profile.region]) setRegion(profile.region);
+    if (profile.totalBudget > 0) setTotalBudget(profile.totalBudget);
+    if (profile.guestCount > 0) setGuestCount(profile.guestCount);
+    setPrefillApplied(true);
+  }, [open, prefillApplied, profile]);
+
+  // Reset prefill flag when sheet closes so it reapplies next open
+  useEffect(() => {
+    if (!open) setPrefillApplied(false);
+  }, [open]);
+
+  const hasPrefill = profile.isLoaded && (profile.totalBudget > 0 || (profile.region && profile.region !== "seoul"));
 
   const toggleChip = (arr: string[], val: string, setter: (v: string[]) => void, max?: number) => {
     if (arr.includes(val)) setter(arr.filter(v => v !== val));
@@ -260,6 +279,14 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
 
         {step === "input" && (
           <div className="mt-4 space-y-4">
+            {hasPrefill && (
+              <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-primary/5 border border-primary/15">
+                <Sparkles className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                <p className="text-[11px] text-primary leading-relaxed">
+                  예산 페이지에 등록된 정보를 자동으로 불러왔어요. 필요하면 수정해주세요.
+                </p>
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">지역</label>
               <select value={region} onChange={(e) => setRegion(e.target.value)} className="w-full px-3 py-2.5 bg-muted rounded-xl text-sm border-none outline-none">
