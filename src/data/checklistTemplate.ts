@@ -91,6 +91,28 @@ export const CHECKLIST_TEMPLATE: ChecklistTask[] = [
   { title: "최종 인원·식대 통보", daysBeforeWedding: 3, stage: "wrapping_up", category: "wedding_hall" },
 ];
 
+// Style-specific add-on tasks layered ON TOP of CHECKLIST_TEMPLATE. For
+// example, self-wedding users need their own prep tasks (셀프 촬영 컨셉 회의,
+// DIY 부케 제작 등) that aren't in the standard template.
+//
+// Keyed by the same wedding_style values used in user_wedding_settings.
+// Returned tasks share the same shape as CHECKLIST_TEMPLATE entries.
+export const STYLE_ADDON_TASKS: Record<string, ChecklistTask[]> = {
+  self: [
+    { title: "셀프 촬영 컨셉·로케이션 회의", daysBeforeWedding: 200, stage: "researching", category: "general" },
+    { title: "촬영 친구·장비 일정 조율", daysBeforeWedding: 150, stage: "contracting", category: "general" },
+    { title: "DIY 청첩장 디자인 시안", daysBeforeWedding: 110, stage: "contracting", category: "general" },
+    { title: "DIY 부케·소품 제작", daysBeforeWedding: 40, stage: "wrapping_up", category: "general" },
+    { title: "셀프 메이크업 리허설", daysBeforeWedding: 21, stage: "wrapping_up", category: "general" },
+  ],
+  small: [
+    { title: "소규모 식순·진행자 정하기", daysBeforeWedding: 60, stage: "wrapping_up", category: "general" },
+    { title: "직접 만드는 답례품·웰컴 키트", daysBeforeWedding: 45, stage: "wrapping_up", category: "general" },
+  ],
+  general: [],
+  custom: [],
+};
+
 /**
  * Generate scheduled_date strings for each template task, anchored to the
  * given weddingDate. When weddingDate is null, we anchor to (today + 12 months)
@@ -98,31 +120,36 @@ export const CHECKLIST_TEMPLATE: ChecklistTask[] = [
  *
  * `excludedCategories` lets the caller skip seeding tasks the user opted out
  * of (e.g. self-wedding skips studio/dress_shop/makeup_shop).
+ * `weddingStyle` layers style-specific add-on tasks on top (셀프웨딩의 DIY
+ * 일정 등).
  */
 export function buildScheduleFromTemplate(
   weddingDate: string | null,
   selectedStage: PlanningStage,
   excludedCategories: readonly string[] = [],
+  weddingStyle?: string | null,
 ): Array<{ title: string; scheduled_date: string; category: string; completed: boolean }> {
   const anchor = weddingDate ? new Date(weddingDate) : addMonths(new Date(), 12);
   const selectedIdx = STAGE_ORDER.indexOf(selectedStage);
   const excludedSet = new Set(excludedCategories);
 
-  return CHECKLIST_TEMPLATE
-    .filter((task) => !excludedSet.has(task.category))
-    .map((task) => {
-      const due = new Date(anchor);
-      due.setDate(due.getDate() - task.daysBeforeWedding);
-      const taskStageIdx = STAGE_ORDER.indexOf(task.stage);
-      return {
-        title: task.title,
-        scheduled_date: due.toISOString().slice(0, 10), // YYYY-MM-DD
-        category: task.category,
-        // Anything from a stage strictly before the user's current stage is
-        // assumed already done. Same-stage tasks stay open.
-        completed: taskStageIdx < selectedIdx,
-      };
-    });
+  const baseTasks = CHECKLIST_TEMPLATE.filter((task) => !excludedSet.has(task.category));
+  const addons = (weddingStyle && STYLE_ADDON_TASKS[weddingStyle]) || [];
+  const allTasks = [...baseTasks, ...addons];
+
+  return allTasks.map((task) => {
+    const due = new Date(anchor);
+    due.setDate(due.getDate() - task.daysBeforeWedding);
+    const taskStageIdx = STAGE_ORDER.indexOf(task.stage);
+    return {
+      title: task.title,
+      scheduled_date: due.toISOString().slice(0, 10), // YYYY-MM-DD
+      category: task.category,
+      // Anything from a stage strictly before the user's current stage is
+      // assumed already done. Same-stage tasks stay open.
+      completed: taskStageIdx < selectedIdx,
+    };
+  });
 }
 
 function addMonths(date: Date, months: number): Date {

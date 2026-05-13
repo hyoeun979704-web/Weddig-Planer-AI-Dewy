@@ -39,17 +39,19 @@ export const WEDDING_STYLE_PRESETS: Record<
 > = {
   general: {
     label: "일반 결혼식",
-    description: "표준 준비 과정 전체 포함",
+    description: "표준 준비 과정 전체 포함 — 호텔/예식장 + 풀패키지",
     excluded: [],
   },
   small: {
     label: "스몰웨딩",
-    description: "가까운 가족·지인 중심, 한복/대규모 청첩장 등 생략",
-    excluded: ["hanbok"],
+    // Realistic small-wedding scope: 50명 안팎, 한옥/하우스/카페형. 한복은
+    // 보통 안 입고, 예복도 일반 정장으로 대체, 청첩장은 모바일 위주.
+    description: "30~80명 소규모 · 한복·예복·대규모 청첩장 생략",
+    excluded: ["hanbok", "tailor_shop", "invitation_venue"],
   },
   self: {
     label: "셀프웨딩",
-    description: "촬영·메이크업·드레스 등을 직접 진행",
+    description: "촬영·드레스·메이크업을 직접 진행 (예산은 작지만 손이 많이 가요)",
     excluded: ["studio", "makeup_shop", "dress_shop"],
   },
 };

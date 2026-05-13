@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useBudget } from "@/hooks/useBudget";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
-import { Heart, Loader2, Plus, Check, BookOpen } from "lucide-react";
+import { Heart, Loader2, Plus, Check, BookOpen, Settings } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
@@ -24,7 +24,12 @@ import {
   daysUntilWedding,
   parseLocalDate,
 } from "@/lib/schedule";
-import { isHiddenByExclusion } from "@/lib/weddingStyle";
+import {
+  CATEGORY_LABELS,
+  SKIPPABLE_CATEGORIES,
+  isHiddenByExclusion,
+  type SkippableCategory,
+} from "@/lib/weddingStyle";
 import arrowLeftIcon from "@/assets/icons/arrow-left.svg";
 import chevronRightIcon from "@/assets/icons/chevron-right.svg";
 import clipboardIcon from "@/assets/icons/clipboard.svg";
@@ -54,6 +59,9 @@ const Schedule = () => {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const tutorial = usePageTutorial("schedule");
   const weddingInfoPrompt = useWeddingInfoPrompt();
+  const [tidyTipDismissed, setTidyTipDismissed] = useState<boolean>(
+    () => typeof window !== "undefined" && localStorage.getItem("dewy:schedule:tidy-tip-dismissed") === "1"
+  );
 
   const days = daysUntilWedding(weddingSettings.wedding_date);
 
@@ -68,9 +76,24 @@ const Schedule = () => {
   const completedItems = visibleItems.filter(i => i.completed).length;
   const overallProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
-  // D-Day based premium banners
+  // Tidy tip: if many template-seeded items are still incomplete, suggest a
+  // cleanup pass. Helps "일반 웨딩" users avoid feeling overwhelmed by the
+  // 30+ default checklist on first run.
+  const incompleteTemplateCount = visibleItems.filter(
+    i => i.source === "template" && !i.completed
+  ).length;
+  const showTidyTip = !tidyTipDismissed && incompleteTemplateCount >= 20;
+
+  const dismissTidyTip = () => {
+    localStorage.setItem("dewy:schedule:tidy-tip-dismissed", "1");
+    setTidyTipDismissed(true);
+  };
+
+  // D-Day based premium banners. Suppressed for high-progress users outside
+  // the last-2-week window — 풀패키지 고객이 D-150에 견적서 광고 받는 일을 줄임.
   const getDDayBanner = () => {
     if (days === null || days <= 0) return null;
+    if (days > 14 && overallProgress >= 85) return null;
     const banners = [
       { min: 120, max: 180, msg: "📋 업체 비교 견적서 만들어보세요", route: "/premium/content" },
       { min: 60, max: 119, msg: "📸 스냅 촬영 타임라인 준비할 때예요!", route: "/premium/content" },
@@ -222,18 +245,51 @@ const Schedule = () => {
           </div>
         </div>
 
-        {/* ── Premium Banner ── */}
-        <button
-          onClick={() => isPremium ? navigate("/premium/content") : setShowUpgrade(true)}
-          className="mx-4 mb-6 w-[calc(100%-2rem)] px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left"
-        >
-          <img src={clipboardIcon} alt="" className="w-[17px] h-5 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[15px] font-bold text-foreground">업체 비교 견적서 PDF</p>
-            <p className="text-xs text-muted-foreground">{isPremium ? "탭하여 시작하기" : "프리미엄 전용"}</p>
+        {/* ── Tidy Tip ── */}
+        {showTidyTip && (
+          <div className="mx-4 mb-3 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl">
+            <div className="flex items-start gap-2.5">
+              <span className="text-base shrink-0" aria-hidden>💡</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-bold text-amber-900">
+                  추천 일정이 {incompleteTemplateCount}개 있어요
+                </p>
+                <p className="text-[12px] text-amber-800 mt-0.5 leading-snug">
+                  필요 없는 항목은 정리하고, 결혼 스타일을 다시 확인해보세요.
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => navigate("/my-schedule")}
+                    className="text-[12px] font-semibold text-amber-900 px-3 py-1 rounded-full bg-amber-200/70"
+                  >
+                    정리하기
+                  </button>
+                  <button
+                    onClick={dismissTidyTip}
+                    className="text-[12px] text-amber-700 px-2"
+                  >
+                    나중에
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
-        </button>
+        )}
+
+        {/* ── Premium Banner — dynamic content tied to D-Day + progress ── */}
+        {ddayBanner && (
+          <button
+            onClick={() => isPremium ? navigate(ddayBanner.route) : setShowUpgrade(true)}
+            className="mx-4 mb-6 w-[calc(100%-2rem)] px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left"
+          >
+            <img src={clipboardIcon} alt="" className="w-[17px] h-5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[15px] font-bold text-foreground">{ddayBanner.msg}</p>
+              <p className="text-xs text-muted-foreground">{isPremium ? "탭하여 시작하기" : "프리미엄 전용"}</p>
+            </div>
+            <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
+          </button>
+        )}
 
         {/* ── Upcoming Tasks ── */}
         <section className="px-4 mb-6">
@@ -287,6 +343,46 @@ const Schedule = () => {
             </div>
           )}
         </section>
+
+        {/* ── Category Progress ── */}
+        {(() => {
+          const counts: Record<string, { total: number; done: number }> = {};
+          for (const item of visibleItems) {
+            const key = item.category;
+            if (!key) continue;
+            if (!SKIPPABLE_CATEGORIES.includes(key as SkippableCategory)) continue;
+            counts[key] = counts[key] || { total: 0, done: 0 };
+            counts[key].total += 1;
+            if (item.completed) counts[key].done += 1;
+          }
+          const entries = Object.entries(counts);
+          if (entries.length === 0) return null;
+          return (
+            <section className="px-4 mb-6">
+              <h3 className="font-bold text-foreground mb-3 text-[16px]">카테고리별 진행률</h3>
+              <div className="bg-white rounded-2xl border border-border p-4 space-y-3">
+                {entries.map(([cat, { total, done }]) => {
+                  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                  const meta = CATEGORY_LABELS[cat as SkippableCategory];
+                  return (
+                    <div key={cat}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[13px] font-medium text-foreground">{meta?.label ?? cat}</span>
+                        <span className="text-[11px] text-muted-foreground">{done}/{total}</span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${pct === 100 ? "bg-green-500" : "bg-primary"}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })()}
 
         {/* ── Budget Mini Widget ── */}
         <section className="px-4 mb-6">
@@ -415,6 +511,27 @@ const Schedule = () => {
             </div>
           </div>
         </section>
+
+        {/* ── Wedding Style Summary ── */}
+        {weddingSettings.excluded_categories.length > 0 && (
+          <section className="px-4 mb-6">
+            <button
+              onClick={() => navigate("/my-schedule")}
+              className="w-full p-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left"
+            >
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Settings className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-bold text-foreground">결혼 스타일 적용 중</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {weddingSettings.excluded_categories.length}개 카테고리 숨김 · 탭하여 조정
+                </p>
+              </div>
+              <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
+            </button>
+          </section>
+        )}
 
         {/* ── Couple Section ── */}
         <section className="px-4 mb-6" data-tutorial="schedule-couple">
