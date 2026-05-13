@@ -35,17 +35,34 @@ const Referral = () => {
 
   const handleShare = async () => {
     const code = await ensureCode();
-    if (!code) return;
-    const shareText = `Dewy 웨딩플래너에서 같이 결혼 준비해요! 가입 시 제 초대코드 ${code}를 입력하면 500P를 받을 수 있어요. https://www.dewy-wedding.com`;
-    if (navigator.share) {
+    if (!code) {
+      toast.error("코드 생성에 실패했어요");
+      return;
+    }
+    const url = `https://www.dewy-wedding.com/auth?ref=${code}`;
+    const shareText = `Dewy 웨딩플래너에서 같이 결혼 준비해요!\n\n가입 후 마이페이지에서 제 초대코드 ${code}를 입력하면 500P를 받을 수 있어요.\n\n${url}`;
+    if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: "Dewy 친구 초대", text: shareText });
-      } catch {
-        // 사용자 취소
+        await navigator.share({
+          title: "Dewy 친구 초대",
+          text: shareText,
+          url,
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          console.error("share failed:", err);
+        }
+        // 공유 실패 또는 취소 시 폴백
       }
-    } else {
+    }
+    try {
       await navigator.clipboard.writeText(shareText);
-      toast.success("초대 메시지가 복사되었어요");
+      toast.success("초대 메시지를 복사했어요. 카톡에 붙여넣기 해주세요.", {
+        duration: 4000,
+      });
+    } catch {
+      toast.error("복사에 실패했어요. 코드를 길게 눌러 직접 복사해주세요.");
     }
   };
 
