@@ -55,6 +55,25 @@ export const regionalAverages: Record<string, RegionalAverage> = {
   jeju: { total: 2200, venue: 350, sdm: 260, ring: 260, house: 500, honeymoon: 250, etc: 580, per_guest_meal: 6.5, note: "스몰웨딩/야외 비율 높음" },
 };
 
+/**
+ * Returns regional averages with per-guest meal cost folded into `venue` and `total`.
+ * Wedding hall venue averages in `regionalAverages` only cover hall rental/setup;
+ * meal cost scales with guest count and must be added separately to avoid
+ * showing users an unrealistically low budget.
+ */
+export const getRegionalAvgWithMeal = (regionKey: string, guestCount: number) => {
+  const avg = regionalAverages[regionKey];
+  if (!avg) return null;
+  const mealCost = Math.round(avg.per_guest_meal * guestCount);
+  return {
+    ...avg,
+    venue: avg.venue + mealCost,
+    total: avg.total + mealCost,
+    mealCost,
+    baseVenue: avg.venue,
+  };
+};
+
 export type BudgetCategory = "venue" | "sdm" | "ring" | "house" | "honeymoon" | "etc";
 
 export interface CategoryInfo {

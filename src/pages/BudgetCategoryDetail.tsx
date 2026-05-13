@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Trash2, Lightbulb } from "lucide-react";
 import { useBudget } from "@/hooks/useBudget";
-import { categories, savingTips, regions, type BudgetCategory } from "@/data/budgetData";
+import { categories, savingTips, regions, getRegionalAvgWithMeal, type BudgetCategory } from "@/data/budgetData";
+
+const fmt = (n: number) => n.toLocaleString();
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -29,7 +31,13 @@ const BudgetCategoryDetail = () => {
   const spent = summary.categoryTotals[cat] || 0;
   const budget = settings?.category_budgets?.[cat] || 0;
   const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
-  const avgVal = regionalAverage ? (regionalAverage as any)[cat] : 0;
+  const guestCount = settings?.guest_count || 200;
+  const effectiveRegionKey = settings?.region || profileRegionKey || "seoul";
+  const avgWithMeal = getRegionalAvgWithMeal(effectiveRegionKey, guestCount);
+  // venue uses meal-inclusive average to match how the user sets their venue budget
+  const avgVal = cat === "venue"
+    ? (avgWithMeal?.venue ?? 0)
+    : (regionalAverage ? (regionalAverage as any)[cat] : 0);
   const diff = spent - avgVal;
   const diffPct = avgVal > 0 ? Math.round((Math.abs(diff) / avgVal) * 100) : 0;
   const catItems = items.filter(i => i.category === cat);
@@ -50,8 +58,8 @@ const BudgetCategoryDetail = () => {
         <div className="rounded-xl bg-card border border-border p-4">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-bold text-foreground">사용 현황</span>
-            <span className={cn("text-sm font-bold", spent > budget && budget > 0 ? "text-destructive" : "text-foreground")}>
-              {spent}만원 {budget > 0 && `/ ${budget}만원`}
+            <span className={cn("text-sm font-bold tabular-nums", spent > budget && budget > 0 ? "text-destructive" : "text-foreground")}>
+              {fmt(spent)}만원 {budget > 0 && `/ ${fmt(budget)}만원`}
             </span>
           </div>
           <Progress value={pct} className="h-3 mb-1" />
@@ -63,16 +71,21 @@ const BudgetCategoryDetail = () => {
         {/* Regional comparison */}
         {avgVal > 0 && (
           <div className="rounded-xl bg-card border border-border p-4">
-            <p className="text-xs font-semibold text-foreground mb-3">📍 {regions[settings?.region || profileRegionKey || "seoul"]?.label} 지역 평균 비교</p>
+            <p className="text-xs font-semibold text-foreground mb-3">📍 {regions[effectiveRegionKey]?.label} 지역 평균 비교</p>
             <div className="flex justify-between text-sm mb-2">
               <span className="text-muted-foreground">내 지출</span>
-              <span className="font-bold">{spent}만원</span>
+              <span className="font-bold tabular-nums">{fmt(spent)}만원</span>
             </div>
-            <div className="flex justify-between text-sm mb-3">
+            <div className="flex justify-between text-sm mb-1">
               <span className="text-muted-foreground">지역 평균</span>
-              <span className="font-bold">{avgVal}만원</span>
+              <span className="font-bold tabular-nums">{fmt(avgVal)}만원</span>
             </div>
-            <p className={cn("text-xs font-medium text-center py-2 rounded-lg",
+            {cat === "venue" && avgWithMeal && (
+              <p className="text-[10px] text-muted-foreground text-right mb-3">
+                대관료 {fmt(avgWithMeal.baseVenue)} + 식대 {fmt(avgWithMeal.mealCost)}만원 ({guestCount}명)
+              </p>
+            )}
+            <p className={cn("text-xs font-medium text-center py-2 rounded-lg mt-3",
               diff <= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500")}>
               {diff <= 0
                 ? `평균 대비 ${diffPct}% 절약 중이에요 👍`

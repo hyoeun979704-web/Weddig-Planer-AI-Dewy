@@ -13,8 +13,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { regions, regionalAverages, categories, type BudgetCategory } from "@/data/budgetData";
-import { Minus, Plus, MapPin } from "lucide-react";
+import { regions, getRegionalAvgWithMeal, categories, type BudgetCategory } from "@/data/budgetData";
+import { Minus, Plus, MapPin, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const fmt = (n: number) => n.toLocaleString();
@@ -59,7 +59,7 @@ export default function BudgetSetupSheet({
   }, [open, initialRegion, initialGuestCount, initialTotalBudget, initialCategoryBudgets]);
 
   const applyRegionalAvg = () => {
-    const avg = regionalAverages[region];
+    const avg = getRegionalAvgWithMeal(region, guestCount);
     if (!avg) return;
     setTotalBudget(avg.total);
     setCatBudgets({
@@ -69,7 +69,7 @@ export default function BudgetSetupSheet({
   };
 
   const catSum = Object.values(catBudgets).reduce((a, b) => a + b, 0);
-  const avg = regionalAverages[region];
+  const avg = getRegionalAvgWithMeal(region, guestCount);
   const hasMismatch = totalBudget > 0 && catSum !== totalBudget;
 
   const commitSave = () => {
@@ -157,9 +157,14 @@ export default function BudgetSetupSheet({
             <span className="text-sm text-muted-foreground whitespace-nowrap">만원</span>
           </div>
           {avg && (
-            <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-              <MapPin className="w-3 h-3" /> {regions[region]?.label} {guestCount}명 기준 평균 {fmt(avg.total)}만원
-            </p>
+            <div className="mt-1.5 space-y-0.5">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> {regions[region]?.label} {guestCount}명 기준 평균 <span className="font-semibold text-foreground tabular-nums">{fmt(avg.total)}만원</span>
+              </p>
+              <p className="text-[10px] text-muted-foreground pl-4">
+                · 카테고리 {fmt(avg.total - avg.mealCost)}만원 + 식대 {fmt(avg.mealCost)}만원 ({guestCount}명 × {avg.per_guest_meal}만원)
+              </p>
+            </div>
           )}
         </div>
 
@@ -173,14 +178,30 @@ export default function BudgetSetupSheet({
           </div>
           <div className="space-y-2">
             {categoryKeys.map(key => (
-              <div key={key} className="flex items-center gap-2">
-                <span className="text-sm w-20 shrink-0">{categories[key].emoji} {categories[key].label}</span>
-                <Input type="number" inputMode="numeric" value={catBudgets[key] || ""}
-                  onChange={e => setCatBudgets(prev => ({ ...prev, [key]: Number(e.target.value) }))}
-                  className="text-right text-sm h-9 no-spinner" />
-                <span className="text-xs text-muted-foreground w-8">만원</span>
+              <div key={key}>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm w-20 shrink-0">{categories[key].emoji} {categories[key].label}</span>
+                  <Input type="number" inputMode="numeric" value={catBudgets[key] || ""}
+                    onChange={e => setCatBudgets(prev => ({ ...prev, [key]: Number(e.target.value) }))}
+                    className="text-right text-sm h-9 no-spinner" />
+                  <span className="text-xs text-muted-foreground w-8">만원</span>
+                </div>
+                {key === "venue" && avg && (
+                  <p className="text-[10px] text-muted-foreground pl-[88px] mt-0.5">
+                    대관료 {fmt(avg.baseVenue)} + 식대 {fmt(avg.mealCost)}만원 포함 권장
+                  </p>
+                )}
               </div>
             ))}
+          </div>
+          <div className="mt-3 rounded-lg bg-yellow-50 border border-yellow-200 p-2.5 flex gap-2">
+            <Info className="w-3.5 h-3.5 text-yellow-700 shrink-0 mt-0.5" />
+            <div className="text-[11px] text-yellow-900 leading-relaxed">
+              <p className="font-semibold mb-0.5">잊기 쉬운 숨은 비용</p>
+              <p>· <b>스드메</b>에는 헬퍼비(20~30만원), 부케, 본식스냅, 원본 추가비가 별도예요</p>
+              <p>· <b>웨딩홀</b>에 식대/주차/세팅/포토존이 다 포함됐는지 계약 전 확인하세요</p>
+              <p>· <b>기타</b>에 청첩장·답례품·축가비 등을 미리 잡아두는 게 좋아요</p>
+            </div>
           </div>
         </div>
         </div>
