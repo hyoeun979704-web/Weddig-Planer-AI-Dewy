@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useQuery } from "@tanstack/react-query";
-import { MessageSquare, Flame, Image as ImageIcon } from "lucide-react";
+import { MessageSquare, Flame, Image as ImageIcon, Search } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
@@ -36,7 +36,7 @@ interface Post {
   wedding_style: PostWeddingStyle | null;
 }
 
-const categories = ["전체", "웨딩홀", "스드메", "셀프웨딩", "스몰웨딩", "허니문", "혼수", "자유"];
+const categories = ["전체", "웨딩홀", "스드메", "허니문", "혼수", "자유"];
 
 type StyleFilter = "all" | PostWeddingStyle;
 
@@ -289,6 +289,20 @@ const Community = () => {
       </header>
 
       <main className="pb-24">
+        <div className="px-4 pt-3 pb-1 bg-card">
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            className="w-full flex items-center gap-2 px-4 h-10 rounded-full bg-muted/60 text-left hover:bg-muted transition-colors"
+            aria-label="게시글 검색"
+          >
+            <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-[13px] text-muted-foreground">
+              게시글 제목·내용 검색
+            </span>
+          </button>
+        </div>
+
         <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-3 pb-2 bg-card">
           {STYLE_FILTERS.map((filter) => {
             const isActive = styleFilter === filter.key;

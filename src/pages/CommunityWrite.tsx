@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
-const categories = ["웨딩홀", "스드메", "셀프웨딩", "스몰웨딩", "혼수", "허니문", "자유"];
+const categories = ["웨딩홀", "스드메", "혼수", "허니문", "자유"];
 
 type PostWeddingStyle = "general" | "small" | "self";
 
@@ -42,13 +42,8 @@ const CommunityWrite = () => {
     setStyleAutoApplied(true);
   }, [weddingSettings.wedding_style, styleAutoApplied]);
 
-  // 카테고리에서 셀프웨딩/스몰웨딩을 고르면 결혼 유형도 함께 추론.
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
-    if (!styleAutoApplied) {
-      if (category === "셀프웨딩") setWeddingStyle("self");
-      else if (category === "스몰웨딩") setWeddingStyle("small");
-    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
