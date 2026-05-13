@@ -7,9 +7,12 @@ const corsHeaders = {
 };
 
 const EARLY_BIRD_END = new Date("2026-08-01T00:00:00+09:00").getTime();
-const HEART_REWARDS: Record<string, { amount: number; reason: string }> = {
-  monthly: { amount: 10, reason: "early_bird_monthly" },
-  yearly: { amount: 180, reason: "early_bird_yearly" },
+
+// Server-side source of truth. 클라이언트가 보낸 amount/type은 검증 용도로만 사용.
+const PLAN_INFO: Record<string, { amount: number; heartReward?: number; heartReason?: string }> = {
+  trial:   { amount: 100 },
+  monthly: { amount: 4900, heartReward: 10,  heartReason: "early_bird_monthly" },
+  yearly:  { amount: 39000, heartReward: 180, heartReason: "early_bird_yearly" },
 };
 
 Deno.serve(async (req) => {
@@ -26,14 +29,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
+    // anon client: 사용자 인증·소유권 검증용
+    const userClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
 
+    // admin client: payments/subscriptions write + RPC 호출용
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -42,9 +52,9 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const { tid, partnerOrderId, partnerUserId, pgToken, type, amount } = await req.json();
+    const { tid, partnerOrderId, partnerUserId, pgToken, type } = await req.json();
 
-    if (!tid || !partnerOrderId || !partnerUserId || !pgToken) {
+    if (!tid || !partnerOrderId || !partnerUserId || !pgToken || !type) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -56,6 +66,31 @@ Deno.serve(async (req) => {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const plan = PLAN_INFO[type as string];
+    if (!plan) {
+      return new Response(JSON.stringify({ error: "Invalid plan type" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 멱등성: 이미 같은 tid 로 처리된 결제면 단락
+    const { data: existing } = await adminClient
+      .from("payments")
+      .select("id, status")
+      .eq("payment_key", tid)
+      .maybeSingle();
+    if (existing) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          alreadyProcessed: true,
+          message: "이미 처리된 결제입니다.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const adminKey = Deno.env.get("KAKAO_ADMIN_KEY");
@@ -94,15 +129,43 @@ Deno.serve(async (req) => {
           error: approveData.msg || approveData.error_description || "Approval failed",
           code: approveData.code,
           kakao_status: approveRes.status,
-          kakao_raw: approveData,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const paidAmount = approveData?.amount?.total ?? amount ?? 0;
+    const paidAmount: number = approveData?.amount?.total ?? 0;
 
-    await supabase.from("payments").insert({
+    // 가격 변조 검증: 서버 PLAN_INFO 와 카카오 응답이 일치해야 한다.
+    if (paidAmount !== plan.amount) {
+      console.error("Amount mismatch:", { type, expected: plan.amount, got: paidAmount });
+      // 잘못된 금액은 즉시 환불 시도
+      try {
+        const cancelParams = new URLSearchParams({
+          cid,
+          tid,
+          cancel_amount: String(paidAmount),
+          cancel_tax_free_amount: "0",
+        });
+        await fetch("https://kapi.kakao.com/v1/payment/cancel", {
+          method: "POST",
+          headers: {
+            Authorization: `KakaoAK ${adminKey}`,
+            "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+          },
+          body: cancelParams.toString(),
+        });
+      } catch (e) {
+        console.error("Mismatch refund failed:", e);
+      }
+      return new Response(
+        JSON.stringify({ success: false, error: "결제 금액이 일치하지 않습니다." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // payments insert — UNIQUE(payment_key) 로 중복 결제 자동 차단
+    const { error: insertError } = await adminClient.from("payments").insert({
       user_id: userId,
       payment_key: tid,
       order_number: partnerOrderId,
@@ -112,28 +175,27 @@ Deno.serve(async (req) => {
       approved_at: approveData.approved_at || new Date().toISOString(),
       raw_response: approveData,
     });
+    if (insertError && !insertError.message?.includes("duplicate")) {
+      console.error("payments insert failed:", insertError);
+    }
 
-    await supabase
+    await adminClient
       .from("subscriptions")
-      .update({
-        payment_id: tid,
-        payment_method: "kakaopay",
-      })
+      .update({ payment_id: tid, payment_method: "kakaopay" })
       .eq("user_id", userId);
 
     let heartsGranted = 0;
-    const reward = HEART_REWARDS[type as string];
-    if (reward && Date.now() < EARLY_BIRD_END) {
-      const { error: heartError } = await supabase.rpc("earn_hearts", {
+    if (plan.heartReward && plan.heartReason && Date.now() < EARLY_BIRD_END) {
+      const { error: heartError } = await adminClient.rpc("earn_hearts", {
         p_user_id: userId,
-        p_amount: reward.amount,
-        p_reason: reward.reason,
+        p_amount: plan.heartReward,
+        p_reason: plan.heartReason,
         p_ref_id: null,
       });
       if (heartError) {
         console.error("Heart grant failed:", heartError);
       } else {
-        heartsGranted = reward.amount;
+        heartsGranted = plan.heartReward;
       }
     }
 
@@ -157,17 +219,24 @@ Deno.serve(async (req) => {
 
         if (cancelRes.ok) {
           refunded = true;
-          await supabase
+          await adminClient
             .from("payments")
             .update({ status: "refunded" })
-            .eq("payment_key", tid)
-            .eq("user_id", userId);
+            .eq("payment_key", tid);
         } else {
           const cancelData = await cancelRes.json();
           console.error("Kakao cancel failed:", cancelData);
+          await adminClient
+            .from("payments")
+            .update({ status: "refund_pending" })
+            .eq("payment_key", tid);
         }
       } catch (refundError) {
         console.error("Refund error:", refundError);
+        await adminClient
+          .from("payments")
+          .update({ status: "refund_pending" })
+          .eq("payment_key", tid);
       }
     }
 
