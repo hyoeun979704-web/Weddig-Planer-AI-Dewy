@@ -21,13 +21,13 @@ import { format, differenceInDays } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import type { BudgetItem } from "@/hooks/useBudget";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { visibleBudgetCategories } from "@/lib/weddingStyle";
 
 const regionLabelToKey = (label: string | null): string | undefined => {
   if (!label) return undefined;
   return Object.entries(regions).find(([_, r]) => r.label === label)?.[0];
 };
-
-const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 
 /** SVG donut chart for budget usage */
 const DonutChart = ({ pct, size = 80, strokeWidth = 8 }: { pct: number; size?: number; strokeWidth?: number }) => {
@@ -55,6 +55,9 @@ const Budget = () => {
   const { defaultRegion } = useDefaultRegion();
   const profileRegionKey = regionLabelToKey(defaultRegion);
   const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem } = useBudget(profileRegionKey);
+  const { weddingSettings } = useWeddingSchedule();
+  const excludedScheduleCategories = weddingSettings.excluded_categories;
+  const categoryKeys = visibleBudgetCategories(excludedScheduleCategories) as BudgetCategory[];
 
   const [setupOpen, setSetupOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -242,7 +245,18 @@ const Budget = () => {
 
         {/* Category progress */}
         <div data-tutorial="budget-categories" className="rounded-2xl bg-card border border-border p-4">
-          <p className="text-xs font-semibold text-foreground mb-3">카테고리별 현황</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-foreground">카테고리별 현황</p>
+            {categoryKeys.length < 6 && (
+              <button
+                onClick={() => navigate("/my-schedule")}
+                className="text-[11px] text-muted-foreground hover:text-primary transition-colors"
+                title="결혼 스타일 설정에 따라 일부 카테고리가 숨겨졌어요"
+              >
+                스타일 설정 · {6 - categoryKeys.length}개 숨김
+              </button>
+            )}
+          </div>
           <div className="space-y-3">
             {categoryKeys.map(key => {
               const spent = summary.categoryTotals[key] || 0;
@@ -369,6 +383,7 @@ const Budget = () => {
         initialGuestCount={settings?.guest_count}
         initialTotalBudget={settings?.total_budget}
         initialCategoryBudgets={settings?.category_budgets}
+        visibleCategoryKeys={categoryKeys}
         onSave={data => {
           saveSettings.mutate(data, {
             onSuccess: () => toast({ title: "예산 설정이 저장되었습니다" }),
@@ -379,6 +394,7 @@ const Budget = () => {
       <BudgetAddSheet
         open={addOpen} onOpenChange={setAddOpen}
         editItem={editItem}
+        visibleCategoryKeys={categoryKeys}
         onSave={data => {
           if (editItem) {
             updateItem.mutate({ id: editItem.id, ...data } as any, {
@@ -392,7 +408,11 @@ const Budget = () => {
         }}
       />
 
-      <BudgetReportSheet open={reportOpen} onClose={() => setReportOpen(false)} />
+      <BudgetReportSheet
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        visibleCategoryKeys={categoryKeys}
+      />
       <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} trigger="pdf_feature" />
 
       <WeddingInfoSetupModal
