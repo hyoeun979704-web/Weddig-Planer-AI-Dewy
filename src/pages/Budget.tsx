@@ -220,25 +220,32 @@ const Budget = () => {
         {/* Paid-by bar */}
         {paidTotal > 0 && (
           <div className="rounded-2xl bg-card border border-border p-4">
-            <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-semibold text-foreground">양가 분담 현황</p>
-              <button onClick={() => navigate("/budget/split-simulator")} className="text-[10px] text-primary font-bold">시뮬레이션 →</button>
+              <button onClick={() => navigate("/budget/split-simulator")} className="text-[11px] text-primary font-bold">시뮬레이션 →</button>
             </div>
-            <div className="h-3 rounded-full overflow-hidden flex bg-muted">
+            {/* Per-side cards — easier to show to family at a glance */}
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="rounded-xl bg-muted/50 p-2.5 text-center">
+                <p className="text-[10px] text-muted-foreground">🤝 공동</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">{paidShared.toLocaleString()}<span className="text-[10px] font-normal">만원</span></p>
+                <p className="text-[10px] text-muted-foreground">{Math.round((paidShared / paidTotal) * 100)}%</p>
+              </div>
+              <div className="rounded-xl bg-blue-50 p-2.5 text-center">
+                <p className="text-[10px] text-blue-700">🤵 신랑측</p>
+                <p className="text-sm font-bold text-blue-900 mt-0.5">{paidGroom.toLocaleString()}<span className="text-[10px] font-normal">만원</span></p>
+                <p className="text-[10px] text-blue-700">{Math.round((paidGroom / paidTotal) * 100)}%</p>
+              </div>
+              <div className="rounded-xl bg-primary/10 p-2.5 text-center">
+                <p className="text-[10px] text-primary">👰 신부측</p>
+                <p className="text-sm font-bold text-primary mt-0.5">{paidBride.toLocaleString()}<span className="text-[10px] font-normal">만원</span></p>
+                <p className="text-[10px] text-primary">{Math.round((paidBride / paidTotal) * 100)}%</p>
+              </div>
+            </div>
+            <div className="h-2.5 rounded-full overflow-hidden flex bg-muted">
               {paidShared > 0 && <div className="bg-muted-foreground/40 h-full transition-all" style={{ width: `${(paidShared / paidTotal) * 100}%` }} />}
               {paidGroom > 0 && <div className="h-full transition-all bg-blue-400" style={{ width: `${(paidGroom / paidTotal) * 100}%` }} />}
               {paidBride > 0 && <div className="h-full transition-all bg-primary" style={{ width: `${(paidBride / paidTotal) * 100}%` }} />}
-            </div>
-            <div className="flex justify-between mt-2 text-[10px]">
-              <span className="text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-muted-foreground/40" /> 공동 {paidShared}만원
-              </span>
-              <span className="text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-blue-400" /> 신랑측 {paidGroom}만원
-              </span>
-              <span className="text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-primary" /> 신부측 {paidBride}만원
-              </span>
             </div>
           </div>
         )}
@@ -250,10 +257,11 @@ const Budget = () => {
             {categoryKeys.length < 6 && (
               <button
                 onClick={() => navigate("/my-schedule")}
-                className="text-[11px] text-muted-foreground hover:text-primary transition-colors"
+                className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-primary/10 text-primary font-semibold"
                 title="결혼 스타일 설정에 따라 일부 카테고리가 숨겨졌어요"
               >
-                스타일 설정 · {6 - categoryKeys.length}개 숨김
+                <Settings className="w-3 h-3" />
+                {6 - categoryKeys.length}개 숨김
               </button>
             )}
           </div>
