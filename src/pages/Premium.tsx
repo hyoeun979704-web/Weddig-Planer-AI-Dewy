@@ -146,12 +146,16 @@ const Premium = () => {
               {/* Monthly */}
               <button
                 onClick={() => setSelectedPlan("monthly")}
-                className={`p-4 rounded-2xl border-2 text-left transition-colors ${
+                className={`p-4 rounded-2xl border-2 text-left transition-colors relative ${
                   selectedPlan === "monthly" ? "border-primary bg-primary/5" : "border-border bg-card"
                 }`}
               >
+                <div className="absolute -top-2.5 left-3 px-2 py-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+                  50% 할인
+                </div>
                 <p className="font-bold text-foreground text-sm">월간</p>
-                <p className="text-lg font-bold text-foreground mt-1">4,900원</p>
+                <p className="text-[11px] text-muted-foreground line-through mt-1">9,900원</p>
+                <p className="text-lg font-bold text-foreground">4,900원</p>
                 <p className="text-xs text-muted-foreground">/월</p>
               </button>
               {/* Yearly */}
@@ -164,10 +168,13 @@ const Premium = () => {
                 <div className="absolute -top-2.5 right-3 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full">
                   추천
                 </div>
+                <div className="absolute -top-2.5 left-3 px-2 py-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+                  67% 할인
+                </div>
                 <p className="font-bold text-foreground text-sm">연간</p>
-                <p className="text-lg font-bold text-foreground mt-1">39,000원</p>
+                <p className="text-[11px] text-muted-foreground line-through mt-1">118,800원</p>
+                <p className="text-lg font-bold text-foreground">39,000원</p>
                 <p className="text-xs text-muted-foreground">/년 · 월 3,250원</p>
-                <span className="inline-block mt-1 text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">34% 할인</span>
               </button>
             </div>
             <button onClick={handleSubscribe} className="w-full mt-3 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
