@@ -1,0 +1,157 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
+
+    const { tid, partnerOrderId, partnerUserId, pgToken, type, amount } = await req.json();
+
+    if (!tid || !partnerOrderId || !partnerUserId || !pgToken) {
+      return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (partnerUserId !== userId) {
+      return new Response(JSON.stringify({ error: "User mismatch" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const adminKey = Deno.env.get("KAKAO_ADMIN_KEY");
+    const cid = Deno.env.get("KAKAO_CID") || "TC0ONETIME";
+    if (!adminKey) {
+      return new Response(JSON.stringify({ error: "KAKAO_ADMIN_KEY is not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const approveParams = new URLSearchParams({
+      cid,
+      tid,
+      partner_order_id: partnerOrderId,
+      partner_user_id: partnerUserId,
+      pg_token: pgToken,
+    });
+
+    const approveRes = await fetch("https://kapi.kakao.com/v1/payment/approve", {
+      method: "POST",
+      headers: {
+        Authorization: `KakaoAK ${adminKey}`,
+        "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+      },
+      body: approveParams.toString(),
+    });
+
+    const approveData = await approveRes.json();
+
+    if (!approveRes.ok) {
+      console.error("Kakao approve failed:", approveData);
+      return new Response(
+        JSON.stringify({ error: approveData.msg || "Approval failed", code: approveData.code }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const paidAmount = approveData?.amount?.total ?? amount ?? 0;
+
+    await supabase.from("payments").insert({
+      user_id: userId,
+      payment_key: tid,
+      order_number: partnerOrderId,
+      amount: paidAmount,
+      status: "approved",
+      method: "kakaopay",
+      approved_at: approveData.approved_at || new Date().toISOString(),
+      raw_response: approveData,
+    });
+
+    await supabase
+      .from("subscriptions")
+      .update({
+        payment_id: tid,
+        payment_method: "kakaopay",
+      })
+      .eq("user_id", userId);
+
+    let refunded = false;
+    if (type === "trial" && paidAmount === 100) {
+      try {
+        const cancelParams = new URLSearchParams({
+          cid,
+          tid,
+          cancel_amount: String(paidAmount),
+          cancel_tax_free_amount: "0",
+        });
+        const cancelRes = await fetch("https://kapi.kakao.com/v1/payment/cancel", {
+          method: "POST",
+          headers: {
+            Authorization: `KakaoAK ${adminKey}`,
+            "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+          },
+          body: cancelParams.toString(),
+        });
+
+        if (cancelRes.ok) {
+          refunded = true;
+          await supabase
+            .from("payments")
+            .update({ status: "refunded" })
+            .eq("payment_key", tid)
+            .eq("user_id", userId);
+        } else {
+          const cancelData = await cancelRes.json();
+          console.error("Kakao cancel failed:", cancelData);
+        }
+      } catch (refundError) {
+        console.error("Refund error:", refundError);
+      }
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, payment: approveData, refunded }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("kakao-pay-approve error:", error);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
