@@ -48,6 +48,18 @@ export default function BudgetSetupSheet({
     }
   }, [open]);
 
+  // Regional averages are anchored to 200 guests. For smaller weddings the
+  // venue cost (which is dominated by meal) shrinks proportionally — small/
+  // self-wedding users hitting "지역 평균으로 채우기" should not get a 200-guest
+  // venue figure dropped onto their 50-guest plan.
+  const REFERENCE_GUEST_COUNT = 200;
+  const scaledVenue = (avg: typeof regionalAverages[string]) => {
+    const referenceMeal = avg.per_guest_meal * REFERENCE_GUEST_COUNT;
+    const fixedVenuePart = Math.max(avg.venue - referenceMeal, 0);
+    const userMeal = avg.per_guest_meal * guestCount;
+    return Math.round(fixedVenuePart + userMeal);
+  };
+
   const applyRegionalAvg = () => {
     const avg = regionalAverages[region];
     if (!avg) return;
@@ -58,7 +70,7 @@ export default function BudgetSetupSheet({
     };
     let sum = 0;
     for (const key of categoryKeys) {
-      const v = avg[key as keyof typeof avg] as number;
+      const v = key === "venue" ? scaledVenue(avg) : (avg[key as keyof typeof avg] as number);
       next[key] = v;
       sum += v;
     }
@@ -102,7 +114,7 @@ export default function BudgetSetupSheet({
           <Label className="text-sm font-semibold mb-2 block">👥 예상 하객 수</Label>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="icon" className="h-9 w-9"
-              onClick={() => setGuestCount(Math.max(50, guestCount - 10))}>
+              onClick={() => setGuestCount(Math.max(20, guestCount - 10))}>
               <Minus className="w-4 h-4" />
             </Button>
             <span className="text-lg font-bold min-w-[60px] text-center">{guestCount}명</span>
@@ -111,6 +123,12 @@ export default function BudgetSetupSheet({
               <Plus className="w-4 h-4" />
             </Button>
           </div>
+          {avg && (
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              예상 식대 약 <span className="font-semibold text-foreground">{Math.round(avg.per_guest_meal * guestCount).toLocaleString()}만원</span>
+              <span className="text-muted-foreground/70"> · 1인 {avg.per_guest_meal}만원 기준</span>
+            </p>
+          )}
         </div>
 
         {/* Total budget */}
