@@ -14,6 +14,8 @@ interface BudgetSetupSheetProps {
   initialGuestCount?: number;
   initialTotalBudget?: number;
   initialCategoryBudgets?: Record<BudgetCategory, number>;
+  /** Budget categories the user hasn't excluded via wedding style. Falls back to all 6. */
+  visibleCategoryKeys?: BudgetCategory[];
   onSave: (data: {
     region: string;
     guest_count: number;
@@ -23,12 +25,13 @@ interface BudgetSetupSheetProps {
 }
 
 const quickBudgets = [2000, 2500, 3000, 3500, 4000];
-const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
+const DEFAULT_CATEGORY_KEYS: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 
 export default function BudgetSetupSheet({
   open, onOpenChange, initialRegion = "seoul", initialGuestCount = 200,
-  initialTotalBudget = 0, initialCategoryBudgets, onSave,
+  initialTotalBudget = 0, initialCategoryBudgets, visibleCategoryKeys, onSave,
 }: BudgetSetupSheetProps) {
+  const categoryKeys = visibleCategoryKeys ?? DEFAULT_CATEGORY_KEYS;
   const [region, setRegion] = useState(initialRegion);
   const [guestCount, setGuestCount] = useState(initialGuestCount);
   const [totalBudget, setTotalBudget] = useState(initialTotalBudget);
@@ -48,11 +51,19 @@ export default function BudgetSetupSheet({
   const applyRegionalAvg = () => {
     const avg = regionalAverages[region];
     if (!avg) return;
-    setTotalBudget(avg.total);
-    setCatBudgets({
-      venue: avg.venue, sdm: avg.sdm, ring: avg.ring,
-      house: avg.house, honeymoon: avg.honeymoon, etc: avg.etc,
-    });
+    // Only seed visible categories; hidden ones stay at 0 so the budget total
+    // reflects what the user will actually spend.
+    const next: Record<BudgetCategory, number> = {
+      venue: 0, sdm: 0, ring: 0, house: 0, honeymoon: 0, etc: 0,
+    };
+    let sum = 0;
+    for (const key of categoryKeys) {
+      const v = avg[key as keyof typeof avg] as number;
+      next[key] = v;
+      sum += v;
+    }
+    setCatBudgets(next);
+    setTotalBudget(sum);
   };
 
   const catSum = Object.values(catBudgets).reduce((a, b) => a + b, 0);

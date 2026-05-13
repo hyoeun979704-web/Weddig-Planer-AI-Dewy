@@ -18,11 +18,14 @@ interface BudgetAddSheetProps {
   onOpenChange: (open: boolean) => void;
   editItem?: BudgetItem | null;
   onSave: (item: Omit<BudgetItem, "id" | "user_id" | "created_at">) => void;
+  /** Budget categories the user hasn't excluded via wedding style. Falls back to all 6. */
+  visibleCategoryKeys?: BudgetCategory[];
 }
 
-const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
+const DEFAULT_CATEGORY_KEYS: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 
-export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }: BudgetAddSheetProps) {
+export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave, visibleCategoryKeys }: BudgetAddSheetProps) {
+  const categoryKeys = visibleCategoryKeys ?? DEFAULT_CATEGORY_KEYS;
   const [amount, setAmount] = useState(0);
   const [category, setCategory] = useState<BudgetCategory>("venue");
   const [title, setTitle] = useState("");
@@ -49,10 +52,11 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }:
       setBalanceAmount(editItem.balance_amount || 0);
       setBalanceDueDate(editItem.balance_due_date ? new Date(editItem.balance_due_date) : undefined);
     } else if (open) {
-      setAmount(0); setCategory("venue"); setTitle(""); setItemDate(new Date());
+      setAmount(0); setCategory(categoryKeys[0] ?? "venue"); setTitle(""); setItemDate(new Date());
       setPaidBy("shared"); setPaymentStage("full"); setPaymentMethod("cash");
       setMemo(""); setHasBalance(false); setBalanceAmount(0); setBalanceDueDate(undefined);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editItem]);
 
   const subItems = categories[category]?.sub_items || [];

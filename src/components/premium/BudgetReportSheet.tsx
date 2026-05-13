@@ -10,11 +10,14 @@ import { toast } from "sonner";
 interface BudgetReportSheetProps {
   open: boolean;
   onClose: () => void;
+  /** Budget categories the user hasn't excluded via wedding style. Falls back to all 6. */
+  visibleCategoryKeys?: BudgetCategory[];
 }
 
-const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
+const DEFAULT_CATEGORY_KEYS: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 
-const BudgetReportSheet = ({ open, onClose }: BudgetReportSheetProps) => {
+const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportSheetProps) => {
+  const categoryKeys = visibleCategoryKeys ?? DEFAULT_CATEGORY_KEYS;
   const { settings, items, summary } = useBudget();
   const { weddingSettings } = useWeddingSchedule();
   const [generating, setGenerating] = useState(false);
