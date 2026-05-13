@@ -4,7 +4,10 @@ const SubscriptionPaymentFail = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const errorCode = searchParams.get("code") || "";
-  const errorMessage = searchParams.get("message") || "결제에 실패했습니다";
+  const reason = searchParams.get("reason");
+  const errorMessage =
+    searchParams.get("message") ||
+    (reason === "cancel" ? "결제가 취소되었습니다" : "결제에 실패했습니다");
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4 text-center">

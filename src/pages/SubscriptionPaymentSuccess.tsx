@@ -6,6 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
+const KAKAO_PAY_SESSION_KEY = "kakao_pay_session";
+
 const SubscriptionPaymentSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -16,28 +18,47 @@ const SubscriptionPaymentSuccess = () => {
 
   useEffect(() => {
     const confirmAndActivate = async () => {
-      const paymentKey = searchParams.get("paymentKey");
-      const orderId = searchParams.get("orderId");
-      const amount = searchParams.get("amount");
+      const pgToken = searchParams.get("pg_token");
       const type = searchParams.get("type") || "trial";
+      const orderId = searchParams.get("order");
 
-      if (!paymentKey || !orderId || !amount || !user) {
+      const sessionRaw = sessionStorage.getItem(KAKAO_PAY_SESSION_KEY);
+      if (!pgToken || !sessionRaw || !user) {
         setStatus("error");
         setErrorMessage("결제 정보가 올바르지 않습니다");
         return;
       }
 
+      const session = JSON.parse(sessionRaw) as {
+        tid: string;
+        partnerOrderId: string;
+        partnerUserId: string;
+        type: string;
+        amount: number;
+      };
+
+      if (orderId && session.partnerOrderId !== orderId) {
+        setStatus("error");
+        setErrorMessage("주문 정보가 일치하지 않습니다");
+        return;
+      }
+
       try {
-        // 1. Confirm payment with edge function
-        const { data, error } = await supabase.functions.invoke("confirm-subscription-payment", {
-          body: { paymentKey, orderId, amount: Number(amount), type },
+        const { data, error } = await supabase.functions.invoke("kakao-pay-approve", {
+          body: {
+            tid: session.tid,
+            partnerOrderId: session.partnerOrderId,
+            partnerUserId: session.partnerUserId,
+            pgToken,
+            type,
+            amount: session.amount,
+          },
         });
 
         if (error || !data?.success) {
           throw new Error(data?.error || error?.message || "결제 승인 실패");
         }
 
-        // 2. Activate subscription
         if (type === "trial") {
           const ok = await startTrial();
           if (!ok) throw new Error("체험 활성화 실패");
@@ -47,6 +68,7 @@ const SubscriptionPaymentSuccess = () => {
           if (!ok) throw new Error("구독 활성화 실패");
         }
 
+        sessionStorage.removeItem(KAKAO_PAY_SESSION_KEY);
         await refetch();
         setStatus("success");
         toast.success(type === "trial" ? "🎉 무료 체험이 시작되었습니다!" : "구독이 완료되었습니다!");
