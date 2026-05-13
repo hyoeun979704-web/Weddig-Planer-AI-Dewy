@@ -21,21 +21,25 @@ interface SearchResult extends Post {
   comments_count: number;
 }
 
+// 페르소나가 골고루 보일 수 있도록 일반·스몰·셀프를 섞어 배치.
 const POPULAR_KEYWORDS = [
   "웨딩홀 추천",
+  "스몰웨딩 장소",
+  "셀프 촬영 스팟",
   "스드메 가격",
-  "신혼여행 준비",
-  "혼수 리스트",
-  "예복 맞춤",
+  "하우스웨딩 후기",
 ];
 
 const RECOMMENDED_SEARCHES = [
-  "결혼 준비",
-  "웨딩 패키지",
-  "청첩장",
+  "셀프웨딩",
+  "스몰웨딩",
   "본식 드레스",
-  "스튜디오 후기",
+  "청첩장 DIY",
+  "레스토랑 웨딩",
+  "야외 셀프촬영",
+  "혼수 리스트",
   "허니문 추천",
+  "예복 맞춤",
 ];
 
 const STORAGE_KEY = "community-recent-searches";

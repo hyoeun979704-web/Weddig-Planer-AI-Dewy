@@ -1,20 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useQuery } from "@tanstack/react-query";
+import { MessageSquare, Flame, Image as ImageIcon } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import type { WeddingStyle } from "@/lib/weddingStyle";
 import arrowLeftIcon from "@/assets/icons/arrow-left.svg";
 import noteIcon from "@/assets/community/note.svg";
 import searchBoxIcon from "@/assets/community/search-box.svg";
 import editIcon from "@/assets/community/edit.svg";
 import heartFilledIcon from "@/assets/community/heart-filled.svg";
+
+type PostWeddingStyle = "general" | "small" | "self";
 
 interface Post {
   id: string;
@@ -26,19 +33,81 @@ interface Post {
   created_at: string;
   likes_count: number;
   comments_count: number;
+  wedding_style: PostWeddingStyle | null;
 }
 
-const categories = ["전체", "웨딩홀", "스드메", "허니문", "혼수", "자유"];
-type SortKey = "latest" | "popular";
+const categories = ["전체", "웨딩홀", "스드메", "셀프웨딩", "스몰웨딩", "허니문", "혼수", "자유"];
+
+type StyleFilter = "all" | PostWeddingStyle;
+
+const STYLE_FILTERS: { key: StyleFilter; label: string }[] = [
+  { key: "all", label: "전체" },
+  { key: "general", label: "일반 결혼식" },
+  { key: "small", label: "스몰웨딩" },
+  { key: "self", label: "셀프웨딩" },
+];
+
+const STYLE_BADGE: Record<PostWeddingStyle, { label: string; classes: string }> = {
+  general: { label: "일반", classes: "bg-blue-100 text-blue-700" },
+  small: { label: "스몰", classes: "bg-emerald-100 text-emerald-700" },
+  self: { label: "셀프", classes: "bg-amber-100 text-amber-700" },
+};
+
+const EMPTY_STATES: Record<StyleFilter, { title: string; cta: string }> = {
+  all: {
+    title: "아직 게시글이 없어요.",
+    cta: "첫 번째 글을 작성해 다른 부부와 이야기 나눠보세요.",
+  },
+  general: {
+    title: "일반 결혼식 글이 아직 없어요.",
+    cta: "웨딩홀·스드메 후기를 공유하고 첫 글을 남겨보세요.",
+  },
+  small: {
+    title: "스몰웨딩 글이 아직 없어요.",
+    cta: "하우스웨딩·레스토랑 후기 등 작은 결혼식 노하우를 나눠주세요.",
+  },
+  self: {
+    title: "셀프웨딩 글이 아직 없어요.",
+    cta: "셀프 촬영, 부케 DIY, 직접 만든 청첩장 이야기를 남겨보세요.",
+  },
+};
+
+type SortKey = "latest" | "popular" | "comments";
+
+// 인기글 트렌딩 점수: 참여(댓글)와 호응(좋아요), 최근성을 함께 고려.
+// 최근 7일 글에는 부스트, 그 외에는 시간에 따라 완만하게 감쇠.
+const trendingScore = (post: Post) => {
+  const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 36e5;
+  const recency = ageHours < 24 ? 8 : ageHours < 72 ? 4 : ageHours < 168 ? 2 : 0;
+  return post.likes_count * 2 + post.comments_count * 3 + recency;
+};
+
+const isHotPost = (post: Post) => {
+  const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 36e5;
+  return ageHours <= 72 && post.likes_count + post.comments_count >= 5;
+};
 
 const Community = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
+  const myStyle: WeddingStyle | null = weddingSettings.wedding_style;
   const [selectedCategory, setSelectedCategory] = useState("전체");
+  const [styleFilter, setStyleFilter] = useState<StyleFilter>("all");
+  const [styleAutoApplied, setStyleAutoApplied] = useState(false);
   const [sortBy, setSortBy] = useState<SortKey>("latest");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const tutorial = usePageTutorial("community");
+
+  // 사용자의 결혼 유형이 로드되면 첫 1회만 같은 유형을 기본 필터로 적용.
+  // 이후 사용자가 직접 바꾸면 자동 적용을 멈춰서 의도를 덮어쓰지 않도록 함.
+  useEffect(() => {
+    if (styleAutoApplied) return;
+    if (!myStyle || myStyle === "custom") return;
+    setStyleFilter(myStyle);
+    setStyleAutoApplied(true);
+  }, [myStyle, styleAutoApplied]);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["community-posts"],
@@ -75,17 +144,26 @@ const Community = () => {
     },
   });
 
-  const trendingPosts = [...posts]
-    .sort((a, b) => b.likes_count - a.likes_count)
+  // 카테고리·스타일 필터를 모두 적용한 목록.
+  // "오늘의 수다"는 스타일 필터를 따르되 카테고리는 무시 — 활성 페르소나 안에서
+  // 폭넓게 핫토픽을 보여주기 위함.
+  const styleFiltered =
+    styleFilter === "all"
+      ? posts
+      : posts.filter((post) => post.wedding_style === styleFilter);
+
+  const trendingPosts = [...styleFiltered]
+    .sort((a, b) => trendingScore(b) - trendingScore(a))
     .slice(0, 5);
 
   const filteredPosts =
     selectedCategory === "전체"
-      ? posts
-      : posts.filter((post) => post.category === selectedCategory);
+      ? styleFiltered
+      : styleFiltered.filter((post) => post.category === selectedCategory);
 
   const sortedPosts = [...filteredPosts].sort((a, b) => {
-    if (sortBy === "popular") return b.likes_count - a.likes_count;
+    if (sortBy === "popular") return trendingScore(b) - trendingScore(a);
+    if (sortBy === "comments") return b.comments_count - a.comments_count;
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
@@ -96,26 +174,57 @@ const Community = () => {
   const getPreview = (content: string) =>
     content.length > 40 ? content.slice(0, 40) + "..." : content;
 
+  const formatRelative = (dateString: string) =>
+    formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: ko })
+      .replace("약 ", "");
+
+  const renderStyleBadge = (style: PostWeddingStyle | null) => {
+    if (!style) return null;
+    const { label, classes } = STYLE_BADGE[style];
+    return (
+      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${classes}`}>
+        {label}
+      </span>
+    );
+  };
+
   const renderPostCard = (post: Post) => (
     <button
       key={post.id}
       onClick={() => handlePostClick(post.id)}
       className="w-full text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
     >
-      <span className="self-start px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
-        {post.category}
-      </span>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+          {post.category}
+        </span>
+        {renderStyleBadge(post.wedding_style)}
+        {isHotPost(post) && (
+          <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-semibold">
+            <Flame className="w-3 h-3" /> HOT
+          </span>
+        )}
+        {post.has_image && (
+          <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
+        )}
+      </div>
       <h3 className="mt-2 text-[16px] font-bold text-foreground line-clamp-1">
         {post.title}
       </h3>
       <p className="mt-0.5 text-[13px] text-muted-foreground line-clamp-1">
         {getPreview(post.content)}
       </p>
-      <div className="mt-6 flex items-center justify-between text-[12px] text-muted-foreground">
-        <span>조회수 {post.views}</span>
-        <span className="flex items-center gap-1.5">
-          <span>{post.likes_count}</span>
-          <img src={heartFilledIcon} alt="" className="w-[15px] h-[14px]" />
+      <div className="mt-5 flex items-center justify-between text-[12px] text-muted-foreground">
+        <span>{formatRelative(post.created_at)} · 조회 {post.views}</span>
+        <span className="flex items-center gap-3">
+          <span className="flex items-center gap-1">
+            <MessageSquare className="w-[13px] h-[13px]" />
+            <span>{post.comments_count}</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span>{post.likes_count}</span>
+            <img src={heartFilledIcon} alt="" className="w-[15px] h-[14px]" />
+          </span>
         </span>
       </div>
     </button>
@@ -180,9 +289,42 @@ const Community = () => {
       </header>
 
       <main className="pb-24">
+        <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-3 pb-2 bg-card">
+          {STYLE_FILTERS.map((filter) => {
+            const isActive = styleFilter === filter.key;
+            const isMine =
+              filter.key !== "all" && myStyle && myStyle === filter.key;
+            return (
+              <button
+                key={filter.key}
+                onClick={() => {
+                  setStyleFilter(filter.key);
+                  setStyleAutoApplied(true);
+                }}
+                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-colors flex items-center gap-1 ${
+                  isActive
+                    ? "bg-foreground text-background"
+                    : "bg-muted/60 text-muted-foreground"
+                }`}
+              >
+                {filter.label}
+                {isMine && (
+                  <span
+                    className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                      isActive ? "bg-background/20" : "bg-primary/15 text-primary"
+                    }`}
+                  >
+                    내 스타일
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         <div
           data-tutorial="community-categories"
-          className="flex overflow-x-auto scrollbar-hide gap-2 px-4 py-3 bg-card"
+          className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-1 pb-3 bg-card"
         >
           {categories.map((category) => {
             const isActive = selectedCategory === category;
@@ -203,9 +345,17 @@ const Community = () => {
         </div>
 
         <section className="bg-[hsl(var(--pink-100))] px-4 pt-5 pb-6">
-          <h2 className="text-[18px] font-bold text-foreground mb-4">
-            오늘의 수다
-          </h2>
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-[18px] font-bold text-foreground">
+              오늘의 수다
+            </h2>
+            <span className="text-[11px] text-muted-foreground">
+              {styleFilter === "all"
+                ? "전체"
+                : STYLE_FILTERS.find((f) => f.key === styleFilter)?.label}
+              {" "}· 핫토픽
+            </span>
+          </div>
           {isLoading ? (
             <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
               {[1, 2].map((i) => (
@@ -217,7 +367,7 @@ const Community = () => {
             </div>
           ) : trendingPosts.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
-              아직 게시글이 없습니다.
+              아직 인기 게시글이 없어요.
             </p>
           ) : (
             <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
@@ -227,20 +377,34 @@ const Community = () => {
                   onClick={() => handlePostClick(post.id)}
                   className="flex-shrink-0 w-[260px] text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
                 >
-                  <span className="self-start px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
-                    {post.category}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+                      {post.category}
+                    </span>
+                    {renderStyleBadge(post.wedding_style)}
+                    {isHotPost(post) && (
+                      <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-semibold">
+                        <Flame className="w-3 h-3" /> HOT
+                      </span>
+                    )}
+                  </div>
                   <h3 className="mt-2 text-[16px] font-bold text-foreground line-clamp-1">
                     {post.title}
                   </h3>
                   <p className="mt-0.5 text-[13px] text-muted-foreground line-clamp-1">
                     {getPreview(post.content)}
                   </p>
-                  <div className="mt-8 flex items-center justify-between text-[12px] text-muted-foreground">
-                    <span>조회수 {post.views}</span>
-                    <span className="flex items-center gap-1.5">
-                      <span>{post.likes_count}</span>
-                      <img src={heartFilledIcon} alt="" className="w-[15px] h-[14px]" />
+                  <div className="mt-6 flex items-center justify-between text-[12px] text-muted-foreground">
+                    <span>{formatRelative(post.created_at)}</span>
+                    <span className="flex items-center gap-3">
+                      <span className="flex items-center gap-1">
+                        <MessageSquare className="w-[13px] h-[13px]" />
+                        {post.comments_count}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span>{post.likes_count}</span>
+                        <img src={heartFilledIcon} alt="" className="w-[15px] h-[14px]" />
+                      </span>
                     </span>
                   </div>
                 </button>
@@ -249,10 +413,10 @@ const Community = () => {
           )}
         </section>
 
-        <div className="px-4 pt-5 pb-3 flex items-baseline gap-3">
+        <div className="px-4 pt-5 pb-3 flex items-baseline gap-4">
           <button
             onClick={() => setSortBy("latest")}
-            className={`text-[16px] transition-colors ${
+            className={`text-[15px] transition-colors ${
               sortBy === "latest"
                 ? "font-bold text-foreground"
                 : "font-medium text-muted-foreground"
@@ -262,13 +426,23 @@ const Community = () => {
           </button>
           <button
             onClick={() => setSortBy("popular")}
-            className={`text-[14px] transition-colors ${
+            className={`text-[15px] transition-colors ${
               sortBy === "popular"
                 ? "font-bold text-foreground"
                 : "font-medium text-muted-foreground"
             }`}
           >
             인기순
+          </button>
+          <button
+            onClick={() => setSortBy("comments")}
+            className={`text-[15px] transition-colors ${
+              sortBy === "comments"
+                ? "font-bold text-foreground"
+                : "font-medium text-muted-foreground"
+            }`}
+          >
+            댓글많은순
           </button>
         </div>
 
@@ -278,8 +452,19 @@ const Community = () => {
               <Skeleton key={i} className="h-[120px] rounded-2xl" />
             ))
           ) : sortedPosts.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="text-muted-foreground text-sm">게시글이 없습니다.</p>
+            <div className="py-12 px-6 text-center bg-white rounded-2xl shadow-[var(--shadow-card)]">
+              <p className="text-foreground text-sm font-semibold mb-1">
+                {EMPTY_STATES[styleFilter].title}
+              </p>
+              <p className="text-muted-foreground text-xs mb-4 leading-relaxed">
+                {EMPTY_STATES[styleFilter].cta}
+              </p>
+              <button
+                onClick={handleWriteClick}
+                className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold"
+              >
+                글 작성하기
+              </button>
             </div>
           ) : (
             sortedPosts.map(renderPostCard)

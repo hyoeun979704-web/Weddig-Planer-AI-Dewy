@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, X, ImagePlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,18 +7,49 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
-const categories = ["웨딩홀", "스드메", "혼수", "허니문", "자유"];
+const categories = ["웨딩홀", "스드메", "셀프웨딩", "스몰웨딩", "혼수", "허니문", "자유"];
+
+type PostWeddingStyle = "general" | "small" | "self";
+
+const STYLE_OPTIONS: { value: PostWeddingStyle | ""; label: string; hint: string }[] = [
+  { value: "", label: "선택 안 함", hint: "모든 부부가 볼 수 있어요" },
+  { value: "general", label: "일반 결혼식", hint: "표준 웨딩홀·식순 기반" },
+  { value: "small", label: "스몰웨딩", hint: "50명 이하·하우스/레스토랑" },
+  { value: "self", label: "셀프웨딩", hint: "직접 준비·DIY" },
+];
 
 const CommunityWrite = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [weddingStyle, setWeddingStyle] = useState<PostWeddingStyle | "">("");
+  const [styleAutoApplied, setStyleAutoApplied] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 사용자의 결혼 유형이 로드되면 첫 1회 자동 선택. 직접 바꾼 뒤에는 덮어쓰지 않음.
+  useEffect(() => {
+    if (styleAutoApplied) return;
+    const myStyle = weddingSettings.wedding_style;
+    if (!myStyle || myStyle === "custom") return;
+    setWeddingStyle(myStyle);
+    setStyleAutoApplied(true);
+  }, [weddingSettings.wedding_style, styleAutoApplied]);
+
+  // 카테고리에서 셀프웨딩/스몰웨딩을 고르면 결혼 유형도 함께 추론.
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    if (!styleAutoApplied) {
+      if (category === "셀프웨딩") setWeddingStyle("self");
+      else if (category === "스몰웨딩") setWeddingStyle("small");
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -113,6 +144,7 @@ const CommunityWrite = () => {
           content: content.trim(),
           has_image: imageUrls.length > 0,
           image_urls: imageUrls,
+          wedding_style: weddingStyle === "" ? null : weddingStyle,
         })
         .select()
         .single();
@@ -164,7 +196,7 @@ const CommunityWrite = () => {
             {categories.map((category) => (
               <button
                 key={category}
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => handleCategorySelect(category)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   selectedCategory === category
                     ? "bg-primary text-primary-foreground"
@@ -174,6 +206,43 @@ const CommunityWrite = () => {
                 {category}
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Wedding Style Tag */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            결혼 유형 <span className="text-muted-foreground font-normal">(선택)</span>
+          </label>
+          <p className="text-xs text-muted-foreground">
+            같은 유형의 부부들이 내 글을 더 쉽게 찾을 수 있어요.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {STYLE_OPTIONS.map((opt) => {
+              const isActive = weddingStyle === opt.value;
+              return (
+                <button
+                  key={opt.value || "none"}
+                  type="button"
+                  onClick={() => {
+                    setWeddingStyle(opt.value);
+                    setStyleAutoApplied(true);
+                  }}
+                  className={`text-left px-3 py-2.5 rounded-xl border transition-colors ${
+                    isActive
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-card hover:bg-muted/40"
+                  }`}
+                >
+                  <p className={`text-sm font-semibold ${isActive ? "text-primary" : "text-foreground"}`}>
+                    {opt.label}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {opt.hint}
+                  </p>
+                </button>
+              );
+            })}
           </div>
         </div>
 
