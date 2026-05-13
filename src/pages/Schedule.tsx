@@ -5,7 +5,6 @@ import { useBudget } from "@/hooks/useBudget";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import {
-  CheckCircle2,
   Heart,
   Camera,
   Gift,
@@ -139,10 +138,10 @@ const Schedule = () => {
     if (days === null || days <= 0) return null;
     const banners = [
       { min: 120, max: 180, msg: "📋 업체 비교 견적서 만들어보세요", route: "/premium/content" },
-      { min: 60, max: 90, msg: "📸 스냅 촬영 타임라인 준비할 때예요!", route: "/premium/content" },
-      { min: 30, max: 60, msg: "📊 예산 중간 점검 리포트를 확인하세요", route: "/premium/content" },
-      { min: 14, max: 30, msg: "💒 본식 타임라인 + 스태프 안내서를 준비하세요", route: "/premium/content" },
-      { min: 7, max: 14, msg: "👜 가방순이·축의대 안내서 전달하셨나요?", route: "/premium/content" },
+      { min: 60, max: 119, msg: "📸 스냅 촬영 타임라인 준비할 때예요!", route: "/premium/content" },
+      { min: 31, max: 59, msg: "📊 예산 중간 점검 리포트를 확인하세요", route: "/premium/content" },
+      { min: 15, max: 30, msg: "💒 본식 타임라인 + 스태프 안내서를 준비하세요", route: "/premium/content" },
+      { min: 8, max: 14, msg: "👜 가방순이·축의대 안내서 전달하셨나요?", route: "/premium/content" },
       { min: 1, max: 7, msg: "📱 하객에게 리마인드 메시지를 보내세요", route: "/premium/content" },
     ];
     return banners.find(b => days >= b.min && days <= b.max) || null;
@@ -198,8 +197,13 @@ const Schedule = () => {
   };
 
   const getDateUrgency = (dateStr: string) => {
-    const daysLeft = differenceInDays(new Date(dateStr), new Date());
-    if (daysLeft <= 0) return "text-destructive";
+    const target = new Date(dateStr);
+    target.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysLeft = differenceInDays(target, today);
+    if (daysLeft < 0) return "text-destructive";
+    if (daysLeft === 0) return "text-primary font-bold";
     if (daysLeft <= 3) return "text-orange-500";
     if (daysLeft <= 7) return "text-yellow-600";
     return "text-muted-foreground";
@@ -312,12 +316,11 @@ const Schedule = () => {
                   key={task.id}
                   className="flex items-center gap-3 px-4 py-3.5 bg-white rounded-2xl border border-border active:scale-[0.98] transition-transform"
                 >
-                  <button 
+                  <button
                     onClick={() => toggleItemCompletion(task.id)}
-                    className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center hover:border-primary transition-colors shrink-0"
-                  >
-                    <CheckCircle2 className="w-4 h-4 text-transparent" />
-                  </button>
+                    aria-label="완료 처리"
+                    className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 hover:border-primary hover:bg-primary/5 active:bg-primary/10 transition-colors shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="text-sm text-foreground block truncate">{task.title}</span>

@@ -25,7 +25,7 @@ interface TimelineDetailSheetProps {
   onAddItem: (title: string, date: string, category: string) => Promise<boolean>;
   onToggleItem: (id: string) => void;
   onDeleteItem: (id: string) => void;
-  onUpdateNotes: (id: string, notes: string) => void;
+  onUpdateNotes: (id: string, notes: string) => Promise<boolean>;
   onUpdateItem?: (id: string, updates: { title?: string; scheduled_date?: string; category?: string }) => Promise<boolean>;
   weddingDate: string | null;
 }
@@ -49,6 +49,7 @@ const TimelineDetailSheet = ({
   const [editingNotes, setEditingNotes] = useState<{ id: string; notes: string } | null>(null);
   const [editingItem, setEditingItem] = useState<{ id: string; title: string; scheduled_date: string; category: string } | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
 
   const categoryOptions = [
     { value: "general", label: "일반" },
@@ -76,9 +77,11 @@ const TimelineDetailSheet = ({
     setIsAdding(false);
   };
 
-  const handleSaveNotes = (id: string, notes: string) => {
-    onUpdateNotes(id, notes);
-    setEditingNotes(null);
+  const handleSaveNotes = async (id: string, notes: string) => {
+    setIsSavingNotes(true);
+    const success = await onUpdateNotes(id, notes);
+    setIsSavingNotes(false);
+    if (success) setEditingNotes(null);
   };
 
   const handleStartEdit = (item: ScheduleItem) => {
@@ -283,11 +286,11 @@ const TimelineDetailSheet = ({
                             className="min-h-[80px]"
                           />
                           <div className="flex gap-2 justify-end">
-                            <Button variant="outline" size="sm" onClick={() => setEditingNotes(null)}>
+                            <Button variant="outline" size="sm" onClick={() => setEditingNotes(null)} disabled={isSavingNotes}>
                               취소
                             </Button>
-                            <Button size="sm" onClick={() => handleSaveNotes(item.id, editingNotes.notes)}>
-                              저장
+                            <Button size="sm" onClick={() => handleSaveNotes(item.id, editingNotes.notes)} disabled={isSavingNotes}>
+                              {isSavingNotes ? <Loader2 className="w-4 h-4 animate-spin" /> : "저장"}
                             </Button>
                           </div>
                         </div>

@@ -233,20 +233,24 @@ export const useWeddingSchedule = () => {
   };
 
   // Update item notes
-  const updateItemNotes = async (id: string, notes: string) => {
+  const updateItemNotes = async (id: string, notes: string): Promise<boolean> => {
     try {
-      await supabase
+      const { error } = await supabase
         .from("user_schedule_items")
         .update({ notes })
         .eq("id", id);
+
+      if (error) throw error;
 
       setScheduleItems(prev =>
         prev.map(i => (i.id === id ? { ...i, notes } : i))
       );
       toast.success("메모가 저장되었습니다");
+      return true;
     } catch (error) {
       console.error("Error updating notes:", error);
       toast.error("메모 저장에 실패했습니다");
+      return false;
     }
   };
 
