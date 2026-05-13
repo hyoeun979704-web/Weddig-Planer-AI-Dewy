@@ -182,12 +182,22 @@ export const SCENE_TYPE_DESC: Record<SceneType, string> = {
  *
  * GPT-4o (gpt-image-1) 에 두 장의 이미지(사용자 사진·드레스)와 함께
  * 이 프롬프트 텍스트를 전송해서 합성 결과를 받는다.
+ *
+ * dressDescription 은 dress_samples 메타데이터를 영어 자연어로
+ * 직렬화한 문단(생성: src/lib/dressDescription.ts).
  */
-export const buildFittingPrompt = (sceneCode: SceneCode): string => {
+export const buildFittingPrompt = (
+  sceneCode: SceneCode,
+  dressDescription: string = "",
+): string => {
   const scene = sceneByCode(sceneCode);
   if (!scene) throw new Error(`unknown scene code: ${sceneCode}`);
 
   const isCeremony = scene.scene === "CEREMONY";
+
+  const dressSchemaBlock = dressDescription
+    ? `\nDRESS SCHEMA — match these attributes exactly\n${dressDescription}\nIf the dress in Image 2 disagrees with any attribute above, the\nattribute list above wins. Do not invent a different silhouette,\nfabric, or detail set.\n`
+    : "";
 
   return `You're generating a photorealistic Korean bridal portrait.
 
@@ -225,6 +235,18 @@ DRESS — keep exactly from Image 2
 - All decorative work — embroidery, beading, lace, trim, feathers,
   ruffles, applique — at the same positions and scale
 - Drapes naturally; visible skin matches the dress's coverage
+${dressSchemaBlock}
+BODY PROPORTIONS
+- Realistic adult Korean woman proportions: total height ~7 to 7.5
+  heads tall.
+- Shoulders width approximately 1.5–1.8 times the head width.
+- Hands sized to face: a closed fist is roughly the size of the
+  face from chin to hairline; fingers proportionate.
+- Arms reach to mid-thigh when relaxed at the sides.
+- Waist sits at the natural waistline (between ribs and hips).
+- Do not produce doll-like or chibi proportions (oversized head,
+  tiny hands, shortened torso, missing neck). Do not stretch the
+  body to fashion-illustration 9-head proportions.
 
 VENUE
 ${scene.promptBlock}
