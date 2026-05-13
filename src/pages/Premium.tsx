@@ -126,9 +126,12 @@ const Premium = () => {
         {!isPremium && (
           <div className="px-4 py-3">
             <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 border border-primary/30 text-center">
-              <p className="text-lg font-bold text-foreground">🎉 런칭 이벤트</p>
-              <p className="text-sm text-foreground mt-1">첫 1개월 무료 체험</p>
-              <p className="text-xs text-muted-foreground mt-1">체험 종료 후 자동 결제 없음</p>
+              <p className="text-lg font-bold text-foreground">🎉 초기 이용자 특전</p>
+              <p className="text-sm text-foreground mt-1">첫 1개월 무료 체험 + 구독 시 AI 스튜디오 하트 보너스</p>
+              <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                <span>💗 월간 10 / 연간 180 (6개월치 보너스)</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-2">2026년 7월까지 월간·연간 구독 시 한정 · 체험 종료 후 자동 결제 없음</p>
               <button onClick={handleStartTrial} className="mt-3 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
                 무료 체험 시작하기
               </button>
@@ -143,12 +146,16 @@ const Premium = () => {
               {/* Monthly */}
               <button
                 onClick={() => setSelectedPlan("monthly")}
-                className={`p-4 rounded-2xl border-2 text-left transition-colors ${
+                className={`p-4 rounded-2xl border-2 text-left transition-colors relative ${
                   selectedPlan === "monthly" ? "border-primary bg-primary/5" : "border-border bg-card"
                 }`}
               >
+                <div className="absolute -top-2.5 left-3 px-2 py-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+                  50% 할인
+                </div>
                 <p className="font-bold text-foreground text-sm">월간</p>
-                <p className="text-lg font-bold text-foreground mt-1">4,900원</p>
+                <p className="text-[11px] text-muted-foreground line-through mt-1">9,900원</p>
+                <p className="text-lg font-bold text-foreground">4,900원</p>
                 <p className="text-xs text-muted-foreground">/월</p>
               </button>
               {/* Yearly */}
@@ -161,10 +168,13 @@ const Premium = () => {
                 <div className="absolute -top-2.5 right-3 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full">
                   추천
                 </div>
+                <div className="absolute -top-2.5 left-3 px-2 py-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+                  67% 할인
+                </div>
                 <p className="font-bold text-foreground text-sm">연간</p>
-                <p className="text-lg font-bold text-foreground mt-1">39,000원</p>
+                <p className="text-[11px] text-muted-foreground line-through mt-1">118,800원</p>
+                <p className="text-lg font-bold text-foreground">39,000원</p>
                 <p className="text-xs text-muted-foreground">/년 · 월 3,250원</p>
-                <span className="inline-block mt-1 text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">34% 할인</span>
               </button>
             </div>
             <button onClick={handleSubscribe} className="w-full mt-3 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">

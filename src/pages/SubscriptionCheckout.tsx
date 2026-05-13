@@ -17,12 +17,16 @@ const SubscriptionCheckout = () => {
 
   const type = (searchParams.get("type") || "trial") as PlanType;
   const amount = type === "trial" ? 100 : type === "yearly" ? 39000 : 4900;
+  const originalPrice = type === "yearly" ? 118800 : type === "monthly" ? 9900 : 0;
+  const discountPercent = type === "yearly" ? 67 : type === "monthly" ? 50 : 0;
   const label =
     type === "trial"
       ? "무료 체험 (카드 인증)"
       : type === "yearly"
       ? "연간 구독 (39,000원/년)"
       : "월간 구독 (4,900원/월)";
+  const heartBonus = type === "yearly" ? 180 : type === "monthly" ? 10 : 0;
+  const isEarlyBird = heartBonus > 0 && Date.now() < new Date("2026-08-01T00:00:00+09:00").getTime();
 
   useEffect(() => {
     if (!user) navigate("/auth");
@@ -92,12 +96,33 @@ const SubscriptionCheckout = () => {
               {type === "trial" ? "0원" : `${amount.toLocaleString()}원`}
             </p>
           </div>
+          {originalPrice > 0 && (
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[11px] text-muted-foreground line-through">정상가 {originalPrice.toLocaleString()}원</span>
+              <span className="text-[11px] font-bold text-destructive">{discountPercent}% 할인</span>
+            </div>
+          )}
           {type === "trial" && (
             <p className="text-[11px] text-muted-foreground mt-2 bg-background/50 rounded-lg p-2">
               💡 카드 유효성 확인을 위해 100원이 결제 후 즉시 환불됩니다. 체험 종료 후 자동 결제는 없습니다.
             </p>
           )}
         </div>
+
+        {isEarlyBird && (
+          <div className="p-4 rounded-2xl border border-primary/30 bg-primary/5">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🎉</span>
+              <p className="font-semibold text-foreground text-sm">초기 이용자 특전</p>
+            </div>
+            <p className="text-sm text-foreground mt-2">
+              결제 완료 시 AI 스튜디오 하트 <span className="font-bold text-primary">{heartBonus}개</span> 지급
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              2026년 7월까지 결제 시 한정 · 가입 기념 혜택과 별도 지급
+            </p>
+          </div>
+        )}
 
         <div className="p-4 bg-card rounded-2xl border border-border">
           <p className="text-sm font-semibold text-foreground mb-2">결제 수단</p>
