@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2, Pencil, X, Save } from "lucide-react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,6 +116,10 @@ const MySchedule = () => {
 
   const days = daysUntilWedding();
 
+  const formattedWeddingDate = weddingSettings.wedding_date
+    ? format(new Date(weddingSettings.wedding_date), "yyyy년 M월 d일 (EEEE)", { locale: ko })
+    : null;
+
   if (!user) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
@@ -166,15 +172,22 @@ const MySchedule = () => {
                 <p className="text-sm text-muted-foreground">결혼식까지</p>
                 {days !== null ? (
                   <p className="text-4xl font-bold text-primary">
-                    {days > 0 ? `D-${days}` : days === 0 ? "D-Day!" : `D+${Math.abs(days)}`}
+                    {days > 0 ? `D-${days}` : days === 0 ? "D-Day 🎉" : `D+${Math.abs(days)}`}
                   </p>
+                ) : weddingSettings.wedding_date_tbd ? (
+                  <div className="space-y-1">
+                    <p className="text-2xl font-bold text-primary">D-Day</p>
+                    <span className="inline-block text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full font-medium">
+                      예정일 미정
+                    </span>
+                  </div>
                 ) : (
                   <p className="text-2xl font-bold text-muted-foreground">날짜를 설정해주세요</p>
                 )}
               </div>
               <Calendar className="w-12 h-12 text-primary/50" />
             </div>
-            
+
             {isEditing ? (
               <div className="flex gap-2">
                 <Input
@@ -191,11 +204,12 @@ const MySchedule = () => {
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">
-                  {weddingSettings.wedding_date || "아직 설정되지 않음"}
+                  {formattedWeddingDate
+                    ?? (weddingSettings.wedding_date_tbd ? "1년 후 기준으로 일정이 잡혀요" : "아직 설정되지 않음")}
                 </p>
-                <Button variant="outline" size="sm" onClick={handleStartEditing}>
+                <Button variant="outline" size="sm" onClick={handleStartEditing} className="shrink-0">
                   {weddingSettings.wedding_date ? "날짜 변경" : "날짜 설정"}
                 </Button>
               </div>
@@ -321,7 +335,9 @@ const MySchedule = () => {
                           {item.title}
                         </p>
                         <div className="flex items-center gap-2">
-                          <p className="text-xs text-muted-foreground">{item.scheduled_date}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(item.scheduled_date), "yyyy.M.d (EEE)", { locale: ko })}
+                          </p>
                           {item.category && item.category !== "general" && (
                             <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
                               {getCategoryLabel(item.category)}

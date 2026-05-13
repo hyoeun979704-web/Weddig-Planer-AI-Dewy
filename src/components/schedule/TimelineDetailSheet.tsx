@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { X, Plus, Check, Trash2, MessageSquare, Loader2, Pencil, Save } from "lucide-react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -134,16 +136,20 @@ const TimelineDetailSheet = ({
               <p className="text-sm text-muted-foreground">{phase.period}</p>
             </div>
           </div>
-          {/* Progress bar */}
-          <div className="flex items-center gap-2 mt-3">
-            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary rounded-full transition-all" 
-                style={{ width: `${progress}%` }} 
-              />
+          {/* Progress bar — only when this phase has items */}
+          {phaseItems.length > 0 ? (
+            <div className="flex items-center gap-2 mt-3">
+              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="text-sm font-medium text-primary">{completedCount}/{phaseItems.length}</span>
             </div>
-            <span className="text-sm font-medium text-primary">{completedCount}/{phaseItems.length}</span>
-          </div>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-3">{phase.description}</p>
+          )}
         </SheetHeader>
 
         <div className="overflow-y-auto h-[calc(100%-120px)] -mx-6 px-6">
@@ -247,7 +253,9 @@ const TimelineDetailSheet = ({
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground">{item.scheduled_date}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(item.scheduled_date), "yyyy.M.d (EEE)", { locale: ko })}
+                        </p>
                       </div>
                       {onUpdateItem && (
                         <button
