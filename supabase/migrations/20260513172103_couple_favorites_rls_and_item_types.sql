@@ -14,6 +14,9 @@
 
 -- ── 1. SELECT policy: extend to include the linked partner ──────────────────
 DROP POLICY IF EXISTS "Users can view their own favorites" ON public.favorites;
+-- An older duplicate policy got added to the remote DB by an automation —
+-- drop it so we end up with a single canonical SELECT policy.
+DROP POLICY IF EXISTS "Linked partners can view each other's favorites" ON public.favorites;
 
 CREATE POLICY "Couple members can view favorites"
 ON public.favorites FOR SELECT
