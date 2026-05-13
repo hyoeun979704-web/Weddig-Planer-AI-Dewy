@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Loader2, Download } from "lucide-react";
 import { generatePdfHeader, generatePdfFooter, downloadPdf } from "@/lib/pdfGenerator";
 import { useBudget } from "@/hooks/useBudget";
-import { categories, regions, regionalAverages, type BudgetCategory } from "@/data/budgetData";
+import { categories, categoryKeys, regions, getRegionalAvgWithMeal, type BudgetCategory } from "@/data/budgetData";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { toast } from "sonner";
 
@@ -11,8 +11,6 @@ interface BudgetReportSheetProps {
   open: boolean;
   onClose: () => void;
 }
-
-const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 
 const BudgetReportSheet = ({ open, onClose }: BudgetReportSheetProps) => {
   const { settings, items, summary } = useBudget();
@@ -25,7 +23,8 @@ const BudgetReportSheet = ({ open, onClose }: BudgetReportSheetProps) => {
       const totalBudget = settings?.total_budget || 0;
       const regionKey = settings?.region || "seoul";
       const regionLabel = regions[regionKey]?.label || regionKey;
-      const avg = regionalAverages[regionKey];
+      const guestCount = settings?.guest_count || 200;
+      const avg = getRegionalAvgWithMeal(regionKey, guestCount);
       const catBudgets = (settings?.category_budgets || {}) as Record<BudgetCategory, number>;
 
       // D-Day

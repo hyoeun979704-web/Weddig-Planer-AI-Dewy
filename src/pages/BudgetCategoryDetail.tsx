@@ -34,9 +34,8 @@ const BudgetCategoryDetail = () => {
   const guestCount = settings?.guest_count || 200;
   const effectiveRegionKey = settings?.region || profileRegionKey || "seoul";
   const avgWithMeal = getRegionalAvgWithMeal(effectiveRegionKey, guestCount);
-  // venue uses meal-inclusive average to match how the user sets their venue budget
-  const avgVal = cat === "venue"
-    ? (avgWithMeal?.venue ?? 0)
+  const avgVal = cat === "meal"
+    ? (avgWithMeal?.meal ?? 0)
     : (regionalAverage ? (regionalAverage as any)[cat] : 0);
   const diff = spent - avgVal;
   const diffPct = avgVal > 0 ? Math.round((Math.abs(diff) / avgVal) * 100) : 0;
@@ -80,9 +79,9 @@ const BudgetCategoryDetail = () => {
               <span className="text-muted-foreground">지역 평균</span>
               <span className="font-bold tabular-nums">{fmt(avgVal)}만원</span>
             </div>
-            {cat === "venue" && avgWithMeal && (
+            {cat === "meal" && avgWithMeal && (
               <p className="text-[10px] text-muted-foreground text-right mb-3">
-                대관료 {fmt(avgWithMeal.baseVenue)} + 식대 {fmt(avgWithMeal.mealCost)}만원 ({guestCount}명)
+                {guestCount}명 × {avgWithMeal.per_guest_meal}만원 기준
               </p>
             )}
             <p className={cn("text-xs font-medium text-center py-2 rounded-lg mt-3",

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { categories, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
+import { categories, categoryKeys, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -21,8 +21,6 @@ interface BudgetAddSheetProps {
   editItem?: BudgetItem | null;
   onSave: (item: Omit<BudgetItem, "id" | "user_id" | "created_at">) => void;
 }
-
-const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 
 export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave }: BudgetAddSheetProps) {
   const [amount, setAmount] = useState(0);

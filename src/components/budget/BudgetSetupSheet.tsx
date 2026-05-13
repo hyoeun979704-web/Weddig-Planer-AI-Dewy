@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { regions, getRegionalAvgWithMeal, categories, type BudgetCategory } from "@/data/budgetData";
+import { regions, getRegionalAvgWithMeal, categories, categoryKeys, type BudgetCategory } from "@/data/budgetData";
 import { Minus, Plus, MapPin, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,17 +35,17 @@ interface BudgetSetupSheetProps {
 }
 
 const quickBudgets = [2000, 3000, 4000, 5000, 6000];
-const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 
 export default function BudgetSetupSheet({
   open, onOpenChange, initialRegion = "seoul", initialGuestCount = 200,
   initialTotalBudget = 0, initialCategoryBudgets, onSave,
 }: BudgetSetupSheetProps) {
+  const emptyCatBudgets: Record<BudgetCategory, number> = { venue: 0, meal: 0, sdm: 0, ring: 0, house: 0, honeymoon: 0, etc: 0 };
   const [region, setRegion] = useState(initialRegion);
   const [guestCount, setGuestCount] = useState(initialGuestCount);
   const [totalBudget, setTotalBudget] = useState(initialTotalBudget);
   const [catBudgets, setCatBudgets] = useState<Record<BudgetCategory, number>>(
-    initialCategoryBudgets || { venue: 0, sdm: 0, ring: 0, house: 0, honeymoon: 0, etc: 0 }
+    initialCategoryBudgets ? { ...emptyCatBudgets, ...initialCategoryBudgets } : emptyCatBudgets
   );
   const [confirmMismatch, setConfirmMismatch] = useState(false);
 
@@ -54,8 +54,11 @@ export default function BudgetSetupSheet({
       setRegion(initialRegion);
       setGuestCount(initialGuestCount);
       setTotalBudget(initialTotalBudget);
-      if (initialCategoryBudgets) setCatBudgets(initialCategoryBudgets);
+      if (initialCategoryBudgets) {
+        setCatBudgets({ ...emptyCatBudgets, ...initialCategoryBudgets });
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialRegion, initialGuestCount, initialTotalBudget, initialCategoryBudgets]);
 
   const applyRegionalAvg = () => {
@@ -63,7 +66,7 @@ export default function BudgetSetupSheet({
     if (!avg) return;
     setTotalBudget(avg.total);
     setCatBudgets({
-      venue: avg.venue, sdm: avg.sdm, ring: avg.ring,
+      venue: avg.venue, meal: avg.meal, sdm: avg.sdm, ring: avg.ring,
       house: avg.house, honeymoon: avg.honeymoon, etc: avg.etc,
     });
   };
@@ -162,7 +165,7 @@ export default function BudgetSetupSheet({
                 <MapPin className="w-3 h-3" /> {regions[region]?.label} {guestCount}명 기준 평균 <span className="font-semibold text-foreground tabular-nums">{fmt(avg.total)}만원</span>
               </p>
               <p className="text-[10px] text-muted-foreground pl-4">
-                · 카테고리 {fmt(avg.total - avg.mealCost)}만원 + 식대 {fmt(avg.mealCost)}만원 ({guestCount}명 × {avg.per_guest_meal}만원)
+                · 식대 포함 ({guestCount}명 × {avg.per_guest_meal}만원 = {fmt(avg.meal)}만원)
               </p>
             </div>
           )}
@@ -186,9 +189,9 @@ export default function BudgetSetupSheet({
                     className="text-right text-sm h-9 no-spinner" />
                   <span className="text-xs text-muted-foreground w-8">만원</span>
                 </div>
-                {key === "venue" && avg && (
+                {key === "meal" && avg && (
                   <p className="text-[10px] text-muted-foreground pl-[88px] mt-0.5">
-                    대관료 {fmt(avg.baseVenue)} + 식대 {fmt(avg.mealCost)}만원 포함 권장
+                    {guestCount}명 × {avg.per_guest_meal}만원 = {fmt(avg.meal)}만원 권장
                   </p>
                 )}
               </div>
@@ -198,8 +201,9 @@ export default function BudgetSetupSheet({
             <Info className="w-3.5 h-3.5 text-yellow-700 shrink-0 mt-0.5" />
             <div className="text-[11px] text-yellow-900 leading-relaxed">
               <p className="font-semibold mb-0.5">잊기 쉬운 숨은 비용</p>
-              <p>· <b>스드메</b>에는 헬퍼비(20~30만원), 부케, 본식스냅, 원본 추가비가 별도예요</p>
-              <p>· <b>웨딩홀</b>에 식대/주차/세팅/포토존이 다 포함됐는지 계약 전 확인하세요</p>
+              <p>· <b>스드메</b>에 헬퍼비(20~30만원), 부케, 본식스냅, 원본 추가비가 별도예요</p>
+              <p>· <b>식대</b>에 어린이 식대(50% 할인)·주류·코너메뉴 추가비가 포함됐는지 확인하세요</p>
+              <p>· <b>웨딩홀</b>의 주차/세팅/폐백실 비용이 계약에 포함됐는지 체크하세요</p>
               <p>· <b>기타</b>에 청첩장·답례품·축가비 등을 미리 잡아두는 게 좋아요</p>
             </div>
           </div>

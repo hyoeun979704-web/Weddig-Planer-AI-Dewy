@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useBudget } from "@/hooks/useBudget";
 import { useAuth } from "@/contexts/AuthContext";
-import { categories, regions, paidByOptions, paymentStageOptions, type BudgetCategory } from "@/data/budgetData";
+import { categories, categoryKeys, regions, paidByOptions, paymentStageOptions, type BudgetCategory } from "@/data/budgetData";
 import BudgetSetupSheet from "@/components/budget/BudgetSetupSheet";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import BudgetReportSheet from "@/components/premium/BudgetReportSheet";
@@ -35,8 +35,6 @@ const regionLabelToKey = (label: string | null): string | undefined => {
   if (!label) return undefined;
   return Object.entries(regions).find(([_, r]) => r.label === label)?.[0];
 };
-
-const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 
 /** SVG donut chart for budget usage */
 const DonutChart = ({ pct, size = 80, strokeWidth = 8 }: { pct: number; size?: number; strokeWidth?: number }) => {

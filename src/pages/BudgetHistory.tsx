@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { useBudget } from "@/hooks/useBudget";
-import { categories, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
+import { categories, categoryKeys, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import {
   AlertDialog,
@@ -21,7 +21,6 @@ import type { BudgetItem } from "@/hooks/useBudget";
 
 const fmt = (n: number) => n.toLocaleString();
 
-const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 const sortOptions = ["최신순", "오래된순", "금액 높은순", "금액 낮은순"] as const;
 
 const BudgetHistory = () => {

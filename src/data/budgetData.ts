@@ -56,25 +56,25 @@ export const regionalAverages: Record<string, RegionalAverage> = {
 };
 
 /**
- * Returns regional averages with per-guest meal cost folded into `venue` and `total`.
- * Wedding hall venue averages in `regionalAverages` only cover hall rental/setup;
- * meal cost scales with guest count and must be added separately to avoid
- * showing users an unrealistically low budget.
+ * Returns regional averages with per-guest meal cost computed as a separate `meal` field.
+ * The hall venue averages cover dry hall/setup costs only; the meal value scales
+ * with guest count and is exposed alongside venue so it can be assigned to its own
+ * "meal" budget category. `total` includes meal so the headline figure is realistic.
  */
 export const getRegionalAvgWithMeal = (regionKey: string, guestCount: number) => {
   const avg = regionalAverages[regionKey];
   if (!avg) return null;
-  const mealCost = Math.round(avg.per_guest_meal * guestCount);
+  const meal = Math.round(avg.per_guest_meal * guestCount);
   return {
     ...avg,
-    venue: avg.venue + mealCost,
-    total: avg.total + mealCost,
-    mealCost,
-    baseVenue: avg.venue,
+    meal,
+    total: avg.total + meal,
   };
 };
 
-export type BudgetCategory = "venue" | "sdm" | "ring" | "house" | "honeymoon" | "etc";
+export type BudgetCategory = "venue" | "meal" | "sdm" | "ring" | "house" | "honeymoon" | "etc";
+
+export const categoryKeys: BudgetCategory[] = ["venue", "meal", "sdm", "ring", "house", "honeymoon", "etc"];
 
 export interface CategoryInfo {
   label: string;
@@ -84,7 +84,8 @@ export interface CategoryInfo {
 }
 
 export const categories: Record<BudgetCategory, CategoryInfo> = {
-  venue: { label: "웨딩홀", emoji: "💒", color: "#F4A7B9", sub_items: ["웨딩홀 대관료", "식대(뷔페/코스)", "주차비", "폐백실", "포토존", "추가 시간", "기타"] },
+  venue: { label: "웨딩홀", emoji: "💒", color: "#F4A7B9", sub_items: ["웨딩홀 대관료", "세팅비", "주차비", "폐백실", "포토존", "추가 시간", "기타"] },
+  meal: { label: "식대", emoji: "🍽️", color: "#F97316", sub_items: ["성인 식대(뷔페/코스)", "어린이 식대", "주류/음료", "추가 인원 식대", "케이크/디저트", "기타"] },
   sdm: { label: "스드메", emoji: "📸", color: "#A78BFA", sub_items: ["스튜디오 촬영", "드레스 대여", "메이크업", "본식스냅", "영상 촬영", "원본 데이터", "앨범 추가", "헬퍼", "부케", "기타"] },
   ring: { label: "예물/예단", emoji: "💍", color: "#F59E0B", sub_items: ["결혼반지", "예물(시계/주얼리)", "예단(한복/이불)", "함/폐백음식", "기타"] },
   house: { label: "혼수", emoji: "🏠", color: "#10B981", sub_items: ["가전(TV/냉장고/세탁기 등)", "가구(침대/소파/식탁 등)", "생활용품", "인테리어/리모델링", "이사비", "기타"] },
@@ -114,9 +115,15 @@ export const paymentMethodOptions = [
 export const savingTips: Record<BudgetCategory, string[]> = {
   venue: [
     "주중이나 오전 예식은 10~30% 할인되는 곳이 많아요",
-    "보증인원을 정확히 맞추면 불필요한 식대를 줄일 수 있어요",
     "얼리버드 예약(6개월 이상 전)으로 할인 받을 수 있어요",
-    "별도 세팅비, 주차비, 포토존 비용은 계약 전 꼭 확인하세요",
+    "세팅비, 주차비, 폐백실 사용료는 계약 전 꼭 확인하세요",
+    "포토존/추가시간 비용이 별도인지 미리 체크하세요",
+  ],
+  meal: [
+    "보증인원을 실제 참석 예상보다 약간 적게 잡으면 불필요한 식대를 줄일 수 있어요",
+    "어린이 식대(8세 미만)는 50% 할인되는 곳이 많아요",
+    "코너 메뉴/주류는 패키지 외 추가비가 큰 항목이니 미리 확인하세요",
+    "성인/어린이 인원 비율을 청첩장 회신 단계에서 정확히 집계하세요",
   ],
   sdm: [
     "평일 촬영은 주말 대비 10~20% 저렴한 경우가 많아요",
