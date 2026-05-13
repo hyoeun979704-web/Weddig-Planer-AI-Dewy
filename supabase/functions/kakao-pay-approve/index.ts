@@ -81,10 +81,16 @@ Deno.serve(async (req) => {
     const approveData = await approveRes.json();
 
     if (!approveRes.ok) {
-      console.error("Kakao approve failed:", approveData);
+      console.error("Kakao approve failed. status:", approveRes.status, "body:", JSON.stringify(approveData));
       return new Response(
-        JSON.stringify({ error: approveData.msg || "Approval failed", code: approveData.code }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          success: false,
+          error: approveData.msg || approveData.error_description || "Approval failed",
+          code: approveData.code,
+          kakao_status: approveRes.status,
+          kakao_raw: approveData,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

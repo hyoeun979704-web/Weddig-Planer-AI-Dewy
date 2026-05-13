@@ -93,10 +93,16 @@ Deno.serve(async (req) => {
     const kakaoData = await kakaoRes.json();
 
     if (!kakaoRes.ok) {
-      console.error("Kakao ready failed:", kakaoData);
+      console.error("Kakao ready failed. status:", kakaoRes.status, "body:", JSON.stringify(kakaoData));
       return new Response(
-        JSON.stringify({ error: kakaoData.msg || "Kakao ready failed", code: kakaoData.code }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          success: false,
+          error: kakaoData.msg || kakaoData.error_description || "Kakao ready failed",
+          code: kakaoData.code,
+          kakao_status: kakaoRes.status,
+          kakao_raw: kakaoData,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
