@@ -127,7 +127,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       // to today + 12 months so the checklist is still actionable. Exclusions
       // are applied here so the user never sees seeded items for categories
       // they opted out of.
-      const items = buildScheduleFromTemplate(weddingDateStr, stage, excludedCategories);
+      const items = buildScheduleFromTemplate(weddingDateStr, stage, excludedCategories, weddingStyle);
       const seeded = await generateScheduleFromTemplate(items);
       onSaved?.();
       onClose();
