@@ -23,7 +23,7 @@ const SubscriptionCheckout = () => {
       : type === "yearly"
       ? "연간 구독 (39,000원/년)"
       : "월간 구독 (4,900원/월)";
-  const heartBonus = type === "yearly" ? 50 : type === "monthly" ? 10 : 0;
+  const heartBonus = type === "yearly" ? 180 : type === "monthly" ? 10 : 0;
   const isEarlyBird = heartBonus > 0 && Date.now() < new Date("2026-08-01T00:00:00+09:00").getTime();
 
   useEffect(() => {

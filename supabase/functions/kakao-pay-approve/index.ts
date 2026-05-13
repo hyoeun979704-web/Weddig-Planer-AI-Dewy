@@ -9,7 +9,7 @@ const corsHeaders = {
 const EARLY_BIRD_END = new Date("2026-08-01T00:00:00+09:00").getTime();
 const HEART_REWARDS: Record<string, { amount: number; reason: string }> = {
   monthly: { amount: 10, reason: "early_bird_monthly" },
-  yearly: { amount: 50, reason: "early_bird_yearly" },
+  yearly: { amount: 180, reason: "early_bird_yearly" },
 };
 
 Deno.serve(async (req) => {

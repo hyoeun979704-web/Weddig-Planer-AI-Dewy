@@ -129,7 +129,7 @@ const Premium = () => {
               <p className="text-lg font-bold text-foreground">🎉 초기 이용자 특전</p>
               <p className="text-sm text-foreground mt-1">첫 1개월 무료 체험 + 구독 시 AI 스튜디오 하트 보너스</p>
               <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                <span>💗 월간 10 / 연간 50</span>
+                <span>💗 월간 10 / 연간 180 (6개월치 보너스)</span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-2">2026년 7월까지 월간·연간 구독 시 한정 · 체험 종료 후 자동 결제 없음</p>
               <button onClick={handleStartTrial} className="mt-3 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
