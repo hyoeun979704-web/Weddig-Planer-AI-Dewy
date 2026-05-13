@@ -2,7 +2,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useState } from "react";
 import { Loader2, Download } from "lucide-react";
 import { generatePdfHeader, generatePdfFooter, downloadPdf } from "@/lib/pdfGenerator";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type TimelineType = "timeline-snap" | "timeline-ceremony" | "timeline-guest";
@@ -16,6 +15,169 @@ const typeLabels: Record<TimelineType, { title: string; emoji: string }> = {
   "timeline-snap": { title: "스냅촬영일 타임라인", emoji: "📸" },
   "timeline-ceremony": { title: "본식 당일 타임라인", emoji: "💒" },
   "timeline-guest": { title: "하객 안내 타임라인", emoji: "👥" },
+};
+
+interface TimelineItem {
+  offsetMin: number; // minutes offset from anchor time (negative = before)
+  event: string;
+  note?: string;
+}
+
+interface TimelineInput {
+  date: string;
+  venueName: string;
+  venueAddress: string;
+  ceremonyTime: string;
+  groomName: string;
+  brideName: string;
+  hasPyebaek: boolean;
+  hasOutdoor: boolean;
+  extraNotes: string;
+}
+
+const parseTime = (hhmm: string): { hours: number; minutes: number } => {
+  const [h, m] = hhmm.split(":").map((v) => parseInt(v, 10));
+  return { hours: isNaN(h) ? 12 : h, minutes: isNaN(m) ? 0 : m };
+};
+
+const offsetTime = (hhmm: string, offsetMin: number): string => {
+  const { hours, minutes } = parseTime(hhmm);
+  const total = hours * 60 + minutes + offsetMin;
+  const wrapped = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
+  const hh = String(Math.floor(wrapped / 60)).padStart(2, "0");
+  const mm = String(wrapped % 60).padStart(2, "0");
+  return `${hh}:${mm}`;
+};
+
+const SNAP_ITEMS = (input: TimelineInput): TimelineItem[] => {
+  const items: TimelineItem[] = [
+    { offsetMin: 0, event: "스튜디오/촬영장 도착 · 의상 컨펌", note: "여유 있게 30분 전 도착" },
+    { offsetMin: 30, event: "신부 헤어/메이크업 시작", note: "본식보다 진하지 않게 자연스럽게" },
+    { offsetMin: 60, event: "신랑 메이크업 · 의상 갈아입기" },
+    { offsetMin: 120, event: "실내 스튜디오 컷 촬영 시작", note: "단독 · 커플 · 가족 컷 순서" },
+    { offsetMin: 210, event: "의상 체인지 (두 번째 컨셉)", note: "10~15분 소요" },
+    { offsetMin: 240, event: "두 번째 컨셉 촬영" },
+  ];
+  if (input.hasOutdoor) {
+    items.push({ offsetMin: 330, event: "야외 촬영 장소로 이동", note: "이동 동선/주차 사전 확인" });
+    items.push({ offsetMin: 360, event: "야외 스냅 촬영", note: "골든아워(일몰 1시간 전) 활용" });
+    items.push({ offsetMin: 450, event: "촬영 종료 · 의상 반납" });
+  } else {
+    items.push({ offsetMin: 330, event: "보정 컷/추가 컨셉 촬영" });
+    items.push({ offsetMin: 390, event: "촬영 종료 · 의상 반납" });
+  }
+  return items;
+};
+
+const CEREMONY_ITEMS = (input: TimelineInput): TimelineItem[] => {
+  const items: TimelineItem[] = [
+    { offsetMin: -150, event: "신부 메이크업/헤어 시작", note: "본식보다 1시간 전 마무리" },
+    { offsetMin: -120, event: "신랑 도착 · 의상 착장" },
+    { offsetMin: -90, event: "양가 부모님 도착 · 폐백 준비", note: "한복/예복 확인" },
+    { offsetMin: -75, event: "신부 대기실 입장 · 친지/하객 사진" },
+    { offsetMin: -60, event: "원판/가족 단체사진 촬영", note: "양가 가족 + 친지 그룹" },
+    { offsetMin: -40, event: "축의대/안내 데스크 오픈" },
+    { offsetMin: -10, event: "하객 착석 안내", note: "사회자 마이크 체크" },
+    { offsetMin: 0, event: "예식 시작 · 신랑 입장" },
+    { offsetMin: 2, event: "신부 입장" },
+    { offsetMin: 5, event: "주례/예식 진행" },
+    { offsetMin: 20, event: "성혼 선언 · 축가" },
+    { offsetMin: 25, event: "양가 부모님 인사 · 축하 영상" },
+    { offsetMin: 32, event: "신랑신부 행진 · 폐식" },
+    { offsetMin: 35, event: "단체 기념사진 (양가 + 친구)", note: "사진 담당자 큐 확인" },
+  ];
+  if (input.hasPyebaek) {
+    items.push({ offsetMin: 55, event: "폐백 진행", note: "양가 가족 위주, 약 20분" });
+  }
+  items.push({ offsetMin: 75, event: "피로연/식사 시작" });
+  items.push({ offsetMin: 150, event: "신랑신부 인사 · 마무리" });
+  return items;
+};
+
+const GUEST_ITEMS = (): TimelineItem[] => [
+  { offsetMin: -60, event: "웨딩홀 도착 권장 시간", note: "주차 만석 대비 여유 있게" },
+  { offsetMin: -45, event: "축의대 접수 · 식사권 수령" },
+  { offsetMin: -30, event: "신부 대기실 방문 (선택)", note: "사진 촬영 가능" },
+  { offsetMin: -10, event: "예식장 착석", note: "휴대폰 무음 설정 부탁드려요" },
+  { offsetMin: 0, event: "예식 시작" },
+  { offsetMin: 35, event: "예식 종료 · 단체사진" },
+  { offsetMin: 45, event: "피로연장으로 이동 · 식사", note: "식사권 제시" },
+  { offsetMin: 150, event: "자유 퇴장" },
+];
+
+const SNAP_CHECKLIST = [
+  "본식 드레스/턱시도 외 두 번째 컨셉 의상",
+  "구두/액세서리 일체",
+  "메이크업 수정용 파우치",
+  "촬영 동선 메모 · 컨셉 레퍼런스 이미지",
+  "간단한 간식/음료(저당 위주)",
+  "촬영 끝나고 갈아입을 편한 옷",
+];
+
+const CEREMONY_CHECKLIST = [
+  "신분증/계약서 사본",
+  "본식 의상 + 여분 양말/스타킹",
+  "신부 부케 · 신랑 부토니에",
+  "결혼반지",
+  "양가 부모님 코사지/한복 소품",
+  "축의금 봉투 보관용 가방",
+  "응급 키트(반창고, 진통제, 핀, 양면테이프)",
+];
+
+const GUEST_CHECKLIST = [
+  "축의금 봉투 (이름 기재)",
+  "초대장/모바일 청첩장 캡처",
+  "주차권 또는 대중교통 정보",
+  "예식장 위치 지도/네비",
+];
+
+const SNAP_TIPS = [
+  "촬영장 도착은 콜타임보다 20~30분 일찍이 안전해요",
+  "골든아워(일몰 1시간 전)는 야외 스냅 최고의 시간이에요",
+  "메이크업 수정 도구는 셀프 휴대 권장 (헬퍼 부재 대비)",
+  "이동 중 차량 안에서 의상 구김 방지용 옷걸이 활용",
+];
+
+const CEREMONY_TIPS = [
+  "신부 메이크업은 본식 1시간 전 완료가 가장 안정적이에요",
+  "원판/가족 사진은 예식 전이 가장 자연스럽고 빠르게 끝나요",
+  "축의대는 예식 40분 전부터 오픈해 늦은 하객도 받으세요",
+  "폐백 진행 시 핸드폰/지갑은 가방순이에게 미리 인계하세요",
+];
+
+const GUEST_TIPS = [
+  "주차장이 협소할 수 있으니 30분~1시간 여유를 두고 도착하세요",
+  "식사권은 분실 시 재발급이 어려우니 잘 보관해주세요",
+  "포토타임 단체사진은 예식 직후 진행되니 자리를 비우지 마세요",
+];
+
+const buildTimeline = (type: TimelineType, input: TimelineInput): {
+  items: { time: string; event: string; note?: string }[];
+  checklist: string[];
+  tips: string[];
+} => {
+  const itemsRaw =
+    type === "timeline-snap" ? SNAP_ITEMS(input) :
+    type === "timeline-ceremony" ? CEREMONY_ITEMS(input) :
+    GUEST_ITEMS();
+
+  const items = itemsRaw.map((it) => ({
+    time: offsetTime(input.ceremonyTime, it.offsetMin),
+    event: it.event,
+    note: it.note,
+  }));
+
+  const checklist =
+    type === "timeline-snap" ? SNAP_CHECKLIST :
+    type === "timeline-ceremony" ? CEREMONY_CHECKLIST :
+    GUEST_CHECKLIST;
+
+  const tips =
+    type === "timeline-snap" ? SNAP_TIPS :
+    type === "timeline-ceremony" ? CEREMONY_TIPS :
+    GUEST_TIPS;
+
+  return { items, checklist, tips };
 };
 
 const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
@@ -34,101 +196,58 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
   const type = open as TimelineType;
   const meta = typeLabels[type];
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     setStep("loading");
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) throw new Error("로그인 필요");
+    setTimeout(async () => {
+      try {
+        const input: TimelineInput = {
+          date, venueName, venueAddress, ceremonyTime,
+          groomName, brideName, hasPyebaek, hasOutdoor, extraNotes,
+        };
+        const data = buildTimeline(type, input);
 
-      const typeDesc = type === "timeline-snap" ? "스냅 촬영일" : type === "timeline-ceremony" ? "본식 당일" : "하객 안내용";
-      const prompt = `다음 정보로 ${typeDesc} 타임라인을 JSON으로 생성해주세요.
-날짜: ${date}, 장소: ${venueName} (${venueAddress}), 시간: ${ceremonyTime}
-신랑: ${groomName}, 신부: ${brideName}
-폐백: ${hasPyebaek ? "있음" : "없음"}, 야외촬영: ${hasOutdoor ? "있음" : "없음"}
-특이사항: ${extraNotes || "없음"}
-
-반드시 아래 JSON 형식으로만 응답:
-{
-  "items": [
-    { "time": "09:00", "event": "이벤트명", "note": "비고" }
-  ],
-  "checklist": ["준비물1", "준비물2"],
-  "tips": ["주의사항1", "주의사항2"]
-}`;
-
-      const resp = await fetch(`${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/ai-planner`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
-      });
-
-      if (!resp.ok) throw new Error("AI 응답 실패");
-      const reader = resp.body?.getReader();
-      if (!reader) throw new Error("스트림 오류");
-      const decoder = new TextDecoder();
-      let fullText = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        for (const line of chunk.split("\n")) {
-          if (!line.startsWith("data: ") || line.includes("[DONE]")) continue;
-          try {
-            const parsed = JSON.parse(line.slice(6));
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) fullText += content;
-          } catch { /* skip */ }
-        }
-      }
-
-      const jsonMatch = fullText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("JSON 파싱 실패");
-      const data = JSON.parse(jsonMatch[0]);
-
-      let html = generatePdfHeader(meta.title);
-      html += `<div class="pdf-subtitle">${groomName} ♥ ${brideName}</div>`;
-      html += `<div class="pdf-info-grid">
-        <div class="pdf-info-item"><div class="pdf-info-label">날짜</div><div class="pdf-info-value">${date}</div></div>
-        <div class="pdf-info-item"><div class="pdf-info-label">장소</div><div class="pdf-info-value">${venueName}</div></div>
-        <div class="pdf-info-item"><div class="pdf-info-label">시간</div><div class="pdf-info-value">${ceremonyTime}</div></div>
-        <div class="pdf-info-item"><div class="pdf-info-label">주소</div><div class="pdf-info-value">${venueAddress}</div></div>
-      </div>`;
-
-      // Timeline
-      html += `<div class="pdf-section"><div class="pdf-section-title">⏰ 시간별 일정</div><div class="pdf-timeline">`;
-      for (const item of data.items || []) {
-        html += `<div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div>
-          <div class="pdf-timeline-time">${item.time}</div>
-          <div class="pdf-timeline-event">${item.event}</div>
-          ${item.note ? `<div class="pdf-timeline-note">${item.note}</div>` : ""}
+        let html = generatePdfHeader(meta.title);
+        const couple = groomName && brideName ? `${groomName} ♥ ${brideName}` : "결혼식 안내";
+        html += `<div class="pdf-subtitle">${couple}</div>`;
+        html += `<div class="pdf-info-grid">
+          <div class="pdf-info-item"><div class="pdf-info-label">날짜</div><div class="pdf-info-value">${date || "-"}</div></div>
+          <div class="pdf-info-item"><div class="pdf-info-label">장소</div><div class="pdf-info-value">${venueName || "-"}</div></div>
+          <div class="pdf-info-item"><div class="pdf-info-label">${type === "timeline-snap" ? "촬영 시작" : "예식 시간"}</div><div class="pdf-info-value">${ceremonyTime}</div></div>
+          <div class="pdf-info-item"><div class="pdf-info-label">주소</div><div class="pdf-info-value">${venueAddress || "-"}</div></div>
         </div>`;
-      }
-      html += `</div></div>`;
 
-      // Checklist
-      if (data.checklist?.length > 0) {
+        html += `<div class="pdf-section"><div class="pdf-section-title">⏰ 시간별 일정</div><div class="pdf-timeline">`;
+        for (const item of data.items) {
+          html += `<div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div>
+            <div class="pdf-timeline-time">${item.time}</div>
+            <div class="pdf-timeline-event">${item.event}</div>
+            ${item.note ? `<div class="pdf-timeline-note">${item.note}</div>` : ""}
+          </div>`;
+        }
+        html += `</div></div>`;
+
         html += `<div class="pdf-section"><div class="pdf-section-title">✅ 준비물 체크리스트</div><ul class="pdf-checklist">`;
         for (const item of data.checklist) html += `<li>${item}</li>`;
         html += `</ul></div>`;
-      }
 
-      // Tips
-      if (data.tips?.length > 0) {
         html += `<div class="pdf-section"><div class="pdf-section-title">💡 주의사항</div>`;
         for (const tip of data.tips) html += `<div class="pdf-tip">${tip}</div>`;
         html += `</div>`;
-      }
 
-      html += generatePdfFooter();
-      await downloadPdf(html, `듀이_${meta.title}_${date || "타임라인"}.pdf`);
-      toast.success("PDF가 다운로드됩니다!");
-      setStep("done");
-    } catch (err) {
-      console.error(err);
-      toast.error("타임라인 생성에 실패했습니다.");
-      setStep("input");
-    }
+        if (extraNotes.trim()) {
+          html += `<div class="pdf-section"><div class="pdf-section-title">📝 추가 메모</div><div class="pdf-highlight" style="font-size:12px;">${extraNotes.replace(/\n/g, "<br/>")}</div></div>`;
+        }
+
+        html += generatePdfFooter();
+        await downloadPdf(html, `듀이_${meta.title}_${date || "타임라인"}.pdf`);
+        toast.success("PDF가 다운로드됩니다!");
+        setStep("done");
+      } catch (err) {
+        console.error(err);
+        toast.error("타임라인 생성에 실패했습니다.");
+        setStep("input");
+      }
+    }, 300);
   };
 
   const handleClose = () => { setStep("input"); onClose(); };
@@ -180,14 +299,16 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
               <label className="text-xs font-medium text-foreground mb-1 block">특이사항 (선택)</label>
               <textarea value={extraNotes} onChange={(e) => setExtraNotes(e.target.value)} rows={2} placeholder="예: 야외촬영 시 우천 대안 필요" className="w-full px-3 py-2 bg-muted rounded-xl text-sm outline-none resize-none" />
             </div>
-            <button onClick={handleGenerate} className="w-full py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">타임라인 생성하기</button>
+            <button onClick={handleGenerate} className="w-full py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm flex items-center justify-center gap-2">
+              <Download className="w-4 h-4" /> 타임라인 PDF 다운로드
+            </button>
           </div>
         )}
 
         {step === "loading" && (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
-            <p className="text-sm font-medium text-foreground">듀이가 타임라인을 만들고 있어요...</p>
+            <p className="text-sm font-medium text-foreground">타임라인을 정리하고 있어요...</p>
           </div>
         )}
 
