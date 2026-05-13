@@ -153,13 +153,16 @@ const Budget = () => {
 
   /**
    * Budget categories the user has implicitly opted out of via excluded
-   * schedule categories. We map shop-style schedule keys back to budget
-   * keys so the UI can dim them. A budget category is only considered
-   * excluded when EVERY schedule key that maps to it is excluded.
+   * schedule categories. hanbok and invitation_venue are "partial mappings"
+   * — they each map to a budget category (ring/etc) but only account for
+   * one of several sub-items in it. Excluding them shouldn't dim the whole
+   * budget category, since the user may still buy rings or send mobile
+   * invitations.
    */
+  const PARTIAL_MAPPED_SCHEDULE_CATS = new Set(["hanbok", "invitation_venue"]);
   const dimmedBudgetCategories = (() => {
     const groupedByBudget: Partial<Record<BudgetCategory, string[]>> = {};
-    for (const scheduleCat of ["wedding_hall", "studio", "dress_shop", "makeup_shop", "tailor_shop", "appliance", "honeymoon", "hanbok", "invitation_venue"]) {
+    for (const scheduleCat of ["wedding_hall", "studio", "dress_shop", "makeup_shop", "tailor_shop", "appliance", "honeymoon"]) {
       const bc = scheduleCategoryToBudget(scheduleCat);
       if (!bc) continue;
       (groupedByBudget[bc] ||= []).push(scheduleCat);
@@ -171,6 +174,23 @@ const Budget = () => {
       }
     }
     return dim;
+  })();
+
+  /**
+   * Budget categories partially affected by excluded schedule categories
+   * (e.g. hanbok excluded but rings + 예단 still buyable). We surface a
+   * small "X 제외" label rather than dimming the whole row.
+   */
+  const partialExclusionLabels: Partial<Record<BudgetCategory, string>> = (() => {
+    const out: Partial<Record<BudgetCategory, string>> = {};
+    for (const cat of PARTIAL_MAPPED_SCHEDULE_CATS) {
+      if (!excludedSet.has(cat)) continue;
+      const bc = scheduleCategoryToBudget(cat);
+      if (!bc) continue;
+      const label = cat === "hanbok" ? "한복 제외" : "청첩장 제외";
+      out[bc] = out[bc] ? `${out[bc]} · ${label}` : label;
+    }
+    return out;
   })();
 
   const openAddWithPrefill = (title: string, category: BudgetCategory) => {
@@ -406,21 +426,41 @@ const Budget = () => {
           </button>
         )}
 
-        {/* Wedding style banner — small/self get specific budget tips */}
+        {/* Wedding style banner — small/self get specific budget tips.
+            Click to re-open the shared onboarding modal (which contains the
+            WeddingStylePicker) so the user can adjust without leaving Budget. */}
         {weddingSettings.wedding_style && weddingSettings.wedding_style !== "general" && weddingSettings.wedding_style !== "custom" && (
-          <div className="rounded-xl bg-card border border-border px-3 py-2.5">
+          <button
+            onClick={() => weddingInfoPrompt.openManually()}
+            className="w-full text-left rounded-xl bg-card border border-border px-3 py-2.5 active:scale-[0.99] transition-transform"
+          >
             <div className="flex items-center gap-2 mb-1">
               <Sparkle className="w-3.5 h-3.5 text-primary" />
-              <p className="text-xs font-bold text-foreground">
+              <p className="text-xs font-bold text-foreground flex-1">
                 {WEDDING_STYLE_LABEL[weddingSettings.wedding_style]} 모드
               </p>
+              <span className="text-[10px] text-muted-foreground">변경 →</span>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               {weddingSettings.wedding_style === "small"
                 ? "하객 수가 적으니 식대 부담이 크게 줄어요. 대신 가까운 분들에게 답례품·식대 단가는 더 신경 쓰는 게 좋아요."
                 : "스튜디오·드레스·메이크업을 직접 진행하시면 스드메 예산을 30~50% 절감할 수 있어요. 셀프 진행에 필요한 소품 비용은 기타에 잡아두세요."}
             </p>
-          </div>
+          </button>
+        )}
+
+        {/* No-style hint — encourage user to pick a style when they have a
+            budget but haven't chosen one. Helps general-wedding personas
+            discover the small/self optimizations. */}
+        {totalBudget > 0 && !weddingSettings.wedding_style && (
+          <button
+            onClick={() => weddingInfoPrompt.openManually()}
+            className="w-full rounded-xl bg-primary/5 border border-primary/15 px-3 py-2 flex items-center gap-2 text-left active:scale-[0.99] transition-transform"
+          >
+            <Sparkle className="w-3.5 h-3.5 text-primary shrink-0" />
+            <p className="text-xs text-foreground flex-1">결혼 스타일을 정하면 예산 추천이 더 정확해져요</p>
+            <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+          </button>
         )}
 
         {/* Upcoming schedule payments — open tasks with budget mapping due ≤ 30 days */}
@@ -586,6 +626,11 @@ const Budget = () => {
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium flex items-center gap-1">
                       {categories[key].emoji} {categories[key].label}
+                      {partialExclusionLabels[key] && (
+                        <span className="text-[9px] text-muted-foreground font-normal bg-muted px-1.5 py-0.5 rounded-full">
+                          {partialExclusionLabels[key]}
+                        </span>
+                      )}
                       {catPct >= 90 && <AlertTriangle className="w-3 h-3 text-destructive" />}
                     </span>
                     <div className="flex items-center gap-1.5 text-xs">
@@ -749,6 +794,7 @@ const Budget = () => {
         initialTotalBudget={settings?.total_budget}
         initialCategoryBudgets={settings?.category_budgets}
         weddingStyle={weddingSettings.wedding_style}
+        excludedCategories={weddingSettings.excluded_categories}
         onSave={data => {
           saveSettings.mutate(data, {
             onSuccess: () => toast({ title: "예산 설정이 저장되었습니다" }),

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Trash2, Lightbulb } from "lucide-react";
 import { useBudget } from "@/hooks/useBudget";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { categories, savingTips, regions, getRegionalAvgWithMeal, resolveRegionKey, type BudgetCategory } from "@/data/budgetData";
 import {
   AlertDialog,
@@ -30,6 +31,7 @@ const BudgetCategoryDetail = () => {
   const { defaultRegion } = useDefaultRegion();
   const profileRegionKey = resolveRegionKey(defaultRegion);
   const { settings, items, summary, regionalAverage, updateItem, deleteItem, addItem } = useBudget(profileRegionKey);
+  const { weddingSettings } = useWeddingSchedule();
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<BudgetItem | null>(null);
@@ -50,6 +52,38 @@ const BudgetCategoryDetail = () => {
   const diffPct = avgVal > 0 ? Math.round((Math.abs(diff) / avgVal) * 100) : 0;
   const catItems = items.filter(i => i.category === cat);
   const tips = savingTips[cat] || [];
+
+  /**
+   * Tips tailored to the user's wedding_style + excluded sub-categories.
+   * Shown above the generic savingTips so style-specific guidance lands first.
+   */
+  const styleTips: string[] = (() => {
+    const out: string[] = [];
+    const excluded = weddingSettings.excluded_categories || [];
+    const isSelf = weddingSettings.wedding_style === "self";
+    const isSmall = weddingSettings.wedding_style === "small";
+
+    if (cat === "sdm" && isSelf) {
+      if (excluded.includes("studio")) out.push("셀프 촬영 비용은 카메라/렌즈 대여비, 보정 외주비, 원본 보관 비용까지 포함해 잡으세요");
+      if (excluded.includes("dress_shop")) out.push("드레스 구매·중고·해외 직구 시 가봉비와 보관비가 추가될 수 있어요");
+      if (excluded.includes("makeup_shop")) out.push("셀프 메이크업도 리허설용 제품·헬퍼 인건비는 별도로 잡아두세요");
+      out.push("부케·본식스냅·헬퍼는 셀프웨딩에서도 살리는 분이 많아요. 별도로 예산을 남겨두세요");
+    }
+    if (cat === "venue" && isSmall) {
+      out.push("스몰웨딩홀은 평일·오전 대관료가 컨벤션 대비 30~50% 저렴해요");
+      out.push("하우스/가든은 우천 대비 실내 옵션 비용을 미리 확인하세요");
+    }
+    if (cat === "meal" && isSmall) {
+      out.push("50인 이하는 인당 단가 협상 여지가 적어요. 어린이/축의금 답례 식대 인원도 포함해 카운트하세요");
+    }
+    if (cat === "ring" && excluded.includes("hanbok")) {
+      out.push("한복을 제외하셨으니 결혼반지·예물 위주로만 잡으셔도 충분해요");
+    }
+    if (cat === "house" && excluded.includes("appliance")) {
+      out.push("가전 구매를 생략한다면 가구·생활용품·인테리어 비중이 늘어날 수 있어요");
+    }
+    return out;
+  })();
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
@@ -102,7 +136,26 @@ const BudgetCategoryDetail = () => {
           </div>
         )}
 
-        {/* Tips */}
+        {/* Style-specific tips — wedding_style/excluded-aware */}
+        {styleTips.length > 0 && (
+          <div className="rounded-xl bg-yellow-50 border border-yellow-200 p-4">
+            <p className="text-xs font-semibold text-yellow-900 mb-2 flex items-center gap-1">
+              <Lightbulb className="w-3.5 h-3.5 text-yellow-700" />
+              {weddingSettings.wedding_style === "self" ? "셀프웨딩 가이드"
+                : weddingSettings.wedding_style === "small" ? "스몰웨딩 가이드"
+                : "맞춤 가이드"}
+            </p>
+            <ul className="space-y-1.5">
+              {styleTips.map((tip, i) => (
+                <li key={i} className="text-xs text-yellow-900 flex gap-1.5">
+                  <span className="shrink-0">•</span> {tip}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Generic saving tips */}
         {tips.length > 0 && (
           <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
             <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">

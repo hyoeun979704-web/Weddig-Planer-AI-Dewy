@@ -25,6 +25,10 @@ interface BudgetSetupSheetProps {
   onOpenChange: (open: boolean) => void;
   initialRegion?: string;
   weddingStyle?: WeddingStyle | null;
+  /** Categories the user has excluded via the schedule's style picker.
+   *  Used to selectively reduce sdm (drops only when studio/dress/makeup
+   *  are in the list) rather than a blanket 50% cut. */
+  excludedCategories?: string[];
   initialGuestCount?: number;
   initialTotalBudget?: number;
   initialCategoryBudgets?: Record<BudgetCategory, number>;
@@ -40,7 +44,8 @@ const quickBudgets = [2000, 3000, 4000, 5000, 6000];
 
 export default function BudgetSetupSheet({
   open, onOpenChange, initialRegion = "seoul", initialGuestCount,
-  initialTotalBudget = 0, initialCategoryBudgets, weddingStyle, onSave,
+  initialTotalBudget = 0, initialCategoryBudgets, weddingStyle,
+  excludedCategories = [], onSave,
 }: BudgetSetupSheetProps) {
   const styleDefaultGuests = weddingStyle === "small" ? 50 : 200;
   const effectiveInitialGuests = initialGuestCount ?? styleDefaultGuests;
@@ -67,23 +72,70 @@ export default function BudgetSetupSheet({
   }, [open, initialRegion, effectiveInitialGuests, initialTotalBudget, initialCategoryBudgets]);
 
   /**
-   * Apply regional averages to all category inputs, with optional style-based
-   * adjustments. 'self' style assumes the couple handles studio/dress/makeup
-   * directly, so we halve the sdm average. 'small' uses the meal-inclusive
-   * average as-is (guestCount is already small).
+   * Apply regional averages to all category inputs, adjusting for the user's
+   * wedding style + excluded shop categories:
+   *
+   *  - small wedding: venue × 0.7 (가든/하우스 가정), ring × 0.85 if hanbok
+   *    excluded. Meal already scales with the smaller guestCount default.
+   *  - self / excluded sub-categories: drop sdm proportionally based on which
+   *    of studio/dress_shop/makeup_shop is excluded (each ≈ 1/4 of sdm).
+   *    Avoids blanket 50% cuts that misprice when only one piece is DIY.
+   *  - excluded honeymoon → honeymoon = 0
+   *  - excluded appliance → house × 0.5 (house also covers furniture/move-in)
    */
   const applyRegionalAvg = () => {
     const avg = getRegionalAvgWithMeal(region, guestCount);
     if (!avg) return;
-    const sdmAdjust = weddingStyle === "self" ? 0.5 : 1;
-    const sdm = Math.round(avg.sdm * sdmAdjust);
+    const excludedSet = new Set(excludedCategories);
+    const isSmall = weddingStyle === "small";
+
+    // sdm sub-share: 4 main pieces (studio + dress + makeup + tailor/extras)
+    const sdmDrop = ["studio", "dress_shop", "makeup_shop"]
+      .filter(c => excludedSet.has(c)).length * 0.25;
+    const sdmAdjust = Math.max(0.25, 1 - sdmDrop);
+
+    const venueAdjust = isSmall ? 0.7 : 1;
+    const ringAdjust = isSmall || excludedSet.has("hanbok") ? 0.85 : 1;
+    const houseAdjust = excludedSet.has("appliance") ? 0.5 : 1;
+    const honeymoonValue = excludedSet.has("honeymoon") ? 0 : avg.honeymoon;
+
     const next = {
-      venue: avg.venue, meal: avg.meal, sdm,
-      ring: avg.ring, house: avg.house,
-      honeymoon: avg.honeymoon, etc: avg.etc,
+      venue: Math.round(avg.venue * venueAdjust),
+      meal: avg.meal,
+      sdm: Math.round(avg.sdm * sdmAdjust),
+      ring: Math.round(avg.ring * ringAdjust),
+      house: Math.round(avg.house * houseAdjust),
+      honeymoon: honeymoonValue,
+      etc: avg.etc,
     };
     setTotalBudget(Object.values(next).reduce((a, b) => a + b, 0));
     setCatBudgets(next);
+  };
+
+  /**
+   * Pro-rata rescale of all non-zero category budgets so their sum equals
+   * the current totalBudget. Keeps the user's chosen proportions but resolves
+   * the mismatch in one tap.
+   */
+  const rebalanceToTotal = () => {
+    if (totalBudget <= 0) return;
+    const sum = Object.values(catBudgets).reduce((a, b) => a + b, 0);
+    if (sum === 0) return;
+    const ratio = totalBudget / sum;
+    const scaled = (Object.entries(catBudgets) as [BudgetCategory, number][]).reduce(
+      (acc, [k, v]) => { acc[k] = Math.round(v * ratio); return acc; },
+      {} as Record<BudgetCategory, number>
+    );
+    // Fix rounding drift on the largest non-zero category so the sum lands
+    // exactly on totalBudget.
+    const drift = totalBudget - Object.values(scaled).reduce((a, b) => a + b, 0);
+    if (drift !== 0) {
+      const biggest = (Object.entries(scaled) as [BudgetCategory, number][])
+        .filter(([, v]) => v > 0)
+        .sort(([, a], [, b]) => b - a)[0]?.[0];
+      if (biggest) scaled[biggest] += drift;
+    }
+    setCatBudgets(scaled);
   };
 
   /**
@@ -246,7 +298,7 @@ export default function BudgetSetupSheet({
             </button>
           </div>
           {totalBudget > 0 && (
-            <div className="mb-2 flex items-center justify-between text-[11px] tabular-nums">
+            <div className="mb-2 flex items-center justify-between gap-2 text-[11px] tabular-nums">
               <span className="text-muted-foreground">
                 합계 <span className={cn("font-bold",
                   catSum === totalBudget ? "text-emerald-600" :
@@ -255,13 +307,23 @@ export default function BudgetSetupSheet({
                 <span> / {fmt(totalBudget)}만원</span>
               </span>
               {hasMismatch && (
-                <span className={cn("font-medium",
-                  catSum > totalBudget ? "text-destructive" : "text-yellow-700"
-                )}>
-                  {catSum > totalBudget
-                    ? `${fmt(catSum - totalBudget)}만원 초과`
-                    : `${fmt(totalBudget - catSum)}만원 남음`}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className={cn("font-medium",
+                    catSum > totalBudget ? "text-destructive" : "text-yellow-700"
+                  )}>
+                    {catSum > totalBudget
+                      ? `+${fmt(catSum - totalBudget)}만원`
+                      : `-${fmt(totalBudget - catSum)}만원`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={rebalanceToTotal}
+                    className="text-[10px] bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-bold active:scale-95 transition-transform"
+                    title="총 예산에 맞게 비율 유지하며 자동 조정"
+                  >
+                    비율 맞추기
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -276,9 +338,16 @@ export default function BudgetSetupSheet({
                   <span className="text-xs text-muted-foreground w-8">만원</span>
                 </div>
                 {key === "meal" && avg && (
-                  <p className="text-[10px] text-muted-foreground pl-[88px] mt-0.5">
-                    {guestCount}명 × {avg.per_guest_meal}만원 = {fmt(avg.meal)}만원 권장
-                  </p>
+                  <div className="pl-[88px] mt-0.5 space-y-0.5">
+                    <p className="text-[10px] text-muted-foreground">
+                      {guestCount}명 × {avg.per_guest_meal}만원 = {fmt(avg.meal)}만원 권장
+                    </p>
+                    {weddingStyle === "small" && guestCount <= 60 && (
+                      <p className="text-[10px] text-yellow-700">
+                        ⓘ 50명 이하는 인당 단가가 평균보다 10~20% 비쌀 수 있어요 (대량 할인 어려움)
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
