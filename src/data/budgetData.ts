@@ -97,6 +97,25 @@ export type BudgetCategory = "venue" | "meal" | "sdm" | "ring" | "house" | "hone
 export const categoryKeys: BudgetCategory[] = ["venue", "meal", "sdm", "ring", "house", "honeymoon", "etc"];
 
 /**
+ * Shop-style schedule categories that map cleanly to a single budget
+ * category (the budget category is fully accounted for by this schedule
+ * piece). Excluding any of these in the schedule's style picker → the
+ * matching budget category should dim out when unspent.
+ */
+export const FULL_MAPPED_SCHEDULE_CATEGORIES = [
+  "wedding_hall", "studio", "dress_shop", "makeup_shop",
+  "tailor_shop", "appliance", "honeymoon",
+] as const;
+
+/**
+ * Schedule categories that map to a budget category but only cover part of
+ * it (e.g. hanbok is one of several things in 예물/예단). Excluding these
+ * shouldn't dim the whole budget row — we surface a small "X 제외" label
+ * instead so the user can still log the remaining sub-items.
+ */
+export const PARTIAL_MAPPED_SCHEDULE_CATEGORIES = ["hanbok", "invitation_venue"] as const;
+
+/**
  * Maps the shop-style category values used in `user_schedule_items.category`
  * (wedding_hall, studio, dress_shop, etc.) to the budget category they
  * correspond to. Used to surface schedule tasks as budget records and

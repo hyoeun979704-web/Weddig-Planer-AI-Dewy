@@ -15,9 +15,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const fmt = (n: number) => n.toLocaleString();
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
+import { fmt } from "@/lib/budgetFormat";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
@@ -186,7 +187,7 @@ const BudgetCategoryDetail = () => {
                     onClick={() => { setEditItem(item); setAddOpen(true); }}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                      <p className="text-[10px] text-muted-foreground">{format(new Date(item.item_date), "yyyy.M.d")}</p>
+                      <p className="text-[10px] text-muted-foreground">{format(parseLocalDate(item.item_date), "yyyy.M.d")}</p>
                     </div>
                     <span className="text-sm font-bold text-foreground">{item.amount}만원</span>
                   </button>
@@ -212,6 +213,7 @@ const BudgetCategoryDetail = () => {
 
       <BudgetAddSheet open={addOpen} onOpenChange={setAddOpen} editItem={editItem}
         initialCategory={cat}
+        weddingDate={weddingSettings.wedding_date}
         onSave={data => {
           if (editItem) {
             updateItem.mutate({ id: editItem.id, ...data } as any, { onSuccess: () => toast({ title: "수정되었습니다" }) });

@@ -21,12 +21,14 @@ import { categories, categoryKeys, paidByOptions, paymentStageOptions, paymentMe
 import { CalendarIcon, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { format, differenceInDays, isAfter, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
+import { fmt, manwonToWon } from "@/lib/budgetFormat";
 import type { BudgetItem } from "@/hooks/useBudget";
 
-const LARGE_AMOUNT_THRESHOLD = 100000; // 10억원 = 1억 ÷ 1만 × 10
-const FAR_FUTURE_THRESHOLD_DAYS = 365;
-
-const fmt = (n: number) => n.toLocaleString();
+// 50,000만원 = 5억원. Catches unit-confusion oopses (typing 100000 thinking
+// 1억원) without nagging legitimate big-ticket entries like a 1억원 신혼집
+// down payment.
+const LARGE_AMOUNT_THRESHOLD = 50000;
+const FAR_FUTURE_THRESHOLD_DAYS = 540; // ~1.5y — wedding prep often starts D-365+
 
 interface BudgetAddSheetProps {
   open: boolean;
@@ -34,6 +36,10 @@ interface BudgetAddSheetProps {
   editItem?: BudgetItem | null;
   initialCategory?: BudgetCategory;
   initialTitle?: string;
+  /** When provided, "far future" date warning uses this instead of the
+   *  static 540-day threshold. Lets us be tolerant of legitimate D-365+
+   *  early bookings but still flag obvious year-typo mistakes. */
+  weddingDate?: string | null;
   onSave: (item: Omit<BudgetItem, "id" | "user_id" | "created_at">) => void;
 }
 
@@ -45,7 +51,7 @@ const getRememberedCategory = (): BudgetCategory => {
   return stored && categoryKeys.includes(stored) ? stored : "venue";
 };
 
-export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCategory, initialTitle, onSave }: BudgetAddSheetProps) {
+export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCategory, initialTitle, weddingDate, onSave }: BudgetAddSheetProps) {
   const [amount, setAmount] = useState(0);
   const [category, setCategory] = useState<BudgetCategory>("venue");
   const [title, setTitle] = useState("");
@@ -92,12 +98,18 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
 
   const subItems = categories[category]?.sub_items || [];
 
-  // Validation flags
+  // Validation flags. When we know wedding_date, "far future" = item_date
+  // beyond the wedding (the user almost certainly mistyped a year). When we
+  // don't, fall back to a static ~1.5y window (wedding prep can start at
+  // D-365+; we don't want to nag legitimate early bookings).
   const today = startOfDay(new Date());
   const itemDateIsFuture = isAfter(startOfDay(itemDate), today);
   const itemDateDaysAhead = itemDateIsFuture ? differenceInDays(startOfDay(itemDate), today) : 0;
+  const weddingTs = weddingDate ? startOfDay(new Date(weddingDate + "T00:00:00")) : null;
+  const isFarFuture = weddingTs
+    ? isAfter(startOfDay(itemDate), weddingTs)
+    : itemDateDaysAhead > FAR_FUTURE_THRESHOLD_DAYS;
   const isLargeAmount = amount >= LARGE_AMOUNT_THRESHOLD;
-  const isFarFuture = itemDateDaysAhead > FAR_FUTURE_THRESHOLD_DAYS;
   const needsConfirmation = isLargeAmount || isFarFuture;
 
   const commitSave = () => {
@@ -147,7 +159,7 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
           </div>
           {amount > 0 && (
             <p className="text-[10px] text-muted-foreground mt-1 text-right tabular-nums">
-              = {Math.round(amount * 10000).toLocaleString()}원
+              = {manwonToWon(amount).toLocaleString()}원
               {amount >= 10000 && <span className="text-yellow-700"> · 금액이 너무 큰 건 아닌가요?</span>}
               {amount > 0 && amount < 0.1 && <span className="text-yellow-700"> · 금액이 너무 작은 건 아닌가요?</span>}
             </p>
@@ -308,7 +320,7 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
                 </div>
                 {balanceAmount > 0 && (
                   <p className="text-[10px] text-muted-foreground mt-0.5 text-right tabular-nums">
-                    = {Math.round(balanceAmount * 10000).toLocaleString()}원
+                    = {manwonToWon(balanceAmount).toLocaleString()}원
                   </p>
                 )}
               </div>
@@ -346,7 +358,7 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
             <AlertDialogDescription className="space-y-1.5">
               {isLargeAmount && (
                 <span className="block">
-                  · 금액이 <b className="text-foreground">{fmt(amount)}만원</b> ({(amount * 10000).toLocaleString()}원)이에요.
+                  · 금액이 <b className="text-foreground">{fmt(amount)}만원</b> ({manwonToWon(amount).toLocaleString()}원)이에요.
                   단위가 맞나요? (1만원 단위 입력)
                 </span>
               )}

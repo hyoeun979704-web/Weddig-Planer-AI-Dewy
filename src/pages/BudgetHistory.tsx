@@ -15,11 +15,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { fmt } from "@/lib/budgetFormat";
 import type { BudgetItem } from "@/hooks/useBudget";
-
-const fmt = (n: number) => n.toLocaleString();
 
 const relativeTime = (iso: string): string => {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -89,7 +89,7 @@ const BudgetHistory = () => {
   const monthGroups: Record<string, BudgetItem[]> = {};
   const vendorGroups: Record<string, BudgetItem[]> = {};
   filtered.forEach(item => {
-    const monthKey = format(new Date(item.item_date), "yyyy년 M월");
+    const monthKey = format(parseLocalDate(item.item_date), "yyyy년 M월");
     (monthGroups[monthKey] ||= []).push(item);
     const vkey = `${item.category}|${vendorKeyOf(item.title)}`;
     (vendorGroups[vkey] ||= []).push(item);
@@ -148,7 +148,7 @@ const BudgetHistory = () => {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
             <p className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
-              {format(new Date(item.item_date), "M.d")} · {pb?.emoji} {pb?.label}
+              {format(parseLocalDate(item.item_date), "M.d")} · {pb?.emoji} {pb?.label}
               {item.payment_stage && (
                 <span className="bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
                   {paymentStageOptions.find(s => s.value === item.payment_stage)?.label || item.payment_stage}

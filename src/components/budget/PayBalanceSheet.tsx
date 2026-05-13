@@ -10,9 +10,8 @@ import { paymentMethodOptions } from "@/data/budgetData";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { fmt, manwonToWon } from "@/lib/budgetFormat";
 import type { BudgetItem } from "@/hooks/useBudget";
-
-const fmt = (n: number) => n.toLocaleString();
 
 interface PayBalanceSheetProps {
   item: BudgetItem | null;
@@ -49,7 +48,7 @@ export default function PayBalanceSheet({ item, onOpenChange, onConfirm }: PayBa
           <p className="text-lg font-bold text-foreground tabular-nums">
             {fmt(balance)}만원
             <span className="text-xs font-normal text-muted-foreground ml-1.5">
-              = {(balance * 10000).toLocaleString()}원
+              = {manwonToWon(balance).toLocaleString()}원
             </span>
           </p>
         </div>

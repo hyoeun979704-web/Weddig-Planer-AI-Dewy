@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useNavigate, useLocation } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
@@ -17,7 +17,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useBudget } from "@/hooks/useBudget";
 import { useAuth } from "@/contexts/AuthContext";
-import { categories, categoryKeys, regions, paidByOptions, paymentStageOptions, scheduleCategoryToBudget, resolveRegionKey, type BudgetCategory } from "@/data/budgetData";
+import {
+  categories, categoryKeys, regions, paidByOptions, paymentStageOptions,
+  scheduleCategoryToBudget, resolveRegionKey,
+  FULL_MAPPED_SCHEDULE_CATEGORIES, PARTIAL_MAPPED_SCHEDULE_CATEGORIES,
+  type BudgetCategory,
+} from "@/data/budgetData";
 import BudgetSetupSheet from "@/components/budget/BudgetSetupSheet";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import PayBalanceSheet from "@/components/budget/PayBalanceSheet";
@@ -27,12 +32,14 @@ import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetup
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import { useSubscription } from "@/hooks/useSubscription";
 import { cn } from "@/lib/utils";
-import { format, differenceInDays, startOfMonth, subMonths, isSameMonth } from "date-fns";
+import { format, startOfMonth, subMonths, isSameMonth } from "date-fns";
+import { parseLocalDate, daysUntilWedding } from "@/lib/schedule";
 import { toast } from "@/hooks/use-toast";
 import type { BudgetItem } from "@/hooks/useBudget";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { WEDDING_STYLE_PRESETS, WEDDING_STYLE_LABEL } from "@/lib/weddingStyle";
+import { fmt } from "@/lib/budgetFormat";
 
 /** SVG donut chart for budget usage */
 const DonutChart = ({ pct, size = 80, strokeWidth = 8 }: { pct: number; size?: number; strokeWidth?: number }) => {
@@ -92,19 +99,20 @@ const Budget = () => {
   const paidBride = summary.paidByTotals["bride"] || 0;
   const paidTotal = paidShared + paidGroom + paidBride;
 
-  // Upcoming balances (overdue items appear first)
+  // Upcoming balances (overdue items appear first).
+  // Uses daysUntilWedding (which parses YYYY-MM-DD as local midnight) so the
+  // D-day count matches the user's local calendar, not UTC.
   const upcomingBalances = items
     .filter(i => i.has_balance && i.balance_amount && i.balance_amount > 0 && i.balance_due_date)
-    .map(i => ({ ...i, daysLeft: differenceInDays(new Date(i.balance_due_date!), new Date()) }))
+    .map(i => ({ ...i, daysLeft: daysUntilWedding(i.balance_due_date) ?? 0 }))
     .sort((a, b) => a.daysLeft - b.daysLeft)
     .slice(0, 3);
 
   const recentItems = items.slice(0, 10);
 
-  const fmt = (n: number) => n.toLocaleString();
-
-  // Monthly trend — last 6 months including current
-  const monthlyTrend = (() => {
+  // Monthly trend — last 6 months including current. Memoized on items so
+  // we don't rebuild the 6-bucket array on every unrelated render.
+  const monthlyTrend = useMemo(() => {
     const today = new Date();
     const buckets: { monthDate: Date; label: string; total: number }[] = [];
     for (let i = 5; i >= 0; i--) {
@@ -112,12 +120,12 @@ const Budget = () => {
       buckets.push({ monthDate, label: format(monthDate, "M월"), total: 0 });
     }
     for (const item of items) {
-      const d = new Date(item.item_date);
+      const d = parseLocalDate(item.item_date);
       const bucket = buckets.find(b => isSameMonth(b.monthDate, d));
       if (bucket) bucket.total += item.amount;
     }
     return buckets;
-  })();
+  }, [items]);
   const trendMax = Math.max(...monthlyTrend.map(b => b.total), 1);
   const trendActiveCount = monthlyTrend.filter(b => b.total > 0).length;
 
@@ -128,18 +136,24 @@ const Budget = () => {
    * retyping. Schedule items the user already turned off via the style picker
    * shouldn't nag them here.
    */
-  const excludedSet = new Set(weddingSettings.excluded_categories || []);
-  const upcomingExpenseTasks = scheduleItems
-    .filter(t => !t.completed && !excludedSet.has(t.category || ""))
-    .map(t => ({ task: t, budgetCat: scheduleCategoryToBudget(t.category) }))
-    .filter((x): x is { task: typeof scheduleItems[number]; budgetCat: BudgetCategory } => x.budgetCat !== null)
-    .map(x => ({
-      ...x,
-      daysLeft: differenceInDays(new Date(x.task.scheduled_date), new Date()),
-    }))
-    .filter(x => x.daysLeft <= 30)
-    .sort((a, b) => a.daysLeft - b.daysLeft)
-    .slice(0, 4);
+  const excludedSet = useMemo(
+    () => new Set(weddingSettings.excluded_categories || []),
+    [weddingSettings.excluded_categories]
+  );
+  const upcomingExpenseTasks = useMemo(() =>
+    scheduleItems
+      .filter(t => !t.completed && !excludedSet.has(t.category || ""))
+      .map(t => ({ task: t, budgetCat: scheduleCategoryToBudget(t.category) }))
+      .filter((x): x is { task: typeof scheduleItems[number]; budgetCat: BudgetCategory } => x.budgetCat !== null)
+      .map(x => ({
+        ...x,
+        daysLeft: daysUntilWedding(x.task.scheduled_date) ?? 0,
+      }))
+      .filter(x => x.daysLeft <= 30)
+      .sort((a, b) => a.daysLeft - b.daysLeft)
+      .slice(0, 4),
+    [scheduleItems, excludedSet]
+  );
 
   const planningStageGuide: Record<string, { icon: string; text: string }> = {
     just_started: { icon: "🌱", text: "이제 시작했다면 총 예산부터 잡아보세요" },
@@ -153,16 +167,13 @@ const Budget = () => {
 
   /**
    * Budget categories the user has implicitly opted out of via excluded
-   * schedule categories. hanbok and invitation_venue are "partial mappings"
-   * — they each map to a budget category (ring/etc) but only account for
-   * one of several sub-items in it. Excluding them shouldn't dim the whole
-   * budget category, since the user may still buy rings or send mobile
-   * invitations.
+   * full-mapped schedule categories. Partial-mapped ones (hanbok,
+   * invitation_venue) are handled separately because they only cover part
+   * of their target budget row.
    */
-  const PARTIAL_MAPPED_SCHEDULE_CATS = new Set(["hanbok", "invitation_venue"]);
-  const dimmedBudgetCategories = (() => {
+  const dimmedBudgetCategories = useMemo(() => {
     const groupedByBudget: Partial<Record<BudgetCategory, string[]>> = {};
-    for (const scheduleCat of ["wedding_hall", "studio", "dress_shop", "makeup_shop", "tailor_shop", "appliance", "honeymoon"]) {
+    for (const scheduleCat of FULL_MAPPED_SCHEDULE_CATEGORIES) {
       const bc = scheduleCategoryToBudget(scheduleCat);
       if (!bc) continue;
       (groupedByBudget[bc] ||= []).push(scheduleCat);
@@ -174,16 +185,16 @@ const Budget = () => {
       }
     }
     return dim;
-  })();
+  }, [excludedSet]);
 
   /**
    * Budget categories partially affected by excluded schedule categories
    * (e.g. hanbok excluded but rings + 예단 still buyable). We surface a
    * small "X 제외" label rather than dimming the whole row.
    */
-  const partialExclusionLabels: Partial<Record<BudgetCategory, string>> = (() => {
+  const partialExclusionLabels = useMemo<Partial<Record<BudgetCategory, string>>>(() => {
     const out: Partial<Record<BudgetCategory, string>> = {};
-    for (const cat of PARTIAL_MAPPED_SCHEDULE_CATS) {
+    for (const cat of PARTIAL_MAPPED_SCHEDULE_CATEGORIES) {
       if (!excludedSet.has(cat)) continue;
       const bc = scheduleCategoryToBudget(cat);
       if (!bc) continue;
@@ -191,7 +202,7 @@ const Budget = () => {
       out[bc] = out[bc] ? `${out[bc]} · ${label}` : label;
     }
     return out;
-  })();
+  }, [excludedSet]);
 
   const openAddWithPrefill = (title: string, category: BudgetCategory) => {
     setEditItem(null);
@@ -199,9 +210,9 @@ const Budget = () => {
     setAddOpen(true);
   };
 
-  // D-day pace
-  const weddingDate = weddingSettings?.wedding_date;
-  const daysToWedding = weddingDate ? differenceInDays(new Date(weddingDate), new Date()) : null;
+  // D-day pace — local-midnight parsing so the count matches the user's
+  // wall calendar even in negative-UTC timezones.
+  const daysToWedding = daysUntilWedding(weddingSettings?.wedding_date);
   const remainingBudget = summary.remaining;
   const dailyPace = daysToWedding !== null && daysToWedding > 0 && remainingBudget > 0
     ? Math.round(remainingBudget / daysToWedding)
@@ -247,40 +258,53 @@ const Budget = () => {
   };
 
   /**
-   * Marks a balance as paid by creating a new "잔금" expense item with the
-   * user-supplied date/method/memo, then clears has_balance on the original
-   * item. Preserves payment history.
+   * Marks a balance as paid: creates a new "잔금" expense item dated to the
+   * user's chosen pay date, THEN clears has_balance on the original item.
+   *
+   * Two-step transaction safety: we await each step and roll back the new
+   * "잔금" item if the original update fails — otherwise the user would see
+   * the payment recorded twice (the new item + a still-pending balance card).
    */
-  const handleMarkBalancePaid = (
+  const handleMarkBalancePaid = async (
     item: BudgetItem,
     payload: { payDate: string; paymentMethod: string; memo: string | null }
   ) => {
     if (!item.balance_amount) return;
-    addItem.mutate({
-      category: item.category,
-      title: `${item.title} 잔금`,
-      amount: item.balance_amount,
-      paid_by: item.paid_by,
-      payment_stage: "full",
-      payment_method: payload.paymentMethod,
-      item_date: payload.payDate,
-      memo: payload.memo,
-      has_balance: false,
-      balance_amount: null,
-      balance_due_date: null,
-    }, {
-      onSuccess: () => {
-        updateItem.mutate({
-          id: item.id,
-          has_balance: false,
-          balance_amount: null,
-          balance_due_date: null,
-        } as any, {
-          onSuccess: () => toast({ title: "잔금 결제가 기록되었습니다" }),
-        });
-      },
-    });
     setPayBalanceTarget(null);
+
+    let createdItemId: string | null = null;
+    try {
+      const created = await addItem.mutateAsync({
+        category: item.category,
+        title: `${item.title} 잔금`,
+        amount: item.balance_amount,
+        paid_by: item.paid_by,
+        payment_stage: "full",
+        payment_method: payload.paymentMethod,
+        item_date: payload.payDate,
+        memo: payload.memo,
+        has_balance: false,
+        balance_amount: null,
+        balance_due_date: null,
+      });
+      createdItemId = (created as { id?: string } | undefined)?.id ?? null;
+
+      await updateItem.mutateAsync({
+        id: item.id,
+        has_balance: false,
+        balance_amount: null,
+        balance_due_date: null,
+      } as any);
+      toast({ title: "잔금 결제가 기록되었습니다" });
+    } catch (err) {
+      console.error("Balance payment failed:", err);
+      if (createdItemId) {
+        // Compensate: roll back the new 잔금 item so the user doesn't see
+        // a double-recorded payment with a still-pending balance card.
+        try { await deleteItem.mutateAsync(createdItemId); } catch { /* best effort */ }
+      }
+      toast({ title: "잔금 결제 기록에 실패했어요", variant: "destructive" });
+    }
   };
 
   return (
@@ -811,6 +835,7 @@ const Budget = () => {
         editItem={editItem}
         initialCategory={addPrefill?.category}
         initialTitle={addPrefill?.title}
+        weddingDate={weddingSettings.wedding_date}
         onSave={data => {
           if (editItem) {
             updateItem.mutate({ id: editItem.id, ...data } as any, {

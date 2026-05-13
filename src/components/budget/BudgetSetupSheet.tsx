@@ -17,8 +17,7 @@ import { regions, regionalAverages, getRegionalAvgWithMeal, categories, category
 import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
 import { Minus, Plus, MapPin, Info, Sparkle } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const fmt = (n: number) => n.toLocaleString();
+import { fmt } from "@/lib/budgetFormat";
 
 interface BudgetSetupSheetProps {
   open: boolean;
@@ -113,25 +112,37 @@ export default function BudgetSetupSheet({
   };
 
   /**
-   * Pro-rata rescale of all non-zero category budgets so their sum equals
-   * the current totalBudget. Keeps the user's chosen proportions but resolves
-   * the mismatch in one tap.
+   * Pro-rata rescale of all non-zero, non-meal category budgets so the full
+   * sum equals totalBudget. Meal is intentionally excluded from the scaling
+   * because it's hard-anchored to (guest_count × per_guest_meal) — scaling
+   * it would create an unrealistic per-guest amount.
+   *
+   * If meal alone already exceeds totalBudget we bail (the user needs to
+   * either reduce guest count or raise the total).
    */
   const rebalanceToTotal = () => {
     if (totalBudget <= 0) return;
-    const sum = Object.values(catBudgets).reduce((a, b) => a + b, 0);
-    if (sum === 0) return;
-    const ratio = totalBudget / sum;
+    const meal = catBudgets.meal || 0;
+    const remainingBudget = totalBudget - meal;
+    if (remainingBudget <= 0) return;
+    const otherSum = Object.entries(catBudgets)
+      .filter(([k]) => k !== "meal")
+      .reduce((a, [, v]) => a + v, 0);
+    if (otherSum === 0) return;
+    const ratio = remainingBudget / otherSum;
     const scaled = (Object.entries(catBudgets) as [BudgetCategory, number][]).reduce(
-      (acc, [k, v]) => { acc[k] = Math.round(v * ratio); return acc; },
+      (acc, [k, v]) => {
+        acc[k] = k === "meal" ? v : Math.round(v * ratio);
+        return acc;
+      },
       {} as Record<BudgetCategory, number>
     );
-    // Fix rounding drift on the largest non-zero category so the sum lands
-    // exactly on totalBudget.
+    // Fix rounding drift on the largest non-meal, non-zero category so the
+    // sum lands exactly on totalBudget.
     const drift = totalBudget - Object.values(scaled).reduce((a, b) => a + b, 0);
     if (drift !== 0) {
       const biggest = (Object.entries(scaled) as [BudgetCategory, number][])
-        .filter(([, v]) => v > 0)
+        .filter(([k, v]) => k !== "meal" && v > 0)
         .sort(([, a], [, b]) => b - a)[0]?.[0];
       if (biggest) scaled[biggest] += drift;
     }
