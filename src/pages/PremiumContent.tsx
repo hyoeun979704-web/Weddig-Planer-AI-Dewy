@@ -5,6 +5,8 @@ import BottomNav from "@/components/BottomNav";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useWeddingProfile } from "@/hooks/useWeddingProfile";
+import { WEDDING_STYLE_LABEL, WEDDING_STYLE_PRESETS } from "@/lib/weddingStyle";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import EstimateSheet from "@/components/premium/EstimateSheet";
 import BudgetReportSheet from "@/components/premium/BudgetReportSheet";
@@ -46,9 +48,12 @@ const PremiumContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isPremium } = useSubscription();
+  const profile = useWeddingProfile();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [activeSheet, setActiveSheet] = useState<SheetType>(null);
   const tutorial = usePageTutorial("premium");
+  const styleKey = profile.weddingStyle === "custom" ? "general" : profile.weddingStyle;
+  const styleDesc = WEDDING_STYLE_PRESETS[styleKey]?.description ?? "";
 
   const handleItemClick = (sheet: SheetType) => {
     if (!isPremium) {
@@ -69,6 +74,26 @@ const PremiumContent = () => {
       </header>
 
       <main className="flex-1 pb-20 px-4 py-4 space-y-6">
+        {isPremium && profile.isLoaded && (
+          <div className="px-4 py-3 rounded-2xl bg-primary/5 border border-primary/15">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] text-muted-foreground">결혼 스타일</p>
+                <p className="text-sm font-bold text-foreground">{WEDDING_STYLE_LABEL[profile.weddingStyle]}</p>
+              </div>
+              <button onClick={() => navigate("/schedule")} className="text-[11px] text-primary font-medium px-2 py-1 rounded-lg bg-primary/10 shrink-0">
+                변경하기
+              </button>
+            </div>
+            {styleDesc && (
+              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">{styleDesc}</p>
+            )}
+            <p className="text-[10.5px] text-primary/80 mt-2 leading-relaxed">
+              ✨ 모든 PDF가 이 스타일에 맞춰 자동으로 톤·내용을 조정해 생성돼요.
+            </p>
+          </div>
+        )}
+
         {!isPremium && (
           <div className="p-4 rounded-2xl bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/20 text-center">
             <p className="text-sm font-bold text-foreground">🔒 프리미엄 전용 기능입니다</p>
