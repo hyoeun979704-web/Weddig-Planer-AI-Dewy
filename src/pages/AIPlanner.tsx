@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Send, ArrowLeft, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
 import TypingIndicator from "@/components/wedding-planner/TypingIndicator";
 import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
@@ -15,15 +16,104 @@ import UpgradeModal from "@/components/premium/UpgradeModal";
 import BottomNav from "@/components/BottomNav";
 import { motion, AnimatePresence } from "framer-motion";
 import { findSuggestions } from "@/data/chatbotSuggestions";
+import type { WeddingStyle } from "@/lib/weddingStyle";
 
 type ModalType = "venue" | "sdme" | "timeline" | "budget" | null;
 
-const QUICK_QUESTIONS = [
-  { emoji: "🏛️", label: "웨딩홀 추천", desc: "지역·예산 맞춤 추천", modal: "venue" as ModalType },
-  { emoji: "📸", label: "스드메 가이드", desc: "촬영 순서·견적 안내", modal: "sdme" as ModalType },
-  { emoji: "📅", label: "준비 타임라인", desc: "월별 체크리스트", modal: "timeline" as ModalType },
-  { emoji: "💰", label: "예산 플래너", desc: "항목별 예산 설계", modal: "budget" as ModalType, premium: true },
+interface QuickQuestion {
+  emoji: string;
+  label: string;
+  desc: string;
+  modal?: ModalType;
+  /** When set, clicking sends this string as a chat prompt (no modal). */
+  prompt?: string;
+  premium?: boolean;
+}
+
+const BASE_QUICK_QUESTIONS: QuickQuestion[] = [
+  { emoji: "🏛️", label: "웨딩홀 추천", desc: "지역·예산 맞춤 추천", modal: "venue" },
+  { emoji: "📸", label: "스드메 가이드", desc: "촬영 순서·견적 안내", modal: "sdme" },
+  { emoji: "📅", label: "준비 타임라인", desc: "월별 체크리스트", modal: "timeline" },
+  { emoji: "💰", label: "예산 플래너", desc: "항목별 예산 설계", modal: "budget", premium: true },
 ];
+
+// Style-specific quick questions replace one slot in BASE_QUICK_QUESTIONS so
+// the grid stays 2x2. We swap the 스드메(SDM) slot for self-wedding users
+// (they skip studio/dress/makeup anyway) and the 웨딩홀 slot for small/general
+// only when the user has the matching context.
+const STYLE_OVERRIDES: Partial<Record<WeddingStyle, QuickQuestion[]>> = {
+  self: [
+    {
+      emoji: "🎨",
+      label: "셀프촬영 로케이션",
+      desc: "지역별 셀프 스냅 명소",
+      prompt: "셀프웨딩 촬영하기 좋은 로케이션을 추천해줘",
+    },
+    {
+      emoji: "💐",
+      label: "DIY 부케·소품",
+      desc: "직접 만드는 아이디어",
+      prompt: "DIY 부케와 소품 아이디어 알려줘",
+    },
+  ],
+  small: [
+    {
+      emoji: "🌿",
+      label: "스몰 베뉴 추천",
+      desc: "한옥·하우스·카페형",
+      prompt: "스몰웨딩하기 좋은 베뉴를 추천해줘",
+    },
+    {
+      emoji: "🎁",
+      label: "답례품 아이디어",
+      desc: "소규모 하객용 큐레이션",
+      prompt: "스몰웨딩 답례품 아이디어 추천해줘",
+    },
+  ],
+  general: [
+    {
+      emoji: "⚖️",
+      label: "양가 분담 비교",
+      desc: "지역 평균 기반 분배",
+      prompt: "양가 분담 평균과 분배 가이드 알려줘",
+    },
+  ],
+};
+
+const buildQuickQuestions = (style: WeddingStyle | null): QuickQuestion[] => {
+  const overrides = style ? STYLE_OVERRIDES[style] ?? [] : [];
+  if (overrides.length === 0) return BASE_QUICK_QUESTIONS;
+  // Keep the 4-card grid: take the first N base cards we want to preserve,
+  // then style overrides. Self-wedding skips the SDM card (irrelevant) and
+  // the timeline card stays. Small/general keep venue + timeline + budget.
+  const baseFiltered = style === "self"
+    ? BASE_QUICK_QUESTIONS.filter(q => q.modal !== "sdme")
+    : BASE_QUICK_QUESTIONS;
+  return [...overrides, ...baseFiltered].slice(0, 4);
+};
+
+const STYLE_GREETING: Record<WeddingStyle, { title: string; subtitle: string; emoji: string }> = {
+  general: {
+    title: "안녕하세요, 신부님!",
+    subtitle: "AI 웨딩플래너 Dewy가\n결혼 준비를 도와드릴게요 🌸",
+    emoji: "💍",
+  },
+  small: {
+    title: "안녕하세요, 스몰웨딩 신부님!",
+    subtitle: "소규모 예식에 꼭 맞는\n큐레이션을 추천드릴게요 🌿",
+    emoji: "🌿",
+  },
+  self: {
+    title: "안녕하세요, 셀프웨딩러님!",
+    subtitle: "DIY부터 셀프촬영까지\n손맛 가득한 준비를 도와드릴게요 🎨",
+    emoji: "🎨",
+  },
+  custom: {
+    title: "안녕하세요!",
+    subtitle: "내가 정한 카테고리 중심으로\nDewy가 도와드릴게요 ✨",
+    emoji: "🛠️",
+  },
+};
 
 const FOLLOW_UP_CHIPS = [
   "더 자세히 알려줘",
@@ -37,6 +127,10 @@ const AIPlanner = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { messages, isLoading, sendMessage, sendStructured, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
+  const { weddingSettings } = useWeddingSchedule();
+  const weddingStyle = (weddingSettings.wedding_style ?? "general") as WeddingStyle;
+  const quickQuestions = useMemo(() => buildQuickQuestions(weddingStyle), [weddingStyle]);
+  const greeting = STYLE_GREETING[weddingStyle] ?? STYLE_GREETING.general;
   const [input, setInput] = useState("");
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -94,7 +188,14 @@ const AIPlanner = () => {
     sendMessage(text);
   };
 
-  const handleQuickClick = (item: typeof QUICK_QUESTIONS[0]) => setActiveModal(item.modal);
+  const handleQuickClick = (item: QuickQuestion) => {
+    // Prompt-style cards (no modal) send the prepared text straight to chat.
+    if (item.prompt) {
+      sendMessage(item.prompt);
+      return;
+    }
+    if (item.modal) setActiveModal(item.modal);
+  };
 
   // 모달 핸들러: 모든 입력 필드를 결정형 핸들러로 직접 전달 (LLM 호출 X)
   const handleVenueSubmit = (data: Record<string, unknown>) => {
@@ -147,7 +248,10 @@ const AIPlanner = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
       {!user && <LoginRequiredOverlay message="AI가 나만의 맞춤 웨딩 플랜을 설계해드려요" features={["맞춤 웨딩홀 추천", "예산 플래너", "준비 타임라인"]} />}
       {/* Header */}
-      <header className="sticky top-0 bg-card/95 backdrop-blur-md border-b border-border z-40 px-4 py-3">
+      <header
+        data-tutorial="ai-header"
+        className="sticky top-0 bg-card/95 backdrop-blur-md border-b border-border z-40 px-4 py-3"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground active:scale-95 transition-transform">
@@ -194,17 +298,17 @@ const AIPlanner = () => {
               {/* Welcome card */}
               <div className="text-center py-6">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-accent mx-auto mb-4 flex items-center justify-center text-3xl">
-                  💍
+                  {greeting.emoji}
                 </div>
-                <h2 className="text-lg font-bold text-foreground mb-1">안녕하세요, 신부님!</h2>
-                <p className="text-sm text-muted-foreground">
-                  AI 웨딩플래너 Dewy가<br />결혼 준비를 도와드릴게요 🌸
+                <h2 className="text-lg font-bold text-foreground mb-1">{greeting.title}</h2>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">
+                  {greeting.subtitle}
                 </p>
               </div>
 
               {/* Quick question cards */}
-              <div className="grid grid-cols-2 gap-2.5">
-                {QUICK_QUESTIONS.map((q) => (
+              <div data-tutorial="ai-suggestions" className="grid grid-cols-2 gap-2.5">
+                {quickQuestions.map((q) => (
                   <button
                     key={q.label}
                     onClick={() => handleQuickClick(q)}
@@ -273,7 +377,10 @@ const AIPlanner = () => {
       </AnimatePresence>
 
       {/* Input area */}
-      <div className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto z-40">
+      <div
+        data-tutorial="ai-input"
+        className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto z-40"
+      >
         {/* 추천 질문 패널 (입력창 위) */}
         <div className="px-3 pb-2">
           <SuggestionPanel

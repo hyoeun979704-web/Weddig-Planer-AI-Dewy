@@ -2,6 +2,7 @@ import { CategoryTab } from "./CategoryTabBar";
 import HeroBanner from "./HeroBanner";
 import TabHeroContent from "./TabHeroContent";
 import HomeCategoryGrid from "./HomeCategoryGrid";
+import PersonaDashboard from "./PersonaDashboard";
 import RecommendedSection from "./RecommendedSection";
 import InvitationTemplateSection from "./InvitationTemplateSection";
 import StudioGallery from "./StudioGallery";
@@ -18,6 +19,10 @@ const TabContent = ({ activeTab }: TabContentProps) => {
   if (activeTab === "ai-planner") {
     return (
       <div className="animate-fade-in">
+        {/* Style-aware dashboard renders above the marketing carousel for
+            onboarded users; for guests/pre-onboarding it returns null and the
+            carousel keeps its slot. */}
+        <PersonaDashboard />
         <HeroBanner />
         <HomeCategoryGrid />
         <RecommendedSection />

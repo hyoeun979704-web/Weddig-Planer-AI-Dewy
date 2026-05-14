@@ -1,0 +1,102 @@
+import { useMemo } from "react";
+import { useWeddingSchedule, type ScheduleItem } from "@/hooks/useWeddingSchedule";
+import {
+  WEDDING_STYLE_LABEL,
+  type WeddingStyle,
+} from "@/lib/weddingStyle";
+import {
+  getMissionsForStyle,
+  getStyleIntro,
+  type PersonaMission,
+} from "@/data/personaMissions";
+
+export interface PersonaInsights {
+  isLoaded: boolean;
+  hasOnboarded: boolean;
+  weddingStyle: WeddingStyle;
+  styleLabel: string;
+  styleIntro: { title: string; subtitle: string; accentEmoji: string };
+  daysUntilWedding: number | null;
+  /** % of seeded checklist items completed (0–100). */
+  progressPercent: number;
+  completedCount: number;
+  totalCount: number;
+  /** Up to 3 next actionable items, sorted by nearest due date. */
+  nextActions: ScheduleItem[];
+  missions: PersonaMission[];
+}
+
+const computeDaysUntil = (date: string | null): number | null => {
+  if (!date) return null;
+  const wedding = new Date(date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+/**
+ * Aggregates the data needed for the style-aware home dashboard:
+ *  - wedding style metadata (label + intro copy + accent emoji)
+ *  - checklist progress (% complete from seeded schedule items)
+ *  - the next 3 actionable upcoming items
+ *  - style-tailored daily missions
+ *
+ * Onboarding gate: returns hasOnboarded=false until the user has either
+ * entered a real wedding_date or explicitly checked 미정. Callers should
+ * branch on that to show the welcome/setup CTA instead of the dashboard.
+ */
+export function usePersonaInsights(): PersonaInsights {
+  const { weddingSettings, scheduleItems, isLoading } = useWeddingSchedule();
+
+  return useMemo(() => {
+    const style = (weddingSettings.wedding_style ?? "general") as WeddingStyle;
+    const styleIntro = getStyleIntro(style);
+    const styleLabel = WEDDING_STYLE_LABEL[style] ?? WEDDING_STYLE_LABEL.general;
+
+    const hasDateInfo =
+      !!weddingSettings.wedding_date || weddingSettings.wedding_date_tbd;
+    const hasOnboarded =
+      hasDateInfo || !!weddingSettings.planning_stage;
+
+    const daysUntilWedding = computeDaysUntil(weddingSettings.wedding_date);
+
+    // Progress + next actions are only meaningful once items are seeded.
+    const totalCount = scheduleItems.length;
+    const completedCount = scheduleItems.filter(i => i.completed).length;
+    const progressPercent = totalCount === 0
+      ? 0
+      : Math.round((completedCount / totalCount) * 100);
+
+    // Next actions: open items, soonest scheduled_date first. Falls back to
+    // any open items if everything is past-due (still actionable, just late).
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const openItems = scheduleItems.filter(i => !i.completed);
+    const upcoming = openItems.filter(i => new Date(i.scheduled_date) >= now);
+    const nextActions = (upcoming.length > 0 ? upcoming : openItems)
+      .slice()
+      .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
+      .slice(0, 3);
+
+    return {
+      isLoaded: !isLoading,
+      hasOnboarded,
+      weddingStyle: style,
+      styleLabel,
+      styleIntro,
+      daysUntilWedding,
+      progressPercent,
+      completedCount,
+      totalCount,
+      nextActions,
+      missions: getMissionsForStyle(style),
+    };
+  }, [
+    isLoading,
+    weddingSettings.wedding_style,
+    weddingSettings.wedding_date,
+    weddingSettings.wedding_date_tbd,
+    weddingSettings.planning_stage,
+    scheduleItems,
+  ]);
+}

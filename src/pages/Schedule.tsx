@@ -276,22 +276,10 @@ const Schedule = () => {
           </div>
         )}
 
-        {/* ── Premium Banner — dynamic content tied to D-Day + progress ── */}
-        {ddayBanner && (
-          <button
-            onClick={() => isPremium ? navigate(ddayBanner.route) : setShowUpgrade(true)}
-            className="mx-4 mb-6 w-[calc(100%-2rem)] px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left"
-          >
-            <img src={clipboardIcon} alt="" className="w-[17px] h-5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-[15px] font-bold text-foreground">{ddayBanner.msg}</p>
-              <p className="text-xs text-muted-foreground">{isPremium ? "탭하여 시작하기" : "프리미엄 전용"}</p>
-            </div>
-            <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
-          </button>
-        )}
-
-        {/* ── Upcoming Tasks ── */}
+        {/* ── Upcoming Tasks ──
+            Moved above the premium banner: the user's actionable items
+            should come before the upsell. Premium CTA still surfaces
+            right below when applicable. */}
         <section className="px-4 mb-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-foreground flex items-center gap-2 text-[16px]">
@@ -332,7 +320,7 @@ const Schedule = () => {
               ))}
             </div>
           ) : (
-            <div 
+            <div
               className="flex flex-col items-center justify-center py-8 bg-card rounded-xl border border-dashed border-border cursor-pointer hover:border-primary/50 transition-colors"
               onClick={() => navigate("/my-schedule")}
             >
@@ -343,6 +331,21 @@ const Schedule = () => {
             </div>
           )}
         </section>
+
+        {/* ── Premium Banner — dynamic content tied to D-Day + progress ── */}
+        {ddayBanner && (
+          <button
+            onClick={() => isPremium ? navigate(ddayBanner.route) : setShowUpgrade(true)}
+            className="mx-4 mb-6 w-[calc(100%-2rem)] px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left"
+          >
+            <img src={clipboardIcon} alt="" className="w-[17px] h-5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[15px] font-bold text-foreground">{ddayBanner.msg}</p>
+              <p className="text-xs text-muted-foreground">{isPremium ? "탭하여 시작하기" : "프리미엄 전용"}</p>
+            </div>
+            <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
+          </button>
+        )}
 
         {/* ── Category Progress ── */}
         {(() => {
