@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Vendor, VendorInfoLine } from "@/lib/placeMappers";
+import { useAuth } from "@/contexts/AuthContext";
+import { useFavorites, type ItemType } from "@/hooks/useFavorites";
+import { PLACE_CATEGORY_TO_ITEM_TYPE, type Vendor, type VendorInfoLine } from "@/lib/placeMappers";
 
 export interface VendorMediaCardData {
   id: string;
@@ -14,6 +17,9 @@ export interface VendorMediaCardData {
   strength?: string | null;
   is_partner?: boolean;
   info_lines: VendorInfoLine[];
+  // When set, the heart syncs with the favorites table; otherwise it is a
+  // local UI-only toggle (e.g. for static template cards).
+  item_type?: ItemType;
 }
 
 // Adapter so any Vendor (recommended/list/gallery) can feed VendorMediaCard
@@ -29,6 +35,7 @@ export const vendorToCardData = (vendor: Vendor): VendorMediaCardData => ({
   strength: vendor.keyword_tags[3] ?? null,
   is_partner: vendor.is_partner,
   info_lines: vendor.info_lines,
+  item_type: PLACE_CATEGORY_TO_ITEM_TYPE[vendor.category_slug],
 });
 
 interface VendorMediaCardProps {
@@ -56,7 +63,30 @@ const KEYWORD_CHIP_CLASSES = {
 } as const;
 
 const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps) => {
-  const [liked, setLiked] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite, isToggling } = useFavorites();
+  // Fallback for cards that have no item_type (e.g. static invitation
+  // templates) — preserves the original UI-only toggle behavior.
+  const [localLiked, setLocalLiked] = useState(false);
+
+  const persistedLiked = data.item_type ? isFavorite(data.id, data.item_type) : false;
+  const liked = data.item_type ? persistedLiked : localLiked;
+
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!data.item_type) {
+      setLocalLiked((v) => !v);
+      return;
+    }
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    if (isToggling) return;
+    void toggleFavorite(data.id, data.item_type);
+  };
 
   const keywordChips: Array<{ value: string; className: string }> = [];
   if (data.category) keywordChips.push({ value: data.category, className: KEYWORD_CHIP_CLASSES.category });
@@ -99,11 +129,7 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
         <span
           role="button"
           aria-label={liked ? "찜 해제" : "찜하기"}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setLiked((v) => !v);
-          }}
+          onClick={handleHeartClick}
           className="absolute right-1.5 top-1.5 z-10 inline-flex"
         >
           <Heart
