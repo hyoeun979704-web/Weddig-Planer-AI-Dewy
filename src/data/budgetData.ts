@@ -198,9 +198,22 @@ export const paidByOptions = [
   { value: "bride", label: "신부측", emoji: "👰" },
 ] as const;
 
+/**
+ * Stage of payment within a single vendor contract. Korean wedding vendors
+ * typically run on a 예약금 → 계약금 → 정계약(중도금) → 잔금 timeline; "완납" is
+ * for one-shot purchases (가전·예물 등) where there's no installment.
+ *
+ * - deposit (예약금): refundable booking deposit
+ * - contract (계약금): signed-contract deposit, partial-refund window
+ * - midpayment (정계약): formal contract / mid-payment installment
+ * - balance (잔금): remaining payment, usually due on event day
+ * - full (완납): paid in full, no installments
+ */
 export const paymentStageOptions = [
   { value: "deposit", label: "예약금", emoji: "🔖" },
   { value: "contract", label: "계약금", emoji: "📝" },
+  { value: "midpayment", label: "정계약", emoji: "📋" },
+  { value: "balance", label: "잔금", emoji: "💰" },
   { value: "full", label: "완납", emoji: "✅" },
 ] as const;
 
