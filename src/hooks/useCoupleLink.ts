@@ -77,7 +77,11 @@ export const useCoupleLink = () => {
         return coupleLink.invite_code;
       }
 
-      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      // Avoid 0/O/1/I/L — these get mistyped by partners reading off a phone.
+      const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+      const code = Array.from({ length: 6 }, () =>
+        ALPHABET[Math.floor(Math.random() * ALPHABET.length)]
+      ).join("");
 
       const { data, error } = await (supabase
         .from("couple_links" as any) as any)
@@ -108,18 +112,26 @@ export const useCoupleLink = () => {
       return false;
     }
 
+    // Normalize: strip whitespace + uppercase. Partners often paste codes
+    // with stray spaces from a kakao share.
+    const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
+    if (normalized.length === 0) {
+      toast.error("초대 코드를 입력해주세요");
+      return false;
+    }
+
     try {
       // 초대 코드로 링크 찾기
       const { data: link, error: findError } = await (supabase
         .from("couple_links" as any)
         .select("*") as any)
-        .eq("invite_code", code.toUpperCase())
+        .eq("invite_code", normalized)
         .eq("status", "pending")
         .maybeSingle();
 
       if (findError) throw findError;
       if (!link) {
-        toast.error("유효하지 않은 초대 코드예요");
+        toast.error("초대 코드를 찾을 수 없어요. 6자리가 맞는지 확인해주세요");
         return false;
       }
 

@@ -32,15 +32,17 @@ const priorityOptions: { value: BudgetCategory | "value"; label: string }[] = [
   { value: "value", label: "가성비" },
 ];
 
-const CATEGORY_ORDER: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
+const CATEGORY_ORDER: BudgetCategory[] = [
+  "venue", "meal", "sdm", "suit", "hanbok", "ring", "meetup", "house", "honeymoon", "etc",
+];
 
 // Categories that go to ~0 cost for each style. We still show them in the
 // table so users see the savings they're getting, but mark them as
 // "직접 진행" or "생략" in the tip column.
 const STYLE_SKIPPED_CATEGORIES: Record<WeddingStyle, BudgetCategory[]> = {
   general: [],
-  small: [], // small wedding usually still spends on sdm/ring etc, just at smaller scale
-  self: ["sdm"], // self-wedding handles studio/dress/makeup themselves
+  small: ["hanbok"],         // 스몰웨딩은 한복 생략 빈도 높음
+  self: ["sdm", "hanbok"],   // 셀프웨딩은 스튜디오·드레스·메이크업·한복 모두 직접/생략
   custom: [],
 };
 
@@ -62,11 +64,15 @@ const STYLE_MULTIPLIER: Record<string, number> = {
 };
 
 const HIDDEN_COSTS: Record<BudgetCategory, string[]> = {
-  venue: ["주차비", "포토존 추가 사용료", "세팅비", "추가 시간 연장료"],
+  venue: ["대관료 외 세팅비", "포토존 추가 사용료", "추가 시간 연장료", "주차비"],
+  meal: ["주류·음료 추가", "어린이/유아 식대", "보증 인원 미달 위약금"],
   sdm: ["원본 데이터", "헬퍼비", "얼리스타트비", "앨범 추가 페이지"],
+  suit: ["수선비", "보타이/포켓스퀘어", "구두 별도"],
+  hanbok: ["폐백 한복 추가", "한복 헬퍼비", "노리개·비녀 등 소품"],
   ring: ["반지 사이즈 조정/각인", "예단 답례품", "함값"],
+  meetup: ["식사비", "선물비", "교통비"],
   house: ["설치/배송비", "폐가전 처리비", "리모델링 추가 자재비"],
-  honeymoon: ["여행자보험", "유류할증료", "리조트 데이베드/액티비티 비용"],
+  honeymoon: ["여행자보험", "유류할증료", "리조트 데이베드/액티비티"],
   etc: ["청첩장 인쇄 추가", "답례품 포장비", "사회자 사례금"],
 };
 
@@ -113,18 +119,22 @@ const buildEstimate = (
   // 지역 평균의 per_guest_meal(만원/인) × 가중치를 사용해 22명/400명 어떤 규모도 정상 반영
   const perGuestMealCost = avg.per_guest_meal * VENUE_GRADE_MEAL_FACTOR[venueGrade] * styleMult * frugalMult * weddingStyleFactor;
   const totalMealCost = Math.round(perGuestMealCost * guestCount);
-  // 대관료: 지역 평균에서 200명 기준 식대를 빼고 남는 부분으로 추정 + 등급 곱
-  const baseVenueRent = Math.max(50, avg.venue - 200 * avg.per_guest_meal);
-  const venueRent = Math.round(baseVenueRent * VENUE_GRADE_VENUE_FACTOR[venueGrade] * styleMult * frugalMult * weddingStyleFactor);
+  // 대관료: 새 스키마에서는 avg.venue 자체가 대관료(식대 제외) + 등급 곱
+  const venueRent = Math.round(avg.venue * VENUE_GRADE_VENUE_FACTOR[venueGrade] * styleMult * frugalMult * weddingStyleFactor);
+  const baseFactor = styleMult * frugalMult * weddingStyleFactor;
 
-  // Base recommended per category
+  // Base recommended per category - 새 10개 카테고리 스키마
   const baseRecommended: Record<BudgetCategory, number> = {
-    venue: venueRent + totalMealCost,
-    sdm: Math.round(avg.sdm * styleMult * frugalMult * weddingStyleFactor),
-    ring: Math.round(avg.ring * styleMult * frugalMult * weddingStyleFactor),
-    house: Math.round(avg.house * styleMult * frugalMult * weddingStyleFactor),
-    honeymoon: Math.round(avg.honeymoon * styleMult * frugalMult * weddingStyleFactor),
-    etc: Math.round(avg.etc * styleMult * frugalMult * weddingStyleFactor),
+    venue: venueRent,
+    meal: totalMealCost,
+    sdm: Math.round(avg.sdm * baseFactor),
+    suit: Math.round(avg.suit * baseFactor),
+    hanbok: Math.round(avg.hanbok * baseFactor),
+    ring: Math.round(avg.ring * baseFactor),
+    meetup: Math.round(avg.meetup * baseFactor),
+    house: Math.round(avg.house * baseFactor),
+    honeymoon: Math.round(avg.honeymoon * baseFactor),
+    etc: Math.round(avg.etc * baseFactor),
   };
 
   // Self-wedding handles SDM themselves → keep a token DIY budget instead of zero

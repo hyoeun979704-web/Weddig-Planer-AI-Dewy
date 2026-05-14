@@ -10,7 +10,7 @@ import {
 } from "@/lib/pdfGenerator";
 import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { useBudget } from "@/hooks/useBudget";
-import { categories, regions, regionalAverages, savingTips, type BudgetCategory } from "@/data/budgetData";
+import { categories, categoryKeys as ALL_CATEGORY_KEYS, regions, getRegionalAvgWithMeal, savingTips, type BudgetCategory } from "@/data/budgetData";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { WEDDING_STYLE_LABEL } from "@/lib/weddingStyle";
@@ -22,10 +22,8 @@ interface BudgetReportSheetProps {
   visibleCategoryKeys?: BudgetCategory[];
 }
 
-const DEFAULT_CATEGORY_KEYS: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
-
 const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportSheetProps) => {
-  const categoryKeys = visibleCategoryKeys ?? DEFAULT_CATEGORY_KEYS;
+  const categoryKeys = visibleCategoryKeys ?? ALL_CATEGORY_KEYS;
   const { settings, items, summary } = useBudget();
   const { weddingSettings } = useWeddingSchedule();
   const profile = useWeddingProfile();
@@ -39,7 +37,8 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       const totalBudget = settings?.total_budget || 0;
       const regionKey = settings?.region || "seoul";
       const regionLabel = regions[regionKey]?.label || regionKey;
-      const avg = regionalAverages[regionKey];
+      const guestCount = settings?.guest_count || 200;
+      const avg = getRegionalAvgWithMeal(regionKey, guestCount);
       const catBudgets = (settings?.category_budgets || {}) as Record<BudgetCategory, number>;
 
       let daysLeft: number | null = null;

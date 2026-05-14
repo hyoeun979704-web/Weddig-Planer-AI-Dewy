@@ -30,6 +30,8 @@ import {
   SceneCode,
   buildFittingPrompt,
 } from "@/data/fittingScenes";
+import { describeDress } from "@/lib/dressDescription";
+import { FittingProgress } from "@/components/fitting/FittingProgress";
 import { labelOf } from "@/data/dressFilters";
 
 /**
@@ -211,7 +213,18 @@ const DressFitting = () => {
     if (!photoPath || !selectedDress || !selectedSceneCode) return;
     setIsGenerating(true);
     try {
-      const prompt = buildFittingPrompt(selectedSceneCode);
+      // 드레스 메타데이터 전체를 가져와 프롬프트에 주입 (목록에서는 일부만 SELECT 했음)
+      const { data: dressMeta } = await (supabase as any)
+        .from("dress_samples")
+        .select(
+          "name, silhouette, neckline, sleeve, length, fabric, details, back_design, color, waist, mood",
+        )
+        .eq("id", selectedDress.id)
+        .maybeSingle();
+
+      const dressDescription = dressMeta ? describeDress(dressMeta) : "";
+      const prompt = buildFittingPrompt(selectedSceneCode, dressDescription);
+
       const { data, error } = await supabase.functions.invoke("dewy-fitting", {
         body: {
           source_image_path: photoPath,
@@ -762,11 +775,7 @@ const ReviewSection = ({
           </>
         )}
       </Button>
-      {isGenerating && (
-        <p className="text-[11px] text-center text-muted-foreground">
-          이미지 생성에 시간이 걸려요. 페이지를 닫지 말고 잠시 기다려주세요.
-        </p>
-      )}
+      <FittingProgress active={isGenerating} />
     </section>
   );
 };

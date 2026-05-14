@@ -5,6 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { usePartnerDealDetail, usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { useAuth } from "@/contexts/AuthContext";
+import { FavoriteButton } from "@/components/FavoriteButton";
 
 const dealTypeLabels: Record<string, { label: string; color: string }> = {
   discount: { label: "할인", color: "bg-red-100 text-red-600" },
@@ -87,7 +88,8 @@ const DealDetail = () => {
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-bold text-foreground truncate">혜택 상세</h1>
+          <h1 className="text-lg font-bold text-foreground truncate flex-1">혜택 상세</h1>
+          <FavoriteButton itemId={deal.id} itemType="deal" />
         </div>
       </header>
 

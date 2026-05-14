@@ -7,25 +7,58 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { categories, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { categories, categoryKeys, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
+import { CalendarIcon, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { format, differenceInDays, isAfter, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
+import { fmt, manwonToWon } from "@/lib/budgetFormat";
 import type { BudgetItem } from "@/hooks/useBudget";
+
+// 50,000만원 = 5억원. Catches unit-confusion oopses (typing 100000 thinking
+// 1억원) without nagging legitimate big-ticket entries like a 1억원 신혼집
+// down payment.
+const LARGE_AMOUNT_THRESHOLD = 50000;
+const FAR_FUTURE_THRESHOLD_DAYS = 540; // ~1.5y — wedding prep often starts D-365+
 
 interface BudgetAddSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editItem?: BudgetItem | null;
+  initialCategory?: BudgetCategory;
+  initialTitle?: string;
+  /** When provided, "far future" date warning uses this instead of the
+   *  static 540-day threshold. Lets us be tolerant of legitimate D-365+
+   *  early bookings but still flag obvious year-typo mistakes. */
+  weddingDate?: string | null;
   onSave: (item: Omit<BudgetItem, "id" | "user_id" | "created_at">) => void;
   /** Budget categories the user hasn't excluded via wedding style. Falls back to all 6. */
   visibleCategoryKeys?: BudgetCategory[];
 }
 
-const DEFAULT_CATEGORY_KEYS: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
+const LAST_CATEGORY_KEY = "dewy.budget.lastCategory";
 
-export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave, visibleCategoryKeys }: BudgetAddSheetProps) {
-  const categoryKeys = visibleCategoryKeys ?? DEFAULT_CATEGORY_KEYS;
+const getRememberedCategory = (allowed: BudgetCategory[]): BudgetCategory => {
+  if (typeof window === "undefined") return allowed[0] ?? "venue";
+  const stored = window.localStorage.getItem(LAST_CATEGORY_KEY) as BudgetCategory | null;
+  return stored && allowed.includes(stored) ? stored : (allowed[0] ?? "venue");
+};
+
+export default function BudgetAddSheet({
+  open, onOpenChange, editItem, initialCategory, initialTitle, weddingDate, onSave, visibleCategoryKeys,
+}: BudgetAddSheetProps) {
+  // When the caller passes a filtered category list, restrict picker rendering
+  // + "remembered last category" fallback to those. Defaults to all 10.
+  const visibleKeys = visibleCategoryKeys ?? categoryKeys;
   const [amount, setAmount] = useState(0);
   const [category, setCategory] = useState<BudgetCategory>("venue");
   const [title, setTitle] = useState("");
@@ -37,6 +70,10 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave, v
   const [hasBalance, setHasBalance] = useState(false);
   const [balanceAmount, setBalanceAmount] = useState(0);
   const [balanceDueDate, setBalanceDueDate] = useState<Date | undefined>();
+  const [dateOpen, setDateOpen] = useState(false);
+  const [balanceDateOpen, setBalanceDateOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
 
   useEffect(() => {
     if (open && editItem) {
@@ -51,18 +88,42 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave, v
       setHasBalance(editItem.has_balance);
       setBalanceAmount(editItem.balance_amount || 0);
       setBalanceDueDate(editItem.balance_due_date ? new Date(editItem.balance_due_date) : undefined);
+      const hasNonDefault =
+        (editItem.payment_stage && editItem.payment_stage !== "full") ||
+        (editItem.payment_method && editItem.payment_method !== "cash") ||
+        !!editItem.memo;
+      setAdvancedOpen(!!hasNonDefault);
     } else if (open) {
-      setAmount(0); setCategory(categoryKeys[0] ?? "venue"); setTitle(""); setItemDate(new Date());
+      setAmount(0);
+      setCategory(initialCategory || getRememberedCategory(visibleKeys));
+      setTitle(initialTitle || ""); setItemDate(new Date());
       setPaidBy("shared"); setPaymentStage("full"); setPaymentMethod("cash");
       setMemo(""); setHasBalance(false); setBalanceAmount(0); setBalanceDueDate(undefined);
+      setAdvancedOpen(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editItem]);
+  }, [open, editItem, initialCategory, initialTitle]);
 
   const subItems = categories[category]?.sub_items || [];
 
-  const handleSave = () => {
-    if (!title || amount <= 0) return;
+  // Validation flags. When we know wedding_date, "far future" = item_date
+  // beyond the wedding (the user almost certainly mistyped a year). When we
+  // don't, fall back to a static ~1.5y window (wedding prep can start at
+  // D-365+; we don't want to nag legitimate early bookings).
+  const today = startOfDay(new Date());
+  const itemDateIsFuture = isAfter(startOfDay(itemDate), today);
+  const itemDateDaysAhead = itemDateIsFuture ? differenceInDays(startOfDay(itemDate), today) : 0;
+  const weddingTs = weddingDate ? startOfDay(new Date(weddingDate + "T00:00:00")) : null;
+  const isFarFuture = weddingTs
+    ? isAfter(startOfDay(itemDate), weddingTs)
+    : itemDateDaysAhead > FAR_FUTURE_THRESHOLD_DAYS;
+  const isLargeAmount = amount >= LARGE_AMOUNT_THRESHOLD;
+  const needsConfirmation = isLargeAmount || isFarFuture;
+
+  const commitSave = () => {
+    if (typeof window !== "undefined" && !editItem) {
+      window.localStorage.setItem(LAST_CATEGORY_KEY, category);
+    }
     onSave({
       category, title, amount, paid_by: paidBy,
       payment_stage: paymentStage,
@@ -76,31 +137,51 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave, v
     onOpenChange(false);
   };
 
+  const handleSave = () => {
+    if (!title || amount <= 0) return;
+    if (needsConfirmation) {
+      setConfirmSaveOpen(true);
+      return;
+    }
+    commitSave();
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[85vh] overflow-y-auto pb-8">
+      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[85dvh] overflow-y-auto pb-8">
         <SheetHeader className="mb-4">
           <SheetTitle className="text-base">{editItem ? "지출 수정" : "지출 기록하기"}</SheetTitle>
         </SheetHeader>
 
         {/* Amount */}
         <div className="mb-4">
-          <Label className="text-sm font-semibold mb-1.5 block">금액</Label>
+          <div className="flex items-center justify-between mb-1.5">
+            <Label className="text-sm font-semibold">금액</Label>
+            <span className="text-[10px] text-muted-foreground">1만원 단위 · 32만 5천원 → 32.5</span>
+          </div>
           <div className="flex items-center gap-2">
-            <Input type="number" value={amount || ""} onChange={e => setAmount(Number(e.target.value))}
-              placeholder="0" className="text-right text-lg font-bold" />
+            <Input type="number" inputMode="decimal" step="0.1" value={amount || ""}
+              onChange={e => setAmount(Number(e.target.value))}
+              placeholder="0" className="text-right text-lg font-bold no-spinner" />
             <span className="text-sm text-muted-foreground">만원</span>
           </div>
+          {amount > 0 && (
+            <p className="text-[10px] text-muted-foreground mt-1 text-right tabular-nums">
+              = {manwonToWon(amount).toLocaleString()}원
+              {amount >= 10000 && <span className="text-yellow-700"> · 금액이 너무 큰 건 아닌가요?</span>}
+              {amount > 0 && amount < 0.1 && <span className="text-yellow-700"> · 금액이 너무 작은 건 아닌가요?</span>}
+            </p>
+          )}
         </div>
 
         {/* Category */}
         <div className="mb-4">
           <Label className="text-sm font-semibold mb-1.5 block">카테고리</Label>
           <div className="flex gap-1.5 flex-wrap">
-            {categoryKeys.map(key => (
-              <button key={key} onClick={() => setCategory(key)}
+            {visibleKeys.map(key => (
+              <button key={key} type="button" onClick={() => setCategory(key)}
                 className={cn(
-                  "text-xs py-1.5 px-3 rounded-full border transition-all",
+                  "text-xs py-1.5 px-3 rounded-full border transition-all active:scale-95",
                   category === key
                     ? "border-primary bg-primary/10 text-foreground font-bold"
                     : "border-border text-muted-foreground"
@@ -130,18 +211,28 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave, v
         {/* Date */}
         <div className="mb-4">
           <Label className="text-sm font-semibold mb-1.5 block">날짜</Label>
-          <Popover>
+          <Popover open={dateOpen} onOpenChange={setDateOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-start text-left font-normal">
+              <Button variant="outline" className={cn(
+                "w-full justify-start text-left font-normal",
+                itemDateIsFuture && "border-yellow-400 bg-yellow-50"
+              )}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {format(itemDate, "yyyy-MM-dd")}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={itemDate} onSelect={d => d && setItemDate(d)}
+              <Calendar mode="single" selected={itemDate}
+                onSelect={d => { if (d) { setItemDate(d); setDateOpen(false); } }}
                 className={cn("p-3 pointer-events-auto")} />
             </PopoverContent>
           </Popover>
+          {itemDateIsFuture && (
+            <p className="text-[11px] text-yellow-700 mt-1 flex items-start gap-1">
+              <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+              미래 날짜({itemDateDaysAhead}일 뒤)예요. 실제 결제일이 맞나요?
+            </p>
+          )}
         </div>
 
         {/* Paid by */}
@@ -149,9 +240,9 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave, v
           <Label className="text-sm font-semibold mb-1.5 block">누가 냈나요?</Label>
           <div className="flex gap-2">
             {paidByOptions.map(opt => (
-              <button key={opt.value} onClick={() => setPaidBy(opt.value)}
+              <button key={opt.value} type="button" onClick={() => setPaidBy(opt.value)}
                 className={cn(
-                  "flex-1 text-xs py-2 rounded-lg border transition-all",
+                  "flex-1 text-xs py-2 rounded-lg border transition-all active:scale-95",
                   paidBy === opt.value
                     ? "border-primary bg-primary/10 font-bold"
                     : "border-border text-muted-foreground"
@@ -162,46 +253,62 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave, v
           </div>
         </div>
 
-        {/* Payment Stage */}
         <div className="mb-4">
-          <Label className="text-sm font-semibold mb-1.5 block">결제 단계</Label>
-          <div className="flex gap-2">
-            {paymentStageOptions.map(opt => (
-              <button key={opt.value} onClick={() => setPaymentStage(opt.value)}
-                className={cn(
-                  "flex-1 text-xs py-2 rounded-lg border transition-all",
-                  paymentStage === opt.value
-                    ? "border-primary bg-primary/10 font-bold"
-                    : "border-border text-muted-foreground"
-                )}>
-                {opt.emoji} {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen(o => !o)}
+            className="flex items-center justify-between w-full text-left py-1"
+          >
+            <span className="text-xs font-medium text-muted-foreground">
+              결제 단계 · 결제수단 · 메모
+            </span>
+            {advancedOpen
+              ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
+              : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+          </button>
+          {advancedOpen && (
+            <div className="mt-3 space-y-4">
+              <div>
+                <Label className="text-xs font-semibold mb-1.5 block">결제 단계</Label>
+                <div className="flex gap-2">
+                  {paymentStageOptions.map(opt => (
+                    <button key={opt.value} type="button" onClick={() => setPaymentStage(opt.value)}
+                      className={cn(
+                        "flex-1 text-xs py-2 rounded-lg border transition-all active:scale-95",
+                        paymentStage === opt.value
+                          ? "border-primary bg-primary/10 font-bold"
+                          : "border-border text-muted-foreground"
+                      )}>
+                      {opt.emoji} {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        {/* Payment Method */}
-        <div className="mb-4">
-          <Label className="text-sm font-semibold mb-1.5 block">결제수단</Label>
-          <div className="flex gap-1.5 flex-wrap">
-            {paymentMethodOptions.map(opt => (
-              <button key={opt.value} onClick={() => setPaymentMethod(opt.value)}
-                className={cn(
-                  "text-xs py-1.5 px-3 rounded-full border transition-all",
-                  paymentMethod === opt.value
-                    ? "border-primary bg-primary/10 font-bold"
-                    : "border-border text-muted-foreground"
-                )}>
-                {opt.emoji} {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+              <div>
+                <Label className="text-xs font-semibold mb-1.5 block">결제수단</Label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {paymentMethodOptions.map(opt => (
+                    <button key={opt.value} type="button" onClick={() => setPaymentMethod(opt.value)}
+                      className={cn(
+                        "text-xs py-1.5 px-3 rounded-full border transition-all active:scale-95",
+                        paymentMethod === opt.value
+                          ? "border-primary bg-primary/10 font-bold"
+                          : "border-border text-muted-foreground"
+                      )}>
+                      {opt.emoji} {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        <div className="mb-4">
-          <Label className="text-sm font-semibold mb-1.5 block">메모 (선택)</Label>
-          <Textarea value={memo} onChange={e => setMemo(e.target.value)}
-            placeholder="예: 잔금 200만원 D-30 전까지" rows={2} />
+              <div>
+                <Label className="text-xs font-semibold mb-1.5 block">메모</Label>
+                <Textarea value={memo} onChange={e => setMemo(e.target.value)}
+                  placeholder="예: 잔금 200만원 D-30 전까지" rows={2} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Balance toggle */}
@@ -212,12 +319,20 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave, v
           </div>
           {hasBalance && (
             <div className="space-y-3 pl-2 border-l-2 border-primary/20">
-              <div className="flex items-center gap-2">
-                <Input type="number" value={balanceAmount || ""} onChange={e => setBalanceAmount(Number(e.target.value))}
-                  placeholder="잔금 금액" className="text-right" />
-                <span className="text-sm text-muted-foreground">만원</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Input type="number" inputMode="decimal" step="0.1" value={balanceAmount || ""}
+                    onChange={e => setBalanceAmount(Number(e.target.value))}
+                    placeholder="잔금 금액 (만원)" className="text-right no-spinner" />
+                  <span className="text-sm text-muted-foreground">만원</span>
+                </div>
+                {balanceAmount > 0 && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5 text-right tabular-nums">
+                    = {manwonToWon(balanceAmount).toLocaleString()}원
+                  </p>
+                )}
               </div>
-              <Popover>
+              <Popover open={balanceDateOpen} onOpenChange={setBalanceDateOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal text-sm">
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -225,10 +340,16 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave, v
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={balanceDueDate} onSelect={setBalanceDueDate}
+                  <Calendar mode="single" selected={balanceDueDate}
+                    onSelect={d => { setBalanceDueDate(d); if (d) setBalanceDateOpen(false); }}
                     className={cn("p-3 pointer-events-auto")} />
                 </PopoverContent>
               </Popover>
+              {balanceAmount > 0 && amount > 0 && balanceAmount > amount && (
+                <p className="text-[11px] text-yellow-700 bg-yellow-100 px-2 py-1 rounded">
+                  잔금({fmt(balanceAmount)}만원)이 본 지출 금액({fmt(amount)}만원)보다 커요. 본 금액에 잔금이 포함되어 있는지 확인해주세요.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -237,6 +358,34 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, onSave, v
           {editItem ? "수정 완료" : "기록하기"}
         </Button>
       </SheetContent>
+
+      <AlertDialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>입력 내용을 다시 확인해주세요</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-1.5">
+              {isLargeAmount && (
+                <span className="block">
+                  · 금액이 <b className="text-foreground">{fmt(amount)}만원</b> ({manwonToWon(amount).toLocaleString()}원)이에요.
+                  단위가 맞나요? (1만원 단위 입력)
+                </span>
+              )}
+              {isFarFuture && (
+                <span className="block">
+                  · 날짜가 <b className="text-foreground">{itemDateDaysAhead}일 뒤</b>({format(itemDate, "yyyy-MM-dd")})로
+                  설정돼 있어요. 너무 먼 미래는 아닌가요?
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>다시 확인</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmSaveOpen(false); commitSave(); }}>
+              이대로 저장
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }

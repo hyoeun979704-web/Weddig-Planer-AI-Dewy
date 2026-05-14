@@ -76,7 +76,9 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
               key={cat}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 border rounded-xl cursor-pointer transition-colors",
-                isExcluded ? "border-primary/40 bg-primary/5" : "border-gray-200 bg-white"
+                isExcluded
+                  ? "border-primary bg-primary/15"
+                  : "border-gray-200 bg-white hover:border-gray-300"
               )}
             >
               <input
@@ -88,18 +90,21 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
               <span
                 className={cn(
                   "w-5 h-5 rounded border-2 flex items-center justify-center shrink-0",
-                  isExcluded ? "bg-primary border-primary" : "border-gray-300"
+                  isExcluded ? "bg-primary border-primary" : "bg-white border-gray-400"
                 )}
                 aria-hidden
               >
-                {isExcluded && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
+                {isExcluded && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
               </span>
               <div className="flex-1 min-w-0">
-                <p className={cn("text-sm", isExcluded ? "text-primary font-medium" : "text-gray-800")}>
+                <p className={cn("text-sm", isExcluded ? "text-gray-900 font-semibold line-through" : "text-gray-800")}>
                   {meta.label}
                 </p>
                 <p className="text-[11px] text-gray-400">{meta.hint}</p>
               </div>
+              {isExcluded && (
+                <span className="text-[10px] font-bold text-primary uppercase tracking-wide shrink-0">제외됨</span>
+              )}
             </label>
           );
         })}
