@@ -39,7 +39,11 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
         </p>
       )}
 
-      {/* Presets */}
+      {/* Presets — inactive buttons use bg-gray-50 so they don't disappear
+          into the surrounding white modal background. When the user toggles
+          a category checkbox, inferStyleFromExclusions returns "custom" and
+          all 3 preset buttons drop their active state simultaneously; with
+          bg-white they previously rendered as ghost-like empty rectangles. */}
       <div className="grid grid-cols-3 gap-2">
         {presetOrder.map((p) => {
           const preset = WEDDING_STYLE_PRESETS[p];
@@ -50,18 +54,26 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
               type="button"
               onClick={() => handlePreset(p)}
               className={cn(
-                "px-3 py-2.5 rounded-xl border text-left transition-colors",
-                isActive ? "border-primary bg-primary/5" : "border-gray-200 bg-white hover:border-gray-300"
+                "px-3 py-2.5 rounded-xl border-2 text-left transition-colors",
+                isActive
+                  ? "border-primary bg-primary/10"
+                  : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white"
               )}
             >
-              <p className={cn("text-sm font-semibold", isActive ? "text-primary" : "text-gray-800")}>{preset.label}</p>
+              <p className={cn("text-sm font-semibold", isActive ? "text-primary" : "text-gray-700")}>{preset.label}</p>
             </button>
           );
         })}
       </div>
-      {style && (
+      {style === "custom" && (
+        <div className="rounded-xl border-2 border-primary/40 bg-primary/5 px-3 py-2 flex items-center gap-2">
+          <span className="text-xs font-bold text-primary">직접 선택</span>
+          <span className="text-[11px] text-gray-500 flex-1">아래에서 카테고리를 골라 직접 조합하셨어요</span>
+        </div>
+      )}
+      {style && style !== "custom" && (
         <p className="text-[11px] text-gray-500">
-          {style === "custom" ? "직접 선택한 조합이에요" : WEDDING_STYLE_PRESETS[style].description}
+          {WEDDING_STYLE_PRESETS[style].description}
         </p>
       )}
 
