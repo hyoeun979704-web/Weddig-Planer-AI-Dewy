@@ -85,9 +85,13 @@ const AIStudio = () => {
     });
   };
 
-  const handleLockedCardClick = (cardId: string) => {
-    // Phase b-7에서 사전알림 모달 연결 예정
-    console.log("waitlist signup for:", cardId);
+  const handleLockedCardClick = (title: string) => {
+    // Phase b-7에서 사전알림 모달이 연결되기 전까지는 토스트로 임시 안내.
+    // (예전엔 console.log만 호출돼 CTA "출시 알림 받기"가 묵묵부답이었음.)
+    toast({
+      title: "준비 중인 서비스예요",
+      description: `${title} 출시 시 알림으로 알려드릴게요.`,
+    });
   };
 
   return (
@@ -157,7 +161,7 @@ const AIStudio = () => {
                 title={card.title}
                 description={card.description}
                 badge={lockedBadge[card.status]}
-                onClick={() => handleLockedCardClick(card.id)}
+                onClick={() => handleLockedCardClick(card.title)}
               />
             );
           })}

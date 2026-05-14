@@ -31,9 +31,7 @@ const Venues = lazy(() => import("./pages/Venues"));
 const VenueDetail = lazy(() => import("./pages/VenueDetail"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Store = lazy(() => import("./pages/Store"));
-const More = lazy(() => import("./pages/More"));
 const Magazine = lazy(() => import("./pages/Magazine"));
-const Reviews = lazy(() => import("./pages/Reviews"));
 const Gallery = lazy(() => import("./pages/Gallery"));
 const AIPlanner = lazy(() => import("./pages/AIPlanner"));
 const Budget = lazy(() => import("./pages/Budget"));
@@ -158,9 +156,7 @@ const App = () => (
               <Route path="/venue/:id" element={<VenueDetail />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/store" element={<Store />} />
-              <Route path="/more" element={<More />} />
               <Route path="/magazine" element={<Magazine />} />
-              <Route path="/reviews" element={<Reviews />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/ai-planner" element={<AIPlanner />} />
               <Route path="/budget" element={<Budget />} />
