@@ -248,7 +248,10 @@ const AIPlanner = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
       {!user && <LoginRequiredOverlay message="AI가 나만의 맞춤 웨딩 플랜을 설계해드려요" features={["맞춤 웨딩홀 추천", "예산 플래너", "준비 타임라인"]} />}
       {/* Header */}
-      <header className="sticky top-0 bg-card/95 backdrop-blur-md border-b border-border z-40 px-4 py-3">
+      <header
+        data-tutorial="ai-header"
+        className="sticky top-0 bg-card/95 backdrop-blur-md border-b border-border z-40 px-4 py-3"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground active:scale-95 transition-transform">
@@ -304,7 +307,7 @@ const AIPlanner = () => {
               </div>
 
               {/* Quick question cards */}
-              <div className="grid grid-cols-2 gap-2.5">
+              <div data-tutorial="ai-suggestions" className="grid grid-cols-2 gap-2.5">
                 {quickQuestions.map((q) => (
                   <button
                     key={q.label}
@@ -374,7 +377,10 @@ const AIPlanner = () => {
       </AnimatePresence>
 
       {/* Input area */}
-      <div className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto z-40">
+      <div
+        data-tutorial="ai-input"
+        className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto z-40"
+      >
         {/* 추천 질문 패널 (입력창 위) */}
         <div className="px-3 pb-2">
           <SuggestionPanel

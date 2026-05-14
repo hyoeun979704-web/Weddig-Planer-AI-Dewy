@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import SessionTracker from "@/components/SessionTracker";
+import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -252,6 +253,9 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          {/* First-time tutorial welcome sheet — uses useNavigate so it
+              must live inside BrowserRouter. Self-gates on user + onboarding. */}
+          <TutorialWelcomeSheet />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

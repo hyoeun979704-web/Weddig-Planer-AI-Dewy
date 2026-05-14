@@ -2,12 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { ArrowRight, Check, Flame, Sparkles, Timer } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Flame, Sparkles, Timer } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { usePersonaInsights } from "@/hooks/usePersonaInsights";
 import { useDailyStreak } from "@/hooks/useDailyStreak";
 import { useSessionTimer } from "@/hooks/useSessionTimer";
+import { useTutorialProgress } from "@/hooks/useTutorialProgress";
 import {
   loadMissionProgress,
   markMissionComplete,
@@ -55,6 +56,8 @@ const PersonaDashboard = () => {
   const { weddingSettings } = useWeddingSchedule();
   const streak = useDailyStreak();
   const session = useSessionTimer();
+  const tutorialProgress = useTutorialProgress();
+  const tutorialOverall = tutorialProgress.styleProgress(weddingSettings.wedding_style);
 
   const [missionProgress, setMissionProgress] = useState(() => loadMissionProgress());
 
@@ -93,7 +96,10 @@ const PersonaDashboard = () => {
   const progressDeg = Math.max(0, Math.min(360, (progressPercent / 100) * 360));
 
   return (
-    <section className="px-4 pt-4 pb-2 animate-fade-in">
+    <section
+      data-tutorial="persona-dashboard"
+      className="px-4 pt-4 pb-2 animate-fade-in"
+    >
       <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-accent/40 to-background border border-primary/15 p-4 relative overflow-hidden">
         {/* Decorative blur */}
         <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-primary/10 blur-3xl" aria-hidden />
@@ -101,9 +107,20 @@ const PersonaDashboard = () => {
         {/* Row 1: Style intro + D-Day ring */}
         <div className="relative flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-card/80 rounded-full text-[10px] font-semibold text-primary mb-1.5">
-              <span>{styleIntro.accentEmoji}</span>
-              <span>{styleLabel} 모드</span>
+            <div className="flex items-center gap-1 flex-wrap mb-1.5">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-card/80 rounded-full text-[10px] font-semibold text-primary">
+                <span>{styleIntro.accentEmoji}</span>
+                <span>{styleLabel} 모드</span>
+              </span>
+              {tutorialOverall.total > 0 && tutorialOverall.percent < 100 && (
+                <button
+                  onClick={() => navigate("/tutorial")}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-100 rounded-full text-[10px] font-semibold text-violet-700 active:scale-95 transition-transform"
+                >
+                  <BookOpen className="w-2.5 h-2.5" />
+                  가이드 {tutorialOverall.done}/{tutorialOverall.total}
+                </button>
+              )}
             </div>
             <h2 className="text-[15px] font-bold text-foreground leading-tight">
               {styleIntro.title}
