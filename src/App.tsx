@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
+import SessionTracker from "@/components/SessionTracker";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -128,6 +129,7 @@ const App = () => (
       <AuthProvider>
         <TooltipProvider>
         <PWAUpdatePrompt />
+        <SessionTracker />
         <WeddingBlessingSplash />
         <Toaster />
         <Sonner />
