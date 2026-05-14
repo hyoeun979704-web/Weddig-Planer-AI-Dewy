@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 import { regionalAverages, regions, type BudgetCategory } from "@/data/budgetData";
 
 export interface BudgetSettings {
@@ -141,8 +142,17 @@ export function useBudget(profileRegionKey?: string) {
       queryClient.invalidateQueries({ queryKey: ["budget-settings"] });
       queryClient.invalidateQueries({ queryKey: ["default-region"] });
     },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "예산 설정 저장에 실패했어요";
+      toast({ title: "저장 실패", description: msg, variant: "destructive" });
+    },
   });
 
+  // All three item mutations surface failures as a destructive toast. Without
+  // this, schema mismatches (e.g. the old INTEGER amount column silently
+  // rejecting decimal inserts) leave the user staring at an apparently-closed
+  // sheet with no new row in the list and no clue why. Caller-supplied
+  // onError is still honored.
   const addItem = useMutation({
     mutationFn: async (item: Omit<BudgetItem, "id" | "user_id" | "created_at">) => {
       if (!user) throw new Error("로그인이 필요합니다");
@@ -155,6 +165,10 @@ export function useBudget(profileRegionKey?: string) {
       return data as { id: string };
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["budget-items"] }),
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "지출 기록에 실패했어요";
+      toast({ title: "저장 실패", description: msg, variant: "destructive" });
+    },
   });
 
   const updateItem = useMutation({
@@ -166,6 +180,10 @@ export function useBudget(profileRegionKey?: string) {
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["budget-items"] }),
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "수정에 실패했어요";
+      toast({ title: "수정 실패", description: msg, variant: "destructive" });
+    },
   });
 
   const deleteItem = useMutation({
@@ -177,6 +195,10 @@ export function useBudget(profileRegionKey?: string) {
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["budget-items"] }),
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "삭제에 실패했어요";
+      toast({ title: "삭제 실패", description: msg, variant: "destructive" });
+    },
   });
 
   return {
