@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { supabase } from "@/integrations/supabase/client";
 import { matchIntent } from "@/lib/chatbot/intentRouter";
 import { runDbHandler } from "@/lib/chatbot/dbHandlers";
@@ -33,6 +34,7 @@ export const useAIPlanner = () => {
   const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
 
   const sendMessage = useCallback(async (input: string) => {
     const userMsg: Message = { role: "user", content: input };
@@ -69,7 +71,11 @@ export const useAIPlanner = () => {
         if (intent.dbHandler && user) {
           const result = await runDbHandler(
             intent.dbHandler,
-            { userId: user.id },
+            {
+              userId: user.id,
+              weddingStyle: weddingSettings.wedding_style,
+              excludedCategories: weddingSettings.excluded_categories,
+            },
             input,
             intent.args,
           );
@@ -119,16 +125,29 @@ export const useAIPlanner = () => {
 
       // 게이트가 추출한 컨텍스트(B+C 하이브리드)가 있다면 시스템 메시지로 주입.
       // LLM이 이 정보를 활용해 자연어로 정리한 답변을 만든다.
-      const messagesToSend: Message[] = llmContextInjection
-        ? [
-            {
-              role: "user",
+      // wedding_style 이 세팅돼 있고 일반이 아닐 땐 페르소나 힌트를 상시 주입해
+      // 셀프/스몰 사용자가 일반 결혼 어휘로 답변받지 않게 한다.
+      const personaContext = (() => {
+        const style = weddingSettings.wedding_style;
+        const excluded = weddingSettings.excluded_categories ?? [];
+        if (!style || style === "general") return null;
+        const styleLabel = style === "self" ? "셀프웨딩" : style === "small" ? "스몰웨딩" : "맞춤형 결혼식";
+        const excludedLabel = excluded.length > 0 ? ` 제외 카테고리: ${excluded.join(", ")}.` : "";
+        return `[페르소나] 사용자는 ${styleLabel}을 준비 중이에요.${excludedLabel} 추천·체크리스트·예산 안내는 이 페르소나에 맞춰 답변해주세요. 제외 카테고리에 해당하는 업체/일정은 추천에서 빼주세요.`;
+      })();
+      const messagesToSend: Message[] = [
+        ...(personaContext
+          ? [{ role: "user" as const, content: personaContext }]
+          : []),
+        ...(llmContextInjection
+          ? [{
+              role: "user" as const,
               content: `[참고 컨텍스트 - 사용자 데이터에서 추출됨, 이 정보를 자연스럽게 활용해 답변해주세요]\n${llmContextInjection}`,
-            },
-            ...messages,
-            userMsg,
-          ]
-        : [...messages, userMsg];
+            }]
+          : []),
+        ...messages,
+        userMsg,
+      ];
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -260,7 +279,7 @@ export const useAIPlanner = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, toast, user]);
+  }, [messages, toast, user, weddingSettings.wedding_style, weddingSettings.excluded_categories]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
