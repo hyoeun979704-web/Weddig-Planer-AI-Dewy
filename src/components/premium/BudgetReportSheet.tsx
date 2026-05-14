@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Loader2, Download } from "lucide-react";
 import { generatePdfHeader, generatePdfFooter, downloadPdf } from "@/lib/pdfGenerator";
 import { useBudget } from "@/hooks/useBudget";
-import { categories, regions, regionalAverages, type BudgetCategory } from "@/data/budgetData";
+import { categories, categoryKeys as ALL_CATEGORY_KEYS, regions, getRegionalAvgWithMeal, type BudgetCategory } from "@/data/budgetData";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { toast } from "sonner";
 
@@ -14,10 +14,8 @@ interface BudgetReportSheetProps {
   visibleCategoryKeys?: BudgetCategory[];
 }
 
-const DEFAULT_CATEGORY_KEYS: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
-
 const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportSheetProps) => {
-  const categoryKeys = visibleCategoryKeys ?? DEFAULT_CATEGORY_KEYS;
+  const categoryKeys = visibleCategoryKeys ?? ALL_CATEGORY_KEYS;
   const { settings, items, summary } = useBudget();
   const { weddingSettings } = useWeddingSchedule();
   const [generating, setGenerating] = useState(false);
@@ -28,7 +26,8 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       const totalBudget = settings?.total_budget || 0;
       const regionKey = settings?.region || "seoul";
       const regionLabel = regions[regionKey]?.label || regionKey;
-      const avg = regionalAverages[regionKey];
+      const guestCount = settings?.guest_count || 200;
+      const avg = getRegionalAvgWithMeal(regionKey, guestCount);
       const catBudgets = (settings?.category_budgets || {}) as Record<BudgetCategory, number>;
 
       // D-Day

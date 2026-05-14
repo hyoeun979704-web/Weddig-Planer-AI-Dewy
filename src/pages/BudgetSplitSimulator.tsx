@@ -3,22 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useBudget } from "@/hooks/useBudget";
 import { useAuth } from "@/contexts/AuthContext";
-import { categories, type BudgetCategory } from "@/data/budgetData";
+import { categories, categoryKeys, resolveRegionKey, type BudgetCategory } from "@/data/budgetData";
 import { Slider } from "@/components/ui/slider";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
-import { regions } from "@/data/budgetData";
-
-const regionLabelToKey = (label: string | null): string | undefined => {
-  if (!label) return undefined;
-  return Object.entries(regions).find(([_, r]) => r.label === label)?.[0];
-};
-
-const categoryKeys: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
 
 const traditionalSplit: Record<BudgetCategory, { groom: number; bride: number; label: string }> = {
   venue: { groom: 0, bride: 100, label: "전통적 신부측" },
+  meal: { groom: 0, bride: 100, label: "전통적 신부측" },
   sdm: { groom: 0, bride: 100, label: "전통적 신부측" },
+  suit: { groom: 100, bride: 0, label: "각자 부담(예복)" },
+  hanbok: { groom: 50, bride: 50, label: "각자 부담(한복)" },
   ring: { groom: 50, bride: 50, label: "각자 부담" },
+  meetup: { groom: 50, bride: 50, label: "공동 부담" },
   house: { groom: 100, bride: 0, label: "전통적 신랑측" },
   honeymoon: { groom: 100, bride: 0, label: "전통적 신랑측" },
   etc: { groom: 50, bride: 50, label: "공동 부담" },
@@ -36,7 +32,7 @@ const BudgetSplitSimulator = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { defaultRegion } = useDefaultRegion();
-  const profileRegionKey = regionLabelToKey(defaultRegion);
+  const profileRegionKey = resolveRegionKey(defaultRegion);
   const { settings } = useBudget(profileRegionKey);
 
   const totalBudget = settings?.total_budget || 0;
