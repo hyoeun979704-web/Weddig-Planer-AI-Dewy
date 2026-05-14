@@ -41,17 +41,24 @@ interface BudgetAddSheetProps {
    *  early bookings but still flag obvious year-typo mistakes. */
   weddingDate?: string | null;
   onSave: (item: Omit<BudgetItem, "id" | "user_id" | "created_at">) => void;
+  /** Budget categories the user hasn't excluded via wedding style. Falls back to all 6. */
+  visibleCategoryKeys?: BudgetCategory[];
 }
 
 const LAST_CATEGORY_KEY = "dewy.budget.lastCategory";
 
-const getRememberedCategory = (): BudgetCategory => {
-  if (typeof window === "undefined") return "venue";
+const getRememberedCategory = (allowed: BudgetCategory[]): BudgetCategory => {
+  if (typeof window === "undefined") return allowed[0] ?? "venue";
   const stored = window.localStorage.getItem(LAST_CATEGORY_KEY) as BudgetCategory | null;
-  return stored && categoryKeys.includes(stored) ? stored : "venue";
+  return stored && allowed.includes(stored) ? stored : (allowed[0] ?? "venue");
 };
 
-export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCategory, initialTitle, weddingDate, onSave }: BudgetAddSheetProps) {
+export default function BudgetAddSheet({
+  open, onOpenChange, editItem, initialCategory, initialTitle, weddingDate, onSave, visibleCategoryKeys,
+}: BudgetAddSheetProps) {
+  // When the caller passes a filtered category list, restrict picker rendering
+  // + "remembered last category" fallback to those. Defaults to all 10.
+  const visibleKeys = visibleCategoryKeys ?? categoryKeys;
   const [amount, setAmount] = useState(0);
   const [category, setCategory] = useState<BudgetCategory>("venue");
   const [title, setTitle] = useState("");
@@ -88,12 +95,13 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
       setAdvancedOpen(!!hasNonDefault);
     } else if (open) {
       setAmount(0);
-      setCategory(initialCategory || getRememberedCategory());
+      setCategory(initialCategory || getRememberedCategory(visibleKeys));
       setTitle(initialTitle || ""); setItemDate(new Date());
       setPaidBy("shared"); setPaymentStage("full"); setPaymentMethod("cash");
       setMemo(""); setHasBalance(false); setBalanceAmount(0); setBalanceDueDate(undefined);
       setAdvancedOpen(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editItem, initialCategory, initialTitle]);
 
   const subItems = categories[category]?.sub_items || [];
@@ -170,7 +178,7 @@ export default function BudgetAddSheet({ open, onOpenChange, editItem, initialCa
         <div className="mb-4">
           <Label className="text-sm font-semibold mb-1.5 block">카테고리</Label>
           <div className="flex gap-1.5 flex-wrap">
-            {categoryKeys.map(key => (
+            {visibleKeys.map(key => (
               <button key={key} type="button" onClick={() => setCategory(key)}
                 className={cn(
                   "text-xs py-1.5 px-3 rounded-full border transition-all active:scale-95",

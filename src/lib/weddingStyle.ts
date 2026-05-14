@@ -39,17 +39,19 @@ export const WEDDING_STYLE_PRESETS: Record<
 > = {
   general: {
     label: "일반 결혼식",
-    description: "표준 준비 과정 전체 포함",
+    description: "표준 준비 과정 전체 포함 — 호텔/예식장 + 풀패키지",
     excluded: [],
   },
   small: {
     label: "스몰웨딩",
-    description: "가까운 가족·지인 중심, 한복/대규모 청첩장 등 생략",
-    excluded: ["hanbok"],
+    // Realistic small-wedding scope: 50명 안팎, 한옥/하우스/카페형. 한복은
+    // 보통 안 입고, 예복도 일반 정장으로 대체, 청첩장은 모바일 위주.
+    description: "30~80명 소규모 · 한복·예복·대규모 청첩장 생략",
+    excluded: ["hanbok", "tailor_shop", "invitation_venue"],
   },
   self: {
     label: "셀프웨딩",
-    description: "촬영·메이크업·드레스 등을 직접 진행",
+    description: "촬영·드레스·메이크업을 직접 진행 (예산은 작지만 손이 많이 가요)",
     excluded: ["studio", "makeup_shop", "dress_shop"],
   },
 };
@@ -93,3 +95,46 @@ export const isHiddenByExclusion = (
   if (!category) return false;
   return excluded.includes(category);
 };
+
+// Maps each budget category to the set of schedule-side categories that
+// compose it. A budget category is hidden only when EVERY composing schedule
+// category is in `excluded_categories` — so e.g. excluding `studio` alone
+// keeps SDM visible (드레스/메이크업도 그 카테고리), but excluding studio +
+// dress_shop + makeup_shop together hides SDM entirely.
+//
+// Categories with no schedule-side composers (meal/ring/meetup) are never
+// auto-hidden by exclusions — they're general budget rows that users may
+// always need.
+export const BUDGET_CATEGORY_COMPOSERS: Record<string, readonly string[]> = {
+  venue: ["wedding_hall"],
+  meal: [],
+  sdm: ["studio", "dress_shop", "makeup_shop"],
+  suit: ["tailor_shop"],
+  hanbok: ["hanbok"],
+  ring: [],
+  meetup: [],
+  house: ["appliance"],
+  honeymoon: ["honeymoon"],
+  etc: ["invitation_venue"],
+};
+
+const ALL_BUDGET_CATEGORIES = [
+  "venue", "meal", "sdm", "suit", "hanbok", "ring", "meetup", "house", "honeymoon", "etc",
+] as const;
+export type BudgetCategoryKey = (typeof ALL_BUDGET_CATEGORIES)[number];
+
+export const isBudgetCategoryHidden = (
+  budgetCategory: string,
+  excludedScheduleCategories: string[]
+): boolean => {
+  const composers = BUDGET_CATEGORY_COMPOSERS[budgetCategory] ?? [];
+  if (composers.length === 0) return false;
+  return composers.every(c => excludedScheduleCategories.includes(c));
+};
+
+export const visibleBudgetCategories = (
+  excludedScheduleCategories: string[]
+): BudgetCategoryKey[] =>
+  ALL_BUDGET_CATEGORIES.filter(
+    c => !isBudgetCategoryHidden(c, excludedScheduleCategories)
+  );

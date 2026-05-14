@@ -38,7 +38,7 @@ import { toast } from "@/hooks/use-toast";
 import type { BudgetItem } from "@/hooks/useBudget";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
-import { WEDDING_STYLE_PRESETS, WEDDING_STYLE_LABEL } from "@/lib/weddingStyle";
+import { WEDDING_STYLE_PRESETS, WEDDING_STYLE_LABEL, visibleBudgetCategories } from "@/lib/weddingStyle";
 import { fmt } from "@/lib/budgetFormat";
 
 /** SVG donut chart for budget usage */
@@ -68,6 +68,9 @@ const Budget = () => {
   const profileRegionKey = resolveRegionKey(defaultRegion);
   const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem } = useBudget(profileRegionKey);
   const { weddingSettings, scheduleItems } = useWeddingSchedule();
+  // Sheets get the filtered list; main page itself iterates all 10 with
+  // dimming for hidden ones (visible without forcing edits).
+  const visibleSheetCategories = visibleBudgetCategories(weddingSettings.excluded_categories || []) as BudgetCategory[];
 
   const [setupOpen, setSetupOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -572,13 +575,13 @@ const Budget = () => {
           </div>
         )}
 
-        {/* Paid-by bar */}
+        {/* Paid-by bar — whole card is clickable to open the simulator */}
         {paidTotal > 0 ? (
           <button
             onClick={() => navigate("/budget/split-simulator")}
             className="w-full text-left rounded-2xl bg-card border border-border p-4 active:scale-[0.99] transition-transform"
           >
-            <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-primary" />양가 분담 현황
               </p>
@@ -586,21 +589,28 @@ const Budget = () => {
                 시뮬레이션 <ChevronRight className="w-2.5 h-2.5" />
               </span>
             </div>
-            <div className="h-3 rounded-full overflow-hidden flex bg-muted">
+            {/* Per-side cards — easier to show to family at a glance */}
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="rounded-xl bg-muted/50 p-2.5 text-center">
+                <p className="text-[10px] text-muted-foreground">🤝 공동</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">{fmt(paidShared)}<span className="text-[10px] font-normal">만원</span></p>
+                <p className="text-[10px] text-muted-foreground">{Math.round((paidShared / paidTotal) * 100)}%</p>
+              </div>
+              <div className="rounded-xl bg-blue-50 p-2.5 text-center">
+                <p className="text-[10px] text-blue-700">🤵 신랑측</p>
+                <p className="text-sm font-bold text-blue-900 mt-0.5">{fmt(paidGroom)}<span className="text-[10px] font-normal">만원</span></p>
+                <p className="text-[10px] text-blue-700">{Math.round((paidGroom / paidTotal) * 100)}%</p>
+              </div>
+              <div className="rounded-xl bg-primary/10 p-2.5 text-center">
+                <p className="text-[10px] text-primary">👰 신부측</p>
+                <p className="text-sm font-bold text-primary mt-0.5">{fmt(paidBride)}<span className="text-[10px] font-normal">만원</span></p>
+                <p className="text-[10px] text-primary">{Math.round((paidBride / paidTotal) * 100)}%</p>
+              </div>
+            </div>
+            <div className="h-2.5 rounded-full overflow-hidden flex bg-muted">
               {paidShared > 0 && <div className="bg-muted-foreground/40 h-full transition-all" style={{ width: `${(paidShared / paidTotal) * 100}%` }} />}
               {paidGroom > 0 && <div className="h-full transition-all bg-blue-400" style={{ width: `${(paidGroom / paidTotal) * 100}%` }} />}
               {paidBride > 0 && <div className="h-full transition-all bg-primary" style={{ width: `${(paidBride / paidTotal) * 100}%` }} />}
-            </div>
-            <div className="flex justify-between mt-2 text-[10px]">
-              <span className="text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-muted-foreground/40" /> 부부 공동 {fmt(paidShared)}만원
-              </span>
-              <span className="text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-blue-400" /> 신랑측 {fmt(paidGroom)}만원
-              </span>
-              <span className="text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-primary" /> 신부측 {fmt(paidBride)}만원
-              </span>
             </div>
           </button>
         ) : items.length > 0 && (
@@ -819,6 +829,7 @@ const Budget = () => {
         initialCategoryBudgets={settings?.category_budgets}
         weddingStyle={weddingSettings.wedding_style}
         excludedCategories={weddingSettings.excluded_categories}
+        visibleCategoryKeys={visibleSheetCategories}
         onSave={data => {
           saveSettings.mutate(data, {
             onSuccess: () => toast({ title: "예산 설정이 저장되었습니다" }),
@@ -836,6 +847,7 @@ const Budget = () => {
         initialCategory={addPrefill?.category}
         initialTitle={addPrefill?.title}
         weddingDate={weddingSettings.wedding_date}
+        visibleCategoryKeys={visibleSheetCategories}
         onSave={data => {
           if (editItem) {
             updateItem.mutate({ id: editItem.id, ...data } as any, {
@@ -849,7 +861,11 @@ const Budget = () => {
         }}
       />
 
-      <BudgetReportSheet open={reportOpen} onClose={() => setReportOpen(false)} />
+      <BudgetReportSheet
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        visibleCategoryKeys={categoryKeys}
+      />
       <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} trigger="pdf_feature" />
 
       <PayBalanceSheet

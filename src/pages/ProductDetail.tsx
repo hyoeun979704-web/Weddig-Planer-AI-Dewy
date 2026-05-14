@@ -6,6 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
+import { FavoriteButton } from "@/components/FavoriteButton";
 
 interface Product {
   id: string;
@@ -112,14 +113,17 @@ const ProductDetail = () => {
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <button onClick={() => navigate("/cart")} className="relative p-2">
-            <ShoppingCart className="w-5 h-5 text-foreground" />
-            {itemCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
-                {itemCount}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-1">
+            <FavoriteButton itemId={product.id} itemType="product" />
+            <button onClick={() => navigate("/cart")} className="relative p-2">
+              <ShoppingCart className="w-5 h-5 text-foreground" />
+              {itemCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 

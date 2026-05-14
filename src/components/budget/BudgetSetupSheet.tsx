@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { regions, regionalAverages, getRegionalAvgWithMeal, categories, categoryKeys, type BudgetCategory } from "@/data/budgetData";
+import { regions, regionalAverages, getRegionalAvgWithMeal, categories, categoryKeys as ALL_CATEGORY_KEYS, type BudgetCategory } from "@/data/budgetData";
 import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
 import { Minus, Plus, MapPin, Info, Sparkle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,8 @@ interface BudgetSetupSheetProps {
   initialGuestCount?: number;
   initialTotalBudget?: number;
   initialCategoryBudgets?: Record<BudgetCategory, number>;
+  /** Budget categories the user hasn't excluded via wedding style. Falls back to all 6. */
+  visibleCategoryKeys?: BudgetCategory[];
   onSave: (data: {
     region: string;
     guest_count: number;
@@ -44,8 +46,13 @@ const quickBudgets = [2000, 3000, 4000, 5000, 6000];
 export default function BudgetSetupSheet({
   open, onOpenChange, initialRegion = "seoul", initialGuestCount,
   initialTotalBudget = 0, initialCategoryBudgets, weddingStyle,
-  excludedCategories = [], onSave,
+  excludedCategories = [], visibleCategoryKeys, onSave,
 }: BudgetSetupSheetProps) {
+  // Render-time category list. When the caller passes a filtered subset
+  // (Budget.tsx does this via visibleBudgetCategories) we honor it; otherwise
+  // show all 10. The applyRegionalAvg logic still emits a full 10-key Record
+  // so categories the user re-enables later keep their average.
+  const visibleKeys = visibleCategoryKeys ?? ALL_CATEGORY_KEYS;
   const styleDefaultGuests = weddingStyle === "small" ? 50 : 200;
   const effectiveInitialGuests = initialGuestCount ?? styleDefaultGuests;
   const emptyCatBudgets: Record<BudgetCategory, number> = {
@@ -78,7 +85,7 @@ export default function BudgetSetupSheet({
    * wedding style + excluded shop categories:
    *
    *  - small wedding: venue × 0.7 (가든/하우스 가정). Meal already scales
-   *    with the smaller guestCount default.
+   *    with the smaller guestCount via getRegionalAvgWithMeal.
    *  - self / excluded sub-categories: drop sdm proportionally based on
    *    which of studio/dress_shop/makeup_shop is excluded (each ≈ 1/3 of
    *    sdm now that tailor_shop has its own budget row). Avoids blanket
@@ -347,7 +354,7 @@ export default function BudgetSetupSheet({
             </div>
           )}
           <div className="space-y-2">
-            {categoryKeys.map(key => (
+            {visibleKeys.map(key => (
               <div key={key}>
                 <div className="flex items-center gap-2">
                   <span className="text-sm w-20 shrink-0">{categories[key].emoji} {categories[key].label}</span>

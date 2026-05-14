@@ -3,6 +3,7 @@ import { ArrowLeft, ExternalLink, Users, Play, Image, FileText, Eye, Heart, Load
 import BottomNav from "@/components/BottomNav";
 import { useInfluencerDetail, useCategoryLabels } from "@/hooks/useInfluencers";
 import { Button } from "@/components/ui/button";
+import { FavoriteButton } from "@/components/FavoriteButton";
 
 const platformNames: Record<string, string> = {
   instagram: "Instagram",
@@ -56,7 +57,8 @@ const InfluencerDetail = () => {
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-lg font-bold text-foreground truncate">{influencer.name}</h1>
+          <h1 className="text-lg font-bold text-foreground truncate flex-1">{influencer.name}</h1>
+          <FavoriteButton itemId={influencer.id} itemType="influencer" />
         </div>
       </header>
 

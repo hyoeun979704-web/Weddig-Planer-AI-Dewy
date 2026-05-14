@@ -3,16 +3,19 @@ import { useState } from "react";
 import { Loader2, Download } from "lucide-react";
 import { generatePdfHeader, generatePdfFooter, downloadPdf } from "@/lib/pdfGenerator";
 import { useBudget } from "@/hooks/useBudget";
-import { categories, categoryKeys, regions, getRegionalAvgWithMeal, type BudgetCategory } from "@/data/budgetData";
+import { categories, categoryKeys as ALL_CATEGORY_KEYS, regions, getRegionalAvgWithMeal, type BudgetCategory } from "@/data/budgetData";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { toast } from "sonner";
 
 interface BudgetReportSheetProps {
   open: boolean;
   onClose: () => void;
+  /** Budget categories the user hasn't excluded via wedding style. Falls back to all 6. */
+  visibleCategoryKeys?: BudgetCategory[];
 }
 
-const BudgetReportSheet = ({ open, onClose }: BudgetReportSheetProps) => {
+const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportSheetProps) => {
+  const categoryKeys = visibleCategoryKeys ?? ALL_CATEGORY_KEYS;
   const { settings, items, summary } = useBudget();
   const { weddingSettings } = useWeddingSchedule();
   const [generating, setGenerating] = useState(false);
