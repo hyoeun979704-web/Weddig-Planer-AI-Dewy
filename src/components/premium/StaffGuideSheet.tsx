@@ -1,13 +1,13 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
-import { Loader2, Download, Sparkles } from "lucide-react";
+import { Loader2, Eye, Sparkles } from "lucide-react";
 import {
   generatePdfHeader,
   generatePdfFooter,
-  downloadPdf,
   pdfInfoGrid,
   pdfSection,
 } from "@/lib/pdfGenerator";
+import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
 import {
@@ -458,6 +458,8 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
 const StaffGuideSheet = ({ open, onClose }: StaffGuideSheetProps) => {
   const profile = useWeddingProfile();
   const [generating, setGenerating] = useState(false);
+  const [htmlResult, setHtmlResult] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [info, setInfo] = useState<StaffInfo>({
     weddingDate: "", ceremonyTime: "12:00", venueName: "", venueAddress: "",
     groomName: "", brideName: "", groomPhone: "", bridePhone: "",
@@ -495,8 +497,8 @@ const StaffGuideSheet = ({ open, onClose }: StaffGuideSheetProps) => {
     try {
       const template = staffTemplates[type];
       const html = template(info, profile.weddingStyle);
-      await downloadPdf(html, `듀이_${meta.filename}_${info.weddingDate || "안내서"}.pdf`);
-      toast.success("PDF가 다운로드됩니다!");
+      setHtmlResult(html);
+      setPreviewOpen(true);
     } catch (err) {
       console.error(err);
       toast.error("생성에 실패했습니다.");
@@ -506,6 +508,7 @@ const StaffGuideSheet = ({ open, onClose }: StaffGuideSheetProps) => {
   };
 
   return (
+    <>
     <Sheet open={!!open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-3xl max-h-[85vh] overflow-y-auto pb-8">
         <SheetHeader>
@@ -619,12 +622,21 @@ const StaffGuideSheet = ({ open, onClose }: StaffGuideSheetProps) => {
             </label>
           )}
           <button onClick={handleGenerate} disabled={generating} className="w-full py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
-            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            {generating ? "생성 중..." : "PDF 다운로드"}
+            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+            {generating ? "생성 중..." : "안내서 미리보기"}
           </button>
         </div>
       </SheetContent>
     </Sheet>
+
+    <PdfPreviewModal
+      open={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      html={htmlResult}
+      filename={`듀이_${meta.filename}_${info.weddingDate || "안내서"}.pdf`}
+      title={`${meta.title} 미리보기`}
+    />
+    </>
   );
 };
 

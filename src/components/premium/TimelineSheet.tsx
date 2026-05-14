@@ -1,7 +1,8 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
-import { Loader2, Download, Sparkles } from "lucide-react";
-import { generatePdfHeader, generatePdfFooter, downloadPdf } from "@/lib/pdfGenerator";
+import { Loader2, Eye, Sparkles } from "lucide-react";
+import { generatePdfHeader, generatePdfFooter } from "@/lib/pdfGenerator";
+import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
 import {
@@ -294,7 +295,9 @@ const buildTimeline = (type: TimelineType, input: TimelineInput, weddingStyle: W
 
 const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
   const profile = useWeddingProfile();
-  const [step, setStep] = useState<"input" | "loading" | "done">("input");
+  const [step, setStep] = useState<"input" | "loading">("input");
+  const [htmlResult, setHtmlResult] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [date, setDate] = useState("");
   const [venueName, setVenueName] = useState("");
   const [venueAddress, setVenueAddress] = useState("");
@@ -370,9 +373,9 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
         }
 
         html += generatePdfFooter();
-        await downloadPdf(html, `듀이_${meta.title}_${date || "타임라인"}.pdf`);
-        toast.success("PDF가 다운로드됩니다!");
-        setStep("done");
+        setHtmlResult(html);
+        setStep("input");
+        setPreviewOpen(true);
       } catch (err) {
         console.error(err);
         toast.error("타임라인 생성에 실패했습니다.");
@@ -381,9 +384,15 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
     }, 300);
   };
 
-  const handleClose = () => { setStep("input"); onClose(); };
+  const handleClose = () => {
+    setStep("input");
+    setHtmlResult("");
+    setPreviewOpen(false);
+    onClose();
+  };
 
   return (
+    <>
     <Sheet open={!!open} onOpenChange={(o) => !o && handleClose()}>
       <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-3xl max-h-[85vh] overflow-y-auto pb-8">
         <SheetHeader>
@@ -463,7 +472,7 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
               <textarea value={extraNotes} onChange={(e) => setExtraNotes(e.target.value)} rows={2} placeholder="예: 야외촬영 시 우천 대안 필요" className="w-full px-3 py-2 bg-muted rounded-xl text-sm outline-none resize-none" />
             </div>
             <button onClick={handleGenerate} className="w-full py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm flex items-center justify-center gap-2">
-              <Download className="w-4 h-4" /> 타임라인 PDF 다운로드
+              <Eye className="w-4 h-4" /> 타임라인 미리보기
             </button>
           </div>
         )}
@@ -475,15 +484,17 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
           </div>
         )}
 
-        {step === "done" && (
-          <div className="flex flex-col items-center justify-center py-12">
-            <span className="text-4xl mb-3">✅</span>
-            <p className="text-sm font-medium text-foreground">다운로드 완료!</p>
-            <button onClick={() => setStep("input")} className="mt-4 text-sm text-primary font-medium">다시 만들기</button>
-          </div>
-        )}
       </SheetContent>
     </Sheet>
+
+    <PdfPreviewModal
+      open={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      html={htmlResult}
+      filename={`듀이_${meta.title}_${date || "타임라인"}.pdf`}
+      title={`${meta.title} 미리보기`}
+    />
+    </>
   );
 };
 

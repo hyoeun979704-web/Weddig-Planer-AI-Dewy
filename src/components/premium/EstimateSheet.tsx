@@ -1,7 +1,8 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
-import { Loader2, Download, Sparkles } from "lucide-react";
-import { generatePdfHeader, generatePdfFooter, downloadPdf } from "@/lib/pdfGenerator";
+import { Loader2, Eye, Sparkles } from "lucide-react";
+import { generatePdfHeader, generatePdfFooter } from "@/lib/pdfGenerator";
+import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { regions, regionalAverages, categories, savingTips, type BudgetCategory } from "@/data/budgetData";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
@@ -279,7 +280,7 @@ const buildEstimateHtml = (params: {
 
 const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
   const profile = useWeddingProfile();
-  const [step, setStep] = useState<"input" | "loading" | "preview">("input");
+  const [step, setStep] = useState<"input" | "loading">("input");
   const [region, setRegion] = useState("seoul");
   const [guestCount, setGuestCount] = useState(200);
   const [totalBudget, setTotalBudget] = useState(3000);
@@ -288,7 +289,7 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
   const [guestAgeMix, setGuestAgeMix] = useState<GuestAgeMix>("balanced");
   const [venueGrade, setVenueGrade] = useState<VenueGrade>("standard");
   const [htmlResult, setHtmlResult] = useState("");
-  const [summary, setSummary] = useState<{ recommended: number; min: number; max: number } | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [prefillApplied, setPrefillApplied] = useState(false);
 
   // Prefill from registered budget/wedding info once loaded
@@ -332,12 +333,8 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
           weddingDate: profile.weddingDate || undefined,
         });
         setHtmlResult(html);
-        setSummary({
-          recommended: estimate.totalRecommended,
-          min: estimate.totalMin,
-          max: estimate.totalMax,
-        });
-        setStep("preview");
+        setStep("input");
+        setPreviewOpen(true);
       } catch (err) {
         console.error("Estimate generation error:", err);
         toast.error("견적서 생성에 실패했습니다. 다시 시도해주세요.");
@@ -346,19 +343,15 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
     }, 400);
   };
 
-  const handleDownload = () => {
-    downloadPdf(htmlResult, `듀이_견적서_${new Date().toISOString().split("T")[0]}.pdf`);
-    toast.success("PDF가 다운로드됩니다!");
-  };
-
   const handleClose = () => {
     setStep("input");
     setHtmlResult("");
-    setSummary(null);
+    setPreviewOpen(false);
     onClose();
   };
 
   return (
+    <>
     <Sheet open={open} onOpenChange={(o) => !o && handleClose()}>
       <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-3xl max-h-[85vh] overflow-y-auto pb-8">
         <SheetHeader>
@@ -439,8 +432,8 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
                 ))}
               </div>
             </div>
-            <button onClick={handleGenerate} className="w-full py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
-              견적서 생성하기
+            <button onClick={handleGenerate} className="w-full py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm flex items-center justify-center gap-2">
+              <Eye className="w-4 h-4" /> 견적서 미리보기
             </button>
           </div>
         )}
@@ -453,30 +446,17 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
           </div>
         )}
 
-        {step === "preview" && (
-          <div className="mt-4">
-            <div className="bg-muted rounded-2xl p-4 mb-4">
-              <div className="text-center py-4">
-                <span className="text-4xl">📄</span>
-                <p className="text-sm font-medium text-foreground mt-2">견적서가 준비되었어요!</p>
-                <p className="text-xs text-muted-foreground mt-1">{regions[region]?.label} · {guestCount}명 · {totalBudget.toLocaleString()}만원</p>
-                {summary && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    예상 범위 <strong className="text-foreground">{summary.min.toLocaleString()}~{summary.max.toLocaleString()}만원</strong>
-                  </p>
-                )}
-              </div>
-            </div>
-            <button onClick={handleDownload} className="w-full py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm flex items-center justify-center gap-2">
-              <Download className="w-4 h-4" /> PDF 다운로드
-            </button>
-            <button onClick={() => { setStep("input"); setHtmlResult(""); setSummary(null); }} className="w-full py-2.5 text-sm text-muted-foreground mt-2">
-              다시 만들기
-            </button>
-          </div>
-        )}
       </SheetContent>
     </Sheet>
+
+    <PdfPreviewModal
+      open={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      html={htmlResult}
+      filename={`듀이_견적서_${new Date().toISOString().split("T")[0]}.pdf`}
+      title="맞춤 웨딩 견적서 미리보기"
+    />
+    </>
   );
 };
 

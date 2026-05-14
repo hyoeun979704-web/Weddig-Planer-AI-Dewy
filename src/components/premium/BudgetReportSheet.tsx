@@ -1,14 +1,14 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useState } from "react";
-import { Loader2, Download } from "lucide-react";
+import { Loader2, Eye } from "lucide-react";
 import {
   generatePdfHeader,
   generatePdfFooter,
-  downloadPdf,
   pdfInfoGrid,
   pdfStatRow,
   pdfSection,
 } from "@/lib/pdfGenerator";
+import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { useBudget } from "@/hooks/useBudget";
 import { categories, regions, regionalAverages, savingTips, type BudgetCategory } from "@/data/budgetData";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
@@ -30,6 +30,8 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
   const { weddingSettings } = useWeddingSchedule();
   const profile = useWeddingProfile();
   const [generating, setGenerating] = useState(false);
+  const [htmlResult, setHtmlResult] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -211,8 +213,8 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
 
       html += generatePdfFooter();
 
-      await downloadPdf(html, `듀이_예산리포트_${new Date().toISOString().split("T")[0]}.pdf`);
-      toast.success("PDF가 다운로드됩니다!");
+      setHtmlResult(html);
+      setPreviewOpen(true);
     } catch (err) {
       console.error(err);
       toast.error("리포트 생성에 실패했습니다.");
@@ -222,6 +224,7 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
   };
 
   return (
+    <>
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-3xl pb-8">
         <SheetHeader>
@@ -237,12 +240,21 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
             </div>
           </div>
           <button onClick={handleGenerate} disabled={generating} className="w-full py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
-            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            {generating ? "생성 중..." : "리포트 PDF 다운로드"}
+            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+            {generating ? "분석 중..." : "리포트 미리보기"}
           </button>
         </div>
       </SheetContent>
     </Sheet>
+
+    <PdfPreviewModal
+      open={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      html={htmlResult}
+      filename={`듀이_예산리포트_${new Date().toISOString().split("T")[0]}.pdf`}
+      title="웨딩 예산 분석 리포트 미리보기"
+    />
+    </>
   );
 };
 
