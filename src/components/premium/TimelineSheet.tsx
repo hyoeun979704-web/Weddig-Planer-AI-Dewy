@@ -4,6 +4,13 @@ import { Loader2, Download, Sparkles } from "lucide-react";
 import { generatePdfHeader, generatePdfFooter, downloadPdf } from "@/lib/pdfGenerator";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
+import {
+  type GuestAgeMix,
+  GUEST_AGE_MIX_LABEL,
+  GUEST_AGE_MIX_HINT,
+  GUEST_TIMELINE_TIPS_BY_AGE,
+  pickFromPool, hashSeed,
+} from "@/lib/pdfPhrasings";
 import { toast } from "sonner";
 
 type TimelineType = "timeline-snap" | "timeline-ceremony" | "timeline-guest";
@@ -35,6 +42,7 @@ interface TimelineInput {
   hasPyebaek: boolean;
   hasOutdoor: boolean;
   extraNotes: string;
+  guestAgeMix: GuestAgeMix;
 }
 
 const parseTime = (hhmm: string): { hours: number; minutes: number } => {
@@ -264,6 +272,17 @@ const buildTimeline = (type: TimelineType, input: TimelineInput, weddingStyle: W
     tips = [...SMALL_TIPS, ...tips.slice(0, 2)];
   }
 
+  // 하객 안내 타임라인: 연령 비중에 따라 팁을 풀에서 선택
+  if (type === "timeline-guest") {
+    const ageTipPool = GUEST_TIMELINE_TIPS_BY_AGE[input.guestAgeMix] ?? GUEST_TIMELINE_TIPS_BY_AGE.balanced;
+    const seed = hashSeed(`${input.groomName}${input.brideName}${input.date}guest`);
+    const a = pickFromPool(ageTipPool, seed);
+    const b = pickFromPool(ageTipPool, seed, 1);
+    const c = pickFromPool(ageTipPool, seed, 2);
+    const ageTips = Array.from(new Set([a, b, c]));
+    tips = [...ageTips, ...tips.slice(0, 2)];
+  }
+
   return { items, checklist, tips };
 };
 
@@ -279,6 +298,7 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
   const [hasPyebaek, setHasPyebaek] = useState(true);
   const [hasOutdoor, setHasOutdoor] = useState(false);
   const [extraNotes, setExtraNotes] = useState("");
+  const [guestAgeMix, setGuestAgeMix] = useState<GuestAgeMix>("balanced");
   const [prefillApplied, setPrefillApplied] = useState(false);
 
   useEffect(() => {
@@ -304,7 +324,7 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
       try {
         const input: TimelineInput = {
           date, venueName, venueAddress, ceremonyTime,
-          groomName, brideName, hasPyebaek, hasOutdoor, extraNotes,
+          groomName, brideName, hasPyebaek, hasOutdoor, extraNotes, guestAgeMix,
         };
         const data = buildTimeline(type, input, profile.weddingStyle);
 
@@ -408,6 +428,21 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={hasPyebaek} onChange={(e) => setHasPyebaek(e.target.checked)} className="rounded" /> 폐백 진행</label>
               )}
             </div>
+            {type === "timeline-guest" && (
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">하객 연령 비중</label>
+                <select
+                  value={guestAgeMix}
+                  onChange={(e) => setGuestAgeMix(e.target.value as GuestAgeMix)}
+                  className="w-full px-3 py-2 bg-muted rounded-xl text-sm outline-none"
+                >
+                  {(Object.keys(GUEST_AGE_MIX_LABEL) as GuestAgeMix[]).map((key) => (
+                    <option key={key} value={key}>{GUEST_AGE_MIX_LABEL[key]}</option>
+                  ))}
+                </select>
+                <p className="text-[10.5px] text-muted-foreground mt-1 leading-snug">{GUEST_AGE_MIX_HINT[guestAgeMix]}</p>
+              </div>
+            )}
             <div>
               <label className="text-xs font-medium text-foreground mb-1 block">특이사항 (선택)</label>
               <textarea value={extraNotes} onChange={(e) => setExtraNotes(e.target.value)} rows={2} placeholder="예: 야외촬영 시 우천 대안 필요" className="w-full px-3 py-2 bg-muted rounded-xl text-sm outline-none resize-none" />

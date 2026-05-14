@@ -5,6 +5,12 @@ import { generatePdfHeader, generatePdfFooter, downloadPdf } from "@/lib/pdfGene
 import { regions, regionalAverages, categories, savingTips, type BudgetCategory } from "@/data/budgetData";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
+import {
+  type GuestAgeMix,
+  GUEST_AGE_MIX_LABEL,
+  GUEST_AGE_MIX_HINT,
+  HALL_FOOD_RECOMMENDATION,
+} from "@/lib/pdfPhrasings";
 import { toast } from "sonner";
 
 interface EstimateSheetProps {
@@ -182,10 +188,11 @@ const buildEstimateHtml = (params: {
   estimate: EstimateResult;
   regionNote: string;
   weddingStyle: WeddingStyle;
+  guestAgeMix: GuestAgeMix;
   couple?: string;
   weddingDate?: string;
 }): string => {
-  const { regionLabel, guestCount, totalBudget, styles, estimate, regionNote, weddingStyle, couple, weddingDate } = params;
+  const { regionLabel, guestCount, totalBudget, styles, estimate, regionNote, weddingStyle, guestAgeMix, couple, weddingDate } = params;
 
   let html = generatePdfHeader(
     "맞춤 웨딩 견적서",
@@ -223,6 +230,16 @@ const buildEstimateHtml = (params: {
     html += `<div class="pdf-note">💡 <strong>${WEDDING_STYLE_LABEL[weddingStyle]} 가이드:</strong> ${styleGuidance[weddingStyle]}</div>`;
   }
 
+  // 하객 연령 비중 기반 식사 추천
+  const food = HALL_FOOD_RECOMMENDATION[guestAgeMix];
+  html += `<div class="pdf-section"><div class="pdf-section-title">🍽️ ${GUEST_AGE_MIX_LABEL[guestAgeMix]} 기준 식사 추천</div>
+    <div class="pdf-info-grid">
+      <div class="pdf-info-item"><div class="pdf-info-label">추천 메뉴</div><div class="pdf-info-value">${food.recommend}</div></div>
+      <div class="pdf-info-item"><div class="pdf-info-label">단가 메모</div><div class="pdf-info-value">${food.priceNote}</div></div>
+    </div>
+    <p style="font-size:11.5px;color:#374151;line-height:1.6;">${food.reason}</p>
+  </div>`;
+
   for (const row of estimate.rows) {
     html += `<div class="pdf-section"><div class="pdf-section-title">${row.emoji} ${row.name} 상세</div>`;
     html += `<p style="font-size:12px;margin-bottom:4px;"><strong>포함 항목:</strong> ${row.items.join(", ")}</p>`;
@@ -256,6 +273,7 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
   const [totalBudget, setTotalBudget] = useState(3000);
   const [styles, setStyles] = useState<string[]>([]);
   const [priorities, setPriorities] = useState<string[]>([]);
+  const [guestAgeMix, setGuestAgeMix] = useState<GuestAgeMix>("balanced");
   const [htmlResult, setHtmlResult] = useState("");
   const [summary, setSummary] = useState<{ recommended: number; min: number; max: number } | null>(null);
   const [prefillApplied, setPrefillApplied] = useState(false);
@@ -295,6 +313,7 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
         const html = buildEstimateHtml({
           regionLabel, guestCount, totalBudget, styles, estimate, regionNote,
           weddingStyle: profile.weddingStyle,
+          guestAgeMix,
           couple,
           weddingDate: profile.weddingDate || undefined,
         });
@@ -369,6 +388,19 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
                   <button key={s} onClick={() => toggleChip(styles, s, setStyles)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${styles.includes(s) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{s}</button>
                 ))}
               </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">하객 연령 비중</label>
+              <select
+                value={guestAgeMix}
+                onChange={(e) => setGuestAgeMix(e.target.value as GuestAgeMix)}
+                className="w-full px-3 py-2.5 bg-muted rounded-xl text-sm border-none outline-none"
+              >
+                {(Object.keys(GUEST_AGE_MIX_LABEL) as GuestAgeMix[]).map((key) => (
+                  <option key={key} value={key}>{GUEST_AGE_MIX_LABEL[key]}</option>
+                ))}
+              </select>
+              <p className="text-[10.5px] text-muted-foreground mt-1 leading-snug">{GUEST_AGE_MIX_HINT[guestAgeMix]}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">우선순위 (최대 2개)</label>

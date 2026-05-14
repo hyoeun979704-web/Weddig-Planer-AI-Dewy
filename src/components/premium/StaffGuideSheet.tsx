@@ -10,6 +10,15 @@ import {
 } from "@/lib/pdfGenerator";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
+import {
+  type GuestAgeMix,
+  GUEST_AGE_MIX_LABEL,
+  GUEST_AGE_MIX_HINT,
+  MC_OPENING, MC_AFTER_DECLARATION, MC_CLOSING,
+  PARENT_OPENING, PARENT_CLOSING,
+  BAG_STAFF_THANKS, RECEPTION_THANKS, RECEPTION_TIPS_BY_AGE,
+  mentToneFor, pickFromPool, hashSeed, formatPhrase,
+} from "@/lib/pdfPhrasings";
 import { toast } from "sonner";
 
 type StaffType = "staff-gabang" | "staff-reception" | "staff-mc" | "staff-parents";
@@ -38,6 +47,7 @@ interface StaffInfo {
   expectedGuests: number;
   mealType: string;
   hasPyebaek: boolean;
+  guestAgeMix: GuestAgeMix;
 }
 
 const coupleSubtitle = (info: StaffInfo) =>
@@ -116,7 +126,10 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
     );
 
     html += `<div class="pdf-warning">⚠️ 절대 가방을 방치하지 마세요 · 축의금 봉투는 열어보지 마세요 · 편한 신발로 장시간 대비하세요</div>`;
-    html += `<div class="pdf-tip">💡 부담스러운 역할이지만, 신부 입장에서 가장 든든한 사람이에요. 천천히 호흡하면서 침착하게 진행해주세요.</div>`;
+
+    const seed = hashSeed(`${info.groomName}${info.brideName}${info.weddingDate}gabang`);
+    const thanksLine = pickFromPool(BAG_STAFF_THANKS, seed);
+    html += `<div class="pdf-tip">💝 ${thanksLine}</div>`;
 
     html += generatePdfFooter();
     return html;
@@ -184,6 +197,23 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
 
     html += `<div class="pdf-warning">⚠️ 봉투 분실 시 즉시 신랑/신부 측에 알리고 CCTV 확인 요청 · 봉투에 이름 없는 경우 사진으로 봉투 모양/위치 기록</div>`;
 
+    // 하객 연령 비중별 접수 팁 (해시로 결정론적 선택)
+    const recSeed = hashSeed(`${info.groomName}${info.brideName}${info.weddingDate}reception`);
+    const ageTips = RECEPTION_TIPS_BY_AGE[info.guestAgeMix] ?? RECEPTION_TIPS_BY_AGE.balanced;
+    const tip1 = pickFromPool(ageTips, recSeed);
+    const tip2 = pickFromPool(ageTips, recSeed, 1);
+    let ageTipsHtml = "";
+    for (const t of Array.from(new Set([tip1, tip2]))) {
+      ageTipsHtml += `<div class="pdf-tip">💡 ${t}</div>`;
+    }
+    html += pdfSection(
+      `🎯 ${GUEST_AGE_MIX_LABEL[info.guestAgeMix]} 응대 팁`,
+      `<p style="font-size:11px;color:#6b7280;margin-bottom:8px;">${GUEST_AGE_MIX_HINT[info.guestAgeMix]}</p>${ageTipsHtml}`,
+    );
+
+    const thanksRec = pickFromPool(RECEPTION_THANKS, recSeed);
+    html += `<div class="pdf-highlight">💝 ${thanksRec}</div>`;
+
     html += generatePdfFooter();
     return html;
   },
@@ -193,6 +223,16 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
     html += sharedInfoGrid(info);
 
     const isCasual = weddingStyle === "small" || weddingStyle === "self";
+    const tone = mentToneFor(weddingStyle, info.guestAgeMix);
+    const mcSeed = hashSeed(`${info.groomName}${info.brideName}${info.weddingDate}mc`);
+    const vars = {
+      groom: info.groomName || "신랑",
+      bride: info.brideName || "신부",
+      venue: info.venueName || "피로연장",
+    };
+    const opening = formatPhrase(pickFromPool(MC_OPENING[tone], mcSeed), vars);
+    const afterDecl = formatPhrase(pickFromPool(MC_AFTER_DECLARATION[tone], mcSeed, 1), vars);
+    const closing = formatPhrase(pickFromPool(MC_CLOSING[tone], mcSeed, 2), vars);
 
     const generalCue = [
       { order: 1, event: "개식 안내 · 휴대폰 무음 요청", duration: "2분", time: "−5", cue: "하객 착석 안내 멘트" },
@@ -229,35 +269,28 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
     cueTable += `</tbody></table>`;
     html += pdfSection(isCasual ? "🎬 식순 및 큐 (간소 진행)" : "🎬 식순 및 큐 타이밍", cueTable);
 
-    const formalMentScripts = `<div class="pdf-highlight">
+    const mentScripts = `<p style="font-size:10.5px;color:#9ca3af;margin-bottom:8px;">
+        톤: <strong>${
+          tone === "formal_elder" ? "격식체 · 어르신 비중 높음" :
+          tone === "formal_work" ? "격식체 · 회사/지인 비중 높음" :
+          tone === "warm_family" ? "따뜻한 톤 · 가족 위주" :
+          "편안한 톤 · 또래 위주"
+        }</strong> (하객 연령 비중에 맞춰 자동 선택)
+      </p>
+      <div class="pdf-highlight">
         <strong style="color:#F4A7B9;">개식 멘트 (예시)</strong><br/>
-        "안녕하십니까, 오늘 ${info.groomName || "신랑"} 군과 ${info.brideName || "신부"} 양의 결혼식에 함께해 주신 모든 분들께 감사드립니다.
-        잠시 후 예식이 시작될 예정이오니, 휴대폰은 진동이나 무음으로 전환해 주시고, 자리에 착석해 주시기 바랍니다."
+        "${opening}"
       </div>
       <div class="pdf-highlight" style="margin-top:8px;">
         <strong style="color:#F4A7B9;">성혼 선언 후 멘트 (예시)</strong><br/>
-        "방금 두 분이 부부가 되셨습니다! 두 사람의 새로운 출발을 축하하는 큰 박수 부탁드립니다."
+        "${afterDecl}"
       </div>
       <div class="pdf-highlight" style="margin-top:8px;">
         <strong style="color:#F4A7B9;">폐식 멘트 (예시)</strong><br/>
-        "이상으로 ${info.groomName || "신랑"}·${info.brideName || "신부"} 두 분의 결혼식을 모두 마칩니다. 함께해주신 모든 분들께 다시 한 번 감사드리며, 잠시 후 ${info.venueName || "피로연장"}에서 식사 자리를 마련하였으니 부디 자리를 빛내주시기 바랍니다."
+        "${closing}"
       </div>`;
 
-    const casualMentScripts = `<div class="pdf-highlight">
-        <strong style="color:#F4A7B9;">환영 멘트 (예시)</strong><br/>
-        "안녕하세요! 오늘 ${info.groomName || "신랑"}와 ${info.brideName || "신부"}의 결혼을 축하하기 위해 와주셔서 정말 감사드려요.
-        오늘은 두 사람의 특별한 하루를 함께 만드는 자리니까, 모두 편안하게 즐겨주시면 좋겠습니다."
-      </div>
-      <div class="pdf-highlight" style="margin-top:8px;">
-        <strong style="color:#F4A7B9;">성혼 선언 후 (예시)</strong><br/>
-        "이제 두 사람이 진짜 부부가 되었습니다! 다 같이 큰 박수로 축하해주세요 🎉"
-      </div>
-      <div class="pdf-highlight" style="margin-top:8px;">
-        <strong style="color:#F4A7B9;">마무리 멘트 (예시)</strong><br/>
-        "${info.groomName || "신랑"}와 ${info.brideName || "신부"}의 결혼식을 함께해주셔서 감사합니다. 잠시 후 ${info.venueName || "피로연 자리"}에서 편하게 식사와 환담 이어가실 예정이니, 천천히 자리해주세요."
-      </div>`;
-
-    html += pdfSection("🎤 멘트 가이드", isCasual ? casualMentScripts : formalMentScripts);
+    html += pdfSection("🎤 멘트 가이드", mentScripts);
 
     html += pdfSection(
       "🚨 비상 대응",
@@ -290,6 +323,12 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
   "staff-parents": (info, weddingStyle) => {
     let html = buildHeader(info, "부모님 안내서", weddingStyle);
     html += sharedInfoGrid(info);
+
+    // 톤 라우팅 & 풀에서 인사말 선택
+    const parentTone = mentToneFor(weddingStyle, info.guestAgeMix);
+    const parentSeed = hashSeed(`${info.groomName}${info.brideName}${info.weddingDate}parent`);
+    const opening = pickFromPool(PARENT_OPENING[parentTone], parentSeed);
+    html += `<div class="pdf-highlight">${opening}</div>`;
 
     html += pdfSection(
       "⏰ 당일 동선",
@@ -356,7 +395,8 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
       </ul>`,
     );
 
-    html += `<div class="pdf-note">📌 자녀의 가장 행복한 날입니다. 모든 일을 부모님이 다 챙기실 필요 없어요. 옆에서 미소로 함께해주시는 것만으로도 충분합니다. 💕</div>`;
+    const closingLine = pickFromPool(PARENT_CLOSING[parentTone], parentSeed, 1);
+    html += `<div class="pdf-note">📌 ${closingLine}</div>`;
 
     html += generatePdfFooter();
     return html;
@@ -369,7 +409,7 @@ const StaffGuideSheet = ({ open, onClose }: StaffGuideSheetProps) => {
   const [info, setInfo] = useState<StaffInfo>({
     weddingDate: "", ceremonyTime: "12:00", venueName: "", venueAddress: "",
     groomName: "", brideName: "", groomPhone: "", bridePhone: "",
-    expectedGuests: 200, mealType: "뷔페", hasPyebaek: true,
+    expectedGuests: 200, mealType: "뷔페", hasPyebaek: true, guestAgeMix: "balanced",
   });
   const [prefillApplied, setPrefillApplied] = useState(false);
 
@@ -457,6 +497,19 @@ const StaffGuideSheet = ({ open, onClose }: StaffGuideSheetProps) => {
           <div>
             <label className="text-xs font-medium text-foreground mb-1 block">주소</label>
             <input value={info.venueAddress} onChange={(e) => updateField("venueAddress", e.target.value)} className="w-full px-3 py-2 bg-muted rounded-xl text-sm outline-none" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-foreground mb-1 block">하객 연령 비중</label>
+            <select
+              value={info.guestAgeMix}
+              onChange={(e) => updateField("guestAgeMix", e.target.value as GuestAgeMix)}
+              className="w-full px-3 py-2 bg-muted rounded-xl text-sm outline-none"
+            >
+              {(Object.keys(GUEST_AGE_MIX_LABEL) as GuestAgeMix[]).map((key) => (
+                <option key={key} value={key}>{GUEST_AGE_MIX_LABEL[key]}</option>
+              ))}
+            </select>
+            <p className="text-[10.5px] text-muted-foreground mt-1 leading-snug">{GUEST_AGE_MIX_HINT[info.guestAgeMix]}</p>
           </div>
           {(type === "staff-gabang" || type === "staff-reception") && (
             <div className="grid grid-cols-2 gap-3">
