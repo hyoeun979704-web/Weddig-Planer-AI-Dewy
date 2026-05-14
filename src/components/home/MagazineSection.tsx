@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { CategoryTab } from "./CategoryTabBar";
@@ -7,6 +6,8 @@ import {
   youTubeUrl,
   type TipVideo,
 } from "@/hooks/useTipVideos";
+import { useFavorites } from "@/hooks/useFavorites";
+import { useAuth } from "@/contexts/AuthContext";
 import { PLACE_TO_KOREAN_CATEGORY } from "@/lib/placeMappers";
 
 const CARD_W = 120;
@@ -22,7 +23,20 @@ const koreanCategoryLabel = (slug: string): string =>
   PLACE_TO_KOREAN_CATEGORY[slug] ?? slug;
 
 function VideoCard({ video }: { video: TipVideo }) {
-  const [liked, setLiked] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const liked = isFavorite(video.video_id, "tip_video");
+
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    toggleFavorite(video.video_id, "tip_video");
+  };
 
   const [categorySlug, ...subCategorySlugs] = video.categories ?? [];
   const categoryLabel = categorySlug ? koreanCategoryLabel(categorySlug) : null;
@@ -61,11 +75,7 @@ function VideoCard({ video }: { video: TipVideo }) {
         <button
           type="button"
           aria-label={liked ? "찜 해제" : "찜하기"}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setLiked((v) => !v);
-          }}
+          onClick={handleHeartClick}
           className="absolute right-2 top-2 z-10"
         >
           <Heart

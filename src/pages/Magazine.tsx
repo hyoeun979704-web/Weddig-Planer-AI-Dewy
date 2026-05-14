@@ -1,8 +1,44 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Play, Flame } from "lucide-react";
+import { ArrowLeft, Play, Flame, Heart } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useTipVideos, youTubeUrl, type TipVideo } from "@/hooks/useTipVideos";
+import { useFavorites } from "@/hooks/useFavorites";
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
+
+function TipVideoHeart({ videoId, className }: { videoId: string; className?: string }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const liked = isFavorite(videoId, "tip_video");
+
+  return (
+    <button
+      type="button"
+      aria-label={liked ? "찜 해제" : "찜하기"}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!user) {
+          navigate("/auth");
+          return;
+        }
+        toggleFavorite(videoId, "tip_video");
+      }}
+      className={cn("absolute z-10", className)}
+    >
+      <Heart
+        className={
+          liked
+            ? "h-5 w-5 fill-[#f29aa3] text-[#f29aa3] drop-shadow"
+            : "h-5 w-5 text-white drop-shadow"
+        }
+        strokeWidth={2}
+      />
+    </button>
+  );
+}
 
 // Shorts threshold: YouTube classifies up to 3 min as Shorts. We use 180s.
 const SHORT_MAX_SECONDS = 180;
@@ -60,6 +96,7 @@ function HotCard({ video, rank }: { video: TipVideo; rank: number }) {
         <span className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center">
           {rank}
         </span>
+        <TipVideoHeart videoId={video.video_id} className="top-1.5 right-1.5" />
         <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/70 text-white text-[10px]">
           {formatViews(video.view_count)}
         </div>
@@ -96,6 +133,7 @@ function GridCard({ video, wide }: { video: TipVideo; wide?: boolean }) {
         <div className="absolute bottom-1.5 left-1.5 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
           <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
         </div>
+        <TipVideoHeart videoId={video.video_id} className="top-1.5 right-1.5" />
       </div>
       <div className="p-2">
         <p className="text-[12px] font-semibold text-foreground leading-snug line-clamp-2 min-h-[2.6em]">

@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const ITEM_TYPE_MAP = {
   place: { label: "장소·업체", table: "places", idCol: "place_id", titleCol: "name" },
   product: { label: "상품", table: "products", idCol: "id", titleCol: "name" },
-  tip_video: { label: "영상·팁", table: "tip_videos", idCol: "id", titleCol: "title" },
+  tip_video: { label: "영상·팁", table: "tip_videos", idCol: "video_id", titleCol: "title" },
   community_post: { label: "커뮤니티 글", table: "community_posts", idCol: "id", titleCol: "title" },
   deal: { label: "특가", table: "partner_deals", idCol: "id", titleCol: "description" },
 } as const;
