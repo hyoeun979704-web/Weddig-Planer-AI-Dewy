@@ -6,9 +6,12 @@ import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
 import {
   type GuestAgeMix,
+  type PyebaekType,
   GUEST_AGE_MIX_LABEL,
   GUEST_AGE_MIX_HINT,
   GUEST_TIMELINE_TIPS_BY_AGE,
+  PYEBAEK_LABEL,
+  PYEBAEK_DURATION_MIN,
   pickFromPool, hashSeed,
 } from "@/lib/pdfPhrasings";
 import { toast } from "sonner";
@@ -39,7 +42,7 @@ interface TimelineInput {
   ceremonyTime: string;
   groomName: string;
   brideName: string;
-  hasPyebaek: boolean;
+  pyebaekType: PyebaekType;
   hasOutdoor: boolean;
   extraNotes: string;
   guestAgeMix: GuestAgeMix;
@@ -137,10 +140,13 @@ const CEREMONY_ITEMS = (input: TimelineInput, weddingStyle: WeddingStyle): Timel
     { offsetMin: 32, event: "신랑신부 행진 · 폐식" },
     { offsetMin: 35, event: "단체 기념사진 (양가 + 친구)", note: "사진 담당자 큐 확인" },
   ];
-  if (input.hasPyebaek) {
-    items.push({ offsetMin: 55, event: "폐백 진행", note: "양가 가족 위주, 약 20분" });
+  const pyebaekMin = PYEBAEK_DURATION_MIN[input.pyebaekType];
+  if (input.pyebaekType === "informal") {
+    items.push({ offsetMin: 50, event: "약식 폐백", note: "양가 부모님만, 10분 이내 마무리" });
+  } else if (input.pyebaekType === "traditional") {
+    items.push({ offsetMin: 55, event: "전통 폐백", note: "양가 친지 포함, 25분 내외 · 폐백 음식 사전 확인" });
   }
-  items.push({ offsetMin: 75, event: "피로연/식사 시작" });
+  items.push({ offsetMin: 50 + pyebaekMin + 5, event: "피로연/식사 시작" });
   items.push({ offsetMin: 150, event: "신랑신부 인사 · 마무리" });
   return items;
 };
@@ -295,7 +301,7 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
   const [ceremonyTime, setCeremonyTime] = useState("12:00");
   const [groomName, setGroomName] = useState("");
   const [brideName, setBrideName] = useState("");
-  const [hasPyebaek, setHasPyebaek] = useState(true);
+  const [pyebaekType, setPyebaekType] = useState<PyebaekType>("traditional");
   const [hasOutdoor, setHasOutdoor] = useState(false);
   const [extraNotes, setExtraNotes] = useState("");
   const [guestAgeMix, setGuestAgeMix] = useState<GuestAgeMix>("balanced");
@@ -324,7 +330,7 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
       try {
         const input: TimelineInput = {
           date, venueName, venueAddress, ceremonyTime,
-          groomName, brideName, hasPyebaek, hasOutdoor, extraNotes, guestAgeMix,
+          groomName, brideName, pyebaekType, hasOutdoor, extraNotes, guestAgeMix,
         };
         const data = buildTimeline(type, input, profile.weddingStyle);
 
@@ -420,14 +426,23 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
               <label className="text-xs font-medium text-foreground mb-1 block">{type === "timeline-snap" ? "촬영 시작 시간" : "예식 시간"}</label>
               <input type="time" value={ceremonyTime} onChange={(e) => setCeremonyTime(e.target.value)} className="w-full px-3 py-2 bg-muted rounded-xl text-sm outline-none" />
             </div>
-            <div className="flex gap-4">
-              {type === "timeline-snap" && (
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={hasOutdoor} onChange={(e) => setHasOutdoor(e.target.checked)} className="rounded" /> 야외촬영 포함</label>
-              )}
-              {type === "timeline-ceremony" && (
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={hasPyebaek} onChange={(e) => setHasPyebaek(e.target.checked)} className="rounded" /> 폐백 진행</label>
-              )}
-            </div>
+            {type === "timeline-snap" && (
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={hasOutdoor} onChange={(e) => setHasOutdoor(e.target.checked)} className="rounded" /> 야외촬영 포함</label>
+            )}
+            {type === "timeline-ceremony" && (
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1 block">폐백 형식</label>
+                <select
+                  value={pyebaekType}
+                  onChange={(e) => setPyebaekType(e.target.value as PyebaekType)}
+                  className="w-full px-3 py-2 bg-muted rounded-xl text-sm outline-none"
+                >
+                  {(Object.keys(PYEBAEK_LABEL) as PyebaekType[]).map((key) => (
+                    <option key={key} value={key}>{PYEBAEK_LABEL[key]}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             {type === "timeline-guest" && (
               <div>
                 <label className="text-xs font-medium text-foreground mb-1 block">하객 연령 비중</label>

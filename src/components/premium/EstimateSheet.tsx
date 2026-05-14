@@ -7,8 +7,12 @@ import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
 import {
   type GuestAgeMix,
+  type VenueGrade,
   GUEST_AGE_MIX_LABEL,
   GUEST_AGE_MIX_HINT,
+  VENUE_GRADE_LABEL,
+  VENUE_GRADE_MEAL_FACTOR,
+  VENUE_GRADE_VENUE_FACTOR,
   HALL_FOOD_RECOMMENDATION,
 } from "@/lib/pdfPhrasings";
 import { toast } from "sonner";
@@ -92,6 +96,7 @@ const buildEstimate = (
   styles: string[],
   priorities: string[],
   weddingStyle: WeddingStyle = "general",
+  venueGrade: VenueGrade = "standard",
 ): EstimateResult => {
   const avg = regionalAverages[regionKey] ?? regionalAverages.seoul;
   const styleMult = styles.length === 0
@@ -103,12 +108,17 @@ const buildEstimate = (
   const weddingStyleFactor = WEDDING_STYLE_BUDGET_FACTOR[weddingStyle] ?? 1;
   const skippedCats = new Set(STYLE_SKIPPED_CATEGORIES[weddingStyle] ?? []);
 
-  // Adjust venue cost by actual guest count (region avg assumes ~200 guests)
-  const guestRatio = guestCount / 200;
+  // 식대: 인당 단가 × 인원 × 장소 등급 × 스타일/검약 가중치
+  // 지역 평균의 per_guest_meal(만원/인) × 가중치를 사용해 22명/400명 어떤 규모도 정상 반영
+  const perGuestMealCost = avg.per_guest_meal * VENUE_GRADE_MEAL_FACTOR[venueGrade] * styleMult * frugalMult * weddingStyleFactor;
+  const totalMealCost = Math.round(perGuestMealCost * guestCount);
+  // 대관료: 지역 평균에서 200명 기준 식대를 빼고 남는 부분으로 추정 + 등급 곱
+  const baseVenueRent = Math.max(50, avg.venue - 200 * avg.per_guest_meal);
+  const venueRent = Math.round(baseVenueRent * VENUE_GRADE_VENUE_FACTOR[venueGrade] * styleMult * frugalMult * weddingStyleFactor);
 
-  // Base recommended per category from regional average, adjusted by style & guest count
+  // Base recommended per category
   const baseRecommended: Record<BudgetCategory, number> = {
-    venue: Math.round(avg.venue * styleMult * frugalMult * weddingStyleFactor * (0.6 + 0.4 * guestRatio)),
+    venue: venueRent + totalMealCost,
     sdm: Math.round(avg.sdm * styleMult * frugalMult * weddingStyleFactor),
     ring: Math.round(avg.ring * styleMult * frugalMult * weddingStyleFactor),
     house: Math.round(avg.house * styleMult * frugalMult * weddingStyleFactor),
@@ -189,10 +199,11 @@ const buildEstimateHtml = (params: {
   regionNote: string;
   weddingStyle: WeddingStyle;
   guestAgeMix: GuestAgeMix;
+  venueGrade: VenueGrade;
   couple?: string;
   weddingDate?: string;
 }): string => {
-  const { regionLabel, guestCount, totalBudget, styles, estimate, regionNote, weddingStyle, guestAgeMix, couple, weddingDate } = params;
+  const { regionLabel, guestCount, totalBudget, styles, estimate, regionNote, weddingStyle, guestAgeMix, venueGrade, couple, weddingDate } = params;
 
   let html = generatePdfHeader(
     "맞춤 웨딩 견적서",
@@ -204,6 +215,7 @@ const buildEstimateHtml = (params: {
     <div class="pdf-info-item"><div class="pdf-info-label">지역</div><div class="pdf-info-value">${regionLabel}</div></div>
     <div class="pdf-info-item"><div class="pdf-info-label">하객 수</div><div class="pdf-info-value">${guestCount}명</div></div>
     <div class="pdf-info-item"><div class="pdf-info-label">총 예산</div><div class="pdf-info-value">${totalBudget.toLocaleString()}만원</div></div>
+    <div class="pdf-info-item"><div class="pdf-info-label">장소 등급</div><div class="pdf-info-value">${VENUE_GRADE_LABEL[venueGrade]}</div></div>
     <div class="pdf-info-item"><div class="pdf-info-label">선호 스타일</div><div class="pdf-info-value">${styles.join(", ") || "-"}</div></div>
   </div>`;
 
@@ -274,6 +286,7 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
   const [styles, setStyles] = useState<string[]>([]);
   const [priorities, setPriorities] = useState<string[]>([]);
   const [guestAgeMix, setGuestAgeMix] = useState<GuestAgeMix>("balanced");
+  const [venueGrade, setVenueGrade] = useState<VenueGrade>("standard");
   const [htmlResult, setHtmlResult] = useState("");
   const [summary, setSummary] = useState<{ recommended: number; min: number; max: number } | null>(null);
   const [prefillApplied, setPrefillApplied] = useState(false);
@@ -304,7 +317,7 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
     // Brief delay so users feel the "generation" without an actual API roundtrip.
     setTimeout(() => {
       try {
-        const estimate = buildEstimate(region, guestCount, totalBudget, styles, priorities, profile.weddingStyle);
+        const estimate = buildEstimate(region, guestCount, totalBudget, styles, priorities, profile.weddingStyle, venueGrade);
         const regionLabel = regions[region]?.label || region;
         const regionNote = regionalAverages[region]?.note ?? "";
         const couple = profile.displayName && profile.partnerName
@@ -314,6 +327,7 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
           regionLabel, guestCount, totalBudget, styles, estimate, regionNote,
           weddingStyle: profile.weddingStyle,
           guestAgeMix,
+          venueGrade,
           couple,
           weddingDate: profile.weddingDate || undefined,
         });
@@ -388,6 +402,21 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
                   <button key={s} onClick={() => toggleChip(styles, s, setStyles)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${styles.includes(s) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{s}</button>
                 ))}
               </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">예식 장소 등급</label>
+              <select
+                value={venueGrade}
+                onChange={(e) => setVenueGrade(e.target.value as VenueGrade)}
+                className="w-full px-3 py-2.5 bg-muted rounded-xl text-sm border-none outline-none"
+              >
+                {(Object.keys(VENUE_GRADE_LABEL) as VenueGrade[]).map((key) => (
+                  <option key={key} value={key}>{VENUE_GRADE_LABEL[key]}</option>
+                ))}
+              </select>
+              <p className="text-[10.5px] text-muted-foreground mt-1 leading-snug">
+                {venueGrade === "luxury" ? "인당 식대 12~18만원 기준" : venueGrade === "premium" ? "인당 식대 8~12만원 기준" : "인당 식대 5~7만원 기준"}
+              </p>
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">하객 연령 비중</label>

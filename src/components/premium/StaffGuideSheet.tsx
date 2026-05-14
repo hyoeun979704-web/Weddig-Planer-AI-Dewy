@@ -12,11 +12,16 @@ import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
 import {
   type GuestAgeMix,
+  type PyebaekType,
   GUEST_AGE_MIX_LABEL,
   GUEST_AGE_MIX_HINT,
+  PYEBAEK_LABEL,
   MC_OPENING, MC_AFTER_DECLARATION, MC_CLOSING,
   PARENT_OPENING, PARENT_CLOSING,
   BAG_STAFF_THANKS, RECEPTION_THANKS, RECEPTION_TIPS_BY_AGE,
+  VIP_RECEPTION_TIPS, HWAHWAN_GUIDE,
+  SELF_HOSTED_GUIDE, SELF_HOSTED_OPENING,
+  LIVE_STREAM_OPENING, LIVE_STREAM_CLOSING,
   mentToneFor, pickFromPool, hashSeed, formatPhrase,
 } from "@/lib/pdfPhrasings";
 import { toast } from "sonner";
@@ -46,8 +51,11 @@ interface StaffInfo {
   bridePhone: string;
   expectedGuests: number;
   mealType: string;
-  hasPyebaek: boolean;
+  pyebaekType: PyebaekType;
   guestAgeMix: GuestAgeMix;
+  selfHosted: boolean;        // 신랑신부가 직접 사회 진행
+  hasLiveStream: boolean;     // 인스타·유튜브 라이브 중계 운영
+  hasVip: boolean;            // VIP/임원 손님 다수
 }
 
 const coupleSubtitle = (info: StaffInfo) =>
@@ -89,7 +97,7 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
         <div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div><div class="pdf-timeline-time">예식 직전</div><div class="pdf-timeline-event">축의대에서 축의금 봉투 1차 수거</div></div>
         <div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div><div class="pdf-timeline-time">예식 중</div><div class="pdf-timeline-event">가방은 항상 몸에 지닌 채 자리 비우지 않기</div></div>
         <div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div><div class="pdf-timeline-time">예식 후</div><div class="pdf-timeline-event">축의금 봉투 2차 수거 · 신부에게 전달 확인</div></div>
-        ${info.hasPyebaek ? `<div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div><div class="pdf-timeline-time">폐백</div><div class="pdf-timeline-event">폐백실 동행 · 귀중품 보관</div></div>` : ""}
+        ${info.pyebaekType !== "none" ? `<div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div><div class="pdf-timeline-time">폐백</div><div class="pdf-timeline-event">폐백실 동행 · 귀중품 보관</div></div>` : ""}
       </div>`,
     );
 
@@ -211,6 +219,22 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
       `<p style="font-size:11px;color:#6b7280;margin-bottom:8px;">${GUEST_AGE_MIX_HINT[info.guestAgeMix]}</p>${ageTipsHtml}`,
     );
 
+    // VIP 응대 가이드 (회사 비중 또는 VIP 체크 시)
+    if (info.hasVip || info.guestAgeMix === "work") {
+      let vipHtml = `<ul class="pdf-bullet-list">`;
+      for (const tip of VIP_RECEPTION_TIPS) vipHtml += `<li>${tip}</li>`;
+      vipHtml += `</ul>`;
+      html += pdfSection("👔 VIP · 임원 손님 응대", vipHtml);
+    }
+
+    // 화환·전보 답례 안내 (회사 비중 또는 VIP일 때 자주 필요)
+    if (info.hasVip || info.guestAgeMix === "work") {
+      let hwaHtml = `<ul class="pdf-bullet-list">`;
+      for (const tip of HWAHWAN_GUIDE) hwaHtml += `<li>${tip}</li>`;
+      hwaHtml += `</ul>`;
+      html += pdfSection("🌸 화환·전보 응대 및 답례", hwaHtml);
+    }
+
     const thanksRec = pickFromPool(RECEPTION_THANKS, recSeed);
     html += `<div class="pdf-highlight">💝 ${thanksRec}</div>`;
 
@@ -230,9 +254,15 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
       bride: info.brideName || "신부",
       venue: info.venueName || "피로연장",
     };
-    const opening = formatPhrase(pickFromPool(MC_OPENING[tone], mcSeed), vars);
+    // 신랑신부 본인 사회면 셀프 진행용 개식 멘트로 교체
+    const baseOpening = info.selfHosted
+      ? pickFromPool(SELF_HOSTED_OPENING, mcSeed)
+      : pickFromPool(MC_OPENING[tone], mcSeed);
+    const opening = formatPhrase(baseOpening, vars);
     const afterDecl = formatPhrase(pickFromPool(MC_AFTER_DECLARATION[tone], mcSeed, 1), vars);
     const closing = formatPhrase(pickFromPool(MC_CLOSING[tone], mcSeed, 2), vars);
+    const liveOpening = info.hasLiveStream ? pickFromPool(LIVE_STREAM_OPENING, mcSeed) : "";
+    const liveClosing = info.hasLiveStream ? pickFromPool(LIVE_STREAM_CLOSING, mcSeed, 1) : "";
 
     const generalCue = [
       { order: 1, event: "개식 안내 · 휴대폰 무음 요청", duration: "2분", time: "−5", cue: "하객 착석 안내 멘트" },
@@ -269,18 +299,24 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
     cueTable += `</tbody></table>`;
     html += pdfSection(isCasual ? "🎬 식순 및 큐 (간소 진행)" : "🎬 식순 및 큐 타이밍", cueTable);
 
+    const toneLabel = info.selfHosted ? "신랑신부 직접 사회 · 1인칭 톤" : (
+      tone === "formal_elder" ? "격식체 · 어르신 비중 높음" :
+      tone === "formal_work" ? "격식체 · 회사/지인 비중 높음" :
+      tone === "warm_family" ? "따뜻한 톤 · 가족 위주" :
+      "편안한 톤 · 또래 위주"
+    );
+
     const mentScripts = `<p style="font-size:10.5px;color:#9ca3af;margin-bottom:8px;">
-        톤: <strong>${
-          tone === "formal_elder" ? "격식체 · 어르신 비중 높음" :
-          tone === "formal_work" ? "격식체 · 회사/지인 비중 높음" :
-          tone === "warm_family" ? "따뜻한 톤 · 가족 위주" :
-          "편안한 톤 · 또래 위주"
-        }</strong> (하객 연령 비중에 맞춰 자동 선택)
+        톤: <strong>${toneLabel}</strong> (하객 연령 비중·진행 형식에 맞춰 자동 선택)
       </p>
       <div class="pdf-highlight">
         <strong style="color:#F4A7B9;">개식 멘트 (예시)</strong><br/>
         "${opening}"
       </div>
+      ${liveOpening ? `<div class="pdf-highlight" style="margin-top:8px;background:#eff6ff;">
+        <strong style="color:#3b82f6;">📡 라이브 시작 멘트</strong><br/>
+        "${liveOpening}"
+      </div>` : ""}
       <div class="pdf-highlight" style="margin-top:8px;">
         <strong style="color:#F4A7B9;">성혼 선언 후 멘트 (예시)</strong><br/>
         "${afterDecl}"
@@ -288,9 +324,21 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
       <div class="pdf-highlight" style="margin-top:8px;">
         <strong style="color:#F4A7B9;">폐식 멘트 (예시)</strong><br/>
         "${closing}"
-      </div>`;
+      </div>
+      ${liveClosing ? `<div class="pdf-highlight" style="margin-top:8px;background:#eff6ff;">
+        <strong style="color:#3b82f6;">📡 라이브 마무리 멘트</strong><br/>
+        "${liveClosing}"
+      </div>` : ""}`;
 
     html += pdfSection("🎤 멘트 가이드", mentScripts);
+
+    // 신랑신부 본인 사회면 셀프 진행 팁 섹션 추가
+    if (info.selfHosted) {
+      let selfHostedHtml = `<ul class="pdf-bullet-list">`;
+      for (const tip of SELF_HOSTED_GUIDE) selfHostedHtml += `<li>${tip}</li>`;
+      selfHostedHtml += `</ul>`;
+      html += pdfSection("🎙️ 직접 사회 진행 팁", selfHostedHtml);
+    }
 
     html += pdfSection(
       "🚨 비상 대응",
@@ -340,7 +388,11 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
         <div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div><div class="pdf-timeline-time">예식 직전</div><div class="pdf-timeline-event">지정 좌석 착석 (1열 양쪽 끝)</div></div>
         <div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div><div class="pdf-timeline-time">예식 중</div><div class="pdf-timeline-event">화촉 점화 (양가 어머니) · 자녀 인사 받기</div></div>
         <div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div><div class="pdf-timeline-time">예식 후</div><div class="pdf-timeline-event">하객 인사 · 피로연 안내</div></div>
-        ${info.hasPyebaek ? `<div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div><div class="pdf-timeline-time">폐백</div><div class="pdf-timeline-event">폐백실로 이동 · 한복 착용</div></div>` : ""}
+        ${info.pyebaekType === "traditional"
+          ? `<div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div><div class="pdf-timeline-time">폐백 (전통)</div><div class="pdf-timeline-event">폐백실 이동 · 한복 착용 · 양가 친지 인사 (25분 내외)</div></div>`
+          : info.pyebaekType === "informal"
+            ? `<div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div><div class="pdf-timeline-time">폐백 (약식)</div><div class="pdf-timeline-event">양가 부모님만 짧게 인사 (10분 이내) · 한복은 선택</div></div>`
+            : ""}
       </div>`,
     );
 
@@ -409,7 +461,9 @@ const StaffGuideSheet = ({ open, onClose }: StaffGuideSheetProps) => {
   const [info, setInfo] = useState<StaffInfo>({
     weddingDate: "", ceremonyTime: "12:00", venueName: "", venueAddress: "",
     groomName: "", brideName: "", groomPhone: "", bridePhone: "",
-    expectedGuests: 200, mealType: "뷔페", hasPyebaek: true, guestAgeMix: "balanced",
+    expectedGuests: 200, mealType: "뷔페",
+    pyebaekType: "traditional", guestAgeMix: "balanced",
+    selfHosted: false, hasLiveStream: false, hasVip: false,
   });
   const [prefillApplied, setPrefillApplied] = useState(false);
 
@@ -523,19 +577,47 @@ const StaffGuideSheet = ({ open, onClose }: StaffGuideSheetProps) => {
               </div>
             </div>
           )}
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={info.hasPyebaek} onChange={(e) => updateField("hasPyebaek", e.target.checked)} className="rounded" />
-              폐백 진행
-            </label>
-            {type === "staff-reception" && (
-              <select value={info.mealType} onChange={(e) => updateField("mealType", e.target.value)} className="px-3 py-1.5 bg-muted rounded-xl text-sm outline-none">
+          <div>
+            <label className="text-xs font-medium text-foreground mb-1 block">폐백 형식</label>
+            <select
+              value={info.pyebaekType}
+              onChange={(e) => updateField("pyebaekType", e.target.value as PyebaekType)}
+              className="w-full px-3 py-2 bg-muted rounded-xl text-sm outline-none"
+            >
+              {(Object.keys(PYEBAEK_LABEL) as PyebaekType[]).map((key) => (
+                <option key={key} value={key}>{PYEBAEK_LABEL[key]}</option>
+              ))}
+            </select>
+          </div>
+          {type === "staff-reception" && (
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1 block">피로연 식사</label>
+              <select value={info.mealType} onChange={(e) => updateField("mealType", e.target.value)} className="w-full px-3 py-2 bg-muted rounded-xl text-sm outline-none">
                 <option value="뷔페">뷔페</option>
                 <option value="코스">코스</option>
                 <option value="한식">한식</option>
+                <option value="한 상 차림">한 상 차림 (소규모)</option>
               </select>
-            )}
-          </div>
+            </div>
+          )}
+          {type === "staff-mc" && (
+            <div className="space-y-2 p-3 rounded-xl bg-muted/50 border border-border">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={info.selfHosted} onChange={(e) => updateField("selfHosted", e.target.checked)} className="rounded" />
+                신랑신부가 직접 사회를 봅니다
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={info.hasLiveStream} onChange={(e) => updateField("hasLiveStream", e.target.checked)} className="rounded" />
+                인스타·유튜브 라이브 중계를 진행합니다
+              </label>
+            </div>
+          )}
+          {type === "staff-reception" && (
+            <label className="flex items-center gap-2 text-sm p-3 rounded-xl bg-muted/50 border border-border">
+              <input type="checkbox" checked={info.hasVip} onChange={(e) => updateField("hasVip", e.target.checked)} className="rounded" />
+              VIP·임원 손님이 많이 옵니다 (별도 응대 가이드 추가)
+            </label>
+          )}
           <button onClick={handleGenerate} disabled={generating} className="w-full py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             {generating ? "생성 중..." : "PDF 다운로드"}
