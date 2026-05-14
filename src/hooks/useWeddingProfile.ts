@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useBudget } from "@/hooks/useBudget";
+import type { WeddingStyle } from "@/lib/weddingStyle";
 
 export interface WeddingProfilePrefill {
   weddingDate: string;        // YYYY-MM-DD, "" if unset
@@ -11,6 +12,7 @@ export interface WeddingProfilePrefill {
   guestCount: number;          // budget guest_count, 200 if unset
   displayName: string;         // logged-in user's display name (profiles)
   partnerName: string;         // partner name from wedding settings
+  weddingStyle: WeddingStyle;  // general | small | self | custom, "general" if unset
   isLoaded: boolean;
 }
 
@@ -62,6 +64,7 @@ export const useWeddingProfile = (): WeddingProfilePrefill => {
     guestCount: settings?.guest_count ?? 200,
     displayName,
     partnerName: weddingSettings.partner_name ?? "",
+    weddingStyle: weddingSettings.wedding_style ?? "general",
     isLoaded: !weddingLoading && profileLoaded,
   };
 };

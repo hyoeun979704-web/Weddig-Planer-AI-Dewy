@@ -9,6 +9,7 @@ import {
   pdfSection,
 } from "@/lib/pdfGenerator";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
+import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
 import { toast } from "sonner";
 
 type StaffType = "staff-gabang" | "staff-reception" | "staff-mc" | "staff-parents";
@@ -51,9 +52,18 @@ const sharedInfoGrid = (info: StaffInfo, extras: { label: string; value: string 
     ...extras,
   ]);
 
-const staffTemplates: Record<StaffType, (info: StaffInfo) => string> = {
-  "staff-gabang": (info) => {
-    let html = generatePdfHeader("가방순이 전달사항", coupleSubtitle(info));
+const buildHeader = (info: StaffInfo, title: string, weddingStyle: WeddingStyle) => {
+  const couple = info.groomName && info.brideName ? `${info.groomName} ♥ ${info.brideName}` : undefined;
+  return generatePdfHeader(title, coupleSubtitle(info), {
+    couple,
+    weddingDate: info.weddingDate || undefined,
+    styleLabel: WEDDING_STYLE_LABEL[weddingStyle],
+  });
+};
+
+const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingStyle) => string> = {
+  "staff-gabang": (info, weddingStyle) => {
+    let html = buildHeader(info, "가방순이 전달사항", weddingStyle);
     html += sharedInfoGrid(info);
 
     html += pdfSection(
@@ -112,8 +122,8 @@ const staffTemplates: Record<StaffType, (info: StaffInfo) => string> = {
     return html;
   },
 
-  "staff-reception": (info) => {
-    let html = generatePdfHeader("축의대 담당자 안내서", coupleSubtitle(info));
+  "staff-reception": (info, weddingStyle) => {
+    let html = buildHeader(info, "축의대 담당자 안내서", weddingStyle);
     html += sharedInfoGrid(info, [{ label: "예상 하객", value: `${info.expectedGuests}명` }]);
 
     html += pdfSection(
@@ -178,11 +188,13 @@ const staffTemplates: Record<StaffType, (info: StaffInfo) => string> = {
     return html;
   },
 
-  "staff-mc": (info) => {
-    let html = generatePdfHeader("사회자 큐시트", coupleSubtitle(info));
+  "staff-mc": (info, weddingStyle) => {
+    let html = buildHeader(info, "사회자 큐시트", weddingStyle);
     html += sharedInfoGrid(info);
 
-    const cueItems = [
+    const isCasual = weddingStyle === "small" || weddingStyle === "self";
+
+    const generalCue = [
       { order: 1, event: "개식 안내 · 휴대폰 무음 요청", duration: "2분", time: "−5", cue: "하객 착석 안내 멘트" },
       { order: 2, event: "양가 어머니 화촉 점화", duration: "2분", time: "0", cue: "조명 다운 신호" },
       { order: 3, event: "신랑 입장", duration: "1분", time: "+2", cue: "입장곡 큐 (음향 담당)" },
@@ -197,16 +209,27 @@ const staffTemplates: Record<StaffType, (info: StaffInfo) => string> = {
       { order: 12, event: "단체 기념사진 안내", duration: "5분", time: "+30", cue: "양가 가족 → 친구 → 전체 순" },
     ];
 
+    const casualCue = [
+      { order: 1, event: "환영 인사 · 분위기 환기", duration: "2분", time: "−3", cue: "편하게 자리 안내, 음악 볼륨 체크" },
+      { order: 2, event: "신랑·신부 함께 입장", duration: "2분", time: "0", cue: "BGM 시작 신호" },
+      { order: 3, event: "두 사람의 이야기 (만남~결혼)", duration: "3분", time: "+2", cue: "사회자 또는 친구 진행" },
+      { order: 4, event: "혼인서약 · 반지 교환", duration: "3분", time: "+5", cue: "반지 위치 확인" },
+      { order: 5, event: "축가 또는 부모님께 편지", duration: "4분", time: "+8", cue: "마이크 전달 타이밍" },
+      { order: 6, event: "성혼 선언 · 단체 사진", duration: "5분", time: "+12", cue: "포토그래퍼 위치 큐" },
+      { order: 7, event: "가든파티/피로연 안내", duration: "2분", time: "+18", cue: "BGM 변경 · 자리 이동 유도" },
+      { order: 8, event: "자유 환담 · 마무리", duration: "-", time: "+20", cue: "신랑신부 테이블 인사 동선 확인" },
+    ];
+
+    const cueItems = isCasual ? casualCue : generalCue;
+
     let cueTable = `<table class="pdf-table"><thead><tr><th>#</th><th>순서</th><th>예식+분</th><th>소요</th><th>큐/멘트 포인트</th></tr></thead><tbody>`;
     for (const item of cueItems) {
       cueTable += `<tr><td>${item.order}</td><td><strong>${item.event}</strong></td><td>${item.time}</td><td>${item.duration}</td><td>${item.cue}</td></tr>`;
     }
     cueTable += `</tbody></table>`;
-    html += pdfSection("🎬 식순 및 큐 타이밍", cueTable);
+    html += pdfSection(isCasual ? "🎬 식순 및 큐 (간소 진행)" : "🎬 식순 및 큐 타이밍", cueTable);
 
-    html += pdfSection(
-      "🎤 멘트 가이드",
-      `<div class="pdf-highlight">
+    const formalMentScripts = `<div class="pdf-highlight">
         <strong style="color:#F4A7B9;">개식 멘트 (예시)</strong><br/>
         "안녕하십니까, 오늘 ${info.groomName || "신랑"} 군과 ${info.brideName || "신부"} 양의 결혼식에 함께해 주신 모든 분들께 감사드립니다.
         잠시 후 예식이 시작될 예정이오니, 휴대폰은 진동이나 무음으로 전환해 주시고, 자리에 착석해 주시기 바랍니다."
@@ -218,8 +241,23 @@ const staffTemplates: Record<StaffType, (info: StaffInfo) => string> = {
       <div class="pdf-highlight" style="margin-top:8px;">
         <strong style="color:#F4A7B9;">폐식 멘트 (예시)</strong><br/>
         "이상으로 ${info.groomName || "신랑"}·${info.brideName || "신부"} 두 분의 결혼식을 모두 마칩니다. 함께해주신 모든 분들께 다시 한 번 감사드리며, 잠시 후 ${info.venueName || "피로연장"}에서 식사 자리를 마련하였으니 부디 자리를 빛내주시기 바랍니다."
-      </div>`,
-    );
+      </div>`;
+
+    const casualMentScripts = `<div class="pdf-highlight">
+        <strong style="color:#F4A7B9;">환영 멘트 (예시)</strong><br/>
+        "안녕하세요! 오늘 ${info.groomName || "신랑"}와 ${info.brideName || "신부"}의 결혼을 축하하기 위해 와주셔서 정말 감사드려요.
+        오늘은 두 사람의 특별한 하루를 함께 만드는 자리니까, 모두 편안하게 즐겨주시면 좋겠습니다."
+      </div>
+      <div class="pdf-highlight" style="margin-top:8px;">
+        <strong style="color:#F4A7B9;">성혼 선언 후 (예시)</strong><br/>
+        "이제 두 사람이 진짜 부부가 되었습니다! 다 같이 큰 박수로 축하해주세요 🎉"
+      </div>
+      <div class="pdf-highlight" style="margin-top:8px;">
+        <strong style="color:#F4A7B9;">마무리 멘트 (예시)</strong><br/>
+        "${info.groomName || "신랑"}와 ${info.brideName || "신부"}의 결혼식을 함께해주셔서 감사합니다. 잠시 후 ${info.venueName || "피로연 자리"}에서 편하게 식사와 환담 이어가실 예정이니, 천천히 자리해주세요."
+      </div>`;
+
+    html += pdfSection("🎤 멘트 가이드", isCasual ? casualMentScripts : formalMentScripts);
 
     html += pdfSection(
       "🚨 비상 대응",
@@ -249,8 +287,8 @@ const staffTemplates: Record<StaffType, (info: StaffInfo) => string> = {
     return html;
   },
 
-  "staff-parents": (info) => {
-    let html = generatePdfHeader("부모님 안내서", coupleSubtitle(info));
+  "staff-parents": (info, weddingStyle) => {
+    let html = buildHeader(info, "부모님 안내서", weddingStyle);
     html += sharedInfoGrid(info);
 
     html += pdfSection(
@@ -267,28 +305,45 @@ const staffTemplates: Record<StaffType, (info: StaffInfo) => string> = {
       </div>`,
     );
 
-    html += pdfSection(
-      "👔 복장 안내",
-      `<table class="pdf-table"><tbody>
+    const isCasualStyle = weddingStyle === "small" || weddingStyle === "self";
+
+    const formalDress = `<table class="pdf-table"><tbody>
         <tr><td style="width:35%;">🤵 신랑 아버지</td><td>다크 양복 정장 + 흰 와이셔츠 (보타이 또는 단정한 넥타이)</td></tr>
         <tr><td>🤵 신랑 어머니</td><td>한복 또는 단정한 양장 (밝은 톤 추천)</td></tr>
         <tr><td>👰 신부 아버지</td><td>다크 양복 정장 (신랑 측과 톤 매치)</td></tr>
         <tr><td>👰 신부 어머니</td><td>한복 또는 단정한 양장 (밝은 톤 추천)</td></tr>
       </tbody></table>
-      <div class="pdf-tip">💡 양가 어머니 복장 톤을 미리 맞추면 사진 결과가 훨씬 조화로워요 (예: 둘 다 파스텔 / 둘 다 정장)</div>`,
-    );
+      <div class="pdf-tip">💡 양가 어머니 복장 톤을 미리 맞추면 사진 결과가 훨씬 조화로워요 (예: 둘 다 파스텔 / 둘 다 정장)</div>`;
 
-    html += pdfSection(
-      "💐 챙기면 좋은 것",
-      `<ul class="pdf-checklist">
+    const casualDress = `<table class="pdf-table"><tbody>
+        <tr><td style="width:35%;">🤵 신랑 아버지</td><td>깔끔한 정장 (다크/그레이 계열) 또는 단정한 캐주얼 정장</td></tr>
+        <tr><td>🤵 신랑 어머니</td><td>단정한 원피스 또는 투피스 (한복은 선택)</td></tr>
+        <tr><td>👰 신부 아버지</td><td>정장 (신랑 측과 톤 매치)</td></tr>
+        <tr><td>👰 신부 어머니</td><td>단정한 원피스 또는 투피스 (한복은 선택)</td></tr>
+      </tbody></table>
+      <div class="pdf-tip">💡 ${weddingStyle === "self" ? "셀프웨딩은 사진의 자연스러움이 중요해요. 결혼식 컨셉 톤에 맞춰 양가 의상을 매치해주세요" : "스몰웨딩은 격식보다 자연스러움이 포인트예요. 무리해서 한복을 준비하지 않아도 괜찮아요"}</div>`;
+
+    html += pdfSection("👔 복장 안내", isCasualStyle ? casualDress : formalDress);
+
+    const formalBring = `<ul class="pdf-checklist">
         <li>지정된 코사지/한복 액세서리</li>
         <li>한복 또는 정장 (변경용 옷 1벌 포함)</li>
         <li>편한 신발 (예식 외 시간용)</li>
         <li>축의금 답례용 작은 답례품 (선택)</li>
         <li>가족 사진용 손수건/소품</li>
         <li>휴대폰 충전기 (장시간 대비)</li>
-      </ul>`,
-    );
+      </ul>`;
+
+    const casualBring = `<ul class="pdf-checklist">
+        <li>코사지 또는 작은 부토니에 (양가 색상 매치)</li>
+        <li>예식 의상 + 가든파티/피로연용 가벼운 카디건</li>
+        <li>편한 신발 (장소에 따라 야외 보행 대비)</li>
+        <li>가족 사진용 손수건</li>
+        <li>휴대폰 충전기 (장시간 대비)</li>
+        <li>비/햇빛 대비 우산·양산 (야외 진행 시)</li>
+      </ul>`;
+
+    html += pdfSection("💐 챙기면 좋은 것", isCasualStyle ? casualBring : formalBring);
 
     html += pdfSection(
       "💡 유의사항",
@@ -345,7 +400,7 @@ const StaffGuideSheet = ({ open, onClose }: StaffGuideSheetProps) => {
     setGenerating(true);
     try {
       const template = staffTemplates[type];
-      const html = template(info);
+      const html = template(info, profile.weddingStyle);
       await downloadPdf(html, `듀이_${meta.filename}_${info.weddingDate || "안내서"}.pdf`);
       toast.success("PDF가 다운로드됩니다!");
     } catch (err) {

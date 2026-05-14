@@ -72,11 +72,28 @@ const PDF_STYLES = `
   /* Footer */
   .pdf-footer { text-align: center; font-size: 9px; color: #9ca3af; padding-top: 18px; border-top: 1px solid #f3f4f6; margin-top: 28px; line-height: 1.6; }
   .pdf-footer-brand { color: #F4A7B9; font-weight: 600; }
+
+  /* Couple tag in header */
+  .pdf-couple-tag { font-size: 10.5px; color: #1f2937; font-weight: 600; margin-bottom: 2px; }
+  /* Style badge next to title */
+  .pdf-style-pill { display: inline-block; vertical-align: middle; margin-left: 8px; padding: 2px 9px; background: #fce4ec; color: #be185d; font-size: 11px; font-weight: 600; border-radius: 10px; letter-spacing: 0.2px; }
 `;
 
-export function generatePdfHeader(title: string, subtitle?: string): string {
+export interface PdfHeaderOptions {
+  /** "지유 ♥ 민호" 같은 커플 표시. 헤더 우측 상단에 작게 노출 */
+  couple?: string;
+  /** 예식일 (YYYY-MM-DD). 커플과 함께 표시 */
+  weddingDate?: string;
+  /** "셀프웨딩"/"스몰웨딩"/"일반 결혼식" 등 스타일 배지 */
+  styleLabel?: string;
+}
+
+export function generatePdfHeader(title: string, subtitle?: string, opts: PdfHeaderOptions = {}): string {
   const today = new Date();
   const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
+  const coupleLine = opts.couple || opts.weddingDate
+    ? `<div class="pdf-couple-tag">${opts.couple ?? ""}${opts.couple && opts.weddingDate ? " · " : ""}${opts.weddingDate ?? ""}</div>`
+    : "";
   return `
     <style>${PDF_STYLES}</style>
     <div class="pdf-page">
@@ -87,9 +104,12 @@ export function generatePdfHeader(title: string, subtitle?: string): string {
             <div class="pdf-logo-sub">Wedding Planner</div>
           </div>
         </div>
-        <div class="pdf-date">발행일 ${dateStr}</div>
+        <div style="text-align:right;">
+          ${coupleLine}
+          <div class="pdf-date">발행일 ${dateStr}</div>
+        </div>
       </div>
-      <div class="pdf-title">${title}</div>
+      <div class="pdf-title">${title}${opts.styleLabel ? ` <span class="pdf-style-pill">${opts.styleLabel}</span>` : ""}</div>
       ${subtitle ? `<div class="pdf-subtitle">${subtitle}</div>` : ""}
   `;
 }

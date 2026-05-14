@@ -4,6 +4,7 @@ import { Loader2, Download, Sparkles } from "lucide-react";
 import { generatePdfHeader, generatePdfFooter, downloadPdf } from "@/lib/pdfGenerator";
 import { regions, regionalAverages, categories, savingTips, type BudgetCategory } from "@/data/budgetData";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
+import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
 import { toast } from "sonner";
 
 interface EstimateSheetProps {
@@ -21,6 +22,25 @@ const priorityOptions: { value: BudgetCategory | "value"; label: string }[] = [
 ];
 
 const CATEGORY_ORDER: BudgetCategory[] = ["venue", "sdm", "ring", "house", "honeymoon", "etc"];
+
+// Categories that go to ~0 cost for each style. We still show them in the
+// table so users see the savings they're getting, but mark them as
+// "직접 진행" or "생략" in the tip column.
+const STYLE_SKIPPED_CATEGORIES: Record<WeddingStyle, BudgetCategory[]> = {
+  general: [],
+  small: [], // small wedding usually still spends on sdm/ring etc, just at smaller scale
+  self: ["sdm"], // self-wedding handles studio/dress/makeup themselves
+  custom: [],
+};
+
+// Wedding style multiplier on top of the user-selected style chips.
+// Reflects that self/small weddings cost meaningfully less overall.
+const WEDDING_STYLE_BUDGET_FACTOR: Record<WeddingStyle, number> = {
+  general: 1.0,
+  small: 0.72,
+  self: 0.55,
+  custom: 1.0,
+};
 
 const STYLE_MULTIPLIER: Record<string, number> = {
   클래식: 1.0,
@@ -65,6 +85,7 @@ const buildEstimate = (
   totalBudget: number,
   styles: string[],
   priorities: string[],
+  weddingStyle: WeddingStyle = "general",
 ): EstimateResult => {
   const avg = regionalAverages[regionKey] ?? regionalAverages.seoul;
   const styleMult = styles.length === 0
@@ -73,19 +94,26 @@ const buildEstimate = (
 
   const isFrugal = priorities.includes("value");
   const frugalMult = isFrugal ? 0.9 : 1;
+  const weddingStyleFactor = WEDDING_STYLE_BUDGET_FACTOR[weddingStyle] ?? 1;
+  const skippedCats = new Set(STYLE_SKIPPED_CATEGORIES[weddingStyle] ?? []);
 
   // Adjust venue cost by actual guest count (region avg assumes ~200 guests)
   const guestRatio = guestCount / 200;
 
   // Base recommended per category from regional average, adjusted by style & guest count
   const baseRecommended: Record<BudgetCategory, number> = {
-    venue: Math.round(avg.venue * styleMult * frugalMult * (0.6 + 0.4 * guestRatio)),
-    sdm: Math.round(avg.sdm * styleMult * frugalMult),
-    ring: Math.round(avg.ring * styleMult * frugalMult),
-    house: Math.round(avg.house * styleMult * frugalMult),
-    honeymoon: Math.round(avg.honeymoon * styleMult * frugalMult),
-    etc: Math.round(avg.etc * styleMult * frugalMult),
+    venue: Math.round(avg.venue * styleMult * frugalMult * weddingStyleFactor * (0.6 + 0.4 * guestRatio)),
+    sdm: Math.round(avg.sdm * styleMult * frugalMult * weddingStyleFactor),
+    ring: Math.round(avg.ring * styleMult * frugalMult * weddingStyleFactor),
+    house: Math.round(avg.house * styleMult * frugalMult * weddingStyleFactor),
+    honeymoon: Math.round(avg.honeymoon * styleMult * frugalMult * weddingStyleFactor),
+    etc: Math.round(avg.etc * styleMult * frugalMult * weddingStyleFactor),
   };
+
+  // Self-wedding handles SDM themselves → keep a token DIY budget instead of zero
+  for (const skipped of skippedCats) {
+    baseRecommended[skipped] = Math.max(20, Math.round(baseRecommended[skipped] * 0.1));
+  }
 
   // Boost priorities by +12% each (max 2)
   const priorityCats = priorities.filter((p): p is BudgetCategory => p !== "value") as BudgetCategory[];
@@ -107,9 +135,13 @@ const buildEstimate = (
 
   const rows: EstimateCategoryRow[] = CATEGORY_ORDER.map((key) => {
     const recommended = scaled[key];
-    const min = Math.round(recommended * 0.85);
-    const max = Math.round(recommended * 1.2);
+    const isSkipped = skippedCats.has(key);
+    const min = isSkipped ? Math.round(recommended * 0.5) : Math.round(recommended * 0.85);
+    const max = isSkipped ? Math.round(recommended * 1.5) : Math.round(recommended * 1.2);
     const tipPool = savingTips[key];
+    const selfWeddingNote = weddingStyle === "self" && key === "sdm"
+      ? "직접 진행 (장비 대여·인화비 등 실비)"
+      : "";
     return {
       key,
       name: categories[key].label,
@@ -117,9 +149,9 @@ const buildEstimate = (
       min,
       max,
       recommended,
-      items: categories[key].sub_items.slice(0, 5),
+      items: isSkipped ? ["DIY 진행"] : categories[key].sub_items.slice(0, 5),
       hiddenCosts: HIDDEN_COSTS[key],
-      tip: tipPool[0] ?? "",
+      tip: selfWeddingNote || tipPool[0] || "",
     };
   });
 
@@ -149,13 +181,17 @@ const buildEstimateHtml = (params: {
   styles: string[];
   estimate: EstimateResult;
   regionNote: string;
+  weddingStyle: WeddingStyle;
+  couple?: string;
+  weddingDate?: string;
 }): string => {
-  const { regionLabel, guestCount, totalBudget, styles, estimate, regionNote } = params;
+  const { regionLabel, guestCount, totalBudget, styles, estimate, regionNote, weddingStyle, couple, weddingDate } = params;
 
-  let html = generatePdfHeader("맞춤 웨딩 견적서");
-  html += `<div class="pdf-subtitle">${regionLabel} · ${guestCount}명 · ${totalBudget.toLocaleString()}만원${
-    styles.length ? ` · ${styles.join(", ")}` : ""
-  }</div>`;
+  let html = generatePdfHeader(
+    "맞춤 웨딩 견적서",
+    `${regionLabel} · ${guestCount}명 · ${totalBudget.toLocaleString()}만원${styles.length ? ` · ${styles.join(", ")}` : ""}`,
+    { couple, weddingDate, styleLabel: WEDDING_STYLE_LABEL[weddingStyle] },
+  );
 
   html += `<div class="pdf-info-grid">
     <div class="pdf-info-item"><div class="pdf-info-label">지역</div><div class="pdf-info-value">${regionLabel}</div></div>
@@ -174,6 +210,17 @@ const buildEstimateHtml = (params: {
 
   if (regionNote) {
     html += `<div class="pdf-tip">📍 <strong>${regionLabel} 시장 메모:</strong> ${regionNote}</div>`;
+  }
+
+  // Style-specific guidance block
+  const styleGuidance: Record<WeddingStyle, string> = {
+    general: "표준 결혼식 기준의 견적입니다. 양가 상견례 합의 후 카테고리별 우선순위를 명확히 정하세요.",
+    small: "30~80명 소규모 기준입니다. 식대 단가가 일반 결혼식보다 높을 수 있으니 인당 식대를 꼭 확인하세요. 청첩장은 모바일 위주 권장.",
+    self: "스튜디오·드레스·메이크업을 직접 진행하는 구성입니다. SDM 행은 장비 대여·인화·소품 등 실비 기준이에요. 시간과 인력이 가장 큰 비용이라는 점을 잊지 마세요.",
+    custom: "직접 선택한 구성에 맞춘 견적입니다.",
+  };
+  if (styleGuidance[weddingStyle]) {
+    html += `<div class="pdf-note">💡 <strong>${WEDDING_STYLE_LABEL[weddingStyle]} 가이드:</strong> ${styleGuidance[weddingStyle]}</div>`;
   }
 
   for (const row of estimate.rows) {
@@ -239,10 +286,18 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
     // Brief delay so users feel the "generation" without an actual API roundtrip.
     setTimeout(() => {
       try {
-        const estimate = buildEstimate(region, guestCount, totalBudget, styles, priorities);
+        const estimate = buildEstimate(region, guestCount, totalBudget, styles, priorities, profile.weddingStyle);
         const regionLabel = regions[region]?.label || region;
         const regionNote = regionalAverages[region]?.note ?? "";
-        const html = buildEstimateHtml({ regionLabel, guestCount, totalBudget, styles, estimate, regionNote });
+        const couple = profile.displayName && profile.partnerName
+          ? `${profile.displayName} ♥ ${profile.partnerName}`
+          : undefined;
+        const html = buildEstimateHtml({
+          regionLabel, guestCount, totalBudget, styles, estimate, regionNote,
+          weddingStyle: profile.weddingStyle,
+          couple,
+          weddingDate: profile.weddingDate || undefined,
+        });
         setHtmlResult(html);
         setSummary({
           recommended: estimate.totalRecommended,

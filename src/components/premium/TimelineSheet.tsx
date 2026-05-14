@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Download, Sparkles } from "lucide-react";
 import { generatePdfHeader, generatePdfFooter, downloadPdf } from "@/lib/pdfGenerator";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
+import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
 import { toast } from "sonner";
 
 type TimelineType = "timeline-snap" | "timeline-ceremony" | "timeline-guest";
@@ -50,7 +51,26 @@ const offsetTime = (hhmm: string, offsetMin: number): string => {
   return `${hh}:${mm}`;
 };
 
-const SNAP_ITEMS = (input: TimelineInput): TimelineItem[] => {
+const SNAP_ITEMS = (input: TimelineInput, weddingStyle: WeddingStyle): TimelineItem[] => {
+  if (weddingStyle === "self") {
+    // Self-wedding: no studio, friend photographer, DIY props
+    const items: TimelineItem[] = [
+      { offsetMin: 0, event: "촬영 장소 도착 · 장비/소품 셋업", note: "친구 촬영자 · 보조 인력 동선 점검" },
+      { offsetMin: 30, event: "셀프 메이크업 · 헤어 마무리", note: "리허설했던 컨셉대로" },
+      { offsetMin: 60, event: "의상 착장 · 부케/액세서리 확인" },
+      { offsetMin: 90, event: "프리셋 컨셉 1 촬영", note: "단독 · 커플 · 가족 컷" },
+      { offsetMin: 180, event: "의상 체인지 · 컨셉 전환" },
+      { offsetMin: 210, event: "프리셋 컨셉 2 촬영" },
+    ];
+    if (input.hasOutdoor) {
+      items.push({ offsetMin: 270, event: "야외 로케이션 이동", note: "골든아워 1시간 전 도착 목표" });
+      items.push({ offsetMin: 300, event: "야외 스냅 (일몰 활용)" });
+    }
+    items.push({ offsetMin: 360, event: "촬영 종료 · 데이터 백업", note: "당일 SD카드 백업 권장" });
+    return items;
+  }
+
+  // Default (general/small): studio-based snap shoot
   const items: TimelineItem[] = [
     { offsetMin: 0, event: "스튜디오/촬영장 도착 · 의상 컨펌", note: "여유 있게 30분 전 도착" },
     { offsetMin: 30, event: "신부 헤어/메이크업 시작", note: "본식보다 진하지 않게 자연스럽게" },
@@ -70,7 +90,29 @@ const SNAP_ITEMS = (input: TimelineInput): TimelineItem[] => {
   return items;
 };
 
-const CEREMONY_ITEMS = (input: TimelineInput): TimelineItem[] => {
+const CEREMONY_ITEMS = (input: TimelineInput, weddingStyle: WeddingStyle): TimelineItem[] => {
+  if (weddingStyle === "small" || weddingStyle === "self") {
+    // Mini ceremony (~25-30분), 한옥/하우스/정원형
+    const items: TimelineItem[] = [
+      { offsetMin: -90, event: "신부 메이크업/헤어 마무리", note: weddingStyle === "self" ? "셀프 또는 친구 도움" : "스몰웨딩은 진하지 않게" },
+      { offsetMin: -75, event: "신랑·신부 의상 착장 · 부케 확인" },
+      { offsetMin: -60, event: "장소 셋업 점검 · BGM 사운드 체크", note: "스피커/마이크/조명" },
+      { offsetMin: -45, event: "양가 가족 도착 · 가족 사진 촬영" },
+      { offsetMin: -30, event: "친한 친구·하객 도착 · 웰컴 드링크 안내" },
+      { offsetMin: -10, event: "하객 착석 · 인사 마무리" },
+      { offsetMin: 0, event: "예식 시작 · 함께 입장 (또는 신부 입장)" },
+      { offsetMin: 3, event: "주례 또는 진행자 인사 / 짧은 덕담" },
+      { offsetMin: 8, event: "혼인서약 · 반지 교환" },
+      { offsetMin: 13, event: "축가 또는 부모님께 편지 낭독" },
+      { offsetMin: 20, event: "성혼 선언 · 단체 사진" },
+      { offsetMin: 25, event: "예식 마무리 · 피로연(가든파티/식사) 시작" },
+      { offsetMin: 90, event: "신랑신부 테이블 인사 · 자유 환담" },
+      { offsetMin: 150, event: "마무리 · 정리" },
+    ];
+    return items;
+  }
+
+  // General wedding: 표준 45분 예식
   const items: TimelineItem[] = [
     { offsetMin: -150, event: "신부 메이크업/헤어 시작", note: "본식보다 1시간 전 마무리" },
     { offsetMin: -120, event: "신랑 도착 · 의상 착장" },
@@ -152,14 +194,48 @@ const GUEST_TIPS = [
   "포토타임 단체사진은 예식 직후 진행되니 자리를 비우지 마세요",
 ];
 
-const buildTimeline = (type: TimelineType, input: TimelineInput): {
+const SELF_SNAP_CHECKLIST = [
+  "촬영 장비 (카메라, 렌즈, 삼각대, SD카드 여분, 배터리 풀충전)",
+  "셀프 의상 (드레스/턱시도 + 두 번째 컨셉)",
+  "구두/액세서리 · 부케 (또는 DIY 부케 자재)",
+  "셀프 메이크업 도구 (수정용 파우치 포함)",
+  "촬영 컨셉 레퍼런스/포즈 카드",
+  "친구 촬영자 보조용 의자/모니터",
+  "데이터 백업용 노트북 또는 외장 하드",
+];
+
+const SMALL_CEREMONY_CHECKLIST = [
+  "신분증 / 계약서",
+  "신랑·신부 본식 의상 + 부케",
+  "결혼반지 · 코사지",
+  "BGM 플레이리스트 (USB or 스마트폰)",
+  "마이크/스피커 사용법 (장소에 따라 직접 조작)",
+  "가든파티 음료/간식 (셀프 진행 시)",
+  "응급 키트 (반창고, 핀, 양면테이프, 진통제)",
+];
+
+const SELF_TIPS = [
+  "셀프 메이크업은 사전 리허설을 꼭 해보세요 (조명 차이 큼)",
+  "친구 촬영자에게 사전 컨셉 카드를 공유해주세요",
+  "DIY 부케/소품은 전날 미리 조립 완료 권장",
+  "촬영 중 자주 SD카드 확인 (용량/저장 오류 대비)",
+];
+
+const SMALL_TIPS = [
+  "30분 미니 예식은 진행자 멘트 길이를 미리 정해두세요",
+  "장소에 음향 시스템이 빈약할 수 있어요 - 블루투스 스피커 챙기기",
+  "가든파티는 비/추위 대비 우천 시 플랜B를 정해두세요",
+  "양가 부모님과 진행 흐름을 사전에 한 번 더 공유해주세요",
+];
+
+const buildTimeline = (type: TimelineType, input: TimelineInput, weddingStyle: WeddingStyle): {
   items: { time: string; event: string; note?: string }[];
   checklist: string[];
   tips: string[];
 } => {
   const itemsRaw =
-    type === "timeline-snap" ? SNAP_ITEMS(input) :
-    type === "timeline-ceremony" ? CEREMONY_ITEMS(input) :
+    type === "timeline-snap" ? SNAP_ITEMS(input, weddingStyle) :
+    type === "timeline-ceremony" ? CEREMONY_ITEMS(input, weddingStyle) :
     GUEST_ITEMS();
 
   const items = itemsRaw.map((it) => ({
@@ -168,15 +244,25 @@ const buildTimeline = (type: TimelineType, input: TimelineInput): {
     note: it.note,
   }));
 
-  const checklist =
+  let checklist =
     type === "timeline-snap" ? SNAP_CHECKLIST :
     type === "timeline-ceremony" ? CEREMONY_CHECKLIST :
     GUEST_CHECKLIST;
 
-  const tips =
+  let tips =
     type === "timeline-snap" ? SNAP_TIPS :
     type === "timeline-ceremony" ? CEREMONY_TIPS :
     GUEST_TIPS;
+
+  // Style-specific overrides
+  if (type === "timeline-snap" && weddingStyle === "self") {
+    checklist = SELF_SNAP_CHECKLIST;
+    tips = [...SELF_TIPS, ...tips.slice(0, 2)];
+  }
+  if (type === "timeline-ceremony" && (weddingStyle === "small" || weddingStyle === "self")) {
+    checklist = SMALL_CEREMONY_CHECKLIST;
+    tips = [...SMALL_TIPS, ...tips.slice(0, 2)];
+  }
 
   return { items, checklist, tips };
 };
@@ -220,11 +306,14 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
           date, venueName, venueAddress, ceremonyTime,
           groomName, brideName, hasPyebaek, hasOutdoor, extraNotes,
         };
-        const data = buildTimeline(type, input);
+        const data = buildTimeline(type, input, profile.weddingStyle);
 
-        let html = generatePdfHeader(meta.title);
-        const couple = groomName && brideName ? `${groomName} ♥ ${brideName}` : "결혼식 안내";
-        html += `<div class="pdf-subtitle">${couple}</div>`;
+        const couple = groomName && brideName ? `${groomName} ♥ ${brideName}` : "";
+        let html = generatePdfHeader(meta.title, couple || undefined, {
+          couple: couple || undefined,
+          weddingDate: date || undefined,
+          styleLabel: WEDDING_STYLE_LABEL[profile.weddingStyle],
+        });
         html += `<div class="pdf-info-grid">
           <div class="pdf-info-item"><div class="pdf-info-label">날짜</div><div class="pdf-info-value">${date || "-"}</div></div>
           <div class="pdf-info-item"><div class="pdf-info-label">장소</div><div class="pdf-info-value">${venueName || "-"}</div></div>

@@ -12,6 +12,8 @@ import {
 import { useBudget } from "@/hooks/useBudget";
 import { categories, regions, regionalAverages, savingTips, type BudgetCategory } from "@/data/budgetData";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useWeddingProfile } from "@/hooks/useWeddingProfile";
+import { WEDDING_STYLE_LABEL } from "@/lib/weddingStyle";
 import { toast } from "sonner";
 
 interface BudgetReportSheetProps {
@@ -26,6 +28,7 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
   const categoryKeys = visibleCategoryKeys ?? DEFAULT_CATEGORY_KEYS;
   const { settings, items, summary } = useBudget();
   const { weddingSettings } = useWeddingSchedule();
+  const profile = useWeddingProfile();
   const [generating, setGenerating] = useState(false);
 
   const handleGenerate = async () => {
@@ -60,9 +63,17 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       const healthLabel = healthScore >= 85 ? "매우 안정" : healthScore >= 70 ? "양호" : healthScore >= 55 ? "주의" : "재조정 필요";
       const healthColor = healthScore >= 70 ? "#10b981" : healthScore >= 55 ? "#f59e0b" : "#ef4444";
 
+      const couple = profile.displayName && profile.partnerName
+        ? `${profile.displayName} ♥ ${profile.partnerName}`
+        : undefined;
       let html = generatePdfHeader(
         "웨딩 예산 분석 리포트",
         `${regionLabel} · 총 예산 ${totalBudget.toLocaleString()}만원 · 기록 ${items.length}건`,
+        {
+          couple,
+          weddingDate: profile.weddingDate || undefined,
+          styleLabel: WEDDING_STYLE_LABEL[profile.weddingStyle],
+        },
       );
 
       // Overview info grid
