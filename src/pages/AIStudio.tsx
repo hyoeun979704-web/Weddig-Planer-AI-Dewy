@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
 import LockedCard from "@/components/LockedCard";
-import { toast } from "@/hooks/use-toast";
+import WaitlistSignupSheet from "@/components/studio/WaitlistSignupSheet";
 
 interface StudioCard {
   id: string;
@@ -62,6 +63,7 @@ const AIStudio = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const activeTab: CategoryTab = "ai-studio";
+  const [waitlistCard, setWaitlistCard] = useState<StudioCard | null>(null);
 
   const handleTabChange = (href: string) => {
     navigate(href);
@@ -78,20 +80,10 @@ const AIStudio = () => {
     navigate(tabRoutes[tab]);
   };
 
-  const handleComingSoonClick = (title: string) => {
-    toast({
-      title: "곧 만나요 ✨",
-      description: `${title}는 준비 중이에요. 출시 시 알림으로 알려드릴게요.`,
-    });
-  };
-
-  const handleLockedCardClick = (title: string) => {
-    // Phase b-7에서 사전알림 모달이 연결되기 전까지는 토스트로 임시 안내.
-    // (예전엔 console.log만 호출돼 CTA "출시 알림 받기"가 묵묵부답이었음.)
-    toast({
-      title: "준비 중인 서비스예요",
-      description: `${title} 출시 시 알림으로 알려드릴게요.`,
-    });
+  const handleLockedCardClick = (card: StudioCard) => {
+    // Open the waitlist sheet so users can register for launch notifications.
+    // Writes to service_waitlist (same table AdminServiceWaitlist administers).
+    setWaitlistCard(card);
   };
 
   return (
@@ -126,13 +118,13 @@ const AIStudio = () => {
                 </button>
               );
             }
-            // 곧 출시 카드 (시각적으론 활성, 클릭 시 토스트)
+            // 곧 출시 카드 (시각적으론 활성, 클릭 시 사전알림 시트)
             if (card.status === "coming_soon") {
               return (
                 <button
                   key={card.id}
                   type="button"
-                  onClick={() => handleComingSoonClick(card.title)}
+                  onClick={() => handleLockedCardClick(card)}
                   className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
                 >
                   <div className="relative aspect-square bg-gradient-to-br from-pink-50 to-pink-100">
@@ -161,7 +153,7 @@ const AIStudio = () => {
                 title={card.title}
                 description={card.description}
                 badge={lockedBadge[card.status]}
-                onClick={() => handleLockedCardClick(card.title)}
+                onClick={() => handleLockedCardClick(card)}
               />
             );
           })}
@@ -169,6 +161,13 @@ const AIStudio = () => {
       </main>
 
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
+
+      <WaitlistSignupSheet
+        open={waitlistCard !== null}
+        onOpenChange={(open) => !open && setWaitlistCard(null)}
+        serviceId={waitlistCard?.id ?? null}
+        serviceTitle={waitlistCard?.title ?? ""}
+      />
     </div>
   );
 };

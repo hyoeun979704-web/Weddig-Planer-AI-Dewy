@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
+import { toast } from "sonner";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useQuery } from "@tanstack/react-query";
@@ -102,11 +103,25 @@ const Community = () => {
 
   // 사용자의 결혼 유형이 로드되면 첫 1회만 같은 유형을 기본 필터로 적용.
   // 이후 사용자가 직접 바꾸면 자동 적용을 멈춰서 의도를 덮어쓰지 않도록 함.
+  // sessionStorage 가드로 같은 세션에선 안내 토스트가 중복 노출되지 않도록.
   useEffect(() => {
     if (styleAutoApplied) return;
     if (!myStyle || myStyle === "custom") return;
     setStyleFilter(myStyle);
     setStyleAutoApplied(true);
+
+    const NOTICE_KEY = "dewy:community:auto-style-notice";
+    if (typeof window !== "undefined" && sessionStorage.getItem(NOTICE_KEY) !== "1") {
+      const label =
+        myStyle === "general" ? "일반 결혼식"
+        : myStyle === "small" ? "스몰웨딩"
+        : "셀프웨딩";
+      toast(`${label} 글로 자동 필터링했어요`, {
+        description: "상단 필터 버튼으로 다른 스타일 글도 볼 수 있어요.",
+        duration: 4000,
+      });
+      sessionStorage.setItem(NOTICE_KEY, "1");
+    }
   }, [myStyle, styleAutoApplied]);
 
   const { data: posts = [], isLoading } = useQuery({
