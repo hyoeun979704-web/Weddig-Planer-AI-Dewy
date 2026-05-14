@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Play, Flame } from "lucide-react";
+import { ArrowLeft, Flame } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import { useTipVideos, youTubeUrl, type TipVideo } from "@/hooks/useTipVideos";
+import { TipVideoCard, TipVideoCardSkeleton } from "@/components/TipVideoCard";
+import { useTipVideos, type TipVideo } from "@/hooks/useTipVideos";
 
 // Shorts threshold: YouTube classifies up to 3 min as Shorts. We use 180s.
 const SHORT_MAX_SECONDS = 180;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+const HOT_CARD_WIDTH = 140;
 type FormatKey = "all" | "short" | "long";
 
 const CATEGORY_CHIPS: Array<{ slug: string | null; label: string }> = [
@@ -24,93 +26,6 @@ const CATEGORY_CHIPS: Array<{ slug: string | null; label: string }> = [
 ];
 
 type SortKey = "popular" | "recent";
-
-function formatViews(n: number): string {
-  if (n >= 10_000) return `${(n / 10_000).toFixed(1).replace(/\.0$/, "")}만회`;
-  return `${n.toLocaleString()}회`;
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "";
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
-  if (days < 1) return "오늘";
-  if (days < 7) return `${days}일 전`;
-  if (days < 30) return `${Math.floor(days / 7)}주 전`;
-  if (days < 365) return `${Math.floor(days / 30)}개월 전`;
-  return `${Math.floor(days / 365)}년 전`;
-}
-
-function HotCard({ video, rank }: { video: TipVideo; rank: number }) {
-  return (
-    <a
-      href={youTubeUrl(video.video_id)}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex-shrink-0 w-[180px] active:scale-[0.97] transition-transform"
-    >
-      <div className="relative aspect-[9/16] bg-muted rounded-[10px] overflow-hidden">
-        {video.thumbnail_url && (
-          <img
-            src={video.thumbnail_url}
-            alt={video.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        )}
-        <span className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center">
-          {rank}
-        </span>
-        <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/70 text-white text-[10px]">
-          {formatViews(video.view_count)}
-        </div>
-      </div>
-      <p className="text-[12px] font-medium text-foreground leading-snug line-clamp-2 mt-1.5">
-        {video.title}
-      </p>
-    </a>
-  );
-}
-
-function GridCard({ video, wide }: { video: TipVideo; wide?: boolean }) {
-  // wide=true → long-form full-row card with 16:9 thumbnail.
-  // wide=false → short-form 2-col card with 9:16 portrait thumbnail.
-  return (
-    <a
-      href={youTubeUrl(video.video_id)}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`block bg-card rounded-[10px] overflow-hidden shadow-sm active:scale-[0.98] transition-transform ${
-        wide ? "col-span-2" : ""
-      }`}
-    >
-      <div className={`relative bg-muted overflow-hidden ${wide ? "aspect-video" : "aspect-[9/16]"}`}>
-        {video.thumbnail_url && (
-          <img
-            src={video.thumbnail_url}
-            alt={video.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        )}
-        {/* Always-visible play badge (corner) so mobile users see the video affordance */}
-        <div className="absolute bottom-1.5 left-1.5 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
-          <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
-        </div>
-      </div>
-      <div className="p-2">
-        <p className="text-[12px] font-semibold text-foreground leading-snug line-clamp-2 min-h-[2.6em]">
-          {video.title}
-        </p>
-        <p className="text-[10px] text-muted-foreground line-clamp-1 mt-1">
-          {video.channel_name ?? ""}
-        </p>
-        <p className="text-[10px] text-muted-foreground/80 mt-0.5">
-          조회 {formatViews(video.view_count)} · {formatDate(video.published_at)}
-        </p>
-      </div>
-    </a>
-  );
-}
 
 const Magazine = () => {
   const navigate = useNavigate();
@@ -200,16 +115,18 @@ const Magazine = () => {
           {hotLoading ? (
             <div className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4 pb-2">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex-shrink-0 w-[180px] aspect-[9/16] bg-muted animate-pulse rounded-[10px]"
-                />
+                <TipVideoCardSkeleton key={i} width={HOT_CARD_WIDTH} />
               ))}
             </div>
           ) : hotList.length > 0 ? (
             <div className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4 pb-2">
               {hotList.map((v, i) => (
-                <HotCard key={v.video_id} video={v} rank={i + 1} />
+                <TipVideoCard
+                  key={v.video_id}
+                  video={v}
+                  width={HOT_CARD_WIDTH}
+                  rank={i + 1}
+                />
               ))}
             </div>
           ) : (
@@ -223,7 +140,7 @@ const Magazine = () => {
           <div className="flex items-center justify-between px-4 mb-3 gap-2 flex-wrap">
             <h2 className="text-base font-bold text-foreground">전체 꿀팁</h2>
             <div className="flex items-center gap-2">
-              {/* Format filter — controls layout (long=full row 16:9, short=2-col 9:16, all=mixed) */}
+              {/* Format filter (long/short/all) */}
               <div className="flex bg-muted rounded-full p-0.5">
                 {(["all", "long", "short"] as const).map((f) => (
                   <button
@@ -261,26 +178,14 @@ const Magazine = () => {
           {isLoading ? (
             <div className="grid grid-cols-2 gap-2 px-4">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="rounded-[10px] overflow-hidden bg-card">
-                  <div className="aspect-[9/16] bg-muted animate-pulse" />
-                  <div className="p-2 space-y-1.5">
-                    <div className="h-3 bg-muted rounded animate-pulse" />
-                    <div className="h-3 bg-muted rounded w-2/3 animate-pulse" />
-                  </div>
-                </div>
+                <TipVideoCardSkeleton key={i} />
               ))}
             </div>
           ) : gridList.length > 0 ? (
-            // grid-flow-row-dense lets the browser pack short cards into gaps
-            // a long-form (col-span-2) card would otherwise leave behind, so the
-            // mixed layout reads as [LONG]/[SHORT][SHORT] without empty cells.
-            <div className="grid grid-cols-2 gap-2 px-4 grid-flow-row-dense">
-              {gridList.map((v) => {
-                // Layout: in 'long' format every card is wide; in 'short' none are;
-                // in 'all' long-form cards take a full row, shorts pair up.
-                const wide = format === "long" || (format === "all" && !isShort(v));
-                return <GridCard key={v.video_id} video={v} wide={wide} />;
-              })}
+            <div className="grid grid-cols-2 gap-2 px-4">
+              {gridList.map((v) => (
+                <TipVideoCard key={v.video_id} video={v} />
+              ))}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-12">
