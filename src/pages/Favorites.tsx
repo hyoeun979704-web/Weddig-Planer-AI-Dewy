@@ -39,7 +39,7 @@ const favTabs = [
   },
   { id: "event", label: "이벤트", types: ["deal"] as ItemType[] },
   { id: "shopping", label: "쇼핑", types: ["product"] as ItemType[] },
-  { id: "info", label: "정보", types: ["influencer"] as ItemType[] },
+  { id: "info", label: "꿀팁", types: ["influencer"] as ItemType[] },
 ] as const;
 
 type FavTabId = (typeof favTabs)[number]["id"];
