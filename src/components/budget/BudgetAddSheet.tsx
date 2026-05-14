@@ -345,9 +345,12 @@ export default function BudgetAddSheet({
                     className={cn("p-3 pointer-events-auto")} />
                 </PopoverContent>
               </Popover>
-              {balanceAmount > 0 && amount > 0 && balanceAmount > amount && (
-                <p className="text-[11px] text-yellow-700 bg-yellow-100 px-2 py-1 rounded">
-                  잔금({fmt(balanceAmount)}만원)이 본 지출 금액({fmt(amount)}만원)보다 커요. 본 금액에 잔금이 포함되어 있는지 확인해주세요.
+              {balanceAmount > 0 && amount > 0 && (
+                <p className="text-[11px] text-muted-foreground px-2">
+                  계약 총액 약 <b className="text-foreground tabular-nums">{fmt(amount + balanceAmount)}만원</b>
+                  {balanceAmount > amount && (
+                    <span> · 잔금이 더 큰 건 결혼 업계에서 일반적이에요</span>
+                  )}
                 </p>
               )}
             </div>

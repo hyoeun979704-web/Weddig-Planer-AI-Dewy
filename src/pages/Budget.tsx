@@ -282,7 +282,7 @@ const Budget = () => {
         title: `${item.title} 잔금`,
         amount: item.balance_amount,
         paid_by: item.paid_by,
-        payment_stage: "full",
+        payment_stage: "balance",
         payment_method: payload.paymentMethod,
         item_date: payload.payDate,
         memo: payload.memo,
