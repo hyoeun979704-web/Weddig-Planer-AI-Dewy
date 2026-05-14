@@ -354,13 +354,16 @@ export default function BudgetSetupSheet({
             </div>
           )}
           <div className="space-y-2">
-            {visibleKeys.map(key => (
-              <div key={key}>
+            {ALL_CATEGORY_KEYS.map(key => {
+              const isHidden = !visibleKeys.includes(key);
+              return (
+              <div key={key} className={cn(isHidden && "opacity-50")}>
                 <div className="flex items-center gap-2">
                   <span className="text-sm w-20 shrink-0">{categories[key].emoji} {categories[key].label}</span>
                   <Input type="number" inputMode="numeric" value={catBudgets[key] || ""}
                     onChange={e => setCatBudgets(prev => ({ ...prev, [key]: Number(e.target.value) }))}
-                    className="text-right text-sm h-9 no-spinner" />
+                    className="text-right text-sm h-9 no-spinner"
+                    placeholder={isHidden ? "스타일에서 제외됨 · 0 권장" : undefined} />
                   <span className="text-xs text-muted-foreground w-8">만원</span>
                 </div>
                 {key === "meal" && avg && (
@@ -376,7 +379,8 @@ export default function BudgetSetupSheet({
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
           <div className="mt-3 rounded-lg bg-yellow-50 border border-yellow-200 p-2.5 flex gap-2">
             <Info className="w-3.5 h-3.5 text-yellow-700 shrink-0 mt-0.5" />
