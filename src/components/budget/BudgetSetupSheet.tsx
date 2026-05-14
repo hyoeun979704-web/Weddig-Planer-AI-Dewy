@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { regions, regionalAverages, categories, type BudgetCategory } from "@/data/budgetData";
+import { regions, regionalAverages, categories, getStyledRegionalAverage, type BudgetCategory } from "@/data/budgetData";
 import { Minus, Plus, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,10 @@ interface BudgetSetupSheetProps {
   initialCategoryBudgets?: Record<BudgetCategory, number>;
   /** Budget categories the user hasn't excluded via wedding style. Falls back to all 6. */
   visibleCategoryKeys?: BudgetCategory[];
+  /** When set, "지역 평균으로 채우기" uses style-adjusted figures so a self
+   *  /small user doesn't get a 200-guest general-wedding number dumped on
+   *  them. */
+  weddingStyle?: string | null;
   onSave: (data: {
     region: string;
     guest_count: number;
@@ -29,7 +33,7 @@ const DEFAULT_CATEGORY_KEYS: BudgetCategory[] = ["venue", "sdm", "ring", "house"
 
 export default function BudgetSetupSheet({
   open, onOpenChange, initialRegion = "seoul", initialGuestCount = 200,
-  initialTotalBudget = 0, initialCategoryBudgets, visibleCategoryKeys, onSave,
+  initialTotalBudget = 0, initialCategoryBudgets, visibleCategoryKeys, weddingStyle, onSave,
 }: BudgetSetupSheetProps) {
   const categoryKeys = visibleCategoryKeys ?? DEFAULT_CATEGORY_KEYS;
   const [region, setRegion] = useState(initialRegion);
@@ -61,8 +65,7 @@ export default function BudgetSetupSheet({
   };
 
   const applyRegionalAvg = () => {
-    const avg = regionalAverages[region];
-    if (!avg) return;
+    const avg = getStyledRegionalAverage(region, weddingStyle);
     // Only seed visible categories; hidden ones stay at 0 so the budget total
     // reflects what the user will actually spend.
     const next: Record<BudgetCategory, number> = {
@@ -79,7 +82,7 @@ export default function BudgetSetupSheet({
   };
 
   const catSum = Object.values(catBudgets).reduce((a, b) => a + b, 0);
-  const avg = regionalAverages[region];
+  const avg = getStyledRegionalAverage(region, weddingStyle);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

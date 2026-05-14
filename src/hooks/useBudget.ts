@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { regionalAverages, regions, type BudgetCategory } from "@/data/budgetData";
+import { getStyledRegionalAverage, regions, type BudgetCategory } from "@/data/budgetData";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 export interface BudgetSettings {
   id: string;
@@ -41,6 +42,8 @@ export interface BudgetSummary {
 export function useBudget(profileRegionKey?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { weddingSettings } = useWeddingSchedule();
+  const weddingStyle = weddingSettings.wedding_style;
 
   const settingsQuery = useQuery({
     queryKey: ["budget-settings", user?.id],
@@ -89,7 +92,7 @@ export function useBudget(profileRegionKey?: string) {
   };
 
   const effectiveRegion = settings?.region || profileRegionKey || "seoul";
-  const regionalAverage = regionalAverages[effectiveRegion] || regionalAverages.seoul;
+  const regionalAverage = getStyledRegionalAverage(effectiveRegion, weddingStyle);
 
   const saveSettings = useMutation({
     mutationFn: async (s: Partial<BudgetSettings>) => {

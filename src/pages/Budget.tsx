@@ -133,14 +133,22 @@ const Budget = () => {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-1">
+                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                     <span className="text-lg font-bold text-foreground">{totalBudget.toLocaleString()}만원</span>
                     {settings?.region && (
                       <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full flex items-center gap-0.5">
                         <MapPin className="w-2.5 h-2.5" /> {regions[settings.region]?.label}
                       </span>
                     )}
+                    {weddingSettings.wedding_style && weddingSettings.wedding_style !== "general" && (
+                      <span className="text-[10px] bg-accent/20 text-foreground px-2 py-0.5 rounded-full font-medium">
+                        {weddingSettings.wedding_style === "self" ? "셀프웨딩 기준" : "스몰웨딩 기준"}
+                      </span>
+                    )}
                   </div>
+                  {regionalAverage?.note && weddingSettings.wedding_style && weddingSettings.wedding_style !== "general" && (
+                    <p className="text-[10px] text-muted-foreground/80 mb-1.5 leading-tight">{regionalAverage.note}</p>
+                  )}
                   <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                     <div>
                       <p className="text-[10px] text-muted-foreground">사용</p>
@@ -392,6 +400,7 @@ const Budget = () => {
         initialTotalBudget={settings?.total_budget}
         initialCategoryBudgets={settings?.category_budgets}
         visibleCategoryKeys={categoryKeys}
+        weddingStyle={weddingSettings.wedding_style}
         onSave={data => {
           saveSettings.mutate(data, {
             onSuccess: () => toast({ title: "예산 설정이 저장되었습니다" }),

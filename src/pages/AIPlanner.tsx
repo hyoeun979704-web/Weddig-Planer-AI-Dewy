@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Send, ArrowLeft, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { WEDDING_STYLE_LABEL } from "@/lib/weddingStyle";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
 import TypingIndicator from "@/components/wedding-planner/TypingIndicator";
 import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
@@ -18,25 +20,64 @@ import { findSuggestions } from "@/data/chatbotSuggestions";
 
 type ModalType = "venue" | "sdme" | "timeline" | "budget" | null;
 
-const QUICK_QUESTIONS = [
-  { emoji: "🏛️", label: "웨딩홀 추천", desc: "지역·예산 맞춤 추천", modal: "venue" as ModalType },
-  { emoji: "📸", label: "스드메 가이드", desc: "촬영 순서·견적 안내", modal: "sdme" as ModalType },
-  { emoji: "📅", label: "준비 타임라인", desc: "월별 체크리스트", modal: "timeline" as ModalType },
-  { emoji: "💰", label: "예산 플래너", desc: "항목별 예산 설계", modal: "budget" as ModalType, premium: true },
+interface QuickQuestion {
+  emoji: string;
+  label: string;
+  desc: string;
+  /** Opens a structured modal (legacy flow). */
+  modal?: ModalType;
+  /** Sends this text as a free-form message — used for persona-specific
+   *  prompts that don't have a dedicated structured handler. */
+  prompt?: string;
+  premium?: boolean;
+}
+
+const BASE_QUICK_QUESTIONS: QuickQuestion[] = [
+  { emoji: "🏛️", label: "웨딩홀 추천", desc: "지역·예산 맞춤 추천", modal: "venue" },
+  { emoji: "📸", label: "스드메 가이드", desc: "촬영 순서·견적 안내", modal: "sdme" },
+  { emoji: "📅", label: "준비 타임라인", desc: "월별 체크리스트", modal: "timeline" },
+  { emoji: "💰", label: "예산 플래너", desc: "항목별 예산 설계", modal: "budget", premium: true },
 ];
 
-const FOLLOW_UP_CHIPS = [
-  "더 자세히 알려줘",
-  "다른 옵션은?",
-  "비용 비교해줘",
-  "체크리스트 만들어줘",
+// Persona-specific quick cards. They send a free-form prompt that the LLM
+// answers — the persona system message in useAIPlanner ensures the reply
+// stays in style. Self/small cards replace categories the user already
+// opted out of (스드메 등).
+const SELF_QUICK_QUESTIONS: QuickQuestion[] = [
+  { emoji: "🏡", label: "한옥/하우스 베뉴", desc: "셀프웨딩 어울리는 식장", prompt: "셀프웨딩에 어울리는 한옥·하우스 베뉴 추천해줘" },
+  { emoji: "✏️", label: "DIY 청첩장", desc: "직접 만드는 청첩장 가이드", prompt: "셀프웨딩 DIY 청첩장 만드는 순서와 팁 알려줘" },
+  { emoji: "📷", label: "셀프 스냅 팁", desc: "촬영 장비·구도", prompt: "셀프 본식 스냅 촬영 장비, 구도, 사전 점검 체크리스트 알려줘" },
+  { emoji: "💐", label: "DIY 부케·소품", desc: "재료·시기 가이드", prompt: "셀프웨딩 부케·코사지·답례품 DIY 재료와 준비 시기 알려줘" },
 ];
+
+const SMALL_QUICK_QUESTIONS: QuickQuestion[] = [
+  { emoji: "🏡", label: "스몰 베뉴", desc: "30~80명 하우스·한옥", prompt: "30~80명 스몰웨딩에 어울리는 베뉴 종류와 추천 지역 알려줘" },
+  { emoji: "💰", label: "스몰 예산", desc: "50명 기준 항목별 분배", prompt: "스몰웨딩 50명 기준 예산을 항목별로 어떻게 분배하는 게 좋아?" },
+  { emoji: "📅", label: "준비 타임라인", desc: "스몰웨딩 일정", modal: "timeline" },
+  { emoji: "🎀", label: "답례품 아이디어", desc: "직접 만드는 답례품", prompt: "50명 스몰웨딩에 어울리는 답례품 아이디어 추천해줘" },
+];
+
+const STYLE_QUICK_QUESTIONS: Record<string, QuickQuestion[]> = {
+  self: SELF_QUICK_QUESTIONS,
+  small: SMALL_QUICK_QUESTIONS,
+};
+
+const BASE_FOLLOW_UP_CHIPS = ["더 자세히 알려줘", "다른 옵션은?", "비용 비교해줘", "체크리스트 만들어줘"];
+const STYLE_FOLLOW_UPS: Record<string, string[]> = {
+  self: ["DIY로 가능해?", "비용은 얼마나?", "직접 해본 후기는?", "체크리스트 만들어줘"],
+  small: ["50명 기준은?", "비용 비교해줘", "스몰 예식 사례는?", "체크리스트 만들어줘"],
+};
 
 const AIPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const { messages, isLoading, sendMessage, sendStructured, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
+  const { weddingSettings } = useWeddingSchedule();
+  const weddingStyle = weddingSettings.wedding_style;
+  const quickQuestions = (weddingStyle && STYLE_QUICK_QUESTIONS[weddingStyle]) ?? BASE_QUICK_QUESTIONS;
+  const followUpChips = (weddingStyle && STYLE_FOLLOW_UPS[weddingStyle]) ?? BASE_FOLLOW_UP_CHIPS;
+  const personaLabel = weddingStyle && weddingStyle !== "general" ? WEDDING_STYLE_LABEL[weddingStyle] : null;
   const [input, setInput] = useState("");
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -94,7 +135,13 @@ const AIPlanner = () => {
     sendMessage(text);
   };
 
-  const handleQuickClick = (item: typeof QUICK_QUESTIONS[0]) => setActiveModal(item.modal);
+  const handleQuickClick = (item: QuickQuestion) => {
+    if (item.prompt) {
+      sendMessage(item.prompt);
+      return;
+    }
+    if (item.modal) setActiveModal(item.modal);
+  };
 
   // 모달 핸들러: 모든 입력 필드를 결정형 핸들러로 직접 전달 (LLM 호출 X)
   const handleVenueSubmit = (data: Record<string, unknown>) => {
@@ -200,11 +247,16 @@ const AIPlanner = () => {
                 <p className="text-sm text-muted-foreground">
                   AI 웨딩플래너 Dewy가<br />결혼 준비를 도와드릴게요 🌸
                 </p>
+                {personaLabel && (
+                  <span className="inline-flex mt-3 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-semibold">
+                    {personaLabel} 맞춤 가이드
+                  </span>
+                )}
               </div>
 
               {/* Quick question cards */}
               <div className="grid grid-cols-2 gap-2.5">
-                {QUICK_QUESTIONS.map((q) => (
+                {quickQuestions.map((q) => (
                   <button
                     key={q.label}
                     onClick={() => handleQuickClick(q)}
@@ -241,7 +293,7 @@ const AIPlanner = () => {
               animate={{ opacity: 1, y: 0 }}
               className="flex flex-wrap gap-2 pl-11"
             >
-              {FOLLOW_UP_CHIPS.map((chip) => (
+              {followUpChips.map((chip) => (
                 <button
                   key={chip}
                   onClick={() => handleChipClick(chip)}

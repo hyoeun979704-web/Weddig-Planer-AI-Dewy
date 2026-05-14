@@ -35,6 +35,29 @@ export const regions: Record<string, RegionData> = {
   jeju: { label: "제주", sub_regions: ["제주시", "서귀포시"] },
 };
 
+// Wedding-style multipliers applied on top of the regional average. The
+// venue figure already gets per-guest scaling in BudgetSetupSheet, so the
+// multipliers here only adjust the *other* categories. (e.g. a self-wedding
+// user spends roughly 20% of typical SDM since they DIY photo/dress/makeup,
+// but extras like 소품 재료비 go up — that's the etc bump.)
+//
+// `note` is appended to the regional average note so the user understands
+// why their plan number differs from a friend's.
+export interface StyleMultiplier {
+  sdm: number;
+  ring: number;
+  house: number;
+  honeymoon: number;
+  etc: number;
+  note: string;
+}
+
+export const STYLE_BUDGET_MULTIPLIER: Record<string, StyleMultiplier> = {
+  general: { sdm: 1.0, ring: 1.0, house: 1.0, honeymoon: 1.0, etc: 1.0, note: "" },
+  small:   { sdm: 0.8, ring: 0.9, house: 1.0, honeymoon: 1.0, etc: 0.7, note: "스몰웨딩 기준: 식대·청첩장·답례품을 축소 반영했어요" },
+  self:    { sdm: 0.2, ring: 1.0, house: 1.0, honeymoon: 1.0, etc: 1.3, note: "셀프웨딩 기준: 스드메는 DIY 재료비만 반영하고 소품·청첩장은 +30% 잡았어요" },
+};
+
 export const regionalAverages: Record<string, RegionalAverage> = {
   seoul: { total: 3200, venue: 500, sdm: 350, ring: 400, house: 800, honeymoon: 350, etc: 800, per_guest_meal: 8.5, note: "서울은 전국 평균 대비 약 20~30% 높음" },
   gyeonggi: { total: 2800, venue: 420, sdm: 300, ring: 350, house: 700, honeymoon: 330, etc: 700, per_guest_meal: 7.5, note: "분당/판교 등 일부 지역은 서울급" },
@@ -53,6 +76,32 @@ export const regionalAverages: Record<string, RegionalAverage> = {
   gyeongbuk: { total: 2100, venue: 320, sdm: 240, ring: 260, house: 480, honeymoon: 260, etc: 540, per_guest_meal: 6.0, note: "" },
   gyeongnam: { total: 2300, venue: 350, sdm: 260, ring: 290, house: 550, honeymoon: 280, etc: 570, per_guest_meal: 6.5, note: "" },
   jeju: { total: 2200, venue: 350, sdm: 260, ring: 260, house: 500, honeymoon: 250, etc: 580, per_guest_meal: 6.5, note: "스몰웨딩/야외 비율 높음" },
+};
+
+// Style-adjusted regional average. `venue` and `per_guest_meal` stay raw
+// because BudgetSetupSheet rescales them based on the user's guestCount.
+export const getStyledRegionalAverage = (
+  region: string,
+  style?: string | null,
+): RegionalAverage => {
+  const base = regionalAverages[region] ?? regionalAverages.seoul;
+  const mult = STYLE_BUDGET_MULTIPLIER[style ?? "general"] ?? STYLE_BUDGET_MULTIPLIER.general;
+  const sdm = Math.round(base.sdm * mult.sdm);
+  const ring = Math.round(base.ring * mult.ring);
+  const house = Math.round(base.house * mult.house);
+  const honeymoon = Math.round(base.honeymoon * mult.honeymoon);
+  const etc = Math.round(base.etc * mult.etc);
+  return {
+    total: base.venue + sdm + ring + house + honeymoon + etc,
+    venue: base.venue,
+    sdm,
+    ring,
+    house,
+    honeymoon,
+    etc,
+    per_guest_meal: base.per_guest_meal,
+    note: mult.note ? `${base.note ? `${base.note} · ` : ""}${mult.note}` : base.note,
+  };
 };
 
 export type BudgetCategory = "venue" | "sdm" | "ring" | "house" | "honeymoon" | "etc";
