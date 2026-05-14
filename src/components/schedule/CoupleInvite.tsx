@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Heart, Copy, Check, UserPlus, Unlink, Loader2 } from "lucide-react";
+import { Heart, Copy, Check, UserPlus, Unlink, Loader2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCoupleLink } from "@/hooks/useCoupleLink";
+import { toast } from "sonner";
 
 const CoupleInvite = () => {
   const {
@@ -34,11 +35,37 @@ const CoupleInvite = () => {
     setIsProcessing(false);
   };
 
-  const handleCopy = async () => {
-    if (!coupleLink?.invite_code) return;
-    await navigator.clipboard.writeText(coupleLink.invite_code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  // Web Share API first; falls back to clipboard when the browser doesn't
+  // expose it (desktop Safari/Chrome on http, older Android WebView, etc.).
+  // The copy fallback keeps the green-check feedback the user already
+  // recognizes from the previous button.
+  const handleShareOrCopy = async () => {
+    const code = coupleLink?.invite_code;
+    if (!code) return;
+    const url = typeof window !== "undefined" ? window.location.origin : "";
+    const message = `우리 결혼 준비 같이 해요! Dewy 초대 코드: ${code}\n${url}`;
+
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: "Dewy 커플 연결 초대",
+          text: message,
+        });
+        return;
+      } catch (err) {
+        // User dismissed share sheet — fall through to clipboard.
+        if ((err as { name?: string })?.name === "AbortError") return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopied(true);
+      toast.success("초대 메시지를 복사했어요. 카톡에 붙여넣기 해주세요");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("복사에 실패했어요");
+    }
   };
 
   const handleUnlink = async () => {
@@ -116,21 +143,41 @@ const CoupleInvite = () => {
           아래 초대 코드를 상대방에게 공유하세요
         </p>
 
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-2">
           <div className="flex-1 px-4 py-3 bg-muted rounded-xl text-center font-mono text-lg font-bold tracking-widest text-foreground">
             {coupleLink.invite_code}
           </div>
-          <Button variant="outline" size="icon" onClick={handleCopy} className="h-12 w-12">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              if (!coupleLink?.invite_code) return;
+              navigator.clipboard.writeText(coupleLink.invite_code).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              });
+            }}
+            className="h-12 w-12"
+            title="코드만 복사"
+          >
             {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
           </Button>
         </div>
+        <Button
+          onClick={handleShareOrCopy}
+          className="w-full mb-4 flex items-center gap-2"
+          variant="default"
+        >
+          <Share2 className="w-4 h-4" />
+          파트너에게 공유하기
+        </Button>
 
         <div className="border-t border-border pt-3">
           <p className="text-sm text-muted-foreground mb-2">상대방의 초대 코드가 있나요?</p>
           <div className="flex gap-2">
             <Input
               value={inputCode}
-              onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+              onChange={(e) => setInputCode(e.target.value.toUpperCase().replace(/\s+/g, ""))}
               placeholder="코드 입력"
               maxLength={6}
               className="font-mono tracking-widest text-center"
