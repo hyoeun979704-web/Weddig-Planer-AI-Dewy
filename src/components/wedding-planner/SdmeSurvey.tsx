@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SurveyModal from "./SurveyModal";
 import { REGIONS, BUDGET_OPTIONS_SDME } from "./constants";
+import { useWeddingFormContext } from "@/hooks/useWeddingFormContext";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -16,6 +17,7 @@ interface Props {
 const DRESS_OPTIONS = ["국내 브랜드 대여", "해외 브랜드 대여", "드레스 구매", "한복 포함", "미정"];
 
 const SdmeSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
+  const { defaultWeddingDate, defaultRegion } = useWeddingFormContext();
   const [date, setDate] = useState<Date>();
   const [region, setRegion] = useState("");
   const [studioStyle, setStudioStyle] = useState("");
@@ -25,6 +27,13 @@ const SdmeSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const [budgetLabel, setBudgetLabel] = useState("");
   const [priority, setPriority] = useState("");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  // 저장된 결혼일·지역으로 prefill.
+  useEffect(() => {
+    if (!isOpen) return;
+    if (defaultWeddingDate) setDate(defaultWeddingDate);
+    setRegion(defaultRegion ?? "");
+  }, [isOpen, defaultWeddingDate, defaultRegion]);
 
   const toggleDress = (d: string) => setDressOptions(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
 

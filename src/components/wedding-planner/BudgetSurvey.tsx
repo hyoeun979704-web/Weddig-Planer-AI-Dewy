@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SurveyModal from "./SurveyModal";
 import { REGIONS } from "./constants";
+import { useWeddingFormContext } from "@/hooks/useWeddingFormContext";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -23,6 +24,7 @@ const getSeason = (date: Date) => {
 };
 
 const BudgetSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
+  const { defaultTotalBudget, defaultRegion, defaultWeddingDate } = useWeddingFormContext();
   const [step, setStep] = useState<"lock" | "form">("lock");
   const [totalBudget, setTotalBudget] = useState("");
   const [items, setItems] = useState<Record<string, string>>({});
@@ -32,6 +34,16 @@ const BudgetSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const [supportAmount, setSupportAmount] = useState("");
   const [priorities, setPriorities] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  // 저장된 결혼 정보(`user_wedding_settings`·`budget_settings`)로 prefill.
+  // 모달이 열릴 때마다 동기화 — 다른 페이지에서 정보 바꾸고 다시 열어도 반영.
+  // 사용자가 모달에서 수동으로 바꾼 값은 isOpen이 다시 토글될 때만 덮어써짐.
+  useEffect(() => {
+    if (!isOpen) return;
+    setTotalBudget(defaultTotalBudget ?? "");
+    setRegion(defaultRegion ?? "");
+    if (defaultWeddingDate) setDate(defaultWeddingDate);
+  }, [isOpen, defaultTotalBudget, defaultRegion, defaultWeddingDate]);
 
   const togglePriority = (p: string) => {
     setPriorities(prev => {

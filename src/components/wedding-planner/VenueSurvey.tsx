@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SurveyModal from "./SurveyModal";
 import { REGIONS, BUDGET_OPTIONS_VENUE, WEDDING_STYLES } from "./constants";
+import { useWeddingFormContext } from "@/hooks/useWeddingFormContext";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,6 +15,7 @@ interface Props {
 }
 
 const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
+  const { defaultWeddingDate, defaultRegion, defaultGuests } = useWeddingFormContext();
   const [date, setDate] = useState<Date>();
   const [region, setRegion] = useState("");
   const [guests, setGuests] = useState("");
@@ -23,6 +25,14 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const [meal, setMeal] = useState("");
   const [special, setSpecial] = useState("");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  // 저장된 결혼일·지역·하객 수로 prefill (BudgetSurvey 동일 패턴).
+  useEffect(() => {
+    if (!isOpen) return;
+    if (defaultWeddingDate) setDate(defaultWeddingDate);
+    setRegion(defaultRegion ?? "");
+    setGuests(defaultGuests ?? "");
+  }, [isOpen, defaultWeddingDate, defaultRegion, defaultGuests]);
 
   const toggleStyle = (s: string) => setStyles(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 

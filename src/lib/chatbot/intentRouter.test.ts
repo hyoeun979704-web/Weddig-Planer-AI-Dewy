@@ -209,6 +209,32 @@ describe("matchIntent — 정적 가이드 (guideKey)", () => {
     expect(matchIntent("신혼집 준비 체크")?.guideKey).toBe("new_home");
     expect(matchIntent("본식 식순 보여줘")?.guideKey).toBe("ceremony_progress");
   });
+
+  it("AIPlanner 메인 칩 양가 분담 비교 — etiquette 가이드로 라우팅", () => {
+    // 화면 칩 prompt: "양가 분담 평균과 분배 가이드 알려줘"
+    // 이전엔 어떤 패턴에도 안 잡혀 LLM 폴백되던 회귀.
+    for (const input of [
+      "양가 분담 평균과 분배 가이드 알려줘",
+      "양가 분담 비교",
+      "양가 분배 가이드",
+      "양가 지원금 얼마",
+      "분담 평균 알려줘",
+      "분배 비율 어떻게",
+      "지원금 평균",
+    ]) {
+      const m = matchIntent(input);
+      expect(m?.guideKey, `input="${input}"`).toBe("etiquette");
+    }
+  });
+
+  it("STYLE_OVERRIDES 칩 — 스몰웨딩·셀프웨딩 베뉴·로케이션 추천", () => {
+    // 메인 칩 prompts:
+    //   - "스몰웨딩하기 좋은 베뉴를 추천해줘"
+    //   - "셀프웨딩 촬영하기 좋은 로케이션을 추천해줘"
+    expect(matchIntent("스몰웨딩하기 좋은 베뉴를 추천해줘")?.dbHandler).toBe("free_search");
+    expect(matchIntent("셀프웨딩 촬영하기 좋은 로케이션을 추천해줘")?.dbHandler).toBe("free_search");
+    expect(matchIntent("스몰웨딩 답례품 아이디어 추천해줘")?.guideKey).toBe("gift_etiquette");
+  });
 });
 
 describe("matchIntent — 매칭 없음(LLM으로 폴백)", () => {
