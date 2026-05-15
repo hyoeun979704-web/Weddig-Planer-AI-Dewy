@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeForIlike } from "./_utils";
 
 export interface PriceStats {
   count: number;
@@ -63,8 +64,7 @@ export const fetchPriceStats = async (
     .eq("is_active", true)
     .not("min_price", "is", null);
 
-  // PostgREST .or() 안전화 — 괄호/쉼표/슬래시 제거.
-  const safe = region?.replace(/[,()/%*\\]/g, " ").replace(/\s+/g, " ").trim();
+  const safe = sanitizeForIlike(region);
   if (safe) query = query.or(`district.ilike.%${safe}%,city.ilike.%${safe}%`);
 
   const { data } = await query;

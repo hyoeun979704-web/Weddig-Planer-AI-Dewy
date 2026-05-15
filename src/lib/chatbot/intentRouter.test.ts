@@ -63,6 +63,9 @@ describe("matchIntent — 정적 응답 (staticReply)", () => {
       const m = matchIntent(input);
       expect(m?.intent, `input="${input}"`).not.toBe("pricing");
     }
+
+    // "환불" 단독 false positive 체크 — 결제 컨텍스트면 pricing OK
+    expect(matchIntent("환불 가능?")?.intent).toBe("pricing");
   });
 
   it("문의", () => {
@@ -75,10 +78,24 @@ describe("matchIntent — 정적 응답 (staticReply)", () => {
 
 describe("matchIntent — DB 핸들러 라우팅", () => {
   it("D-Day", () => {
-    for (const input of ["D-Day 알려줘", "디데이 며칠?", "결혼식까지 며칠 남았어", "예식까지 얼마 남았어"]) {
+    for (const input of [
+      "D-Day 알려줘",
+      "디데이 며칠?",
+      "결혼식까지 며칠 남았어",
+      "예식까지 얼마 남았어",
+      "결혼 며칠 남았어", // 단어 "결혼" 단독 케이스 — 이전 회귀
+      "결혼까지 얼마나 남았나",
+    ]) {
       const m = matchIntent(input);
       expect(m?.intent, `input="${input}"`).toBe("dday");
       expect(m?.dbHandler, `input="${input}"`).toBe("dday");
+    }
+  });
+
+  it("D-Day 오트리거 방지 — 예산/포인트/하트 '얼마 남았어'는 dday 아님", () => {
+    for (const input of ["예산 얼마 남았어?", "포인트 얼마 남았어", "하트 얼마 남았어"]) {
+      const m = matchIntent(input);
+      expect(m?.intent, `input="${input}"`).not.toBe("dday");
     }
   });
 
@@ -115,6 +132,19 @@ describe("matchIntent — DB 핸들러 라우팅", () => {
     expect(matchIntent("장바구니")?.dbHandler).toBe("cart");
     expect(matchIntent("하트 잔액 얼마")?.dbHandler).toBe("hearts");
     expect(matchIntent("포인트 얼마 남았어")?.dbHandler).toBe("points");
+  });
+
+  it("찜 자연어 변형 — 카테고리 없으면 정적 favorites, 카테고리 있으면 동적", () => {
+    // 카테고리 키워드 없음 → 정적 favorites (전체)
+    expect(matchIntent("찜한 거 알려줘")?.dbHandler).toBe("favorites");
+    expect(matchIntent("북마크 보여줘")?.dbHandler).toBe("favorites");
+    expect(matchIntent("즐겨찾기 확인")?.dbHandler).toBe("favorites");
+
+    // 카테고리 키워드 있음 → 동적 매칭으로 favorites_by_type/search
+    // (정적 favorites 패턴이 카테고리 키워드 표현은 안 잡아야 동적으로 빠짐)
+    const videoMatch = matchIntent("찜한 영상 보여줘");
+    expect(videoMatch?.dbHandler).toBe("favorites_by_type");
+    expect(videoMatch?.args?.itemType).toBe("tip_video");
   });
 
   it("결혼 정보 종합", () => {

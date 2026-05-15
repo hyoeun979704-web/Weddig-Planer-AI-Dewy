@@ -49,6 +49,15 @@ describe("handleTimelinePlanning (모달 #3 타임라인)", () => {
     expect(result).toContain("피로연 시작");
   });
 
+  it("피로연 '없음' 선택 시 피로연 라인이 안 나옴", async () => {
+    const result = await handleTimelinePlanning({
+      ceremonyTime: "13:00",
+      duration: "60분",
+      reception: "없음",
+    });
+    expect(result).not.toContain("피로연 시작");
+  });
+
   it("한복 환복 '있음' 선택 시 환복 라인 출력", async () => {
     const result = await handleTimelinePlanning({
       ceremonyTime: "13:00",

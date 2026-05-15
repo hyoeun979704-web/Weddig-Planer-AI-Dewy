@@ -10,6 +10,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { CHECKLIST_TEMPLATE } from "@/data/checklistTemplate";
 import { fetchPriceStats, formatPriceStatsLine } from "./priceStats";
+import { sanitizeForIlike } from "./_utils";
 
 // ════════════════════════════════════════════════════════════
 // 1. 웨딩홀 추천
@@ -32,15 +33,6 @@ const parseNumber = (v: string | number | null | undefined): number | null => {
   if (typeof v === "number") return v;
   const num = parseInt(v.replace(/[^0-9]/g, ""), 10);
   return isNaN(num) ? null : num;
-};
-
-// PostgREST .or() / ilike 필터에 들어가기 전 사용자 입력에서
-// 쿼리 grammar를 깨뜨릴 수 있는 특수문자 제거. 모달이 안전한 searchKey를
-// 보내도록 바뀌었지만, 다른 진입점/구버전 클라이언트 대비 안전망.
-const sanitizeForIlike = (s: string | undefined): string | undefined => {
-  if (!s) return undefined;
-  const cleaned = s.replace(/[,()/%*\\]/g, " ").replace(/\s+/g, " ").trim();
-  return cleaned || undefined;
 };
 
 export const handleVenueRecommendation = async (params: VenueParams): Promise<string> => {
