@@ -31,7 +31,7 @@ const Venues = lazy(() => import("./pages/Venues"));
 const VenueDetail = lazy(() => import("./pages/VenueDetail"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Store = lazy(() => import("./pages/Store"));
-const Magazine = lazy(() => import("./pages/Magazine"));
+const Tips = lazy(() => import("./pages/Tips"));
 const Gallery = lazy(() => import("./pages/Gallery"));
 const AIPlanner = lazy(() => import("./pages/AIPlanner"));
 const Budget = lazy(() => import("./pages/Budget"));
@@ -96,6 +96,9 @@ const InfluencerDetail = lazy(() => import("./pages/InfluencerDetail"));
 const Deals = lazy(() => import("./pages/Deals"));
 const DealDetail = lazy(() => import("./pages/DealDetail"));
 
+// 진행중 이벤트 모음 (가입 혜택·미션·초대 등)
+const Events = lazy(() => import("./pages/Events"));
+
 // 기능 4: 쇼핑 결제 플로우
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const Cart = lazy(() => import("./pages/Cart"));
@@ -156,7 +159,8 @@ const App = () => (
               <Route path="/venue/:id" element={<VenueDetail />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/store" element={<Store />} />
-              <Route path="/magazine" element={<Magazine />} />
+              <Route path="/tips" element={<Tips />} />
+              <Route path="/magazine" element={<Navigate to="/tips" replace />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/ai-planner" element={<AIPlanner />} />
               <Route path="/budget" element={<Budget />} />
@@ -206,6 +210,7 @@ const App = () => (
               {/* 기능 3: 업체 제휴 혜택 */}
               <Route path="/deals" element={<Deals />} />
               <Route path="/deals/:id" element={<DealDetail />} />
+              <Route path="/events" element={<Events />} />
 
               {/* 기능 4: 쇼핑 결제 플로우 */}
               <Route path="/store/:id" element={<ProductDetail />} />

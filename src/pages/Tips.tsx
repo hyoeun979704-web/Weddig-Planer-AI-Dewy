@@ -27,7 +27,7 @@ const CATEGORY_CHIPS: Array<{ slug: string | null; label: string }> = [
 
 type SortKey = "popular" | "recent";
 
-const Magazine = () => {
+const Tips = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [category, setCategory] = useState<string | null>(null);
@@ -200,4 +200,4 @@ const Magazine = () => {
   );
 };
 
-export default Magazine;
+export default Tips;

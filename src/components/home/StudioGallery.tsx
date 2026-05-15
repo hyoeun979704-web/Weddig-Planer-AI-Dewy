@@ -3,6 +3,8 @@ import { ChevronRight } from "lucide-react";
 import { useVendors } from "@/hooks/useVendors";
 import { Skeleton } from "@/components/ui/skeleton";
 import VendorMediaCard, { CARD_W, CARD_H, vendorToCardData } from "./VendorMediaCard";
+import EmptyState from "@/components/EmptyState";
+import { emptyCopy } from "@/lib/emptyCopy";
 
 const StudioGallery = () => {
   const navigate = useNavigate();
@@ -46,9 +48,7 @@ const StudioGallery = () => {
             ))}
           </div>
         ) : (
-          <div className="flex items-center justify-center py-8">
-            <p className="text-sm text-muted-foreground">등록된 스튜디오가 없습니다</p>
-          </div>
+          <EmptyState variant="inline" {...emptyCopy.studio} />
         )}
       </div>
     </section>

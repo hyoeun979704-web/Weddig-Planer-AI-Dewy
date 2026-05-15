@@ -7,6 +7,11 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+export interface SearchPersonaCtx {
+  weddingStyle?: string | null;
+  excludedCategories?: string[];
+}
+
 const PLACE_CATEGORY_LABEL: Record<string, string> = {
   wedding_hall: "웨딩홀",
   studio: "스튜디오",
@@ -17,6 +22,42 @@ const PLACE_CATEGORY_LABEL: Record<string, string> = {
   honeymoon: "신혼여행",
   jewelry: "예물·반지",
   appliance: "가전·혼수",
+};
+
+// Map place category slug → the `excluded_categories` key used in
+// user_wedding_settings. Most align 1:1; "suit" (places) vs
+// "tailor_shop" (skippable) needs an explicit bridge.
+const PLACE_TO_EXCLUDE_KEY: Record<string, string> = {
+  wedding_hall: "wedding_hall",
+  studio: "studio",
+  dress_shop: "dress_shop",
+  makeup_shop: "makeup_shop",
+  hanbok: "hanbok",
+  suit: "tailor_shop",
+  honeymoon: "honeymoon",
+  jewelry: "appliance",
+  appliance: "appliance",
+};
+
+const styleLabel = (style?: string | null): string | null => {
+  if (style === "self") return "셀프웨딩";
+  if (style === "small") return "스몰웨딩";
+  return null;
+};
+
+// Soft notice shown when the user explicitly asks about a category they've
+// previously marked as excluded. We honor the explicit intent (still answer
+// the question) but acknowledge the mismatch so they can adjust settings.
+const personaConflictNote = (
+  inferredCategory: string,
+  ctx: SearchPersonaCtx,
+): string => {
+  const excludeKey = PLACE_TO_EXCLUDE_KEY[inferredCategory];
+  if (!excludeKey) return "";
+  if (!ctx.excludedCategories?.includes(excludeKey)) return "";
+  const label = styleLabel(ctx.weddingStyle);
+  if (!label) return "";
+  return `\n\n_${label} 설정에선 보통 ${PLACE_CATEGORY_LABEL[inferredCategory]}을(를) 생략하지만, 명시적으로 물어보셔서 결과를 보여드릴게요._`;
 };
 
 const PLACE_CATEGORY_KEYWORDS: Record<string, string> = {
@@ -82,7 +123,10 @@ const inferBudget = (text: string): number | null => {
 // ════════════════════════════════════════════════════════════
 // 자유 텍스트 검색 (카테고리·지역·예산 기반)
 // ════════════════════════════════════════════════════════════
-export const handleFreeTextSearch = async (userMessage: string): Promise<string> => {
+export const handleFreeTextSearch = async (
+  userMessage: string,
+  personaCtx: SearchPersonaCtx = {},
+): Promise<string> => {
   const category = inferCategory(userMessage);
   const region = inferRegion(userMessage);
   const budget = inferBudget(userMessage);
@@ -111,8 +155,19 @@ export const handleFreeTextSearch = async (userMessage: string): Promise<string>
     return `**검색 결과** 🔍\n${filters}\n\n조건에 맞는 업체를 찾지 못했어요 🌿\n다른 지역·카테고리로 시도해보시거나 [전체 페이지](/venues)에서 직접 살펴보세요.`;
   }
 
+  // Persona filter — only applied when no explicit category was inferred
+  // (broad query). When the user explicitly named a category, honor that
+  // intent and instead append a soft persona note further down.
+  const excluded = new Set(personaCtx.excludedCategories ?? []);
+  const filtered = category
+    ? data
+    : (data as any[]).filter((p) => {
+        const key = PLACE_TO_EXCLUDE_KEY[p.category];
+        return !key || !excluded.has(key);
+      });
+
   // 정렬: partner > rating
-  const sorted = [...data].sort((a: any, b: any) => {
+  const sorted = [...filtered].sort((a: any, b: any) => {
     if (a.is_partner !== b.is_partner) return b.is_partner ? 1 : -1;
     return (b.avg_rating ?? 0) - (a.avg_rating ?? 0);
   });
@@ -130,19 +185,26 @@ export const handleFreeTextSearch = async (userMessage: string): Promise<string>
     category && `🏷️ ${PLACE_CATEGORY_LABEL[category]}`,
   ].filter(Boolean).join(" · ");
 
-  return `**검색 결과 ${data.length}건 (상위 8)** 🔍\n${summary}\n\n${lines}\n\n자세히 보기: ${
+  const conflictNote = category ? personaConflictNote(category, personaCtx) : "";
+
+  return `**검색 결과 ${filtered.length}건 (상위 8)** 🔍\n${summary}\n\n${lines}\n\n자세히 보기: ${
     category === "wedding_hall" ? "[웨딩홀](/venues)" :
     category === "studio" ? "[스튜디오](/studios)" :
     "[전체 카테고리](/venues)"
-  }`;
+  }${conflictNote}`;
 };
 
 // ════════════════════════════════════════════════════════════
 // 카테고리·지역 평균 시세
 // ════════════════════════════════════════════════════════════
-export const handleAveragePrice = async (userMessage: string): Promise<string> => {
-  const category = inferCategory(userMessage) ?? "wedding_hall";
+export const handleAveragePrice = async (
+  userMessage: string,
+  personaCtx: SearchPersonaCtx = {},
+): Promise<string> => {
+  const inferredCategory = inferCategory(userMessage);
+  const category = inferredCategory ?? "wedding_hall";
   const region = inferRegion(userMessage);
+  const conflictNote = inferredCategory ? personaConflictNote(inferredCategory, personaCtx) : "";
 
   let query = (supabase as any)
     .from("places")
@@ -182,15 +244,23 @@ export const handleAveragePrice = async (userMessage: string): Promise<string> =
     `• 중간값: ${(median / 10000).toLocaleString()}만원~\n` +
     `• 최저: ${(min / 10000).toLocaleString()}만원~\n` +
     `• 최고: ${(max / 10000).toLocaleString()}만원~\n\n` +
-    `* 표시 가격은 시작가(min_price) 기준이며 옵션·시기에 따라 변동돼요.`;
+    `* 표시 가격은 시작가(min_price) 기준이며 옵션·시기에 따라 변동돼요.${conflictNote}`;
 };
 
 // ════════════════════════════════════════════════════════════
 // 인기 업체 (rating 정렬)
 // ════════════════════════════════════════════════════════════
-export const handlePopularPlaces = async (userMessage: string): Promise<string> => {
+export const handlePopularPlaces = async (
+  userMessage: string,
+  personaCtx: SearchPersonaCtx = {},
+): Promise<string> => {
   const category = inferCategory(userMessage);
   const region = inferRegion(userMessage);
+
+  // Broad "TOP 업체" query — pull a wider candidate pool and then drop
+  // excluded categories before slicing to 8. When user named a specific
+  // category we honor it and only attach a soft persona note.
+  const fetchLimit = category ? 8 : 24;
 
   let query = (supabase as any)
     .from("places")
@@ -202,13 +272,26 @@ export const handlePopularPlaces = async (userMessage: string): Promise<string> 
   if (category) query = query.eq("category", category);
   if (region) query = query.or(`district.ilike.%${region}%,city.ilike.%${region}%`);
 
-  const { data } = await query.limit(8);
+  const { data } = await query.limit(fetchLimit);
 
   if (!data || data.length === 0) {
     return `**인기 업체 추천** 🌟\n\n해당 조건에 충분한 후기가 쌓인 업체가 아직 없어요. 다른 조건으로 시도해보세요.`;
   }
 
-  const lines = data.map((p: any) => {
+  const excluded = new Set(personaCtx.excludedCategories ?? []);
+  const filtered = category
+    ? data
+    : (data as any[]).filter((p) => {
+        const key = PLACE_TO_EXCLUDE_KEY[p.category];
+        return !key || !excluded.has(key);
+      });
+  const shown = filtered.slice(0, 8);
+
+  if (shown.length === 0) {
+    return `**인기 업체 추천** 🌟\n\n현재 페르소나 설정에 맞는 인기 업체가 부족해요. 마이페이지 > 결혼 정보 설정에서 카테고리를 조정해보시거나, 카테고리·지역을 직접 지정해 다시 물어봐 주세요.`;
+  }
+
+  const lines = shown.map((p: any) => {
     const cat = PLACE_CATEGORY_LABEL[p.category] ?? p.category;
     const partner = p.is_partner ? " ⭐" : "";
     return `• **${p.name}** [${cat}] ${p.district ?? ""} — ★ ${p.avg_rating} (${p.review_count}건)${partner}`;
@@ -217,5 +300,7 @@ export const handlePopularPlaces = async (userMessage: string): Promise<string> 
   const filters = [region && `📍 ${region}`, category && `🏷️ ${PLACE_CATEGORY_LABEL[category]}`]
     .filter(Boolean).join(" · ");
 
-  return `**인기 업체 TOP ${data.length}** 🌟\n${filters || "전체"}\n\n${lines}\n\n별점 기준 상위. [전체 비교](/venues)에서 더 많은 옵션을 보실 수 있어요.`;
+  const conflictNote = category ? personaConflictNote(category, personaCtx) : "";
+
+  return `**인기 업체 TOP ${shown.length}** 🌟\n${filters || "전체"}\n\n${lines}\n\n별점 기준 상위. [전체 비교](/venues)에서 더 많은 옵션을 보실 수 있어요.${conflictNote}`;
 };

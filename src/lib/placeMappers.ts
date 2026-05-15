@@ -1,4 +1,5 @@
 import type { Database } from "@/integrations/supabase/types";
+import type { ItemType } from "@/hooks/useFavorites";
 import {
   buildVendorInfoLines,
   collectKeywordTags,
@@ -10,6 +11,20 @@ import {
 export type PlaceRow = Database["public"]["Tables"]["places"]["Row"];
 
 export type { VendorInfoLine };
+
+// Map places.category slug → favorites.item_type so cards rendered anywhere
+// (home recommendations, category list, etc.) can sync hearts with the
+// favorites page. dress_shop / makeup_shop have no slot in the favorites
+// schema yet — callers fall back to non-persistent local state for those.
+export const PLACE_CATEGORY_TO_ITEM_TYPE: Record<string, ItemType> = {
+  wedding_hall: "venue",
+  studio: "studio",
+  hanbok: "hanbok",
+  tailor_shop: "suit",
+  honeymoon: "honeymoon",
+  appliance: "appliance",
+  invitation_venue: "invitation_venues",
+};
 
 // Korean UI category label ↔ places.category snake_case (9 vendor categories)
 // 웨딩플래너는 이 앱의 핵심 제품(AI 플래너)이라 vendor 카테고리에서 제외.

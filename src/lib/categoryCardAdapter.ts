@@ -3,6 +3,7 @@ import { formatWon } from "@/lib/vendorInfoLines";
 import type { VendorMediaCardData } from "@/components/home/VendorMediaCard";
 import type { CategoryItem } from "@/hooks/useCategoryData";
 import type { CategoryType } from "@/stores/useCategoryFilterStore";
+import type { ItemType } from "@/hooks/useFavorites";
 
 const CATEGORY_LABEL: Record<CategoryType, string> = {
   venues: "웨딩홀",
@@ -15,6 +16,19 @@ const CATEGORY_LABEL: Record<CategoryType, string> = {
   jewelry: "예물·예단",
   appliances: "혼수·가전",
   invitation_venues: "청첩장",
+};
+
+// CategoryType → favorites.item_type. dress_shops / makeup_shops aren't in
+// the favorites schema, so hearts on those stay non-persistent.
+const CATEGORY_TO_ITEM_TYPE: Partial<Record<CategoryType, ItemType>> = {
+  venues: "venue",
+  studios: "studio",
+  hanbok: "hanbok",
+  suits: "suit",
+  honeymoon: "honeymoon",
+  jewelry: "jewelry",
+  appliances: "appliance",
+  invitation_venues: "invitation_venues",
 };
 
 const formatGuests = (min?: number | null, max?: number | null): string | null => {
@@ -122,6 +136,7 @@ export const categoryItemToCardData = (
     strength: tags[3] ?? null,
     is_partner: item.is_partner,
     info_lines: buildCategoryItemInfoLines(item, category),
+    item_type: CATEGORY_TO_ITEM_TYPE[category],
   };
 };
 
@@ -152,5 +167,6 @@ export const venueToCardData = (venue: Venue): VendorMediaCardData => {
     strength: venue.tags?.[3] ?? null,
     is_partner: venue.is_partner,
     info_lines,
+    item_type: "venue",
   };
 };
