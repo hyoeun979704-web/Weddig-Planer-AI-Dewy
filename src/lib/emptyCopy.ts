@@ -46,6 +46,17 @@ export const emptyCopy = {
     emoji: "🛍️",
     title: "쇼핑은 곧 열어요",
   },
+  // 듀이 스토어(/store) — 카테고리 필터 시 빈 결과
+  storeProducts: {
+    emoji: "🛍️",
+    title: "이 카테고리 상품은 추가 중",
+  },
+  // 파트너 혜택(/deals) — 카테고리 필터 시 빈 결과
+  dealsCategory: {
+    emoji: "🎁",
+    title: "이 카테고리 혜택은 준비 중",
+    description: "다른 카테고리도 둘러보세요",
+  },
   aiStudioTab: {
     emoji: "✨",
     title: "AI 스튜디오는 준비 중",

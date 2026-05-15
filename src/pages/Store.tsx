@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ShoppingCart, Star, Loader2, SlidersHorizontal, ArrowLeft, Heart } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import EmptyState from "@/components/EmptyState";
+import { emptyCopy } from "@/lib/emptyCopy";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
@@ -151,9 +153,7 @@ const Store = () => {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : products.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground">상품이 없습니다</p>
-          </div>
+          <EmptyState {...emptyCopy.storeProducts} />
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {products.map((product) => {

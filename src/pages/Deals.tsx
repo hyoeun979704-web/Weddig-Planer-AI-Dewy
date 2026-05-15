@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Tag, Star, ChevronRight, SlidersHorizontal, Heart } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import EmptyState from "@/components/EmptyState";
+import { emptyCopy } from "@/lib/emptyCopy";
 import { usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { Skeleton } from "@/components/ui/skeleton";
 import SortToggle, { SortMode } from "@/components/SortToggle";
@@ -193,9 +195,7 @@ const Deals = () => {
             ))}
           </div>
         ) : sorted.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">
-            해당 카테고리에 혜택이 없습니다
-          </div>
+          <EmptyState {...emptyCopy.dealsCategory} />
         ) : (
           <div className="space-y-3">
             {sorted.map((deal) => (
