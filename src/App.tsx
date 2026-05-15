@@ -96,6 +96,9 @@ const InfluencerDetail = lazy(() => import("./pages/InfluencerDetail"));
 const Deals = lazy(() => import("./pages/Deals"));
 const DealDetail = lazy(() => import("./pages/DealDetail"));
 
+// 진행중 이벤트 모음 (가입 혜택·미션·초대 등)
+const Events = lazy(() => import("./pages/Events"));
+
 // 기능 4: 쇼핑 결제 플로우
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const Cart = lazy(() => import("./pages/Cart"));
@@ -207,6 +210,7 @@ const App = () => (
               {/* 기능 3: 업체 제휴 혜택 */}
               <Route path="/deals" element={<Deals />} />
               <Route path="/deals/:id" element={<DealDetail />} />
+              <Route path="/events" element={<Events />} />
 
               {/* 기능 4: 쇼핑 결제 플로우 */}
               <Route path="/store/:id" element={<ProductDetail />} />

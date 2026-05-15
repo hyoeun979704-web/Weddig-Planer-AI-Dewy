@@ -1,5 +1,6 @@
 import { CategoryTab } from "./CategoryTabBar";
-import HeroBanner from "./HeroBanner";
+import CompactBannerCarousel from "./CompactBannerCarousel";
+import HomeDashboard from "./HomeDashboard";
 import TabHeroContent from "./TabHeroContent";
 import HomeCategoryGrid from "./HomeCategoryGrid";
 import RecommendedSection from "./RecommendedSection";
@@ -18,7 +19,8 @@ const TabContent = ({ activeTab }: TabContentProps) => {
   if (activeTab === "ai-planner") {
     return (
       <div className="animate-fade-in">
-        <HeroBanner />
+        <CompactBannerCarousel />
+        <HomeDashboard />
         <HomeCategoryGrid />
         <RecommendedSection />
         <InvitationTemplateSection />

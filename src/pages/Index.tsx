@@ -3,6 +3,7 @@ import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
 import TabContent from "@/components/home/TabContent";
+import HomeEntryPopup from "@/components/home/HomeEntryPopup";
 import Footer from "@/components/home/Footer";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
@@ -39,6 +40,8 @@ const Index = () => {
       </main>
 
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
+
+      <HomeEntryPopup />
 
       {tutorial.isActive && tutorial.currentStep && (
         <TutorialOverlay
