@@ -286,8 +286,8 @@ export const handleTimelinePlanning = async (params: TimelineParams): Promise<st
   // 폐백·단체사진 (30~45분)
   lines.push(`${plusMin(ceremony, duration + 45)} 폐백·단체사진 종료`);
 
-  // 피로연
-  if (params.reception === "예" || receptionTime) {
+  // 피로연 — 모달은 "있음"/"없음"으로 보냄. "예"는 구버전/자유 입력 대비.
+  if (params.reception === "있음" || params.reception === "예" || receptionTime) {
     const recStart = receptionTime
       ? `${String(receptionTime.h).padStart(2, "0")}:${String(receptionTime.m).padStart(2, "0")}`
       : plusMin(ceremony, duration + 60);
@@ -295,7 +295,7 @@ export const handleTimelinePlanning = async (params: TimelineParams): Promise<st
   }
 
   // 한복 환복
-  if (params.hanbok === "예" || params.hanbok === "있음") {
+  if (params.hanbok === "있음" || params.hanbok === "예") {
     lines.push(`(피로연 후) 한복 환복 + 인사`);
   }
 
