@@ -4,6 +4,8 @@ import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WEDDING_STYLE_LABEL } from "@/lib/weddingStyle";
 import VendorMediaCard, { CARD_W, CARD_H, vendorToCardData } from "./VendorMediaCard";
+import EmptyState from "@/components/EmptyState";
+import { emptyCopy } from "@/lib/emptyCopy";
 
 const CardSkeleton = () => (
   <Skeleton
@@ -54,13 +56,15 @@ const RecommendedSection = () => {
             />
           ))
         ) : (
-          <div className="flex items-center justify-center w-full py-15">
-            <p className="text-sm text-muted-foreground">
-              {style === "self"
-                ? "셀프웨딩에 어울리는 업체를 더 모으는 중이에요"
-                : "등록된 업체가 없습니다"}
-            </p>
-          </div>
+          <EmptyState
+            variant="inline"
+            className="w-full"
+            {...(style === "self"
+              ? emptyCopy.vendorsSelf
+              : style === "small"
+                ? emptyCopy.vendorsSmall
+                : emptyCopy.vendors)}
+          />
         )}
       </div>
     </section>

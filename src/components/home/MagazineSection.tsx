@@ -8,6 +8,8 @@ import {
   type TipVideo,
 } from "@/hooks/useTipVideos";
 import { PLACE_TO_KOREAN_CATEGORY } from "@/lib/placeMappers";
+import EmptyState from "@/components/EmptyState";
+import { emptyCopy } from "@/lib/emptyCopy";
 
 const CARD_W = 120;
 const THUMB_H = Math.round((CARD_W * 16) / 9);
@@ -160,9 +162,7 @@ export default function MagazineSection({ activeTab: _activeTab }: MagazineSecti
             영상을 불러오지 못했어요.
           </div>
         ) : data.length === 0 ? (
-          <div className="text-[12px] text-black/50">
-            표시할 영상이 아직 없어요.
-          </div>
+          <EmptyState variant="inline" {...emptyCopy.magazine} />
         ) : (
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
             {data.map((video) => (
