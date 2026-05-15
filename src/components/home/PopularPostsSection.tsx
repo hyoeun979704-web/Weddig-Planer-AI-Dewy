@@ -12,7 +12,7 @@ interface PopularPostsSectionProps {
   hideWhenEmpty?: boolean;
 }
 
-const PopularPostsSection = ({ hideWhenEmpty = false }: PopularPostsSectionProps = {}) => {
+const PopularPostsSection = ({ hideWhenEmpty = false }: PopularPostsSectionProps) => {
   const navigate = useNavigate();
 
   const { data: posts = [], isLoading } = useQuery({

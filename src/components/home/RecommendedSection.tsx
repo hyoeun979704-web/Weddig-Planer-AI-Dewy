@@ -7,6 +7,11 @@ import VendorMediaCard, { CARD_W, CARD_H, vendorToCardData } from "./VendorMedia
 import EmptyState from "@/components/EmptyState";
 import { emptyCopy } from "@/lib/emptyCopy";
 
+const EMPTY_BY_STYLE = {
+  self: emptyCopy.vendorsSelf,
+  small: emptyCopy.vendorsSmall,
+} as const;
+
 const CardSkeleton = () => (
   <Skeleton
     className="flex-shrink-0 rounded-[10px]"
@@ -59,11 +64,7 @@ const RecommendedSection = () => {
           <EmptyState
             variant="inline"
             className="w-full"
-            {...(style === "self"
-              ? emptyCopy.vendorsSelf
-              : style === "small"
-                ? emptyCopy.vendorsSmall
-                : emptyCopy.vendors)}
+            {...(EMPTY_BY_STYLE[style as keyof typeof EMPTY_BY_STYLE] ?? emptyCopy.vendors)}
           />
         )}
       </div>

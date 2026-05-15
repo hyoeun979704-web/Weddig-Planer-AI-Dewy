@@ -57,8 +57,6 @@ const CompactBannerCarousel = () => {
       className="px-4 pt-3 pb-2 bg-background"
       onPointerEnter={() => setPaused(true)}
       onPointerLeave={() => setPaused(false)}
-      onTouchStart={() => setPaused(true)}
-      onTouchEnd={() => setPaused(false)}
     >
       <div className="flex items-center gap-2">
         <button

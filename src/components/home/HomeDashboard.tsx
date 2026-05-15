@@ -30,7 +30,8 @@ const HomeDashboard = () => {
   const totalTasks = scheduleItems.length;
   const completedTasks = scheduleItems.filter((s) => s.completed).length;
 
-  // Budget progress — spent / total, capped at 100.
+  // Budget progress — spent / total. 초과 사용 시 100% 넘게 표시(최대 999)
+  // 해서 "이미 초과" 상태를 가린 채 안심시키지 않도록 합니다.
   const totalBudget = budgetSettings?.total_budget ?? 0;
   const pct = totalBudget > 0
     ? Math.min(Math.round((budgetSummary.totalSpent / totalBudget) * 100), 999)

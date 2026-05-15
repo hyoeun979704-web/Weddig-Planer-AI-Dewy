@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Share2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 interface EventCard {
@@ -118,6 +119,8 @@ const Events = () => {
   const location = useLocation();
   const { user } = useAuth();
 
+  const { toast } = useToast();
+
   const handleShare = async () => {
     const shareData = {
       title: "Dewy 이벤트",
@@ -125,8 +128,12 @@ const Events = () => {
       url: window.location.href,
     };
     try {
-      if (navigator.share) await navigator.share(shareData);
-      else await navigator.clipboard?.writeText(shareData.url);
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(shareData.url);
+        toast({ description: "링크를 복사했어요" });
+      }
     } catch {
       // user cancelled — no-op
     }

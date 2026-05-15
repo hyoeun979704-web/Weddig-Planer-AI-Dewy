@@ -1,11 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { CategoryTab } from "./CategoryTabBar";
-import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
-import { useAuth } from "@/contexts/AuthContext";
-import { format } from "date-fns";
-import { ko } from "date-fns/locale";
 
 interface HeroData {
   badge: string;
@@ -65,70 +61,11 @@ interface TabHeroContentProps {
   activeTab: CategoryTab;
 }
 
+// ai-planner 탭 hero 는 HomeDashboard 가 대체하므로 여기서는 비 ai-planner
+// 탭(이벤트/쇼핑/AI 스튜디오/꿀팁)의 정적 hero 만 렌더합니다.
 const TabHeroContent = ({ activeTab }: TabHeroContentProps) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { weddingSettings } = useWeddingSchedule();
   const data = heroDataMap[activeTab];
-
-  const getDDay = () => {
-    if (!weddingSettings.wedding_date) return null;
-    const wedding = new Date(weddingSettings.wedding_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return Math.ceil((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  };
-
-  const days = activeTab === "ai-planner" ? getDDay() : null;
-  const showDDay = activeTab === "ai-planner" && user && days !== null;
-
-  if (activeTab === "ai-planner" && showDDay) {
-    return (
-      <section className="relative bg-gradient-to-br from-accent via-accent/50 to-background px-4 pt-5 pb-4 overflow-hidden">
-        <div className="absolute top-2 right-2 w-20 h-20 bg-primary/8 rounded-full blur-2xl" />
-
-        <div className="relative z-10">
-          <button
-            onClick={() => navigate("/schedule")}
-            className="w-full flex items-center gap-3 p-3 bg-background/60 backdrop-blur-sm rounded-xl mb-4 border border-border/50 active:scale-[0.98] transition-transform"
-          >
-            <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center">
-              <span className="text-xl font-extrabold text-primary">
-                {days > 0 ? `D-${days}` : days === 0 ? "🎉" : `D+${Math.abs(days)}`}
-              </span>
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-foreground">
-                {days > 0 ? "결혼식까지" : days === 0 ? "오늘이 결혼식!" : "결혼식 후"}
-                {days > 0 && <span className="text-primary ml-1">{days}일</span>}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {format(new Date(weddingSettings.wedding_date!), "yyyy.MM.dd (EEEE)", { locale: ko })}
-              </p>
-            </div>
-            <ArrowRight className="w-4 h-4 text-muted-foreground" />
-          </button>
-
-          <div className="flex gap-2">
-            <Button
-              onClick={() => navigate("/ai-planner")}
-              className="flex-1 h-11 rounded-xl font-semibold gap-2 text-sm"
-            >
-              <Sparkles className="w-4 h-4" />
-              AI 플래너
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/my-schedule")}
-              className="flex-1 h-11 rounded-xl font-semibold text-sm border-primary/30 hover:bg-accent"
-            >
-              일정 관리
-            </Button>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className={`relative bg-gradient-to-br ${data.bgColor} px-4 pt-6 pb-5 overflow-hidden`}>
