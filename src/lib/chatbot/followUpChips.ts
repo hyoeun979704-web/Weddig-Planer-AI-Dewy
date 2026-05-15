@@ -1,156 +1,176 @@
 /**
  * Intent별 후속 질문 칩 매핑.
  *
- * 이전엔 AIPlanner.tsx에 하드코딩된 4개 칩("더 자세히 알려줘", "다른 옵션은?",
- * "비용 비교해줘", "체크리스트 만들어줘")이 어떤 응답 뒤든 똑같이 노출됐다.
- * 사용자 입장에서 무의미해서, 마지막 응답의 intent에 따라 의미 있는 후속
- * 질문을 매핑한다.
+ * ⚠️ 모든 칩 텍스트는 intentRouter.ts의 정적 패턴에 매칭되도록 작성한다.
+ * 칩이 LLM 폴백되면 일일 무료 한도가 소진되고 응답도 부정확해서 사용자
+ * 경험이 크게 나빠진다. 새 칩을 추가할 때 followUpChips.test.ts에서
+ * matchIntent로 매칭 검증 필수.
  *
- * 칩 텍스트는 클릭하면 그대로 sendMessage로 들어가므로, 라우터 패턴에 잡힐
- * 표현을 우선 선택. 잡히지 않는 경우엔 LLM 폴백되더라도 사용자 의도가 명확
- * 하면 OK.
- *
- * 모르는 intent거나 null이면 일반적인 4개 폴백 사용.
+ * 매핑 없는 intent거나 null/undefined면 안전한 폴백 4개 사용.
  */
 
 const DEFAULT_CHIPS = [
-  "더 자세히 알려줘",
-  "비용은 얼마야?",
-  "체크리스트 만들어줘",
-  "다음 단계는?",
+  "오늘 일정 알려줘",
+  "예산 얼마 썼어?",
+  "디데이 알려줘",
+  "도움말 보여줘",
 ];
 
 const CHIP_MAP: Record<string, string[]> = {
   // ── 가이드 응답 후 ─────────────────────────────────
   guide_etiquette: [
-    "축의금 봉투는 어떻게 써?",
-    "혼주 한복 색상 추천",
-    "예단 줄여도 매너 안 어긋날까?",
-    "양가 갈등 화법 알려줘",
+    "축의금 봉투 어떻게 써?",          // → guide_gift
+    "답례품 추천",                      // → guide_gift
+    "신혼집 준비 체크",                 // → guide_new_home
+    "본식 식순 보여줘",                 // → guide_ceremony_progress
   ],
   guide_gift: [
-    "답례품 가격대별 추천",
-    "축의금 평균은 얼마야?",
-    "친척 축의금 기준 알려줘",
+    "예단 매너 알려줘",                 // → guide_etiquette
+    "축의금 얼마가 적당해?",            // → guide_gift (재진입)
+    "신혼집 준비 체크",                 // → guide_new_home
+    "본식 식순 보여줘",                 // → guide_ceremony_progress
   ],
   guide_sdme_timing: [
-    "스튜디오 추천해줘",
-    "드레스 투어 일정 짜줘",
-    "메이크업 시연 언제 해?",
+    "메이크업 시연 언제 해?",           // → guide_makeup_trial
+    "강남 스튜디오 추천",               // → free_search
+    "스튜디오 시세 어때",               // → average_price
+    "인기 스튜디오 보여줘",             // → popular_places
   ],
   guide_invitation_timing: [
-    "청첩장 문구 추천",
-    "모바일 청첩장 어디서 만들어?",
-    "직장 동료 누구까지 보내?",
+    "청첩장 언제 보내",                 // → guide_invitation_timing (재진입)
+    "오늘 일정 알려줘",                 // → schedule_today
+    "디데이 알려줘",                    // → dday
+    "체크리스트 진척률",                // → checklist_progress
   ],
   guide_makeup_trial: [
-    "시연 메이크업 후기 어디서 봐?",
-    "본식 메이크업 평균 시세",
-    "메이크업 샵 추천해줘",
+    "메이크업 시연 언제",               // → guide_makeup_trial (재진입)
+    "강남 메이크업 추천",               // → free_search
+    "스드메 언제 예약",                 // → guide_sdme_timing
+    "인기 스튜디오 보여줘",             // → popular_places
   ],
   guide_honeymoon_timing: [
-    "신혼여행지 추천",
-    "허니문 예산 평균은?",
-    "비자·여권 체크 알려줘",
+    "신혼여행 언제 예약",               // → guide_honeymoon_timing (재진입)
+    "신혼집 준비 체크",                 // → guide_new_home
+    "예산 분석해줘",                    // → budget_diagnosis
+    "디데이 알려줘",                    // → dday
   ],
   guide_contract: [
-    "계약 시 자주 빠뜨리는 항목",
-    "가계약·본계약 차이",
-    "위약금 조항 어떻게 봐?",
+    "예단 매너 알려줘",                 // → guide_etiquette
+    "스드메 언제 예약",                 // → guide_sdme_timing
+    "예산 분석해줘",                    // → budget_diagnosis
+    "체크리스트 진척률",                // → checklist_progress
   ],
   guide_new_home: [
-    "전세·매매 어떤 게 나아?",
-    "혼수 가전 추천 순서",
-    "이사 일정 짜줘",
+    "신혼여행 언제 예약",               // → guide_honeymoon_timing
+    "예단 매너 알려줘",                 // → guide_etiquette
+    "예산 얼마 썼어?",                  // → budget_summary
+    "체크리스트 진척률",                // → checklist_progress
   ],
   guide_ceremony_progress: [
-    "타임라인 만들어줘",
-    "사회자 멘트 추천",
-    "본식 BGM 추천",
+    "예단 매너 알려줘",                 // → guide_etiquette
+    "메이크업 시연 언제",               // → guide_makeup_trial
+    "디데이 알려줘",                    // → dday
+    "이번 주 일정",                     // → schedule_upcoming
   ],
 
   // ── DB 조회 응답 후 ────────────────────────────────
   dday: [
-    "오늘 일정 알려줘",
-    "이번 주 일정 보여줘",
-    "지금 뭐 해야 해?",
+    "오늘 일정 알려줘",                 // → schedule_today
+    "이번 주 일정",                     // → schedule_upcoming
+    "체크리스트 진척률",                // → checklist_progress
+    "예산 얼마 썼어?",                  // → budget_summary
   ],
   budget_summary: [
-    "예산 분석해줘",
-    "초과한 항목은?",
-    "절약할 곳 추천",
+    "예산 분석해줘",                    // → budget_diagnosis
+    "웨딩홀 시세 어때",                 // → average_price
+    "찜 목록 보여줘",                   // → favorites
+    "오늘 일정 알려줘",                 // → schedule_today
   ],
   budget_diagnosis: [
-    "절약할 항목 추천",
-    "지역 평균 시세 비교",
-    "체크리스트 보여줘",
+    "예산 얼마 썼어?",                  // → budget_summary
+    "웨딩홀 시세 어때",                 // → average_price
+    "체크리스트 진척률",                // → checklist_progress
+    "디데이 알려줘",                    // → dday
   ],
   schedule_today: [
-    "이번 주 일정도 보여줘",
-    "놓친 일정 있어?",
-    "다음 마일스톤은?",
+    "이번 주 일정",                     // → schedule_upcoming
+    "일정 점검해줘",                    // → schedule_diagnosis
+    "체크리스트 진척률",                // → checklist_progress
+    "디데이 알려줘",                    // → dday
   ],
   schedule_upcoming: [
-    "오늘 일정만 보여줘",
-    "이번 달 전체 보여줘",
-    "체크리스트 진척률",
+    "오늘 일정 알려줘",                 // → schedule_today
+    "일정 점검해줘",                    // → schedule_diagnosis
+    "체크리스트 진척률",                // → checklist_progress
+    "예산 얼마 썼어?",                  // → budget_summary
   ],
   schedule_diagnosis: [
-    "놓친 일정 다시 보여줘",
-    "다음 마일스톤은?",
-    "체크리스트 진척률",
+    "오늘 일정 알려줘",                 // → schedule_today
+    "이번 주 일정",                     // → schedule_upcoming
+    "체크리스트 진척률",                // → checklist_progress
+    "디데이 알려줘",                    // → dday
   ],
   checklist_progress: [
-    "다음 단계 알려줘",
-    "이번 주 할 일",
-    "놓친 일정 있어?",
+    "오늘 일정 알려줘",                 // → schedule_today
+    "이번 주 일정",                     // → schedule_upcoming
+    "예산 얼마 썼어?",                  // → budget_summary
+    "계약 진행 상황",                   // → contract_progress
   ],
   favorites: [
-    "장바구니 보여줘",
-    "받은 특가 알려줘",
-    "인기 업체 추천",
+    "장바구니",                         // → cart
+    "받은 특가 보여줘",                 // → deal_claims
+    "인기 식장 보여줘",                 // → popular_places
+    "강남 웨딩홀 추천",                 // → free_search
   ],
   cart: [
-    "찜 목록 보여줘",
-    "주문 내역 보여줘",
-    "결제 내역 알려줘",
+    "찜 목록 보여줘",                   // → favorites
+    "주문 내역 보여줘",                 // → orders
+    "결제 내역 보여줘",                 // → payments
+    "받은 특가 보여줘",                 // → deal_claims
   ],
   free_search: [
-    "시세 평균 알려줘",
-    "인기 업체 보여줘",
-    "찜 목록 보여줘",
+    "웨딩홀 시세 어때",                 // → average_price
+    "인기 식장 보여줘",                 // → popular_places
+    "찜 목록 보여줘",                   // → favorites
+    "예산 얼마 썼어?",                  // → budget_summary
   ],
   average_price: [
-    "인기 업체 추천",
-    "지역별 비교",
-    "예산 분석해줘",
+    "인기 식장 보여줘",                 // → popular_places
+    "강남 웨딩홀 추천",                 // → free_search
+    "예산 분석해줘",                    // → budget_diagnosis
+    "찜 목록 보여줘",                   // → favorites
   ],
   popular_places: [
-    "시세 평균 알려줘",
-    "지역별 검색",
-    "찜 목록 보여줘",
+    "웨딩홀 시세 어때",                 // → average_price
+    "강남 웨딩홀 추천",                 // → free_search
+    "찜 목록 보여줘",                   // → favorites
+    "예산 얼마 썼어?",                  // → budget_summary
   ],
 
   // ── 모달 응답 후 (sendStructured) ──────────────────
   venue_recommendation: [
-    "스드메도 추천해줘",
-    "타임라인 만들어줘",
-    "예산 분석해줘",
+    "스드메 언제 예약",                 // → guide_sdme_timing
+    "예산 분석해줘",                    // → budget_diagnosis
+    "웨딩홀 시세 어때",                 // → average_price
+    "찜 목록 보여줘",                   // → favorites
   ],
   sdme_guide: [
-    "웨딩홀 추천해줘",
-    "메이크업 시연 언제 해?",
-    "스튜디오 후기 어디서 봐?",
+    "강남 웨딩홀 추천",                 // → free_search
+    "메이크업 시연 언제",               // → guide_makeup_trial
+    "인기 스튜디오 보여줘",             // → popular_places
+    "예산 분석해줘",                    // → budget_diagnosis
   ],
   timeline_planning: [
-    "시기별 체크리스트 만들어줘",
-    "본식 식순 보여줘",
-    "신부 메이크업 시간 추천",
+    "본식 식순 보여줘",                 // → guide_ceremony_progress
+    "체크리스트 진척률",                // → checklist_progress
+    "디데이 알려줘",                    // → dday
+    "오늘 일정 알려줘",                 // → schedule_today
   ],
   budget_planning: [
-    "절약할 곳 추천",
-    "지역 평균과 비교",
-    "체크리스트 만들어줘",
+    "예산 분석해줘",                    // → budget_diagnosis
+    "웨딩홀 시세 어때",                 // → average_price
+    "체크리스트 진척률",                // → checklist_progress
+    "예산 점검해줘",                    // → budget_diagnosis
   ],
 };
 

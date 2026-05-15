@@ -161,7 +161,7 @@ export const handleBudget = async (ctx: DbHandlerContext): Promise<string> => {
   const categoryLines = Object.entries(byCategory)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 6)
-    .map(([cat, amt]) => `• ${budgetCategoryLabel(cat)}: ${amt.toLocaleString()}원`)
+    .map(([cat, amt]) => `- ${budgetCategoryLabel(cat)}: ${amt.toLocaleString()}원`)
     .join("\n");
 
   let header = `현재 등록된 지출 합계는 **${totalSpent.toLocaleString()}원**이에요 💰`;
@@ -210,7 +210,7 @@ export const handleScheduleToday = async (ctx: DbHandlerContext): Promise<string
 
   const completed = data.filter((d: any) => d.completed).length;
   const remaining = data.filter((d: any) => !d.completed);
-  const lines = remaining.slice(0, 5).map((d: any) => `• ${d.title}`).join("\n");
+  const lines = remaining.slice(0, 5).map((d: any) => `- ${d.title}`).join("\n");
 
   return `오늘 예정된 일정 ${data.length}건이 있어요 📅 (완료 ${completed}건)\n\n${lines || "모두 완료하셨네요! 🎉"}\n\n전체 일정은 [일정 페이지](/schedule)에서 확인하실 수 있어요.`;
 };
@@ -238,7 +238,7 @@ export const handleScheduleUpcoming = async (ctx: DbHandlerContext): Promise<str
   const lines = data
     .map((d: any) => {
       const date = new Date(d.scheduled_date);
-      return `• ${date.getMonth() + 1}/${date.getDate()} — ${d.title}`;
+      return `- ${date.getMonth() + 1}/${date.getDate()} — ${d.title}`;
     })
     .join("\n");
 
@@ -298,7 +298,7 @@ export const handleChecklist = async (
   const styleHint = ctx.weddingStyle && ctx.weddingStyle !== "general"
     ? ` (${ctx.weddingStyle === "self" ? "셀프웨딩" : ctx.weddingStyle === "small" ? "스몰웨딩" : "맞춤"} 기준 · 제외 카테고리 반영)`
     : "";
-  const lines = tasks.map((t) => `• ${t.title}`).join("\n");
+  const lines = tasks.map((t) => `- ${t.title}`).join("\n");
   return `**${label}** 권장 체크리스트예요 📋${styleHint}\n\n${lines}\n\n전체 일정은 [일정 페이지](/schedule)에서 관리하실 수 있어요.`;
 };
 
@@ -320,7 +320,7 @@ export const handleFavorites = async (ctx: DbHandlerContext): Promise<string> =>
     byType[f.item_type] = (byType[f.item_type] ?? 0) + 1;
   }
   const lines = Object.entries(byType)
-    .map(([type, count]) => `• ${itemTypeLabel(type)}: ${count}개`)
+    .map(([type, count]) => `- ${itemTypeLabel(type)}: ${count}개`)
     .join("\n");
 
   return `현재 **${data.length}개**의 항목을 찜하고 계세요 💗\n\n**카테고리별**\n${lines}\n\n전체 목록은 [즐겨찾기 페이지](/favorites)에서 확인하실 수 있어요.`;
@@ -408,8 +408,8 @@ export const handleHearts = async (ctx: DbHandlerContext): Promise<string> => {
 
   const balance = data.balance ?? 0;
   let message = `현재 하트 잔액은 **${balance}개** 예요 💗\n\n`;
-  message += `• 누적 적립: ${(data.total_earned ?? 0).toLocaleString()}개\n`;
-  message += `• 누적 사용: ${(data.total_spent ?? 0).toLocaleString()}개\n\n`;
+  message += `- 누적 적립: ${(data.total_earned ?? 0).toLocaleString()}개\n`;
+  message += `- 누적 사용: ${(data.total_spent ?? 0).toLocaleString()}개\n\n`;
 
   if (balance >= 5) {
     message += "AI 드레스 피팅 한 장(5 하트) 가능해요. [AI 스튜디오](/ai-studio)에서 시작해보세요!";

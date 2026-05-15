@@ -98,7 +98,7 @@ export const handleVenueRecommendation = async (params: VenueParams): Promise<st
         ? `${d.min_guarantee}~${d.max_guarantee}명`
         : "";
       const partner = v.is_partner ? " ⭐파트너" : "";
-      return `• **${v.name}** (${region})${partner}\n  ${price} · ${cap}${v.avg_rating ? ` · ★ ${v.avg_rating}` : ""}`;
+      return `- **${v.name}** (${region})${partner}\n  ${price} · ${cap}${v.avg_rating ? ` · ★ ${v.avg_rating}` : ""}`;
     })
     .join("\n\n");
 
@@ -148,7 +148,7 @@ export const handleSdmeGuide = async (params: SdmeParams): Promise<string> => {
     `* 표본은 듀이에 등록된 업체의 시작가(min_price) 기준이에요. 옵션·시즌에 따라 변동 있을 수 있어요.`;
 
   // 추가금 방어
-  const guard = `**숨은 추가금 주의** ⚠️\n• 원본 데이터: 30~50만원\n• 헬퍼 이모님(드레스 도와주는 분): 15~25만원\n• 얼리 스타트(이른 시간 메이크업): 5~10만원\n• 드레스 가봉 추가: 5~10만원\n• 부속품(베일·티아라·신발): 별도`;
+  const guard = `**숨은 추가금 주의** ⚠️\n- 원본 데이터: 30~50만원\n- 헬퍼 이모님(드레스 도와주는 분): 15~25만원\n- 얼리 스타트(이른 시간 메이크업): 5~10만원\n- 드레스 가봉 추가: 5~10만원\n- 부속품(베일·티아라·신발): 별도`;
 
   // 사용자 조건 요약
   const summary: string[] = [];
@@ -182,7 +182,7 @@ export const handleSdmeGuide = async (params: SdmeParams): Promise<string> => {
       Object.entries(grouped)
         .map(([cat, items]) => {
           const lines = items.slice(0, 2).map((p: any) =>
-            `  • ${p.name}${p.district ? ` (${p.district})` : ""}${p.avg_rating ? ` ★${p.avg_rating}` : ""}${p.is_partner ? " ⭐" : ""}`
+            `  - ${p.name}${p.district ? ` (${p.district})` : ""}${p.avg_rating ? ` ★${p.avg_rating}` : ""}${p.is_partner ? " ⭐" : ""}`
           ).join("\n");
           return `${catLabels[cat] || cat}\n${lines}`;
         })
@@ -320,7 +320,7 @@ export const handleTimelinePlanning = async (params: TimelineParams): Promise<st
   if (params.photoTeam) summary.push(`📸 ${params.photoTeam}`);
   if (params.special) summary.push(`✨ ${params.special}`);
 
-  return `**본식 당일 타임라인** ⏰\n예식 ${ceremonyStr} (${duration}분 진행)\n${summary.length > 0 ? summary.join(" · ") + "\n" : ""}\n${lines.map((l) => `• ${l}`).join("\n")}\n\n* 식장·계절·사진팀 일정에 따라 30분 단위 조정 권장.\n* 자세한 시기별 체크리스트는 "준비 타임라인 만들어줘" 라고 물어봐 주세요.`;
+  return `**본식 당일 타임라인** ⏰\n예식 ${ceremonyStr} (${duration}분 진행)\n${summary.length > 0 ? summary.join(" · ") + "\n" : ""}\n${lines.map((l) => `- ${l}`).join("\n")}\n\n* 식장·계절·사진팀 일정에 따라 30분 단위 조정 권장.\n* 자세한 시기별 체크리스트는 "준비 타임라인 만들어줘" 라고 물어봐 주세요.`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -406,7 +406,7 @@ export const handleBudgetPlanning = async (params: BudgetParams): Promise<string
     .sort((a, b) => b.amount - a.amount);
 
   const lines = allocations
-    .map((a) => `• ${a.label}: ${(a.amount / 10000).toLocaleString()}만원 (${Math.round(a.ratio * 100)}%)${a.priority ? " ⭐" : ""}`)
+    .map((a) => `- ${a.label}: ${(a.amount / 10000).toLocaleString()}만원 (${Math.round(a.ratio * 100)}%)${a.priority ? " ⭐" : ""}`)
     .join("\n");
 
   // 양가 지원금
@@ -423,5 +423,5 @@ export const handleBudgetPlanning = async (params: BudgetParams): Promise<string
   }
 
   const displayRegion = params.regionLabel ?? params.region;
-  return `**예산 분배 추천** 💰\n총 예산 **${total.toLocaleString()}만원**${displayRegion ? ` (${displayRegion})` : ""}\n\n${lines}\n\n⭐ 표시는 우선순위 항목이에요${supportLine}${seasonNote}\n\n💡 **추가금 방어 팁**\n• 웨딩홀: 보증인원 협상, 대관료·식대 분리 견적 받기\n• 스드메: 원본·헬퍼·얼리스타트 등 숨은 비용 포함 견적 요청\n• 예물: 시세 변동 큰 금 가격 우선 체크\n\n자세한 항목별 관리는 [예산 페이지](/budget)에서 가능해요.`;
+  return `**예산 분배 추천** 💰\n총 예산 **${total.toLocaleString()}만원**${displayRegion ? ` (${displayRegion})` : ""}\n\n${lines}\n\n⭐ 표시는 우선순위 항목이에요${supportLine}${seasonNote}\n\n💡 **추가금 방어 팁**\n- 웨딩홀: 보증인원 협상, 대관료·식대 분리 견적 받기\n- 스드메: 원본·헬퍼·얼리스타트 등 숨은 비용 포함 견적 요청\n- 예물: 시세 변동 큰 금 가격 우선 체크\n\n자세한 항목별 관리는 [예산 페이지](/budget)에서 가능해요.`;
 };
