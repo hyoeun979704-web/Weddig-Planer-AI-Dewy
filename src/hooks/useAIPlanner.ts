@@ -23,7 +23,16 @@ export type StructuredHandler =
   | { kind: "timeline"; params: TimelineParams }
   | { kind: "budget"; params: BudgetParams };
 
-type Message = { role: "user" | "assistant"; content: string };
+/**
+ * `intent` — 응답이 어떤 intent로 라우팅됐는지 (assistant 메시지에만 의미).
+ * 후속 질문 칩을 동적으로 결정하는 데 사용 (followUpChips.getFollowUpChips).
+ * LLM 폴백은 "llm", 매칭 안 된 비로그인 로그인 안내는 "login_required".
+ */
+export type Message = {
+  role: "user" | "assistant";
+  content: string;
+  intent?: string | null;
+};
 
 const CHAT_URL = `${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/ai-planner`;
 
@@ -53,7 +62,7 @@ export const useAIPlanner = () => {
       if (intent) {
         // (a) 정적 응답 — 인사·도움말·가격 안내 등
         if (intent.staticReply) {
-          setMessages(prev => [...prev, { role: "assistant", content: intent.staticReply! }]);
+          setMessages(prev => [...prev, { role: "assistant", content: intent.staticReply!, intent: intent.intent }]);
           setIsLoading(false);
           return;
         }
@@ -62,7 +71,7 @@ export const useAIPlanner = () => {
         // 일부는 places 통계로 동적 산출하므로 async
         if (intent.guideKey) {
           const reply = await runGuideHandler(intent.guideKey);
-          setMessages(prev => [...prev, { role: "assistant", content: reply }]);
+          setMessages(prev => [...prev, { role: "assistant", content: reply, intent: intent.intent }]);
           setIsLoading(false);
           return;
         }
@@ -86,7 +95,7 @@ export const useAIPlanner = () => {
             // LLM 호출 흐름으로 fallthrough
           } else if (result.reply) {
             // 즉답만 — 거기서 종료
-            setMessages(prev => [...prev, { role: "assistant", content: result.reply! }]);
+            setMessages(prev => [...prev, { role: "assistant", content: result.reply!, intent: intent.intent }]);
             setIsLoading(false);
             return;
           }
@@ -96,6 +105,7 @@ export const useAIPlanner = () => {
           setMessages(prev => [...prev, {
             role: "assistant",
             content: "이 정보는 로그인 후 확인할 수 있어요 🌿\n[로그인 페이지](/auth)에서 가입·로그인 부탁드려요.",
+            intent: "login_required",
           }]);
           setIsLoading(false);
           return;
@@ -115,7 +125,7 @@ export const useAIPlanner = () => {
         if (last?.role === "assistant") {
           return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
         }
-        return [...prev, { role: "assistant", content: assistantSoFar }];
+        return [...prev, { role: "assistant", content: assistantSoFar, intent: "llm" }];
       });
     };
 
@@ -299,21 +309,26 @@ export const useAIPlanner = () => {
 
     try {
       let reply: string;
+      let intent: string;
       switch (handler.kind) {
         case "venue":
           reply = await handleVenueRecommendation(handler.params);
+          intent = "venue_recommendation";
           break;
         case "sdme":
           reply = await handleSdmeGuide(handler.params);
+          intent = "sdme_guide";
           break;
         case "timeline":
           reply = await handleTimelinePlanning(handler.params);
+          intent = "timeline_planning";
           break;
         case "budget":
           reply = await handleBudgetPlanning(handler.params);
+          intent = "budget_planning";
           break;
       }
-      setMessages(prev => [...prev, { role: "assistant", content: reply }]);
+      setMessages(prev => [...prev, { role: "assistant", content: reply, intent }]);
     } catch (e) {
       console.error("Structured handler error:", e);
       toast({

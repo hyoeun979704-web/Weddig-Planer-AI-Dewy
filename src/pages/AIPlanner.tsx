@@ -16,6 +16,7 @@ import UpgradeModal from "@/components/premium/UpgradeModal";
 import BottomNav from "@/components/BottomNav";
 import { motion, AnimatePresence } from "framer-motion";
 import { findSuggestions } from "@/data/chatbotSuggestions";
+import { getFollowUpChips } from "@/lib/chatbot/followUpChips";
 import type { WeddingStyle } from "@/lib/weddingStyle";
 
 type ModalType = "venue" | "sdme" | "timeline" | "budget" | null;
@@ -114,13 +115,6 @@ const STYLE_GREETING: Record<WeddingStyle, { title: string; subtitle: string; em
     emoji: "🛠️",
   },
 };
-
-const FOLLOW_UP_CHIPS = [
-  "더 자세히 알려줘",
-  "다른 옵션은?",
-  "비용 비교해줘",
-  "체크리스트 만들어줘",
-];
 
 const AIPlanner = () => {
   const navigate = useNavigate();
@@ -243,8 +237,11 @@ const AIPlanner = () => {
   };
 
   const hasConversation = messages.length > 0;
-  const lastMessageIsAssistant = messages.length > 0 && messages[messages.length - 1]?.role === "assistant";
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+  const lastMessageIsAssistant = lastMessage?.role === "assistant";
   const showFollowUps = hasConversation && lastMessageIsAssistant && !isLoading;
+  // 마지막 응답의 intent에 따라 컨텍스트 맞는 후속 칩. 매핑 없으면 기본 4개.
+  const followUpChips = getFollowUpChips(lastMessage?.intent);
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
@@ -347,7 +344,7 @@ const AIPlanner = () => {
               animate={{ opacity: 1, y: 0 }}
               className="flex flex-wrap gap-2 pl-11"
             >
-              {FOLLOW_UP_CHIPS.map((chip) => (
+              {followUpChips.map((chip) => (
                 <button
                   key={chip}
                   onClick={() => handleChipClick(chip)}
