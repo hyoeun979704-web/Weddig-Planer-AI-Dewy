@@ -26,6 +26,47 @@ const HomeDashboard = () => {
     return Math.round((target.getTime() - today.getTime()) / 86400000);
   })();
 
+  // D-day 긴급도 — 남은 기간에 따라 색/카피 분기. 페르소나 인터뷰에서
+  // D-90 / D-100 / D-120 인 커플들이 "분홍색 그대로라 급한 게 안 보였다"
+  // 고 일관되게 언급해서, 잔여일 임계치별로 카드 톤을 바꿉니다.
+  const urgency = (() => {
+    if (dDay === null || dDay < 0) return null;
+    if (dDay <= 30) {
+      return {
+        tone: "critical" as const,
+        bgClass: "bg-red-50",
+        textClass: "text-red-600",
+        badgeClass: "bg-red-100",
+        hint: "마지막 마무리 시기예요",
+      };
+    }
+    if (dDay <= 90) {
+      return {
+        tone: "urgent" as const,
+        bgClass: "bg-orange-50",
+        textClass: "text-orange-600",
+        badgeClass: "bg-orange-100",
+        hint: "지금이 결정 타이밍",
+      };
+    }
+    if (dDay <= 180) {
+      return {
+        tone: "active" as const,
+        bgClass: "bg-amber-50",
+        textClass: "text-amber-700",
+        badgeClass: "bg-amber-100",
+        hint: "차근차근 진행하기 좋은 시기",
+      };
+    }
+    return {
+      tone: "early" as const,
+      bgClass: "bg-card",
+      textClass: "text-primary",
+      badgeClass: "bg-primary/12",
+      hint: null,
+    };
+  })();
+
   // Schedule progress — completed / total of template-seeded items.
   const totalTasks = scheduleItems.length;
   const completedTasks = scheduleItems.filter((s) => s.completed).length;
@@ -42,11 +83,11 @@ const HomeDashboard = () => {
       {/* D-day card */}
       <button
         onClick={() => navigate(user ? "/schedule" : "/auth")}
-        className="w-full flex items-center gap-3 p-3 bg-card rounded-2xl border border-border/60 active:scale-[0.98] transition-transform"
+        className={`w-full flex items-center gap-3 p-3 rounded-2xl border border-border/60 active:scale-[0.98] transition-transform ${urgency?.bgClass ?? "bg-card"}`}
       >
-        <div className="w-12 h-12 rounded-xl bg-primary/12 flex items-center justify-center flex-shrink-0">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${urgency?.badgeClass ?? "bg-primary/12"}`}>
           {dDay !== null ? (
-            <span className="text-sm font-extrabold text-primary leading-none">
+            <span className={`text-sm font-extrabold leading-none ${urgency?.textClass ?? "text-primary"}`}>
               {dDay > 0 ? `D-${dDay}` : dDay === 0 ? "🎉" : `D+${Math.abs(dDay)}`}
             </span>
           ) : (
@@ -59,8 +100,10 @@ const HomeDashboard = () => {
               <p className="text-sm font-bold text-foreground truncate">
                 {dDay > 0 ? `결혼식까지 ${dDay}일` : dDay === 0 ? "오늘이 결혼식이에요!" : `결혼식 후 ${Math.abs(dDay)}일`}
               </p>
-              <p className="text-[11px] text-muted-foreground">
-                {format(new Date(weddingSettings.wedding_date!), "yyyy.MM.dd (EEEE)", { locale: ko })}
+              <p className={`text-[11px] truncate ${urgency?.hint ? urgency.textClass : "text-muted-foreground"}`}>
+                {urgency?.hint
+                  ? `${format(new Date(weddingSettings.wedding_date!), "yyyy.MM.dd (EEEE)", { locale: ko })} · ${urgency.hint}`
+                  : format(new Date(weddingSettings.wedding_date!), "yyyy.MM.dd (EEEE)", { locale: ko })}
               </p>
             </>
           ) : (

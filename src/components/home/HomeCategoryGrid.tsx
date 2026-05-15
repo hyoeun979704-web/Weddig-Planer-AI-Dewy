@@ -50,6 +50,15 @@ const SMALL_EXTRA_TILES: CategoryItem[] = [
   { label: "스몰 후기", image: weddingHallImg, path: "/community?style=small", emoji: "📖" },
 ];
 
+// 페르소나별로 baseTiles 의 노출 우선순위를 다르게 합니다.
+// self: DIY/직접 컨택 카테고리 위로. 큰 웨딩홀은 뒤로.
+// small: 작은 베뉴·스드메·답례 위로.
+// general/null: 기존 순서(이미 일반적 우선순위).
+const TILE_PRIORITY: Record<"self" | "small", string[]> = {
+  self: ["청첩장 모임", "예복", "한복", "스드메", "신혼여행", "예물·예단", "가전·혼수", "웨딩홀"],
+  small: ["스드메", "한복", "예복", "청첩장 모임", "웨딩홀", "신혼여행", "예물·예단", "가전·혼수"],
+};
+
 const Tile = ({ item, onClick }: { item: CategoryItem; onClick: () => void }) => {
   const src = typeof item.image === "string" ? item.image : item.image.src;
   return (
@@ -80,18 +89,30 @@ const HomeCategoryGrid = () => {
   const navigate = useNavigate();
   const { weddingSettings } = useWeddingSchedule();
 
-  // Derive the tile list once per (style, exclusions) change. Hides
-  // excluded-category tiles and folds in style-specific replacements so the
-  // grid keeps a consistent 8-tile rhythm (2 rows × 4) when possible.
+  // Derive the tile list once per (style, exclusions) change.
+  // 1) Hide excluded categories.
+  // 2) For self/small, prepend persona-specific extras so DIY/스몰 베뉴
+  //    같은 카테고리가 1행에 노출됩니다 (페르소나 인터뷰 결과).
+  // 3) Reorder remaining base tiles per TILE_PRIORITY when style is set.
   const tiles = useMemo<CategoryItem[]>(() => {
     const excluded = new Set(weddingSettings.excluded_categories ?? []);
     const visible = baseTiles.filter(t => !t.excludeKey || !excluded.has(t.excludeKey));
     const style = weddingSettings.wedding_style;
-    if (style !== "self" && style !== "small") return visible;
+
+    if (style !== "self" && style !== "small") return visible.slice(0, 8);
+
+    // Per-style ordering of base tiles
+    const priority = TILE_PRIORITY[style];
+    const ordered = [...visible].sort((a, b) => {
+      const ai = priority.indexOf(a.label);
+      const bi = priority.indexOf(b.label);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    });
+
+    // Persona extras lead so they hit the first row (positions 0~3).
     const extras = style === "self" ? SELF_EXTRA_TILES : SMALL_EXTRA_TILES;
-    const slotsToFill = Math.max(0, 8 - visible.length);
-    if (slotsToFill === 0) return visible;
-    return [...visible, ...extras.slice(0, slotsToFill)];
+    const merged = [...extras.slice(0, 2), ...ordered];
+    return merged.slice(0, 8);
   }, [weddingSettings.excluded_categories, weddingSettings.wedding_style]);
 
   const row1 = tiles.slice(0, 4);
