@@ -20,6 +20,7 @@ import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import { searchVideos, fetchVideoStats } from "./youtube";
 import { TIP_QUERIES, TIP_CATEGORIES, type TipCategory } from "./queries";
+import { normalizeTipCategories } from "../../src/lib/tipNormalize";
 
 interface Args {
   category?: TipCategory;
@@ -120,7 +121,7 @@ async function main() {
       like_count: s?.likeCount ?? 0,
       published_at: v.published_at,
       description: v.description,
-      categories: Array.from(v.categories),
+      categories: normalizeTipCategories(Array.from(v.categories)),
       search_query: v.search_query,
       collected_at: new Date().toISOString(),
       is_active: true,
