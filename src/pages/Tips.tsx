@@ -112,7 +112,7 @@ function GridCard({ video, wide }: { video: TipVideo; wide?: boolean }) {
   );
 }
 
-const Magazine = () => {
+const Tips = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [category, setCategory] = useState<string | null>(null);
@@ -295,4 +295,4 @@ const Magazine = () => {
   );
 };
 
-export default Magazine;
+export default Tips;

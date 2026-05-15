@@ -22,7 +22,7 @@ const Index = () => {
     const tabRoutes: Record<CategoryTab, string> = {
       "ai-planner": "/ai-planner",
       "ai-studio": "/ai-studio",
-      tips: "/magazine",
+      tips: "/tips",
       events: "/deals",
       shopping: "/store",
     };

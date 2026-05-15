@@ -6,7 +6,7 @@ import HomeCategoryGrid from "./HomeCategoryGrid";
 import RecommendedSection from "./RecommendedSection";
 import InvitationTemplateSection from "./InvitationTemplateSection";
 import StudioGallery from "./StudioGallery";
-import MagazineSection from "./MagazineSection";
+import TipsSection from "./TipsSection";
 import CommunityChatterSection from "./CommunityChatterSection";
 import ReviewSection from "./ReviewSection";
 import PopularPostsSection from "./PopularPostsSection";
@@ -18,8 +18,8 @@ interface TabContentProps {
 }
 
 // 탭별 큐레이션이 아직 준비되지 않은 탭에만 안내 카드를 띄웁니다.
-// 꿀팁 탭은 MagazineSection이 "오늘의 꿀팁" 영상으로 이미 채우고
-// 있어서 placeholder가 필요 없습니다.
+// 꿀팁 탭은 TipsSection("오늘의 꿀팁" 영상)이 이미 채우고 있어서
+// placeholder가 필요 없습니다.
 const TAB_PLACEHOLDER: Partial<Record<CategoryTab, keyof typeof emptyCopy>> = {
   events: "eventsTab",
   shopping: "shoppingTab",
@@ -35,7 +35,7 @@ const TabContent = ({ activeTab }: TabContentProps) => {
         <HomeCategoryGrid />
         <RecommendedSection />
         <InvitationTemplateSection />
-        <MagazineSection activeTab={activeTab} />
+        <TipsSection activeTab={activeTab} />
         <CommunityChatterSection />
         <ReviewSection activeTab={activeTab} />
       </div>
@@ -55,7 +55,7 @@ const TabContent = ({ activeTab }: TabContentProps) => {
       <RecommendedSection />
       <PopularPostsSection hideWhenEmpty />
       <StudioGallery />
-      <MagazineSection activeTab={activeTab} />
+      <TipsSection activeTab={activeTab} />
       <ReviewSection activeTab={activeTab} />
     </div>
   );

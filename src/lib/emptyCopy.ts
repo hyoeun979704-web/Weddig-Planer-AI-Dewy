@@ -24,7 +24,7 @@ export const emptyCopy = {
     title: "아직 글이 없어요",
     description: "첫 글을 남겨보세요",
   },
-  magazine: {
+  tipsVideos: {
     emoji: "🎬",
     title: "영상이 곧 올라와요",
   },

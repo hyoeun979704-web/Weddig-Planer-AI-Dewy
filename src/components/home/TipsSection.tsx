@@ -126,11 +126,11 @@ function CardSkeleton() {
   );
 }
 
-type MagazineSectionProps = {
+type TipsSectionProps = {
   activeTab: CategoryTab;
 };
 
-export default function MagazineSection({ activeTab: _activeTab }: MagazineSectionProps) {
+export default function TipsSection({ activeTab: _activeTab }: TipsSectionProps) {
   const navigate = useNavigate();
   const { data = [], isLoading, isError } = useTipVideos();
 
@@ -144,7 +144,7 @@ export default function MagazineSection({ activeTab: _activeTab }: MagazineSecti
 
           <button
             type="button"
-            onClick={() => navigate("/magazine")}
+            onClick={() => navigate("/tips")}
             className="text-[12px] text-black/50"
           >
             더보기
@@ -162,7 +162,7 @@ export default function MagazineSection({ activeTab: _activeTab }: MagazineSecti
             영상을 불러오지 못했어요.
           </div>
         ) : data.length === 0 ? (
-          <EmptyState variant="inline" {...emptyCopy.magazine} />
+          <EmptyState variant="inline" {...emptyCopy.tipsVideos} />
         ) : (
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
             {data.map((video) => (
