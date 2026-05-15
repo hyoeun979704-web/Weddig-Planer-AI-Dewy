@@ -54,10 +54,12 @@ const BudgetSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const handleSubmit = () => {
     if (!validate()) return;
     const season = getSeason(date!);
+    const regionObj = REGIONS.find(r => r.searchKey === region);
     onSubmit({
       totalBudget,
       items,
-      region,
+      region: regionObj?.searchKey ?? "",
+      regionLabel: regionObj?.label ?? "",
       date: format(date!, "yyyy년 M월 d일"),
       season,
       support,
@@ -134,7 +136,7 @@ const BudgetSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
               <label className={labelCls}>예식 지역 {reqMark}</label>
               <select value={region} onChange={e => setRegion(e.target.value)} className={cn("w-full px-3 py-2.5 border rounded-xl text-sm bg-white", errorCls("region"))}>
                 <option value="">선택해주세요</option>
-                {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                {REGIONS.map(r => <option key={r.searchKey} value={r.searchKey}>{r.label}</option>)}
               </select>
               {helperText("region")}
             </div>

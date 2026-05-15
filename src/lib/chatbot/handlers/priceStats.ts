@@ -63,7 +63,9 @@ export const fetchPriceStats = async (
     .eq("is_active", true)
     .not("min_price", "is", null);
 
-  if (region) query = query.or(`district.ilike.%${region}%,city.ilike.%${region}%`);
+  // PostgREST .or() 안전화 — 괄호/쉼표/슬래시 제거.
+  const safe = region?.replace(/[,()/%*\\]/g, " ").replace(/\s+/g, " ").trim();
+  if (safe) query = query.or(`district.ilike.%${safe}%,city.ilike.%${safe}%`);
 
   const { data } = await query;
   if (!data || data.length < 3) return null;

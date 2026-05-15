@@ -197,13 +197,15 @@ const AIPlanner = () => {
     if (item.modal) setActiveModal(item.modal);
   };
 
-  // 모달 핸들러: 모든 입력 필드를 결정형 핸들러로 직접 전달 (LLM 호출 X)
+  // 모달 핸들러: 모든 입력 필드를 결정형 핸들러로 직접 전달 (LLM 호출 X).
+  // 채팅 표시는 사람이 읽기 좋은 라벨(regionLabel / budgetLabel)을 쓰고,
+  // 핸들러에는 DB 검색에 안전한 값(region/budget)을 그대로 전달.
   const handleVenueSubmit = (data: Record<string, unknown>) => {
     setActiveModal(null);
     const userText = `🏛️ 웨딩홀 추천 요청\n${[
-      data.region && `지역: ${data.region}`,
+      data.regionLabel && `지역: ${data.regionLabel}`,
       data.guests && `하객수: ${data.guests}명`,
-      data.budget && `예산: ${data.budget}만원`,
+      data.budgetLabel && `예산: ${data.budgetLabel}`,
       Array.isArray(data.styles) && data.styles.length > 0 && `스타일: ${(data.styles as string[]).join(", ")}`,
     ].filter(Boolean).join(" · ")}`;
     sendStructured(userText, { kind: "venue", params: data as never });
@@ -212,8 +214,8 @@ const AIPlanner = () => {
   const handleSdmeSubmit = (data: Record<string, unknown>) => {
     setActiveModal(null);
     const userText = `📸 스드메 가이드 요청\n${[
-      data.region && `지역: ${data.region}`,
-      data.budget && `예산: ${data.budget}만원`,
+      data.regionLabel && `지역: ${data.regionLabel}`,
+      data.budgetLabel && `예산: ${data.budgetLabel}`,
       data.studioStyle && `스타일: ${data.studioStyle}`,
       data.priority && `우선순위: ${data.priority}`,
     ].filter(Boolean).join(" · ")}`;
@@ -234,7 +236,7 @@ const AIPlanner = () => {
     setActiveModal(null);
     const userText = `💰 예산 분배 요청\n${[
       data.totalBudget && `총 ${data.totalBudget}만원`,
-      data.region && `(${data.region})`,
+      data.regionLabel && `(${data.regionLabel})`,
       Array.isArray(data.priorities) && data.priorities.length > 0 && `우선순위: ${(data.priorities as string[]).join(", ")}`,
     ].filter(Boolean).join(" ")}`;
     sendStructured(userText, { kind: "budget", params: data as never });

@@ -17,19 +17,30 @@ import { fetchPriceStats, formatPriceStatsLine } from "./priceStats";
 export interface VenueParams {
   date?: string;
   region?: string;
+  regionLabel?: string;
   guests?: string | number;
-  budget?: string | number;
+  budget?: string | number | null;
+  budgetLabel?: string;
   styles?: string[];
   parking?: string;
   meal?: string | string[];
   special?: string;
 }
 
-const parseNumber = (v: string | number | undefined): number | null => {
+const parseNumber = (v: string | number | null | undefined): number | null => {
   if (v === undefined || v === null) return null;
   if (typeof v === "number") return v;
   const num = parseInt(v.replace(/[^0-9]/g, ""), 10);
   return isNaN(num) ? null : num;
+};
+
+// PostgREST .or() / ilike 필터에 들어가기 전 사용자 입력에서
+// 쿼리 grammar를 깨뜨릴 수 있는 특수문자 제거. 모달이 안전한 searchKey를
+// 보내도록 바뀌었지만, 다른 진입점/구버전 클라이언트 대비 안전망.
+const sanitizeForIlike = (s: string | undefined): string | undefined => {
+  if (!s) return undefined;
+  const cleaned = s.replace(/[,()/%*\\]/g, " ").replace(/\s+/g, " ").trim();
+  return cleaned || undefined;
 };
 
 export const handleVenueRecommendation = async (params: VenueParams): Promise<string> => {
@@ -44,15 +55,17 @@ export const handleVenueRecommendation = async (params: VenueParams): Promise<st
     .eq("category", "wedding_hall")
     .eq("is_active", true);
 
-  // 지역 필터
-  if (params.region) {
-    query = query.or(`district.ilike.%${params.region}%,city.ilike.%${params.region}%`);
+  // 지역 필터 (sanitizer로 특수문자 제거)
+  const safeRegion = sanitizeForIlike(params.region);
+  if (safeRegion) {
+    query = query.or(`district.ilike.%${safeRegion}%,city.ilike.%${safeRegion}%`);
   }
 
   const { data: venues } = await query.order("avg_rating", { ascending: false }).limit(20);
 
   if (!venues || venues.length === 0) {
-    return `**웨딩홀 추천 결과** 🏛️\n\n요청하신 조건(${params.region ?? "지역 미지정"})에 맞는 등록 웨딩홀을 찾지 못했어요 🌿\n\n[웨딩홀 페이지](/venues)에서 직접 검색해보세요.`;
+    const displayRegion = params.regionLabel ?? params.region ?? "지역 미지정";
+    return `**웨딩홀 추천 결과** 🏛️\n\n요청하신 조건(${displayRegion})에 맞는 등록 웨딩홀을 찾지 못했어요 🌿\n\n[웨딩홀 페이지](/venues)에서 직접 검색해보세요.`;
   }
 
   // 보증인원·가격 추가 정보 (place_wedding_halls)
@@ -98,8 +111,10 @@ export const handleVenueRecommendation = async (params: VenueParams): Promise<st
     .join("\n\n");
 
   const filterSummary: string[] = [];
-  if (params.region) filterSummary.push(`📍 ${params.region}`);
-  if (totalBudget) filterSummary.push(`💰 ${totalBudget.toLocaleString()}만원`);
+  const displayRegion = params.regionLabel ?? params.region;
+  if (displayRegion) filterSummary.push(`📍 ${displayRegion}`);
+  if (params.budgetLabel) filterSummary.push(`💰 ${params.budgetLabel}`);
+  else if (totalBudget) filterSummary.push(`💰 ${totalBudget.toLocaleString()}만원`);
   if (guests) filterSummary.push(`👥 ${guests}명`);
   if (params.styles?.length) filterSummary.push(`✨ ${params.styles.join(", ")}`);
 
@@ -112,25 +127,29 @@ export const handleVenueRecommendation = async (params: VenueParams): Promise<st
 export interface SdmeParams {
   date?: string;
   region?: string;
+  regionLabel?: string;
   studioStyle?: string;
   dressOptions?: string[];
   makeup?: string;
   album?: string;
-  budget?: string | number;
+  budget?: string | number | null;
+  budgetLabel?: string;
   priority?: string;
 }
 
 export const handleSdmeGuide = async (params: SdmeParams): Promise<string> => {
   const budget = parseNumber(params.budget);
+  const safeRegion = sanitizeForIlike(params.region);
+  const displayRegion = params.regionLabel ?? params.region;
 
   // 실제 등록 업체 가격 통계 (places 카테고리별)
   const [studioStats, dressStats, makeupStats] = await Promise.all([
-    fetchPriceStats("studio", params.region),
-    fetchPriceStats("dress_shop", params.region),
-    fetchPriceStats("makeup_shop", params.region),
+    fetchPriceStats("studio", safeRegion),
+    fetchPriceStats("dress_shop", safeRegion),
+    fetchPriceStats("makeup_shop", safeRegion),
   ]);
 
-  const guide = `**스드메 시세** 📸 ${params.region ? `(${params.region})` : "(전국)"}\n` +
+  const guide = `**스드메 시세** 📸 ${displayRegion ? `(${displayRegion})` : "(전국)"}\n` +
     `${formatPriceStatsLine("스튜디오", studioStats, "30~150만원")}\n` +
     `${formatPriceStatsLine("드레스샵", dressStats, "50~200만원")}\n` +
     `${formatPriceStatsLine("메이크업샵", makeupStats, "25~50만원")}\n` +
@@ -141,8 +160,9 @@ export const handleSdmeGuide = async (params: SdmeParams): Promise<string> => {
 
   // 사용자 조건 요약
   const summary: string[] = [];
-  if (params.region) summary.push(`📍 ${params.region}`);
-  if (budget) summary.push(`💰 총예산 ${budget.toLocaleString()}만원`);
+  if (displayRegion) summary.push(`📍 ${displayRegion}`);
+  if (params.budgetLabel) summary.push(`💰 총예산 ${params.budgetLabel}`);
+  else if (budget) summary.push(`💰 총예산 ${budget.toLocaleString()}만원`);
   if (params.studioStyle) summary.push(`📸 ${params.studioStyle}`);
   if (params.priority) summary.push(`✨ 우선순위 ${params.priority}`);
 
@@ -153,8 +173,8 @@ export const handleSdmeGuide = async (params: SdmeParams): Promise<string> => {
     .select("place_id, name, category, district, avg_rating, min_price, is_partner")
     .in("category", ["studio", "dress_shop", "makeup_shop"])
     .eq("is_active", true);
-  if (params.region) {
-    query = query.or(`district.ilike.%${params.region}%,city.ilike.%${params.region}%`);
+  if (safeRegion) {
+    query = query.or(`district.ilike.%${safeRegion}%,city.ilike.%${safeRegion}%`);
   }
   const { data: places } = await query.order("avg_rating", { ascending: false }).limit(6);
 
@@ -294,6 +314,7 @@ export interface BudgetParams {
   totalBudget?: string | number;
   items?: string[];
   region?: string;
+  regionLabel?: string;
   date?: string;
   season?: string;
   support?: string;
@@ -385,5 +406,6 @@ export const handleBudgetPlanning = async (params: BudgetParams): Promise<string
     seasonNote = "\n\n🌸 **성수기 안내**: 4·5월·10·11월은 웨딩홀·스드메 가격이 10~20% 높아요. 예산을 5~10% 여유 두시는 걸 권장해요.";
   }
 
-  return `**예산 분배 추천** 💰\n총 예산 **${total.toLocaleString()}만원**${params.region ? ` (${params.region})` : ""}\n\n${lines}\n\n⭐ 표시는 우선순위 항목이에요${supportLine}${seasonNote}\n\n💡 **추가금 방어 팁**\n• 웨딩홀: 보증인원 협상, 대관료·식대 분리 견적 받기\n• 스드메: 원본·헬퍼·얼리스타트 등 숨은 비용 포함 견적 요청\n• 예물: 시세 변동 큰 금 가격 우선 체크\n\n자세한 항목별 관리는 [예산 페이지](/budget)에서 가능해요.`;
+  const displayRegion = params.regionLabel ?? params.region;
+  return `**예산 분배 추천** 💰\n총 예산 **${total.toLocaleString()}만원**${displayRegion ? ` (${displayRegion})` : ""}\n\n${lines}\n\n⭐ 표시는 우선순위 항목이에요${supportLine}${seasonNote}\n\n💡 **추가금 방어 팁**\n• 웨딩홀: 보증인원 협상, 대관료·식대 분리 견적 받기\n• 스드메: 원본·헬퍼·얼리스타트 등 숨은 비용 포함 견적 요청\n• 예물: 시세 변동 큰 금 가격 우선 체크\n\n자세한 항목별 관리는 [예산 페이지](/budget)에서 가능해요.`;
 };

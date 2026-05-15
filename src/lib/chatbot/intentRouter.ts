@@ -257,17 +257,31 @@ const PATTERNS: IntentPattern[] = [
   },
 
   // ── 서비스 소개 ────────────────────────────────
+  // 단순 호명("듀이야 ~")이나 "무료" 단어만으로는 트리거하지 않도록 좁힘.
+  // 의도가 "이 서비스 자체"를 묻는 경우에만 정적 안내.
   {
     intent: "service_intro",
-    patterns: [/듀이|dewy/i, /이 (앱|서비스).*뭐|이 (앱|서비스).*소개/, /무료/],
+    patterns: [
+      /듀이.*(누구|뭐(야|예요|니|에요)|소개|어떤\s*(서비스|앱)|뭐\s*하는)/,
+      /(이|이 ?앱|이 ?서비스).*(뭐(야|예요|니|에요)|소개|어떤\s*서비스)/,
+      /dewy.*(what|who|about\s+service)/i,
+    ],
     staticReply:
       "듀이(Dewy)는 한국 결혼 문화에 특화된 통합 웨딩 플랫폼이에요.\n\n🌸 AI 플래너 (저예요!) — 일 5회 무료, Premium 무제한\n👗 AI 드레스 피팅 — 사진으로 어울리는 스타일 미리보기\n💌 모바일·종이 청첩장 — 곧 출시\n📸 웨딩촬영 시안 — 곧 출시\n🎬 식전영상 외주 — 곧 출시\n\n자세한 내용은 마이페이지나 [Premium](/premium) 페이지에서 확인하실 수 있어요.",
   },
 
   // ── 가격 문의 ──────────────────────────────────
+  // 단어 "얼마" 단독으로는 트리거하지 않음 — "예산 얼마 남았어?" 같은
+  // 정상 질문이 구독 가격 안내로 빠지는 걸 막기 위함.
+  // 구독·결제·요금제 맥락에서만 정적 응답.
   {
     intent: "pricing",
-    patterns: [/가격|요금|얼마|비용.*얼마|결제|premium.*얼마/i],
+    patterns: [
+      /(구독|premium|프리미엄).*(가격|요금|얼마|비용|결제|업그레이드)/i,
+      /(요금제|월정액|월 ?구독료|연간\s*구독)/,
+      /(premium|프리미엄)\s*(가격|얼마|비용)/i,
+      /(결제\s*방식|결제\s*수단|환불|구독\s*취소)/,
+    ],
     staticReply:
       "**무료 사용**\n• AI 플래너 일 5회 질문\n• 기본 정보·플래닝·커뮤니티 무제한\n• 가입 시 1,000P 적립 (≈ 200원 상당)\n\n**Premium 구독**\n• AI 플래너 무제한\n• 견적서 PDF 자동 생성\n• 예산 분석 리포트 PDF\n• 월간 10하트 / 연간 180하트 보너스 (초기 이용자 한정)\n\n**AI Studio (드레스 피팅 등)**\n• 충전식 하트(토큰) 결제\n• 1,900원부터\n\n자세한 가격은 [Premium 페이지](/premium)에서 확인하실 수 있어요.",
   },
@@ -293,9 +307,16 @@ const PATTERNS: IntentPattern[] = [
   { intent: "my_comments", patterns: [/내가\s*쓴\s*댓글/, /내\s*댓글/], dbHandler: "my_comments" },
 
   // ── AI 사용량 ──────────────────────────────────
+  // "AI 추천 몇 번이나?" 같은 일반 질문에 오작동하지 않도록 좁힘 —
+  // "사용량/횟수/오늘 몇 번 썼/남았" 같은 잔량 조회 의도로만.
   {
     intent: "ai_usage",
-    patterns: [/AI.*몇\s*번/i, /챗봇.*몇\s*번/, /(AI|챗봇)\s*사용\s*(량|횟수|기록)/, /오늘.*몇\s*(번|회)/],
+    patterns: [
+      /(AI|챗봇)\s*사용\s*(량|횟수|기록|이력)/i,
+      /(AI|챗봇).*(오늘|지금).*(몇\s*(번|회)|남|썼|했)/i,
+      /질문\s*(몇\s*(번|회)|얼마나)\s*(남|썼|했|가능)/,
+      /오늘.*질문.*(몇|남|썼)/,
+    ],
     dbHandler: "ai_usage",
   },
 
@@ -466,13 +487,14 @@ const PATTERNS: IntentPattern[] = [
 export const matchIntent = (message: string): IntentMatch | null => {
   const trimmed = message.trim();
   if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
 
   // 1) 정적 패턴 매칭
   for (const pattern of PATTERNS) {
     for (const p of pattern.patterns) {
       const matched =
         typeof p === "string"
-          ? trimmed.toLowerCase().includes(p.toLowerCase())
+          ? lower.includes(p.toLowerCase())
           : p.test(trimmed);
 
       if (matched) {
