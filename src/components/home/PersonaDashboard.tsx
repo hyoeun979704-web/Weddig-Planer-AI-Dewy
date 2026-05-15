@@ -95,6 +95,42 @@ const PersonaDashboard = () => {
   const completedMissions = missionProgress.completedKeys.length;
   const progressDeg = Math.max(0, Math.min(360, (progressPercent / 100) * 360));
 
+  // D-day 긴급도 — 6명 페르소나 인터뷰에서 D-30/90/120/180 모두 같은
+  // 분홍 톤이라 "급함"이 안 읽혔다는 피드백 반영. 잔여일 임계치별로
+  // 링·텍스트 색을 분기합니다. >180일 또는 미정·과거(D+)는 기존 톤.
+  const urgencyTone: { ring: string; text: string; chipBg: string; chipFg: string; hint: string | null } | null = (() => {
+    if (daysUntilWedding === null || daysUntilWedding <= 0) return null;
+    if (daysUntilWedding <= 30) {
+      return {
+        ring: "hsl(0 84% 60%)",
+        text: "text-red-600",
+        chipBg: "bg-red-100",
+        chipFg: "text-red-700",
+        hint: "마지막 마무리 시기예요",
+      };
+    }
+    if (daysUntilWedding <= 90) {
+      return {
+        ring: "hsl(25 95% 53%)",
+        text: "text-orange-600",
+        chipBg: "bg-orange-100",
+        chipFg: "text-orange-700",
+        hint: "지금이 결정 타이밍",
+      };
+    }
+    if (daysUntilWedding <= 180) {
+      return {
+        ring: "hsl(38 92% 50%)",
+        text: "text-amber-700",
+        chipBg: "bg-amber-100",
+        chipFg: "text-amber-700",
+        hint: "차근차근 진행하기 좋아요",
+      };
+    }
+    return null;
+  })();
+  const ringColor = urgencyTone?.ring ?? "hsl(var(--primary))";
+
   return (
     <section
       data-tutorial="persona-dashboard"
@@ -112,6 +148,11 @@ const PersonaDashboard = () => {
                 <span>{styleIntro.accentEmoji}</span>
                 <span>{styleLabel} 모드</span>
               </span>
+              {urgencyTone?.hint && (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${urgencyTone.chipBg} ${urgencyTone.chipFg}`}>
+                  {urgencyTone.hint}
+                </span>
+              )}
               {tutorialOverall.total > 0 && tutorialOverall.percent < 100 && (
                 <button
                   onClick={() => navigate("/tutorial")}
@@ -136,13 +177,15 @@ const PersonaDashboard = () => {
             aria-label="일정 관리"
           >
             <div
-              className="w-[68px] h-[68px] rounded-full flex items-center justify-center text-primary"
+              className="w-[68px] h-[68px] rounded-full flex items-center justify-center"
               style={{
-                background: `conic-gradient(hsl(var(--primary)) ${progressDeg}deg, hsl(var(--muted)) ${progressDeg}deg)`,
+                background: `conic-gradient(${ringColor} ${progressDeg}deg, hsl(var(--muted)) ${progressDeg}deg)`,
               }}
             >
               <div className="w-[58px] h-[58px] rounded-full bg-card flex flex-col items-center justify-center">
-                <span className="text-[15px] font-extrabold leading-none">{dDayLabel}</span>
+                <span className={`text-[15px] font-extrabold leading-none ${urgencyTone?.text ?? "text-primary"}`}>
+                  {dDayLabel}
+                </span>
                 <span className="text-[9px] text-muted-foreground mt-0.5">
                   {totalCount > 0 ? `${progressPercent}% 완료` : "준비 시작"}
                 </span>
@@ -252,6 +295,17 @@ const PersonaDashboard = () => {
             })}
           </div>
         </div>
+
+        {/* Delegate-to-AI shortcut — 결정 피로 페르소나용. 페르소나 인터뷰에서
+            지윤+민철처럼 "한 번에 결정 위임하고 싶다" 가 반복적으로 나와서
+            대시보드 아래에 진입 경로 하나 추가. */}
+        <button
+          onClick={() => navigate("/ai-planner")}
+          className="relative mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/8 hover:bg-primary/12 active:scale-[0.98] transition-all"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <span className="text-[11px] font-bold text-primary">결정이 어려우신가요? Dewy가 추천해드려요</span>
+        </button>
 
         {/* Wedding date footer (small) */}
         {weddingDate && (
