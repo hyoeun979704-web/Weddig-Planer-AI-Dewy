@@ -58,6 +58,44 @@ describe("handleTimelinePlanning (모달 #3 타임라인)", () => {
     expect(result).not.toContain("피로연 시작");
   });
 
+  it("duration이 '1시간' 라벨이면 60분으로 처리 (이전 버그: 1분으로 잘림)", async () => {
+    const result = await handleTimelinePlanning({
+      ceremonyTime: "12:30",
+      duration: "1시간",
+    });
+    expect(result).toContain("(60분 진행)");
+    // 12:30 + 60분 = 13:30 예식 종료
+    expect(result).toContain("13:30 예식 종료");
+    // 12:30 + 60 + 45 = 14:15 폐백 종료 (이전엔 12:31 / 13:16으로 박살)
+    expect(result).toContain("14:15 폐백·단체사진 종료");
+  });
+
+  it("duration이 '1시간 30분' 라벨이면 90분으로 처리", async () => {
+    const result = await handleTimelinePlanning({
+      ceremonyTime: "12:00",
+      duration: "1시간 30분",
+    });
+    expect(result).toContain("(90분 진행)");
+    expect(result).toContain("13:30 예식 종료");
+  });
+
+  it("사용자 입력 피로연 시간이 폐백 종료보다 빨라도 라인이 시간순 정렬", async () => {
+    // 예식 12:30 + 60분 = 13:30 종료, 폐백 종료 14:15.
+    // 그런데 사용자가 피로연 13:00을 입력하면 폐백(14:15)·피로연(13:00) 역순.
+    // 시간순 정렬로 피로연이 폐백 앞에 와야 함.
+    const result = await handleTimelinePlanning({
+      ceremonyTime: "12:30",
+      duration: "1시간",
+      reception: "있음",
+      receptionTime: "13:00",
+    });
+    const recIdx = result.indexOf("13:00 피로연");
+    const pbIdx = result.indexOf("14:15 폐백");
+    expect(recIdx).toBeGreaterThan(-1);
+    expect(pbIdx).toBeGreaterThan(-1);
+    expect(recIdx).toBeLessThan(pbIdx);
+  });
+
   it("한복 환복 '있음' 선택 시 환복 라인 출력", async () => {
     const result = await handleTimelinePlanning({
       ceremonyTime: "13:00",

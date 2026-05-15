@@ -208,6 +208,21 @@ export interface TimelineParams {
   special?: string;
 }
 
+// "30분"·"40분"·"1시간"·"1시간 30분"·"2시간"·"90" 등 모두 분 단위로 정규화.
+// parseNumber("1시간") = 1로 잘려서 예식이 1분만 진행되던 버그 (TimelineSurvey
+// 옵션 라벨이 "1시간"이라 그대로 들어왔음) 차단.
+const parseDurationMinutes = (v: string | number | undefined): number | null => {
+  if (v === undefined || v === null) return null;
+  if (typeof v === "number") return v;
+  const hour = v.match(/(\d+)\s*시간/);
+  const min = v.match(/(\d+)\s*분/);
+  if (hour || min) {
+    return (hour ? parseInt(hour[1], 10) * 60 : 0) + (min ? parseInt(min[1], 10) : 0);
+  }
+  const num = parseInt(v.replace(/[^0-9]/g, ""), 10);
+  return isNaN(num) ? null : num;
+};
+
 const parseHHMM = (s: string | undefined): { h: number; m: number } | null => {
   if (!s) return null;
   const m = s.match(/(\d{1,2})\s*[:시]\s*(\d{1,2})/);
@@ -241,7 +256,7 @@ export const handleTimelinePlanning = async (params: TimelineParams): Promise<st
   }
 
   const ceremonyStr = `${String(ceremony.h).padStart(2, "0")}:${String(ceremony.m).padStart(2, "0")}`;
-  const duration = parseNumber(params.duration) ?? 60; // 기본 60분
+  const duration = parseDurationMinutes(params.duration) ?? 60; // 기본 60분
   const receptionTime = parseHHMM(params.receptionTime);
 
   const lines: string[] = [];
@@ -290,6 +305,15 @@ export const handleTimelinePlanning = async (params: TimelineParams): Promise<st
   if (params.hanbok === "있음" || params.hanbok === "예") {
     lines.push(`(피로연 후) 한복 환복 + 인사`);
   }
+
+  // 사용자가 입력한 피로연 시작 시간이 폐백 종료보다 빠른 경우 등, 라인이 시간
+  // 역순이 되는 케이스가 있다. HH:MM 접두사로 시간순 정렬 (없는 라인은 끝).
+  const sortKey = (line: string): number => {
+    const m = line.match(/(\d{1,2}):(\d{2})/);
+    if (!m) return Number.MAX_SAFE_INTEGER;
+    return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  };
+  lines.sort((a, b) => sortKey(a) - sortKey(b));
 
   const summary: string[] = [];
   if (params.venueType) summary.push(`🏛️ ${params.venueType}`);
