@@ -50,10 +50,6 @@ export const emptyCopy = {
     emoji: "✨",
     title: "AI 스튜디오는 준비 중",
   },
-  tipsTab: {
-    emoji: "🌱",
-    title: "오늘의 꿀팁은 매거진에서 보고 있어요",
-  },
   general: {
     emoji: "🌿",
     title: "준비 중이에요",

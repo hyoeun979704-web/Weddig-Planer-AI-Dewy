@@ -17,14 +17,13 @@ interface TabContentProps {
   activeTab: CategoryTab;
 }
 
-// 비 ai-planner 탭은 아직 탭별 큐레이션이 준비되지 않아서 같은
-// 추천 컨텐츠를 보여주고 있어요. 그 사실을 정직하게 알려주는
-// 브랜드 톤의 안내 박스를 hero 아래에 한 줄 띄웁니다.
+// 탭별 큐레이션이 아직 준비되지 않은 탭에만 안내 카드를 띄웁니다.
+// 꿀팁 탭은 MagazineSection이 "오늘의 꿀팁" 영상으로 이미 채우고
+// 있어서 placeholder가 필요 없습니다.
 const TAB_PLACEHOLDER: Partial<Record<CategoryTab, keyof typeof emptyCopy>> = {
   events: "eventsTab",
   shopping: "shoppingTab",
   "ai-studio": "aiStudioTab",
-  tips: "tipsTab",
 };
 
 const TabContent = ({ activeTab }: TabContentProps) => {
