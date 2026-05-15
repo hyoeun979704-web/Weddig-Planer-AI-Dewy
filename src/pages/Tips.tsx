@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Flame } from "lucide-react";
+import { ArrowLeft, Flame, Sparkles } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { TipVideoCard, TipVideoCardSkeleton } from "@/components/TipVideoCard";
 import { useTipVideos, type TipVideo } from "@/hooks/useTipVideos";
+import { useWeddingProfile } from "@/hooks/useWeddingProfile";
+import { rankTipVideosForUser, buildCurationFactors } from "@/lib/tipCuration";
 
 // Shorts threshold: YouTube classifies up to 3 min as Shorts. We use 180s.
 const SHORT_MAX_SECONDS = 180;
@@ -25,13 +27,18 @@ const CATEGORY_CHIPS: Array<{ slug: string | null; label: string }> = [
   { slug: "invitation_venue", label: "청첩장" },
 ];
 
-type SortKey = "popular" | "recent";
+type SortKey = "curated" | "popular" | "recent";
 
 const Tips = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const profile = useWeddingProfile();
+  const curationFactors = buildCurationFactors(profile);
   const [category, setCategory] = useState<string | null>(null);
-  const [sort, setSort] = useState<SortKey>("popular");
+  // Default to "추천순". When user has no personalization signal yet,
+  // rankTipVideosForUser falls back to the popularity order — same result as
+  // "인기순" — so this is safe even for logged-out / fresh users.
+  const [sort, setSort] = useState<SortKey>("curated");
   const [format, setFormat] = useState<FormatKey>("all");
 
   // HOT row: published in last 7 days. Over-fetch (40) so the client filter
@@ -63,12 +70,18 @@ const Tips = () => {
     if (format === "long") return !isShort(v);
     return true;
   });
-  const gridList = [...formatFiltered].sort((a, b) => {
-    if (sort === "popular") return b.view_count - a.view_count;
-    const da = a.published_at ? new Date(a.published_at).getTime() : 0;
-    const db = b.published_at ? new Date(b.published_at).getTime() : 0;
-    return db - da;
-  });
+  const gridList = (() => {
+    if (sort === "curated") {
+      return rankTipVideosForUser(formatFiltered, profile);
+    }
+    return [...formatFiltered].sort((a, b) => {
+      if (sort === "popular") return b.view_count - a.view_count;
+      const da = a.published_at ? new Date(a.published_at).getTime() : 0;
+      const db = b.published_at ? new Date(b.published_at).getTime() : 0;
+      return db - da;
+    });
+  })();
+  const showCuratedBadge = sort === "curated" && curationFactors.hasSignal;
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-20">
@@ -138,7 +151,14 @@ const Tips = () => {
 
         <section className="pt-3 pb-6 border-t border-border/50">
           <div className="flex items-center justify-between px-4 mb-3 gap-2 flex-wrap">
-            <h2 className="text-base font-bold text-foreground">전체 꿀팁</h2>
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-base font-bold text-foreground">전체 꿀팁</h2>
+              {showCuratedBadge && (
+                <span className="inline-flex items-center gap-1 px-2 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
+                  <Sparkles className="w-2.5 h-2.5" />맞춤
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               {/* Format filter (long/short/all) */}
               <div className="flex bg-muted rounded-full p-0.5">
@@ -158,7 +178,7 @@ const Tips = () => {
               </div>
               {/* Sort */}
               <div className="flex bg-muted rounded-full p-0.5">
-                {(["popular", "recent"] as const).map((s) => (
+                {(["curated", "popular", "recent"] as const).map((s) => (
                   <button
                     key={s}
                     onClick={() => setSort(s)}
@@ -168,7 +188,7 @@ const Tips = () => {
                         : "text-muted-foreground"
                     }`}
                   >
-                    {s === "popular" ? "인기순" : "최신순"}
+                    {s === "curated" ? "추천순" : s === "popular" ? "인기순" : "최신순"}
                   </button>
                 ))}
               </div>
