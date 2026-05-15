@@ -10,7 +10,7 @@ import HomeHeader from "@/components/home/HomeHeader";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
-import CoupleInvite from "@/components/schedule/CoupleInvite";
+import PartnerLinkCard from "@/components/partner/PartnerLinkCard";
 import { useCoupleLink } from "@/hooks/useCoupleLink";
 import { useSubscription } from "@/hooks/useSubscription";
 import UpgradeModal from "@/components/premium/UpgradeModal";
@@ -538,11 +538,11 @@ const Schedule = () => {
 
         {/* ── Couple Section ── */}
         <section className="px-4 mb-6" data-tutorial="schedule-couple">
-          <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-            <Heart className="w-4 h-4 text-pink-500" />
-            커플 연결
+          <h3 className="font-bold text-foreground mb-3 flex items-center gap-2 text-[16px]">
+            <Heart className="w-[17px] h-[17px] text-pink-500" />
+            파트너 연결
           </h3>
-          <CoupleInvite />
+          <PartnerLinkCard variant="schedule" hideWhenLoggedOut />
         </section>
       
         {/* Couple Diary Link */}

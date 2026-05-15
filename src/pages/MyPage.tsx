@@ -10,6 +10,7 @@ import DdayCard from "@/components/mypage/DdayCard";
 import QuickMenuGrid from "@/components/mypage/QuickMenuGrid";
 import MenuSection from "@/components/mypage/MenuSection";
 import PremiumBanner from "@/components/premium/PremiumBanner";
+import PartnerLinkCard from "@/components/partner/PartnerLinkCard";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import { Button } from "@/components/ui/button";
@@ -211,6 +212,10 @@ const MyPage = () => {
           weddingDate={weddingSettings.wedding_date}
           weddingDateTbd={weddingSettings.wedding_date_tbd}
         />
+
+        <div className="px-4 mt-3">
+          <PartnerLinkCard variant="mypage" hideWhenLoggedOut />
+        </div>
 
         {isAdmin && (
           <div className="px-4 mt-3">
