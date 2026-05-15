@@ -1,8 +1,8 @@
 import { CategoryTab } from "./CategoryTabBar";
 import CompactBannerCarousel from "./CompactBannerCarousel";
-import HomeDashboard from "./HomeDashboard";
 import TabHeroContent from "./TabHeroContent";
 import HomeCategoryGrid from "./HomeCategoryGrid";
+import PersonaDashboard from "./PersonaDashboard";
 import RecommendedSection from "./RecommendedSection";
 import InvitationTemplateSection from "./InvitationTemplateSection";
 import StudioGallery from "./StudioGallery";
@@ -30,8 +30,11 @@ const TabContent = ({ activeTab }: TabContentProps) => {
   if (activeTab === "ai-planner") {
     return (
       <div className="animate-fade-in">
+        {/* PersonaDashboard 가 온보딩 완료 사용자에게 페르소나-인지 카드(D-day,
+            체크리스트 진척, 일별 미션 등)를 보여주고, 미로그인/온보딩 전엔
+            null 반환해 캐러셀이 자리를 채웁니다. */}
+        <PersonaDashboard />
         <CompactBannerCarousel />
-        <HomeDashboard />
         <HomeCategoryGrid />
         <RecommendedSection />
         <InvitationTemplateSection />

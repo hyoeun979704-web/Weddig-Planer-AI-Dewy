@@ -1,5 +1,7 @@
 import { lazy, Suspense } from "react";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
+import SessionTracker from "@/components/SessionTracker";
+import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -29,9 +31,7 @@ const Venues = lazy(() => import("./pages/Venues"));
 const VenueDetail = lazy(() => import("./pages/VenueDetail"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Store = lazy(() => import("./pages/Store"));
-const More = lazy(() => import("./pages/More"));
 const Tips = lazy(() => import("./pages/Tips"));
-const Reviews = lazy(() => import("./pages/Reviews"));
 const Gallery = lazy(() => import("./pages/Gallery"));
 const AIPlanner = lazy(() => import("./pages/AIPlanner"));
 const Budget = lazy(() => import("./pages/Budget"));
@@ -131,6 +131,7 @@ const App = () => (
       <AuthProvider>
         <TooltipProvider>
         <PWAUpdatePrompt />
+        <SessionTracker />
         <WeddingBlessingSplash />
         <Toaster />
         <Sonner />
@@ -158,10 +159,8 @@ const App = () => (
               <Route path="/venue/:id" element={<VenueDetail />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/store" element={<Store />} />
-              <Route path="/more" element={<More />} />
               <Route path="/tips" element={<Tips />} />
               <Route path="/magazine" element={<Navigate to="/tips" replace />} />
-              <Route path="/reviews" element={<Reviews />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/ai-planner" element={<AIPlanner />} />
               <Route path="/budget" element={<Budget />} />
@@ -255,6 +254,9 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          {/* First-time tutorial welcome sheet — uses useNavigate so it
+              must live inside BrowserRouter. Self-gates on user + onboarding. */}
+          <TutorialWelcomeSheet />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

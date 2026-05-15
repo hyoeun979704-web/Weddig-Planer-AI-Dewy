@@ -1,51 +1,240 @@
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Play } from "lucide-react";
-import { FEATURE_GUIDES } from "@/hooks/useTutorial";
+import {
+  ChevronLeft,
+  Play,
+  CheckCircle2,
+  Sparkles,
+  RotateCcw,
+  ArrowRight,
+} from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useTutorialProgress } from "@/hooks/useTutorialProgress";
+import {
+  chaptersForStyle,
+  TUTORIAL_CHAPTERS,
+  type TutorialLesson,
+  type TutorialChapter,
+} from "@/data/tutorialChapters";
+import { cn } from "@/lib/utils";
+
+const ACCENT_CLASSES: Record<TutorialChapter["accent"], { bg: string; text: string; ring: string }> = {
+  rose: { bg: "bg-rose-50", text: "text-rose-600", ring: "ring-rose-200" },
+  amber: { bg: "bg-amber-50", text: "text-amber-700", ring: "ring-amber-200" },
+  emerald: { bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200" },
+  violet: { bg: "bg-violet-50", text: "text-violet-700", ring: "ring-violet-200" },
+  sky: { bg: "bg-sky-50", text: "text-sky-700", ring: "ring-sky-200" },
+};
 
 const Tutorial = () => {
   const navigate = useNavigate();
+  const { weddingSettings } = useWeddingSchedule();
+  const style = weddingSettings.wedding_style;
+  const progress = useTutorialProgress();
 
-  const handleStartGuide = (guide: typeof FEATURE_GUIDES[number]) => {
-    navigate(`${guide.route}?tutorial=${guide.id}`);
+  const visibleChapters = useMemo(() => chaptersForStyle(style), [style]);
+  const overall = progress.styleProgress(style);
+  const nextUp = progress.nextLesson(style);
+
+  // Lessons that are hidden by the style filter but technically available
+  // (e.g. self-wedding user wants to peek at the SDM lesson). Surfaced in a
+  // collapsible footer so the page never feels gate-locked.
+  const hiddenLessons: { chapter: TutorialChapter; lesson: TutorialLesson }[] = useMemo(() => {
+    const visibleIds = new Set(visibleChapters.flatMap(c => c.lessons.map(l => l.id)));
+    return TUTORIAL_CHAPTERS.flatMap(ch =>
+      ch.lessons
+        .filter(l => !visibleIds.has(l.id))
+        .map(l => ({ chapter: ch, lesson: l }))
+    );
+  }, [visibleChapters]);
+
+  const startLesson = (lesson: TutorialLesson) => {
+    navigate(`${lesson.route}?tutorial=${lesson.id}`);
   };
+
+  const progressDeg = (overall.percent / 100) * 360;
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center px-4 h-14">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 flex items-center justify-center -ml-2"
+            aria-label="뒤로"
+          >
             <ChevronLeft className="w-5 h-5 text-foreground" />
           </button>
           <h1 className="text-lg font-bold text-foreground">가이드 & 튜토리얼</h1>
         </div>
       </header>
 
-      <main className="px-4 py-6 pb-24 space-y-4">
-        <p className="text-sm text-muted-foreground mb-2">
-          각 기능의 사용법을 코치마크 가이드로 확인해 보세요.
-        </p>
+      <main className="pb-24">
+        {/* Overall progress hero */}
+        <section className="px-4 pt-5">
+          <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-accent/30 to-background border border-primary/15 p-5 relative overflow-hidden">
+            <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-primary/10 blur-3xl" aria-hidden />
 
-        {FEATURE_GUIDES.map((guide) => (
-          <button
-            key={guide.id}
-            onClick={() => handleStartGuide(guide)}
-            className="w-full flex items-center gap-4 p-4 bg-card rounded-2xl border border-border hover:border-primary/30 hover:shadow-sm transition-all text-left group"
-          >
-            <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center text-2xl shrink-0">
-              {guide.icon}
+            <div className="relative flex items-center gap-4">
+              <div
+                className="w-[84px] h-[84px] rounded-full flex items-center justify-center shrink-0"
+                style={{
+                  background: `conic-gradient(hsl(var(--primary)) ${progressDeg}deg, hsl(var(--muted)) ${progressDeg}deg)`,
+                }}
+              >
+                <div className="w-[72px] h-[72px] rounded-full bg-card flex flex-col items-center justify-center">
+                  <span className="text-xl font-extrabold text-primary leading-none">
+                    {overall.percent}%
+                  </span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5">
+                    {overall.done}/{overall.total} 완료
+                  </span>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 rounded-full px-2 py-0.5">
+                  <Sparkles className="w-3 h-3" /> {style ? `${style === "self" ? "셀프웨딩" : style === "small" ? "스몰웨딩" : style === "custom" ? "맞춤" : "일반 결혼식"} 코스` : "기본 코스"}
+                </p>
+                <h2 className="text-base font-bold text-foreground mt-1.5 leading-tight">
+                  {nextUp
+                    ? "이어서 시작해볼까요?"
+                    : overall.total > 0 && overall.percent === 100
+                      ? "모든 가이드 완료!"
+                      : "Dewy를 처음이라면 여기부터"}
+                </h2>
+                <p className="text-[12px] text-muted-foreground mt-0.5">
+                  {nextUp
+                    ? `다음 레슨: ${nextUp.lesson.title}`
+                    : "결혼 스타일에 맞는 가이드만 모았어요"}
+                </p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-foreground text-sm">{guide.title}</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">{guide.description}</p>
-              <span className="text-xs text-primary mt-1 inline-block">{guide.steps.length}단계</span>
-            </div>
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <Play className="w-4 h-4 text-primary ml-0.5" />
-            </div>
-          </button>
-        ))}
+
+            {nextUp && (
+              <button
+                onClick={() => startLesson(nextUp.lesson)}
+                className="relative w-full mt-4 h-11 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              >
+                <Play className="w-4 h-4" />
+                이어서 시작 · +{nextUp.lesson.reward}P
+              </button>
+            )}
+          </div>
+        </section>
+
+        {/* Chapters */}
+        <section className="px-4 pt-5 space-y-4">
+          {visibleChapters.map(chapter => {
+            const a = ACCENT_CLASSES[chapter.accent];
+            const chapterDone = chapter.lessons.every(l => progress.isCompleted(l.id));
+            return (
+              <div
+                key={chapter.id}
+                className="bg-card rounded-2xl border border-border overflow-hidden"
+              >
+                <div className="px-4 py-3 flex items-center gap-3 border-b border-border">
+                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-xl", a.bg)}>
+                    {chapter.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground">{chapter.title}</p>
+                    <p className="text-[11px] text-muted-foreground">{chapter.subtitle}</p>
+                  </div>
+                  {chapterDone && (
+                    <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full ring-1", a.text, a.ring, a.bg)}>
+                      완료
+                    </span>
+                  )}
+                </div>
+
+                <ul className="divide-y divide-border">
+                  {chapter.lessons.map(lesson => {
+                    const done = progress.isCompleted(lesson.id);
+                    return (
+                      <li key={lesson.id}>
+                        <button
+                          onClick={() => startLesson(lesson)}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 active:bg-muted/80 transition-colors"
+                        >
+                          <span className="w-7 h-7 rounded-full flex items-center justify-center bg-muted shrink-0">
+                            {done ? (
+                              <CheckCircle2 className="w-4 h-4 text-primary" />
+                            ) : (
+                              <Play className="w-3.5 h-3.5 text-muted-foreground ml-0.5" />
+                            )}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className={cn(
+                              "text-sm font-semibold leading-tight",
+                              done ? "text-muted-foreground" : "text-foreground"
+                            )}>
+                              {lesson.title}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight truncate">
+                              {lesson.description} · {lesson.steps.length}단계
+                            </p>
+                          </div>
+                          <span className={cn(
+                            "text-[10px] font-semibold shrink-0 px-2 py-0.5 rounded-full",
+                            done ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+                          )}>
+                            {done ? "다시 보기" : `+${lesson.reward}P`}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+        </section>
+
+        {/* Hidden / off-style lessons */}
+        {hiddenLessons.length > 0 && (
+          <section className="px-4 pt-5">
+            <details className="bg-card rounded-2xl border border-dashed border-border overflow-hidden">
+              <summary className="px-4 py-3 cursor-pointer flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                <ArrowRight className="w-3.5 h-3.5" />
+                내 스타일에 안 보이는 가이드 ({hiddenLessons.length})
+              </summary>
+              <ul className="divide-y divide-border border-t border-border">
+                {hiddenLessons.map(({ chapter, lesson }) => (
+                  <li key={lesson.id}>
+                    <button
+                      onClick={() => startLesson(lesson)}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-muted/50 text-left"
+                    >
+                      <span className="text-base">{chapter.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground">{lesson.title}</p>
+                        <p className="text-[11px] text-muted-foreground">{chapter.title}</p>
+                      </div>
+                      <Play className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </section>
+        )}
+
+        {/* Reset link (subtle, for re-running tutorials) */}
+        {overall.done > 0 && (
+          <section className="px-4 pt-6">
+            <button
+              onClick={() => {
+                if (confirm("튜토리얼 진행률을 초기화할까요? 다음 방문 시 다시 안내가 시작돼요.")) {
+                  progress.reset();
+                }
+              }}
+              className="w-full text-[11px] text-muted-foreground flex items-center justify-center gap-1 py-2"
+            >
+              <RotateCcw className="w-3 h-3" /> 튜토리얼 진행률 초기화
+            </button>
+          </section>
+        )}
       </main>
 
       <BottomNav activeTab="/" onTabChange={(href) => navigate(href)} />

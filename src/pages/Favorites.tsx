@@ -15,6 +15,7 @@ import {
 import BottomNav from "@/components/BottomNav";
 import { useFavorites, ItemType } from "@/hooks/useFavorites";
 import { useCoupleFavorites, type MergedFavorite, type Ownership } from "@/hooks/useCoupleFavorites";
+import { youTubeUrl } from "@/hooks/useTipVideos";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -39,7 +40,9 @@ const favTabs = [
   },
   { id: "event", label: "이벤트", types: ["deal"] as ItemType[] },
   { id: "shopping", label: "쇼핑", types: ["product"] as ItemType[] },
-  { id: "info", label: "정보", types: ["influencer"] as ItemType[] },
+  // 인플루언서 ItemType은 DB·FavoriteButton(InfluencerDetail)에 그대로 살아있지만
+  // 찜 페이지 UI에서는 별도 인플루언서 탭이 다시 들어오기 전까지 노출 X.
+  { id: "info", label: "꿀팁", types: ["tip_video"] as ItemType[] },
 ] as const;
 
 type FavTabId = (typeof favTabs)[number]["id"];
@@ -110,7 +113,7 @@ const emptyStateCTA = (
 ): { label: string; path: string; hint: string } => {
   if (tab === "event") return { label: "혜택 둘러보기", path: "/deals", hint: "지금 받을 수 있는 파트너 혜택을 모아봤어요" };
   if (tab === "shopping") return { label: "셀프웨딩 스토어", path: "/store", hint: "소품·키트를 한 곳에서 둘러보세요" };
-  if (tab === "info") return { label: "인플루언서 콘텐츠", path: "/influencers", hint: "실제 결혼 준비 후기를 모아봤어요" };
+  if (tab === "info") return { label: "꿀팁 보러가기", path: "/magazine", hint: "유튜브 꿀팁 영상을 ❤️로 저장해두면 여기서 다시 볼 수 있어요" };
   if (weddingStyle === "self") return { label: "셀프웨딩 굿즈", path: "/store", hint: "셀프웨딩에 필요한 아이템부터 찾아보세요" };
   if (weddingStyle === "small") return { label: "소규모 예식장", path: "/invitation-venues", hint: "가족 중심 스몰웨딩 베뉴를 둘러보세요" };
   return { label: "웨딩홀 둘러보기", path: "/venues", hint: "마음에 드는 곳을 하트로 저장해보세요" };
@@ -258,16 +261,16 @@ const Favorites = () => {
 
       if (activeTab === "info") {
         const ids = filteredFavs.map((f) => f.item_id);
-        const { data } = await (supabase
-          .from("influencers" as any)
-          .select("id, name, handle, profile_image_url, follower_count, platform, category") as any)
-          .in("id", ids);
+        const { data } = await supabase
+          .from("tip_videos")
+          .select("video_id, title, thumbnail_url, channel_name")
+          .in("video_id", ids);
         if (!data) return [];
-        return (data as any[]).map((inf) =>
-          enrich(lookup(inf.id, "influencer"), {
-            name: inf.name,
-            thumbnail_url: inf.profile_image_url,
-            subtitle: inf.handle || inf.platform,
+        return data.map((v) =>
+          enrich(lookup(v.video_id, "tip_video"), {
+            name: v.title,
+            thumbnail_url: v.thumbnail_url,
+            subtitle: v.channel_name ?? "유튜브",
           }),
         );
       }
@@ -313,6 +316,14 @@ const Favorites = () => {
   const getDetailPath = (item: FavItem) => {
     const base = ITEM_TYPE_DETAIL_PATH[item.item_type] ?? "/vendor";
     return `${base}/${item.item_id}`;
+  };
+
+  const handleCardClick = (item: FavItem) => {
+    if (item.item_type === "tip_video") {
+      window.open(youTubeUrl(item.item_id), "_blank", "noopener,noreferrer");
+      return;
+    }
+    navigate(getDetailPath(item));
   };
 
   const handleTabChange = (href: string) => navigate(href);
@@ -606,7 +617,7 @@ const Favorites = () => {
                   )}
                 >
                   <button
-                    onClick={() => navigate(getDetailPath(item))}
+                    onClick={() => handleCardClick(item)}
                     className="flex items-center gap-3 flex-1 min-w-0 text-left"
                   >
                     <div className="w-14 h-14 rounded-xl bg-muted overflow-hidden flex-shrink-0">

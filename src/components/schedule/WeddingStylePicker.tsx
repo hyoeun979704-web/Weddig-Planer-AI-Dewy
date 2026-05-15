@@ -78,7 +78,7 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
                 "flex items-center gap-3 px-3 py-2.5 border rounded-xl cursor-pointer transition-colors",
                 isExcluded
                   ? "border-primary bg-primary/15"
-                  : "border-gray-200 bg-white hover:border-gray-300"
+                  : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white"
               )}
             >
               <input

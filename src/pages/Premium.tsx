@@ -185,22 +185,48 @@ const Premium = () => {
 
         {/* Feature Comparison */}
         <div className="px-4 py-4">
-          <h3 className="font-bold text-foreground mb-3">프리미엄 혜택 상세</h3>
+          <div className="flex items-baseline justify-between mb-3">
+            <h3 className="font-bold text-foreground">프리미엄 혜택 상세</h3>
+            <p className="text-[11px] text-muted-foreground">9개의 PDF · 1개의 메시지 템플릿</p>
+          </div>
+
+          {/* Column header */}
+          <div className="flex items-center gap-3 px-4 py-2 mb-2 rounded-xl bg-muted/60">
+            <span className="w-5" aria-hidden />
+            <span className="flex-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">기능</span>
+            <span className="w-14 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">무료</span>
+            <span className="w-14 text-center text-[11px] font-semibold text-primary uppercase tracking-wide">💎 Premium</span>
+          </div>
+
           {featureGroups.map((group) => (
             <div key={group.title} className="mb-4">
-              <p className="text-xs font-bold text-muted-foreground mb-2 uppercase">{group.title}</p>
-              <div className="bg-card rounded-2xl border border-border overflow-hidden">
-                {group.items.map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-b-0">
-                    <span className="text-base">{item.icon}</span>
-                    <span className="flex-1 text-sm text-foreground">{item.text}</span>
-                    <span className="text-xs text-muted-foreground w-14 text-center">{item.free}</span>
-                    <span className="text-xs font-bold text-primary w-14 text-center">{item.premium}</span>
-                  </div>
-                ))}
+              <p className="text-[11px] font-bold text-muted-foreground mb-2 uppercase tracking-wide">{group.title}</p>
+              <div className="bg-card rounded-2xl border border-border overflow-hidden divide-y divide-border">
+                {group.items.map((item, i) => {
+                  const freeUnavailable = item.free === "✕";
+                  return (
+                    <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                      <span className="text-lg w-5 text-center" aria-hidden>{item.icon}</span>
+                      <span className="flex-1 text-sm text-foreground leading-snug">{item.text}</span>
+                      <span className={`w-14 text-center text-[11px] ${freeUnavailable ? "text-muted-foreground/60" : "text-muted-foreground font-medium"}`}>
+                        {item.free}
+                      </span>
+                      <span className="w-14 text-center">
+                        <span className="inline-block px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary/10 text-primary">
+                          {item.premium}
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}
+
+          <p className="text-[11px] text-muted-foreground text-center mt-2 leading-relaxed">
+            모든 PDF는 입력값 기반의 정적 템플릿이며,<br />
+            AI API 호출 없이 즉시 다운로드됩니다.
+          </p>
         </div>
 
         {/* FAQ */}
