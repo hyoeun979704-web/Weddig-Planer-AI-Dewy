@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { normalizeTipCategories } from "./tipNormalize";
+import {
+  normalizeTipCategories,
+  orderCategoriesByMatchCount,
+} from "./tipNormalize";
 
 describe("normalizeTipCategories", () => {
   it("returns empty for empty input", () => {
@@ -41,5 +44,69 @@ describe("normalizeTipCategories", () => {
 
   it("ignores empty strings", () => {
     expect(normalizeTipCategories(["", "studio", ""])).toEqual(["studio"]);
+  });
+});
+
+describe("orderCategoriesByMatchCount", () => {
+  const ORDER = [
+    "general",
+    "wedding_hall",
+    "studio",
+    "dress_shop",
+    "makeup_shop",
+    "hanbok",
+  ];
+
+  it("returns empty for empty map", () => {
+    expect(orderCategoriesByMatchCount(new Map(), ORDER)).toEqual([]);
+  });
+
+  it("higher match count wins (the actual fix)", () => {
+    // Dress matched 3 times, wedding-hall once → dress is primary.
+    const m = new Map([
+      ["wedding_hall", 1],
+      ["dress_shop", 3],
+      ["hanbok", 1],
+    ]);
+    expect(orderCategoriesByMatchCount(m, ORDER)).toEqual([
+      "dress_shop",
+      "wedding_hall",
+      "hanbok",
+    ]);
+  });
+
+  it("ties fall back to tiebreaker order (deterministic)", () => {
+    // All tied at 1 — output follows ORDER: wedding_hall < studio < dress_shop.
+    const m = new Map([
+      ["dress_shop", 1],
+      ["studio", 1],
+      ["wedding_hall", 1],
+    ]);
+    expect(orderCategoriesByMatchCount(m, ORDER)).toEqual([
+      "wedding_hall",
+      "studio",
+      "dress_shop",
+    ]);
+  });
+
+  it("composes with normalizeTipCategories: drops 'general' even when it has matches", () => {
+    // A general planning video that also incidentally hit a studio query.
+    const m = new Map([
+      ["general", 2],
+      ["studio", 1],
+    ]);
+    const sorted = orderCategoriesByMatchCount(m, ORDER); // ['general', 'studio']
+    expect(normalizeTipCategories(sorted)).toEqual(["studio"]);
+  });
+
+  it("unknown slug (not in tiebreaker) sorts after known ties", () => {
+    const m = new Map([
+      ["unknown_cat", 1],
+      ["studio", 1],
+    ]);
+    expect(orderCategoriesByMatchCount(m, ORDER)).toEqual([
+      "studio",
+      "unknown_cat",
+    ]);
   });
 });

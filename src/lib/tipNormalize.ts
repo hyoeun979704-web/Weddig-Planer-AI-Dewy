@@ -30,3 +30,23 @@ export function normalizeTipCategories(
   }
   return out;
 }
+
+// Picks the primary category by match strength. The collector counts how
+// many distinct seed queries returned a video for each category — a video
+// matched by 3 dress queries and 1 wedding-hall query is more about
+// dresses than venues, regardless of which query happened to run first.
+// Ties fall back to the `tiebreaker` order (typically TIP_CATEGORIES) so
+// the result is deterministic across runs.
+export function orderCategoriesByMatchCount(
+  matches: ReadonlyMap<string, number>,
+  tiebreaker: ReadonlyArray<string>
+): string[] {
+  const rank = (slug: string) => {
+    const i = tiebreaker.indexOf(slug);
+    return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+  };
+  return Array.from(matches.entries())
+    .sort((a, b) => (b[1] - a[1]) || (rank(a[0]) - rank(b[0])))
+    .map(([slug]) => slug);
+}
+

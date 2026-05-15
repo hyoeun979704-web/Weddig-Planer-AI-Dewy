@@ -20,7 +20,10 @@ import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import { searchVideos, fetchVideoStats } from "./youtube";
 import { TIP_QUERIES, TIP_CATEGORIES, type TipCategory } from "./queries";
-import { normalizeTipCategories } from "../../src/lib/tipNormalize";
+import {
+  normalizeTipCategories,
+  orderCategoriesByMatchCount,
+} from "../../src/lib/tipNormalize";
 
 interface Args {
   category?: TipCategory;
@@ -46,7 +49,10 @@ interface CollectedVideo {
   thumbnail_url: string;
   published_at: string;
   description: string;
-  categories: Set<string>;
+  // slug → number of distinct seed queries that surfaced this video for
+  // that category. Used to decide which category becomes the primary
+  // (badge) — see orderCategoriesByMatchCount.
+  categoryMatches: Map<string, number>;
   search_query: string;
 }
 
@@ -78,7 +84,10 @@ async function main() {
         for (const it of items) {
           const existing = pool.get(it.videoId);
           if (existing) {
-            existing.categories.add(cat);
+            existing.categoryMatches.set(
+              cat,
+              (existing.categoryMatches.get(cat) ?? 0) + 1
+            );
             continue;
           }
           pool.set(it.videoId, {
@@ -89,7 +98,7 @@ async function main() {
             thumbnail_url: it.thumbnailUrl,
             published_at: it.publishedAt,
             description: it.description,
-            categories: new Set([cat]),
+            categoryMatches: new Map([[cat, 1]]),
             search_query: q,
           });
         }
@@ -121,7 +130,9 @@ async function main() {
       like_count: s?.likeCount ?? 0,
       published_at: v.published_at,
       description: v.description,
-      categories: normalizeTipCategories(Array.from(v.categories)),
+      categories: normalizeTipCategories(
+        orderCategoriesByMatchCount(v.categoryMatches, TIP_CATEGORIES)
+      ),
       search_query: v.search_query,
       collected_at: new Date().toISOString(),
       is_active: true,
