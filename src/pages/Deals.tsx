@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Tag, Star, ChevronRight, SlidersHorizontal, Heart } from "lucide-react";
+import { Tag, Star, ChevronRight, SlidersHorizontal } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import HomeHeader from "@/components/home/HomeHeader";
+import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
 import { usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { Skeleton } from "@/components/ui/skeleton";
 import SortToggle, { SortMode } from "@/components/SortToggle";
@@ -36,6 +38,17 @@ const Deals = () => {
 
   const handleTabChange = (href: string) => navigate(href);
 
+  const handleCategoryTabChange = (tab: CategoryTab) => {
+    const tabRoutes: Record<CategoryTab, string> = {
+      "ai-planner": "/ai-planner",
+      "ai-studio": "/ai-studio",
+      tips: "/tips",
+      events: "/deals",
+      shopping: "/store",
+    };
+    navigate(tabRoutes[tab]);
+  };
+
   // Apply filters
   let filtered = [...deals];
   if (filters.keyword) {
@@ -56,19 +69,8 @@ const Deals = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-1">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="text-lg font-bold text-foreground">파트너 혜택</h1>
-          </div>
-          <button onClick={() => navigate("/favorites")} className="p-2">
-            <Heart className="w-5 h-5 text-foreground" />
-          </button>
-        </div>
-      </header>
+      <HomeHeader />
+      <CategoryTabBar activeTab="events" onTabChange={handleCategoryTabChange} />
 
       {/* Category Filter */}
       <div className="px-4 py-3 overflow-x-auto">
