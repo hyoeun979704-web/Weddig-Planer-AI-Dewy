@@ -23,7 +23,7 @@ export type SkippableCategory = (typeof SKIPPABLE_CATEGORIES)[number];
 
 export const CATEGORY_LABELS: Record<SkippableCategory, { label: string; hint: string }> = {
   wedding_hall: { label: "웨딩홀", hint: "예식장 답사·계약·시연" },
-  studio: { label: "스튜디오 촬영", hint: "본식·리허설 스냅" },
+  studio: { label: "스튜디오", hint: "본식·리허설 스냅" },
   dress_shop: { label: "드레스샵", hint: "드레스 투어·피팅" },
   makeup_shop: { label: "메이크업샵", hint: "헤어·메이크업 예약" },
   hanbok: { label: "한복", hint: "혼주·신부 한복 준비" },
