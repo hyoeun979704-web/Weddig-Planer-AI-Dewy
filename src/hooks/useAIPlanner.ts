@@ -1,11 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useBudget } from "@/hooks/useBudget";
 import { supabase } from "@/integrations/supabase/client";
 import { matchIntent } from "@/lib/chatbot/intentRouter";
 import { runDbHandler } from "@/lib/chatbot/dbHandlers";
 import { runGuideHandler } from "@/lib/chatbot/handlers/staticGuideHandlers";
+import { buildUserContextPrompt } from "@/lib/chatbot/userContext";
 import {
   handleVenueRecommendation,
   handleSdmeGuide,
@@ -43,7 +45,43 @@ export const useAIPlanner = () => {
   const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const { weddingSettings } = useWeddingSchedule();
+  const { weddingSettings, scheduleItems } = useWeddingSchedule();
+  const { settings: budgetSettings, summary: budgetSummary } = useBudget();
+
+  // LLM 호출 시 주입할 사용자 컨텍스트. 결혼일·예산·진척률 등을 자연어로
+  // 시스템 메시지에 넣어 답변이 사용자 상황에 맞춰지게 한다.
+  // 정적 라우팅 응답은 이미 결정형이라 주입 불필요. LLM 폴백 + 핸들러
+  // llmContext 동시 흐름에서만 쓰인다.
+  const userContextPrompt = useMemo(() => {
+    if (!user) return null;
+    // 다음 임박 일정: 미완료 + 미래 일정 중 가장 가까운 것
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcoming = (scheduleItems ?? [])
+      .filter((s) => !s.completed)
+      .map((s) => {
+        const d = new Date(s.scheduled_date);
+        d.setHours(0, 0, 0, 0);
+        return { title: s.title, daysAway: Math.round((d.getTime() - today.getTime()) / 86400000) };
+      })
+      .filter((s) => s.daysAway >= 0)
+      .sort((a, b) => a.daysAway - b.daysAway);
+    const completedCount = (scheduleItems ?? []).filter((s) => s.completed).length;
+    return buildUserContextPrompt({
+      weddingSettings,
+      budgetSettings: budgetSettings
+        ? { total_budget: budgetSettings.total_budget, guest_count: budgetSettings.guest_count }
+        : null,
+      budgetSummary,
+      scheduleSummary: scheduleItems && scheduleItems.length > 0
+        ? {
+            completed: completedCount,
+            total: scheduleItems.length,
+            nextUpcoming: upcoming[0] ?? null,
+          }
+        : null,
+    });
+  }, [user, weddingSettings, budgetSettings, budgetSummary, scheduleItems]);
 
   const sendMessage = useCallback(async (input: string) => {
     const userMsg: Message = { role: "user", content: input };
@@ -133,21 +171,13 @@ export const useAIPlanner = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token || ((import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ?? "");
 
-      // 게이트가 추출한 컨텍스트(B+C 하이브리드)가 있다면 시스템 메시지로 주입.
-      // LLM이 이 정보를 활용해 자연어로 정리한 답변을 만든다.
-      // wedding_style 이 세팅돼 있고 일반이 아닐 땐 페르소나 힌트를 상시 주입해
-      // 셀프/스몰 사용자가 일반 결혼 어휘로 답변받지 않게 한다.
-      const personaContext = (() => {
-        const style = weddingSettings.wedding_style;
-        const excluded = weddingSettings.excluded_categories ?? [];
-        if (!style || style === "general") return null;
-        const styleLabel = style === "self" ? "셀프웨딩" : style === "small" ? "스몰웨딩" : "맞춤형 결혼식";
-        const excludedLabel = excluded.length > 0 ? ` 제외 카테고리: ${excluded.join(", ")}.` : "";
-        return `[페르소나] 사용자는 ${styleLabel}을 준비 중이에요.${excludedLabel} 추천·체크리스트·예산 안내는 이 페르소나에 맞춰 답변해주세요. 제외 카테고리에 해당하는 업체/일정은 추천에서 빼주세요.`;
-      })();
+      // LLM 호출 시 사용자 컨텍스트(결혼일·예산·진척률·지역·스타일·제외
+      // 카테고리·다음 임박 일정)를 시스템 메시지로 주입. 라우터에 안 잡히는
+      // 자유 자연어 질문도 사용자 상황에 맞는 답을 받게 한다.
+      // 게이트가 추출한 추가 컨텍스트(B+C 하이브리드)가 있으면 함께 주입.
       const messagesToSend: Message[] = [
-        ...(personaContext
-          ? [{ role: "user" as const, content: personaContext }]
+        ...(userContextPrompt
+          ? [{ role: "user" as const, content: userContextPrompt }]
           : []),
         ...(llmContextInjection
           ? [{
@@ -289,7 +319,7 @@ export const useAIPlanner = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, toast, user, weddingSettings.wedding_style, weddingSettings.excluded_categories]);
+  }, [messages, toast, user, weddingSettings.wedding_style, weddingSettings.excluded_categories, userContextPrompt]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
