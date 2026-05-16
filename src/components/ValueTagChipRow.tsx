@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { PLACE_VALUE_TAG_OPTIONS } from "@/lib/placeValueTags";
 import { useFilterStore } from "@/stores/useFilterStore";
 import { useValueTagAvailability } from "@/hooks/useValueTagAvailability";
+import { trackEvent } from "@/lib/track";
 
 interface Props {
   /** 카테고리(places.category) — 가용성 조회에 사용. 기본 wedding_hall. */
@@ -46,11 +47,22 @@ const ValueTagChipRow = ({ placeCategory = "wedding_hall" }: Props) => {
 
           const handleClick = () => {
             if (empty) {
+              trackEvent("value_tag_click", {
+                tag: opt.value,
+                category: placeCategory,
+                state: "empty",
+              });
               toast.info(`${opt.emoji} ${opt.label}`, {
                 description: "매칭 데이터를 곧 추가할 예정이에요",
               });
               return;
             }
+            trackEvent("value_tag_click", {
+              tag: opt.value,
+              category: placeCategory,
+              state: active ? "deactivate" : "activate",
+              count,
+            });
             toggleValueTag(opt.value);
           };
 
