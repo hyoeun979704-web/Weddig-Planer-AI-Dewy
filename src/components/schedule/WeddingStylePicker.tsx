@@ -66,10 +66,10 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
         })}
       </div>
       {style === "custom" && (
-        <div className="rounded-xl border-2 border-primary/40 bg-primary/5 px-3 py-2 flex items-center gap-2">
-          <span className="text-xs font-bold text-primary">직접 선택</span>
-          <span className="text-[11px] text-gray-500 flex-1">아래에서 카테고리를 골라 직접 조합하셨어요</span>
-        </div>
+        <p className="text-[11px] text-primary flex items-center gap-1">
+          <span className="font-bold">✨ 직접 선택</span>
+          <span className="text-gray-500">· 카테고리를 골라 직접 조합하셨어요</span>
+        </p>
       )}
       {style && style !== "custom" && (
         <p className="text-[11px] text-gray-500">
