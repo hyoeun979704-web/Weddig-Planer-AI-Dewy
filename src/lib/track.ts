@@ -25,13 +25,16 @@ export const trackEvent = (
       const { data: authData } = await supabase.auth.getUser();
       const userId = authData?.user?.id;
       if (!userId) return;
-      const { error } = await supabase
-        .from("user_events" as never)
+      // user_events 는 아직 supabase types.ts 에 미반영 — 다른 후속 테이블
+      // (guest_list_items, budget_settings 등) 과 동일한 (supabase as any)
+      // 패턴으로 통일.
+      const { error } = await (supabase as any)
+        .from("user_events")
         .insert({
           user_id: userId,
           event_name: name,
           properties: properties ?? {},
-        } as never);
+        });
       if (error) {
         console.warn("trackEvent insert failed", name, error.message);
       }
