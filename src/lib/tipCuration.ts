@@ -1,5 +1,6 @@
 import type { TipVideo } from "@/hooks/useTipVideos";
 import type { WeddingProfilePrefill } from "@/hooks/useWeddingProfile";
+import type { WeddingStyle } from "@/lib/weddingStyle";
 
 // Korean wedding planning timeline: couples typically book vendors in this
 // order. Each phase boosts the categories that are most relevant *right now*
@@ -20,7 +21,9 @@ const PHASE_BOOSTS: ReadonlyArray<{
   { minDays: -Infinity, maxDays: 0, categories: ["honeymoon", "general"] },
 ];
 
-const STYLE_HINTS: Record<string, ReadonlyArray<string>> = {
+// Hint values are stored already-lowercased (matching uses a lowercased
+// haystack), so Korean tokens look unchanged while English ones are flat.
+const STYLE_HINTS: Record<WeddingStyle, ReadonlyArray<string>> = {
   small: ["스몰", "스몰웨딩", "하우스", "한옥", "small"],
   self: ["셀프", "직접", "self", "diy"],
   general: [],
@@ -39,7 +42,7 @@ const STYLE_HINTS: Record<string, ReadonlyArray<string>> = {
 // A general-wedding user has no positive style hint (general is the
 // unmarked default), so without this signal a viral 셀프웨딩 video can
 // outrank standard wedding-prep content purely on popularity.
-const STYLE_OPPOSITE_HINTS: Record<string, ReadonlyArray<string>> = {
+const STYLE_OPPOSITE_HINTS: Record<WeddingStyle, ReadonlyArray<string>> = {
   general: ["셀프웨딩", "diy 웨딩", "스몰웨딩"],
   small: [],
   self: [],
@@ -85,8 +88,10 @@ export function buildCurationFactors(
   const phase = excluded.length > 0
     ? rawPhase.filter((c) => !excluded.includes(c))
     : rawPhase;
-  const style = STYLE_HINTS[profile.weddingStyle] ?? [];
-  const opposite = STYLE_OPPOSITE_HINTS[profile.weddingStyle] ?? [];
+  // Record<WeddingStyle, ...> covers every enum variant, so no fallback
+  // needed — TS guarantees the lookup is total.
+  const style = STYLE_HINTS[profile.weddingStyle];
+  const opposite = STYLE_OPPOSITE_HINTS[profile.weddingStyle];
   return {
     phaseCategories: phase,
     styleHints: style,
