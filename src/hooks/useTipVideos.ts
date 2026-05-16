@@ -18,19 +18,32 @@ interface UseTipVideosOptions {
   category?: string; // place category slug or "general"
   limit?: number;
   freshOnly?: boolean; // prefer last 12 months
+  // Free-text search across title and channel name. When set, `category`
+  // and `freshOnly` are ignored — search is a global escape hatch that
+  // surfaces every matching video regardless of the user's exclusions or
+  // recency filters. Trimmed/empty strings are treated as "no search".
+  searchQuery?: string;
 }
+
+// Postgres `ilike` pattern wildcard chars must be escaped so a query like
+// "50%" doesn't behave as a wildcard. Also escape backslash itself.
+const escapeIlike = (s: string) =>
+  s.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 
 /**
  * Fetches tip videos ordered by view_count desc.
- * - No category → top videos across all categories (homepage 오늘의 꿀팁).
+ * - No category & no search → top videos across all categories (homepage 오늘의 꿀팁).
  * - With category → filter by `categories @> {category}` (GIN index hit).
+ * - With searchQuery → ilike against title/channel_name; ignores category & freshOnly.
  * - freshOnly → published_at >= 12 months ago. Falls back to all-time
  *   if too few fresh videos exist (rare given current corpus).
  */
 export function useTipVideos(opts: UseTipVideosOptions = {}) {
-  const { category, limit = 20, freshOnly = true } = opts;
+  const { category, limit = 20, freshOnly = true, searchQuery } = opts;
+  const trimmedQuery = searchQuery?.trim() ?? "";
+  const isSearch = trimmedQuery.length > 0;
   return useQuery({
-    queryKey: ["tip_videos", category ?? "all", limit, freshOnly],
+    queryKey: ["tip_videos", isSearch ? `q:${trimmedQuery}` : (category ?? "all"), limit, isSearch ? false : freshOnly],
     queryFn: async (): Promise<TipVideo[]> => {
       let q = supabase
         .from("tip_videos")
@@ -41,10 +54,15 @@ export function useTipVideos(opts: UseTipVideosOptions = {}) {
         .order("view_count", { ascending: false })
         .limit(limit);
 
-      if (category) {
+      if (isSearch) {
+        const pattern = `%${escapeIlike(trimmedQuery)}%`;
+        q = q.or(`title.ilike.${pattern},channel_name.ilike.${pattern}`);
+      } else if (category) {
         q = q.contains("categories", [category]);
       }
-      if (freshOnly) {
+      // freshOnly is intentionally bypassed during search so old-but-relevant
+      // videos still appear when the user explicitly types a keyword.
+      if (freshOnly && !isSearch) {
         const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
         q = q.gte("published_at", oneYearAgo);
       }
@@ -54,7 +72,7 @@ export function useTipVideos(opts: UseTipVideosOptions = {}) {
       const rows = (data ?? []) as TipVideo[];
       // Fallback: if freshOnly returned too few, retry without the filter so
       // the section never shows up empty when older content exists.
-      if (freshOnly && rows.length < Math.min(5, limit)) {
+      if (!isSearch && freshOnly && rows.length < Math.min(5, limit)) {
         const { data: all } = await supabase
           .from("tip_videos")
           .select(

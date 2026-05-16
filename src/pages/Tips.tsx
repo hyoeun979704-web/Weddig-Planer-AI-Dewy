@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Flame, Sparkles } from "lucide-react";
+import { ArrowLeft, Flame, Search, Sparkles, X } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import { Input } from "@/components/ui/input";
 import { TipVideoCard, TipVideoCardSkeleton } from "@/components/TipVideoCard";
 import { useTipVideos, type TipVideo } from "@/hooks/useTipVideos";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
@@ -50,6 +51,18 @@ const Tips = () => {
       setCategory(null);
     }
   }, [visibleChips, category]);
+
+  // Free-text search. Debounced so we don't hammer Supabase on every
+  // keystroke. When `debouncedQuery` is non-empty we enter "search mode":
+  // the chip filter, exclusion filter, HOT row, and curation are all
+  // bypassed so the user can find ANY video by keyword.
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchInput.trim()), 250);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+  const isSearching = debouncedQuery.length > 0;
   // Default to "추천순". When user has no personalization signal yet,
   // rankTipVideosForUser falls back to the popularity order — same result as
   // "인기순" — so this is safe even for logged-out / fresh users.
@@ -57,7 +70,8 @@ const Tips = () => {
   const [format, setFormat] = useState<FormatKey>("all");
 
   // HOT row: published in last 7 days. Over-fetch (40) so the client filter
-  // still has candidates when fresh content is sparse.
+  // still has candidates when fresh content is sparse. Skipped during
+  // search — search mode shows a flat result list only.
   const { data: hotPool, isLoading: hotLoading } = useTipVideos({
     category: category ?? undefined,
     limit: 40,
@@ -86,22 +100,30 @@ const Tips = () => {
   const hotList = (freshList.length > 0 ? freshList : visibleHotPool).slice(0, 8);
   const hotIsFallback = freshList.length === 0;
 
-  // Grid: full list filtered by category, then by format, client-sorted.
+  // Grid: full list filtered by category (or search), then by format,
+  // client-sorted. Search mode passes `searchQuery` and ignores `category`.
   const { data: allVideos, isLoading } = useTipVideos({
-    category: category ?? undefined,
+    category: isSearching ? undefined : (category ?? undefined),
     limit: 60,
     freshOnly: false,
+    searchQuery: isSearching ? debouncedQuery : undefined,
   });
   const isShort = (v: TipVideo) =>
     v.duration_seconds != null && v.duration_seconds <= SHORT_MAX_SECONDS;
+  // Exclusions and format filter both bypassed in search mode — the user
+  // explicitly asked for a global view.
   const formatFiltered = (allVideos ?? [])
-    .filter((v) => !isExcludedByPrimary(v))
+    .filter((v) => isSearching || !isExcludedByPrimary(v))
     .filter((v) => {
+      if (isSearching) return true;
       if (format === "short") return isShort(v);
       if (format === "long") return !isShort(v);
       return true;
     });
   const gridList = (() => {
+    // Search mode: keep the server's view_count desc order — relevance
+    // ranking would require a smarter scorer than our personalization one.
+    if (isSearching) return formatFiltered;
     if (sort === "curated") {
       return rankTipVideosForUser(formatFiltered, profile);
     }
@@ -112,7 +134,7 @@ const Tips = () => {
       return db - da;
     });
   })();
-  const showCuratedBadge = sort === "curated" && curationFactors.hasSignal;
+  const showCuratedBadge = !isSearching && sort === "curated" && curationFactors.hasSignal;
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-20">
@@ -127,103 +149,143 @@ const Tips = () => {
           <h1 className="text-lg font-bold flex-1 text-center -mr-8">꿀팁</h1>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-3">
-          {visibleChips.map((c) => {
-            const active = category === c.slug;
-            return (
+        <div className="px-4 pb-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="search"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="제목·채널 검색 (숨긴 카테고리 포함 전체 검색)"
+              className="pl-9 pr-9 h-9 text-sm"
+              aria-label="꿀팁 영상 검색"
+            />
+            {searchInput && (
               <button
-                key={c.slug ?? "all"}
-                onClick={() => setCategory(c.slug)}
-                className={`flex-shrink-0 px-3 h-8 rounded-full text-[12px] font-medium transition-colors ${
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
+                type="button"
+                onClick={() => setSearchInput("")}
+                aria-label="검색어 지우기"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
               >
-                {c.label}
+                <X className="w-3.5 h-3.5" />
               </button>
-            );
-          })}
+            )}
+          </div>
         </div>
+
+        {!isSearching && (
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-3">
+            {visibleChips.map((c) => {
+              const active = category === c.slug;
+              return (
+                <button
+                  key={c.slug ?? "all"}
+                  onClick={() => setCategory(c.slug)}
+                  className={`flex-shrink-0 px-3 h-8 rounded-full text-[12px] font-medium transition-colors ${
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </header>
 
       <main>
-        <section className="pt-4 pb-2">
-          <div className="flex items-center gap-2 px-4 mb-3">
-            <Flame className="w-5 h-5 text-rose-500 fill-rose-500" />
-            <h2 className="text-base font-bold text-foreground">HOT</h2>
-            <span className="text-xs text-muted-foreground">
-              {hotIsFallback ? "전체 인기" : "최근 7일"}
-            </span>
-          </div>
-          {hotLoading ? (
-            <div className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4 pb-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <TipVideoCardSkeleton key={i} width={HOT_CARD_WIDTH} />
-              ))}
+        {!isSearching && (
+          <section className="pt-4 pb-2">
+            <div className="flex items-center gap-2 px-4 mb-3">
+              <Flame className="w-5 h-5 text-rose-500 fill-rose-500" />
+              <h2 className="text-base font-bold text-foreground">HOT</h2>
+              <span className="text-xs text-muted-foreground">
+                {hotIsFallback ? "전체 인기" : "최근 7일"}
+              </span>
             </div>
-          ) : hotList.length > 0 ? (
-            <div className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4 pb-2">
-              {hotList.map((v, i) => (
-                <TipVideoCard
-                  key={v.video_id}
-                  video={v}
-                  width={HOT_CARD_WIDTH}
-                  rank={i + 1}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground px-4 py-6">
-              인기 영상을 모으는 중이에요.
-            </p>
-          )}
-        </section>
+            {hotLoading ? (
+              <div className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4 pb-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TipVideoCardSkeleton key={i} width={HOT_CARD_WIDTH} />
+                ))}
+              </div>
+            ) : hotList.length > 0 ? (
+              <div className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4 pb-2">
+                {hotList.map((v, i) => (
+                  <TipVideoCard
+                    key={v.video_id}
+                    video={v}
+                    width={HOT_CARD_WIDTH}
+                    rank={i + 1}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground px-4 py-6">
+                인기 영상을 모으는 중이에요.
+              </p>
+            )}
+          </section>
+        )}
 
-        <section className="pt-3 pb-6 border-t border-border/50">
+        <section className={`pt-3 pb-6 ${isSearching ? "" : "border-t border-border/50"}`}>
           <div className="flex items-center justify-between px-4 mb-3 gap-2 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <h2 className="text-base font-bold text-foreground">전체 꿀팁</h2>
-              {showCuratedBadge && (
-                <span className="inline-flex items-center gap-1 px-2 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
-                  <Sparkles className="w-2.5 h-2.5" />맞춤
-                </span>
+              <h2 className="text-base font-bold text-foreground">
+                {isSearching ? `'${debouncedQuery}' 검색 결과` : "전체 꿀팁"}
+              </h2>
+              {isSearching ? (
+                !isLoading && (
+                  <span className="text-xs text-muted-foreground">
+                    {gridList.length}건
+                  </span>
+                )
+              ) : (
+                showCuratedBadge && (
+                  <span className="inline-flex items-center gap-1 px-2 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
+                    <Sparkles className="w-2.5 h-2.5" />맞춤
+                  </span>
+                )
               )}
             </div>
-            <div className="flex items-center gap-2">
-              {/* Format filter (long/short/all) */}
-              <div className="flex bg-muted rounded-full p-0.5">
-                {(["all", "long", "short"] as const).map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setFormat(f)}
-                    className={`px-2.5 h-7 rounded-full text-[11px] font-medium transition-colors ${
-                      format === f
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {f === "all" ? "전체" : f === "long" ? "롱폼" : "숏폼"}
-                  </button>
-                ))}
+            {!isSearching && (
+              <div className="flex items-center gap-2">
+                {/* Format filter (long/short/all) */}
+                <div className="flex bg-muted rounded-full p-0.5">
+                  {(["all", "long", "short"] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setFormat(f)}
+                      className={`px-2.5 h-7 rounded-full text-[11px] font-medium transition-colors ${
+                        format === f
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {f === "all" ? "전체" : f === "long" ? "롱폼" : "숏폼"}
+                    </button>
+                  ))}
+                </div>
+                {/* Sort */}
+                <div className="flex bg-muted rounded-full p-0.5">
+                  {(["curated", "popular", "recent"] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSort(s)}
+                      className={`px-2.5 h-7 rounded-full text-[11px] font-medium transition-colors ${
+                        sort === s
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {s === "curated" ? "추천순" : s === "popular" ? "인기순" : "최신순"}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {/* Sort */}
-              <div className="flex bg-muted rounded-full p-0.5">
-                {(["curated", "popular", "recent"] as const).map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setSort(s)}
-                    className={`px-2.5 h-7 rounded-full text-[11px] font-medium transition-colors ${
-                      sort === s
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {s === "curated" ? "추천순" : s === "popular" ? "인기순" : "최신순"}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
 
           {isLoading ? (
@@ -240,7 +302,9 @@ const Tips = () => {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-12">
-              해당 조건에 맞는 영상이 아직 없어요.
+              {isSearching
+                ? `'${debouncedQuery}'에 맞는 영상이 없어요.`
+                : "해당 조건에 맞는 영상이 아직 없어요."}
             </p>
           )}
         </section>
