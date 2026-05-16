@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { escapeLikePattern, quoteForOr } from "@/lib/postgrestEscape";
 
 export interface TipVideo {
   video_id: string;
@@ -23,12 +24,11 @@ interface UseTipVideosOptions {
   // surfaces every matching video regardless of the user's exclusions or
   // recency filters. Trimmed/empty strings are treated as "no search".
   searchQuery?: string;
+  // React Query gating. Pass false when the consumer knows the result
+  // won't be displayed (e.g. HOT row while the user is searching) to
+  // avoid a wasted network round-trip.
+  enabled?: boolean;
 }
-
-// Postgres `ilike` pattern wildcard chars must be escaped so a query like
-// "50%" doesn't behave as a wildcard. Also escape backslash itself.
-const escapeIlike = (s: string) =>
-  s.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 
 /**
  * Fetches tip videos ordered by view_count desc.
@@ -39,11 +39,12 @@ const escapeIlike = (s: string) =>
  *   if too few fresh videos exist (rare given current corpus).
  */
 export function useTipVideos(opts: UseTipVideosOptions = {}) {
-  const { category, limit = 20, freshOnly = true, searchQuery } = opts;
+  const { category, limit = 20, freshOnly = true, searchQuery, enabled = true } = opts;
   const trimmedQuery = searchQuery?.trim() ?? "";
   const isSearch = trimmedQuery.length > 0;
   return useQuery({
     queryKey: ["tip_videos", isSearch ? `q:${trimmedQuery}` : (category ?? "all"), limit, isSearch ? false : freshOnly],
+    enabled,
     queryFn: async (): Promise<TipVideo[]> => {
       let q = supabase
         .from("tip_videos")
@@ -55,7 +56,9 @@ export function useTipVideos(opts: UseTipVideosOptions = {}) {
         .limit(limit);
 
       if (isSearch) {
-        const pattern = `%${escapeIlike(trimmedQuery)}%`;
+        // Two-layer escape: LIKE wildcards (so "50%" is literal) and the
+        // .or() value wrapper (so commas/parens don't break parsing).
+        const pattern = quoteForOr(`%${escapeLikePattern(trimmedQuery)}%`);
         q = q.or(`title.ilike.${pattern},channel_name.ilike.${pattern}`);
       } else if (category) {
         q = q.contains("categories", [category]);

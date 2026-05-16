@@ -52,17 +52,25 @@ const Tips = () => {
     }
   }, [visibleChips, category]);
 
-  // Free-text search. Debounced so we don't hammer Supabase on every
-  // keystroke. When `debouncedQuery` is non-empty we enter "search mode":
-  // the chip filter, exclusion filter, HOT row, and curation are all
-  // bypassed so the user can find ANY video by keyword.
+  // Free-text search. Two pieces of state:
+  //   - `uiSearchMode` flips the moment the user starts typing (chips and
+  //     HOT collapse, header switches to "검색 결과") so the interface
+  //     responds immediately.
+  //   - `debouncedQuery` lags 250ms behind so we don't fire a Supabase
+  //     request for every keystroke. While the two are out of sync the
+  //     grid shows a loading skeleton (see `isGridLoading` below).
+  // Both bypass the chip filter, exclusion filter, HOT row, and curation
+  // so the user can find ANY video by keyword.
   const [searchInput, setSearchInput] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const trimmedInput = searchInput.trim();
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedQuery(searchInput.trim()), 250);
+    const t = setTimeout(() => setDebouncedQuery(trimmedInput), 250);
     return () => clearTimeout(t);
-  }, [searchInput]);
+  }, [trimmedInput]);
+  const uiSearchMode = trimmedInput.length > 0;
   const isSearching = debouncedQuery.length > 0;
+  const isDebouncing = uiSearchMode && trimmedInput !== debouncedQuery;
   // Default to "추천순". When user has no personalization signal yet,
   // rankTipVideosForUser falls back to the popularity order — same result as
   // "인기순" — so this is safe even for logged-out / fresh users.
@@ -70,12 +78,14 @@ const Tips = () => {
   const [format, setFormat] = useState<FormatKey>("all");
 
   // HOT row: published in last 7 days. Over-fetch (40) so the client filter
-  // still has candidates when fresh content is sparse. Skipped during
-  // search — search mode shows a flat result list only.
+  // still has candidates when fresh content is sparse. Disabled the moment
+  // the user starts typing — the section is hidden in search mode and we
+  // shouldn't pay for a request whose result will never render.
   const { data: hotPool, isLoading: hotLoading } = useTipVideos({
     category: category ?? undefined,
     limit: 40,
     freshOnly: false,
+    enabled: !uiSearchMode,
   });
   // Drop videos whose primary category the user opted out of — keeps the
   // HOT row and grid consistent with the chip set (an excluded chip is
@@ -90,7 +100,10 @@ const Tips = () => {
     return primary != null && excludedSet.has(primary);
   };
 
-  const sevenDaysAgo = Date.now() - SEVEN_DAYS_MS;
+  // "7 days ago" anchors to the moment the page mounted — recomputing it
+  // every render would make `freshList` a fresh reference each time and
+  // defeat downstream memoization.
+  const sevenDaysAgo = useMemo(() => Date.now() - SEVEN_DAYS_MS, []);
   const visibleHotPool = (hotPool ?? []).filter((v) => !isExcludedByPrimary(v));
   const freshList = visibleHotPool.filter(
     (v) => v.published_at && new Date(v.published_at).getTime() >= sevenDaysAgo
@@ -102,20 +115,24 @@ const Tips = () => {
 
   // Grid: full list filtered by category (or search), then by format,
   // client-sorted. Search mode passes `searchQuery` and ignores `category`.
+  // While the user is mid-typing (uiSearchMode true but debouncedQuery
+  // still stale) we disable the non-search query so we don't briefly show
+  // the default-mode list under a "검색 결과" header.
   const { data: allVideos, isLoading } = useTipVideos({
     category: isSearching ? undefined : (category ?? undefined),
     limit: 60,
     freshOnly: false,
     searchQuery: isSearching ? debouncedQuery : undefined,
+    enabled: !uiSearchMode || isSearching,
   });
   const isShort = (v: TipVideo) =>
     v.duration_seconds != null && v.duration_seconds <= SHORT_MAX_SECONDS;
   // Exclusions and format filter both bypassed in search mode — the user
   // explicitly asked for a global view.
   const formatFiltered = (allVideos ?? [])
-    .filter((v) => isSearching || !isExcludedByPrimary(v))
+    .filter((v) => uiSearchMode || !isExcludedByPrimary(v))
     .filter((v) => {
-      if (isSearching) return true;
+      if (uiSearchMode) return true;
       if (format === "short") return isShort(v);
       if (format === "long") return !isShort(v);
       return true;
@@ -123,7 +140,7 @@ const Tips = () => {
   const gridList = (() => {
     // Search mode: keep the server's view_count desc order — relevance
     // ranking would require a smarter scorer than our personalization one.
-    if (isSearching) return formatFiltered;
+    if (uiSearchMode) return formatFiltered;
     if (sort === "curated") {
       return rankTipVideosForUser(formatFiltered, profile);
     }
@@ -134,7 +151,11 @@ const Tips = () => {
       return db - da;
     });
   })();
-  const showCuratedBadge = !isSearching && sort === "curated" && curationFactors.hasSignal;
+  // Show the skeleton both during the actual network fetch and while the
+  // debounce timer is still running — otherwise the grid would briefly
+  // show stale results during the 250ms wait.
+  const isGridLoading = isLoading || isDebouncing;
+  const showCuratedBadge = !uiSearchMode && sort === "curated" && curationFactors.hasSignal;
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-20">
@@ -153,11 +174,11 @@ const Tips = () => {
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              type="search"
+              type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="제목·채널 검색 (숨긴 카테고리 포함 전체 검색)"
-              className="pl-9 pr-9 h-9 text-sm"
+              className="pl-9 pr-10 h-9 text-sm"
               aria-label="꿀팁 영상 검색"
             />
             {searchInput && (
@@ -165,15 +186,15 @@ const Tips = () => {
                 type="button"
                 onClick={() => setSearchInput("")}
                 aria-label="검색어 지우기"
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
         </div>
 
-        {!isSearching && (
+        {!uiSearchMode && (
           <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-3">
             {visibleChips.map((c) => {
               const active = category === c.slug;
@@ -196,7 +217,7 @@ const Tips = () => {
       </header>
 
       <main>
-        {!isSearching && (
+        {!uiSearchMode && (
           <section className="pt-4 pb-2">
             <div className="flex items-center gap-2 px-4 mb-3">
               <Flame className="w-5 h-5 text-rose-500 fill-rose-500" />
@@ -230,16 +251,18 @@ const Tips = () => {
           </section>
         )}
 
-        <section className={`pt-3 pb-6 ${isSearching ? "" : "border-t border-border/50"}`}>
+        <section className={`pt-3 pb-6 ${uiSearchMode ? "" : "border-t border-border/50"}`}>
           <div className="flex items-center justify-between px-4 mb-3 gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <h2 className="text-base font-bold text-foreground">
-                {isSearching ? `'${debouncedQuery}' 검색 결과` : "전체 꿀팁"}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h2 className="text-base font-bold text-foreground truncate max-w-[220px]">
+                {uiSearchMode
+                  ? `'${isDebouncing ? trimmedInput : debouncedQuery}' 검색 결과`
+                  : "전체 꿀팁"}
               </h2>
-              {isSearching ? (
-                !isLoading && (
-                  <span className="text-xs text-muted-foreground">
-                    {gridList.length}건
+              {uiSearchMode ? (
+                !isGridLoading && (
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {gridList.length}건 · 인기순
                   </span>
                 )
               ) : (
@@ -250,7 +273,7 @@ const Tips = () => {
                 )
               )}
             </div>
-            {!isSearching && (
+            {!uiSearchMode && (
               <div className="flex items-center gap-2">
                 {/* Format filter (long/short/all) */}
                 <div className="flex bg-muted rounded-full p-0.5">
@@ -288,7 +311,7 @@ const Tips = () => {
             )}
           </div>
 
-          {isLoading ? (
+          {isGridLoading ? (
             <div className="grid grid-cols-2 gap-2 px-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <TipVideoCardSkeleton key={i} />
@@ -302,7 +325,7 @@ const Tips = () => {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-12">
-              {isSearching
+              {uiSearchMode
                 ? `'${debouncedQuery}'에 맞는 영상이 없어요.`
                 : "해당 조건에 맞는 영상이 아직 없어요."}
             </p>
