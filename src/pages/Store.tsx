@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, Star, Loader2, SlidersHorizontal, ArrowLeft, Heart } from "lucide-react";
+import { ShoppingCart, Star, Loader2, SlidersHorizontal } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import HomeHeader from "@/components/home/HomeHeader";
+import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { supabase } from "@/integrations/supabase/client";
-import { useCart } from "@/hooks/useCart";
 import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
 import SortToggle, { SortMode } from "@/components/SortToggle";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 interface Product {
   id: string;
@@ -35,7 +37,6 @@ const formatPrice = (price: number) => price.toLocaleString() + "원";
 const Store = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { itemCount } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedTab, setSelectedTab] = useState<TabId>("all");
@@ -43,6 +44,18 @@ const Store = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<StoreFilters>(initialFilters);
   const [sortMode, setSortMode] = useState<SortMode>("popular");
+
+  // 결혼 스타일이 셀프인 경우 1회 한정으로 '셀프웨딩' 탭을 자동 선택.
+  // ref 로 1회 적용해서 사용자가 직접 다른 탭으로 옮겨도 다시 되돌리지 않음.
+  const { weddingSettings, isLoading: scheduleLoading } = useWeddingSchedule();
+  const didInitTabRef = useRef(false);
+  useEffect(() => {
+    if (didInitTabRef.current || scheduleLoading) return;
+    didInitTabRef.current = true;
+    if (weddingSettings.wedding_style === "self") {
+      setSelectedTab("self_wedding");
+    }
+  }, [scheduleLoading, weddingSettings.wedding_style]);
   useEffect(() => {
     const fetch = async () => {
       setIsLoading(true);
@@ -86,61 +99,41 @@ const Store = () => {
     filters.sizes.length > 0 ||
     filters.keyword !== "";
 
+  const handleCategoryTabChange = useCategoryTabNavigation();
+
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-1">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="text-lg font-bold text-foreground">듀이 스토어</h1>
-          </div>
-          <div className="flex items-center gap-1">
-            <button onClick={() => navigate("/favorites")} className="p-2">
-              <Heart className="w-5 h-5 text-foreground" />
-            </button>
-            <button onClick={() => navigate("/cart")} className="relative p-2">
-            <ShoppingCart className="w-5 h-5 text-foreground" />
-            {itemCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center min-w-[18px] h-[18px]">
-                {itemCount}
-              </span>
-            )}
-            </button>
-          </div>
-        </div>
+      <HomeHeader />
+      <CategoryTabBar activeTab="shopping" onTabChange={handleCategoryTabChange} />
 
-        {/* Tabs + Filter button */}
-        <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setSelectedTab(tab.id)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedTab === tab.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-accent"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* Tabs + Filter button */}
+      <div className="flex items-center gap-2 px-4 py-3 overflow-x-auto scrollbar-hide border-b border-border">
+        {tabs.map((tab) => (
           <button
-            onClick={() => setFilterOpen(true)}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border ${
-              hasActiveFilters
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background text-muted-foreground border-border hover:border-primary/50"
+            key={tab.id}
+            onClick={() => setSelectedTab(tab.id)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              selectedTab === tab.id
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-accent"
             }`}
           >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            필터
-            {hasActiveFilters && <span className="ml-0.5 text-[10px]">●</span>}
+            {tab.label}
           </button>
-        </div>
-      </header>
+        ))}
+        <button
+          onClick={() => setFilterOpen(true)}
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border ${
+            hasActiveFilters
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background text-muted-foreground border-border hover:border-primary/50"
+          }`}
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5" />
+          필터
+          {hasActiveFilters && <span className="ml-0.5 text-[10px]">●</span>}
+        </button>
+      </div>
 
       <main className="pb-20 px-4 py-4">
         <div className="flex justify-end mb-3">

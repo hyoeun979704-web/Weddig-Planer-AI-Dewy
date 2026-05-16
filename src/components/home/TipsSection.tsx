@@ -1,29 +1,33 @@
 import { useNavigate } from "react-router-dom";
 import { CategoryTab } from "./CategoryTabBar";
 import { TipVideoCard, TipVideoCardSkeleton } from "@/components/TipVideoCard";
-import { useTipVideos } from "@/hooks/useTipVideos";
+import { usePersonalizedTipVideos } from "@/hooks/usePersonalizedTipVideos";
+import EmptyState from "@/components/EmptyState";
+import { emptyCopy } from "@/lib/emptyCopy";
 
 const CARD_W = 120;
 
-type MagazineSectionProps = {
+type TipsSectionProps = {
   activeTab: CategoryTab;
 };
 
-export default function MagazineSection({ activeTab: _activeTab }: MagazineSectionProps) {
+export default function TipsSection({ activeTab: _activeTab }: TipsSectionProps) {
   const navigate = useNavigate();
-  const { data = [], isLoading, isError } = useTipVideos();
+  const { data, isLoading, isError, isPersonalized } = usePersonalizedTipVideos({
+    limit: 8,
+  });
 
   return (
     <section className="bg-[#fff1f4] px-5 py-6">
       <div className="mx-auto max-w-[1200px]">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[24px] font-bold leading-none text-black">
-            오늘의 꿀팁
+            {isPersonalized ? "당신을 위한 꿀팁" : "오늘의 꿀팁"}
           </h2>
 
           <button
             type="button"
-            onClick={() => navigate("/magazine")}
+            onClick={() => navigate("/tips")}
             className="text-[12px] text-black/50"
           >
             더보기
@@ -41,9 +45,7 @@ export default function MagazineSection({ activeTab: _activeTab }: MagazineSecti
             영상을 불러오지 못했어요.
           </div>
         ) : data.length === 0 ? (
-          <div className="text-[12px] text-black/50">
-            표시할 영상이 아직 없어요.
-          </div>
+          <EmptyState variant="inline" {...emptyCopy.tipsVideos} />
         ) : (
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
             {data.map((video) => (

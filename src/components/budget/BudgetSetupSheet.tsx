@@ -13,8 +13,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { regions, regionalAverages, getRegionalAvgWithMeal, categories, categoryKeys as ALL_CATEGORY_KEYS, type BudgetCategory } from "@/data/budgetData";
-import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
+import { regions, getRegionalAvgWithMeal, categories, categoryKeys as ALL_CATEGORY_KEYS, type BudgetCategory } from "@/data/budgetData";
+import { WEDDING_STYLE_LABEL, clearHiddenBudgetValues, type WeddingStyle } from "@/lib/weddingStyle";
 import { Minus, Plus, MapPin, Info, Sparkle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmt } from "@/lib/budgetFormat";
@@ -41,7 +41,16 @@ interface BudgetSetupSheetProps {
   }) => void;
 }
 
-const quickBudgets = [2000, 3000, 4000, 5000, 6000];
+// Quick-pick budget chips, in 만원. Style-aware so a self/small couple
+// isn't anchored to general-wedding numbers when they tap a chip — the
+// usual 셀프웨딩 range (300~2000만) is wildly different from a typical
+// hotel wedding (5000~10000만).
+const QUICK_BUDGETS_BY_STYLE: Record<WeddingStyle, number[]> = {
+  general: [3000, 5000, 7000, 9000, 12000],
+  small: [1500, 2500, 3500, 4500, 6000],
+  self: [500, 1000, 1500, 2000, 3000],
+  custom: [2000, 3000, 4000, 5000, 6000],
+};
 
 export default function BudgetSetupSheet({
   open, onOpenChange, initialRegion = "seoul", initialGuestCount,
@@ -53,6 +62,7 @@ export default function BudgetSetupSheet({
   // show all 10. The applyRegionalAvg logic still emits a full 10-key Record
   // so categories the user re-enables later keep their average.
   const visibleKeys = visibleCategoryKeys ?? ALL_CATEGORY_KEYS;
+  const quickBudgets = QUICK_BUDGETS_BY_STYLE[weddingStyle ?? "custom"];
   const styleDefaultGuests = weddingStyle === "small" ? 50 : 200;
   const effectiveInitialGuests = initialGuestCount ?? styleDefaultGuests;
   const emptyCatBudgets: Record<BudgetCategory, number> = {
@@ -81,25 +91,24 @@ export default function BudgetSetupSheet({
   }, [open, initialRegion, effectiveInitialGuests, initialTotalBudget, initialCategoryBudgets]);
 
   /**
-   * Apply regional averages to all category inputs, adjusting for the user's
-   * wedding style + excluded shop categories:
+   * Apply regional averages to all category inputs. Style-level adjustments
+   * (small의 venue 0.6, self의 sdm 0.15 등) are baked into
+   * getRegionalAvgWithMeal when we pass weddingStyle. This function only
+   * layers on user-specific exclusions on top:
    *
-   *  - small wedding: venue × 0.7 (가든/하우스 가정). Meal already scales
-   *    with the smaller guestCount via getRegionalAvgWithMeal.
-   *  - self / excluded sub-categories: drop sdm proportionally based on
-   *    which of studio/dress_shop/makeup_shop is excluded (each ≈ 1/3 of
-   *    sdm now that tailor_shop has its own budget row). Avoids blanket
-   *    50% cuts that misprice when only one piece is DIY.
+   *  - excluded sub-categories: drop sdm proportionally based on which of
+   *    studio/dress_shop/makeup_shop is excluded (each ≈ 1/3 of sdm now
+   *    that tailor_shop has its own budget row). Avoids blanket 50% cuts
+   *    that misprice when only one piece is DIY.
    *  - excluded tailor_shop → suit = 0
    *  - excluded hanbok → hanbok = 0
    *  - excluded honeymoon → honeymoon = 0
    *  - excluded appliance → house × 0.5 (house also covers furniture/move-in)
    */
   const applyRegionalAvg = () => {
-    const avg = getRegionalAvgWithMeal(region, guestCount);
+    const avg = getRegionalAvgWithMeal(region, guestCount, weddingStyle ?? undefined);
     if (!avg) return;
     const excludedSet = new Set(excludedCategories);
-    const isSmall = weddingStyle === "small";
 
     // sdm sub-share: studio + dress + makeup (~1/3 each after tailor_shop
     // moved out into its own 'suit' budget row).
@@ -107,11 +116,10 @@ export default function BudgetSetupSheet({
       .filter(c => excludedSet.has(c)).length * (1 / 3);
     const sdmAdjust = Math.max(0.2, 1 - sdmDrop);
 
-    const venueAdjust = isSmall ? 0.7 : 1;
     const houseAdjust = excludedSet.has("appliance") ? 0.5 : 1;
 
     const next = {
-      venue: Math.round(avg.venue * venueAdjust),
+      venue: avg.venue,
       meal: avg.meal,
       sdm: Math.round(avg.sdm * sdmAdjust),
       suit: excludedSet.has("tailor_shop") ? 0 : avg.suit,
@@ -174,7 +182,10 @@ export default function BudgetSetupSheet({
     const clamped = Math.max(50, Math.min(500, newCount));
     if (clamped === guestCount) return;
 
-    const perGuestMeal = regionalAverages[region]?.per_guest_meal;
+    // Use style-aware per_guest_meal so the sync matches the avg shown in
+    // the sheet (small wedding has a ~10% higher per-guest cost).
+    const styleAvgForRegion = getRegionalAvgWithMeal(region, 1, weddingStyle ?? undefined);
+    const perGuestMeal = styleAvgForRegion?.per_guest_meal;
     if (!perGuestMeal) {
       setGuestCount(clamped);
       return;
@@ -195,11 +206,18 @@ export default function BudgetSetupSheet({
   };
 
   const catSum = Object.values(catBudgets).reduce((a, b) => a + b, 0);
-  const avg = getRegionalAvgWithMeal(region, guestCount);
+  const avg = getRegionalAvgWithMeal(region, guestCount, weddingStyle ?? undefined);
   const hasMismatch = totalBudget > 0 && catSum !== totalBudget;
 
   const commitSave = () => {
-    onSave({ region, guest_count: guestCount, total_budget: totalBudget, category_budgets: catBudgets });
+    // Strip residue from categories the user has opted out of via wedding
+    // style. The sheet's visible chip set already hides them, but the
+    // underlying state record still carries any prior value (e.g. a 200만
+    // hanbok budget set before the user switched to a small-wedding
+    // preset). Zeroing here keeps the saved breakdown consistent with
+    // what the user actually sees and edits.
+    const cleaned = clearHiddenBudgetValues(catBudgets, visibleKeys);
+    onSave({ region, guest_count: guestCount, total_budget: totalBudget, category_budgets: cleaned });
     onOpenChange(false);
   };
 
@@ -354,13 +372,16 @@ export default function BudgetSetupSheet({
             </div>
           )}
           <div className="space-y-2">
-            {visibleKeys.map(key => (
-              <div key={key}>
+            {ALL_CATEGORY_KEYS.map(key => {
+              const isHidden = !visibleKeys.includes(key);
+              return (
+              <div key={key} className={cn(isHidden && "opacity-50")}>
                 <div className="flex items-center gap-2">
                   <span className="text-sm w-20 shrink-0">{categories[key].emoji} {categories[key].label}</span>
                   <Input type="number" inputMode="numeric" value={catBudgets[key] || ""}
                     onChange={e => setCatBudgets(prev => ({ ...prev, [key]: Number(e.target.value) }))}
-                    className="text-right text-sm h-9 no-spinner" />
+                    className="text-right text-sm h-9 no-spinner"
+                    placeholder={isHidden ? "스타일에서 제외됨 · 0 권장" : undefined} />
                   <span className="text-xs text-muted-foreground w-8">만원</span>
                 </div>
                 {key === "meal" && avg && (
@@ -376,7 +397,8 @@ export default function BudgetSetupSheet({
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
           <div className="mt-3 rounded-lg bg-yellow-50 border border-yellow-200 p-2.5 flex gap-2">
             <Info className="w-3.5 h-3.5 text-yellow-700 shrink-0 mt-0.5" />

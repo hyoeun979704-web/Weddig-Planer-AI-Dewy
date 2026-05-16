@@ -5,6 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import CategoryFilterBar from "@/components/CategoryFilterBar";
 import CategoryGrid from "@/components/CategoryGrid";
+import ExcludedCategoryBanner from "@/components/ExcludedCategoryBanner";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
@@ -25,6 +26,9 @@ const Studios = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <PageHeader title="스드메" />
       <main className="pb-20">
+        <ExcludedCategoryBanner
+          scheduleCategories={["studio", "dress_shop", "makeup_shop"]}
+        />
         <CategoryHeroBanner category="studios" />
         <CategoryFilterBar category="studios" />
         <div className="px-4 py-3">

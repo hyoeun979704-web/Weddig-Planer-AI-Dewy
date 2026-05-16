@@ -59,6 +59,12 @@ import {
 
 export interface DbHandlerContext {
   userId: string;
+  // Optional wedding-style context — when present, handlers that surface
+  // template tasks (체크리스트 등) skip categories the user has marked as
+  // not applicable so a self-wedding user doesn't get drone-fed
+  // "드레스 투어 3~4곳" suggestions.
+  weddingStyle?: string | null;
+  excludedCategories?: string[];
 }
 
 export interface DbHandlerArgs {
@@ -279,16 +285,21 @@ export const handleChecklist = async (
     }
   }
 
-  const tasks = CHECKLIST_TEMPLATE.filter(
-    (t) => Math.abs(t.daysBeforeWedding - targetDays!) <= 30,
-  ).slice(0, 8);
+  const excluded = new Set(ctx.excludedCategories ?? []);
+  const tasks = CHECKLIST_TEMPLATE
+    .filter((t) => Math.abs(t.daysBeforeWedding - targetDays!) <= 30)
+    .filter((t) => !excluded.has(t.category))
+    .slice(0, 8);
 
   if (tasks.length === 0) {
     return `**${label}** 기준으로 추천할 만한 표준 체크리스트가 없네요.\n\n자세한 시기별 가이드는 [일정 페이지](/schedule)에서 확인하실 수 있어요.`;
   }
 
+  const styleHint = ctx.weddingStyle && ctx.weddingStyle !== "general"
+    ? ` (${ctx.weddingStyle === "self" ? "셀프웨딩" : ctx.weddingStyle === "small" ? "스몰웨딩" : "맞춤"} 기준 · 제외 카테고리 반영)`
+    : "";
   const lines = tasks.map((t) => `• ${t.title}`).join("\n");
-  return `**${label}** 권장 체크리스트예요 📋\n\n${lines}\n\n전체 일정은 [일정 페이지](/schedule)에서 관리하실 수 있어요.`;
+  return `**${label}** 권장 체크리스트예요 📋${styleHint}\n\n${lines}\n\n전체 일정은 [일정 페이지](/schedule)에서 관리하실 수 있어요.`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -589,9 +600,9 @@ export const runDbHandler = async (
     case "schedule_diagnosis": return { reply: await handleScheduleDiagnosis(ctx.userId) };
     case "contract_progress": return { reply: await handleContractProgress(ctx.userId) };
     case "checklist_progress": return { reply: await handleChecklistProgress(ctx.userId) };
-    case "free_search": return { reply: await handleFreeTextSearch(userMessage) };
-    case "average_price": return { reply: await handleAveragePrice(userMessage) };
-    case "popular_places": return { reply: await handlePopularPlaces(userMessage) };
+    case "free_search": return { reply: await handleFreeTextSearch(userMessage, { weddingStyle: ctx.weddingStyle, excludedCategories: ctx.excludedCategories }) };
+    case "average_price": return { reply: await handleAveragePrice(userMessage, { weddingStyle: ctx.weddingStyle, excludedCategories: ctx.excludedCategories }) };
+    case "popular_places": return { reply: await handlePopularPlaces(userMessage, { weddingStyle: ctx.weddingStyle, excludedCategories: ctx.excludedCategories }) };
     default:
       return { reply: "요청을 처리할 수 없어요. 다시 한 번 말씀해주시겠어요?" };
   }

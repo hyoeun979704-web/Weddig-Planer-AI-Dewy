@@ -91,3 +91,34 @@ export const daysUntilWedding = (weddingDate: string | null | undefined): number
   today.setHours(0, 0, 0, 0);
   return Math.round((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 };
+
+// Tier the user uses to focus when the checklist gets dense (D-90 미만,
+// especially F-1 임산부 D-60 케이스). Computed against today, not D-day,
+// so even a D-365 user sees an actionable "이번 주" group.
+export type TaskUrgency = "past_due" | "urgent" | "this_month" | "later";
+
+export const URGENCY_LABEL: Record<TaskUrgency, string> = {
+  past_due: "지났어요",
+  urgent: "이번 주",
+  this_month: "이번 달",
+  later: "여유 있어요",
+};
+
+// Threshold at which we switch the schedule UI into compressed mode —
+// collapses "later" and "완료" sections by default to fight the 30+ item
+// overwhelm reported by F-1 (임산부 D-60) and F-2 (D-110).
+export const COMPRESSION_DDAY_THRESHOLD = 90;
+
+export const getTaskUrgency = (
+  scheduledDate: string,
+  today: Date = new Date(),
+): TaskUrgency => {
+  const target = parseLocalDate(scheduledDate);
+  const base = new Date(today);
+  base.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((target.getTime() - base.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return "past_due";
+  if (diffDays <= 7) return "urgent";
+  if (diffDays <= 30) return "this_month";
+  return "later";
+};

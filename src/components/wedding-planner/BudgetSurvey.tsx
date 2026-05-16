@@ -1,17 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SurveyModal from "./SurveyModal";
 import { REGIONS } from "./constants";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Gem, Check } from "lucide-react";
+import { CalendarIcon, Gem, Check, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+export interface BudgetSurveyPrefill {
+  totalBudget?: number;       // 만원
+  region?: string;             // long-form label, e.g. "서울특별시"
+  weddingDate?: string;        // YYYY-MM-DD
+}
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: any) => void;
+  /** Values pulled from the user's saved wedding profile / budget settings.
+   *  Pre-fills the corresponding fields so the user doesn't re-enter data
+   *  that already lives in Schedule or Budget. The user can still edit. */
+  prefill?: BudgetSurveyPrefill;
 }
 
 const BUDGET_ITEMS = ["웨딩홀/예식장", "스드메 (스튜디오/드레스/메이크업)", "허니문", "예물 (반지/시계 등)", "예단/혼수", "신혼집", "기타 (청첩장/답례품/꽃장식 등)"];
@@ -22,7 +32,7 @@ const getSeason = (date: Date) => {
   return (m >= 3 && m <= 5) || (m >= 9 && m <= 11) ? "성수기" : "비수기";
 };
 
-const BudgetSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
+const BudgetSurvey = ({ isOpen, onClose, onSubmit, prefill }: Props) => {
   const [step, setStep] = useState<"lock" | "form">("lock");
   const [totalBudget, setTotalBudget] = useState("");
   const [items, setItems] = useState<Record<string, string>>({});
@@ -32,6 +42,54 @@ const BudgetSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const [supportAmount, setSupportAmount] = useState("");
   const [priorities, setPriorities] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+  // Track which fields were auto-filled from saved profile so we can show a
+  // subtle "이미 등록한 정보예요" badge — gives the user confidence the data
+  // came from their existing settings, not a hardcoded default.
+  const [autofilled, setAutofilled] = useState<Record<string, boolean>>({});
+
+  // Hydrate from prefill whenever the modal opens. We re-run on every open
+  // (not just first mount) so reopening after a Schedule edit picks up
+  // newly-saved values without remounting.
+  //
+  // We also fully reset transient state (items/support/supportAmount/
+  // priorities) on every open — previously these persisted across modal
+  // open/close cycles which meant a user who typed per-category amounts,
+  // closed the modal, then reopened it would carry stale numbers into
+  // their next AI request without realizing. Prefilled fields get
+  // (re-)set inside this block; everything else starts blank.
+  useEffect(() => {
+    if (!isOpen) return;
+    setItems({});
+    setSupport("");
+    setSupportAmount("");
+    setPriorities([]);
+    const filled: Record<string, boolean> = {};
+    if (prefill?.totalBudget && prefill.totalBudget > 0) {
+      setTotalBudget(String(prefill.totalBudget));
+      filled.totalBudget = true;
+    } else {
+      setTotalBudget("");
+    }
+    if (prefill?.region && (REGIONS as readonly string[]).includes(prefill.region)) {
+      setRegion(prefill.region);
+      filled.region = true;
+    } else {
+      setRegion("");
+    }
+    if (prefill?.weddingDate) {
+      const d = new Date(prefill.weddingDate);
+      if (!isNaN(d.getTime())) {
+        setDate(d);
+        filled.date = true;
+      } else {
+        setDate(undefined);
+      }
+    } else {
+      setDate(undefined);
+    }
+    setAutofilled(filled);
+    setErrors({});
+  }, [isOpen, prefill?.totalBudget, prefill?.region, prefill?.weddingDate]);
 
   const togglePriority = (p: string) => {
     setPriorities(prev => {
@@ -59,6 +117,9 @@ const BudgetSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
       items,
       region,
       date: format(date!, "yyyy년 M월 d일"),
+      // ISO form so AIPlanner can mirror the date into user_wedding_settings
+      // (and into the savable budget plan, which applyBudgetPlan persists).
+      dateISO: format(date!, "yyyy-MM-dd"),
       season,
       support,
       supportAmount,
@@ -77,6 +138,15 @@ const BudgetSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const reqMark = <span className="text-red-500 ml-0.5">*</span>;
   const errorCls = (f: string) => errors[f] ? "border-red-400" : "";
   const helperText = (f: string) => errors[f] ? <p className="text-xs text-red-500 mt-1">필수 입력 항목입니다</p> : null;
+  // Sparkle pill rendered next to a label when we pulled the field's value
+  // from the saved wedding/budget profile. Keeps it lightweight — full
+  // dismissable banners felt too heavy when 3 fields might be auto-filled.
+  const prefillBadge = (field: string) =>
+    autofilled[field] ? (
+      <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] text-[#C9A96E] font-medium align-middle">
+        <Sparkles className="w-3 h-3" /> 자동 채움
+      </span>
+    ) : null;
 
   const season = date ? getSeason(date) : null;
 
@@ -106,7 +176,7 @@ const BudgetSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
         ) : (
           <motion.div key="form" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-5">
             <div>
-              <label className={labelCls}>총 결혼 준비 예산 {reqMark}</label>
+              <label className={labelCls}>총 결혼 준비 예산 {reqMark}{prefillBadge("totalBudget")}</label>
               <div className="relative">
                 <input type="number" value={totalBudget} onChange={e => setTotalBudget(e.target.value)} placeholder="예: 5000" className={cn("w-full px-3 py-2.5 border rounded-xl text-sm pr-12", errorCls("totalBudget"))} />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">만원</span>
@@ -131,7 +201,7 @@ const BudgetSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
             </div>
 
             <div>
-              <label className={labelCls}>예식 지역 {reqMark}</label>
+              <label className={labelCls}>예식 지역 {reqMark}{prefillBadge("region")}</label>
               <select value={region} onChange={e => setRegion(e.target.value)} className={cn("w-full px-3 py-2.5 border rounded-xl text-sm bg-white", errorCls("region"))}>
                 <option value="">선택해주세요</option>
                 {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
@@ -140,7 +210,7 @@ const BudgetSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
             </div>
 
             <div>
-              <label className={labelCls}>결혼 예정일 {reqMark}</label>
+              <label className={labelCls}>결혼 예정일 {reqMark}{prefillBadge("date")}</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <button className={cn("w-full flex items-center gap-2 px-3 py-2.5 border rounded-xl text-sm text-left", !date && "text-gray-400", errorCls("date"))}>

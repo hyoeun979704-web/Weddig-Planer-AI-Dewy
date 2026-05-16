@@ -99,7 +99,7 @@ export function TipVideoCard({ video, width, rank }: TipVideoCardProps) {
           </p>
           {subCategoryLabels.length > 0 && (
             <p className="mt-1 line-clamp-1 h-[10px] text-[8px] leading-none text-[hsl(353,75%,55%)]/85">
-              {subCategoryLabels.map((t) => `#${t}`).join(" ")}
+              {subCategoryLabels.join(" · ")}
             </p>
           )}
           {keywordTags.length > 0 && (

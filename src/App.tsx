@@ -1,5 +1,7 @@
 import { lazy, Suspense } from "react";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
+import SessionTracker from "@/components/SessionTracker";
+import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -29,9 +31,7 @@ const Venues = lazy(() => import("./pages/Venues"));
 const VenueDetail = lazy(() => import("./pages/VenueDetail"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Store = lazy(() => import("./pages/Store"));
-const More = lazy(() => import("./pages/More"));
-const Magazine = lazy(() => import("./pages/Magazine"));
-const Reviews = lazy(() => import("./pages/Reviews"));
+const Tips = lazy(() => import("./pages/Tips"));
 const Gallery = lazy(() => import("./pages/Gallery"));
 const AIPlanner = lazy(() => import("./pages/AIPlanner"));
 const Budget = lazy(() => import("./pages/Budget"));
@@ -53,6 +53,7 @@ const Referral = lazy(() => import("./pages/Referral"));
 const Coupons = lazy(() => import("./pages/Coupons"));
 const Orders = lazy(() => import("./pages/Orders"));
 const MySchedule = lazy(() => import("./pages/MySchedule"));
+const Guests = lazy(() => import("./pages/Guests"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const MyInquiries = lazy(() => import("./pages/MyInquiries"));
@@ -96,6 +97,9 @@ const InfluencerDetail = lazy(() => import("./pages/InfluencerDetail"));
 const Deals = lazy(() => import("./pages/Deals"));
 const DealDetail = lazy(() => import("./pages/DealDetail"));
 
+// 진행중 이벤트 모음 (가입 혜택·미션·초대 등)
+const Events = lazy(() => import("./pages/Events"));
+
 // 기능 4: 쇼핑 결제 플로우
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const Cart = lazy(() => import("./pages/Cart"));
@@ -128,6 +132,7 @@ const App = () => (
       <AuthProvider>
         <TooltipProvider>
         <PWAUpdatePrompt />
+        <SessionTracker />
         <WeddingBlessingSplash />
         <Toaster />
         <Sonner />
@@ -155,9 +160,8 @@ const App = () => (
               <Route path="/venue/:id" element={<VenueDetail />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/store" element={<Store />} />
-              <Route path="/more" element={<More />} />
-              <Route path="/magazine" element={<Magazine />} />
-              <Route path="/reviews" element={<Reviews />} />
+              <Route path="/tips" element={<Tips />} />
+              <Route path="/magazine" element={<Navigate to="/tips" replace />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/ai-planner" element={<AIPlanner />} />
               <Route path="/budget" element={<Budget />} />
@@ -179,6 +183,7 @@ const App = () => (
               <Route path="/coupons" element={<Coupons />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/my-schedule" element={<MySchedule />} />
+              <Route path="/guests" element={<Guests />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/my-inquiries" element={<MyInquiries />} />
@@ -207,6 +212,7 @@ const App = () => (
               {/* 기능 3: 업체 제휴 혜택 */}
               <Route path="/deals" element={<Deals />} />
               <Route path="/deals/:id" element={<DealDetail />} />
+              <Route path="/events" element={<Events />} />
 
               {/* 기능 4: 쇼핑 결제 플로우 */}
               <Route path="/store/:id" element={<ProductDetail />} />
@@ -250,6 +256,9 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          {/* First-time tutorial welcome sheet — uses useNavigate so it
+              must live inside BrowserRouter. Self-gates on user + onboarding. */}
+          <TutorialWelcomeSheet />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

@@ -26,6 +26,7 @@ import {
 import BudgetSetupSheet from "@/components/budget/BudgetSetupSheet";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import PayBalanceSheet from "@/components/budget/PayBalanceSheet";
+import PartnerLinkCard from "@/components/partner/PartnerLinkCard";
 import BudgetReportSheet from "@/components/premium/BudgetReportSheet";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
@@ -66,8 +67,8 @@ const Budget = () => {
   const { user } = useAuth();
   const { defaultRegion } = useDefaultRegion();
   const profileRegionKey = resolveRegionKey(defaultRegion);
-  const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem } = useBudget(profileRegionKey);
   const { weddingSettings, scheduleItems } = useWeddingSchedule();
+  const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem } = useBudget(profileRegionKey, weddingSettings.wedding_style);
   // Sheets get the filtered list; main page itself iterates all 10 with
   // dimming for hidden ones (visible without forcing edits).
   const visibleSheetCategories = visibleBudgetCategories(weddingSettings.excluded_categories || []) as BudgetCategory[];
@@ -282,7 +283,7 @@ const Budget = () => {
         title: `${item.title} 잔금`,
         amount: item.balance_amount,
         paid_by: item.paid_by,
-        payment_stage: "full",
+        payment_stage: "balance",
         payment_method: payload.paymentMethod,
         item_date: payload.payDate,
         memo: payload.memo,
@@ -575,6 +576,10 @@ const Budget = () => {
           </div>
         )}
 
+        {/* Partner link — surfaces here because 양가 분담 is the budget-side
+            payoff of linking. Hidden for guests (the login overlay covers them). */}
+        <PartnerLinkCard variant="budget" hideWhenLoggedOut />
+
         {/* Paid-by bar — whole card is clickable to open the simulator */}
         {paidTotal > 0 ? (
           <button
@@ -643,10 +648,15 @@ const Budget = () => {
             {[...categoryKeys]
               .map(key => {
                 const spent = summary.categoryTotals[key] || 0;
-                const budget = catBudgets[key] || 0;
+                const rawBudget = catBudgets[key] || 0;
+                const dimmed = dimmedBudgetCategories.has(key) && spent === 0;
+                // Hide stale budget residue on dimmed (fully-excluded with
+                // no spend) rows — the next save through BudgetSetupSheet
+                // zeros these in the DB; this keeps the display in sync
+                // in the meantime instead of showing "0 / 200만원".
+                const budget = dimmed ? 0 : rawBudget;
                 const catPct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
                 const over = spent > budget && budget > 0;
-                const dimmed = dimmedBudgetCategories.has(key) && spent === 0;
                 return { key, spent, budget, catPct, over, dimmed };
               })
               .sort((a, b) => {
@@ -824,7 +834,7 @@ const Budget = () => {
       <BudgetSetupSheet
         open={setupOpen} onOpenChange={setSetupOpen}
         initialRegion={settings?.region || profileRegionKey}
-        initialGuestCount={settings?.guest_count}
+        initialGuestCount={settings?.guest_count ?? weddingSettings.guest_count ?? undefined}
         initialTotalBudget={settings?.total_budget}
         initialCategoryBudgets={settings?.category_budgets}
         weddingStyle={weddingSettings.wedding_style}

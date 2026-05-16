@@ -39,7 +39,11 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
         </p>
       )}
 
-      {/* Presets */}
+      {/* Presets — inactive buttons use bg-gray-50 so they don't disappear
+          into the surrounding white modal background. When the user toggles
+          a category checkbox, inferStyleFromExclusions returns "custom" and
+          all 3 preset buttons drop their active state simultaneously; with
+          bg-white they previously rendered as ghost-like empty rectangles. */}
       <div className="grid grid-cols-3 gap-2">
         {presetOrder.map((p) => {
           const preset = WEDDING_STYLE_PRESETS[p];
@@ -50,43 +54,54 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
               type="button"
               onClick={() => handlePreset(p)}
               className={cn(
-                "px-3 py-2.5 rounded-xl border text-left transition-colors",
-                isActive ? "border-primary bg-primary/5" : "border-gray-200 bg-white hover:border-gray-300"
+                "px-3 py-2.5 rounded-xl border-2 text-left transition-colors",
+                isActive
+                  ? "border-primary bg-primary/10"
+                  : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white"
               )}
             >
-              <p className={cn("text-sm font-semibold", isActive ? "text-primary" : "text-gray-800")}>{preset.label}</p>
+              <p className={cn("text-sm font-semibold", isActive ? "text-primary" : "text-gray-700")}>{preset.label}</p>
             </button>
           );
         })}
       </div>
-      {style && (
+      {style === "custom" && (
+        <p className="text-[11px] text-primary flex items-center gap-1">
+          <span className="font-bold">✨ 직접 선택</span>
+          <span className="text-gray-500">· 카테고리를 골라 직접 조합하셨어요</span>
+        </p>
+      )}
+      {style && style !== "custom" && (
         <p className="text-[11px] text-gray-500">
-          {style === "custom" ? "직접 선택한 조합이에요" : WEDDING_STYLE_PRESETS[style].description}
+          {WEDDING_STYLE_PRESETS[style].description}
         </p>
       )}
 
-      {/* Category checklist */}
+      {/* Category checklist — uses <button role=checkbox> instead of a real
+          <input type=checkbox sr-only>. iOS Safari was scrolling the hidden
+          input into view on focus, which broke the fixed modal's layout
+          (modal shrank to a slit at the top with a white area covering most
+          of the screen, as if a keyboard-accessory bar fixed itself over the
+          content). A button doesn't trigger that scroll-into-view path. */}
       <div className="space-y-1.5">
         <p className="text-xs font-semibold text-gray-700">제외할 카테고리</p>
         {SKIPPABLE_CATEGORIES.map((cat) => {
           const meta = CATEGORY_LABELS[cat];
           const isExcluded = excluded.includes(cat);
           return (
-            <label
+            <button
               key={cat}
+              type="button"
+              role="checkbox"
+              aria-checked={isExcluded}
+              onClick={() => handleCategoryToggle(cat)}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 border rounded-xl cursor-pointer transition-colors",
+                "w-full flex items-center gap-3 px-3 py-2.5 border rounded-xl text-left transition-colors active:scale-[0.99]",
                 isExcluded
                   ? "border-primary bg-primary/15"
-                  : "border-gray-200 bg-white hover:border-gray-300"
+                  : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white"
               )}
             >
-              <input
-                type="checkbox"
-                checked={isExcluded}
-                onChange={() => handleCategoryToggle(cat)}
-                className="sr-only"
-              />
               <span
                 className={cn(
                   "w-5 h-5 rounded border-2 flex items-center justify-center shrink-0",
@@ -105,7 +120,7 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
               {isExcluded && (
                 <span className="text-[10px] font-bold text-primary uppercase tracking-wide shrink-0">제외됨</span>
               )}
-            </label>
+            </button>
           );
         })}
       </div>

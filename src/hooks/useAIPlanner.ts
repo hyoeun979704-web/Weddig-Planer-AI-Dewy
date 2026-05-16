@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { supabase } from "@/integrations/supabase/client";
 import { matchIntent } from "@/lib/chatbot/intentRouter";
 import { runDbHandler } from "@/lib/chatbot/dbHandlers";
@@ -14,6 +15,8 @@ import {
   type SdmeParams,
   type TimelineParams,
   type BudgetParams,
+  type SavableBudgetPlan,
+  type SavableTimelinePlan,
 } from "@/lib/chatbot/handlers/quickQuestionHandlers";
 
 export type StructuredHandler =
@@ -22,7 +25,20 @@ export type StructuredHandler =
   | { kind: "timeline"; params: TimelineParams }
   | { kind: "budget"; params: BudgetParams };
 
-type Message = { role: "user" | "assistant"; content: string };
+/**
+ * Optional structured plan attached to an assistant message. AIPlanner uses
+ * it to render an "내 예산/일정에 저장하기" CTA below the bubble so the user
+ * can apply the AI's recommendation to their real data with one tap.
+ */
+export type AssistantMessagePlan =
+  | { kind: "budget"; data: SavableBudgetPlan }
+  | { kind: "timeline"; data: SavableTimelinePlan };
+
+export type Message = {
+  role: "user" | "assistant";
+  content: string;
+  plan?: AssistantMessagePlan;
+};
 
 const CHAT_URL = `${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/ai-planner`;
 
@@ -33,6 +49,7 @@ export const useAIPlanner = () => {
   const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
 
   const sendMessage = useCallback(async (input: string) => {
     const userMsg: Message = { role: "user", content: input };
@@ -69,7 +86,11 @@ export const useAIPlanner = () => {
         if (intent.dbHandler && user) {
           const result = await runDbHandler(
             intent.dbHandler,
-            { userId: user.id },
+            {
+              userId: user.id,
+              weddingStyle: weddingSettings.wedding_style,
+              excludedCategories: weddingSettings.excluded_categories,
+            },
             input,
             intent.args,
           );
@@ -119,16 +140,29 @@ export const useAIPlanner = () => {
 
       // 게이트가 추출한 컨텍스트(B+C 하이브리드)가 있다면 시스템 메시지로 주입.
       // LLM이 이 정보를 활용해 자연어로 정리한 답변을 만든다.
-      const messagesToSend: Message[] = llmContextInjection
-        ? [
-            {
-              role: "user",
+      // wedding_style 이 세팅돼 있고 일반이 아닐 땐 페르소나 힌트를 상시 주입해
+      // 셀프/스몰 사용자가 일반 결혼 어휘로 답변받지 않게 한다.
+      const personaContext = (() => {
+        const style = weddingSettings.wedding_style;
+        const excluded = weddingSettings.excluded_categories ?? [];
+        if (!style || style === "general") return null;
+        const styleLabel = style === "self" ? "셀프웨딩" : style === "small" ? "스몰웨딩" : "맞춤형 결혼식";
+        const excludedLabel = excluded.length > 0 ? ` 제외 카테고리: ${excluded.join(", ")}.` : "";
+        return `[페르소나] 사용자는 ${styleLabel}을 준비 중이에요.${excludedLabel} 추천·체크리스트·예산 안내는 이 페르소나에 맞춰 답변해주세요. 제외 카테고리에 해당하는 업체/일정은 추천에서 빼주세요.`;
+      })();
+      const messagesToSend: Message[] = [
+        ...(personaContext
+          ? [{ role: "user" as const, content: personaContext }]
+          : []),
+        ...(llmContextInjection
+          ? [{
+              role: "user" as const,
               content: `[참고 컨텍스트 - 사용자 데이터에서 추출됨, 이 정보를 자연스럽게 활용해 답변해주세요]\n${llmContextInjection}`,
-            },
-            ...messages,
-            userMsg,
-          ]
-        : [...messages, userMsg];
+            }]
+          : []),
+        ...messages,
+        userMsg,
+      ];
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -260,7 +294,7 @@ export const useAIPlanner = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, toast, user]);
+  }, [messages, toast, user, weddingSettings.wedding_style, weddingSettings.excluded_categories]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -280,21 +314,32 @@ export const useAIPlanner = () => {
 
     try {
       let reply: string;
+      let plan: AssistantMessagePlan | undefined;
       switch (handler.kind) {
-        case "venue":
-          reply = await handleVenueRecommendation(handler.params);
+        case "venue": {
+          const r = await handleVenueRecommendation(handler.params);
+          reply = r.text;
           break;
-        case "sdme":
-          reply = await handleSdmeGuide(handler.params);
+        }
+        case "sdme": {
+          const r = await handleSdmeGuide(handler.params);
+          reply = r.text;
           break;
-        case "timeline":
-          reply = await handleTimelinePlanning(handler.params);
+        }
+        case "timeline": {
+          const r = await handleTimelinePlanning(handler.params);
+          reply = r.text;
+          if (r.plan) plan = { kind: "timeline", data: r.plan };
           break;
-        case "budget":
-          reply = await handleBudgetPlanning(handler.params);
+        }
+        case "budget": {
+          const r = await handleBudgetPlanning(handler.params);
+          reply = r.text;
+          if (r.plan) plan = { kind: "budget", data: r.plan };
           break;
+        }
       }
-      setMessages(prev => [...prev, { role: "assistant", content: reply }]);
+      setMessages(prev => [...prev, { role: "assistant", content: reply, plan }]);
     } catch (e) {
       console.error("Structured handler error:", e);
       toast({

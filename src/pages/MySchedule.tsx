@@ -1,15 +1,24 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2, Pencil, X, Save, Settings2 } from "lucide-react";
+import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2, Pencil, X, Save, Settings2, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { trackEvent } from "@/lib/track";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useWeddingSchedule, type ScheduleItem } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
-import { CATEGORY_OPTIONS, daysUntilWedding, parseLocalDate } from "@/lib/schedule";
+import {
+  CATEGORY_OPTIONS,
+  COMPRESSION_DDAY_THRESHOLD,
+  daysUntilWedding,
+  getTaskUrgency,
+  parseLocalDate,
+  URGENCY_LABEL,
+  type TaskUrgency,
+} from "@/lib/schedule";
 import {
   CATEGORY_LABELS,
   WEDDING_STYLE_LABEL,
@@ -17,6 +26,14 @@ import {
   type SkippableCategory,
 } from "@/lib/weddingStyle";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
+
+const URGENCY_ORDER: TaskUrgency[] = ["past_due", "urgent", "this_month", "later"];
+const URGENCY_STYLE: Record<TaskUrgency, { dot: string; chip: string; emoji: string }> = {
+  past_due: { dot: "bg-destructive", chip: "bg-destructive/10 text-destructive", emoji: "🚨" },
+  urgent: { dot: "bg-orange-500", chip: "bg-orange-100 text-orange-700", emoji: "🔴" },
+  this_month: { dot: "bg-yellow-500", chip: "bg-yellow-100 text-yellow-800", emoji: "🟡" },
+  later: { dot: "bg-muted-foreground/50", chip: "bg-muted text-muted-foreground", emoji: "⚪" },
+};
 
 const MySchedule = () => {
   const navigate = useNavigate();
@@ -115,6 +132,56 @@ const MySchedule = () => {
     i => !isHiddenByExclusion(i.category, weddingSettings.excluded_categories)
   );
   const hiddenCount = scheduleItems.length - visibleItems.length;
+
+  // Compression mode kicks in inside the last 90 days — at that point the
+  // 30+ template items create overwhelm (F-1 임산부 D-60 페르소나). We group
+  // by urgency tier and default-collapse the long-tail "여유 일정" / "완료"
+  // sections. Users can still expand them.
+  const isCompressionMode =
+    days !== null && days >= 0 && days < COMPRESSION_DDAY_THRESHOLD;
+
+  const groups = useMemo(() => {
+    const today = new Date();
+    const open: Record<TaskUrgency, ScheduleItem[]> = {
+      past_due: [],
+      urgent: [],
+      this_month: [],
+      later: [],
+    };
+    const completed: ScheduleItem[] = [];
+    for (const item of visibleItems) {
+      if (item.completed) {
+        completed.push(item);
+        continue;
+      }
+      const tier = getTaskUrgency(item.scheduled_date, today);
+      open[tier].push(item);
+    }
+    for (const tier of URGENCY_ORDER) {
+      open[tier].sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date));
+    }
+    completed.sort((a, b) => b.scheduled_date.localeCompare(a.scheduled_date));
+    return { open, completed };
+  }, [visibleItems]);
+
+  // User overrides take precedence; otherwise default-collapse "later" when
+  // in compression mode and always default-collapse "completed".
+  const [collapseOverride, setCollapseOverride] = useState<Record<string, boolean>>({});
+  const isSectionCollapsed = (key: "later" | "completed") => {
+    if (key in collapseOverride) return collapseOverride[key];
+    if (key === "later") return isCompressionMode;
+    return true; // completed
+  };
+  const toggleSection = (key: "later" | "completed") => {
+    const nextCollapsed = !isSectionCollapsed(key);
+    setCollapseOverride((prev) => ({ ...prev, [key]: nextCollapsed }));
+    trackEvent("schedule_compression_toggle", {
+      section: key,
+      collapsed: nextCollapsed,
+      compression_mode: isCompressionMode,
+      days_until_wedding: days,
+    });
+  };
 
   if (!user) {
     return (
@@ -293,7 +360,22 @@ const MySchedule = () => {
 
         {/* Schedule List */}
         <div className="p-4">
-          <h2 className="font-bold text-foreground mb-4">웨딩 체크리스트</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-foreground">웨딩 체크리스트</h2>
+            {isCompressionMode && (
+              <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 bg-primary/10 text-primary rounded-full font-semibold">
+                <Zap className="w-3 h-3" /> 압축 모드
+              </span>
+            )}
+          </div>
+
+          {isCompressionMode && (
+            <p className="text-[12px] text-muted-foreground mb-3 leading-snug">
+              결혼식까지 90일 미만이라 급한 일정 위주로 보여드려요. 여유 일정은
+              섹션을 눌러 펼칠 수 있어요.
+            </p>
+          )}
+
           {visibleItems.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -301,100 +383,102 @@ const MySchedule = () => {
               <p className="text-xs">위에서 새 일정을 추가해보세요</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {visibleItems.map((item) => (
-                <div
-                  key={item.id}
-                  className={`p-4 bg-card rounded-xl border border-border ${
-                    item.completed ? "opacity-60" : ""
-                  }`}
-                >
-                  {editingItem?.id === item.id ? (
-                    /* Edit Mode */
-                    <div className="space-y-2">
-                      <Input
-                        value={editingItem.title}
-                        onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                        placeholder="일정 제목"
-                      />
-                      <Select 
-                        value={editingItem.category} 
-                        onValueChange={(v) => setEditingItem({ ...editingItem, category: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORY_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        type="date"
-                        value={editingItem.scheduled_date}
-                        onChange={(e) => setEditingItem({ ...editingItem, scheduled_date: e.target.value })}
-                      />
-                      <div className="flex gap-2 pt-2">
-                        <Button 
-                          onClick={handleSaveEdit} 
-                          size="sm" 
-                          disabled={isSaving || !editingItem.title.trim()}
-                          className="flex-1"
-                        >
-                          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-1" /> 저장</>}
-                        </Button>
-                        <Button onClick={handleCancelEdit} size="sm" variant="outline">
-                          <X className="w-4 h-4" />
-                        </Button>
+            <div className="space-y-5">
+              {URGENCY_ORDER.map((tier) => {
+                const items = groups.open[tier];
+                if (items.length === 0) return null;
+                const isLater = tier === "later";
+                const collapsed = isLater && isSectionCollapsed("later");
+                const meta = URGENCY_STYLE[tier];
+                return (
+                  <section key={tier}>
+                    <button
+                      type="button"
+                      onClick={() => isLater && toggleSection("later")}
+                      disabled={!isLater}
+                      className="w-full flex items-center justify-between mb-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${meta.dot}`} aria-hidden />
+                        <span className="text-sm font-semibold text-foreground">
+                          {URGENCY_LABEL[tier]}
+                        </span>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${meta.chip}`}>
+                          {items.length}
+                        </span>
                       </div>
+                      {isLater && (
+                        <span className="text-muted-foreground">
+                          {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                        </span>
+                      )}
+                    </button>
+                    {!collapsed && (
+                      <div className="space-y-2">
+                        {items.map((item) =>
+                          renderItem({
+                            item,
+                            editingItem,
+                            setEditingItem,
+                            handleSaveEdit,
+                            handleCancelEdit,
+                            isSaving,
+                            toggleItemCompletion,
+                            deleteScheduleItem,
+                            handleStartEdit,
+                            getCategoryLabel,
+                            urgency: tier,
+                          })
+                        )}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
+
+              {groups.completed.length > 0 && (
+                <section>
+                  <button
+                    type="button"
+                    onClick={() => toggleSection("completed")}
+                    className="w-full flex items-center justify-between mb-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-primary/50" aria-hidden />
+                      <span className="text-sm font-semibold text-foreground">완료</span>
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-full font-semibold bg-primary/10 text-primary">
+                        {groups.completed.length}
+                      </span>
                     </div>
-                  ) : (
-                    /* View Mode */
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => toggleItemCompletion(item.id)}
-                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                          item.completed
-                            ? "bg-primary border-primary"
-                            : "border-muted-foreground"
-                        }`}
-                      >
-                        {item.completed && <Check className="w-4 h-4 text-primary-foreground" />}
-                      </button>
-                      <div className="flex-1">
-                        <p className={`font-medium text-sm ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                          {item.title}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-muted-foreground">
-                            {format(parseLocalDate(item.scheduled_date), "yyyy.M.d (EEE)", { locale: ko })}
-                          </p>
-                          {item.category && item.category !== "general" && (
-                            <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-                              {getCategoryLabel(item.category)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleStartEdit(item)}
-                        className="p-2 text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteScheduleItem(item.id)}
-                        className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <span className="text-muted-foreground">
+                      {isSectionCollapsed("completed") ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronUp className="w-4 h-4" />
+                      )}
+                    </span>
+                  </button>
+                  {!isSectionCollapsed("completed") && (
+                    <div className="space-y-2">
+                      {groups.completed.map((item) =>
+                        renderItem({
+                          item,
+                          editingItem,
+                          setEditingItem,
+                          handleSaveEdit,
+                          handleCancelEdit,
+                          isSaving,
+                          toggleItemCompletion,
+                          deleteScheduleItem,
+                          handleStartEdit,
+                          getCategoryLabel,
+                          urgency: null,
+                        })
+                      )}
                     </div>
                   )}
-                </div>
-              ))}
+                </section>
+              )}
             </div>
           )}
         </div>
@@ -406,5 +490,141 @@ const MySchedule = () => {
     </div>
   );
 };
+
+interface RenderItemArgs {
+  item: ScheduleItem;
+  editingItem: {
+    id: string;
+    title: string;
+    scheduled_date: string;
+    category: string;
+  } | null;
+  setEditingItem: (v: RenderItemArgs["editingItem"]) => void;
+  handleSaveEdit: () => Promise<void>;
+  handleCancelEdit: () => void;
+  isSaving: boolean;
+  toggleItemCompletion: (id: string) => Promise<boolean | void>;
+  deleteScheduleItem: (id: string) => Promise<boolean | void>;
+  handleStartEdit: (item: ScheduleItem) => void;
+  getCategoryLabel: (cat: string) => string;
+  urgency: TaskUrgency | null;
+}
+
+function renderItem({
+  item,
+  editingItem,
+  setEditingItem,
+  handleSaveEdit,
+  handleCancelEdit,
+  isSaving,
+  toggleItemCompletion,
+  deleteScheduleItem,
+  handleStartEdit,
+  getCategoryLabel,
+  urgency,
+}: RenderItemArgs) {
+  const dot = urgency ? URGENCY_STYLE[urgency].dot : "bg-primary/40";
+  if (editingItem?.id === item.id) {
+    return (
+      <div key={item.id} className="p-4 bg-card rounded-xl border border-border space-y-2">
+        <Input
+          value={editingItem.title}
+          onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+          placeholder="일정 제목"
+        />
+        <Select
+          value={editingItem.category}
+          onValueChange={(v) => setEditingItem({ ...editingItem, category: v })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {CATEGORY_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          type="date"
+          value={editingItem.scheduled_date}
+          onChange={(e) =>
+            setEditingItem({ ...editingItem, scheduled_date: e.target.value })
+          }
+        />
+        <div className="flex gap-2 pt-2">
+          <Button
+            onClick={handleSaveEdit}
+            size="sm"
+            disabled={isSaving || !editingItem.title.trim()}
+            className="flex-1"
+          >
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-1" /> 저장
+              </>
+            )}
+          </Button>
+          <Button onClick={handleCancelEdit} size="sm" variant="outline">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div
+      key={item.id}
+      className={`p-4 bg-card rounded-xl border border-border flex items-center gap-3 ${
+        item.completed ? "opacity-60" : ""
+      }`}
+    >
+      <span className={`w-1.5 self-stretch rounded-full ${dot}`} aria-hidden />
+      <button
+        onClick={() => toggleItemCompletion(item.id)}
+        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
+          item.completed ? "bg-primary border-primary" : "border-muted-foreground"
+        }`}
+      >
+        {item.completed && <Check className="w-4 h-4 text-primary-foreground" />}
+      </button>
+      <div className="flex-1 min-w-0">
+        <p
+          className={`font-medium text-sm ${
+            item.completed ? "line-through text-muted-foreground" : "text-foreground"
+          }`}
+        >
+          {item.title}
+        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground">
+            {format(parseLocalDate(item.scheduled_date), "yyyy.M.d (EEE)", { locale: ko })}
+          </p>
+          {item.category && item.category !== "general" && (
+            <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+              {getCategoryLabel(item.category)}
+            </span>
+          )}
+        </div>
+      </div>
+      <button
+        onClick={() => handleStartEdit(item)}
+        className="p-2 text-muted-foreground hover:text-primary transition-colors"
+      >
+        <Pencil className="w-4 h-4" />
+      </button>
+      <button
+        onClick={() => deleteScheduleItem(item.id)}
+        className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
 
 export default MySchedule;

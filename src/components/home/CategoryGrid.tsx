@@ -64,10 +64,10 @@ const CategoryGrid = () => {
     },
     {
       icon: BookOpen,
-      title: "매거진·콘텐츠",
+      title: "꿀팁·콘텐츠",
       description: "웨딩 트렌드 & 팁",
       color: "bg-emerald-100 text-emerald-500",
-      onClick: () => {},
+      onClick: () => navigate("/tips"),
     },
   ];
 

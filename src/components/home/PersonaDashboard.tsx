@@ -1,0 +1,282 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { trackEvent } from "@/lib/track";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
+import { ArrowRight, BookOpen, Check, Flame, Sparkles, Timer } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { usePersonaInsights } from "@/hooks/usePersonaInsights";
+import { useDailyStreak } from "@/hooks/useDailyStreak";
+import { useSessionTimer } from "@/hooks/useSessionTimer";
+import { useTutorialProgress } from "@/hooks/useTutorialProgress";
+import {
+  loadMissionProgress,
+  markMissionComplete,
+  type PersonaMission,
+} from "@/data/personaMissions";
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  wedding_hall: "🏛️",
+  studio: "📸",
+  dress_shop: "👗",
+  makeup_shop: "💄",
+  hanbok: "👘",
+  tailor_shop: "🤵",
+  honeymoon: "✈️",
+  appliance: "🏠",
+  invitation_venue: "💌",
+  general: "📝",
+};
+
+const formatMinutes = (seconds: number) => {
+  if (seconds < 60) return `${seconds}초`;
+  const min = Math.floor(seconds / 60);
+  if (min < 60) return `${min}분`;
+  const hr = Math.floor(min / 60);
+  return `${hr}시간 ${min % 60}분`;
+};
+
+/**
+ * Style-aware home dashboard card. Renders only for signed-in users that
+ * have completed onboarding (real date OR explicit 미정). Combines the four
+ * persona-simulation engagement levers into one above-the-fold surface:
+ *  - D-Day + checklist progress ring
+ *  - Style-specific intro line ("오늘의 스몰웨딩 큐레이션" 등)
+ *  - Next 3 actionable items from the seeded schedule
+ *  - Daily streak + today's session minutes (self-quantification)
+ *  - 3 daily missions tailored to wedding_style
+ *
+ * Returns null for guests / pre-onboarding so the existing HeroBanner/marketing
+ * surface keeps its slot.
+ */
+const PersonaDashboard = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const insights = usePersonaInsights();
+  const { weddingSettings } = useWeddingSchedule();
+  const streak = useDailyStreak();
+  const session = useSessionTimer();
+  const tutorialProgress = useTutorialProgress();
+  const tutorialOverall = tutorialProgress.styleProgress(weddingSettings.wedding_style);
+
+  const [missionProgress, setMissionProgress] = useState(() => loadMissionProgress());
+
+  // 측정: 대시보드가 실제 화면에 노출된 시점에만 1회 기록. user/onboarded
+  // 가 false 인 동안엔 발화하지 않는다.
+  const isVisible = !!user && insights.isLoaded && insights.hasOnboarded;
+  useEffect(() => {
+    if (isVisible) {
+      trackEvent("persona_dashboard_view", {
+        style: insights.weddingStyle,
+        days_until_wedding: insights.daysUntilWedding,
+        progress_percent: insights.progressPercent,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVisible]);
+
+  if (!isVisible) {
+    return null;
+  }
+
+  const {
+    daysUntilWedding,
+    progressPercent,
+    completedCount,
+    totalCount,
+    nextActions,
+    missions,
+    styleLabel,
+    styleIntro,
+  } = insights;
+
+  const weddingDate = weddingSettings.wedding_date;
+  const dDayLabel = daysUntilWedding === null
+    ? "예정일 미정"
+    : daysUntilWedding > 0
+      ? `D-${daysUntilWedding}`
+      : daysUntilWedding === 0
+        ? "오늘!"
+        : `D+${Math.abs(daysUntilWedding)}`;
+
+  const handleMissionClick = (m: PersonaMission) => {
+    if (!missionProgress.completedKeys.includes(m.key)) {
+      setMissionProgress(markMissionComplete(m.key));
+    }
+    navigate(m.href);
+  };
+
+  const completedMissions = missionProgress.completedKeys.length;
+  const progressDeg = Math.max(0, Math.min(360, (progressPercent / 100) * 360));
+
+  return (
+    <section
+      data-tutorial="persona-dashboard"
+      className="px-4 pt-4 pb-2 animate-fade-in"
+    >
+      <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-accent/40 to-background border border-primary/15 p-4 relative overflow-hidden">
+        {/* Decorative blur */}
+        <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+
+        {/* Row 1: Style intro + D-Day ring */}
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1 flex-wrap mb-1.5">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-card/80 rounded-full text-[10px] font-semibold text-primary">
+                <span>{styleIntro.accentEmoji}</span>
+                <span>{styleLabel} 모드</span>
+              </span>
+              {tutorialOverall.total > 0 && tutorialOverall.percent < 100 && (
+                <button
+                  onClick={() => navigate("/tutorial")}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-100 rounded-full text-[10px] font-semibold text-violet-700 active:scale-95 transition-transform"
+                >
+                  <BookOpen className="w-2.5 h-2.5" />
+                  가이드 {tutorialOverall.done}/{tutorialOverall.total}
+                </button>
+              )}
+            </div>
+            <h2 className="text-[15px] font-bold text-foreground leading-tight">
+              {styleIntro.title}
+            </h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {styleIntro.subtitle}
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate("/my-schedule")}
+            className="shrink-0 active:scale-95 transition-transform"
+            aria-label="일정 관리"
+          >
+            <div
+              className="w-[68px] h-[68px] rounded-full flex items-center justify-center text-primary"
+              style={{
+                background: `conic-gradient(hsl(var(--primary)) ${progressDeg}deg, hsl(var(--muted)) ${progressDeg}deg)`,
+              }}
+            >
+              <div className="w-[58px] h-[58px] rounded-full bg-card flex flex-col items-center justify-center">
+                <span className="text-[15px] font-extrabold leading-none">{dDayLabel}</span>
+                <span className="text-[9px] text-muted-foreground mt-0.5">
+                  {totalCount > 0 ? `${progressPercent}% 완료` : "준비 시작"}
+                </span>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {/* Row 2: streak + session time + wedding date strip */}
+        <div className="relative mt-3 grid grid-cols-3 gap-1.5">
+          <div className="flex items-center gap-1.5 bg-card/70 rounded-xl px-2 py-1.5">
+            <Flame className="w-3.5 h-3.5 text-rose-500" />
+            <div className="min-w-0">
+              <p className="text-[10px] text-muted-foreground leading-none">연속</p>
+              <p className="text-[11px] font-bold text-foreground">{streak.streak}일</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 bg-card/70 rounded-xl px-2 py-1.5">
+            <Timer className="w-3.5 h-3.5 text-amber-500" />
+            <div className="min-w-0">
+              <p className="text-[10px] text-muted-foreground leading-none">오늘</p>
+              <p className="text-[11px] font-bold text-foreground">
+                {formatMinutes(session.todaySeconds)}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 bg-card/70 rounded-xl px-2 py-1.5">
+            <Check className="w-3.5 h-3.5 text-emerald-500" />
+            <div className="min-w-0">
+              <p className="text-[10px] text-muted-foreground leading-none">완료</p>
+              <p className="text-[11px] font-bold text-foreground">
+                {completedCount}/{totalCount}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 3: next actions */}
+        {nextActions.length > 0 && (
+          <div className="relative mt-3 bg-card/70 rounded-2xl p-2.5">
+            <div className="flex items-center justify-between mb-1.5 px-1">
+              <p className="text-[11px] font-bold text-foreground">다음 액션</p>
+              <button
+                onClick={() => navigate("/my-schedule")}
+                className="text-[10px] font-medium text-primary flex items-center gap-0.5"
+              >
+                전체 보기 <ArrowRight className="w-2.5 h-2.5" />
+              </button>
+            </div>
+            <div className="space-y-1">
+              {nextActions.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => navigate("/my-schedule")}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-muted/60 active:scale-[0.98] transition-all text-left"
+                >
+                  <span className="text-base">
+                    {CATEGORY_EMOJI[item.category ?? "general"] ?? "📝"}
+                  </span>
+                  <span className="flex-1 text-[12px] font-medium text-foreground truncate">
+                    {item.title}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    {format(new Date(item.scheduled_date), "M/d", { locale: ko })}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Row 4: daily missions */}
+        <div className="relative mt-3">
+          <div className="flex items-center justify-between mb-1.5 px-1">
+            <p className="text-[11px] font-bold text-foreground flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-primary" />
+              오늘의 미션 {completedMissions > 0 && (
+                <span className="text-primary">({completedMissions}/{missions.length})</span>
+              )}
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {missions.map(m => {
+              const done = missionProgress.completedKeys.includes(m.key);
+              return (
+                <button
+                  key={m.key}
+                  onClick={() => handleMissionClick(m)}
+                  className={`text-left p-2 rounded-xl border transition-all active:scale-[0.97] ${
+                    done
+                      ? "bg-primary/10 border-primary/30"
+                      : "bg-card/80 border-border hover:border-primary/30"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-base">{m.emoji}</span>
+                    {done && <Check className="w-3 h-3 text-primary" />}
+                  </div>
+                  <p className="text-[11px] font-semibold text-foreground leading-tight">
+                    {m.label}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground leading-tight mt-0.5">
+                    {m.hint}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Wedding date footer (small) */}
+        {weddingDate && (
+          <p className="relative text-[10px] text-muted-foreground mt-3 text-center">
+            예식 {format(new Date(weddingDate), "yyyy.MM.dd (EEEE)", { locale: ko })}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+};
+
+export default PersonaDashboard;

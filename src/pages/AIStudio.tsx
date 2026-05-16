@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
-import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
+import CategoryTabBar, { CategoryTab, useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import LockedCard from "@/components/LockedCard";
-import { toast } from "@/hooks/use-toast";
+import WaitlistSignupSheet from "@/components/studio/WaitlistSignupSheet";
 
 interface StudioCard {
   id: string;
@@ -62,32 +63,18 @@ const AIStudio = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const activeTab: CategoryTab = "ai-studio";
+  const [waitlistCard, setWaitlistCard] = useState<StudioCard | null>(null);
 
   const handleTabChange = (href: string) => {
     navigate(href);
   };
 
-  const handleCategoryTabChange = (tab: CategoryTab) => {
-    const tabRoutes: Record<CategoryTab, string> = {
-      "ai-planner": "/ai-planner",
-      "ai-studio": "/ai-studio",
-      tips: "/magazine",
-      events: "/deals",
-      shopping: "/store",
-    };
-    navigate(tabRoutes[tab]);
-  };
+  const handleCategoryTabChange = useCategoryTabNavigation();
 
-  const handleComingSoonClick = (title: string) => {
-    toast({
-      title: "곧 만나요 ✨",
-      description: `${title}는 준비 중이에요. 출시 시 알림으로 알려드릴게요.`,
-    });
-  };
-
-  const handleLockedCardClick = (cardId: string) => {
-    // Phase b-7에서 사전알림 모달 연결 예정
-    console.log("waitlist signup for:", cardId);
+  const handleLockedCardClick = (card: StudioCard) => {
+    // Open the waitlist sheet so users can register for launch notifications.
+    // Writes to service_waitlist (same table AdminServiceWaitlist administers).
+    setWaitlistCard(card);
   };
 
   return (
@@ -122,13 +109,13 @@ const AIStudio = () => {
                 </button>
               );
             }
-            // 곧 출시 카드 (시각적으론 활성, 클릭 시 토스트)
+            // 곧 출시 카드 (시각적으론 활성, 클릭 시 사전알림 시트)
             if (card.status === "coming_soon") {
               return (
                 <button
                   key={card.id}
                   type="button"
-                  onClick={() => handleComingSoonClick(card.title)}
+                  onClick={() => handleLockedCardClick(card)}
                   className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
                 >
                   <div className="relative aspect-square bg-gradient-to-br from-pink-50 to-pink-100">
@@ -157,7 +144,7 @@ const AIStudio = () => {
                 title={card.title}
                 description={card.description}
                 badge={lockedBadge[card.status]}
-                onClick={() => handleLockedCardClick(card.id)}
+                onClick={() => handleLockedCardClick(card)}
               />
             );
           })}
@@ -165,6 +152,13 @@ const AIStudio = () => {
       </main>
 
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
+
+      <WaitlistSignupSheet
+        open={waitlistCard !== null}
+        onOpenChange={(open) => !open && setWaitlistCard(null)}
+        serviceId={waitlistCard?.id ?? null}
+        serviceTitle={waitlistCard?.title ?? ""}
+      />
     </div>
   );
 };

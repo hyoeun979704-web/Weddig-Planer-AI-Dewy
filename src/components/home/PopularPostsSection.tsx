@@ -3,8 +3,16 @@ import { ChevronRight, Eye, Heart, MessageCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import EmptyState from "@/components/EmptyState";
+import { emptyCopy } from "@/lib/emptyCopy";
 
-const PopularPostsSection = () => {
+interface PopularPostsSectionProps {
+  // hideWhenEmpty: ai-planner 탭처럼 비어있을 때 섹션 자체를 숨길지,
+  // 아니면 브랜드 카피로 "준비 중"을 보여줄지 선택. 기본은 보여주기.
+  hideWhenEmpty?: boolean;
+}
+
+const PopularPostsSection = ({ hideWhenEmpty = false }: PopularPostsSectionProps) => {
   const navigate = useNavigate();
 
   const { data: posts = [], isLoading } = useQuery({
@@ -35,7 +43,19 @@ const PopularPostsSection = () => {
     );
   }
 
-  if (posts.length === 0) return null;
+  if (posts.length === 0) {
+    if (hideWhenEmpty) return null;
+    return (
+      <section className="py-5">
+        <div className="px-4 mb-3">
+          <h2 className="text-base font-bold text-foreground">실시간 인기 게시물</h2>
+        </div>
+        <div className="px-4">
+          <EmptyState {...emptyCopy.posts} />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-5">

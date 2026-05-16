@@ -19,29 +19,32 @@ const ratingOptions = [
   { value: 4.9, label: "4.9점 이상" },
 ];
 
+// Values aligned to the most-popular tag spelling in `places.tags` so
+// `overlaps()` actually matches rows. e.g. "야외웨딩" (46 venues) is far
+// more common than the bare "야외" (3 venues).
 const hallTypeOptions = [
-  { value: "어두운홀", label: "어두운홀" },
-  { value: "밝은홀", label: "밝은홀" },
-  { value: "야외", label: "야외" },
+  { value: "호텔웨딩", label: "호텔" },
+  { value: "하우스웨딩", label: "하우스" },
+  { value: "야외웨딩", label: "야외" },
+  { value: "가든웨딩", label: "가든" },
+  { value: "컨벤션웨딩", label: "컨벤션" },
+  { value: "채플웨딩", label: "채플" },
   { value: "단독홀", label: "단독홀" },
-  { value: "호텔", label: "호텔" },
+  { value: "스몰웨딩", label: "스몰웨딩" },
 ];
 
+// Most rows tag meals as plain "뷔페" or "코스요리"; the granular
+// 양식/한식/중식/일식 split that used to be here returned 0–2 results.
 const mealOptionOptions = [
   { value: "뷔페", label: "뷔페" },
-  { value: "양식코스", label: "양식코스" },
-  { value: "한식코스", label: "한식코스" },
-  { value: "중식코스", label: "중식코스" },
-  { value: "일식코스", label: "일식코스" },
+  { value: "코스요리", label: "코스요리" },
 ];
 
-const eventOptionOptions = [
-  { value: "포토부스", label: "포토부스" },
-  { value: "벌룬이펙트", label: "벌룬이펙트" },
-  { value: "뮤지컬", label: "뮤지컬" },
-  { value: "돔오픈", label: "돔오픈" },
-  { value: "라이브 연주", label: "라이브 연주" },
-];
+// Event-style tagging is too sparse in the current corpus (포토부스: 1,
+// others: 0) to be useful as a filter — hide the chip entirely until
+// the dataset catches up. Store fields are kept so any stored selections
+// degrade gracefully.
+const eventOptionOptions: { value: string; label: string }[] = [];
 
 // 슬라이더 설정
 const PRICE_MIN = 40000;
@@ -399,23 +402,27 @@ const FilterBar = () => {
                 </div>
               </div>
 
-              {/* Event Options Filter (복수선택) */}
-              <div>
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <PartyPopper className="w-4 h-4" />
-                  이벤트옵션 <span className="text-xs text-muted-foreground font-normal">(복수선택 가능)</span>
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {eventOptionOptions.map((e) => (
-                    <FilterChip
-                      key={e.value}
-                      label={e.label}
-                      isActive={eventOptions.includes(e.value)}
-                      onClick={() => toggleEventOption(e.value)}
-                    />
-                  ))}
+              {/* Event Options Filter (복수선택). Hidden when no
+                  meaningful options are available in the current corpus —
+                  keeps the sheet from showing an empty section. */}
+              {eventOptionOptions.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <PartyPopper className="w-4 h-4" />
+                    이벤트옵션 <span className="text-xs text-muted-foreground font-normal">(복수선택 가능)</span>
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {eventOptionOptions.map((e) => (
+                      <FilterChip
+                        key={e.value}
+                        label={e.label}
+                        isActive={eventOptions.includes(e.value)}
+                        onClick={() => toggleEventOption(e.value)}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t border-border">
@@ -556,24 +563,27 @@ const FilterBar = () => {
           ))}
         </QuickFilterChip>
 
-        {/* 이벤트옵션 (복수선택) */}
-        <QuickFilterChip
-          label={getEventOptionsLabel() || ""}
-          defaultLabel="이벤트"
-          isActive={eventOptions.length > 0}
-          icon={<PartyPopper className="w-3.5 h-3.5" />}
-          onClear={() => setEventOptions([])}
-          keepOpen
-        >
-          {eventOptionOptions.map((e) => (
-            <MultiFilterOption
-              key={e.value}
-              label={e.label}
-              isSelected={eventOptions.includes(e.value)}
-              onClick={() => toggleEventOption(e.value)}
-            />
-          ))}
-        </QuickFilterChip>
+        {/* 이벤트옵션 (복수선택). See note above: hidden until data
+            density supports a useful selection. */}
+        {eventOptionOptions.length > 0 && (
+          <QuickFilterChip
+            label={getEventOptionsLabel() || ""}
+            defaultLabel="이벤트"
+            isActive={eventOptions.length > 0}
+            icon={<PartyPopper className="w-3.5 h-3.5" />}
+            onClear={() => setEventOptions([])}
+            keepOpen
+          >
+            {eventOptionOptions.map((e) => (
+              <MultiFilterOption
+                key={e.value}
+                label={e.label}
+                isSelected={eventOptions.includes(e.value)}
+                onClick={() => toggleEventOption(e.value)}
+              />
+            ))}
+          </QuickFilterChip>
+        )}
       </div>
     </div>
   );
