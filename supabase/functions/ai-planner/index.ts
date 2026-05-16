@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { BASE_SYSTEM_PROMPT } from "./prompt.ts";
 import { fetchUserData, buildUserContext } from "./user-data.ts";
+import { ALWAYS_ON_CAPSULES, buildConditionalCapsules } from "./domain-capsules.ts";
 import { extractAndStoreMemories } from "./memory.ts";
 
 const corsHeaders = {
@@ -70,6 +71,7 @@ serve(async (req) => {
     }
 
     let userContext = "";
+    let conditionalCapsules = "";
     let dailyRemaining = -1;
 
     const authHeader = req.headers.get("Authorization");
@@ -97,6 +99,7 @@ serve(async (req) => {
 
           const userData = await fetchUserData(supabase, user.id);
           userContext = buildUserContext(userData);
+          conditionalCapsules = buildConditionalCapsules(userData.weddingSettings);
           console.log("User context loaded for:", user.id, "premium:", usageResult.isPremium, "remaining:", usageResult.remaining, "memories:", userData.memories.length);
 
           // Fire-and-forget memory extraction on the user's most recent
@@ -114,8 +117,18 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = BASE_SYSTEM_PROMPT + userContext;
-    console.log("Dewy AI Planner request received, messages count:", messages.length, "has user context:", !!userContext);
+    // 캡슐 순서: BASE → 항상-on(부모님 설득) → user 컨텍스트 → 조건부(재혼/임신)
+    // userContext가 먼저 와야 LLM이 사용자 정보를 가까운 문맥으로 인식.
+    const systemPrompt =
+      BASE_SYSTEM_PROMPT + ALWAYS_ON_CAPSULES + userContext + conditionalCapsules;
+    console.log(
+      "Dewy AI Planner request received, messages count:",
+      messages.length,
+      "has user context:",
+      !!userContext,
+      "conditional capsules:",
+      conditionalCapsules.length > 0,
+    );
 
     let streamResponse: Response | null = null;
     const geminiContents = messages.map((m: Message) => ({
