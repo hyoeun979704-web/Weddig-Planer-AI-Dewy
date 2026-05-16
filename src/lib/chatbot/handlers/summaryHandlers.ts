@@ -124,51 +124,110 @@ const fetchCounts = async (
 };
 
 // ────────────────────────────────────────────────────────────
-// 종합 활동 요약 (전체 누적)
+// 종합 활동 요약 (전체 누적) — Dewy 페르소나 적용
+//
+// 이전 회귀: 12개 카테고리 raw 카운트 나열 (DATA-DUMP). "내 활동 어때?"
+// 라고 물어도 의미·다음 액션이 없어서 데이터 페이지 보는 것과 동일했음.
+// 페르소나 적용 후:
+//  1) D-day·지역·파트너로 한 줄 컨텍스트
+//  2) 두드러진 신호 1~2개 인사이트화 (놓친 일정·결정 정체·커플 부재 등)
+//  3) 다음 액션 1개 제안
+//  4) 전체 카운트는 간결히 끝에
 // ────────────────────────────────────────────────────────────
 export const handleActivitySummary = async (userId: string): Promise<string> => {
   const c = await fetchCounts(userId);
 
-  // 결혼 정보 + D-day
   const { data: settings } = await (supabase as any)
     .from("user_wedding_settings")
     .select("wedding_date, wedding_date_tbd, wedding_region, partner_name")
     .eq("user_id", userId)
     .maybeSingle();
 
-  const lines: string[] = [];
-
-  if (settings?.partner_name) lines.push(`💑 파트너: ${settings.partner_name}`);
+  const ctx: string[] = [];
+  let dday: number | null = null;
+  if (settings?.partner_name) ctx.push(`💑 ${settings.partner_name}님과`);
   if (settings?.wedding_date && !settings.wedding_date_tbd) {
     const target = new Date(settings.wedding_date);
     const today = new Date();
     target.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
-    const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
-    lines.push(`📅 D-${diff}`);
+    dday = Math.round((target.getTime() - today.getTime()) / 86400000);
+    if (dday > 0) ctx.push(`📅 D-${dday}`);
+    else if (dday === 0) ctx.push(`📅 오늘이 결혼식!`);
+    else ctx.push(`📅 D+${-dday}`);
   }
-  if (settings?.wedding_region) lines.push(`📍 ${settings.wedding_region}`);
+  if (settings?.wedding_region) ctx.push(`📍 ${settings.wedding_region}`);
+  const ctxLine = ctx.length > 0 ? `${ctx.join(" · ")}\n\n` : "";
 
-  const baseInfo = lines.length > 0 ? `${lines.join(" · ")}\n\n` : "";
+  // 두드러진 신호 1~2개를 골라 의미 있는 코멘트로 변환.
+  const insights: string[] = [];
 
-  return `${baseInfo}**나의 활동 요약** 📊\n\n` +
-    `📋 **플래닝**\n` +
-    `• 미완료 일정: ${c.schedule_pending}건\n` +
-    `• 찜한 항목: ${c.favorites}개\n` +
-    `• 장바구니: ${c.cart}건\n\n` +
-    `💑 **커플**\n` +
-    `• 다이어리: ${c.diary}개\n` +
-    `• 투표: ${c.votes}건\n\n` +
-    `🎨 **AI Studio**\n` +
-    `• 드레스 피팅: ${c.fittings}장\n` +
-    `• 하트 잔액: ${c.hearts}\n\n` +
-    `🛍️ **쇼핑**\n` +
-    `• 주문: ${c.orders}건\n\n` +
-    `💬 **커뮤니티**\n` +
-    `• 작성한 글: ${c.posts}개 / 댓글: ${c.comments}개\n\n` +
-    `🤖 **AI 사용**\n` +
-    `• 오늘 챗봇: ${c.ai_today}회 (한도 5회)\n\n` +
-    `각 항목별 자세한 내용은 해당 페이지에서 확인하실 수 있어요.`;
+  if (dday !== null && dday > 0 && dday <= 90 && c.schedule_pending >= 5) {
+    insights.push(
+      `⚠️ **D-${dday}**인데 미완료 일정이 **${c.schedule_pending}건** 남아있어요. 일정 페이지에서 우선순위 정리부터 같이 해볼까요?`,
+    );
+  } else if (c.schedule_pending >= 10) {
+    insights.push(
+      `📋 미완료 일정이 **${c.schedule_pending}건**이에요. 가까운 일정 3~5개부터 차근차근 처리하시면 부담이 줄어요.`,
+    );
+  }
+
+  if (c.favorites >= 5 && c.orders === 0 && c.cart === 0) {
+    insights.push(
+      `❤️ 찜만 **${c.favorites}개** 모이셨네요. 결정에 망설여지신다면 상위 2~3곳만 추려서 비교해드릴까요?`,
+    );
+  } else if (c.favorites >= 10 && c.cart >= 1) {
+    insights.push(
+      `🛒 찜 ${c.favorites}개 · 장바구니 ${c.cart}건 — 슬슬 결정 단계예요. 카테고리별 우선순위 잡아드릴까요?`,
+    );
+  }
+
+  if (settings?.partner_name && c.diary === 0 && c.votes === 0) {
+    insights.push(
+      `💑 ${settings.partner_name}님과 다이어리·투표 활동이 아직 없으시네요. 함께 결정 모드 들어가시면 진척이 훨씬 빨라져요.`,
+    );
+  }
+
+  if (c.ai_today >= 4) {
+    insights.push(
+      `🤖 오늘 챗봇 ${c.ai_today}회 사용 — 열심히 준비하고 계시네요! 무료 한도가 곧 차요. 프리미엄으로 무제한 가능해요.`,
+    );
+  }
+
+  if (insights.length === 0) {
+    if (c.schedule_pending === 0 && c.favorites === 0) {
+      insights.push(
+        `🌱 아직 활동 기록이 적네요. 결혼식 일정·예산을 먼저 정해두시면 챗봇이 시기별로 맞춤 추천을 드릴 수 있어요.`,
+      );
+    } else {
+      insights.push(
+        `🎉 잘 진행하고 계세요! 다음 단계가 궁금하시면 "지금 뭐 해야 해?"라고 물어봐 주세요.`,
+      );
+    }
+  }
+
+  // 전체 카운트 — 0인 항목은 생략해 시각적 노이즈 감소.
+  const counts = [
+    `미완료 일정 ${c.schedule_pending}건`,
+    `찜 ${c.favorites}개`,
+    c.cart > 0 ? `장바구니 ${c.cart}건` : null,
+    c.orders > 0 ? `주문 ${c.orders}건` : null,
+    c.fittings > 0 ? `드레스 피팅 ${c.fittings}장` : null,
+    c.diary > 0 ? `다이어리 ${c.diary}개` : null,
+    c.votes > 0 ? `투표 ${c.votes}건` : null,
+    c.posts > 0 ? `글 ${c.posts}개` : null,
+    `하트 ${c.hearts}`,
+  ].filter(Boolean);
+
+  return `${ctxLine}**나의 활동 요약** 📊
+
+${insights.slice(0, 2).join("\n\n")}
+
+---
+**전체 현황** — ${counts.join(" · ")}
+오늘 챗봇 ${c.ai_today}/5회
+
+자세한 내용은 [홈](/home) 또는 [일정 페이지](/schedule)에서 확인하실 수 있어요.`;
 };
 
 // ────────────────────────────────────────────────────────────
