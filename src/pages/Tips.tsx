@@ -17,18 +17,28 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const HOT_CARD_WIDTH = 140;
 type FormatKey = "all" | "short" | "long";
 
+// Chip order roughly follows the wedding-prep timeline: research → vendor
+// shopping → ceremony day → post-wedding. "전체"/"일반" stay at the head
+// as catch-alls. Categories the user opted out of are hidden at render
+// time (visibleChips below).
 const CATEGORY_CHIPS: Array<{ slug: string | null; label: string }> = [
   { slug: null, label: "전체" },
   { slug: "general", label: "일반" },
+  { slug: "family_meeting", label: "상견례" },
   { slug: "wedding_hall", label: "웨딩홀" },
   { slug: "studio", label: "스튜디오" },
   { slug: "dress_shop", label: "드레스" },
   { slug: "makeup_shop", label: "메이크업" },
   { slug: "hanbok", label: "한복" },
   { slug: "tailor_shop", label: "예복" },
-  { slug: "honeymoon", label: "허니문" },
+  { slug: "wedding_gifts", label: "예단·예물" },
+  { slug: "newlywed_home", label: "신혼집" },
   { slug: "appliance", label: "혼수" },
   { slug: "invitation_venue", label: "청첩장" },
+  { slug: "bridal_care", label: "신부 관리" },
+  { slug: "ceremony", label: "본식 진행" },
+  { slug: "legal_paperwork", label: "혼인신고" },
+  { slug: "honeymoon", label: "허니문" },
 ];
 
 type SortKey = "curated" | "popular" | "recent";

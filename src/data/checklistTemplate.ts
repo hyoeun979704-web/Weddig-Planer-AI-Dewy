@@ -46,7 +46,7 @@ export interface ChecklistTask {
   title: string;
   daysBeforeWedding: number;
   stage: PlanningStage;
-  category: string; // wedding_hall / studio / dress_shop / makeup_shop / hanbok / tailor_shop / honeymoon / appliance / invitation_venue / family_meeting / newlywed_home / general
+  category: string; // wedding_hall / studio / dress_shop / makeup_shop / hanbok / tailor_shop / honeymoon / appliance / invitation_venue / family_meeting / newlywed_home / wedding_gifts / legal_paperwork / bridal_care / ceremony / general
 }
 
 export const CHECKLIST_TEMPLATE: ChecklistTask[] = [
@@ -70,25 +70,25 @@ export const CHECKLIST_TEMPLATE: ChecklistTask[] = [
   { title: "예복 알아보기·계약", daysBeforeWedding: 170, stage: "contracting", category: "tailor_shop" },
   { title: "신혼여행 예약 확정", daysBeforeWedding: 160, stage: "contracting", category: "honeymoon" },
   { title: "혼수 가전·가구 결정", daysBeforeWedding: 150, stage: "contracting", category: "appliance" },
-  { title: "예단·예물 준비", daysBeforeWedding: 140, stage: "contracting", category: "general" },
+  { title: "예단·예물 준비", daysBeforeWedding: 140, stage: "contracting", category: "wedding_gifts" },
   { title: "본식 촬영 일정 확정", daysBeforeWedding: 130, stage: "contracting", category: "studio" },
   { title: "리허설 촬영", daysBeforeWedding: 120, stage: "contracting", category: "studio" },
   { title: "청첩장 디자인 결정", daysBeforeWedding: 100, stage: "contracting", category: "invitation_venue" },
-  { title: "주례·사회자 섭외", daysBeforeWedding: 95, stage: "contracting", category: "general" },
+  { title: "주례·사회자 섭외", daysBeforeWedding: 95, stage: "contracting", category: "ceremony" },
 
   // ── wrapping_up — D-90 ~ D-day ──
   { title: "청첩장 발송 (모바일 + 지류)", daysBeforeWedding: 60, stage: "wrapping_up", category: "invitation_venue" },
-  { title: "축의금 계좌·답례품 준비", daysBeforeWedding: 50, stage: "wrapping_up", category: "general" },
-  { title: "신부 다이어트·관리", daysBeforeWedding: 45, stage: "wrapping_up", category: "general" },
+  { title: "축의금 계좌·답례품 준비", daysBeforeWedding: 50, stage: "wrapping_up", category: "ceremony" },
+  { title: "신부 다이어트·관리", daysBeforeWedding: 45, stage: "wrapping_up", category: "bridal_care" },
   { title: "예복 가봉 완료", daysBeforeWedding: 40, stage: "wrapping_up", category: "tailor_shop" },
   { title: "드레스 가봉 (최종)", daysBeforeWedding: 35, stage: "wrapping_up", category: "dress_shop" },
   { title: "음식 시연 참석", daysBeforeWedding: 30, stage: "wrapping_up", category: "wedding_hall" },
   { title: "헤어메이크업 리허설", daysBeforeWedding: 25, stage: "wrapping_up", category: "makeup_shop" },
-  { title: "하객 RSVP 최종 집계", daysBeforeWedding: 20, stage: "wrapping_up", category: "general" },
+  { title: "하객 RSVP 최종 집계", daysBeforeWedding: 20, stage: "wrapping_up", category: "ceremony" },
   { title: "좌석 배치 확정", daysBeforeWedding: 14, stage: "wrapping_up", category: "wedding_hall" },
-  { title: "혼인신고 서류 준비", daysBeforeWedding: 10, stage: "wrapping_up", category: "general" },
-  { title: "예식 당일 동선 점검", daysBeforeWedding: 7, stage: "wrapping_up", category: "wedding_hall" },
-  { title: "최종 인원·식대 통보", daysBeforeWedding: 3, stage: "wrapping_up", category: "wedding_hall" },
+  { title: "혼인신고 서류 준비", daysBeforeWedding: 10, stage: "wrapping_up", category: "legal_paperwork" },
+  { title: "예식 당일 동선 점검", daysBeforeWedding: 7, stage: "wrapping_up", category: "ceremony" },
+  { title: "최종 인원·식대 통보", daysBeforeWedding: 3, stage: "wrapping_up", category: "ceremony" },
 ];
 
 // Style-specific add-on tasks layered ON TOP of CHECKLIST_TEMPLATE. For
