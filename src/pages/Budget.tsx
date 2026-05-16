@@ -648,10 +648,15 @@ const Budget = () => {
             {[...categoryKeys]
               .map(key => {
                 const spent = summary.categoryTotals[key] || 0;
-                const budget = catBudgets[key] || 0;
+                const rawBudget = catBudgets[key] || 0;
+                const dimmed = dimmedBudgetCategories.has(key) && spent === 0;
+                // Hide stale budget residue on dimmed (fully-excluded with
+                // no spend) rows — the next save through BudgetSetupSheet
+                // zeros these in the DB; this keeps the display in sync
+                // in the meantime instead of showing "0 / 200만원".
+                const budget = dimmed ? 0 : rawBudget;
                 const catPct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
                 const over = spent > budget && budget > 0;
-                const dimmed = dimmedBudgetCategories.has(key) && spent === 0;
                 return { key, spent, budget, catPct, over, dimmed };
               })
               .sort((a, b) => {

@@ -13,6 +13,11 @@ export interface WeddingProfilePrefill {
   displayName: string;         // logged-in user's display name (profiles)
   partnerName: string;         // partner name from wedding settings
   weddingStyle: WeddingStyle;  // general | small | self | custom, "general" if unset
+  // Schedule-side category slugs the user opted out of (e.g. ["studio",
+  // "dress_shop", "makeup_shop"] for a self-wedding). Drives hiding logic
+  // in Schedule, Budget, Home and Tips so the user only sees prep work
+  // they actually plan to do.
+  excludedCategories: string[];
   isLoaded: boolean;
 }
 
@@ -65,6 +70,7 @@ export const useWeddingProfile = (): WeddingProfilePrefill => {
     displayName,
     partnerName: weddingSettings.partner_name ?? "",
     weddingStyle: weddingSettings.wedding_style ?? "general",
+    excludedCategories: weddingSettings.excluded_categories ?? [],
     isLoaded: !weddingLoading && profileLoaded,
   };
 };
