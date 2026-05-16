@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ShoppingCart, Star, Loader2, SlidersHorizontal } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -7,6 +7,7 @@ import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/Cate
 import { supabase } from "@/integrations/supabase/client";
 import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
 import SortToggle, { SortMode } from "@/components/SortToggle";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 interface Product {
   id: string;
@@ -43,6 +44,18 @@ const Store = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<StoreFilters>(initialFilters);
   const [sortMode, setSortMode] = useState<SortMode>("popular");
+
+  // 결혼 스타일이 셀프인 경우 1회 한정으로 '셀프웨딩' 탭을 자동 선택.
+  // ref 로 1회 적용해서 사용자가 직접 다른 탭으로 옮겨도 다시 되돌리지 않음.
+  const { weddingSettings, isLoading: scheduleLoading } = useWeddingSchedule();
+  const didInitTabRef = useRef(false);
+  useEffect(() => {
+    if (didInitTabRef.current || scheduleLoading) return;
+    didInitTabRef.current = true;
+    if (weddingSettings.wedding_style === "self") {
+      setSelectedTab("self_wedding");
+    }
+  }, [scheduleLoading, weddingSettings.wedding_style]);
   useEffect(() => {
     const fetch = async () => {
       setIsLoading(true);

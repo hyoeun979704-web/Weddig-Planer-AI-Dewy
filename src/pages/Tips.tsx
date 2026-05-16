@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Flame } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -6,6 +6,7 @@ import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { TipVideoCard, TipVideoCardSkeleton } from "@/components/TipVideoCard";
 import { useTipVideos, type TipVideo } from "@/hooks/useTipVideos";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 // Shorts threshold: YouTube classifies up to 3 min as Shorts. We use 180s.
 const SHORT_MAX_SECONDS = 180;
@@ -35,6 +36,18 @@ const Tips = () => {
   const [category, setCategory] = useState<string | null>(null);
   const [sort, setSort] = useState<SortKey>("popular");
   const [format, setFormat] = useState<FormatKey>("all");
+
+  // 스몰웨딩 사용자가 진입했을 때 1회 한정으로 '청첩장' 칩을 자동 선택해서
+  // 소규모 모임 관련 콘텐츠를 바로 보여줌. 사용자가 다른 칩으로 옮기면 유지.
+  const { weddingSettings, isLoading: scheduleLoading } = useWeddingSchedule();
+  const didInitCategoryRef = useRef(false);
+  useEffect(() => {
+    if (didInitCategoryRef.current || scheduleLoading) return;
+    didInitCategoryRef.current = true;
+    if (weddingSettings.wedding_style === "small") {
+      setCategory("invitation_venue");
+    }
+  }, [scheduleLoading, weddingSettings.wedding_style]);
 
   // HOT row: published in last 7 days. Over-fetch (40) so the client filter
   // still has candidates when fresh content is sparse.

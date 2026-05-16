@@ -5,6 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import VenueGrid from "@/components/VenueGrid";
 import FilterBar from "@/components/FilterBar";
+import VenueCrossLink from "@/components/VenueCrossLink";
 import { Venue } from "@/hooks/useVenues";
 import { useFilterStore } from "@/stores/useFilterStore";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
@@ -28,6 +29,7 @@ const Venues = () => {
       <PageHeader title="웨딩홀" />
       <main className="pb-20">
         <CategoryHeroBanner category="venues" />
+        <VenueCrossLink variant="venues" />
         <FilterBar />
         <div className="px-4 pb-3">
           <h2 className="text-lg font-bold text-foreground">{hasActiveFilters() ? "검색 결과" : "인기 웨딩홀"}</h2>
