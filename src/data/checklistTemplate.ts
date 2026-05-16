@@ -46,13 +46,13 @@ export interface ChecklistTask {
   title: string;
   daysBeforeWedding: number;
   stage: PlanningStage;
-  category: string; // wedding_hall / studio / dress / makeup / hanbok / suit / honeymoon / appliance / invitation / general
+  category: string; // wedding_hall / studio / dress_shop / makeup_shop / hanbok / tailor_shop / honeymoon / appliance / invitation_venue / family_meeting / newlywed_home / general
 }
 
 export const CHECKLIST_TEMPLATE: ChecklistTask[] = [
   // ── just_started — D-365 ~ D-300 ──
   { title: "결혼 비전·예산 합의", daysBeforeWedding: 365, stage: "just_started", category: "general" },
-  { title: "양가 인사·상견례 일정 잡기", daysBeforeWedding: 350, stage: "just_started", category: "general" },
+  { title: "양가 인사·상견례 일정 잡기", daysBeforeWedding: 350, stage: "just_started", category: "family_meeting" },
   { title: "예산 항목별 배분 (웨딩홀/스드메/혼수)", daysBeforeWedding: 340, stage: "just_started", category: "general" },
   { title: "웨딩홀 후보 3~5곳 답사", daysBeforeWedding: 330, stage: "just_started", category: "wedding_hall" },
 
@@ -63,7 +63,7 @@ export const CHECKLIST_TEMPLATE: ChecklistTask[] = [
   { title: "메이크업샵 알아보기", daysBeforeWedding: 240, stage: "researching", category: "makeup_shop" },
   { title: "한복 알아보기 (혼주·신부)", daysBeforeWedding: 220, stage: "researching", category: "hanbok" },
   { title: "신혼여행지·항공·숙박 알아보기", daysBeforeWedding: 210, stage: "researching", category: "honeymoon" },
-  { title: "신혼집 알아보기·계약", daysBeforeWedding: 200, stage: "researching", category: "general" },
+  { title: "신혼집 알아보기·계약", daysBeforeWedding: 200, stage: "researching", category: "newlywed_home" },
 
   // ── contracting — D-180 ~ D-90 ──
   { title: "스드메 계약 완료", daysBeforeWedding: 180, stage: "contracting", category: "studio" },
