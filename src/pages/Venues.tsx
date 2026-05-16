@@ -35,13 +35,13 @@ const Venues = () => {
         <CategoryHeroBanner category="venues" />
         <FilterBar />
         {weddingStyle === "small" && (
-          // Filter UI already supports the relevant venue types (하우스,
-          // 채플, etc.) — small-wedding users just need a nudge that the
-          // typical "호텔" / "컨벤션" defaults aren't their best fit.
+          // Surface the hall-type filter to small-wedding users — the
+          // options (하우스/스몰웨딩/채플/가든) are most relevant to their
+          // intent but easy to miss inside the filter sheet.
           <div className="mx-4 mt-2 rounded-md bg-rose-50 border border-rose-100 px-3 py-2 flex items-center gap-2 text-[12px] text-rose-700">
             <Sparkles className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
             <span>
-              스몰웨딩 추천 — 위 필터의 <b>홀 유형</b>에서 “하우스 / 채플” 을 선택해보세요.
+              스몰웨딩 추천 — <b>홀 유형</b>에서 “하우스 · 스몰웨딩 · 채플” 을 선택해보세요.
             </span>
           </div>
         )}
