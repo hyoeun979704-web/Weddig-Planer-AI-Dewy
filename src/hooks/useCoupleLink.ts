@@ -106,6 +106,11 @@ export const useCoupleLink = () => {
   };
 
   // 초대 코드로 연결
+  //
+  // RLS 때문에 클라이언트에서 직접 invite_code를 조회할 수 없어 (couple_links
+  // SELECT 정책: user_id 또는 partner_user_id 일치 필요 — 코드 입력자는
+  // 아직 둘 다 아님), SECURITY DEFINER RPC redeem_couple_invite로 lookup +
+  // update를 한 번에 처리. 마이그레이션 20260516180000 참고.
   const linkWithCode = async (code: string): Promise<boolean> => {
     if (!user) {
       toast.error("로그인이 필요합니다");
@@ -113,7 +118,9 @@ export const useCoupleLink = () => {
     }
 
     // Normalize: strip whitespace + uppercase. Partners often paste codes
-    // with stray spaces from a kakao share.
+    // with stray spaces from a kakao share. The RPC normalizes too — keeping
+    // this client-side check lets us short-circuit empty input without a
+    // round-trip.
     const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
     if (normalized.length === 0) {
       toast.error("초대 코드를 입력해주세요");
@@ -121,51 +128,39 @@ export const useCoupleLink = () => {
     }
 
     try {
-      // 초대 코드로 링크 찾기
-      const { data: link, error: findError } = await (supabase
-        .from("couple_links" as any)
-        .select("*") as any)
-        .eq("invite_code", normalized)
-        .eq("status", "pending")
-        .maybeSingle();
+      const { data, error } = await (supabase as any).rpc("redeem_couple_invite", {
+        p_code: normalized,
+      });
+      if (error) throw error;
 
-      if (findError) throw findError;
-      if (!link) {
-        toast.error("초대 코드를 찾을 수 없어요. 6자리가 맞는지 확인해주세요");
+      const result = (data ?? {}) as { ok?: boolean; error?: string };
+      if (!result.ok) {
+        switch (result.error) {
+          case "auth_required":
+            toast.error("로그인이 필요합니다");
+            break;
+          case "empty_code":
+            toast.error("초대 코드를 입력해주세요");
+            break;
+          case "not_found":
+            toast.error("초대 코드를 찾을 수 없어요. 6자리가 맞는지 확인해주세요");
+            break;
+          case "own_code":
+            toast.error("본인의 초대 코드는 사용할 수 없어요");
+            break;
+          case "already_redeemed":
+            toast.error("이미 사용된 초대 코드예요");
+            break;
+          default:
+            toast.error("연결에 실패했습니다");
+        }
         return false;
       }
 
-      if ((link as any).user_id === user.id) {
-        toast.error("본인의 초대 코드는 사용할 수 없어요");
-        return false;
-      }
-
-      // 연결 처리
-      const { data: updated, error: updateError } = await (supabase
-        .from("couple_links" as any) as any)
-        .update({
-          partner_user_id: user.id,
-          status: "linked",
-          linked_at: new Date().toISOString(),
-        })
-        .eq("id", (link as any).id)
-        .select()
-        .single();
-
-      if (updateError) throw updateError;
-
-      // 양쪽 user_wedding_settings에 partner_user_id 저장
-      await Promise.all([
-        (supabase
-          .from("user_wedding_settings") as any)
-          .upsert({ user_id: (link as any).user_id, partner_user_id: user.id }, { onConflict: "user_id" }),
-        (supabase
-          .from("user_wedding_settings") as any)
-          .upsert({ user_id: user.id, partner_user_id: (link as any).user_id }, { onConflict: "user_id" }),
-      ]);
-
-      setCoupleLink(updated as any);
-      await fetchCoupleLink(); // 파트너 프로필 다시 로드
+      // Refetch pulls the freshly-linked row (now visible under the SELECT
+      // policy since auth.uid() is partner_user_id) and loads the partner
+      // profile so UI flips to the linked state immediately.
+      await fetchCoupleLink();
       toast.success("커플이 연결되었습니다! 💕");
       return true;
     } catch (error) {
