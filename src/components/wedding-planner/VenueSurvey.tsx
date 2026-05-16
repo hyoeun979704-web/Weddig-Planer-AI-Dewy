@@ -33,21 +33,36 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit, prefill }: Props) => {
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [autofilled, setAutofilled] = useState<Record<string, boolean>>({});
 
+  // Full reset on every open so non-prefilled inputs (styles, parking, meal,
+  // special) don't carry stale state across modal cycles. Prefilled fields
+  // get (re-)set inside this block; everything else returns to blank.
   useEffect(() => {
     if (!isOpen) return;
+    setStyles([]);
+    setParking("");
+    setMeal("");
+    setSpecial("");
     const f: Record<string, boolean> = {};
     if (prefill?.weddingDate) {
       const d = new Date(prefill.weddingDate);
-      if (!isNaN(d.getTime())) { setDate(d); f.date = true; }
+      if (!isNaN(d.getTime())) { setDate(d); f.date = true; } else { setDate(undefined); }
+    } else {
+      setDate(undefined);
     }
     if (prefill?.region && (REGIONS as readonly string[]).includes(prefill.region)) {
       setRegion(prefill.region); f.region = true;
+    } else {
+      setRegion("");
     }
     if (prefill?.guestCount && prefill.guestCount > 0) {
       setGuests(String(prefill.guestCount)); f.guests = true;
+    } else {
+      setGuests("");
     }
     if (prefill?.totalBudget && prefill.totalBudget > 0) {
       setBudget(String(prefill.totalBudget)); f.budget = true;
+    } else {
+      setBudget("");
     }
     setAutofilled(f);
     setErrors({});

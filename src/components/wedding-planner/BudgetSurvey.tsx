@@ -50,28 +50,42 @@ const BudgetSurvey = ({ isOpen, onClose, onSubmit, prefill }: Props) => {
   // Hydrate from prefill whenever the modal opens. We re-run on every open
   // (not just first mount) so reopening after a Schedule edit picks up
   // newly-saved values without remounting.
+  //
+  // We also fully reset transient state (items/support/supportAmount/
+  // priorities) on every open — previously these persisted across modal
+  // open/close cycles which meant a user who typed per-category amounts,
+  // closed the modal, then reopened it would carry stale numbers into
+  // their next AI request without realizing. Prefilled fields get
+  // (re-)set inside this block; everything else starts blank.
   useEffect(() => {
     if (!isOpen) return;
+    setItems({});
+    setSupport("");
+    setSupportAmount("");
+    setPriorities([]);
     const filled: Record<string, boolean> = {};
     if (prefill?.totalBudget && prefill.totalBudget > 0) {
       setTotalBudget(String(prefill.totalBudget));
       filled.totalBudget = true;
+    } else {
+      setTotalBudget("");
     }
-    if (prefill?.region) {
-      // BudgetSurvey REGIONS is a readonly tuple of literal strings;
-      // widening to readonly string[] lets us run includes() with a
-      // runtime-supplied value without TS narrowing complaints.
-      if ((REGIONS as readonly string[]).includes(prefill.region)) {
-        setRegion(prefill.region);
-        filled.region = true;
-      }
+    if (prefill?.region && (REGIONS as readonly string[]).includes(prefill.region)) {
+      setRegion(prefill.region);
+      filled.region = true;
+    } else {
+      setRegion("");
     }
     if (prefill?.weddingDate) {
       const d = new Date(prefill.weddingDate);
       if (!isNaN(d.getTime())) {
         setDate(d);
         filled.date = true;
+      } else {
+        setDate(undefined);
       }
+    } else {
+      setDate(undefined);
     }
     setAutofilled(filled);
     setErrors({});

@@ -335,9 +335,17 @@ export interface BudgetParams {
   priorities?: string[];
 }
 
-// 카테고리별 권장 비율 (한국 평균 기준)
+// 카테고리별 권장 비율 (한국 평균 기준).
+//
+// venue·meal 분리: 이전에는 단일 'venue: 0.40' 슬롯에 "웨딩홀+식대" 라벨을
+// 붙였지만, budget_settings.category_budgets는 venue/meal을 따로 추적한다.
+// 합쳐서 저장하면 식대 슬롯이 0으로 남아 사용자가 예산 페이지에서 "식대
+// 예산 없음" 상태를 보게 됨. 일반적인 한국 결혼식 통계상 200인 기준 식대가
+// 대관·세팅보다 큰 경우가 많아 40 : 60 (venue : meal) 분할로 잡음. 정확한
+// 비율은 인원/지역별 편차 큼 — 사용자가 예산 페이지에서 미세 조정 가능.
 const BASE_RATIOS: Record<string, number> = {
-  venue: 0.40,        // 웨딩홀 + 식대
+  venue: 0.16,        // 웨딩홀 대관·세팅
+  meal: 0.24,         // 식대
   sdm: 0.15,          // 스튜디오·드레스·메이크업
   ring: 0.10,         // 예물·반지
   honeymoon: 0.15,    // 신혼여행
@@ -346,7 +354,8 @@ const BASE_RATIOS: Record<string, number> = {
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
-  venue: "웨딩홀+식대",
+  venue: "웨딩홀 대관",
+  meal: "식대",
   sdm: "스드메",
   ring: "예물·반지",
   honeymoon: "신혼여행",
@@ -354,17 +363,19 @@ const CATEGORY_LABEL: Record<string, string> = {
   etc: "기타",
 };
 
-// 우선순위 키워드 매핑 (BudgetSurvey의 priorities 값)
-const PRIORITY_TO_CATEGORY: Record<string, string> = {
-  "웨딩홀": "venue",
-  "식장": "venue",
-  "스드메": "sdm",
-  "예물": "ring",
-  "반지": "ring",
-  "신혼여행": "honeymoon",
-  "허니문": "honeymoon",
-  "가전": "appliance",
-  "혼수": "appliance",
+// 우선순위 키워드 매핑 (BudgetSurvey의 priorities 값).
+// "웨딩홀" 우선순위는 venue + meal을 함께 boost — 사용자 입장에서 "웨딩홀에
+// 비중 높이고 싶다"는 보통 식장+식대를 한 묶음으로 가리키기 때문.
+const PRIORITY_TO_CATEGORIES: Record<string, string[]> = {
+  "웨딩홀": ["venue", "meal"],
+  "식장": ["venue", "meal"],
+  "스드메": ["sdm"],
+  "예물": ["ring"],
+  "반지": ["ring"],
+  "신혼여행": ["honeymoon"],
+  "허니문": ["honeymoon"],
+  "가전": ["appliance"],
+  "혼수": ["appliance"],
 };
 
 // Maps the handler's internal allocation slug to the real BudgetCategory
@@ -374,6 +385,7 @@ const PRIORITY_TO_CATEGORY: Record<string, string> = {
 // 가전·혼수 (matching budgetData.categoryKeys).
 const ALLOC_TO_BUDGET_CATEGORY: Record<string, BudgetCategory> = {
   venue: "venue",
+  meal: "meal",
   sdm: "sdm",
   ring: "ring",
   honeymoon: "honeymoon",
@@ -416,20 +428,34 @@ export const handleBudgetPlanning = async (params: BudgetParams): Promise<Budget
     return { text: "총 예산을 입력해주시면 항목별로 권장 분배를 보여드릴 수 있어요 💰\n\n한국 결혼식 평균은 부부 합산 5,000만~1억 원 정도예요." };
   }
 
-  // 우선순위 카테고리 추출
+  // 우선순위 카테고리 추출. "웨딩홀" 키워드는 venue + meal에 boost를
+  // 나눠 적용 — 사용자 입장에서 "웨딩홀 우선순위" 한 표는 한 표 분량의
+  // 추가 비중을 의미. 단순히 두 카테고리에 +5%씩 더하면 다른 우선순위
+  // (스드메 등 한 카테고리만 매핑)보다 2배 boost되어 형평성 깨짐. 그래서
+  // 매핑된 카테고리 수로 boost를 나눔.
   const priorityCategories = new Set<string>();
+  const categoryBoosts: Record<string, number> = {};
   for (const p of params.priorities ?? []) {
-    const cat = PRIORITY_TO_CATEGORY[p];
-    if (cat) priorityCategories.add(cat);
+    const cats = PRIORITY_TO_CATEGORIES[p];
+    if (!cats || cats.length === 0) continue;
+    const perCatBoost = 0.05 / cats.length;
+    for (const c of cats) {
+      priorityCategories.add(c);
+      categoryBoosts[c] = (categoryBoosts[c] ?? 0) + perCatBoost;
+    }
   }
 
-  // 우선순위 +5%, 비우선 항목에서 -2.5% 분산
+  // 우선순위 +5% (한 priority 슬롯당), 비우선 항목에서 균등 차감.
+  // categoryBoosts에 이미 슬롯별·카테고리별 보너스가 누적돼 있으므로
+  // 총 차감액은 모든 boost의 합과 같음.
   const ratios = { ...BASE_RATIOS };
-  if (priorityCategories.size > 0) {
-    const totalBoost = priorityCategories.size * 0.05;
+  const totalBoost = Object.values(categoryBoosts).reduce((s, v) => s + v, 0);
+  if (totalBoost > 0) {
     const nonPriorityKeys = Object.keys(ratios).filter((k) => !priorityCategories.has(k));
-    const distribute = totalBoost / nonPriorityKeys.length;
-    for (const k of priorityCategories) ratios[k] += 0.05;
+    const distribute = nonPriorityKeys.length > 0 ? totalBoost / nonPriorityKeys.length : 0;
+    for (const [k, b] of Object.entries(categoryBoosts)) {
+      ratios[k] = (ratios[k] ?? 0) + b;
+    }
     for (const k of nonPriorityKeys) ratios[k] = Math.max(0.02, ratios[k] - distribute);
   }
 

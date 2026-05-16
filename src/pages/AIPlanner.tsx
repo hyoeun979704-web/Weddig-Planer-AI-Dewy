@@ -155,19 +155,35 @@ const AIPlanner = () => {
   // sub-region list (constants.ts REGIONS) silently skip region prefill
   // when it can't be matched, leaving the user to pick — that's safer
   // than auto-selecting the wrong sub-region.
+  // Read directly from the raw saved tables (user_wedding_settings +
+  // budget_settings) so we ONLY mark a field as "자동 채움" when the user
+  // actually entered it. useWeddingProfile is convenient but its fallback
+  // defaults ("seoul" for region, 200 for guest_count, etc.) would surface
+  // those defaults as if they were the user's saved data — a brand-new
+  // account would see "서울특별시 자동 채움 / 200명 자동 채움" without
+  // ever having entered anything. Using the raw values keeps undefined
+  // honest: no value, no badge, blank field for the user to fill.
   const surveyPrefill = useMemo(() => {
-    // Map region key → official long label so BudgetSurvey's region <select>
-    // (which lists "서울특별시", "경기도", etc.) matches.
-    const officialRegion = profile.region
-      ? REGION_DATA[profile.region]?.officialLabel ?? weddingSettings.wedding_region ?? undefined
-      : weddingSettings.wedding_region ?? undefined;
+    const rawRegionLabel = weddingSettings.wedding_region || undefined;
+    const rawRegionKey = budgetSettings?.region;
+    const region = rawRegionLabel
+      ?? (rawRegionKey ? REGION_DATA[rawRegionKey]?.officialLabel : undefined);
+    const rawGuests = budgetSettings?.guest_count ?? weddingSettings.guest_count ?? null;
+    const rawTotal = budgetSettings?.total_budget ?? null;
     return {
-      weddingDate: profile.weddingDate || undefined,
-      region: officialRegion,
-      guestCount: profile.guestCount > 0 ? profile.guestCount : undefined,
-      totalBudget: profile.totalBudget > 0 ? profile.totalBudget : undefined,
+      weddingDate: weddingSettings.wedding_date || undefined,
+      region,
+      guestCount: rawGuests && rawGuests > 0 ? rawGuests : undefined,
+      totalBudget: rawTotal && rawTotal > 0 ? rawTotal : undefined,
     };
-  }, [profile.weddingDate, profile.region, profile.guestCount, profile.totalBudget, weddingSettings.wedding_region]);
+  }, [
+    weddingSettings.wedding_date,
+    weddingSettings.wedding_region,
+    weddingSettings.guest_count,
+    budgetSettings?.region,
+    budgetSettings?.guest_count,
+    budgetSettings?.total_budget,
+  ]);
   const quickQuestions = useMemo(() => buildQuickQuestions(weddingStyle), [weddingStyle]);
   const greeting = STYLE_GREETING[weddingStyle] ?? STYLE_GREETING.general;
   const [input, setInput] = useState("");
