@@ -13,6 +13,10 @@ export interface UserData {
     planning_stage: string | null;
     wedding_date_tbd: boolean | null;
     wedding_region_tbd: boolean | null;
+    wedding_style: string | null;
+    excluded_categories: string[] | null;
+    marital_history: string | null;
+    pregnant: boolean | null;
   } | null;
   budgetSettings: {
     total_budget: number | null;
@@ -30,7 +34,7 @@ export async function fetchUserData(supabase: any, userId: string): Promise<User
     supabase.from("favorites").select("item_type, item_id").eq("user_id", userId),
     supabase
       .from("user_wedding_settings")
-      .select("wedding_date, wedding_region, partner_name, planning_stage, wedding_date_tbd, wedding_region_tbd")
+      .select("wedding_date, wedding_region, partner_name, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -96,6 +100,25 @@ const STAGE_LABELS: Record<string, string> = {
   wrapping_up: "마무리 단계 (~D-60, 시연·시착·하객 안내)",
 };
 
+const STYLE_LABELS: Record<string, string> = {
+  general: "일반 결혼식 (호텔/예식장 + 풀패키지)",
+  small: "스몰웨딩 (30~80명 소규모, 한옥/하우스/카페형 선호)",
+  self: "셀프웨딩 (스튜디오·드레스·메이크업을 직접 진행)",
+  custom: "직접 선택한 카테고리 조합",
+};
+
+const CATEGORY_KO: Record<string, string> = {
+  wedding_hall: "웨딩홀",
+  studio: "스튜디오 촬영",
+  dress_shop: "드레스샵",
+  makeup_shop: "메이크업샵",
+  hanbok: "한복",
+  tailor_shop: "예복",
+  honeymoon: "신혼여행",
+  appliance: "혼수 가전·가구",
+  invitation_venue: "청첩장 모임 베뉴",
+};
+
 export function buildUserContext(userData: UserData): string {
   const parts: string[] = [];
 
@@ -122,6 +145,36 @@ export function buildUserContext(userData: UserData): string {
   if (ws?.planning_stage) {
     const label = STAGE_LABELS[ws.planning_stage] ?? ws.planning_stage;
     parts.push(`진행 단계: ${label}`);
+  }
+
+  if (ws?.wedding_style) {
+    const label = STYLE_LABELS[ws.wedding_style] ?? ws.wedding_style;
+    parts.push(`결혼 스타일: ${label}`);
+  }
+
+  if (Array.isArray(ws?.excluded_categories) && ws.excluded_categories.length > 0) {
+    const labels = ws.excluded_categories
+      .map((c) => CATEGORY_KO[c] ?? c)
+      .join(", ");
+    parts.push(`준비 제외 카테고리: ${labels} (이 카테고리는 추천·답변에서 제외하세요)`);
+  }
+
+  // 재혼 — 청첩장 발송 범위·하객 톤·축의금 안내가 초혼과 달라 명시. 누락
+  // (NULL)일 땐 초혼이라고 단정하지 말고 조용히 지나가도록 컨텍스트에서 생략.
+  if (ws?.marital_history === "remarriage") {
+    parts.push(
+      "결혼 차수: 재혼 (양가 친지·축의금 안내 범위가 좁고, 간소한 진행을 선호하는 경향. 일반 초혼 가이드를 그대로 적용하지 마세요)",
+    );
+  } else if (ws?.marital_history === "first") {
+    parts.push("결혼 차수: 초혼");
+  }
+
+  // 임산부 — 드레스 사이즈 여유, 메이크업 약품 회피, 식음·일정 압축 등 답변
+  // 톤에 직접 반영되어야 함.
+  if (ws?.pregnant) {
+    parts.push(
+      "신부 임신 중: 드레스 사이즈 여유분, 임산부 친화 메이크업, 식음 주의, 일정 압축 우선순위를 답변에 반영하세요. 단, 묻지 않은 의학 조언은 피하고 식약처·산부인과 확인을 권하세요.",
+    );
   }
 
   const bs = userData.budgetSettings;

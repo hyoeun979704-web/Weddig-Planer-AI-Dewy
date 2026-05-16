@@ -15,6 +15,8 @@ export interface ScheduleItem {
   source: "user" | "template";
 }
 
+export type MaritalHistory = "first" | "remarriage";
+
 interface WeddingSettings {
   wedding_date: string | null;
   partner_name: string | null;
@@ -24,6 +26,8 @@ interface WeddingSettings {
   wedding_region_tbd: boolean;
   wedding_style: WeddingStyle | null;
   excluded_categories: string[];
+  marital_history: MaritalHistory | null;
+  pregnant: boolean;
 }
 
 export const useWeddingSchedule = () => {
@@ -37,6 +41,8 @@ export const useWeddingSchedule = () => {
     wedding_region_tbd: false,
     wedding_style: null,
     excluded_categories: [],
+    marital_history: null,
+    pregnant: false,
   });
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +62,7 @@ export const useWeddingSchedule = () => {
       const [settingsRes, itemsRes] = await Promise.all([
         supabase
           .from("user_wedding_settings")
-          .select("wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories")
+          .select("wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant")
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
@@ -77,6 +83,8 @@ export const useWeddingSchedule = () => {
           wedding_region_tbd: !!s.wedding_region_tbd,
           wedding_style: (s.wedding_style ?? null) as WeddingStyle | null,
           excluded_categories: Array.isArray(s.excluded_categories) ? s.excluded_categories : [],
+          marital_history: (s.marital_history ?? null) as MaritalHistory | null,
+          pregnant: !!s.pregnant,
         });
       }
 
@@ -144,6 +152,8 @@ export const useWeddingSchedule = () => {
       wedding_region_tbd: boolean;
       wedding_style: WeddingStyle | null;
       excluded_categories: string[];
+      marital_history: MaritalHistory | null;
+      pregnant: boolean;
     }>
   ) => {
     if (!user) {

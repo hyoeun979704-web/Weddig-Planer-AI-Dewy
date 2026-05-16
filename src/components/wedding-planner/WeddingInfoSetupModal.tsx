@@ -8,7 +8,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SurveyModal from "@/components/wedding-planner/SurveyModal";
 import WeddingStylePicker from "@/components/schedule/WeddingStylePicker";
-import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useWeddingSchedule, type MaritalHistory } from "@/hooks/useWeddingSchedule";
 import {
   buildScheduleFromTemplate,
   PLANNING_STAGE_LABELS,
@@ -58,6 +58,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const [stage, setStage] = useState<PlanningStage>("just_started");
   const [weddingStyle, setWeddingStyle] = useState<WeddingStyle>("general");
   const [excludedCategories, setExcludedCategories] = useState<string[]>([]);
+  const [maritalHistory, setMaritalHistory] = useState<MaritalHistory | null>(null);
+  const [pregnant, setPregnant] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -85,6 +87,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
         ? weddingSettings.excluded_categories
         : defaultExclusionsFor((weddingSettings.wedding_style ?? "general") as WeddingStyle)
     );
+    setMaritalHistory(weddingSettings.marital_history);
+    setPregnant(weddingSettings.pregnant);
     setErrors({});
   }, [
     isOpen,
@@ -96,6 +100,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     weddingSettings.planning_stage,
     weddingSettings.wedding_style,
     weddingSettings.excluded_categories,
+    weddingSettings.marital_history,
+    weddingSettings.pregnant,
   ]);
 
   const validate = () => {
@@ -120,6 +126,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       wedding_region_tbd: regionTbd,
       wedding_style: weddingStyle,
       excluded_categories: excludedCategories,
+      marital_history: maritalHistory,
+      pregnant,
     });
 
     if (ok) {
@@ -307,6 +315,60 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
               setExcludedCategories(excluded);
             }}
           />
+        </div>
+
+        {/* 결혼 차수 (선택) — 재혼 페르소나 G-1, F-2를 위해 카피·체크리스트
+            톤을 다르게. 미선택이면 AI 컨텍스트에서 생략. */}
+        <div>
+          <label className={labelCls}>
+            결혼 차수 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { value: "first", label: "초혼" },
+              { value: "remarriage", label: "재혼" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() =>
+                  setMaritalHistory((prev) => (prev === opt.value ? null : opt.value))
+                }
+                className={cn(
+                  "px-3 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors",
+                  maritalHistory === opt.value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-1.5">
+            선택하면 추천 콘텐츠·AI 답변 톤을 맞춰드려요. 다시 누르면 해제.
+          </p>
+        </div>
+
+        {/* 임신 여부 (선택) — 페르소나 F-1 (임산부 D-60)을 위해. 체크리스트
+            우선순위 압축과 AI 답변(드레스 사이즈, 메이크업 약품 등)에 반영. */}
+        <div>
+          <label className="flex items-start gap-2.5 px-3 py-3 border rounded-xl cursor-pointer bg-gray-50 hover:bg-white transition-colors">
+            <input
+              type="checkbox"
+              checked={pregnant}
+              onChange={(e) => setPregnant(e.target.checked)}
+              className="w-4 h-4 accent-[#C9A96E] mt-0.5"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-800">
+                현재 임신 중이에요 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+              </p>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                드레스 사이즈·일정 압축·메이크업 등 임신 친화 정보 위주로 추천해드려요.
+              </p>
+            </div>
+          </label>
         </div>
 
         <div className="flex gap-2 pt-2">
