@@ -24,8 +24,8 @@ interface BudgetReportSheetProps {
 
 const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportSheetProps) => {
   const categoryKeys = visibleCategoryKeys ?? ALL_CATEGORY_KEYS;
-  const { settings, items, summary } = useBudget();
   const { weddingSettings } = useWeddingSchedule();
+  const { settings, items, summary } = useBudget(undefined, weddingSettings.wedding_style);
   const profile = useWeddingProfile();
   const [generating, setGenerating] = useState(false);
   const [htmlResult, setHtmlResult] = useState("");
@@ -38,7 +38,7 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       const regionKey = settings?.region || "seoul";
       const regionLabel = regions[regionKey]?.label || regionKey;
       const guestCount = settings?.guest_count || 200;
-      const avg = getRegionalAvgWithMeal(regionKey, guestCount);
+      const avg = getRegionalAvgWithMeal(regionKey, guestCount, weddingSettings.wedding_style ?? undefined);
       const catBudgets = (settings?.category_budgets || {}) as Record<BudgetCategory, number>;
 
       let daysLeft: number | null = null;

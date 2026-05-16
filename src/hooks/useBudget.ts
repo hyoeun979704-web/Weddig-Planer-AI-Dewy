@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { regionalAverages, regions, type BudgetCategory } from "@/data/budgetData";
+import { getRegionalAvgWithMeal, regionalAverages, regions, type BudgetCategory } from "@/data/budgetData";
+import type { WeddingStyle } from "@/lib/weddingStyle";
 
 export interface BudgetSettings {
   id: string;
@@ -43,7 +44,7 @@ export interface BudgetSummary {
   paidByTotals: Record<string, number>;
 }
 
-export function useBudget(profileRegionKey?: string) {
+export function useBudget(profileRegionKey?: string, weddingStyle?: WeddingStyle | null) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -102,7 +103,14 @@ export function useBudget(profileRegionKey?: string) {
   }, [items, settings?.total_budget]);
 
   const effectiveRegion = settings?.region || profileRegionKey || "seoul";
-  const regionalAverage = regionalAverages[effectiveRegion] || regionalAverages.seoul;
+  // Style-aware regional average. When weddingStyle is small/self we apply
+  // category multipliers (venue·sdm·etc) so the "지역 평균 vs 내 예산"
+  // comparison reflects the user's actual scope. Falls back to general
+  // (un-adjusted) when style is null/general/custom or settings missing.
+  const styleDefaultGuests = weddingStyle === "self" ? 25 : weddingStyle === "small" ? 50 : 200;
+  const effectiveGuestCount = settings?.guest_count ?? styleDefaultGuests;
+  const styleAvg = getRegionalAvgWithMeal(effectiveRegion, effectiveGuestCount, weddingStyle ?? undefined);
+  const regionalAverage = styleAvg ?? regionalAverages[effectiveRegion] ?? regionalAverages.seoul;
 
   const saveSettings = useMutation({
     mutationFn: async (s: Partial<BudgetSettings>) => {
