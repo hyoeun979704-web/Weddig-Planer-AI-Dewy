@@ -7,6 +7,7 @@ import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import ExcludedCategoryBanner from "@/components/ExcludedCategoryBanner";
 import VenueGrid from "@/components/VenueGrid";
 import FilterBar from "@/components/FilterBar";
+import ValueTagChipRow from "@/components/ValueTagChipRow";
 import VenueCrossLink from "@/components/VenueCrossLink";
 import { Venue } from "@/hooks/useVenues";
 import { useFilterStore } from "@/stores/useFilterStore";
@@ -36,6 +37,7 @@ const Venues = () => {
         <CategoryHeroBanner category="venues" />
         <VenueCrossLink variant="venues" />
         <FilterBar />
+        <ValueTagChipRow />
         {weddingStyle === "small" && (
           // Surface the hall-type filter to small-wedding users — the
           // options (하우스/스몰웨딩/채플/가든) are most relevant to their

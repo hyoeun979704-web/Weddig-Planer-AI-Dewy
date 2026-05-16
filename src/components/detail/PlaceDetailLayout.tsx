@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { extractValueTags, isValueTag } from "@/lib/placeValueTags";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -264,15 +265,32 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
         )}
         {place.tags && place.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">
-            {place.tags.slice(0, 8).map((t, i) => (
+            {/* Value tags first with emoji + friendly label so they pop out
+                of the long generic tag list. Persona v2 권고 #7 후속 — S-2
+                같은 가치 중심 페르소나가 한눈에 매칭을 확인할 수 있게. */}
+            {extractValueTags(place.tags).map((vt) => (
               <button
-                key={i}
-                onClick={() => handleTagClick(t)}
-                className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-full transition-colors"
+                key={`val-${vt.value}`}
+                onClick={() => handleTagClick(vt.value)}
+                title={vt.hint}
+                className="text-[11px] px-2 py-0.5 bg-primary/10 text-primary rounded-full font-semibold flex items-center gap-1 hover:bg-primary/20 transition-colors"
               >
-                #{t}
+                <span aria-hidden>{vt.emoji}</span>
+                <span>{vt.label}</span>
               </button>
             ))}
+            {place.tags
+              .filter((t) => !isValueTag(t))
+              .slice(0, 8)
+              .map((t, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleTagClick(t)}
+                  className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-full transition-colors"
+                >
+                  #{t}
+                </button>
+              ))}
           </div>
         )}
       </div>

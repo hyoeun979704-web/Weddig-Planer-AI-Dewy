@@ -53,6 +53,9 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
   if (filters.eventOptions && filters.eventOptions.length > 0) {
     query = query.overlaps("tags", filters.eventOptions);
   }
+  if (filters.valueTags && filters.valueTags.length > 0) {
+    query = query.overlaps("tags", filters.valueTags);
+  }
 
   // 신뢰도(채움도) 우선, 같으면 평점 — null 데이터 적은 곳이 먼저 노출.
   const { data, error, count } = await query
@@ -70,8 +73,8 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
 };
 
 export const useVenues = (partnersOnly: boolean = false) => {
-  const { region, maxPrice, maxGuarantee, minRating, hallTypes, mealOptions, eventOptions } = useFilterStore();
-  const hasFilters = !!(region || maxPrice || maxGuarantee || minRating || hallTypes.length || mealOptions.length || eventOptions.length);
+  const { region, maxPrice, maxGuarantee, minRating, hallTypes, mealOptions, eventOptions, valueTags } = useFilterStore();
+  const hasFilters = !!(region || maxPrice || maxGuarantee || minRating || hallTypes.length || mealOptions.length || eventOptions.length || valueTags.length);
 
   const filters: FilterState = {
     region,
@@ -81,6 +84,7 @@ export const useVenues = (partnersOnly: boolean = false) => {
     hallTypes,
     mealOptions,
     eventOptions,
+    valueTags,
   };
 
   const showPartnersOnly = partnersOnly && !hasFilters;
