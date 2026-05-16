@@ -73,6 +73,39 @@ const CHIP_MAP: Record<string, string[]> = {
     "이번 주 일정",                     // → schedule_upcoming
   ],
 
+  // ── 신규 가이드 5종 follow-up ──────────────────────
+  // 모든 칩은 followUpChips.test.ts 회귀 테스트로 라우팅 보장.
+  guide_fitting: [
+    "드레스 시세 어때",                 // → average_price
+    "강남 드레스샵 추천",               // → free_search
+    "스드메 언제 예약",                 // → guide_sdme_timing
+    "디데이 알려줘",                    // → dday
+  ],
+  guide_snap: [
+    "스튜디오 시세 어때",               // → average_price
+    "강남 스튜디오 추천",               // → free_search
+    "인기 스튜디오 보여줘",             // → popular_places
+    "계약 체크포인트",                  // → guide_contract
+  ],
+  guide_invitation_design: [
+    "청첩장 언제 보내",                 // → guide_invitation_timing
+    "체크리스트 진척률",                // → checklist_progress
+    "디데이 알려줘",                    // → dday
+    "예단 매너 알려줘",                 // → guide_etiquette
+  ],
+  guide_ceremony_rehearsal: [
+    "본식 식순 보여줘",                 // → guide_ceremony_progress
+    "메이크업 시연 언제",               // → guide_makeup_trial
+    "혼주 복장 가이드",                 // → guide_parents_attire
+    "디데이 알려줘",                    // → dday
+  ],
+  guide_parents_attire: [
+    "예단 매너 알려줘",                 // → guide_etiquette
+    "본식 식순 보여줘",                 // → guide_ceremony_progress
+    "축의금 봉투 어떻게 써?",          // → guide_gift
+    "디데이 알려줘",                    // → dday
+  ],
+
   // ── DB 조회 응답 후 ────────────────────────────────
   dday: [
     "오늘 일정 알려줘",                 // → schedule_today

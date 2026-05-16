@@ -47,6 +47,9 @@ describe("getFollowUpChips — 응답 intent별 후속 질문 칩", () => {
       "guide_etiquette", "guide_gift", "guide_sdme_timing",
       "guide_invitation_timing", "guide_makeup_trial", "guide_honeymoon_timing",
       "guide_contract", "guide_new_home", "guide_ceremony_progress",
+      // 신규 가이드 5종
+      "guide_fitting", "guide_snap", "guide_invitation_design",
+      "guide_ceremony_rehearsal", "guide_parents_attire",
       "dday", "budget_summary", "budget_diagnosis",
       "schedule_today", "schedule_upcoming", "schedule_diagnosis",
       "checklist_progress", "favorites", "cart",
