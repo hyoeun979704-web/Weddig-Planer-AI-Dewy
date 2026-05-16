@@ -88,19 +88,90 @@ export const regionalAverages: Record<string, RegionalAverage> = {
 };
 
 /**
+ * Per-style multipliers on each category, calibrated against persona
+ * simulations (F-1 셀프 25명·700만원, F-2 셀프 18명·950만원, S-1 스몰
+ * 60명·4,200만원, S-2 스몰 50명·3,300만원). general/custom는 무변경.
+ *
+ *  · small: 한옥/하우스/카페형 가정 — venue 절감이 크고, 코스 식대로
+ *    per_guest_meal은 약간 상승. 한복·예복은 대여 위주로 절감.
+ *  · self: 마당/공원/지인 베뉴 가정 — venue·sdm 대폭 절감. DIY 소품·
+ *    재료비 증가로 etc는 상승.
+ */
+const STYLE_AVG_FACTOR: Partial<Record<string, Partial<Record<keyof RegionalAverage, number>>>> = {
+  small: {
+    venue: 0.6,
+    sdm: 0.8,
+    suit: 0.7,
+    hanbok: 0.8,
+    etc: 1.2,
+    per_guest_meal: 1.1,
+  },
+  self: {
+    venue: 0.2,
+    sdm: 0.15,
+    suit: 0.6,
+    hanbok: 0.6,
+    etc: 1.5,
+  },
+};
+
+const STYLE_NOTE_SUFFIX: Record<string, string> = {
+  small: "스몰웨딩 평균 기준 (일반 대비 venue·예복 약 30~40% 절감)",
+  self: "셀프웨딩 평균 기준 (일반 대비 venue·스드메 약 80% 절감)",
+};
+
+const factorOf = (style: string | null | undefined, key: keyof RegionalAverage): number => {
+  if (!style || !STYLE_AVG_FACTOR[style]) return 1;
+  return STYLE_AVG_FACTOR[style]?.[key] ?? 1;
+};
+
+/**
  * Returns regional averages with per-guest meal cost computed as a separate `meal` field.
  * The hall venue averages cover dry hall/setup costs only; the meal value scales
  * with guest count and is exposed alongside venue so it can be assigned to its own
  * "meal" budget category. `total` includes meal so the headline figure is realistic.
+ *
+ * When `style` is "small" or "self", category multipliers from
+ * STYLE_AVG_FACTOR are applied and `total` is recomputed from the scaled
+ * categories. Pass undefined / "general" / "custom" for the un-adjusted
+ * baseline (호환을 위해 기본값).
  */
-export const getRegionalAvgWithMeal = (regionKey: string, guestCount: number) => {
+export const getRegionalAvgWithMeal = (
+  regionKey: string,
+  guestCount: number,
+  style?: string | null,
+) => {
   const avg = regionalAverages[regionKey];
   if (!avg) return null;
-  const meal = Math.round(avg.per_guest_meal * guestCount);
+  const perGuestMeal = avg.per_guest_meal * factorOf(style, "per_guest_meal");
+  const meal = Math.round(perGuestMeal * guestCount);
+
+  const scaled = {
+    venue: Math.round(avg.venue * factorOf(style, "venue")),
+    sdm: Math.round(avg.sdm * factorOf(style, "sdm")),
+    suit: Math.round(avg.suit * factorOf(style, "suit")),
+    hanbok: Math.round(avg.hanbok * factorOf(style, "hanbok")),
+    ring: Math.round(avg.ring * factorOf(style, "ring")),
+    meetup: Math.round(avg.meetup * factorOf(style, "meetup")),
+    house: Math.round(avg.house * factorOf(style, "house")),
+    honeymoon: Math.round(avg.honeymoon * factorOf(style, "honeymoon")),
+    etc: Math.round(avg.etc * factorOf(style, "etc")),
+  };
+
+  const note =
+    style && STYLE_NOTE_SUFFIX[style]
+      ? avg.note
+        ? `${avg.note} · ${STYLE_NOTE_SUFFIX[style]}`
+        : STYLE_NOTE_SUFFIX[style]
+      : avg.note;
+
   return {
     ...avg,
+    ...scaled,
+    per_guest_meal: perGuestMeal,
     meal,
-    total: avg.total + meal,
+    total: Object.values(scaled).reduce((a, b) => a + b, 0) + meal,
+    note,
   };
 };
 

@@ -67,8 +67,8 @@ const Budget = () => {
   const { user } = useAuth();
   const { defaultRegion } = useDefaultRegion();
   const profileRegionKey = resolveRegionKey(defaultRegion);
-  const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem } = useBudget(profileRegionKey);
   const { weddingSettings, scheduleItems } = useWeddingSchedule();
+  const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem } = useBudget(profileRegionKey, weddingSettings.wedding_style);
   // Sheets get the filtered list; main page itself iterates all 10 with
   // dimming for hidden ones (visible without forcing edits).
   const visibleSheetCategories = visibleBudgetCategories(weddingSettings.excluded_categories || []) as BudgetCategory[];
