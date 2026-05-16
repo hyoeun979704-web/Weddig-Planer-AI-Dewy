@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Flame, Search, Sparkles, X } from "lucide-react";
+import { Flame, Search, Sparkles, X } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import HomeHeader from "@/components/home/HomeHeader";
+import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { Input } from "@/components/ui/input";
 import { TipVideoCard, TipVideoCardSkeleton } from "@/components/TipVideoCard";
 import { useTipVideos, type TipVideo } from "@/hooks/useTipVideos";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { rankTipVideosForUser, buildCurationFactors } from "@/lib/tipCuration";
 
 // Shorts threshold: YouTube classifies up to 3 min as Shorts. We use 180s.
@@ -83,6 +86,24 @@ const Tips = () => {
   // "인기순" — so this is safe even for logged-out / fresh users.
   const [sort, setSort] = useState<SortKey>("curated");
   const [format, setFormat] = useState<FormatKey>("all");
+
+  // 스몰웨딩 사용자가 진입했을 때 1회 한정으로 '청첩장' 칩을 자동 선택해서
+  // 소규모 모임 관련 콘텐츠를 바로 보여줌. 사용자가 다른 칩으로 옮기면 유지.
+  // 단, invitation_venue가 사용자의 excluded_categories에 들어가 chip 자체가
+  // 숨겨졌다면(default small preset 케이스) 자동 선택을 건너뜀 — 위쪽 reset
+  // useEffect가 즉시 풀어버려서 결국 사용자에겐 변화로 보이지 않기 때문.
+  const { weddingSettings, isLoading: scheduleLoading } = useWeddingSchedule();
+  const didInitCategoryRef = useRef(false);
+  useEffect(() => {
+    if (didInitCategoryRef.current || scheduleLoading) return;
+    didInitCategoryRef.current = true;
+    if (
+      weddingSettings.wedding_style === "small" &&
+      visibleChips.some((c) => c.slug === "invitation_venue")
+    ) {
+      setCategory("invitation_venue");
+    }
+  }, [scheduleLoading, weddingSettings.wedding_style, visibleChips]);
 
   // HOT row: published in last 7 days. Over-fetch (40) so the client filter
   // still has candidates when fresh content is sparse. Disabled the moment
@@ -164,67 +185,60 @@ const Tips = () => {
   const isGridLoading = isLoading || isDebouncing;
   const showCuratedBadge = !uiSearchMode && sort === "curated" && curationFactors.hasSignal;
 
+  const handleCategoryTabChange = useCategoryTabNavigation();
+
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-20">
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center px-4 h-14">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 flex items-center justify-center -ml-2"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-lg font-bold flex-1 text-center -mr-8">꿀팁</h1>
-        </div>
+      <HomeHeader />
+      <CategoryTabBar activeTab="tips" onTabChange={handleCategoryTabChange} />
 
-        <div className="px-4 pb-2">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              type="text"
-              role="searchbox"
-              inputMode="search"
-              enterKeyHint="search"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="영상 제목·채널 검색"
-              className="pl-9 pr-10 h-9 text-sm"
-              aria-label="꿀팁 영상 검색 (숨긴 카테고리 포함 전체 검색)"
-            />
-            {searchInput && (
+      <div className="px-4 pt-3 pb-2 border-b border-border">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            role="searchbox"
+            inputMode="search"
+            enterKeyHint="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="영상 제목·채널 검색"
+            className="pl-9 pr-10 h-9 text-sm"
+            aria-label="꿀팁 영상 검색 (숨긴 카테고리 포함 전체 검색)"
+          />
+          {searchInput && (
+            <button
+              type="button"
+              onClick={() => setSearchInput("")}
+              aria-label="검색어 지우기"
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {!uiSearchMode && (
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 py-3 border-b border-border">
+          {visibleChips.map((c) => {
+            const active = category === c.slug;
+            return (
               <button
-                type="button"
-                onClick={() => setSearchInput("")}
-                aria-label="검색어 지우기"
-                className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground"
+                key={c.slug ?? "all"}
+                onClick={() => setCategory(c.slug)}
+                className={`flex-shrink-0 px-3 h-8 rounded-full text-[12px] font-medium transition-colors ${
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
               >
-                <X className="w-4 h-4" />
+                {c.label}
               </button>
-            )}
-          </div>
+            );
+          })}
         </div>
-
-        {!uiSearchMode && (
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-3">
-            {visibleChips.map((c) => {
-              const active = category === c.slug;
-              return (
-                <button
-                  key={c.slug ?? "all"}
-                  onClick={() => setCategory(c.slug)}
-                  className={`flex-shrink-0 px-3 h-8 rounded-full text-[12px] font-medium transition-colors ${
-                    active
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
-                >
-                  {c.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </header>
+      )}
 
       <main>
         {!uiSearchMode && (

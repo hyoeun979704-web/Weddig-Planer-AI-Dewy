@@ -7,6 +7,7 @@ import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import ExcludedCategoryBanner from "@/components/ExcludedCategoryBanner";
 import VenueGrid from "@/components/VenueGrid";
 import FilterBar from "@/components/FilterBar";
+import VenueCrossLink from "@/components/VenueCrossLink";
 import { Venue } from "@/hooks/useVenues";
 import { useFilterStore } from "@/stores/useFilterStore";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
@@ -33,6 +34,7 @@ const Venues = () => {
       <main className="pb-20">
         <ExcludedCategoryBanner scheduleCategories="wedding_hall" />
         <CategoryHeroBanner category="venues" />
+        <VenueCrossLink variant="venues" />
         <FilterBar />
         {weddingStyle === "small" && (
           // Surface the hall-type filter to small-wedding users — the

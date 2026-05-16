@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SearchOverlay from "./SearchOverlay";
 import DewyLogo from "./DewyLogo";
+import { useCart } from "@/hooks/useCart";
 import searchIcon from "@/assets/icons/search.svg";
 import bellIcon from "@/assets/icons/bell.svg";
 import heartIcon from "@/assets/icons/heart.svg";
@@ -11,6 +12,7 @@ import helpIcon from "@/assets/icons/help.svg";
 const HomeHeader = () => {
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { itemCount } = useCart();
 
   return (
     <>
@@ -62,10 +64,15 @@ const HomeHeader = () => {
             </button>
             <button
               onClick={() => navigate("/cart")}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
-              aria-label="장바구니"
+              className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label={itemCount > 0 ? `장바구니 (${itemCount}개)` : "장바구니"}
             >
               <img src={cartIcon} alt="" className="w-[22px] h-[22px]" />
+              {itemCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {itemCount > 99 ? "99+" : itemCount}
+                </span>
+              )}
             </button>
           </div>
         </div>

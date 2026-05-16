@@ -26,6 +26,7 @@ import {
 import BudgetSetupSheet from "@/components/budget/BudgetSetupSheet";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
 import PayBalanceSheet from "@/components/budget/PayBalanceSheet";
+import PartnerLinkCard from "@/components/partner/PartnerLinkCard";
 import BudgetReportSheet from "@/components/premium/BudgetReportSheet";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
@@ -574,6 +575,10 @@ const Budget = () => {
             </div>
           </div>
         )}
+
+        {/* Partner link — surfaces here because 양가 분담 is the budget-side
+            payoff of linking. Hidden for guests (the login overlay covers them). */}
+        <PartnerLinkCard variant="budget" hideWhenLoggedOut />
 
         {/* Paid-by bar — whole card is clickable to open the simulator */}
         {paidTotal > 0 ? (
