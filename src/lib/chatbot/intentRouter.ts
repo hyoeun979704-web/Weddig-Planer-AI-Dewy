@@ -105,7 +105,8 @@ export interface IntentMatch {
     | "checklist_progress"
     | "free_search"
     | "average_price"
-    | "popular_places";
+    | "popular_places"
+    | "web_search";
   /** 매칭된 키워드 (디버깅·로그용) */
   matchedKeyword?: string;
   /** 동적으로 추출된 인자 (검색 키워드·종류 등) */
@@ -421,6 +422,22 @@ const PATTERNS: IntentPattern[] = [
     intent: "checklist_progress" as ChatIntent,
     patterns: [/체크리스트.*(완료|진행|진척|얼마)/, /몇\s*(%|퍼센트).*했/, /진척률/],
     dbHandler: "checklist_progress",
+  },
+
+  // ── 명시 웹 검색 (사용자가 "웹에서 찾아줘") ────────────
+  // free_search·popular_places보다 먼저 매칭되어야 함 — "웹에서 강남
+  // 웨딩홀 찾아줘"가 free_search 패턴에 먼저 잡히는 회귀 방지.
+  // "더 찾아줘" 단독은 너무 광범위 → 컨텍스트(웹/실시간/최신) 동반 필요.
+  {
+    intent: "web_search" as ChatIntent,
+    patterns: [
+      /웹에서.*(검색|찾|알려)/,
+      /실시간.*(검색|찾|정보)/,
+      /최신.*(검색|찾|정보).*(업체|식장|스튜디오|드레스)/,
+      /구글에서.*(검색|찾)/,
+      /직접.*(웹|구글|인터넷).*(검색|찾)/,
+    ],
+    dbHandler: "web_search",
   },
 
   // 통계·검색 (자유 텍스트)

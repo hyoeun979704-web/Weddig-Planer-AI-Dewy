@@ -164,20 +164,26 @@ const CHIP_MAP: Record<string, string[]> = {
   free_search: [
     "웨딩홀 시세 어때",                 // → average_price
     "인기 식장 보여줘",                 // → popular_places
-    "찜 목록 보여줘",                   // → favorites
+    "웹에서 더 찾아줘",                 // → web_search (실시간 폴백)
     "예산 얼마 썼어?",                  // → budget_summary
   ],
   average_price: [
     "인기 식장 보여줘",                 // → popular_places
     "강남 웨딩홀 추천",                 // → free_search
-    "예산 분석해줘",                    // → budget_diagnosis
+    "웹에서 최신 시세 검색",            // → web_search
     "찜 목록 보여줘",                   // → favorites
   ],
   popular_places: [
     "웨딩홀 시세 어때",                 // → average_price
     "강남 웨딩홀 추천",                 // → free_search
-    "찜 목록 보여줘",                   // → favorites
+    "웹에서 더 찾아줘",                 // → web_search
     "예산 얼마 썼어?",                  // → budget_summary
+  ],
+  web_search: [
+    "예산 얼마 썼어?",                  // → budget_summary
+    "찜 목록 보여줘",                   // → favorites
+    "계약 체크포인트",                  // → guide_contract
+    "디데이 알려줘",                    // → dday
   ],
 
   // ── 모달 응답 후 (sendStructured) ──────────────────

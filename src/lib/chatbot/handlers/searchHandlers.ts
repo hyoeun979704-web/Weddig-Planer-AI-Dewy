@@ -3,9 +3,14 @@
  * - 지역별 식장 평균 시세
  * - 카테고리·지역 자유 검색
  * - 인기 업체 랭킹
+ *
+ * DB에 매칭 업체가 없거나 부족할 때(매핑 안된 신생 업체·니치 카테고리·
+ * 우리 DB 커버리지 밖) Gemini Google Search Grounding으로 폴백해 실시간
+ * 웹 검색 결과 + 검증된 출처를 제공.
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { callWebSearch, formatWebSearchReply } from "./webSearchFallback";
 
 export interface SearchPersonaCtx {
   weddingStyle?: string | null;
@@ -152,6 +157,19 @@ export const handleFreeTextSearch = async (
       category && `🏷️ ${PLACE_CATEGORY_LABEL[category]}`,
       budget && `💰 ${budget}만원`,
     ].filter(Boolean).join(" · ");
+
+    // DB 0건 → 웹 검색 폴백. 실패 시 graceful으로 기존 메시지.
+    const web = await callWebSearch("search", userMessage, {
+      category: category ?? undefined,
+      region: region ?? undefined,
+    });
+    if (web.limitMessage) {
+      return `**검색 결과** 🔍\n${filters}\n\n${web.limitMessage}`;
+    }
+    if (!web.failed && web.reply) {
+      const header = `**검색 결과** 🔍\n${filters}\n\n_듀이 DB에 매칭 업체가 없어 웹 검색 결과를 보여드려요._\n\n`;
+      return header + formatWebSearchReply(web);
+    }
     return `**검색 결과** 🔍\n${filters}\n\n조건에 맞는 업체를 찾지 못했어요 🌿\n다른 지역·카테고리로 시도해보시거나 [전체 페이지](/venues)에서 직접 살펴보세요.`;
   }
 
@@ -246,6 +264,18 @@ export const handleAveragePrice = async (
   const { data } = await query;
 
   if (!data || data.length < 3) {
+    // 표본 부족 → 웹 검색으로 실시간 시세 조회
+    const web = await callWebSearch("price", userMessage, {
+      category: category ?? undefined,
+      region: region ?? undefined,
+    });
+    if (web.limitMessage) {
+      return `**${region ?? "전체"} ${PLACE_CATEGORY_LABEL[category]} 시세** 💰\n\n${web.limitMessage}`;
+    }
+    if (!web.failed && web.reply) {
+      const header = `**${region ?? "전국"} ${PLACE_CATEGORY_LABEL[category]} 시세** 💰\n\n_듀이 DB 표본(${data?.length ?? 0}곳)이 부족해 웹 검색 결과를 보여드려요._\n\n`;
+      return header + formatWebSearchReply(web);
+    }
     return `**${region ?? "전체"} ${PLACE_CATEGORY_LABEL[category]} 시세** 💰\n\n아직 충분한 데이터가 없어 평균을 내기 어려워요. [전체 페이지](/venues)에서 직접 확인해보세요.`;
   }
 
@@ -320,6 +350,18 @@ export const handlePopularPlaces = async (
   const { data } = await query.limit(fetchLimit);
 
   if (!data || data.length === 0) {
+    // DB에 후기 5건+ 업체가 없음 → 웹 검색으로 인기 업체 조회
+    const web = await callWebSearch("popular", userMessage, {
+      category: category ?? undefined,
+      region: region ?? undefined,
+    });
+    if (web.limitMessage) {
+      return `**인기 업체 추천** 🌟\n\n${web.limitMessage}`;
+    }
+    if (!web.failed && web.reply) {
+      const header = `**인기 업체 추천** 🌟\n\n_듀이 DB에 후기가 쌓인 업체가 없어 웹 검색 결과를 보여드려요._\n\n`;
+      return header + formatWebSearchReply(web);
+    }
     return `**인기 업체 추천** 🌟\n\n해당 조건에 충분한 후기가 쌓인 업체가 아직 없어요. 다른 조건으로 시도해보세요.`;
   }
 
@@ -369,4 +411,36 @@ ${filters || "전체"}
 ${lines}${insightBlock}
 
 별점 기준 상위. 자세히 보고 비교는 [전체 페이지](/venues)에서 가능해요.${conflictNote}`;
+};
+
+// ════════════════════════════════════════════════════════════
+// 명시 발동: 사용자가 "웹에서 찾아줘"라고 명시할 때
+// ════════════════════════════════════════════════════════════
+// DB 우회. 항상 Gemini Search Grounding으로 답변. 사용자가 의도적으로
+// 최신 정보를 요청한 케이스 (예: 신생 업체·트렌드·뉴스성 정보).
+export const handleExplicitWebSearch = async (userMessage: string): Promise<string> => {
+  const category = inferCategory(userMessage);
+  const region = inferRegion(userMessage);
+
+  const web = await callWebSearch("search", userMessage, {
+    category: category ?? undefined,
+    region: region ?? undefined,
+  });
+
+  if (web.limitMessage) {
+    return `**웹 검색** 🌐\n\n${web.limitMessage}`;
+  }
+  if (web.failed || !web.reply) {
+    return `**웹 검색** 🌐\n\n검색 중 일시적 문제가 발생했어요. 잠시 후 다시 시도해주세요.`;
+  }
+
+  const filters = [
+    region && `📍 ${region}`,
+    category && `🏷️ ${PLACE_CATEGORY_LABEL[category]}`,
+  ].filter(Boolean).join(" · ");
+  const header = filters
+    ? `**웹 검색 결과** 🌐\n${filters}\n\n`
+    : `**웹 검색 결과** 🌐\n\n`;
+
+  return header + formatWebSearchReply(web);
 };

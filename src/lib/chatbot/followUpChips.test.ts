@@ -53,7 +53,7 @@ describe("getFollowUpChips — 응답 intent별 후속 질문 칩", () => {
       "dday", "budget_summary", "budget_diagnosis",
       "schedule_today", "schedule_upcoming", "schedule_diagnosis",
       "checklist_progress", "favorites", "cart",
-      "free_search", "average_price", "popular_places",
+      "free_search", "average_price", "popular_places", "web_search",
       "venue_recommendation", "sdme_guide", "timeline_planning", "budget_planning",
     ];
     const misses: string[] = [];

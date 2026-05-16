@@ -55,6 +55,7 @@ import {
   handleFreeTextSearch,
   handleAveragePrice,
   handlePopularPlaces,
+  handleExplicitWebSearch,
 } from "./handlers/searchHandlers";
 
 export interface DbHandlerContext {
@@ -603,6 +604,7 @@ export const runDbHandler = async (
     case "free_search": return { reply: await handleFreeTextSearch(userMessage, { weddingStyle: ctx.weddingStyle, excludedCategories: ctx.excludedCategories }) };
     case "average_price": return { reply: await handleAveragePrice(userMessage, { weddingStyle: ctx.weddingStyle, excludedCategories: ctx.excludedCategories }) };
     case "popular_places": return { reply: await handlePopularPlaces(userMessage, { weddingStyle: ctx.weddingStyle, excludedCategories: ctx.excludedCategories }) };
+    case "web_search": return { reply: await handleExplicitWebSearch(userMessage) };
     default:
       return { reply: "요청을 처리할 수 없어요. 다시 한 번 말씀해주시겠어요?" };
   }
