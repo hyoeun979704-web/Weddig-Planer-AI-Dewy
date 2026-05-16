@@ -64,6 +64,13 @@ export const useCoupleLink = () => {
     fetchCoupleLink();
   }, [fetchCoupleLink]);
 
+  // Avoid 0/O/1/I/L — these get mistyped by partners reading off a phone.
+  const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const randomCode = () =>
+    Array.from({ length: 6 }, () =>
+      CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]
+    ).join("");
+
   // 초대 코드 생성
   const generateInviteCode = async (): Promise<string | null> => {
     if (!user) {
@@ -77,11 +84,7 @@ export const useCoupleLink = () => {
         return coupleLink.invite_code;
       }
 
-      // Avoid 0/O/1/I/L — these get mistyped by partners reading off a phone.
-      const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-      const code = Array.from({ length: 6 }, () =>
-        ALPHABET[Math.floor(Math.random() * ALPHABET.length)]
-      ).join("");
+      const code = randomCode();
 
       const { data, error } = await (supabase
         .from("couple_links" as any) as any)
@@ -170,6 +173,62 @@ export const useCoupleLink = () => {
     }
   };
 
+  // 초대 코드 재발급 (pending 상태에서만 가능)
+  //
+  // 카톡 등으로 잘못된 사람에게 코드를 노출했거나, 파트너가 코드를 잊어버려
+  // 다시 받고 싶을 때 사용. 같은 행을 그대로 두고 invite_code 컬럼만 새 값으로
+  // 갱신해 기존 공유 링크/메시지는 자동 무효화.
+  //
+  // RLS UPDATE 정책이 user_id=auth.uid() 또는 partner_user_id=auth.uid()를
+  // 허용하므로 본인의 pending 행은 클라이언트에서 직접 update 가능. status
+  // 조건을 WHERE에 같이 걸어 그 사이 누군가 redeem 해버린 race도 차단.
+  const regenerateInviteCode = async (): Promise<string | null> => {
+    if (!user) {
+      toast.error("로그인이 필요합니다");
+      return null;
+    }
+    if (!coupleLink) {
+      toast.error("먼저 초대 코드를 생성해주세요");
+      return null;
+    }
+    if (coupleLink.status !== "pending") {
+      toast.error("연결된 코드는 재발급할 수 없어요");
+      return null;
+    }
+    if (coupleLink.user_id !== user.id) {
+      toast.error("내가 만든 코드만 재발급할 수 있어요");
+      return null;
+    }
+
+    const newCode = randomCode();
+
+    try {
+      const { data, error } = await (supabase
+        .from("couple_links" as any) as any)
+        .update({ invite_code: newCode })
+        .eq("id", coupleLink.id)
+        .eq("status", "pending")
+        .select()
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) {
+        // status 조건에 안 걸린 경우 — 이미 누군가 redeem 한 상태.
+        toast.error("이미 연결된 코드는 재발급할 수 없어요");
+        await fetchCoupleLink();
+        return null;
+      }
+
+      setCoupleLink(data as any);
+      toast.success("새 초대 코드가 발급되었어요");
+      return newCode;
+    } catch (error) {
+      console.error("Error regenerating invite code:", error);
+      toast.error("코드 재발급에 실패했습니다");
+      return null;
+    }
+  };
+
   // 연결 해제
   const unlinkCouple = async (): Promise<boolean> => {
     if (!coupleLink) return false;
@@ -199,6 +258,7 @@ export const useCoupleLink = () => {
     isLinked,
     isLoading,
     generateInviteCode,
+    regenerateInviteCode,
     linkWithCode,
     unlinkCouple,
     refetch: fetchCoupleLink,
