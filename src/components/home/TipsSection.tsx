@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { CategoryTab } from "./CategoryTabBar";
 import { TipVideoCard, TipVideoCardSkeleton } from "@/components/TipVideoCard";
-import { useTipVideos } from "@/hooks/useTipVideos";
+import { usePersonalizedTipVideos } from "@/hooks/usePersonalizedTipVideos";
 import EmptyState from "@/components/EmptyState";
 import { emptyCopy } from "@/lib/emptyCopy";
 
@@ -13,14 +13,16 @@ type TipsSectionProps = {
 
 export default function TipsSection({ activeTab: _activeTab }: TipsSectionProps) {
   const navigate = useNavigate();
-  const { data = [], isLoading, isError } = useTipVideos();
+  const { data, isLoading, isError, isPersonalized } = usePersonalizedTipVideos({
+    limit: 8,
+  });
 
   return (
     <section className="bg-[#fff1f4] px-5 py-6">
       <div className="mx-auto max-w-[1200px]">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[24px] font-bold leading-none text-black">
-            오늘의 꿀팁
+            {isPersonalized ? "당신을 위한 꿀팁" : "오늘의 꿀팁"}
           </h2>
 
           <button

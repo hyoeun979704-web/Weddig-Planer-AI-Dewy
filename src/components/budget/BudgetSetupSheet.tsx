@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { regions, regionalAverages, getRegionalAvgWithMeal, categories, categoryKeys as ALL_CATEGORY_KEYS, type BudgetCategory } from "@/data/budgetData";
-import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
+import { WEDDING_STYLE_LABEL, clearHiddenBudgetValues, type WeddingStyle } from "@/lib/weddingStyle";
 import { Minus, Plus, MapPin, Info, Sparkle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmt } from "@/lib/budgetFormat";
@@ -41,7 +41,16 @@ interface BudgetSetupSheetProps {
   }) => void;
 }
 
-const quickBudgets = [2000, 3000, 4000, 5000, 6000];
+// Quick-pick budget chips, in 만원. Style-aware so a self/small couple
+// isn't anchored to general-wedding numbers when they tap a chip — the
+// usual 셀프웨딩 range (300~2000만) is wildly different from a typical
+// hotel wedding (5000~10000만).
+const QUICK_BUDGETS_BY_STYLE: Record<WeddingStyle, number[]> = {
+  general: [3000, 5000, 7000, 9000, 12000],
+  small: [1500, 2500, 3500, 4500, 6000],
+  self: [500, 1000, 1500, 2000, 3000],
+  custom: [2000, 3000, 4000, 5000, 6000],
+};
 
 export default function BudgetSetupSheet({
   open, onOpenChange, initialRegion = "seoul", initialGuestCount,
@@ -53,6 +62,7 @@ export default function BudgetSetupSheet({
   // show all 10. The applyRegionalAvg logic still emits a full 10-key Record
   // so categories the user re-enables later keep their average.
   const visibleKeys = visibleCategoryKeys ?? ALL_CATEGORY_KEYS;
+  const quickBudgets = QUICK_BUDGETS_BY_STYLE[weddingStyle ?? "custom"];
   const styleDefaultGuests = weddingStyle === "small" ? 50 : 200;
   const effectiveInitialGuests = initialGuestCount ?? styleDefaultGuests;
   const emptyCatBudgets: Record<BudgetCategory, number> = {
@@ -199,7 +209,14 @@ export default function BudgetSetupSheet({
   const hasMismatch = totalBudget > 0 && catSum !== totalBudget;
 
   const commitSave = () => {
-    onSave({ region, guest_count: guestCount, total_budget: totalBudget, category_budgets: catBudgets });
+    // Strip residue from categories the user has opted out of via wedding
+    // style. The sheet's visible chip set already hides them, but the
+    // underlying state record still carries any prior value (e.g. a 200만
+    // hanbok budget set before the user switched to a small-wedding
+    // preset). Zeroing here keeps the saved breakdown consistent with
+    // what the user actually sees and edits.
+    const cleaned = clearHiddenBudgetValues(catBudgets, visibleKeys);
+    onSave({ region, guest_count: guestCount, total_budget: totalBudget, category_budgets: cleaned });
     onOpenChange(false);
   };
 
