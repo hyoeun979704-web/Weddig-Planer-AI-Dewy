@@ -5,6 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import CategoryFilterBar from "@/components/CategoryFilterBar";
 import CategoryGrid from "@/components/CategoryGrid";
+import VenueCrossLink from "@/components/VenueCrossLink";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
@@ -26,6 +27,7 @@ const InvitationVenues = () => {
       <PageHeader title="청첩장·모임" />
       <main className="pb-20">
         <CategoryHeroBanner category="invitation_venues" />
+        <VenueCrossLink variant="invitation-venues" />
         <CategoryFilterBar category="invitation_venues" />
         <div className="px-4 py-3">
           <h2 className="text-lg font-bold text-foreground">{hasActiveFilters() ? "검색 결과" : "추천 모임 장소"}</h2>
