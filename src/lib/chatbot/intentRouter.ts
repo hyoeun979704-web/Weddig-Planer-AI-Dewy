@@ -64,7 +64,12 @@ export interface IntentMatch {
     | "etiquette"
     | "gift_etiquette"
     | "new_home"
-    | "ceremony_progress";
+    | "ceremony_progress"
+    | "fitting"
+    | "snap"
+    | "invitation_design"
+    | "ceremony_rehearsal"
+    | "parents_attire";
   /** DB 조회 필요 시 핸들러 키 */
   dbHandler?:
     | "dday"
@@ -501,6 +506,73 @@ const PATTERNS: IntentPattern[] = [
     intent: "guide_ceremony_progress" as ChatIntent,
     patterns: [/식순.*(어떻|보여|알려)/, /본식.*(진행|식순)/, /예식.*순서/],
     guideKey: "ceremony_progress",
+  },
+
+  // ── 가봉 (드레스 가봉 일정·횟수·준비물) ─────────────────
+  // "드레스 언제 예약" 은 sdme_timing(예약 시기)으로 가야 함. 여기서는
+  // "가봉/피팅"의 횟수·준비·일정을 다룸.
+  {
+    intent: "guide_fitting" as ChatIntent,
+    patterns: [
+      /가봉.*(언제|시기|횟수|준비|몇\s*번)/,
+      /드레스.*가봉/,
+      /피팅.*(횟수|시기|언제|준비)/,
+      /가봉.*(뭐|무엇|챙겨)/,
+    ],
+    guideKey: "fitting",
+  },
+
+  // ── 본식 스냅 vs 웨딩 스냅 ─────────────────────────────
+  // sdme_timing 패턴이 /스튜디오.*(언제|시기)/ 라 "스냅 작가" 같은
+  // 비-시기 질문은 안 잡혀 LLM 폴백되던 갭. 본식 스냅·웨딩 스냅·작가
+  // 차이·계약 포인트 모두 이 핸들러에서 다룸.
+  {
+    intent: "guide_snap" as ChatIntent,
+    patterns: [
+      /(본식|웨딩)\s*스냅/,
+      /스냅.*(작가|컷|원본|보정|차이|뭐|구분)/,
+      /본식\s*촬영.*작가/,
+      /원본.*(주나|받|제공)/,
+    ],
+    guideKey: "snap",
+  },
+
+  // ── 청첩장 디자인 (모바일·종이·트렌드) ────────────────
+  // invitation_timing은 "발송 시기"만 다루므로, 디자인·종류·모바일
+  // vs 종이 비교는 별도 핸들러로 분리.
+  {
+    intent: "guide_invitation_design" as ChatIntent,
+    patterns: [
+      /청첩장.*(디자인|종류|샘플|컨셉|트렌드|예쁜)/,
+      /모바일\s*청첩장/,
+      /(종이|모바일).*청첩장/,
+      /청첩장.*(만들|제작)/,
+    ],
+    guideKey: "invitation_design",
+  },
+
+  // ── 예식 리허설 (식장 동선·진행) ──────────────────────
+  // makeup_trial은 메이크업 시연 한정. 본식 식장 리허설은 별도 가이드.
+  {
+    intent: "guide_ceremony_rehearsal" as ChatIntent,
+    patterns: [
+      /(예식|본식|식장)\s*리허설/,
+      /리허설.*(동선|진행|언제|뭐|준비)/,
+      /식장.*리허설/,
+    ],
+    guideKey: "ceremony_rehearsal",
+  },
+
+  // ── 혼주 복장 (어머님·아버님 한복·양장) ───────────────
+  {
+    intent: "guide_parents_attire" as ChatIntent,
+    patterns: [
+      /혼주.*(복장|옷|한복|양장)/,
+      /(어머님|아버님|어머니|아버지).*(한복|양장|양복|복장|옷|정장)/,
+      /부모님.*복장/,
+      /양가\s*어머님.*(한복|색깔|색상)/,
+    ],
+    guideKey: "parents_attire",
   },
 ];
 

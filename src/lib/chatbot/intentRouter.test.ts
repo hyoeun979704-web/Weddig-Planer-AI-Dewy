@@ -241,10 +241,12 @@ describe("matchIntent — 매칭 없음(LLM으로 폴백)", () => {
   it("일반적인 결혼 질문은 LLM으로", () => {
     // 어떤 정적 패턴에도 안 걸리는 자유 질문들.
     // 참고: "어떻게 써?" 같은 표현은 help 패턴(broad)에 잡힘 — 비용 절감 의도된 동작.
+    // "혼주 한복 색상 추천" 은 이제 guide_parents_attire 정적 라우팅됨
+    // (의도된 회귀 — 자주 묻는 질문이라 LLM 비용 아끼려 정적 가이드 추가).
     for (const input of [
       "신부 입장곡 추천해줘",
       "신혼여행 어디가 좋아",
-      "혼주 한복 색상 추천",
+      "축가 누가 좋을까",
     ]) {
       const m = matchIntent(input);
       expect(m, `input="${input}"`).toBeNull();
