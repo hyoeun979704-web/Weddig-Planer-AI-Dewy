@@ -27,6 +27,25 @@ const STYLE_HINTS: Record<string, ReadonlyArray<string>> = {
   custom: [],
 };
 
+// Phrases that signal a video targets a wedding type DIFFERENT from the
+// user's. Matching one in the title or tags mildly demotes the video so
+// stylistically-aligned content of similar popularity rises above it —
+// the user can still find the video by search, but it won't dominate
+// their default feed.
+//
+// Only "general" is populated: small/self users already have positive
+// style hints (+ exclusion penalty) doing the work, and our corpus has
+// almost no hotel/premium-tagged content for "small" opposites anyway.
+// A general-wedding user has no positive style hint (general is the
+// unmarked default), so without this signal a viral 셀프웨딩 video can
+// outrank standard wedding-prep content purely on popularity.
+const STYLE_OPPOSITE_HINTS: Record<string, ReadonlyArray<string>> = {
+  general: ["셀프웨딩", "diy 웨딩", "스몰웨딩"],
+  small: [],
+  self: [],
+  custom: [],
+};
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export function daysUntilWedding(dateStr: string, now: number = Date.now()): number | null {
@@ -45,6 +64,9 @@ export function phaseCategoriesFor(days: number | null): ReadonlyArray<string> {
 export interface CurationFactors {
   phaseCategories: ReadonlyArray<string>;
   styleHints: ReadonlyArray<string>;
+  // Phrases that mark a video as targeting a DIFFERENT wedding type than
+  // the user's. Matching adds OPPOSITE_HINT_PENALTY.
+  oppositeHints: ReadonlyArray<string>;
   // Categories the user opted out of (small-wedding skips hanbok/tailor;
   // self-wedding skips studio/dress/makeup, etc). Videos in these
   // categories are pushed to the bottom — see EXCLUDED_PENALTY.
@@ -64,12 +86,17 @@ export function buildCurationFactors(
     ? rawPhase.filter((c) => !excluded.includes(c))
     : rawPhase;
   const style = STYLE_HINTS[profile.weddingStyle] ?? [];
+  const opposite = STYLE_OPPOSITE_HINTS[profile.weddingStyle] ?? [];
   return {
     phaseCategories: phase,
     styleHints: style,
+    oppositeHints: opposite,
     excludedCategories: excluded,
-    // Exclusions alone count as a personalization signal: even with no
-    // date/style match, ranking should still demote excluded categories.
+    // Personalization activates only when the user has expressed a
+    // preference (date, style, or exclusions). Opposite hints are a
+    // *modifier* on existing ranking — they fire when something else
+    // already triggers scoring, but on their own they shouldn't override
+    // popularity for a brand-new profile that hasn't set anything yet.
     hasSignal: phase.length > 0 || style.length > 0 || excluded.length > 0,
   };
 }
@@ -81,6 +108,12 @@ export function buildCurationFactors(
 // (Tips.tsx) is the user-facing hide; this is for ranking inside the
 // "전체" / mixed lists.
 const EXCLUDED_PENALTY = -10;
+
+// Mild demotion: opposite-style videos are still legitimate content,
+// just lower priority. Tuned so popularity (up to ~1.0) can still
+// promote a viral off-style video above an obscure on-style one — we
+// nudge the order, not suppress.
+const OPPOSITE_HINT_PENALTY = -0.3;
 
 // Higher score = more relevant. Popularity is log-normalized so a 10M-view
 // video can still lose to a 100k-view video that matches the user's phase.
@@ -110,15 +143,25 @@ export function scoreTipVideo(
     if (match) score += 0.6;
   }
 
-  if (factors.styleHints.length > 0) {
+  if (factors.styleHints.length > 0 || factors.oppositeHints.length > 0) {
+    // Build the haystack once and reuse for both positive and negative
+    // phrase matching — each does a substring check against title + tags.
     const haystack = [
       video.title.toLowerCase(),
       ...(video.tags ?? []).map((t) => t.toLowerCase()),
     ];
-    const hit = factors.styleHints.some((h) =>
-      haystack.some((s) => s.includes(h.toLowerCase()))
-    );
-    if (hit) score += 0.3;
+    if (factors.styleHints.length > 0) {
+      const hit = factors.styleHints.some((h) =>
+        haystack.some((s) => s.includes(h.toLowerCase()))
+      );
+      if (hit) score += 0.3;
+    }
+    if (factors.oppositeHints.length > 0) {
+      const hit = factors.oppositeHints.some((h) =>
+        haystack.some((s) => s.includes(h.toLowerCase()))
+      );
+      if (hit) score += OPPOSITE_HINT_PENALTY;
+    }
   }
 
   if (video.published_at) {
