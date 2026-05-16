@@ -39,7 +39,7 @@ const Tips = () => {
   // weddings). "전체" is always available so the user can still browse
   // the full ranked list.
   const visibleChips = useMemo(() => {
-    const excluded = new Set(profile.excludedCategories ?? []);
+    const excluded = new Set(profile.excludedCategories);
     if (excluded.size === 0) return CATEGORY_CHIPS;
     return CATEGORY_CHIPS.filter((c) => c.slug === null || !excluded.has(c.slug));
   }, [profile.excludedCategories]);
@@ -65,6 +65,13 @@ const Tips = () => {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const trimmedInput = searchInput.trim();
   useEffect(() => {
+    // Skip the debounce when clearing — otherwise debouncedQuery stays
+    // stale for 250ms after the user empties the input, which makes the
+    // grid render the previous search results under the default-mode UI.
+    if (trimmedInput === "") {
+      setDebouncedQuery("");
+      return;
+    }
     const t = setTimeout(() => setDebouncedQuery(trimmedInput), 250);
     return () => clearTimeout(t);
   }, [trimmedInput]);
@@ -91,7 +98,7 @@ const Tips = () => {
   // HOT row and grid consistent with the chip set (an excluded chip is
   // hidden, so its videos shouldn't sneak in via "전체" or HOT either).
   const excludedSet = useMemo(
-    () => new Set(profile.excludedCategories ?? []),
+    () => new Set(profile.excludedCategories),
     [profile.excludedCategories]
   );
   const isExcludedByPrimary = (v: TipVideo) => {
@@ -175,11 +182,14 @@ const Tips = () => {
             <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
+              role="searchbox"
+              inputMode="search"
+              enterKeyHint="search"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="제목·채널 검색 (숨긴 카테고리 포함 전체 검색)"
+              placeholder="영상 제목·채널 검색"
               className="pl-9 pr-10 h-9 text-sm"
-              aria-label="꿀팁 영상 검색"
+              aria-label="꿀팁 영상 검색 (숨긴 카테고리 포함 전체 검색)"
             />
             {searchInput && (
               <button
@@ -260,7 +270,7 @@ const Tips = () => {
                   : "전체 꿀팁"}
               </h2>
               {uiSearchMode ? (
-                !isGridLoading && (
+                !isGridLoading && gridList.length > 0 && (
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {gridList.length}건 · 인기순
                   </span>
