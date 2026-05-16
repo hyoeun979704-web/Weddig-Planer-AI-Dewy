@@ -1,7 +1,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
 import { Loader2, Eye, Sparkles } from "lucide-react";
-import { generatePdfHeader, generatePdfFooter } from "@/lib/pdfGenerator";
+import { generatePdfHeader, generatePdfFooter, pdfBarChart, pdfDonut, pdfDivider } from "@/lib/pdfGenerator";
 import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { regions, regionalAverages, categories, savingTips, type BudgetCategory } from "@/data/budgetData";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
@@ -216,10 +216,18 @@ const buildEstimateHtml = (params: {
 }): string => {
   const { regionLabel, guestCount, totalBudget, styles, estimate, regionNote, weddingStyle, guestAgeMix, venueGrade, couple, weddingDate } = params;
 
+  const styleLabel = WEDDING_STYLE_LABEL[weddingStyle];
   let html = generatePdfHeader(
     "맞춤 웨딩 견적서",
     `${regionLabel} · ${guestCount}명 · ${totalBudget.toLocaleString()}만원${styles.length ? ` · ${styles.join(", ")}` : ""}`,
-    { couple, weddingDate, styleLabel: WEDDING_STYLE_LABEL[weddingStyle] },
+    {
+      couple, weddingDate, styleLabel,
+      cover: {
+        docType: "맞춤 웨딩 견적서",
+        docSub: `${regionLabel} 평균을 기반으로 두 분의 조건에 맞춰 산출한 카테고리별 예상 비용입니다.`,
+        couple, weddingDate, styleLabel,
+      },
+    },
   );
 
   html += `<div class="pdf-info-grid">
@@ -236,7 +244,22 @@ const buildEstimateHtml = (params: {
     html += `<tr><td>${row.emoji} ${row.name}</td><td>${row.min.toLocaleString()}만원</td><td>${row.max.toLocaleString()}만원</td><td><strong>${row.recommended.toLocaleString()}만원</strong></td></tr>`;
   }
   html += `<tr class="total-row"><td>합계</td><td>${estimate.totalMin.toLocaleString()}만원</td><td>${estimate.totalMax.toLocaleString()}만원</td><td><strong>${estimate.totalRecommended.toLocaleString()}만원</strong></td></tr>`;
-  html += `</tbody></table></div>`;
+  html += `</tbody></table>`;
+
+  // 시각 차트: 카테고리별 추천 배분 막대
+  html += pdfBarChart(estimate.rows.map((r) => ({
+    label: `${r.emoji} ${r.name}`,
+    value: r.recommended,
+    displayValue: `${r.recommended.toLocaleString()}만원`,
+  })));
+
+  html += `</div>`;
+
+  // 도넛: 큰 그림으로 비중 한눈에
+  html += `<div class="pdf-section"><div class="pdf-section-title">예산 구성 한눈에 보기</div>`;
+  html += pdfDonut(estimate.rows.map((r) => ({ label: `${r.emoji} ${r.name}`, value: r.recommended })));
+  html += `</div>`;
+  html += pdfDivider();
 
   if (regionNote) {
     html += `<div class="pdf-tip">📍 <strong>${regionLabel} 시장 메모:</strong> ${regionNote}</div>`;
