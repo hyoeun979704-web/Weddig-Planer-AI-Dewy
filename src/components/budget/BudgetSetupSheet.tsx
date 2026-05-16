@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { regions, regionalAverages, getRegionalAvgWithMeal, categories, categoryKeys as ALL_CATEGORY_KEYS, type BudgetCategory } from "@/data/budgetData";
-import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
+import { WEDDING_STYLE_LABEL, clearHiddenBudgetValues, type WeddingStyle } from "@/lib/weddingStyle";
 import { Minus, Plus, MapPin, Info, Sparkle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmt } from "@/lib/budgetFormat";
@@ -209,7 +209,14 @@ export default function BudgetSetupSheet({
   const hasMismatch = totalBudget > 0 && catSum !== totalBudget;
 
   const commitSave = () => {
-    onSave({ region, guest_count: guestCount, total_budget: totalBudget, category_budgets: catBudgets });
+    // Strip residue from categories the user has opted out of via wedding
+    // style. The sheet's visible chip set already hides them, but the
+    // underlying state record still carries any prior value (e.g. a 200만
+    // hanbok budget set before the user switched to a small-wedding
+    // preset). Zeroing here keeps the saved breakdown consistent with
+    // what the user actually sees and edits.
+    const cleaned = clearHiddenBudgetValues(catBudgets, visibleKeys);
+    onSave({ region, guest_count: guestCount, total_budget: totalBudget, category_budgets: cleaned });
     onOpenChange(false);
   };
 

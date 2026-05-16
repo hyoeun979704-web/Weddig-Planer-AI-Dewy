@@ -138,3 +138,23 @@ export const visibleBudgetCategories = (
   ALL_BUDGET_CATEGORIES.filter(
     c => !isBudgetCategoryHidden(c, excludedScheduleCategories)
   );
+
+// Strips budget values for categories that aren't currently visible
+// (i.e. every composing schedule category was excluded). Used to clean
+// stale residue: a user who set hanbok = 200만 and then later switched to
+// a style that hides hanbok shouldn't keep paying that 200만 toward the
+// totals or seeing it as a dimmed "0/200" row.
+//
+// Returns a NEW record with hidden keys zeroed; visible keys pass through.
+// Keys missing from the input are normalized to 0 so the shape is stable.
+export const clearHiddenBudgetValues = (
+  budgets: Partial<Record<BudgetCategoryKey, number>>,
+  visibleKeys: ReadonlyArray<BudgetCategoryKey>
+): Record<BudgetCategoryKey, number> => {
+  const visible = new Set(visibleKeys);
+  const out = {} as Record<BudgetCategoryKey, number>;
+  for (const k of ALL_BUDGET_CATEGORIES) {
+    out[k] = visible.has(k) ? (budgets[k] ?? 0) : 0;
+  }
+  return out;
+};
