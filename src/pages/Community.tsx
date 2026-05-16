@@ -85,7 +85,7 @@ const trendingScore = (post: Post) => {
 
 const isHotPost = (post: Post) => {
   const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 36e5;
-  return ageHours <= 72 && post.likes_count + post.comments_count >= 5;
+  return ageHours <= 168 && post.likes_count + post.comments_count >= 3;
 };
 
 const Community = () => {
@@ -159,13 +159,22 @@ const Community = () => {
     },
   });
 
-  // 카테고리·스타일 필터를 모두 적용한 목록.
-  // "오늘의 수다"는 스타일 필터를 따르되 카테고리는 무시 — 활성 페르소나 안에서
-  // 폭넓게 핫토픽을 보여주기 위함.
-  const styleFiltered =
-    styleFilter === "all"
-      ? posts
-      : posts.filter((post) => post.wedding_style === styleFilter);
+  // 스타일 필터: 선택된 유형과 일치하는 글 + 유형 미지정(NULL) 글을 함께 노출.
+  // NULL = "모든 부부 대상" 글이므로 어떤 필터에서도 가려져선 안 됨 (작성 UI 약속).
+  const matchesStyle = (post: Post, filter: StyleFilter) =>
+    filter === "all" || post.wedding_style === filter || post.wedding_style === null;
+
+  // 콜드스타트 가드: 자동 적용된 스타일 필터에서 결과가 0개면 안전하게 전체로 폴백.
+  // 사용자가 직접 칩을 누른 경우(수동)에는 폴백하지 않음 — 의도 존중.
+  const matchedForSelectedStyle = posts.filter((p) => matchesStyle(p, styleFilter));
+  const isColdStartFallback =
+    styleAutoApplied &&
+    styleFilter !== "all" &&
+    posts.length > 0 &&
+    matchedForSelectedStyle.length === 0;
+  const effectiveStyleFilter: StyleFilter = isColdStartFallback ? "all" : styleFilter;
+
+  const styleFiltered = posts.filter((p) => matchesStyle(p, effectiveStyleFilter));
 
   const trendingPosts = [...styleFiltered]
     .sort((a, b) => trendingScore(b) - trendingScore(a))
@@ -373,15 +382,22 @@ const Community = () => {
           })}
         </div>
 
+        {isColdStartFallback && (
+          <div className="mx-4 mt-2 mb-1 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800 leading-snug">
+            {STYLE_FILTERS.find((f) => f.key === styleFilter)?.label} 글이 아직 없어 전체 게시글을 함께 보여드려요.
+            글이 쌓이면 자동으로 필터링해드릴게요.
+          </div>
+        )}
+
         <section className="bg-[hsl(var(--pink-100))] px-4 pt-5 pb-6">
           <div className="flex items-baseline justify-between mb-4">
             <h2 className="text-[18px] font-bold text-foreground">
               오늘의 수다
             </h2>
             <span className="text-[11px] text-muted-foreground">
-              {styleFilter === "all"
+              {effectiveStyleFilter === "all"
                 ? "전체"
-                : STYLE_FILTERS.find((f) => f.key === styleFilter)?.label}
+                : STYLE_FILTERS.find((f) => f.key === effectiveStyleFilter)?.label}
               {" "}· 핫토픽
             </span>
           </div>
@@ -483,17 +499,31 @@ const Community = () => {
           ) : sortedPosts.length === 0 ? (
             <div className="py-12 px-6 text-center bg-white rounded-2xl shadow-[var(--shadow-card)]">
               <p className="text-foreground text-sm font-semibold mb-1">
-                {EMPTY_STATES[styleFilter].title}
+                {selectedCategory !== "전체"
+                  ? `'${selectedCategory}' 글이 아직 없어요.`
+                  : EMPTY_STATES[effectiveStyleFilter].title}
               </p>
               <p className="text-muted-foreground text-xs mb-4 leading-relaxed">
-                {EMPTY_STATES[styleFilter].cta}
+                {selectedCategory !== "전체"
+                  ? `다른 카테고리로 둘러보거나 첫 글을 작성해보세요.`
+                  : EMPTY_STATES[effectiveStyleFilter].cta}
               </p>
-              <button
-                onClick={handleWriteClick}
-                className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold"
-              >
-                글 작성하기
-              </button>
+              <div className="flex items-center justify-center gap-2">
+                {selectedCategory !== "전체" && (
+                  <button
+                    onClick={() => setSelectedCategory("전체")}
+                    className="px-4 py-2 rounded-full bg-muted text-foreground text-xs font-semibold"
+                  >
+                    전체 카테고리 보기
+                  </button>
+                )}
+                <button
+                  onClick={handleWriteClick}
+                  className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold"
+                >
+                  글 작성하기
+                </button>
+              </div>
             </div>
           ) : (
             sortedPosts.map(renderPostCard)

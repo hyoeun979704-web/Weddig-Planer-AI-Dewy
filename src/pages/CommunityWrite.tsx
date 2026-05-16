@@ -14,7 +14,7 @@ const categories = ["웨딩홀", "스드메", "혼수", "허니문", "자유"];
 type PostWeddingStyle = "general" | "small" | "self";
 
 const STYLE_OPTIONS: { value: PostWeddingStyle | ""; label: string; hint: string }[] = [
-  { value: "", label: "선택 안 함", hint: "모든 부부가 볼 수 있어요" },
+  { value: "", label: "선택 안 함", hint: "모든 스타일 필터에서 노출돼요" },
   { value: "general", label: "일반 결혼식", hint: "표준 웨딩홀·식순 기반" },
   { value: "small", label: "스몰웨딩", hint: "50명 이하·하우스/레스토랑" },
   { value: "self", label: "셀프웨딩", hint: "직접 준비·DIY" },

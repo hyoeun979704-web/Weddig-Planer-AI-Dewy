@@ -98,8 +98,13 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
   }, [searchQuery]);
 
   // 결과에 클라이언트 측 필터·정렬을 적용.
+  // 스타일 NULL = "모든 부부 대상" 글이므로 어떤 스타일 필터에서도 함께 노출.
   const filteredResults = results
-    .filter((r) => (styleFilter === "all" ? true : r.wedding_style === styleFilter))
+    .filter((r) =>
+      styleFilter === "all"
+        ? true
+        : r.wedding_style === styleFilter || r.wedding_style === null
+    )
     .filter((r) => (categoryFilter === "전체" ? true : r.category === categoryFilter));
 
   const sortedResults = [...filteredResults].sort((a, b) => {
