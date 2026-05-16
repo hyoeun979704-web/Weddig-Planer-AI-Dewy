@@ -17,6 +17,7 @@ export interface UserData {
     excluded_categories: string[] | null;
     marital_history: string | null;
     pregnant: boolean | null;
+    value_tags: string[] | null;
   } | null;
   budgetSettings: {
     total_budget: number | null;
@@ -34,7 +35,7 @@ export async function fetchUserData(supabase: any, userId: string): Promise<User
     supabase.from("favorites").select("item_type, item_id").eq("user_id", userId),
     supabase
       .from("user_wedding_settings")
-      .select("wedding_date, wedding_region, partner_name, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant")
+      .select("wedding_date, wedding_region, partner_name, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant, value_tags")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -119,6 +120,15 @@ const CATEGORY_KO: Record<string, string> = {
   invitation_venue: "청첩장 모임 베뉴",
 };
 
+// Keep these strings in sync with src/lib/weddingValues.ts WEDDING_VALUE_OPTIONS.
+// 의도적으로 duplicate — edge function은 src/ 모듈을 못 가져온다.
+const VALUE_TAG_CONTEXT: Record<string, string> = {
+  eco: "친환경·제로웨이스트 지향: 일회용 인쇄·플라스틱 답례품을 피하고, 재사용 가능한 소품과 친환경 SKU를 우선 제안하세요.",
+  vegan: "비건·채식 친화: 식단·답례품·웰컴키트 추천 시 비건 옵션을 명시하고, 동물성 재료를 피한 케이터링을 우선 제안하세요.",
+  pet: "반려동물 동반 의향: 야외·하우스 베뉴 중 반려동물 동반이 가능한 곳 위주로 추천하고, 호텔식·실내 위주 추천은 그 점을 명시하세요.",
+  foreign_guests: "외국인 하객 비중이 높음: 식순·청첩장·안내문에 영문 동시 표기를 권하고, 한국 결혼 문화에 익숙하지 않은 하객을 위한 안내(축의금, 식사 매너 등) 가이드를 제안하세요.",
+};
+
 export function buildUserContext(userData: UserData): string {
   const parts: string[] = [];
 
@@ -175,6 +185,17 @@ export function buildUserContext(userData: UserData): string {
     parts.push(
       "신부 임신 중: 드레스 사이즈 여유분, 임산부 친화 메이크업, 식음 주의, 일정 압축 우선순위를 답변에 반영하세요. 단, 묻지 않은 의학 조언은 피하고 식약처·산부인과 확인을 권하세요.",
     );
+  }
+
+  // 가치 태그 — S-2 (비건·환경 NGO) 케이스 등. AI가 모르는 가치축이라
+  // 시스템 프롬프트로 명시적으로 주입해야 답변 톤이 맞춰진다.
+  if (Array.isArray(ws?.value_tags) && ws.value_tags.length > 0) {
+    const lines = ws.value_tags
+      .map((t) => VALUE_TAG_CONTEXT[t])
+      .filter(Boolean);
+    if (lines.length > 0) {
+      parts.push(`가치·취향 태그:\n${lines.map((l) => `- ${l}`).join("\n")}`);
+    }
   }
 
   const bs = userData.budgetSettings;

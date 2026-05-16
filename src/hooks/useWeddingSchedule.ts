@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { WeddingStyle } from "@/lib/weddingStyle";
+import { filterValidValueTags, type WeddingValueTag } from "@/lib/weddingValues";
 import { resolveRegionKey } from "@/data/budgetData";
 
 export interface ScheduleItem {
@@ -28,6 +29,7 @@ interface WeddingSettings {
   excluded_categories: string[];
   marital_history: MaritalHistory | null;
   pregnant: boolean;
+  value_tags: WeddingValueTag[];
 }
 
 export const useWeddingSchedule = () => {
@@ -43,6 +45,7 @@ export const useWeddingSchedule = () => {
     excluded_categories: [],
     marital_history: null,
     pregnant: false,
+    value_tags: [],
   });
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,7 +65,7 @@ export const useWeddingSchedule = () => {
       const [settingsRes, itemsRes] = await Promise.all([
         supabase
           .from("user_wedding_settings")
-          .select("wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant")
+          .select("wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant, value_tags")
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
@@ -85,6 +88,7 @@ export const useWeddingSchedule = () => {
           excluded_categories: Array.isArray(s.excluded_categories) ? s.excluded_categories : [],
           marital_history: (s.marital_history ?? null) as MaritalHistory | null,
           pregnant: !!s.pregnant,
+          value_tags: filterValidValueTags(s.value_tags),
         });
       }
 
@@ -154,6 +158,7 @@ export const useWeddingSchedule = () => {
       excluded_categories: string[];
       marital_history: MaritalHistory | null;
       pregnant: boolean;
+      value_tags: WeddingValueTag[];
     }>
   ) => {
     if (!user) {

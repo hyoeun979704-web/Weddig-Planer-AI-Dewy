@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import SurveyModal from "@/components/wedding-planner/SurveyModal";
 import WeddingStylePicker from "@/components/schedule/WeddingStylePicker";
 import { useWeddingSchedule, type MaritalHistory } from "@/hooks/useWeddingSchedule";
+import { WEDDING_VALUE_OPTIONS, type WeddingValueTag } from "@/lib/weddingValues";
 import {
   buildScheduleFromTemplate,
   PLANNING_STAGE_LABELS,
@@ -60,6 +61,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const [excludedCategories, setExcludedCategories] = useState<string[]>([]);
   const [maritalHistory, setMaritalHistory] = useState<MaritalHistory | null>(null);
   const [pregnant, setPregnant] = useState(false);
+  const [valueTags, setValueTags] = useState<WeddingValueTag[]>([]);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -89,6 +91,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     );
     setMaritalHistory(weddingSettings.marital_history);
     setPregnant(weddingSettings.pregnant);
+    setValueTags(weddingSettings.value_tags);
     setErrors({});
   }, [
     isOpen,
@@ -102,6 +105,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     weddingSettings.excluded_categories,
     weddingSettings.marital_history,
     weddingSettings.pregnant,
+    weddingSettings.value_tags,
   ]);
 
   const validate = () => {
@@ -128,6 +132,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       excluded_categories: excludedCategories,
       marital_history: maritalHistory,
       pregnant,
+      value_tags: valueTags,
     });
 
     if (ok) {
@@ -369,6 +374,43 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
               </p>
             </div>
           </label>
+        </div>
+
+        {/* 가치 태그 (선택) — 페르소나 S-2 (비건 카페·환경 NGO)를 위해.
+            AI 답변·추천 가중치에 반영. 다중 선택. */}
+        <div>
+          <label className={labelCls}>
+            가치·취향 태그 <span className="text-xs text-gray-400 font-normal">(선택, 복수)</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {WEDDING_VALUE_OPTIONS.map((opt) => {
+              const active = valueTags.includes(opt.key);
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() =>
+                    setValueTags((prev) =>
+                      active ? prev.filter((t) => t !== opt.key) : [...prev, opt.key],
+                    )
+                  }
+                  className={cn(
+                    "px-3 py-1.5 rounded-full border text-[12px] font-medium transition-colors flex items-center gap-1",
+                    active
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300",
+                  )}
+                  title={opt.hint}
+                >
+                  <span aria-hidden>{opt.emoji}</span>
+                  <span>{opt.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-1.5">
+            선택하면 AI 추천·답변이 해당 가치축에 맞춰져요.
+          </p>
         </div>
 
         <div className="flex gap-2 pt-2">
