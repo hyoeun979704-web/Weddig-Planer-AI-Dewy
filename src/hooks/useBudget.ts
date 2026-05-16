@@ -129,21 +129,27 @@ export function useBudget(profileRegionKey?: string, weddingStyle?: WeddingStyle
         if (error) throw error;
       }
 
-      // Mirror region into user_wedding_settings using the official long
-      // label so the Schedule page's region picker (which lists long forms)
-      // matches. Update-only: we deliberately don't insert a settings row
-      // here because that would skip the onboarding flow (planning_stage,
-      // schedule template seeding, etc.). If the user hasn't onboarded yet,
-      // they'll do it via WeddingInfoSetupModal and the region picker there
-      // will use the long form they see in budget anyway.
+      // Mirror shared profile fields (region, guest_count) into
+      // user_wedding_settings so AI Planner and Schedule see the same
+      // canonical values without re-asking. region is stored as the
+      // official long label there ("서울특별시") to match Schedule's
+      // region picker. Update-only: we don't insert a settings row here
+      // because that would skip onboarding (planning_stage, schedule
+      // template seeding, etc.). If the user hasn't onboarded yet,
+      // they'll do it via WeddingInfoSetupModal.
+      const mirror: Record<string, unknown> = {};
       if (s.region) {
         const officialLabel = regions[s.region]?.officialLabel;
-        if (officialLabel) {
-          await supabase
-            .from("user_wedding_settings")
-            .update({ wedding_region: officialLabel } as any)
-            .eq("user_id", user.id);
-        }
+        if (officialLabel) mirror.wedding_region = officialLabel;
+      }
+      if (typeof s.guest_count === "number") {
+        mirror.guest_count = s.guest_count;
+      }
+      if (Object.keys(mirror).length > 0) {
+        await supabase
+          .from("user_wedding_settings")
+          .update(mirror as any)
+          .eq("user_id", user.id);
       }
     },
     onSuccess: () => {

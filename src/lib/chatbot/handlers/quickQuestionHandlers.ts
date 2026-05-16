@@ -10,6 +10,34 @@
 import { supabase } from "@/integrations/supabase/client";
 import { CHECKLIST_TEMPLATE } from "@/data/checklistTemplate";
 import { fetchPriceStats, formatPriceStatsLine } from "./priceStats";
+import type { BudgetCategory } from "@/data/budgetData";
+
+/**
+ * Savable plan returned by handleBudgetPlanning alongside the chat text.
+ * AIPlanner renders an "내 예산에 저장하기" CTA when present so the AI's
+ * recommendation can flow into the user's actual budget_settings without
+ * re-entering anything. The category keys use the real BudgetCategory enum
+ * (not the handler's internal slugs) so saving is a direct upsert.
+ */
+export interface SavableBudgetPlan {
+  totalBudget: number;  // 만원
+  region?: string;       // budget region KEY (e.g. "seoul"), if known
+  allocations: Array<{
+    category: BudgetCategory;
+    label: string;
+    amount: number;     // 만원
+    isPriority: boolean;
+  }>;
+}
+
+/**
+ * Savable timeline returned by handleTimelinePlanning. AIPlanner renders an
+ * "내 일정에 저장하기" CTA so the same-day timeline becomes real schedule
+ * items anchored to wedding_date. Each row goes to user_schedule_items.
+ */
+export interface SavableTimelinePlan {
+  events: Array<{ time: string; title: string; emphasis?: boolean }>;
+}
 
 // ════════════════════════════════════════════════════════════
 // 1. 웨딩홀 추천
@@ -32,7 +60,9 @@ const parseNumber = (v: string | number | undefined): number | null => {
   return isNaN(num) ? null : num;
 };
 
-export const handleVenueRecommendation = async (params: VenueParams): Promise<string> => {
+export interface VenueRecommendationResult { text: string }
+
+export const handleVenueRecommendation = async (params: VenueParams): Promise<VenueRecommendationResult> => {
   const guests = parseNumber(params.guests) ?? 100;
   const totalBudget = parseNumber(params.budget); // 만원 단위 가능성, 정확한 단위 모름
   const perPersonMax = totalBudget ? Math.floor((totalBudget * 10000) / guests) : null;
@@ -52,7 +82,7 @@ export const handleVenueRecommendation = async (params: VenueParams): Promise<st
   const { data: venues } = await query.order("avg_rating", { ascending: false }).limit(20);
 
   if (!venues || venues.length === 0) {
-    return `**웨딩홀 추천 결과** 🏛️\n\n요청하신 조건(${params.region ?? "지역 미지정"})에 맞는 등록 웨딩홀을 찾지 못했어요 🌿\n\n[웨딩홀 페이지](/venues)에서 직접 검색해보세요.`;
+    return { text: `**웨딩홀 추천 결과** 🏛️\n\n요청하신 조건(${params.region ?? "지역 미지정"})에 맞는 등록 웨딩홀을 찾지 못했어요 🌿\n\n[웨딩홀 페이지](/venues)에서 직접 검색해보세요.` };
   }
 
   // 보증인원·가격 추가 정보 (place_wedding_halls)
@@ -81,7 +111,7 @@ export const handleVenueRecommendation = async (params: VenueParams): Promise<st
 
   const top = filtered.slice(0, 5);
   if (top.length === 0) {
-    return `**웨딩홀 추천 결과** 🏛️\n\n조건에 맞는 곳을 못 찾았어요 🌿\n\n조건을 조금 완화하시거나 [웨딩홀 페이지](/venues)에서 직접 살펴보세요.`;
+    return { text: `**웨딩홀 추천 결과** 🏛️\n\n조건에 맞는 곳을 못 찾았어요 🌿\n\n조건을 조금 완화하시거나 [웨딩홀 페이지](/venues)에서 직접 살펴보세요.` };
   }
 
   const lines = top
@@ -103,7 +133,7 @@ export const handleVenueRecommendation = async (params: VenueParams): Promise<st
   if (guests) filterSummary.push(`👥 ${guests}명`);
   if (params.styles?.length) filterSummary.push(`✨ ${params.styles.join(", ")}`);
 
-  return `**웨딩홀 추천 ${top.length}곳** 🏛️\n${filterSummary.join(" · ")}\n\n${lines}\n\n[웨딩홀 페이지](/venues)에서 더 자세히 보거나 다른 조건으로 검색하실 수 있어요.`;
+  return { text: `**웨딩홀 추천 ${top.length}곳** 🏛️\n${filterSummary.join(" · ")}\n\n${lines}\n\n[웨딩홀 페이지](/venues)에서 더 자세히 보거나 다른 조건으로 검색하실 수 있어요.` };
 };
 
 // ════════════════════════════════════════════════════════════
@@ -120,7 +150,9 @@ export interface SdmeParams {
   priority?: string;
 }
 
-export const handleSdmeGuide = async (params: SdmeParams): Promise<string> => {
+export interface SdmeGuideResult { text: string }
+
+export const handleSdmeGuide = async (params: SdmeParams): Promise<SdmeGuideResult> => {
   const budget = parseNumber(params.budget);
 
   // 실제 등록 업체 가격 통계 (places 카테고리별)
@@ -177,7 +209,7 @@ export const handleSdmeGuide = async (params: SdmeParams): Promise<string> => {
         .join("\n\n");
   }
 
-  return `**스드메 가이드** 📸\n${summary.length > 0 ? summary.join(" · ") + "\n\n" : ""}${guide}\n\n${guard}${recommendations}\n\n[스드메 페이지](/studios)에서 직접 비교하실 수 있어요.`;
+  return { text: `**스드메 가이드** 📸\n${summary.length > 0 ? summary.join(" · ") + "\n\n" : ""}${guide}\n\n${guard}${recommendations}\n\n[스드메 페이지](/studios)에서 직접 비교하실 수 있어요.` };
 };
 
 // ════════════════════════════════════════════════════════════
@@ -222,61 +254,50 @@ const plusMin = (t: { h: number; m: number }, plus: number): string => {
   return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
 };
 
-export const handleTimelinePlanning = async (params: TimelineParams): Promise<string> => {
+export interface TimelinePlanningResult {
+  text: string;
+  plan?: SavableTimelinePlan;
+}
+
+export const handleTimelinePlanning = async (params: TimelineParams): Promise<TimelinePlanningResult> => {
   const ceremony = parseHHMM(params.ceremonyTime);
   if (!ceremony) {
-    return "예식 시작 시간을 입력해주시면 본식 타임라인을 자세히 짜드릴 수 있어요 ⏰\n\n예: '13:00' 또는 '오후 1시'";
+    return { text: "예식 시작 시간을 입력해주시면 본식 타임라인을 자세히 짜드릴 수 있어요 ⏰\n\n예: '13:00' 또는 '오후 1시'" };
   }
 
   const ceremonyStr = `${String(ceremony.h).padStart(2, "0")}:${String(ceremony.m).padStart(2, "0")}`;
   const duration = parseNumber(params.duration) ?? 60; // 기본 60분
   const receptionTime = parseHHMM(params.receptionTime);
 
-  const lines: string[] = [];
+  // Build structured events first; the chat string is derived from these
+  // so the savable plan and the rendered text can never drift.
+  const events: SavableTimelinePlan["events"] = [];
 
-  // 신부 메이크업 시작 (예식 4~5시간 전 권장)
   const brideStart = parseHHMM(params.brideStartTime);
   if (brideStart) {
-    lines.push(`${String(brideStart.h).padStart(2, "0")}:${String(brideStart.m).padStart(2, "0")} 신부 메이크업 시작`);
+    events.push({
+      time: `${String(brideStart.h).padStart(2, "0")}:${String(brideStart.m).padStart(2, "0")}`,
+      title: "신부 메이크업 시작",
+    });
   } else {
-    lines.push(`${minusMin(ceremony, 240)} 신부 메이크업 시작 (권장)`);
+    events.push({ time: minusMin(ceremony, 240), title: "신부 메이크업 시작 (권장)" });
   }
-
-  // 양가 부모님 메이크업 (예식 3시간 전)
-  lines.push(`${minusMin(ceremony, 180)} 양가 어머니·신랑 메이크업·헤어 도착 권장`);
-
-  // 신부 식장 도착 (예식 90분 전)
-  lines.push(`${minusMin(ceremony, 90)} 신부 식장 도착 / 신부 대기실 입장`);
-
-  // 신랑 도착·정장 환복 (예식 60분 전)
-  lines.push(`${minusMin(ceremony, 60)} 신랑 도착, 양가 가족 친지 입장 시작`);
-
-  // 본식 사진 촬영 (예식 30분 전)
-  lines.push(`${minusMin(ceremony, 30)} 본식 사진 촬영 (가족·들러리)`);
-
-  // 하객 대기 (예식 15분 전)
-  lines.push(`${minusMin(ceremony, 15)} 하객 입장 본격 시작, 사회자 안내 준비`);
-
-  // 예식 시작
-  lines.push(`**${ceremonyStr} 🎉 예식 시작**`);
-
-  // 예식 종료
-  lines.push(`${plusMin(ceremony, duration)} 예식 종료 / 폐백·단체사진`);
-
-  // 폐백·단체사진 (30~45분)
-  lines.push(`${plusMin(ceremony, duration + 45)} 폐백·단체사진 종료`);
-
-  // 피로연
-  if (params.reception === "예" || receptionTime) {
+  events.push({ time: minusMin(ceremony, 180), title: "양가 어머니·신랑 메이크업·헤어 도착" });
+  events.push({ time: minusMin(ceremony, 90), title: "신부 식장 도착 / 대기실 입장" });
+  events.push({ time: minusMin(ceremony, 60), title: "신랑 도착, 양가 친지 입장 시작" });
+  events.push({ time: minusMin(ceremony, 30), title: "본식 사진 촬영 (가족·들러리)" });
+  events.push({ time: minusMin(ceremony, 15), title: "하객 입장 본격 시작, 사회자 안내" });
+  events.push({ time: ceremonyStr, title: "🎉 예식 시작", emphasis: true });
+  events.push({ time: plusMin(ceremony, duration), title: "예식 종료 / 폐백·단체사진" });
+  events.push({ time: plusMin(ceremony, duration + 45), title: "폐백·단체사진 종료" });
+  if (params.reception === "예" || params.reception === "있음" || receptionTime) {
     const recStart = receptionTime
       ? `${String(receptionTime.h).padStart(2, "0")}:${String(receptionTime.m).padStart(2, "0")}`
       : plusMin(ceremony, duration + 60);
-    lines.push(`${recStart} 피로연 시작`);
+    events.push({ time: recStart, title: "피로연 시작" });
   }
-
-  // 한복 환복
   if (params.hanbok === "예" || params.hanbok === "있음") {
-    lines.push(`(피로연 후) 한복 환복 + 인사`);
+    events.push({ time: "피로연 후", title: "한복 환복 + 인사" });
   }
 
   const summary: string[] = [];
@@ -284,7 +305,11 @@ export const handleTimelinePlanning = async (params: TimelineParams): Promise<st
   if (params.photoTeam) summary.push(`📸 ${params.photoTeam}`);
   if (params.special) summary.push(`✨ ${params.special}`);
 
-  return `**본식 당일 타임라인** ⏰\n예식 ${ceremonyStr} (${duration}분 진행)\n${summary.length > 0 ? summary.join(" · ") + "\n" : ""}\n${lines.map((l) => `• ${l}`).join("\n")}\n\n* 식장·계절·사진팀 일정에 따라 30분 단위 조정 권장.\n* 자세한 시기별 체크리스트는 "준비 타임라인 만들어줘" 라고 물어봐 주세요.`;
+  const lines = events.map((e) => e.emphasis ? `**${e.time} ${e.title}**` : `${e.time} ${e.title}`);
+
+  const text = `**본식 당일 타임라인** ⏰\n예식 ${ceremonyStr} (${duration}분 진행)\n${summary.length > 0 ? summary.join(" · ") + "\n" : ""}\n${lines.map((l) => `• ${l}`).join("\n")}\n\n* 식장·계절·사진팀 일정에 따라 30분 단위 조정 권장.\n* 자세한 시기별 체크리스트는 "준비 타임라인 만들어줘" 라고 물어봐 주세요.`;
+
+  return { text, plan: { events } };
 };
 
 // ════════════════════════════════════════════════════════════
@@ -333,10 +358,53 @@ const PRIORITY_TO_CATEGORY: Record<string, string> = {
   "혼수": "appliance",
 };
 
-export const handleBudgetPlanning = async (params: BudgetParams): Promise<string> => {
+// Maps the handler's internal allocation slug to the real BudgetCategory
+// used by budget_settings.category_budgets / budget_items.category. Without
+// this the AI plan can't be applied to the actual budget — "appliance" is
+// the slug we surface to the user but the budget tables use "house" for
+// 가전·혼수 (matching budgetData.categoryKeys).
+const ALLOC_TO_BUDGET_CATEGORY: Record<string, BudgetCategory> = {
+  venue: "venue",
+  sdm: "sdm",
+  ring: "ring",
+  honeymoon: "honeymoon",
+  appliance: "house",
+  etc: "etc",
+};
+
+// Region long-label → key. Mirrors resolveRegionKey from budgetData but
+// scoped to the BudgetSurvey REGIONS list (long-form labels) so we can
+// stamp a region key onto the savable plan even when the user picks
+// region inside the modal (vs. inheriting from their profile).
+const REGION_LABEL_TO_KEY: Record<string, string> = {
+  "서울특별시": "seoul",
+  "경기도": "gyeonggi",
+  "인천광역시": "incheon",
+  "부산광역시": "busan",
+  "대구광역시": "daegu",
+  "대전광역시": "daejeon",
+  "광주광역시": "gwangju",
+  "울산광역시": "ulsan",
+  "세종특별자치시": "sejong",
+  "강원특별자치도": "gangwon",
+  "충청북도": "chungbuk",
+  "충청남도": "chungnam",
+  "전북특별자치도": "jeonbuk",
+  "전라남도": "jeonnam",
+  "경상북도": "gyeongbuk",
+  "경상남도": "gyeongnam",
+  "제주특별자치도": "jeju",
+};
+
+export interface BudgetPlanningResult {
+  text: string;
+  plan?: SavableBudgetPlan;
+}
+
+export const handleBudgetPlanning = async (params: BudgetParams): Promise<BudgetPlanningResult> => {
   const total = parseNumber(params.totalBudget);
   if (!total) {
-    return "총 예산을 입력해주시면 항목별로 권장 분배를 보여드릴 수 있어요 💰\n\n한국 결혼식 평균은 부부 합산 5,000만~1억 원 정도예요.";
+    return { text: "총 예산을 입력해주시면 항목별로 권장 분배를 보여드릴 수 있어요 💰\n\n한국 결혼식 평균은 부부 합산 5,000만~1억 원 정도예요." };
   }
 
   // 우선순위 카테고리 추출
@@ -385,5 +453,31 @@ export const handleBudgetPlanning = async (params: BudgetParams): Promise<string
     seasonNote = "\n\n🌸 **성수기 안내**: 4·5월·10·11월은 웨딩홀·스드메 가격이 10~20% 높아요. 예산을 5~10% 여유 두시는 걸 권장해요.";
   }
 
-  return `**예산 분배 추천** 💰\n총 예산 **${total.toLocaleString()}만원**${params.region ? ` (${params.region})` : ""}\n\n${lines}\n\n⭐ 표시는 우선순위 항목이에요${supportLine}${seasonNote}\n\n💡 **추가금 방어 팁**\n• 웨딩홀: 보증인원 협상, 대관료·식대 분리 견적 받기\n• 스드메: 원본·헬퍼·얼리스타트 등 숨은 비용 포함 견적 요청\n• 예물: 시세 변동 큰 금 가격 우선 체크\n\n자세한 항목별 관리는 [예산 페이지](/budget)에서 가능해요.`;
+  const text = `**예산 분배 추천** 💰\n총 예산 **${total.toLocaleString()}만원**${params.region ? ` (${params.region})` : ""}\n\n${lines}\n\n⭐ 표시는 우선순위 항목이에요${supportLine}${seasonNote}\n\n💡 **추가금 방어 팁**\n• 웨딩홀: 보증인원 협상, 대관료·식대 분리 견적 받기\n• 스드메: 원본·헬퍼·얼리스타트 등 숨은 비용 포함 견적 요청\n• 예물: 시세 변동 큰 금 가격 우선 체크\n\n자세한 항목별 관리는 [예산 페이지](/budget)에서 가능해요.`;
+
+  // Build the savable plan in (만원). Drop allocations that didn't map to
+  // a real BudgetCategory (shouldn't happen with current slugs, but defends
+  // against future BASE_RATIOS additions). Region resolves to a key if
+  // we recognize the long-form label; otherwise we leave it undefined so
+  // useBudget's mirror logic falls back to the user's saved region.
+  const savableAllocations = allocations
+    .map((a) => {
+      const cat = ALLOC_TO_BUDGET_CATEGORY[a.cat];
+      if (!cat) return null;
+      return {
+        category: cat,
+        label: a.label,
+        amount: Math.round(a.amount / 10000), // won → 만원
+        isPriority: a.priority,
+      };
+    })
+    .filter((a): a is NonNullable<typeof a> => a !== null);
+
+  const plan: SavableBudgetPlan = {
+    totalBudget: total,
+    region: params.region ? REGION_LABEL_TO_KEY[params.region] : undefined,
+    allocations: savableAllocations,
+  };
+
+  return { text, plan };
 };

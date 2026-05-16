@@ -7,13 +7,20 @@ import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useWeddingProfile } from "@/hooks/useWeddingProfile";
+import { useBudget } from "@/hooks/useBudget";
+import { useToast } from "@/hooks/use-toast";
+import { regions as REGION_DATA } from "@/data/budgetData";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
+import AIPlanApplyCard from "@/components/wedding-planner/AIPlanApplyCard";
 import TypingIndicator from "@/components/wedding-planner/TypingIndicator";
 import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
 import SdmeSurvey from "@/components/wedding-planner/SdmeSurvey";
 import TimelineSurvey from "@/components/wedding-planner/TimelineSurvey";
 import BudgetSurvey from "@/components/wedding-planner/BudgetSurvey";
 import SuggestionPanel from "@/components/wedding-planner/SuggestionPanel";
+import type { SavableBudgetPlan, SavableTimelinePlan } from "@/lib/chatbot/handlers/quickQuestionHandlers";
+import type { BudgetCategory } from "@/data/budgetData";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import BottomNav from "@/components/BottomNav";
 import { motion, AnimatePresence } from "framer-motion";
@@ -129,8 +136,38 @@ const AIPlanner = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { messages, isLoading, sendMessage, sendStructured, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
-  const { weddingSettings } = useWeddingSchedule();
+  const { weddingSettings, addScheduleItemsBulk } = useWeddingSchedule();
+  const profile = useWeddingProfile();
+  const { settings: budgetSettings, saveSettings } = useBudget(profile.region, weddingSettings.wedding_style);
+  const { toast } = useToast();
   const weddingStyle = (weddingSettings.wedding_style ?? "general") as WeddingStyle;
+  // Track which messages the user already dismissed/applied so we don't
+  // re-render the apply card after they tap save. Indexed by message
+  // position, which is stable for the session (we never splice messages,
+  // only append). clearMessages() resets the array, so this map naturally
+  // drops dead entries on reset.
+  const [appliedPlans, setAppliedPlans] = useState<Record<number, true>>({});
+
+  // Single prefill object derived from the unified wedding profile. Each
+  // survey picks the fields it cares about. We translate the canonical
+  // long-form region label (e.g. "서울특별시") into the official label that
+  // matches REGIONS lists in BudgetSurvey; surveys that use the short-form
+  // sub-region list (constants.ts REGIONS) silently skip region prefill
+  // when it can't be matched, leaving the user to pick — that's safer
+  // than auto-selecting the wrong sub-region.
+  const surveyPrefill = useMemo(() => {
+    // Map region key → official long label so BudgetSurvey's region <select>
+    // (which lists "서울특별시", "경기도", etc.) matches.
+    const officialRegion = profile.region
+      ? REGION_DATA[profile.region]?.officialLabel ?? weddingSettings.wedding_region ?? undefined
+      : weddingSettings.wedding_region ?? undefined;
+    return {
+      weddingDate: profile.weddingDate || undefined,
+      region: officialRegion,
+      guestCount: profile.guestCount > 0 ? profile.guestCount : undefined,
+      totalBudget: profile.totalBudget > 0 ? profile.totalBudget : undefined,
+    };
+  }, [profile.weddingDate, profile.region, profile.guestCount, profile.totalBudget, weddingSettings.wedding_region]);
   const quickQuestions = useMemo(() => buildQuickQuestions(weddingStyle), [weddingStyle]);
   const greeting = STYLE_GREETING[weddingStyle] ?? STYLE_GREETING.general;
   const [input, setInput] = useState("");
@@ -242,6 +279,42 @@ const AIPlanner = () => {
     sendStructured(userText, { kind: "budget", params: data as never });
   };
 
+  // Apply the AI-generated budget plan to budget_settings. We overwrite
+  // total_budget + category_budgets but preserve existing budget_items —
+  // those represent actual recorded spending and aren't part of the plan.
+  // category_budgets is merged with existing entries so categories the AI
+  // doesn't allocate (meal/suit/hanbok/meetup, which the handler folds
+  // into broader buckets) keep whatever the user had before.
+  const applyBudgetPlan = async (plan: SavableBudgetPlan) => {
+    const existing = (budgetSettings?.category_budgets ?? {}) as Record<string, number>;
+    const merged: Record<string, number> = { ...existing };
+    for (const a of plan.allocations) {
+      merged[a.category] = a.amount;
+    }
+    await saveSettings.mutateAsync({
+      total_budget: plan.totalBudget,
+      category_budgets: merged as Record<BudgetCategory, number>,
+      ...(plan.region ? { region: plan.region } : {}),
+    });
+    toast({ title: "예산이 업데이트되었어요", description: "예산 페이지에서 바로 확인할 수 있어요." });
+  };
+
+  // Apply the AI-generated same-day timeline. Each event becomes a row in
+  // user_schedule_items anchored to wedding_date with the time embedded in
+  // the title (the column is date-only, no datetime). Bulk-insert in a
+  // single round-trip so the user sees one toast, not twelve.
+  const applyTimelinePlan = async (plan: SavableTimelinePlan, weddingDate: string) => {
+    const items = plan.events.map(e => ({
+      title: `${e.time} ${e.title}`,
+      scheduled_date: weddingDate,
+      category: "wedding_hall",
+    }));
+    const inserted = await addScheduleItemsBulk(items);
+    if (inserted > 0) {
+      toast({ title: `${inserted}개의 본식 일정이 추가되었어요`, description: "스케쥴 페이지에서 시간 순으로 확인할 수 있어요." });
+    }
+  };
+
   const hasConversation = messages.length > 0;
   const lastMessageIsAssistant = messages.length > 0 && messages[messages.length - 1]?.role === "assistant";
   const showFollowUps = hasConversation && lastMessageIsAssistant && !isLoading;
@@ -324,7 +397,27 @@ const AIPlanner = () => {
 
           {/* Messages */}
           {messages.map((msg, i) => (
-            <ChatBubble key={i} msg={msg} />
+            <div key={i}>
+              <ChatBubble msg={msg} />
+              {msg.role === "assistant" && msg.plan && !appliedPlans[i] && (
+                msg.plan.kind === "budget" ? (
+                  <AIPlanApplyCard
+                    kind="budget"
+                    plan={msg.plan.data}
+                    onApply={applyBudgetPlan}
+                    onSaved={() => setAppliedPlans(prev => ({ ...prev, [i]: true }))}
+                  />
+                ) : (
+                  <AIPlanApplyCard
+                    kind="timeline"
+                    plan={msg.plan.data}
+                    weddingDate={weddingSettings.wedding_date}
+                    onApply={applyTimelinePlan}
+                    onSaved={() => setAppliedPlans(prev => ({ ...prev, [i]: true }))}
+                  />
+                )
+              )}
+            </div>
           ))}
           {isLoading && <TypingIndicator />}
 
@@ -414,10 +507,10 @@ const AIPlanner = () => {
 
       <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
 
-      <VenueSurvey isOpen={activeModal === "venue"} onClose={() => setActiveModal(null)} onSubmit={handleVenueSubmit} />
+      <VenueSurvey isOpen={activeModal === "venue"} onClose={() => setActiveModal(null)} onSubmit={handleVenueSubmit} prefill={surveyPrefill} />
       <SdmeSurvey isOpen={activeModal === "sdme"} onClose={() => setActiveModal(null)} onSubmit={handleSdmeSubmit} />
       <TimelineSurvey isOpen={activeModal === "timeline"} onClose={() => setActiveModal(null)} onSubmit={handleTimelineSubmit} />
-      <BudgetSurvey isOpen={activeModal === "budget"} onClose={() => setActiveModal(null)} onSubmit={handleBudgetSubmit} />
+      <BudgetSurvey isOpen={activeModal === "budget"} onClose={() => setActiveModal(null)} onSubmit={handleBudgetSubmit} prefill={surveyPrefill} />
 
       <UpgradeModal
         isOpen={showUpgradeModal}
