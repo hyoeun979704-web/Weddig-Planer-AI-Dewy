@@ -115,7 +115,14 @@ export const BUDGET_CATEGORY_COMPOSERS: Record<string, readonly string[]> = {
   meetup: [],
   house: ["appliance"],
   honeymoon: ["honeymoon"],
-  etc: ["invitation_venue"],
+  // 'etc' is intentionally treated as having NO composing schedule
+  // category. It looks like it should be tied to "invitation_venue", but
+  // 'etc' is the catch-all bucket for items like 사회자비 / 부케 / 예단
+  // — wiping it whenever a user excludes invitation_venue would destroy
+  // those unrelated entries. The "청첩장 제외" label is rendered
+  // separately in Budget.tsx via PARTIAL_MAPPED_SCHEDULE_CATEGORIES, so
+  // users still see the partial-exclusion indicator without losing data.
+  etc: [],
 };
 
 const ALL_BUDGET_CATEGORIES = [

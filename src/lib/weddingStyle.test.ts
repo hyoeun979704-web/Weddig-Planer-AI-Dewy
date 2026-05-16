@@ -62,4 +62,27 @@ describe("clearHiddenBudgetValues", () => {
     clearHiddenBudgetValues(input, visible);
     expect(input.hanbok).toBe(200);
   });
+
+  it("preserves 'etc' budget when only invitation_venue is excluded (data-loss regression)", () => {
+    // invitation_venue is PARTIAL_MAPPED — 'etc' is the catch-all bucket
+    // for items like 사회자비/부케/예단, NOT just invitation_venue.
+    // Excluding invitation_venue should NOT zero the etc budget.
+    const excluded = ["invitation_venue"];
+    const visible = visibleBudgetCategories(excluded);
+    expect(visible).toContain("etc");
+    const out = clearHiddenBudgetValues({ etc: 100, venue: 1000 }, visible);
+    expect(out.etc).toBe(100);
+    expect(out.venue).toBe(1000);
+  });
+
+  it("still zeros 'hanbok' when hanbok schedule cat is excluded (FULL_MAPPED)", () => {
+    // Sanity: the etc-preservation fix should not weaken the case for
+    // properly full-mapped categories like hanbok.
+    const excluded = ["hanbok"];
+    const visible = visibleBudgetCategories(excluded);
+    expect(visible).not.toContain("hanbok");
+    const out = clearHiddenBudgetValues({ hanbok: 200, etc: 50 }, visible);
+    expect(out.hanbok).toBe(0);
+    expect(out.etc).toBe(50);
+  });
 });
