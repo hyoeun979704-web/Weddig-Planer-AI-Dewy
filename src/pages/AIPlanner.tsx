@@ -2,7 +2,9 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Send, ArrowLeft, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
+import { Send, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
+import HomeHeader from "@/components/home/HomeHeader";
+import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
@@ -244,46 +246,43 @@ const AIPlanner = () => {
   const lastMessageIsAssistant = messages.length > 0 && messages[messages.length - 1]?.role === "assistant";
   const showFollowUps = hasConversation && lastMessageIsAssistant && !isLoading;
 
+  const handleCategoryTabChange = (tab: CategoryTab) => {
+    const tabRoutes: Record<CategoryTab, string> = {
+      "ai-planner": "/ai-planner",
+      "ai-studio": "/ai-studio",
+      tips: "/tips",
+      events: "/deals",
+      shopping: "/store",
+    };
+    navigate(tabRoutes[tab]);
+  };
+
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
       {!user && <LoginRequiredOverlay message="AI가 나만의 맞춤 웨딩 플랜을 설계해드려요" features={["맞춤 웨딩홀 추천", "예산 플래너", "준비 타임라인"]} />}
-      {/* Header */}
-      <header
-        data-tutorial="ai-header"
-        className="sticky top-0 bg-card/95 backdrop-blur-md border-b border-border z-40 px-4 py-3"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground active:scale-95 transition-transform">
-              <ArrowLeft className="w-5 h-5" />
+      <HomeHeader />
+      <CategoryTabBar activeTab="ai-planner" onTabChange={handleCategoryTabChange} />
+
+      {/* 챗 컨트롤 — 일일 잔여 + 대화 초기화 */}
+      {(dailyRemaining !== null || hasConversation) && (
+        <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-border bg-card/60">
+          {dailyRemaining !== null && (
+            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              {dailyRemaining}회 남음
+            </span>
+          )}
+          {hasConversation && (
+            <button
+              onClick={clearMessages}
+              className="p-1.5 text-muted-foreground hover:text-foreground active:scale-95 transition-all rounded-lg hover:bg-muted"
+              title="대화 초기화"
+              aria-label="대화 초기화"
+            >
+              <RotateCcw className="w-4 h-4" />
             </button>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary flex items-center justify-center text-base">🌸</div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Dewy</p>
-              <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
-                AI 웨딩플래너
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {dailyRemaining !== null && (
-              <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                {dailyRemaining}회 남음
-              </span>
-            )}
-            {hasConversation && (
-              <button
-                onClick={clearMessages}
-                className="p-2 text-muted-foreground hover:text-foreground active:scale-95 transition-all rounded-lg hover:bg-muted"
-                title="대화 초기화"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+          )}
         </div>
-      </header>
+      )}
 
       {/* Chat area */}
       <main ref={scrollAreaRef} className="flex-1 overflow-y-auto pb-36 px-4">
@@ -296,7 +295,7 @@ const AIPlanner = () => {
               className="space-y-5 mt-2"
             >
               {/* Welcome card */}
-              <div className="text-center py-6">
+              <div data-tutorial="ai-header" className="text-center py-6">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-accent mx-auto mb-4 flex items-center justify-center text-3xl">
                   {greeting.emoji}
                 </div>

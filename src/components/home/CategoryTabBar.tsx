@@ -16,7 +16,8 @@ const tabs: Tab[] = [
 ];
 
 interface CategoryTabBarProps {
-  activeTab: CategoryTab;
+  /** null/undefined일 때 어떤 탭도 강조하지 않음 — 홈(`/`)에서 사용. */
+  activeTab?: CategoryTab | null;
   onTabChange: (tab: CategoryTab) => void;
 }
 

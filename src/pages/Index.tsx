@@ -11,7 +11,8 @@ import { usePageTutorial } from "@/hooks/usePageTutorial";
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const activeTab: CategoryTab = "ai-planner";
+  // 홈 콘텐츠 레이아웃은 'ai-planner' 분기를 그대로 사용하지만, 상단탭은
+  // 어떤 카테고리도 아니라서 강조하지 않음 (null 전달).
   const tutorial = usePageTutorial("app-tour");
 
   const handleTabChange = (href: string) => {
@@ -32,10 +33,10 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <HomeHeader />
-      <CategoryTabBar activeTab={activeTab} onTabChange={handleCategoryTabChange} />
+      <CategoryTabBar activeTab={null} onTabChange={handleCategoryTabChange} />
 
       <main className="pb-20" data-tutorial="home-categories">
-        <TabContent activeTab={activeTab} />
+        <TabContent activeTab="ai-planner" />
         <Footer />
       </main>
 
