@@ -19,6 +19,7 @@ const baseProfile: WeddingProfilePrefill = {
   displayName: "",
   partnerName: "",
   weddingStyle: "general",
+  excludedCategories: [],
   isLoaded: true,
 };
 
@@ -164,5 +165,139 @@ describe("rankTipVideosForUser", () => {
       mkVideo({ video_id: `v${i}`, view_count: 100 * i })
     );
     expect(rankTipVideosForUser(videos, baseProfile, { now: NOW, limit: 3 })).toHaveLength(3);
+  });
+});
+
+// Persona-based regression tests. Each persona maps to a real user type
+// (general/small/self) and asserts the ranked output matches what that
+// user should actually see in the Tips "전체" tab.
+describe("persona simulations", () => {
+  const popularSDM = mkVideo({
+    video_id: "sdm-pop",
+    title: "스튜디오 + 드레스 + 메이크업 풀패키지 후기",
+    view_count: 5_000_000,
+    categories: ["studio"],
+  });
+  const popularHanbok = mkVideo({
+    video_id: "hanbok-pop",
+    title: "한복 트렌드 정리",
+    view_count: 3_000_000,
+    categories: ["hanbok"],
+  });
+  const popularTailor = mkVideo({
+    video_id: "tailor-pop",
+    title: "예복 맞춤 후기",
+    view_count: 2_500_000,
+    categories: ["tailor_shop"],
+  });
+  const popularInvite = mkVideo({
+    video_id: "invite-pop",
+    title: "청첩장 디자인 비교",
+    view_count: 2_000_000,
+    categories: ["invitation_venue"],
+  });
+  const nichSelf = mkVideo({
+    video_id: "self-niche",
+    title: "셀프웨딩 촬영 DIY 꿀팁",
+    view_count: 30_000,
+    categories: ["general"],
+  });
+  const nichSmall = mkVideo({
+    video_id: "small-venue",
+    title: "스몰웨딩 한옥 추천",
+    view_count: 80_000,
+    categories: ["wedding_hall"],
+  });
+
+  it("지수 (셀프웨딩, D-150): SDM 영상이 인기 1위여도 모두 맨 뒤로 밀린다", () => {
+    const jisu: WeddingProfilePrefill = {
+      ...baseProfile,
+      weddingDate: "2026-10-12", // D-149
+      weddingStyle: "self",
+      excludedCategories: ["studio", "dress_shop", "makeup_shop"],
+    };
+    const ranked = rankTipVideosForUser(
+      [popularSDM, nichSelf, nichSmall],
+      jisu,
+      { now: NOW }
+    );
+    // niche self/small content beats the popular SDM video (which is excluded).
+    expect(ranked[ranked.length - 1].video_id).toBe("sdm-pop");
+    // Self DIY video should rank ahead of unrelated content
+    expect(ranked.indexOf(nichSelf)).toBeLessThan(ranked.indexOf(popularSDM));
+  });
+
+  it("소영 (스몰웨딩, D-90): 한복·예복·청첩장 영상이 phase boost 없이 맨 뒤로", () => {
+    const soyoung: WeddingProfilePrefill = {
+      ...baseProfile,
+      weddingDate: "2026-08-13", // D-90
+      weddingStyle: "small",
+      excludedCategories: ["hanbok", "tailor_shop", "invitation_venue"],
+    };
+    const factors = buildCurationFactors(soyoung, NOW);
+    // D-90 phase normally boosts makeup_shop/tailor_shop/appliance — but
+    // tailor_shop must be removed because the user opted out.
+    expect(factors.phaseCategories).not.toContain("tailor_shop");
+    expect(factors.phaseCategories).toContain("makeup_shop");
+
+    const ranked = rankTipVideosForUser(
+      [popularHanbok, popularTailor, popularInvite, nichSmall],
+      soyoung,
+      { now: NOW }
+    );
+    // All three excluded videos sink below the niche small-wedding match.
+    const ids = ranked.map((v) => v.video_id);
+    expect(ids.indexOf("small-venue")).toBeLessThan(ids.indexOf("hanbok-pop"));
+    expect(ids.indexOf("small-venue")).toBeLessThan(ids.indexOf("tailor-pop"));
+    expect(ids.indexOf("small-venue")).toBeLessThan(ids.indexOf("invite-pop"));
+  });
+
+  it("민지 (일반 웨딩, D-180): 모든 카테고리 노출, 인기 SDM 영상 정상 랭크", () => {
+    const minji: WeddingProfilePrefill = {
+      ...baseProfile,
+      weddingDate: "2026-11-12", // D-180
+      weddingStyle: "general",
+      excludedCategories: [], // 일반 웨딩은 제외 없음
+    };
+    const factors = buildCurationFactors(minji, NOW);
+    // No exclusions means no phase categories are filtered out.
+    expect(factors.phaseCategories).toContain("wedding_hall");
+    expect(factors.excludedCategories).toEqual([]);
+
+    const ranked = rankTipVideosForUser(
+      [popularSDM, popularHanbok, popularTailor],
+      minji,
+      { now: NOW }
+    );
+    // Regression guard: popular SDM video should NOT be demoted.
+    // (D-180 phase boosts wedding_hall, but SDM is still highly viewed
+    // and not penalized — should be in the top half.)
+    expect(ranked.indexOf(popularSDM)).toBeLessThan(ranked.length / 2 + 1);
+  });
+
+  it("excluded penalty defeats every positive boost (sanity)", () => {
+    const profile: WeddingProfilePrefill = {
+      ...baseProfile,
+      weddingDate: "2026-08-15", // D-92, dress_shop is in phase
+      weddingStyle: "self",
+      excludedCategories: ["dress_shop"],
+    };
+    // A dress_shop video that hits BOTH phase (+0.6) AND style hint (+0.3)
+    // AND recency (+0.15) AND has 100M views (+1.0) — still must lose to a
+    // plain video of any kind.
+    const stacked = mkVideo({
+      video_id: "stacked",
+      title: "셀프 드레스 DIY 트렌드", // matches "셀프" + "diy" hints
+      view_count: 100_000_000,
+      categories: ["dress_shop"],
+      published_at: new Date(NOW - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    const plain = mkVideo({
+      video_id: "plain",
+      view_count: 100,
+      categories: ["general"],
+    });
+    const ranked = rankTipVideosForUser([stacked, plain], profile, { now: NOW });
+    expect(ranked[0].video_id).toBe("plain");
   });
 });

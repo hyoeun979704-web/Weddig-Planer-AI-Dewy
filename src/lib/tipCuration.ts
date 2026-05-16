@@ -45,6 +45,10 @@ export function phaseCategoriesFor(days: number | null): ReadonlyArray<string> {
 export interface CurationFactors {
   phaseCategories: ReadonlyArray<string>;
   styleHints: ReadonlyArray<string>;
+  // Categories the user opted out of (small-wedding skips hanbok/tailor;
+  // self-wedding skips studio/dress/makeup, etc). Videos in these
+  // categories are pushed to the bottom — see EXCLUDED_PENALTY.
+  excludedCategories: ReadonlyArray<string>;
   hasSignal: boolean; // false → fall back to popularity sort
 }
 
@@ -52,14 +56,31 @@ export function buildCurationFactors(
   profile: WeddingProfilePrefill,
   now: number = Date.now()
 ): CurationFactors {
-  const phase = phaseCategoriesFor(daysUntilWedding(profile.weddingDate, now));
+  const rawPhase = phaseCategoriesFor(daysUntilWedding(profile.weddingDate, now));
+  const excluded = profile.excludedCategories ?? [];
+  // Phase boost should never push a category the user explicitly opted out
+  // of — e.g. a D-90 small-wedding user shouldn't see "tailor_shop" boosted.
+  const phase = excluded.length > 0
+    ? rawPhase.filter((c) => !excluded.includes(c))
+    : rawPhase;
   const style = STYLE_HINTS[profile.weddingStyle] ?? [];
   return {
     phaseCategories: phase,
     styleHints: style,
-    hasSignal: phase.length > 0 || style.length > 0,
+    excludedCategories: excluded,
+    // Exclusions alone count as a personalization signal: even with no
+    // date/style match, ranking should still demote excluded categories.
+    hasSignal: phase.length > 0 || style.length > 0 || excluded.length > 0,
   };
 }
+
+// Strong negative score so excluded videos sink below every realistic
+// positive score (popularity ≤ 1 + phase 0.6 + style 0.3 + recency 0.15).
+// Using -10 rather than filtering keeps the video reachable if the user
+// explicitly navigates to the excluded category tab — the chip filter
+// (Tips.tsx) is the user-facing hide; this is for ranking inside the
+// "전체" / mixed lists.
+const EXCLUDED_PENALTY = -10;
 
 // Higher score = more relevant. Popularity is log-normalized so a 10M-view
 // video can still lose to a 100k-view video that matches the user's phase.
@@ -70,6 +91,19 @@ export function scoreTipVideo(
 ): number {
   // log10(view_count) / 8 → roughly 0..1 (100M views ≈ 1.0).
   let score = Math.log10(Math.max(video.view_count, 1)) / 8;
+
+  // Hard demotion for opted-out categories. Applied first so the rest of
+  // the boosts can't accidentally rescue an excluded video. We check only
+  // the PRIMARY category (badge slot) — a multi-category video like
+  // [dress_shop, wedding_hall, hanbok] should still surface for a
+  // small-wedding user who only excluded hanbok, because it's primarily
+  // about dresses.
+  if (factors.excludedCategories.length > 0) {
+    const primary = video.categories[0];
+    if (primary && factors.excludedCategories.includes(primary)) {
+      score += EXCLUDED_PENALTY;
+    }
+  }
 
   if (factors.phaseCategories.length > 0) {
     const match = video.categories.some((c) => factors.phaseCategories.includes(c));

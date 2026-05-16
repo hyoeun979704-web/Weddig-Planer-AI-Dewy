@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Flame, Sparkles } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -34,7 +34,22 @@ const Tips = () => {
   const location = useLocation();
   const profile = useWeddingProfile();
   const curationFactors = buildCurationFactors(profile);
+  // Hide chips for categories the user opted out of (small/self/custom
+  // weddings). "전체" is always available so the user can still browse
+  // the full ranked list.
+  const visibleChips = useMemo(() => {
+    const excluded = new Set(profile.excludedCategories ?? []);
+    if (excluded.size === 0) return CATEGORY_CHIPS;
+    return CATEGORY_CHIPS.filter((c) => c.slug === null || !excluded.has(c.slug));
+  }, [profile.excludedCategories]);
   const [category, setCategory] = useState<string | null>(null);
+  // If the user changes their style/exclusions while a now-hidden category
+  // is selected, fall back to "전체" so they don't end up on a dead tab.
+  useEffect(() => {
+    if (category && !visibleChips.some((c) => c.slug === category)) {
+      setCategory(null);
+    }
+  }, [visibleChips, category]);
   // Default to "추천순". When user has no personalization signal yet,
   // rankTipVideosForUser falls back to the popularity order — same result as
   // "인기순" — so this is safe even for logged-out / fresh users.
@@ -48,13 +63,27 @@ const Tips = () => {
     limit: 40,
     freshOnly: false,
   });
+  // Drop videos whose primary category the user opted out of — keeps the
+  // HOT row and grid consistent with the chip set (an excluded chip is
+  // hidden, so its videos shouldn't sneak in via "전체" or HOT either).
+  const excludedSet = useMemo(
+    () => new Set(profile.excludedCategories ?? []),
+    [profile.excludedCategories]
+  );
+  const isExcludedByPrimary = (v: TipVideo) => {
+    if (excludedSet.size === 0) return false;
+    const primary = v.categories[0];
+    return primary != null && excludedSet.has(primary);
+  };
+
   const sevenDaysAgo = Date.now() - SEVEN_DAYS_MS;
-  const freshList = (hotPool ?? []).filter(
+  const visibleHotPool = (hotPool ?? []).filter((v) => !isExcludedByPrimary(v));
+  const freshList = visibleHotPool.filter(
     (v) => v.published_at && new Date(v.published_at).getTime() >= sevenDaysAgo
   );
   // Always render HOT row: prefer last-7-days; fall back to top-by-views
   // when no fresh content (HOT header should always be present per spec).
-  const hotList = (freshList.length > 0 ? freshList : (hotPool ?? [])).slice(0, 8);
+  const hotList = (freshList.length > 0 ? freshList : visibleHotPool).slice(0, 8);
   const hotIsFallback = freshList.length === 0;
 
   // Grid: full list filtered by category, then by format, client-sorted.
@@ -65,11 +94,13 @@ const Tips = () => {
   });
   const isShort = (v: TipVideo) =>
     v.duration_seconds != null && v.duration_seconds <= SHORT_MAX_SECONDS;
-  const formatFiltered = (allVideos ?? []).filter((v) => {
-    if (format === "short") return isShort(v);
-    if (format === "long") return !isShort(v);
-    return true;
-  });
+  const formatFiltered = (allVideos ?? [])
+    .filter((v) => !isExcludedByPrimary(v))
+    .filter((v) => {
+      if (format === "short") return isShort(v);
+      if (format === "long") return !isShort(v);
+      return true;
+    });
   const gridList = (() => {
     if (sort === "curated") {
       return rankTipVideosForUser(formatFiltered, profile);
@@ -97,7 +128,7 @@ const Tips = () => {
         </div>
 
         <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-3">
-          {CATEGORY_CHIPS.map((c) => {
+          {visibleChips.map((c) => {
             const active = category === c.slug;
             return (
               <button
