@@ -149,6 +149,11 @@ export const useWeddingSchedule = () => {
   // in one call). Used by the shared WeddingInfoSetupModal that auto-pops
   // on Schedule/Budget/MyPage when the user hasn't entered basic wedding
   // info yet.
+  //
+  // `opts.silent` — suppress success/error toasts and skip the auth-required
+  // toast (caller already gated access). Used by AI Planner when survey
+  // inputs are quietly mirrored into the profile so the user isn't shown
+  // a "저장되었어요" toast on top of the AI chat response.
   const saveWeddingSettings = async (
     patch: Partial<{
       wedding_date: string | null;
@@ -163,10 +168,12 @@ export const useWeddingSchedule = () => {
       pregnant: boolean;
       value_tags: WeddingValueTag[];
       guest_count: number | null;
-    }>
+    }>,
+    opts?: { silent?: boolean }
   ) => {
+    const silent = !!opts?.silent;
     if (!user) {
-      toast.error("로그인이 필요합니다");
+      if (!silent) toast.error("로그인이 필요합니다");
       return false;
     }
     try {
@@ -225,11 +232,11 @@ export const useWeddingSchedule = () => {
         }
       }
 
-      toast.success("결혼 정보가 저장되었어요");
+      if (!silent) toast.success("결혼 정보가 저장되었어요");
       return true;
     } catch (error) {
       console.error("Error saving wedding settings:", error);
-      toast.error("저장에 실패했어요");
+      if (!silent) toast.error("저장에 실패했어요");
       return false;
     }
   };

@@ -22,6 +22,12 @@ import type { BudgetCategory } from "@/data/budgetData";
 export interface SavableBudgetPlan {
   totalBudget: number;  // 만원
   region?: string;       // budget region KEY (e.g. "seoul"), if known
+  // ISO date (YYYY-MM-DD) the user entered in the BudgetSurvey. When the
+  // user taps "내 예산에 저장" we also mirror this into
+  // user_wedding_settings.wedding_date so the AI's plan and the user's
+  // canonical profile stay aligned — without this, the BudgetSurvey's
+  // date input was a write-only field that never propagated.
+  weddingDate?: string;
   allocations: Array<{
     category: BudgetCategory;
     label: string;
@@ -320,6 +326,9 @@ export interface BudgetParams {
   items?: string[];
   region?: string;
   date?: string;
+  // YYYY-MM-DD form of `date`. Passed through into SavableBudgetPlan.weddingDate
+  // so applyBudgetPlan can mirror the user's chosen date into the profile.
+  dateISO?: string;
   season?: string;
   support?: string;
   supportAmount?: string | number;
@@ -476,6 +485,7 @@ export const handleBudgetPlanning = async (params: BudgetParams): Promise<Budget
   const plan: SavableBudgetPlan = {
     totalBudget: total,
     region: params.region ? REGION_LABEL_TO_KEY[params.region] : undefined,
+    weddingDate: params.dateISO,
     allocations: savableAllocations,
   };
 

@@ -41,7 +41,12 @@ const SdmeSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
 
   const handleSubmit = () => {
     if (!validate()) return;
-    onSubmit({ date: format(date!, "yyyy년 M월 d일"), region, studioStyle, dressOptions, makeup, album, budget, priority });
+    onSubmit({
+      date: format(date!, "yyyy년 M월 d일"),
+      // ISO form so AIPlanner can persist wedding_date into the unified profile.
+      dateISO: format(date!, "yyyy-MM-dd"),
+      region, studioStyle, dressOptions, makeup, album, budget, priority,
+    });
     onClose();
   };
 

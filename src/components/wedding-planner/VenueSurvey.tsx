@@ -70,6 +70,9 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit, prefill }: Props) => {
     if (!validate()) return;
     onSubmit({
       date: format(date!, "yyyy년 M월 d일"),
+      // ISO form for callers that need to persist the date (e.g. mirroring
+      // into user_wedding_settings.wedding_date — that column is YYYY-MM-DD).
+      dateISO: format(date!, "yyyy-MM-dd"),
       region,
       guests,
       budget,

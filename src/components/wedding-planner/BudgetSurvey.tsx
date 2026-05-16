@@ -103,6 +103,9 @@ const BudgetSurvey = ({ isOpen, onClose, onSubmit, prefill }: Props) => {
       items,
       region,
       date: format(date!, "yyyy년 M월 d일"),
+      // ISO form so AIPlanner can mirror the date into user_wedding_settings
+      // (and into the savable budget plan, which applyBudgetPlan persists).
+      dateISO: format(date!, "yyyy-MM-dd"),
       season,
       support,
       supportAmount,

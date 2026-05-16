@@ -136,7 +136,7 @@ const AIPlanner = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { messages, isLoading, sendMessage, sendStructured, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
-  const { weddingSettings, addScheduleItemsBulk } = useWeddingSchedule();
+  const { weddingSettings, addScheduleItemsBulk, saveWeddingSettings } = useWeddingSchedule();
   const profile = useWeddingProfile();
   const { settings: budgetSettings, saveSettings } = useBudget(profile.region, weddingSettings.wedding_style);
   const { toast } = useToast();
@@ -236,9 +236,55 @@ const AIPlanner = () => {
     if (item.modal) setActiveModal(item.modal);
   };
 
+  // Silently mirror the user's survey inputs back into the unified profile.
+  // Without this, AI Planner surveys were write-only — the user could type
+  // their date / region / guest count into a survey and have it vanish
+  // after the AI reply, forcing re-entry on every visit and leaving
+  // Schedule + Budget out of sync.
+  //
+  // Conservative on which fields propagate per-survey because the survey
+  // region pickers don't all speak the same vocabulary:
+  //   · BudgetSurvey region = long official label ("서울특별시")
+  //     → matches user_wedding_settings.wedding_region exactly
+  //   · Venue/SdmeSurvey region = sub-region phrase ("서울 강남/서초")
+  //     → can't be safely written to wedding_region without lossy mapping,
+  //       so we skip region from those two and only mirror date/guests.
+  const syncProfileFromSurvey = (patch: {
+    weddingDate?: string;
+    weddingRegion?: string;
+    guestCount?: number;
+  }) => {
+    const update: Parameters<typeof saveWeddingSettings>[0] = {};
+    if (patch.weddingDate) update.wedding_date = patch.weddingDate;
+    if (patch.weddingRegion) update.wedding_region = patch.weddingRegion;
+    if (typeof patch.guestCount === "number" && patch.guestCount > 0) {
+      update.guest_count = patch.guestCount;
+    }
+    if (Object.keys(update).length === 0) return;
+    // Fire-and-forget. saveWeddingSettings already handles auth gating, the
+    // budget_settings mirror, and error logging. Silent mode suppresses the
+    // success toast so the user only sees the AI's response, not "결혼
+    // 정보가 저장되었어요" stacked on top.
+    saveWeddingSettings(update, { silent: true });
+  };
+
+  const parseGuestsNumber = (v: unknown): number | undefined => {
+    if (typeof v === "number") return v > 0 ? v : undefined;
+    if (typeof v === "string") {
+      const n = parseInt(v.replace(/[^0-9]/g, ""), 10);
+      return isNaN(n) || n <= 0 ? undefined : n;
+    }
+    return undefined;
+  };
+
   // 모달 핸들러: 모든 입력 필드를 결정형 핸들러로 직접 전달 (LLM 호출 X)
   const handleVenueSubmit = (data: Record<string, unknown>) => {
     setActiveModal(null);
+    syncProfileFromSurvey({
+      weddingDate: typeof data.dateISO === "string" ? data.dateISO : undefined,
+      guestCount: parseGuestsNumber(data.guests),
+      // VenueSurvey region is sub-region format; skip wedding_region.
+    });
     const userText = `🏛️ 웨딩홀 추천 요청\n${[
       data.region && `지역: ${data.region}`,
       data.guests && `하객수: ${data.guests}명`,
@@ -250,6 +296,10 @@ const AIPlanner = () => {
 
   const handleSdmeSubmit = (data: Record<string, unknown>) => {
     setActiveModal(null);
+    syncProfileFromSurvey({
+      weddingDate: typeof data.dateISO === "string" ? data.dateISO : undefined,
+      // SdmeSurvey region is sub-region format; skip wedding_region.
+    });
     const userText = `📸 스드메 가이드 요청\n${[
       data.region && `지역: ${data.region}`,
       data.budget && `예산: ${data.budget}만원`,
@@ -261,6 +311,8 @@ const AIPlanner = () => {
 
   const handleTimelineSubmit = (data: Record<string, unknown>) => {
     setActiveModal(null);
+    // TimelineSurvey collects same-day specifics (ceremonyTime, duration,
+    // photoTeam, etc.) — none are profile-shared fields, so no sync.
     const userText = `⏰ 본식 타임라인 요청\n${[
       data.ceremonyTime && `예식: ${data.ceremonyTime}`,
       data.duration && `소요: ${data.duration}`,
@@ -271,6 +323,11 @@ const AIPlanner = () => {
 
   const handleBudgetSubmit = (data: Record<string, unknown>) => {
     setActiveModal(null);
+    syncProfileFromSurvey({
+      weddingDate: typeof data.dateISO === "string" ? data.dateISO : undefined,
+      // BudgetSurvey region IS the long official label, safe to mirror.
+      weddingRegion: typeof data.region === "string" && data.region ? data.region : undefined,
+    });
     const userText = `💰 예산 분배 요청\n${[
       data.totalBudget && `총 ${data.totalBudget}만원`,
       data.region && `(${data.region})`,
@@ -285,6 +342,12 @@ const AIPlanner = () => {
   // category_budgets is merged with existing entries so categories the AI
   // doesn't allocate (meal/suit/hanbok/meetup, which the handler folds
   // into broader buckets) keep whatever the user had before.
+  //
+  // The region mirror to wedding_settings is handled automatically by
+  // useBudget.saveSettings; we additionally mirror plan.weddingDate here
+  // because budget_settings has no wedding_date column to anchor that sync.
+  // Without this second write, the date the user typed into BudgetSurvey
+  // would never reach Schedule or MyPage.
   const applyBudgetPlan = async (plan: SavableBudgetPlan) => {
     const existing = (budgetSettings?.category_budgets ?? {}) as Record<string, number>;
     const merged: Record<string, number> = { ...existing };
@@ -296,6 +359,9 @@ const AIPlanner = () => {
       category_budgets: merged as Record<BudgetCategory, number>,
       ...(plan.region ? { region: plan.region } : {}),
     });
+    if (plan.weddingDate) {
+      await saveWeddingSettings({ wedding_date: plan.weddingDate }, { silent: true });
+    }
     toast({ title: "예산이 업데이트되었어요", description: "예산 페이지에서 바로 확인할 수 있어요." });
   };
 
