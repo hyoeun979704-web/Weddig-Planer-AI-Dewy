@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Tag, Star, ChevronRight, SlidersHorizontal } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
-import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
+import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { Skeleton } from "@/components/ui/skeleton";
 import SortToggle, { SortMode } from "@/components/SortToggle";
@@ -37,17 +37,7 @@ const Deals = () => {
   const hasActiveFilters = !!(filters.category || filters.region || filters.maxPrice || filters.keyword);
 
   const handleTabChange = (href: string) => navigate(href);
-
-  const handleCategoryTabChange = (tab: CategoryTab) => {
-    const tabRoutes: Record<CategoryTab, string> = {
-      "ai-planner": "/ai-planner",
-      "ai-studio": "/ai-studio",
-      tips: "/tips",
-      events: "/deals",
-      shopping: "/store",
-    };
-    navigate(tabRoutes[tab]);
-  };
+  const handleCategoryTabChange = useCategoryTabNavigation();
 
   // Apply filters
   let filtered = [...deals];
@@ -73,7 +63,7 @@ const Deals = () => {
       <CategoryTabBar activeTab="events" onTabChange={handleCategoryTabChange} />
 
       {/* Category Filter */}
-      <div className="px-4 py-3 overflow-x-auto">
+      <div className="px-4 py-3 overflow-x-auto border-b border-border">
         <div className="flex gap-2">
           {mainCategories.map(({ key, label }) => (
             <button

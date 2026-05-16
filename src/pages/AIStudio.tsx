@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
-import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
+import CategoryTabBar, { CategoryTab, useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import LockedCard from "@/components/LockedCard";
 import WaitlistSignupSheet from "@/components/studio/WaitlistSignupSheet";
 
@@ -69,16 +69,7 @@ const AIStudio = () => {
     navigate(href);
   };
 
-  const handleCategoryTabChange = (tab: CategoryTab) => {
-    const tabRoutes: Record<CategoryTab, string> = {
-      "ai-planner": "/ai-planner",
-      "ai-studio": "/ai-studio",
-      tips: "/tips",
-      events: "/deals",
-      shopping: "/store",
-    };
-    navigate(tabRoutes[tab]);
-  };
+  const handleCategoryTabChange = useCategoryTabNavigation();
 
   const handleLockedCardClick = (card: StudioCard) => {
     // Open the waitlist sheet so users can register for launch notifications.

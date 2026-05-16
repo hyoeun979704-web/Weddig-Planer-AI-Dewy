@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Send, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
 import HomeHeader from "@/components/home/HomeHeader";
-import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
+import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
@@ -246,16 +246,7 @@ const AIPlanner = () => {
   const lastMessageIsAssistant = messages.length > 0 && messages[messages.length - 1]?.role === "assistant";
   const showFollowUps = hasConversation && lastMessageIsAssistant && !isLoading;
 
-  const handleCategoryTabChange = (tab: CategoryTab) => {
-    const tabRoutes: Record<CategoryTab, string> = {
-      "ai-planner": "/ai-planner",
-      "ai-studio": "/ai-studio",
-      tips: "/tips",
-      events: "/deals",
-      shopping: "/store",
-    };
-    navigate(tabRoutes[tab]);
-  };
+  const handleCategoryTabChange = useCategoryTabNavigation();
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">

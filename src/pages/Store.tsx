@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ShoppingCart, Star, Loader2, SlidersHorizontal } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
-import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
+import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { supabase } from "@/integrations/supabase/client";
 import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
 import SortToggle, { SortMode } from "@/components/SortToggle";
@@ -86,16 +86,7 @@ const Store = () => {
     filters.sizes.length > 0 ||
     filters.keyword !== "";
 
-  const handleCategoryTabChange = (tab: CategoryTab) => {
-    const tabRoutes: Record<CategoryTab, string> = {
-      "ai-planner": "/ai-planner",
-      "ai-studio": "/ai-studio",
-      tips: "/tips",
-      events: "/deals",
-      shopping: "/store",
-    };
-    navigate(tabRoutes[tab]);
-  };
+  const handleCategoryTabChange = useCategoryTabNavigation();
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">

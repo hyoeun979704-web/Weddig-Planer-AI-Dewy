@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Flame } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
-import CategoryTabBar, { CategoryTab } from "@/components/home/CategoryTabBar";
+import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { TipVideoCard, TipVideoCardSkeleton } from "@/components/TipVideoCard";
 import { useTipVideos, type TipVideo } from "@/hooks/useTipVideos";
 
@@ -72,16 +72,7 @@ const Tips = () => {
     return db - da;
   });
 
-  const handleCategoryTabChange = (tab: CategoryTab) => {
-    const tabRoutes: Record<CategoryTab, string> = {
-      "ai-planner": "/ai-planner",
-      "ai-studio": "/ai-studio",
-      tips: "/tips",
-      events: "/deals",
-      shopping: "/store",
-    };
-    navigate(tabRoutes[tab]);
-  };
+  const handleCategoryTabChange = useCategoryTabNavigation();
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-20">
