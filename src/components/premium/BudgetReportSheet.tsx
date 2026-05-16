@@ -7,6 +7,9 @@ import {
   pdfInfoGrid,
   pdfStatRow,
   pdfSection,
+  pdfBarChart,
+  pdfDonut,
+  pdfDivider,
 } from "@/lib/pdfGenerator";
 import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { useBudget } from "@/hooks/useBudget";
@@ -67,13 +70,21 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       const couple = profile.displayName && profile.partnerName
         ? `${profile.displayName} ♥ ${profile.partnerName}`
         : undefined;
+      const styleLabel = WEDDING_STYLE_LABEL[profile.weddingStyle];
       let html = generatePdfHeader(
         "웨딩 예산 분석 리포트",
         `${regionLabel} · 총 예산 ${totalBudget.toLocaleString()}만원 · 기록 ${items.length}건`,
         {
           couple,
           weddingDate: profile.weddingDate || undefined,
-          styleLabel: WEDDING_STYLE_LABEL[profile.weddingStyle],
+          styleLabel,
+          cover: {
+            docType: "웨딩 예산 분석 리포트",
+            docSub: `두 분의 예산·지출 데이터를 ${regionLabel} 평균과 비교하여 작성된 맞춤 분석 자료입니다.`,
+            couple,
+            weddingDate: profile.weddingDate || undefined,
+            styleLabel,
+          },
         },
       );
 
@@ -106,7 +117,23 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
         catTable += `<tr><td>${categories[key].emoji} ${categories[key].label}</td><td>${budget}만원</td><td>${spent}만원</td><td>${pct}%</td><td>${avgVal}만원</td><td style="color:${diff > 0 ? '#ef4444' : '#10b981'};font-weight:600">${diffLabel}</td></tr>`;
       }
       catTable += `<tr class="total-row"><td>합계</td><td>${totalBudget}만원</td><td>${summary.totalSpent}만원</td><td>${usagePct}%</td><td>${avg?.total || "-"}만원</td><td></td></tr></tbody></table>`;
-      html += pdfSection("📊 카테고리별 지출 현황", catTable);
+      // 막대 차트 - 예산 대비 지출 비교
+      const spendBars = pdfBarChart(
+        categoryKeys
+          .filter((k) => (catBudgets[k] || 0) > 0 || (summary.categoryTotals[k] || 0) > 0)
+          .map((k) => {
+            const spent = summary.categoryTotals[k] || 0;
+            const budget = catBudgets[k] || 0;
+            const ratio = budget > 0 ? Math.min(1.2, spent / budget) : 0;
+            return {
+              label: `${categories[k].emoji} ${categories[k].label}`,
+              value: spent,
+              ratio,
+              displayValue: `${spent}/${budget}만원`,
+            };
+          }),
+      );
+      html += pdfSection("📊 카테고리별 지출 현황", catTable + spendBars);
 
       // Health score badge area
       html += `<div class="pdf-highlight" style="border-left:4px solid ${healthColor};padding-left:14px;">
@@ -136,7 +163,13 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
           <tr><td>🤵 신랑측</td><td>${paidGroom}만원</td><td>${Math.round((paidGroom / splitTotal) * 100)}%</td></tr>
           <tr><td>👰 신부측</td><td>${paidBride}만원</td><td>${Math.round((paidBride / splitTotal) * 100)}%</td></tr>
         </tbody></table>`;
-        html += pdfSection("🤝 양가 분담 현황", splitTable);
+        const splitDonut = pdfDonut([
+          { label: "🤝 공동", value: paidShared, color: "#F4A7B9" },
+          { label: "🤵 신랑측", value: paidGroom, color: "#60a5fa" },
+          { label: "👰 신부측", value: paidBride, color: "#fb7185" },
+        ]);
+        html += pdfSection("🤝 양가 분담 현황", splitDonut + splitTable);
+        html += pdfDivider();
       }
 
       // Balance items

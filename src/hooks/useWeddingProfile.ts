@@ -71,7 +71,7 @@ export const useWeddingProfile = (): WeddingProfilePrefill => {
     // should always be in sync, but during the transition / for users who
     // entered the value only in Budget pre-unification, settings is still
     // authoritative for an existing row.
-    guestCount: settings?.guest_count ?? weddingSettings.guest_count ?? 200,
+    guestCount: settings?.guest_count ?? (weddingSettings as any).guest_count ?? 200,
     displayName,
     partnerName: weddingSettings.partner_name ?? "",
     weddingStyle: weddingSettings.wedding_style ?? "general",
