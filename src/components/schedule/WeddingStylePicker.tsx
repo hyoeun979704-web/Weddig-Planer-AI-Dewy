@@ -66,10 +66,10 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
         })}
       </div>
       {style === "custom" && (
-        <div className="rounded-xl border-2 border-primary/40 bg-primary/5 px-3 py-2 flex items-center gap-2">
-          <span className="text-xs font-bold text-primary">직접 선택</span>
-          <span className="text-[11px] text-gray-500 flex-1">아래에서 카테고리를 골라 직접 조합하셨어요</span>
-        </div>
+        <p className="text-[11px] text-primary flex items-center gap-1">
+          <span className="font-bold">✨ 직접 선택</span>
+          <span className="text-gray-500">· 카테고리를 골라 직접 조합하셨어요</span>
+        </p>
       )}
       {style && style !== "custom" && (
         <p className="text-[11px] text-gray-500">
@@ -77,28 +77,31 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
         </p>
       )}
 
-      {/* Category checklist */}
+      {/* Category checklist — uses <button role=checkbox> instead of a real
+          <input type=checkbox sr-only>. iOS Safari was scrolling the hidden
+          input into view on focus, which broke the fixed modal's layout
+          (modal shrank to a slit at the top with a white area covering most
+          of the screen, as if a keyboard-accessory bar fixed itself over the
+          content). A button doesn't trigger that scroll-into-view path. */}
       <div className="space-y-1.5">
         <p className="text-xs font-semibold text-gray-700">제외할 카테고리</p>
         {SKIPPABLE_CATEGORIES.map((cat) => {
           const meta = CATEGORY_LABELS[cat];
           const isExcluded = excluded.includes(cat);
           return (
-            <label
+            <button
               key={cat}
+              type="button"
+              role="checkbox"
+              aria-checked={isExcluded}
+              onClick={() => handleCategoryToggle(cat)}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 border rounded-xl cursor-pointer transition-colors",
+                "w-full flex items-center gap-3 px-3 py-2.5 border rounded-xl text-left transition-colors active:scale-[0.99]",
                 isExcluded
                   ? "border-primary bg-primary/15"
                   : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white"
               )}
             >
-              <input
-                type="checkbox"
-                checked={isExcluded}
-                onChange={() => handleCategoryToggle(cat)}
-                className="sr-only"
-              />
               <span
                 className={cn(
                   "w-5 h-5 rounded border-2 flex items-center justify-center shrink-0",
@@ -117,7 +120,7 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
               {isExcluded && (
                 <span className="text-[10px] font-bold text-primary uppercase tracking-wide shrink-0">제외됨</span>
               )}
-            </label>
+            </button>
           );
         })}
       </div>
