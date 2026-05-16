@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { computeGuestStats, type GuestItem } from "@/lib/guestList";
+import { trackEvent } from "@/lib/track";
 
 export type GuestDraft = Pick<
   GuestItem,
@@ -40,21 +41,44 @@ export const useGuestList = () => {
         .insert({ user_id: user.id, ...draft });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["guest-list", user?.id] }),
+    onSuccess: (_data, draft) => {
+      qc.invalidateQueries({ queryKey: ["guest-list", user?.id] });
+      trackEvent("guest_added", {
+        side: draft.side,
+        rsvp_status: draft.rsvp_status,
+        attending_count: draft.attending_count,
+      });
+    },
     onError: (e) => toast.error("추가 실패", { description: e instanceof Error ? e.message : "" }),
   });
 
   const updateGuest = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<GuestDraft> }) => {
       if (!user) throw new Error("로그인이 필요합니다");
+      // RSVP 변경은 별도 이벤트로 트래킹 — 응답 수집 흐름을 보기 위해.
+      // 이전 값과 비교해야 정확하므로 update 직전에 현재 값을 한 번 읽음.
+      let previousRsvp: string | null = null;
+      if (patch.rsvp_status) {
+        const prev = items.find((g) => g.id === id);
+        previousRsvp = prev?.rsvp_status ?? null;
+      }
       const { error } = await (supabase as any)
         .from("guest_list_items")
         .update(patch)
         .eq("id", id)
         .eq("user_id", user.id);
       if (error) throw error;
+      return { previousRsvp };
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["guest-list", user?.id] }),
+    onSuccess: (result, { patch }) => {
+      qc.invalidateQueries({ queryKey: ["guest-list", user?.id] });
+      if (patch.rsvp_status && patch.rsvp_status !== result?.previousRsvp) {
+        trackEvent("guest_rsvp_changed", {
+          from: result?.previousRsvp ?? null,
+          to: patch.rsvp_status,
+        });
+      }
+    },
     onError: (e) => toast.error("수정 실패", { description: e instanceof Error ? e.message : "" }),
   });
 

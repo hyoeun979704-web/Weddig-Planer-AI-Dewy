@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2, Pencil, X, Save, Settings2, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { trackEvent } from "@/lib/track";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
@@ -171,8 +172,16 @@ const MySchedule = () => {
     if (key === "later") return isCompressionMode;
     return true; // completed
   };
-  const toggleSection = (key: "later" | "completed") =>
-    setCollapseOverride((prev) => ({ ...prev, [key]: !isSectionCollapsed(key) }));
+  const toggleSection = (key: "later" | "completed") => {
+    const nextCollapsed = !isSectionCollapsed(key);
+    setCollapseOverride((prev) => ({ ...prev, [key]: nextCollapsed }));
+    trackEvent("schedule_compression_toggle", {
+      section: key,
+      collapsed: nextCollapsed,
+      compression_mode: isCompressionMode,
+      days_until_wedding: days,
+    });
+  };
 
   if (!user) {
     return (
