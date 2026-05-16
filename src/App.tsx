@@ -53,6 +53,7 @@ const Referral = lazy(() => import("./pages/Referral"));
 const Coupons = lazy(() => import("./pages/Coupons"));
 const Orders = lazy(() => import("./pages/Orders"));
 const MySchedule = lazy(() => import("./pages/MySchedule"));
+const Guests = lazy(() => import("./pages/Guests"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const MyInquiries = lazy(() => import("./pages/MyInquiries"));
@@ -182,6 +183,7 @@ const App = () => (
               <Route path="/coupons" element={<Coupons />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/my-schedule" element={<MySchedule />} />
+              <Route path="/guests" element={<Guests />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/my-inquiries" element={<MyInquiries />} />
