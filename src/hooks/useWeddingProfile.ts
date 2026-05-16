@@ -66,7 +66,12 @@ export const useWeddingProfile = (): WeddingProfilePrefill => {
     weddingDate: weddingSettings.wedding_date ?? "",
     region: settings?.region || weddingSettings.wedding_region || "seoul",
     totalBudget: settings?.total_budget ?? 0,
-    guestCount: settings?.guest_count ?? 200,
+    // Prefer the unified profile field; fall back to legacy budget_settings,
+    // then to a sensible default. After migration 20260516170000 the two
+    // should always be in sync, but during the transition / for users who
+    // entered the value only in Budget pre-unification, settings is still
+    // authoritative for an existing row.
+    guestCount: settings?.guest_count ?? weddingSettings.guest_count ?? 200,
     displayName,
     partnerName: weddingSettings.partner_name ?? "",
     weddingStyle: weddingSettings.wedding_style ?? "general",

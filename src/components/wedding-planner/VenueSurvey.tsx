@@ -1,19 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SurveyModal from "./SurveyModal";
 import { REGIONS, BUDGET_OPTIONS_VENUE, WEDDING_STYLES } from "./constants";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Sparkles } from "lucide-react";
+
+export interface SurveyPrefill {
+  weddingDate?: string;  // YYYY-MM-DD
+  region?: string;        // long-form label
+  guestCount?: number;
+  totalBudget?: number;   // 만원
+}
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: any) => void;
+  prefill?: SurveyPrefill;
 }
 
-const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
+const VenueSurvey = ({ isOpen, onClose, onSubmit, prefill }: Props) => {
   const [date, setDate] = useState<Date>();
   const [region, setRegion] = useState("");
   const [guests, setGuests] = useState("");
@@ -23,6 +31,42 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const [meal, setMeal] = useState("");
   const [special, setSpecial] = useState("");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [autofilled, setAutofilled] = useState<Record<string, boolean>>({});
+
+  // Full reset on every open so non-prefilled inputs (styles, parking, meal,
+  // special) don't carry stale state across modal cycles. Prefilled fields
+  // get (re-)set inside this block; everything else returns to blank.
+  useEffect(() => {
+    if (!isOpen) return;
+    setStyles([]);
+    setParking("");
+    setMeal("");
+    setSpecial("");
+    const f: Record<string, boolean> = {};
+    if (prefill?.weddingDate) {
+      const d = new Date(prefill.weddingDate);
+      if (!isNaN(d.getTime())) { setDate(d); f.date = true; } else { setDate(undefined); }
+    } else {
+      setDate(undefined);
+    }
+    if (prefill?.region && (REGIONS as readonly string[]).includes(prefill.region)) {
+      setRegion(prefill.region); f.region = true;
+    } else {
+      setRegion("");
+    }
+    if (prefill?.guestCount && prefill.guestCount > 0) {
+      setGuests(String(prefill.guestCount)); f.guests = true;
+    } else {
+      setGuests("");
+    }
+    if (prefill?.totalBudget && prefill.totalBudget > 0) {
+      setBudget(String(prefill.totalBudget)); f.budget = true;
+    } else {
+      setBudget("");
+    }
+    setAutofilled(f);
+    setErrors({});
+  }, [isOpen, prefill?.weddingDate, prefill?.region, prefill?.guestCount, prefill?.totalBudget]);
 
   const toggleStyle = (s: string) => setStyles(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
@@ -41,6 +85,9 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
     if (!validate()) return;
     onSubmit({
       date: format(date!, "yyyy년 M월 d일"),
+      // ISO form for callers that need to persist the date (e.g. mirroring
+      // into user_wedding_settings.wedding_date — that column is YYYY-MM-DD).
+      dateISO: format(date!, "yyyy-MM-dd"),
       region,
       guests,
       budget,

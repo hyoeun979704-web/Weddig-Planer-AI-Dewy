@@ -834,7 +834,7 @@ const Budget = () => {
       <BudgetSetupSheet
         open={setupOpen} onOpenChange={setSetupOpen}
         initialRegion={settings?.region || profileRegionKey}
-        initialGuestCount={settings?.guest_count}
+        initialGuestCount={settings?.guest_count ?? weddingSettings.guest_count ?? undefined}
         initialTotalBudget={settings?.total_budget}
         initialCategoryBudgets={settings?.category_budgets}
         weddingStyle={weddingSettings.wedding_style}
