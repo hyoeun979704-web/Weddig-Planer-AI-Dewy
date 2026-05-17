@@ -56,7 +56,17 @@ const Tips = () => {
     if (excluded.size === 0) return CATEGORY_CHIPS;
     return CATEGORY_CHIPS.filter((c) => c.slug === null || !excluded.has(c.slug));
   }, [profile.excludedCategories]);
-  const [category, setCategory] = useState<string | null>(null);
+  const [category, setCategory] = useState<string | null>(() => {
+    // Deep-link entry from MySchedule (and other pages that want to
+    // surface tips for a specific topic). Read once on mount so the chip
+    // honors the URL when the user lands here, then let normal click
+    // interactions take over — we deliberately don't keep state and URL
+    // in sync afterwards. If the slug is unknown, fall back to "전체".
+    const params = new URLSearchParams(location.search);
+    const slug = params.get("category");
+    if (!slug) return null;
+    return CATEGORY_CHIPS.some((c) => c.slug === slug) ? slug : null;
+  });
   // If the user changes their style/exclusions while a now-hidden category
   // is selected, fall back to "전체" so they don't end up on a dead tab.
   useEffect(() => {
@@ -357,11 +367,42 @@ const Tips = () => {
                 <TipVideoCard key={v.video_id} video={v} />
               ))}
             </div>
+          ) : uiSearchMode ? (
+            <p className="text-sm text-muted-foreground text-center py-12">
+              '{debouncedQuery}'에 맞는 영상이 없어요.<br />
+              다른 키워드로 검색해보세요.
+            </p>
+          ) : category ? (
+            // Category chip selected but the filtered list is empty —
+            // surface popular videos from the visible pool as a fallback
+            // so the screen isn't a dead end. The pool is already
+            // exclusion-filtered, so we don't need to re-check here.
+            <div className="px-4 py-8">
+              <div className="text-center mb-6">
+                <p className="text-sm text-foreground mb-1">
+                  '{CATEGORY_CHIPS.find((c) => c.slug === category)?.label ?? "이 카테고리"}' 영상이 아직 부족해요.
+                </p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  대신 인기 영상을 둘러보세요.
+                </p>
+                <button
+                  onClick={() => setCategory(null)}
+                  className="text-xs font-semibold text-primary px-3 py-1.5 rounded-full bg-primary/10"
+                >
+                  전체 영상 보기
+                </button>
+              </div>
+              {visibleHotPool.length > 0 && (
+                <div className="grid grid-cols-2 gap-2">
+                  {visibleHotPool.slice(0, 4).map((v) => (
+                    <TipVideoCard key={v.video_id} video={v} />
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-12">
-              {uiSearchMode
-                ? `'${debouncedQuery}'에 맞는 영상이 없어요.`
-                : "해당 조건에 맞는 영상이 아직 없어요."}
+              아직 영상이 없어요.
             </p>
           )}
         </section>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2, Pencil, X, Save, Settings2 } from "lucide-react";
+import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2, Pencil, X, Save, Settings2, PlayCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
@@ -379,6 +379,22 @@ const MySchedule = () => {
                           )}
                         </div>
                       </div>
+                      {/* Deep link to Tips filtered by this item's category.
+                          "general" is excluded because it covers too broad
+                          a topic to surface anything useful when clicked. */}
+                      {(() => {
+                        const cat = item.category;
+                        if (!cat || cat === "general") return null;
+                        return (
+                          <button
+                            onClick={() => navigate(`/tips?category=${encodeURIComponent(cat)}`)}
+                            className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                            aria-label="관련 영상 보기"
+                          >
+                            <PlayCircle className="w-4 h-4" />
+                          </button>
+                        );
+                      })()}
                       <button
                         onClick={() => handleStartEdit(item)}
                         className="p-2 text-muted-foreground hover:text-primary transition-colors"

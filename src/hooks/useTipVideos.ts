@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { escapeLikePattern, quoteForOr } from "@/lib/postgrestEscape";
+import { koreanQueryToCategorySlugs } from "@/lib/placeMappers";
 
 export interface TipVideo {
   video_id: string;
@@ -59,7 +60,22 @@ export function useTipVideos(opts: UseTipVideosOptions = {}) {
         // Two-layer escape: LIKE wildcards (so "50%" is literal) and the
         // .or() value wrapper (so commas/parens don't break parsing).
         const pattern = quoteForOr(`%${escapeLikePattern(trimmedQuery)}%`);
-        q = q.or(`title.ilike.${pattern},channel_name.ilike.${pattern}`);
+        // Text-field ilike across title, channel, and description.
+        // description covers cases where the keyword only appears in the
+        // YouTube write-up (the title may be a clickbait variant).
+        const orParts = [
+          `title.ilike.${pattern}`,
+          `channel_name.ilike.${pattern}`,
+          `description.ilike.${pattern}`,
+        ];
+        // If the query is a known Korean category label (or partial), also
+        // match videos tagged with that slug — pulls in `wedding_gifts`
+        // videos when the user types "예단", even if the literal word
+        // never appears in the title.
+        for (const slug of koreanQueryToCategorySlugs(trimmedQuery)) {
+          orParts.push(`categories.cs.{${slug}}`);
+        }
+        q = q.or(orParts.join(","));
       } else if (category) {
         q = q.contains("categories", [category]);
       }
