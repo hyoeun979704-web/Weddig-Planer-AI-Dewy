@@ -407,7 +407,7 @@ export function pdfDonut(items: DonutItem[]): string {
     return { seg, color, portion };
   });
 
-  const svg = `<svg class="pdf-donut" viewBox="0 0 130 130">
+  const svg = `<svg class="pdf-donut" width="130" height="130" viewBox="0 0 130 130">
     ${segments.map((s) => s.seg).join("")}
     <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="14" fill="#9ca3af">TOTAL</text>
     <text x="${cx}" y="${cy + 14}" text-anchor="middle" font-family="Cormorant Garamond, serif" font-weight="700" font-size="18" fill="#1f2937">${total.toLocaleString()}</text>
@@ -485,7 +485,7 @@ export const pdfDashMiniDonut = (items: DonutItem[]): string => {
     segs.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="transparent" stroke="${color}" stroke-width="${stroke}" stroke-dasharray="${dash} ${circ - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})" />`);
     offset += dash;
   });
-  const svg = `<svg viewBox="0 0 80 80">${segs.join("")}</svg>`;
+  const svg = `<svg width="80" height="80" viewBox="0 0 80 80" style="flex-shrink:0;">${segs.join("")}</svg>`;
   const legend = items
     .map((it, idx) => {
       const color = it.color ?? DONUT_DEFAULT_COLORS[idx % DONUT_DEFAULT_COLORS.length];
@@ -587,15 +587,31 @@ export function generatePdfDashboard(opts: DashboardOptions): string {
 // - PNG (JPEG 압축 아티팩트 제거)
 // - useCORS + allowTaint false 유지
 // ---------------------------------------------------------------------------
+// CRITICAL: DOMPurify가 `<style>` 태그를 ADD_TAGS 옵션을 줘도 끈질기게 제거하는
+// 케이스가 있다. 우리 PDF는 inline <style>에 grid·flex·색상·SVG 사이즈가 전부
+// 들어있어서 잘리면 레이아웃이 통째로 무너진다. 그래서 sanitize 전에 <style>을
+// 추출해두고, 본문만 sanitize한 뒤 다시 합쳐 안전성과 스타일을 모두 유지한다.
+export const safeSanitize = (html: string): string => {
+  const styles: string[] = [];
+  const bodyOnly = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, (match) => {
+    styles.push(match);
+    return "";
+  });
+  const sanitizedBody = DOMPurify.sanitize(bodyOnly, {
+    ADD_TAGS: ["svg", "circle", "text", "g", "path", "rect", "line", "defs", "linearGradient", "stop"],
+    ADD_ATTR: [
+      "viewBox", "stroke", "stroke-width", "stroke-dasharray", "stroke-dashoffset",
+      "fill", "transform", "cx", "cy", "r", "x", "y", "x1", "y1", "x2", "y2",
+      "text-anchor", "font-family", "font-size", "font-weight", "width", "height",
+      "preserveAspectRatio", "offset", "stop-color",
+    ],
+  });
+  return styles.join("") + sanitizedBody;
+};
+
 export async function downloadPdf(htmlContent: string, filename: string): Promise<void> {
   const container = document.createElement("div");
-  // CRITICAL: DOMPurify 기본 설정은 <style> 태그를 제거함.
-  // 우리 PDF는 inline <style>에 모든 grid·flex·색상이 들어있어서
-  // 이걸 안 살리면 레이아웃이 통째로 무너진다. style 태그·속성 모두 허용.
-  container.innerHTML = DOMPurify.sanitize(htmlContent, {
-    ADD_TAGS: ["style", "svg", "circle", "text", "g", "path", "rect", "line"],
-    ADD_ATTR: ["style", "viewBox", "stroke", "stroke-width", "stroke-dasharray", "stroke-dashoffset", "fill", "transform", "cx", "cy", "r", "x", "y", "x1", "y1", "x2", "y2", "text-anchor", "font-family", "font-size", "font-weight"],
-  });
+  container.innerHTML = safeSanitize(htmlContent);
   container.style.position = "absolute";
   container.style.left = "-9999px";
   container.style.top = "0";
