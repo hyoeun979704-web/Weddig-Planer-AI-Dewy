@@ -3,16 +3,15 @@ import html2canvas from "html2canvas";
 import DOMPurify from "dompurify";
 
 // ---------------------------------------------------------------------------
-// 프리미엄 인쇄물 톤을 노린 PDF 스타일.
-// - 컬러: 부드러운 핑크/로즈 그라데이션 + 차분한 그레이
-// - 헤딩: Cormorant Garamond (Serif, 굵게)
-// - 본문: Noto Sans KR (한글 가독성)
-// - 강조: Playfair Display (Dewy 브랜드 로고)
+// 단정하고 부드러운 인쇄물 톤.
+// - 본문/숫자/라벨: Noto Sans KR (산세리프 — 단정한 가독성)
+// - 헤딩: Noto Serif KR (절제된 serif, 한국어 우아함)
+// - 브랜드 로고에만 Cormorant Garamond 한정 사용 (식별성)
 // ---------------------------------------------------------------------------
 const PDF_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Noto+Serif+KR:wght@400;500;600;700&family=Playfair+Display:wght@600;700;900&family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Noto+Serif+KR:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap');
   * { box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-  body { margin: 0; padding: 0; color: #1f2937; background: #ffffff; font-family: 'Noto Sans KR', sans-serif; }
+  body { margin: 0; padding: 0; color: #1f2937; background: #ffffff; font-family: 'Noto Sans KR', sans-serif; font-feature-settings: "tnum"; }
 
   .pdf-page { padding: 48px 44px 44px; max-width: 595px; margin: 0 auto; background: #ffffff; }
 
@@ -130,43 +129,45 @@ const PDF_STYLES = `
   .pdf-footer-brand { font-family: 'Playfair Display', serif; color: #F4A7B9; font-weight: 700; letter-spacing: 0.5px; }
 
   /* ============ Dashboard layout (one-page infographic) ============ */
-  .pdf-dash { width: 595px; min-height: 842px; margin: 0 auto; background: #ffffff; display: grid; grid-template-columns: 120px 1fr; }
+  .pdf-dash { width: 595px; min-height: 842px; margin: 0 auto; background: #ffffff; display: block; }
 
-  /* Sidebar with vertical branding */
-  .pdf-dash-side { background: linear-gradient(180deg, #fef8fa 0%, #fff5f7 100%); padding: 40px 12px 36px 20px; display: flex; flex-direction: column; justify-content: space-between; position: relative; border-right: 1px solid #fce4ec; }
-  .pdf-dash-side-top { }
-  .pdf-dash-brand-name { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: #1f2937; line-height: 1.05; letter-spacing: -0.3px; }
-  .pdf-dash-brand-tag { font-family: 'Cormorant Garamond', serif; font-size: 9.5px; color: #9ca3af; letter-spacing: 2px; text-transform: uppercase; margin-top: 22px; line-height: 1.4; }
-  .pdf-dash-side-bottom { font-family: 'Cormorant Garamond', serif; font-size: 9.5px; color: #9ca3af; letter-spacing: 1.5px; line-height: 1.6; font-style: italic; }
-  .pdf-dash-side-deco { position: absolute; right: 10px; top: 50%; width: 1px; height: 80px; background: linear-gradient(180deg, transparent, #F4A7B9, transparent); transform: translateY(-50%); }
-  /* Main content area */
-  .pdf-dash-main { padding: 30px 32px 24px; }
+  /* 가로 헤더 (브랜드 + 발행일) */
+  .pdf-dash-topbar { display: flex; justify-content: space-between; align-items: center; padding: 22px 36px 14px; border-bottom: 1px solid #fce4ec; }
+  .pdf-dash-brand { display: flex; align-items: baseline; gap: 10px; }
+  .pdf-dash-brand-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; color: #1f2937; line-height: 1; letter-spacing: -0.2px; }
+  .pdf-dash-brand-tag { font-size: 9px; color: #9ca3af; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 500; }
+  .pdf-dash-topbar-meta { display: flex; gap: 16px; align-items: center; font-size: 10.5px; color: #4b5563; font-weight: 500; }
+  .pdf-dash-topbar-meta .item { display: flex; gap: 6px; align-items: baseline; }
+  .pdf-dash-topbar-meta .label { color: #9ca3af; font-size: 8.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .pdf-dash-topbar-meta .value { color: #1f2937; font-weight: 600; }
 
-  /* Top meta row (dates) */
-  .pdf-dash-meta { display: flex; justify-content: flex-end; align-items: center; gap: 14px; font-family: 'Cormorant Garamond', serif; font-size: 11px; color: #9ca3af; letter-spacing: 1.5px; margin-bottom: 18px; }
-  .pdf-dash-meta-strong { color: #6b7280; font-weight: 600; }
+  /* Main content area (사이드바 제거 → 전체 폭 사용) */
+  .pdf-dash-main { padding: 22px 36px 24px; }
+
+  /* (legacy 호환용 — 사용 안 함) */
+  .pdf-dash-meta { display: none; }
 
   /* Title section */
-  .pdf-dash-title { font-family: 'Noto Serif KR', serif; font-size: 22px; font-weight: 700; color: #1f2937; margin: 0 0 6px; letter-spacing: -0.5px; }
-  .pdf-dash-desc { font-size: 11px; color: #6b7280; line-height: 1.6; margin: 0 0 18px; }
+  .pdf-dash-title { font-family: 'Noto Serif KR', serif; font-size: 24px; font-weight: 700; color: #1f2937; margin: 0 0 6px; letter-spacing: -0.5px; line-height: 1.2; }
+  .pdf-dash-desc { font-size: 11.5px; color: #6b7280; line-height: 1.6; margin: 0 0 22px; }
 
   /* Info pills row */
-  .pdf-dash-pills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 16px; }
-  .pdf-dash-pill { background: linear-gradient(135deg, #fef8fa, #ffffff); border: 1px solid #fce4ec; border-radius: 10px; padding: 9px 10px; display: flex; align-items: center; gap: 7px; }
-  .pdf-dash-pill-icon { width: 22px; height: 22px; border-radius: 50%; background: #fce4ec; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+  .pdf-dash-pills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .pdf-dash-pill { background: #fafafa; border: 1px solid #f3f4f6; border-radius: 10px; padding: 11px 13px; display: flex; flex-direction: column; gap: 3px; }
+  .pdf-dash-pill-icon { display: none; }
   .pdf-dash-pill-text { display: flex; flex-direction: column; min-width: 0; }
-  .pdf-dash-pill-label { font-size: 8px; color: #9ca3af; letter-spacing: 0.3px; text-transform: uppercase; font-family: 'Cormorant Garamond', serif; line-height: 1; margin-bottom: 2px; }
-  .pdf-dash-pill-value { font-size: 11px; font-weight: 700; color: #1f2937; line-height: 1.1; }
+  .pdf-dash-pill-label { font-size: 9px; color: #9ca3af; line-height: 1; margin-bottom: 4px; font-weight: 500; letter-spacing: 0.2px; }
+  .pdf-dash-pill-value { font-size: 13px; font-weight: 700; color: #1f2937; line-height: 1.2; }
 
   /* Stat cards row (3 big colored cards) */
-  .pdf-dash-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 18px; }
-  .pdf-dash-stat { padding: 18px 14px 16px; border-radius: 14px; position: relative; overflow: hidden; text-align: center; }
-  .pdf-dash-stat-pink { background: linear-gradient(135deg, #fde2e9 0%, #fbcfd8 100%); }
-  .pdf-dash-stat-amber { background: linear-gradient(135deg, #fff4d6 0%, #ffe7a8 100%); }
-  .pdf-dash-stat-mint { background: linear-gradient(135deg, #d4f4e2 0%, #b6ecd0 100%); }
-  .pdf-dash-stat-icon { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; font-size: 16px; margin: 0 auto 8px; }
-  .pdf-dash-stat-value { font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 700; color: #1f2937; line-height: 1; margin-bottom: 4px; letter-spacing: -0.8px; }
-  .pdf-dash-stat-label { font-size: 10px; color: #6b7280; font-weight: 500; letter-spacing: 0.2px; }
+  .pdf-dash-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+  .pdf-dash-stat { padding: 16px 14px 14px; border-radius: 14px; position: relative; overflow: hidden; text-align: center; }
+  .pdf-dash-stat-pink { background: #fde8ee; }
+  .pdf-dash-stat-amber { background: #fff5dc; }
+  .pdf-dash-stat-mint { background: #dcf5e8; }
+  .pdf-dash-stat-icon { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; font-size: 14px; margin: 0 auto 6px; }
+  .pdf-dash-stat-value { font-family: 'Noto Sans KR', sans-serif; font-size: 26px; font-weight: 700; color: #1f2937; line-height: 1; margin-bottom: 5px; letter-spacing: -0.6px; }
+  .pdf-dash-stat-label { font-size: 10.5px; color: #6b7280; font-weight: 500; letter-spacing: 0.1px; }
 
   /* Two-column grid card area */
   .pdf-dash-row { display: grid; gap: 10px; margin-bottom: 12px; }
@@ -174,31 +175,31 @@ const PDF_STYLES = `
   .pdf-dash-row-3 { grid-template-columns: 2fr 1fr; }
 
   .pdf-dash-card { background: #ffffff; border: 1px solid #f3f4f6; border-radius: 12px; padding: 14px 14px 12px; }
-  .pdf-dash-card-title { font-family: 'Noto Serif KR', serif; font-size: 12px; font-weight: 700; color: #1f2937; margin: 0 0 9px; padding-bottom: 6px; border-bottom: 1px solid #fce4ec; display: flex; align-items: center; gap: 6px; }
-  .pdf-dash-card-title::before { content: ''; width: 4px; height: 12px; background: linear-gradient(180deg, #F4A7B9, #ec4899); border-radius: 2px; }
+  .pdf-dash-card-title { font-family: 'Noto Sans KR', sans-serif; font-size: 12.5px; font-weight: 700; color: #1f2937; margin: 0 0 10px; padding-bottom: 7px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; gap: 7px; letter-spacing: -0.2px; }
+  .pdf-dash-card-title::before { content: ''; width: 3px; height: 12px; background: #F4A7B9; border-radius: 2px; }
 
   /* Compact table inside dashboard cards */
-  .pdf-dash-table { width: 100%; border-collapse: collapse; font-size: 9.5px; table-layout: auto; }
-  .pdf-dash-table th { padding: 6px 4px; text-align: left; font-weight: 600; color: #9ca3af; font-size: 8.5px; letter-spacing: 0.3px; text-transform: uppercase; border-bottom: 1px solid #f3f4f6; font-family: 'Cormorant Garamond', serif; white-space: nowrap; }
-  .pdf-dash-table td { padding: 7px 4px; font-size: 10px; color: #374151; border-bottom: 1px solid #fafafa; white-space: nowrap; }
+  .pdf-dash-table { width: 100%; border-collapse: collapse; font-size: 10.5px; table-layout: auto; }
+  .pdf-dash-table th { padding: 7px 5px; text-align: left; font-weight: 500; color: #9ca3af; font-size: 9.5px; letter-spacing: 0.2px; border-bottom: 1px solid #f3f4f6; white-space: nowrap; }
+  .pdf-dash-table td { padding: 8px 5px; font-size: 10.5px; color: #374151; border-bottom: 1px solid #fafafa; white-space: nowrap; font-weight: 500; }
   .pdf-dash-table .total td { font-weight: 700; color: #1f2937; background: #fef8fa; border-top: 1.5px solid #F4A7B9; }
-  .pdf-dash-table .diff-pos { color: #ef4444; font-weight: 600; }
-  .pdf-dash-table .diff-neg { color: #10b981; font-weight: 600; }
+  .pdf-dash-table .diff-pos { color: #dc2626; font-weight: 600; }
+  .pdf-dash-table .diff-neg { color: #059669; font-weight: 600; }
 
   /* Category share bars (compact horizontal) */
   .pdf-dash-share { padding: 2px 0; }
-  .pdf-dash-share-row { display: grid; grid-template-columns: 60px 1fr 44px; gap: 8px; align-items: center; margin-bottom: 9px; font-size: 10px; }
+  .pdf-dash-share-row { display: grid; grid-template-columns: 60px 1fr 44px; gap: 8px; align-items: center; margin-bottom: 10px; font-size: 10.5px; }
   .pdf-dash-share-label { color: #374151; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pdf-dash-share-track { height: 10px; background: #f3f4f6; border-radius: 5px; overflow: hidden; }
-  .pdf-dash-share-fill { height: 100%; border-radius: 5px; }
-  .pdf-dash-share-pct { text-align: right; font-family: 'Cormorant Garamond', serif; font-weight: 700; color: #be185d; font-size: 11px; white-space: nowrap; }
+  .pdf-dash-share-track { height: 9px; background: #f3f4f6; border-radius: 4.5px; overflow: hidden; }
+  .pdf-dash-share-fill { height: 100%; border-radius: 4.5px; }
+  .pdf-dash-share-pct { text-align: right; font-weight: 700; color: #be185d; font-size: 11px; white-space: nowrap; }
 
   /* Big number block (예산 건강도 large display) */
   .pdf-dash-big { text-align: center; padding: 14px 8px 10px; }
   .pdf-dash-big-icon { width: 38px; height: 38px; border-radius: 50%; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-  .pdf-dash-big-value { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 700; color: #be185d; line-height: 1; letter-spacing: -1px; }
-  .pdf-dash-big-suffix { font-size: 14px; color: #9ca3af; font-weight: 500; }
-  .pdf-dash-big-label { font-size: 10px; color: #6b7280; margin-top: 4px; font-weight: 600; }
+  .pdf-dash-big-value { font-family: 'Noto Sans KR', sans-serif; font-size: 36px; font-weight: 700; color: #be185d; line-height: 1; letter-spacing: -1.2px; }
+  .pdf-dash-big-suffix { font-size: 14px; color: #9ca3af; font-weight: 500; margin-left: 2px; }
+  .pdf-dash-big-label { font-size: 10.5px; color: #6b7280; margin-top: 6px; font-weight: 500; }
 
   /* Mini donut (smaller than regular) */
   .pdf-dash-mini-donut { display: flex; align-items: center; gap: 10px; }
@@ -207,7 +208,7 @@ const PDF_STYLES = `
   .pdf-dash-mini-donut .legend-row { display: grid; grid-template-columns: 10px 1fr auto; gap: 6px; align-items: center; font-size: 10px; padding: 2px 0; }
   .pdf-dash-mini-donut .legend-dot { width: 9px; height: 9px; border-radius: 2px; }
   .pdf-dash-mini-donut .legend-label { color: #374151; }
-  .pdf-dash-mini-donut .legend-pct { font-family: 'Cormorant Garamono', serif; font-weight: 700; color: #be185d; font-size: 11px; }
+  .pdf-dash-mini-donut .legend-pct { font-weight: 700; color: #be185d; font-size: 11px; }
 
   /* Insight strip */
   .pdf-dash-insight { background: linear-gradient(135deg, #fff8e1, #fffaf0); border: 1px solid #fde68a; border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; }
@@ -215,8 +216,8 @@ const PDF_STYLES = `
   .pdf-dash-insight-body { font-size: 10.5px; color: #78350f; line-height: 1.6; }
 
   /* Dashboard footer (full width) */
-  .pdf-dash-footer { padding: 14px 32px 20px 152px; border-top: 1px solid #f3f4f6; font-size: 9px; color: #9ca3af; display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
-  .pdf-dash-footer-brand { font-family: 'Playfair Display', serif; color: #F4A7B9; font-weight: 700; }
+  .pdf-dash-footer { padding: 14px 36px 18px; border-top: 1px solid #f3f4f6; font-size: 9px; color: #9ca3af; display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
+  .pdf-dash-footer-brand { font-family: 'Cormorant Garamond', serif; color: #F4A7B9; font-weight: 600; letter-spacing: 0.3px; }
 `;
 
 // ---------------------------------------------------------------------------
@@ -549,22 +550,23 @@ export function generatePdfDashboard(opts: DashboardOptions): string {
       </div>`
     : "";
 
+  // 브랜드는 가로 한 줄로 ("Dewy Wedding Planner")
+  const brandInline = brandLines.join(" ");
+
   return `
     <style>${PDF_STYLES}</style>
     <div class="pdf-dash">
-      <aside class="pdf-dash-side">
-        <div class="pdf-dash-side-top">
-          ${brandHtml}
+      <header class="pdf-dash-topbar">
+        <div class="pdf-dash-brand">
+          <div class="pdf-dash-brand-name">${brandInline}</div>
           ${opts.brandTag ? `<div class="pdf-dash-brand-tag">${opts.brandTag}</div>` : ""}
         </div>
-        <div class="pdf-dash-side-bottom">${opts.brandBottom || "For the most precious day"}</div>
-        <div class="pdf-dash-side-deco"></div>
-      </aside>
-      <main class="pdf-dash-main">
-        <div class="pdf-dash-meta">
-          <span>${pubDate}</span>
-          ${opts.weddingDate ? `<span>·</span><span class="pdf-dash-meta-strong">${opts.weddingDate}</span>` : ""}
+        <div class="pdf-dash-topbar-meta">
+          <div class="item"><span class="label">발행</span><span class="value">${pubDate}</span></div>
+          ${opts.weddingDate ? `<div class="item"><span class="label">예식</span><span class="value">${opts.weddingDate}</span></div>` : ""}
         </div>
+      </header>
+      <main class="pdf-dash-main">
         <h1 class="pdf-dash-title">${opts.title}</h1>
         ${opts.description ? `<p class="pdf-dash-desc">${opts.description}</p>` : ""}
         ${pillsHtml}
