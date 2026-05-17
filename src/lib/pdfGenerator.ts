@@ -589,7 +589,13 @@ export function generatePdfDashboard(opts: DashboardOptions): string {
 // ---------------------------------------------------------------------------
 export async function downloadPdf(htmlContent: string, filename: string): Promise<void> {
   const container = document.createElement("div");
-  container.innerHTML = DOMPurify.sanitize(htmlContent);
+  // CRITICAL: DOMPurify 기본 설정은 <style> 태그를 제거함.
+  // 우리 PDF는 inline <style>에 모든 grid·flex·색상이 들어있어서
+  // 이걸 안 살리면 레이아웃이 통째로 무너진다. style 태그·속성 모두 허용.
+  container.innerHTML = DOMPurify.sanitize(htmlContent, {
+    ADD_TAGS: ["style", "svg", "circle", "text", "g", "path", "rect", "line"],
+    ADD_ATTR: ["style", "viewBox", "stroke", "stroke-width", "stroke-dasharray", "stroke-dashoffset", "fill", "transform", "cx", "cy", "r", "x", "y", "x1", "y1", "x2", "y2", "text-anchor", "font-family", "font-size", "font-weight"],
+  });
   container.style.position = "absolute";
   container.style.left = "-9999px";
   container.style.top = "0";
