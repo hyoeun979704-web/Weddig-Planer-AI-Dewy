@@ -1,7 +1,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
 import { Loader2, Eye, Sparkles } from "lucide-react";
-import { generatePdfHeader, generatePdfFooter } from "@/lib/pdfGenerator";
+import { generatePdfHeader, generatePdfFooter, esc } from "@/lib/pdfGenerator";
 import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { WEDDING_STYLE_LABEL, type WeddingStyle } from "@/lib/weddingStyle";
@@ -344,32 +344,35 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
           styleLabel: WEDDING_STYLE_LABEL[profile.weddingStyle],
         });
         html += `<div class="pdf-info-grid">
-          <div class="pdf-info-item"><div class="pdf-info-label">날짜</div><div class="pdf-info-value">${date || "-"}</div></div>
-          <div class="pdf-info-item"><div class="pdf-info-label">장소</div><div class="pdf-info-value">${venueName || "-"}</div></div>
-          <div class="pdf-info-item"><div class="pdf-info-label">${type === "timeline-snap" ? "촬영 시작" : "예식 시간"}</div><div class="pdf-info-value">${ceremonyTime}</div></div>
-          <div class="pdf-info-item"><div class="pdf-info-label">주소</div><div class="pdf-info-value">${venueAddress || "-"}</div></div>
+          <div class="pdf-info-item"><div class="pdf-info-label">날짜</div><div class="pdf-info-value">${esc(date || "-")}</div></div>
+          <div class="pdf-info-item"><div class="pdf-info-label">장소</div><div class="pdf-info-value">${esc(venueName || "-")}</div></div>
+          <div class="pdf-info-item"><div class="pdf-info-label">${type === "timeline-snap" ? "촬영 시작" : "예식 시간"}</div><div class="pdf-info-value">${esc(ceremonyTime)}</div></div>
+          <div class="pdf-info-item"><div class="pdf-info-label">주소</div><div class="pdf-info-value">${esc(venueAddress || "-")}</div></div>
         </div>`;
 
-        html += `<div class="pdf-section"><div class="pdf-section-title">⏰ 시간별 일정</div><div class="pdf-timeline">`;
+        // 시간별 일정 — event/note는 정적 풀(buildTimeline)에서 옴, 사용자 입력 아님이지만 일관성 위해 escape
+        html += `<div class="pdf-section"><div class="pdf-section-title">시간별 일정</div><div class="pdf-timeline">`;
         for (const item of data.items) {
           html += `<div class="pdf-timeline-item"><div class="pdf-timeline-dot"></div>
-            <div class="pdf-timeline-time">${item.time}</div>
-            <div class="pdf-timeline-event">${item.event}</div>
-            ${item.note ? `<div class="pdf-timeline-note">${item.note}</div>` : ""}
+            <div class="pdf-timeline-time">${esc(item.time)}</div>
+            <div class="pdf-timeline-event">${esc(item.event)}</div>
+            ${item.note ? `<div class="pdf-timeline-note">${esc(item.note)}</div>` : ""}
           </div>`;
         }
         html += `</div></div>`;
 
-        html += `<div class="pdf-section"><div class="pdf-section-title">✅ 준비물 체크리스트</div><ul class="pdf-checklist">`;
-        for (const item of data.checklist) html += `<li>${item}</li>`;
+        html += `<div class="pdf-section"><div class="pdf-section-title">준비물 체크리스트</div><ul class="pdf-checklist">`;
+        for (const item of data.checklist) html += `<li>${esc(item)}</li>`;
         html += `</ul></div>`;
 
-        html += `<div class="pdf-section"><div class="pdf-section-title">💡 주의사항</div>`;
-        for (const tip of data.tips) html += `<div class="pdf-tip">${tip}</div>`;
+        html += `<div class="pdf-section"><div class="pdf-section-title">주의사항</div>`;
+        for (const tip of data.tips) html += `<div class="pdf-tip">${esc(tip)}</div>`;
         html += `</div>`;
 
         if (extraNotes.trim()) {
-          html += `<div class="pdf-section"><div class="pdf-section-title">📝 추가 메모</div><div class="pdf-highlight" style="font-size:12px;">${extraNotes.replace(/\n/g, "<br/>")}</div></div>`;
+          // 사용자 입력 escape 후 줄바꿈만 <br/>로 변환
+          const escapedNotes = esc(extraNotes).replace(/\n/g, "<br/>");
+          html += `<div class="pdf-section"><div class="pdf-section-title">추가 메모</div><div class="pdf-highlight" style="font-size:12px;">${escapedNotes}</div></div>`;
         }
 
         html += generatePdfFooter();
