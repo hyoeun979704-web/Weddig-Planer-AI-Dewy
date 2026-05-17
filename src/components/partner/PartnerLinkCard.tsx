@@ -11,7 +11,6 @@ import {
   Calendar,
   ChevronRight,
   Unlink,
-  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,7 +86,6 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
     isLinked,
     isLoading,
     generateInviteCode,
-    regenerateInviteCode,
     linkWithCode,
     unlinkCouple,
   } = useCoupleLink();
@@ -97,9 +95,6 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
   const [isProcessing, setIsProcessing] = useState(false);
   const [showUnlink, setShowUnlink] = useState(false);
   const [showInputField, setShowInputField] = useState(false);
-  // 재발급은 클릭 한 번에 invite_code가 바뀌어 이미 공유한 링크가 무효화되므로
-  // 실수로 누를 가능성을 줄이려고 2-step 확인을 둠. UX 패턴은 연결 해제와 동일.
-  const [showRegenerate, setShowRegenerate] = useState(false);
 
   if (hideWhenLoggedOut && !user) return null;
 
@@ -160,13 +155,6 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
     setIsProcessing(true);
     await unlinkCouple();
     setShowUnlink(false);
-    setIsProcessing(false);
-  };
-
-  const handleRegenerate = async () => {
-    setIsProcessing(true);
-    await regenerateInviteCode();
-    setShowRegenerate(false);
     setIsProcessing(false);
   };
 
@@ -299,41 +287,6 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
           <Share2 className="w-4 h-4" />
           파트너에게 공유하기
         </Button>
-
-        {showRegenerate ? (
-          <div className="flex gap-2 mt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRegenerate}
-              disabled={isProcessing}
-              className="flex-1"
-            >
-              {isProcessing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "새 코드 발급"
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowRegenerate(false)}
-              className="flex-1"
-            >
-              취소
-            </Button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowRegenerate(true)}
-            className="mt-2 w-full text-[11px] text-muted-foreground hover:text-primary transition-colors inline-flex items-center justify-center gap-1"
-            aria-label="초대 코드 재발급"
-          >
-            <RefreshCw className="w-3 h-3" />
-            코드 재발급 (기존 코드는 무효화돼요)
-          </button>
-        )}
 
         <div className="mt-3 pt-3 border-t border-border">
           {showInputField ? (

@@ -44,11 +44,10 @@ export const WEDDING_STYLE_PRESETS: Record<
   },
   small: {
     label: "스몰웨딩",
-    // Realistic small-wedding scope: 50명 안팎, 한옥/하우스/카페형. 예복은
-    // 정장으로 대체, 청첩장은 모바일 위주. 한복은 혼주(부모) 한복 수요가
-    // 적지 않아 기본 제외에서 빼고, 필요 없으면 사용자가 직접 토글하도록.
-    description: "30~80명 소규모 · 예복·대규모 청첩장 생략",
-    excluded: ["tailor_shop", "invitation_venue"],
+    // Realistic small-wedding scope: 50명 안팎, 한옥/하우스/카페형. 한복은
+    // 보통 안 입고, 예복도 일반 정장으로 대체, 청첩장은 모바일 위주.
+    description: "30~80명 소규모 · 한복·예복·대규모 청첩장 생략",
+    excluded: ["hanbok", "tailor_shop", "invitation_venue"],
   },
   self: {
     label: "셀프웨딩",

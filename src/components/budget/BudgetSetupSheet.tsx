@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { regions, getRegionalAvgWithMeal, categories, categoryKeys as ALL_CATEGORY_KEYS, type BudgetCategory } from "@/data/budgetData";
+import { regions, regionalAverages, getRegionalAvgWithMeal, categories, categoryKeys as ALL_CATEGORY_KEYS, type BudgetCategory } from "@/data/budgetData";
 import { WEDDING_STYLE_LABEL, clearHiddenBudgetValues, type WeddingStyle } from "@/lib/weddingStyle";
 import { Minus, Plus, MapPin, Info, Sparkle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -91,24 +91,25 @@ export default function BudgetSetupSheet({
   }, [open, initialRegion, effectiveInitialGuests, initialTotalBudget, initialCategoryBudgets]);
 
   /**
-   * Apply regional averages to all category inputs. Style-level adjustments
-   * (small의 venue 0.6, self의 sdm 0.15 등) are baked into
-   * getRegionalAvgWithMeal when we pass weddingStyle. This function only
-   * layers on user-specific exclusions on top:
+   * Apply regional averages to all category inputs, adjusting for the user's
+   * wedding style + excluded shop categories:
    *
-   *  - excluded sub-categories: drop sdm proportionally based on which of
-   *    studio/dress_shop/makeup_shop is excluded (each ≈ 1/3 of sdm now
-   *    that tailor_shop has its own budget row). Avoids blanket 50% cuts
-   *    that misprice when only one piece is DIY.
+   *  - small wedding: venue × 0.7 (가든/하우스 가정). Meal already scales
+   *    with the smaller guestCount via getRegionalAvgWithMeal.
+   *  - self / excluded sub-categories: drop sdm proportionally based on
+   *    which of studio/dress_shop/makeup_shop is excluded (each ≈ 1/3 of
+   *    sdm now that tailor_shop has its own budget row). Avoids blanket
+   *    50% cuts that misprice when only one piece is DIY.
    *  - excluded tailor_shop → suit = 0
    *  - excluded hanbok → hanbok = 0
    *  - excluded honeymoon → honeymoon = 0
    *  - excluded appliance → house × 0.5 (house also covers furniture/move-in)
    */
   const applyRegionalAvg = () => {
-    const avg = getRegionalAvgWithMeal(region, guestCount, weddingStyle ?? undefined);
+    const avg = getRegionalAvgWithMeal(region, guestCount);
     if (!avg) return;
     const excludedSet = new Set(excludedCategories);
+    const isSmall = weddingStyle === "small";
 
     // sdm sub-share: studio + dress + makeup (~1/3 each after tailor_shop
     // moved out into its own 'suit' budget row).
@@ -116,10 +117,11 @@ export default function BudgetSetupSheet({
       .filter(c => excludedSet.has(c)).length * (1 / 3);
     const sdmAdjust = Math.max(0.2, 1 - sdmDrop);
 
+    const venueAdjust = isSmall ? 0.7 : 1;
     const houseAdjust = excludedSet.has("appliance") ? 0.5 : 1;
 
     const next = {
-      venue: avg.venue,
+      venue: Math.round(avg.venue * venueAdjust),
       meal: avg.meal,
       sdm: Math.round(avg.sdm * sdmAdjust),
       suit: excludedSet.has("tailor_shop") ? 0 : avg.suit,
@@ -182,10 +184,7 @@ export default function BudgetSetupSheet({
     const clamped = Math.max(50, Math.min(500, newCount));
     if (clamped === guestCount) return;
 
-    // Use style-aware per_guest_meal so the sync matches the avg shown in
-    // the sheet (small wedding has a ~10% higher per-guest cost).
-    const styleAvgForRegion = getRegionalAvgWithMeal(region, 1, weddingStyle ?? undefined);
-    const perGuestMeal = styleAvgForRegion?.per_guest_meal;
+    const perGuestMeal = regionalAverages[region]?.per_guest_meal;
     if (!perGuestMeal) {
       setGuestCount(clamped);
       return;
@@ -206,7 +205,7 @@ export default function BudgetSetupSheet({
   };
 
   const catSum = Object.values(catBudgets).reduce((a, b) => a + b, 0);
-  const avg = getRegionalAvgWithMeal(region, guestCount, weddingStyle ?? undefined);
+  const avg = getRegionalAvgWithMeal(region, guestCount);
   const hasMismatch = totalBudget > 0 && catSum !== totalBudget;
 
   const commitSave = () => {

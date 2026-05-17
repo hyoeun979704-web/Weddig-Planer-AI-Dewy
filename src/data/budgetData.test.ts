@@ -103,40 +103,4 @@ describe("getRegionalAvgWithMeal", () => {
     expect(avg!.hanbok).toBeGreaterThan(0);
     expect(avg!.meetup).toBeGreaterThan(0);
   });
-
-  it("returns un-adjusted baseline when style is null/general/custom", () => {
-    const baseline = getRegionalAvgWithMeal("seoul", 200);
-    for (const style of [undefined, null, "general", "custom"] as const) {
-      const a = getRegionalAvgWithMeal("seoul", 200, style);
-      expect(a!.venue).toBe(baseline!.venue);
-      expect(a!.sdm).toBe(baseline!.sdm);
-      expect(a!.total).toBe(baseline!.total);
-    }
-  });
-
-  it("scales down venue/sdm and bumps etc for small wedding style", () => {
-    const base = getRegionalAvgWithMeal("seoul", 50);
-    const small = getRegionalAvgWithMeal("seoul", 50, "small");
-    expect(small!.venue).toBe(Math.round(base!.venue * 0.6));
-    expect(small!.sdm).toBe(Math.round(base!.sdm * 0.8));
-    expect(small!.etc).toBe(Math.round(base!.etc * 1.2));
-    expect(small!.note).toContain("스몰웨딩");
-  });
-
-  it("dramatically scales down venue/sdm for self wedding style", () => {
-    const base = getRegionalAvgWithMeal("seoul", 25);
-    const self = getRegionalAvgWithMeal("seoul", 25, "self");
-    expect(self!.venue).toBe(Math.round(base!.venue * 0.2));
-    expect(self!.sdm).toBe(Math.round(base!.sdm * 0.15));
-    expect(self!.total).toBeLessThan(base!.total);
-    expect(self!.note).toContain("셀프웨딩");
-  });
-
-  it("recomputes total from scaled categories so it stays internally consistent", () => {
-    const small = getRegionalAvgWithMeal("seoul", 50, "small");
-    const catSum =
-      small!.venue + small!.sdm + small!.suit + small!.hanbok +
-      small!.ring + small!.meetup + small!.house + small!.honeymoon + small!.etc;
-    expect(small!.total).toBe(catSum + small!.meal);
-  });
 });

@@ -7,7 +7,6 @@ import PartnerLinkCard from "./PartnerLinkCard";
 // The hooks pull from AuthContext and the supabase client, so we mock the
 // surface our component touches: useCoupleLink + useAuth.
 const mockGenerateInviteCode = vi.fn();
-const mockRegenerateInviteCode = vi.fn();
 const mockLinkWithCode = vi.fn();
 const mockUnlinkCouple = vi.fn();
 
@@ -39,7 +38,6 @@ vi.mock("@/hooks/useCoupleLink", () => ({
     isLinked: mockState.isLinked,
     isLoading: mockState.isLoading,
     generateInviteCode: mockGenerateInviteCode,
-    regenerateInviteCode: mockRegenerateInviteCode,
     linkWithCode: mockLinkWithCode,
     unlinkCouple: mockUnlinkCouple,
     refetch: vi.fn(),
@@ -71,7 +69,6 @@ const renderCard = (variant: "mypage" | "budget" | "schedule" = "mypage") =>
 
 beforeEach(() => {
   mockGenerateInviteCode.mockReset();
-  mockRegenerateInviteCode.mockReset();
   mockLinkWithCode.mockReset();
   mockUnlinkCouple.mockReset();
   mockState = {
@@ -168,19 +165,6 @@ describe("PartnerLinkCard — pending state", () => {
     await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
     const arg = share.mock.calls[0][0] as { title: string; text: string };
     expect(arg.text).toContain("ABCD23");
-  });
-
-  it("requires a confirmation step before regenerating the invite code", async () => {
-    mockRegenerateInviteCode.mockResolvedValue("WXYZ89");
-    renderCard("mypage");
-
-    // First click reveals the confirm row — does not regenerate yet.
-    fireEvent.click(screen.getByLabelText("초대 코드 재발급"));
-    expect(mockRegenerateInviteCode).not.toHaveBeenCalled();
-
-    // Second click on the explicit confirm button performs the action.
-    fireEvent.click(screen.getByRole("button", { name: "새 코드 발급" }));
-    await waitFor(() => expect(mockRegenerateInviteCode).toHaveBeenCalledTimes(1));
   });
 });
 

@@ -8,8 +8,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SurveyModal from "@/components/wedding-planner/SurveyModal";
 import WeddingStylePicker from "@/components/schedule/WeddingStylePicker";
-import { useWeddingSchedule, type MaritalHistory } from "@/hooks/useWeddingSchedule";
-import { WEDDING_VALUE_OPTIONS, type WeddingValueTag } from "@/lib/weddingValues";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import {
   buildScheduleFromTemplate,
   PLANNING_STAGE_LABELS,
@@ -59,9 +58,6 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const [stage, setStage] = useState<PlanningStage>("just_started");
   const [weddingStyle, setWeddingStyle] = useState<WeddingStyle>("general");
   const [excludedCategories, setExcludedCategories] = useState<string[]>([]);
-  const [maritalHistory, setMaritalHistory] = useState<MaritalHistory | null>(null);
-  const [pregnant, setPregnant] = useState(false);
-  const [valueTags, setValueTags] = useState<WeddingValueTag[]>([]);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -89,9 +85,6 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
         ? weddingSettings.excluded_categories
         : defaultExclusionsFor((weddingSettings.wedding_style ?? "general") as WeddingStyle)
     );
-    setMaritalHistory(weddingSettings.marital_history);
-    setPregnant(weddingSettings.pregnant);
-    setValueTags(weddingSettings.value_tags);
     setErrors({});
   }, [
     isOpen,
@@ -103,9 +96,6 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     weddingSettings.planning_stage,
     weddingSettings.wedding_style,
     weddingSettings.excluded_categories,
-    weddingSettings.marital_history,
-    weddingSettings.pregnant,
-    weddingSettings.value_tags,
   ]);
 
   const validate = () => {
@@ -130,9 +120,6 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       wedding_region_tbd: regionTbd,
       wedding_style: weddingStyle,
       excluded_categories: excludedCategories,
-      marital_history: maritalHistory,
-      pregnant,
-      value_tags: valueTags,
     });
 
     if (ok) {
@@ -320,97 +307,6 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
               setExcludedCategories(excluded);
             }}
           />
-        </div>
-
-        {/* 결혼 차수 (선택) — 재혼 페르소나 G-1, F-2를 위해 카피·체크리스트
-            톤을 다르게. 미선택이면 AI 컨텍스트에서 생략. */}
-        <div>
-          <label className={labelCls}>
-            결혼 차수 <span className="text-xs text-gray-400 font-normal">(선택)</span>
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {([
-              { value: "first", label: "초혼" },
-              { value: "remarriage", label: "재혼" },
-            ] as const).map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() =>
-                  setMaritalHistory((prev) => (prev === opt.value ? null : opt.value))
-                }
-                className={cn(
-                  "px-3 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors",
-                  maritalHistory === opt.value
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          <p className="text-[11px] text-gray-400 mt-1.5">
-            선택하면 추천 콘텐츠·AI 답변 톤을 맞춰드려요. 다시 누르면 해제.
-          </p>
-        </div>
-
-        {/* 임신 여부 (선택) — 페르소나 F-1 (임산부 D-60)을 위해. 체크리스트
-            우선순위 압축과 AI 답변(드레스 사이즈, 메이크업 약품 등)에 반영. */}
-        <div>
-          <label className="flex items-start gap-2.5 px-3 py-3 border rounded-xl cursor-pointer bg-gray-50 hover:bg-white transition-colors">
-            <input
-              type="checkbox"
-              checked={pregnant}
-              onChange={(e) => setPregnant(e.target.checked)}
-              className="w-4 h-4 accent-[#C9A96E] mt-0.5"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-800">
-                현재 임신 중이에요 <span className="text-xs text-gray-400 font-normal">(선택)</span>
-              </p>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                드레스 사이즈·일정 압축·메이크업 등 임신 친화 정보 위주로 추천해드려요.
-              </p>
-            </div>
-          </label>
-        </div>
-
-        {/* 가치 태그 (선택) — 페르소나 S-2 (비건 카페·환경 NGO)를 위해.
-            AI 답변·추천 가중치에 반영. 다중 선택. */}
-        <div>
-          <label className={labelCls}>
-            가치·취향 태그 <span className="text-xs text-gray-400 font-normal">(선택, 복수)</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {WEDDING_VALUE_OPTIONS.map((opt) => {
-              const active = valueTags.includes(opt.key);
-              return (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() =>
-                    setValueTags((prev) =>
-                      active ? prev.filter((t) => t !== opt.key) : [...prev, opt.key],
-                    )
-                  }
-                  className={cn(
-                    "px-3 py-1.5 rounded-full border text-[12px] font-medium transition-colors flex items-center gap-1",
-                    active
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300",
-                  )}
-                  title={opt.hint}
-                >
-                  <span aria-hidden>{opt.emoji}</span>
-                  <span>{opt.label}</span>
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-[11px] text-gray-400 mt-1.5">
-            선택하면 AI 추천·답변이 해당 가치축에 맞춰져요.
-          </p>
         </div>
 
         <div className="flex gap-2 pt-2">

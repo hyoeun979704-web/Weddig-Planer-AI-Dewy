@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { WeddingStyle } from "@/lib/weddingStyle";
-import { filterValidValueTags, type WeddingValueTag } from "@/lib/weddingValues";
 import { resolveRegionKey } from "@/data/budgetData";
 
 export interface ScheduleItem {
@@ -16,8 +15,6 @@ export interface ScheduleItem {
   source: "user" | "template";
 }
 
-export type MaritalHistory = "first" | "remarriage";
-
 interface WeddingSettings {
   wedding_date: string | null;
   partner_name: string | null;
@@ -27,10 +24,6 @@ interface WeddingSettings {
   wedding_region_tbd: boolean;
   wedding_style: WeddingStyle | null;
   excluded_categories: string[];
-  marital_history: MaritalHistory | null;
-  pregnant: boolean;
-  value_tags: WeddingValueTag[];
-  guest_count: number | null;
 }
 
 export const useWeddingSchedule = () => {
@@ -44,10 +37,6 @@ export const useWeddingSchedule = () => {
     wedding_region_tbd: false,
     wedding_style: null,
     excluded_categories: [],
-    marital_history: null,
-    pregnant: false,
-    value_tags: [],
-    guest_count: null,
   });
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,7 +56,7 @@ export const useWeddingSchedule = () => {
       const [settingsRes, itemsRes] = await Promise.all([
         supabase
           .from("user_wedding_settings")
-          .select("wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant, value_tags, guest_count")
+          .select("wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories")
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
@@ -88,10 +77,6 @@ export const useWeddingSchedule = () => {
           wedding_region_tbd: !!s.wedding_region_tbd,
           wedding_style: (s.wedding_style ?? null) as WeddingStyle | null,
           excluded_categories: Array.isArray(s.excluded_categories) ? s.excluded_categories : [],
-          marital_history: (s.marital_history ?? null) as MaritalHistory | null,
-          pregnant: !!s.pregnant,
-          value_tags: filterValidValueTags(s.value_tags),
-          guest_count: typeof s.guest_count === "number" ? s.guest_count : null,
         });
       }
 
@@ -149,11 +134,6 @@ export const useWeddingSchedule = () => {
   // in one call). Used by the shared WeddingInfoSetupModal that auto-pops
   // on Schedule/Budget/MyPage when the user hasn't entered basic wedding
   // info yet.
-  //
-  // `opts.silent` — suppress success/error toasts and skip the auth-required
-  // toast (caller already gated access). Used by AI Planner when survey
-  // inputs are quietly mirrored into the profile so the user isn't shown
-  // a "저장되었어요" toast on top of the AI chat response.
   const saveWeddingSettings = async (
     patch: Partial<{
       wedding_date: string | null;
@@ -164,16 +144,10 @@ export const useWeddingSchedule = () => {
       wedding_region_tbd: boolean;
       wedding_style: WeddingStyle | null;
       excluded_categories: string[];
-      marital_history: MaritalHistory | null;
-      pregnant: boolean;
-      value_tags: WeddingValueTag[];
-      guest_count: number | null;
-    }>,
-    opts?: { silent?: boolean }
+    }>
   ) => {
-    const silent = !!opts?.silent;
     if (!user) {
-      if (!silent) toast.error("로그인이 필요합니다");
+      toast.error("로그인이 필요합니다");
       return false;
     }
     try {
@@ -195,48 +169,32 @@ export const useWeddingSchedule = () => {
       }
       setWeddingSettings(prev => ({ ...prev, ...patch }));
 
-      // Mirror shared profile fields into budget_settings so Budget reads
-      // the same canonical values without re-asking. Single round-trip:
-      // we read budget_settings once, decide what (if anything) needs to
-      // change, then update once. Pre-unification this only synced region;
-      // now also covers guest_count (migration 20260516170000 added the
-      // shared column to user_wedding_settings).
-      const needsMirror = patch.wedding_region !== undefined || patch.guest_count !== undefined;
-      if (needsMirror) {
-        const { data: budget } = await (supabase as any)
-          .from("budget_settings")
-          .select("id, region, guest_count")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (budget) {
-          const mirror: Record<string, unknown> = {};
-          if (patch.wedding_region) {
-            const regionKey = resolveRegionKey(patch.wedding_region);
-            if (regionKey && budget.region !== regionKey) {
-              mirror.region = regionKey;
-            }
-          }
-          if (
-            patch.guest_count !== undefined &&
-            patch.guest_count !== null &&
-            budget.guest_count !== patch.guest_count
-          ) {
-            mirror.guest_count = patch.guest_count;
-          }
-          if (Object.keys(mirror).length > 0) {
+      // Mirror region into budget_settings if the user has already set up a
+      // budget. Keeps the two pages from drifting when the user updates their
+      // region from the Schedule onboarding modal first vs the Budget setup
+      // sheet first.
+      if (patch.wedding_region) {
+        const regionKey = resolveRegionKey(patch.wedding_region);
+        if (regionKey) {
+          const { data: budget } = await (supabase as any)
+            .from("budget_settings")
+            .select("id, region")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (budget && budget.region !== regionKey) {
             await (supabase as any)
               .from("budget_settings")
-              .update(mirror)
+              .update({ region: regionKey })
               .eq("id", budget.id);
           }
         }
       }
 
-      if (!silent) toast.success("결혼 정보가 저장되었어요");
+      toast.success("결혼 정보가 저장되었어요");
       return true;
     } catch (error) {
       console.error("Error saving wedding settings:", error);
-      if (!silent) toast.error("저장에 실패했어요");
+      toast.error("저장에 실패했어요");
       return false;
     }
   };
@@ -273,45 +231,6 @@ export const useWeddingSchedule = () => {
     } catch (error) {
       console.error("Error seeding schedule:", error);
       return null;
-    }
-  };
-
-  // Bulk-insert schedule items in a single Supabase call. Used when the
-  // user applies an AI-generated same-day timeline (12 events) so we
-  // don't fire 12 individual mutations + 12 success toasts. Caller toasts
-  // a single summary instead. Returns inserted count (0 on failure).
-  const addScheduleItemsBulk = async (
-    items: Array<{ title: string; scheduled_date: string; category?: string }>
-  ): Promise<number> => {
-    if (!user) {
-      toast.error("로그인이 필요합니다");
-      return 0;
-    }
-    if (items.length === 0) return 0;
-    try {
-      const rows = items.map(i => ({
-        user_id: user.id,
-        title: i.title,
-        scheduled_date: i.scheduled_date,
-        category: i.category ?? "general",
-      }));
-      const { data, error } = await supabase
-        .from("user_schedule_items")
-        .insert(rows)
-        .select("id, title, scheduled_date, completed, notes, category, source");
-      if (error) throw error;
-      if (data) {
-        setScheduleItems(prev =>
-          ([...prev, ...(data as unknown as ScheduleItem[])]).sort(
-            (a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
-          )
-        );
-      }
-      return data?.length ?? rows.length;
-    } catch (error) {
-      console.error("Error bulk-adding schedule items:", error);
-      toast.error("일정 추가에 실패했어요");
-      return 0;
     }
   };
 
@@ -430,7 +349,6 @@ export const useWeddingSchedule = () => {
     saveWeddingSettings,
     generateScheduleFromTemplate,
     addScheduleItem,
-    addScheduleItemsBulk,
     toggleItemCompletion,
     deleteScheduleItem,
     updateItemNotes,

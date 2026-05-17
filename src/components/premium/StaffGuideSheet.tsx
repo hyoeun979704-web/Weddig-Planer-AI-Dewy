@@ -70,29 +70,12 @@ const sharedInfoGrid = (info: StaffInfo, extras: { label: string; value: string 
     ...extras,
   ]);
 
-const STAFF_DOC_SUBS: Record<string, string> = {
-  "가방순이 전달사항": "신부의 가방·귀중품을 책임지는 가장 가까운 사람을 위한 동선·체크리스트 안내서입니다.",
-  "축의대 담당자 안내서": "축의대 운영, 봉투 관리, 손님 응대 요령을 정리한 담당자용 가이드입니다.",
-  "사회자 큐시트": "식순과 큐 타이밍, 멘트 예시를 한 장에 정리한 사회자 진행 자료입니다.",
-  "부모님 안내서": "당일 동선·복장·유의사항을 양가 부모님께 사전 안내해 드릴 가이드입니다.",
-};
-
 const buildHeader = (info: StaffInfo, title: string, weddingStyle: WeddingStyle) => {
   const couple = info.groomName && info.brideName ? `${info.groomName} ♥ ${info.brideName}` : undefined;
-  const styleLabel = WEDDING_STYLE_LABEL[weddingStyle];
   return generatePdfHeader(title, coupleSubtitle(info), {
     couple,
     weddingDate: info.weddingDate || undefined,
-    styleLabel,
-    cover: {
-      docType: title,
-      docSub: STAFF_DOC_SUBS[title],
-      groomName: info.groomName || undefined,
-      brideName: info.brideName || undefined,
-      couple,
-      weddingDate: info.weddingDate || undefined,
-      styleLabel,
-    },
+    styleLabel: WEDDING_STYLE_LABEL[weddingStyle],
   });
 };
 

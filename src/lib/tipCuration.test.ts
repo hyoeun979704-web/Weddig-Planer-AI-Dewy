@@ -20,6 +20,7 @@ const baseProfile: WeddingProfilePrefill = {
   partnerName: "",
   weddingStyle: "general",
   excludedCategories: [],
+  completedCategories: [],
   isLoaded: true,
 };
 
@@ -92,6 +93,30 @@ describe("buildCurationFactors", () => {
     expect(f.hasSignal).toBe(true);
     expect(f.styleHints).toContain("스몰");
   });
+
+  it("removes completed categories from phase boost", () => {
+    // D-200 phase = wedding_hall. After finishing wedding_hall tasks
+    // the boost should disappear so other content can surface.
+    const f = buildCurationFactors(
+      {
+        ...baseProfile,
+        weddingDate: "2026-12-01", // D-200 from NOW
+        completedCategories: ["wedding_hall"],
+      },
+      NOW
+    );
+    expect(f.phaseCategories).not.toContain("wedding_hall");
+    expect(f.completedCategories).toEqual(["wedding_hall"]);
+    expect(f.hasSignal).toBe(true);
+  });
+
+  it("flags signal when only completed categories are set", () => {
+    const f = buildCurationFactors(
+      { ...baseProfile, completedCategories: ["studio"] },
+      NOW
+    );
+    expect(f.hasSignal).toBe(true);
+  });
 });
 
 describe("scoreTipVideo", () => {
@@ -135,6 +160,32 @@ describe("scoreTipVideo", () => {
       scoreTipVideo(stale, factors, NOW)
     );
   });
+
+  it("completed primary category demotes the video", () => {
+    const completedFactors = buildCurationFactors(
+      { ...baseProfile, completedCategories: ["studio"] },
+      NOW
+    );
+    const done = mkVideo({ video_id: "done", view_count: 10_000, categories: ["studio"] });
+    const open = mkVideo({ video_id: "open", view_count: 10_000, categories: ["dress_shop"] });
+    expect(scoreTipVideo(done, completedFactors, NOW)).toBeLessThan(
+      scoreTipVideo(open, completedFactors, NOW)
+    );
+  });
+
+  it("completed penalty is milder than excluded penalty", () => {
+    const f = buildCurationFactors(
+      {
+        ...baseProfile,
+        excludedCategories: ["hanbok"],
+        completedCategories: ["studio"],
+      },
+      NOW
+    );
+    const excluded = mkVideo({ video_id: "x", view_count: 10_000, categories: ["hanbok"] });
+    const completed = mkVideo({ video_id: "c", view_count: 10_000, categories: ["studio"] });
+    expect(scoreTipVideo(completed, f, NOW)).toBeGreaterThan(scoreTipVideo(excluded, f, NOW));
+  });
 });
 
 describe("rankTipVideosForUser", () => {
@@ -158,6 +209,25 @@ describe("rankTipVideosForUser", () => {
     ];
     const ranked = rankTipVideosForUser(videos, profile, { now: NOW });
     expect(ranked[0].video_id).toBe("dress");
+  });
+
+  it("pushes completed-category videos below pending-category ones", () => {
+    // User has already booked their venue and finished the studio
+    // shoot. Even though wedding_hall is a phase-boosted category at
+    // D-200, the still-pending dress shop video should outrank both.
+    const profile: WeddingProfilePrefill = {
+      ...baseProfile,
+      weddingDate: "2026-12-01", // ~D-200
+      completedCategories: ["wedding_hall", "studio"],
+    };
+    const videos = [
+      mkVideo({ video_id: "hall_done", view_count: 1_000_000, categories: ["wedding_hall"] }),
+      mkVideo({ video_id: "studio_done", view_count: 500_000, categories: ["studio"] }),
+      mkVideo({ video_id: "dress_pending", view_count: 10_000, categories: ["dress_shop"] }),
+    ];
+    const ranked = rankTipVideosForUser(videos, profile, { now: NOW });
+    expect(ranked[0].video_id).toBe("dress_pending");
+    expect(ranked[ranked.length - 1].video_id).toBe("studio_done");
   });
 
   it("respects limit", () => {

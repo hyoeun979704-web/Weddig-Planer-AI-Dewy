@@ -52,6 +52,14 @@ export const PLACE_TO_KOREAN_CATEGORY: Record<string, string> = {
   honeymoon: "허니문",
   appliance: "혼수",
   invitation_venue: "청첩장",
+  // Video-only categories (no places attached). Used by TipVideoCard for
+  // the category badge — see koreanCategoryLabel().
+  family_meeting: "상견례",
+  newlywed_home: "신혼집",
+  wedding_gifts: "예단·예물",
+  legal_paperwork: "혼인신고",
+  bridal_care: "신부 관리",
+  ceremony: "본식 진행",
 };
 
 // Mapping from place category slug → category-specific card table name
