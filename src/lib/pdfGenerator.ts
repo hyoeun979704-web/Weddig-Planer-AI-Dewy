@@ -2,6 +2,23 @@ import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import DOMPurify from "dompurify";
 
+/**
+ * HTML 특수문자 이스케이프.
+ * 사용자 자유입력(이름, 메모, 장소명 등)을 PDF용 HTML 문자열에 삽입할 때
+ * 반드시 통과시켜야 한다. safeSanitize()가 <style> 태그를 보존하는 우회
+ * 로직을 쓰기 때문에 사용자 입력에 `<style>...</style>`가 끼면 그대로
+ * PDF에 삽입되는 위험이 있다.
+ */
+export const esc = (value: string | number | undefined | null): string => {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+};
+
 // ---------------------------------------------------------------------------
 // 단정하고 부드러운 인쇄물 톤.
 // - 본문/숫자/라벨: Noto Sans KR (산세리프 — 단정한 가독성)
@@ -21,7 +38,7 @@ const PDF_STYLES = `
   .pdf-cover::after { content: ''; position: absolute; bottom: -120px; left: -60px; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(252,228,236,0.35) 0%, rgba(252,228,236,0) 70%); }
 
   .pdf-cover-top { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 2; margin-bottom: 80px; }
-  .pdf-cover-logo { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: #F4A7B9; letter-spacing: 1px; }
+  .pdf-cover-logo { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; color: #F4A7B9; letter-spacing: 1px; }
   .pdf-cover-logo-sub { font-family: 'Cormorant Garamond', serif; font-size: 11px; color: #9ca3af; letter-spacing: 3px; text-transform: uppercase; margin-top: -4px; }
   .pdf-cover-meta { text-align: right; font-family: 'Cormorant Garamond', serif; font-size: 12px; color: #9ca3af; letter-spacing: 1px; }
 
@@ -44,7 +61,7 @@ const PDF_STYLES = `
 
   /* ============ 일반 본문 페이지 ============ */
   .pdf-header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 16px; margin-bottom: 32px; border-bottom: 1.5px solid #F4A7B9; }
-  .pdf-logo { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #F4A7B9; letter-spacing: 0.5px; }
+  .pdf-logo { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: #F4A7B9; letter-spacing: 0.5px; }
   .pdf-logo-sub { font-family: 'Cormorant Garamond', serif; font-size: 9px; color: #9ca3af; letter-spacing: 2px; text-transform: uppercase; margin-top: -3px; }
   .pdf-date { font-size: 10px; color: #9ca3af; font-family: 'Cormorant Garamond', serif; letter-spacing: 0.5px; }
   .pdf-couple-tag { font-size: 11px; color: #1f2937; font-weight: 600; margin-bottom: 3px; font-family: 'Cormorant Garamond', serif; letter-spacing: 0.5px; }
@@ -126,7 +143,7 @@ const PDF_STYLES = `
 
   /* Footer */
   .pdf-footer { text-align: center; font-size: 9.5px; color: #9ca3af; padding-top: 22px; border-top: 1px solid #f3f4f6; margin-top: 32px; line-height: 1.7; }
-  .pdf-footer-brand { font-family: 'Playfair Display', serif; color: #F4A7B9; font-weight: 700; letter-spacing: 0.5px; }
+  .pdf-footer-brand { font-family: 'Cormorant Garamond', serif; color: #F4A7B9; font-weight: 700; letter-spacing: 0.5px; }
 
   /* ============ Dashboard layout (one-page infographic) ============ */
   .pdf-dash { width: 595px; min-height: 842px; margin: 0 auto; background: #ffffff; display: block; }
@@ -238,9 +255,9 @@ export function generatePdfCover(opts: PdfCoverOptions): string {
   const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
 
   const coupleDisplay = opts.groomName && opts.brideName
-    ? `<span>${opts.groomName}</span><span class="pdf-cover-couple-amp">&amp;</span><span>${opts.brideName}</span>`
+    ? `<span>${esc(opts.groomName)}</span><span class="pdf-cover-couple-amp">&amp;</span><span>${esc(opts.brideName)}</span>`
     : opts.couple
-      ? opts.couple.replace(/\s*♥\s*/, '<span class="pdf-cover-couple-amp">&amp;</span>')
+      ? esc(opts.couple).replace(/\s*♥\s*/, '<span class="pdf-cover-couple-amp">&amp;</span>')
       : `<span class="pdf-cover-couple-amp">&amp;</span>`;
 
   const weddingDateLine = opts.weddingDate
@@ -262,9 +279,9 @@ export function generatePdfCover(opts: PdfCoverOptions): string {
         <div class="pdf-cover-eyebrow">Wedding Document</div>
         <div class="pdf-cover-couple">${coupleDisplay}</div>
         ${weddingDateLine ? `<div class="pdf-cover-date">${weddingDateLine}</div>` : ""}
-        <div class="pdf-cover-doc-type">${opts.docType}</div>
-        ${opts.docSub ? `<div class="pdf-cover-doc-sub">${opts.docSub}</div>` : ""}
-        ${opts.styleLabel ? `<div class="pdf-cover-style-badge">${opts.styleLabel}</div>` : ""}
+        <div class="pdf-cover-doc-type">${esc(opts.docType)}</div>
+        ${opts.docSub ? `<div class="pdf-cover-doc-sub">${esc(opts.docSub)}</div>` : ""}
+        ${opts.styleLabel ? `<div class="pdf-cover-style-badge">${esc(opts.styleLabel)}</div>` : ""}
       </div>
 
       <div class="pdf-cover-bottom">
@@ -289,7 +306,7 @@ export function generatePdfHeader(title: string, subtitle?: string, opts: PdfHea
   const today = new Date();
   const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
   const coupleLine = opts.couple || opts.weddingDate
-    ? `<div class="pdf-couple-tag">${opts.couple ?? ""}${opts.couple && opts.weddingDate ? " · " : ""}${opts.weddingDate ?? ""}</div>`
+    ? `<div class="pdf-couple-tag">${esc(opts.couple ?? "")}${opts.couple && opts.weddingDate ? " · " : ""}${esc(opts.weddingDate ?? "")}</div>`
     : "";
 
   const coverHtml = opts.cover ? generatePdfCover(opts.cover) : `<style>${PDF_STYLES}</style>`;
@@ -307,8 +324,8 @@ export function generatePdfHeader(title: string, subtitle?: string, opts: PdfHea
           <div class="pdf-date">발행일 ${dateStr}</div>
         </div>
       </div>
-      <div class="pdf-title">${title}${opts.styleLabel ? ` <span class="pdf-style-pill">${opts.styleLabel}</span>` : ""}</div>
-      ${subtitle ? `<div class="pdf-subtitle">${subtitle}</div>` : ""}
+      <div class="pdf-title">${esc(title)}${opts.styleLabel ? ` <span class="pdf-style-pill">${esc(opts.styleLabel)}</span>` : ""}</div>
+      ${subtitle ? `<div class="pdf-subtitle">${esc(subtitle)}</div>` : ""}
   `;
 }
 
@@ -326,7 +343,7 @@ export function pdfInfoGrid(items: { label: string; value: string }[]): string {
   return `<div class="pdf-info-grid">${items
     .map(
       (it) =>
-        `<div class="pdf-info-item"><div class="pdf-info-label">${it.label}</div><div class="pdf-info-value">${it.value}</div></div>`,
+        `<div class="pdf-info-item"><div class="pdf-info-label">${esc(it.label)}</div><div class="pdf-info-value">${esc(it.value)}</div></div>`,
     )
     .join("")}</div>`;
 }
@@ -335,13 +352,13 @@ export function pdfStatRow(items: { value: string; label: string }[]): string {
   return `<div class="pdf-stat-row">${items
     .map(
       (it) =>
-        `<div class="pdf-stat-item"><div class="pdf-stat-value">${it.value}</div><div class="pdf-stat-label">${it.label}</div></div>`,
+        `<div class="pdf-stat-item"><div class="pdf-stat-value">${esc(it.value)}</div><div class="pdf-stat-label">${esc(it.label)}</div></div>`,
     )
     .join("")}</div>`;
 }
 
 export function pdfSection(title: string, body: string): string {
-  return `<div class="pdf-section"><div class="pdf-section-title">${title}</div>${body}</div>`;
+  return `<div class="pdf-section"><div class="pdf-section-title">${esc(title)}</div>${body}</div>`;
 }
 
 export function pdfDivider(): string {
@@ -366,9 +383,9 @@ export function pdfBarChart(items: BarChartItem[]): string {
       const fillPct = Math.round(ratio * 100);
       const display = it.displayValue ?? `${it.value.toLocaleString()}만원`;
       return `<div class="pdf-bar-row">
-        <div class="pdf-bar-label">${it.label}</div>
+        <div class="pdf-bar-label">${esc(it.label)}</div>
         <div class="pdf-bar-track"><div class="pdf-bar-fill" style="width:${fillPct}%;"></div></div>
-        <div class="pdf-bar-value">${display}</div>
+        <div class="pdf-bar-value">${esc(display)}</div>
       </div>`;
     })
     .join("");
@@ -409,8 +426,8 @@ export function pdfDonut(items: DonutItem[]): string {
 
   const svg = `<svg class="pdf-donut" width="130" height="130" viewBox="0 0 130 130">
     ${segments.map((s) => s.seg).join("")}
-    <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="14" fill="#9ca3af">TOTAL</text>
-    <text x="${cx}" y="${cy + 14}" text-anchor="middle" font-family="Cormorant Garamond, serif" font-weight="700" font-size="18" fill="#1f2937">${total.toLocaleString()}</text>
+    <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="Noto Sans KR, sans-serif" font-size="11" fill="#9ca3af">TOTAL</text>
+    <text x="${cx}" y="${cy + 14}" text-anchor="middle" font-family="Noto Sans KR, sans-serif" font-weight="700" font-size="18" fill="#1f2937">${esc(total.toLocaleString())}</text>
   </svg>`;
 
   const legend = items
@@ -419,7 +436,7 @@ export function pdfDonut(items: DonutItem[]): string {
       const portion = Math.round((it.value / total) * 100);
       return `<div class="pdf-donut-legend-item">
         <span class="pdf-donut-legend-dot" style="background:${color};"></span>
-        <span class="pdf-donut-legend-label">${it.label}</span>
+        <span class="pdf-donut-legend-label">${esc(it.label)}</span>
         <span class="pdf-donut-legend-value">${portion}%</span>
       </div>`;
     })
@@ -447,7 +464,7 @@ export interface DashboardOptions {
 }
 
 export const pdfDashCard = (title: string, body: string): string =>
-  `<div class="pdf-dash-card"><div class="pdf-dash-card-title">${title}</div>${body}</div>`;
+  `<div class="pdf-dash-card"><div class="pdf-dash-card-title">${esc(title)}</div>${body}</div>`;
 
 export const pdfDashRow = (cards: string[], variant: 2 | 3 = 2): string =>
   `<div class="pdf-dash-row pdf-dash-row-${variant}">${cards.join("")}</div>`;
@@ -462,7 +479,7 @@ export const pdfDashShareBars = (
       const color = it.color ?? palette[idx % palette.length];
       const pct = Math.max(0, Math.min(100, it.pct));
       return `<div class="pdf-dash-share-row">
-        <div class="pdf-dash-share-label">${it.label}</div>
+        <div class="pdf-dash-share-label">${esc(it.label)}</div>
         <div class="pdf-dash-share-track"><div class="pdf-dash-share-fill" style="width:${pct}%;background:linear-gradient(90deg,${color},${color}cc);"></div></div>
         <div class="pdf-dash-share-pct">${pct.toFixed(1)}%</div>
       </div>`;
@@ -492,7 +509,7 @@ export const pdfDashMiniDonut = (items: DonutItem[]): string => {
       const pct = Math.round((it.value / total) * 100);
       return `<div class="legend-row">
         <span class="legend-dot" style="background:${color};"></span>
-        <span class="legend-label">${it.label}</span>
+        <span class="legend-label">${esc(it.label)}</span>
         <span class="legend-pct">${pct}%</span>
       </div>`;
     })
@@ -509,9 +526,9 @@ export const pdfDashBigNumber = (opts: {
   label: string;
 }): string => {
   return `<div class="pdf-dash-big">
-    ${opts.icon ? `<div class="pdf-dash-big-icon" style="background:${opts.iconBg};">${opts.icon}</div>` : ""}
-    <div class="pdf-dash-big-value">${opts.value}${opts.suffix ? `<span class="pdf-dash-big-suffix">${opts.suffix}</span>` : ""}</div>
-    <div class="pdf-dash-big-label">${opts.label}</div>
+    ${opts.icon ? `<div class="pdf-dash-big-icon" style="background:${opts.iconBg};">${esc(opts.icon)}</div>` : ""}
+    <div class="pdf-dash-big-value">${esc(opts.value)}${opts.suffix ? `<span class="pdf-dash-big-suffix">${esc(opts.suffix)}</span>` : ""}</div>
+    <div class="pdf-dash-big-label">${esc(opts.label)}</div>
   </div>`;
 };
 
@@ -526,10 +543,10 @@ export function generatePdfDashboard(opts: DashboardOptions): string {
   const pillsHtml = opts.pills && opts.pills.length > 0
     ? `<div class="pdf-dash-pills">${opts.pills.map((p) => `
         <div class="pdf-dash-pill">
-          ${p.icon ? `<div class="pdf-dash-pill-icon">${p.icon}</div>` : ""}
+          ${p.icon ? `<div class="pdf-dash-pill-icon">${esc(p.icon)}</div>` : ""}
           <div class="pdf-dash-pill-text">
-            <div class="pdf-dash-pill-label">${p.label}</div>
-            <div class="pdf-dash-pill-value">${p.value}</div>
+            <div class="pdf-dash-pill-label">${esc(p.label)}</div>
+            <div class="pdf-dash-pill-value">${esc(p.value)}</div>
           </div>
         </div>`).join("")}</div>`
     : "";
@@ -537,16 +554,18 @@ export function generatePdfDashboard(opts: DashboardOptions): string {
   const statsHtml = opts.stats && opts.stats.length > 0
     ? `<div class="pdf-dash-stats">${opts.stats.map((s) => `
         <div class="pdf-dash-stat pdf-dash-stat-${s.tone}">
-          ${s.icon ? `<div class="pdf-dash-stat-icon">${s.icon}</div>` : ""}
-          <div class="pdf-dash-stat-value">${s.value}</div>
-          <div class="pdf-dash-stat-label">${s.label}</div>
+          ${s.icon ? `<div class="pdf-dash-stat-icon">${esc(s.icon)}</div>` : ""}
+          <div class="pdf-dash-stat-value">${esc(s.value)}</div>
+          <div class="pdf-dash-stat-label">${esc(s.label)}</div>
         </div>`).join("")}</div>`
     : "";
 
+  // insight.title은 호출 측이 자유롭게 결정 (이모지/아이콘은 호출 측이 prefix할지 결정).
+  // body는 사용자 입력이 섞일 수 있어 escape. title도 동일.
   const insightHtml = opts.insight
     ? `<div class="pdf-dash-insight">
-        <div class="pdf-dash-insight-title">💡 ${opts.insight.title}</div>
-        <div class="pdf-dash-insight-body">${opts.insight.body}</div>
+        <div class="pdf-dash-insight-title">${esc(opts.insight.title)}</div>
+        <div class="pdf-dash-insight-body">${esc(opts.insight.body)}</div>
       </div>`
     : "";
 
