@@ -6,6 +6,7 @@ import {
   generatePdfFooter,
   pdfInfoGrid,
   pdfSection,
+  esc,
 } from "@/lib/pdfGenerator";
 import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
@@ -125,10 +126,10 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
     );
 
     html += pdfSection(
-      "📞 비상 연락처",
+      "비상 연락처",
       `<table class="pdf-table"><tbody>
-        <tr><td style="width:30%;">신부</td><td>${info.bridePhone || "(                              )"}</td></tr>
-        <tr><td>신랑</td><td>${info.groomPhone || "(                              )"}</td></tr>
+        <tr><td style="width:30%;">신부</td><td>${esc(info.bridePhone || "(                              )")}</td></tr>
+        <tr><td>신랑</td><td>${esc(info.groomPhone || "(                              )")}</td></tr>
         <tr><td>웨딩홀 안내</td><td>(                              )</td></tr>
       </tbody></table>`,
     );
@@ -183,21 +184,21 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
     );
 
     html += pdfSection(
-      "💺 좌석 / 식사 안내",
+      "좌석 / 식사 안내",
       `<table class="pdf-table"><tbody>
         <tr><td style="width:30%;">신랑측 좌석</td><td>식장 입구 기준 왼쪽</td></tr>
         <tr><td>신부측 좌석</td><td>식장 입구 기준 오른쪽</td></tr>
-        <tr><td>피로연 형태</td><td>${info.mealType || "뷔페"}</td></tr>
+        <tr><td>피로연 형태</td><td>${esc(info.mealType || "뷔페")}</td></tr>
         <tr><td>식사 시작</td><td>예식 종료 후 약 30분 후</td></tr>
       </tbody></table>
-      <div class="pdf-tip">💡 어르신/거동 불편 하객은 동선이 짧은 자리로 안내해드리면 좋아요</div>`,
+      <div class="pdf-tip">어르신/거동 불편 하객은 동선이 짧은 자리로 안내해드리면 좋아요</div>`,
     );
 
     html += pdfSection(
-      "📞 비상 연락처",
+      "비상 연락처",
       `<table class="pdf-table"><tbody>
-        <tr><td>신랑</td><td>${info.groomPhone || "(                              )"}</td></tr>
-        <tr><td>신부</td><td>${info.bridePhone || "(                              )"}</td></tr>
+        <tr><td>신랑</td><td>${esc(info.groomPhone || "(                              )")}</td></tr>
+        <tr><td>신부</td><td>${esc(info.bridePhone || "(                              )")}</td></tr>
         <tr><td>가방순이</td><td>(                              )</td></tr>
         <tr><td>웨딩홀</td><td>(                              )</td></tr>
       </tbody></table>`,
@@ -254,13 +255,16 @@ const staffTemplates: Record<StaffType, (info: StaffInfo, weddingStyle: WeddingS
       bride: info.brideName || "신부",
       venue: info.venueName || "피로연장",
     };
+    // 멘트 안에 들어가는 사용자 입력 이름·장소를 미리 escape해서 formatPhrase에 전달.
+    // formatPhrase가 단순 치환이므로 여기서 escape하면 raw HTML에 안전하게 박힘.
+    const safeVars = { groom: esc(vars.groom), bride: esc(vars.bride), venue: esc(vars.venue) };
     // 신랑신부 본인 사회면 셀프 진행용 개식 멘트로 교체
     const baseOpening = info.selfHosted
       ? pickFromPool(SELF_HOSTED_OPENING, mcSeed)
       : pickFromPool(MC_OPENING[tone], mcSeed);
-    const opening = formatPhrase(baseOpening, vars);
-    const afterDecl = formatPhrase(pickFromPool(MC_AFTER_DECLARATION[tone], mcSeed, 1), vars);
-    const closing = formatPhrase(pickFromPool(MC_CLOSING[tone], mcSeed, 2), vars);
+    const opening = formatPhrase(baseOpening, safeVars);
+    const afterDecl = formatPhrase(pickFromPool(MC_AFTER_DECLARATION[tone], mcSeed, 1), safeVars);
+    const closing = formatPhrase(pickFromPool(MC_CLOSING[tone], mcSeed, 2), safeVars);
     const liveOpening = info.hasLiveStream ? pickFromPool(LIVE_STREAM_OPENING, mcSeed) : "";
     const liveClosing = info.hasLiveStream ? pickFromPool(LIVE_STREAM_CLOSING, mcSeed, 1) : "";
 

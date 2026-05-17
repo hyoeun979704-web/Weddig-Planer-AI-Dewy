@@ -450,9 +450,8 @@ export function pdfDonut(items: DonutItem[]): string {
 // 좌측 세로 브랜딩 + 우측 다단 그리드 (예산 리포트·견적서용)
 // ---------------------------------------------------------------------------
 export interface DashboardOptions {
-  brandName?: string[];          // ["Dewy", "Wedding", "Planner"] 같이 줄별 분리
+  brandName?: string;            // "Dewy Wedding Planner" — 가로 헤더에 한 줄 표시
   brandTag?: string;             // "Wedding Document"
-  brandBottom?: string;          // "For the most precious day"
   publishDate?: string;          // 발행일 (YYYY.MM.DD)
   weddingDate?: string;          // 예식일 (YYYY.MM.DD)
   title: string;                 // "웨딩 예산 분석 리포트"
@@ -537,8 +536,7 @@ export function generatePdfDashboard(opts: DashboardOptions): string {
   const todayStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
   const pubDate = opts.publishDate || todayStr;
 
-  const brandLines = opts.brandName || ["Dewy", "Wedding", "Planner"];
-  const brandHtml = brandLines.map((l) => `<div class="pdf-dash-brand-name">${l}</div>`).join("");
+  const brandInline = opts.brandName || "Dewy Wedding Planner";
 
   const pillsHtml = opts.pills && opts.pills.length > 0
     ? `<div class="pdf-dash-pills">${opts.pills.map((p) => `
@@ -569,25 +567,22 @@ export function generatePdfDashboard(opts: DashboardOptions): string {
       </div>`
     : "";
 
-  // 브랜드는 가로 한 줄로 ("Dewy Wedding Planner")
-  const brandInline = brandLines.join(" ");
-
   return `
     <style>${PDF_STYLES}</style>
     <div class="pdf-dash">
       <header class="pdf-dash-topbar">
         <div class="pdf-dash-brand">
-          <div class="pdf-dash-brand-name">${brandInline}</div>
-          ${opts.brandTag ? `<div class="pdf-dash-brand-tag">${opts.brandTag}</div>` : ""}
+          <div class="pdf-dash-brand-name">${esc(brandInline)}</div>
+          ${opts.brandTag ? `<div class="pdf-dash-brand-tag">${esc(opts.brandTag)}</div>` : ""}
         </div>
         <div class="pdf-dash-topbar-meta">
-          <div class="item"><span class="label">발행</span><span class="value">${pubDate}</span></div>
-          ${opts.weddingDate ? `<div class="item"><span class="label">예식</span><span class="value">${opts.weddingDate}</span></div>` : ""}
+          <div class="item"><span class="label">발행</span><span class="value">${esc(pubDate)}</span></div>
+          ${opts.weddingDate ? `<div class="item"><span class="label">예식</span><span class="value">${esc(opts.weddingDate)}</span></div>` : ""}
         </div>
       </header>
       <main class="pdf-dash-main">
-        <h1 class="pdf-dash-title">${opts.title}</h1>
-        ${opts.description ? `<p class="pdf-dash-desc">${opts.description}</p>` : ""}
+        <h1 class="pdf-dash-title">${esc(opts.title)}</h1>
+        ${opts.description ? `<p class="pdf-dash-desc">${esc(opts.description)}</p>` : ""}
         ${pillsHtml}
         ${statsHtml}
         ${opts.body}
