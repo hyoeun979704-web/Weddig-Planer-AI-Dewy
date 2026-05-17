@@ -26,38 +26,42 @@ export const esc = (value: string | number | undefined | null): string => {
 // - 브랜드 로고에만 Cormorant Garamond 한정 사용 (식별성)
 // ---------------------------------------------------------------------------
 const PDF_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Noto+Serif+KR:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@600;700&family=Cormorant+Garamond:wght@500;600&display=swap');
+
+  /* 디자인 토큰 — 컬러 한 곳에서 관리 */
+  :root {
+    --c-text: #1f2937;
+    --c-text-muted: #6b7280;
+    --c-text-faint: #9ca3af;
+    --c-text-strong: #111827;
+    --c-bg: #ffffff;
+    --c-bg-soft: #fafafa;
+    --c-border: #f3f4f6;
+    --c-border-soft: #fafafa;
+    --c-brand: #F4A7B9;
+    --c-brand-strong: #be185d;
+    --c-brand-soft: #fce4ec;
+    --c-brand-tint: #fef8fa;
+    --c-brand-bg: #fff0f3;
+    --c-success: #059669;
+    --c-warning: #f59e0b;
+    --c-error: #dc2626;
+    --c-info: #3b82f6;
+    --c-stat-pink-bg: #fde8ee;
+    --c-stat-amber-bg: #fff5dc;
+    --c-stat-mint-bg: #dcf5e8;
+    --c-tip-bg: #fff8e1;
+    --c-warning-bg: #fef2f2;
+    --c-note-bg: #eff6ff;
+    --f-sans: 'Noto Sans KR', sans-serif;
+    --f-serif: 'Noto Serif KR', serif;
+    --f-display: 'Cormorant Garamond', serif;
+  }
+
   * { box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-  body { margin: 0; padding: 0; color: #1f2937; background: #ffffff; font-family: 'Noto Sans KR', sans-serif; font-feature-settings: "tnum"; }
+  body { margin: 0; padding: 0; color: var(--c-text); background: var(--c-bg); font-family: var(--f-sans); font-feature-settings: "tnum"; }
 
   .pdf-page { padding: 48px 44px 44px; max-width: 595px; margin: 0 auto; background: #ffffff; }
-
-  /* ============ Cover Page (첫 페이지) ============ */
-  .pdf-cover { position: relative; max-width: 595px; min-height: 842px; margin: 0 auto; padding: 64px 48px 56px; background: linear-gradient(165deg, #fff5f7 0%, #ffffff 50%, #fef8fa 100%); overflow: hidden; page-break-after: always; display: flex; flex-direction: column; }
-  .pdf-cover::before { content: ''; position: absolute; top: -80px; right: -80px; width: 280px; height: 280px; border-radius: 50%; background: radial-gradient(circle, rgba(244,167,185,0.18) 0%, rgba(244,167,185,0) 70%); }
-  .pdf-cover::after { content: ''; position: absolute; bottom: -120px; left: -60px; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(252,228,236,0.35) 0%, rgba(252,228,236,0) 70%); }
-
-  .pdf-cover-top { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 2; margin-bottom: 80px; }
-  .pdf-cover-logo { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; color: #F4A7B9; letter-spacing: 1px; }
-  .pdf-cover-logo-sub { font-family: 'Cormorant Garamond', serif; font-size: 11px; color: #9ca3af; letter-spacing: 3px; text-transform: uppercase; margin-top: -4px; }
-  .pdf-cover-meta { text-align: right; font-family: 'Cormorant Garamond', serif; font-size: 12px; color: #9ca3af; letter-spacing: 1px; }
-
-  .pdf-cover-center { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; z-index: 2; text-align: center; }
-  .pdf-cover-eyebrow { font-family: 'Cormorant Garamond', serif; font-size: 13px; color: #be185d; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 32px; }
-  .pdf-cover-eyebrow::before, .pdf-cover-eyebrow::after { content: ''; display: inline-block; width: 28px; height: 1px; background: #F4A7B9; vertical-align: middle; margin: 0 14px; }
-
-  .pdf-cover-couple { font-family: 'Cormorant Garamond', serif; font-size: 56px; font-weight: 500; color: #1f2937; line-height: 1.15; letter-spacing: 0.5px; margin: 0 0 12px; }
-  .pdf-cover-couple-amp { font-style: italic; color: #F4A7B9; font-weight: 400; margin: 0 14px; }
-
-  .pdf-cover-date { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: #6b7280; letter-spacing: 4px; margin-bottom: 56px; }
-
-  .pdf-cover-doc-type { font-family: 'Noto Serif KR', serif; font-size: 30px; font-weight: 600; color: #1f2937; letter-spacing: -1px; margin: 0 0 14px; }
-  .pdf-cover-doc-sub { font-size: 13px; color: #6b7280; max-width: 360px; line-height: 1.7; }
-
-  .pdf-cover-style-badge { display: inline-block; margin-top: 32px; padding: 8px 22px; background: #ffffff; border: 1.5px solid #F4A7B9; color: #be185d; font-size: 12px; font-weight: 600; border-radius: 22px; letter-spacing: 0.5px; }
-
-  .pdf-cover-bottom { position: relative; z-index: 2; text-align: center; padding-top: 32px; border-top: 1px solid rgba(244,167,185,0.3); }
-  .pdf-cover-bottom-text { font-family: 'Cormorant Garamond', serif; font-size: 11px; color: #9ca3af; letter-spacing: 3px; text-transform: uppercase; }
 
   /* ============ 일반 본문 페이지 ============ */
   .pdf-header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 16px; margin-bottom: 32px; border-bottom: 1.5px solid #F4A7B9; }
@@ -161,9 +165,6 @@ const PDF_STYLES = `
   /* Main content area (사이드바 제거 → 전체 폭 사용) */
   .pdf-dash-main { padding: 22px 36px 24px; }
 
-  /* (legacy 호환용 — 사용 안 함) */
-  .pdf-dash-meta { display: none; }
-
   /* Title section */
   .pdf-dash-title { font-family: 'Noto Serif KR', serif; font-size: 24px; font-weight: 700; color: #1f2937; margin: 0 0 6px; letter-spacing: -0.5px; line-height: 1.2; }
   .pdf-dash-desc { font-size: 11.5px; color: #6b7280; line-height: 1.6; margin: 0 0 22px; }
@@ -238,68 +239,12 @@ const PDF_STYLES = `
 `;
 
 // ---------------------------------------------------------------------------
-// Cover page (인쇄물 첫인상)
-// ---------------------------------------------------------------------------
-export interface PdfCoverOptions {
-  docType: string;        // "맞춤 웨딩 견적서" / "사회자 큐시트" 등
-  docSub?: string;        // 한 줄 설명
-  couple?: string;        // "지유 ♥ 도현"
-  groomName?: string;
-  brideName?: string;
-  weddingDate?: string;
-  styleLabel?: string;
-}
-
-export function generatePdfCover(opts: PdfCoverOptions): string {
-  const today = new Date();
-  const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
-
-  const coupleDisplay = opts.groomName && opts.brideName
-    ? `<span>${esc(opts.groomName)}</span><span class="pdf-cover-couple-amp">&amp;</span><span>${esc(opts.brideName)}</span>`
-    : opts.couple
-      ? esc(opts.couple).replace(/\s*♥\s*/, '<span class="pdf-cover-couple-amp">&amp;</span>')
-      : `<span class="pdf-cover-couple-amp">&amp;</span>`;
-
-  const weddingDateLine = opts.weddingDate
-    ? opts.weddingDate.replace(/-/g, ".")
-    : "";
-
-  return `
-    <style>${PDF_STYLES}</style>
-    <div class="pdf-cover">
-      <div class="pdf-cover-top">
-        <div>
-          <div class="pdf-cover-logo">Dewy</div>
-          <div class="pdf-cover-logo-sub">Wedding Planner</div>
-        </div>
-        <div class="pdf-cover-meta">${dateStr}</div>
-      </div>
-
-      <div class="pdf-cover-center">
-        <div class="pdf-cover-eyebrow">Wedding Document</div>
-        <div class="pdf-cover-couple">${coupleDisplay}</div>
-        ${weddingDateLine ? `<div class="pdf-cover-date">${weddingDateLine}</div>` : ""}
-        <div class="pdf-cover-doc-type">${esc(opts.docType)}</div>
-        ${opts.docSub ? `<div class="pdf-cover-doc-sub">${esc(opts.docSub)}</div>` : ""}
-        ${opts.styleLabel ? `<div class="pdf-cover-style-badge">${esc(opts.styleLabel)}</div>` : ""}
-      </div>
-
-      <div class="pdf-cover-bottom">
-        <div class="pdf-cover-bottom-text">For the most precious day</div>
-      </div>
-    </div>
-  `;
-}
-
-// ---------------------------------------------------------------------------
-// 본문 헤더 (Cover 이후 페이지 시작점)
+// 본문 헤더
 // ---------------------------------------------------------------------------
 export interface PdfHeaderOptions {
   couple?: string;
   weddingDate?: string;
   styleLabel?: string;
-  /** Cover 페이지 옵션을 함께 전달하면 자동으로 cover + header 모두 렌더 */
-  cover?: PdfCoverOptions;
 }
 
 export function generatePdfHeader(title: string, subtitle?: string, opts: PdfHeaderOptions = {}): string {
@@ -309,7 +254,7 @@ export function generatePdfHeader(title: string, subtitle?: string, opts: PdfHea
     ? `<div class="pdf-couple-tag">${esc(opts.couple ?? "")}${opts.couple && opts.weddingDate ? " · " : ""}${esc(opts.weddingDate ?? "")}</div>`
     : "";
 
-  const coverHtml = opts.cover ? generatePdfCover(opts.cover) : `<style>${PDF_STYLES}</style>`;
+  const coverHtml = `<style>${PDF_STYLES}</style>`;
 
   return `
     ${coverHtml}
