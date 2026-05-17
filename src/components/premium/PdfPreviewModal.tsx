@@ -34,7 +34,13 @@ export const PdfPreviewModal = ({ open, onClose, html, filename, title }: PdfPre
     if (open) setIframeHeight(800);
   }, [open, html]);
 
-  const docHtml = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=${FRAME_BASE_WIDTH}"><base target="_blank"></head><body style="margin:0;background:#ffffff;">${DOMPurify.sanitize(html)}</body></html>`;
+  // CRITICAL: DOMPurify가 기본값으로 <style>·SVG 태그를 제거함 → 대시보드 CSS·차트가 통째로 날아가
+  // 세로 stack으로 무너짐. 미리보기와 실제 PDF가 동일하게 보이도록 sanitize 옵션을 다운로드와 일치시킴.
+  const sanitized = DOMPurify.sanitize(html, {
+    ADD_TAGS: ["style", "svg", "circle", "text", "g", "path", "rect", "line"],
+    ADD_ATTR: ["style", "viewBox", "stroke", "stroke-width", "stroke-dasharray", "stroke-dashoffset", "fill", "transform", "cx", "cy", "r", "x", "y", "x1", "y1", "x2", "y2", "text-anchor", "font-family", "font-size", "font-weight"],
+  });
+  const docHtml = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=${FRAME_BASE_WIDTH}"><base target="_blank"></head><body style="margin:0;background:#ffffff;">${sanitized}</body></html>`;
 
   const measure = () => {
     const iframe = iframeRef.current;
