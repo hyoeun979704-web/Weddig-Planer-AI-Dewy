@@ -338,24 +338,10 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
         const data = buildTimeline(type, input, profile.weddingStyle);
 
         const couple = groomName && brideName ? `${groomName} ♥ ${brideName}` : "";
-        const docSubs: Record<TimelineType, string> = {
-          "timeline-snap": "촬영 당일 시간별 동선과 챙길 준비물, 진행 팁을 한 장에 정리했어요.",
-          "timeline-ceremony": "본식 당일 시간별 동선과 식순, 비상 대응 가이드를 정리했어요.",
-          "timeline-guest": "하객분들께 안내할 도착·식사·동선 정보를 정리했어요.",
-        };
         let html = generatePdfHeader(meta.title, couple || undefined, {
           couple: couple || undefined,
           weddingDate: date || undefined,
           styleLabel: WEDDING_STYLE_LABEL[profile.weddingStyle],
-          cover: {
-            docType: meta.title,
-            docSub: docSubs[type],
-            groomName: groomName || undefined,
-            brideName: brideName || undefined,
-            couple: couple || undefined,
-            weddingDate: date || undefined,
-            styleLabel: WEDDING_STYLE_LABEL[profile.weddingStyle],
-          },
         });
         html += `<div class="pdf-info-grid">
           <div class="pdf-info-item"><div class="pdf-info-label">날짜</div><div class="pdf-info-value">${date || "-"}</div></div>

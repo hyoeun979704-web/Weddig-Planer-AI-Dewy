@@ -15,8 +15,6 @@ import {
   type SdmeParams,
   type TimelineParams,
   type BudgetParams,
-  type SavableBudgetPlan,
-  type SavableTimelinePlan,
 } from "@/lib/chatbot/handlers/quickQuestionHandlers";
 
 export type StructuredHandler =
@@ -25,20 +23,7 @@ export type StructuredHandler =
   | { kind: "timeline"; params: TimelineParams }
   | { kind: "budget"; params: BudgetParams };
 
-/**
- * Optional structured plan attached to an assistant message. AIPlanner uses
- * it to render an "내 예산/일정에 저장하기" CTA below the bubble so the user
- * can apply the AI's recommendation to their real data with one tap.
- */
-export type AssistantMessagePlan =
-  | { kind: "budget"; data: SavableBudgetPlan }
-  | { kind: "timeline"; data: SavableTimelinePlan };
-
-export type Message = {
-  role: "user" | "assistant";
-  content: string;
-  plan?: AssistantMessagePlan;
-};
+type Message = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/ai-planner`;
 
@@ -314,32 +299,21 @@ export const useAIPlanner = () => {
 
     try {
       let reply: string;
-      let plan: AssistantMessagePlan | undefined;
       switch (handler.kind) {
-        case "venue": {
-          const r = await handleVenueRecommendation(handler.params);
-          reply = r.text;
+        case "venue":
+          reply = await handleVenueRecommendation(handler.params);
           break;
-        }
-        case "sdme": {
-          const r = await handleSdmeGuide(handler.params);
-          reply = r.text;
+        case "sdme":
+          reply = await handleSdmeGuide(handler.params);
           break;
-        }
-        case "timeline": {
-          const r = await handleTimelinePlanning(handler.params);
-          reply = r.text;
-          if (r.plan) plan = { kind: "timeline", data: r.plan };
+        case "timeline":
+          reply = await handleTimelinePlanning(handler.params);
           break;
-        }
-        case "budget": {
-          const r = await handleBudgetPlanning(handler.params);
-          reply = r.text;
-          if (r.plan) plan = { kind: "budget", data: r.plan };
+        case "budget":
+          reply = await handleBudgetPlanning(handler.params);
           break;
-        }
       }
-      setMessages(prev => [...prev, { role: "assistant", content: reply, plan }]);
+      setMessages(prev => [...prev, { role: "assistant", content: reply }]);
     } catch (e) {
       console.error("Structured handler error:", e);
       toast({

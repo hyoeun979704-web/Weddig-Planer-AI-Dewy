@@ -3,8 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { getRegionalAvgWithMeal, regionalAverages, regions, type BudgetCategory } from "@/data/budgetData";
-import type { WeddingStyle } from "@/lib/weddingStyle";
+import { regionalAverages, regions, type BudgetCategory } from "@/data/budgetData";
 
 export interface BudgetSettings {
   id: string;
@@ -44,7 +43,7 @@ export interface BudgetSummary {
   paidByTotals: Record<string, number>;
 }
 
-export function useBudget(profileRegionKey?: string, weddingStyle?: WeddingStyle | null) {
+export function useBudget(profileRegionKey?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -103,14 +102,7 @@ export function useBudget(profileRegionKey?: string, weddingStyle?: WeddingStyle
   }, [items, settings?.total_budget]);
 
   const effectiveRegion = settings?.region || profileRegionKey || "seoul";
-  // Style-aware regional average. When weddingStyle is small/self we apply
-  // category multipliers (venue·sdm·etc) so the "지역 평균 vs 내 예산"
-  // comparison reflects the user's actual scope. Falls back to general
-  // (un-adjusted) when style is null/general/custom or settings missing.
-  const styleDefaultGuests = weddingStyle === "self" ? 25 : weddingStyle === "small" ? 50 : 200;
-  const effectiveGuestCount = settings?.guest_count ?? styleDefaultGuests;
-  const styleAvg = getRegionalAvgWithMeal(effectiveRegion, effectiveGuestCount, weddingStyle ?? undefined);
-  const regionalAverage = styleAvg ?? regionalAverages[effectiveRegion] ?? regionalAverages.seoul;
+  const regionalAverage = regionalAverages[effectiveRegion] || regionalAverages.seoul;
 
   const saveSettings = useMutation({
     mutationFn: async (s: Partial<BudgetSettings>) => {
@@ -129,27 +121,21 @@ export function useBudget(profileRegionKey?: string, weddingStyle?: WeddingStyle
         if (error) throw error;
       }
 
-      // Mirror shared profile fields (region, guest_count) into
-      // user_wedding_settings so AI Planner and Schedule see the same
-      // canonical values without re-asking. region is stored as the
-      // official long label there ("서울특별시") to match Schedule's
-      // region picker. Update-only: we don't insert a settings row here
-      // because that would skip onboarding (planning_stage, schedule
-      // template seeding, etc.). If the user hasn't onboarded yet,
-      // they'll do it via WeddingInfoSetupModal.
-      const mirror: Record<string, unknown> = {};
+      // Mirror region into user_wedding_settings using the official long
+      // label so the Schedule page's region picker (which lists long forms)
+      // matches. Update-only: we deliberately don't insert a settings row
+      // here because that would skip the onboarding flow (planning_stage,
+      // schedule template seeding, etc.). If the user hasn't onboarded yet,
+      // they'll do it via WeddingInfoSetupModal and the region picker there
+      // will use the long form they see in budget anyway.
       if (s.region) {
         const officialLabel = regions[s.region]?.officialLabel;
-        if (officialLabel) mirror.wedding_region = officialLabel;
-      }
-      if (typeof s.guest_count === "number") {
-        mirror.guest_count = s.guest_count;
-      }
-      if (Object.keys(mirror).length > 0) {
-        await supabase
-          .from("user_wedding_settings")
-          .update(mirror as any)
-          .eq("user_id", user.id);
+        if (officialLabel) {
+          await supabase
+            .from("user_wedding_settings")
+            .update({ wedding_region: officialLabel } as any)
+            .eq("user_id", user.id);
+        }
       }
     },
     onSuccess: () => {

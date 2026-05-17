@@ -74,6 +74,11 @@ export interface CurationFactors {
   // self-wedding skips studio/dress/makeup, etc). Videos in these
   // categories are pushed to the bottom — see EXCLUDED_PENALTY.
   excludedCategories: ReadonlyArray<string>;
+  // Categories the user has already finished (venue booked, shoot done,
+  // honeymoon paid for, etc). Videos in these categories are mildly
+  // demoted — still findable, but they shouldn't dominate the feed when
+  // the work is behind the user. See COMPLETED_PENALTY.
+  completedCategories: ReadonlyArray<string>;
   hasSignal: boolean; // false → fall back to popularity sort
 }
 
@@ -83,10 +88,15 @@ export function buildCurationFactors(
 ): CurationFactors {
   const rawPhase = phaseCategoriesFor(daysUntilWedding(profile.weddingDate, now));
   const excluded = profile.excludedCategories ?? [];
-  // Phase boost should never push a category the user explicitly opted out
-  // of — e.g. a D-90 small-wedding user shouldn't see "tailor_shop" boosted.
-  const phase = excluded.length > 0
-    ? rawPhase.filter((c) => !excluded.includes(c))
+  const completed = profile.completedCategories ?? [];
+  // Phase boost should never push a category the user opted out of OR has
+  // already finished — e.g. a D-90 small-wedding user shouldn't see
+  // "tailor_shop" boosted, and a D-200 user whose venue is booked
+  // shouldn't see "wedding_hall" boosted either. The completed-category
+  // penalty below handles ranking; this filter just prevents the
+  // contradictory "boost + penalty on the same video" pile-up.
+  const phase = (excluded.length > 0 || completed.length > 0)
+    ? rawPhase.filter((c) => !excluded.includes(c) && !completed.includes(c))
     : rawPhase;
   // Record<WeddingStyle, ...> covers every enum variant, so no fallback
   // needed — TS guarantees the lookup is total.
@@ -97,12 +107,18 @@ export function buildCurationFactors(
     styleHints: style,
     oppositeHints: opposite,
     excludedCategories: excluded,
+    completedCategories: completed,
     // Personalization activates only when the user has expressed a
-    // preference (date, style, or exclusions). Opposite hints are a
-    // *modifier* on existing ranking — they fire when something else
-    // already triggers scoring, but on their own they shouldn't override
-    // popularity for a brand-new profile that hasn't set anything yet.
-    hasSignal: phase.length > 0 || style.length > 0 || excluded.length > 0,
+    // preference (date, style, exclusions, or completed schedule items).
+    // Opposite hints are a *modifier* on existing ranking — they fire
+    // when something else already triggers scoring, but on their own
+    // they shouldn't override popularity for a brand-new profile that
+    // hasn't set anything yet.
+    hasSignal:
+      phase.length > 0 ||
+      style.length > 0 ||
+      excluded.length > 0 ||
+      completed.length > 0,
   };
 }
 
@@ -119,6 +135,14 @@ const EXCLUDED_PENALTY = -10;
 // promote a viral off-style video above an obscure on-style one — we
 // nudge the order, not suppress.
 const OPPOSITE_HINT_PENALTY = -0.3;
+
+// Moderate demotion for categories the user has finished. Sized so it
+// fully offsets a phase boost (+0.6) and outweighs the recency bonus
+// (+0.15) — a completed-category video stays in the list but sinks
+// below any phase-relevant content of similar popularity. Weaker than
+// EXCLUDED_PENALTY so a viral completed-category video can still rise
+// above an obscure unrelated one (the work is done, not unwanted).
+const COMPLETED_PENALTY = -0.8;
 
 // Higher score = more relevant. Popularity is log-normalized so a 10M-view
 // video can still lose to a 100k-view video that matches the user's phase.
@@ -140,6 +164,17 @@ export function scoreTipVideo(
     const primary = video.categories[0];
     if (primary && factors.excludedCategories.includes(primary)) {
       score += EXCLUDED_PENALTY;
+    }
+  }
+
+  // Same primary-only check as excluded: a video tagged
+  // [studio, wedding_hall, makeup_shop] is "primarily about studios", so
+  // a user who has finished studio gets it demoted even if wedding_hall
+  // is still pending. Keeps the demotion crisp and predictable.
+  if (factors.completedCategories.length > 0) {
+    const primary = video.categories[0];
+    if (primary && factors.completedCategories.includes(primary)) {
+      score += COMPLETED_PENALTY;
     }
   }
 

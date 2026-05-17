@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
@@ -18,6 +18,12 @@ export interface WeddingProfilePrefill {
   // in Schedule, Budget, Home and Tips so the user only sees prep work
   // they actually plan to do.
   excludedCategories: string[];
+  // Distinct category slugs whose schedule items the user has finished
+  // (e.g. ["wedding_hall", "studio"] once the venue is booked and the
+  // shoot is done). Drives tip-feed demotion so already-resolved topics
+  // sink below ones still pending. "general" is filtered out — it
+  // covers too broad a range to be a meaningful "done" signal.
+  completedCategories: string[];
   isLoaded: boolean;
 }
 
@@ -29,7 +35,7 @@ export interface WeddingProfilePrefill {
  */
 export const useWeddingProfile = (): WeddingProfilePrefill => {
   const { user } = useAuth();
-  const { weddingSettings, isLoading: weddingLoading } = useWeddingSchedule();
+  const { weddingSettings, scheduleItems, isLoading: weddingLoading } = useWeddingSchedule();
   const budget = useBudget();
   const [displayName, setDisplayName] = useState<string>("");
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -62,20 +68,29 @@ export const useWeddingProfile = (): WeddingProfilePrefill => {
 
   const settings = budget.settings;
 
+  const completedCategories = useMemo(() => {
+    const seen = new Set<string>();
+    for (const item of scheduleItems) {
+      if (!item.completed) continue;
+      const c = item.category;
+      // "general" tasks span vision/budget/RSVP/etc — too broad to use as
+      // a demotion signal for an entire content category.
+      if (!c || c === "general") continue;
+      seen.add(c);
+    }
+    return Array.from(seen);
+  }, [scheduleItems]);
+
   return {
     weddingDate: weddingSettings.wedding_date ?? "",
     region: settings?.region || weddingSettings.wedding_region || "seoul",
     totalBudget: settings?.total_budget ?? 0,
-    // Prefer the unified profile field; fall back to legacy budget_settings,
-    // then to a sensible default. After migration 20260516170000 the two
-    // should always be in sync, but during the transition / for users who
-    // entered the value only in Budget pre-unification, settings is still
-    // authoritative for an existing row.
-    guestCount: settings?.guest_count ?? (weddingSettings as any).guest_count ?? 200,
+    guestCount: settings?.guest_count ?? 200,
     displayName,
     partnerName: weddingSettings.partner_name ?? "",
     weddingStyle: weddingSettings.wedding_style ?? "general",
     excludedCategories: weddingSettings.excluded_categories ?? [],
+    completedCategories,
     isLoaded: !weddingLoading && profileLoaded,
   };
 };

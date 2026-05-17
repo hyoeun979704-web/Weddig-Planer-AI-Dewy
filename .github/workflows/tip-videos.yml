@@ -1,12 +1,15 @@
 name: Collect Tip Videos
 
-# YouTube wedding tip video collector. Manual trigger + weekly cron.
-# Quota footprint per full run: ~3,600 units (well within 10k/day free tier).
+# YouTube wedding tip video collector. Manual trigger + daily cron.
+# Quota footprint per full run: ~9,800 units (98 seeds × 100 units/search).
+# That nearly saturates the 10k/day free tier, so a single daily run is the
+# safe ceiling. If a paid quota gets attached later, a second 18:00 KST run
+# can be added by appending another schedule line (UTC 09:00).
 
 on:
   schedule:
-    # 04:00 KST every Monday (Sunday 19:00 UTC)
-    - cron: "0 19 * * 0"
+    # 06:00 KST every day (21:00 UTC the previous day)
+    - cron: "0 21 * * *"
   workflow_dispatch:
     inputs:
       category:

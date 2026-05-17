@@ -31,8 +31,8 @@ const BudgetCategoryDetail = () => {
   const cat = category as BudgetCategory;
   const { defaultRegion } = useDefaultRegion();
   const profileRegionKey = resolveRegionKey(defaultRegion);
+  const { settings, items, summary, regionalAverage, updateItem, deleteItem, addItem } = useBudget(profileRegionKey);
   const { weddingSettings } = useWeddingSchedule();
-  const { settings, items, summary, regionalAverage, updateItem, deleteItem, addItem } = useBudget(profileRegionKey, weddingSettings.wedding_style);
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<BudgetItem | null>(null);

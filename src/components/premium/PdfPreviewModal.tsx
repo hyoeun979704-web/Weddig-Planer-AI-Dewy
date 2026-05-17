@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
+import DOMPurify from "dompurify";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { downloadPdf, safeSanitize } from "@/lib/pdfGenerator";
+import { downloadPdf } from "@/lib/pdfGenerator";
 import { toast } from "sonner";
 
 interface PdfPreviewModalProps {
@@ -33,8 +34,7 @@ export const PdfPreviewModal = ({ open, onClose, html, filename, title }: PdfPre
     if (open) setIframeHeight(800);
   }, [open, html]);
 
-  // downloadPdf와 동일한 safeSanitize 사용 → <style> 태그를 sanitize 우회로 보존
-  const docHtml = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=${FRAME_BASE_WIDTH}"><base target="_blank"></head><body style="margin:0;background:#ffffff;">${safeSanitize(html)}</body></html>`;
+  const docHtml = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=${FRAME_BASE_WIDTH}"><base target="_blank"></head><body style="margin:0;background:#ffffff;">${DOMPurify.sanitize(html)}</body></html>`;
 
   const measure = () => {
     const iframe = iframeRef.current;

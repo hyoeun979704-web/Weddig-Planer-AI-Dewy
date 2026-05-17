@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { trackEvent } from "@/lib/track";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { ArrowRight, BookOpen, Check, Flame, Sparkles, Timer } from "lucide-react";
@@ -62,21 +61,7 @@ const PersonaDashboard = () => {
 
   const [missionProgress, setMissionProgress] = useState(() => loadMissionProgress());
 
-  // 측정: 대시보드가 실제 화면에 노출된 시점에만 1회 기록. user/onboarded
-  // 가 false 인 동안엔 발화하지 않는다.
-  const isVisible = !!user && insights.isLoaded && insights.hasOnboarded;
-  useEffect(() => {
-    if (isVisible) {
-      trackEvent("persona_dashboard_view", {
-        style: insights.weddingStyle,
-        days_until_wedding: insights.daysUntilWedding,
-        progress_percent: insights.progressPercent,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isVisible]);
-
-  if (!isVisible) {
+  if (!user || !insights.isLoaded || !insights.hasOnboarded) {
     return null;
   }
 
