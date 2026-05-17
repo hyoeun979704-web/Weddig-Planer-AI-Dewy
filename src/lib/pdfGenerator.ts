@@ -128,6 +128,96 @@ const PDF_STYLES = `
   /* Footer */
   .pdf-footer { text-align: center; font-size: 9.5px; color: #9ca3af; padding-top: 22px; border-top: 1px solid #f3f4f6; margin-top: 32px; line-height: 1.7; }
   .pdf-footer-brand { font-family: 'Playfair Display', serif; color: #F4A7B9; font-weight: 700; letter-spacing: 0.5px; }
+
+  /* ============ Dashboard layout (one-page infographic) ============ */
+  .pdf-dash { width: 595px; min-height: 842px; margin: 0 auto; background: #ffffff; display: grid; grid-template-columns: 120px 1fr; }
+
+  /* Sidebar with vertical branding */
+  .pdf-dash-side { background: linear-gradient(180deg, #fef8fa 0%, #fff5f7 100%); padding: 36px 18px; display: flex; flex-direction: column; justify-content: space-between; position: relative; border-right: 1px solid #fce4ec; }
+  .pdf-dash-side-top { }
+  .pdf-dash-brand-name { font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 600; color: #1f2937; line-height: 1.05; letter-spacing: -0.5px; }
+  .pdf-dash-brand-tag { font-family: 'Cormorant Garamond', serif; font-size: 10.5px; color: #9ca3af; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 22px; }
+  .pdf-dash-side-bottom { font-family: 'Cormorant Garamond', serif; font-size: 10px; color: #9ca3af; letter-spacing: 2px; line-height: 1.6; font-style: italic; }
+  .pdf-dash-side-deco { position: absolute; right: 14px; top: 50%; width: 1px; height: 80px; background: linear-gradient(180deg, transparent, #F4A7B9, transparent); transform: translateY(-50%); }
+
+  /* Main content area */
+  .pdf-dash-main { padding: 30px 32px 24px; }
+
+  /* Top meta row (dates) */
+  .pdf-dash-meta { display: flex; justify-content: flex-end; align-items: center; gap: 14px; font-family: 'Cormorant Garamond', serif; font-size: 11px; color: #9ca3af; letter-spacing: 1.5px; margin-bottom: 18px; }
+  .pdf-dash-meta-strong { color: #6b7280; font-weight: 600; }
+
+  /* Title section */
+  .pdf-dash-title { font-family: 'Noto Serif KR', serif; font-size: 22px; font-weight: 700; color: #1f2937; margin: 0 0 6px; letter-spacing: -0.5px; }
+  .pdf-dash-desc { font-size: 11px; color: #6b7280; line-height: 1.6; margin: 0 0 18px; }
+
+  /* Info pills row */
+  .pdf-dash-pills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 16px; }
+  .pdf-dash-pill { background: linear-gradient(135deg, #fef8fa, #ffffff); border: 1px solid #fce4ec; border-radius: 10px; padding: 9px 10px; display: flex; align-items: center; gap: 7px; }
+  .pdf-dash-pill-icon { width: 22px; height: 22px; border-radius: 50%; background: #fce4ec; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+  .pdf-dash-pill-text { display: flex; flex-direction: column; min-width: 0; }
+  .pdf-dash-pill-label { font-size: 8px; color: #9ca3af; letter-spacing: 0.3px; text-transform: uppercase; font-family: 'Cormorant Garamond', serif; line-height: 1; margin-bottom: 2px; }
+  .pdf-dash-pill-value { font-size: 11px; font-weight: 700; color: #1f2937; line-height: 1.1; }
+
+  /* Stat cards row (3 big colored cards) */
+  .pdf-dash-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 18px; }
+  .pdf-dash-stat { padding: 14px 12px; border-radius: 12px; position: relative; overflow: hidden; }
+  .pdf-dash-stat-pink { background: linear-gradient(135deg, #fde2e9 0%, #fbcfd8 100%); }
+  .pdf-dash-stat-amber { background: linear-gradient(135deg, #fff4d6 0%, #ffe7a8 100%); }
+  .pdf-dash-stat-mint { background: linear-gradient(135deg, #d4f4e2 0%, #b6ecd0 100%); }
+  .pdf-dash-stat-icon { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; font-size: 16px; margin-bottom: 8px; }
+  .pdf-dash-stat-value { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 700; color: #1f2937; line-height: 1; margin-bottom: 3px; letter-spacing: -0.5px; }
+  .pdf-dash-stat-label { font-size: 10px; color: #6b7280; font-weight: 500; }
+
+  /* Two-column grid card area */
+  .pdf-dash-row { display: grid; gap: 10px; margin-bottom: 12px; }
+  .pdf-dash-row-2 { grid-template-columns: 1fr 1fr; }
+  .pdf-dash-row-3 { grid-template-columns: 2fr 1fr; }
+
+  .pdf-dash-card { background: #ffffff; border: 1px solid #f3f4f6; border-radius: 12px; padding: 14px 14px 12px; }
+  .pdf-dash-card-title { font-family: 'Noto Serif KR', serif; font-size: 12px; font-weight: 700; color: #1f2937; margin: 0 0 9px; padding-bottom: 6px; border-bottom: 1px solid #fce4ec; display: flex; align-items: center; gap: 6px; }
+  .pdf-dash-card-title::before { content: ''; width: 4px; height: 12px; background: linear-gradient(180deg, #F4A7B9, #ec4899); border-radius: 2px; }
+
+  /* Compact table inside dashboard cards */
+  .pdf-dash-table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+  .pdf-dash-table th { padding: 6px 6px; text-align: left; font-weight: 600; color: #9ca3af; font-size: 8.5px; letter-spacing: 0.3px; text-transform: uppercase; border-bottom: 1px solid #f3f4f6; font-family: 'Cormorant Garamond', serif; }
+  .pdf-dash-table td { padding: 7px 6px; font-size: 10px; color: #374151; border-bottom: 1px solid #fafafa; }
+  .pdf-dash-table .total td { font-weight: 700; color: #1f2937; background: #fef8fa; border-top: 1.5px solid #F4A7B9; }
+  .pdf-dash-table .diff-pos { color: #ef4444; font-weight: 600; }
+  .pdf-dash-table .diff-neg { color: #10b981; font-weight: 600; }
+
+  /* Category share bars (compact horizontal) */
+  .pdf-dash-share { padding: 2px 0; }
+  .pdf-dash-share-row { display: grid; grid-template-columns: 76px 1fr 44px; gap: 8px; align-items: center; margin-bottom: 7px; font-size: 10px; }
+  .pdf-dash-share-label { color: #374151; font-weight: 500; }
+  .pdf-dash-share-track { height: 7px; background: #f9fafb; border-radius: 4px; overflow: hidden; }
+  .pdf-dash-share-fill { height: 100%; border-radius: 4px; }
+  .pdf-dash-share-pct { text-align: right; font-family: 'Cormorant Garamond', serif; font-weight: 700; color: #be185d; font-size: 11px; }
+
+  /* Big number block (예산 건강도 large display) */
+  .pdf-dash-big { text-align: center; padding: 14px 8px 10px; }
+  .pdf-dash-big-icon { width: 38px; height: 38px; border-radius: 50%; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .pdf-dash-big-value { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 700; color: #be185d; line-height: 1; letter-spacing: -1px; }
+  .pdf-dash-big-suffix { font-size: 14px; color: #9ca3af; font-weight: 500; }
+  .pdf-dash-big-label { font-size: 10px; color: #6b7280; margin-top: 4px; font-weight: 600; }
+
+  /* Mini donut (smaller than regular) */
+  .pdf-dash-mini-donut { display: flex; align-items: center; gap: 10px; }
+  .pdf-dash-mini-donut svg { width: 80px; height: 80px; flex-shrink: 0; }
+  .pdf-dash-mini-donut .legend { flex: 1; }
+  .pdf-dash-mini-donut .legend-row { display: grid; grid-template-columns: 10px 1fr auto; gap: 6px; align-items: center; font-size: 10px; padding: 2px 0; }
+  .pdf-dash-mini-donut .legend-dot { width: 9px; height: 9px; border-radius: 2px; }
+  .pdf-dash-mini-donut .legend-label { color: #374151; }
+  .pdf-dash-mini-donut .legend-pct { font-family: 'Cormorant Garamono', serif; font-weight: 700; color: #be185d; font-size: 11px; }
+
+  /* Insight strip */
+  .pdf-dash-insight { background: linear-gradient(135deg, #fff8e1, #fffaf0); border: 1px solid #fde68a; border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; }
+  .pdf-dash-insight-title { font-size: 11px; font-weight: 700; color: #92400e; margin: 0 0 6px; display: flex; align-items: center; gap: 4px; }
+  .pdf-dash-insight-body { font-size: 10.5px; color: #78350f; line-height: 1.6; }
+
+  /* Dashboard footer (full width) */
+  .pdf-dash-footer { padding: 14px 32px 20px 152px; border-top: 1px solid #f3f4f6; font-size: 9px; color: #9ca3af; display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
+  .pdf-dash-footer-brand { font-family: 'Playfair Display', serif; color: #F4A7B9; font-weight: 700; }
 `;
 
 // ---------------------------------------------------------------------------
@@ -336,6 +426,159 @@ export function pdfDonut(items: DonutItem[]): string {
     .join("");
 
   return `<div class="pdf-donut-wrap">${svg}<div class="pdf-donut-legend">${legend}</div></div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard Layout — 한 페이지 인포그래픽
+// 좌측 세로 브랜딩 + 우측 다단 그리드 (예산 리포트·견적서용)
+// ---------------------------------------------------------------------------
+export interface DashboardOptions {
+  brandName?: string[];          // ["Dewy", "Wedding", "Planner"] 같이 줄별 분리
+  brandTag?: string;             // "Wedding Document"
+  brandBottom?: string;          // "For the most precious day"
+  publishDate?: string;          // 발행일 (YYYY.MM.DD)
+  weddingDate?: string;          // 예식일 (YYYY.MM.DD)
+  title: string;                 // "웨딩 예산 분석 리포트"
+  description?: string;          // 한 줄 설명
+  pills?: { icon: string; label: string; value: string }[];     // 상단 정보 칩 (4개 권장)
+  stats?: { tone: "pink" | "amber" | "mint"; icon: string; value: string; label: string }[];   // 큰 컬러 카드 (3개 권장)
+  body: string;                  // 본문 카드들 (pdfDashRow + pdfDashCard로 구성)
+  insight?: { title: string; body: string };
+}
+
+export const pdfDashCard = (title: string, body: string): string =>
+  `<div class="pdf-dash-card"><div class="pdf-dash-card-title">${title}</div>${body}</div>`;
+
+export const pdfDashRow = (cards: string[], variant: 2 | 3 = 2): string =>
+  `<div class="pdf-dash-row pdf-dash-row-${variant}">${cards.join("")}</div>`;
+
+/** 컴팩트 카테고리 비중 막대 (대시보드용) */
+export const pdfDashShareBars = (
+  items: { label: string; pct: number; color?: string }[],
+): string => {
+  const palette = ["#F4A7B9", "#ec4899", "#fb7185", "#f59e0b", "#fbbf24", "#34d399", "#60a5fa", "#a78bfa", "#fda4af", "#fcd34d"];
+  return `<div class="pdf-dash-share">${items
+    .map((it, idx) => {
+      const color = it.color ?? palette[idx % palette.length];
+      const pct = Math.max(0, Math.min(100, it.pct));
+      return `<div class="pdf-dash-share-row">
+        <div class="pdf-dash-share-label">${it.label}</div>
+        <div class="pdf-dash-share-track"><div class="pdf-dash-share-fill" style="width:${pct}%;background:linear-gradient(90deg,${color},${color}cc);"></div></div>
+        <div class="pdf-dash-share-pct">${pct.toFixed(1)}%</div>
+      </div>`;
+    })
+    .join("")}</div>`;
+};
+
+/** 대시보드용 미니 도넛 (작은 사이즈 + 우측 범례) */
+export const pdfDashMiniDonut = (items: DonutItem[]): string => {
+  const total = items.reduce((s, i) => s + i.value, 0);
+  if (total <= 0) return "";
+  const cx = 40, cy = 40, r = 28, stroke = 14;
+  const circ = 2 * Math.PI * r;
+  let offset = 0;
+  const segs: string[] = [];
+  items.forEach((it, idx) => {
+    const color = it.color ?? DONUT_DEFAULT_COLORS[idx % DONUT_DEFAULT_COLORS.length];
+    const portion = it.value / total;
+    const dash = circ * portion;
+    segs.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="transparent" stroke="${color}" stroke-width="${stroke}" stroke-dasharray="${dash} ${circ - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})" />`);
+    offset += dash;
+  });
+  const svg = `<svg viewBox="0 0 80 80">${segs.join("")}</svg>`;
+  const legend = items
+    .map((it, idx) => {
+      const color = it.color ?? DONUT_DEFAULT_COLORS[idx % DONUT_DEFAULT_COLORS.length];
+      const pct = Math.round((it.value / total) * 100);
+      return `<div class="legend-row">
+        <span class="legend-dot" style="background:${color};"></span>
+        <span class="legend-label">${it.label}</span>
+        <span class="legend-pct">${pct}%</span>
+      </div>`;
+    })
+    .join("");
+  return `<div class="pdf-dash-mini-donut">${svg}<div class="legend">${legend}</div></div>`;
+};
+
+/** 큰 숫자 디스플레이 (예산 건강도 등) */
+export const pdfDashBigNumber = (opts: {
+  icon: string;
+  iconBg: string;
+  value: string;
+  suffix?: string;
+  label: string;
+}): string => {
+  return `<div class="pdf-dash-big">
+    <div class="pdf-dash-big-icon" style="background:${opts.iconBg};">${opts.icon}</div>
+    <div class="pdf-dash-big-value">${opts.value}${opts.suffix ? `<span class="pdf-dash-big-suffix">${opts.suffix}</span>` : ""}</div>
+    <div class="pdf-dash-big-label">${opts.label}</div>
+  </div>`;
+};
+
+export function generatePdfDashboard(opts: DashboardOptions): string {
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
+  const pubDate = opts.publishDate || todayStr;
+
+  const brandLines = opts.brandName || ["Dewy", "Wedding", "Planner"];
+  const brandHtml = brandLines.map((l) => `<div class="pdf-dash-brand-name">${l}</div>`).join("");
+
+  const pillsHtml = opts.pills && opts.pills.length > 0
+    ? `<div class="pdf-dash-pills">${opts.pills.map((p) => `
+        <div class="pdf-dash-pill">
+          <div class="pdf-dash-pill-icon">${p.icon}</div>
+          <div class="pdf-dash-pill-text">
+            <div class="pdf-dash-pill-label">${p.label}</div>
+            <div class="pdf-dash-pill-value">${p.value}</div>
+          </div>
+        </div>`).join("")}</div>`
+    : "";
+
+  const statsHtml = opts.stats && opts.stats.length > 0
+    ? `<div class="pdf-dash-stats">${opts.stats.map((s) => `
+        <div class="pdf-dash-stat pdf-dash-stat-${s.tone}">
+          <div class="pdf-dash-stat-icon">${s.icon}</div>
+          <div class="pdf-dash-stat-value">${s.value}</div>
+          <div class="pdf-dash-stat-label">${s.label}</div>
+        </div>`).join("")}</div>`
+    : "";
+
+  const insightHtml = opts.insight
+    ? `<div class="pdf-dash-insight">
+        <div class="pdf-dash-insight-title">💡 ${opts.insight.title}</div>
+        <div class="pdf-dash-insight-body">${opts.insight.body}</div>
+      </div>`
+    : "";
+
+  return `
+    <style>${PDF_STYLES}</style>
+    <div class="pdf-dash">
+      <aside class="pdf-dash-side">
+        <div class="pdf-dash-side-top">
+          ${brandHtml}
+          ${opts.brandTag ? `<div class="pdf-dash-brand-tag">${opts.brandTag}</div>` : ""}
+        </div>
+        <div class="pdf-dash-side-bottom">${opts.brandBottom || "For the most precious day"}</div>
+        <div class="pdf-dash-side-deco"></div>
+      </aside>
+      <main class="pdf-dash-main">
+        <div class="pdf-dash-meta">
+          <span>${pubDate}</span>
+          ${opts.weddingDate ? `<span>·</span><span class="pdf-dash-meta-strong">${opts.weddingDate}</span>` : ""}
+        </div>
+        <h1 class="pdf-dash-title">${opts.title}</h1>
+        ${opts.description ? `<p class="pdf-dash-desc">${opts.description}</p>` : ""}
+        ${pillsHtml}
+        ${statsHtml}
+        ${opts.body}
+        ${insightHtml}
+      </main>
+    </div>
+    <div class="pdf-dash-footer">
+      <span><span class="pdf-dash-footer-brand">Dewy</span> Wedding Planner</span>
+      <span>dewywedding.com · 본 문서는 참고용 자료입니다</span>
+    </div>
+  `;
 }
 
 // ---------------------------------------------------------------------------
