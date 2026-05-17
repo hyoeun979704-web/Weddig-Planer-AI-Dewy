@@ -2,21 +2,18 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useState } from "react";
 import { Loader2, Eye } from "lucide-react";
 import {
-  generatePdfHeader,
-  generatePdfFooter,
-  pdfInfoGrid,
-  pdfStatRow,
-  pdfSection,
-  pdfBarChart,
-  pdfDonut,
-  pdfDivider,
+  generatePdfDashboard,
+  pdfDashCard,
+  pdfDashRow,
+  pdfDashShareBars,
+  pdfDashMiniDonut,
+  pdfDashBigNumber,
 } from "@/lib/pdfGenerator";
 import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { useBudget } from "@/hooks/useBudget";
-import { categories, categoryKeys as ALL_CATEGORY_KEYS, regions, getRegionalAvgWithMeal, savingTips, type BudgetCategory } from "@/data/budgetData";
+import { categories, categoryKeys as ALL_CATEGORY_KEYS, regions, getRegionalAvgWithMeal, type BudgetCategory } from "@/data/budgetData";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
-import { WEDDING_STYLE_LABEL } from "@/lib/weddingStyle";
 import { toast } from "sonner";
 
 interface BudgetReportSheetProps {
@@ -68,111 +65,44 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       const healthColor = healthScore >= 70 ? "#10b981" : healthScore >= 55 ? "#f59e0b" : "#ef4444";
 
       const couple = profile.displayName && profile.partnerName
-        ? `${profile.displayName} ♥ ${profile.partnerName}`
+        ? `${profile.displayName} & ${profile.partnerName}`
         : undefined;
-      const styleLabel = WEDDING_STYLE_LABEL[profile.weddingStyle];
-      let html = generatePdfHeader(
-        "웨딩 예산 분석 리포트",
-        `${regionLabel} · 총 예산 ${totalBudget.toLocaleString()}만원 · 기록 ${items.length}건`,
-        {
-          couple,
-          weddingDate: profile.weddingDate || undefined,
-          styleLabel,
-          cover: {
-            docType: "웨딩 예산 분석 리포트",
-            docSub: `두 분의 예산·지출 데이터를 ${regionLabel} 평균과 비교하여 작성된 맞춤 분석 자료입니다.`,
-            couple,
-            weddingDate: profile.weddingDate || undefined,
-            styleLabel,
-          },
-        },
-      );
 
-      // Overview info grid
-      html += pdfInfoGrid([
-        { label: "지역", value: regionLabel },
-        { label: "총 예산", value: `${totalBudget.toLocaleString()}만원` },
-        { label: "총 지출", value: `${summary.totalSpent.toLocaleString()}만원` },
-        { label: "남은 예산", value: `${remaining.toLocaleString()}만원` },
-        ...(daysLeft !== null ? [{ label: "결혼식까지", value: `D-${daysLeft}` }] : []),
-        { label: "예산 사용률", value: `${usagePct}%` },
-      ]);
-
-      // Stat row: at-a-glance metrics
-      html += pdfStatRow([
-        { value: `${healthScore}점`, label: `예산 건강도 (${healthLabel})` },
-        { value: `${overCats.length}개`, label: "초과 카테고리" },
-        { value: `${items.length}건`, label: "기록된 항목" },
-      ]);
-
-      // Category breakdown
-      let catTable = `<table class="pdf-table"><thead><tr><th>카테고리</th><th>예산</th><th>지출</th><th>사용률</th><th>지역 평균</th><th>평균 대비</th></tr></thead><tbody>`;
-      for (const key of categoryKeys) {
+      // ============ 카테고리별 지출 표 (대시보드 컴팩트 버전) ============
+      let catTable = `<table class="pdf-dash-table"><thead><tr><th>카테고리</th><th>예산</th><th>지출</th><th>사용률</th><th>평균대비</th></tr></thead><tbody>`;
+      const visibleCats = categoryKeys.filter((k) => (catBudgets[k] || 0) > 0 || (summary.categoryTotals[k] || 0) > 0);
+      for (const key of visibleCats.length > 0 ? visibleCats : categoryKeys) {
         const spent = summary.categoryTotals[key] || 0;
         const budget = catBudgets[key] || 0;
         const pct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
         const avgVal = avg ? (avg as any)[key] : 0;
         const diff = spent - avgVal;
-        const diffLabel = diff > 0 ? `+${diff}만원` : diff < 0 ? `${diff}만원` : "동일";
-        catTable += `<tr><td>${categories[key].emoji} ${categories[key].label}</td><td>${budget}만원</td><td>${spent}만원</td><td>${pct}%</td><td>${avgVal}만원</td><td style="color:${diff > 0 ? '#ef4444' : '#10b981'};font-weight:600">${diffLabel}</td></tr>`;
+        const diffCls = diff > 0 ? "diff-pos" : diff < 0 ? "diff-neg" : "";
+        const diffLabel = diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : "0";
+        catTable += `<tr>
+          <td>${categories[key].emoji} ${categories[key].label}</td>
+          <td>${budget}</td>
+          <td>${spent}</td>
+          <td>${pct}%</td>
+          <td class="${diffCls}">${diffLabel}만원</td>
+        </tr>`;
       }
-      catTable += `<tr class="total-row"><td>합계</td><td>${totalBudget}만원</td><td>${summary.totalSpent}만원</td><td>${usagePct}%</td><td>${avg?.total || "-"}만원</td><td></td></tr></tbody></table>`;
-      // 막대 차트 - 예산 대비 지출 비교
-      const spendBars = pdfBarChart(
-        categoryKeys
-          .filter((k) => (catBudgets[k] || 0) > 0 || (summary.categoryTotals[k] || 0) > 0)
-          .map((k) => {
-            const spent = summary.categoryTotals[k] || 0;
-            const budget = catBudgets[k] || 0;
-            const ratio = budget > 0 ? Math.min(1.2, spent / budget) : 0;
-            return {
-              label: `${categories[k].emoji} ${categories[k].label}`,
-              value: spent,
-              ratio,
-              displayValue: `${spent}/${budget}만원`,
-            };
-          }),
+      catTable += `<tr class="total"><td>합계</td><td>${totalBudget}</td><td>${summary.totalSpent}</td><td>${usagePct}%</td><td></td></tr></tbody></table>`;
+
+      // ============ 카테고리별 지출 비중 (막대) ============
+      const totalSpentForShare = summary.totalSpent || 1;
+      const shareBars = pdfDashShareBars(
+        (visibleCats.length > 0 ? visibleCats : categoryKeys.slice(0, 6))
+          .filter((k) => (summary.categoryTotals[k] || 0) > 0)
+          .sort((a, b) => (summary.categoryTotals[b] || 0) - (summary.categoryTotals[a] || 0))
+          .slice(0, 8)
+          .map((k) => ({
+            label: `${categories[k].emoji} ${categories[k].label}`,
+            pct: ((summary.categoryTotals[k] || 0) / totalSpentForShare) * 100,
+          })),
       );
-      html += pdfSection("📊 카테고리별 지출 현황", catTable + spendBars);
 
-      // Health score badge area
-      html += `<div class="pdf-highlight" style="border-left:4px solid ${healthColor};padding-left:14px;">
-        <div style="font-size:11px;color:#6b7280;margin-bottom:4px;">예산 건강도</div>
-        <div style="font-size:18px;font-weight:700;color:${healthColor};">${healthScore}점 · ${healthLabel}</div>
-        <div style="font-size:10.5px;color:#6b7280;margin-top:6px;line-height:1.6;">
-          ${
-            healthScore >= 85
-              ? "초과 카테고리 없이 평균 대비 안정적으로 관리 중이에요."
-              : healthScore >= 70
-                ? "전체적으로 양호하지만 일부 카테고리에 주의가 필요합니다."
-                : healthScore >= 55
-                  ? "초과 카테고리가 있어요. 잔여 예산을 재배분해보세요."
-                  : "예산 재조정이 시급합니다. 우선순위가 낮은 항목부터 정리해보세요."
-          }
-        </div>
-      </div>`;
-
-      // Paid-by split
-      const paidShared = summary.paidByTotals["shared"] || 0;
-      const paidGroom = summary.paidByTotals["groom"] || 0;
-      const paidBride = summary.paidByTotals["bride"] || 0;
-      const splitTotal = paidShared + paidGroom + paidBride;
-      if (splitTotal > 0) {
-        const splitTable = `<table class="pdf-table"><thead><tr><th>구분</th><th>금액</th><th>비율</th></tr></thead><tbody>
-          <tr><td>🤝 공동</td><td>${paidShared}만원</td><td>${Math.round((paidShared / splitTotal) * 100)}%</td></tr>
-          <tr><td>🤵 신랑측</td><td>${paidGroom}만원</td><td>${Math.round((paidGroom / splitTotal) * 100)}%</td></tr>
-          <tr><td>👰 신부측</td><td>${paidBride}만원</td><td>${Math.round((paidBride / splitTotal) * 100)}%</td></tr>
-        </tbody></table>`;
-        const splitDonut = pdfDonut([
-          { label: "🤝 공동", value: paidShared, color: "#F4A7B9" },
-          { label: "🤵 신랑측", value: paidGroom, color: "#60a5fa" },
-          { label: "👰 신부측", value: paidBride, color: "#fb7185" },
-        ]);
-        html += pdfSection("🤝 양가 분담 현황", splitDonut + splitTable);
-        html += pdfDivider();
-      }
-
-      // Balance items
+      // ============ 잔금 일정 ============
       const balanceItems = items
         .filter((i) => i.has_balance && i.balance_amount && i.balance_amount > 0)
         .sort((a, b) => {
@@ -180,70 +110,114 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
           const db = b.balance_due_date ? new Date(b.balance_due_date).getTime() : Infinity;
           return da - db;
         });
+      const totalBalance = balanceItems.reduce((s, i) => s + (i.balance_amount || 0), 0);
+      let balanceCardBody = "";
       if (balanceItems.length > 0) {
-        const totalBalance = balanceItems.reduce((s, i) => s + (i.balance_amount || 0), 0);
-        let balanceTable = `<table class="pdf-table"><thead><tr><th>납부일</th><th>항목</th><th>잔금</th></tr></thead><tbody>`;
-        for (const item of balanceItems) {
-          balanceTable += `<tr><td>${item.balance_due_date || "-"}</td><td>${item.title}</td><td>${item.balance_amount}만원</td></tr>`;
+        balanceCardBody = `<div style="display:flex;gap:14px;margin-bottom:10px;">
+          <div style="flex:1;background:#fef8fa;border-radius:8px;padding:10px 12px;">
+            <div style="font-size:9px;color:#9ca3af;letter-spacing:0.3px;text-transform:uppercase;font-family:'Cormorant Garamond',serif;">납부 예정</div>
+            <div style="font-size:18px;font-weight:700;color:#1f2937;font-family:'Cormorant Garamond',serif;">${balanceItems.length}건</div>
+          </div>
+          <div style="flex:1;background:#fef8fa;border-radius:8px;padding:10px 12px;">
+            <div style="font-size:9px;color:#9ca3af;letter-spacing:0.3px;text-transform:uppercase;font-family:'Cormorant Garamond',serif;">잔금 총액</div>
+            <div style="font-size:18px;font-weight:700;color:#be185d;font-family:'Cormorant Garamond',serif;">${totalBalance.toLocaleString()}만원</div>
+          </div>
+        </div>`;
+        balanceCardBody += `<table class="pdf-dash-table"><tbody>`;
+        for (const item of balanceItems.slice(0, 5)) {
+          balanceCardBody += `<tr>
+            <td style="font-size:9.5px;color:#9ca3af;width:70px;">${item.balance_due_date || "-"}</td>
+            <td>${item.title}</td>
+            <td style="text-align:right;font-weight:600;color:#be185d;">${item.balance_amount}만원</td>
+          </tr>`;
         }
-        balanceTable += `<tr class="total-row"><td>합계</td><td></td><td>${totalBalance}만원</td></tr></tbody></table>`;
-        html += pdfSection("💳 잔금 납부 일정", balanceTable);
+        balanceCardBody += `</tbody></table>`;
+      } else {
+        balanceCardBody = `<div style="font-size:10.5px;color:#9ca3af;text-align:center;padding:20px 0;">예정된 잔금이 없어요.</div>`;
       }
 
-      // Insights & recommendations
+      // ============ 양가 분담 도넛 ============
+      const paidShared = summary.paidByTotals["shared"] || 0;
+      const paidGroom = summary.paidByTotals["groom"] || 0;
+      const paidBride = summary.paidByTotals["bride"] || 0;
+      const splitTotal = paidShared + paidGroom + paidBride;
+      const splitCardBody = splitTotal > 0
+        ? pdfDashMiniDonut([
+            { label: "🤝 공동", value: paidShared, color: "#F4A7B9" },
+            { label: "🤵 신랑측", value: paidGroom, color: "#93c5fd" },
+            { label: "👰 신부측", value: paidBride, color: "#fb7185" },
+          ])
+        : `<div style="font-size:10.5px;color:#9ca3af;text-align:center;padding:20px 0;">분담 데이터가 없어요.</div>`;
+
+      // ============ 예산 건강도 큰 숫자 ============
+      const healthIconBg = healthScore >= 70 ? "#d4f4e2" : healthScore >= 55 ? "#fff4d6" : "#fde2e9";
+      const healthIcon = healthScore >= 70 ? "💚" : healthScore >= 55 ? "⚠️" : "🔴";
+      const healthBigNumber = pdfDashBigNumber({
+        icon: healthIcon,
+        iconBg: healthIconBg,
+        value: String(healthScore),
+        suffix: "점",
+        label: healthLabel,
+      });
+
+      // ============ 진단 및 조언 ============
       const insights: string[] = [];
       const warningInsights: string[] = [];
       for (const key of categoryKeys) {
         const spent = summary.categoryTotals[key] || 0;
         const budget = catBudgets[key] || 0;
         const avgVal = avg ? (avg as any)[key] : 0;
-
         if (budget > 0 && spent > budget) {
-          warningInsights.push(`${categories[key].emoji} ${categories[key].label}: 예산 ${budget}만원 대비 ${spent - budget}만원 초과 (${Math.round((spent / budget) * 100)}%)`);
+          warningInsights.push(`${categories[key].label} 예산 ${spent - budget}만원 초과`);
         } else if (avgVal > 0 && spent > avgVal * 1.15) {
-          insights.push(`${categories[key].label} 지출이 ${regionLabel} 평균보다 ${Math.round(((spent - avgVal) / avgVal) * 100)}% 높아요. 항목을 점검해보세요.`);
+          insights.push(`${categories[key].label} 지출이 평균보다 ${Math.round(((spent - avgVal) / avgVal) * 100)}% 높음`);
         } else if (avgVal > 0 && spent > 0 && spent < avgVal * 0.7) {
-          insights.push(`${categories[key].label}은 평균 대비 ${Math.round(((avgVal - spent) / avgVal) * 100)}% 절약 중이에요.`);
+          insights.push(`${categories[key].label} 평균 대비 ${Math.round(((avgVal - spent) / avgVal) * 100)}% 절약 중`);
         }
       }
       if (overPace) {
-        warningInsights.push(`결혼식까지 ${daysLeft}일 남았는데 예산을 ${usagePct}% 사용했어요. 페이스 조절이 필요해요.`);
+        warningInsights.push(`${daysLeft}일 남았는데 예산 ${usagePct}% 사용 — 페이스 조절 필요`);
       }
       if (insights.length === 0 && warningInsights.length === 0) {
-        insights.push("전체적으로 평균 범위 안에서 잘 관리되고 있어요. 👍");
+        insights.push("전체적으로 평균 범위 안에서 잘 관리되고 있어요 👍");
       }
+      const insightBody = [...warningInsights, ...insights].slice(0, 4).join(" · ");
 
-      let insightHtml = "";
-      for (const w of warningInsights) insightHtml += `<div class="pdf-warning">${w}</div>`;
-      for (const tip of insights) insightHtml += `<div class="pdf-tip">${tip}</div>`;
-      html += pdfSection("💡 진단 및 조언", insightHtml);
+      // ============ 대시보드 조립 ============
+      const body = ""
+        + pdfDashRow([
+            pdfDashCard("📊 카테고리별 지출 현황", catTable),
+            pdfDashCard("🎯 카테고리별 지출 비중", shareBars),
+          ], 3)
+        + pdfDashRow([
+            pdfDashCard("💳 잔금 일정", balanceCardBody),
+            pdfDashCard("💯 예산 건강도", healthBigNumber),
+          ], 3)
+        + pdfDashRow([
+            pdfDashCard("🤝 양가 분담 현황", splitCardBody),
+          ], 2);
 
-      // Recommended saving tips (top categories)
-      const overOrNear = categoryKeys.filter((k) => {
-        const spent = summary.categoryTotals[k] || 0;
-        const budget = catBudgets[k] || 0;
-        return budget > 0 && spent >= budget * 0.8;
+      const html = generatePdfDashboard({
+        brandName: ["Dewy", "Wedding", "Planner"],
+        brandTag: "Wedding Document",
+        brandBottom: "For the most precious day",
+        weddingDate: profile.weddingDate ? profile.weddingDate.replace(/-/g, ".") : undefined,
+        title: "웨딩 예산 분석 리포트",
+        description: `${couple ? `${couple}  ·  ` : ""}${regionLabel} 평균 대비 두 분의 예산·지출을 분석한 맞춤 리포트입니다.`,
+        pills: [
+          { icon: "📍", label: "지역", value: regionLabel },
+          { icon: "💰", label: "총 예산", value: `${totalBudget.toLocaleString()}만원` },
+          { icon: "👥", label: "하객 수", value: `${guestCount}명` },
+          { icon: "📝", label: "기록 수", value: `${items.length}건` },
+        ],
+        stats: [
+          { tone: "pink", icon: "❤️", value: `${usagePct}%`, label: "예산 사용률" },
+          { tone: "amber", icon: "💸", value: `${summary.totalSpent.toLocaleString()}`, label: "총 지출 (만원)" },
+          { tone: "mint", icon: daysLeft !== null ? "📅" : "✓", value: daysLeft !== null ? `D-${daysLeft}` : "—", label: daysLeft !== null ? "결혼식까지" : "예식일 미설정" },
+        ],
+        body,
+        insight: { title: "진단 및 조언", body: insightBody },
       });
-      const tipCats = overOrNear.length > 0 ? overOrNear : categoryKeys.slice(0, 3);
-      const tipPool: { cat: string; tip: string }[] = [];
-      for (const k of tipCats) {
-        for (const t of savingTips[k].slice(0, 2)) {
-          tipPool.push({ cat: categories[k].label, tip: t });
-        }
-      }
-      if (tipPool.length > 0) {
-        let tipHtml = `<ul class="pdf-bullet-list">`;
-        for (const t of tipPool.slice(0, 8)) {
-          tipHtml += `<li><strong>${t.cat}</strong> · ${t.tip}</li>`;
-        }
-        tipHtml += `</ul>`;
-        html += pdfSection("💰 추천 절약 포인트", tipHtml);
-      }
-
-      // Disclaimer
-      html += `<div class="pdf-note">📌 이 리포트는 현재 입력된 예산/지출 데이터와 ${regionLabel} 평균값을 기반으로 자동 분석된 결과입니다. 실제 상황과 차이가 있을 수 있어요.</div>`;
-
-      html += generatePdfFooter();
 
       setHtmlResult(html);
       setPreviewOpen(true);
