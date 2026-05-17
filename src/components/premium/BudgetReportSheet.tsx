@@ -80,7 +80,7 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
         const diffCls = diff > 0 ? "diff-pos" : diff < 0 ? "diff-neg" : "";
         const diffLabel = diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : "0";
         catTable += `<tr>
-          <td>${categories[key].emoji} ${categories[key].label}</td>
+          <td>${categories[key].label}</td>
           <td>${budget}</td>
           <td>${spent}</td>
           <td>${pct}%</td>
@@ -97,7 +97,7 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
           .sort((a, b) => (summary.categoryTotals[b] || 0) - (summary.categoryTotals[a] || 0))
           .slice(0, 8)
           .map((k) => ({
-            label: `${categories[k].emoji} ${categories[k].label}`,
+            label: categories[k].label,
             pct: ((summary.categoryTotals[k] || 0) / totalSpentForShare) * 100,
           })),
       );
@@ -143,15 +143,15 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       const splitTotal = paidShared + paidGroom + paidBride;
       const splitCardBody = splitTotal > 0
         ? pdfDashMiniDonut([
-            { label: "🤝 공동", value: paidShared, color: "#F4A7B9" },
-            { label: "🤵 신랑측", value: paidGroom, color: "#93c5fd" },
-            { label: "👰 신부측", value: paidBride, color: "#fb7185" },
+            { label: "공동", value: paidShared, color: "#F4A7B9" },
+            { label: "신랑측", value: paidGroom, color: "#93c5fd" },
+            { label: "신부측", value: paidBride, color: "#fb7185" },
           ])
         : `<div style="font-size:10.5px;color:#9ca3af;text-align:center;padding:20px 0;">분담 데이터가 없어요.</div>`;
 
       // ============ 예산 건강도 큰 숫자 ============
       const healthIconBg = healthScore >= 70 ? "#d4f4e2" : healthScore >= 55 ? "#fff4d6" : "#fde2e9";
-      const healthIcon = healthScore >= 70 ? "💚" : healthScore >= 55 ? "⚠️" : "🔴";
+      const healthIcon = "";  // 이모지 제거 — 큰 숫자만 강조
       const healthBigNumber = pdfDashBigNumber({
         icon: healthIcon,
         iconBg: healthIconBg,
@@ -179,22 +179,22 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
         warningInsights.push(`${daysLeft}일 남았는데 예산 ${usagePct}% 사용 — 페이스 조절 필요`);
       }
       if (insights.length === 0 && warningInsights.length === 0) {
-        insights.push("전체적으로 평균 범위 안에서 잘 관리되고 있어요 👍");
+        insights.push("전체적으로 평균 범위 안에서 잘 관리되고 있어요.");
       }
       const insightBody = [...warningInsights, ...insights].slice(0, 4).join(" · ");
 
       // ============ 대시보드 조립 ============
       const body = ""
         + pdfDashRow([
-            pdfDashCard("📊 카테고리별 지출 현황", catTable),
-            pdfDashCard("🎯 카테고리별 지출 비중", shareBars),
+            pdfDashCard("카테고리별 지출 현황", catTable),
+            pdfDashCard("카테고리별 지출 비중", shareBars),
           ], 3)
         + pdfDashRow([
-            pdfDashCard("💳 잔금 일정", balanceCardBody),
-            pdfDashCard("💯 예산 건강도", healthBigNumber),
+            pdfDashCard("잔금 일정", balanceCardBody),
+            pdfDashCard("예산 건강도", healthBigNumber),
           ], 3)
         + pdfDashRow([
-            pdfDashCard("🤝 양가 분담 현황", splitCardBody),
+            pdfDashCard("양가 분담 현황", splitCardBody),
           ], 2);
 
       const html = generatePdfDashboard({
@@ -205,15 +205,15 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
         title: "웨딩 예산 분석 리포트",
         description: `${couple ? `${couple}  ·  ` : ""}${regionLabel} 평균 대비 두 분의 예산·지출을 분석한 맞춤 리포트입니다.`,
         pills: [
-          { icon: "📍", label: "지역", value: regionLabel },
-          { icon: "💰", label: "총 예산", value: `${totalBudget.toLocaleString()}만원` },
-          { icon: "👥", label: "하객 수", value: `${guestCount}명` },
-          { icon: "📝", label: "기록 수", value: `${items.length}건` },
+          { icon: "", label: "지역", value: regionLabel },
+          { icon: "", label: "총 예산", value: `${totalBudget.toLocaleString()}만원` },
+          { icon: "", label: "하객 수", value: `${guestCount}명` },
+          { icon: "", label: "기록 수", value: `${items.length}건` },
         ],
         stats: [
-          { tone: "pink", icon: "❤️", value: `${usagePct}%`, label: "예산 사용률" },
-          { tone: "amber", icon: "💸", value: `${summary.totalSpent.toLocaleString()}`, label: "총 지출 (만원)" },
-          { tone: "mint", icon: daysLeft !== null ? "📅" : "✓", value: daysLeft !== null ? `D-${daysLeft}` : "—", label: daysLeft !== null ? "결혼식까지" : "예식일 미설정" },
+          { tone: "pink", icon: "", value: `${usagePct}%`, label: "예산 사용률" },
+          { tone: "amber", icon: "", value: `${summary.totalSpent.toLocaleString()}`, label: "총 지출 (만원)" },
+          { tone: "mint", icon: "", value: daysLeft !== null ? `D-${daysLeft}` : "—", label: daysLeft !== null ? "결혼식까지" : "예식일 미설정" },
         ],
         body,
         insight: { title: "진단 및 조언", body: insightBody },
