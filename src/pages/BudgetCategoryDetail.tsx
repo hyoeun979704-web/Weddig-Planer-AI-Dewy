@@ -126,7 +126,7 @@ const BudgetCategoryDetail = () => {
         {/* Regional comparison */}
         {avgVal > 0 && (
           <div className="rounded-xl bg-card border border-border p-4">
-            <p className="text-xs font-semibold text-foreground mb-3">📍 {regions[effectiveRegionKey]?.label} 지역 평균 비교</p>
+            <p className="text-xs font-semibold text-foreground mb-3"> {regions[effectiveRegionKey]?.label} 지역 평균 비교</p>
             <div className="flex justify-between text-sm mb-2">
               <span className="text-muted-foreground">내 지출</span>
               <span className="font-bold tabular-nums">{fmt(spent)}만원</span>
@@ -143,7 +143,7 @@ const BudgetCategoryDetail = () => {
             <p className={cn("text-xs font-medium text-center py-2 rounded-lg mt-3",
               diff <= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500")}>
               {diff <= 0
-                ? `평균 대비 ${diffPct}% 절약 중이에요 👍`
+                ? `평균 대비 ${diffPct}% 절약 중이에요 `
                 : `평균보다 ${diffPct}% 높아요`}
             </p>
           </div>

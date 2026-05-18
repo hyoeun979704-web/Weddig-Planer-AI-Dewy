@@ -107,7 +107,7 @@ export const useAIPlanner = () => {
         else if (intent.dbHandler && !user) {
           setMessages(prev => [...prev, {
             role: "assistant",
-            content: "이 정보는 로그인 후 확인할 수 있어요 🌿\n[로그인 페이지](/auth)에서 가입·로그인 부탁드려요.",
+            content: "이 정보는 로그인 후 확인할 수 있어요 \n[로그인 페이지](/auth)에서 가입·로그인 부탁드려요.",
             intent: "login_required",
           }]);
           setIsLoading(false);

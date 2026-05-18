@@ -365,7 +365,7 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
     <Sheet open={open} onOpenChange={(o) => !o && handleClose()}>
       <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-3xl max-h-[85vh] overflow-y-auto pb-8">
         <SheetHeader>
-          <SheetTitle>📋 맞춤 견적서 자동생성</SheetTitle>
+          <SheetTitle>맞춤 견적서 자동생성</SheetTitle>
         </SheetHeader>
 
         {step === "input" && (

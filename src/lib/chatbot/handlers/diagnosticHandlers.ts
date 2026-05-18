@@ -46,7 +46,7 @@ export const handleBudgetDiagnosis = async (userId: string): Promise<string> => 
   const items = (itemsRes.data ?? []) as Array<{ category: string; amount: number }>;
 
   if (!totalBudget) {
-    return "총 예산이 설정되지 않아 진단할 수 없어요 💰\n[예산 페이지](/budget)에서 총 예산을 먼저 설정해주세요.";
+    return "총 예산이 설정되지 않아 진단할 수 없어요 \n[예산 페이지](/budget)에서 총 예산을 먼저 설정해주세요.";
   }
   if (items.length === 0) {
     return `총 예산은 ${totalBudget.toLocaleString()}원이에요. 아직 지출 항목이 없어 진단이 어려워요. [예산 페이지](/budget)에서 항목을 추가해주세요.`;
@@ -67,16 +67,16 @@ export const handleBudgetDiagnosis = async (userId: string): Promise<string> => 
 
     let status = "";
     if (actual === 0) {
-      status = "⚪ 미시작";
+      status = " 미시작";
     } else if (ratio >= 1.2) {
-      status = "🔴 권장 초과 (+20%↑)";
+      status = " 권장 초과 (+20%↑)";
       warningCount++;
     } else if (ratio >= 1.0) {
-      status = "🟡 권장 도달 (조심)";
+      status = " 권장 도달 (조심)";
     } else if (ratio >= 0.7) {
-      status = "🟢 정상 진행";
+      status = " 정상 진행";
     } else {
-      status = "🔵 여유 (~30%)";
+      status = " 여유 (~30%)";
     }
     lines.push(
       `• **${label}**: ${actual.toLocaleString()}원 / 권장 ${recommendedAmount.toLocaleString()}원 ${status}`,
@@ -87,16 +87,16 @@ export const handleBudgetDiagnosis = async (userId: string): Promise<string> => 
   const totalRatio = Math.round((totalSpent / totalBudget) * 100);
 
   let summary = `총 ${totalRatio}% 사용 중 (${totalSpent.toLocaleString()} / ${totalBudget.toLocaleString()}원)`;
-  if (totalRatio >= 95) summary += " ⚠️ 예산 거의 소진";
-  else if (totalRatio >= 80) summary += " 🟡 마지막 체크 필요";
-  else if (totalRatio < 30 && items.length < 3) summary += " 🌿 초기 단계";
+  if (totalRatio >= 95) summary += "  예산 거의 소진";
+  else if (totalRatio >= 80) summary += "  마지막 체크 필요";
+  else if (totalRatio < 30 && items.length < 3) summary += "  초기 단계";
 
   let warning = "";
   if (warningCount >= 2) {
-    warning = "\n\n⚠️ **주의**: 권장 비율 초과 항목이 여러 개예요. 전체 예산 재조정을 고려해보세요.";
+    warning = "\n\n **주의**: 권장 비율 초과 항목이 여러 개예요. 전체 예산 재조정을 고려해보세요.";
   }
 
-  return `**예산 진단 결과** 📊\n${summary}\n\n${lines.join("\n")}${warning}\n\n💡 자세한 항목 관리는 [예산 페이지](/budget)에서.`;
+  return `**예산 진단 결과** \n${summary}\n\n${lines.join("\n")}${warning}\n\n 자세한 항목 관리는 [예산 페이지](/budget)에서.`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -110,7 +110,7 @@ export const handleScheduleDiagnosis = async (userId: string): Promise<string> =
     .maybeSingle();
 
   if (!settings?.wedding_date || settings.wedding_date_tbd) {
-    return "예식일이 설정되지 않아 시기 진단이 어려워요 📅\n마이페이지에서 예식일을 설정해주세요.";
+    return "예식일이 설정되지 않아 시기 진단이 어려워요 \n마이페이지에서 예식일을 설정해주세요.";
   }
 
   const target = new Date(settings.wedding_date);
@@ -120,7 +120,7 @@ export const handleScheduleDiagnosis = async (userId: string): Promise<string> =
   const daysLeft = Math.round((target.getTime() - today.getTime()) / 86400000);
 
   if (daysLeft < 0) {
-    return `결혼식 후 ${Math.abs(daysLeft)}일이 지났어요 🎉 신혼 잘 보내고 계신가요?`;
+    return `결혼식 후 ${Math.abs(daysLeft)}일이 지났어요  신혼 잘 보내고 계신가요?`;
   }
 
   // 사용자 일정 조회
@@ -152,16 +152,16 @@ export const handleScheduleDiagnosis = async (userId: string): Promise<string> =
   let result = `**일정 진단 (D-${daysLeft})** ⏰\n\n`;
 
   if (overdue.length === 0 && upcoming.length === 0) {
-    result += "👏 잘 따라오고 계세요! 권장 시기에 맞춰 진행 중입니다.";
+    result += " 잘 따라오고 계세요! 권장 시기에 맞춰 진행 중입니다.";
   } else {
     if (overdue.length > 0) {
-      result += `🔴 **놓친 골든타임 ${overdue.length}건**\n`;
+      result += ` **놓친 골든타임 ${overdue.length}건**\n`;
       result += overdue.slice(0, 5).map((t) => `• ${t.title} (D-${t.daysBeforeWedding} 권장)`).join("\n");
       if (overdue.length > 5) result += `\n... 외 ${overdue.length - 5}건`;
       result += "\n\n";
     }
     if (upcoming.length > 0) {
-      result += `🟡 **앞으로 30일 내 권장 ${upcoming.length}건**\n`;
+      result += ` **앞으로 30일 내 권장 ${upcoming.length}건**\n`;
       result += upcoming.slice(0, 5).map((t) => `• ${t.title} (D-${t.daysBeforeWedding} 권장)`).join("\n");
       if (upcoming.length > 5) result += `\n... 외 ${upcoming.length - 5}건`;
     }
@@ -175,11 +175,11 @@ export const handleScheduleDiagnosis = async (userId: string): Promise<string> =
 // 계약 진척도 — 카테고리별 진행 상황
 // ════════════════════════════════════════════════════════════
 const CATEGORY_FOR_CONTRACT = [
-  { key: "venue", label: "🏛️ 웨딩홀", budgetCat: "venue" },
-  { key: "sdm", label: "📸 스드메", budgetCat: "sdm" },
-  { key: "ring", label: "💍 예물·반지", budgetCat: "ring" },
-  { key: "honeymoon", label: "✈️ 신혼여행", budgetCat: "honeymoon" },
-  { key: "house", label: "🏠 가전·혼수", budgetCat: "house" },
+  { key: "venue", label: " 웨딩홀", budgetCat: "venue" },
+  { key: "sdm", label: " 스드메", budgetCat: "sdm" },
+  { key: "ring", label: " 예물·반지", budgetCat: "ring" },
+  { key: "honeymoon", label: " 신혼여행", budgetCat: "honeymoon" },
+  { key: "house", label: " 가전·혼수", budgetCat: "house" },
 ];
 
 export const handleContractProgress = async (userId: string): Promise<string> => {
@@ -198,9 +198,9 @@ export const handleContractProgress = async (userId: string): Promise<string> =>
   const lines = CATEGORY_FOR_CONTRACT.map((c) => {
     const data = byCategory[c.budgetCat];
     if (!data || data.count === 0) {
-      return `${c.label}: ⚪ 시작 전`;
+      return `${c.label}:  시작 전`;
     }
-    return `${c.label}: ✅ 진행 중 (${data.count}건 · ${data.total.toLocaleString()}원)`;
+    return `${c.label}:  진행 중 (${data.count}건 · ${data.total.toLocaleString()}원)`;
   }).join("\n");
 
   const startedCount = CATEGORY_FOR_CONTRACT.filter(
@@ -211,16 +211,16 @@ export const handleContractProgress = async (userId: string): Promise<string> =>
 
   let nextStep = "";
   if (startedCount === 0) {
-    nextStep = "\n\n💡 **다음 단계**: 가장 먼저 식장(웨딩홀) 알아보시는 걸 권장해요. 식장이 정해져야 다른 일정이 잡혀요.";
+    nextStep = "\n\n **다음 단계**: 가장 먼저 식장(웨딩홀) 알아보시는 걸 권장해요. 식장이 정해져야 다른 일정이 잡혀요.";
   } else if (!byCategory.venue) {
-    nextStep = "\n\n💡 **다음 단계**: 식장이 미정이에요. 가장 우선해서 진행해야 할 항목이에요.";
+    nextStep = "\n\n **다음 단계**: 식장이 미정이에요. 가장 우선해서 진행해야 할 항목이에요.";
   } else if (!byCategory.sdm) {
-    nextStep = "\n\n💡 **다음 단계**: 스드메는 식장 결정 후 바로 (6~9개월 전) 진행 권장.";
+    nextStep = "\n\n **다음 단계**: 스드메는 식장 결정 후 바로 (6~9개월 전) 진행 권장.";
   } else if (!byCategory.honeymoon) {
-    nextStep = "\n\n💡 **다음 단계**: 신혼여행 항공권은 4~6개월 전이 특가 시즌이에요.";
+    nextStep = "\n\n **다음 단계**: 신혼여행 항공권은 4~6개월 전이 특가 시즌이에요.";
   }
 
-  return `**카테고리별 진행 상황** 📋\n진척도 ${progress}% (${startedCount}/${total} 카테고리)\n\n${lines}${nextStep}\n\n자세한 항목은 [예산 페이지](/budget)에서.`;
+  return `**카테고리별 진행 상황** \n진척도 ${progress}% (${startedCount}/${total} 카테고리)\n\n${lines}${nextStep}\n\n자세한 항목은 [예산 페이지](/budget)에서.`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -233,7 +233,7 @@ export const handleChecklistProgress = async (userId: string): Promise<string> =
     .eq("user_id", userId);
 
   if (error || !data || data.length === 0) {
-    return "체크리스트가 아직 비어 있어요 📋\n[일정 페이지](/schedule)에서 항목을 추가해주세요.";
+    return "체크리스트가 아직 비어 있어요 \n[일정 페이지](/schedule)에서 항목을 추가해주세요.";
   }
 
   const total = data.length;
@@ -241,10 +241,10 @@ export const handleChecklistProgress = async (userId: string): Promise<string> =
   const rate = Math.round((completed / total) * 100);
 
   let badge = "";
-  if (rate >= 80) badge = "🌟 거의 완성!";
-  else if (rate >= 50) badge = "💪 절반 넘김!";
-  else if (rate >= 20) badge = "🌱 시작 단계";
-  else badge = "🌿 출발선";
+  if (rate >= 80) badge = " 거의 완성!";
+  else if (rate >= 50) badge = " 절반 넘김!";
+  else if (rate >= 20) badge = " 시작 단계";
+  else badge = " 출발선";
 
-  return `**체크리스트 진행률** ✅\n\n${badge}\n• 완료: ${completed}/${total}건 (${rate}%)\n\n남은 항목은 [일정 페이지](/schedule)에서 확인할 수 있어요.`;
+  return `**체크리스트 진행률** \n\n${badge}\n• 완료: ${completed}/${total}건 (${rate}%)\n\n남은 항목은 [일정 페이지](/schedule)에서 확인할 수 있어요.`;
 };

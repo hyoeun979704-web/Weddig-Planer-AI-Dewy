@@ -135,7 +135,7 @@ export const handleFavoritesByType = async (
   const map = ITEM_TYPE_MAP[itemType];
 
   if (results.length === 0) {
-    return `찜한 ${map.label}이 아직 없어요 💗\n관심 있는 항목을 ❤️ 아이콘으로 찜해두시면 여기서 모아 보실 수 있어요.`;
+    return `찜한 ${map.label}이 아직 없어요 \n관심 있는 항목을  아이콘으로 찜해두시면 여기서 모아 보실 수 있어요.`;
   }
 
   const lines = results
@@ -144,7 +144,7 @@ export const handleFavoritesByType = async (
     .join("\n");
   const more = results.length > 8 ? `\n\n... 외 ${results.length - 8}건` : "";
 
-  return `찜하신 ${map.label} **${results.length}건** 이에요 💗\n\n${lines}${more}\n\n전체 목록은 [즐겨찾기 페이지](/favorites)에서 확인하실 수 있어요.`;
+  return `찜하신 ${map.label} **${results.length}건** 이에요 \n\n${lines}${more}\n\n전체 목록은 [즐겨찾기 페이지](/favorites)에서 확인하실 수 있어요.`;
 };
 
 /** 키워드 검색 — itemType + keyword 둘 다 활용 */
@@ -159,7 +159,7 @@ export const handleFavoritesSearch = async (
   if (results.length === 0) {
     const typeLabel = itemType === "any" ? "찜한 항목" : `찜한 ${ITEM_TYPE_MAP[itemType].label}`;
     return {
-      reply: `${typeLabel} 중에서 "${keyword}" 와 일치하는 항목을 찾지 못했어요 🌿\n\n다른 키워드로 시도해보시거나, [즐겨찾기 페이지](/favorites)에서 직접 확인해보세요.`,
+      reply: `${typeLabel} 중에서 "${keyword}" 와 일치하는 항목을 찾지 못했어요 \n\n다른 키워드로 시도해보시거나, [즐겨찾기 페이지](/favorites)에서 직접 확인해보세요.`,
       needsLlmContext: false,
     };
   }
@@ -170,7 +170,7 @@ export const handleFavoritesSearch = async (
       .map((r) => `• ${r.title}${r.subtitle ? ` — ${r.subtitle}` : ""}`)
       .join("\n");
     return {
-      reply: `"${keyword}" 와 일치하는 찜한 항목을 찾았어요 ✨\n\n${lines}\n\n[즐겨찾기 페이지](/favorites)에서 자세히 보실 수 있어요.`,
+      reply: `"${keyword}" 와 일치하는 찜한 항목을 찾았어요 \n\n${lines}\n\n[즐겨찾기 페이지](/favorites)에서 자세히 보실 수 있어요.`,
       needsLlmContext: false,
     };
   }
@@ -189,7 +189,7 @@ export const handleFavoritesSearch = async (
 
   // 결과 10건 초과 — LLM에 컨텍스트로 위임 (d-2에서 활성화 예정)
   return {
-    reply: `"${keyword}" 와 일치하는 찜한 항목이 **${results.length}건**으로 너무 많아요 📚\n\n조금 더 구체적인 키워드(예: 채널명·지역·가격대)로 다시 물어봐 주시거나, [즐겨찾기 페이지](/favorites)에서 직접 보시는 게 빠를 거예요.`,
+    reply: `"${keyword}" 와 일치하는 찜한 항목이 **${results.length}건**으로 너무 많아요 \n\n조금 더 구체적인 키워드(예: 채널명·지역·가격대)로 다시 물어봐 주시거나, [즐겨찾기 페이지](/favorites)에서 직접 보시는 게 빠를 거예요.`,
     needsLlmContext: true,
     rawResults: results,
   };

@@ -145,18 +145,18 @@ export const handleActivitySummary = async (userId: string): Promise<string> => 
 
   const ctx: string[] = [];
   let dday: number | null = null;
-  if (settings?.partner_name) ctx.push(`💑 ${settings.partner_name}님과`);
+  if (settings?.partner_name) ctx.push(` ${settings.partner_name}님과`);
   if (settings?.wedding_date && !settings.wedding_date_tbd) {
     const target = new Date(settings.wedding_date);
     const today = new Date();
     target.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
     dday = Math.round((target.getTime() - today.getTime()) / 86400000);
-    if (dday > 0) ctx.push(`📅 D-${dday}`);
-    else if (dday === 0) ctx.push(`📅 오늘이 결혼식!`);
-    else ctx.push(`📅 D+${-dday}`);
+    if (dday > 0) ctx.push(` D-${dday}`);
+    else if (dday === 0) ctx.push(` 오늘이 결혼식!`);
+    else ctx.push(` D+${-dday}`);
   }
-  if (settings?.wedding_region) ctx.push(`📍 ${settings.wedding_region}`);
+  if (settings?.wedding_region) ctx.push(` ${settings.wedding_region}`);
   const ctxLine = ctx.length > 0 ? `${ctx.join(" · ")}\n\n` : "";
 
   // 두드러진 신호 1~2개를 골라 의미 있는 코멘트로 변환.
@@ -164,44 +164,44 @@ export const handleActivitySummary = async (userId: string): Promise<string> => 
 
   if (dday !== null && dday > 0 && dday <= 90 && c.schedule_pending >= 5) {
     insights.push(
-      `⚠️ **D-${dday}**인데 미완료 일정이 **${c.schedule_pending}건** 남아있어요. 일정 페이지에서 우선순위 정리부터 같이 해볼까요?`,
+      ` **D-${dday}**인데 미완료 일정이 **${c.schedule_pending}건** 남아있어요. 일정 페이지에서 우선순위 정리부터 같이 해볼까요?`,
     );
   } else if (c.schedule_pending >= 10) {
     insights.push(
-      `📋 미완료 일정이 **${c.schedule_pending}건**이에요. 가까운 일정 3~5개부터 차근차근 처리하시면 부담이 줄어요.`,
+      ` 미완료 일정이 **${c.schedule_pending}건**이에요. 가까운 일정 3~5개부터 차근차근 처리하시면 부담이 줄어요.`,
     );
   }
 
   if (c.favorites >= 5 && c.orders === 0 && c.cart === 0) {
     insights.push(
-      `❤️ 찜만 **${c.favorites}개** 모이셨네요. 결정에 망설여지신다면 상위 2~3곳만 추려서 비교해드릴까요?`,
+      ` 찜만 **${c.favorites}개** 모이셨네요. 결정에 망설여지신다면 상위 2~3곳만 추려서 비교해드릴까요?`,
     );
   } else if (c.favorites >= 10 && c.cart >= 1) {
     insights.push(
-      `🛒 찜 ${c.favorites}개 · 장바구니 ${c.cart}건 — 슬슬 결정 단계예요. 카테고리별 우선순위 잡아드릴까요?`,
+      ` 찜 ${c.favorites}개 · 장바구니 ${c.cart}건 — 슬슬 결정 단계예요. 카테고리별 우선순위 잡아드릴까요?`,
     );
   }
 
   if (settings?.partner_name && c.diary === 0 && c.votes === 0) {
     insights.push(
-      `💑 ${settings.partner_name}님과 다이어리·투표 활동이 아직 없으시네요. 함께 결정 모드 들어가시면 진척이 훨씬 빨라져요.`,
+      ` ${settings.partner_name}님과 다이어리·투표 활동이 아직 없으시네요. 함께 결정 모드 들어가시면 진척이 훨씬 빨라져요.`,
     );
   }
 
   if (c.ai_today >= 4) {
     insights.push(
-      `🤖 오늘 챗봇 ${c.ai_today}회 사용 — 열심히 준비하고 계시네요! 무료 한도가 곧 차요. 프리미엄으로 무제한 가능해요.`,
+      ` 오늘 챗봇 ${c.ai_today}회 사용 — 열심히 준비하고 계시네요! 무료 한도가 곧 차요. 프리미엄으로 무제한 가능해요.`,
     );
   }
 
   if (insights.length === 0) {
     if (c.schedule_pending === 0 && c.favorites === 0) {
       insights.push(
-        `🌱 아직 활동 기록이 적네요. 결혼식 일정·예산을 먼저 정해두시면 챗봇이 시기별로 맞춤 추천을 드릴 수 있어요.`,
+        ` 아직 활동 기록이 적네요. 결혼식 일정·예산을 먼저 정해두시면 챗봇이 시기별로 맞춤 추천을 드릴 수 있어요.`,
       );
     } else {
       insights.push(
-        `🎉 잘 진행하고 계세요! 다음 단계가 궁금하시면 "지금 뭐 해야 해?"라고 물어봐 주세요.`,
+        ` 잘 진행하고 계세요! 다음 단계가 궁금하시면 "지금 뭐 해야 해?"라고 물어봐 주세요.`,
       );
     }
   }
@@ -219,7 +219,7 @@ export const handleActivitySummary = async (userId: string): Promise<string> => 
     `하트 ${c.hearts}`,
   ].filter(Boolean);
 
-  return `${ctxLine}**나의 활동 요약** 📊
+  return `${ctxLine}**나의 활동 요약** 
 
 ${insights.slice(0, 2).join("\n\n")}
 
@@ -254,17 +254,17 @@ export const handleThisWeek = async (userId: string): Promise<string> => {
 
   // 활동이 0인 항목은 표시 생략 (간결성)
   const items: string[] = [];
-  if (c.fittings > 0) items.push(`🎨 드레스 피팅 ${c.fittings}장`);
-  if (c.orders > 0) items.push(`🛍️ 주문 ${c.orders}건`);
-  if (c.posts > 0) items.push(`✏️ 글 작성 ${c.posts}개`);
-  if (c.comments > 0) items.push(`💬 댓글 ${c.comments}개`);
-  if (c.diary > 0) items.push(`📔 다이어리 ${c.diary}개`);
-  if (c.votes > 0) items.push(`🗳️ 투표 ${c.votes}건`);
-  if (aiWeek > 0) items.push(`🤖 AI 챗봇 ${aiWeek}회`);
+  if (c.fittings > 0) items.push(` 드레스 피팅 ${c.fittings}장`);
+  if (c.orders > 0) items.push(` 주문 ${c.orders}건`);
+  if (c.posts > 0) items.push(` 글 작성 ${c.posts}개`);
+  if (c.comments > 0) items.push(` 댓글 ${c.comments}개`);
+  if (c.diary > 0) items.push(` 다이어리 ${c.diary}개`);
+  if (c.votes > 0) items.push(` 투표 ${c.votes}건`);
+  if (aiWeek > 0) items.push(` AI 챗봇 ${aiWeek}회`);
 
   if (items.length === 0) {
-    return "이번 주 활동 기록이 없어요 🌿\n오늘부터 시작해보시는 건 어떨까요? 작은 행동도 결혼 준비에 도움이 됩니다.";
+    return "이번 주 활동 기록이 없어요 \n오늘부터 시작해보시는 건 어떨까요? 작은 행동도 결혼 준비에 도움이 됩니다.";
   }
 
-  return `**이번 주(최근 7일) 활동** 📊\n\n${items.map((i) => `• ${i}`).join("\n")}\n\n잘하고 계세요! 🎉`;
+  return `**이번 주(최근 7일) 활동** \n\n${items.map((i) => `• ${i}`).join("\n")}\n\n잘하고 계세요! `;
 };

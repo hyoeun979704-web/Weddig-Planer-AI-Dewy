@@ -141,7 +141,7 @@ const HeartCharge = () => {
                       {pkg.description}
                     </p>
                     <p className="text-sm text-foreground mt-1">
-                      💗 <span className="font-bold">{pkg.hearts}</span>개
+                       <span className="font-bold">{pkg.hearts}</span>개
                       <span className="text-xs text-muted-foreground ml-1">
                         (1H = {Math.round(pkg.price / pkg.hearts)}원)
                       </span>

@@ -40,7 +40,7 @@ const BusinessGallery = () => {
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   // New highlight form
-  const [newHighlight, setNewHighlight] = useState({ title: "", description: "", icon: "✨" });
+  const [newHighlight, setNewHighlight] = useState({ title: "", description: "", icon: "" });
   const [showHighlightForm, setShowHighlightForm] = useState(false);
 
   const vendorId = businessProfile?.vendor_id;
@@ -153,7 +153,7 @@ const BusinessGallery = () => {
           vendor_id: vendorId,
           title: newHighlight.title,
           description: newHighlight.description || null,
-          icon: newHighlight.icon || "✨",
+          icon: newHighlight.icon || "",
           display_order: highlights.length,
         })
         .select()
@@ -162,7 +162,7 @@ const BusinessGallery = () => {
       if (error) throw error;
 
       setHighlights((prev) => [...prev, data]);
-      setNewHighlight({ title: "", description: "", icon: "✨" });
+      setNewHighlight({ title: "", description: "", icon: "" });
       setShowHighlightForm(false);
       toast.success("장점카드가 추가되었습니다");
     } catch (error) {
@@ -188,7 +188,7 @@ const BusinessGallery = () => {
     );
   }
 
-  const ICON_OPTIONS = ["✨", "🏆", "💎", "🎯", "🌟", "💐", "🎨", "📸", "🍽️", "🅿️", "🎵", "💡"];
+  const ICON_OPTIONS = ["", "", "", "", "", "", "", "", "", "🅿️", "", ""];
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto">

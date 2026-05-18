@@ -168,7 +168,7 @@ const MySchedule = () => {
                 <p className="text-sm text-muted-foreground">결혼식까지</p>
                 {days !== null ? (
                   <p className="text-4xl font-bold text-primary">
-                    {days > 0 ? `D-${days}` : days === 0 ? "D-Day 🎉" : `D+${Math.abs(days)}`}
+                    {days > 0 ? `D-${days}` : days === 0 ? "D-Day " : `D+${Math.abs(days)}`}
                   </p>
                 ) : weddingSettings.wedding_date_tbd ? (
                   <div className="space-y-1">

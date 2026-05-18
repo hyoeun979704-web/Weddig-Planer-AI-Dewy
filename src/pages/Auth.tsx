@@ -155,7 +155,7 @@ const Auth = () => {
       <div className="p-6">
         {/* Logo / Title */}
         <div className="text-center mb-6">
-          <span className="text-6xl">💍</span>
+          <span className="text-6xl"></span>
           <h2 className="text-2xl font-bold mt-4 text-foreground">웨딩 플래너</h2>
           <p className="text-muted-foreground mt-2">
             {isSignUp ? "새 계정을 만들어주세요" : "계정에 로그인하세요"}

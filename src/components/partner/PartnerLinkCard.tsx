@@ -53,7 +53,7 @@ const VARIANT_CONFIG: Record<
     unlinkedSubtitle: "일정·예산·일기를 둘이서 함께 관리",
     linkedSubtitle: "둘이서 함께 준비 중",
     Icon: Heart,
-    benefits: ["📅 일정 공유", "💰 분담 관리", "📔 공유 일기"],
+    benefits: [" 일정 공유", " 분담 관리", " 공유 일기"],
     linkedCta: { label: "공유 일기 보기", href: "/couple-diary" },
   },
   budget: {
@@ -61,7 +61,7 @@ const VARIANT_CONFIG: Record<
     unlinkedSubtitle: "양가 분담·잔금 일정도 함께 체크",
     linkedSubtitle: "예산을 함께 관리 중",
     Icon: Wallet,
-    benefits: ["🤝 양가 분담", "🔔 잔금 알림 공유", "📊 합계 한눈에"],
+    benefits: [" 양가 분담", " 잔금 알림 공유", " 합계 한눈에"],
     linkedCta: { label: "분담 시뮬레이션", href: "/budget/split-simulator" },
   },
   schedule: {
@@ -69,7 +69,7 @@ const VARIANT_CONFIG: Record<
     unlinkedSubtitle: "체크리스트·D-Day를 둘이서 공유",
     linkedSubtitle: "일정을 함께 관리 중",
     Icon: Calendar,
-    benefits: ["✅ 체크리스트 공유", "📔 공유 일기", "🗳️ 같이 투표"],
+    benefits: [" 체크리스트 공유", " 공유 일기", " 같이 투표"],
     linkedCta: { label: "공유 일기 보기", href: "/couple-diary" },
   },
 };

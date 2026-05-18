@@ -117,7 +117,7 @@ export const usePartnerDeals = (category?: string) => {
         )
       );
 
-      toast.success("혜택을 받았어요! 🎉");
+      toast.success("혜택을 받았어요! ");
       return true;
     } catch (error) {
       console.error("Error claiming deal:", error);

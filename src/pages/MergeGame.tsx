@@ -59,7 +59,7 @@ export default function MergeGame() {
             >
               <ChevronLeft className="w-5 h-5 text-foreground" />
             </button>
-            <span className="text-base font-bold text-foreground ml-1">💐 꽃 머지 게임</span>
+            <span className="text-base font-bold text-foreground ml-1"> 꽃 머지 게임</span>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -104,7 +104,7 @@ export default function MergeGame() {
                       <span className={`text-sm font-bold w-6 text-center ${
                         i === 0 ? 'text-yellow-500' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-amber-600' : 'text-muted-foreground'
                       }`}>
-                        {i < 3 ? ['🥇','🥈','🥉'][i] : `${i + 1}`}
+                        {i < 3 ? ['','',''][i] : `${i + 1}`}
                       </span>
                       <div>
                         <p className="text-sm font-medium text-foreground">

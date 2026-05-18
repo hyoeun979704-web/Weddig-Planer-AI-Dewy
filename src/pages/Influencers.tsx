@@ -8,9 +8,9 @@ import SortToggle, { SortMode } from "@/components/SortToggle";
 import InfoFilterSheet, { InfoFilters, initialInfoFilters } from "@/components/info/InfoFilterSheet";
 
 const platformIcons: Record<string, string> = {
-  instagram: "📸",
-  youtube: "🎬",
-  blog: "📝",
+  instagram: "",
+  youtube: "",
+  blog: "",
 };
 
 const formatCount = (n: number): string => {
@@ -165,7 +165,7 @@ const InfluencerCard = ({ influencer, onClick }: { influencer: Influencer; onCli
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2">
         <h3 className="font-semibold text-foreground text-sm">{influencer.name}</h3>
-        <span className="text-xs">{platformIcons[influencer.platform] || "🌐"}</span>
+        <span className="text-xs">{platformIcons[influencer.platform] || ""}</span>
       </div>
       <p className="text-xs text-muted-foreground mb-1.5">{influencer.handle}</p>
       <div className="flex items-center gap-2">

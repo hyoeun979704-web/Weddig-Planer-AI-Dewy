@@ -57,7 +57,7 @@ export const handleVenueRecommendation = async (params: VenueParams): Promise<st
 
   if (!venues || venues.length === 0) {
     const displayRegion = params.regionLabel ?? params.region ?? "지역 미지정";
-    return `**웨딩홀 추천 결과** 🏛️\n\n요청하신 조건(${displayRegion})에 맞는 등록 웨딩홀을 찾지 못했어요 🌿\n\n[웨딩홀 페이지](/venues)에서 직접 검색해보세요.`;
+    return `**웨딩홀 추천 결과** \n\n요청하신 조건(${displayRegion})에 맞는 등록 웨딩홀을 찾지 못했어요 \n\n[웨딩홀 페이지](/venues)에서 직접 검색해보세요.`;
   }
 
   // 보증인원·가격 추가 정보 (place_wedding_halls)
@@ -86,7 +86,7 @@ export const handleVenueRecommendation = async (params: VenueParams): Promise<st
 
   const top = filtered.slice(0, 5);
   if (top.length === 0) {
-    return `**웨딩홀 추천 결과** 🏛️\n\n조건에 맞는 곳을 못 찾았어요 🌿\n\n조건을 조금 완화하시거나 [웨딩홀 페이지](/venues)에서 직접 살펴보세요.`;
+    return `**웨딩홀 추천 결과** \n\n조건에 맞는 곳을 못 찾았어요 \n\n조건을 조금 완화하시거나 [웨딩홀 페이지](/venues)에서 직접 살펴보세요.`;
   }
 
   const lines = top
@@ -98,19 +98,19 @@ export const handleVenueRecommendation = async (params: VenueParams): Promise<st
         ? `${d.min_guarantee}~${d.max_guarantee}명`
         : "";
       const partner = v.is_partner ? " ⭐파트너" : "";
-      return `- **${v.name}** (${region})${partner}\n  ${price} · ${cap}${v.avg_rating ? ` · ★ ${v.avg_rating}` : ""}`;
+      return `- **${v.name}** (${region})${partner}\n  ${price} · ${cap}${v.avg_rating ? ` ·  ${v.avg_rating}` : ""}`;
     })
     .join("\n\n");
 
   const filterSummary: string[] = [];
   const displayRegion = params.regionLabel ?? params.region;
-  if (displayRegion) filterSummary.push(`📍 ${displayRegion}`);
-  if (params.budgetLabel) filterSummary.push(`💰 ${params.budgetLabel}`);
-  else if (totalBudget) filterSummary.push(`💰 ${totalBudget.toLocaleString()}만원`);
-  if (guests) filterSummary.push(`👥 ${guests}명`);
-  if (params.styles?.length) filterSummary.push(`✨ ${params.styles.join(", ")}`);
+  if (displayRegion) filterSummary.push(` ${displayRegion}`);
+  if (params.budgetLabel) filterSummary.push(` ${params.budgetLabel}`);
+  else if (totalBudget) filterSummary.push(` ${totalBudget.toLocaleString()}만원`);
+  if (guests) filterSummary.push(` ${guests}명`);
+  if (params.styles?.length) filterSummary.push(` ${params.styles.join(", ")}`);
 
-  return `**웨딩홀 추천 ${top.length}곳** 🏛️\n${filterSummary.join(" · ")}\n\n${lines}\n\n[웨딩홀 페이지](/venues)에서 더 자세히 보거나 다른 조건으로 검색하실 수 있어요.`;
+  return `**웨딩홀 추천 ${top.length}곳** \n${filterSummary.join(" · ")}\n\n${lines}\n\n[웨딩홀 페이지](/venues)에서 더 자세히 보거나 다른 조건으로 검색하실 수 있어요.`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -141,22 +141,22 @@ export const handleSdmeGuide = async (params: SdmeParams): Promise<string> => {
     fetchPriceStats("makeup_shop", safeRegion),
   ]);
 
-  const guide = `**스드메 시세** 📸 ${displayRegion ? `(${displayRegion})` : "(전국)"}\n` +
+  const guide = `**스드메 시세**  ${displayRegion ? `(${displayRegion})` : "(전국)"}\n` +
     `${formatPriceStatsLine("스튜디오", studioStats, "30~150만원")}\n` +
     `${formatPriceStatsLine("드레스샵", dressStats, "50~200만원")}\n` +
     `${formatPriceStatsLine("메이크업샵", makeupStats, "25~50만원")}\n` +
     `* 표본은 듀이에 등록된 업체의 시작가(min_price) 기준이에요. 옵션·시즌에 따라 변동 있을 수 있어요.`;
 
   // 추가금 방어
-  const guard = `**숨은 추가금 주의** ⚠️\n- 원본 데이터: 30~50만원\n- 헬퍼 이모님(드레스 도와주는 분): 15~25만원\n- 얼리 스타트(이른 시간 메이크업): 5~10만원\n- 드레스 가봉 추가: 5~10만원\n- 부속품(베일·티아라·신발): 별도`;
+  const guard = `**숨은 추가금 주의** \n- 원본 데이터: 30~50만원\n- 헬퍼 이모님(드레스 도와주는 분): 15~25만원\n- 얼리 스타트(이른 시간 메이크업): 5~10만원\n- 드레스 가봉 추가: 5~10만원\n- 부속품(베일·티아라·신발): 별도`;
 
   // 사용자 조건 요약
   const summary: string[] = [];
-  if (displayRegion) summary.push(`📍 ${displayRegion}`);
-  if (params.budgetLabel) summary.push(`💰 총예산 ${params.budgetLabel}`);
-  else if (budget) summary.push(`💰 총예산 ${budget.toLocaleString()}만원`);
-  if (params.studioStyle) summary.push(`📸 ${params.studioStyle}`);
-  if (params.priority) summary.push(`✨ 우선순위 ${params.priority}`);
+  if (displayRegion) summary.push(` ${displayRegion}`);
+  if (params.budgetLabel) summary.push(` 총예산 ${params.budgetLabel}`);
+  else if (budget) summary.push(` 총예산 ${budget.toLocaleString()}만원`);
+  if (params.studioStyle) summary.push(` ${params.studioStyle}`);
+  if (params.priority) summary.push(` 우선순위 ${params.priority}`);
 
   // 등록된 스드메 업체 추천 (places category in studio·dress_shop·makeup_shop)
   let recommendations = "";
@@ -174,22 +174,22 @@ export const handleSdmeGuide = async (params: SdmeParams): Promise<string> => {
     const grouped: Record<string, any[]> = {};
     for (const p of places) (grouped[p.category] ??= []).push(p);
     const catLabels: Record<string, string> = {
-      studio: "📸 스튜디오",
-      dress_shop: "👗 드레스",
-      makeup_shop: "💄 메이크업",
+      studio: " 스튜디오",
+      dress_shop: " 드레스",
+      makeup_shop: " 메이크업",
     };
     recommendations = "\n\n**추천 업체**\n" +
       Object.entries(grouped)
         .map(([cat, items]) => {
           const lines = items.slice(0, 2).map((p: any) =>
-            `  - ${p.name}${p.district ? ` (${p.district})` : ""}${p.avg_rating ? ` ★${p.avg_rating}` : ""}${p.is_partner ? " ⭐" : ""}`
+            `  - ${p.name}${p.district ? ` (${p.district})` : ""}${p.avg_rating ? ` ${p.avg_rating}` : ""}${p.is_partner ? " ⭐" : ""}`
           ).join("\n");
           return `${catLabels[cat] || cat}\n${lines}`;
         })
         .join("\n\n");
   }
 
-  return `**스드메 가이드** 📸\n${summary.length > 0 ? summary.join(" · ") + "\n\n" : ""}${guide}\n\n${guard}${recommendations}\n\n[스드메 페이지](/studios)에서 직접 비교하실 수 있어요.`;
+  return `**스드메 가이드** \n${summary.length > 0 ? summary.join(" · ") + "\n\n" : ""}${guide}\n\n${guard}${recommendations}\n\n[스드메 페이지](/studios)에서 직접 비교하실 수 있어요.`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -285,7 +285,7 @@ export const handleTimelinePlanning = async (params: TimelineParams): Promise<st
   lines.push(`${minusMin(ceremony, 15)} 하객 입장 본격 시작, 사회자 안내 준비`);
 
   // 예식 시작
-  lines.push(`**${ceremonyStr} 🎉 예식 시작**`);
+  lines.push(`**${ceremonyStr}  예식 시작**`);
 
   // 예식 종료
   lines.push(`${plusMin(ceremony, duration)} 예식 종료 / 폐백·단체사진`);
@@ -316,9 +316,9 @@ export const handleTimelinePlanning = async (params: TimelineParams): Promise<st
   lines.sort((a, b) => sortKey(a) - sortKey(b));
 
   const summary: string[] = [];
-  if (params.venueType) summary.push(`🏛️ ${params.venueType}`);
-  if (params.photoTeam) summary.push(`📸 ${params.photoTeam}`);
-  if (params.special) summary.push(`✨ ${params.special}`);
+  if (params.venueType) summary.push(` ${params.venueType}`);
+  if (params.photoTeam) summary.push(` ${params.photoTeam}`);
+  if (params.special) summary.push(` ${params.special}`);
 
   return `**본식 당일 타임라인** ⏰\n예식 ${ceremonyStr} (${duration}분 진행)\n${summary.length > 0 ? summary.join(" · ") + "\n" : ""}\n${lines.map((l) => `- ${l}`).join("\n")}\n\n* 식장·계절·사진팀 일정에 따라 30분 단위 조정 권장.\n* 자세한 시기별 체크리스트는 "준비 타임라인 만들어줘" 라고 물어봐 주세요.`;
 };
@@ -373,7 +373,7 @@ const PRIORITY_TO_CATEGORY: Record<string, string> = {
 export const handleBudgetPlanning = async (params: BudgetParams): Promise<string> => {
   const total = parseNumber(params.totalBudget);
   if (!total) {
-    return "총 예산을 입력해주시면 항목별로 권장 분배를 보여드릴 수 있어요 💰\n\n한국 결혼식 평균은 부부 합산 5,000만~1억 원 정도예요.";
+    return "총 예산을 입력해주시면 항목별로 권장 분배를 보여드릴 수 있어요 \n\n한국 결혼식 평균은 부부 합산 5,000만~1억 원 정도예요.";
   }
 
   // 우선순위 카테고리 추출
@@ -413,15 +413,15 @@ export const handleBudgetPlanning = async (params: BudgetParams): Promise<string
   const support = parseNumber(params.supportAmount);
   let supportLine = "";
   if (support && support > 0) {
-    supportLine = `\n\n💑 **양가 지원금**: ${support.toLocaleString()}만원\n실 부담 예산: ${(total - support).toLocaleString()}만원`;
+    supportLine = `\n\n **양가 지원금**: ${support.toLocaleString()}만원\n실 부담 예산: ${(total - support).toLocaleString()}만원`;
   }
 
   // 시즌 보정
   let seasonNote = "";
   if (params.season === "성수기" || params.date?.match(/(4월|5월|10월|11월)/)) {
-    seasonNote = "\n\n🌸 **성수기 안내**: 4·5월·10·11월은 웨딩홀·스드메 가격이 10~20% 높아요. 예산을 5~10% 여유 두시는 걸 권장해요.";
+    seasonNote = "\n\n **성수기 안내**: 4·5월·10·11월은 웨딩홀·스드메 가격이 10~20% 높아요. 예산을 5~10% 여유 두시는 걸 권장해요.";
   }
 
   const displayRegion = params.regionLabel ?? params.region;
-  return `**예산 분배 추천** 💰\n총 예산 **${total.toLocaleString()}만원**${displayRegion ? ` (${displayRegion})` : ""}\n\n${lines}\n\n⭐ 표시는 우선순위 항목이에요${supportLine}${seasonNote}\n\n💡 **추가금 방어 팁**\n- 웨딩홀: 보증인원 협상, 대관료·식대 분리 견적 받기\n- 스드메: 원본·헬퍼·얼리스타트 등 숨은 비용 포함 견적 요청\n- 예물: 시세 변동 큰 금 가격 우선 체크\n\n자세한 항목별 관리는 [예산 페이지](/budget)에서 가능해요.`;
+  return `**예산 분배 추천** \n총 예산 **${total.toLocaleString()}만원**${displayRegion ? ` (${displayRegion})` : ""}\n\n${lines}\n\n⭐ 표시는 우선순위 항목이에요${supportLine}${seasonNote}\n\n **추가금 방어 팁**\n- 웨딩홀: 보증인원 협상, 대관료·식대 분리 견적 받기\n- 스드메: 원본·헬퍼·얼리스타트 등 숨은 비용 포함 견적 요청\n- 예물: 시세 변동 큰 금 가격 우선 체크\n\n자세한 항목별 관리는 [예산 페이지](/budget)에서 가능해요.`;
 };

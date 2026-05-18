@@ -66,7 +66,7 @@ const Points = () => {
               onClick={() => navigate("/points/charge")}
               className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2"
             >
-              💗 하트 충전
+               하트 충전
             </button>
           </div>
         </div>
@@ -98,7 +98,7 @@ const Points = () => {
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {attendance.currentStreak > 0
-                    ? `🔥 ${attendance.currentStreak}일 연속 출석 중 · 7일마다 +200P / 30일마다 +1,000P`
+                    ? ` ${attendance.currentStreak}일 연속 출석 중 · 7일마다 +200P / 30일마다 +1,000P`
                     : "매일 들어와서 포인트 받기"}
                 </p>
               </div>
@@ -116,7 +116,7 @@ const Points = () => {
             className="w-full p-4 bg-gradient-to-r from-secondary to-accent rounded-2xl border border-border flex items-center gap-4 text-left hover:shadow-md transition-shadow"
           >
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
-              💐
+              
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-foreground text-sm">꽃 머지 게임</p>
@@ -133,7 +133,7 @@ const Points = () => {
             className="w-full p-4 bg-card border border-border rounded-2xl flex items-center gap-4 text-left hover:shadow-md transition-shadow"
           >
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
-              🎁
+              
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-foreground text-sm">친구 초대하기</p>

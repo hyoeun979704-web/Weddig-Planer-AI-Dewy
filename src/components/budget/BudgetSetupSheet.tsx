@@ -251,7 +251,7 @@ export default function BudgetSetupSheet({
 
         {/* Region select */}
         <div className="mb-5">
-          <Label className="text-sm font-semibold mb-2 block">📍 지역 선택</Label>
+          <Label className="text-sm font-semibold mb-2 block"> 지역 선택</Label>
           <div className="grid grid-cols-4 gap-1.5">
             {Object.entries(regions).map(([key, r]) => (
               <button
@@ -273,7 +273,7 @@ export default function BudgetSetupSheet({
 
         {/* Guest count */}
         <div className="mb-5">
-          <Label className="text-sm font-semibold mb-2 block">👥 예상 하객 수</Label>
+          <Label className="text-sm font-semibold mb-2 block"> 예상 하객 수</Label>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" className="h-10 w-10 shrink-0"
               onClick={() => setGuestCountWithMealSync(guestCount - 10)}>
@@ -303,7 +303,7 @@ export default function BudgetSetupSheet({
 
         {/* Total budget */}
         <div className="mb-4">
-          <Label className="text-sm font-semibold mb-2 block">💰 총 예산</Label>
+          <Label className="text-sm font-semibold mb-2 block"> 총 예산</Label>
           <div className="flex gap-1.5 mb-2 flex-wrap">
             {quickBudgets.map(v => (
               <button key={v} type="button" onClick={() => setTotalBudget(v)}

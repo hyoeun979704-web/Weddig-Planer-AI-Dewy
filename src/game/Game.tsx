@@ -229,7 +229,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.font = 'bold 22px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('💐 Game Over', GAME_WIDTH / 2, popY + 32);
+      ctx.fillText(' Game Over', GAME_WIDTH / 2, popY + 32);
 
       // 최종 점수
       ctx.fillStyle = '#333';
@@ -240,7 +240,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       const earnedPoints = Math.floor(gs.score / 20);
       ctx.fillStyle = '#C9A96E';
       ctx.font = 'bold 15px sans-serif';
-      ctx.fillText(`🪙 획득 포인트: ${earnedPoints}P`, GAME_WIDTH / 2, popY + 88);
+      ctx.fillText(` 획득 포인트: ${earnedPoints}P`, GAME_WIDTH / 2, popY + 88);
 
       // 포인트 2배 버튼 (광고)
       const btnW = 200;
@@ -261,7 +261,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 13px sans-serif';
-        ctx.fillText(`📺 포인트 2배 받기 (${earnedPoints * 2}P)`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
+        ctx.fillText(` 포인트 2배 받기 (${earnedPoints * 2}P)`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
       } else if (currentAdCountdown > 0) {
         // 카운트다운 중 — 비활성 버튼 + 타이머
         ctx.fillStyle = '#999';
@@ -281,7 +281,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
         ctx.fillStyle = '#ddd';
         ctx.font = 'bold 13px sans-serif';
-        ctx.fillText(`✅ 우측 상단에서 포인트 받기`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
+        ctx.fillText(` 우측 상단에서 포인트 받기`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
       }
 
       // 다시하기 버튼
@@ -294,7 +294,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 13px sans-serif';
-      ctx.fillText('🔄 다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
+      ctx.fillText(' 다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
     }
   }, [getBodies, dropXRef, mergeFlashesRef, adCountdown]);
 
@@ -416,11 +416,11 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
                 boxShadow: '0 2px 12px rgba(201, 169, 110, 0.5)',
               }}
             >
-              🪙 포인트 2배 받기!
+               포인트 2배 받기!
             </button>
           )}
           <div className="flex items-center gap-1 text-muted-foreground">
-            <span className="text-xs">🏆</span>
+            <span className="text-xs"></span>
             <span className="text-sm font-semibold text-primary/80 tabular-nums">{bestScore}점</span>
           </div>
         </div>

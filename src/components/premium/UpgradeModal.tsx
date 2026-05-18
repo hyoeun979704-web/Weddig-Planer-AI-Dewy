@@ -64,7 +64,7 @@ const UpgradeModal = ({ isOpen, onClose, trigger = "manual" }: UpgradeModalProps
 
         {/* Launch Event */}
         <div className="mt-5 p-4 rounded-2xl bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20 text-center">
-          <p className="text-sm font-bold text-foreground">🎉 런칭 이벤트: 첫 1개월 무료 체험!</p>
+          <p className="text-sm font-bold text-foreground">런칭 이벤트: 첫 1개월 무료 체험!</p>
           <p className="text-xs text-muted-foreground mt-1">체험 종료 후 자동 결제 없음</p>
         </div>
 

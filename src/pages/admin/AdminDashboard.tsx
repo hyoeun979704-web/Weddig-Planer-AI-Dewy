@@ -374,15 +374,15 @@ const AdminDashboard = () => {
                 {freshness.map((row) => {
                   let status: { icon: string; label: string; color: string };
                   if (row.total === 0) {
-                    status = { icon: "⚪", label: "미등록", color: "text-muted-foreground" };
+                    status = { icon: "", label: "미등록", color: "text-muted-foreground" };
                   } else if (row.daysSinceMedian <= 14) {
-                    status = { icon: "🟢", label: "신선", color: "text-emerald-600" };
+                    status = { icon: "", label: "신선", color: "text-emerald-600" };
                   } else if (row.daysSinceMedian <= 30) {
-                    status = { icon: "🟡", label: "보통", color: "text-amber-600" };
+                    status = { icon: "", label: "보통", color: "text-amber-600" };
                   } else if (row.daysSinceMedian <= 60) {
-                    status = { icon: "🟡", label: "갱신 권장", color: "text-amber-600" };
+                    status = { icon: "", label: "갱신 권장", color: "text-amber-600" };
                   } else {
-                    status = { icon: "🔴", label: "오래됨", color: "text-rose-600" };
+                    status = { icon: "", label: "오래됨", color: "text-rose-600" };
                   }
                   return (
                     <tr key={row.category} className="hover:bg-muted/50">

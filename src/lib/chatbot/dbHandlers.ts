@@ -94,10 +94,10 @@ export const handleDday = async (ctx: DbHandlerContext): Promise<string> => {
     .maybeSingle();
 
   if (error || !data) {
-    return "예식일 정보가 없어요 📅\n마이페이지 > 결혼 정보 설정에서 예식일을 등록해주시면 디데이를 알려드릴게요!";
+    return "예식일 정보가 없어요 \n마이페이지 > 결혼 정보 설정에서 예식일을 등록해주시면 디데이를 알려드릴게요!";
   }
   if (data.wedding_date_tbd || !data.wedding_date) {
-    return "예식일이 아직 미정으로 설정되어 있어요 🌿\n예식일이 잡히시면 마이페이지 > 결혼 정보 설정에서 업데이트해주세요. 그러면 정확한 디데이와 시기별 체크리스트를 알려드릴 수 있어요.";
+    return "예식일이 아직 미정으로 설정되어 있어요 \n예식일이 잡히시면 마이페이지 > 결혼 정보 설정에서 업데이트해주세요. 그러면 정확한 디데이와 시기별 체크리스트를 알려드릴 수 있어요.";
   }
 
   const target = new Date(data.wedding_date);
@@ -113,20 +113,20 @@ export const handleDday = async (ctx: DbHandlerContext): Promise<string> => {
   });
 
   if (diffDays > 0) {
-    return `예식일까지 **D-${diffDays}** 남았어요 💍\n\n📅 ${dateStr}\n\n${diffDayGuide(diffDays)}`;
+    return `예식일까지 **D-${diffDays}** 남았어요 \n\n ${dateStr}\n\n${diffDayGuide(diffDays)}`;
   }
   if (diffDays === 0) {
-    return `오늘이 결혼식 당일이에요! 🎉\n\n${dateStr}\n\n신부님, 오늘 정말 멋지실 거예요. 마음 편하게 즐기세요 🌸💍`;
+    return `오늘이 결혼식 당일이에요! \n\n${dateStr}\n\n신부님, 오늘 정말 멋지실 거예요. 마음 편하게 즐기세요 `;
   }
-  return `결혼하신 지 **${Math.abs(diffDays)}일**이 됐어요 🎉\n신혼 잘 보내고 계신가요? 추억 가득한 시간 되세요 🌸`;
+  return `결혼하신 지 **${Math.abs(diffDays)}일**이 됐어요 \n신혼 잘 보내고 계신가요? 추억 가득한 시간 되세요 `;
 };
 
 const diffDayGuide = (days: number): string => {
-  if (days <= 30) return "✨ 한 달 이내! 본식 리허설·예복 가봉·축의금 봉투 준비를 챙기실 때예요.";
-  if (days <= 90) return "📸 3개월 이내! 본식 스냅 결정·청첩장 발송·헤어메이크업 시연 시점이에요.";
-  if (days <= 180) return "🏛️ 6개월 이내! 식장·스드메 계약 마무리·신혼여행 예약 권장 시기예요.";
-  if (days <= 365) return "💐 1년 이내! 식장 답사·예산 합의·기본 업체 알아보실 시기예요.";
-  return "🌿 여유 있게 준비할 수 있어요. 양가 인사·결혼식 비전 정하시는 단계예요.";
+  if (days <= 30) return " 한 달 이내! 본식 리허설·예복 가봉·축의금 봉투 준비를 챙기실 때예요.";
+  if (days <= 90) return " 3개월 이내! 본식 스냅 결정·청첩장 발송·헤어메이크업 시연 시점이에요.";
+  if (days <= 180) return " 6개월 이내! 식장·스드메 계약 마무리·신혼여행 예약 권장 시기예요.";
+  if (days <= 365) return " 1년 이내! 식장 답사·예산 합의·기본 업체 알아보실 시기예요.";
+  return " 여유 있게 준비할 수 있어요. 양가 인사·결혼식 비전 정하시는 단계예요.";
 };
 
 // ════════════════════════════════════════════════════════════
@@ -150,8 +150,8 @@ export const handleBudget = async (ctx: DbHandlerContext): Promise<string> => {
 
   if (items.length === 0) {
     return totalBudget
-      ? `총 예산은 **${totalBudget.toLocaleString()}원**으로 설정되어 있어요 💰\n\n아직 등록된 지출 항목이 없네요. [예산 페이지](/budget)에서 항목을 추가하시면 자세한 분석을 보여드릴 수 있어요.`
-      : "예산 정보가 아직 없어요 💰\n[예산 페이지](/budget)에서 총 예산과 항목을 등록해주시면 분석해드릴게요!";
+      ? `총 예산은 **${totalBudget.toLocaleString()}원**으로 설정되어 있어요 \n\n아직 등록된 지출 항목이 없네요. [예산 페이지](/budget)에서 항목을 추가하시면 자세한 분석을 보여드릴 수 있어요.`
+      : "예산 정보가 아직 없어요 \n[예산 페이지](/budget)에서 총 예산과 항목을 등록해주시면 분석해드릴게요!";
   }
 
   const totalSpent = items.reduce((sum, i) => sum + (i.amount ?? 0), 0);
@@ -165,12 +165,12 @@ export const handleBudget = async (ctx: DbHandlerContext): Promise<string> => {
     .map(([cat, amt]) => `- ${budgetCategoryLabel(cat)}: ${amt.toLocaleString()}원`)
     .join("\n");
 
-  let header = `현재 등록된 지출 합계는 **${totalSpent.toLocaleString()}원**이에요 💰`;
+  let header = `현재 등록된 지출 합계는 **${totalSpent.toLocaleString()}원**이에요 `;
   if (totalBudget) {
     const ratio = Math.round((totalSpent / totalBudget) * 100);
     header += `\n총 예산 ${totalBudget.toLocaleString()}원 대비 **${ratio}%** 사용 중`;
-    if (ratio >= 90) header += " ⚠️";
-    else if (ratio >= 70) header += " 🟡";
+    if (ratio >= 90) header += " ";
+    else if (ratio >= 70) header += " ";
   }
 
   return `${header}\n\n**카테고리별 지출 (상위 6)**\n${categoryLines}\n\n자세한 항목과 추이는 [예산 페이지](/budget)에서 확인하실 수 있어요.`;
@@ -206,14 +206,14 @@ export const handleScheduleToday = async (ctx: DbHandlerContext): Promise<string
     .order("scheduled_date", { ascending: true });
 
   if (error || !data || data.length === 0) {
-    return "오늘 예정된 일정이 없어요 ✨\n여유 있는 하루 되세요. 결혼 준비 외에도 신부님 자신을 위한 시간 가지시면 좋을 것 같아요 🌿";
+    return "오늘 예정된 일정이 없어요 \n여유 있는 하루 되세요. 결혼 준비 외에도 신부님 자신을 위한 시간 가지시면 좋을 것 같아요 ";
   }
 
   const completed = data.filter((d: any) => d.completed).length;
   const remaining = data.filter((d: any) => !d.completed);
   const lines = remaining.slice(0, 5).map((d: any) => `- ${d.title}`).join("\n");
 
-  return `오늘 예정된 일정 ${data.length}건이 있어요 📅 (완료 ${completed}건)\n\n${lines || "모두 완료하셨네요! 🎉"}\n\n전체 일정은 [일정 페이지](/schedule)에서 확인하실 수 있어요.`;
+  return `오늘 예정된 일정 ${data.length}건이 있어요  (완료 ${completed}건)\n\n${lines || "모두 완료하셨네요! "}\n\n전체 일정은 [일정 페이지](/schedule)에서 확인하실 수 있어요.`;
 };
 
 export const handleScheduleUpcoming = async (ctx: DbHandlerContext): Promise<string> => {
@@ -233,7 +233,7 @@ export const handleScheduleUpcoming = async (ctx: DbHandlerContext): Promise<str
     .limit(10);
 
   if (error || !data || data.length === 0) {
-    return "앞으로 7일 이내 예정된 일정이 없어요 🌿\n여유 있는 시간이지만, 1~2개월 후 해야 할 일을 미리 점검해보시는 것도 좋아요. '체크리스트 만들어줘' 라고 물어보시면 시기별 가이드를 드릴게요!";
+    return "앞으로 7일 이내 예정된 일정이 없어요 \n여유 있는 시간이지만, 1~2개월 후 해야 할 일을 미리 점검해보시는 것도 좋아요. '체크리스트 만들어줘' 라고 물어보시면 시기별 가이드를 드릴게요!";
   }
 
   const lines = data
@@ -243,7 +243,7 @@ export const handleScheduleUpcoming = async (ctx: DbHandlerContext): Promise<str
     })
     .join("\n");
 
-  return `앞으로 7일 이내 ${data.length}건의 일정이 있어요 📅\n\n${lines}\n\n전체 일정은 [일정 페이지](/schedule)에서 확인하실 수 있어요.`;
+  return `앞으로 7일 이내 ${data.length}건의 일정이 있어요 \n\n${lines}\n\n전체 일정은 [일정 페이지](/schedule)에서 확인하실 수 있어요.`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -300,7 +300,7 @@ export const handleChecklist = async (
     ? ` (${ctx.weddingStyle === "self" ? "셀프웨딩" : ctx.weddingStyle === "small" ? "스몰웨딩" : "맞춤"} 기준 · 제외 카테고리 반영)`
     : "";
   const lines = tasks.map((t) => `- ${t.title}`).join("\n");
-  return `**${label}** 권장 체크리스트예요 📋${styleHint}\n\n${lines}\n\n전체 일정은 [일정 페이지](/schedule)에서 관리하실 수 있어요.`;
+  return `**${label}** 권장 체크리스트예요 ${styleHint}\n\n${lines}\n\n전체 일정은 [일정 페이지](/schedule)에서 관리하실 수 있어요.`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -313,7 +313,7 @@ export const handleFavorites = async (ctx: DbHandlerContext): Promise<string> =>
     .eq("user_id", ctx.userId);
 
   if (error || !data || data.length === 0) {
-    return "아직 찜한 항목이 없어요 💗\n\n식장·스튜디오·드레스 페이지에서 마음에 드는 곳을 ❤️ 아이콘으로 찜해두시면, 나중에 [즐겨찾기 페이지](/favorites)에서 한 번에 모아 보실 수 있어요.";
+    return "아직 찜한 항목이 없어요 \n\n식장·스튜디오·드레스 페이지에서 마음에 드는 곳을  아이콘으로 찜해두시면, 나중에 [즐겨찾기 페이지](/favorites)에서 한 번에 모아 보실 수 있어요.";
   }
 
   const byType: Record<string, number> = {};
@@ -324,7 +324,7 @@ export const handleFavorites = async (ctx: DbHandlerContext): Promise<string> =>
     .map(([type, count]) => `- ${itemTypeLabel(type)}: ${count}개`)
     .join("\n");
 
-  return `현재 **${data.length}개**의 항목을 찜하고 계세요 💗\n\n**카테고리별**\n${lines}\n\n전체 목록은 [즐겨찾기 페이지](/favorites)에서 확인하실 수 있어요.`;
+  return `현재 **${data.length}개**의 항목을 찜하고 계세요 \n\n**카테고리별**\n${lines}\n\n전체 목록은 [즐겨찾기 페이지](/favorites)에서 확인하실 수 있어요.`;
 };
 
 const itemTypeLabel = (type: string): string => {
@@ -354,13 +354,13 @@ export const handleCart = async (ctx: DbHandlerContext): Promise<string> => {
     .eq("user_id", ctx.userId);
 
   if (error || !data || data.length === 0) {
-    return "장바구니가 비어 있어요 🛒\n\n[쇼핑 페이지](/store)에서 마음에 드는 상품을 담아두시면 한 번에 결제하실 수 있어요.";
+    return "장바구니가 비어 있어요 \n\n[쇼핑 페이지](/store)에서 마음에 드는 상품을 담아두시면 한 번에 결제하실 수 있어요.";
   }
 
   const totalQty = data.reduce((sum: number, c: any) => sum + (c.quantity ?? 0), 0);
   const uniqueProducts = data.length;
 
-  return `장바구니에 **${uniqueProducts}종 (총 ${totalQty}개)** 상품이 담겨 있어요 🛒\n\n자세한 항목·가격은 [장바구니 페이지](/cart)에서 확인 후 결제하실 수 있어요.`;
+  return `장바구니에 **${uniqueProducts}종 (총 ${totalQty}개)** 상품이 담겨 있어요 \n\n자세한 항목·가격은 [장바구니 페이지](/cart)에서 확인 후 결제하실 수 있어요.`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -374,10 +374,10 @@ export const handleRegion = async (ctx: DbHandlerContext): Promise<string> => {
     .maybeSingle();
 
   if (error || !data) {
-    return "지역 정보가 아직 없어요 📍\n마이페이지 > 결혼 정보 설정에서 결혼 예정 지역을 등록해주시면 그 지역의 식장·업체를 추천해드릴 수 있어요.";
+    return "지역 정보가 아직 없어요 \n마이페이지 > 결혼 정보 설정에서 결혼 예정 지역을 등록해주시면 그 지역의 식장·업체를 추천해드릴 수 있어요.";
   }
   if (data.wedding_region_tbd || !data.wedding_region) {
-    return "결혼 예정 지역이 미정으로 설정되어 있어요 🌿\n지역이 정해지시면 마이페이지에서 업데이트해주세요. 그러면 그 지역 평균 시세·식장·스튜디오를 맞춤 추천해드릴게요.";
+    return "결혼 예정 지역이 미정으로 설정되어 있어요 \n지역이 정해지시면 마이페이지에서 업데이트해주세요. 그러면 그 지역 평균 시세·식장·스튜디오를 맞춤 추천해드릴게요.";
   }
 
   // 같은 지역의 식장·스튜디오 수 조회 (있다면)
@@ -390,7 +390,7 @@ export const handleRegion = async (ctx: DbHandlerContext): Promise<string> => {
     ? `\n\n${data.wedding_region} 지역에 등록된 웨딩홀이 **${venueCount.count}곳** 있어요. [웨딩홀 페이지](/venues)에서 확인해보세요!`
     : "";
 
-  return `결혼 예정 지역은 **${data.wedding_region}** 이에요 📍${venueLine}\n\n다른 지역으로 변경하시려면 마이페이지 > 결혼 정보 설정에서 수정하실 수 있어요.`;
+  return `결혼 예정 지역은 **${data.wedding_region}** 이에요 ${venueLine}\n\n다른 지역으로 변경하시려면 마이페이지 > 결혼 정보 설정에서 수정하실 수 있어요.`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -404,11 +404,11 @@ export const handleHearts = async (ctx: DbHandlerContext): Promise<string> => {
     .maybeSingle();
 
   if (error || !data) {
-    return "하트 정보를 불러올 수 없어요 💗\n월간·연간 [프리미엄 구독](/premium) 결제 시 보너스 하트가 적립됩니다.";
+    return "하트 정보를 불러올 수 없어요 \n월간·연간 [프리미엄 구독](/premium) 결제 시 보너스 하트가 적립됩니다.";
   }
 
   const balance = data.balance ?? 0;
-  let message = `현재 하트 잔액은 **${balance}개** 예요 💗\n\n`;
+  let message = `현재 하트 잔액은 **${balance}개** 예요 \n\n`;
   message += `- 누적 적립: ${(data.total_earned ?? 0).toLocaleString()}개\n`;
   message += `- 누적 사용: ${(data.total_spent ?? 0).toLocaleString()}개\n\n`;
 
@@ -433,14 +433,14 @@ export const handlePoints = async (ctx: DbHandlerContext): Promise<string> => {
     .maybeSingle();
 
   if (error || !data) {
-    return "포인트 정보가 아직 없어요 ✨\n앱을 사용하시면서 자동으로 적립되는 포인트는 [포인트 페이지](/points)에서 확인하실 수 있어요.";
+    return "포인트 정보가 아직 없어요 \n앱을 사용하시면서 자동으로 적립되는 포인트는 [포인트 페이지](/points)에서 확인하실 수 있어요.";
   }
 
   const points = data.total_points ?? 0;
   if (points === 0) {
-    return "현재 적립된 포인트가 0점이에요 ✨\n앱을 사용하시거나 결제하시면 포인트가 적립돼요. [포인트 페이지](/points)에서 자세히 확인하실 수 있어요.";
+    return "현재 적립된 포인트가 0점이에요 \n앱을 사용하시거나 결제하시면 포인트가 적립돼요. [포인트 페이지](/points)에서 자세히 확인하실 수 있어요.";
   }
-  return `현재 보유 포인트는 **${points.toLocaleString()}점** 이에요 ✨\n\n결제 시 사용하실 수 있고, [포인트 페이지](/points)에서 사용 내역도 확인하실 수 있어요.`;
+  return `현재 보유 포인트는 **${points.toLocaleString()}점** 이에요 \n\n결제 시 사용하실 수 있고, [포인트 페이지](/points)에서 사용 내역도 확인하실 수 있어요.`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -454,11 +454,11 @@ export const handleWeddingInfo = async (ctx: DbHandlerContext): Promise<string> 
     .maybeSingle();
 
   if (error || !data) {
-    return "결혼 정보가 아직 없어요 💍\n마이페이지에서 예식일·지역·파트너 정보를 등록해주시면 맞춤 가이드를 드릴 수 있어요.";
+    return "결혼 정보가 아직 없어요 \n마이페이지에서 예식일·지역·파트너 정보를 등록해주시면 맞춤 가이드를 드릴 수 있어요.";
   }
 
   const lines: string[] = [];
-  if (data.partner_name) lines.push(`💑 파트너: ${data.partner_name}`);
+  if (data.partner_name) lines.push(` 파트너: ${data.partner_name}`);
 
   if (data.wedding_date && !data.wedding_date_tbd) {
     const target = new Date(data.wedding_date);
@@ -466,19 +466,19 @@ export const handleWeddingInfo = async (ctx: DbHandlerContext): Promise<string> 
     target.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
     const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
-    lines.push(`📅 예식일: ${target.toLocaleDateString("ko-KR")} (D-${diff})`);
+    lines.push(` 예식일: ${target.toLocaleDateString("ko-KR")} (D-${diff})`);
   } else {
-    lines.push("📅 예식일: 미정");
+    lines.push(" 예식일: 미정");
   }
 
   if (data.wedding_region && !data.wedding_region_tbd) {
-    lines.push(`📍 지역: ${data.wedding_region}`);
+    lines.push(` 지역: ${data.wedding_region}`);
   } else {
-    lines.push("📍 지역: 미정");
+    lines.push(" 지역: 미정");
   }
 
   if (data.planning_stage) {
-    lines.push(`🌿 준비 단계: ${planningStageLabel(data.planning_stage)}`);
+    lines.push(` 준비 단계: ${planningStageLabel(data.planning_stage)}`);
   }
 
   return `**신부님의 결혼 정보**\n\n${lines.join("\n")}\n\n수정은 마이페이지 > 결혼 정보 설정에서 가능해요.`;

@@ -36,7 +36,7 @@ const LoginRequiredOverlay = ({ variant = "login", message, features }: LoginReq
               </div>
             )}
             <p className="text-sm font-bold text-foreground mb-0.5">
-              {variant === "signup" ? "지금 무료로 시작하세요 ✨" : "로그인하고 시작하세요 ✨"}
+              {variant === "signup" ? "지금 무료로 시작하세요 " : "로그인하고 시작하세요 "}
             </p>
             <p className="text-xs text-muted-foreground mb-3">{message || defaultMessage}</p>
             <div className="flex gap-2">

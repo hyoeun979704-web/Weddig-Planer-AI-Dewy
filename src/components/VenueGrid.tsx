@@ -92,7 +92,7 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
   if (allVenues.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 animate-fade-in">
-        <span className="text-4xl mb-4">{hasActiveFilters() ? "🔍" : "🏛️"}</span>
+        <span className="text-4xl mb-4">{hasActiveFilters() ? "" : ""}</span>
         <p className="text-muted-foreground text-center mb-4">
           {hasActiveFilters()
             ? "검색 조건에 맞는 웨딩홀이 없습니다."

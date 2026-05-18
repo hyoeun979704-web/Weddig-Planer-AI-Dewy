@@ -20,26 +20,26 @@ const sections = [
   {
     title: "AI 리포트",
     items: [
-      { icon: FileText, emoji: "📋", label: "견적서 자동생성", desc: "조건 입력 → AI 견적 PDF", sheet: "estimate" as SheetType },
-      { icon: BarChart3, emoji: "📊", label: "예산 분석 리포트", desc: "지출 현황 분석 PDF", sheet: "budget-report" as SheetType },
+      { icon: FileText, emoji: "", label: "견적서 자동생성", desc: "조건 입력 → AI 견적 PDF", sheet: "estimate" as SheetType },
+      { icon: BarChart3, emoji: "", label: "예산 분석 리포트", desc: "지출 현황 분석 PDF", sheet: "budget-report" as SheetType },
     ],
   },
   {
     title: "타임라인",
     items: [
-      { icon: Camera, emoji: "📸", label: "스냅촬영일 타임라인", desc: "촬영 일정표 PDF", sheet: "timeline-snap" as SheetType },
-      { icon: Church, emoji: "💒", label: "본식 당일 타임라인", desc: "당일 일정표 PDF", sheet: "timeline-ceremony" as SheetType },
-      { icon: Users, emoji: "👥", label: "하객 안내 타임라인", desc: "하객용 안내서 PDF", sheet: "timeline-guest" as SheetType },
+      { icon: Camera, emoji: "", label: "스냅촬영일 타임라인", desc: "촬영 일정표 PDF", sheet: "timeline-snap" as SheetType },
+      { icon: Church, emoji: "", label: "본식 당일 타임라인", desc: "당일 일정표 PDF", sheet: "timeline-ceremony" as SheetType },
+      { icon: Users, emoji: "", label: "하객 안내 타임라인", desc: "하객용 안내서 PDF", sheet: "timeline-guest" as SheetType },
     ],
   },
   {
     title: "스태프 안내서",
     items: [
-      { icon: Briefcase, emoji: "👜", label: "가방순이 전달사항", desc: "역할 안내 PDF", sheet: "staff-gabang" as SheetType },
-      { icon: DollarSign, emoji: "💰", label: "축의대 전달사항", desc: "운영 안내 PDF", sheet: "staff-reception" as SheetType },
-      { icon: Mic, emoji: "🎤", label: "사회자 큐시트", desc: "진행 안내 PDF", sheet: "staff-mc" as SheetType },
-      { icon: UserCheck, emoji: "👪", label: "부모님 안내서", desc: "양가 안내 PDF", sheet: "staff-parents" as SheetType },
-      { icon: MessageSquare, emoji: "📱", label: "하객 안내 메시지", desc: "메시지 템플릿", sheet: "guest-message" as SheetType },
+      { icon: Briefcase, emoji: "", label: "가방순이 전달사항", desc: "역할 안내 PDF", sheet: "staff-gabang" as SheetType },
+      { icon: DollarSign, emoji: "", label: "축의대 전달사항", desc: "운영 안내 PDF", sheet: "staff-reception" as SheetType },
+      { icon: Mic, emoji: "", label: "사회자 큐시트", desc: "진행 안내 PDF", sheet: "staff-mc" as SheetType },
+      { icon: UserCheck, emoji: "", label: "부모님 안내서", desc: "양가 안내 PDF", sheet: "staff-parents" as SheetType },
+      { icon: MessageSquare, emoji: "", label: "하객 안내 메시지", desc: "메시지 템플릿", sheet: "guest-message" as SheetType },
     ],
   },
 ];
@@ -69,7 +69,7 @@ const PremiumContent = () => {
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-lg font-bold">프리미엄 콘텐츠</h1>
-          {isPremium && <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">💎 Premium</span>}
+          {isPremium && <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium"> Premium</span>}
         </div>
       </header>
 
@@ -89,14 +89,14 @@ const PremiumContent = () => {
               <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">{styleDesc}</p>
             )}
             <p className="text-[10.5px] text-primary/80 mt-2 leading-relaxed">
-              ✨ 모든 PDF가 이 스타일에 맞춰 자동으로 톤·내용을 조정해 생성돼요.
+               모든 PDF가 이 스타일에 맞춰 자동으로 톤·내용을 조정해 생성돼요.
             </p>
           </div>
         )}
 
         {!isPremium && (
           <div className="p-4 rounded-2xl bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/20 text-center">
-            <p className="text-sm font-bold text-foreground">🔒 프리미엄 전용 기능입니다</p>
+            <p className="text-sm font-bold text-foreground"> 프리미엄 전용 기능입니다</p>
             <p className="text-xs text-muted-foreground mt-1">무료 체험을 시작하고 모든 PDF를 이용해보세요</p>
             <button onClick={() => setShowUpgrade(true)} className="mt-3 px-5 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold">
               무료 체험 시작

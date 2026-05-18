@@ -324,7 +324,7 @@ const SELF_DIY: TutorialLesson = {
 export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
   {
     id: "basics",
-    icon: "🌸",
+    icon: "",
     title: "기초 둘러보기",
     subtitle: "Dewy의 첫인상을 잡는 시간",
     accent: "rose",
@@ -332,7 +332,7 @@ export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
   },
   {
     id: "ai",
-    icon: "✨",
+    icon: "",
     title: "AI 도구 활용",
     subtitle: "막힐 때 가장 빠른 답을 얻는 법",
     accent: "violet",
@@ -340,7 +340,7 @@ export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
   },
   {
     id: "plan",
-    icon: "📅",
+    icon: "",
     title: "예산 · 일정 관리",
     subtitle: "준비의 핵심 도구 두 가지",
     accent: "emerald",
@@ -348,7 +348,7 @@ export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
   },
   {
     id: "social",
-    icon: "💬",
+    icon: "",
     title: "커뮤니티 · 커플",
     subtitle: "혼자가 아니라 함께",
     accent: "sky",
@@ -356,7 +356,7 @@ export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
   },
   {
     id: "advanced",
-    icon: "💎",
+    icon: "",
     title: "프리미엄 · 특화",
     subtitle: "결혼 직전 도구와 스타일 특화 레슨",
     accent: "amber",

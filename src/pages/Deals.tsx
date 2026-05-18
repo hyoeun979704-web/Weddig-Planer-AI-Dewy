@@ -106,9 +106,9 @@ const Deals = () => {
         <div className="relative flex items-center gap-4 px-5 py-5">
           {/* 꽃 아이콘 그룹 */}
           <div className="flex-shrink-0 flex flex-col items-center gap-0.5">
-            <span className="text-3xl drop-shadow">💐</span>
+            <span className="text-3xl drop-shadow"></span>
             <div className="flex gap-0.5 text-base">
-              <span>🌸</span><span>🌼</span><span>🌹</span>
+              <span></span><span></span><span></span>
             </div>
           </div>
 
@@ -116,7 +116,7 @@ const Deals = () => {
           <div className="flex-1 text-left">
             <div className="flex items-center gap-1.5 mb-0.5">
               <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
-                🎮 이벤트
+                 이벤트
               </span>
             </div>
             <p className="font-extrabold text-white text-base leading-tight drop-shadow-sm">

@@ -38,7 +38,7 @@ export const handleSubscriptionStatus = async (userId: string): Promise<string> 
     .maybeSingle();
 
   if (error || !data) {
-    return "현재 무료 플랜이에요 🌿\n\n[Premium 페이지](/premium)에서 무제한 AI 플래너·견적서·예산 리포트 기능을 이용하실 수 있어요.";
+    return "현재 무료 플랜이에요 \n\n[Premium 페이지](/premium)에서 무제한 AI 플래너·견적서·예산 리포트 기능을 이용하실 수 있어요.";
   }
 
   const now = new Date();
@@ -47,7 +47,7 @@ export const handleSubscriptionStatus = async (userId: string): Promise<string> 
   const isCancelled = !!data.cancelled_at;
 
   if (data.plan === "free" || (!isTrialActive && !isPaidActive)) {
-    return "현재 무료 플랜이에요 🌿\n\n[Premium 페이지](/premium)에서 더 풍부한 기능을 이용하실 수 있어요.";
+    return "현재 무료 플랜이에요 \n\n[Premium 페이지](/premium)에서 더 풍부한 기능을 이용하실 수 있어요.";
   }
 
   const expiresStr = data.expires_at
@@ -57,11 +57,11 @@ export const handleSubscriptionStatus = async (userId: string): Promise<string> 
     ? new Date(data.trial_ends_at).toLocaleDateString("ko-KR")
     : null;
 
-  let result = `**Premium ${isTrialActive ? "체험" : "구독"} 활성** ✨\n\n`;
+  let result = `**Premium ${isTrialActive ? "체험" : "구독"} 활성** \n\n`;
   if (isTrialActive) result += `• 체험 기간: ~${trialStr}\n`;
   if (expiresStr) result += `• 만료일: ${expiresStr}\n`;
   if (data.payment_method) result += `• 결제 수단: ${data.payment_method}\n`;
-  if (isCancelled) result += `\n⚠️ 자동 갱신 해지됨 — 만료일 이후 무료 플랜으로 전환됩니다.`;
+  if (isCancelled) result += `\n 자동 갱신 해지됨 — 만료일 이후 무료 플랜으로 전환됩니다.`;
   else result += `\n매월 자동 갱신 중이에요. [구독 관리](/premium)에서 변경 가능합니다.`;
 
   return result;
@@ -79,7 +79,7 @@ export const handleDressFittingHistory = async (userId: string): Promise<string>
     .limit(20);
 
   if (error || !data || data.length === 0) {
-    return "아직 생성하신 드레스 피팅이 없어요 👗\n\n[방구석 드레스 투어](/ai-studio/dress-tour)에서 첫 피팅을 시작해보세요. [프리미엄 구독](/premium) 또는 [포인트](/points) 충전으로 하트를 마련할 수 있어요.";
+    return "아직 생성하신 드레스 피팅이 없어요 \n\n[방구석 드레스 투어](/ai-studio/dress-tour)에서 첫 피팅을 시작해보세요. [프리미엄 구독](/premium) 또는 [포인트](/points) 충전으로 하트를 마련할 수 있어요.";
   }
 
   const done = data.filter((d: any) => d.status === "done").length;
@@ -87,7 +87,7 @@ export const handleDressFittingHistory = async (userId: string): Promise<string>
   const pending = data.filter((d: any) => d.status === "pending").length;
   const totalHearts = data.reduce((sum: number, d: any) => sum + (d.hearts_spent ?? 0), 0);
 
-  let result = `**드레스 피팅 기록** 👗\n\n`;
+  let result = `**드레스 피팅 기록** \n\n`;
   result += `• 총 생성: ${data.length}장 (성공 ${done} · 실패 ${failed} · 진행 중 ${pending})\n`;
   result += `• 총 사용 하트: ${totalHearts}\n\n`;
 
@@ -117,7 +117,7 @@ export const handleHeartHistory = async (userId: string): Promise<string> => {
     .limit(10);
 
   if (error || !data || data.length === 0) {
-    return "하트 거래 내역이 없어요 💗\n[프리미엄 구독](/premium) 또는 [포인트](/points) 충전으로 하트를 받을 수 있어요.";
+    return "하트 거래 내역이 없어요 \n[프리미엄 구독](/premium) 또는 [포인트](/points) 충전으로 하트를 받을 수 있어요.";
   }
 
   const earned = data
@@ -134,5 +134,5 @@ export const handleHeartHistory = async (userId: string): Promise<string> => {
     return `• ${date} ${amtStr} (${reason}) → ${t.balance_after}`;
   }).join("\n");
 
-  return `**최근 하트 거래 ${data.length}건** 💗\n적립 +${earned} / 사용 ${spent}\n\n${lines}`;
+  return `**최근 하트 거래 ${data.length}건** \n적립 +${earned} / 사용 ${spent}\n\n${lines}`;
 };

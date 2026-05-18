@@ -108,7 +108,7 @@ export const formatFreshness = (stats: PriceStats): string => {
   else if (days <= 180) timeLabel = `약 ${Math.round(days / 30)}달 전`;
   else timeLabel = `약 ${Math.round(days / 30)}달 전 (오래됨)`;
 
-  const icon = stats.freshness === "fresh" ? "🟢" : stats.freshness === "ok" ? "🟡" : "🔴";
+  const icon = stats.freshness === "fresh" ? "" : stats.freshness === "ok" ? "" : "";
   return `${icon} ${timeLabel} 갱신`;
 };
 

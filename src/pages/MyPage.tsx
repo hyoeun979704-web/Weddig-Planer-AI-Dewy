@@ -118,7 +118,7 @@ const GuestMyPage = () => {
           <h3 className="text-xs font-medium text-muted-foreground mb-2 px-1">실제 이용 후기</h3>
           <div className="space-y-2">
             {[
-              { name: "예비신부 김**", text: "예산 관리 기능이 정말 편해요! 양가 분담까지 한눈에 보여서 좋아요 👍", stars: 5 },
+              { name: "예비신부 김**", text: "예산 관리 기능이 정말 편해요! 양가 분담까지 한눈에 보여서 좋아요 ", stars: 5 },
               { name: "예비신랑 이**", text: "AI 추천으로 웨딩홀 3곳 방문했는데 다 만족스러웠어요", stars: 5 },
             ].map((r, i) => (
               <div key={i} className="p-3.5 bg-card rounded-2xl border border-border">

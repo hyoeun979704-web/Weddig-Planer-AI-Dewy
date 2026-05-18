@@ -1,7 +1,7 @@
 /**
  * Intent별 후속 질문 칩 매핑.
  *
- * ⚠️ 모든 칩 텍스트는 intentRouter.ts의 정적 패턴에 매칭되도록 작성한다.
+ *  모든 칩 텍스트는 intentRouter.ts의 정적 패턴에 매칭되도록 작성한다.
  * 칩이 LLM 폴백되면 일일 무료 한도가 소진되고 응답도 부정확해서 사용자
  * 경험이 크게 나빠진다. 새 칩을 추가할 때 followUpChips.test.ts에서
  * matchIntent로 매칭 검증 필수.

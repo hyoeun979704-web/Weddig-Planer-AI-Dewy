@@ -113,8 +113,8 @@ const BudgetSplitSimulator = () => {
           </div>
           <Slider value={[overallRatio]} onValueChange={v => setOverallRatio(v[0])} min={0} max={100} step={5} className="mb-2" />
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>🤵 신랑측 {overallRatio}%</span>
-            <span>👰 신부측 {100 - overallRatio}%</span>
+            <span> 신랑측 {overallRatio}%</span>
+            <span> 신부측 {100 - overallRatio}%</span>
           </div>
         </div>
 
@@ -125,7 +125,7 @@ const BudgetSplitSimulator = () => {
             {categoryKeys.map(key => {
               const budget = catBudgets[key] || 0;
               const split = categorySplits[key];
-              const splitLabel = split === "groom" ? "🤵 신랑측" : split === "bride" ? "👰 신부측" : "🤝 공동";
+              const splitLabel = split === "groom" ? " 신랑측" : split === "bride" ? " 신부측" : " 공동";
               const splitColor = split === "groom" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" 
                 : split === "bride" ? "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400" 
                 : "bg-muted text-muted-foreground";
@@ -170,11 +170,11 @@ const BudgetSplitSimulator = () => {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center p-3 bg-card rounded-xl">
-              <p className="text-xs text-muted-foreground">🤵 신랑측</p>
+              <p className="text-xs text-muted-foreground"> 신랑측</p>
               <p className="text-lg font-bold text-foreground">{groomTotal.toLocaleString()}만원</p>
             </div>
             <div className="text-center p-3 bg-card rounded-xl">
-              <p className="text-xs text-muted-foreground">👰 신부측</p>
+              <p className="text-xs text-muted-foreground"> 신부측</p>
               <p className="text-lg font-bold text-foreground">{brideTotal.toLocaleString()}만원</p>
             </div>
           </div>
@@ -183,7 +183,7 @@ const BudgetSplitSimulator = () => {
         {/* Tip */}
         <div className="p-4 bg-muted rounded-2xl">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            💡 최근 트렌드는 항목별로 유연하게 나누는 커플이 늘고 있어요. 양가가 편하게 대화할 수 있는 분위기가 가장 중요해요.
+             최근 트렌드는 항목별로 유연하게 나누는 커플이 늘고 있어요. 양가가 편하게 대화할 수 있는 분위기가 가장 중요해요.
           </p>
         </div>
       </main>

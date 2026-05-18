@@ -25,9 +25,9 @@ interface TimelineSheetProps {
 }
 
 const typeLabels: Record<TimelineType, { title: string; emoji: string }> = {
-  "timeline-snap": { title: "스냅촬영일 타임라인", emoji: "📸" },
-  "timeline-ceremony": { title: "본식 당일 타임라인", emoji: "💒" },
-  "timeline-guest": { title: "하객 안내 타임라인", emoji: "👥" },
+  "timeline-snap": { title: "스냅촬영일 타임라인", emoji: "" },
+  "timeline-ceremony": { title: "본식 당일 타임라인", emoji: "" },
+  "timeline-guest": { title: "하객 안내 타임라인", emoji: "" },
 };
 
 interface TimelineItem {
@@ -399,7 +399,7 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
     <Sheet open={!!open} onOpenChange={(o) => !o && handleClose()}>
       <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-3xl max-h-[85vh] overflow-y-auto pb-8">
         <SheetHeader>
-          <SheetTitle>{meta.emoji} {meta.title}</SheetTitle>
+          <SheetTitle>{meta.title}</SheetTitle>
         </SheetHeader>
 
         {step === "input" && (

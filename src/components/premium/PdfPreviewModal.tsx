@@ -73,7 +73,7 @@ export const PdfPreviewModal = ({ open, onClose, html, filename, title }: PdfPre
         className="max-w-[430px] mx-auto rounded-t-3xl h-[92vh] p-0 flex flex-col gap-0"
       >
         <SheetHeader className="px-4 py-3 border-b border-border shrink-0">
-          <SheetTitle className="text-sm">📄 {title || "PDF 미리보기"}</SheetTitle>
+          <SheetTitle className="text-sm">{title || "PDF 미리보기"}</SheetTitle>
           <p className="text-[11px] text-muted-foreground mt-0.5">
             실제 다운로드되는 PDF와 동일한 모습이에요. 확인 후 저장해 주세요.
           </p>

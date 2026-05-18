@@ -37,7 +37,7 @@ const PaymentSuccess = () => {
 
         await clearCart();
         setStatus("success");
-        toast.success("결제가 완료되었습니다! 🎉");
+        toast.success("결제가 완료되었습니다! ");
       } catch (err: any) {
         console.error("Payment confirmation failed:", err);
         setStatus("error");
@@ -61,7 +61,7 @@ const PaymentSuccess = () => {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4 text-center">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-          <span className="text-3xl">❌</span>
+          <span className="text-3xl"></span>
         </div>
         <h2 className="text-lg font-bold text-foreground mb-2">결제 승인 실패</h2>
         <p className="text-sm text-muted-foreground mb-6">{errorMessage}</p>

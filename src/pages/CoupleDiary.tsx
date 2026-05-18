@@ -8,11 +8,11 @@ import { useCoupleLink } from "@/hooks/useCoupleLink";
 import { useAuth } from "@/contexts/AuthContext";
 
 const moodEmojis: Record<string, string> = {
-  happy: "😊",
-  excited: "🥰",
-  love: "💕",
-  tired: "😴",
-  worried: "😟",
+  happy: "",
+  excited: "",
+  love: "",
+  tired: "",
+  worried: "",
 };
 
 const CoupleDiary = () => {

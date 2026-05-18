@@ -167,7 +167,7 @@ const BudgetSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
               </Popover>
               {season && (
                 <span className={cn("inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-bold", season === "성수기" ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600")}>
-                  {season === "성수기" ? "🔴 성수기" : "🟢 비수기"}
+                  {season === "성수기" ? " 성수기" : " 비수기"}
                 </span>
               )}
               {helperText("date")}

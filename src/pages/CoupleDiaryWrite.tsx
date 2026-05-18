@@ -8,11 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCoupleDiary } from "@/hooks/useCoupleDiary";
 
 const moods = [
-  { value: "happy", emoji: "😊", label: "행복" },
-  { value: "excited", emoji: "🥰", label: "설렘" },
-  { value: "love", emoji: "💕", label: "사랑" },
-  { value: "tired", emoji: "😴", label: "피곤" },
-  { value: "worried", emoji: "😟", label: "걱정" },
+  { value: "happy", emoji: "", label: "행복" },
+  { value: "excited", emoji: "", label: "설렘" },
+  { value: "love", emoji: "", label: "사랑" },
+  { value: "tired", emoji: "", label: "피곤" },
+  { value: "worried", emoji: "", label: "걱정" },
 ];
 
 const CoupleDiaryWrite = () => {

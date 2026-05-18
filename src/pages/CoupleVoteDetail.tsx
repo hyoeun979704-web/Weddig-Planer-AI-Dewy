@@ -121,7 +121,7 @@ const CoupleVoteDetail = () => {
   const handleDecide = async () => {
     if (!vote) return;
     await (supabase.from("couple_votes" as any) as any).update({ status: "decided" }).eq("id", vote.id);
-    toast.success("결정 완료! 🎉");
+    toast.success("결정 완료! ");
     fetchVote();
   };
 
@@ -235,13 +235,13 @@ const CoupleVoteDetail = () => {
             onClick={handleDecide}
             className="w-full py-3.5 bg-emerald-500 text-white rounded-2xl font-bold text-sm"
           >
-            ✅ 결정 완료
+             결정 완료
           </button>
         )}
 
         {vote.status === "decided" && (
           <div className="text-center py-4">
-            <p className="text-sm font-bold text-emerald-500">✅ 결정 완료되었습니다</p>
+            <p className="text-sm font-bold text-emerald-500"> 결정 완료되었습니다</p>
           </div>
         )}
       </main>

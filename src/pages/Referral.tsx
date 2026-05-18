@@ -79,7 +79,7 @@ const Referral = () => {
       return;
     }
     if (result.redeemed) {
-      toast.success(`🎉 ${result.refereeAmount}P 적립! ${result.message}`);
+      toast.success(` ${result.refereeAmount}P 적립! ${result.message}`);
       setInputCode("");
     } else {
       toast.error(result.message);

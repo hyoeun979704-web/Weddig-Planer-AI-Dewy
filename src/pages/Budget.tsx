@@ -160,10 +160,10 @@ const Budget = () => {
   );
 
   const planningStageGuide: Record<string, { icon: string; text: string }> = {
-    just_started: { icon: "🌱", text: "이제 시작했다면 총 예산부터 잡아보세요" },
-    researching: { icon: "🔍", text: "지역 평균과 비교하며 카테고리별로 배분해보세요" },
-    contracting: { icon: "📝", text: "계약금/잔금 일정을 빠짐없이 기록해두세요" },
-    wrapping_up: { icon: "✅", text: "결제 완료 표시로 마무리하고 최종 합계를 확인해보세요" },
+    just_started: { icon: "", text: "이제 시작했다면 총 예산부터 잡아보세요" },
+    researching: { icon: "", text: "지역 평균과 비교하며 카테고리별로 배분해보세요" },
+    contracting: { icon: "", text: "계약금/잔금 일정을 빠짐없이 기록해두세요" },
+    wrapping_up: { icon: "", text: "결제 완료 표시로 마무리하고 최종 합계를 확인해보세요" },
   };
   const stageGuide = weddingSettings.planning_stage
     ? planningStageGuide[weddingSettings.planning_stage]
@@ -228,7 +228,7 @@ const Budget = () => {
    */
   const handleShare = async () => {
     const lines: string[] = [];
-    lines.push(`💍 우리 결혼 예산 현황${settings?.region ? ` (${regions[settings.region]?.label})` : ""}`);
+    lines.push(` 우리 결혼 예산 현황${settings?.region ? ` (${regions[settings.region]?.label})` : ""}`);
     lines.push(`총 예산: ${fmt(totalBudget)}만원`);
     lines.push(`사용: ${fmt(summary.totalSpent)}만원 (${Math.round(pct)}%)`);
     lines.push(`남은 예산: ${fmt(summary.remaining)}만원`);
@@ -606,17 +606,17 @@ const Budget = () => {
             {/* Per-side cards — easier to show to family at a glance */}
             <div className="grid grid-cols-3 gap-2 mb-3">
               <div className="rounded-xl bg-muted/50 p-2.5 text-center">
-                <p className="text-[10px] text-muted-foreground">🤝 공동</p>
+                <p className="text-[10px] text-muted-foreground"> 공동</p>
                 <p className="text-sm font-bold text-foreground mt-0.5">{fmt(paidShared)}<span className="text-[10px] font-normal">만원</span></p>
                 <p className="text-[10px] text-muted-foreground">{Math.round((paidShared / paidTotal) * 100)}%</p>
               </div>
               <div className="rounded-xl bg-blue-50 p-2.5 text-center">
-                <p className="text-[10px] text-blue-700">🤵 신랑측</p>
+                <p className="text-[10px] text-blue-700"> 신랑측</p>
                 <p className="text-sm font-bold text-blue-900 mt-0.5">{fmt(paidGroom)}<span className="text-[10px] font-normal">만원</span></p>
                 <p className="text-[10px] text-blue-700">{Math.round((paidGroom / paidTotal) * 100)}%</p>
               </div>
               <div className="rounded-xl bg-primary/10 p-2.5 text-center">
-                <p className="text-[10px] text-primary">👰 신부측</p>
+                <p className="text-[10px] text-primary"> 신부측</p>
                 <p className="text-sm font-bold text-primary mt-0.5">{fmt(paidBride)}<span className="text-[10px] font-normal">만원</span></p>
                 <p className="text-[10px] text-primary">{Math.round((paidBride / paidTotal) * 100)}%</p>
               </div>

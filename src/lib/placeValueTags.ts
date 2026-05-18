@@ -18,10 +18,10 @@ export interface PlaceValueTag {
 }
 
 export const PLACE_VALUE_TAG_OPTIONS: readonly PlaceValueTag[] = [
-  { value: "친환경",     label: "친환경",       emoji: "🌱", hint: "재사용 소품·제로웨이스트 친화",   userKey: "eco" },
-  { value: "비건옵션",   label: "비건",         emoji: "🥬", hint: "비건·채식 옵션 제공",              userKey: "vegan" },
-  { value: "반려동물",   label: "반려동물 동반", emoji: "🐾", hint: "반려동물 동반 가능",               userKey: "pet" },
-  { value: "영문안내",   label: "영문 안내",     emoji: "🌐", hint: "외국인 하객용 영문 안내 지원",     userKey: "foreign_guests" },
+  { value: "친환경",     label: "친환경",       emoji: "", hint: "재사용 소품·제로웨이스트 친화",   userKey: "eco" },
+  { value: "비건옵션",   label: "비건",         emoji: "", hint: "비건·채식 옵션 제공",              userKey: "vegan" },
+  { value: "반려동물",   label: "반려동물 동반", emoji: "", hint: "반려동물 동반 가능",               userKey: "pet" },
+  { value: "영문안내",   label: "영문 안내",     emoji: "", hint: "외국인 하객용 영문 안내 지원",     userKey: "foreign_guests" },
 ] as const;
 
 const VALUE_TO_OPTION: Record<string, PlaceValueTag> = Object.fromEntries(
