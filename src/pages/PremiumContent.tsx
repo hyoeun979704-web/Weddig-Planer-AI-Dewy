@@ -67,7 +67,7 @@ const PremiumContent = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
       <header data-tutorial="premium-header" className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
+          <button onClick={() => navigate(-1)} aria-label="뒤로 가기" className="w-9 h-9 -ml-1 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-lg font-bold">프리미엄 콘텐츠</h1>
           {isPremium && <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">💎 Premium</span>}
         </div>

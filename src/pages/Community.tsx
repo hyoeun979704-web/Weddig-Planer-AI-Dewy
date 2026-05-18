@@ -278,8 +278,8 @@ const Community = () => {
           <div className="flex items-center gap-1">
             <button
               onClick={() => navigate(-1)}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
-              aria-label="뒤로가기"
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors -ml-1"
+              aria-label="뒤로 가기"
             >
               <img src={arrowLeftIcon} alt="" className="w-[15px] h-[15px]" />
             </button>

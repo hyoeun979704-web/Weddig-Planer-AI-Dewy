@@ -18,7 +18,8 @@ const BusinessVendorEdit = () => {
       <div className="flex items-center h-14">
         <button
           onClick={() => navigate(-1)}
-          className="w-10 h-10 flex items-center justify-center -ml-2"
+          aria-label="뒤로 가기"
+          className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
