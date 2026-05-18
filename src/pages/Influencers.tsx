@@ -6,6 +6,7 @@ import PageHeader from "@/components/PageHeader";
 import { useInfluencers, useCategoryLabels, Influencer } from "@/hooks/useInfluencers";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import InfoFilterSheet, { InfoFilters, initialInfoFilters } from "@/components/info/InfoFilterSheet";
+import Chip from "@/components/ui/chip";
 
 const platformIcons: Record<string, string> = {
   instagram: "",
@@ -65,17 +66,13 @@ const Influencers = () => {
       <div className="sticky top-14 z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
           {categories.map((cat) => (
-            <button
+            <Chip
               key={cat.id}
+              active={selectedCategory === cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedCategory === cat.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-accent"
-              }`}
             >
               {cat.label}
-            </button>
+            </Chip>
           ))}
           <button
             onClick={() => setFilterOpen(true)}

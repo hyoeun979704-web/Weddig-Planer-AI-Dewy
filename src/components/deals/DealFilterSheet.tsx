@@ -3,6 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import Chip from "@/components/ui/chip";
 import { Search, RotateCcw } from "lucide-react";
 
 export interface DealFilters {
@@ -54,17 +55,13 @@ const DealFilterSheet = ({ open, onOpenChange, filters, onApply }: Props) => {
             <h3 className="text-sm font-semibold text-foreground mb-2">상세 카테고리</h3>
             <div className="flex flex-wrap gap-2">
               {filterCategories.map((cat) => (
-                <button
+                <Chip
                   key={cat}
+                  active={local.category === cat}
                   onClick={() => setLocal((p) => ({ ...p, category: p.category === cat ? null : cat }))}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                    local.category === cat
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  }`}
                 >
                   {cat}
-                </button>
+                </Chip>
               ))}
             </div>
           </div>
@@ -74,17 +71,13 @@ const DealFilterSheet = ({ open, onOpenChange, filters, onApply }: Props) => {
             <h3 className="text-sm font-semibold text-foreground mb-2">지역</h3>
             <div className="flex flex-wrap gap-2">
               {regions.map((r) => (
-                <button
+                <Chip
                   key={r}
+                  active={local.region === r}
                   onClick={() => setLocal((p) => ({ ...p, region: p.region === r ? null : r }))}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                    local.region === r
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  }`}
                 >
                   {r}
-                </button>
+                </Chip>
               ))}
             </div>
           </div>

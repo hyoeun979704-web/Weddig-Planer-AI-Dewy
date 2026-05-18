@@ -7,6 +7,7 @@ import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/Cate
 import { supabase } from "@/integrations/supabase/client";
 import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
 import SortToggle, { SortMode } from "@/components/SortToggle";
+import Chip from "@/components/ui/chip";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 interface Product {
@@ -109,17 +110,13 @@ const Store = () => {
       {/* Tabs + Filter button */}
       <div className="flex items-center gap-2 px-4 py-3 overflow-x-auto scrollbar-hide border-b border-border">
         {tabs.map((tab) => (
-          <button
+          <Chip
             key={tab.id}
+            active={selectedTab === tab.id}
             onClick={() => setSelectedTab(tab.id)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              selectedTab === tab.id
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-accent"
-            }`}
           >
             {tab.label}
-          </button>
+          </Chip>
         ))}
         <button
           onClick={() => setFilterOpen(true)}

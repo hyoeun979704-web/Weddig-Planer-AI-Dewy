@@ -6,6 +6,7 @@ import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { Skeleton } from "@/components/ui/skeleton";
+import Chip from "@/components/ui/chip";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import DealFilterSheet, { DealFilters, defaultFilters } from "@/components/deals/DealFilterSheet";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
@@ -66,17 +67,13 @@ const Deals = () => {
       <div className="px-4 py-3 overflow-x-auto border-b border-border">
         <div className="flex gap-2">
           {mainCategories.map(({ key, label }) => (
-            <button
+            <Chip
               key={key}
+              active={selectedCategory === key}
               onClick={() => setSelectedCategory(key)}
-              className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${
-                selectedCategory === key
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
-              }`}
             >
               {label}
-            </button>
+            </Chip>
           ))}
           <button
             onClick={() => setFilterOpen(true)}

@@ -1,6 +1,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
 import { Loader2, Eye, Sparkles } from "lucide-react";
+import Chip from "@/components/ui/chip";
 import { generatePdfHeader, generatePdfFooter } from "@/lib/pdfGenerator";
 import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { regions, regionalAverages, categories, savingTips, type BudgetCategory } from "@/data/budgetData";
@@ -402,7 +403,7 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
               <label className="text-sm font-medium text-foreground mb-1.5 block">선호 스타일</label>
               <div className="flex flex-wrap gap-2">
                 {styleOptions.map((s) => (
-                  <button key={s} onClick={() => toggleChip(styles, s, setStyles)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${styles.includes(s) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{s}</button>
+                  <Chip key={s} active={styles.includes(s)} onClick={() => toggleChip(styles, s, setStyles)}>{s}</Chip>
                 ))}
               </div>
             </div>
@@ -438,7 +439,7 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
               <label className="text-sm font-medium text-foreground mb-1.5 block">우선순위 (최대 2개)</label>
               <div className="flex flex-wrap gap-2">
                 {priorityOptions.map((p) => (
-                  <button key={p.value} onClick={() => toggleChip(priorities, p.value, setPriorities, 2)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${priorities.includes(p.value) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{p.label}</button>
+                  <Chip key={p.value} active={priorities.includes(p.value)} onClick={() => toggleChip(priorities, p.value, setPriorities, 2)}>{p.label}</Chip>
                 ))}
               </div>
             </div>
