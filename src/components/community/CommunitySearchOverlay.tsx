@@ -293,7 +293,7 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
           // Search Results
           <div>
             {/* Filter toolbar */}
-            <div className="sticky top-0 z-10 bg-background border-b border-border">
+            <div className="sticky top-0 z-10 bg-card border-b border-border">
               <div className="flex items-center justify-between px-4 py-2.5">
                 <p className="text-sm text-muted-foreground">
                   {isLoading ? (

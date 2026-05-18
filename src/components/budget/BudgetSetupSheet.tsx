@@ -410,7 +410,7 @@ export default function BudgetSetupSheet({
             </div>
           </div>
           <p className="text-[10px] text-muted-foreground/70 mt-2 text-center">
-            * 평균 데이터는 2025년 상반기 기준 · 실제 견적은 업체마다 다를 수 있어요
+            * 평균 데이터는 2026년 상반기 기준 · 실제 견적은 업체마다 다를 수 있어요
           </p>
         </div>
         </div>

@@ -135,7 +135,7 @@ const PersonaDashboard = () => {
       data-tutorial="persona-dashboard"
       className="px-4 pt-4 pb-2 animate-fade-in"
     >
-      <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-accent/40 to-background border border-primary/15 p-4 relative overflow-hidden">
+      <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-accent/40 to-card border border-primary/15 p-4 relative overflow-hidden">
         {/* Decorative blur */}
         <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-primary/10 blur-3xl" aria-hidden />
 

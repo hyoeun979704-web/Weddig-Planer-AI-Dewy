@@ -262,7 +262,7 @@ const Tips = () => {
 
       <main>
         {!uiSearchMode && (
-          <section className="pt-4 pb-2">
+          <section className="pt-4 pb-2 bg-[hsl(var(--pink-100))]">
             <div className="flex items-center gap-2 px-4 mb-3">
               <Flame className="w-5 h-5 text-rose-500 fill-rose-500" />
               <h2 className="text-base font-bold text-foreground">HOT</h2>

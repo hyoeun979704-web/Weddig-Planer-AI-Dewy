@@ -141,7 +141,7 @@ const Events = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
             <button onClick={() => navigate(-1)} className="p-1" aria-label="뒤로가기">

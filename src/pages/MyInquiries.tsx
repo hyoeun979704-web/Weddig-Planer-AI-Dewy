@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MessageSquare, Calendar, ChevronRight, Clock } from "lucide-react";
+import { MessageSquare, Calendar, ChevronRight, Clock } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import BottomNav from "@/components/BottomNav";
 
 const inquiries = [
@@ -8,7 +9,7 @@ const inquiries = [
     type: "inquiry",
     vendor: "더채플앳청담",
     title: "예약 가능 일정 문의",
-    date: "2025-01-20",
+    date: "2026-01-20",
     status: "answered",
     lastMessage: "네, 6월 15일 오후 2시 예약 가능합니다."
   },
@@ -17,7 +18,7 @@ const inquiries = [
     type: "reservation",
     vendor: "루미에르 스튜디오",
     title: "스튜디오 촬영 예약",
-    date: "2025-01-18",
+    date: "2026-01-18",
     status: "pending",
     lastMessage: "예약 요청이 접수되었습니다."
   },
@@ -26,7 +27,7 @@ const inquiries = [
     type: "inquiry",
     vendor: "블룸 드레스",
     title: "드레스 피팅 예약",
-    date: "2025-01-15",
+    date: "2026-01-15",
     status: "answered",
     lastMessage: "2월 중으로 피팅 가능합니다."
   },
@@ -42,14 +43,7 @@ const MyInquiries = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center h-14 px-4">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="flex-1 text-center font-semibold text-lg pr-10">내 문의/예약</h1>
-        </div>
-      </header>
+      <PageHeader title="내 문의/예약" />
 
       <main className="pb-20">
         {/* Tabs */}

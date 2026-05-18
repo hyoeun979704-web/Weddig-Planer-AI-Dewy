@@ -546,7 +546,7 @@ const CategoryFilterBar = forwardRef<HTMLDivElement, CategoryFilterBarProps>(fun
   } = useCategoryFilterStore();
 
   return (
-    <div className="sticky top-14 z-30 bg-background border-b border-border">
+    <div className="sticky top-14 z-30 bg-card border-b border-border">
       <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto scrollbar-hide">
         {/* Filter Sheet Trigger */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

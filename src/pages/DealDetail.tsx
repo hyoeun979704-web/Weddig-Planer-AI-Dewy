@@ -83,7 +83,7 @@ const DealDetail = () => {
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1">
             <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -150,7 +150,7 @@ const DealDetail = () => {
                 <span className="flex-1 text-center font-mono text-lg font-bold tracking-widest text-foreground">
                   {deal.coupon_code}
                 </span>
-                <button onClick={handleCopyCode} className="p-2 hover:bg-background rounded-lg transition-colors">
+                <button onClick={handleCopyCode} className="p-2 hover:bg-muted rounded-lg transition-colors">
                   {copiedCode ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5 text-muted-foreground" />}
                 </button>
               </div>

@@ -59,7 +59,7 @@ const Influencers = () => {
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="p-1">

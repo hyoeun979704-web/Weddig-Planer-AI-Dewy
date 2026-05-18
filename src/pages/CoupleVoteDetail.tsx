@@ -135,7 +135,7 @@ const CoupleVoteDetail = () => {
   if (!vote) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+        <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center gap-3 px-4 h-14">
             <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
             <h1 className="text-lg font-bold">의견 조율</h1>
@@ -151,7 +151,7 @@ const CoupleVoteDetail = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-lg font-bold truncate">{vote.topic}</h1>

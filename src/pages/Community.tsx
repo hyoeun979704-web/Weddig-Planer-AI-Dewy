@@ -317,7 +317,7 @@ const Community = () => {
           <button
             type="button"
             onClick={() => setIsSearchOpen(true)}
-            className="w-full flex items-center gap-2 px-4 h-10 rounded-full bg-muted/60 text-left hover:bg-muted transition-colors"
+            className="w-full flex items-center gap-2 px-4 h-10 rounded-full bg-card border border-border text-left hover:bg-muted/40 transition-colors"
             aria-label="게시글 검색"
           >
             <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -327,7 +327,7 @@ const Community = () => {
           </button>
         </div>
 
-        <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-3 pb-2 bg-card">
+        <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-3 pb-2 bg-[hsl(var(--pink-50))]">
           {STYLE_FILTERS.map((filter) => {
             const isActive = styleFilter === filter.key;
             const isMine =
@@ -362,7 +362,7 @@ const Community = () => {
 
         <div
           data-tutorial="community-categories"
-          className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-1 pb-3 bg-card"
+          className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-1 pb-3 bg-[hsl(var(--pink-50))]"
         >
           {categories.map((category) => {
             const isActive = selectedCategory === category;

@@ -161,7 +161,7 @@ const StoreFilterSheet = ({ open, onOpenChange, filters, onApply }: StoreFilterS
         </div>
 
         {/* Apply */}
-        <div className="sticky bottom-0 bg-background pt-3 pb-2 border-t border-border">
+        <div className="sticky bottom-0 bg-card pt-3 pb-2 border-t border-border">
           <Button onClick={apply} className="w-full h-12 text-base font-semibold rounded-xl">
             {activeCount > 0 ? `필터 적용 (${activeCount})` : "필터 적용"}
           </Button>

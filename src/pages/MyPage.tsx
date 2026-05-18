@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Star, Users, ArrowRight, Crown } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import DewyLogo from "@/components/home/DewyLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -33,7 +34,7 @@ const GuestMyPage = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
           <div className="w-5" />
@@ -50,7 +51,7 @@ const GuestMyPage = () => {
 
             <div className="relative">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">💍</span>
+                <DewyLogo size={28} />
                 <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">무료</span>
               </div>
               <h2 className="text-lg font-bold text-foreground mb-1">웨딩 준비, 여기서 시작하세요</h2>
@@ -65,7 +66,7 @@ const GuestMyPage = () => {
                 <Button
                   variant="outline"
                   onClick={() => navigate("/auth")}
-                  className="gap-1.5 rounded-xl h-11 bg-background/50"
+                  className="gap-1.5 rounded-xl h-11"
                 >
                   <LogIn className="w-4 h-4" />
                   로그인
@@ -158,7 +159,7 @@ const GuestMyPage = () => {
         <div className="px-4 py-6">
           <div className="text-center text-[11px] text-muted-foreground">
             <p>앱 버전 1.0.0</p>
-            <p className="mt-0.5">© 2025 웨딩 플래너</p>
+            <p className="mt-0.5">© 2026 Dewy</p>
           </div>
         </div>
       </main>
@@ -194,7 +195,7 @@ const MyPage = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
           <button onClick={() => navigate("/settings")} className="p-2 active:scale-90 transition-transform">
@@ -248,7 +249,7 @@ const MyPage = () => {
         <div className="px-4 py-6">
           <div className="text-center text-[11px] text-muted-foreground">
             <p>앱 버전 1.0.0</p>
-            <p className="mt-0.5">© 2025 웨딩 플래너</p>
+            <p className="mt-0.5">© 2026 Dewy</p>
           </div>
         </div>
       </main>

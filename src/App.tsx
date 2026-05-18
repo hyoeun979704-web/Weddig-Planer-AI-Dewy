@@ -3,7 +3,6 @@ import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import SessionTracker from "@/components/SessionTracker";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -133,7 +132,6 @@ const App = () => (
         <PWAUpdatePrompt />
         <SessionTracker />
         <WeddingBlessingSplash />
-        <Toaster />
         <Sonner />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
