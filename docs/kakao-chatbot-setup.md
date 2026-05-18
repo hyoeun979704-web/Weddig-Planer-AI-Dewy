@@ -37,16 +37,21 @@ Dewy의 카카오톡 채널 챗봇은 **서비스 소개 + 앱 설치 유도(CTA
 3. **운영채널 연결** 에서 1번에서 만든 채널을 연결
    - 비즈니스 채널 인증이 끝나지 않았다면 "개발용 운영"으로도 테스트 가능
 
-## 3. 스킬(Skill) 등록 — 우리 Edge Function 연결
+## 3. 스킬(Skill) 등록 — Vercel API Route 연결
+
+> ⚠️ Supabase Edge Function은 API 게이트웨이가 `apikey` 헤더를 요구해서, 카카오 i 오픈빌더의 외부 호출이 막힙니다. 그래서 **Vercel Serverless Function** 으로 동일 로직을 노출합니다(파일: `api/kakao-chatbot.ts`). 이 엔드포인트는 인증이 없어서 카카오에서 바로 호출 가능합니다.
 
 이 챗봇은 단일 엔드포인트가 사용자의 발화/액션에 따라 응답을 분기합니다. 스킬은 하나만 만들면 됩니다.
 
 1. 오픈빌더 좌측 메뉴 **스킬 → +스킬 만들기**
 2. 입력값:
    - **이름**: `dewy-info-skill`
-   - **URL**: `https://<YOUR-PROJECT-REF>.supabase.co/functions/v1/kakao-chatbot-skill`
+   - **URL**: `https://<your-vercel-domain>/api/kakao-chatbot`
+     - 운영 도메인 예: `https://dewy.kr/api/kakao-chatbot`
+     - 프리뷰 배포 URL: `https://<branch>-<project>.vercel.app/api/kakao-chatbot`
    - **요청 방식**: POST
    - **요청 파라미터**: (비워둠 — 카카오 기본 페이로드 사용)
+   - **헤더값 입력**: (비워둠 — 별도 인증 헤더 불필요)
 3. **저장 → 발화 테스트** 에서 다음을 호출해 응답이 오는지 확인
    ```json
    {
@@ -87,15 +92,17 @@ Dewy의 카카오톡 채널 챗봇은 **서비스 소개 + 앱 설치 유도(CTA
 
 ## 5. 배포 및 운영
 
+`api/kakao-chatbot.ts` 는 Vercel 이 자동으로 서버리스 함수로 배포합니다. 별도 명령 없이 메인 브랜치에 머지하면 운영 URL에 반영됩니다.
+
 ```bash
-# 로컬에서 함수 동작 확인
-supabase functions serve kakao-chatbot-skill --no-verify-jwt
+# 로컬 동작 확인 (Vite 와 별도)
+vercel dev
 
 # 운영 배포
-supabase functions deploy kakao-chatbot-skill --no-verify-jwt
+git push origin main  # Vercel auto-deploy
 ```
 
-> `supabase/config.toml` 에 `verify_jwt = false` 가 설정되어 있어, 카카오 서버의 익명 호출이 통과합니다.
+> `vercel.json` 의 SPA rewrite 규칙에 `api` 가 제외 패턴으로 추가되어 있어, `/api/kakao-chatbot` 으로 들어오는 요청이 `index.html` 로 리다이렉트되지 않습니다.
 
 ### 환경 변수 (선택)
 
@@ -104,7 +111,11 @@ supabase functions deploy kakao-chatbot-skill --no-verify-jwt
 | `DEWY_APP_URL` | `https://dewy.kr` | 모든 CTA 버튼이 향하는 웹앱 URL |
 | `DEWY_LOGO_URL` | `${DEWY_APP_URL}/dewy-logo.png` | 카드 썸네일에 사용할 로고 이미지 URL |
 
-운영 도메인이 바뀌면 Supabase 대시보드 → **Edge Functions → kakao-chatbot-skill → Settings → Environment variables** 에서 위 값을 덮어쓰세요.
+운영 도메인이 바뀌면 Vercel 대시보드 → **Project → Settings → Environment Variables** 에서 위 값을 덮어쓰세요.
+
+### Supabase Edge Function 은 왜 안 쓰나요?
+
+`supabase/functions/kakao-chatbot-skill` 도 함께 들어 있지만, Supabase 의 API 게이트웨이는 `verify_jwt: false` 라도 `apikey` 헤더(또는 `?apikey=` 쿼리)를 요구해서 카카오 i 오픈빌더 같은 외부 webhook 시스템이 호출하기 까다롭습니다. 운영은 Vercel API Route 를 사용하세요.
 
 ## 6. 작동 점검
 
@@ -128,6 +139,7 @@ supabase functions deploy kakao-chatbot-skill --no-verify-jwt
 ## 8. 트러블슈팅
 
 - **스킬 응답이 빈 메시지로 보일 때**: 응답 JSON 이 `{ "version": "2.0", "template": { "outputs": [...] } }` 구조인지 확인. `outputs` 가 빈 배열이면 카카오는 메시지를 출력하지 않습니다.
-- **401 / JWT 오류**: `supabase/config.toml` 의 `[functions.kakao-chatbot-skill] verify_jwt = false` 누락 — 추가 후 재배포.
+- **"Invalid Json" / 401 오류**: 카카오 스킬 URL 이 Supabase Edge Function 으로 잡혀 있는지 확인 — Vercel API Route (`/api/kakao-chatbot`) 로 바꿔야 합니다.
+- **`/api/kakao-chatbot` 이 index.html 을 반환할 때**: `vercel.json` 의 rewrite 규칙에 `api` 가 제외 패턴에 포함돼 있는지 확인.
 - **카드 이미지가 안 보일 때**: `DEWY_LOGO_URL` 이 HTTPS 이고, 카카오에서 접근 가능한 절대 URL 인지 확인.
 - **버튼 링크가 인앱 브라우저에서만 열림**: 정상 동작. 외부 브라우저로 강제 이동하려면 카카오에서 제공하는 `extra` 옵션 또는 별도 랜딩 페이지가 필요합니다.
