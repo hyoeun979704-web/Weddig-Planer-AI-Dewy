@@ -189,7 +189,10 @@ const Profile = () => {
                 {getUserInitial()}
               </AvatarFallback>
             </Avatar>
-            <button className="absolute bottom-0 right-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg">
+            <button
+              aria-label="프로필 사진 변경"
+              className="absolute bottom-0 right-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 active:scale-90 transition-all"
+            >
               <Camera className="w-4 h-4" />
             </button>
           </div>

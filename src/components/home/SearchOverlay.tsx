@@ -177,9 +177,10 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
               autoFocus
             />
           </form>
-          <button 
+          <button
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            aria-label="검색 닫기"
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors -mr-2"
           >
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
@@ -237,9 +238,9 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
                     <Clock className="w-4 h-4" />
                     최근 검색어
                   </h3>
-                  <button 
+                  <button
                     onClick={clearRecentSearches}
-                    className="text-sm text-muted-foreground hover:text-foreground"
+                    className="text-sm text-muted-foreground hover:text-foreground active:opacity-60 transition-colors"
                   >
                     전체 삭제
                   </button>
@@ -249,7 +250,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
                     <button
                       key={index}
                       onClick={() => handleSuggestionClick(search)}
-                      className="px-3 py-1.5 bg-muted rounded-full text-sm text-foreground hover:bg-muted/80 transition-colors"
+                      className="px-3 py-1.5 bg-muted rounded-full text-sm text-foreground hover:bg-muted/80 active:scale-95 transition-all"
                     >
                       {search}
                     </button>
@@ -288,7 +289,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
                   <button
                     key={index}
                     onClick={() => handleSuggestionClick(search)}
-                    className="px-3 py-1.5 border border-border rounded-full text-sm text-foreground hover:bg-muted transition-colors"
+                    className="px-3 py-1.5 border border-border rounded-full text-sm text-foreground hover:bg-muted active:scale-95 transition-all"
                   >
                     {search}
                   </button>
