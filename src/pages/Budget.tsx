@@ -719,7 +719,7 @@ const Budget = () => {
                 const heightPct = trendMax > 0 ? (b.total / trendMax) * 100 : 0;
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-                    <span className={cn("text-[11px] tabular-nums",
+                    <span className={cn("text-xs tabular-nums",
                       b.total > 0 ? "text-foreground font-bold" : "text-muted-foreground"
                     )}>
                       {b.total > 0 ? fmt(b.total) : "·"}
