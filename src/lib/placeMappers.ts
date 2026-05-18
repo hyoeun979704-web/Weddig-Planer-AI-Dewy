@@ -62,6 +62,23 @@ export const PLACE_TO_KOREAN_CATEGORY: Record<string, string> = {
   ceremony: "본식 진행",
 };
 
+// Maps a free-text Korean query (e.g. "예단", "본식", "혼인신고") to every
+// category slug whose Korean label contains the query. Used by tip-video
+// search so a user typing "예단" also pulls in videos tagged
+// `wedding_gifts`, not just videos whose title literally says "예단".
+//
+// Queries shorter than 2 chars are skipped — a single character like "스"
+// would match too many labels to be useful as a signal.
+export const koreanQueryToCategorySlugs = (rawQuery: string): string[] => {
+  const q = rawQuery.trim();
+  if (q.length < 2) return [];
+  const out: string[] = [];
+  for (const [slug, label] of Object.entries(PLACE_TO_KOREAN_CATEGORY)) {
+    if (label.includes(q)) out.push(slug);
+  }
+  return out;
+};
+
 // Mapping from place category slug → category-specific card table name
 export const CATEGORY_CARD_TABLE: Record<string, string> = {
   wedding_hall: "place_wedding_halls",
