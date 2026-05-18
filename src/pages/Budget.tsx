@@ -710,8 +710,8 @@ const Budget = () => {
         {trendActiveCount >= 2 && (
           <div className="rounded-2xl bg-card border border-border p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold text-foreground">월별 지출 추이</p>
-              <p className="text-[10px] text-muted-foreground">최근 6개월</p>
+              <p className="text-sm font-semibold text-foreground">월별 지출 추이</p>
+              <p className="text-xs text-muted-foreground">최근 6개월</p>
             </div>
             <div className="flex items-end justify-between gap-2 h-24">
               {monthlyTrend.map((b, i) => {
@@ -719,7 +719,7 @@ const Budget = () => {
                 const heightPct = trendMax > 0 ? (b.total / trendMax) * 100 : 0;
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-                    <span className={cn("text-[9px] tabular-nums",
+                    <span className={cn("text-[11px] tabular-nums",
                       b.total > 0 ? "text-foreground font-bold" : "text-muted-foreground"
                     )}>
                       {b.total > 0 ? fmt(b.total) : "·"}
@@ -732,7 +732,7 @@ const Budget = () => {
                         style={{ height: `${Math.max(heightPct, b.total > 0 ? 6 : 0)}%` }}
                       />
                     </div>
-                    <span className={cn("text-[10px]",
+                    <span className={cn("text-xs",
                       isCurrent ? "text-foreground font-bold" : "text-muted-foreground"
                     )}>{b.label}</span>
                   </div>
@@ -746,7 +746,7 @@ const Budget = () => {
               const diff = cur - prev;
               const diffPct = Math.round((Math.abs(diff) / prev) * 100);
               return (
-                <p className={cn("text-caption mt-2 text-center",
+                <p className={cn("text-[10px] mt-2 text-center",
                   diff > 0 ? "text-destructive" : diff < 0 ? "text-emerald-600" : "text-muted-foreground"
                 )}>
                   이번 달은 지난 달보다 {diff === 0 ? "동일" : `${diffPct}% ${diff > 0 ? "더 썼어요" : "덜 썼어요"}`}
