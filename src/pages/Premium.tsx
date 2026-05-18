@@ -132,7 +132,10 @@ const Premium = () => {
                 <span>💗 월간 10 / 연간 180 (6개월치 보너스)</span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-2">2026년 7월까지 월간·연간 구독 시 한정 · 체험 종료 후 자동 결제 없음</p>
-              <button onClick={handleStartTrial} className="mt-3 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
+              <button
+                onClick={handleStartTrial}
+                className="mt-3 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all"
+              >
                 무료 체험 시작하기
               </button>
             </div>
@@ -146,8 +149,8 @@ const Premium = () => {
               {/* Monthly */}
               <button
                 onClick={() => setSelectedPlan("monthly")}
-                className={`p-4 rounded-2xl border-2 text-left transition-colors relative ${
-                  selectedPlan === "monthly" ? "border-primary bg-primary/5" : "border-border bg-card"
+                className={`p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.98] relative ${
+                  selectedPlan === "monthly" ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/30"
                 }`}
               >
                 <div className="absolute -top-2.5 left-3 px-2 py-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
@@ -161,8 +164,8 @@ const Premium = () => {
               {/* Yearly */}
               <button
                 onClick={() => setSelectedPlan("yearly")}
-                className={`p-4 rounded-2xl border-2 text-left transition-colors relative ${
-                  selectedPlan === "yearly" ? "border-primary bg-primary/5" : "border-border bg-card"
+                className={`p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.98] relative ${
+                  selectedPlan === "yearly" ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/30"
                 }`}
               >
                 <div className="absolute -top-2.5 right-3 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full">
@@ -177,7 +180,10 @@ const Premium = () => {
                 <p className="text-xs text-muted-foreground">/년 · 월 3,250원</p>
               </button>
             </div>
-            <button onClick={handleSubscribe} className="w-full mt-3 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
+            <button
+              onClick={handleSubscribe}
+              className="w-full mt-3 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all"
+            >
               구독하기 (테스트)
             </button>
           </div>
@@ -237,7 +243,7 @@ const Premium = () => {
               <button
                 key={i}
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full text-left bg-card border border-border rounded-2xl p-4"
+                className="w-full text-left bg-card border border-border rounded-2xl p-4 hover:border-primary/30 active:scale-[0.99] transition-all"
               >
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-foreground">{faq.q}</p>

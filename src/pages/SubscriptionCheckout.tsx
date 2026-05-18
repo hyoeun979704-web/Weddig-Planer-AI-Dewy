@@ -148,7 +148,7 @@ const SubscriptionCheckout = () => {
         <button
           onClick={handlePayment}
           disabled={isSubmitting}
-          className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
         >
           {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
           {type === "trial" ? "카카오페이로 인증하기" : `카카오페이로 ${amount.toLocaleString()}원 결제`}

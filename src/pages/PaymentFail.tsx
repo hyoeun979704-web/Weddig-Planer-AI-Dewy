@@ -19,13 +19,13 @@ const PaymentFail = () => {
       <div className="flex gap-3 mt-4">
         <button
           onClick={() => navigate("/checkout")}
-          className="px-5 py-3 bg-primary text-primary-foreground rounded-2xl font-medium"
+          className="px-5 py-3 bg-primary text-primary-foreground rounded-2xl font-medium hover:bg-primary/90 active:scale-[0.98] transition-all"
         >
           다시 시도하기
         </button>
         <button
           onClick={() => navigate("/")}
-          className="px-5 py-3 border border-border rounded-2xl font-medium text-foreground"
+          className="px-5 py-3 border border-border rounded-2xl font-medium text-foreground hover:bg-muted active:scale-[0.98] transition-all"
         >
           홈으로
         </button>

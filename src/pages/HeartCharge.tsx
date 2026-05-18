@@ -122,12 +122,12 @@ const HeartCharge = () => {
                 key={pkg.id}
                 onClick={() => handleSelect(pkg)}
                 disabled={disabled}
-                className={`w-full p-4 rounded-2xl border-2 text-left transition-colors relative ${
+                className={`w-full p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.99] disabled:active:scale-100 relative ${
                   active
                     ? "border-primary bg-primary/5"
                     : disabled
                     ? "border-border bg-muted opacity-50"
-                    : "border-border bg-card"
+                    : "border-border bg-card hover:border-primary/30"
                 }`}
               >
                 {pkg.highlight && (
@@ -212,7 +212,7 @@ const HeartCharge = () => {
           <button
             onClick={handlePay}
             disabled={isSubmitting}
-            className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
           >
             {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
             카카오페이로 결제하기
