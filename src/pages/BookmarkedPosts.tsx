@@ -1,14 +1,14 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  Bookmark, 
-  Heart, 
-  MessageSquare, 
-  Eye, 
-  Image,
-  ArrowLeft
+import {
+  Bookmark,
+  Heart,
+  MessageSquare,
+  Eye,
+  Image
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -105,14 +105,7 @@ const BookmarkedPosts = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-        <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-          <div className="flex items-center px-4 h-14 gap-3">
-            <button onClick={() => navigate(-1)} className="p-1">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="text-lg font-bold text-foreground">저장한 게시글</h1>
-          </div>
-        </header>
+        <PageHeader title="북마크한 게시글" />
 
         <main className="pb-20 px-4">
           <div className="flex flex-col items-center justify-center py-20">
@@ -140,18 +133,14 @@ const BookmarkedPosts = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center px-4 h-14 gap-3">
-          <button onClick={() => navigate(-1)} className="p-1">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground">저장한 게시글</h1>
-          {posts.length > 0 && (
-            <span className="text-sm text-muted-foreground">({posts.length})</span>
-          )}
-        </div>
-      </header>
+      <PageHeader
+        title="북마크한 게시글"
+        rightExtra={
+          posts.length > 0 ? (
+            <span className="text-sm text-muted-foreground px-2">({posts.length})</span>
+          ) : undefined
+        }
+      />
 
       {/* Main Content */}
       <main className="pb-20">

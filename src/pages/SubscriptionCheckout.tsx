@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -70,16 +71,7 @@ const SubscriptionCheckout = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground">
-            {type === "trial" ? "결제 정보 등록" : "구독 결제"}
-          </h1>
-        </div>
-      </header>
+      <PageHeader title={type === "trial" ? "결제 정보 등록" : "구독 결제"} />
 
       <main className="pb-32 px-4 py-4 space-y-4">
         <div className="p-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-2xl border border-primary/20">

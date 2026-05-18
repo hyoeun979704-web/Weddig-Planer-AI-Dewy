@@ -1,6 +1,7 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, ExternalLink, Users, Play, Image, FileText, Eye, Heart, Loader2 } from "lucide-react";
+import { ExternalLink, Users, Play, Image, FileText, Eye, Heart, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { useInfluencerDetail, useCategoryLabels } from "@/hooks/useInfluencers";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "@/components/FavoriteButton";

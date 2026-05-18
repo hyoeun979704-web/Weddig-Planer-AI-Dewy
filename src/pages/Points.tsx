@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Coins, Clock, ChevronRight, Loader2, Check, Flame } from "lucide-react";
+import { Coins, Clock, ChevronRight, Loader2, Check, Flame } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePoints, labelForReason } from "@/hooks/usePoints";
 import { useAttendance } from "@/hooks/useAttendance";
@@ -37,14 +38,7 @@ const Points = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center h-14 px-4">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="flex-1 text-center font-semibold text-lg pr-10">포인트</h1>
-        </div>
-      </header>
+      <PageHeader title="포인트" />
 
       <main className="pb-20">
         {/* Point Summary */}
