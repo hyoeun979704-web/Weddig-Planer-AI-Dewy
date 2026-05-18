@@ -52,6 +52,15 @@ describe("classifyTipCategories", () => {
     ).toEqual(["bridal_care"]);
   });
 
+  it("classifies 신부관리 / 바디관리 phrasing as bridal_care", () => {
+    expect(
+      classifyTipCategories("비용 절감 갓성비 신부관리 총정리", ORDER),
+    ).toEqual(["bridal_care"]);
+    expect(
+      classifyTipCategories("예비신부 바디관리 후기", ORDER),
+    ).toEqual(["bridal_care"]);
+  });
+
   it("returns multiple categories for multi-topic videos", () => {
     const cats = classifyTipCategories(
       "혼주 한복 + 결혼식 식순 가이드",
