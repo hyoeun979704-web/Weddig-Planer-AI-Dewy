@@ -490,7 +490,7 @@ const Favorites = () => {
         {/* Search row */}
         {searchOpen ? (
           <div className="flex items-center gap-2 px-4 pb-3">
-            <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-muted rounded-xl">
+            <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-xl">
               <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               <input
                 autoFocus

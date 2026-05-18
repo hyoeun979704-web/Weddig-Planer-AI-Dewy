@@ -120,7 +120,7 @@ const HomeCategoryGrid = () => {
 
   return (
     <>
-      <section className="bg-[hsl(var(--pink-50))] px-[30px] pt-[30px] pb-[10px]">
+      <section className="bg-[hsl(var(--pink-100))] px-[30px] pt-[30px] pb-[10px]">
         <div className="grid grid-cols-4 gap-x-5 gap-y-[5px]">
           {row1.map((cat) => (
             <Tile key={cat.label} item={cat} onClick={() => navigate(cat.path)} />
@@ -128,7 +128,7 @@ const HomeCategoryGrid = () => {
         </div>
       </section>
       {row2.length > 0 && (
-        <section className="bg-[hsl(var(--pink-50))] px-[30px] pt-[10px] pb-[30px]">
+        <section className="bg-[hsl(var(--pink-100))] px-[30px] pt-[10px] pb-[30px]">
           <div className="grid grid-cols-4 gap-x-5 gap-y-[5px]">
             {row2.map((cat) => (
               <Tile key={cat.label} item={cat} onClick={() => navigate(cat.path)} />

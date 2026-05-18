@@ -317,7 +317,7 @@ const Community = () => {
           <button
             type="button"
             onClick={() => setIsSearchOpen(true)}
-            className="w-full flex items-center gap-2 px-4 h-10 rounded-full bg-muted/60 text-left hover:bg-muted transition-colors"
+            className="w-full flex items-center gap-2 px-4 h-10 rounded-full bg-card border border-border text-left hover:bg-muted/40 transition-colors"
             aria-label="게시글 검색"
           >
             <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />

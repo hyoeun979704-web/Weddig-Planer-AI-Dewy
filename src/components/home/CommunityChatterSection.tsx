@@ -70,7 +70,7 @@ const CommunityChatterSection = () => {
   const items: PostListItem[] = posts && posts.length >= 2 ? posts.slice(0, 2) : PLACEHOLDERS;
 
   return (
-    <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-50))]">
+    <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-100))]">
       <h2 className="text-[16px] font-bold text-black mb-[10px]">오늘의 수다</h2>
       <div className="flex gap-[8px]">
         {isLoading ? (
