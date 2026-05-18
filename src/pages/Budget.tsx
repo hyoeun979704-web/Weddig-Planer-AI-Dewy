@@ -746,7 +746,7 @@ const Budget = () => {
               const diff = cur - prev;
               const diffPct = Math.round((Math.abs(diff) / prev) * 100);
               return (
-                <p className={cn("text-[10px] mt-2 text-center",
+                <p className={cn("text-caption mt-2 text-center",
                   diff > 0 ? "text-destructive" : diff < 0 ? "text-emerald-600" : "text-muted-foreground"
                 )}>
                   이번 달은 지난 달보다 {diff === 0 ? "동일" : `${diffPct}% ${diff > 0 ? "더 썼어요" : "덜 썼어요"}`}
