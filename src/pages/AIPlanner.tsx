@@ -299,8 +299,8 @@ const AIPlanner = () => {
             >
               {/* Welcome card */}
               <div data-tutorial="ai-header" className="text-center py-6">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-accent mx-auto mb-4 flex items-center justify-center">
-                  <DewyLogo size={40} />
+                <div className="mx-auto mb-4 flex items-center justify-center">
+                  <DewyLogo size={56} />
                 </div>
                 <h2 className="text-lg font-bold text-foreground mb-1">{greeting.title}</h2>
                 <p className="text-sm text-muted-foreground whitespace-pre-line">
