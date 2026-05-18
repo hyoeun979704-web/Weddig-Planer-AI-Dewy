@@ -24,14 +24,14 @@ interface CategoryItem {
 }
 
 const baseTiles: CategoryItem[] = [
-  { label: "웨딩홀", image: weddingHallImg, path: "/venues", emoji: "🏛️", excludeKey: "wedding_hall" },
-  { label: "스드메", image: studioImg, path: "/studios", emoji: "📸", excludeKey: "studio" },
-  { label: "예복", image: suitImg, path: "/suit", emoji: "🤵", excludeKey: "tailor_shop" },
-  { label: "한복", image: hanbokImg, path: "/hanbok", emoji: "👘", excludeKey: "hanbok" },
-  { label: "청첩장 모임", image: invitationImg, path: "/invitation-venues", emoji: "💌", excludeKey: "invitation_venue" },
-  { label: "가전·혼수", image: applianceImg, path: "/appliances", emoji: "🏠", excludeKey: "appliance" },
-  { label: "예물·예단", image: jewelryImg, path: "/jewelry", emoji: "💍" },
-  { label: "신혼여행", image: honeymoonImg, path: "/honeymoon", emoji: "✈️", excludeKey: "honeymoon" },
+  { label: "웨딩홀", image: weddingHallImg, path: "/venues", emoji: "", excludeKey: "wedding_hall" },
+  { label: "스드메", image: studioImg, path: "/studios", emoji: "", excludeKey: "studio" },
+  { label: "예복", image: suitImg, path: "/suit", emoji: "", excludeKey: "tailor_shop" },
+  { label: "한복", image: hanbokImg, path: "/hanbok", emoji: "", excludeKey: "hanbok" },
+  { label: "청첩장 모임", image: invitationImg, path: "/invitation-venues", emoji: "", excludeKey: "invitation_venue" },
+  { label: "가전·혼수", image: applianceImg, path: "/appliances", emoji: "", excludeKey: "appliance" },
+  { label: "예물·예단", image: jewelryImg, path: "/jewelry", emoji: "" },
+  { label: "신혼여행", image: honeymoonImg, path: "/honeymoon", emoji: "", excludeKey: "honeymoon" },
 ];
 
 // Style-specific replacement tiles surfaced in slots freed up by excluded
@@ -39,15 +39,15 @@ const baseTiles: CategoryItem[] = [
 // in the grid. Paths reuse existing routes (community filter, store, etc.)
 // so we don't add UI without destinations.
 const SELF_EXTRA_TILES: CategoryItem[] = [
-  { label: "DIY 청첩장", image: invitationImg, path: "/invitation-venues", emoji: "✏️" },
-  { label: "셀프 굿즈", image: applianceImg, path: "/store", emoji: "🎁" },
-  { label: "셀프 후기", image: studioImg, path: "/community?style=self", emoji: "📖" },
+  { label: "DIY 청첩장", image: invitationImg, path: "/invitation-venues", emoji: "" },
+  { label: "셀프 굿즈", image: applianceImg, path: "/store", emoji: "" },
+  { label: "셀프 후기", image: studioImg, path: "/community?style=self", emoji: "" },
 ];
 
 const SMALL_EXTRA_TILES: CategoryItem[] = [
-  { label: "스몰 베뉴", image: invitationImg, path: "/invitation-venues", emoji: "🏡" },
-  { label: "답례품", image: applianceImg, path: "/store", emoji: "🎀" },
-  { label: "스몰 후기", image: weddingHallImg, path: "/community?style=small", emoji: "📖" },
+  { label: "스몰 베뉴", image: invitationImg, path: "/invitation-venues", emoji: "" },
+  { label: "답례품", image: applianceImg, path: "/store", emoji: "" },
+  { label: "스몰 후기", image: weddingHallImg, path: "/community?style=small", emoji: "" },
 ];
 
 // 페르소나별로 baseTiles 의 노출 우선순위를 다르게 합니다.

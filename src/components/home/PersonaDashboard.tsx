@@ -16,16 +16,16 @@ import {
 } from "@/data/personaMissions";
 
 const CATEGORY_EMOJI: Record<string, string> = {
-  wedding_hall: "🏛️",
-  studio: "📸",
-  dress_shop: "👗",
-  makeup_shop: "💄",
-  hanbok: "👘",
-  tailor_shop: "🤵",
-  honeymoon: "✈️",
-  appliance: "🏠",
-  invitation_venue: "💌",
-  general: "📝",
+  wedding_hall: "",
+  studio: "",
+  dress_shop: "",
+  makeup_shop: "",
+  hanbok: "",
+  tailor_shop: "",
+  honeymoon: "",
+  appliance: "",
+  invitation_venue: "",
+  general: "",
 };
 
 const formatMinutes = (seconds: number) => {

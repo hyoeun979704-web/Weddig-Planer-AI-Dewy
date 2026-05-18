@@ -180,22 +180,22 @@ export interface CategoryInfo {
 }
 
 export const categories: Record<BudgetCategory, CategoryInfo> = {
-  venue: { label: "웨딩홀", emoji: "💒", color: "#F4A7B9", sub_items: ["웨딩홀 대관료", "세팅비", "주차비", "폐백실", "포토존", "추가 시간", "기타"] },
-  meal: { label: "식대", emoji: "🍽️", color: "#F97316", sub_items: ["성인 식대(뷔페/코스)", "어린이 식대", "주류/음료", "추가 인원 식대", "케이크/디저트", "기타"] },
-  sdm: { label: "스드메", emoji: "📸", color: "#A78BFA", sub_items: ["스튜디오 촬영", "드레스 대여", "메이크업", "본식스냅", "영상 촬영", "원본 데이터", "앨범 추가", "헬퍼", "부케", "기타"] },
-  suit: { label: "예복", emoji: "👔", color: "#1E40AF", sub_items: ["신랑 예복(턱시도/정장)", "구두·셔츠·타이", "신부측 부모 예복", "신랑측 부모 예복", "맞춤·가봉비", "기타"] },
-  hanbok: { label: "한복", emoji: "👘", color: "#BE185D", sub_items: ["신부 한복", "신랑 한복", "신부측 부모 한복", "신랑측 부모 한복", "한복 대여 vs 구매", "보관/세탁", "기타"] },
-  ring: { label: "예물/예단", emoji: "💍", color: "#F59E0B", sub_items: ["결혼반지", "예물(시계/주얼리)", "예단(이불/혼수품)", "함/폐백음식", "기타"] },
-  meetup: { label: "상견례", emoji: "🥂", color: "#B45309", sub_items: ["상견례 식사", "양가 선물", "교통·숙박(원거리)", "기타"] },
-  house: { label: "혼수", emoji: "🏠", color: "#10B981", sub_items: ["가전(TV/냉장고/세탁기 등)", "가구(침대/소파/식탁 등)", "생활용품", "인테리어/리모델링", "이사비", "기타"] },
-  honeymoon: { label: "허니문", emoji: "✈️", color: "#3B82F6", sub_items: ["항공권", "숙소", "여행자보험", "현지경비", "기타"] },
-  etc: { label: "기타", emoji: "🎁", color: "#6B7280", sub_items: ["청첩장(종이/모바일)", "축의금 답례품", "결혼식 소품/데코", "사회자/축가", "감사선물", "기타"] },
+  venue: { label: "웨딩홀", emoji: "", color: "#F4A7B9", sub_items: ["웨딩홀 대관료", "세팅비", "주차비", "폐백실", "포토존", "추가 시간", "기타"] },
+  meal: { label: "식대", emoji: "", color: "#F97316", sub_items: ["성인 식대(뷔페/코스)", "어린이 식대", "주류/음료", "추가 인원 식대", "케이크/디저트", "기타"] },
+  sdm: { label: "스드메", emoji: "", color: "#A78BFA", sub_items: ["스튜디오 촬영", "드레스 대여", "메이크업", "본식스냅", "영상 촬영", "원본 데이터", "앨범 추가", "헬퍼", "부케", "기타"] },
+  suit: { label: "예복", emoji: "", color: "#1E40AF", sub_items: ["신랑 예복(턱시도/정장)", "구두·셔츠·타이", "신부측 부모 예복", "신랑측 부모 예복", "맞춤·가봉비", "기타"] },
+  hanbok: { label: "한복", emoji: "", color: "#BE185D", sub_items: ["신부 한복", "신랑 한복", "신부측 부모 한복", "신랑측 부모 한복", "한복 대여 vs 구매", "보관/세탁", "기타"] },
+  ring: { label: "예물/예단", emoji: "", color: "#F59E0B", sub_items: ["결혼반지", "예물(시계/주얼리)", "예단(이불/혼수품)", "함/폐백음식", "기타"] },
+  meetup: { label: "상견례", emoji: "", color: "#B45309", sub_items: ["상견례 식사", "양가 선물", "교통·숙박(원거리)", "기타"] },
+  house: { label: "혼수", emoji: "", color: "#10B981", sub_items: ["가전(TV/냉장고/세탁기 등)", "가구(침대/소파/식탁 등)", "생활용품", "인테리어/리모델링", "이사비", "기타"] },
+  honeymoon: { label: "허니문", emoji: "", color: "#3B82F6", sub_items: ["항공권", "숙소", "여행자보험", "현지경비", "기타"] },
+  etc: { label: "기타", emoji: "", color: "#6B7280", sub_items: ["청첩장(종이/모바일)", "축의금 답례품", "결혼식 소품/데코", "사회자/축가", "감사선물", "기타"] },
 };
 
 export const paidByOptions = [
-  { value: "shared", label: "부부 공동", emoji: "🤝" },
-  { value: "groom", label: "신랑측", emoji: "🤵" },
-  { value: "bride", label: "신부측", emoji: "👰" },
+  { value: "shared", label: "부부 공동", emoji: "" },
+  { value: "groom", label: "신랑측", emoji: "" },
+  { value: "bride", label: "신부측", emoji: "" },
 ] as const;
 
 /**
@@ -210,18 +210,18 @@ export const paidByOptions = [
  * - full (완납): paid in full, no installments
  */
 export const paymentStageOptions = [
-  { value: "deposit", label: "예약금", emoji: "🔖" },
-  { value: "contract", label: "계약금", emoji: "📝" },
-  { value: "midpayment", label: "정계약", emoji: "📋" },
-  { value: "balance", label: "잔금", emoji: "💰" },
-  { value: "full", label: "완납", emoji: "✅" },
+  { value: "deposit", label: "예약금", emoji: "" },
+  { value: "contract", label: "계약금", emoji: "" },
+  { value: "midpayment", label: "정계약", emoji: "" },
+  { value: "balance", label: "잔금", emoji: "" },
+  { value: "full", label: "완납", emoji: "" },
 ] as const;
 
 export const paymentMethodOptions = [
-  { value: "cash", label: "현금", emoji: "💵" },
-  { value: "card", label: "카드", emoji: "💳" },
-  { value: "transfer", label: "계좌이체", emoji: "🏦" },
-  { value: "check", label: "수표", emoji: "🧾" },
+  { value: "cash", label: "현금", emoji: "" },
+  { value: "card", label: "카드", emoji: "" },
+  { value: "transfer", label: "계좌이체", emoji: "" },
+  { value: "check", label: "수표", emoji: "" },
 ] as const;
 
 export const savingTips: Record<BudgetCategory, string[]> = {
