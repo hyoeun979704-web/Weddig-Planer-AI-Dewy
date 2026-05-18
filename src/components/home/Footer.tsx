@@ -7,7 +7,7 @@ const Footer = () => {
   return (
     <footer className="bg-[hsl(var(--pink-50))]">
       {/* 서비스탭 — pill 버튼 2개 */}
-      <div className="flex items-start gap-[15px] px-[30px] py-[15px] border-t border-primary">
+      <div className="flex items-start gap-[15px] px-[30px] py-[15px] border-t border-border">
         <button
           onClick={() => navigate("/faq")}
           className="flex-1 flex items-center justify-center h-[37px] bg-white rounded-[10px] text-[14px] font-medium text-black"
@@ -23,7 +23,7 @@ const Footer = () => {
       </div>
 
       {/* 사업자정보 */}
-      <div className="flex flex-col gap-[10px] px-[30px] py-[20px] border-t border-primary">
+      <div className="flex flex-col gap-[10px] px-[30px] py-[20px] border-t border-border">
         <div className="flex items-center gap-[10px]">
           <DewyLogo size={20} />
           <span className="font-logo text-[15px] text-black">Dewy</span>
@@ -38,7 +38,7 @@ const Footer = () => {
       </div>
 
       {/* 이용약관 */}
-      <div className="flex flex-col gap-[10px] px-[30px] py-[20px] border-t border-primary">
+      <div className="flex flex-col gap-[10px] px-[30px] py-[20px] border-t border-border">
         <div className="flex items-center gap-[10px] text-[12px] text-black">
           <button onClick={() => navigate("/terms")}>이용약관</button>
           <span className="text-primary/40">|</span>
