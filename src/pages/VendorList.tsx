@@ -28,7 +28,7 @@ const VendorList = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center px-4 h-14">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
+          <button onClick={() => navigate(-1)} aria-label="뒤로 가기" className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors">
             <ChevronLeft className="w-5 h-5 text-foreground" />
           </button>
           <h1 className="text-lg font-bold text-foreground flex-1 text-center -mr-8">

@@ -99,7 +99,7 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
       onClick={onClick}
       aria-label={data.name}
       className={cn(
-        "flex flex-col bg-[#d9d9d9] rounded-[10px] overflow-hidden text-left active:scale-[0.97]",
+        "flex flex-col bg-muted rounded-[10px] overflow-hidden text-left active:scale-[0.97] transition-transform hover:shadow-md",
         fluid ? "w-full" : "flex-shrink-0"
       )}
       style={fluid ? { height: CARD_H } : { width: CARD_W, height: CARD_H }}
@@ -121,7 +121,7 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
         )}
 
         {data.is_partner && (
-          <span className="absolute left-1.5 top-1.5 z-10 px-1 py-[1px] rounded bg-[hsl(353,75%,55%)] text-white text-[8px] font-bold tracking-tight">
+          <span className="absolute left-1.5 top-1.5 z-10 px-1 py-[1px] rounded bg-primary text-primary-foreground text-[8px] font-bold tracking-tight">
             제휴
           </span>
         )}
@@ -130,12 +130,12 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
           role="button"
           aria-label={liked ? "찜 해제" : "찜하기"}
           onClick={handleHeartClick}
-          className="absolute right-1.5 top-1.5 z-10 inline-flex"
+          className="absolute right-1.5 top-1.5 z-10 inline-flex active:scale-90 transition-transform"
         >
           <Heart
             className={cn(
-              "h-4 w-4",
-              liked ? "fill-[#f29aa3] text-[#f29aa3]" : "text-white drop-shadow"
+              "h-4 w-4 transition-colors",
+              liked ? "fill-primary text-primary" : "text-white drop-shadow"
             )}
             strokeWidth={2}
           />
@@ -143,16 +143,16 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
       </div>
 
       <div
-        className="flex-1 flex flex-col gap-[3px] bg-white px-2 py-2 overflow-hidden"
+        className="flex-1 flex flex-col gap-[3px] bg-card px-2 py-2 overflow-hidden"
         style={fluid ? { height: FLUID_TEXT_H } : undefined}
       >
         {data.region && (
-          <p className="text-[9px] leading-tight text-black/55 line-clamp-1">
+          <p className="text-[9px] leading-tight text-muted-foreground line-clamp-1">
             {data.region}
           </p>
         )}
 
-        <p className="text-[12px] font-bold leading-tight text-black line-clamp-1">
+        <p className="text-[12px] font-bold leading-tight text-foreground line-clamp-1">
           {data.name}
         </p>
 
@@ -163,27 +163,27 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
                 key={`${line.label}-${idx}`}
                 className="flex items-center gap-[3px] text-[9px] leading-tight overflow-hidden"
               >
-                <span className="text-black/55 shrink-0">{line.label}</span>
+                <span className="text-muted-foreground shrink-0">{line.label}</span>
                 <span
                   className={cn(
                     "truncate",
                     line.isPrice
-                      ? "font-bold text-[hsl(353,75%,55%)]"
-                      : "text-black/75"
+                      ? "font-bold text-primary"
+                      : "text-foreground/75"
                   )}
                 >
                   {line.value}
                 </span>
                 {line.pair && (
                   <>
-                    <span className="text-black/30 shrink-0">·</span>
-                    <span className="text-black/55 shrink-0">{line.pair.label}</span>
+                    <span className="text-muted-foreground/60 shrink-0">·</span>
+                    <span className="text-muted-foreground shrink-0">{line.pair.label}</span>
                     <span
                       className={cn(
                         "truncate",
                         line.pair.isPrice
-                          ? "font-bold text-[hsl(353,75%,55%)]"
-                          : "text-black/75"
+                          ? "font-bold text-primary"
+                          : "text-foreground/75"
                       )}
                     >
                       {line.pair.value}

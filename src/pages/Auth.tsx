@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, User, Building2 } from "lucide-react";
+import DewyLogo from "@/components/home/DewyLogo";
 
 const emailSchema = z.string().email("올바른 이메일 형식을 입력해주세요");
 const passwordSchema = z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다");
@@ -141,7 +142,8 @@ const Auth = () => {
         <div className="flex items-center h-14 px-4">
           <button
             onClick={() => navigate(-1)}
-            className="w-10 h-10 flex items-center justify-center -ml-2"
+            aria-label="뒤로 가기"
+            className="w-10 h-10 flex items-center justify-center -ml-2 rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -154,9 +156,9 @@ const Auth = () => {
       {/* Content */}
       <div className="p-6">
         {/* Logo / Title */}
-        <div className="text-center mb-6">
-          <span className="text-6xl">💍</span>
-          <h2 className="text-2xl font-bold mt-4 text-foreground">웨딩 플래너</h2>
+        <div className="flex flex-col items-center text-center mb-6">
+          <DewyLogo size={64} />
+          <h2 className="font-logo text-3xl font-bold mt-3 text-foreground tracking-tight">Dewy</h2>
           <p className="text-muted-foreground mt-2">
             {isSignUp ? "새 계정을 만들어주세요" : "계정에 로그인하세요"}
           </p>
@@ -241,7 +243,8 @@ const Auth = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5 text-muted-foreground" />
@@ -354,7 +357,7 @@ const Auth = () => {
                 setErrors({});
                 setAccountType("individual");
               }}
-              className="text-primary font-medium"
+              className="text-primary font-medium hover:underline active:opacity-70 transition-opacity"
             >
               {isSignUp ? "로그인" : "회원가입"}
             </button>

@@ -506,7 +506,7 @@ const FilterChip = ({
 }) => (
   <button
     onClick={onClick}
-    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all active:scale-95 whitespace-nowrap ${
       active
         ? "bg-primary text-primary-foreground"
         : "bg-muted text-muted-foreground hover:bg-primary/10"

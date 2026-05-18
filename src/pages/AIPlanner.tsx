@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Send, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
+import { Send, RotateCcw, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
@@ -320,7 +320,10 @@ const AIPlanner = () => {
                       날짜·지역만 입력해도 맞춤 추천이 정확해져요
                     </p>
                   </div>
-                  <span className="shrink-0 text-[11px] font-bold text-primary">설정 →</span>
+                  <span className="shrink-0 inline-flex items-center gap-0.5 text-[11px] font-bold text-primary">
+                    설정
+                    <ChevronRight className="w-3 h-3" />
+                  </span>
                 </button>
               )}
 
@@ -387,7 +390,8 @@ const AIPlanner = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
-            className="absolute bottom-40 right-4 w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center z-30"
+            aria-label="최신 메시지로 이동"
+            className="absolute bottom-40 right-4 w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center z-30 hover:bg-muted active:scale-90 transition-all"
           >
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </motion.button>
@@ -432,7 +436,8 @@ const AIPlanner = () => {
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center transition-all disabled:opacity-30 active:scale-90 flex-shrink-0"
+              aria-label="메시지 보내기"
+              className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center transition-all disabled:opacity-30 hover:bg-primary/90 active:scale-90 flex-shrink-0"
             >
               <Send className="w-4 h-4 text-primary-foreground" />
             </button>

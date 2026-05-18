@@ -353,7 +353,7 @@ const CommunityPostDetail = () => {
       <div className="min-h-screen bg-background max-w-[430px] mx-auto">
         <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center gap-3 px-4 h-14">
-            <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+            <button onClick={() => navigate(-1)} aria-label="뒤로 가기" className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <Skeleton className="h-5 w-32" />
@@ -383,7 +383,7 @@ const CommunityPostDetail = () => {
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+            <button onClick={() => navigate(-1)} aria-label="뒤로 가기" className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors">
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <span className="text-sm font-medium text-foreground">게시글</span>

@@ -39,7 +39,11 @@ const Settings = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="뒤로 가기"
+            className="w-10 h-10 flex items-center justify-center -ml-2 rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
+          >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="flex-1 text-center font-semibold text-lg pr-10">설정</h1>
@@ -58,7 +62,7 @@ const Settings = () => {
               </div>
               <Switch checked={theme === "dark"} onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} />
             </div>
-            <button className="w-full flex items-center justify-between p-4">
+            <button className="w-full flex items-center justify-between p-4 hover:bg-muted/50 active:bg-muted/80 transition-colors">
               <div className="flex items-center gap-3">
                 <Globe className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">언어</span>
@@ -75,21 +79,27 @@ const Settings = () => {
         <div className="p-4">
           <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">약관 및 정책</h2>
           <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            <button className="w-full flex items-center justify-between p-4 border-b border-border">
+            <button
+              onClick={() => navigate("/terms")}
+              className="w-full flex items-center justify-between p-4 border-b border-border hover:bg-muted/50 active:bg-muted/80 transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">이용약관</span>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
-            <button className="w-full flex items-center justify-between p-4 border-b border-border">
+            <button
+              onClick={() => navigate("/privacy")}
+              className="w-full flex items-center justify-between p-4 border-b border-border hover:bg-muted/50 active:bg-muted/80 transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <Shield className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">개인정보 처리방침</span>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
-            <button className="w-full flex items-center justify-between p-4">
+            <button className="w-full flex items-center justify-between p-4 hover:bg-muted/50 active:bg-muted/80 transition-colors">
               <div className="flex items-center gap-3">
                 <Info className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">오픈소스 라이선스</span>
@@ -104,16 +114,16 @@ const Settings = () => {
           <div className="p-4">
             <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">계정</h2>
             <div className="bg-card rounded-2xl border border-border overflow-hidden">
-              <button 
+              <button
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-3 p-4 border-b border-border text-left"
+                className="w-full flex items-center gap-3 p-4 border-b border-border text-left hover:bg-muted/50 active:bg-muted/80 transition-colors"
               >
                 <LogOut className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">로그아웃</span>
               </button>
-              <button 
+              <button
                 onClick={handleDeleteAccount}
-                className="w-full flex items-center gap-3 p-4 text-left"
+                className="w-full flex items-center gap-3 p-4 text-left hover:bg-destructive/5 active:bg-destructive/10 transition-colors"
               >
                 <Trash2 className="w-5 h-5 text-destructive" />
                 <span className="text-sm font-medium text-destructive">계정 삭제</span>
@@ -126,7 +136,7 @@ const Settings = () => {
         <div className="p-4">
           <div className="text-center text-xs text-muted-foreground">
             <p>앱 버전 1.0.0</p>
-            <p className="mt-1">© 2025 웨딩 플래너</p>
+            <p className="mt-1">© 2025 Dewy</p>
           </div>
         </div>
       </main>

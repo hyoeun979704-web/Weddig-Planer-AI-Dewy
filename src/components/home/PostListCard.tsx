@@ -29,7 +29,7 @@ const PostListCard = ({ post, onClick }: PostListCardProps) => {
   return (
     <button
       onClick={onClick}
-      className="flex-1 min-w-0 min-h-[150px] flex flex-col bg-white rounded-[10px] p-[12px] text-left active:scale-[0.98] transition-transform"
+      className="flex-1 min-w-0 min-h-[150px] flex flex-col bg-card rounded-[10px] p-[12px] text-left active:scale-[0.98] transition-transform hover:shadow-sm"
     >
       {post.category_tag && (
         <span className="self-start mb-1 px-1 py-[1px] rounded bg-[hsl(var(--pink-100))] text-[8px] font-semibold text-[hsl(353,75%,55%)] leading-none">
@@ -37,7 +37,7 @@ const PostListCard = ({ post, onClick }: PostListCardProps) => {
         </span>
       )}
 
-      <p className="text-[12px] font-bold leading-tight text-black line-clamp-1 mb-1">
+      <p className="text-[12px] font-bold leading-tight text-foreground line-clamp-1 mb-1">
         {post.title}
       </p>
 
@@ -47,11 +47,11 @@ const PostListCard = ({ post, onClick }: PostListCardProps) => {
         </p>
       )}
 
-      <p className="text-[10px] leading-[1.35] text-black/65 line-clamp-3 flex-1">
+      <p className="text-[10px] leading-[1.35] text-muted-foreground line-clamp-3 flex-1">
         {post.content}
       </p>
 
-      <div className="flex items-center justify-between mt-2 text-[10px] text-black/55">
+      <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
         <span>조회수 {formatCount(post.views)}</span>
         <span
           role="button"
@@ -67,8 +67,8 @@ const PostListCard = ({ post, onClick }: PostListCardProps) => {
           <Heart
             className={
               liked
-                ? "h-3 w-3 fill-[#f29aa3] text-[#f29aa3]"
-                : "h-3 w-3 fill-[#f29aa3]/40 text-[#f29aa3]"
+                ? "h-3 w-3 fill-primary text-primary transition-colors"
+                : "h-3 w-3 fill-primary/30 text-primary/70 transition-colors"
             }
             strokeWidth={1.5}
           />
