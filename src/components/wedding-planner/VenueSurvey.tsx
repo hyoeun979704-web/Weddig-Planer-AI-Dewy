@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SurveyModal from "./SurveyModal";
 import { REGIONS, BUDGET_OPTIONS_VENUE, WEDDING_STYLES } from "./constants";
+import { useWeddingFormContext } from "@/hooks/useWeddingFormContext";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,15 +15,24 @@ interface Props {
 }
 
 const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
+  const { defaultWeddingDate, defaultRegion, defaultGuests } = useWeddingFormContext();
   const [date, setDate] = useState<Date>();
   const [region, setRegion] = useState("");
   const [guests, setGuests] = useState("");
-  const [budget, setBudget] = useState("");
+  const [budgetLabel, setBudgetLabel] = useState("");
   const [styles, setStyles] = useState<string[]>([]);
   const [parking, setParking] = useState("");
   const [meal, setMeal] = useState("");
   const [special, setSpecial] = useState("");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  // 저장된 결혼일·지역·하객 수로 prefill (BudgetSurvey 동일 패턴).
+  useEffect(() => {
+    if (!isOpen) return;
+    if (defaultWeddingDate) setDate(defaultWeddingDate);
+    setRegion(defaultRegion ?? "");
+    setGuests(defaultGuests ?? "");
+  }, [isOpen, defaultWeddingDate, defaultRegion, defaultGuests]);
 
   const toggleStyle = (s: string) => setStyles(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
@@ -31,7 +41,7 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
     if (!date) e.date = true;
     if (!region) e.region = true;
     if (!guests) e.guests = true;
-    if (!budget) e.budget = true;
+    if (!budgetLabel) e.budget = true;
     if (styles.length === 0) e.styles = true;
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -39,11 +49,15 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
 
   const handleSubmit = () => {
     if (!validate()) return;
+    const regionObj = REGIONS.find(r => r.searchKey === region);
+    const budgetObj = BUDGET_OPTIONS_VENUE.find(b => b.label === budgetLabel);
     onSubmit({
       date: format(date!, "yyyy년 M월 d일"),
-      region,
+      region: regionObj?.searchKey ?? "",
+      regionLabel: regionObj?.label ?? "",
       guests,
-      budget,
+      budget: budgetObj?.max ?? null,
+      budgetLabel: budgetObj?.label ?? "",
       styles,
       parking,
       meal,
@@ -82,7 +96,7 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
           <label className={labelCls}>예식 지역 {reqMark}</label>
           <select value={region} onChange={e => setRegion(e.target.value)} className={cn("w-full px-3 py-2.5 border rounded-xl text-sm bg-white", errorCls("region"))}>
             <option value="">선택해주세요</option>
-            {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+            {REGIONS.map(r => <option key={r.searchKey} value={r.searchKey}>{r.label}</option>)}
           </select>
           {helperText("region")}
         </div>
@@ -100,9 +114,9 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
         {/* Budget */}
         <div>
           <label className={labelCls}>웨딩홀 예산 {reqMark}</label>
-          <select value={budget} onChange={e => setBudget(e.target.value)} className={cn("w-full px-3 py-2.5 border rounded-xl text-sm bg-white", errorCls("budget"))}>
+          <select value={budgetLabel} onChange={e => setBudgetLabel(e.target.value)} className={cn("w-full px-3 py-2.5 border rounded-xl text-sm bg-white", errorCls("budget"))}>
             <option value="">선택해주세요</option>
-            {BUDGET_OPTIONS_VENUE.map(b => <option key={b} value={b}>{b}</option>)}
+            {BUDGET_OPTIONS_VENUE.map(b => <option key={b.label} value={b.label}>{b.label}</option>)}
           </select>
           {helperText("budget")}
         </div>

@@ -3,9 +3,14 @@
  * - 지역별 식장 평균 시세
  * - 카테고리·지역 자유 검색
  * - 인기 업체 랭킹
+ *
+ * DB에 매칭 업체가 없거나 부족할 때(매핑 안된 신생 업체·니치 카테고리·
+ * 우리 DB 커버리지 밖) Gemini Google Search Grounding으로 폴백해 실시간
+ * 웹 검색 결과 + 검증된 출처를 제공.
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { callWebSearch, formatWebSearchReply } from "./webSearchFallback";
 
 export interface SearchPersonaCtx {
   weddingStyle?: string | null;
@@ -152,6 +157,19 @@ export const handleFreeTextSearch = async (
       category && `🏷️ ${PLACE_CATEGORY_LABEL[category]}`,
       budget && `💰 ${budget}만원`,
     ].filter(Boolean).join(" · ");
+
+    // DB 0건 → 웹 검색 폴백. 실패 시 graceful으로 기존 메시지.
+    const web = await callWebSearch("search", userMessage, {
+      category: category ?? undefined,
+      region: region ?? undefined,
+    });
+    if (web.limitMessage) {
+      return `**검색 결과** 🔍\n${filters}\n\n${web.limitMessage}`;
+    }
+    if (!web.failed && web.reply) {
+      const header = `**검색 결과** 🔍\n${filters}\n\n_듀이 DB에 매칭 업체가 없어 웹 검색 결과를 보여드려요._\n\n`;
+      return header + formatWebSearchReply(web);
+    }
     return `**검색 결과** 🔍\n${filters}\n\n조건에 맞는 업체를 찾지 못했어요 🌿\n다른 지역·카테고리로 시도해보시거나 [전체 페이지](/venues)에서 직접 살펴보세요.`;
   }
 
@@ -177,7 +195,7 @@ export const handleFreeTextSearch = async (
     const price = p.min_price ? `${(p.min_price / 10000).toLocaleString()}만원~` : "가격 문의";
     const star = p.avg_rating ? `★${p.avg_rating}` : "";
     const partner = p.is_partner ? " ⭐" : "";
-    return `• **${p.name}** (${region}) ${price} ${star}${partner}`;
+    return `- **${p.name}** (${region}) ${price} ${star}${partner}`;
   }).join("\n");
 
   const summary = [
@@ -185,13 +203,41 @@ export const handleFreeTextSearch = async (
     category && `🏷️ ${PLACE_CATEGORY_LABEL[category]}`,
   ].filter(Boolean).join(" · ");
 
+  // ── 인사이트: 결과 가격대·별점 분포 분석 ─────────────
+  // raw 나열에 끝나지 않고 사용자가 다음 결정에 쓸 정보를 한 줄 더.
+  const insights: string[] = [];
+  const withPrice = sorted.slice(0, 8).filter((p: any) => p.min_price);
+  if (withPrice.length >= 3) {
+    const prices = withPrice.map((p: any) => p.min_price).sort((a: number, b: number) => a - b);
+    const lowest = Math.round(prices[0] / 10000);
+    const highest = Math.round(prices[prices.length - 1] / 10000);
+    const median = Math.round(prices[Math.floor(prices.length / 2)] / 10000);
+    insights.push(`💡 상위 ${withPrice.length}곳 가격대: **${lowest}만원~${highest}만원** (중간값 ${median}만원)`);
+  }
+  const rated = sorted.slice(0, 8).filter((p: any) => p.avg_rating);
+  if (rated.length >= 3) {
+    const top = rated.filter((p: any) => p.avg_rating >= 4.5).length;
+    if (top >= 3) insights.push(`⭐ **★4.5 이상이 ${top}곳** — 후기 평점 높은 곳이 많아요`);
+  }
+  const partnerCount = sorted.slice(0, 8).filter((p: any) => p.is_partner).length;
+  if (partnerCount > 0) {
+    insights.push(`🤝 듀이 파트너 ${partnerCount}곳 포함 (⭐ 표시)`);
+  }
+
+  const insightBlock = insights.length > 0 ? `\n\n${insights.join("\n")}` : "";
+
   const conflictNote = category ? personaConflictNote(category, personaCtx) : "";
 
-  return `**검색 결과 ${filtered.length}건 (상위 8)** 🔍\n${summary}\n\n${lines}\n\n자세히 보기: ${
-    category === "wedding_hall" ? "[웨딩홀](/venues)" :
+  const linkLabel = category === "wedding_hall" ? "[웨딩홀](/venues)" :
     category === "studio" ? "[스튜디오](/studios)" :
-    "[전체 카테고리](/venues)"
-  }${conflictNote}`;
+    "[전체 카테고리](/venues)";
+
+  return `**검색 결과 ${filtered.length}건 (상위 8)** 🔍
+${summary}
+
+${lines}${insightBlock}
+
+찜해두시면 비교하기 편해요. 자세히 보기 → ${linkLabel}${conflictNote}`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -218,6 +264,18 @@ export const handleAveragePrice = async (
   const { data } = await query;
 
   if (!data || data.length < 3) {
+    // 표본 부족 → 웹 검색으로 실시간 시세 조회
+    const web = await callWebSearch("price", userMessage, {
+      category: category ?? undefined,
+      region: region ?? undefined,
+    });
+    if (web.limitMessage) {
+      return `**${region ?? "전체"} ${PLACE_CATEGORY_LABEL[category]} 시세** 💰\n\n${web.limitMessage}`;
+    }
+    if (!web.failed && web.reply) {
+      const header = `**${region ?? "전국"} ${PLACE_CATEGORY_LABEL[category]} 시세** 💰\n\n_듀이 DB 표본(${data?.length ?? 0}곳)이 부족해 웹 검색 결과를 보여드려요._\n\n`;
+      return header + formatWebSearchReply(web);
+    }
     return `**${region ?? "전체"} ${PLACE_CATEGORY_LABEL[category]} 시세** 💰\n\n아직 충분한 데이터가 없어 평균을 내기 어려워요. [전체 페이지](/venues)에서 직접 확인해보세요.`;
   }
 
@@ -239,12 +297,29 @@ export const handleAveragePrice = async (
     : daysMedian <= 60 ? "🟡 최근 2달 내 갱신"
     : `🔴 약 ${Math.round(daysMedian / 30)}달 전 갱신 (오래됨)`;
 
-  return `**${region ?? "전국"} ${PLACE_CATEGORY_LABEL[category]} 시세** 💰\n표본 ${data.length}곳 · ${freshLabel}\n\n` +
-    `• 평균: ${(avg / 10000).toLocaleString()}만원~\n` +
-    `• 중간값: ${(median / 10000).toLocaleString()}만원~\n` +
-    `• 최저: ${(min / 10000).toLocaleString()}만원~\n` +
-    `• 최고: ${(max / 10000).toLocaleString()}만원~\n\n` +
-    `* 표시 가격은 시작가(min_price) 기준이며 옵션·시기에 따라 변동돼요.${conflictNote}`;
+  // 인사이트: 분포 폭으로 시장 특성 코멘트. raw 통계 + "이게 어떤
+  // 의미인지" 한 줄 덧붙여 사용자가 다음 결정에 쓸 수 있게.
+  const spread = max - min;
+  const spreadRatio = median > 0 ? spread / median : 0;
+  let marketNote: string;
+  if (spreadRatio < 0.5) {
+    marketNote = `📊 가격대가 비교적 균일해요 — 업체 간 차이가 작은 시장이에요.`;
+  } else if (spreadRatio < 1.5) {
+    marketNote = `📊 가격대가 다양해요 — 옵션·등급에 따라 차이가 크니 견적 비교가 중요해요.`;
+  } else {
+    marketNote = `📊 **가격대 편차가 매우 큰 시장**이에요. 최저(${(min / 10000).toLocaleString()}만원)와 최고(${(max / 10000).toLocaleString()}만원) 차이가 ${((max - min) / 10000).toLocaleString()}만원이라 같은 카테고리라도 등급·옵션 확인 필수예요.`;
+  }
+
+  return `**${region ?? "전국"} ${PLACE_CATEGORY_LABEL[category]} 시세** 💰
+표본 ${data.length}곳 · ${freshLabel}
+
+- 평균: ${(avg / 10000).toLocaleString()}만원~
+- 중간값: ${(median / 10000).toLocaleString()}만원~
+- 범위: ${(min / 10000).toLocaleString()} ~ ${(max / 10000).toLocaleString()}만원~
+
+${marketNote}
+
+_표시 가격은 시작가(min_price) 기준 — 옵션·시기에 따라 변동돼요. 인기 업체는 "인기 ${PLACE_CATEGORY_LABEL[category]}"라고 물어봐 주세요._${conflictNote}`;
 };
 
 // ════════════════════════════════════════════════════════════
@@ -275,6 +350,18 @@ export const handlePopularPlaces = async (
   const { data } = await query.limit(fetchLimit);
 
   if (!data || data.length === 0) {
+    // DB에 후기 5건+ 업체가 없음 → 웹 검색으로 인기 업체 조회
+    const web = await callWebSearch("popular", userMessage, {
+      category: category ?? undefined,
+      region: region ?? undefined,
+    });
+    if (web.limitMessage) {
+      return `**인기 업체 추천** 🌟\n\n${web.limitMessage}`;
+    }
+    if (!web.failed && web.reply) {
+      const header = `**인기 업체 추천** 🌟\n\n_듀이 DB에 후기가 쌓인 업체가 없어 웹 검색 결과를 보여드려요._\n\n`;
+      return header + formatWebSearchReply(web);
+    }
     return `**인기 업체 추천** 🌟\n\n해당 조건에 충분한 후기가 쌓인 업체가 아직 없어요. 다른 조건으로 시도해보세요.`;
   }
 
@@ -294,7 +381,7 @@ export const handlePopularPlaces = async (
   const lines = shown.map((p: any) => {
     const cat = PLACE_CATEGORY_LABEL[p.category] ?? p.category;
     const partner = p.is_partner ? " ⭐" : "";
-    return `• **${p.name}** [${cat}] ${p.district ?? ""} — ★ ${p.avg_rating} (${p.review_count}건)${partner}`;
+    return `- **${p.name}** [${cat}] ${p.district ?? ""} — ★ ${p.avg_rating} (${p.review_count}건)${partner}`;
   }).join("\n");
 
   const filters = [region && `📍 ${region}`, category && `🏷️ ${PLACE_CATEGORY_LABEL[category]}`]
@@ -302,5 +389,58 @@ export const handlePopularPlaces = async (
 
   const conflictNote = category ? personaConflictNote(category, personaCtx) : "";
 
-  return `**인기 업체 TOP ${shown.length}** 🌟\n${filters || "전체"}\n\n${lines}\n\n별점 기준 상위. [전체 비교](/venues)에서 더 많은 옵션을 보실 수 있어요.${conflictNote}`;
+  // ── 인사이트: 별점 vs 후기 수 균형 분석 ─────────────
+  // 후기 적으면서 별점 높은 곳 = 신상 (검증 X), 후기 많고 별점 높은 곳 =
+  // 안정형. 사용자가 어떤 곳을 우선시할지 판단에 도움.
+  const reliableCount = shown.filter((p: any) => p.review_count >= 30 && p.avg_rating >= 4.3).length;
+  const risingCount = shown.filter((p: any) => p.review_count < 20 && p.avg_rating >= 4.5).length;
+  const insights: string[] = [];
+  if (reliableCount >= 2) {
+    insights.push(`✅ 후기 30건+ 검증된 안정형 **${reliableCount}곳** (★4.3+, 후기 多)`);
+  }
+  if (risingCount >= 2) {
+    insights.push(`🌱 후기 적지만 평점 높은 떠오르는 곳 **${risingCount}곳** (★4.5+, 후기 20건 미만)`);
+  }
+  const insightBlock = insights.length > 0
+    ? `\n\n💡 **선택 가이드**\n${insights.join("\n")}`
+    : "";
+
+  return `**인기 업체 TOP ${shown.length}** 🌟
+${filters || "전체"}
+
+${lines}${insightBlock}
+
+별점 기준 상위. 자세히 보고 비교는 [전체 페이지](/venues)에서 가능해요.${conflictNote}`;
+};
+
+// ════════════════════════════════════════════════════════════
+// 명시 발동: 사용자가 "웹에서 찾아줘"라고 명시할 때
+// ════════════════════════════════════════════════════════════
+// DB 우회. 항상 Gemini Search Grounding으로 답변. 사용자가 의도적으로
+// 최신 정보를 요청한 케이스 (예: 신생 업체·트렌드·뉴스성 정보).
+export const handleExplicitWebSearch = async (userMessage: string): Promise<string> => {
+  const category = inferCategory(userMessage);
+  const region = inferRegion(userMessage);
+
+  const web = await callWebSearch("search", userMessage, {
+    category: category ?? undefined,
+    region: region ?? undefined,
+  });
+
+  if (web.limitMessage) {
+    return `**웹 검색** 🌐\n\n${web.limitMessage}`;
+  }
+  if (web.failed || !web.reply) {
+    return `**웹 검색** 🌐\n\n검색 중 일시적 문제가 발생했어요. 잠시 후 다시 시도해주세요.`;
+  }
+
+  const filters = [
+    region && `📍 ${region}`,
+    category && `🏷️ ${PLACE_CATEGORY_LABEL[category]}`,
+  ].filter(Boolean).join(" · ");
+  const header = filters
+    ? `**웹 검색 결과** 🌐\n${filters}\n\n`
+    : `**웹 검색 결과** 🌐\n\n`;
+
+  return header + formatWebSearchReply(web);
 };

@@ -64,7 +64,12 @@ export interface IntentMatch {
     | "etiquette"
     | "gift_etiquette"
     | "new_home"
-    | "ceremony_progress";
+    | "ceremony_progress"
+    | "fitting"
+    | "snap"
+    | "invitation_design"
+    | "ceremony_rehearsal"
+    | "parents_attire";
   /** DB 조회 필요 시 핸들러 키 */
   dbHandler?:
     | "dday"
@@ -100,7 +105,8 @@ export interface IntentMatch {
     | "checklist_progress"
     | "free_search"
     | "average_price"
-    | "popular_places";
+    | "popular_places"
+    | "web_search";
   /** 매칭된 키워드 (디버깅·로그용) */
   matchedKeyword?: string;
   /** 동적으로 추출된 인자 (검색 키워드·종류 등) */
@@ -148,9 +154,17 @@ const PATTERNS: IntentPattern[] = [
   },
 
   // ── D-Day 조회 ──────────────────────────────────
+  // "얼마.*남" 단독은 너무 광범위 ("예산 얼마 남았어", "포인트 얼마 남았어"가
+  // 모두 dday로 잘못 라우팅되던 버그). 결혼/예식 컨텍스트가 있을 때만 매칭.
   {
     intent: "dday",
-    patterns: [/d-?day/i, /디데이|디 데이/, /며칠.*남|얼마.*남/, /결혼식.*까지|예식.*까지/],
+    patterns: [
+      /d-?day/i,
+      /디데이|디 데이/,
+      /(결혼|결혼식|예식)\s*(까지)?\s*(며칠|얼마)\s*(나|남)/,
+      /(며칠|얼마)\s*(나)?\s*남았.*(결혼|예식)/,
+      /결혼식.*까지|예식.*까지/,
+    ],
     dbHandler: "dday",
   },
 
@@ -176,24 +190,33 @@ const PATTERNS: IntentPattern[] = [
   },
 
   // ── 시기별 체크리스트 ──────────────────────────
+  // /체크리스트/ 단독은 너무 광범위 — "체크리스트 진척률"이 checklist_progress
+  // 대신 여기로 빠지던 버그. 시기·생성 의도가 있을 때만 매칭.
   {
     intent: "checklist_time",
     patterns: [
       /(\d+)\s*개월.*전/,
       /(\d+)\s*주.*전/,
-      /체크리스트/,
+      /체크리스트.*(만들|짜|언제|시기|시점|줘|보여|알려)/,
       /지금.*해야|뭐.*해야/,
     ],
     dbHandler: "checklist",
   },
 
   // ── 찜 목록 (전체 카테고리 분포) ────────────────
+  // 자연 표현("찜 보여줘", "찜한 거 알려줘")도 잡히도록 패턴 완화.
+  // 카테고리 키워드가 함께 있으면 아래 동적 매칭에서 favorites_by_type/search로
+  // 더 구체적으로 라우팅됨.
   {
     intent: "favorites",
     patterns: [
       /^찜\s*(목록|한)?\s*[?!]?$/,
       /^즐겨\s*찾기\s*[?!]?$/,
       /북마크\s*(목록)?\s*[?!]?$/,
+      /찜\s*(목록|보여|알려|확인|뭐|어떤)/,
+      /찜한\s*(거|것|업체|곳)\s*(보여|알려|뭐|확인|어떤)/,
+      /즐겨\s*찾기\s*(보여|알려|확인|뭐|어떤)/,
+      /북마크\s*(보여|알려|확인|어떤)/,
     ],
     dbHandler: "favorites",
   },
@@ -257,6 +280,9 @@ const PATTERNS: IntentPattern[] = [
   },
 
   // ── 서비스 소개 ────────────────────────────────
+  // 의도적으로 broad — "듀이", "무료" 같은 단어가 들어가면 LLM 호출 없이
+  // 가이드성 정적 응답으로 빠르게 응대. false positive(예: "듀이야 도와줘")가
+  // 발생해도 가이드 응답이 사용자에게 다음 질문을 더 구체적으로 하도록 유도.
   {
     intent: "service_intro",
     patterns: [/듀이|dewy/i, /이 (앱|서비스).*뭐|이 (앱|서비스).*소개/, /무료/],
@@ -265,9 +291,17 @@ const PATTERNS: IntentPattern[] = [
   },
 
   // ── 가격 문의 ──────────────────────────────────
+  // 단어 "얼마" 단독은 결혼 도메인 핵심 어휘("식대 얼마", "예물 얼마" 등)라
+  // 오트리거 시 핵심 질문을 막아버려서 의도적으로 좁힘. 구독·결제·요금제
+  // 맥락에서만 정적 응답.
   {
     intent: "pricing",
-    patterns: [/가격|요금|얼마|비용.*얼마|결제|premium.*얼마/i],
+    patterns: [
+      /(구독|premium|프리미엄).*(가격|요금|얼마|비용|결제|업그레이드)/i,
+      /(요금제|월정액|월 ?구독료|연간\s*구독)/,
+      /(premium|프리미엄)\s*(가격|얼마|비용)/i,
+      /(결제\s*방식|결제\s*수단|환불|구독\s*취소)/,
+    ],
     staticReply:
       "**무료 사용**\n• AI 플래너 일 5회 질문\n• 기본 정보·플래닝·커뮤니티 무제한\n• 가입 시 1,000P 적립 (≈ 200원 상당)\n\n**Premium 구독**\n• AI 플래너 무제한\n• 견적서 PDF 자동 생성\n• 예산 분석 리포트 PDF\n• 월간 10하트 / 연간 180하트 보너스 (초기 이용자 한정)\n\n**AI Studio (드레스 피팅 등)**\n• 충전식 하트(토큰) 결제\n• 1,900원부터\n\n자세한 가격은 [Premium 페이지](/premium)에서 확인하실 수 있어요.",
   },
@@ -293,6 +327,8 @@ const PATTERNS: IntentPattern[] = [
   { intent: "my_comments", patterns: [/내가\s*쓴\s*댓글/, /내\s*댓글/], dbHandler: "my_comments" },
 
   // ── AI 사용량 ──────────────────────────────────
+  // 의도적으로 broad — false positive("AI 추천 몇 번 정도?")가 발생해도
+  // 사용량 응답이 무해하고, LLM 호출 절감 효과가 있어서.
   {
     intent: "ai_usage",
     patterns: [/AI.*몇\s*번/i, /챗봇.*몇\s*번/, /(AI|챗봇)\s*사용\s*(량|횟수|기록)/, /오늘.*몇\s*(번|회)/],
@@ -351,7 +387,18 @@ const PATTERNS: IntentPattern[] = [
   // ── 활동 종합 요약 ─────────────────────────────
   {
     intent: "activity_summary",
-    patterns: [/내\s*활동\s*(요약|보여|확인|전체|모두)/, /활동\s*요약/, /현황\s*(보여|알려)/, /지금\s*상태/, /대시보드/],
+    // 자연어 변형("어때?"·"어떤가"·"진행됐어") 추가. 기존 /내\s*활동\s*요약/
+    // 은 "내 활동 어때?" 같은 일상 어투를 못 잡아 시뮬레이션에서 LLM 폴백
+    // 되던 갭(M1·N1·P1·P10). 단독 "진행 상황"은 contract_progress·
+    // checklist_progress와 충돌하므로 제외.
+    patterns: [
+      /내\s*활동/,                           // "내 활동 어때", "내 활동 보여"
+      /활동\s*(요약|어때|어떤가)/,
+      /현황\s*(보여|알려|어때)/,
+      /지금\s*(상태|어디|어떻게)/,
+      /대시보드/,
+      /(어디까지|얼마나).*진행/,             // "어디까지 진행됐어"
+    ],
     dbHandler: "activity_summary",
   },
 
@@ -388,13 +435,33 @@ const PATTERNS: IntentPattern[] = [
     dbHandler: "checklist_progress",
   },
 
+  // ── 명시 웹 검색 (사용자가 "웹에서 찾아줘") ────────────
+  // free_search·popular_places보다 먼저 매칭되어야 함 — "웹에서 강남
+  // 웨딩홀 찾아줘"가 free_search 패턴에 먼저 잡히는 회귀 방지.
+  // "더 찾아줘" 단독은 너무 광범위 → 컨텍스트(웹/실시간/최신) 동반 필요.
+  {
+    intent: "web_search" as ChatIntent,
+    patterns: [
+      /웹에서.*(검색|찾|알려)/,
+      /실시간.*(검색|찾|정보)/,
+      /최신.*(검색|찾|정보).*(업체|식장|스튜디오|드레스)/,
+      /구글에서.*(검색|찾)/,
+      /직접.*(웹|구글|인터넷).*(검색|찾)/,
+    ],
+    dbHandler: "web_search",
+  },
+
   // 통계·검색 (자유 텍스트)
   {
     intent: "free_search" as ChatIntent,
+    // 스몰웨딩("베뉴 추천")·셀프웨딩("로케이션 추천") 등 STYLE_OVERRIDES 칩
+    // 프롬프트도 잡히도록 보강. 기존 keyword(식장/웨딩홀/스튜디오/드레스/
+    // 메이크업)에 베뉴/로케이션/촬영지/장소 추가.
     patterns: [
-      /(강남|강북|서초|마포|용산|종로|부산|대구|인천|성남|수원|천안|청주|경기|제주).*(식장|웨딩홀|스튜디오|드레스|메이크업)/,
-      /(식장|웨딩홀|스튜디오|드레스샵|메이크업).*추천/,
-      /(찾|검색).*(웨딩홀|식장|스튜디오)/,
+      /(강남|강북|서초|마포|용산|종로|부산|대구|인천|성남|수원|천안|청주|경기|제주).*(식장|웨딩홀|스튜디오|드레스|메이크업|베뉴|로케이션)/,
+      /(식장|웨딩홀|스튜디오|드레스샵|메이크업|베뉴|로케이션|촬영지|촬영\s*장소).*추천/,
+      /(찾|검색).*(웨딩홀|식장|스튜디오|베뉴|로케이션)/,
+      /(스몰웨딩|셀프웨딩).*(베뉴|로케이션|장소|촬영).*추천/,
     ],
     dbHandler: "free_search",
   },
@@ -436,13 +503,33 @@ const PATTERNS: IntentPattern[] = [
     guideKey: "contract_check",
   },
   {
+    // AIPlanner 메인 칩 "양가 분담 비교" 프롬프트("양가 분담 평균과 분배 가이드
+    // 알려줘")가 어떤 패턴에도 안 잡혀 LLM 폴백 (일 5회 소진 후 무응답)되던
+    // 회귀. 핸들러(handleEtiquetteGuide)는 분담 내용을 이미 다루므로 패턴만 보강.
     intent: "guide_etiquette" as ChatIntent,
-    patterns: [/(예단|예물).*(매너|얼마|준비)/, /상견례/, /양가\s*인사/, /시부모|장모|장인/],
+    patterns: [
+      /(예단|예물).*(매너|얼마|준비)/,
+      /상견례/,
+      /양가\s*인사/,
+      /시부모|장모|장인/,
+      /양가\s*(분담|분배|지원금|보조)/,
+      /(분담|분배).*(평균|가이드|비율|얼마)/,
+      /지원금.*(평균|얼마|분배|비율)/,
+      // 양가 갈등·의견 차이 조율 — 시뮬레이션 회귀(S2·N2):
+      // "양가 의견 차이 조율" 같은 표현이 기존 패턴에 안 잡혀 LLM 폴백.
+      // etiquette 가이드가 양가 매너·분담을 다루므로 동일 핸들러로.
+      /양가.*(의견|갈등|차이|조율|싸움|마찰)/,
+      /(시댁|친정|처가|시가).*(갈등|의견|차이|조율)/,
+      /부모님.*(의견|갈등).*(조율|차이|다름)/,
+      /강요/,                                  // "시부모님이 한복 색깔 강요"
+    ],
     guideKey: "etiquette",
   },
   {
     intent: "guide_gift" as ChatIntent,
-    patterns: [/답례품/, /축의금.*(얼마|봉투)/, /부조/],
+    // "스몰웨딩 답례품 아이디어 추천해줘"(STYLE_OVERRIDES) 칩도 잡히도록
+    // "답례품 아이디어/추천" 변형 포함. "축의금 봉투" 패턴은 기존 유지.
+    patterns: [/답례품/, /축의금.*(얼마|봉투|기준|정도)/, /부조/, /축의\s*금액/],
     guideKey: "gift_etiquette",
   },
   {
@@ -455,6 +542,73 @@ const PATTERNS: IntentPattern[] = [
     patterns: [/식순.*(어떻|보여|알려)/, /본식.*(진행|식순)/, /예식.*순서/],
     guideKey: "ceremony_progress",
   },
+
+  // ── 가봉 (드레스 가봉 일정·횟수·준비물) ─────────────────
+  // "드레스 언제 예약" 은 sdme_timing(예약 시기)으로 가야 함. 여기서는
+  // "가봉/피팅"의 횟수·준비·일정을 다룸.
+  {
+    intent: "guide_fitting" as ChatIntent,
+    patterns: [
+      /가봉.*(언제|시기|횟수|준비|몇\s*번)/,
+      /드레스.*가봉/,
+      /피팅.*(횟수|시기|언제|준비)/,
+      /가봉.*(뭐|무엇|챙겨)/,
+    ],
+    guideKey: "fitting",
+  },
+
+  // ── 본식 스냅 vs 웨딩 스냅 ─────────────────────────────
+  // sdme_timing 패턴이 /스튜디오.*(언제|시기)/ 라 "스냅 작가" 같은
+  // 비-시기 질문은 안 잡혀 LLM 폴백되던 갭. 본식 스냅·웨딩 스냅·작가
+  // 차이·계약 포인트 모두 이 핸들러에서 다룸.
+  {
+    intent: "guide_snap" as ChatIntent,
+    patterns: [
+      /(본식|웨딩)\s*스냅/,
+      /스냅.*(작가|컷|원본|보정|차이|뭐|구분)/,
+      /본식\s*촬영.*작가/,
+      /원본.*(주나|받|제공)/,
+    ],
+    guideKey: "snap",
+  },
+
+  // ── 청첩장 디자인 (모바일·종이·트렌드) ────────────────
+  // invitation_timing은 "발송 시기"만 다루므로, 디자인·종류·모바일
+  // vs 종이 비교는 별도 핸들러로 분리.
+  {
+    intent: "guide_invitation_design" as ChatIntent,
+    patterns: [
+      /청첩장.*(디자인|종류|샘플|컨셉|트렌드|예쁜)/,
+      /모바일\s*청첩장/,
+      /(종이|모바일).*청첩장/,
+      /청첩장.*(만들|제작)/,
+    ],
+    guideKey: "invitation_design",
+  },
+
+  // ── 예식 리허설 (식장 동선·진행) ──────────────────────
+  // makeup_trial은 메이크업 시연 한정. 본식 식장 리허설은 별도 가이드.
+  {
+    intent: "guide_ceremony_rehearsal" as ChatIntent,
+    patterns: [
+      /(예식|본식|식장)\s*리허설/,
+      /리허설.*(동선|진행|언제|뭐|준비)/,
+      /식장.*리허설/,
+    ],
+    guideKey: "ceremony_rehearsal",
+  },
+
+  // ── 혼주 복장 (어머님·아버님 한복·양장) ───────────────
+  {
+    intent: "guide_parents_attire" as ChatIntent,
+    patterns: [
+      /혼주.*(복장|옷|한복|양장)/,
+      /(어머님|아버님|어머니|아버지).*(한복|양장|양복|복장|옷|정장)/,
+      /부모님.*복장/,
+      /양가\s*어머님.*(한복|색깔|색상)/,
+    ],
+    guideKey: "parents_attire",
+  },
 ];
 
 /**
@@ -466,13 +620,14 @@ const PATTERNS: IntentPattern[] = [
 export const matchIntent = (message: string): IntentMatch | null => {
   const trimmed = message.trim();
   if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
 
   // 1) 정적 패턴 매칭
   for (const pattern of PATTERNS) {
     for (const p of pattern.patterns) {
       const matched =
         typeof p === "string"
-          ? trimmed.toLowerCase().includes(p.toLowerCase())
+          ? lower.includes(p.toLowerCase())
           : p.test(trimmed);
 
       if (matched) {

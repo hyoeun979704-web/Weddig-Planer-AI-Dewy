@@ -18,6 +18,7 @@ import UpgradeModal from "@/components/premium/UpgradeModal";
 import BottomNav from "@/components/BottomNav";
 import { motion, AnimatePresence } from "framer-motion";
 import { findSuggestions } from "@/data/chatbotSuggestions";
+import { getFollowUpChips } from "@/lib/chatbot/followUpChips";
 import type { WeddingStyle } from "@/lib/weddingStyle";
 
 type ModalType = "venue" | "sdme" | "timeline" | "budget" | null;
@@ -117,13 +118,6 @@ const STYLE_GREETING: Record<WeddingStyle, { title: string; subtitle: string; em
   },
 };
 
-const FOLLOW_UP_CHIPS = [
-  "더 자세히 알려줘",
-  "다른 옵션은?",
-  "비용 비교해줘",
-  "체크리스트 만들어줘",
-];
-
 const AIPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -199,13 +193,15 @@ const AIPlanner = () => {
     if (item.modal) setActiveModal(item.modal);
   };
 
-  // 모달 핸들러: 모든 입력 필드를 결정형 핸들러로 직접 전달 (LLM 호출 X)
+  // 모달 핸들러: 모든 입력 필드를 결정형 핸들러로 직접 전달 (LLM 호출 X).
+  // 채팅 표시는 사람이 읽기 좋은 라벨(regionLabel / budgetLabel)을 쓰고,
+  // 핸들러에는 DB 검색에 안전한 값(region/budget)을 그대로 전달.
   const handleVenueSubmit = (data: Record<string, unknown>) => {
     setActiveModal(null);
     const userText = `🏛️ 웨딩홀 추천 요청\n${[
-      data.region && `지역: ${data.region}`,
+      data.regionLabel && `지역: ${data.regionLabel}`,
       data.guests && `하객수: ${data.guests}명`,
-      data.budget && `예산: ${data.budget}만원`,
+      data.budgetLabel && `예산: ${data.budgetLabel}`,
       Array.isArray(data.styles) && data.styles.length > 0 && `스타일: ${(data.styles as string[]).join(", ")}`,
     ].filter(Boolean).join(" · ")}`;
     sendStructured(userText, { kind: "venue", params: data as never });
@@ -214,8 +210,8 @@ const AIPlanner = () => {
   const handleSdmeSubmit = (data: Record<string, unknown>) => {
     setActiveModal(null);
     const userText = `📸 스드메 가이드 요청\n${[
-      data.region && `지역: ${data.region}`,
-      data.budget && `예산: ${data.budget}만원`,
+      data.regionLabel && `지역: ${data.regionLabel}`,
+      data.budgetLabel && `예산: ${data.budgetLabel}`,
       data.studioStyle && `스타일: ${data.studioStyle}`,
       data.priority && `우선순위: ${data.priority}`,
     ].filter(Boolean).join(" · ")}`;
@@ -236,15 +232,18 @@ const AIPlanner = () => {
     setActiveModal(null);
     const userText = `💰 예산 분배 요청\n${[
       data.totalBudget && `총 ${data.totalBudget}만원`,
-      data.region && `(${data.region})`,
+      data.regionLabel && `(${data.regionLabel})`,
       Array.isArray(data.priorities) && data.priorities.length > 0 && `우선순위: ${(data.priorities as string[]).join(", ")}`,
     ].filter(Boolean).join(" ")}`;
     sendStructured(userText, { kind: "budget", params: data as never });
   };
 
   const hasConversation = messages.length > 0;
-  const lastMessageIsAssistant = messages.length > 0 && messages[messages.length - 1]?.role === "assistant";
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+  const lastMessageIsAssistant = lastMessage?.role === "assistant";
   const showFollowUps = hasConversation && lastMessageIsAssistant && !isLoading;
+  // 마지막 응답의 intent에 따라 컨텍스트 맞는 후속 칩. 매핑 없으면 기본 4개.
+  const followUpChips = getFollowUpChips(lastMessage?.intent);
 
   const handleCategoryTabChange = useCategoryTabNavigation();
 
@@ -335,7 +334,7 @@ const AIPlanner = () => {
               animate={{ opacity: 1, y: 0 }}
               className="flex flex-wrap gap-2 pl-11"
             >
-              {FOLLOW_UP_CHIPS.map((chip) => (
+              {followUpChips.map((chip) => (
                 <button
                   key={chip}
                   onClick={() => handleChipClick(chip)}

@@ -23,7 +23,16 @@ export type StructuredHandler =
   | { kind: "timeline"; params: TimelineParams }
   | { kind: "budget"; params: BudgetParams };
 
-type Message = { role: "user" | "assistant"; content: string };
+/**
+ * `intent` — 응답이 어떤 intent로 라우팅됐는지 (assistant 메시지에만 의미).
+ * 후속 질문 칩을 동적으로 결정하는 데 사용 (followUpChips.getFollowUpChips).
+ * LLM 폴백은 "llm", 매칭 안 된 비로그인 로그인 안내는 "login_required".
+ */
+export type Message = {
+  role: "user" | "assistant";
+  content: string;
+  intent?: string | null;
+};
 
 const CHAT_URL = `${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/ai-planner`;
 
@@ -35,6 +44,9 @@ export const useAIPlanner = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
+  // 사용자 컨텍스트는 ai-planner edge function의 user-data.ts에서 직접
+  // fetch하여 시스템 프롬프트에 주입한다 (결혼일·예산·진척률·관심 업체·
+  // 장기 메모리). 클라이언트에서 다시 보내면 중복.
 
   const sendMessage = useCallback(async (input: string) => {
     const userMsg: Message = { role: "user", content: input };
@@ -53,7 +65,7 @@ export const useAIPlanner = () => {
       if (intent) {
         // (a) 정적 응답 — 인사·도움말·가격 안내 등
         if (intent.staticReply) {
-          setMessages(prev => [...prev, { role: "assistant", content: intent.staticReply! }]);
+          setMessages(prev => [...prev, { role: "assistant", content: intent.staticReply!, intent: intent.intent }]);
           setIsLoading(false);
           return;
         }
@@ -62,7 +74,7 @@ export const useAIPlanner = () => {
         // 일부는 places 통계로 동적 산출하므로 async
         if (intent.guideKey) {
           const reply = await runGuideHandler(intent.guideKey);
-          setMessages(prev => [...prev, { role: "assistant", content: reply }]);
+          setMessages(prev => [...prev, { role: "assistant", content: reply, intent: intent.intent }]);
           setIsLoading(false);
           return;
         }
@@ -86,7 +98,7 @@ export const useAIPlanner = () => {
             // LLM 호출 흐름으로 fallthrough
           } else if (result.reply) {
             // 즉답만 — 거기서 종료
-            setMessages(prev => [...prev, { role: "assistant", content: result.reply! }]);
+            setMessages(prev => [...prev, { role: "assistant", content: result.reply!, intent: intent.intent }]);
             setIsLoading(false);
             return;
           }
@@ -96,6 +108,7 @@ export const useAIPlanner = () => {
           setMessages(prev => [...prev, {
             role: "assistant",
             content: "이 정보는 로그인 후 확인할 수 있어요 🌿\n[로그인 페이지](/auth)에서 가입·로그인 부탁드려요.",
+            intent: "login_required",
           }]);
           setIsLoading(false);
           return;
@@ -115,7 +128,7 @@ export const useAIPlanner = () => {
         if (last?.role === "assistant") {
           return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
         }
-        return [...prev, { role: "assistant", content: assistantSoFar }];
+        return [...prev, { role: "assistant", content: assistantSoFar, intent: "llm" }];
       });
     };
 
@@ -123,22 +136,10 @@ export const useAIPlanner = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token || ((import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ?? "");
 
-      // 게이트가 추출한 컨텍스트(B+C 하이브리드)가 있다면 시스템 메시지로 주입.
-      // LLM이 이 정보를 활용해 자연어로 정리한 답변을 만든다.
-      // wedding_style 이 세팅돼 있고 일반이 아닐 땐 페르소나 힌트를 상시 주입해
-      // 셀프/스몰 사용자가 일반 결혼 어휘로 답변받지 않게 한다.
-      const personaContext = (() => {
-        const style = weddingSettings.wedding_style;
-        const excluded = weddingSettings.excluded_categories ?? [];
-        if (!style || style === "general") return null;
-        const styleLabel = style === "self" ? "셀프웨딩" : style === "small" ? "스몰웨딩" : "맞춤형 결혼식";
-        const excludedLabel = excluded.length > 0 ? ` 제외 카테고리: ${excluded.join(", ")}.` : "";
-        return `[페르소나] 사용자는 ${styleLabel}을 준비 중이에요.${excludedLabel} 추천·체크리스트·예산 안내는 이 페르소나에 맞춰 답변해주세요. 제외 카테고리에 해당하는 업체/일정은 추천에서 빼주세요.`;
-      })();
+      // 사용자 컨텍스트는 ai-planner edge function이 user-data.ts로 직접
+      // fetch해 시스템 프롬프트에 주입한다. 게이트가 핸들러에서 추출한
+      // 추가 컨텍스트(B+C 하이브리드)만 LLM 호출 시 함께 보낸다.
       const messagesToSend: Message[] = [
-        ...(personaContext
-          ? [{ role: "user" as const, content: personaContext }]
-          : []),
         ...(llmContextInjection
           ? [{
               role: "user" as const,
@@ -299,21 +300,26 @@ export const useAIPlanner = () => {
 
     try {
       let reply: string;
+      let intent: string;
       switch (handler.kind) {
         case "venue":
           reply = await handleVenueRecommendation(handler.params);
+          intent = "venue_recommendation";
           break;
         case "sdme":
           reply = await handleSdmeGuide(handler.params);
+          intent = "sdme_guide";
           break;
         case "timeline":
           reply = await handleTimelinePlanning(handler.params);
+          intent = "timeline_planning";
           break;
         case "budget":
           reply = await handleBudgetPlanning(handler.params);
+          intent = "budget_planning";
           break;
       }
-      setMessages(prev => [...prev, { role: "assistant", content: reply }]);
+      setMessages(prev => [...prev, { role: "assistant", content: reply, intent }]);
     } catch (e) {
       console.error("Structured handler error:", e);
       toast({

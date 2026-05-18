@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeForIlike } from "./_utils";
 
 export interface PriceStats {
   count: number;
@@ -63,7 +64,8 @@ export const fetchPriceStats = async (
     .eq("is_active", true)
     .not("min_price", "is", null);
 
-  if (region) query = query.or(`district.ilike.%${region}%,city.ilike.%${region}%`);
+  const safe = sanitizeForIlike(region);
+  if (safe) query = query.or(`district.ilike.%${safe}%,city.ilike.%${safe}%`);
 
   const { data } = await query;
   if (!data || data.length < 3) return null;
