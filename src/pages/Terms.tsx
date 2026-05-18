@@ -249,7 +249,7 @@ const Terms = () => {
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
   <section className="mb-6">
-    <h2 className="text-[14px] font-bold mb-2 text-foreground">{title}</h2>
+    <h2 className="text-body font-bold mb-2 text-foreground">{title}</h2>
     <div className="text-foreground/85">{children}</div>
   </section>
 );

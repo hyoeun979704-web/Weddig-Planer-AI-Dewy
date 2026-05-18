@@ -40,14 +40,14 @@ const RecommendedSection = () => {
     <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-100))]">
       <div className="mb-[10px]">
         <div className="flex items-center gap-1.5">
-          <h2 className="text-[16px] font-bold text-black">{header.title}</h2>
+          <h2 className="text-title font-bold text-black">{header.title}</h2>
           {style && style !== "general" && (
             <span className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
               {WEDDING_STYLE_LABEL[style]}
             </span>
           )}
         </div>
-        <p className="text-[11px] text-black/55 mt-0.5">{header.hint}</p>
+        <p className="text-caption text-black/55 mt-0.5">{header.hint}</p>
       </div>
       <div className="flex gap-[8px] overflow-x-auto scrollbar-hide">
         {isLoading ? (

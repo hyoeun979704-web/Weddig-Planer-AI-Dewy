@@ -258,7 +258,7 @@ const BusinessOnboard = () => {
                     value={vendorName}
                     onChange={(e) => setVendorName(e.target.value)}
                   />
-                  <p className="text-[11px] text-muted-foreground">비워두면 상호명이 사용됩니다</p>
+                  <p className="text-caption text-muted-foreground">비워두면 상호명이 사용됩니다</p>
                 </div>
 
                 <div className="space-y-1.5">

@@ -321,7 +321,7 @@ const AIPlanner = () => {
                       날짜·지역만 입력해도 맞춤 추천이 정확해져요
                     </p>
                   </div>
-                  <span className="shrink-0 text-[11px] font-bold text-primary">설정 →</span>
+                  <span className="shrink-0 text-caption font-bold text-primary">설정 →</span>
                 </button>
               )}
 
@@ -335,7 +335,7 @@ const AIPlanner = () => {
                   >
                     {q.emoji && <span className="text-2xl block mb-2">{q.emoji}</span>}
                     <p className="text-sm font-semibold text-foreground mb-0.5">{q.label}</p>
-                    <p className="text-[11px] text-muted-foreground leading-tight">{q.desc}</p>
+                    <p className="text-caption text-muted-foreground leading-tight">{q.desc}</p>
                     {q.premium && (
                       <span className="absolute top-2 right-2 text-[10px] bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium flex items-center gap-0.5">
                         <Sparkles className="w-3 h-3" /> PRO
@@ -345,7 +345,7 @@ const AIPlanner = () => {
                 ))}
               </div>
 
-              <p className="text-center text-[11px] text-muted-foreground">
+              <p className="text-center text-caption text-muted-foreground">
                 아래 입력창에 직접 질문할 수도 있어요
               </p>
             </motion.div>

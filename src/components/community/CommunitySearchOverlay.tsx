@@ -306,7 +306,7 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
                       </span>
                       개
                       {sortedResults.length !== results.length && (
-                        <span className="text-[11px] ml-1">
+                        <span className="text-caption ml-1">
                           (총 {results.length} 중 필터)
                         </span>
                       )}
@@ -335,7 +335,7 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
               {showFilters && (
                 <div className="px-4 pb-3 space-y-2.5 border-t border-border bg-card">
                   <div>
-                    <p className="text-[11px] font-semibold text-muted-foreground mt-2 mb-1.5">결혼 유형</p>
+                    <p className="text-caption font-semibold text-muted-foreground mt-2 mb-1.5">결혼 유형</p>
                     <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
                       {STYLE_FILTERS.map((f) => {
                         const isActive = styleFilter === f.key;
@@ -358,7 +358,7 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
                   </div>
 
                   <div>
-                    <p className="text-[11px] font-semibold text-muted-foreground mb-1.5">카테고리</p>
+                    <p className="text-caption font-semibold text-muted-foreground mb-1.5">카테고리</p>
                     <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
                       {CATEGORY_FILTERS.map((c) => {
                         const isActive = categoryFilter === c;
@@ -381,7 +381,7 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
                   </div>
 
                   <div>
-                    <p className="text-[11px] font-semibold text-muted-foreground mb-1.5">정렬</p>
+                    <p className="text-caption font-semibold text-muted-foreground mb-1.5">정렬</p>
                     <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
                       {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => {
                         const isActive = sortBy === key;

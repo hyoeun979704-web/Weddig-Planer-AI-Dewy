@@ -102,11 +102,11 @@ const WaitlistSignupSheet = ({ open, onOpenChange, serviceId, serviceTitle }: Pr
               disabled={submitting}
             />
             {user ? (
-              <p className="text-[11px] text-muted-foreground mt-1">
+              <p className="text-caption text-muted-foreground mt-1">
                 로그인된 계정으로도 알림을 보내드려요.
               </p>
             ) : (
-              <p className="text-[11px] text-muted-foreground mt-1">
+              <p className="text-caption text-muted-foreground mt-1">
                 로그인하지 않아도 신청할 수 있어요.
               </p>
             )}

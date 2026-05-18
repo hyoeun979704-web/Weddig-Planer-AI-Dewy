@@ -72,7 +72,7 @@ const HomeEntryPopup = () => {
             background: "linear-gradient(135deg, #FFD4DC 0%, #F69BAA 60%, #E04562 110%)",
           }}
         >
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/85 text-[11px] font-bold text-primary">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/85 text-caption font-bold text-primary">
             신규 가입 한정
           </span>
         </div>

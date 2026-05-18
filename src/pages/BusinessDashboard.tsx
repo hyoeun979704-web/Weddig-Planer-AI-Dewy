@@ -129,7 +129,7 @@ const BusinessDashboard = () => {
             <div key={stat.label} className="bg-card rounded-2xl border border-border p-3 text-center">
               <stat.icon className={`w-5 h-5 ${stat.color} mx-auto`} />
               <p className="text-lg font-bold text-foreground mt-1">{stat.value}</p>
-              <p className="text-[11px] text-muted-foreground">{stat.label}</p>
+              <p className="text-caption text-muted-foreground">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -157,7 +157,7 @@ const BusinessDashboard = () => {
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{item.badge}</span>
                     )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{item.description}</p>
+                  <p className="text-caption text-muted-foreground mt-0.5">{item.description}</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               </button>

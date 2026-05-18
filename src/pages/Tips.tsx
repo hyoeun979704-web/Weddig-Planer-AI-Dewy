@@ -327,7 +327,7 @@ const Tips = () => {
                     <button
                       key={f}
                       onClick={() => setFormat(f)}
-                      className={`px-2.5 h-7 rounded-full text-[11px] font-medium transition-colors ${
+                      className={`px-2.5 h-7 rounded-full text-caption font-medium transition-colors ${
                         format === f
                           ? "bg-background text-foreground shadow-sm"
                           : "text-muted-foreground"
@@ -343,7 +343,7 @@ const Tips = () => {
                     <button
                       key={s}
                       onClick={() => setSort(s)}
-                      className={`px-2.5 h-7 rounded-full text-[11px] font-medium transition-colors ${
+                      className={`px-2.5 h-7 rounded-full text-caption font-medium transition-colors ${
                         sort === s
                           ? "bg-background text-foreground shadow-sm"
                           : "text-muted-foreground"

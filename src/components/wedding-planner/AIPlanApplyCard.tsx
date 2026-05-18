@@ -75,13 +75,13 @@ const AIPlanApplyCard = (props: Props) => {
 
         <button
           onClick={() => setExpanded(e => !e)}
-          className="flex items-center gap-1 text-[11px] text-muted-foreground mb-2 hover:text-foreground"
+          className="flex items-center gap-1 text-caption text-muted-foreground mb-2 hover:text-foreground"
         >
           저장될 내용 {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         </button>
 
         {expanded && (
-          <div className="space-y-1 mb-3 text-[11px] text-foreground/80 max-h-40 overflow-y-auto pr-1">
+          <div className="space-y-1 mb-3 text-caption text-foreground/80 max-h-40 overflow-y-auto pr-1">
             <div className="flex justify-between font-medium">
               <span>총 예산</span>
               <span>{fmt(plan.totalBudget)}만원</span>
@@ -136,20 +136,20 @@ const AIPlanApplyCard = (props: Props) => {
       </div>
 
       {dateUnset ? (
-        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mb-2">
+        <p className="text-caption text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mb-2">
           결혼식 날짜를 먼저 등록해주세요. 일정은 결혼식 당일에 저장돼요.
         </p>
       ) : (
         <button
           onClick={() => setExpanded(e => !e)}
-          className="flex items-center gap-1 text-[11px] text-muted-foreground mb-2 hover:text-foreground"
+          className="flex items-center gap-1 text-caption text-muted-foreground mb-2 hover:text-foreground"
         >
           저장될 일정 {plan.events.length}개 {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         </button>
       )}
 
       {expanded && !dateUnset && (
-        <div className="space-y-1 mb-3 text-[11px] text-foreground/80 max-h-40 overflow-y-auto pr-1">
+        <div className="space-y-1 mb-3 text-caption text-foreground/80 max-h-40 overflow-y-auto pr-1">
           {plan.events.map((e, i) => (
             <div key={i} className="flex gap-2">
               <span className="font-medium min-w-[44px]">{e.time}</span>

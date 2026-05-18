@@ -36,7 +36,7 @@ const LockedCard = ({ title, description, badge, onClick }: LockedCardProps) => 
         <p className="mt-1 text-[12px] text-muted-foreground line-clamp-2">{description}</p>
       )}
       {onClick && (
-        <p className="mt-1.5 text-[11px] text-primary font-medium">출시 알림 받기 →</p>
+        <p className="mt-1.5 text-caption text-primary font-medium">출시 알림 받기 →</p>
       )}
     </div>
   </button>

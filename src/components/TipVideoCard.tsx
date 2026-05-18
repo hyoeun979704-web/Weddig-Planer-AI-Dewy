@@ -65,7 +65,7 @@ export function TipVideoCard({ video, width, rank }: TipVideoCardProps) {
         )}
 
         {rank != null ? (
-          <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-[11px] font-bold leading-none text-white">
+          <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-caption font-bold leading-none text-white">
             {rank}
           </span>
         ) : (

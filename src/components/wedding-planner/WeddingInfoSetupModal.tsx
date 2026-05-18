@@ -312,14 +312,14 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-gray-800">{PLANNING_STAGE_LABELS[s]}</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">
+                  <p className="text-caption text-gray-400 mt-0.5">
                     {PLANNING_STAGE_HINTS[s]}
                   </p>
                 </div>
               </label>
             ))}
           </div>
-          <p className="text-[11px] text-gray-400 mt-1.5">
+          <p className="text-caption text-gray-400 mt-1.5">
             이전 단계 항목들은 자동으로 완료 처리돼요 (나중에 수동 조정 가능)
           </p>
         </div>
@@ -385,7 +385,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
               <p className="text-sm font-semibold text-gray-800">
                 임신 중이에요 <span className="text-xs text-gray-400 font-normal">(선택)</span>
               </p>
-              <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+              <p className="text-caption text-gray-500 leading-snug mt-0.5">
                 체크하시면 본식 시점 임신 차수에 맞춰 촬영·가봉·신혼여행 일정을 앞당겨 추천드리고, 임산부 가능 메이크업샵·산부인과 상담 같은 일정이 자동으로 추가돼요. AI 답변 톤도 신체 컨디션을 고려해 안내해드려요.
               </p>
             </div>
@@ -426,13 +426,13 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
                 );
                 if (ctx.weeksAtWedding === null) {
                   return (
-                    <p className="text-[11px] text-amber-600 mt-1.5 leading-snug">
+                    <p className="text-caption text-amber-600 mt-1.5 leading-snug">
                       본식 시점이 출산예정일 이후라 차수를 계산할 수 없어요. 날짜를 다시 확인해주세요.
                     </p>
                   );
                 }
                 return (
-                  <p className="text-[11px] text-gray-500 mt-1.5 leading-snug">
+                  <p className="text-caption text-gray-500 mt-1.5 leading-snug">
                     본식 시점에 <span className="font-semibold text-gray-700">{trimesterLabel(ctx.trimesterAtWedding)} · 약 {ctx.weeksAtWedding}주차</span> 예상 — 그에 맞춰 일정이 자동 조정돼요.
                   </p>
                 );

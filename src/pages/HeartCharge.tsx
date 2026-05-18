@@ -187,7 +187,7 @@ const HeartCharge = () => {
                 </span>
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               결제액의 최대 50%까지 포인트로 결제할 수 있어요.
               1P = {POINT_TO_KRW}원 환산.
             </p>

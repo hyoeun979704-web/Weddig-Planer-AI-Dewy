@@ -68,7 +68,7 @@ const MenuSection = ({ user, onSignOut, onEditWeddingInfo }: MenuSectionProps) =
             </div>
             <div className="flex-1 text-left min-w-0">
               <p className="text-sm font-semibold text-foreground">{businessProfile?.business_name || "업체 관리"}</p>
-              <p className="text-[11px] text-muted-foreground">업체 정보, 이미지, 문의 관리</p>
+              <p className="text-caption text-muted-foreground">업체 정보, 이미지, 문의 관리</p>
             </div>
             <ChevronRight className="w-5 h-5 text-primary flex-shrink-0" />
           </button>
@@ -94,7 +94,7 @@ const MenuSection = ({ user, onSignOut, onEditWeddingInfo }: MenuSectionProps) =
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">{item.title}</p>
-                    <p className="text-[11px] text-muted-foreground">{item.description}</p>
+                    <p className="text-caption text-muted-foreground">{item.description}</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 </button>

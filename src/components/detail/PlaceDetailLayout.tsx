@@ -176,7 +176,7 @@ function TabButton({
     >
       <span>{label}</span>
       {count != null && count > 0 && (
-        <span className="ml-1 text-[11px] text-muted-foreground">({count})</span>
+        <span className="ml-1 text-caption text-muted-foreground">({count})</span>
       )}
       {active && (
         <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-[2px] bg-primary rounded-full" />
@@ -237,7 +237,7 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
           </div>
         )}
         {place.is_partner && (
-          <span className="absolute top-3 left-3 px-2.5 py-1 bg-primary text-primary-foreground text-[11px] font-bold rounded-full">
+          <span className="absolute top-3 left-3 px-2.5 py-1 bg-primary text-primary-foreground text-caption font-bold rounded-full">
             파트너
           </span>
         )}
@@ -268,7 +268,7 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
               <button
                 key={i}
                 onClick={() => handleTagClick(t)}
-                className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-full transition-colors"
+                className="text-caption px-2 py-0.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-full transition-colors"
               >
                 #{t}
               </button>
@@ -667,7 +667,7 @@ function ReviewCard({ review }: { review: PlaceReview }) {
       <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{review.content}</p>
       {review.ai_summary && (
         <div className="mt-2 px-3 py-2 bg-primary/5 border border-primary/10 rounded-lg">
-          <p className="text-[11px] font-semibold text-primary mb-0.5">AI 요약</p>
+          <p className="text-caption font-semibold text-primary mb-0.5">AI 요약</p>
           <p className="text-xs text-foreground">{review.ai_summary}</p>
         </div>
       )}
@@ -689,7 +689,7 @@ function Row({ icon, label, value, action }: { icon: React.ReactNode; label: str
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] text-muted-foreground mb-0.5">{label}</p>
+        <p className="text-caption text-muted-foreground mb-0.5">{label}</p>
         <div className="text-sm text-foreground">{value}</div>
         {action && <div className="mt-1">{action}</div>}
       </div>

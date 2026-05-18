@@ -122,7 +122,7 @@ export const FittingProgress = ({ active }: Props) => {
         <div className="flex items-start gap-2.5">
           <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-[11px] font-semibold text-primary mb-1">알아두면 좋은 드레스 이야기</p>
+            <p className="text-caption font-semibold text-primary mb-1">알아두면 좋은 드레스 이야기</p>
             <p className="text-[13px] text-foreground leading-relaxed">{TIPS[tipIndex]}</p>
           </div>
         </div>
@@ -140,13 +140,13 @@ export const FittingProgress = ({ active }: Props) => {
           <p className="font-bold text-foreground text-sm">
             기다리는 동안 게임 한판 어때요?
           </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-caption text-muted-foreground mt-0.5">
             꽃 머지 게임으로 포인트도 모으고, 시간도 잊어요 
           </p>
         </div>
       </button>
 
-      <p className="text-[11px] text-center text-muted-foreground leading-relaxed">
+      <p className="text-caption text-center text-muted-foreground leading-relaxed">
         완성된 모습은 자동으로 저장돼요. 잠시 다른 일을 보다 오셔도
         <br />
         「프리미엄 콘텐츠 → 갤러리」에서 확인하실 수 있어요 

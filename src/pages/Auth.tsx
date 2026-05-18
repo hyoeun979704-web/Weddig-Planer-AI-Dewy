@@ -181,7 +181,7 @@ const Auth = () => {
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">개인회원</p>
-                <p className="text-[11px] text-muted-foreground">예비부부</p>
+                <p className="text-caption text-muted-foreground">예비부부</p>
               </div>
             </button>
             <button
@@ -200,7 +200,7 @@ const Auth = () => {
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">기업회원</p>
-                <p className="text-[11px] text-muted-foreground">웨딩 업체</p>
+                <p className="text-caption text-muted-foreground">웨딩 업체</p>
               </div>
             </button>
           </div>

@@ -220,7 +220,7 @@ const Community = () => {
       className="w-full text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
     >
       <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+        <span className="px-2.5 py-0.5 rounded-full bg-muted text-caption font-medium text-muted-foreground">
           {post.category}
         </span>
         {renderStyleBadge(post.wedding_style)}
@@ -233,7 +233,7 @@ const Community = () => {
           <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
         )}
       </div>
-      <h3 className="mt-2 text-[16px] font-bold text-foreground line-clamp-1">
+      <h3 className="mt-2 text-title font-bold text-foreground line-clamp-1">
         {post.title}
       </h3>
       <p className="mt-0.5 text-[13px] text-muted-foreground line-clamp-1">
@@ -395,7 +395,7 @@ const Community = () => {
             <h2 className="text-[18px] font-bold text-foreground">
               오늘의 수다
             </h2>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-caption text-muted-foreground">
               {effectiveStyleFilter === "all"
                 ? "전체"
                 : STYLE_FILTERS.find((f) => f.key === effectiveStyleFilter)?.label}
@@ -422,7 +422,7 @@ const Community = () => {
                   className="flex-shrink-0 w-[260px] text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
                 >
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+                    <span className="px-2.5 py-0.5 rounded-full bg-muted text-caption font-medium text-muted-foreground">
                       {post.category}
                     </span>
                     {renderStyleBadge(post.wedding_style)}
@@ -432,7 +432,7 @@ const Community = () => {
                       </span>
                     )}
                   </div>
-                  <h3 className="mt-2 text-[16px] font-bold text-foreground line-clamp-1">
+                  <h3 className="mt-2 text-title font-bold text-foreground line-clamp-1">
                     {post.title}
                   </h3>
                   <p className="mt-0.5 text-[13px] text-muted-foreground line-clamp-1">

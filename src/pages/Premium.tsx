@@ -127,7 +127,7 @@ const Premium = () => {
               <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
                 <span> 월간 10 / 연간 180 (6개월치 보너스)</span>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-2">2026년 7월까지 월간·연간 구독 시 한정 · 체험 종료 후 자동 결제 없음</p>
+              <p className="text-caption text-muted-foreground mt-2">2026년 7월까지 월간·연간 구독 시 한정 · 체험 종료 후 자동 결제 없음</p>
               <button onClick={handleStartTrial} className="mt-3 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
                 무료 체험 시작하기
               </button>
@@ -150,7 +150,7 @@ const Premium = () => {
                   50% 할인
                 </div>
                 <p className="font-bold text-foreground text-sm">월간</p>
-                <p className="text-[11px] text-muted-foreground line-through mt-1">9,900원</p>
+                <p className="text-caption text-muted-foreground line-through mt-1">9,900원</p>
                 <p className="text-lg font-bold text-foreground">4,900원</p>
                 <p className="text-xs text-muted-foreground">/월</p>
               </button>
@@ -168,7 +168,7 @@ const Premium = () => {
                   67% 할인
                 </div>
                 <p className="font-bold text-foreground text-sm">연간</p>
-                <p className="text-[11px] text-muted-foreground line-through mt-1">118,800원</p>
+                <p className="text-caption text-muted-foreground line-through mt-1">118,800원</p>
                 <p className="text-lg font-bold text-foreground">39,000원</p>
                 <p className="text-xs text-muted-foreground">/년 · 월 3,250원</p>
               </button>
@@ -183,20 +183,20 @@ const Premium = () => {
         <div className="px-4 py-4">
           <div className="flex items-baseline justify-between mb-3">
             <h3 className="font-bold text-foreground">프리미엄 혜택 상세</h3>
-            <p className="text-[11px] text-muted-foreground">9개의 PDF · 1개의 메시지 템플릿</p>
+            <p className="text-caption text-muted-foreground">9개의 PDF · 1개의 메시지 템플릿</p>
           </div>
 
           {/* Column header */}
           <div className="flex items-center gap-3 px-4 py-2 mb-2 rounded-xl bg-muted/60">
             <span className="w-5" aria-hidden />
-            <span className="flex-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">기능</span>
-            <span className="w-14 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">무료</span>
-            <span className="w-14 text-center text-[11px] font-semibold text-primary uppercase tracking-wide"> Premium</span>
+            <span className="flex-1 text-caption font-semibold text-muted-foreground uppercase tracking-wide">기능</span>
+            <span className="w-14 text-center text-caption font-semibold text-muted-foreground uppercase tracking-wide">무료</span>
+            <span className="w-14 text-center text-caption font-semibold text-primary uppercase tracking-wide"> Premium</span>
           </div>
 
           {featureGroups.map((group) => (
             <div key={group.title} className="mb-4">
-              <p className="text-[11px] font-bold text-muted-foreground mb-2 uppercase tracking-wide">{group.title}</p>
+              <p className="text-caption font-bold text-muted-foreground mb-2 uppercase tracking-wide">{group.title}</p>
               <div className="bg-card rounded-2xl border border-border overflow-hidden divide-y divide-border">
                 {group.items.map((item, i) => {
                   const freeUnavailable = item.free === "✕";
@@ -204,7 +204,7 @@ const Premium = () => {
                     <div key={i} className="flex items-center gap-3 px-4 py-3.5">
                       {item.icon && <span className="text-lg w-5 text-center" aria-hidden>{item.icon}</span>}
                       <span className="flex-1 text-sm text-foreground leading-snug">{item.text}</span>
-                      <span className={`w-14 text-center text-[11px] ${freeUnavailable ? "text-muted-foreground/60" : "text-muted-foreground font-medium"}`}>
+                      <span className={`w-14 text-center text-caption ${freeUnavailable ? "text-muted-foreground/60" : "text-muted-foreground font-medium"}`}>
                         {item.free}
                       </span>
                       <span className="w-14 text-center">
@@ -219,7 +219,7 @@ const Premium = () => {
             </div>
           ))}
 
-          <p className="text-[11px] text-muted-foreground text-center mt-2 leading-relaxed">
+          <p className="text-caption text-muted-foreground text-center mt-2 leading-relaxed">
             모든 PDF는 입력값 기반의 정적 템플릿이며,<br />
             AI API 호출 없이 즉시 다운로드됩니다.
           </p>

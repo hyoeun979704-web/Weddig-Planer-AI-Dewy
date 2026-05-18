@@ -10,13 +10,13 @@ const Footer = () => {
       <div className="flex items-start gap-[15px] px-[30px] py-[15px] border-t border-border">
         <button
           onClick={() => navigate("/faq")}
-          className="flex-1 flex items-center justify-center h-[37px] bg-white rounded-[10px] text-[14px] font-medium text-black"
+          className="flex-1 flex items-center justify-center h-[37px] bg-white rounded-[10px] text-body font-medium text-black"
         >
           자주 묻는 질문
         </button>
         <button
           onClick={() => navigate("/contact")}
-          className="flex-1 flex items-center justify-center h-[37px] bg-white rounded-[10px] text-[14px] font-medium text-black"
+          className="flex-1 flex items-center justify-center h-[37px] bg-white rounded-[10px] text-body font-medium text-black"
         >
           고객센터
         </button>

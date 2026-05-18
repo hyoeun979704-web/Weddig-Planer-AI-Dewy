@@ -36,7 +36,7 @@ const ComingSoonAdminPage = ({
           </p>
 
           {expectedPhase && (
-            <div className="inline-block text-[11px] font-semibold bg-muted text-muted-foreground px-3 py-1 rounded-full mb-6">
+            <div className="inline-block text-caption font-semibold bg-muted text-muted-foreground px-3 py-1 rounded-full mb-6">
               예정 단계: {expectedPhase}
             </div>
           )}
@@ -52,7 +52,7 @@ const ComingSoonAdminPage = ({
             </div>
           )}
 
-          <p className="mt-6 text-[11px] text-muted-foreground">
+          <p className="mt-6 text-caption text-muted-foreground">
             현 단계에서는 자리만 잡혀 있으며, 향후 동일한 어드민 패턴으로 빠르게 추가됩니다.
           </p>
         </div>

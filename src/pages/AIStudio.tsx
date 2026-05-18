@@ -102,7 +102,7 @@ const AIStudio = () => {
                     <p className="mt-1 text-[12px] text-muted-foreground line-clamp-2">
                       {card.description}
                     </p>
-                    <p className="mt-1.5 text-[11px] text-primary font-medium">
+                    <p className="mt-1.5 text-caption text-primary font-medium">
                       지금 시작 →
                     </p>
                   </div>
@@ -130,7 +130,7 @@ const AIStudio = () => {
                     <p className="mt-1 text-[12px] text-muted-foreground line-clamp-2">
                       {card.description}
                     </p>
-                    <p className="mt-1.5 text-[11px] text-muted-foreground font-medium">
+                    <p className="mt-1.5 text-caption text-muted-foreground font-medium">
                       준비 중이에요
                     </p>
                   </div>

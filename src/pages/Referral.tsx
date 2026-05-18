@@ -182,7 +182,7 @@ const Referral = () => {
             </button>
           </div>
           {ref.hasRedeemed && ref.redeemedCode && (
-            <p className="text-[11px] text-muted-foreground mt-2">
+            <p className="text-caption text-muted-foreground mt-2">
               사용한 코드: {ref.redeemedCode}
             </p>
           )}

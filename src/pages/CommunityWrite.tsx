@@ -229,7 +229,7 @@ const CommunityWrite = () => {
                   <p className={`text-sm font-semibold ${isActive ? "text-primary" : "text-foreground"}`}>
                     {opt.label}
                   </p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                  <p className="text-caption text-muted-foreground mt-0.5">
                     {opt.hint}
                   </p>
                 </button>

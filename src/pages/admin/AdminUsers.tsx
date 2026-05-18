@@ -139,7 +139,7 @@ const AdminUsers = () => {
                     <tr key={u.user_id} className="hover:bg-muted/50">
                       <td className="px-4 py-3">
                         <div className="text-foreground">{u.nickname || "(닉네임 없음)"}</div>
-                        <div className="text-[11px] text-muted-foreground truncate max-w-xs">
+                        <div className="text-caption text-muted-foreground truncate max-w-xs">
                           {u.email || u.user_id}
                         </div>
                       </td>
@@ -173,7 +173,7 @@ const AdminUsers = () => {
                 </tbody>
               </table>
             </div>
-            <div className="px-4 py-2 border-t border-border text-[11px] text-muted-foreground bg-muted/30">
+            <div className="px-4 py-2 border-t border-border text-caption text-muted-foreground bg-muted/30">
               {search ? `검색 결과 ${filtered.length}명` : `총 ${filtered.length}명 표시 (최대 200)`}
             </div>
           </div>

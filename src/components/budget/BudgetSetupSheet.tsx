@@ -341,7 +341,7 @@ export default function BudgetSetupSheet({
             </button>
           </div>
           {totalBudget > 0 && (
-            <div className="mb-2 flex items-center justify-between gap-2 text-[11px] tabular-nums">
+            <div className="mb-2 flex items-center justify-between gap-2 text-caption tabular-nums">
               <span className="text-muted-foreground">
                 합계 <span className={cn("font-bold",
                   catSum === totalBudget ? "text-emerald-600" :
@@ -401,7 +401,7 @@ export default function BudgetSetupSheet({
           </div>
           <div className="mt-3 rounded-lg bg-yellow-50 border border-yellow-200 p-2.5 flex gap-2">
             <Info className="w-3.5 h-3.5 text-yellow-700 shrink-0 mt-0.5" />
-            <div className="text-[11px] text-yellow-900 leading-relaxed">
+            <div className="text-caption text-yellow-900 leading-relaxed">
               <p className="font-semibold mb-0.5">잊기 쉬운 숨은 비용</p>
               <p>· <b>스드메</b>에 헬퍼비(20~30만원), 부케, 본식스냅, 원본 추가비가 별도예요</p>
               <p>· <b>식대</b>에 어린이 식대(50% 할인)·주류·코너메뉴 추가비가 포함됐는지 확인하세요</p>
@@ -428,7 +428,7 @@ export default function BudgetSetupSheet({
                   <span className="text-muted-foreground"> / {fmt(totalBudget)}만원</span>
                 </span>
                 {hasMismatch && (
-                  <span className={cn("text-[11px] font-medium",
+                  <span className={cn("text-caption font-medium",
                     catSum > totalBudget ? "text-destructive" : "text-yellow-700"
                   )}>
                     {catSum > totalBudget

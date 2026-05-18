@@ -153,7 +153,7 @@ const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutP
             <div>
               <h1 className="text-base font-bold text-foreground leading-none">{title}</h1>
               {description && (
-                <p className="text-[11px] text-muted-foreground mt-0.5">{description}</p>
+                <p className="text-caption text-muted-foreground mt-0.5">{description}</p>
               )}
             </div>
           </div>

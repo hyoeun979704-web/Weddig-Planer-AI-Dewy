@@ -169,7 +169,7 @@ const PersonaDashboard = () => {
             <h2 className="text-[15px] font-bold text-foreground leading-tight">
               {styleIntro.title}
             </h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+            <p className="text-caption text-muted-foreground mt-0.5">
               {styleIntro.subtitle}
             </p>
           </div>
@@ -203,14 +203,14 @@ const PersonaDashboard = () => {
             <Flame className="w-3.5 h-3.5 text-rose-500" />
             <div className="min-w-0">
               <p className="text-[10px] text-muted-foreground leading-none">연속</p>
-              <p className="text-[11px] font-bold text-foreground">{streak.streak}일</p>
+              <p className="text-caption font-bold text-foreground">{streak.streak}일</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 bg-card/70 rounded-xl px-2 py-1.5">
             <Timer className="w-3.5 h-3.5 text-amber-500" />
             <div className="min-w-0">
               <p className="text-[10px] text-muted-foreground leading-none">오늘</p>
-              <p className="text-[11px] font-bold text-foreground">
+              <p className="text-caption font-bold text-foreground">
                 {formatMinutes(session.todaySeconds)}
               </p>
             </div>
@@ -219,7 +219,7 @@ const PersonaDashboard = () => {
             <Check className="w-3.5 h-3.5 text-emerald-500" />
             <div className="min-w-0">
               <p className="text-[10px] text-muted-foreground leading-none">완료</p>
-              <p className="text-[11px] font-bold text-foreground">
+              <p className="text-caption font-bold text-foreground">
                 {completedCount}/{totalCount}
               </p>
             </div>
@@ -230,7 +230,7 @@ const PersonaDashboard = () => {
         {nextActions.length > 0 && (
           <div className="relative mt-3 bg-card/70 rounded-2xl p-2.5">
             <div className="flex items-center justify-between mb-1.5 px-1">
-              <p className="text-[11px] font-bold text-foreground">다음 액션</p>
+              <p className="text-caption font-bold text-foreground">다음 액션</p>
               <button
                 onClick={() => navigate("/my-schedule")}
                 className="text-[10px] font-medium text-primary flex items-center gap-0.5"
@@ -260,7 +260,7 @@ const PersonaDashboard = () => {
         {/* Row 4: daily missions */}
         <div className="relative mt-3">
           <div className="flex items-center justify-between mb-1.5 px-1">
-            <p className="text-[11px] font-bold text-foreground flex items-center gap-1">
+            <p className="text-caption font-bold text-foreground flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-primary" />
               오늘의 미션 {completedMissions > 0 && (
                 <span className="text-primary">({completedMissions}/{missions.length})</span>
@@ -283,7 +283,7 @@ const PersonaDashboard = () => {
                   <div className="flex items-center justify-end mb-0.5 min-h-[16px]">
                     {done && <Check className="w-3 h-3 text-primary" />}
                   </div>
-                  <p className="text-[11px] font-semibold text-foreground leading-tight">
+                  <p className="text-caption font-semibold text-foreground leading-tight">
                     {m.label}
                   </p>
                   <p className="text-[9px] text-muted-foreground leading-tight mt-0.5">
@@ -301,7 +301,7 @@ const PersonaDashboard = () => {
           className="relative mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/8 hover:bg-primary/12 active:scale-[0.98] transition-all"
         >
           <Sparkles className="w-3.5 h-3.5 text-primary" />
-          <span className="text-[11px] font-bold text-primary">결정이 어려우신가요? Dewy가 추천해드려요</span>
+          <span className="text-caption font-bold text-primary">결정이 어려우신가요? Dewy가 추천해드려요</span>
         </button>
 
         {/* Wedding date footer (small) */}

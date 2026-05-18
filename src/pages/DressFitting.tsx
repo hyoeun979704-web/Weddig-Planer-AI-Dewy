@@ -432,7 +432,7 @@ const IntroSection = ({
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[11px] text-muted-foreground">내 잔액</p>
+          <p className="text-caption text-muted-foreground">내 잔액</p>
           <p className="text-base font-bold text-foreground">
             {hearts === null ? "—" : `${hearts} `}
           </p>
@@ -469,7 +469,7 @@ const IntroSection = ({
         <Camera className="w-5 h-5" />
         시작하기
       </button>
-      <p className="mt-2 text-[11px] text-center text-muted-foreground">
+      <p className="mt-2 text-caption text-center text-muted-foreground">
         시작 시{" "}
         <a href="/terms" className="underline">
           이용약관
@@ -505,7 +505,7 @@ const StepRow = ({
   children: React.ReactNode;
 }) => (
   <li className="flex gap-3">
-    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center mt-0.5">
+    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-caption font-bold flex items-center justify-center mt-0.5">
       {n}
     </span>
     <span className="leading-relaxed">{children}</span>
@@ -550,7 +550,7 @@ const PhotoStep = ({
       >
         <Upload className="w-8 h-8 text-muted-foreground" />
         <p className="text-sm font-medium text-foreground">사진 선택</p>
-        <p className="text-[11px] text-muted-foreground">JPG/PNG, 최대 5MB</p>
+        <p className="text-caption text-muted-foreground">JPG/PNG, 최대 5MB</p>
       </button>
     )}
   </section>
@@ -795,7 +795,7 @@ const SummaryRow = ({
       <button
         type="button"
         onClick={onEdit}
-        className="text-[11px] text-primary font-medium underline"
+        className="text-caption text-primary font-medium underline"
       >
         변경
       </button>

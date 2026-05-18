@@ -175,11 +175,11 @@ const AdminServiceWaitlist = () => {
                     </td>
                     <td className="px-4 py-3">
                       {entry.notified ? (
-                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                        <span className="text-caption px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
                           발송 완료
                         </span>
                       ) : (
-                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                        <span className="text-caption px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
                           미발송
                         </span>
                       )}

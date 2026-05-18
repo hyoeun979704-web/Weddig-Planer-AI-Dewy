@@ -383,7 +383,7 @@ const Budget = () => {
                 </div>
               </div>
               {daysToWedding !== null && daysToWedding >= 0 && (
-                <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-[11px]">
+                <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-caption">
                   <span className="text-muted-foreground">결혼식까지 <span className="font-bold text-foreground">D-{daysToWedding}일</span></span>
                   {dailyPace !== null ? (
                     <span className="text-muted-foreground">
@@ -469,7 +469,7 @@ const Budget = () => {
               </p>
               <span className="text-[10px] text-muted-foreground">변경 →</span>
             </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="text-caption text-muted-foreground leading-relaxed">
               {weddingSettings.wedding_style === "small"
                 ? "하객 수가 적으니 식대 부담이 크게 줄어요. 대신 가까운 분들에게 답례품·식대 단가는 더 신경 쓰는 게 좋아요."
                 : "스튜디오·드레스·메이크업을 직접 진행하시면 스드메 예산을 30~50% 절감할 수 있어요. 셀프 진행에 필요한 소품 비용은 기타에 잡아두세요."}
@@ -746,7 +746,7 @@ const Budget = () => {
               const diff = cur - prev;
               const diffPct = Math.round((Math.abs(diff) / prev) * 100);
               return (
-                <p className={cn("text-[11px] mt-2 text-center",
+                <p className={cn("text-caption mt-2 text-center",
                   diff > 0 ? "text-destructive" : diff < 0 ? "text-emerald-600" : "text-muted-foreground"
                 )}>
                   이번 달은 지난 달보다 {diff === 0 ? "동일" : `${diffPct}% ${diff > 0 ? "더 썼어요" : "덜 썼어요"}`}

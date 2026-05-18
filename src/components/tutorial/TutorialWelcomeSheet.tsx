@@ -138,7 +138,7 @@ const TutorialWelcomeSheet = () => {
               {totalLessons}개의 짧은 레슨이 준비됐어요
             </p>
           </div>
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
+          <p className="text-caption text-muted-foreground leading-relaxed">
             챕터별로 끊어서 들을 수 있고, 완료할 때마다 포인트가 적립돼요.
             언제든 마이페이지에서 다시 볼 수 있어요.
           </p>
@@ -162,7 +162,7 @@ const TutorialWelcomeSheet = () => {
 
         <button
           onClick={handleGoToHub}
-          className="w-full mt-2 text-[11px] text-muted-foreground flex items-center justify-center gap-1"
+          className="w-full mt-2 text-caption text-muted-foreground flex items-center justify-center gap-1"
         >
           전체 가이드 목록 보기 <ArrowRight className="w-3 h-3" />
         </button>

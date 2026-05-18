@@ -374,7 +374,7 @@ const EstimateSheet = ({ open, onClose }: EstimateSheetProps) => {
             {hasPrefill && (
               <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-primary/5 border border-primary/15">
                 <Sparkles className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-                <p className="text-[11px] text-primary leading-relaxed">
+                <p className="text-caption text-primary leading-relaxed">
                   예산 페이지에 등록된 정보를 자동으로 불러왔어요. 필요하면 수정해주세요.
                 </p>
               </div>

@@ -15,7 +15,7 @@ const StudioGallery = () => {
       <div className="flex items-center justify-between px-4 mb-3">
         <div>
           <h2 className="text-base font-bold text-foreground">인기 스드메</h2>
-          <p className="text-[11px] text-muted-foreground mt-0.5">예비부부가 가장 많이 찜한 스튜디오</p>
+          <p className="text-caption text-muted-foreground mt-0.5">예비부부가 가장 많이 찜한 스튜디오</p>
         </div>
         <button
           onClick={() => navigate("/vendors/스드메")}

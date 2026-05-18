@@ -232,7 +232,7 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
         ) : (
           <button
             onClick={() => setShowUnlink(true)}
-            className="text-[11px] text-muted-foreground mt-2 inline-flex items-center gap-1 hover:text-destructive transition-colors"
+            className="text-caption text-muted-foreground mt-2 inline-flex items-center gap-1 hover:text-destructive transition-colors"
           >
             <Unlink className="w-3 h-3" />
             연결 해제
@@ -344,7 +344,7 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
         {config.benefits.map((b) => (
           <span
             key={b}
-            className="text-[11px] px-2 py-1 bg-background border border-border rounded-full text-foreground"
+            className="text-caption px-2 py-1 bg-background border border-border rounded-full text-foreground"
           >
             {b}
           </span>

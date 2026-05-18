@@ -236,7 +236,7 @@ const MySchedule = () => {
                 {weddingSettings.excluded_categories.map((c) => (
                   <span
                     key={c}
-                    className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground rounded-full"
+                    className="text-caption px-2 py-0.5 bg-muted text-muted-foreground rounded-full"
                   >
                     {CATEGORY_LABELS[c as SkippableCategory]?.label ?? c} 제외
                   </span>
@@ -244,7 +244,7 @@ const MySchedule = () => {
               </div>
             )}
             {hiddenCount > 0 && (
-              <p className="text-[11px] text-muted-foreground mt-2">
+              <p className="text-caption text-muted-foreground mt-2">
                 숨겨진 일정 {hiddenCount}개 (DB에는 남아있어요)
               </p>
             )}

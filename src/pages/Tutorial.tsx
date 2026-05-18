@@ -128,7 +128,7 @@ const Tutorial = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-foreground">{chapter.title}</p>
-                    <p className="text-[11px] text-muted-foreground">{chapter.subtitle}</p>
+                    <p className="text-caption text-muted-foreground">{chapter.subtitle}</p>
                   </div>
                   {chapterDone && (
                     <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full ring-1", a.text, a.ring, a.bg)}>
@@ -160,7 +160,7 @@ const Tutorial = () => {
                             )}>
                               {lesson.title}
                             </p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight truncate">
+                            <p className="text-caption text-muted-foreground mt-0.5 leading-tight truncate">
                               {lesson.description} · {lesson.steps.length}단계
                             </p>
                           </div>
@@ -198,7 +198,7 @@ const Tutorial = () => {
                       <span className="text-base">{chapter.icon}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-foreground">{lesson.title}</p>
-                        <p className="text-[11px] text-muted-foreground">{chapter.title}</p>
+                        <p className="text-caption text-muted-foreground">{chapter.title}</p>
                       </div>
                       <Play className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
@@ -218,7 +218,7 @@ const Tutorial = () => {
                   progress.reset();
                 }
               }}
-              className="w-full text-[11px] text-muted-foreground flex items-center justify-center gap-1 py-2"
+              className="w-full text-caption text-muted-foreground flex items-center justify-center gap-1 py-2"
             >
               <RotateCcw className="w-3 h-3" /> 튜토리얼 진행률 초기화
             </button>

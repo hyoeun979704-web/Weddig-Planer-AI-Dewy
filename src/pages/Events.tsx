@@ -98,16 +98,16 @@ const EventListRow = ({ event }: { event: EventCard }) => {
           event.thumbBg
         )}
       >
-        {event.icon && <span className="text-[28px]" aria-hidden>{event.icon}</span>}
+        {event.icon && <span className="text-display" aria-hidden>{event.icon}</span>}
       </div>
       <div className="flex-1 min-w-0">
         <p className={cn("text-[13px] font-bold truncate", isEnded ? "text-muted-foreground" : "text-foreground")}>
           {event.title}
         </p>
-        <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1">{event.subtitle}</p>
+        <p className="text-caption text-muted-foreground leading-snug line-clamp-1">{event.subtitle}</p>
       </div>
       {!isEnded && (
-        <span className="flex-shrink-0 px-3 py-1.5 rounded-full bg-[hsl(var(--pink-50))] text-primary text-[11px] font-bold">
+        <span className="flex-shrink-0 px-3 py-1.5 rounded-full bg-[hsl(var(--pink-50))] text-primary text-caption font-bold">
           {event.cta}
         </span>
       )}
@@ -164,7 +164,7 @@ const Events = () => {
               "linear-gradient(135deg, #DDEEFB 0%, #A8D2F0 55%, #6FB3DF 110%)",
           }}
         >
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/60 text-[11px] font-bold text-[#1B6BA8]">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/60 text-caption font-bold text-[#1B6BA8]">
             진행중 이벤트 {LIVE_EVENTS.length + 1}
           </span>
           <h2 className="mt-3 text-[26px] font-extrabold text-foreground leading-tight">Dewy 이벤트</h2>
@@ -189,7 +189,7 @@ const Events = () => {
               <p className="mt-1 text-[12px] font-medium text-[#6B3F10]">{FEATURED.subtitle}</p>
             </div>
             <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex flex-col text-[11px]">
+              <div className="flex flex-col text-caption">
                 <span className="font-semibold text-muted-foreground">참여 1,287명 · 만족 4.8</span>
                 {FEATURED.endsLabel && <span className="font-bold text-primary">{FEATURED.endsLabel}</span>}
               </div>
@@ -203,7 +203,7 @@ const Events = () => {
         {/* Live events list */}
         <section className="px-4 pt-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[14px] font-bold text-foreground">진행중 이벤트 {LIVE_EVENTS.length}</h3>
+            <h3 className="text-body font-bold text-foreground">진행중 이벤트 {LIVE_EVENTS.length}</h3>
           </div>
           <div className="flex flex-col gap-2">
             {LIVE_EVENTS.map((e) => (
@@ -215,7 +215,7 @@ const Events = () => {
         {/* Past events */}
         {PAST_EVENTS.length > 0 && (
           <section className="px-4 pt-7">
-            <h3 className="text-[14px] font-bold text-muted-foreground mb-3">지난 이벤트</h3>
+            <h3 className="text-body font-bold text-muted-foreground mb-3">지난 이벤트</h3>
             <div className="flex flex-col gap-2">
               {PAST_EVENTS.map((e) => (
                 <EventListRow key={e.id} event={e} />

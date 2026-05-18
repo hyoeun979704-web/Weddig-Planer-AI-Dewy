@@ -29,7 +29,7 @@ const LoginRequiredOverlay = ({ variant = "login", message, features }: LoginReq
             {features && features.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {features.map((f) => (
-                  <span key={f} className="text-[11px] px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                  <span key={f} className="text-caption px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
                     {f}
                   </span>
                 ))}

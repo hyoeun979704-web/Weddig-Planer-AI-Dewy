@@ -302,7 +302,7 @@ const AdminDressSamples = () => {
                 </div>
                 <div className="p-3">
                   <h3 className="text-sm font-semibold truncate">{s.name}</h3>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                  <p className="text-caption text-muted-foreground mt-0.5 truncate">
                     {[
                       labelOf("silhouette", s.silhouette),
                       labelOf("neckline", s.neckline),

@@ -125,7 +125,7 @@ const Guests = () => {
                   {stats.expectedHeads.all}
                   <span className="text-base font-semibold text-muted-foreground ml-1">명</span>
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <p className="text-caption text-muted-foreground mt-0.5">
                   ({stats.total}팀 등록 · 총 {stats.totalHeads}명 입력)
                 </p>
               </div>
@@ -136,7 +136,7 @@ const Guests = () => {
               <SideStat label="신부측" count={stats.expectedHeads.bride} />
               <SideStat label="공통" count={stats.expectedHeads.shared} />
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 leading-snug">
+            <p className="text-caption text-muted-foreground mt-2 leading-snug">
               불참 응답은 예상 참석에서 제외, 미응답은 보수적으로 포함됩니다.
             </p>
           </div>
@@ -275,7 +275,7 @@ const Guests = () => {
                       <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-semibold", RSVP_CHIP_STYLE[g.rsvp_status])}>
                         {GUEST_RSVP_LABEL[g.rsvp_status]}
                       </span>
-                      <span className="text-[11px] text-muted-foreground">· {g.attending_count}명</span>
+                      <span className="text-caption text-muted-foreground">· {g.attending_count}명</span>
                     </div>
                     {(g.relationship || g.contact || g.notes) && (
                       <p className="text-[12px] text-muted-foreground mt-0.5 truncate">

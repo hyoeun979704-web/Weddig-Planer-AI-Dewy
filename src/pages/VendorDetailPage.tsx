@@ -111,7 +111,7 @@ const Tags = ({ label, items }: { label: string; items: string[] }) =>
 
 const Stat = ({ label, value }: { label: string; value: string | number }) => (
   <div className="bg-muted/50 rounded-xl p-3">
-    <p className="text-[11px] text-muted-foreground">{label}</p>
+    <p className="text-caption text-muted-foreground">{label}</p>
     <p className="text-sm font-semibold text-foreground mt-0.5">{value}</p>
   </div>
 );
@@ -563,7 +563,7 @@ function ApplianceExtras({ place }: { place: LegacyDetail }) {
             <p className="text-xs text-blue-700">가격대: {place.package_price_range}</p>
           )}
           <Tags label="" items={place.package_examples} />
-          <p className="text-[11px] text-blue-700/80 mt-1">
+          <p className="text-caption text-blue-700/80 mt-1">
             매장 방문 시 청첩장·예식 일정 제시하면 추가 할인이나 사은품 협상 가능합니다.
           </p>
         </div>

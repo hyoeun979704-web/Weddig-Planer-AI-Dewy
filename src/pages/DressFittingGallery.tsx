@@ -106,7 +106,7 @@ const DressFittingGallery = () => {
                     )}
                   </div>
                   <div className="p-2">
-                    <p className="text-[11px] text-muted-foreground truncate">
+                    <p className="text-caption text-muted-foreground truncate">
                       {sceneLabel ?? "—"}
                     </p>
                     <p className="text-[10px] text-muted-foreground">

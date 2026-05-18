@@ -68,11 +68,11 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
       {style === "custom" && (
         <div className="rounded-xl border-2 border-primary/40 bg-primary/5 px-3 py-2 flex items-center gap-2">
           <span className="text-xs font-bold text-primary">직접 선택</span>
-          <span className="text-[11px] text-gray-500 flex-1">아래에서 카테고리를 골라 직접 조합하셨어요</span>
+          <span className="text-caption text-gray-500 flex-1">아래에서 카테고리를 골라 직접 조합하셨어요</span>
         </div>
       )}
       {style && style !== "custom" && (
-        <p className="text-[11px] text-gray-500">
+        <p className="text-caption text-gray-500">
           {WEDDING_STYLE_PRESETS[style].description}
         </p>
       )}
@@ -112,7 +112,7 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
                 <p className={cn("text-sm", isExcluded ? "text-gray-900 font-semibold line-through" : "text-gray-800")}>
                   {meta.label}
                 </p>
-                <p className="text-[11px] text-gray-400">{meta.hint}</p>
+                <p className="text-caption text-gray-400">{meta.hint}</p>
               </div>
               {isExcluded && (
                 <span className="text-[10px] font-bold text-primary uppercase tracking-wide shrink-0">제외됨</span>

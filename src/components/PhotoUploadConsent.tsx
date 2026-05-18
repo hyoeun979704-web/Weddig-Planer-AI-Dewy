@@ -107,7 +107,7 @@ const PhotoUploadConsent = ({
       </div>
 
       {/* 약관 링크 */}
-      <div className="text-[11px] text-muted-foreground mb-4 leading-relaxed">
+      <div className="text-caption text-muted-foreground mb-4 leading-relaxed">
         자세한 내용은{" "}
         <Link to="/terms" className="underline">이용약관</Link>
         {" "}및{" "}
@@ -156,7 +156,7 @@ const ConsentItem = ({ checked, onChange, label, description, required }: Consen
         {label}
       </div>
       {description && (
-        <div className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+        <div className="text-caption text-muted-foreground mt-0.5 leading-relaxed">
           {description}
         </div>
       )}

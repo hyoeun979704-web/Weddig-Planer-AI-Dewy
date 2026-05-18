@@ -282,7 +282,7 @@ const Schedule = () => {
             right below when applicable. */}
         <section className="px-4 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-foreground flex items-center gap-2 text-[16px]">
+            <h3 className="font-bold text-foreground flex items-center gap-2 text-title">
               <img src={clockIcon} alt="" className="w-[17px] h-[17px]" />
               다가오는 일정
             </h3>
@@ -362,7 +362,7 @@ const Schedule = () => {
           if (entries.length === 0) return null;
           return (
             <section className="px-4 mb-6">
-              <h3 className="font-bold text-foreground mb-3 text-[16px]">카테고리별 진행률</h3>
+              <h3 className="font-bold text-foreground mb-3 text-title">카테고리별 진행률</h3>
               <div className="bg-white rounded-2xl border border-border p-4 space-y-3">
                 {entries.map(([cat, { total, done }]) => {
                   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -371,7 +371,7 @@ const Schedule = () => {
                     <div key={cat}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[13px] font-medium text-foreground">{meta?.label ?? cat}</span>
-                        <span className="text-[11px] text-muted-foreground">{done}/{total}</span>
+                        <span className="text-caption text-muted-foreground">{done}/{total}</span>
                       </div>
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
@@ -420,7 +420,7 @@ const Schedule = () => {
 
         {/* ── Wedding Timeline ── */}
         <section className="px-4 mb-6" data-tutorial="schedule-timeline">
-          <h3 className="font-bold text-foreground mb-4 flex items-center gap-2 text-[16px]">
+          <h3 className="font-bold text-foreground mb-4 flex items-center gap-2 text-title">
             <img src={calendarIcon} alt="" className="w-[17px] h-[19px]" />
             타임라인
           </h3>
@@ -467,7 +467,7 @@ const Schedule = () => {
                         : "bg-card border-border group-hover:border-primary/20 group-hover:shadow-sm"
                     }`}>
                       <div className="flex items-center justify-between mb-0.5">
-                        <span className={`text-[11px] font-medium ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
+                        <span className={`text-caption font-medium ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
                           {phase.period}
                         </span>
                         {isCurrent && (
@@ -493,17 +493,17 @@ const Schedule = () => {
                               style={{ width: `${phaseProgress}%` }} 
                             />
                           </div>
-                          <span className="text-[11px] font-medium text-muted-foreground">{phaseCompleted}/{phaseItemCount}</span>
+                          <span className="text-caption font-medium text-muted-foreground">{phaseCompleted}/{phaseItemCount}</span>
                         </div>
                       ) : (
                         <div className="flex flex-wrap gap-1">
                           {phase.defaultTasks.slice(0, 2).map((task, idx) => (
-                            <span key={idx} className="px-2 py-0.5 bg-muted rounded-full text-[11px] text-muted-foreground">
+                            <span key={idx} className="px-2 py-0.5 bg-muted rounded-full text-caption text-muted-foreground">
                               {task}
                             </span>
                           ))}
                           {phase.defaultTasks.length > 2 && (
-                            <span className="text-[11px] text-primary font-medium px-1">+{phase.defaultTasks.length - 2}</span>
+                            <span className="text-caption text-primary font-medium px-1">+{phase.defaultTasks.length - 2}</span>
                           )}
                         </div>
                       )}
@@ -526,8 +526,8 @@ const Schedule = () => {
                 <Settings className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-bold text-foreground">결혼 스타일 적용 중</p>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-body font-bold text-foreground">결혼 스타일 적용 중</p>
+                <p className="text-caption text-muted-foreground">
                   {weddingSettings.excluded_categories.length}개 카테고리 숨김 · 탭하여 조정
                 </p>
               </div>
@@ -538,7 +538,7 @@ const Schedule = () => {
 
         {/* ── Couple Section ── */}
         <section className="px-4 mb-6" data-tutorial="schedule-couple">
-          <h3 className="font-bold text-foreground mb-3 flex items-center gap-2 text-[16px]">
+          <h3 className="font-bold text-foreground mb-3 flex items-center gap-2 text-title">
             <Heart className="w-[17px] h-[17px] text-pink-500" />
             파트너 연결
           </h3>
@@ -557,7 +557,7 @@ const Schedule = () => {
               </div>
               <div className="flex-1 text-left">
                 <h3 className="font-semibold text-foreground text-sm">우리의 일기</h3>
-                <p className="text-[11px] text-muted-foreground">함께 쓰는 웨딩 준비 일기</p>
+                <p className="text-caption text-muted-foreground">함께 쓰는 웨딩 준비 일기</p>
               </div>
               <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px]" />
             </button>

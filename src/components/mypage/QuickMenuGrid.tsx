@@ -48,7 +48,7 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
             <div className={`w-10 h-10 rounded-xl ${item.bg} flex items-center justify-center`}>
               <item.icon className={`w-5 h-5 ${item.color}`} />
             </div>
-            <span className="text-[11px] font-medium text-foreground">{item.label}</span>
+            <span className="text-caption font-medium text-foreground">{item.label}</span>
             <span className={`text-xs font-bold ${item.color}`}>{item.value}</span>
           </button>
         ))}

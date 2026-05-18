@@ -220,7 +220,7 @@ const GuestMessageSheet = ({ open, onClose }: GuestMessageSheetProps) => {
         {showLegend && (
           <div className="mb-5 p-3 bg-muted rounded-xl space-y-1.5">
             {PLACEHOLDER_LEGEND.map((p) => (
-              <div key={p.key} className="text-[11px] flex gap-2">
+              <div key={p.key} className="text-caption flex gap-2">
                 <code className="text-primary font-mono shrink-0">{p.key}</code>
                 <span className="text-muted-foreground">{p.desc}</span>
               </div>

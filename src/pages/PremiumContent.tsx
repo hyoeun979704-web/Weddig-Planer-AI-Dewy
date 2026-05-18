@@ -78,15 +78,15 @@ const PremiumContent = () => {
           <div className="px-4 py-3 rounded-2xl bg-primary/5 border border-primary/15">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground">결혼 스타일</p>
+                <p className="text-caption text-muted-foreground">결혼 스타일</p>
                 <p className="text-sm font-bold text-foreground">{WEDDING_STYLE_LABEL[profile.weddingStyle]}</p>
               </div>
-              <button onClick={() => navigate("/schedule")} className="text-[11px] text-primary font-medium px-2 py-1 rounded-lg bg-primary/10 shrink-0">
+              <button onClick={() => navigate("/schedule")} className="text-caption text-primary font-medium px-2 py-1 rounded-lg bg-primary/10 shrink-0">
                 변경하기
               </button>
             </div>
             {styleDesc && (
-              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">{styleDesc}</p>
+              <p className="text-caption text-muted-foreground mt-1.5 leading-relaxed">{styleDesc}</p>
             )}
             <p className="text-[10.5px] text-primary/80 mt-2 leading-relaxed">
                모든 PDF가 이 스타일에 맞춰 자동으로 톤·내용을 조정해 생성돼요.

@@ -69,7 +69,7 @@ const BudgetVsAverageCard = () => {
       >
         <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${palette.chip}`}>
           {palette.icon}
-          <span className="text-[11px] font-bold">{palette.label}</span>
+          <span className="text-caption font-bold">{palette.label}</span>
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[12px] font-bold text-foreground truncate">

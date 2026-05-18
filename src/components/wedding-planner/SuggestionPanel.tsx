@@ -38,7 +38,7 @@ const SuggestionPanel = ({
         >
           <div className="px-3 pt-2.5 pb-1.5 flex items-center gap-1.5">
             <Sparkles className="w-3 h-3 text-primary" />
-            <span className="text-[11px] font-semibold text-muted-foreground">
+            <span className="text-caption font-semibold text-muted-foreground">
               {headerText}
             </span>
           </div>

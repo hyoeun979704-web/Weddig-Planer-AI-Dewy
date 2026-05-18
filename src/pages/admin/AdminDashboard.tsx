@@ -408,7 +408,7 @@ const AdminDashboard = () => {
               </tbody>
             </table>
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">
+          <p className="mt-2 text-caption text-muted-foreground">
             챗봇이 시세 답변 시 이 데이터를 사용해요. 1주~1달 주기로 갱신 시 챗봇 답변 품질도 자동으로 향상돼요.
           </p>
         </section>
@@ -430,7 +430,7 @@ const AdminDashboard = () => {
                   <ActivityIcon type={item.type} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-foreground truncate">{item.description}</div>
-                    <div className="text-[11px] text-muted-foreground">
+                    <div className="text-caption text-muted-foreground">
                       {formatRelative(item.createdAt)}
                     </div>
                   </div>
@@ -468,7 +468,7 @@ const StatCard = ({ label, value, sub, icon: Icon, accent = "default" }: StatCar
       <div className="text-2xl font-bold text-foreground">
         {value === undefined ? "-" : value.toLocaleString()}
       </div>
-      {sub && <div className="text-[11px] text-muted-foreground mt-0.5">{sub}</div>}
+      {sub && <div className="text-caption text-muted-foreground mt-0.5">{sub}</div>}
     </div>
   );
 };

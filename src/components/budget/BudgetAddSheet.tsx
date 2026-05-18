@@ -236,7 +236,7 @@ export default function BudgetAddSheet({
             </PopoverContent>
           </Popover>
           {itemDateIsFuture && (
-            <p className="text-[11px] text-yellow-700 mt-1 flex items-start gap-1">
+            <p className="text-caption text-yellow-700 mt-1 flex items-start gap-1">
               <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
               미래 날짜({itemDateDaysAhead}일 뒤)예요. 실제 결제일이 맞나요?
             </p>
@@ -354,7 +354,7 @@ export default function BudgetAddSheet({
                 </PopoverContent>
               </Popover>
               {balanceAmount > 0 && amount > 0 && (
-                <p className="text-[11px] text-muted-foreground px-2">
+                <p className="text-caption text-muted-foreground px-2">
                   계약 총액 약 <b className="text-foreground tabular-nums">{fmt(amount + balanceAmount)}만원</b>
                   {balanceAmount > amount && (
                     <span> · 잔금이 더 큰 건 결혼 업계에서 일반적이에요</span>
@@ -366,7 +366,7 @@ export default function BudgetAddSheet({
         </div>
 
         {(!title || amount <= 0) && (
-          <p className="text-[11px] text-muted-foreground text-center mb-2">
+          <p className="text-caption text-muted-foreground text-center mb-2">
             {!title && amount <= 0
               ? "항목명과 금액을 입력해주세요"
               : !title ? "항목명을 입력해주세요" : "금액을 입력해주세요"}
