@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Droplets } from "lucide-react";
+import { Heart } from "lucide-react";
 
 const blessings = [
   "두 사람의 사랑이\n영원히 빛나길 바랍니다 ✨",
@@ -40,7 +40,7 @@ const WeddingBlessingSplash = () => {
     >
       <div className="flex flex-col items-center gap-6 px-8 animate-in fade-in zoom-in-95 duration-700">
         <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center">
-          <Droplets className="w-8 h-8 text-primary animate-pulse" />
+          <Heart className="w-8 h-8 text-primary fill-primary animate-pulse" />
         </div>
         <p className="text-xl font-semibold text-foreground text-center whitespace-pre-line leading-relaxed">
           {blessing}

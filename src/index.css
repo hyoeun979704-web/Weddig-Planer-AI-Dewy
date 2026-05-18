@@ -39,8 +39,9 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 20 12% 90%;
-    --input: 20 12% 90%;
+    /* 외곽선은 모두 브랜드 핑크(#F6909B). 회색 보더 제거. */
+    --border: 353 85% 76%;         /* #F6909B */
+    --input: 353 85% 76%;          /* #F6909B */
     --ring: 353 85% 76%;
 
     /* Figma section backgrounds */

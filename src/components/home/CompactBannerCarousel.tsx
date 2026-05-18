@@ -23,7 +23,7 @@ const SLIDES: Slide[] = [
     title: "이달의 혜택",
     subtitle: "최대 30% 할인 + 사은품",
     path: "/deals",
-    bg: "bg-[hsl(var(--pink-50))]",
+    bg: "bg-gradient-to-r from-[#FFD6DD] via-[#FFC7D3] to-[#FFE1B0]",
     fg: "text-[hsl(353,75%,40%)]",
   },
   {
@@ -32,7 +32,7 @@ const SLIDES: Slide[] = [
     title: "이벤트",
     subtitle: "신규 가입 1달 프리미엄 무료",
     path: "/events",
-    bg: "bg-amber-50",
+    bg: "bg-gradient-to-r from-[#FFE9B7] via-[#FFD891] to-[#FFC07A]",
     fg: "text-amber-700",
   },
 ];

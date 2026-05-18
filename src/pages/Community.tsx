@@ -327,7 +327,7 @@ const Community = () => {
           </button>
         </div>
 
-        <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-3 pb-2 bg-card">
+        <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-3 pb-2 bg-[hsl(var(--pink-50))]">
           {STYLE_FILTERS.map((filter) => {
             const isActive = styleFilter === filter.key;
             const isMine =
@@ -362,7 +362,7 @@ const Community = () => {
 
         <div
           data-tutorial="community-categories"
-          className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-1 pb-3 bg-card"
+          className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-1 pb-3 bg-[hsl(var(--pink-50))]"
         >
           {categories.map((category) => {
             const isActive = selectedCategory === category;
