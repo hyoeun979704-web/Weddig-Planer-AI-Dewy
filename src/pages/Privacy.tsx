@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 
 const Privacy = () => {
   const navigate = useNavigate();
@@ -9,14 +9,7 @@ const Privacy = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1" aria-label="뒤로">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-base font-bold text-foreground">개인정보처리방침</h1>
-        </div>
-      </header>
+      <PageHeader title="개인정보처리방침" />
 
       <main className="px-5 py-6 pb-24 text-[13px] leading-7 text-foreground">
         <p className="mb-4 text-muted-foreground">

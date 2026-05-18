@@ -1,7 +1,8 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Minus, Plus, Trash2, ShoppingCart, Loader2 } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingCart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { useCart } from "@/hooks/useCart";
 
 const formatPrice = (price: number) => price.toLocaleString() + "원";
@@ -23,16 +24,7 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground">장바구니</h1>
-          <span className="text-sm text-muted-foreground">({items.length})</span>
-        </div>
-      </header>
+      <PageHeader title={`장바구니 (${items.length})`} />
 
       <main className="pb-36 px-4 py-4">
         {items.length === 0 ? (
