@@ -172,7 +172,7 @@ const InfluencerDetail = () => {
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Heart className="w-3 h-3" /> {formatCount(content.like_count)}
                           </span>
-                          <span className="px-1.5 py-0.5 bg-muted rounded text-[10px] text-muted-foreground uppercase">
+                          <span className="px-1.5 py-0.5 bg-muted rounded text-caption text-muted-foreground uppercase">
                             {content.content_type}
                           </span>
                         </div>

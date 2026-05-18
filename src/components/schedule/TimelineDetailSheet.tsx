@@ -219,7 +219,7 @@ const TimelineDetailSheet = ({
                           </p>
                           {item.source === "template" && (
                             <span
-                              className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium"
+                              className="text-caption px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium"
                               title="결혼 정보 등록 시 자동으로 추가된 추천 일정"
                             >
                                추천

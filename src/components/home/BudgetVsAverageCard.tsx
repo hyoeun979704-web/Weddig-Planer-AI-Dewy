@@ -72,10 +72,10 @@ const BudgetVsAverageCard = () => {
           <span className="text-caption font-bold">{palette.label}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] font-bold text-foreground truncate">
+          <p className="text-caption font-bold text-foreground truncate">
             내 예산 {profile.totalBudget.toLocaleString()}만 · {regionLabel} 평균 {avg.total.toLocaleString()}만
           </p>
-          <p className="text-[10px] text-muted-foreground truncate">
+          <p className="text-caption text-muted-foreground truncate">
             하객 {profile.guestCount}명 · 식대 {avg.meal.toLocaleString()}만 포함 · {palette.sub}
           </p>
         </div>

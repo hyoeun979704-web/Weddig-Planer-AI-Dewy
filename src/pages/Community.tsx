@@ -207,7 +207,7 @@ const Community = () => {
     if (!style) return null;
     const { label, classes } = STYLE_BADGE[style];
     return (
-      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${classes}`}>
+      <span className={`px-2 py-0.5 rounded-full text-caption font-semibold ${classes}`}>
         {label}
       </span>
     );
@@ -225,7 +225,7 @@ const Community = () => {
         </span>
         {renderStyleBadge(post.wedding_style)}
         {isHotPost(post) && (
-          <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-semibold">
+          <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-caption font-semibold">
             <Flame className="w-3 h-3" /> HOT
           </span>
         )}
@@ -236,10 +236,10 @@ const Community = () => {
       <h3 className="mt-2 text-title font-bold text-foreground line-clamp-1">
         {post.title}
       </h3>
-      <p className="mt-0.5 text-[13px] text-muted-foreground line-clamp-1">
+      <p className="mt-0.5 text-body text-muted-foreground line-clamp-1">
         {getPreview(post.content)}
       </p>
-      <div className="mt-5 flex items-center justify-between text-[12px] text-muted-foreground">
+      <div className="mt-5 flex items-center justify-between text-caption text-muted-foreground">
         <span>{formatRelative(post.created_at)} · 조회 {post.views}</span>
         <span className="flex items-center gap-3">
           <span className="flex items-center gap-1">
@@ -284,7 +284,7 @@ const Community = () => {
             >
               <img src={arrowLeftIcon} alt="" className="w-[15px] h-[15px]" />
             </button>
-            <h1 className="text-[18px] font-bold text-foreground">커뮤니티</h1>
+            <h1 className="text-title font-bold text-foreground">커뮤니티</h1>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -322,7 +322,7 @@ const Community = () => {
             aria-label="게시글 검색"
           >
             <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <span className="text-[13px] text-muted-foreground">
+            <span className="text-body text-muted-foreground">
               게시글 제목·내용 검색
             </span>
           </button>
@@ -340,7 +340,7 @@ const Community = () => {
                   setStyleFilter(filter.key);
                   setStyleAutoApplied(true);
                 }}
-                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-colors flex items-center gap-1 ${
+                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-body font-semibold transition-colors flex items-center gap-1 ${
                   isActive
                     ? "bg-foreground text-background"
                     : "bg-muted/60 text-muted-foreground"
@@ -384,7 +384,7 @@ const Community = () => {
         </div>
 
         {isColdStartFallback && (
-          <div className="mx-4 mt-2 mb-1 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800 leading-snug">
+          <div className="mx-4 mt-2 mb-1 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-caption text-amber-800 leading-snug">
             {STYLE_FILTERS.find((f) => f.key === styleFilter)?.label} 글이 아직 없어 전체 게시글을 함께 보여드려요.
             글이 쌓이면 자동으로 필터링해드릴게요.
           </div>
@@ -392,7 +392,7 @@ const Community = () => {
 
         <section className="bg-[hsl(var(--pink-100))] px-4 pt-5 pb-6">
           <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-[18px] font-bold text-foreground">
+            <h2 className="text-title font-bold text-foreground">
               오늘의 수다
             </h2>
             <span className="text-caption text-muted-foreground">
@@ -427,7 +427,7 @@ const Community = () => {
                     </span>
                     {renderStyleBadge(post.wedding_style)}
                     {isHotPost(post) && (
-                      <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-semibold">
+                      <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-caption font-semibold">
                         <Flame className="w-3 h-3" /> HOT
                       </span>
                     )}
@@ -435,10 +435,10 @@ const Community = () => {
                   <h3 className="mt-2 text-title font-bold text-foreground line-clamp-1">
                     {post.title}
                   </h3>
-                  <p className="mt-0.5 text-[13px] text-muted-foreground line-clamp-1">
+                  <p className="mt-0.5 text-body text-muted-foreground line-clamp-1">
                     {getPreview(post.content)}
                   </p>
-                  <div className="mt-6 flex items-center justify-between text-[12px] text-muted-foreground">
+                  <div className="mt-6 flex items-center justify-between text-caption text-muted-foreground">
                     <span>{formatRelative(post.created_at)}</span>
                     <span className="flex items-center gap-3">
                       <span className="flex items-center gap-1">
@@ -460,7 +460,7 @@ const Community = () => {
         <div className="px-4 pt-5 pb-3 flex items-baseline gap-4">
           <button
             onClick={() => setSortBy("latest")}
-            className={`text-[15px] transition-colors ${
+            className={`text-body transition-colors ${
               sortBy === "latest"
                 ? "font-bold text-foreground"
                 : "font-medium text-muted-foreground"
@@ -470,7 +470,7 @@ const Community = () => {
           </button>
           <button
             onClick={() => setSortBy("popular")}
-            className={`text-[15px] transition-colors ${
+            className={`text-body transition-colors ${
               sortBy === "popular"
                 ? "font-bold text-foreground"
                 : "font-medium text-muted-foreground"
@@ -480,7 +480,7 @@ const Community = () => {
           </button>
           <button
             onClick={() => setSortBy("comments")}
-            className={`text-[15px] transition-colors ${
+            className={`text-body transition-colors ${
               sortBy === "comments"
                 ? "font-bold text-foreground"
                 : "font-medium text-muted-foreground"

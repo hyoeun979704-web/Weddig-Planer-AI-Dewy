@@ -43,7 +43,7 @@ const SurveyModal = ({ isOpen, onClose, title, children }: SurveyModalProps) => 
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            <p className="px-5 text-[13px] text-gray-400 mb-3">
+            <p className="px-5 text-body text-gray-400 mb-3">
               아래 정보를 입력하시면 맞춤 답변을 드립니다 
             </p>
 

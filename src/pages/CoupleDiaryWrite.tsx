@@ -97,7 +97,7 @@ const CoupleDiaryWrite = () => {
                 }`}
               >
                 <span className="text-xl">{m.emoji}</span>
-                <span className="text-[10px] text-muted-foreground">{m.label}</span>
+                <span className="text-caption text-muted-foreground">{m.label}</span>
               </button>
             ))}
           </div>
@@ -145,7 +145,7 @@ const CoupleDiaryWrite = () => {
             {photos.length < 5 && (
               <label className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
                 <Camera className="w-5 h-5 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground mt-1">추가</span>
+                <span className="text-caption text-muted-foreground mt-1">추가</span>
                 <input
                   type="file"
                   accept="image/*"

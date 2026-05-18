@@ -83,7 +83,7 @@ const WaitlistSignupSheet = ({ open, onOpenChange, serviceId, serviceTitle }: Pr
             <Sparkles className="w-6 h-6 text-primary" />
           </div>
           <DialogTitle className="text-center">{serviceTitle}</DialogTitle>
-          <p className="text-center text-[13px] text-muted-foreground">
+          <p className="text-center text-body text-muted-foreground">
             출시 알림을 가장 먼저 받아보세요
           </p>
         </DialogHeader>

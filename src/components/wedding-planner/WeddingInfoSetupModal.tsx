@@ -188,7 +188,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   return (
     <SurveyModal isOpen={isOpen} onClose={onClose} title="결혼 정보 등록">
       <div className="space-y-5">
-        <p className="text-[13px] text-gray-500 leading-relaxed">
+        <p className="text-body text-gray-500 leading-relaxed">
           몇 가지만 알려주시면 D-day, 추천 체크리스트, 예산을 한꺼번에 챙겨드려요.
           <br />
           <span className="text-gray-400">아직 정해지지 않았다면 "미정"을 체크해주세요. 마이페이지에서 언제든 수정할 수 있어요.</span>

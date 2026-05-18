@@ -120,7 +120,7 @@ const BudgetCategoryDetail = () => {
           </div>
           <Progress value={pct} className="h-3 mb-1" />
           {budget > 0 && (
-            <p className="text-[10px] text-muted-foreground text-right">{Math.round(pct)}% 사용</p>
+            <p className="text-caption text-muted-foreground text-right">{Math.round(pct)}% 사용</p>
           )}
         </div>
 
@@ -137,7 +137,7 @@ const BudgetCategoryDetail = () => {
               <span className="font-bold tabular-nums">{fmt(avgVal)}만원</span>
             </div>
             {cat === "meal" && avgWithMeal && (
-              <p className="text-[10px] text-muted-foreground text-right mb-3">
+              <p className="text-caption text-muted-foreground text-right mb-3">
                 {guestCount}명 × {avgWithMeal.per_guest_meal}만원 기준
               </p>
             )}
@@ -198,7 +198,7 @@ const BudgetCategoryDetail = () => {
                     onClick={() => { setEditItem(item); setAddOpen(true); }}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                      <p className="text-[10px] text-muted-foreground">{format(parseLocalDate(item.item_date), "yyyy.M.d")}</p>
+                      <p className="text-caption text-muted-foreground">{format(parseLocalDate(item.item_date), "yyyy.M.d")}</p>
                     </div>
                     <span className="text-sm font-bold text-foreground">{item.amount}만원</span>
                   </button>

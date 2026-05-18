@@ -66,7 +66,7 @@ const InvitationTemplateSection = () => {
         <button
           type="button"
           onClick={() => navigate("/invitation-venues")}
-          className="text-[12px] text-black/50"
+          className="text-caption text-black/50"
         >
           더보기
         </button>

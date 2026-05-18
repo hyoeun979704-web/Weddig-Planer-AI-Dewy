@@ -112,7 +112,7 @@ const Deals = () => {
           {/* 텍스트 */}
           <div className="flex-1 text-left">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+              <span className="text-caption font-bold text-white/80 uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
                  이벤트
               </span>
             </div>

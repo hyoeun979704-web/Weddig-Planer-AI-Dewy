@@ -34,7 +34,7 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
   return (
     <div className="space-y-4">
       {!compact && (
-        <p className="text-[13px] text-gray-500 leading-relaxed">
+        <p className="text-body text-gray-500 leading-relaxed">
           준비 과정 중 생략할 카테고리를 골라주세요. 프리셋을 선택한 뒤 아래에서 개별 조정할 수 있어요.
         </p>
       )}
@@ -115,7 +115,7 @@ const WeddingStylePicker = ({ style, excluded, onChange, compact }: Props) => {
                 <p className="text-caption text-gray-400">{meta.hint}</p>
               </div>
               {isExcluded && (
-                <span className="text-[10px] font-bold text-primary uppercase tracking-wide shrink-0">제외됨</span>
+                <span className="text-caption font-bold text-primary uppercase tracking-wide shrink-0">제외됨</span>
               )}
             </label>
           );

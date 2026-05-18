@@ -83,8 +83,8 @@ const PopularPostsSection = ({ hideWhenEmpty = false }: PopularPostsSectionProps
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">{post.title}</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded text-muted-foreground">{post.category}</span>
-                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                <span className="text-caption px-1.5 py-0.5 bg-muted rounded text-muted-foreground">{post.category}</span>
+                <span className="flex items-center gap-0.5 text-caption text-muted-foreground">
                   <Eye className="w-3 h-3" />
                   {post.views || 0}
                 </span>

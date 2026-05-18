@@ -152,7 +152,7 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
           </p>
         )}
 
-        <p className="text-[12px] font-bold leading-tight text-black line-clamp-1">
+        <p className="text-caption font-bold leading-tight text-black line-clamp-1">
           {data.name}
         </p>
 

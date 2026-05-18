@@ -128,7 +128,7 @@ const Store = () => {
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
           필터
-          {hasActiveFilters && <span className="ml-0.5 text-[10px]">●</span>}
+          {hasActiveFilters && <span className="ml-0.5 text-caption">●</span>}
         </button>
       </div>
 
@@ -175,11 +175,11 @@ const Store = () => {
                       </span>
                     </div>
                     {product.sale_price && (
-                      <p className="text-[10px] text-muted-foreground line-through">{formatPrice(product.price)}</p>
+                      <p className="text-caption text-muted-foreground line-through">{formatPrice(product.price)}</p>
                     )}
                     <div className="flex items-center gap-1 mt-1.5">
                       <Star className="w-3 h-3 fill-primary text-primary" />
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-caption text-muted-foreground">
                         {product.rating} ({product.review_count})
                       </span>
                     </div>

@@ -362,18 +362,18 @@ const Budget = () => {
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalBudget)}만원</span>
                     {settings?.region && (
-                      <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                      <span className="text-caption bg-primary/10 text-primary px-2 py-0.5 rounded-full flex items-center gap-0.5">
                         <MapPin className="w-2.5 h-2.5" /> {regions[settings.region]?.label}
                       </span>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                     <div>
-                      <p className="text-[10px] text-muted-foreground">사용</p>
+                      <p className="text-caption text-muted-foreground">사용</p>
                       <p className="text-sm font-bold text-foreground tabular-nums">{fmt(summary.totalSpent)}만원</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-muted-foreground">남은 예산</p>
+                      <p className="text-caption text-muted-foreground">남은 예산</p>
                       <p className={cn(
                         "text-sm font-bold tabular-nums",
                         summary.remaining < 0 ? "text-destructive" : "text-foreground"
@@ -410,7 +410,7 @@ const Budget = () => {
                   const spent = summary.categoryTotals[key] || 0;
                   if (spent <= 0) return null;
                   return (
-                    <span key={key} className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                    <span key={key} className="text-caption text-muted-foreground flex items-center gap-0.5">
                       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categories[key].color }} />
                       {categories[key].label}
                     </span>
@@ -448,7 +448,7 @@ const Budget = () => {
             <CalendarClock className="w-4 h-4 text-yellow-700 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-yellow-900">결혼식 날짜를 알려주세요</p>
-              <p className="text-[10px] text-yellow-800">D-day 페이스와 다가오는 일정이 함께 표시돼요</p>
+              <p className="text-caption text-yellow-800">D-day 페이스와 다가오는 일정이 함께 표시돼요</p>
             </div>
             <ChevronRight className="w-3.5 h-3.5 text-yellow-700 shrink-0" />
           </button>
@@ -467,7 +467,7 @@ const Budget = () => {
               <p className="text-xs font-bold text-foreground flex-1">
                 {WEDDING_STYLE_LABEL[weddingSettings.wedding_style]} 모드
               </p>
-              <span className="text-[10px] text-muted-foreground">변경 →</span>
+              <span className="text-caption text-muted-foreground">변경 →</span>
             </div>
             <p className="text-caption text-muted-foreground leading-relaxed">
               {weddingSettings.wedding_style === "small"
@@ -498,7 +498,7 @@ const Budget = () => {
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <CalendarClock className="w-3.5 h-3.5 text-primary" /> 다가오는 결제 예정
               </p>
-              <button onClick={() => navigate("/schedule")} className="text-[10px] text-muted-foreground">
+              <button onClick={() => navigate("/schedule")} className="text-caption text-muted-foreground">
                 일정 →
               </button>
             </div>
@@ -517,7 +517,7 @@ const Budget = () => {
                       <span className="text-xs text-foreground truncate">{task.title}</span>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                      <span className={cn("text-caption px-1.5 py-0.5 rounded-full font-medium",
                         overdue ? "bg-destructive/15 text-destructive" :
                         daysLeft <= 7 ? "bg-destructive/10 text-destructive" :
                         daysLeft <= 30 ? "bg-yellow-100 text-yellow-700" :
@@ -527,7 +527,7 @@ const Budget = () => {
                       </span>
                       <button
                         onClick={() => openAddWithPrefill(task.title, budgetCat)}
-                        className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded-full font-bold flex items-center gap-0.5 active:scale-95 transition-transform"
+                        className="text-caption bg-primary/10 text-primary px-2 py-1 rounded-full font-bold flex items-center gap-0.5 active:scale-95 transition-transform"
                         aria-label="예산 기록"
                       >
                         <Plus className="w-2.5 h-2.5" />기록
@@ -562,7 +562,7 @@ const Budget = () => {
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span className="text-xs font-bold text-foreground tabular-nums">{fmt(item.balance_amount!)}만원</span>
-                      <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                      <span className={cn("text-caption px-1.5 py-0.5 rounded-full font-medium",
                         overdue ? "bg-destructive/15 text-destructive" :
                         item.daysLeft <= 7 ? "bg-destructive/10 text-destructive" :
                         item.daysLeft <= 30 ? "bg-yellow-100 text-yellow-700" :
@@ -572,7 +572,7 @@ const Budget = () => {
                       </span>
                       <button
                         onClick={() => setPayBalanceTarget(item)}
-                        className="text-[10px] bg-primary text-primary-foreground px-2 py-1 rounded-full font-bold flex items-center gap-0.5 active:scale-95 transition-transform"
+                        className="text-caption bg-primary text-primary-foreground px-2 py-1 rounded-full font-bold flex items-center gap-0.5 active:scale-95 transition-transform"
                         aria-label="잔금 결제 완료"
                       >
                         <Check className="w-2.5 h-2.5" />결제
@@ -599,26 +599,26 @@ const Budget = () => {
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-primary" />양가 분담 현황
               </p>
-              <span className="text-[10px] text-primary font-bold flex items-center gap-0.5">
+              <span className="text-caption text-primary font-bold flex items-center gap-0.5">
                 시뮬레이션 <ChevronRight className="w-2.5 h-2.5" />
               </span>
             </div>
             {/* Per-side cards — easier to show to family at a glance */}
             <div className="grid grid-cols-3 gap-2 mb-3">
               <div className="rounded-xl bg-muted/50 p-2.5 text-center">
-                <p className="text-[10px] text-muted-foreground"> 공동</p>
-                <p className="text-sm font-bold text-foreground mt-0.5">{fmt(paidShared)}<span className="text-[10px] font-normal">만원</span></p>
-                <p className="text-[10px] text-muted-foreground">{Math.round((paidShared / paidTotal) * 100)}%</p>
+                <p className="text-caption text-muted-foreground"> 공동</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">{fmt(paidShared)}<span className="text-caption font-normal">만원</span></p>
+                <p className="text-caption text-muted-foreground">{Math.round((paidShared / paidTotal) * 100)}%</p>
               </div>
               <div className="rounded-xl bg-blue-50 p-2.5 text-center">
-                <p className="text-[10px] text-blue-700"> 신랑측</p>
-                <p className="text-sm font-bold text-blue-900 mt-0.5">{fmt(paidGroom)}<span className="text-[10px] font-normal">만원</span></p>
-                <p className="text-[10px] text-blue-700">{Math.round((paidGroom / paidTotal) * 100)}%</p>
+                <p className="text-caption text-blue-700"> 신랑측</p>
+                <p className="text-sm font-bold text-blue-900 mt-0.5">{fmt(paidGroom)}<span className="text-caption font-normal">만원</span></p>
+                <p className="text-caption text-blue-700">{Math.round((paidGroom / paidTotal) * 100)}%</p>
               </div>
               <div className="rounded-xl bg-primary/10 p-2.5 text-center">
-                <p className="text-[10px] text-primary"> 신부측</p>
-                <p className="text-sm font-bold text-primary mt-0.5">{fmt(paidBride)}<span className="text-[10px] font-normal">만원</span></p>
-                <p className="text-[10px] text-primary">{Math.round((paidBride / paidTotal) * 100)}%</p>
+                <p className="text-caption text-primary"> 신부측</p>
+                <p className="text-sm font-bold text-primary mt-0.5">{fmt(paidBride)}<span className="text-caption font-normal">만원</span></p>
+                <p className="text-caption text-primary">{Math.round((paidBride / paidTotal) * 100)}%</p>
               </div>
             </div>
             <div className="h-2.5 rounded-full overflow-hidden flex bg-muted">
@@ -648,7 +648,7 @@ const Budget = () => {
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold text-foreground">카테고리별 현황</p>
             {dimmedBudgetCategories.size > 0 && (
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 흐린 카테고리는 스케줄에서 제외
               </p>
             )}
@@ -691,7 +691,7 @@ const Budget = () => {
                         {fmt(spent)}만원
                       </span>
                       {budget > 0 && <span className="text-muted-foreground tabular-nums">/ {fmt(budget)}만원</span>}
-                      {over && <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full">초과</span>}
+                      {over && <span className="text-caption bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full">초과</span>}
                       <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
                   </div>
@@ -711,7 +711,7 @@ const Budget = () => {
           <div className="rounded-2xl bg-card border border-border p-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-semibold text-foreground">월별 지출 추이</p>
-              <p className="text-[10px] text-muted-foreground">최근 6개월</p>
+              <p className="text-caption text-muted-foreground">최근 6개월</p>
             </div>
             <div className="flex items-end justify-between gap-2 h-24">
               {monthlyTrend.map((b, i) => {
@@ -732,7 +732,7 @@ const Budget = () => {
                         style={{ height: `${Math.max(heightPct, b.total > 0 ? 6 : 0)}%` }}
                       />
                     </div>
-                    <span className={cn("text-[10px]",
+                    <span className={cn("text-caption",
                       isCurrent ? "text-foreground font-bold" : "text-muted-foreground"
                     )}>{b.label}</span>
                   </div>
@@ -812,7 +812,7 @@ const Budget = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
+                        <p className="text-caption text-muted-foreground flex items-center gap-1 flex-wrap">
                           {format(new Date(item.item_date), "M.d")} · {pb?.emoji} {pb?.label}
                           {item.payment_stage && item.payment_stage !== "full" && (
                             <span className="bg-accent text-accent-foreground px-1.5 py-0.5 rounded">

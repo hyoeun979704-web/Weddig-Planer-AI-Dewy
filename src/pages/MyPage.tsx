@@ -105,7 +105,7 @@ const GuestMyPage = () => {
                   <p className="text-sm font-semibold text-foreground">{f.label}</p>
                   <p className="text-caption text-muted-foreground leading-tight mt-0.5">{f.desc}</p>
                 </div>
-                <span className="text-[10px] text-primary font-medium flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-caption text-primary font-medium flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   시작하기 <ArrowRight className="w-3 h-3" />
                 </span>
               </button>

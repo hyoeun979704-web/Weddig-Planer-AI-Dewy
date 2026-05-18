@@ -351,7 +351,7 @@ const Favorites = () => {
   const OwnershipBadge = ({ ownership }: { ownership: Ownership }) => {
     if (ownership === "both") {
       return (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-caption font-bold">
           <Heart className="w-2.5 h-2.5 fill-current" />
           함께 찜
         </span>
@@ -359,7 +359,7 @@ const Favorites = () => {
     }
     if (ownership === "partner") {
       return (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-medium">
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-caption font-medium">
           {partnerName}
         </span>
       );
@@ -441,7 +441,7 @@ const Favorites = () => {
                 {count > 0 && (
                   <span
                     className={cn(
-                      "min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center",
+                      "min-w-[18px] h-[18px] px-1 rounded-full text-caption font-bold flex items-center justify-center",
                       isActive ? "bg-primary-foreground text-primary" : "bg-background text-foreground",
                     )}
                   >
@@ -630,7 +630,7 @@ const Favorites = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1 mb-0.5 flex-wrap">
                         {item.subtitle && (
-                          <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                          <span className="text-caption text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                             {item.subtitle}
                           </span>
                         )}

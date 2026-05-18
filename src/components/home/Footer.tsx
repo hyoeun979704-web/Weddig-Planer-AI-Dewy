@@ -26,9 +26,9 @@ const Footer = () => {
       <div className="flex flex-col gap-[10px] px-[30px] py-[20px] border-t border-border">
         <div className="flex items-center gap-[10px]">
           <DewyLogo size={20} />
-          <span className="font-logo text-[15px] text-black">Dewy</span>
+          <span className="font-logo text-body text-black">Dewy</span>
         </div>
-        <div className="text-[12px] leading-[18px] text-black">
+        <div className="text-caption leading-[18px] text-black">
           <p>(주)듀이 | 대표: 김효은</p>
           <p>사업자등록번호: 218-38-01132</p>
           <p>충청남도 천안시 서북구 천안대로 1446, 16층 듀이</p>
@@ -39,7 +39,7 @@ const Footer = () => {
 
       {/* 이용약관 */}
       <div className="flex flex-col gap-[10px] px-[30px] py-[20px] border-t border-border">
-        <div className="flex items-center gap-[10px] text-[12px] text-black">
+        <div className="flex items-center gap-[10px] text-caption text-black">
           <button onClick={() => navigate("/terms")}>이용약관</button>
           <span className="text-primary/40">|</span>
           <button onClick={() => navigate("/privacy")}>개인정보처리방침</button>
@@ -48,7 +48,7 @@ const Footer = () => {
             위치기반서비스 이용약관
           </button>
         </div>
-        <p className="text-[12px] leading-[15px] text-black">
+        <p className="text-caption leading-[15px] text-black">
           © 2026 Dewy. All rights reserved.
         </p>
       </div>

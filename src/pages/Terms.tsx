@@ -11,7 +11,7 @@ const Terms = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <PageHeader title="이용약관" />
 
-      <main className="px-5 py-6 pb-24 text-[13px] leading-7 text-foreground">
+      <main className="px-5 py-6 pb-24 text-body leading-7 text-foreground">
         <p className="mb-4 text-muted-foreground">
           시행일: 2026년 5월 1일 · 최종 개정일: 2026년 5월 1일
         </p>
@@ -234,7 +234,7 @@ const Terms = () => {
           본 약관은 2026년 5월 1일부터 시행됩니다.
         </Section>
 
-        <p className="mt-8 text-muted-foreground text-[12px]">
+        <p className="mt-8 text-muted-foreground text-caption">
           문의: help@dewy-wedding.com
         </p>
       </main>

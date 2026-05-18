@@ -270,7 +270,7 @@ const AIPlanner = () => {
       {(dailyRemaining !== null || hasConversation) && (
         <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-border bg-card/60">
           {dailyRemaining !== null && (
-            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+            <span className="text-caption text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
               {dailyRemaining}회 남음
             </span>
           )}
@@ -314,10 +314,10 @@ const AIPlanner = () => {
                   className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl border border-primary/30 bg-primary/8 active:scale-[0.98] transition-all text-left"
                 >
                   <div className="min-w-0">
-                    <p className="text-[12px] font-bold text-foreground leading-tight">
+                    <p className="text-caption font-bold text-foreground leading-tight">
                       결혼식 정보를 1분만 알려주세요
                     </p>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                    <p className="text-caption text-muted-foreground leading-tight mt-0.5">
                       날짜·지역만 입력해도 맞춤 추천이 정확해져요
                     </p>
                   </div>
@@ -337,7 +337,7 @@ const AIPlanner = () => {
                     <p className="text-sm font-semibold text-foreground mb-0.5">{q.label}</p>
                     <p className="text-caption text-muted-foreground leading-tight">{q.desc}</p>
                     {q.premium && (
-                      <span className="absolute top-2 right-2 text-[10px] bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium flex items-center gap-0.5">
+                      <span className="absolute top-2 right-2 text-caption bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium flex items-center gap-0.5">
                         <Sparkles className="w-3 h-3" /> PRO
                       </span>
                     )}

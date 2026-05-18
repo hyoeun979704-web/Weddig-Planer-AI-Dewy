@@ -154,7 +154,7 @@ const BudgetHistory = () => {
           )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-            <p className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
+            <p className="text-caption text-muted-foreground flex items-center gap-1 flex-wrap">
               {format(parseLocalDate(item.item_date), "M.d")} · {pb?.emoji} {pb?.label}
               {item.payment_stage && (
                 <span className="bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
@@ -268,7 +268,7 @@ const BudgetHistory = () => {
           <div className="flex gap-1.5">
             {sortOptions.map(s => (
               <button key={s} type="button" onClick={() => setSortBy(s)}
-                className={cn("text-[10px] py-1 px-2 rounded-full border transition-all active:scale-95",
+                className={cn("text-caption py-1 px-2 rounded-full border transition-all active:scale-95",
                   sortBy === s ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground")}>
                 {s}
               </button>
@@ -276,12 +276,12 @@ const BudgetHistory = () => {
           </div>
           <div className="flex gap-1 bg-muted rounded-full p-0.5">
             <button type="button" onClick={() => setGroupMode("month")}
-              className={cn("text-[10px] py-1 px-2.5 rounded-full transition-all active:scale-95",
+              className={cn("text-caption py-1 px-2.5 rounded-full transition-all active:scale-95",
                 groupMode === "month" ? "bg-background text-foreground font-bold shadow-sm" : "text-muted-foreground")}>
               월별
             </button>
             <button type="button" onClick={() => setGroupMode("vendor")}
-              className={cn("text-[10px] py-1 px-2.5 rounded-full transition-all active:scale-95",
+              className={cn("text-caption py-1 px-2.5 rounded-full transition-all active:scale-95",
                 groupMode === "vendor" ? "bg-background text-foreground font-bold shadow-sm" : "text-muted-foreground")}>
               항목별
             </button>
@@ -336,7 +336,7 @@ const BudgetHistory = () => {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">{vendorName}</p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-caption text-muted-foreground">
                         {vItems.length}건
                         {balanceTotal > 0 && <> · 잔금 {fmt(balanceTotal)}만원 남음</>}
                       </p>

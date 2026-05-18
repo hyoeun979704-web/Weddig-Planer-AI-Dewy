@@ -43,7 +43,7 @@ export default function ExcludedCategoryBanner({ scheduleCategories }: Props) {
         className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"
         aria-hidden="true"
       />
-      <div className="text-[12px] leading-relaxed">
+      <div className="text-caption leading-relaxed">
         <p className="font-medium text-amber-900">
           {styleLabel}이라 <b>{labels}</b>을(를) 제외하셨어요.
         </p>

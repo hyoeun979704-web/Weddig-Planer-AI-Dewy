@@ -146,7 +146,7 @@ const Premium = () => {
                   selectedPlan === "monthly" ? "border-primary bg-primary/5" : "border-border bg-card"
                 }`}
               >
-                <div className="absolute -top-2.5 left-3 px-2 py-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+                <div className="absolute -top-2.5 left-3 px-2 py-0.5 bg-destructive text-destructive-foreground text-caption font-bold rounded-full">
                   50% 할인
                 </div>
                 <p className="font-bold text-foreground text-sm">월간</p>
@@ -161,10 +161,10 @@ const Premium = () => {
                   selectedPlan === "yearly" ? "border-primary bg-primary/5" : "border-border bg-card"
                 }`}
               >
-                <div className="absolute -top-2.5 right-3 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full">
+                <div className="absolute -top-2.5 right-3 px-2 py-0.5 bg-primary text-primary-foreground text-caption font-bold rounded-full">
                   추천
                 </div>
-                <div className="absolute -top-2.5 left-3 px-2 py-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
+                <div className="absolute -top-2.5 left-3 px-2 py-0.5 bg-destructive text-destructive-foreground text-caption font-bold rounded-full">
                   67% 할인
                 </div>
                 <p className="font-bold text-foreground text-sm">연간</p>
@@ -208,7 +208,7 @@ const Premium = () => {
                         {item.free}
                       </span>
                       <span className="w-14 text-center">
-                        <span className="inline-block px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary/10 text-primary">
+                        <span className="inline-block px-2 py-0.5 text-caption font-bold rounded-full bg-primary/10 text-primary">
                           {item.premium}
                         </span>
                       </span>

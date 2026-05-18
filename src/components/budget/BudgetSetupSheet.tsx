@@ -240,7 +240,7 @@ export default function BudgetSetupSheet({
           <SheetTitle className="text-base flex items-center gap-2">
             예산 설정
             {weddingStyle && weddingStyle !== "general" && weddingStyle !== "custom" && (
-              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+              <span className="text-caption bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium flex items-center gap-0.5">
                 <Sparkle className="w-2.5 h-2.5" /> {WEDDING_STYLE_LABEL[weddingStyle]} 모드
               </span>
             )}
@@ -295,7 +295,7 @@ export default function BudgetSetupSheet({
             </Button>
           </div>
           {avg && catBudgets.meal > 0 && (
-            <p className="text-[10px] text-muted-foreground mt-1.5">
+            <p className="text-caption text-muted-foreground mt-1.5">
               식대는 하객 수 × {avg.per_guest_meal}만원으로 자동 계산돼요
             </p>
           )}
@@ -325,7 +325,7 @@ export default function BudgetSetupSheet({
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <MapPin className="w-3 h-3" /> {regions[region]?.label} {guestCount}명 기준 평균 <span className="font-semibold text-foreground tabular-nums">{fmt(avg.total)}만원</span>
               </p>
-              <p className="text-[10px] text-muted-foreground pl-4">
+              <p className="text-caption text-muted-foreground pl-4">
                 · 식대 포함 ({guestCount}명 × {avg.per_guest_meal}만원 = {fmt(avg.meal)}만원)
               </p>
             </div>
@@ -361,7 +361,7 @@ export default function BudgetSetupSheet({
                   <button
                     type="button"
                     onClick={rebalanceToTotal}
-                    className="text-[10px] bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-bold active:scale-95 transition-transform"
+                    className="text-caption bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-bold active:scale-95 transition-transform"
                     title="총 예산에 맞게 비율 유지하며 자동 조정"
                   >
                     비율 맞추기
@@ -385,11 +385,11 @@ export default function BudgetSetupSheet({
                 </div>
                 {key === "meal" && avg && (
                   <div className="pl-[88px] mt-0.5 space-y-0.5">
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-caption text-muted-foreground">
                       {guestCount}명 × {avg.per_guest_meal}만원 = {fmt(avg.meal)}만원 권장
                     </p>
                     {weddingStyle === "small" && guestCount <= 60 && (
-                      <p className="text-[10px] text-yellow-700">
+                      <p className="text-caption text-yellow-700">
                         ⓘ 50명 이하는 인당 단가가 평균보다 10~20% 비쌀 수 있어요 (대량 할인 어려움)
                       </p>
                     )}
@@ -409,7 +409,7 @@ export default function BudgetSetupSheet({
               <p>· <b>기타</b>에 청첩장·답례품·축가비 등을 미리 잡아두는 게 좋아요</p>
             </div>
           </div>
-          <p className="text-[10px] text-muted-foreground/70 mt-2 text-center">
+          <p className="text-caption text-muted-foreground/70 mt-2 text-center">
             * 평균 데이터는 2026년 상반기 기준 · 실제 견적은 업체마다 다를 수 있어요
           </p>
         </div>

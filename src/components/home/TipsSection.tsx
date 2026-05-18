@@ -28,7 +28,7 @@ export default function TipsSection({ activeTab: _activeTab }: TipsSectionProps)
           <button
             type="button"
             onClick={() => navigate("/tips")}
-            className="text-[12px] text-black/50"
+            className="text-caption text-black/50"
           >
             더보기
           </button>
@@ -41,7 +41,7 @@ export default function TipsSection({ activeTab: _activeTab }: TipsSectionProps)
             ))}
           </div>
         ) : isError ? (
-          <div className="text-[12px] text-black/50">
+          <div className="text-caption text-black/50">
             영상을 불러오지 못했어요.
           </div>
         ) : data.length === 0 ? (

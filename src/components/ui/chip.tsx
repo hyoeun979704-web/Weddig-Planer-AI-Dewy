@@ -14,7 +14,7 @@ interface ChipProps {
  * 표준 필터·카테고리 칩.
  * 활성: bg-primary + text-primary-foreground
  * 비활성: bg-muted + text-muted-foreground
- * 크기: px-3 py-1.5 text-[13px] rounded-full
+ * 크기: px-3 py-1.5 text-body rounded-full
  */
 const Chip = ({
   active = false,
@@ -31,7 +31,7 @@ const Chip = ({
     aria-pressed={active}
     aria-label={ariaLabel}
     className={cn(
-      "flex-shrink-0 px-3 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100",
+      "flex-shrink-0 px-3 py-1.5 rounded-full text-body font-medium whitespace-nowrap transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100",
       active
         ? "bg-primary text-primary-foreground"
         : "bg-muted text-muted-foreground hover:bg-primary/10",

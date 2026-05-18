@@ -105,7 +105,7 @@ const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutP
                   {item.label}
                 </span>
                 {item.badge && (
-                  <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground">
+                  <span className="text-caption bg-muted px-2 py-0.5 rounded text-muted-foreground">
                     {item.badge}
                   </span>
                 )}

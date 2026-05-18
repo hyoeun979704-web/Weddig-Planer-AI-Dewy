@@ -11,7 +11,7 @@ const LocationTerms = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <PageHeader title="위치기반서비스 이용약관" />
 
-      <main className="px-5 py-6 pb-24 text-[13px] leading-7 text-foreground">
+      <main className="px-5 py-6 pb-24 text-body leading-7 text-foreground">
         <p className="mb-4 text-muted-foreground">
           시행일: 2026년 5월 1일
         </p>
@@ -77,7 +77,7 @@ const LocationTerms = () => {
         </Section>
 
         <Section title="제9조 (위치정보관리책임자)">
-          <table className="w-full text-[12px] border-collapse">
+          <table className="w-full text-caption border-collapse">
             <tbody>
               <tr>
                 <td className="border border-border p-2 font-semibold w-1/3">성명</td>

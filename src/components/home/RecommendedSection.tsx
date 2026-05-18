@@ -42,7 +42,7 @@ const RecommendedSection = () => {
         <div className="flex items-center gap-1.5">
           <h2 className="text-title font-bold text-black">{header.title}</h2>
           {style && style !== "general" && (
-            <span className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+            <span className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-caption font-semibold">
               {WEDDING_STYLE_LABEL[style]}
             </span>
           )}

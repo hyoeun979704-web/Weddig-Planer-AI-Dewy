@@ -101,7 +101,7 @@ const EventListRow = ({ event }: { event: EventCard }) => {
         {event.icon && <span className="text-display" aria-hidden>{event.icon}</span>}
       </div>
       <div className="flex-1 min-w-0">
-        <p className={cn("text-[13px] font-bold truncate", isEnded ? "text-muted-foreground" : "text-foreground")}>
+        <p className={cn("text-body font-bold truncate", isEnded ? "text-muted-foreground" : "text-foreground")}>
           {event.title}
         </p>
         <p className="text-caption text-muted-foreground leading-snug line-clamp-1">{event.subtitle}</p>
@@ -168,7 +168,7 @@ const Events = () => {
             진행중 이벤트 {LIVE_EVENTS.length + 1}
           </span>
           <h2 className="mt-3 text-[26px] font-extrabold text-foreground leading-tight">Dewy 이벤트</h2>
-          <p className="mt-1 text-[13px] font-medium text-[#1B6BA8] leading-relaxed">
+          <p className="mt-1 text-body font-medium text-[#1B6BA8] leading-relaxed">
             가입·공유·미션으로 받는 보상<br />포인트·하트·프리미엄까지
           </p>
         </section>
@@ -181,19 +181,19 @@ const Events = () => {
           >
             <div className={cn("px-4 pt-4 pb-5 bg-gradient-to-br", FEATURED.thumbBg)}>
               {FEATURED.badge && (
-                <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold", FEATURED.badge.color)}>
+                <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-caption font-bold", FEATURED.badge.color)}>
                   {FEATURED.badge.label}
                 </span>
               )}
-              <p className="mt-2 text-[18px] font-extrabold text-foreground leading-snug">{FEATURED.title}</p>
-              <p className="mt-1 text-[12px] font-medium text-[#6B3F10]">{FEATURED.subtitle}</p>
+              <p className="mt-2 text-title font-extrabold text-foreground leading-snug">{FEATURED.title}</p>
+              <p className="mt-1 text-caption font-medium text-[#6B3F10]">{FEATURED.subtitle}</p>
             </div>
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex flex-col text-caption">
                 <span className="font-semibold text-muted-foreground">참여 1,287명 · 만족 4.8</span>
                 {FEATURED.endsLabel && <span className="font-bold text-primary">{FEATURED.endsLabel}</span>}
               </div>
-              <span className="px-4 py-2 rounded-lg bg-foreground text-background text-[12px] font-bold">
+              <span className="px-4 py-2 rounded-lg bg-foreground text-background text-caption font-bold">
                 {FEATURED.cta}
               </span>
             </div>
