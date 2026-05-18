@@ -154,7 +154,14 @@ const PersonaDashboard = () => {
               )}
               {weddingSettings.pregnant && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-700">
-                  🌷 임신 모드
+                  🌷 {insights.pregnancy.currentWeek !== null
+                    ? `임신 ${insights.pregnancy.currentWeek}주차`
+                    : "임신 모드"}
+                  {insights.pregnancy.trimesterAtWedding && (
+                    <span className="ml-1 opacity-80">
+                      · 본식 {insights.pregnancy.weeksAtWedding}주
+                    </span>
+                  )}
                 </span>
               )}
               {weddingSettings.marital_history === "remarriage" && (

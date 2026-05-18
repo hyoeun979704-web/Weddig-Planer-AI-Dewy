@@ -20,6 +20,7 @@ import {
   defaultExclusionsFor,
   type WeddingStyle,
 } from "@/lib/weddingStyle";
+import { computePregnancyContext, trimesterLabel } from "@/lib/pregnancy";
 
 const REGIONS = [
   "서울특별시", "경기도", "인천광역시", "부산광역시", "대구광역시",
@@ -60,6 +61,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const [excludedCategories, setExcludedCategories] = useState<string[]>([]);
   const [maritalHistory, setMaritalHistory] = useState<"first" | "remarriage" | null>(null);
   const [pregnant, setPregnant] = useState(false);
+  const [pregnancyDueDate, setPregnancyDueDate] = useState<Date | undefined>();
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -89,6 +91,9 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     );
     setMaritalHistory(weddingSettings.marital_history);
     setPregnant(weddingSettings.pregnant);
+    setPregnancyDueDate(
+      weddingSettings.pregnancy_due_date ? new Date(weddingSettings.pregnancy_due_date) : undefined,
+    );
     setErrors({});
   }, [
     isOpen,
@@ -102,6 +107,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     weddingSettings.excluded_categories,
     weddingSettings.marital_history,
     weddingSettings.pregnant,
+    weddingSettings.pregnancy_due_date,
   ]);
 
   const validate = () => {
@@ -128,6 +134,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       excluded_categories: excludedCategories,
       marital_history: maritalHistory,
       pregnant,
+      pregnancy_due_date:
+        pregnant && pregnancyDueDate ? format(pregnancyDueDate, "yyyy-MM-dd") : null,
     });
 
     if (ok) {
@@ -135,7 +143,21 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       // to today + 12 months so the checklist is still actionable. Exclusions
       // are applied here so the user never sees seeded items for categories
       // they opted out of.
-      const items = buildScheduleFromTemplate(weddingDateStr, stage, excludedCategories, weddingStyle, pregnant);
+      const dueDateStr =
+        pregnant && pregnancyDueDate ? format(pregnancyDueDate, "yyyy-MM-dd") : null;
+      const { trimesterAtWedding } = computePregnancyContext(
+        pregnant,
+        dueDateStr,
+        weddingDateStr,
+      );
+      const items = buildScheduleFromTemplate(
+        weddingDateStr,
+        stage,
+        excludedCategories,
+        weddingStyle,
+        pregnant,
+        trimesterAtWedding,
+      );
       const seeded = await generateScheduleFromTemplate(items);
       onSaved?.();
       onClose();
@@ -345,13 +367,18 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
           </div>
         </div>
 
-        {/* 임신 여부 — true일 때 일정 압축·체크리스트 가중치·AI 답변 톤이 바뀜 */}
+        {/* 임신 여부 — true일 때 일정 압축·체크리스트 가중치·AI 답변 톤이 바뀜.
+            출산예정일을 입력하면 본식 시점 차수 (초기/중기/후기)별로 시프트 강도가
+            달라진다. dueDate 미입력 시 보수적으로 중기 적용. */}
         <div>
           <label className="flex items-start gap-2.5 cursor-pointer">
             <input
               type="checkbox"
               checked={pregnant}
-              onChange={(e) => setPregnant(e.target.checked)}
+              onChange={(e) => {
+                setPregnant(e.target.checked);
+                if (!e.target.checked) setPregnancyDueDate(undefined);
+              }}
               className="w-4 h-4 accent-[#C9A96E] mt-0.5"
             />
             <div className="flex-1 min-w-0">
@@ -359,10 +386,59 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
                 임신 중이에요 <span className="text-xs text-gray-400 font-normal">(선택)</span>
               </p>
               <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                체크하시면 촬영·가봉·신혼여행 예약을 30일 정도 앞당겨 추천드리고, 임산부 가능 메이크업샵 확인·산부인과 컨디션 상담 같은 일정이 자동으로 추가돼요. AI 답변 톤도 신체 컨디션을 고려해 안내해드려요.
+                체크하시면 본식 시점 임신 차수에 맞춰 촬영·가봉·신혼여행 일정을 앞당겨 추천드리고, 임산부 가능 메이크업샵·산부인과 상담 같은 일정이 자동으로 추가돼요. AI 답변 톤도 신체 컨디션을 고려해 안내해드려요.
               </p>
             </div>
           </label>
+
+          {pregnant && (
+            <div className="mt-3 pl-7">
+              <label className={labelCls + " text-xs"}>
+                출산예정일 <span className="text-xs text-gray-400 font-normal">(차수 계산용·선택)</span>
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2.5 border rounded-xl text-sm text-left",
+                      !pregnancyDueDate && "text-gray-400",
+                    )}
+                  >
+                    <CalendarIcon className="w-4 h-4" />
+                    {pregnancyDueDate ? format(pregnancyDueDate, "yyyy.MM.dd") : "선택 안 함 (중기로 가정)"}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={pregnancyDueDate}
+                    onSelect={setPregnancyDueDate}
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              {pregnancyDueDate && date && (() => {
+                const ctx = computePregnancyContext(
+                  true,
+                  format(pregnancyDueDate, "yyyy-MM-dd"),
+                  format(date, "yyyy-MM-dd"),
+                );
+                if (ctx.weeksAtWedding === null) {
+                  return (
+                    <p className="text-[11px] text-amber-600 mt-1.5 leading-snug">
+                      본식 시점이 출산예정일 이후라 차수를 계산할 수 없어요. 날짜를 다시 확인해주세요.
+                    </p>
+                  );
+                }
+                return (
+                  <p className="text-[11px] text-gray-500 mt-1.5 leading-snug">
+                    본식 시점에 <span className="font-semibold text-gray-700">{trimesterLabel(ctx.trimesterAtWedding)} · 약 {ctx.weeksAtWedding}주차</span> 예상 — 그에 맞춰 일정이 자동 조정돼요.
+                  </p>
+                );
+              })()}
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 pt-2">

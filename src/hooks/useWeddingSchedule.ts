@@ -28,6 +28,9 @@ interface WeddingSettings {
   marital_history: "first" | "remarriage" | null;
   // 신부 임신 여부. true일 때 체크리스트 우선순위·AI 톤이 조정됨.
   pregnant: boolean;
+  // 출산예정일. pregnant=true 일 때만 의미. 본식일과의 차이로 임신 차수
+  // (초기/중기/후기)를 계산해 일정 시프트·미션·AI 톤이 분기.
+  pregnancy_due_date: string | null;
 }
 
 export const useWeddingSchedule = () => {
@@ -43,6 +46,7 @@ export const useWeddingSchedule = () => {
     excluded_categories: [],
     marital_history: null,
     pregnant: false,
+    pregnancy_due_date: null,
   });
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,7 +66,7 @@ export const useWeddingSchedule = () => {
       const [settingsRes, itemsRes] = await Promise.all([
         supabase
           .from("user_wedding_settings")
-          .select("wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant")
+          .select("wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant, pregnancy_due_date")
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
@@ -88,6 +92,7 @@ export const useWeddingSchedule = () => {
               ? s.marital_history
               : null,
           pregnant: !!s.pregnant,
+          pregnancy_due_date: s.pregnancy_due_date ?? null,
         });
       }
 
@@ -157,6 +162,7 @@ export const useWeddingSchedule = () => {
       excluded_categories: string[];
       marital_history: "first" | "remarriage" | null;
       pregnant: boolean;
+      pregnancy_due_date: string | null;
     }>
   ) => {
     if (!user) {

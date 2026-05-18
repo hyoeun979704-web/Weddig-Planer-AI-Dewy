@@ -15,6 +15,7 @@ export interface UserData {
     wedding_region_tbd: boolean | null;
     marital_history: "first" | "remarriage" | null;
     pregnant: boolean | null;
+    pregnancy_due_date: string | null;
   } | null;
   budgetSettings: {
     total_budget: number | null;
@@ -32,7 +33,7 @@ export async function fetchUserData(supabase: any, userId: string): Promise<User
     supabase.from("favorites").select("item_type, item_id").eq("user_id", userId),
     supabase
       .from("user_wedding_settings")
-      .select("wedding_date, wedding_region, partner_name, planning_stage, wedding_date_tbd, wedding_region_tbd, marital_history, pregnant")
+      .select("wedding_date, wedding_region, partner_name, planning_stage, wedding_date_tbd, wedding_region_tbd, marital_history, pregnant, pregnancy_due_date")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -133,9 +134,43 @@ export function buildUserContext(userData: UserData): string {
     );
   }
   if (ws?.pregnant) {
-    parts.push(
-      "임신 중: 신부가 임신 중입니다. 드레스 가봉·본식 촬영·허니문 일정을 가능하면 앞당기고, 식사·동선·컨디션 부담을 줄이는 옵션을 우선 추천하세요. 알코올·장거리 항공 등은 부적절합니다."
-    );
+    // 차수 (1~13 / 14~27 / 28~40 주) 계산 — dueDate 가 있으면 본식 시점 주수로 분기.
+    const baseMsg =
+      "임신 중: 신부가 임신 중입니다. 드레스 가봉·본식 촬영·허니문 일정을 가능하면 앞당기고, 식사·동선·컨디션 부담을 줄이는 옵션을 우선 추천하세요. 알코올·장거리 항공 등은 부적절합니다.";
+    if (ws.pregnancy_due_date && ws.wedding_date) {
+      const due = new Date(ws.pregnancy_due_date);
+      const wedAt = new Date(ws.wedding_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const TOTAL = 40;
+      const MS_DAY = 86_400_000;
+      const weekAt = (from: Date) => {
+        const diffWeeks = Math.floor((due.getTime() - from.getTime()) / MS_DAY / 7);
+        const w = TOTAL - diffWeeks;
+        return w >= 1 && w <= TOTAL ? w : null;
+      };
+      const wedWeek = weekAt(wedAt);
+      const nowWeek = weekAt(today);
+      const trimesterLabel = wedWeek === null
+        ? null
+        : wedWeek <= 13 ? "초기 (1~13주)"
+        : wedWeek <= 27 ? "중기 (14~27주)"
+        : "후기 (28~40주)";
+      const tone = wedWeek === null
+        ? ""
+        : wedWeek <= 13
+          ? "본식 시점이 임신 초기라 컨디션·드레스 가봉 사이즈 여유 정도만 보수적으로 안내하세요. 입덧·피로감을 고려한 답변."
+          : wedWeek <= 27
+            ? "본식 시점이 임신 중기라 가장 안정적인 시기예요. 가봉·촬영·시연을 한 시기에 집중하도록 안내하세요."
+            : "본식 시점이 임신 후기라 항공 제약·체력 부담이 큽니다. 신혼여행은 단거리·연기 옵션 우선, 본식 동선 최소화, 막달 산부인과 상담 강조.";
+      const weekInfo = [
+        nowWeek !== null ? `현재 약 ${nowWeek}주차` : null,
+        wedWeek !== null ? `본식 시점 약 ${wedWeek}주차 (${trimesterLabel})` : null,
+      ].filter(Boolean).join(", ");
+      parts.push(`${baseMsg}${weekInfo ? ` 추가 정보: ${weekInfo}. ` : " "}${tone}`);
+    } else {
+      parts.push(baseMsg);
+    }
   }
 
   const bs = userData.budgetSettings;
