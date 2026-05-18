@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useBudget } from "@/hooks/useBudget";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
-import { Heart, Loader2, Plus, Check, BookOpen, Settings, ChevronRight } from "lucide-react";
+import { Heart, Loader2, Plus, Check, BookOpen, Settings } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
@@ -187,7 +187,7 @@ const Schedule = () => {
           <div className="flex items-center gap-1">
             <button
               onClick={() => navigate(-1)}
-              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors -ml-1"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               aria-label="뒤로가기"
             >
               <img src={arrowLeftIcon} alt="" className="w-[15px] h-[15px]" />
@@ -197,7 +197,7 @@ const Schedule = () => {
           <button
             data-tutorial="schedule-add"
             onClick={() => navigate("/my-schedule")}
-            className="px-4 py-1.5 bg-primary/15 rounded-full text-primary text-[13px] font-semibold hover:bg-primary/20 active:scale-95 transition-all"
+            className="px-4 py-1.5 bg-primary/15 rounded-full text-primary text-[13px] font-semibold"
           >
             + 일정 관리
           </button>
@@ -233,7 +233,7 @@ const Schedule = () => {
             ) : (
               <p className="text-sm text-muted-foreground mb-4">0000년 0월 0일 (0요일)</p>
             )}
-            <div className="bg-card rounded-xl px-4 py-3">
+            <div className="bg-white rounded-xl px-4 py-3">
               <p className="text-xs font-medium text-foreground mb-1.5">준비 진행률</p>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
@@ -286,20 +286,14 @@ const Schedule = () => {
               <img src={clockIcon} alt="" className="w-[17px] h-[17px]" />
               다가오는 일정
             </h3>
-            <button
-              onClick={() => navigate("/my-schedule")}
-              className="flex items-center gap-0.5 text-[13px] text-primary font-semibold hover:opacity-80 active:opacity-60 transition-opacity"
-            >
-              전체보기
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            <button onClick={() => navigate("/my-schedule")} className="text-[13px] text-primary font-semibold">전체보기</button>
           </div>
           {user && upcomingTasks.length > 0 ? (
             <div className="space-y-2">
               {upcomingTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center gap-3 px-4 py-3.5 bg-card rounded-2xl border border-border active:scale-[0.98] transition-transform"
+                  className="flex items-center gap-3 px-4 py-3.5 bg-white rounded-2xl border border-border active:scale-[0.98] transition-transform"
                 >
                   <button
                     onClick={() => toggleItemCompletion(task.id)}
@@ -342,7 +336,7 @@ const Schedule = () => {
         {ddayBanner && (
           <button
             onClick={() => isPremium ? navigate(ddayBanner.route) : setShowUpgrade(true)}
-            className="mx-4 mb-6 w-[calc(100%-2rem)] px-4 py-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 text-left"
+            className="mx-4 mb-6 w-[calc(100%-2rem)] px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left"
           >
             <img src={clipboardIcon} alt="" className="w-[17px] h-5 shrink-0" />
             <div className="flex-1 min-w-0">
@@ -369,7 +363,7 @@ const Schedule = () => {
           return (
             <section className="px-4 mb-6">
               <h3 className="font-bold text-foreground mb-3 text-[16px]">카테고리별 진행률</h3>
-              <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+              <div className="bg-white rounded-2xl border border-border p-4 space-y-3">
                 {entries.map(([cat, { total, done }]) => {
                   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
                   const meta = CATEGORY_LABELS[cat as SkippableCategory];
@@ -397,7 +391,7 @@ const Schedule = () => {
         <section className="px-4 mb-6">
           <button
             onClick={() => navigate("/budget")}
-            className="w-full px-4 py-3.5 bg-card rounded-2xl border border-border flex items-center gap-3"
+            className="w-full px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3"
           >
             <img src={walletGreenIcon} alt="" className="w-[17px] h-[17px] shrink-0" />
             <div className="flex-1 min-w-0">
@@ -526,7 +520,7 @@ const Schedule = () => {
           <section className="px-4 mb-6">
             <button
               onClick={() => navigate("/my-schedule")}
-              className="w-full p-3.5 bg-card rounded-2xl border border-border flex items-center gap-3 text-left"
+              className="w-full p-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left"
             >
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <Settings className="w-4 h-4 text-primary" />

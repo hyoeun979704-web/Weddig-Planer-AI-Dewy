@@ -774,13 +774,7 @@ const Budget = () => {
               최근 지출 {items.length > 0 && <span className="text-muted-foreground font-normal">({items.length})</span>}
             </p>
             {items.length > 0 && (
-              <button
-                onClick={() => navigate("/budget/history")}
-                className="flex items-center gap-0.5 text-xs text-primary font-medium hover:opacity-80 active:opacity-60 transition-opacity"
-              >
-                전체보기
-                <ChevronRight className="w-3 h-3" />
-              </button>
+              <button onClick={() => navigate("/budget/history")} className="text-xs text-primary font-medium">전체보기 →</button>
             )}
           </div>
           {recentItems.length === 0 ? (

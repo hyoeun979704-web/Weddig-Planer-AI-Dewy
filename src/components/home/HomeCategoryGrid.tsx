@@ -64,13 +64,12 @@ const Tile = ({ item, onClick }: { item: CategoryItem; onClick: () => void }) =>
   return (
     <button
       onClick={onClick}
-      aria-label={item.label}
       className="flex flex-col items-center gap-1.5 group active:scale-95 transition-transform"
     >
-      <div className="w-[68px] h-[68px] rounded-[20px] overflow-hidden bg-card flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+      <div className="w-[68.25px] h-[68.25px] rounded-[20px] overflow-hidden bg-white flex items-center justify-center">
         <img
           src={src}
-          alt=""
+          alt={item.label}
           className="w-full h-full object-cover"
           loading="lazy"
           onError={(e) => {
@@ -79,7 +78,7 @@ const Tile = ({ item, onClick }: { item: CategoryItem; onClick: () => void }) =>
           }}
         />
       </div>
-      <span className="text-[12px] leading-[15px] text-foreground text-center">
+      <span className="text-[12px] leading-[15px] text-black text-center">
         {item.label}
       </span>
     </button>

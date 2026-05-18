@@ -92,7 +92,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
       {/* Slim top header — back / category chip / favorite */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between h-14 px-4">
-          <button onClick={() => navigate(-1)} aria-label="뒤로 가기" className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="font-semibold text-base line-clamp-1 flex-1 text-center px-2">{place.name}</h1>
@@ -170,19 +170,17 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`flex-1 py-3 text-sm relative transition-colors active:opacity-70 ${
-        active ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+      className={`flex-1 py-3 text-sm relative ${
+        active ? "text-primary font-bold" : "text-muted-foreground"
       }`}
     >
       <span>{label}</span>
       {count != null && count > 0 && (
         <span className="ml-1 text-[11px] text-muted-foreground">({count})</span>
       )}
-      <span
-        className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-[2px] bg-primary rounded-full transition-opacity duration-200 ${
-          active ? "opacity-100" : "opacity-0"
-        }`}
-      />
+      {active && (
+        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-[2px] bg-primary rounded-full" />
+      )}
     </button>
   );
 }
@@ -217,15 +215,13 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
               <>
                 <button
                   onClick={() => setGalleryIdx((i) => (i - 1 + gallery.length) % gallery.length)}
-                  aria-label="이전 사진"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur rounded-full flex items-center justify-center hover:bg-background active:scale-90 transition-all shadow-sm"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur rounded-full flex items-center justify-center"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setGalleryIdx((i) => (i + 1) % gallery.length)}
-                  aria-label="다음 사진"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur rounded-full flex items-center justify-center hover:bg-background active:scale-90 transition-all shadow-sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur rounded-full flex items-center justify-center"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>

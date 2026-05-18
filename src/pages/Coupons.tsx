@@ -17,7 +17,7 @@ const Coupons = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
-          <button onClick={() => navigate(-1)} aria-label="뒤로 가기" className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="flex-1 text-center font-semibold text-lg pr-10">쿠폰</h1>
@@ -39,10 +39,9 @@ const Coupons = () => {
             <input
               type="text"
               placeholder="쿠폰 코드 입력"
-              aria-label="쿠폰 코드"
-              className="flex-1 px-4 py-3 bg-muted rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="flex-1 px-4 py-3 bg-muted rounded-xl text-sm"
             />
-            <button className="px-4 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 active:scale-[0.97] transition-all">
+            <button className="px-4 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium">
               등록
             </button>
           </div>
@@ -72,7 +71,7 @@ const Coupons = () => {
                   </span>
                 </div>
               </div>
-              <button className="w-full py-3 bg-muted text-sm font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary active:scale-[0.99] transition-all">
+              <button className="w-full py-3 bg-muted text-sm font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
                 쿠폰 사용하기
               </button>
             </div>

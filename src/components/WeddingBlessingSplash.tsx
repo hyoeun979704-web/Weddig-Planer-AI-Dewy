@@ -34,7 +34,7 @@ const WeddingBlessingSplash = () => {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-b from-primary/5 via-background to-primary/10 transition-opacity duration-500 ${
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-b from-primary/5 via-background to-primary/10 transition-opacity duration-600 ${
         fadeOut ? "opacity-0" : "opacity-100"
       }`}
     >

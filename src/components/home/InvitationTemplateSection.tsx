@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
 import VendorMediaCard, { type VendorMediaCardData } from "./VendorMediaCard";
 
 const TEMPLATES: VendorMediaCardData[] = [
@@ -63,14 +62,13 @@ const InvitationTemplateSection = () => {
   return (
     <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-50))]">
       <div className="mb-[10px] flex items-center justify-between">
-        <h2 className="text-[16px] font-bold text-foreground">5분 완성! 청첩장 만들기</h2>
+        <h2 className="text-[16px] font-bold text-black">5분 완성! 청첩장 만들기</h2>
         <button
           type="button"
           onClick={() => navigate("/invitation-venues")}
-          className="flex items-center gap-0.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+          className="text-[12px] text-black/50"
         >
           더보기
-          <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
       <div className="flex gap-[8px] overflow-x-auto scrollbar-hide">

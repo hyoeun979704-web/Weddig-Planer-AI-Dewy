@@ -353,7 +353,7 @@ const CommunityPostDetail = () => {
       <div className="min-h-screen bg-background max-w-[430px] mx-auto">
         <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center gap-3 px-4 h-14">
-            <button onClick={() => navigate(-1)} aria-label="뒤로 가기" className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors">
+            <button onClick={() => navigate(-1)} className="p-2 -ml-2">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <Skeleton className="h-5 w-32" />
@@ -383,13 +383,13 @@ const CommunityPostDetail = () => {
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} aria-label="뒤로 가기" className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors">
+            <button onClick={() => navigate(-1)} className="p-2 -ml-2">
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <span className="text-sm font-medium text-foreground">게시글</span>
           </div>
           <div className="flex items-center gap-1">
-            <button
+            <button 
               onClick={() => {
                 if (!user) {
                   navigate("/auth");
@@ -398,33 +398,24 @@ const CommunityPostDetail = () => {
                 if (id) toggleFavorite(id, "community_post");
               }}
               disabled={isBookmarkToggling}
-              aria-label={isBookmarked ? "북마크 해제" : "북마크"}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors disabled:opacity-50"
+              className="p-2"
             >
               <Bookmark className={`w-5 h-5 transition-colors ${isBookmarked ? "fill-primary text-primary" : "text-muted-foreground"}`} />
             </button>
-            <button
-              onClick={handleShare}
-              aria-label="공유하기"
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
-            >
+            <button onClick={handleShare} className="p-2">
               <Share2 className="w-5 h-5 text-muted-foreground" />
             </button>
             {user && post.user_id === user.id && (
               <>
-                <button
+                <button 
                   onClick={() => navigate(`/community/${id}/edit`)}
-                  aria-label="수정하기"
-                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
+                  className="p-2"
                 >
                   <Pencil className="w-5 h-5 text-muted-foreground" />
                 </button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <button
-                      aria-label="삭제하기"
-                      className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-destructive/10 active:bg-destructive/20 transition-colors"
-                    >
+                    <button className="p-2">
                       <Trash2 className="w-5 h-5 text-muted-foreground" />
                     </button>
                   </AlertDialogTrigger>
@@ -489,11 +480,10 @@ const CommunityPostDetail = () => {
 
         {/* Stats */}
         <div className="flex items-center gap-4 py-4 border-t border-b border-border">
-          <button
+          <button 
             onClick={() => likeMutation.mutate()}
-            aria-label={isLiked ? "좋아요 취소" : "좋아요"}
-            className={`flex items-center gap-1.5 text-sm transition-all active:scale-95 ${
-              isLiked ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            className={`flex items-center gap-1.5 text-sm transition-colors ${
+              isLiked ? "text-red-500" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />

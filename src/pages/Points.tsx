@@ -39,7 +39,7 @@ const Points = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
-          <button onClick={() => navigate(-1)} aria-label="뒤로 가기" className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="flex-1 text-center font-semibold text-lg pr-10">포인트</h1>
@@ -63,14 +63,14 @@ const Points = () => {
           <div className="flex gap-3 mt-6">
             <button
               onClick={() => navigate("/merge-game")}
-              className="flex-1 py-3 bg-card border border-border text-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-muted active:scale-[0.98] transition-all"
+              className="flex-1 py-3 bg-card border border-border text-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2"
             >
               <Coins className="w-4 h-4" />
               게임으로 적립
             </button>
             <button
               onClick={() => navigate("/points/charge")}
-              className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all"
+              className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2"
             >
               💗 하트 충전
             </button>

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { CategoryTab, useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
@@ -93,7 +92,7 @@ const AIStudio = () => {
                   key={card.id}
                   type="button"
                   onClick={() => navigate(card.href!)}
-                  className="bg-card rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] hover:shadow-md transition-all"
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
                 >
                   <div className="aspect-square bg-gradient-to-br from-pink-100 to-pink-200" />
                   <div className="px-4 py-3">
@@ -103,9 +102,8 @@ const AIStudio = () => {
                     <p className="mt-1 text-[12px] text-muted-foreground line-clamp-2">
                       {card.description}
                     </p>
-                    <p className="mt-1.5 text-[11px] text-primary font-medium inline-flex items-center gap-0.5">
-                      지금 시작
-                      <ChevronRight className="w-3 h-3" />
+                    <p className="mt-1.5 text-[11px] text-primary font-medium">
+                      지금 시작 →
                     </p>
                   </div>
                 </button>
@@ -118,7 +116,7 @@ const AIStudio = () => {
                   key={card.id}
                   type="button"
                   onClick={() => handleLockedCardClick(card)}
-                  className="bg-card rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] hover:shadow-md transition-all"
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
                 >
                   <div className="relative aspect-square bg-gradient-to-br from-pink-50 to-pink-100">
                     <span className="absolute top-2 right-2 text-[10px] font-semibold bg-white/95 text-primary px-2 py-0.5 rounded-full shadow-sm">
