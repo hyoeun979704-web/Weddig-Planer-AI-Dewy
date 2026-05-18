@@ -141,7 +141,8 @@ const Auth = () => {
         <div className="flex items-center h-14 px-4">
           <button
             onClick={() => navigate(-1)}
-            className="w-10 h-10 flex items-center justify-center -ml-2"
+            aria-label="뒤로 가기"
+            className="w-10 h-10 flex items-center justify-center -ml-2 rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -241,7 +242,8 @@ const Auth = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5 text-muted-foreground" />
@@ -354,7 +356,7 @@ const Auth = () => {
                 setErrors({});
                 setAccountType("individual");
               }}
-              className="text-primary font-medium"
+              className="text-primary font-medium hover:underline active:opacity-70 transition-opacity"
             >
               {isSignUp ? "로그인" : "회원가입"}
             </button>

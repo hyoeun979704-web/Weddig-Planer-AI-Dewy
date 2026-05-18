@@ -92,7 +92,7 @@ const AIStudio = () => {
                   key={card.id}
                   type="button"
                   onClick={() => navigate(card.href!)}
-                  className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
+                  className="bg-card rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
                 >
                   <div className="aspect-square bg-gradient-to-br from-pink-100 to-pink-200" />
                   <div className="px-4 py-3">
@@ -116,7 +116,7 @@ const AIStudio = () => {
                   key={card.id}
                   type="button"
                   onClick={() => handleLockedCardClick(card)}
-                  className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
+                  className="bg-card rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
                 >
                   <div className="relative aspect-square bg-gradient-to-br from-pink-50 to-pink-100">
                     <span className="absolute top-2 right-2 text-[10px] font-semibold bg-white/95 text-primary px-2 py-0.5 rounded-full shadow-sm">

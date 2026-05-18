@@ -36,8 +36,8 @@ export const FavoriteButton = ({
   };
 
   const baseStyles = variant === "overlay"
-    ? "w-10 h-10 bg-background/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm transition-transform active:scale-95"
-    : "p-2 rounded-full transition-colors";
+    ? "w-10 h-10 bg-background/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm transition-transform active:scale-95 hover:bg-background"
+    : "p-2 rounded-full transition-colors hover:bg-muted active:scale-95";
 
   return (
     <button
@@ -49,7 +49,7 @@ export const FavoriteButton = ({
       <Heart
         className={cn(
           "w-5 h-5 transition-colors",
-          isFav ? "fill-destructive text-destructive" : "text-foreground"
+          isFav ? "fill-primary text-primary" : "text-foreground"
         )}
       />
     </button>

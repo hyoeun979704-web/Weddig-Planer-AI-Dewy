@@ -197,7 +197,11 @@ const MyPage = () => {
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
-          <button onClick={() => navigate("/settings")} className="p-2 active:scale-90 transition-transform">
+          <button
+            onClick={() => navigate("/settings")}
+            aria-label="설정"
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors -mr-2"
+          >
             <Settings className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
