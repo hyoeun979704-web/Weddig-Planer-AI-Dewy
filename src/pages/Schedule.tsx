@@ -293,16 +293,24 @@ const Schedule = () => {
               {upcomingTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center gap-3 px-4 py-3.5 bg-white rounded-2xl border border-border active:scale-[0.98] transition-transform"
+                  className={`flex items-center gap-3 px-4 py-3.5 bg-card rounded-2xl border border-border active:scale-[0.98] transition-all ${
+                    task.completed ? "opacity-60" : ""
+                  }`}
                 >
                   <button
                     onClick={() => toggleItemCompletion(task.id)}
-                    aria-label="완료 처리"
-                    className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 hover:border-primary hover:bg-primary/5 active:bg-primary/10 transition-colors shrink-0"
-                  />
+                    aria-label={task.completed ? "완료 취소" : "완료 처리"}
+                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
+                      task.completed
+                        ? "bg-primary border-primary"
+                        : "border-muted-foreground hover:border-primary hover:bg-primary/5"
+                    }`}
+                  >
+                    {task.completed && <Check className="w-4 h-4 text-primary-foreground" />}
+                  </button>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-sm text-foreground block truncate">{task.title}</span>
+                      <span className={`text-sm block truncate ${task.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>{task.title}</span>
                       {task.source === "template" && (
                         <span
                           className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium shrink-0"
