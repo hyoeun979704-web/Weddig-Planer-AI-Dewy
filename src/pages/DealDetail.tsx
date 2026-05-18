@@ -3,6 +3,7 @@ import { Clock, ExternalLink, Tag, Copy, Check, Gift, Users, Eye, Loader2 } from
 import { useState } from "react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { usePartnerDealDetail, usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,7 +72,7 @@ const DealDetail = () => {
   if (!deal) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <p className="text-muted-foreground">혜택을 찾을 수 없습니다</p>
+        <EmptyState emoji="" title="혜택을 찾을 수 없습니다" variant="inline" />
       </div>
     );
   }

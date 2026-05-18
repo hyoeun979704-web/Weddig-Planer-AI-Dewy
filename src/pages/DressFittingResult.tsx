@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Download, Share2, Loader2, RefreshCw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -113,9 +114,7 @@ const DressFittingResult = () => {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : !fitting ? (
-          <p className="text-center text-muted-foreground py-20">
-            결과를 찾을 수 없어요.
-          </p>
+          <EmptyState emoji="" title="결과를 찾을 수 없어요" variant="inline" />
         ) : fitting.status === "failed" || fitting.status === "refunded" ? (
           <div className="text-center py-12 space-y-3">
             <p className="text-base font-semibold text-foreground">

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Plus, MessageSquare, Check, Clock } from "lucide-react";
+import { Plus, Check, Clock } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCoupleLink } from "@/hooks/useCoupleLink";
 import { supabase } from "@/integrations/supabase/client";
@@ -115,11 +116,12 @@ const CoupleVote = () => {
         {isLoading ? (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : votes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <MessageSquare className="w-12 h-12 text-muted-foreground/30 mb-4" />
-            <p className="text-sm text-muted-foreground mb-1">아직 의견 조율이 없어요</p>
-            <p className="text-xs text-muted-foreground">둘이 고민 중인 게 있나요?</p>
-          </div>
+          <EmptyState
+            emoji=""
+            title="아직 의견 조율이 없어요"
+            description="둘이 고민 중인 게 있나요?"
+            variant="inline"
+          />
         ) : (
           <div className="space-y-3">
             {votes.map(v => (

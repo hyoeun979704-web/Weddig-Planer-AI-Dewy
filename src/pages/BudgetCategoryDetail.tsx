@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Trash2, Lightbulb } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import { useBudget } from "@/hooks/useBudget";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { categories, savingTips, regions, getRegionalAvgWithMeal, resolveRegionKey, type BudgetCategory } from "@/data/budgetData";
@@ -188,9 +189,7 @@ const BudgetCategoryDetail = () => {
         <div className="rounded-xl bg-card border border-border p-4">
           <p className="text-xs font-semibold text-foreground mb-3">지출 내역</p>
           {catItems.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">
-              아직 기록된 내역이 없어요
-            </p>
+            <EmptyState emoji="" title="아직 기록된 내역이 없어요" variant="inline" />
           ) : (
             <div className="space-y-1">
               {catItems.map(item => (

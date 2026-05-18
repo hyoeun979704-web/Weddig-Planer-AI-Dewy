@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { usePlaceDetail, type LegacyDetail } from "@/hooks/usePlaceDetail";
 import PlaceDetailLayout from "@/components/detail/PlaceDetailLayout";
+import EmptyState from "@/components/EmptyState";
 
 // Catch-all detail page wired to PlaceDetailLayout. Used by:
 //  - /vendor/:id (categoryRouteMap fallback for "스드메" combo + legacy links)
@@ -44,9 +44,12 @@ const VendorDetailPage = () => {
   if (error || !place) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center p-4">
-        <span className="text-4xl mb-4"></span>
-        <p className="text-muted-foreground text-center mb-4">업체를 찾을 수 없어요.</p>
-        <Button onClick={() => navigate(-1)}>뒤로</Button>
+        <EmptyState
+          emoji=""
+          title="업체를 찾을 수 없어요"
+          variant="inline"
+          action={{ label: "뒤로", onClick: () => navigate(-1) }}
+        />
       </div>
     );
   }

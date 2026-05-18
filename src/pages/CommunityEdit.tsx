@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { X, ImagePlus, Loader2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -190,8 +191,12 @@ const CommunityEdit = () => {
   if (!post) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center">
-        <p className="text-muted-foreground mb-4">게시글을 찾을 수 없습니다.</p>
-        <Button onClick={() => navigate("/community")}>커뮤니티로 돌아가기</Button>
+        <EmptyState
+          emoji=""
+          title="게시글을 찾을 수 없습니다"
+          variant="inline"
+          action={{ label: "커뮤니티로 돌아가기", onClick: () => navigate("/community") }}
+        />
       </div>
     );
   }

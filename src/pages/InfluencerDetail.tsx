@@ -2,6 +2,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { ExternalLink, Users, Play, Image, FileText, Eye, Heart, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import { useInfluencerDetail, useCategoryLabels } from "@/hooks/useInfluencers";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "@/components/FavoriteButton";
@@ -45,7 +46,7 @@ const InfluencerDetail = () => {
   if (!influencer) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <p className="text-muted-foreground">인플루언서를 찾을 수 없습니다</p>
+        <EmptyState emoji="" title="인플루언서를 찾을 수 없습니다" variant="inline" />
       </div>
     );
   }
@@ -137,9 +138,7 @@ const InfluencerDetail = () => {
             <h3 className="font-bold text-foreground mb-3">콘텐츠</h3>
 
             {contents.length === 0 ? (
-              <div className="py-8 text-center">
-                <p className="text-sm text-muted-foreground">아직 등록된 콘텐츠가 없습니다</p>
-              </div>
+              <EmptyState emoji="" title="아직 등록된 콘텐츠가 없습니다" variant="inline" />
             ) : (
               <div className="space-y-3">
                 {contents.map((content) => {

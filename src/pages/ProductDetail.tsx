@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import EmptyState from "@/components/EmptyState";
 
 interface Product {
   id: string;
@@ -95,7 +96,7 @@ const ProductDetail = () => {
   if (!product) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <p className="text-muted-foreground">상품을 찾을 수 없습니다</p>
+        <EmptyState emoji="" title="상품을 찾을 수 없습니다" variant="inline" />
       </div>
     );
   }

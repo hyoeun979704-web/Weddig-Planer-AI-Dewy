@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Coins, Clock, ChevronRight, Loader2, Check, Flame } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePoints, labelForReason } from "@/hooks/usePoints";
 import { useAttendance } from "@/hooks/useAttendance";
@@ -156,7 +157,12 @@ const Points = () => {
               <Loader2 className="w-6 h-6 text-primary animate-spin" />
             </div>
           ) : transactions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">아직 적립 내역이 없어요. 게임으로 시작해보세요!</p>
+            <EmptyState
+              emoji=""
+              title="아직 적립 내역이 없어요"
+              description="게임으로 시작해보세요"
+              variant="inline"
+            />
           ) : (
             <div className="space-y-3">
               {transactions.map((tx) => (

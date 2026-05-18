@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sparkles, Check } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -137,7 +138,7 @@ const CoupleVoteDetail = () => {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto">
         <PageHeader title="의견 조율" />
-        <p className="text-center text-muted-foreground py-20">투표를 찾을 수 없어요</p>
+        <EmptyState emoji="" title="투표를 찾을 수 없어요" variant="inline" />
       </div>
     );
   }

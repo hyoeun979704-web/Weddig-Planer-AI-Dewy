@@ -14,6 +14,7 @@ import HomeHeader from "@/components/home/HomeHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
+import EmptyState from "@/components/EmptyState";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import type { WeddingStyle } from "@/lib/weddingStyle";
 import arrowLeftIcon from "@/assets/icons/arrow-left.svg";
@@ -411,9 +412,7 @@ const Community = () => {
               ))}
             </div>
           ) : trendingPosts.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">
-              아직 인기 게시글이 없어요.
-            </p>
+            <EmptyState emoji="" title="아직 인기 게시글이 없어요" variant="inline" />
           ) : (
             <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
               {trendingPosts.map((post) => (

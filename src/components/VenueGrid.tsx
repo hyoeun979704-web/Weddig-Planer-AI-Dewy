@@ -4,7 +4,7 @@ import VendorMediaCard from "@/components/home/VendorMediaCard";
 import { useVenues, Venue } from "@/hooks/useVenues";
 import { useToast } from "@/hooks/use-toast";
 import { useFilterStore } from "@/stores/useFilterStore";
-import { Button } from "@/components/ui/button";
+import EmptyState from "@/components/EmptyState";
 import { venueToCardData } from "@/lib/categoryCardAdapter";
 
 interface VenueGridProps {
@@ -91,19 +91,12 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
 
   if (allVenues.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 px-4 animate-fade-in">
-        <span className="text-4xl mb-4">{hasActiveFilters() ? "" : ""}</span>
-        <p className="text-muted-foreground text-center mb-4">
-          {hasActiveFilters()
-            ? "검색 조건에 맞는 웨딩홀이 없습니다."
-            : "등록된 웨딩홀이 없습니다."}
-        </p>
-        {hasActiveFilters() && (
-          <Button variant="outline" onClick={resetFilters}>
-            필터 초기화
-          </Button>
-        )}
-      </div>
+      <EmptyState
+        emoji=""
+        title={hasActiveFilters() ? "검색 조건에 맞는 웨딩홀이 없습니다" : "등록된 웨딩홀이 없습니다"}
+        variant="inline"
+        action={hasActiveFilters() ? { label: "필터 초기화", onClick: resetFilters } : undefined}
+      />
     );
   }
 

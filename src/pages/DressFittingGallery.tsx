@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
-import { Button } from "@/components/ui/button";
+import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { sceneByCode } from "@/data/fittingScenes";
@@ -75,14 +75,12 @@ const DressFittingGallery = () => {
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         ) : items.length === 0 ? (
-          <div className="py-16 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">
-              아직 생성한 드레스가 없어요.
-            </p>
-            <Button onClick={() => navigate("/ai-studio/dress-tour")}>
-              <Plus className="w-4 h-4 mr-1" />첫 드레스 만들기
-            </Button>
-          </div>
+          <EmptyState
+            emoji=""
+            title="아직 생성한 드레스가 없어요"
+            variant="inline"
+            action={{ label: "첫 드레스 만들기", onClick: () => navigate("/ai-studio/dress-tour") }}
+          />
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {items.map((it) => {

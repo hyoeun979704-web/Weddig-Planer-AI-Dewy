@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import { loadPaymentWidget, PaymentWidgetInstance } from "@tosspayments/payment-widget-sdk";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
@@ -87,10 +88,12 @@ const Checkout = () => {
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4">
-        <p className="text-muted-foreground mb-4">장바구니가 비어있습니다</p>
-        <button onClick={() => navigate("/store")} className="text-primary font-medium">
-          스토어로 이동
-        </button>
+        <EmptyState
+          emoji=""
+          title="장바구니가 비어있습니다"
+          variant="inline"
+          action={{ label: "스토어로 이동", onClick: () => navigate("/store") }}
+        />
       </div>
     );
   }

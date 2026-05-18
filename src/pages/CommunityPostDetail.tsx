@@ -35,6 +35,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import PostImageGallery from "@/components/community/PostImageGallery";
 import CommentItem from "@/components/community/CommentItem";
+import EmptyState from "@/components/EmptyState";
 import { useCommentLikes } from "@/hooks/useCommentLikes";
 import { useFavorites } from "@/hooks/useFavorites";
 
@@ -371,8 +372,12 @@ const CommunityPostDetail = () => {
   if (!post) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center">
-        <p className="text-muted-foreground mb-4">게시글을 찾을 수 없습니다.</p>
-        <Button onClick={() => navigate("/community")}>커뮤니티로 돌아가기</Button>
+        <EmptyState
+          emoji=""
+          title="게시글을 찾을 수 없습니다"
+          variant="inline"
+          action={{ label: "커뮤니티로 돌아가기", onClick: () => navigate("/community") }}
+        />
       </div>
     );
   }
@@ -507,10 +512,12 @@ const CommunityPostDetail = () => {
         </h2>
 
         {comments.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-sm text-muted-foreground">아직 댓글이 없습니다.</p>
-            <p className="text-xs text-muted-foreground mt-1">첫 번째 댓글을 남겨보세요!</p>
-          </div>
+          <EmptyState
+            emoji=""
+            title="아직 댓글이 없습니다"
+            description="첫 번째 댓글을 남겨보세요"
+            variant="inline"
+          />
         ) : (
           <div className="space-y-4">
             {/* Filter parent comments (no parent_comment_id) */}

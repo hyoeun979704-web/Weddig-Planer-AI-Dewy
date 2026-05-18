@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, X, Clock, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
+import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SearchResult {
@@ -220,10 +221,12 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">검색 결과가 없습니다</p>
-                <p className="text-sm text-muted-foreground mt-1">다른 검색어를 입력해보세요</p>
-              </div>
+              <EmptyState
+                emoji=""
+                title="검색 결과가 없습니다"
+                description="다른 검색어를 입력해보세요"
+                variant="inline"
+              />
             )}
           </div>
         ) : (

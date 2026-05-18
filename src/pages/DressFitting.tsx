@@ -10,6 +10,7 @@ import {
   Info,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import EmptyState from "@/components/EmptyState";
 import PhotoUploadConsent from "@/components/PhotoUploadConsent";
 import {
   Dialog,
@@ -577,9 +578,7 @@ const DressStep = ({
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     ) : dresses.length === 0 ? (
-      <div className="py-12 text-center text-sm text-muted-foreground">
-        등록된 드레스가 없어요.
-      </div>
+      <EmptyState emoji="" title="등록된 드레스가 없어요" variant="inline" />
     ) : (
       <div className="grid grid-cols-2 gap-3">
         {dresses.map((d) => (

@@ -29,14 +29,13 @@ const Cart = () => {
 
       <main className="pb-36 px-4 py-4">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <ShoppingCart className="w-16 h-16 text-muted-foreground/30 mb-4" />
-            <p className="font-semibold text-foreground mb-1">장바구니가 비어있어요</p>
-            <p className="text-sm text-muted-foreground mb-4">마음에 드는 상품을 담아보세요</p>
-            <Button variant="outline" onClick={() => navigate("/store")}>
-              쇼핑하러 가기
-            </Button>
-          </div>
+          <EmptyState
+            emoji=""
+            title="장바구니가 비어있어요"
+            description="마음에 드는 상품을 담아보세요"
+            variant="inline"
+            action={{ label: "쇼핑하러 가기", onClick: () => navigate("/store") }}
+          />
         ) : (
           <div className="space-y-3">
             {items.map((item) => {

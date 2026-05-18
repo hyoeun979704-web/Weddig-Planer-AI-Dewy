@@ -1,6 +1,7 @@
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import { useVendors, categoryRouteMap } from "@/hooks/useVendors";
 import { Skeleton } from "@/components/ui/skeleton";
 import VendorMediaCard, {
@@ -59,9 +60,7 @@ const VendorList = () => {
               })}
             </div>
           ) : (
-            <div className="flex items-center justify-center py-16">
-              <p className="text-sm text-muted-foreground">등록된 업체가 없습니다</p>
-            </div>
+            <EmptyState emoji="" title="등록된 업체가 없습니다" variant="inline" />
           )}
         </div>
       </main>

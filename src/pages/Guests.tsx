@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Plus, Pencil, Trash2, Users, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -253,12 +254,11 @@ const Guests = () => {
           {isLoading ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
           ) : visible.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">
-                {items.length === 0 ? "아직 등록된 하객이 없어요" : "필터 조건에 맞는 하객이 없어요"}
-              </p>
-            </div>
+            <EmptyState
+              emoji=""
+              title={items.length === 0 ? "아직 등록된 하객이 없어요" : "필터 조건에 맞는 하객이 없어요"}
+              variant="inline"
+            />
           ) : (
             <ul className="space-y-2">
               {visible.map((g) => (

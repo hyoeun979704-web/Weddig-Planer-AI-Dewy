@@ -1,7 +1,7 @@
 import { useEffect, useRef, forwardRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
+import EmptyState from "@/components/EmptyState";
 import { useCategoryData, CategoryItem } from "@/hooks/useCategoryData";
 import { useCategoryFilterStore, CategoryType } from "@/stores/useCategoryFilterStore";
 import VendorMediaCard from "@/components/home/VendorMediaCard";
@@ -80,18 +80,12 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
 
   if (allItems.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-        <p className="text-muted-foreground mb-4">
-          {hasActiveFilters()
-            ? "필터 조건에 맞는 결과가 없습니다"
-            : "등록된 업체가 없습니다"}
-        </p>
-        {hasActiveFilters() && (
-          <Button variant="outline" size="sm" onClick={resetFilters}>
-            필터 초기화
-          </Button>
-        )}
-      </div>
+      <EmptyState
+        emoji=""
+        title={hasActiveFilters() ? "필터 조건에 맞는 결과가 없습니다" : "등록된 업체가 없습니다"}
+        variant="inline"
+        action={hasActiveFilters() ? { label: "필터 초기화", onClick: resetFilters } : undefined}
+      />
     );
   }
 
