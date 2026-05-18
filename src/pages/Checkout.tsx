@@ -87,10 +87,7 @@ const Checkout = () => {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4">
         <p className="text-muted-foreground mb-4">장바구니가 비어있습니다</p>
-        <button
-          onClick={() => navigate("/store")}
-          className="text-primary font-medium hover:underline active:opacity-70 transition-opacity"
-        >
+        <button onClick={() => navigate("/store")} className="text-primary font-medium">
           스토어로 이동
         </button>
       </div>
@@ -143,7 +140,7 @@ const Checkout = () => {
         <button
           onClick={handlePayment}
           disabled={!isReady || isSubmitting}
-          className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+          className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
           {formatPrice(totalAmount)} 결제하기

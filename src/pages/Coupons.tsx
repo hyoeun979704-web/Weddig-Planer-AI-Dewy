@@ -39,10 +39,9 @@ const Coupons = () => {
             <input
               type="text"
               placeholder="쿠폰 코드 입력"
-              aria-label="쿠폰 코드"
-              className="flex-1 px-4 py-3 bg-muted rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="flex-1 px-4 py-3 bg-muted rounded-xl text-sm"
             />
-            <button className="px-4 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 active:scale-[0.97] transition-all">
+            <button className="px-4 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium">
               등록
             </button>
           </div>
@@ -72,7 +71,7 @@ const Coupons = () => {
                   </span>
                 </div>
               </div>
-              <button className="w-full py-3 bg-muted text-sm font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary active:scale-[0.99] transition-all">
+              <button className="w-full py-3 bg-muted text-sm font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
                 쿠폰 사용하기
               </button>
             </div>

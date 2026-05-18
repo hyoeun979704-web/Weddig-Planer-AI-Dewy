@@ -115,15 +115,11 @@ const ProductDetail = () => {
           </button>
           <div className="flex items-center gap-1">
             <FavoriteButton itemId={product.id} itemType="product" />
-            <button
-              onClick={() => navigate("/cart")}
-              aria-label={itemCount > 0 ? `장바구니 (${itemCount}개)` : "장바구니"}
-              className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
-            >
+            <button onClick={() => navigate("/cart")} className="relative p-2">
               <ShoppingCart className="w-5 h-5 text-foreground" />
               {itemCount > 0 && (
-                <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-background">
-                  {itemCount > 99 ? "99+" : itemCount}
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {itemCount}
                 </span>
               )}
             </button>
@@ -176,18 +172,14 @@ const ProductDetail = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                aria-label="수량 줄이기"
-                disabled={quantity <= 1}
-                className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted active:scale-90 transition-all disabled:opacity-40 disabled:active:scale-100"
+                className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted"
               >
                 <Minus className="w-4 h-4" />
               </button>
               <span className="text-lg font-bold text-foreground w-8 text-center">{quantity}</span>
               <button
                 onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                aria-label="수량 늘리기"
-                disabled={quantity >= product.stock}
-                className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted active:scale-90 transition-all disabled:opacity-40 disabled:active:scale-100"
+                className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted"
               >
                 <Plus className="w-4 h-4" />
               </button>
