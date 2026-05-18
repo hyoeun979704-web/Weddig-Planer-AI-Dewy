@@ -55,8 +55,7 @@ export default function MergeGame() {
           <div className="flex items-center">
             <button
               onClick={() => navigate(-1)}
-              aria-label="뒤로 가기"
-              className="w-9 h-9 -ml-1 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors -ml-1"
             >
               <ChevronLeft className="w-5 h-5 text-foreground" />
             </button>

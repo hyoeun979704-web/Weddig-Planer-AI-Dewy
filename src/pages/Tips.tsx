@@ -363,15 +363,9 @@ const Tips = () => {
             </div>
           ) : gridList.length > 0 ? (
             <div className="grid grid-cols-2 gap-2 px-4">
-              {gridList.map((v) => {
-                const isLong =
-                  v.duration_seconds == null || v.duration_seconds > SHORT_MAX_SECONDS;
-                return (
-                  <div key={v.video_id} className={isLong ? "col-span-2" : ""}>
-                    <TipVideoCard video={v} />
-                  </div>
-                );
-              })}
+              {gridList.map((v) => (
+                <TipVideoCard key={v.video_id} video={v} />
+              ))}
             </div>
           ) : uiSearchMode ? (
             <p className="text-sm text-muted-foreground text-center py-12">
@@ -400,15 +394,9 @@ const Tips = () => {
               </div>
               {visibleHotPool.length > 0 && (
                 <div className="grid grid-cols-2 gap-2">
-                  {visibleHotPool.slice(0, 4).map((v) => {
-                    const isLong =
-                      v.duration_seconds == null || v.duration_seconds > SHORT_MAX_SECONDS;
-                    return (
-                      <div key={v.video_id} className={isLong ? "col-span-2" : ""}>
-                        <TipVideoCard video={v} />
-                      </div>
-                    );
-                  })}
+                  {visibleHotPool.slice(0, 4).map((v) => (
+                    <TipVideoCard key={v.video_id} video={v} />
+                  ))}
                 </div>
               )}
             </div>

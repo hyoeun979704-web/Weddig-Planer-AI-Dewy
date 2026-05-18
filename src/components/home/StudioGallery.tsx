@@ -11,7 +11,7 @@ const StudioGallery = () => {
   const { data: vendors = [], isLoading } = useVendors("스드메");
 
   return (
-    <section className="py-5 bg-[hsl(var(--pink-100))]">
+    <section className="py-5 bg-muted/30">
       <div className="flex items-center justify-between px-4 mb-3">
         <div>
           <h2 className="text-base font-bold text-foreground">인기 스드메</h2>

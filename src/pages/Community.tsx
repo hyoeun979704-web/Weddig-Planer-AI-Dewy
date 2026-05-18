@@ -216,7 +216,7 @@ const Community = () => {
     <button
       key={post.id}
       onClick={() => handlePostClick(post.id)}
-      className="w-full text-left bg-card rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col active:scale-[0.99] hover:shadow-md transition-all"
+      className="w-full text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
     >
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
@@ -278,8 +278,8 @@ const Community = () => {
           <div className="flex items-center gap-1">
             <button
               onClick={() => navigate(-1)}
-              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors -ml-1"
-              aria-label="뒤로 가기"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="뒤로가기"
             >
               <img src={arrowLeftIcon} alt="" className="w-[15px] h-[15px]" />
             </button>
@@ -420,7 +420,7 @@ const Community = () => {
                 <button
                   key={post.id}
                   onClick={() => handlePostClick(post.id)}
-                  className="flex-shrink-0 w-[260px] text-left bg-card rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col active:scale-[0.99] hover:shadow-md transition-all"
+                  className="flex-shrink-0 w-[260px] text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
                 >
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
@@ -497,7 +497,7 @@ const Community = () => {
               <Skeleton key={i} className="h-[120px] rounded-2xl" />
             ))
           ) : sortedPosts.length === 0 ? (
-            <div className="py-12 px-6 text-center bg-card rounded-2xl shadow-[var(--shadow-card)]">
+            <div className="py-12 px-6 text-center bg-white rounded-2xl shadow-[var(--shadow-card)]">
               <p className="text-foreground text-sm font-semibold mb-1">
                 {selectedCategory !== "전체"
                   ? `'${selectedCategory}' 글이 아직 없어요.`

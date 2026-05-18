@@ -114,11 +114,8 @@ interface BottomNavProps {
 
 const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-    >
-      <div className="max-w-[430px] mx-auto flex justify-around items-stretch h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border">
+      <div className="max-w-[430px] mx-auto flex justify-around items-center h-16 px-2 safe-area-inset-bottom">
         {navItems.map(({ Icon, ...item }) => {
           const isActive = activeTab === item.href;
           return (
@@ -127,8 +124,8 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
               data-tutorial={item.tutorialId}
               onClick={() => onTabChange?.(item.href)}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-all duration-200 active:scale-95",
-                isActive ? "text-primary" : "text-[hsl(var(--inactive))]"
+                "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors duration-200",
+                isActive ? "text-primary font-bold" : "text-[hsl(var(--inactive))]"
               )}
             >
               <Icon
@@ -137,14 +134,7 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
                   isActive && "scale-110"
                 )}
               />
-              <span
-                className={cn(
-                  "text-[10px] transition-all duration-200",
-                  isActive ? "font-bold" : "font-medium"
-                )}
-              >
-                {item.label}
-              </span>
+              <span className="text-[10px] font-medium">{item.label}</span>
             </button>
           );
         })}

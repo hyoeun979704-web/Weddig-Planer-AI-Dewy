@@ -144,7 +144,7 @@ const Events = () => {
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
-            <button onClick={() => navigate(-1)} aria-label="뒤로 가기" className="w-9 h-9 -ml-1 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors">
+            <button onClick={() => navigate(-1)} className="p-1" aria-label="뒤로가기">
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <h1 className="text-lg font-bold text-foreground">이벤트</h1>

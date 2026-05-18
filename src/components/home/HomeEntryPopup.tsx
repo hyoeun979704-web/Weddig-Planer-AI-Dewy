@@ -98,13 +98,13 @@ const HomeEntryPopup = () => {
         <div className="px-5 py-3 flex items-center justify-between border-t border-border/60">
           <button
             onClick={handleDismissForToday}
-            className="text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="text-[12px] font-medium text-muted-foreground hover:text-foreground"
           >
             오늘 하루 보지 않기
           </button>
           <button
             onClick={() => setOpen(false)}
-            className="text-[12px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            className="text-[12px] font-semibold text-muted-foreground"
           >
             닫기
           </button>

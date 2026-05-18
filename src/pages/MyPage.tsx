@@ -1,7 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Star, Users, ArrowRight, Crown } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import DewyLogo from "@/components/home/DewyLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -51,7 +50,7 @@ const GuestMyPage = () => {
 
             <div className="relative">
               <div className="flex items-center gap-2 mb-2">
-                <DewyLogo size={28} />
+                <span className="text-2xl">💍</span>
                 <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">무료</span>
               </div>
               <h2 className="text-lg font-bold text-foreground mb-1">웨딩 준비, 여기서 시작하세요</h2>
@@ -159,7 +158,7 @@ const GuestMyPage = () => {
         <div className="px-4 py-6">
           <div className="text-center text-[11px] text-muted-foreground">
             <p>앱 버전 1.0.0</p>
-            <p className="mt-0.5">© 2025 Dewy</p>
+            <p className="mt-0.5">© 2025 웨딩 플래너</p>
           </div>
         </div>
       </main>
@@ -198,11 +197,7 @@ const MyPage = () => {
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
-          <button
-            onClick={() => navigate("/settings")}
-            aria-label="설정"
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors -mr-2"
-          >
+          <button onClick={() => navigate("/settings")} className="p-2 active:scale-90 transition-transform">
             <Settings className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
@@ -253,7 +248,7 @@ const MyPage = () => {
         <div className="px-4 py-6">
           <div className="text-center text-[11px] text-muted-foreground">
             <p>앱 버전 1.0.0</p>
-            <p className="mt-0.5">© 2025 Dewy</p>
+            <p className="mt-0.5">© 2025 웨딩 플래너</p>
           </div>
         </div>
       </main>

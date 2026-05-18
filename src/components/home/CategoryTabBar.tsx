@@ -38,7 +38,7 @@ interface CategoryTabBarProps {
 
 const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
   return (
-    <div data-tutorial="category-tab" className="sticky top-14 z-40 bg-card border-b border-border w-full">
+    <div data-tutorial="category-tab" className="sticky top-14 z-40 bg-card border-b border-[#d9d9d9] w-full">
       <div className="flex items-center justify-center h-[56px] px-[9px]">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -48,25 +48,22 @@ const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "w-[75px] h-full flex items-center justify-center relative transition-colors active:opacity-70",
-                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                "w-[75px] h-full flex items-center justify-center relative transition-colors",
+                isActive ? "text-primary" : "text-[#a4a1a2] hover:text-foreground"
               )}
             >
               <span
                 className={cn(
-                  "text-[12px] whitespace-nowrap transition-all",
+                  "text-[12px] whitespace-nowrap",
                   isActive ? "font-bold" : "font-semibold"
                 )}
               >
                 {tab.label}
               </span>
 
-              <div
-                className={cn(
-                  "absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full transition-opacity duration-200",
-                  isActive ? "opacity-100" : "opacity-0"
-                )}
-              />
+              {isActive && (
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full" />
+              )}
             </button>
           );
         })}
