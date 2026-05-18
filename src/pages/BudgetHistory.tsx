@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Trash2, Search, Download, ChevronDown, ChevronRight } from "lucide-react";
+import { Trash2, Search, Download, ChevronDown, ChevronRight } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { useBudget } from "@/hooks/useBudget";
 import { categories, categoryKeys, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
@@ -183,22 +184,19 @@ const BudgetHistory = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <div className="sticky top-0 z-40 bg-card border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <button onClick={() => navigate(-1)} className="active:scale-90 transition-transform">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-base font-bold text-foreground">지출 내역</h1>
+      <PageHeader
+        title="지출 내역"
+        rightExtra={
           <button
             onClick={handleExportCsv}
-            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted active:scale-95 transition-all"
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
             aria-label="CSV로 내려받기"
             title="CSV 내보내기"
           >
-            <Download className="w-4 h-4 text-foreground" />
+            <Download className="w-5 h-5 text-muted-foreground" />
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Summary */}
       <div className="px-4 pt-3">

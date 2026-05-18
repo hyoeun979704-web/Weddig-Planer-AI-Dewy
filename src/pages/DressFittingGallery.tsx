@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Loader2, Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -66,16 +67,7 @@ const DressFittingGallery = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-base font-bold text-foreground flex-1">
-            내 드레스 갤러리
-          </h1>
-        </div>
-      </header>
+      <PageHeader title="내 드레스 갤러리" />
 
       <main className="px-4 py-5">
         {loading ? (

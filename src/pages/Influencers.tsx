@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Star, Users, Loader2, SlidersHorizontal, Heart } from "lucide-react";
+import { Star, Users, Loader2, SlidersHorizontal } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { useInfluencers, useCategoryLabels, Influencer } from "@/hooks/useInfluencers";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import InfoFilterSheet, { InfoFilters, initialInfoFilters } from "@/components/info/InfoFilterSheet";
@@ -58,22 +59,11 @@ const Influencers = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-1">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="text-lg font-bold text-foreground">웨딩 정보</h1>
-          </div>
-          <button onClick={() => navigate("/favorites")} className="p-2">
-            <Heart className="w-5 h-5 text-foreground" />
-          </button>
-        </div>
+      <PageHeader title="웨딩 정보" fav />
 
-        {/* Category Tabs + Filter */}
-        <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
+      {/* Category Tabs + Filter */}
+      <div className="sticky top-14 z-40 bg-card/80 backdrop-blur-md border-b border-border">
+        <div className="flex items-center gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
           {categories.map((cat) => (
             <button
               key={cat.id}
@@ -100,7 +90,7 @@ const Influencers = () => {
             {hasActiveFilters && <span className="ml-0.5 text-[10px]">●</span>}
           </button>
         </div>
-      </header>
+      </div>
 
       <main className="pb-20 px-4 py-4">
         {/* Sort Toggle */}

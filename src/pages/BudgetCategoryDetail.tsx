@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Trash2, Lightbulb } from "lucide-react";
+import { Trash2, Lightbulb } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { useBudget } from "@/hooks/useBudget";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { categories, savingTips, regions, getRegionalAvgWithMeal, resolveRegionKey, type BudgetCategory } from "@/data/budgetData";
@@ -94,13 +95,7 @@ const BudgetCategoryDetail = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <div className="sticky top-0 z-40 bg-card border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <button onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5 text-foreground" /></button>
-          <h1 className="text-base font-bold text-foreground">{catInfo.emoji} {catInfo.label}</h1>
-          <div className="w-5" />
-        </div>
-      </div>
+      <PageHeader title={`${catInfo.emoji} ${catInfo.label}`} />
 
       <div className="px-4 py-4 pb-24 space-y-4">
         {/* Summary */}

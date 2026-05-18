@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Share2 } from "lucide-react";
+import { Share2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -141,19 +142,18 @@ const Events = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-2">
-            <button onClick={() => navigate(-1)} className="p-1" aria-label="뒤로가기">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="text-lg font-bold text-foreground">이벤트</h1>
-          </div>
-          <button onClick={handleShare} className="p-2" aria-label="공유">
-            <Share2 className="w-5 h-5 text-foreground" />
+      <PageHeader
+        title="이벤트"
+        rightExtra={
+          <button
+            onClick={handleShare}
+            aria-label="공유"
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
+          >
+            <Share2 className="w-5 h-5 text-muted-foreground" />
           </button>
-        </div>
-      </header>
+        }
+      />
 
       <main className="pb-24">
         {/* Hero */}

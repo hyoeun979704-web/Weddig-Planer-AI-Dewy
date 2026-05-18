@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 
 // vendors 테이블이 schema cleanup에서 삭제되어, B2B 업체 등록·편집은 다음 라운드에서
@@ -14,17 +14,9 @@ const BusinessVendorEdit = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto px-4">
-      <div className="flex items-center h-14">
-        <button
-          onClick={() => navigate(-1)}
-          className="w-10 h-10 flex items-center justify-center -ml-2"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-lg font-bold flex-1 text-center -mr-8">업체 정보</h1>
-      </div>
-      <div className="text-center py-20">
+    <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+      <PageHeader title="업체 정보" />
+      <div className="px-4 text-center py-20">
         <p className="text-muted-foreground mb-4">
           B2B 업체 정보 편집 기능은 현재 재설계 중입니다.
         </p>

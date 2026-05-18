@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, X, ImagePlus, Loader2 } from "lucide-react";
+import { X, ImagePlus, Loader2 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -158,13 +159,9 @@ const CommunityWrite = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground">글쓰기</h1>
+      <PageHeader
+        title="글쓰기"
+        rightExtra={
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || !selectedCategory || !title.trim() || !content.trim()}
@@ -177,8 +174,8 @@ const CommunityWrite = () => {
               "등록"
             )}
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       {/* Content */}
       <main className="p-4 space-y-6">

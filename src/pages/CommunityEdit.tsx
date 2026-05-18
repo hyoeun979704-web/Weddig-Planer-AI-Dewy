@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, X, ImagePlus, Loader2 } from "lucide-react";
+import { X, ImagePlus, Loader2 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -176,15 +177,7 @@ const CommunityEdit = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-        <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-          <div className="flex items-center justify-between px-4 h-14">
-            <button onClick={() => navigate(-1)} className="p-2 -ml-2">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="text-lg font-bold text-foreground">글 수정</h1>
-            <div className="w-14" />
-          </div>
-        </header>
+        <PageHeader title="글 수정" />
         <div className="p-4 space-y-6">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -207,13 +200,9 @@ const CommunityEdit = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground">글 수정</h1>
+      <PageHeader
+        title="글 수정"
+        rightExtra={
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || !selectedCategory || !title.trim() || !content.trim()}
@@ -226,8 +215,8 @@ const CommunityEdit = () => {
               "수정"
             )}
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       {/* Content */}
       <main className="p-4 space-y-6">

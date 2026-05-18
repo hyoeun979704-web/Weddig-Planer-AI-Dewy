@@ -1,7 +1,8 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Plus, Heart, Loader2, BookOpen, Trash2 } from "lucide-react";
+import { Plus, Heart, Loader2, BookOpen, Trash2 } from "lucide-react";
 import { useState } from "react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { useCoupleDiary, DiaryEntry } from "@/hooks/useCoupleDiary";
 import { useCoupleLink } from "@/hooks/useCoupleLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,19 +52,11 @@ const CoupleDiary = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/schedule")} className="p-1">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <h1 className="text-lg font-bold text-foreground">우리의 일기</h1>
-            </div>
-          </div>
-          {isLinked && (
+      <PageHeader
+        title="우리의 일기"
+        onBack={() => navigate("/schedule")}
+        rightExtra={
+          isLinked ? (
             <button
               onClick={() => navigate("/couple-diary/write")}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium"
@@ -71,9 +64,9 @@ const CoupleDiary = () => {
               <Plus className="w-4 h-4" />
               쓰기
             </button>
-          )}
-        </div>
-      </header>
+          ) : undefined
+        }
+      />
 
       <main className="pb-20 px-4 py-4">
         {!isLinked ? (

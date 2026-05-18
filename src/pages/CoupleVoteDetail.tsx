@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Sparkles, Check } from "lucide-react";
+import { Sparkles, Check } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -135,12 +136,7 @@ const CoupleVoteDetail = () => {
   if (!vote) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-        <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-          <div className="flex items-center gap-3 px-4 h-14">
-            <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
-            <h1 className="text-lg font-bold">의견 조율</h1>
-          </div>
-        </header>
+        <PageHeader title="의견 조율" />
         <p className="text-center text-muted-foreground py-20">투표를 찾을 수 없어요</p>
       </div>
     );
@@ -151,12 +147,7 @@ const CoupleVoteDetail = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
-          <h1 className="text-lg font-bold truncate">{vote.topic}</h1>
-        </div>
-      </header>
+      <PageHeader title={vote.topic} />
 
       <main className="px-4 py-6 pb-24 space-y-4">
         {/* Vote Cards */}

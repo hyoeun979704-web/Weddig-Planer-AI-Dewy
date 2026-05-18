@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Plus, MessageSquare, Check, Clock } from "lucide-react";
+import { Plus, MessageSquare, Check, Clock } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCoupleLink } from "@/hooks/useCoupleLink";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,12 +86,7 @@ const CoupleVote = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-        <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-          <div className="flex items-center gap-3 px-4 h-14">
-            <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
-            <h1 className="text-lg font-bold">의견 조율 보드</h1>
-          </div>
-        </header>
+        <PageHeader title="의견 조율 보드" />
         <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
           <p className="text-muted-foreground text-sm mb-4">로그인 후 이용할 수 있어요</p>
           <button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground px-6 py-2 rounded-lg text-sm font-bold">로그인</button>
@@ -113,12 +109,7 @@ const CoupleVote = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
-          <h1 className="text-lg font-bold">의견 조율 보드</h1>
-        </div>
-      </header>
+      <PageHeader title="의견 조율 보드" />
 
       <main className="pb-24 px-4 py-4">
         {isLoading ? (

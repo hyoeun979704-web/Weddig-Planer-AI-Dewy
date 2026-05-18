@@ -1,6 +1,6 @@
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { useVendors, categoryRouteMap } from "@/hooks/useVendors";
 import { Skeleton } from "@/components/ui/skeleton";
 import VendorMediaCard, {
@@ -26,16 +26,7 @@ const VendorList = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center px-4 h-14">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
-            <ChevronLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground flex-1 text-center -mr-8">
-            {config?.label || decodedCategory || "업체 목록"}
-          </h1>
-        </div>
-      </header>
+      <PageHeader title={config?.label || decodedCategory || "업체 목록"} />
 
       <main className="pb-20">
         <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background px-4 py-6">
