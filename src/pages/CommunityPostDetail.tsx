@@ -389,7 +389,7 @@ const CommunityPostDetail = () => {
             <span className="text-sm font-medium text-foreground">게시글</span>
           </div>
           <div className="flex items-center gap-1">
-            <button 
+            <button
               onClick={() => {
                 if (!user) {
                   navigate("/auth");
@@ -398,24 +398,33 @@ const CommunityPostDetail = () => {
                 if (id) toggleFavorite(id, "community_post");
               }}
               disabled={isBookmarkToggling}
-              className="p-2"
+              aria-label={isBookmarked ? "북마크 해제" : "북마크"}
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors disabled:opacity-50"
             >
               <Bookmark className={`w-5 h-5 transition-colors ${isBookmarked ? "fill-primary text-primary" : "text-muted-foreground"}`} />
             </button>
-            <button onClick={handleShare} className="p-2">
+            <button
+              onClick={handleShare}
+              aria-label="공유하기"
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
+            >
               <Share2 className="w-5 h-5 text-muted-foreground" />
             </button>
             {user && post.user_id === user.id && (
               <>
-                <button 
+                <button
                   onClick={() => navigate(`/community/${id}/edit`)}
-                  className="p-2"
+                  aria-label="수정하기"
+                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
                 >
                   <Pencil className="w-5 h-5 text-muted-foreground" />
                 </button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <button className="p-2">
+                    <button
+                      aria-label="삭제하기"
+                      className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-destructive/10 active:bg-destructive/20 transition-colors"
+                    >
                       <Trash2 className="w-5 h-5 text-muted-foreground" />
                     </button>
                   </AlertDialogTrigger>
@@ -480,10 +489,11 @@ const CommunityPostDetail = () => {
 
         {/* Stats */}
         <div className="flex items-center gap-4 py-4 border-t border-b border-border">
-          <button 
+          <button
             onClick={() => likeMutation.mutate()}
-            className={`flex items-center gap-1.5 text-sm transition-colors ${
-              isLiked ? "text-red-500" : "text-muted-foreground hover:text-foreground"
+            aria-label={isLiked ? "좋아요 취소" : "좋아요"}
+            className={`flex items-center gap-1.5 text-sm transition-all active:scale-95 ${
+              isLiked ? "text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />

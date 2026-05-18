@@ -89,7 +89,7 @@ const Orders = () => {
             <p className="text-sm text-muted-foreground mb-4">듀이 스토어에서 쇼핑해보세요</p>
             <button
               onClick={() => navigate("/store")}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all"
             >
               스토어 가기
             </button>
@@ -147,7 +147,7 @@ const Orders = () => {
                   <div className="flex gap-2 mt-4">
                     <button
                       onClick={() => navigate("/contact")}
-                      className="flex-1 py-2 bg-primary/10 text-primary rounded-xl text-sm font-medium"
+                      className="flex-1 py-2 bg-primary/10 text-primary rounded-xl text-sm font-medium hover:bg-primary/15 active:scale-[0.98] transition-all"
                     >
                       문의하기
                     </button>
