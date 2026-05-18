@@ -99,13 +99,13 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
       onClick={onClick}
       aria-label={data.name}
       className={cn(
-        "flex flex-col bg-muted rounded-[10px] overflow-hidden text-left active:scale-[0.97] transition-transform hover:shadow-md",
+        "flex flex-col bg-card rounded-[10px] overflow-hidden text-left active:scale-[0.97] transition-transform hover:shadow-md",
         fluid ? "w-full" : "flex-shrink-0"
       )}
       style={fluid ? { height: CARD_H } : { width: CARD_W, height: CARD_H }}
     >
       <div
-        className="relative w-full"
+        className="relative w-full bg-muted"
         style={{ height: IMG_H }}
       >
         {data.thumbnail_url ? (

@@ -13,25 +13,25 @@
 
 @layer base {
   :root {
-    /* 브랜드 규칙: 모든 배경은 #FFF9FA 또는 #FFF1F4. 기본 = #FFF9FA */
+    /* 페이지 배경 = #FFF9FA, 강조 섹션 = #FFF1F4 (디자인 시안 기준).
+       카드는 흰색을 유지해서 페이지 위에 떠 보이도록 함. */
     --background: 340 100% 99%;   /* #FFF9FA */
     --foreground: 0 0% 15%;
 
-    /* 카드는 페이지보다 살짝 진한 #FFF1F4 로 띄움 */
-    --card: 347 100% 97%;          /* #FFF1F4 */
+    --card: 0 0% 100%;             /* #FFFFFF — 페이지 위에 흰 카드로 떠 보이도록 */
     --card-foreground: 0 0% 15%;
 
-    --popover: 340 100% 99%;       /* #FFF9FA */
+    --popover: 0 0% 100%;          /* #FFFFFF */
     --popover-foreground: 0 0% 15%;
 
     /* Figma brand #F6909B */
     --primary: 353 85% 76%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 347 100% 97%;     /* #FFF1F4 */
+    --secondary: 347 100% 97%;     /* #FFF1F4 — 강조 섹션 배경 */
     --secondary-foreground: 0 0% 15%;
 
-    --muted: 347 60% 95%;          /* 핑크 톤 muted */
+    --muted: 340 10% 94%;          /* 옅은 회색-핑크 (비활성 칩·placeholder) */
     --muted-foreground: 0 0% 45%;
 
     /* Soft pink accent */
@@ -41,13 +41,13 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 347 50% 92%;
-    --input: 347 50% 92%;
+    --border: 340 15% 92%;
+    --input: 340 15% 92%;
     --ring: 353 85% 76%;
 
-    /* Figma section backgrounds — bg-background/bg-card 와 동기화된 alias */
-    --pink-50: 340 100% 99%;   /* #FFF9FA — bg-background 동일 */
-    --pink-100: 347 100% 97%;  /* #FFF1F4 — bg-card 동일 */
+    /* Figma section backgrounds */
+    --pink-50: 340 100% 99%;   /* #FFF9FA — 페이지 배경과 동일 */
+    --pink-100: 347 100% 97%;  /* #FFF1F4 — 강조 섹션 배경 */
     --pink-200: 351 100% 97%;  /* #FFF2F4 */
     --inactive: 340 3% 76%;    /* #C4C0C1 */
 
