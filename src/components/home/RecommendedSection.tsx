@@ -37,7 +37,7 @@ const RecommendedSection = () => {
   const displayVendors = (vendors ?? []).filter(v => !excluded.has(v.category_slug));
 
   return (
-    <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-50))]">
+    <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-100))]">
       <div className="mb-[10px]">
         <div className="flex items-center gap-1.5">
           <h2 className="text-[16px] font-bold text-black">{header.title}</h2>

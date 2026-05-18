@@ -60,7 +60,7 @@ const InvitationTemplateSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-100))]">
+    <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-50))]">
       <div className="mb-[10px] flex items-center justify-between">
         <h2 className="text-[16px] font-bold text-black">5분 완성! 청첩장 만들기</h2>
         <button

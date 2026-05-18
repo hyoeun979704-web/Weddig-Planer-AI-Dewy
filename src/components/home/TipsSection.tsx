@@ -18,7 +18,7 @@ export default function TipsSection({ activeTab: _activeTab }: TipsSectionProps)
   });
 
   return (
-    <section className="bg-[hsl(var(--pink-50))] px-5 py-6">
+    <section className="bg-[hsl(var(--pink-100))] px-5 py-6">
       <div className="mx-auto max-w-[1200px]">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[24px] font-bold leading-none text-black">

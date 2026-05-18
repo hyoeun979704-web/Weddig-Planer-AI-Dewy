@@ -134,7 +134,7 @@ const ReviewSection = ({ activeTab = "ai-planner" }: ReviewSectionProps) => {
   const data = reviewDataMap[activeTab];
 
   return (
-    <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-50))]">
+    <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-100))]">
       <h2 className="text-[16px] font-bold text-black mb-[10px]">{data.title}</h2>
       <div className="flex gap-[8px]">
         {data.reviews.map((review) => (
