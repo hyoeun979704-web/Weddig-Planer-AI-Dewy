@@ -66,7 +66,7 @@ const CoupleDiary = () => {
           {isLinked && (
             <button
               onClick={() => navigate("/couple-diary/write")}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full text-primary text-sm font-medium hover:bg-primary/15 active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" />
               쓰기
@@ -87,7 +87,7 @@ const CoupleDiary = () => {
             </p>
             <button
               onClick={() => navigate("/schedule")}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all"
             >
               스케줄로 이동
             </button>
@@ -103,7 +103,7 @@ const CoupleDiary = () => {
             </p>
             <button
               onClick={() => navigate("/couple-diary/write")}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all"
             >
               첫 일기 쓰기
             </button>

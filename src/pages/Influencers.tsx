@@ -145,7 +145,7 @@ const Influencers = () => {
 };
 
 const FeaturedCard = ({ influencer, onClick }: { influencer: Influencer; onClick: () => void }) => (
-  <button onClick={onClick} className="flex-shrink-0 w-36 bg-card rounded-2xl border border-border overflow-hidden hover:shadow-md transition-shadow text-left">
+  <button onClick={onClick} className="flex-shrink-0 w-36 bg-card rounded-2xl border border-border overflow-hidden hover:shadow-md active:scale-[0.98] transition-all text-left">
     <div className="h-20 bg-gradient-to-br from-primary/20 to-accent flex items-center justify-center">
       {influencer.profile_image_url ? (
         <img src={influencer.profile_image_url} alt={influencer.name} className="w-14 h-14 rounded-full object-cover border-2 border-white" />
@@ -164,7 +164,7 @@ const FeaturedCard = ({ influencer, onClick }: { influencer: Influencer; onClick
 );
 
 const InfluencerCard = ({ influencer, onClick }: { influencer: Influencer; onClick: () => void }) => (
-  <button onClick={onClick} className="w-full flex items-center gap-3 p-4 bg-card rounded-2xl border border-border hover:shadow-md transition-shadow text-left">
+  <button onClick={onClick} className="w-full flex items-center gap-3 p-4 bg-card rounded-2xl border border-border hover:shadow-md active:scale-[0.99] transition-all text-left">
     {influencer.profile_image_url ? (
       <img src={influencer.profile_image_url} alt={influencer.name} className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
     ) : (

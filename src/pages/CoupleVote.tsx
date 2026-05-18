@@ -93,7 +93,12 @@ const CoupleVote = () => {
         </header>
         <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
           <p className="text-muted-foreground text-sm mb-4">로그인 후 이용할 수 있어요</p>
-          <button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground px-6 py-2 rounded-lg text-sm font-bold">로그인</button>
+          <button
+            onClick={() => navigate("/auth")}
+            className="bg-primary text-primary-foreground px-6 py-2 rounded-lg text-sm font-bold hover:bg-primary/90 active:scale-95 transition-all"
+          >
+            로그인
+          </button>
         </div>
         <BottomNav activeTab={location.pathname} onTabChange={h => navigate(h)} />
       </div>
@@ -135,7 +140,7 @@ const CoupleVote = () => {
               <button
                 key={v.id}
                 onClick={() => navigate(`/couple-vote/${v.id}`)}
-                className="w-full text-left p-4 bg-card border border-border rounded-2xl hover:border-primary/30 transition-colors"
+                className="w-full text-left p-4 bg-card border border-border rounded-2xl hover:border-primary/30 hover:shadow-sm active:scale-[0.99] transition-all"
               >
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-bold text-foreground">{v.topic}</p>
@@ -157,7 +162,8 @@ const CoupleVote = () => {
       {/* FAB */}
       <button
         onClick={() => setCreateOpen(true)}
-        className="fixed bottom-24 right-4 max-w-[430px] w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center z-30"
+        aria-label="새 주제 만들기"
+        className="fixed bottom-24 right-4 max-w-[430px] w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center z-30 hover:bg-primary/90 hover:shadow-xl active:scale-95 transition-all"
         style={{ right: "max(1rem, calc((100vw - 430px)/2 + 1rem))" }}
       >
         <Plus className="w-6 h-6" />
@@ -188,7 +194,7 @@ const CoupleVote = () => {
             <button
               onClick={handleCreate}
               disabled={!topic.trim() || !optionA.trim() || !optionB.trim()}
-              className="w-full py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-sm disabled:opacity-50"
+              className="w-full py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
             >
               만들기
             </button>

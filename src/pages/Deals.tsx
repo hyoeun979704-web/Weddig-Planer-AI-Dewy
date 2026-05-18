@@ -63,16 +63,16 @@ const Deals = () => {
       <CategoryTabBar activeTab="events" onTabChange={handleCategoryTabChange} />
 
       {/* Category Filter */}
-      <div className="px-4 py-3 overflow-x-auto border-b border-border">
+      <div className="px-4 py-3 overflow-x-auto border-b border-border scrollbar-hide">
         <div className="flex gap-2">
           {mainCategories.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setSelectedCategory(key)}
-              className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all active:scale-95 ${
                 selectedCategory === key
                   ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-primary/10"
               }`}
             >
               {label}
@@ -80,7 +80,8 @@ const Deals = () => {
           ))}
           <button
             onClick={() => setFilterOpen(true)}
-            className="relative px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors bg-muted text-muted-foreground flex items-center gap-1"
+            aria-label="필터 열기"
+            className="relative px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all active:scale-95 bg-muted text-muted-foreground hover:bg-primary/10 flex items-center gap-1"
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
             필터
@@ -149,8 +150,16 @@ const Deals = () => {
             {featured.map((deal) => (
               <div
                 key={deal.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/deals/${deal.id}`)}
-                className="p-4 bg-card rounded-2xl border border-border cursor-pointer hover:shadow-md transition-shadow"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate(`/deals/${deal.id}`);
+                  }
+                }}
+                className="p-4 bg-card rounded-2xl border border-border cursor-pointer hover:shadow-md active:scale-[0.99] transition-all"
               >
                 <div className="flex items-start gap-3">
                   {deal.partner_logo_url && (
@@ -193,8 +202,16 @@ const Deals = () => {
             {sorted.map((deal) => (
               <div
                 key={deal.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/deals/${deal.id}`)}
-                className="p-4 bg-card rounded-2xl border border-border cursor-pointer hover:shadow-md transition-shadow"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate(`/deals/${deal.id}`);
+                  }
+                }}
+                className="p-4 bg-card rounded-2xl border border-border cursor-pointer hover:shadow-md active:scale-[0.99] transition-all"
               >
                 <div className="flex items-start gap-3">
                   {deal.partner_logo_url && (

@@ -169,8 +169,8 @@ const CoupleVoteDetail = () => {
                 key={opt}
                 onClick={() => vote.status !== "decided" && setMyPick(opt)}
                 disabled={vote.status === "decided"}
-                className={`p-4 rounded-2xl border-2 text-left transition-all ${
-                  selected ? "border-primary bg-primary/5" : "border-border bg-card"
+                className={`p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.98] disabled:active:scale-100 ${
+                  selected ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/30"
                 } disabled:opacity-70`}
               >
                 <p className="text-xs font-bold text-muted-foreground mb-1">선택지 {opt.toUpperCase()}</p>
@@ -195,7 +195,7 @@ const CoupleVoteDetail = () => {
             <button
               onClick={handleVote}
               disabled={!myPick}
-              className="w-full mt-2 py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm disabled:opacity-50"
+              className="w-full mt-2 py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
             >
               {myCurrentPick ? "투표 수정하기" : "투표하기"}
             </button>
@@ -219,7 +219,7 @@ const CoupleVoteDetail = () => {
           <button
             onClick={requestAISuggestion}
             disabled={aiLoading}
-            className="w-full p-4 bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full p-4 bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/20 rounded-2xl flex items-center justify-center gap-2 hover:from-primary/25 active:scale-[0.99] transition-all disabled:opacity-50 disabled:active:scale-100"
           >
             <Sparkles className={`w-5 h-5 text-primary ${aiLoading ? "animate-pulse" : ""}`} />
             <span className="text-sm font-bold text-foreground">
@@ -242,7 +242,7 @@ const CoupleVoteDetail = () => {
         {vote.ai_suggestion && vote.status !== "decided" && (
           <button
             onClick={handleDecide}
-            className="w-full py-3.5 bg-emerald-500 text-white rounded-2xl font-bold text-sm"
+            className="w-full py-3.5 bg-emerald-500 text-white rounded-2xl font-bold text-sm hover:bg-emerald-600 active:scale-[0.98] transition-all"
           >
             ✅ 결정 완료
           </button>

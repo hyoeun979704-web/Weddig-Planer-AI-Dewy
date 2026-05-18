@@ -149,7 +149,11 @@ const Events = () => {
             </button>
             <h1 className="text-lg font-bold text-foreground">이벤트</h1>
           </div>
-          <button onClick={handleShare} className="p-2" aria-label="공유">
+          <button
+            onClick={handleShare}
+            aria-label="공유"
+            className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
+          >
             <Share2 className="w-5 h-5 text-foreground" />
           </button>
         </div>
