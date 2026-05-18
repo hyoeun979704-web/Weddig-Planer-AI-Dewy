@@ -10,6 +10,8 @@ import { useTipVideos, type TipVideo } from "@/hooks/useTipVideos";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { rankTipVideosForUser, buildCurationFactors } from "@/lib/tipCuration";
+import EmptyState from "@/components/EmptyState";
+import { emptyCopy } from "@/lib/emptyCopy";
 
 // Shorts threshold: YouTube classifies up to 3 min as Shorts. We use 180s.
 const SHORT_MAX_SECONDS = 180;
@@ -401,9 +403,7 @@ const Tips = () => {
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-12">
-              아직 영상이 없어요.
-            </p>
+            <EmptyState {...emptyCopy.tipsVideos} variant="inline" />
           )}
         </section>
       </main>

@@ -3,6 +3,7 @@ import { Minus, Plus, Trash2, ShoppingCart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
 import { useCart } from "@/hooks/useCart";
 
 const formatPrice = (price: number) => price.toLocaleString() + "원";
