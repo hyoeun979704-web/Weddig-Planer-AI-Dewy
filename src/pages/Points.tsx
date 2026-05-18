@@ -63,14 +63,14 @@ const Points = () => {
           <div className="flex gap-3 mt-6">
             <button
               onClick={() => navigate("/merge-game")}
-              className="flex-1 py-3 bg-card border border-border text-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-card border border-border text-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-muted active:scale-[0.98] transition-all"
             >
               <Coins className="w-4 h-4" />
               게임으로 적립
             </button>
             <button
               onClick={() => navigate("/points/charge")}
-              className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all"
             >
               💗 하트 충전
             </button>
