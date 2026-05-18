@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Star, Users, ArrowRight, Crown } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import DewyLogo from "@/components/home/DewyLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -50,7 +51,7 @@ const GuestMyPage = () => {
 
             <div className="relative">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">💍</span>
+                <DewyLogo size={28} />
                 <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">무료</span>
               </div>
               <h2 className="text-lg font-bold text-foreground mb-1">웨딩 준비, 여기서 시작하세요</h2>
