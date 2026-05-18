@@ -7,8 +7,11 @@
 //       searchVideos(query) → list of (videoId, snippet, thumbnail)
 //   pool unique videoIds across categories
 //   fetchVideoStats(allVideoIds) one batch (1 quota unit per 50 IDs)
-//   upsert by video_id; categories array merged so the same video can serve
-//   multiple tabs (e.g. 결혼 준비 일반 영상은 'general' + 'wedding_hall').
+//   classify each video by its OWN text (title + description + channel) via
+//     classifyTipCategories — not by the seed query that surfaced it, since
+//     YouTube routinely returns off-topic results that would otherwise be
+//     mistagged (e.g. a 공기청정기 review surfacing from a 음식 시연 query).
+//   upsert by video_id; a video may land in multiple categories or in none.
 //
 // Usage:
 //   npm run collect-tips                          # all categories
@@ -20,10 +23,8 @@ import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import { searchVideos, fetchVideoStats } from "./youtube";
 import { TIP_QUERIES, TIP_CATEGORIES, type TipCategory } from "./queries";
-import {
-  normalizeTipCategories,
-  orderCategoriesByMatchCount,
-} from "../../src/lib/tipNormalize";
+import { normalizeTipCategories } from "../../src/lib/tipNormalize";
+import { classifyTipCategories } from "../../src/lib/tipClassify";
 
 interface Args {
   category?: TipCategory;
@@ -49,10 +50,9 @@ interface CollectedVideo {
   thumbnail_url: string;
   published_at: string;
   description: string;
-  // slug → number of distinct seed queries that surfaced this video for
-  // that category. Used to decide which category becomes the primary
-  // (badge) — see orderCategoriesByMatchCount.
-  categoryMatches: Map<string, number>;
+  // The first seed query that surfaced this video — kept for analytics /
+  // debugging only. Categories are derived from video content, not from
+  // the query that happened to find it.
   search_query: string;
 }
 
@@ -82,14 +82,7 @@ async function main() {
       try {
         const items = await searchVideos(q, apiKey, args.perQuery);
         for (const it of items) {
-          const existing = pool.get(it.videoId);
-          if (existing) {
-            existing.categoryMatches.set(
-              cat,
-              (existing.categoryMatches.get(cat) ?? 0) + 1
-            );
-            continue;
-          }
+          if (pool.has(it.videoId)) continue;
           pool.set(it.videoId, {
             video_id: it.videoId,
             title: it.title,
@@ -98,7 +91,6 @@ async function main() {
             thumbnail_url: it.thumbnailUrl,
             published_at: it.publishedAt,
             description: it.description,
-            categoryMatches: new Map([[cat, 1]]),
             search_query: q,
           });
         }
@@ -117,8 +109,14 @@ async function main() {
   console.log(`[collect-tips] fetching stats for ${ids.length} videos…`);
   const stats = await fetchVideoStats(ids, apiKey);
 
+  let uncategorized = 0;
   const rows = Array.from(pool.values()).map((v) => {
     const s = stats.get(v.video_id);
+    const text = `${v.title} ${v.description} ${v.channel_name}`;
+    const categories = normalizeTipCategories(
+      classifyTipCategories(text, TIP_CATEGORIES),
+    );
+    if (categories.length === 0) uncategorized++;
     return {
       video_id: v.video_id,
       title: v.title,
@@ -130,14 +128,16 @@ async function main() {
       like_count: s?.likeCount ?? 0,
       published_at: v.published_at,
       description: v.description,
-      categories: normalizeTipCategories(
-        orderCategoriesByMatchCount(v.categoryMatches, TIP_CATEGORIES)
-      ),
+      categories,
       search_query: v.search_query,
       collected_at: new Date().toISOString(),
       is_active: true,
     };
   });
+  console.log(
+    `[collect-tips] classified ${rows.length - uncategorized}/${rows.length}` +
+      ` (${uncategorized} uncategorized — off-topic results)`,
+  );
 
   // Top-5 preview
   rows
