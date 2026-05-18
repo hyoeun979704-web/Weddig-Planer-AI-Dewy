@@ -58,7 +58,6 @@ export const TIP_QUERIES: Record<string, string[]> = {
     "결혼식 답례품 추천",
     "하객 예절",
     "결혼식 진행 순서",
-    "본식 당일 준비물",
   ],
   // ── Vendor / spend categories ────────────────────────────────────
   wedding_hall: [
@@ -127,9 +126,11 @@ export const TIP_QUERIES: Record<string, string[]> = {
   ],
   invitation_venue: [
     "모바일 청첩장 추천",
+    "모바일 청첩장 만들기",
     "청첩장 디자인",
     "청첩장 문구",
     "청첩장 발송 시기",
+    "청첩장 보내는 법",
     "청첩장 모임 장소",
   ],
   // ── Broad fallback (loses tiebreakers via tip-normalize rule) ───
@@ -140,7 +141,6 @@ export const TIP_QUERIES: Record<string, string[]> = {
     "결혼 비용",
     "결혼 준비 기간",
     "결혼 준비 후회",
-    "결혼 비용 절약",
   ],
 };
 
