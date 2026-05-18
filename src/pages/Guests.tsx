@@ -333,7 +333,7 @@ const FilterChip = ({ label, active, onClick }: { label: string; active: boolean
   <button
     onClick={onClick}
     className={cn(
-      "px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border transition-colors",
+      "px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border transition-all active:scale-95",
       active
         ? "bg-primary text-primary-foreground border-primary"
         : "bg-card border-border text-muted-foreground hover:border-foreground/30",

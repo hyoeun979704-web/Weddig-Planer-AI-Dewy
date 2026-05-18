@@ -170,17 +170,19 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`flex-1 py-3 text-sm relative ${
-        active ? "text-primary font-bold" : "text-muted-foreground"
+      className={`flex-1 py-3 text-sm relative transition-colors active:opacity-70 ${
+        active ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
       }`}
     >
       <span>{label}</span>
       {count != null && count > 0 && (
         <span className="ml-1 text-[11px] text-muted-foreground">({count})</span>
       )}
-      {active && (
-        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-[2px] bg-primary rounded-full" />
-      )}
+      <span
+        className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-[2px] bg-primary rounded-full transition-opacity duration-200 ${
+          active ? "opacity-100" : "opacity-0"
+        }`}
+      />
     </button>
   );
 }
@@ -215,13 +217,15 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
               <>
                 <button
                   onClick={() => setGalleryIdx((i) => (i - 1 + gallery.length) % gallery.length)}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur rounded-full flex items-center justify-center"
+                  aria-label="이전 사진"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur rounded-full flex items-center justify-center hover:bg-background active:scale-90 transition-all shadow-sm"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setGalleryIdx((i) => (i + 1) % gallery.length)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur rounded-full flex items-center justify-center"
+                  aria-label="다음 사진"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur rounded-full flex items-center justify-center hover:bg-background active:scale-90 transition-all shadow-sm"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
