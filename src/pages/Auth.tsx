@@ -15,7 +15,7 @@ type AccountType = "individual" | "business";
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, isLoading, signUp, signIn, signInWithGoogle } = useAuth();
+  const { user, isLoading, signUp, signIn, signInWithGoogle, signInWithKakao } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,6 +25,7 @@ const Auth = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isKakaoLoading, setIsKakaoLoading] = useState(false);
 
   useEffect(() => {
     if (user && !isLoading) {
@@ -110,6 +111,18 @@ const Auth = () => {
       }
     } finally {
       setIsGoogleLoading(false);
+    }
+  };
+
+  const handleKakaoSignIn = async () => {
+    setIsKakaoLoading(true);
+    try {
+      const { error } = await signInWithKakao();
+      if (error) {
+        toast.error("카카오 로그인에 실패했습니다");
+      }
+    } finally {
+      setIsKakaoLoading(false);
     }
   };
 
@@ -285,33 +298,50 @@ const Auth = () => {
         </div>
 
         {/* Social Login */}
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full h-12 text-base font-medium gap-3"
-          onClick={handleGoogleSignIn}
-          disabled={isGoogleLoading}
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
-            <path
-              fill="currentColor"
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-            />
-            <path
-              fill="currentColor"
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            />
-            <path
-              fill="currentColor"
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-            />
-            <path
-              fill="currentColor"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-            />
-          </svg>
-          {isGoogleLoading ? "처리 중..." : "Google로 계속하기"}
-        </Button>
+        <div className="space-y-3">
+          <Button
+            type="button"
+            className="w-full h-12 text-base font-medium gap-3 bg-[#FEE500] text-[#191919] hover:bg-[#FEE500]/90"
+            onClick={handleKakaoSignIn}
+            disabled={isKakaoLoading}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path
+                fill="#191919"
+                d="M9 1.5C4.58 1.5 1 4.31 1 7.78c0 2.27 1.54 4.26 3.85 5.36-.17.6-.61 2.18-.7 2.52-.11.42.16.41.33.3.13-.09 2.13-1.45 2.99-2.04.5.07 1.02.11 1.53.11 4.42 0 8-2.81 8-6.27S13.42 1.5 9 1.5Z"
+              />
+            </svg>
+            {isKakaoLoading ? "처리 중..." : "카카오로 계속하기"}
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-12 text-base font-medium gap-3"
+            onClick={handleGoogleSignIn}
+            disabled={isGoogleLoading}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="currentColor"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="currentColor"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="currentColor"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            {isGoogleLoading ? "처리 중..." : "Google로 계속하기"}
+          </Button>
+        </div>
 
         {/* Toggle */}
         <div className="mt-6 text-center">
