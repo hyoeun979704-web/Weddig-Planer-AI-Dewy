@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import DewyLogo from "@/components/home/DewyLogo";
 
 const NotFound = () => {
   const location = useLocation();
@@ -12,8 +13,8 @@ const NotFound = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6">
-      <div className="text-center max-w-sm">
-        <div className="text-7xl mb-4" aria-hidden>💍</div>
+      <div className="flex flex-col items-center text-center max-w-sm">
+        <DewyLogo size={72} className="mb-4" />
         <h1 className="text-5xl font-extrabold text-primary mb-2">404</h1>
         <p className="text-lg font-bold text-foreground mb-1">페이지를 찾을 수 없어요</p>
         <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
