@@ -159,7 +159,7 @@ const GuestMyPage = () => {
         <div className="px-4 py-6">
           <div className="text-center text-[11px] text-muted-foreground">
             <p>앱 버전 1.0.0</p>
-            <p className="mt-0.5">© 2025 웨딩 플래너</p>
+            <p className="mt-0.5">© 2026 Dewy</p>
           </div>
         </div>
       </main>
@@ -249,7 +249,7 @@ const MyPage = () => {
         <div className="px-4 py-6">
           <div className="text-center text-[11px] text-muted-foreground">
             <p>앱 버전 1.0.0</p>
-            <p className="mt-0.5">© 2025 웨딩 플래너</p>
+            <p className="mt-0.5">© 2026 Dewy</p>
           </div>
         </div>
       </main>

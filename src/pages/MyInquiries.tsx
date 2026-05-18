@@ -8,7 +8,7 @@ const inquiries = [
     type: "inquiry",
     vendor: "더채플앳청담",
     title: "예약 가능 일정 문의",
-    date: "2025-01-20",
+    date: "2026-01-20",
     status: "answered",
     lastMessage: "네, 6월 15일 오후 2시 예약 가능합니다."
   },
@@ -17,7 +17,7 @@ const inquiries = [
     type: "reservation",
     vendor: "루미에르 스튜디오",
     title: "스튜디오 촬영 예약",
-    date: "2025-01-18",
+    date: "2026-01-18",
     status: "pending",
     lastMessage: "예약 요청이 접수되었습니다."
   },
@@ -26,7 +26,7 @@ const inquiries = [
     type: "inquiry",
     vendor: "블룸 드레스",
     title: "드레스 피팅 예약",
-    date: "2025-01-15",
+    date: "2026-01-15",
     status: "answered",
     lastMessage: "2월 중으로 피팅 가능합니다."
   },

@@ -3,11 +3,11 @@ import { ArrowLeft, Ticket, Calendar, Tag } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 
 const coupons = [
-  { id: 1, title: "웨딩홀 10% 할인", description: "모든 웨딩홀 예약 시 사용 가능", discount: "10%", expiry: "2025-03-31", minOrder: "500,000원" },
-  { id: 2, title: "스튜디오 5만원 할인", description: "스튜디오 촬영 예약 시 사용 가능", discount: "50,000원", expiry: "2025-02-28", minOrder: "300,000원" },
-  { id: 3, title: "허니문 15% 할인", description: "허니문 패키지 예약 시 사용 가능", discount: "15%", expiry: "2025-04-30", minOrder: "1,000,000원" },
-  { id: 4, title: "신규회원 웰컴 쿠폰", description: "첫 예약 시 사용 가능", discount: "30,000원", expiry: "2025-02-15", minOrder: "없음" },
-  { id: 5, title: "드레스 대여 할인", description: "드레스 대여 시 사용 가능", discount: "20%", expiry: "2025-05-31", minOrder: "200,000원" },
+  { id: 1, title: "웨딩홀 10% 할인", description: "모든 웨딩홀 예약 시 사용 가능", discount: "10%", expiry: "2026-03-31", minOrder: "500,000원" },
+  { id: 2, title: "스튜디오 5만원 할인", description: "스튜디오 촬영 예약 시 사용 가능", discount: "50,000원", expiry: "2026-02-28", minOrder: "300,000원" },
+  { id: 3, title: "허니문 15% 할인", description: "허니문 패키지 예약 시 사용 가능", discount: "15%", expiry: "2026-04-30", minOrder: "1,000,000원" },
+  { id: 4, title: "신규회원 웰컴 쿠폰", description: "첫 예약 시 사용 가능", discount: "30,000원", expiry: "2026-02-15", minOrder: "없음" },
+  { id: 5, title: "드레스 대여 할인", description: "드레스 대여 시 사용 가능", discount: "20%", expiry: "2026-05-31", minOrder: "200,000원" },
 ];
 
 const Coupons = () => {

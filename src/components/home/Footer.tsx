@@ -49,7 +49,7 @@ const Footer = () => {
           </button>
         </div>
         <p className="text-[12px] leading-[15px] text-black">
-          © 2025 Dewy. All rights reserved.
+          © 2026 Dewy. All rights reserved.
         </p>
       </div>
     </footer>

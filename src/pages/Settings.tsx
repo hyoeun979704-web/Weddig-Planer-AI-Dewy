@@ -126,7 +126,7 @@ const Settings = () => {
         <div className="p-4">
           <div className="text-center text-xs text-muted-foreground">
             <p>앱 버전 1.0.0</p>
-            <p className="mt-1">© 2025 웨딩 플래너</p>
+            <p className="mt-1">© 2026 Dewy</p>
           </div>
         </div>
       </main>
