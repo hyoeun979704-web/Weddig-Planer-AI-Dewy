@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 
 const galleryItems = [
   { imageUrl: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400", label: "더채플앳청담", category: "웨딩홀" },
@@ -27,15 +27,7 @@ const Gallery = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground">갤러리</h1>
-        </div>
-      </header>
+      <PageHeader title="갤러리" />
 
       {/* Main Content */}
       <main className="pb-20 px-4 py-4">

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, GripVertical, Image as ImageIcon, Sparkles, Loader2, X } from "lucide-react";
+import { Plus, Trash2, GripVertical, Image as ImageIcon, Sparkles, Loader2, X } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,7 +40,7 @@ const BusinessGallery = () => {
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   // New highlight form
-  const [newHighlight, setNewHighlight] = useState({ title: "", description: "", icon: "✨" });
+  const [newHighlight, setNewHighlight] = useState({ title: "", description: "", icon: "" });
   const [showHighlightForm, setShowHighlightForm] = useState(false);
 
   const vendorId = businessProfile?.vendor_id;
@@ -152,7 +153,7 @@ const BusinessGallery = () => {
           vendor_id: vendorId,
           title: newHighlight.title,
           description: newHighlight.description || null,
-          icon: newHighlight.icon || "✨",
+          icon: newHighlight.icon || "",
           display_order: highlights.length,
         })
         .select()
@@ -161,7 +162,7 @@ const BusinessGallery = () => {
       if (error) throw error;
 
       setHighlights((prev) => [...prev, data]);
-      setNewHighlight({ title: "", description: "", icon: "✨" });
+      setNewHighlight({ title: "", description: "", icon: "" });
       setShowHighlightForm(false);
       toast.success("장점카드가 추가되었습니다");
     } catch (error) {
@@ -187,18 +188,11 @@ const BusinessGallery = () => {
     );
   }
 
-  const ICON_OPTIONS = ["✨", "🏆", "💎", "🎯", "🌟", "💐", "🎨", "📸", "🍽️", "🅿️", "🎵", "💡"];
+  const ICON_OPTIONS = ["", "", "", "", "", "", "", "", "", "🅿️", "", ""];
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="flex items-center h-14 px-4">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="flex-1 text-center font-semibold text-lg pr-10">이미지/장점카드 관리</h1>
-        </div>
-      </header>
+      <PageHeader title="이미지/장점카드 관리" />
 
       <Tabs defaultValue="gallery" className="w-full">
         <TabsList className="w-full rounded-none border-b border-border bg-background h-11">

@@ -29,7 +29,7 @@ const EmptyState = ({
           className
         )}
       >
-        <span aria-hidden>{emoji}</span>
+        {emoji && <span aria-hidden>{emoji}</span>}
         <span className="whitespace-pre-line">{title}</span>
       </div>
     );
@@ -43,7 +43,7 @@ const EmptyState = ({
           className
         )}
       >
-        <div className="text-2xl mb-2" aria-hidden>{emoji}</div>
+        {emoji && <div className="text-2xl mb-2" aria-hidden>{emoji}</div>}
         <p className="text-body font-semibold text-foreground whitespace-pre-line">
           {title}
         </p>
@@ -72,7 +72,7 @@ const EmptyState = ({
         className
       )}
     >
-      <div className="text-3xl mb-3" aria-hidden>{emoji}</div>
+      {emoji && <div className="text-3xl mb-3" aria-hidden>{emoji}</div>}
       <p className="text-body font-semibold text-foreground whitespace-pre-line">
         {title}
       </p>

@@ -15,36 +15,36 @@ interface TemplateCategory {
 
 const TEMPLATE_GROUPS: TemplateCategory[] = [
   {
-    category: "📨 청첩장 안내",
+    category: " 청첩장 안내",
     templates: [
       {
         name: "기본 안내 메시지",
-        template: `안녕하세요 🌿
+        template: `안녕하세요 
 {groom}·{bride}의 결혼식에 초대합니다.
 
-📅 일시: {date} {time}
-📍 장소: {venue}
-📍 주소: {address}
+ 일시: {date} {time}
+ 장소: {venue}
+ 주소: {address}
 
-🚗 주차: {parking}
-🚇 대중교통: {transit}
+ 주차: {parking}
+ 대중교통: {transit}
 
-축하의 마음으로 함께해 주시면 감사하겠습니다 💍
+축하의 마음으로 함께해 주시면 감사하겠습니다 
 
 [모바일 청첩장 보기]
 {invitation_url}`,
       },
       {
         name: "친한 지인용 (캐주얼)",
-        template: `안녕! 😊
+        template: `안녕! 
 드디어 결혼해 :)
 
-📅 {date} {time}
-📍 {venue} ({address})
+ {date} {time}
+ {venue} ({address})
 
-꼭 와줘! 잘 챙겨먹고 멋진 모습으로 보자 ✨
+꼭 와줘! 잘 챙겨먹고 멋진 모습으로 보자 
 
-📎 모바일 청첩장: {invitation_url}`,
+ 모바일 청첩장: {invitation_url}`,
       },
       {
         name: "직장/거래처용 (공식적)",
@@ -64,49 +64,49 @@ const TEMPLATE_GROUPS: TemplateCategory[] = [
     ],
   },
   {
-    category: "🍽️ 식사·계좌·세부 안내",
+    category: " 식사·계좌·세부 안내",
     templates: [
       {
         name: "식사 안내 포함",
-        template: `안녕하세요 🌿
+        template: `안녕하세요 
 {groom}·{bride}의 결혼식에 초대합니다.
 
-📅 {date} {time}
-📍 {venue}
+ {date} {time}
+ {venue}
 
-🍽️ 식사: {meal}
+ 식사: {meal}
 ⏰ 식사 시작: 예식 후 약 30분
-🎁 답례품: 입구에서 수령 가능
+ 답례품: 입구에서 수령 가능
 
-참석 여부를 알려주시면 좌석 준비에 큰 도움이 됩니다 🙏`,
+참석 여부를 알려주시면 좌석 준비에 큰 도움이 됩니다 `,
       },
       {
         name: "계좌번호 안내 (불참 안내용)",
         template: `직접 참석이 어려우신 분들을 위해
 마음 전달 계좌를 안내드립니다.
 
-🤵 신랑측: {groom_bank} {groom_account} ({groom})
-👰 신부측: {bride_bank} {bride_account} ({bride})
+ 신랑측: {groom_bank} {groom_account} ({groom})
+ 신부측: {bride_bank} {bride_account} ({bride})
 
 소중한 마음 잘 받겠습니다.
-마음만으로도 충분히 감사합니다 💕`,
+마음만으로도 충분히 감사합니다 `,
       },
       {
         name: "교통 / 주차 상세 안내",
-        template: `결혼식장 오시는 길 안내입니다 🌿
+        template: `결혼식장 오시는 길 안내입니다 
 
-📍 {venue}
-📍 {address}
+ {venue}
+ {address}
 
-🚗 주차
+ 주차
 - 건물 자체 주차장 {parking_hours}시간 무료
 - 만차 시 인근 {alt_parking} 이용 (도보 5분)
 
-🚇 대중교통
+ 대중교통
 - {subway_line} {subway_station} {subway_exit}번 출구 도보 {walk_min}분
 - 버스: {bus_info}
 
-🕐 도착 권장 시간: 예식 30~60분 전 (주차 만석 대비)`,
+ 도착 권장 시간: 예식 30~60분 전 (주차 만석 대비)`,
       },
     ],
   },
@@ -115,34 +115,34 @@ const TEMPLATE_GROUPS: TemplateCategory[] = [
     templates: [
       {
         name: "리마인드 메시지 (D-7)",
-        template: `안녕하세요! 😊
+        template: `안녕하세요! 
 다음 주, {groom}·{bride}의 결혼식이 있습니다.
 
-📅 {date} {time}
-📍 {venue}
+ {date} {time}
+ {venue}
 
 뵙게 되어 정말 기쁩니다.
-조심히 와주세요! 💐
+조심히 와주세요! 
 
 [청첩장 다시 보기]
 {invitation_url}`,
       },
       {
         name: "리마인드 메시지 (D-1)",
-        template: `내일이에요! 💒
+        template: `내일이에요! 
 {groom}·{bride} 결혼식 다시 한 번 안내드려요.
 
-📅 내일 {time}
-📍 {venue}
+ 내일 {time}
+ {venue}
 
-🚗 주차 만석 대비 1시간 전 도착 권장
-☂️ 일기예보: {weather}
+ 주차 만석 대비 1시간 전 도착 권장
+ 일기예보: {weather}
 
-내일 뵙겠습니다! 너무 기다려져요 ✨`,
+내일 뵙겠습니다! 너무 기다려져요 `,
       },
       {
         name: "참석 감사 인사 (사후)",
-        template: `안녕하세요 🌿
+        template: `안녕하세요 
 {groom}·{bride}입니다.
 
 바쁘신 와중에도 결혼식에 함께해 주셔서
@@ -150,13 +150,13 @@ const TEMPLATE_GROUPS: TemplateCategory[] = [
 
 덕분에 평생 잊지 못할 따뜻한 하루였어요.
 앞으로도 잘 부탁드리며,
-새 가정에 늘 좋은 일만 가득하길 바랍니다 💕
+새 가정에 늘 좋은 일만 가득하길 바랍니다 
 
 다녀가신 한 분 한 분 마음 깊이 새기겠습니다.`,
       },
       {
         name: "축의금 감사 인사 (불참자)",
-        template: `안녕하세요 🌿
+        template: `안녕하세요 
 {groom}·{bride}입니다.
 
 직접 뵙지는 못했지만,
@@ -165,7 +165,7 @@ const TEMPLATE_GROUPS: TemplateCategory[] = [
 덕분에 더 든든하게 새 출발을 할 수 있게 되었어요.
 다음에 좋은 자리에서 꼭 인사드릴게요.
 
-진심으로 감사드립니다 💕`,
+진심으로 감사드립니다 `,
       },
     ],
   },
@@ -204,7 +204,7 @@ const GuestMessageSheet = ({ open, onClose }: GuestMessageSheetProps) => {
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-3xl max-h-[85vh] overflow-y-auto pb-8">
         <SheetHeader>
-          <SheetTitle>📱 하객 안내 메시지</SheetTitle>
+          <SheetTitle> 하객 안내 메시지</SheetTitle>
         </SheetHeader>
         <p className="text-xs text-muted-foreground mt-2 mb-3">
           {"{ }"} 부분을 실제 정보로 수정한 후 복사하세요

@@ -433,7 +433,7 @@ const IntroSection = ({
         <div className="text-right">
           <p className="text-[11px] text-muted-foreground">내 잔액</p>
           <p className="text-base font-bold text-foreground">
-            {hearts === null ? "—" : `${hearts} ♥`}
+            {hearts === null ? "—" : `${hearts} `}
           </p>
         </div>
       </div>
@@ -754,7 +754,7 @@ const ReviewSection = ({
           <span className="text-muted-foreground">하트 차감</span>
         </div>
         <span className="text-[12px] text-muted-foreground">
-          잔액 {hearts ?? 0} ♥
+          잔액 {hearts ?? 0} 
         </span>
       </div>
 

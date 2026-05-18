@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Gift, Users, Loader2 } from "lucide-react";
+import { Copy, Check, Gift, Users, Loader2 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useReferral } from "@/hooks/useReferral";
 import { toast } from "sonner";
@@ -78,7 +79,7 @@ const Referral = () => {
       return;
     }
     if (result.redeemed) {
-      toast.success(`🎉 ${result.refereeAmount}P 적립! ${result.message}`);
+      toast.success(` ${result.refereeAmount}P 적립! ${result.message}`);
       setInputCode("");
     } else {
       toast.error(result.message);
@@ -89,14 +90,7 @@ const Referral = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative pb-20">
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground">친구 초대</h1>
-        </div>
-      </header>
+      <PageHeader title="친구 초대" />
 
       <main className="px-4 py-4 space-y-4">
         {/* 안내 카드 */}

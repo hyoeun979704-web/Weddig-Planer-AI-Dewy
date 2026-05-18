@@ -161,7 +161,7 @@ export const useCoupleDiary = () => {
         }
       }
 
-      toast.success("일기가 저장되었습니다 📝");
+      toast.success("일기가 저장되었습니다 ");
       await fetchEntries();
       return true;
     } catch (error) {

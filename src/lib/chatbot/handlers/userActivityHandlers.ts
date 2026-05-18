@@ -26,7 +26,7 @@ export const handleOrders = async (userId: string): Promise<string> => {
     .limit(5);
 
   if (error || !data || data.length === 0) {
-    return "아직 주문 내역이 없어요 🛍️\n[쇼핑 페이지](/store)에서 마음에 드는 상품을 찾아보세요.";
+    return "아직 주문 내역이 없어요 \n[쇼핑 페이지](/store)에서 마음에 드는 상품을 찾아보세요.";
   }
 
   const lines = data
@@ -38,7 +38,7 @@ export const handleOrders = async (userId: string): Promise<string> => {
     })
     .join("\n");
 
-  return `최근 주문 ${data.length}건이에요 🛍️\n\n${lines}\n\n전체 주문은 [주문 내역](/orders)에서 확인하실 수 있어요.`;
+  return `최근 주문 ${data.length}건이에요 \n\n${lines}\n\n전체 주문은 [주문 내역](/orders)에서 확인하실 수 있어요.`;
 };
 
 // ────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ export const handlePayments = async (userId: string): Promise<string> => {
 
   const orderIds = (orders ?? []).map((o: any) => o.id);
   if (orderIds.length === 0) {
-    return "결제 내역이 아직 없어요 💳\n주문하시면 여기서 결제 이력을 확인하실 수 있어요.";
+    return "결제 내역이 아직 없어요 \n주문하시면 여기서 결제 이력을 확인하실 수 있어요.";
   }
 
   const { data, error } = await (supabase as any)
@@ -64,7 +64,7 @@ export const handlePayments = async (userId: string): Promise<string> => {
     .limit(5);
 
   if (error || !data || data.length === 0) {
-    return "결제 내역이 아직 없어요 💳";
+    return "결제 내역이 아직 없어요 ";
   }
 
   const totalPaid = data
@@ -80,7 +80,7 @@ export const handlePayments = async (userId: string): Promise<string> => {
     })
     .join("\n");
 
-  return `최근 결제 ${data.length}건 (누적 ${totalPaid.toLocaleString()}원) 💳\n\n${lines}\n\n자세한 내역은 [주문 내역](/orders)에서 확인하실 수 있어요.`;
+  return `최근 결제 ${data.length}건 (누적 ${totalPaid.toLocaleString()}원) \n\n${lines}\n\n자세한 내역은 [주문 내역](/orders)에서 확인하실 수 있어요.`;
 };
 
 // ────────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ export const handleMyPosts = async (userId: string): Promise<string> => {
     .limit(8);
 
   if (error || !data || data.length === 0) {
-    return "아직 작성하신 커뮤니티 글이 없어요 ✏️\n[커뮤니티](/community)에서 다른 예비신부들과 정보를 나눠보세요.";
+    return "아직 작성하신 커뮤니티 글이 없어요 \n[커뮤니티](/community)에서 다른 예비신부들과 정보를 나눠보세요.";
   }
 
   const lines = data
@@ -113,7 +113,7 @@ export const handleMyPosts = async (userId: string): Promise<string> => {
     })
     .join("\n");
 
-  return `작성하신 커뮤니티 글 ${data.length}개 ✏️\n\n${lines}\n\n전체 글은 [커뮤니티 > 내 활동](/community)에서 확인하실 수 있어요.`;
+  return `작성하신 커뮤니티 글 ${data.length}개 \n\n${lines}\n\n전체 글은 [커뮤니티 > 내 활동](/community)에서 확인하실 수 있어요.`;
 };
 
 // ────────────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ export const handleMyComments = async (userId: string): Promise<string> => {
     .limit(5);
 
   if (error || !data || data.length === 0) {
-    return "아직 작성하신 댓글이 없어요 💬";
+    return "아직 작성하신 댓글이 없어요 ";
   }
 
   const lines = data
@@ -139,7 +139,7 @@ export const handleMyComments = async (userId: string): Promise<string> => {
     })
     .join("\n");
 
-  return `최근 작성하신 댓글 ${data.length}개 💬\n\n${lines}`;
+  return `최근 작성하신 댓글 ${data.length}개 \n\n${lines}`;
 };
 
 // ────────────────────────────────────────────────────────────
@@ -159,13 +159,13 @@ export const handleAiUsage = async (userId: string): Promise<string> => {
     .order("usage_date", { ascending: false });
 
   if (error || !data) {
-    return "AI 사용 정보를 불러올 수 없어요 🌿";
+    return "AI 사용 정보를 불러올 수 없어요 ";
   }
 
   const todayCount = data.find((d: any) => d.usage_date === today)?.message_count ?? 0;
   const weekCount = data.reduce((sum: number, d: any) => sum + (d.message_count ?? 0), 0);
 
-  return `**AI 플래너 사용 현황** 🤖\n\n• 오늘: ${todayCount}회 (무료 한도 5회)\n• 최근 7일: ${weekCount}회\n\nPremium 구독 시 무제한 사용 가능해요. [Premium 페이지](/premium)`;
+  return `**AI 플래너 사용 현황** \n\n• 오늘: ${todayCount}회 (무료 한도 5회)\n• 최근 7일: ${weekCount}회\n\nPremium 구독 시 무제한 사용 가능해요. [Premium 페이지](/premium)`;
 };
 
 // ────────────────────────────────────────────────────────────
@@ -179,7 +179,7 @@ export const handleDealClaims = async (userId: string): Promise<string> => {
     .order("created_at", { ascending: false });
 
   if (!claims || claims.length === 0) {
-    return "아직 받으신 특가가 없어요 🎁\n[특가 페이지](/deals)에서 진행 중인 혜택을 확인해보세요.";
+    return "아직 받으신 특가가 없어요 \n[특가 페이지](/deals)에서 진행 중인 혜택을 확인해보세요.";
   }
 
   // deal 정보 join
@@ -202,5 +202,5 @@ export const handleDealClaims = async (userId: string): Promise<string> => {
     })
     .join("\n");
 
-  return `받으신 특가 ${claims.length}건 🎁\n\n${lines}\n\n쿠폰 사용은 [쿠폰 페이지](/coupons)에서 확인하실 수 있어요.`;
+  return `받으신 특가 ${claims.length}건 \n\n${lines}\n\n쿠폰 사용은 [쿠폰 페이지](/coupons)에서 확인하실 수 있어요.`;
 };

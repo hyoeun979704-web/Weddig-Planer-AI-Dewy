@@ -13,7 +13,7 @@ const PremiumBanner = () => {
           onClick={() => navigate("/premium")}
           className="w-full p-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-2xl border border-primary/20 flex items-center gap-3"
         >
-          <span className="text-2xl">🎉</span>
+          <Sparkles className="w-6 h-6 text-primary flex-shrink-0" />
           <div className="flex-1 text-left">
             <p className="text-sm font-bold text-foreground">무료 체험 중</p>
             <p className="text-xs text-muted-foreground">체험 종료까지 {trialDaysLeft}일 남았어요</p>
@@ -35,7 +35,7 @@ const PremiumBanner = () => {
           onClick={() => navigate("/premium")}
           className="w-full p-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-2xl border border-primary/20 flex items-center gap-3"
         >
-          <span className="text-2xl">💎</span>
+          <Sparkles className="w-6 h-6 text-primary flex-shrink-0" />
           <div className="flex-1 text-left">
             <p className="text-sm font-bold text-foreground">Premium 이용 중</p>
             <p className="text-xs text-muted-foreground">{planLabel} 플랜 · {expiresLabel}</p>

@@ -79,5 +79,5 @@ export const formatWebSearchReply = (result: WebSearchResult): string => {
     .map((s) => `- [${s.title}](${s.uri})`)
     .join("\n");
 
-  return `${result.reply}\n\n---\n📚 **출처** (웹 검색 결과)\n${sourceLines}`;
+  return `${result.reply}\n\n---\n **출처** (웹 검색 결과)\n${sourceLines}`;
 };

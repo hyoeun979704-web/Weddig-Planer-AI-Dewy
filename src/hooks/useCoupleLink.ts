@@ -166,7 +166,7 @@ export const useCoupleLink = () => {
 
       setCoupleLink(updated as any);
       await fetchCoupleLink(); // 파트너 프로필 다시 로드
-      toast.success("커플이 연결되었습니다! 💕");
+      toast.success("커플이 연결되었습니다! ");
       return true;
     } catch (error) {
       console.error("Error linking couple:", error);

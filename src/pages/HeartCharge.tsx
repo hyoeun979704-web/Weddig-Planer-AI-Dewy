@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { usePoints } from "@/hooks/usePoints";
@@ -102,14 +103,7 @@ const HeartCharge = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground">하트 충전</h1>
-        </div>
-      </header>
+      <PageHeader title="하트 충전" />
 
       <main className="pb-40 px-4 py-4 space-y-4">
         {/* Heart packages */}
@@ -147,7 +141,7 @@ const HeartCharge = () => {
                       {pkg.description}
                     </p>
                     <p className="text-sm text-foreground mt-1">
-                      💗 <span className="font-bold">{pkg.hearts}</span>개
+                       <span className="font-bold">{pkg.hearts}</span>개
                       <span className="text-xs text-muted-foreground ml-1">
                         (1H = {Math.round(pkg.price / pkg.hearts)}원)
                       </span>

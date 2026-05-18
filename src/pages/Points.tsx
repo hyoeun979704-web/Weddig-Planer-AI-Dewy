@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Coins, Clock, ChevronRight, Loader2, Check, Flame } from "lucide-react";
+import { Coins, Clock, ChevronRight, Loader2, Check, Flame } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePoints, labelForReason } from "@/hooks/usePoints";
 import { useAttendance } from "@/hooks/useAttendance";
@@ -37,14 +38,7 @@ const Points = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center h-14 px-4">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="flex-1 text-center font-semibold text-lg pr-10">포인트</h1>
-        </div>
-      </header>
+      <PageHeader title="포인트" />
 
       <main className="pb-20">
         {/* Point Summary */}
@@ -72,7 +66,7 @@ const Points = () => {
               onClick={() => navigate("/points/charge")}
               className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2"
             >
-              💗 하트 충전
+               하트 충전
             </button>
           </div>
         </div>
@@ -104,7 +98,7 @@ const Points = () => {
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {attendance.currentStreak > 0
-                    ? `🔥 ${attendance.currentStreak}일 연속 출석 중 · 7일마다 +200P / 30일마다 +1,000P`
+                    ? ` ${attendance.currentStreak}일 연속 출석 중 · 7일마다 +200P / 30일마다 +1,000P`
                     : "매일 들어와서 포인트 받기"}
                 </p>
               </div>
@@ -122,7 +116,7 @@ const Points = () => {
             className="w-full p-4 bg-gradient-to-r from-secondary to-accent rounded-2xl border border-border flex items-center gap-4 text-left hover:shadow-md transition-shadow"
           >
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
-              💐
+              
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-foreground text-sm">꽃 머지 게임</p>
@@ -139,7 +133,7 @@ const Points = () => {
             className="w-full p-4 bg-card border border-border rounded-2xl flex items-center gap-4 text-left hover:shadow-md transition-shadow"
           >
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
-              🎁
+              
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-foreground text-sm">친구 초대하기</p>

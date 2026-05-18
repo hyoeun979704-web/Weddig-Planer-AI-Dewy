@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Plus, Pencil, Trash2, Users, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -95,14 +96,7 @@ const Guests = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-        <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-          <div className="flex items-center h-14 px-4">
-            <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="flex-1 text-center font-semibold text-lg pr-10">하객 리스트</h1>
-          </div>
-        </header>
+        <PageHeader title="하객 리스트" />
         <div className="flex flex-col items-center justify-center py-20 px-4">
           <Users className="w-16 h-16 text-muted-foreground mb-4" />
           <h2 className="text-lg font-bold text-foreground mb-2">로그인이 필요합니다</h2>
@@ -117,14 +111,7 @@ const Guests = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center h-14 px-4">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="flex-1 text-center font-semibold text-lg pr-10">하객 리스트</h1>
-        </div>
-      </header>
+      <PageHeader title="하객 리스트" />
 
       <main className="pb-24">
         {/* Summary */}

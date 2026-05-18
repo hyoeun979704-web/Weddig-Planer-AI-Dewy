@@ -233,7 +233,7 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
           </>
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-6xl">
-            🏢
+            
           </div>
         )}
         {place.is_partner && (
@@ -478,7 +478,7 @@ function DetailTab({
                   </ul>
                 )}
                 {pkg.notes && (
-                  <p className="text-xs text-amber-700 mt-1.5 italic">⚠ {pkg.notes}</p>
+                  <p className="text-xs text-amber-700 mt-1.5 italic"> {pkg.notes}</p>
                 )}
               </div>
             ))}
@@ -522,7 +522,7 @@ function DetailTab({
           <div className="grid grid-cols-2 gap-2">
             {place.pros.length > 0 && (
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-                <p className="text-xs font-semibold text-emerald-700 mb-1">👍 좋아요</p>
+                <p className="text-xs font-semibold text-emerald-700 mb-1"> 좋아요</p>
                 <ul className="text-xs text-emerald-900 space-y-0.5">
                   {place.pros.slice(0, 4).map((p, i) => <li key={i}>· {p}</li>)}
                 </ul>
@@ -530,7 +530,7 @@ function DetailTab({
             )}
             {place.cons.length > 0 && (
               <div className="bg-rose-50 border border-rose-200 rounded-xl p-3">
-                <p className="text-xs font-semibold text-rose-700 mb-1">👎 아쉬워요</p>
+                <p className="text-xs font-semibold text-rose-700 mb-1"> 아쉬워요</p>
                 <ul className="text-xs text-rose-900 space-y-0.5">
                   {place.cons.slice(0, 4).map((c, i) => <li key={i}>· {c}</li>)}
                 </ul>
@@ -548,7 +548,7 @@ function DetailTab({
             <span className="text-amber-700">계약 전 확인</span>
           </h3>
           <ul className="text-xs text-amber-900 space-y-1 bg-amber-50 border border-amber-200 rounded-xl p-3">
-            {place.hidden_costs.map((c, i) => <li key={i} className="flex gap-1.5"><span>⚠</span><span>{c}</span></li>)}
+            {place.hidden_costs.map((c, i) => <li key={i} className="flex gap-1.5"><span></span><span>{c}</span></li>)}
           </ul>
         </section>
       )}
@@ -674,7 +674,7 @@ function ReviewCard({ review }: { review: PlaceReview }) {
       <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
         {review.source_name && <span>출처: {review.source_name}</span>}
         {review.helpful_count != null && review.helpful_count > 0 && (
-          <span>👍 {review.helpful_count}</span>
+          <span> {review.helpful_count}</span>
         )}
         {review.hall_name && <span>{review.hall_name}</span>}
       </div>

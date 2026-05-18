@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ChevronLeft,
   Play,
   CheckCircle2,
   Sparkles,
@@ -9,6 +8,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
 import {
@@ -57,18 +57,7 @@ const Tutorial = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center px-4 h-14">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 flex items-center justify-center -ml-2"
-            aria-label="뒤로"
-          >
-            <ChevronLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground">가이드 & 튜토리얼</h1>
-        </div>
-      </header>
+      <PageHeader title="가이드 & 튜토리얼" />
 
       <main className="pb-24">
         {/* Overall progress hero */}

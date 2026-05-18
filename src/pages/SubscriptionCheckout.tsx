@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -70,16 +71,7 @@ const SubscriptionCheckout = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground">
-            {type === "trial" ? "결제 정보 등록" : "구독 결제"}
-          </h1>
-        </div>
-      </header>
+      <PageHeader title={type === "trial" ? "결제 정보 등록" : "구독 결제"} />
 
       <main className="pb-32 px-4 py-4 space-y-4">
         <div className="p-4 bg-gradient-to-r from-primary/20 to-primary/5 rounded-2xl border border-primary/20">
@@ -104,7 +96,7 @@ const SubscriptionCheckout = () => {
           )}
           {type === "trial" && (
             <p className="text-[11px] text-muted-foreground mt-2 bg-background/50 rounded-lg p-2">
-              💡 카드 유효성 확인을 위해 100원이 결제 후 즉시 환불됩니다. 체험 종료 후 자동 결제는 없습니다.
+               카드 유효성 확인을 위해 100원이 결제 후 즉시 환불됩니다. 체험 종료 후 자동 결제는 없습니다.
             </p>
           )}
         </div>
@@ -112,7 +104,7 @@ const SubscriptionCheckout = () => {
         {isEarlyBird && (
           <div className="p-4 rounded-2xl border border-primary/30 bg-primary/5">
             <div className="flex items-center gap-2">
-              <span className="text-base">🎉</span>
+              <span className="text-base"></span>
               <p className="font-semibold text-foreground text-sm">초기 이용자 특전</p>
             </div>
             <p className="text-sm text-foreground mt-2">
@@ -122,7 +114,7 @@ const SubscriptionCheckout = () => {
               2026년 7월까지 결제 시 한정 · 가입 기념 혜택과 별도 지급
             </p>
             <p className="text-[11px] text-destructive mt-2 bg-destructive/5 rounded-lg p-2">
-              ⚠ 보너스 하트를 1개라도 사용하면 해당 결제는 환불이 제한됩니다.
+               보너스 하트를 1개라도 사용하면 해당 결제는 환불이 제한됩니다.
             </p>
           </div>
         )}

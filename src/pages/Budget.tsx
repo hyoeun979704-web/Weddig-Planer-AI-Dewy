@@ -160,10 +160,10 @@ const Budget = () => {
   );
 
   const planningStageGuide: Record<string, { icon: string; text: string }> = {
-    just_started: { icon: "🌱", text: "이제 시작했다면 총 예산부터 잡아보세요" },
-    researching: { icon: "🔍", text: "지역 평균과 비교하며 카테고리별로 배분해보세요" },
-    contracting: { icon: "📝", text: "계약금/잔금 일정을 빠짐없이 기록해두세요" },
-    wrapping_up: { icon: "✅", text: "결제 완료 표시로 마무리하고 최종 합계를 확인해보세요" },
+    just_started: { icon: "", text: "이제 시작했다면 총 예산부터 잡아보세요" },
+    researching: { icon: "", text: "지역 평균과 비교하며 카테고리별로 배분해보세요" },
+    contracting: { icon: "", text: "계약금/잔금 일정을 빠짐없이 기록해두세요" },
+    wrapping_up: { icon: "", text: "결제 완료 표시로 마무리하고 최종 합계를 확인해보세요" },
   };
   const stageGuide = weddingSettings.planning_stage
     ? planningStageGuide[weddingSettings.planning_stage]
@@ -228,7 +228,7 @@ const Budget = () => {
    */
   const handleShare = async () => {
     const lines: string[] = [];
-    lines.push(`💍 우리 결혼 예산 현황${settings?.region ? ` (${regions[settings.region]?.label})` : ""}`);
+    lines.push(` 우리 결혼 예산 현황${settings?.region ? ` (${regions[settings.region]?.label})` : ""}`);
     lines.push(`총 예산: ${fmt(totalBudget)}만원`);
     lines.push(`사용: ${fmt(summary.totalSpent)}만원 (${Math.round(pct)}%)`);
     lines.push(`남은 예산: ${fmt(summary.remaining)}만원`);
@@ -509,7 +509,11 @@ const Budget = () => {
                 return (
                   <div key={task.id} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-sm">{cat.emoji}</span>
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: cat.color }}
+                        aria-hidden
+                      />
                       <span className="text-xs text-foreground truncate">{task.title}</span>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -545,10 +549,15 @@ const Budget = () => {
             <div className="space-y-2.5">
               {upcomingBalances.map(item => {
                 const overdue = item.daysLeft < 0;
+                const catColor = categories[item.category as BudgetCategory]?.color || "#6B7280";
                 return (
                   <div key={item.id} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-sm">{categories[item.category as BudgetCategory]?.emoji || "📋"}</span>
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: catColor }}
+                        aria-hidden
+                      />
                       <span className="text-xs text-foreground truncate">{item.title}</span>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -597,17 +606,17 @@ const Budget = () => {
             {/* Per-side cards — easier to show to family at a glance */}
             <div className="grid grid-cols-3 gap-2 mb-3">
               <div className="rounded-xl bg-muted/50 p-2.5 text-center">
-                <p className="text-[10px] text-muted-foreground">🤝 공동</p>
+                <p className="text-[10px] text-muted-foreground"> 공동</p>
                 <p className="text-sm font-bold text-foreground mt-0.5">{fmt(paidShared)}<span className="text-[10px] font-normal">만원</span></p>
                 <p className="text-[10px] text-muted-foreground">{Math.round((paidShared / paidTotal) * 100)}%</p>
               </div>
               <div className="rounded-xl bg-blue-50 p-2.5 text-center">
-                <p className="text-[10px] text-blue-700">🤵 신랑측</p>
+                <p className="text-[10px] text-blue-700"> 신랑측</p>
                 <p className="text-sm font-bold text-blue-900 mt-0.5">{fmt(paidGroom)}<span className="text-[10px] font-normal">만원</span></p>
                 <p className="text-[10px] text-blue-700">{Math.round((paidGroom / paidTotal) * 100)}%</p>
               </div>
               <div className="rounded-xl bg-primary/10 p-2.5 text-center">
-                <p className="text-[10px] text-primary">👰 신부측</p>
+                <p className="text-[10px] text-primary"> 신부측</p>
                 <p className="text-sm font-bold text-primary mt-0.5">{fmt(paidBride)}<span className="text-[10px] font-normal">만원</span></p>
                 <p className="text-[10px] text-primary">{Math.round((paidBride / paidTotal) * 100)}%</p>
               </div>
@@ -795,7 +804,11 @@ const Budget = () => {
                     <button className="flex-1 flex items-center gap-3 text-left min-w-0"
                       onClick={() => { setEditItem(item); setAddOpen(true); }}>
                       <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm">{cat?.emoji || "📋"}</span>
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: cat?.color || "#6B7280" }}
+                          aria-hidden
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{item.title}</p>

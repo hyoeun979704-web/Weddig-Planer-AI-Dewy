@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, X, Loader2 } from "lucide-react";
+import { Camera, X, Loader2 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useCoupleDiary } from "@/hooks/useCoupleDiary";
 
 const moods = [
-  { value: "happy", emoji: "😊", label: "행복" },
-  { value: "excited", emoji: "🥰", label: "설렘" },
-  { value: "love", emoji: "💕", label: "사랑" },
-  { value: "tired", emoji: "😴", label: "피곤" },
-  { value: "worried", emoji: "😟", label: "걱정" },
+  { value: "happy", emoji: "", label: "행복" },
+  { value: "excited", emoji: "", label: "설렘" },
+  { value: "love", emoji: "", label: "사랑" },
+  { value: "tired", emoji: "", label: "피곤" },
+  { value: "worried", emoji: "", label: "걱정" },
 ];
 
 const CoupleDiaryWrite = () => {
@@ -64,21 +65,15 @@ const CoupleDiaryWrite = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-1">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
-            <h1 className="text-lg font-bold text-foreground">일기 쓰기</h1>
-          </div>
+      <PageHeader
+        title="일기 쓰기"
+        rightExtra={
           <Button onClick={handleSave} disabled={!title.trim() || !content.trim() || isSaving} size="sm">
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
             저장
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       <main className="px-4 py-4 pb-20 space-y-5">
         {/* Date */}

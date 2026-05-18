@@ -76,7 +76,7 @@ export const useTutorial = () => {
       if (!row?.awarded) return;
       if (row.bonus_amount > 0) {
         toast.success(
-          `🎓 튜토리얼 마스터! ${row.base_amount + row.bonus_amount}P 적립`
+          ` 튜토리얼 마스터! ${row.base_amount + row.bonus_amount}P 적립`
         );
       } else if (row.base_amount > 0) {
         toast.success(`튜토리얼 완료! ${row.base_amount}P 적립`);

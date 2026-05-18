@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Trash2, Lightbulb } from "lucide-react";
+import { Trash2, Lightbulb } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { useBudget } from "@/hooks/useBudget";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { categories, savingTips, regions, getRegionalAvgWithMeal, resolveRegionKey, type BudgetCategory } from "@/data/budgetData";
@@ -94,13 +95,18 @@ const BudgetCategoryDetail = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <div className="sticky top-0 z-40 bg-card border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <button onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5 text-foreground" /></button>
-          <h1 className="text-base font-bold text-foreground">{catInfo.emoji} {catInfo.label}</h1>
-          <div className="w-5" />
-        </div>
-      </div>
+      <PageHeader
+        title={
+          <>
+            <span
+              className="w-3 h-3 rounded-full shrink-0"
+              style={{ backgroundColor: catInfo.color }}
+              aria-hidden
+            />
+            <span className="truncate">{catInfo.label}</span>
+          </>
+        }
+      />
 
       <div className="px-4 py-4 pb-24 space-y-4">
         {/* Summary */}
@@ -120,7 +126,7 @@ const BudgetCategoryDetail = () => {
         {/* Regional comparison */}
         {avgVal > 0 && (
           <div className="rounded-xl bg-card border border-border p-4">
-            <p className="text-xs font-semibold text-foreground mb-3">📍 {regions[effectiveRegionKey]?.label} 지역 평균 비교</p>
+            <p className="text-xs font-semibold text-foreground mb-3"> {regions[effectiveRegionKey]?.label} 지역 평균 비교</p>
             <div className="flex justify-between text-sm mb-2">
               <span className="text-muted-foreground">내 지출</span>
               <span className="font-bold tabular-nums">{fmt(spent)}만원</span>
@@ -137,7 +143,7 @@ const BudgetCategoryDetail = () => {
             <p className={cn("text-xs font-medium text-center py-2 rounded-lg mt-3",
               diff <= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500")}>
               {diff <= 0
-                ? `평균 대비 ${diffPct}% 절약 중이에요 👍`
+                ? `평균 대비 ${diffPct}% 절약 중이에요 `
                 : `평균보다 ${diffPct}% 높아요`}
             </p>
           </div>

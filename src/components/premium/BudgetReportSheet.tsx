@@ -235,7 +235,7 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-3xl pb-8">
         <SheetHeader>
-          <SheetTitle>📊 예산 분석 리포트</SheetTitle>
+          <SheetTitle>예산 분석 리포트</SheetTitle>
         </SheetHeader>
         <div className="mt-4">
           <div className="bg-muted rounded-2xl p-4 mb-4">

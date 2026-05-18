@@ -44,7 +44,7 @@ const VendorDetailPage = () => {
   if (error || !place) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center p-4">
-        <span className="text-4xl mb-4">😢</span>
+        <span className="text-4xl mb-4"></span>
         <p className="text-muted-foreground text-center mb-4">업체를 찾을 수 없어요.</p>
         <Button onClick={() => navigate(-1)}>뒤로</Button>
       </div>
@@ -352,7 +352,7 @@ function HoneymoonExtras({ place }: { place: LegacyDetail }) {
 
       {place.promotion_text && (
         <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-          🎁 {place.promotion_text}
+           {place.promotion_text}
         </div>
       )}
 
@@ -489,7 +489,7 @@ function ApplianceExtras({ place }: { place: LegacyDetail }) {
     <div className="space-y-4">
       {place.appliance_promotion_text && (
         <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-          🎁 {place.appliance_promotion_text}
+           {place.appliance_promotion_text}
         </div>
       )}
 
@@ -530,10 +530,10 @@ function ApplianceExtras({ place }: { place: LegacyDetail }) {
             <Stat label="매장 위치" value={place.floor_location} />
           )}
           {place.is_bestseller && (
-            <Stat label="구분" value="🏆 베스트셀러" />
+            <Stat label="구분" value=" 베스트셀러" />
           )}
           {place.is_new_model && (
-            <Stat label="구분" value="✨ 신모델" />
+            <Stat label="구분" value=" 신모델" />
           )}
         </div>
 
@@ -546,7 +546,7 @@ function ApplianceExtras({ place }: { place: LegacyDetail }) {
       {/* 사은품 — 한국 혼수의 핵심 차별점 */}
       {place.gift_items.length > 0 && (
         <div className="space-y-2 rounded-lg bg-pink-50 p-3">
-          <h3 className="font-bold text-sm text-pink-900">🎁 사은품</h3>
+          <h3 className="font-bold text-sm text-pink-900"> 사은품</h3>
           <Tags label="" items={place.gift_items} />
         </div>
       )}
@@ -555,7 +555,7 @@ function ApplianceExtras({ place }: { place: LegacyDetail }) {
       {place.appliance_product_type === "store" &&
         (place.package_examples.length > 0 || place.package_price_range) && (
         <div className="space-y-2 rounded-lg bg-blue-50 p-3">
-          <h3 className="font-bold text-sm text-blue-900">📦 이 매장의 대표 패키지</h3>
+          <h3 className="font-bold text-sm text-blue-900"> 이 매장의 대표 패키지</h3>
           {place.package_price_range && (
             <p className="text-xs text-blue-700">가격대: {place.package_price_range}</p>
           )}
@@ -655,7 +655,7 @@ function JewelryExtras({ place }: { place: LegacyDetail }) {
       {/* 시즌 프로모션 */}
       {place.jewelry_promotion_text && (
         <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-          🎁 {place.jewelry_promotion_text}
+           {place.jewelry_promotion_text}
         </div>
       )}
 

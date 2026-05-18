@@ -50,7 +50,7 @@ const SuggestionPanel = ({
                   onClick={() => onSelect(s.text)}
                   className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-muted/50 active:bg-muted transition-colors text-left"
                 >
-                  <span className="text-base">{s.emoji}</span>
+                  {s.emoji && <span className="text-base">{s.emoji}</span>}
                   <span className="text-[13px] text-foreground flex-1">{s.text}</span>
                 </button>
               </li>

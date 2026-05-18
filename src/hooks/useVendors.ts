@@ -42,14 +42,14 @@ export type VendorCategoryType = typeof VENDOR_CATEGORIES[number];
 // combo (studio/dress/makeup), so it lands on /vendor/:id which detects
 // place.category and dispatches the right per-category extras.
 export const categoryRouteMap: Record<string, { listPath: string; detailPath: string; label: string; emoji: string }> = {
-  "웨딩홀": { listPath: "/vendors/웨딩홀", detailPath: "/venue", label: "웨딩홀", emoji: "🏛️" },
-  "스드메": { listPath: "/vendors/스드메", detailPath: "/vendor", label: "스드메", emoji: "📸" },
-  "한복": { listPath: "/vendors/한복", detailPath: "/hanbok", label: "한복", emoji: "👗" },
-  "예복": { listPath: "/vendors/예복", detailPath: "/suit", label: "예복", emoji: "👔" },
-  "허니문": { listPath: "/vendors/허니문", detailPath: "/honeymoon", label: "허니문", emoji: "🌴" },
-  "혼수": { listPath: "/vendors/혼수", detailPath: "/appliances", label: "혼수·가전", emoji: "🎁" },
-  "청첩장": { listPath: "/vendors/청첩장", detailPath: "/invitation-venues", label: "청첩장", emoji: "✉️" },
-  "웨딩플래너": { listPath: "/vendors/웨딩플래너", detailPath: "/vendor", label: "웨딩플래너", emoji: "💐" },
+  "웨딩홀": { listPath: "/vendors/웨딩홀", detailPath: "/venue", label: "웨딩홀", emoji: "" },
+  "스드메": { listPath: "/vendors/스드메", detailPath: "/vendor", label: "스드메", emoji: "" },
+  "한복": { listPath: "/vendors/한복", detailPath: "/hanbok", label: "한복", emoji: "" },
+  "예복": { listPath: "/vendors/예복", detailPath: "/suit", label: "예복", emoji: "" },
+  "허니문": { listPath: "/vendors/허니문", detailPath: "/honeymoon", label: "허니문", emoji: "" },
+  "혼수": { listPath: "/vendors/혼수", detailPath: "/appliances", label: "혼수·가전", emoji: "" },
+  "청첩장": { listPath: "/vendors/청첩장", detailPath: "/invitation-venues", label: "청첩장", emoji: "" },
+  "웨딩플래너": { listPath: "/vendors/웨딩플래너", detailPath: "/vendor", label: "웨딩플래너", emoji: "" },
 };
 
 // Joined select used by both useVendors and useRecommendedVendors so cards

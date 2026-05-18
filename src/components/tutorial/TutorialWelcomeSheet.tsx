@@ -10,22 +10,22 @@ const STYLE_BLURB: Record<string, { headline: string; subline: string; emoji: st
   general: {
     headline: "결혼 준비, 어디서부터 시작할까요?",
     subline: "검증된 일반 결혼식 동선을 30초만에 둘러보세요.",
-    emoji: "💍",
+    emoji: "",
   },
   small: {
     headline: "스몰웨딩이 처음이라면",
     subline: "꼭 필요한 베뉴·답례품 가이드만 짧게 모아드릴게요.",
-    emoji: "🌿",
+    emoji: "",
   },
   self: {
     headline: "셀프웨딩 DIY 가이드",
     subline: "셀프 촬영·부케·청첩장까지 한 번에 길을 잡아드릴게요.",
-    emoji: "🎨",
+    emoji: "",
   },
   custom: {
     headline: "내 스타일에 맞춰 안내드릴게요",
     subline: "직접 정한 카테고리 위주로 30초 코스로 시작합니다.",
-    emoji: "🛠️",
+    emoji: "",
   },
 };
 

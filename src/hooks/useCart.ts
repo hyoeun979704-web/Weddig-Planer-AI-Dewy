@@ -76,7 +76,7 @@ export const useCart = () => {
           .insert({ user_id: user.id, product_id: productId, quantity });
       }
 
-      toast.success("장바구니에 담았어요 🛒");
+      toast.success("장바구니에 담았어요 ");
       await fetchCart();
       return true;
     } catch (error) {

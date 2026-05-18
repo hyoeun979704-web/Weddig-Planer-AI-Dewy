@@ -95,12 +95,12 @@ const Schedule = () => {
     if (days === null || days <= 0) return null;
     if (days > 14 && overallProgress >= 85) return null;
     const banners = [
-      { min: 120, max: 180, msg: "📋 업체 비교 견적서 만들어보세요", route: "/premium/content" },
-      { min: 60, max: 119, msg: "📸 스냅 촬영 타임라인 준비할 때예요!", route: "/premium/content" },
-      { min: 31, max: 59, msg: "📊 예산 중간 점검 리포트를 확인하세요", route: "/premium/content" },
-      { min: 15, max: 30, msg: "💒 본식 타임라인 + 스태프 안내서를 준비하세요", route: "/premium/content" },
-      { min: 8, max: 14, msg: "👜 가방순이·축의대 안내서 전달하셨나요?", route: "/premium/content" },
-      { min: 1, max: 7, msg: "📱 하객에게 리마인드 메시지를 보내세요", route: "/premium/content" },
+      { min: 120, max: 180, msg: " 업체 비교 견적서 만들어보세요", route: "/premium/content" },
+      { min: 60, max: 119, msg: " 스냅 촬영 타임라인 준비할 때예요!", route: "/premium/content" },
+      { min: 31, max: 59, msg: " 예산 중간 점검 리포트를 확인하세요", route: "/premium/content" },
+      { min: 15, max: 30, msg: " 본식 타임라인 + 스태프 안내서를 준비하세요", route: "/premium/content" },
+      { min: 8, max: 14, msg: " 가방순이·축의대 안내서 전달하셨나요?", route: "/premium/content" },
+      { min: 1, max: 7, msg: " 하객에게 리마인드 메시지를 보내세요", route: "/premium/content" },
     ];
     return banners.find(b => days >= b.min && days <= b.max) || null;
   };
@@ -216,7 +216,7 @@ const Schedule = () => {
             <p className="text-sm text-muted-foreground mb-1">결혼식까지</p>
             {days !== null ? (
               <h2 className="text-[44px] leading-tight font-extrabold tracking-tight text-primary mb-1">
-                {days > 0 ? `D-${days}` : days === 0 ? "D-Day 🎉" : `D+${Math.abs(days)}`}
+                {days > 0 ? `D-${days}` : days === 0 ? "D-Day " : `D+${Math.abs(days)}`}
               </h2>
             ) : (
               <h2 className="text-[44px] leading-tight font-extrabold text-primary mb-1">D-DAY</h2>
@@ -249,7 +249,7 @@ const Schedule = () => {
         {showTidyTip && (
           <div className="mx-4 mb-3 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl">
             <div className="flex items-start gap-2.5">
-              <span className="text-base shrink-0" aria-hidden>💡</span>
+              <span className="text-base shrink-0" aria-hidden></span>
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-bold text-amber-900">
                   추천 일정이 {incompleteTemplateCount}개 있어요
@@ -308,7 +308,7 @@ const Schedule = () => {
                           className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium shrink-0"
                           title="결혼 정보 등록 시 자동으로 추가된 추천 일정"
                         >
-                          ✨ 추천
+                           추천
                         </span>
                       )}
                     </div>

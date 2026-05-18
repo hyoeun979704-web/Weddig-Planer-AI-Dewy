@@ -11,14 +11,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 const SERVICE_CATEGORIES = [
-  { value: "wedding_hall", label: "웨딩홀", emoji: "🏛️" },
-  { value: "studio", label: "스드메 (스튜디오/드레스/메이크업)", emoji: "📸" },
-  { value: "hanbok", label: "한복", emoji: "👘" },
-  { value: "suit", label: "예복", emoji: "🤵" },
-  { value: "honeymoon", label: "허니문", emoji: "✈️" },
-  { value: "appliance", label: "혼수가전", emoji: "🏠" },
-  { value: "jewelry", label: "예물/예단", emoji: "💍" },
-  { value: "invitation_venue", label: "상견례 장소", emoji: "🍽️" },
+  { value: "wedding_hall", label: "웨딩홀" },
+  { value: "studio", label: "스드메 (스튜디오/드레스/메이크업)" },
+  { value: "hanbok", label: "한복" },
+  { value: "suit", label: "예복" },
+  { value: "honeymoon", label: "허니문" },
+  { value: "appliance", label: "혼수가전" },
+  { value: "jewelry", label: "예물/예단" },
+  { value: "invitation_venue", label: "상견례 장소" },
 ];
 
 const STEPS = ["사업자 정보", "서비스 카테고리", "업체 상세정보", "완료"];
@@ -235,7 +235,6 @@ const BusinessOnboard = () => {
                         : "border-border bg-card hover:border-primary/30"
                     }`}
                   >
-                    <span className="text-2xl block mb-2">{cat.emoji}</span>
                     <p className="text-sm font-semibold text-foreground">{cat.label}</p>
                   </button>
                 ))}

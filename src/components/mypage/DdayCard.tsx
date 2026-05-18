@@ -87,7 +87,7 @@ const DdayCard = ({ weddingDate, weddingDateTbd = false }: DdayCardProps) => {
             <div className="text-left">
               <p className="text-xs text-muted-foreground">{formattedDate}</p>
               <p className="text-2xl font-extrabold text-primary mt-0.5">
-                {isToday ? "🎉 D-Day!" : isPast ? `D+${Math.abs(days!)}` : `D-${days}`}
+                {isToday ? " D-Day!" : isPast ? `D+${Math.abs(days!)}` : `D-${days}`}
               </p>
             </div>
           </div>

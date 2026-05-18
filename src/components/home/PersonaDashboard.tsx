@@ -15,19 +15,6 @@ import {
   type PersonaMission,
 } from "@/data/personaMissions";
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  wedding_hall: "🏛️",
-  studio: "📸",
-  dress_shop: "👗",
-  makeup_shop: "💄",
-  hanbok: "👘",
-  tailor_shop: "🤵",
-  honeymoon: "✈️",
-  appliance: "🏠",
-  invitation_venue: "💌",
-  general: "📝",
-};
-
 const formatMinutes = (seconds: number) => {
   if (seconds < 60) return `${seconds}초`;
   const min = Math.floor(seconds / 60);
@@ -144,7 +131,7 @@ const PersonaDashboard = () => {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1 flex-wrap mb-1.5">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-card/80 rounded-full text-[10px] font-semibold text-primary">
-                <span>{styleIntro.accentEmoji}</span>
+                {styleIntro.accentEmoji && <span>{styleIntro.accentEmoji}</span>}
                 <span>{styleLabel} 모드</span>
               </span>
               {urgencyTone && (
@@ -154,7 +141,7 @@ const PersonaDashboard = () => {
               )}
               {weddingSettings.pregnant && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-700">
-                  🌷 {insights.pregnancy.currentWeek !== null
+                  {insights.pregnancy.currentWeek !== null
                     ? `임신 ${insights.pregnancy.currentWeek}주차`
                     : "임신 모드"}
                   {insights.pregnancy.trimesterAtWedding && (
@@ -258,9 +245,6 @@ const PersonaDashboard = () => {
                   onClick={() => navigate("/my-schedule")}
                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-muted/60 active:scale-[0.98] transition-all text-left"
                 >
-                  <span className="text-base">
-                    {CATEGORY_EMOJI[item.category ?? "general"] ?? "📝"}
-                  </span>
                   <span className="flex-1 text-[12px] font-medium text-foreground truncate">
                     {item.title}
                   </span>
@@ -296,8 +280,7 @@ const PersonaDashboard = () => {
                       : "bg-card/80 border-border hover:border-primary/30"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-base">{m.emoji}</span>
+                  <div className="flex items-center justify-end mb-0.5 min-h-[16px]">
                     {done && <Check className="w-3 h-3 text-primary" />}
                   </div>
                   <p className="text-[11px] font-semibold text-foreground leading-tight">

@@ -1,7 +1,8 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, Clock, ExternalLink, Tag, Copy, Check, Gift, Users, Eye, Loader2 } from "lucide-react";
+import { Clock, ExternalLink, Tag, Copy, Check, Gift, Users, Eye, Loader2 } from "lucide-react";
 import { useState } from "react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { usePartnerDealDetail, usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { useAuth } from "@/contexts/AuthContext";
@@ -82,16 +83,10 @@ const DealDetail = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground truncate flex-1">혜택 상세</h1>
-          <FavoriteButton itemId={deal.id} itemType="deal" />
-        </div>
-      </header>
+      <PageHeader
+        title="혜택 상세"
+        rightExtra={<FavoriteButton itemId={deal.id} itemType="deal" />}
+      />
 
       <main className="pb-32">
         {/* Banner */}

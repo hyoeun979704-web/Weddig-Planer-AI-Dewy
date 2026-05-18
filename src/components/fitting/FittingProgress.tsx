@@ -13,11 +13,11 @@ import { Loader2, Sparkles, Gamepad2 } from "lucide-react";
  */
 
 const STAGES = [
-  { label: "당신의 모습을 곰곰이 들여다보고 있어요", emoji: "📸", durationMs: 6_000 },
-  { label: "당신만의 표정과 분위기를 기억해요", emoji: "💞", durationMs: 8_000 },
-  { label: "꿈에 그리던 드레스를 정성스럽게 입혀드릴게요", emoji: "👰‍♀️", durationMs: 12_000 },
-  { label: "당신을 위한 장면을 한 컷, 그려보는 중", emoji: "🌸", durationMs: 12_000 },
-  { label: "마지막 빛결을 더해 가장 빛나는 순간으로", emoji: "✨", durationMs: 8_000 },
+  { label: "당신의 모습을 곰곰이 들여다보고 있어요", emoji: "", durationMs: 6_000 },
+  { label: "당신만의 표정과 분위기를 기억해요", emoji: "", durationMs: 8_000 },
+  { label: "꿈에 그리던 드레스를 정성스럽게 입혀드릴게요", emoji: "", durationMs: 12_000 },
+  { label: "당신을 위한 장면을 한 컷, 그려보는 중", emoji: "", durationMs: 12_000 },
+  { label: "마지막 빛결을 더해 가장 빛나는 순간으로", emoji: "", durationMs: 8_000 },
 ];
 
 const TIPS = [
@@ -141,7 +141,7 @@ export const FittingProgress = ({ active }: Props) => {
             기다리는 동안 게임 한판 어때요?
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            꽃 머지 게임으로 포인트도 모으고, 시간도 잊어요 🌸
+            꽃 머지 게임으로 포인트도 모으고, 시간도 잊어요 
           </p>
         </div>
       </button>
@@ -149,7 +149,7 @@ export const FittingProgress = ({ active }: Props) => {
       <p className="text-[11px] text-center text-muted-foreground leading-relaxed">
         완성된 모습은 자동으로 저장돼요. 잠시 다른 일을 보다 오셔도
         <br />
-        「프리미엄 콘텐츠 → 갤러리」에서 확인하실 수 있어요 💌
+        「프리미엄 콘텐츠 → 갤러리」에서 확인하실 수 있어요 
       </p>
     </div>
   );

@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, X, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { Check, X, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,27 +22,27 @@ const featureGroups = [
   {
     title: "AI 기능",
     items: [
-      { icon: "💬", text: "AI 플래너 무제한 대화", free: "5회/일", premium: "무제한" },
-      { icon: "📋", text: "AI 견적서 자동생성", free: "✕", premium: "PDF" },
-      { icon: "📊", text: "예산 분석 리포트", free: "✕", premium: "PDF" },
+      { icon: "", text: "AI 플래너 무제한 대화", free: "5회/일", premium: "무제한" },
+      { icon: "", text: "AI 견적서 자동생성", free: "✕", premium: "PDF" },
+      { icon: "", text: "예산 분석 리포트", free: "✕", premium: "PDF" },
     ],
   },
   {
     title: "웨딩 당일 준비",
     items: [
-      { icon: "📸", text: "촬영 타임라인", free: "✕", premium: "PDF" },
-      { icon: "💒", text: "본식 당일 타임라인", free: "✕", premium: "PDF" },
-      { icon: "👥", text: "하객 안내 타임라인", free: "✕", premium: "PDF" },
+      { icon: "", text: "촬영 타임라인", free: "✕", premium: "PDF" },
+      { icon: "", text: "본식 당일 타임라인", free: "✕", premium: "PDF" },
+      { icon: "", text: "하객 안내 타임라인", free: "✕", premium: "PDF" },
     ],
   },
   {
     title: "스태프 안내서",
     items: [
-      { icon: "👜", text: "가방순이 전달사항", free: "✕", premium: "PDF" },
-      { icon: "💰", text: "축의대 전달사항", free: "✕", premium: "PDF" },
-      { icon: "🎤", text: "사회자 큐시트", free: "✕", premium: "PDF" },
-      { icon: "👪", text: "부모님 안내서", free: "✕", premium: "PDF" },
-      { icon: "📱", text: "하객 안내 메시지", free: "✕", premium: "템플릿" },
+      { icon: "", text: "가방순이 전달사항", free: "✕", premium: "PDF" },
+      { icon: "", text: "축의대 전달사항", free: "✕", premium: "PDF" },
+      { icon: "", text: "사회자 큐시트", free: "✕", premium: "PDF" },
+      { icon: "", text: "부모님 안내서", free: "✕", premium: "PDF" },
+      { icon: "", text: "하객 안내 메시지", free: "✕", premium: "템플릿" },
     ],
   },
 ];
@@ -83,12 +84,7 @@ const Premium = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
-          <h1 className="text-lg font-bold">프리미엄</h1>
-        </div>
-      </header>
+      <PageHeader title="프리미엄" />
 
       <main className="flex-1 pb-20 overflow-y-auto">
         {/* Current Plan Card */}
@@ -96,7 +92,7 @@ const Premium = () => {
           {isPremium ? (
             <div className="p-5 bg-gradient-to-r from-primary/20 to-primary/5 rounded-2xl border border-primary/20">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xl">💎</span>
+                <span className="text-xl"></span>
                 <p className="font-bold text-foreground">
                   현재 플랜: {isTrialActive ? "무료 체험" : plan === "yearly" ? "연간" : "월간"} 프리미엄
                 </p>
@@ -108,7 +104,7 @@ const Premium = () => {
                 onClick={() => navigate("/premium/content")}
                 className="mt-3 w-full py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold"
               >
-                📄 프리미엄 콘텐츠 바로가기
+                 프리미엄 콘텐츠 바로가기
               </button>
             </div>
           ) : (
@@ -126,10 +122,10 @@ const Premium = () => {
         {!isPremium && (
           <div className="px-4 py-3">
             <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 border border-primary/30 text-center">
-              <p className="text-lg font-bold text-foreground">🎉 초기 이용자 특전</p>
+              <p className="text-lg font-bold text-foreground"> 초기 이용자 특전</p>
               <p className="text-sm text-foreground mt-1">첫 1개월 무료 체험 + 구독 시 AI 스튜디오 하트 보너스</p>
               <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                <span>💗 월간 10 / 연간 180 (6개월치 보너스)</span>
+                <span> 월간 10 / 연간 180 (6개월치 보너스)</span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-2">2026년 7월까지 월간·연간 구독 시 한정 · 체험 종료 후 자동 결제 없음</p>
               <button onClick={handleStartTrial} className="mt-3 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
@@ -195,7 +191,7 @@ const Premium = () => {
             <span className="w-5" aria-hidden />
             <span className="flex-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">기능</span>
             <span className="w-14 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">무료</span>
-            <span className="w-14 text-center text-[11px] font-semibold text-primary uppercase tracking-wide">💎 Premium</span>
+            <span className="w-14 text-center text-[11px] font-semibold text-primary uppercase tracking-wide"> Premium</span>
           </div>
 
           {featureGroups.map((group) => (
@@ -206,7 +202,7 @@ const Premium = () => {
                   const freeUnavailable = item.free === "✕";
                   return (
                     <div key={i} className="flex items-center gap-3 px-4 py-3.5">
-                      <span className="text-lg w-5 text-center" aria-hidden>{item.icon}</span>
+                      {item.icon && <span className="text-lg w-5 text-center" aria-hidden>{item.icon}</span>}
                       <span className="flex-1 text-sm text-foreground leading-snug">{item.text}</span>
                       <span className={`w-14 text-center text-[11px] ${freeUnavailable ? "text-muted-foreground/60" : "text-muted-foreground font-medium"}`}>
                         {item.free}

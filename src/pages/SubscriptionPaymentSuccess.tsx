@@ -76,7 +76,7 @@ const SubscriptionPaymentSuccess = () => {
         sessionStorage.removeItem(KAKAO_PAY_SESSION_KEY);
         await refetch();
         setStatus("success");
-        toast.success(type === "trial" ? "🎉 무료 체험이 시작되었습니다!" : "구독이 완료되었습니다!");
+        toast.success(type === "trial" ? " 무료 체험이 시작되었습니다!" : "구독이 완료되었습니다!");
       } catch (err: any) {
         console.error("Subscription activation failed:", err);
         setStatus("error");
@@ -100,7 +100,7 @@ const SubscriptionPaymentSuccess = () => {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4 text-center">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-          <span className="text-3xl">❌</span>
+          <span className="text-3xl"></span>
         </div>
         <h2 className="text-lg font-bold text-foreground mb-2">처리에 실패했습니다</h2>
         <p className="text-sm text-muted-foreground mb-6">{errorMessage}</p>
@@ -128,7 +128,7 @@ const SubscriptionPaymentSuccess = () => {
       </p>
       {heartsGranted > 0 && (
         <div className="mb-6 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold">
-          💗 초기 이용자 특전 하트 {heartsGranted}개 지급 완료
+           초기 이용자 특전 하트 {heartsGranted}개 지급 완료
         </div>
       )}
       <div className="flex gap-3">

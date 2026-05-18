@@ -81,7 +81,7 @@ const HeartChargeSuccess = () => {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4 text-center">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-          <span className="text-3xl">❌</span>
+          <span className="text-3xl"></span>
         </div>
         <h2 className="text-lg font-bold text-foreground mb-2">처리에 실패했습니다</h2>
         <p className="text-sm text-muted-foreground mb-6">{errorMessage}</p>
@@ -99,7 +99,7 @@ const HeartChargeSuccess = () => {
       </div>
       <h2 className="text-lg font-bold text-foreground mb-2">충전 완료!</h2>
       <p className="text-sm text-muted-foreground mb-3">
-        💗 하트 <span className="font-bold text-primary">{hearts}개</span>가 적립되었어요.
+         하트 <span className="font-bold text-primary">{hearts}개</span>가 적립되었어요.
       </p>
       {pointsSpent > 0 && (
         <p className="text-xs text-muted-foreground mb-4">

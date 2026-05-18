@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Trash2, Search, Download, ChevronDown, ChevronRight } from "lucide-react";
+import { Trash2, Search, Download, ChevronDown, ChevronRight } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { useBudget } from "@/hooks/useBudget";
 import { categories, categoryKeys, paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory } from "@/data/budgetData";
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
@@ -144,7 +145,13 @@ const BudgetHistory = () => {
       <div key={item.id} className="flex items-center gap-3 py-2.5 border-b border-border last:border-0 group">
         <button className="flex-1 flex items-center gap-3 text-left min-w-0"
           onClick={() => { setEditItem(item); setAddOpen(true); }}>
-          {!compact && <span className="text-lg shrink-0">{cat?.emoji || "📋"}</span>}
+          {!compact && (
+            <span
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: cat?.color || "#6B7280" }}
+              aria-hidden
+            />
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
             <p className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
@@ -183,22 +190,19 @@ const BudgetHistory = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <div className="sticky top-0 z-40 bg-card border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <button onClick={() => navigate(-1)} className="active:scale-90 transition-transform">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-base font-bold text-foreground">지출 내역</h1>
+      <PageHeader
+        title="지출 내역"
+        rightExtra={
           <button
             onClick={handleExportCsv}
-            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted active:scale-95 transition-all"
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
             aria-label="CSV로 내려받기"
             title="CSV 내보내기"
           >
-            <Download className="w-4 h-4 text-foreground" />
+            <Download className="w-5 h-5 text-muted-foreground" />
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Summary */}
       <div className="px-4 pt-3">
@@ -325,7 +329,11 @@ const BudgetHistory = () => {
                     onClick={() => toggleVendor(key)}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left active:bg-muted/40 transition-colors"
                   >
-                    <span className="text-base">{cat?.emoji || "📋"}</span>
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: cat?.color || "#6B7280" }}
+                      aria-hidden
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">{vendorName}</p>
                       <p className="text-[10px] text-muted-foreground">

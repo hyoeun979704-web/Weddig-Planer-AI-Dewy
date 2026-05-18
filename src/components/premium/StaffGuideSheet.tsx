@@ -35,10 +35,10 @@ interface StaffGuideSheetProps {
 }
 
 const staffMeta: Record<StaffType, { title: string; emoji: string; filename: string }> = {
-  "staff-gabang": { title: "가방순이 전달사항", emoji: "👜", filename: "가방순이_안내서" },
-  "staff-reception": { title: "축의대 담당자 안내서", emoji: "💰", filename: "축의대_안내서" },
-  "staff-mc": { title: "사회자 큐시트", emoji: "🎤", filename: "사회자_큐시트" },
-  "staff-parents": { title: "부모님 안내서", emoji: "👪", filename: "부모님_안내서" },
+  "staff-gabang": { title: "가방순이 전달사항", emoji: "", filename: "가방순이_안내서" },
+  "staff-reception": { title: "축의대 담당자 안내서", emoji: "", filename: "축의대_안내서" },
+  "staff-mc": { title: "사회자 큐시트", emoji: "", filename: "사회자_큐시트" },
+  "staff-parents": { title: "부모님 안내서", emoji: "", filename: "부모님_안내서" },
 };
 
 interface StaffInfo {
@@ -516,7 +516,7 @@ const StaffGuideSheet = ({ open, onClose }: StaffGuideSheetProps) => {
     <Sheet open={!!open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-3xl max-h-[85vh] overflow-y-auto pb-8">
         <SheetHeader>
-          <SheetTitle>{meta.emoji} {meta.title}</SheetTitle>
+          <SheetTitle>{meta.title}</SheetTitle>
         </SheetHeader>
         <div className="mt-4 space-y-3">
           {hasPrefill && (

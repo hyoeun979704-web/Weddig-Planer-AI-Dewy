@@ -113,7 +113,7 @@ const emptyStateCTA = (
 ): { label: string; path: string; hint: string } => {
   if (tab === "event") return { label: "혜택 둘러보기", path: "/deals", hint: "지금 받을 수 있는 파트너 혜택을 모아봤어요" };
   if (tab === "shopping") return { label: "셀프웨딩 스토어", path: "/store", hint: "소품·키트를 한 곳에서 둘러보세요" };
-  if (tab === "info") return { label: "꿀팁 보러가기", path: "/tips", hint: "유튜브 꿀팁 영상을 ❤️로 저장해두면 여기서 다시 볼 수 있어요" };
+  if (tab === "info") return { label: "꿀팁 보러가기", path: "/tips", hint: "유튜브 꿀팁 영상을 로 저장해두면 여기서 다시 볼 수 있어요" };
   if (weddingStyle === "self") return { label: "셀프웨딩 굿즈", path: "/store", hint: "셀프웨딩에 필요한 아이템부터 찾아보세요" };
   if (weddingStyle === "small") return { label: "소규모 예식장", path: "/invitation-venues", hint: "가족 중심 스몰웨딩 베뉴를 둘러보세요" };
   return { label: "웨딩홀 둘러보기", path: "/venues", hint: "마음에 드는 곳을 하트로 저장해보세요" };

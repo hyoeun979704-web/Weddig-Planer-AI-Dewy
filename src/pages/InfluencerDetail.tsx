@@ -1,6 +1,7 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, ExternalLink, Users, Play, Image, FileText, Eye, Heart, Loader2 } from "lucide-react";
+import { ExternalLink, Users, Play, Image, FileText, Eye, Heart, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import PageHeader from "@/components/PageHeader";
 import { useInfluencerDetail, useCategoryLabels } from "@/hooks/useInfluencers";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "@/components/FavoriteButton";
@@ -51,16 +52,10 @@ const InfluencerDetail = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-lg font-bold text-foreground truncate flex-1">{influencer.name}</h1>
-          <FavoriteButton itemId={influencer.id} itemType="influencer" />
-        </div>
-      </header>
+      <PageHeader
+        title={influencer.name}
+        rightExtra={<FavoriteButton itemId={influencer.id} itemType="influencer" />}
+      />
 
       <main className="pb-20">
         {/* Profile Section */}
