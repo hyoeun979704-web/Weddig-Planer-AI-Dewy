@@ -113,6 +113,30 @@ export const STYLE_ADDON_TASKS: Record<string, ChecklistTask[]> = {
   custom: [],
 };
 
+// 임신 신부 가중치 — domain-capsules.ts PREGNANCY_CAPSULE 와 정합.
+// 본식 시점 임신 주수가 늘어날수록 컨디션·일정 압박이 커지므로 영향 큰
+// 태스크들을 앞당겨 잡는다.
+//
+// 1) 기존 태스크의 daysBeforeWedding 을 더 앞쪽으로 시프트 (값이 클수록
+//    더 일찍). Title 정확히 일치하는 항목만 override.
+const PREGNANCY_DAYS_SHIFT: Record<string, number> = {
+  "신혼여행지·항공·숙박 알아보기": 270,   // 210 → 270 (임신 후기 항공 제약 사전 대비)
+  "신혼여행 예약 확정": 220,              // 160 → 220
+  "본식 촬영 일정 확정": 170,             // 130 → 170 (체력·동선 부담 줄이려 일찍 잡기)
+  "리허설 촬영": 160,                    // 120 → 160
+  "음식 시연 참석": 60,                  // 30 → 60 (비살균 메뉴·알코올 옵션 사전 협의)
+  "헤어메이크업 리허설": 45,             // 25 → 45 (시술 시간 짧게 효율적으로)
+  "드레스 가봉 (최종)": 60,              // 35 → 60 (본식 2~3주 전 추가 가봉 + 사이즈 여유)
+};
+
+// 2) 임신 케이스에만 들어가는 신규 태스크. bridal_care 우선.
+const PREGNANCY_ADDON_TASKS: ChecklistTask[] = [
+  { title: "산부인과 본식 컨디션 상담", daysBeforeWedding: 90, stage: "contracting", category: "bridal_care" },
+  { title: "임산부 가능 메이크업샵 확인", daysBeforeWedding: 100, stage: "contracting", category: "makeup_shop" },
+  { title: "본식 식음 알코올·비살균 옵션 협의", daysBeforeWedding: 40, stage: "wrapping_up", category: "wedding_hall" },
+  { title: "신부 대기실 의자·간식·편한 신발 준비", daysBeforeWedding: 14, stage: "wrapping_up", category: "bridal_care" },
+];
+
 /**
  * Generate scheduled_date strings for each template task, anchored to the
  * given weddingDate. When weddingDate is null, we anchor to (today + 12 months)
@@ -122,12 +146,15 @@ export const STYLE_ADDON_TASKS: Record<string, ChecklistTask[]> = {
  * of (e.g. self-wedding skips studio/dress_shop/makeup_shop).
  * `weddingStyle` layers style-specific add-on tasks on top (셀프웨딩의 DIY
  * 일정 등).
+ * `pregnant=true` shifts dress·photo·honeymoon items earlier per
+ * PREGNANCY_DAYS_SHIFT + adds PREGNANCY_ADDON_TASKS.
  */
 export function buildScheduleFromTemplate(
   weddingDate: string | null,
   selectedStage: PlanningStage,
   excludedCategories: readonly string[] = [],
   weddingStyle?: string | null,
+  pregnant: boolean = false,
 ): Array<{ title: string; scheduled_date: string; category: string; completed: boolean }> {
   const anchor = weddingDate ? new Date(weddingDate) : addMonths(new Date(), 12);
   const selectedIdx = STAGE_ORDER.indexOf(selectedStage);
@@ -135,11 +162,18 @@ export function buildScheduleFromTemplate(
 
   const baseTasks = CHECKLIST_TEMPLATE.filter((task) => !excludedSet.has(task.category));
   const addons = (weddingStyle && STYLE_ADDON_TASKS[weddingStyle]) || [];
-  const allTasks = [...baseTasks, ...addons];
+  const pregnancyAddons = pregnant
+    ? PREGNANCY_ADDON_TASKS.filter((task) => !excludedSet.has(task.category))
+    : [];
+  const allTasks = [...baseTasks, ...addons, ...pregnancyAddons];
 
   return allTasks.map((task) => {
+    // 임신 가중치: 매핑된 title 이면 더 앞으로 시프트.
+    const effectiveDays = pregnant
+      ? PREGNANCY_DAYS_SHIFT[task.title] ?? task.daysBeforeWedding
+      : task.daysBeforeWedding;
     const due = new Date(anchor);
-    due.setDate(due.getDate() - task.daysBeforeWedding);
+    due.setDate(due.getDate() - effectiveDays);
     const taskStageIdx = STAGE_ORDER.indexOf(task.stage);
     return {
       title: task.title,

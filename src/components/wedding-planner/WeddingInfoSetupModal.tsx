@@ -135,7 +135,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       // to today + 12 months so the checklist is still actionable. Exclusions
       // are applied here so the user never sees seeded items for categories
       // they opted out of.
-      const items = buildScheduleFromTemplate(weddingDateStr, stage, excludedCategories, weddingStyle);
+      const items = buildScheduleFromTemplate(weddingDateStr, stage, excludedCategories, weddingStyle, pregnant);
       const seeded = await generateScheduleFromTemplate(items);
       onSaved?.();
       onClose();
@@ -359,7 +359,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
                 임신 중이에요 <span className="text-xs text-gray-400 font-normal">(선택)</span>
               </p>
               <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                체크하시면 촬영·드레스 가봉 일정을 앞당겨 추천해드리고, AI 답변도 신체 컨디션을 고려해 안내해드려요.
+                체크하시면 촬영·가봉·신혼여행 예약을 30일 정도 앞당겨 추천드리고, 임산부 가능 메이크업샵 확인·산부인과 컨디션 상담 같은 일정이 자동으로 추가돼요. AI 답변 톤도 신체 컨디션을 고려해 안내해드려요.
               </p>
             </div>
           </label>

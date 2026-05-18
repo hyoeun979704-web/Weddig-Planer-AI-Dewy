@@ -94,6 +94,25 @@ const STYLE_SPECIFIC: Record<WeddingStyle, PersonaMission[]> = {
   ],
 };
 
+// 임신 모드 — 일정 압박이 큰 페르소나라 "오늘 한 발자국" 단위를 다르게
+// 보여준다. style mission 1개 자리를 임신 우선순위 미션으로 대체.
+const PREGNANCY_MISSIONS: PersonaMission[] = [
+  {
+    key: "pregnancy-fitting",
+    label: "임신 주수 고려해 드레스 가봉 확인",
+    hint: "본식 2~3주 전 추가 가봉 + 사이즈 여유",
+    emoji: "👰",
+    href: "/my-schedule",
+  },
+  {
+    key: "pregnancy-makeup",
+    label: "임산부 가능 메이크업샵 알아보기",
+    hint: "케라틴·블리치 회피 옵션 우선",
+    emoji: "💄",
+    href: "/ai-planner",
+  },
+];
+
 const STYLE_INTRO: Record<WeddingStyle, { title: string; subtitle: string; accentEmoji: string }> = {
   general: {
     title: "오늘의 일반 결혼 준비",
@@ -117,11 +136,20 @@ const STYLE_INTRO: Record<WeddingStyle, { title: string; subtitle: string; accen
   },
 };
 
-export function getMissionsForStyle(style: WeddingStyle | null | undefined): PersonaMission[] {
+export function getMissionsForStyle(
+  style: WeddingStyle | null | undefined,
+  options: { pregnant?: boolean } = {},
+): PersonaMission[] {
   const s = (style ?? "general") as WeddingStyle;
   const styleList = STYLE_SPECIFIC[s] ?? STYLE_SPECIFIC.general;
-  // Cap at 3 to keep the dashboard glanceable. Style-specific first, then
-  // common — the home page is the user's daily landing pad, not a task list.
+  // Cap at 3 to keep the dashboard glanceable. 임신이면 첫 자리를 가봉·
+  // 메이크업 미션으로 대체 — 스타일 미션 + COMMON 보다 컨디션·시간 압박
+  // 큰 페르소나라 우선순위 위에 둠.
+  if (options.pregnant) {
+    return [PREGNANCY_MISSIONS[0], styleList[0] ?? COMMON[0], PREGNANCY_MISSIONS[1]].filter(
+      (m): m is PersonaMission => !!m,
+    ).slice(0, 3);
+  }
   return [...styleList, ...COMMON].slice(0, 3);
 }
 

@@ -89,7 +89,7 @@ export function usePersonaInsights(): PersonaInsights {
       completedCount,
       totalCount,
       nextActions,
-      missions: getMissionsForStyle(style),
+      missions: getMissionsForStyle(style, { pregnant: weddingSettings.pregnant }),
     };
   }, [
     isLoading,
@@ -97,6 +97,7 @@ export function usePersonaInsights(): PersonaInsights {
     weddingSettings.wedding_date,
     weddingSettings.wedding_date_tbd,
     weddingSettings.planning_stage,
+    weddingSettings.pregnant,
     scheduleItems,
   ]);
 }
