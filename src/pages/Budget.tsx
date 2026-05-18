@@ -719,7 +719,7 @@ const Budget = () => {
                 const heightPct = trendMax > 0 ? (b.total / trendMax) * 100 : 0;
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-                    <span className={cn("text-xs tabular-nums",
+                    <span className={cn("text-[11px] tabular-nums",
                       b.total > 0 ? "text-foreground font-bold" : "text-muted-foreground"
                     )}>
                       {b.total > 0 ? fmt(b.total) : "·"}
@@ -746,7 +746,7 @@ const Budget = () => {
               const diff = cur - prev;
               const diffPct = Math.round((Math.abs(diff) / prev) * 100);
               return (
-                <p className={cn("text-caption mt-2 text-center",
+                <p className={cn("text-caption mt-2 text-center opacity-70",
                   diff > 0 ? "text-destructive" : diff < 0 ? "text-emerald-600" : "text-muted-foreground"
                 )}>
                   이번 달은 지난 달보다 {diff === 0 ? "동일" : `${diffPct}% ${diff > 0 ? "더 썼어요" : "덜 썼어요"}`}
