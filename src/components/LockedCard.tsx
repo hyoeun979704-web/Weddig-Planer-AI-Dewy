@@ -23,7 +23,7 @@ const LockedCard = ({ title, description, badge, onClick }: LockedCardProps) => 
         <div className="flex flex-col items-center gap-1 text-white">
           <Lock className="w-7 h-7" strokeWidth={2.5} />
           {badge && (
-            <span className="text-caption font-semibold bg-white/90 text-foreground px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-semibold bg-white/90 text-foreground px-2 py-0.5 rounded-full">
               {badge}
             </span>
           )}
@@ -31,9 +31,9 @@ const LockedCard = ({ title, description, badge, onClick }: LockedCardProps) => 
       </div>
     </div>
     <div className="px-4 py-3">
-      <h3 className="text-body font-bold text-foreground leading-tight">{title}</h3>
+      <h3 className="text-[15px] font-bold text-foreground leading-tight">{title}</h3>
       {description && (
-        <p className="mt-1 text-caption text-muted-foreground line-clamp-2">{description}</p>
+        <p className="mt-1 text-[12px] text-muted-foreground line-clamp-2">{description}</p>
       )}
       {onClick && (
         <p className="mt-1.5 text-caption text-primary font-medium">출시 알림 받기 →</p>

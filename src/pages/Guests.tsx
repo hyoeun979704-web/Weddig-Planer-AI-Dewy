@@ -269,16 +269,16 @@ const Guests = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-sm font-semibold text-foreground truncate">{g.name}</span>
-                      <span className="text-caption px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                         {GUEST_SIDE_LABEL[g.side]}
                       </span>
-                      <span className={cn("text-caption px-1.5 py-0.5 rounded-full font-semibold", RSVP_CHIP_STYLE[g.rsvp_status])}>
+                      <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-semibold", RSVP_CHIP_STYLE[g.rsvp_status])}>
                         {GUEST_RSVP_LABEL[g.rsvp_status]}
                       </span>
                       <span className="text-caption text-muted-foreground">· {g.attending_count}명</span>
                     </div>
                     {(g.relationship || g.contact || g.notes) && (
-                      <p className="text-caption text-muted-foreground mt-0.5 truncate">
+                      <p className="text-[12px] text-muted-foreground mt-0.5 truncate">
                         {[g.relationship, g.contact, g.notes].filter(Boolean).join(" · ")}
                       </p>
                     )}
@@ -311,7 +311,7 @@ const Guests = () => {
 
 const SideStat = ({ label, count }: { label: string; count: number }) => (
   <div className="bg-white/70 rounded-lg py-1.5">
-    <p className="text-caption text-muted-foreground">{label}</p>
+    <p className="text-[10px] text-muted-foreground">{label}</p>
     <p className="text-sm font-bold text-foreground">{count}</p>
   </div>
 );

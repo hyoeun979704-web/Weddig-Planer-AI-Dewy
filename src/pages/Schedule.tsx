@@ -192,12 +192,12 @@ const Schedule = () => {
             >
               <img src={arrowLeftIcon} alt="" className="w-[15px] h-[15px]" />
             </button>
-            <h1 className="text-title font-bold text-foreground">스케줄</h1>
+            <h1 className="text-[18px] font-bold text-foreground">스케줄</h1>
           </div>
           <button
             data-tutorial="schedule-add"
             onClick={() => navigate("/my-schedule")}
-            className="px-4 py-1.5 bg-primary/15 rounded-full text-primary text-body font-semibold"
+            className="px-4 py-1.5 bg-primary/15 rounded-full text-primary text-[13px] font-semibold"
           >
             + 일정 관리
           </button>
@@ -251,22 +251,22 @@ const Schedule = () => {
             <div className="flex items-start gap-2.5">
               <span className="text-base shrink-0" aria-hidden></span>
               <div className="flex-1 min-w-0">
-                <p className="text-body font-bold text-amber-900">
+                <p className="text-[13px] font-bold text-amber-900">
                   추천 일정이 {incompleteTemplateCount}개 있어요
                 </p>
-                <p className="text-caption text-amber-800 mt-0.5 leading-snug">
+                <p className="text-[12px] text-amber-800 mt-0.5 leading-snug">
                   필요 없는 항목은 정리하고, 결혼 스타일을 다시 확인해보세요.
                 </p>
                 <div className="flex gap-2 mt-2">
                   <button
                     onClick={() => navigate("/my-schedule")}
-                    className="text-caption font-semibold text-amber-900 px-3 py-1 rounded-full bg-amber-200/70"
+                    className="text-[12px] font-semibold text-amber-900 px-3 py-1 rounded-full bg-amber-200/70"
                   >
                     정리하기
                   </button>
                   <button
                     onClick={dismissTidyTip}
-                    className="text-caption text-amber-700 px-2"
+                    className="text-[12px] text-amber-700 px-2"
                   >
                     나중에
                   </button>
@@ -286,7 +286,7 @@ const Schedule = () => {
               <img src={clockIcon} alt="" className="w-[17px] h-[17px]" />
               다가오는 일정
             </h3>
-            <button onClick={() => navigate("/my-schedule")} className="text-body text-primary font-semibold">전체보기</button>
+            <button onClick={() => navigate("/my-schedule")} className="text-[13px] text-primary font-semibold">전체보기</button>
           </div>
           {user && upcomingTasks.length > 0 ? (
             <div className="space-y-2">
@@ -313,7 +313,7 @@ const Schedule = () => {
                       <span className={`text-sm block truncate ${task.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>{task.title}</span>
                       {task.source === "template" && (
                         <span
-                          className="text-caption px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium shrink-0"
+                          className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium shrink-0"
                           title="결혼 정보 등록 시 자동으로 추가된 추천 일정"
                         >
                            추천
@@ -348,7 +348,7 @@ const Schedule = () => {
           >
             <img src={clipboardIcon} alt="" className="w-[17px] h-5 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-body font-bold text-foreground">{ddayBanner.msg}</p>
+              <p className="text-[15px] font-bold text-foreground">{ddayBanner.msg}</p>
               <p className="text-xs text-muted-foreground">{isPremium ? "탭하여 시작하기" : "프리미엄 전용"}</p>
             </div>
             <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
@@ -378,7 +378,7 @@ const Schedule = () => {
                   return (
                     <div key={cat}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-body font-medium text-foreground">{meta?.label ?? cat}</span>
+                        <span className="text-[13px] font-medium text-foreground">{meta?.label ?? cat}</span>
                         <span className="text-caption text-muted-foreground">{done}/{total}</span>
                       </div>
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -404,8 +404,8 @@ const Schedule = () => {
             <img src={walletGreenIcon} alt="" className="w-[17px] h-[17px] shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-body font-bold text-foreground">예산 사용 현황</span>
-                <span className="text-body font-semibold text-primary">
+                <span className="text-[15px] font-bold text-foreground">예산 사용 현황</span>
+                <span className="text-[13px] font-semibold text-primary">
                   {budgetSettings && budgetSettings.total_budget > 0
                     ? `${budgetSummary.totalSpent.toLocaleString()} / ${budgetSettings.total_budget.toLocaleString()}만원`
                     : "예산 미설정"}
@@ -479,12 +479,12 @@ const Schedule = () => {
                           {phase.period}
                         </span>
                         {isCurrent && (
-                          <span className="text-caption font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
                             진행중
                           </span>
                         )}
                         {isCompleted && phaseItemCount > 0 && (
-                          <span className="text-caption font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-600">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-600">
                             완료
                           </span>
                         )}

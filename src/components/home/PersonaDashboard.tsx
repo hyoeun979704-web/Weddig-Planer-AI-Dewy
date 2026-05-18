@@ -130,17 +130,17 @@ const PersonaDashboard = () => {
         <div className="relative flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1 flex-wrap mb-1.5">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-card/80 rounded-full text-caption font-semibold text-primary">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-card/80 rounded-full text-[10px] font-semibold text-primary">
                 {styleIntro.accentEmoji && <span>{styleIntro.accentEmoji}</span>}
                 <span>{styleLabel} 모드</span>
               </span>
               {urgencyTone && (
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-caption font-bold ${urgencyTone.chipBg} ${urgencyTone.chipFg}`}>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${urgencyTone.chipBg} ${urgencyTone.chipFg}`}>
                   {urgencyTone.hint}
                 </span>
               )}
               {weddingSettings.pregnant && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-caption font-bold bg-pink-100 text-pink-700">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-700">
                   {insights.pregnancy.currentWeek !== null
                     ? `임신 ${insights.pregnancy.currentWeek}주차`
                     : "임신 모드"}
@@ -152,21 +152,21 @@ const PersonaDashboard = () => {
                 </span>
               )}
               {weddingSettings.marital_history === "remarriage" && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-caption font-bold bg-violet-100 text-violet-700">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700">
                   재혼
                 </span>
               )}
               {tutorialOverall.total > 0 && tutorialOverall.percent < 100 && (
                 <button
                   onClick={() => navigate("/tutorial")}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-100 rounded-full text-caption font-semibold text-violet-700 active:scale-95 transition-transform"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-100 rounded-full text-[10px] font-semibold text-violet-700 active:scale-95 transition-transform"
                 >
                   <BookOpen className="w-2.5 h-2.5" />
                   가이드 {tutorialOverall.done}/{tutorialOverall.total}
                 </button>
               )}
             </div>
-            <h2 className="text-body font-bold text-foreground leading-tight">
+            <h2 className="text-[15px] font-bold text-foreground leading-tight">
               {styleIntro.title}
             </h2>
             <p className="text-caption text-muted-foreground mt-0.5">
@@ -186,7 +186,7 @@ const PersonaDashboard = () => {
               }}
             >
               <div className="w-[58px] h-[58px] rounded-full bg-card flex flex-col items-center justify-center">
-                <span className={`text-body font-extrabold leading-none ${urgencyTone?.text ?? "text-primary"}`}>
+                <span className={`text-[15px] font-extrabold leading-none ${urgencyTone?.text ?? "text-primary"}`}>
                   {dDayLabel}
                 </span>
                 <span className="text-[9px] text-muted-foreground mt-0.5">
@@ -202,14 +202,14 @@ const PersonaDashboard = () => {
           <div className="flex items-center gap-1.5 bg-card/70 rounded-xl px-2 py-1.5">
             <Flame className="w-3.5 h-3.5 text-rose-500" />
             <div className="min-w-0">
-              <p className="text-caption text-muted-foreground leading-none">연속</p>
+              <p className="text-[10px] text-muted-foreground leading-none">연속</p>
               <p className="text-caption font-bold text-foreground">{streak.streak}일</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 bg-card/70 rounded-xl px-2 py-1.5">
             <Timer className="w-3.5 h-3.5 text-amber-500" />
             <div className="min-w-0">
-              <p className="text-caption text-muted-foreground leading-none">오늘</p>
+              <p className="text-[10px] text-muted-foreground leading-none">오늘</p>
               <p className="text-caption font-bold text-foreground">
                 {formatMinutes(session.todaySeconds)}
               </p>
@@ -218,7 +218,7 @@ const PersonaDashboard = () => {
           <div className="flex items-center gap-1.5 bg-card/70 rounded-xl px-2 py-1.5">
             <Check className="w-3.5 h-3.5 text-emerald-500" />
             <div className="min-w-0">
-              <p className="text-caption text-muted-foreground leading-none">완료</p>
+              <p className="text-[10px] text-muted-foreground leading-none">완료</p>
               <p className="text-caption font-bold text-foreground">
                 {completedCount}/{totalCount}
               </p>
@@ -233,7 +233,7 @@ const PersonaDashboard = () => {
               <p className="text-caption font-bold text-foreground">다음 액션</p>
               <button
                 onClick={() => navigate("/my-schedule")}
-                className="text-caption font-medium text-primary flex items-center gap-0.5"
+                className="text-[10px] font-medium text-primary flex items-center gap-0.5"
               >
                 전체 보기 <ArrowRight className="w-2.5 h-2.5" />
               </button>
@@ -245,10 +245,10 @@ const PersonaDashboard = () => {
                   onClick={() => navigate("/my-schedule")}
                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-muted/60 active:scale-[0.98] transition-all text-left"
                 >
-                  <span className="flex-1 text-caption font-medium text-foreground truncate">
+                  <span className="flex-1 text-[12px] font-medium text-foreground truncate">
                     {item.title}
                   </span>
-                  <span className="text-caption text-muted-foreground shrink-0">
+                  <span className="text-[10px] text-muted-foreground shrink-0">
                     {format(new Date(item.scheduled_date), "M/d", { locale: ko })}
                   </span>
                 </button>
@@ -306,7 +306,7 @@ const PersonaDashboard = () => {
 
         {/* Wedding date footer (small) */}
         {weddingDate && (
-          <p className="relative text-caption text-muted-foreground mt-3 text-center">
+          <p className="relative text-[10px] text-muted-foreground mt-3 text-center">
             예식 {format(new Date(weddingDate), "yyyy.MM.dd (EEEE)", { locale: ko })}
           </p>
         )}

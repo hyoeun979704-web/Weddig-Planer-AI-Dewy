@@ -85,7 +85,7 @@ const ValueTagChipRow = ({ placeCategory = "wedding_hall" }: Props) => {
               <span aria-hidden>{opt.emoji}</span>
               <span>{opt.label}</span>
               {empty && (
-                <span className="text-caption font-semibold ml-0.5 px-1 rounded bg-muted text-muted-foreground">
+                <span className="text-[10px] font-semibold ml-0.5 px-1 rounded bg-muted text-muted-foreground">
                   준비 중
                 </span>
               )}

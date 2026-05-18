@@ -113,7 +113,7 @@ const AIPlanApplyCard = (props: Props) => {
             "내 예산에 저장하기"
           )}
         </button>
-        <p className="text-caption text-muted-foreground mt-1.5 text-center">
+        <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
           기존 카테고리별 금액은 새 분배로 덮어쓰여요. 항목별 지출 기록은 유지됩니다.
         </p>
       </motion.div>

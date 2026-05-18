@@ -109,7 +109,7 @@ const DressFittingGallery = () => {
                     <p className="text-caption text-muted-foreground truncate">
                       {sceneLabel ?? "—"}
                     </p>
-                    <p className="text-caption text-muted-foreground">
+                    <p className="text-[10px] text-muted-foreground">
                       {new Date(it.created_at).toLocaleDateString("ko-KR")}
                     </p>
                   </div>

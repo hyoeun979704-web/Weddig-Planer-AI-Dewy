@@ -76,13 +76,13 @@ const Tutorial = () => {
                   <span className="text-xl font-extrabold text-primary leading-none">
                     {overall.percent}%
                   </span>
-                  <span className="text-caption text-muted-foreground mt-0.5">
+                  <span className="text-[10px] text-muted-foreground mt-0.5">
                     {overall.done}/{overall.total} 완료
                   </span>
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="inline-flex items-center gap-1 text-caption font-semibold text-primary bg-primary/10 rounded-full px-2 py-0.5">
+                <p className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 rounded-full px-2 py-0.5">
                   <Sparkles className="w-3 h-3" /> {style ? `${style === "self" ? "셀프웨딩" : style === "small" ? "스몰웨딩" : style === "custom" ? "맞춤" : "일반 결혼식"} 코스` : "기본 코스"}
                 </p>
                 <h2 className="text-base font-bold text-foreground mt-1.5 leading-tight">
@@ -92,7 +92,7 @@ const Tutorial = () => {
                       ? "모든 가이드 완료!"
                       : "Dewy를 처음이라면 여기부터"}
                 </h2>
-                <p className="text-caption text-muted-foreground mt-0.5">
+                <p className="text-[12px] text-muted-foreground mt-0.5">
                   {nextUp
                     ? `다음 레슨: ${nextUp.lesson.title}`
                     : "결혼 스타일에 맞는 가이드만 모았어요"}
@@ -131,7 +131,7 @@ const Tutorial = () => {
                     <p className="text-caption text-muted-foreground">{chapter.subtitle}</p>
                   </div>
                   {chapterDone && (
-                    <span className={cn("text-caption font-semibold px-2 py-0.5 rounded-full ring-1", a.text, a.ring, a.bg)}>
+                    <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full ring-1", a.text, a.ring, a.bg)}>
                       완료
                     </span>
                   )}
@@ -165,7 +165,7 @@ const Tutorial = () => {
                             </p>
                           </div>
                           <span className={cn(
-                            "text-caption font-semibold shrink-0 px-2 py-0.5 rounded-full",
+                            "text-[10px] font-semibold shrink-0 px-2 py-0.5 rounded-full",
                             done ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
                           )}>
                             {done ? "다시 보기" : `+${lesson.reward}P`}

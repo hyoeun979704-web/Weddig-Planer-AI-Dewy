@@ -11,7 +11,7 @@ const Privacy = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <PageHeader title="개인정보처리방침" />
 
-      <main className="px-5 py-6 pb-24 text-body leading-7 text-foreground">
+      <main className="px-5 py-6 pb-24 text-[13px] leading-7 text-foreground">
         <p className="mb-4 text-muted-foreground">
           시행일: 2026년 5월 1일 · 최종 개정일: 2026년 5월 1일
         </p>
@@ -52,7 +52,7 @@ const Privacy = () => {
             <li>드레스·메이크업 등 선택한 옵션 정보</li>
             <li>생성된 결과 이미지</li>
           </ul>
-          <p className="mt-2 text-caption text-muted-foreground">
+          <p className="mt-2 text-[12px] text-muted-foreground">
             ※ 얼굴 사진은 「개인정보 보호법」상 개인정보에 해당하므로 별도 동의를 받습니다.
           </p>
 
@@ -72,7 +72,7 @@ const Privacy = () => {
 
         <Section title="3. 개인정보의 보유 및 이용 기간">
           <p className="mb-2">회사는 원칙적으로 개인정보 수집·이용 목적이 달성되면 지체 없이 파기합니다. 단, 다음의 경우에는 명시된 기간 동안 보관합니다.</p>
-          <table className="w-full text-caption border-collapse mt-2">
+          <table className="w-full text-[12px] border-collapse mt-2">
             <thead>
               <tr className="bg-muted">
                 <th className="border border-border p-2 text-left">항목</th>
@@ -132,7 +132,7 @@ const Privacy = () => {
 
         <Section title="5. 개인정보 처리의 위탁">
           회사는 원활한 서비스 제공을 위해 다음의 업무를 외부에 위탁하고 있습니다.
-          <table className="w-full text-caption border-collapse mt-2">
+          <table className="w-full text-[12px] border-collapse mt-2">
             <thead>
               <tr className="bg-muted">
                 <th className="border border-border p-2 text-left">수탁자</th>
@@ -158,7 +158,7 @@ const Privacy = () => {
               </tr>
             </tbody>
           </table>
-          <p className="mt-2 text-caption text-muted-foreground">
+          <p className="mt-2 text-[12px] text-muted-foreground">
             회사는 위탁 시 개인정보의 안전한 처리를 위해 필요한 사항을 규정하고 감독합니다.
           </p>
         </Section>
@@ -212,7 +212,7 @@ const Privacy = () => {
         </Section>
 
         <Section title="11. 개인정보 보호책임자">
-          <table className="w-full text-caption border-collapse">
+          <table className="w-full text-[12px] border-collapse">
             <tbody>
               <tr>
                 <td className="border border-border p-2 font-semibold w-1/3">성명</td>
@@ -228,10 +228,10 @@ const Privacy = () => {
               </tr>
             </tbody>
           </table>
-          <p className="mt-2 text-caption text-muted-foreground">
+          <p className="mt-2 text-[12px] text-muted-foreground">
             기타 개인정보 침해에 대한 신고·상담은 다음 기관에 문의할 수 있습니다.
           </p>
-          <ul className="list-disc pl-5 mt-1 text-caption text-muted-foreground space-y-0.5">
+          <ul className="list-disc pl-5 mt-1 text-[12px] text-muted-foreground space-y-0.5">
             <li>개인정보 침해신고센터 (privacy.kisa.or.kr / 국번없이 118)</li>
             <li>개인정보 분쟁조정위원회 (kopico.go.kr / 1833-6972)</li>
             <li>대검찰청 사이버수사과 (spo.go.kr / 1301)</li>
@@ -261,7 +261,7 @@ const Section = ({ title, children }: { title: string; children: ReactNode }) =>
 );
 
 const SubTitle = ({ children }: { children: ReactNode }) => (
-  <h3 className="text-body font-semibold mt-3 mb-1 text-foreground">{children}</h3>
+  <h3 className="text-[13px] font-semibold mt-3 mb-1 text-foreground">{children}</h3>
 );
 
 export default Privacy;

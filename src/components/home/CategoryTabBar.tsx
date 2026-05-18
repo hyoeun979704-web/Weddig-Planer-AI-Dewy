@@ -54,7 +54,7 @@ const CategoryTabBar = ({ activeTab, onTabChange }: CategoryTabBarProps) => {
             >
               <span
                 className={cn(
-                  "text-caption whitespace-nowrap",
+                  "text-[12px] whitespace-nowrap",
                   isActive ? "font-bold" : "font-semibold"
                 )}
               >

@@ -82,12 +82,12 @@ const HomeEntryPopup = () => {
           <h2 className="text-xl font-extrabold text-foreground leading-snug">
             지금 가입하면<br />Premium 1달 무료
           </h2>
-          <p className="mt-2 text-body text-muted-foreground leading-relaxed">
+          <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">
             AI 플래너 무제한 · 예산 분석 PDF<br />결혼 스타일별 맞춤 가이드까지
           </p>
           <button
             onClick={handleCTA}
-            className="mt-5 w-full h-12 rounded-2xl bg-primary text-primary-foreground font-bold text-body active:scale-[0.98] transition-transform"
+            className="mt-5 w-full h-12 rounded-2xl bg-primary text-primary-foreground font-bold text-[15px] active:scale-[0.98] transition-transform"
           >
             지금 시작하기
           </button>
@@ -97,13 +97,13 @@ const HomeEntryPopup = () => {
         <div className="px-5 py-3 flex items-center justify-between border-t border-border/60">
           <button
             onClick={handleDismissForToday}
-            className="text-caption font-medium text-muted-foreground hover:text-foreground"
+            className="text-[12px] font-medium text-muted-foreground hover:text-foreground"
           >
             오늘 하루 보지 않기
           </button>
           <button
             onClick={() => setOpen(false)}
-            className="text-caption font-semibold text-muted-foreground"
+            className="text-[12px] font-semibold text-muted-foreground"
           >
             닫기
           </button>

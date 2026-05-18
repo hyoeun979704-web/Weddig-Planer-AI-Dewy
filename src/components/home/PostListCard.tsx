@@ -37,7 +37,7 @@ const PostListCard = ({ post, onClick }: PostListCardProps) => {
         </span>
       )}
 
-      <p className="text-caption font-bold leading-tight text-black line-clamp-1 mb-1">
+      <p className="text-[12px] font-bold leading-tight text-black line-clamp-1 mb-1">
         {post.title}
       </p>
 
@@ -47,11 +47,11 @@ const PostListCard = ({ post, onClick }: PostListCardProps) => {
         </p>
       )}
 
-      <p className="text-caption leading-[1.35] text-black/65 line-clamp-3 flex-1">
+      <p className="text-[10px] leading-[1.35] text-black/65 line-clamp-3 flex-1">
         {post.content}
       </p>
 
-      <div className="flex items-center justify-between mt-2 text-caption text-black/55">
+      <div className="flex items-center justify-between mt-2 text-[10px] text-black/55">
         <span>조회수 {formatCount(post.views)}</span>
         <span
           role="button"

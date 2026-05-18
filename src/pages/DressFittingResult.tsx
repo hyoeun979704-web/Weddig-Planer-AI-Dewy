@@ -120,10 +120,10 @@ const DressFittingResult = () => {
             <p className="text-base font-semibold text-foreground">
               생성에 실패했어요
             </p>
-            <p className="text-caption text-muted-foreground">
+            <p className="text-[12px] text-muted-foreground">
               {fitting.error_message ?? "알 수 없는 오류"}
             </p>
-            <p className="text-caption text-foreground/70">
+            <p className="text-[12px] text-foreground/70">
               하트는 자동으로 환불됐어요.
             </p>
             <Button
@@ -153,7 +153,7 @@ const DressFittingResult = () => {
             )}
 
             {sceneLabel && (
-              <p className="text-caption text-muted-foreground text-center">
+              <p className="text-[12px] text-muted-foreground text-center">
                 {sceneLabel}
               </p>
             )}
@@ -180,7 +180,7 @@ const DressFittingResult = () => {
             <button
               type="button"
               onClick={() => navigate("/ai-studio/dress-tour/gallery")}
-              className="w-full text-body text-muted-foreground underline pt-2"
+              className="w-full text-[13px] text-muted-foreground underline pt-2"
             >
               내 갤러리 보기
             </button>

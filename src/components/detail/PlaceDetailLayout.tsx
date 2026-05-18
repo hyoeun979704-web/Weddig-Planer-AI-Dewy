@@ -653,7 +653,7 @@ function ReviewCard({ review }: { review: PlaceReview }) {
           <span className="text-sm text-foreground">{review.author}</span>
         )}
         {review.is_verified && (
-          <span className="text-caption px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-full">
+          <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-full">
             인증
           </span>
         )}

@@ -69,8 +69,8 @@ const CompactBannerCarousel = () => {
         >
           {active.icon && <span className="text-base" aria-hidden>{active.icon}</span>}
           <div className="flex-1 flex flex-col items-start leading-tight">
-            <span className={cn("text-caption font-bold", active.fg)}>{active.title}</span>
-            <span className="text-caption font-medium text-black/55">{active.subtitle}</span>
+            <span className={cn("text-[12px] font-bold", active.fg)}>{active.title}</span>
+            <span className="text-[10px] font-medium text-black/55">{active.subtitle}</span>
           </div>
           <ChevronRight className={cn("w-4 h-4 flex-shrink-0", active.fg)} />
         </button>

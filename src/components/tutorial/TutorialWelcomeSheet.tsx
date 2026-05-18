@@ -126,7 +126,7 @@ const TutorialWelcomeSheet = () => {
             {blurb.emoji}
           </div>
           <h2 className="text-lg font-bold text-foreground">{blurb.headline}</h2>
-          <p className="text-body text-muted-foreground mt-1 px-2 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground mt-1 px-2 leading-relaxed">
             {blurb.subline}
           </p>
         </div>

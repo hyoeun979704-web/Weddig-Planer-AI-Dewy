@@ -157,7 +157,7 @@ export default function BudgetAddSheet({
         <div className="mb-4">
           <div className="flex items-center justify-between mb-1.5">
             <Label className="text-sm font-semibold">금액</Label>
-            <span className="text-caption text-muted-foreground">1만원 단위 · 32만 5천원 → 32.5</span>
+            <span className="text-[10px] text-muted-foreground">1만원 단위 · 32만 5천원 → 32.5</span>
           </div>
           <div className="flex items-center gap-2">
             <Input type="number" inputMode="decimal" step="0.1" value={amount || ""}
@@ -166,7 +166,7 @@ export default function BudgetAddSheet({
             <span className="text-sm text-muted-foreground">만원</span>
           </div>
           {amount > 0 && (
-            <p className="text-caption text-muted-foreground mt-1 text-right tabular-nums">
+            <p className="text-[10px] text-muted-foreground mt-1 text-right tabular-nums">
               = {manwonToWon(amount).toLocaleString()}원
               {amount >= 10000 && <span className="text-yellow-700"> · 금액이 너무 큰 건 아닌가요?</span>}
               {amount > 0 && amount < 0.1 && <span className="text-yellow-700"> · 금액이 너무 작은 건 아닌가요?</span>}
@@ -208,7 +208,7 @@ export default function BudgetAddSheet({
             <div className="flex gap-1 flex-wrap mt-1.5">
               {subItems.map(s => (
                 <button key={s} onClick={() => setTitle(s)}
-                  className="text-caption py-0.5 px-2 rounded-full bg-muted text-muted-foreground hover:bg-primary/10">
+                  className="text-[10px] py-0.5 px-2 rounded-full bg-muted text-muted-foreground hover:bg-primary/10">
                   {s}
                 </button>
               ))}
@@ -335,7 +335,7 @@ export default function BudgetAddSheet({
                   <span className="text-sm text-muted-foreground">만원</span>
                 </div>
                 {balanceAmount > 0 && (
-                  <p className="text-caption text-muted-foreground mt-0.5 text-right tabular-nums">
+                  <p className="text-[10px] text-muted-foreground mt-0.5 text-right tabular-nums">
                     = {manwonToWon(balanceAmount).toLocaleString()}원
                   </p>
                 )}

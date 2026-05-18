@@ -91,7 +91,7 @@ export const FittingProgress = ({ active }: Props) => {
     <div className="mt-4 p-4 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 space-y-4">
       {/* 단계 표시 */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-caption">
+        <div className="flex items-center justify-between text-[12px]">
           <span className="flex items-center gap-2 font-medium text-foreground">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
             <span className="text-lg leading-none">{STAGES[currentStageIdx].emoji}</span>
@@ -123,7 +123,7 @@ export const FittingProgress = ({ active }: Props) => {
           <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-caption font-semibold text-primary mb-1">알아두면 좋은 드레스 이야기</p>
-            <p className="text-body text-foreground leading-relaxed">{TIPS[tipIndex]}</p>
+            <p className="text-[13px] text-foreground leading-relaxed">{TIPS[tipIndex]}</p>
           </div>
         </div>
       </div>

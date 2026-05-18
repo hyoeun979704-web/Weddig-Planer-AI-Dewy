@@ -309,7 +309,7 @@ const DressFitting = () => {
           )}
         </div>
         {step !== "intro" && (
-          <div className="px-4 pb-2 flex items-center gap-2 text-caption text-muted-foreground">
+          <div className="px-4 pb-2 flex items-center gap-2 text-[12px] text-muted-foreground">
             <span>{stepLabel[step]}</span>
             <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
               <div
@@ -424,7 +424,7 @@ const IntroSection = ({
     <section className="mb-6 p-4 bg-pink-50 rounded-xl border border-pink-100">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-body text-muted-foreground mb-1">한 장 생성</p>
+          <p className="text-[13px] text-muted-foreground mb-1">한 장 생성</p>
           <div className="flex items-center gap-1">
             <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
             <span className="text-lg font-bold text-foreground">{HEART_COST}</span>
@@ -453,7 +453,7 @@ const IntroSection = ({
 
     <section className="mb-6 p-3 bg-blue-50 rounded-lg flex gap-2">
       <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-      <p className="text-caption text-blue-900 leading-relaxed">
+      <p className="text-[12px] text-blue-900 leading-relaxed">
         <strong>전신 사진</strong>을 올리면 본인의 실제 체형이 반영되어 더
         현실적인 핏을 확인할 수 있어요. 셀카도 가능하지만 체형은 AI가
         추정해요.
@@ -464,7 +464,7 @@ const IntroSection = ({
       <button
         type="button"
         onClick={onStart}
-        className="w-full bg-primary text-primary-foreground rounded-xl py-4 font-bold text-body flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+        className="w-full bg-primary text-primary-foreground rounded-xl py-4 font-bold text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
       >
         <Camera className="w-5 h-5" />
         시작하기
@@ -491,7 +491,7 @@ const IntroSection = ({
         <span className="text-sm font-medium text-foreground">
           내 드레스 갤러리
         </span>
-        <span className="text-body text-muted-foreground">→</span>
+        <span className="text-[13px] text-muted-foreground">→</span>
       </button>
     </section>
   </>
@@ -570,7 +570,7 @@ const DressStep = ({
 }) => (
   <section className="space-y-3">
     <h2 className="text-lg font-bold text-foreground">드레스 선택</h2>
-    <p className="text-caption text-muted-foreground">
+    <p className="text-[12px] text-muted-foreground">
       마음에 드는 드레스를 하나 골라주세요.
     </p>
     {loading ? (
@@ -596,10 +596,10 @@ const DressStep = ({
               />
             </div>
             <div className="p-2">
-              <p className="text-caption font-semibold text-foreground truncate">
+              <p className="text-[12px] font-semibold text-foreground truncate">
                 {d.name}
               </p>
-              <p className="text-caption text-muted-foreground truncate">
+              <p className="text-[10px] text-muted-foreground truncate">
                 {[
                   labelOf("silhouette", d.silhouette),
                   labelOf("neckline", d.neckline),
@@ -632,7 +632,7 @@ const SceneStep = ({ onPick }: { onPick: (t: SceneType) => void }) => (
           <p className="text-base font-bold text-foreground mb-1">
             {SCENE_TYPE_LABEL[t]}
           </p>
-          <p className="text-caption text-muted-foreground">
+          <p className="text-[12px] text-muted-foreground">
             {SCENE_TYPE_DESC[t]}
           </p>
         </button>
@@ -668,7 +668,7 @@ const ToneStep = ({
             <p className="text-base font-bold text-foreground mb-1">
               {s.shortLabel}
             </p>
-            <p className="text-caption text-muted-foreground">{s.description}</p>
+            <p className="text-[12px] text-muted-foreground">{s.description}</p>
           </button>
         ))}
       </div>
@@ -728,7 +728,7 @@ const ReviewSection = ({
                 alt={dress.name}
                 className="w-12 h-16 object-cover rounded"
               />
-              <span className="text-caption text-foreground truncate max-w-[120px]">
+              <span className="text-[12px] text-foreground truncate max-w-[120px]">
                 {dress.name}
               </span>
             </div>
@@ -740,19 +740,19 @@ const ReviewSection = ({
         label="컷·배경"
         right={
           scene && (
-            <span className="text-body text-foreground">{scene.label}</span>
+            <span className="text-[13px] text-foreground">{scene.label}</span>
           )
         }
         onEdit={onEditScene}
       />
 
       <div className="p-3 bg-pink-50 rounded-lg flex items-center justify-between">
-        <div className="flex items-center gap-1 text-body">
+        <div className="flex items-center gap-1 text-[13px]">
           <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
           <span className="font-bold text-foreground">{HEART_COST}</span>
           <span className="text-muted-foreground">하트 차감</span>
         </div>
-        <span className="text-caption text-muted-foreground">
+        <span className="text-[12px] text-muted-foreground">
           잔액 {hearts ?? 0} 
         </span>
       </div>
@@ -760,7 +760,7 @@ const ReviewSection = ({
       <Button
         onClick={onGenerate}
         disabled={isGenerating || (hearts ?? 0) < HEART_COST}
-        className="w-full h-12 text-body font-bold"
+        className="w-full h-12 text-[15px] font-bold"
       >
         {isGenerating ? (
           <>

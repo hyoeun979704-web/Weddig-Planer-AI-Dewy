@@ -325,7 +325,7 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
                   <SlidersHorizontal className="w-3.5 h-3.5" />
                   필터
                   {activeFilterCount > 0 && (
-                    <span className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full bg-background/30 text-caption flex items-center justify-center">
+                    <span className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full bg-background/30 text-[10px] flex items-center justify-center">
                       {activeFilterCount}
                     </span>
                   )}
@@ -426,11 +426,11 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
                         <div className="flex items-start gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                              <span className="px-2 py-0.5 bg-muted rounded text-caption font-medium text-muted-foreground">
+                              <span className="px-2 py-0.5 bg-muted rounded text-[10px] font-medium text-muted-foreground">
                                 {post.category}
                               </span>
                               {styleBadge && (
-                                <span className={`px-2 py-0.5 rounded-full text-caption font-semibold ${styleBadge.classes}`}>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${styleBadge.classes}`}>
                                   {styleBadge.label}
                                 </span>
                               )}

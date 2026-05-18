@@ -136,7 +136,7 @@ const BudgetSplitSimulator = () => {
                     <span className="text-base">{categories[key].emoji}</span>
                     <div>
                       <p className="text-sm font-medium text-foreground">{categories[key].label}</p>
-                      <p className="text-caption text-muted-foreground">{budget}만원</p>
+                      <p className="text-[10px] text-muted-foreground">{budget}만원</p>
                     </div>
                   </div>
                   <button
@@ -156,13 +156,13 @@ const BudgetSplitSimulator = () => {
           <p className="text-xs font-semibold text-foreground mb-3">분담 결과</p>
           <div className="h-5 rounded-full overflow-hidden flex bg-muted mb-3">
             {groomTotal > 0 && (
-              <div className="h-full flex items-center justify-center text-caption font-bold text-white" 
+              <div className="h-full flex items-center justify-center text-[10px] font-bold text-white" 
                 style={{ width: `${groomPct}%`, backgroundColor: "#3B82F6" }}>
                 {groomPct}%
               </div>
             )}
             {brideTotal > 0 && (
-              <div className="h-full flex items-center justify-center text-caption font-bold text-white" 
+              <div className="h-full flex items-center justify-center text-[10px] font-bold text-white" 
                 style={{ width: `${bridePct}%`, backgroundColor: "#F4A7B9" }}>
                 {bridePct}%
               </div>

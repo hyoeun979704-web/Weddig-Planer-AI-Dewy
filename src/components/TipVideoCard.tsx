@@ -94,7 +94,7 @@ export function TipVideoCard({ video, width, rank }: TipVideoCardProps) {
         </button>
 
         <div className="absolute inset-x-0 bottom-0 bg-white/65 px-2 py-2">
-          <p className="line-clamp-2 h-[26px] text-caption font-medium leading-[1.3] text-black">
+          <p className="line-clamp-2 h-[26px] text-[10px] font-medium leading-[1.3] text-black">
             {video.title}
           </p>
           {subCategoryLabels.length > 0 && (

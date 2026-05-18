@@ -134,7 +134,7 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
                   isActive && "scale-110"
                 )}
               />
-              <span className="text-caption font-medium">{item.label}</span>
+              <span className="text-[10px] font-medium">{item.label}</span>
             </button>
           );
         })}

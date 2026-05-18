@@ -84,7 +84,7 @@ const Influencers = () => {
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
             필터
-            {hasActiveFilters && <span className="ml-0.5 text-caption">●</span>}
+            {hasActiveFilters && <span className="ml-0.5 text-[10px]">●</span>}
           </button>
         </div>
       </div>
@@ -168,7 +168,7 @@ const InfluencerCard = ({ influencer, onClick }: { influencer: Influencer; onCli
       <div className="flex items-center gap-2">
         <span className="text-xs text-primary font-medium">{formatCount(influencer.follower_count)} 팔로워</span>
         {influencer.tags.slice(0, 2).map((tag) => (
-          <span key={tag} className="px-1.5 py-0.5 bg-muted rounded text-caption text-muted-foreground">
+          <span key={tag} className="px-1.5 py-0.5 bg-muted rounded text-[10px] text-muted-foreground">
             #{tag}
           </span>
         ))}

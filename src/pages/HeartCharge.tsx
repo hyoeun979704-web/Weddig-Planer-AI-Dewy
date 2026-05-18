@@ -125,12 +125,12 @@ const HeartCharge = () => {
                 }`}
               >
                 {pkg.highlight && (
-                  <span className="absolute -top-2 right-3 px-2 py-0.5 bg-primary text-primary-foreground text-caption font-bold rounded-full">
+                  <span className="absolute -top-2 right-3 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full">
                     추천
                   </span>
                 )}
                 {pkg.firstOnly && (
-                  <span className="absolute -top-2 left-3 px-2 py-0.5 bg-destructive text-destructive-foreground text-caption font-bold rounded-full">
+                  <span className="absolute -top-2 left-3 px-2 py-0.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
                     {disabled ? "사용 완료" : "1회 한정"}
                   </span>
                 )}

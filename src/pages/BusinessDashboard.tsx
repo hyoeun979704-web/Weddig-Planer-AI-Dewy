@@ -154,7 +154,7 @@ const BusinessDashboard = () => {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-foreground">{item.label}</p>
                     {item.badge && (
-                      <span className="text-caption px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{item.badge}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{item.badge}</span>
                     )}
                   </div>
                   <p className="text-caption text-muted-foreground mt-0.5">{item.description}</p>

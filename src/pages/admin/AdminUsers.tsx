@@ -198,7 +198,7 @@ const RoleBadge = ({ role }: { role: string }) => {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 text-caption px-2 py-0.5 rounded-full font-medium",
+        "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium",
         c.color,
       )}
     >

@@ -78,7 +78,7 @@ const Tile = ({ item, onClick }: { item: CategoryItem; onClick: () => void }) =>
           }}
         />
       </div>
-      <span className="text-caption leading-[15px] text-black text-center">
+      <span className="text-[12px] leading-[15px] text-black text-center">
         {item.label}
       </span>
     </button>

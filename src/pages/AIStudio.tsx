@@ -96,10 +96,10 @@ const AIStudio = () => {
                 >
                   <div className="aspect-square bg-gradient-to-br from-pink-100 to-pink-200" />
                   <div className="px-4 py-3">
-                    <h3 className="text-body font-bold text-foreground leading-tight">
+                    <h3 className="text-[15px] font-bold text-foreground leading-tight">
                       {card.title}
                     </h3>
-                    <p className="mt-1 text-caption text-muted-foreground line-clamp-2">
+                    <p className="mt-1 text-[12px] text-muted-foreground line-clamp-2">
                       {card.description}
                     </p>
                     <p className="mt-1.5 text-caption text-primary font-medium">
@@ -119,15 +119,15 @@ const AIStudio = () => {
                   className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
                 >
                   <div className="relative aspect-square bg-gradient-to-br from-pink-50 to-pink-100">
-                    <span className="absolute top-2 right-2 text-caption font-semibold bg-white/95 text-primary px-2 py-0.5 rounded-full shadow-sm">
+                    <span className="absolute top-2 right-2 text-[10px] font-semibold bg-white/95 text-primary px-2 py-0.5 rounded-full shadow-sm">
                       곧 출시
                     </span>
                   </div>
                   <div className="px-4 py-3">
-                    <h3 className="text-body font-bold text-foreground leading-tight">
+                    <h3 className="text-[15px] font-bold text-foreground leading-tight">
                       {card.title}
                     </h3>
-                    <p className="mt-1 text-caption text-muted-foreground line-clamp-2">
+                    <p className="mt-1 text-[12px] text-muted-foreground line-clamp-2">
                       {card.description}
                     </p>
                     <p className="mt-1.5 text-caption text-muted-foreground font-medium">

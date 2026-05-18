@@ -249,7 +249,7 @@ const Tips = () => {
               <button
                 key={c.slug ?? "all"}
                 onClick={() => setCategory(c.slug)}
-                className={`flex-shrink-0 px-3 h-8 rounded-full text-caption font-medium transition-colors ${
+                className={`flex-shrink-0 px-3 h-8 rounded-full text-[12px] font-medium transition-colors ${
                   active
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -313,7 +313,7 @@ const Tips = () => {
                 )
               ) : (
                 showCuratedBadge && (
-                  <span className="inline-flex items-center gap-1 px-2 h-5 rounded-full bg-primary/10 text-primary text-caption font-medium">
+                  <span className="inline-flex items-center gap-1 px-2 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
                     <Sparkles className="w-2.5 h-2.5" />맞춤
                   </span>
                 )

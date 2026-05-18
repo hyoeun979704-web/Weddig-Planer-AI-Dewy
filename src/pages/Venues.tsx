@@ -40,7 +40,7 @@ const Venues = () => {
           // Surface the hall-type filter to small-wedding users — the
           // options (하우스/스몰웨딩/채플/가든) are most relevant to their
           // intent but easy to miss inside the filter sheet.
-          <div className="mx-4 mt-2 rounded-md bg-rose-50 border border-rose-100 px-3 py-2 flex items-center gap-2 text-caption text-rose-700">
+          <div className="mx-4 mt-2 rounded-md bg-rose-50 border border-rose-100 px-3 py-2 flex items-center gap-2 text-[12px] text-rose-700">
             <Sparkles className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
             <span>
               스몰웨딩 추천 — <b>홀 유형</b>에서 “하우스 · 스몰웨딩 · 채플” 을 선택해보세요.

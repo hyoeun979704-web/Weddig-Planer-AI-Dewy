@@ -191,7 +191,7 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-body text-muted-foreground">{config.linkedSubtitle}</p>
+            <p className="text-[13px] text-muted-foreground">{config.linkedSubtitle}</p>
             <p className="font-semibold text-foreground truncate">
               {partnerName}
               <span className="text-muted-foreground font-normal text-sm"> 님과 연결됨</span>
@@ -252,7 +252,7 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
       >
         <div className="flex items-center gap-2 mb-1">
           <UserPlus className="w-4 h-4 text-primary" />
-          <h3 className="text-body font-bold text-foreground">파트너의 합류를 기다리는 중</h3>
+          <h3 className="text-[15px] font-bold text-foreground">파트너의 합류를 기다리는 중</h3>
         </div>
         <p className="text-xs text-muted-foreground mb-3">
           아래 6자리 초대 코드를 파트너에게 공유해주세요
@@ -333,8 +333,8 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
           <Icon className={cn("w-5 h-5 text-primary", variant === "mypage" && "fill-primary/30")} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-body font-bold text-foreground leading-tight">{config.title}</h3>
-          <p className="text-caption text-muted-foreground mt-0.5 leading-snug">
+          <h3 className="text-[15px] font-bold text-foreground leading-tight">{config.title}</h3>
+          <p className="text-[12px] text-muted-foreground mt-0.5 leading-snug">
             {config.unlinkedSubtitle}
           </p>
         </div>
