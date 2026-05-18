@@ -9,6 +9,7 @@ import {
   getStyleIntro,
   type PersonaMission,
 } from "@/data/personaMissions";
+import { computePregnancyContext, type PregnancyContext } from "@/lib/pregnancy";
 
 export interface PersonaInsights {
   isLoaded: boolean;
@@ -24,6 +25,8 @@ export interface PersonaInsights {
   /** Up to 3 next actionable items, sorted by nearest due date. */
   nextActions: ScheduleItem[];
   missions: PersonaMission[];
+  /** 임신 차수·주수 컨텍스트. pregnant=false 거나 dueDate 미설정이면 모든 필드 null. */
+  pregnancy: PregnancyContext;
 }
 
 const computeDaysUntil = (date: string | null): number | null => {
@@ -60,6 +63,12 @@ export function usePersonaInsights(): PersonaInsights {
 
     const daysUntilWedding = computeDaysUntil(weddingSettings.wedding_date);
 
+    const pregnancy = computePregnancyContext(
+      weddingSettings.pregnant,
+      weddingSettings.pregnancy_due_date,
+      weddingSettings.wedding_date,
+    );
+
     // Progress + next actions are only meaningful once items are seeded.
     const totalCount = scheduleItems.length;
     const completedCount = scheduleItems.filter(i => i.completed).length;
@@ -89,7 +98,11 @@ export function usePersonaInsights(): PersonaInsights {
       completedCount,
       totalCount,
       nextActions,
-      missions: getMissionsForStyle(style),
+      missions: getMissionsForStyle(style, {
+        pregnant: weddingSettings.pregnant,
+        pregnancyTrimester: pregnancy.trimesterAtWedding,
+      }),
+      pregnancy,
     };
   }, [
     isLoading,
@@ -97,6 +110,8 @@ export function usePersonaInsights(): PersonaInsights {
     weddingSettings.wedding_date,
     weddingSettings.wedding_date_tbd,
     weddingSettings.planning_stage,
+    weddingSettings.pregnant,
+    weddingSettings.pregnancy_due_date,
     scheduleItems,
   ]);
 }

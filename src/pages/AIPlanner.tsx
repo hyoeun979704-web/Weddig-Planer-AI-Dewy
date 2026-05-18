@@ -7,6 +7,8 @@ import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
+import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
 import TypingIndicator from "@/components/wedding-planner/TypingIndicator";
 import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
@@ -124,6 +126,16 @@ const AIPlanner = () => {
   const { user } = useAuth();
   const { messages, isLoading, sendMessage, sendStructured, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
   const { weddingSettings } = useWeddingSchedule();
+  const weddingInfoPrompt = useWeddingInfoPrompt();
+  // 결혼 정보(날짜·지역)가 모두 비어있으면 LLM이 컨텍스트 없이 일반론 답변을
+  // 주게 됨. 첫 진입 화면에 1줄 chip으로 1분 설정을 유도해 무료 한도가
+  // 일반론으로 소모되는 사고 방지.
+  const needsWeddingSetup =
+    !!user &&
+    !weddingSettings.wedding_date &&
+    !weddingSettings.wedding_date_tbd &&
+    !weddingSettings.wedding_region &&
+    !weddingSettings.wedding_region_tbd;
   const weddingStyle = (weddingSettings.wedding_style ?? "general") as WeddingStyle;
   const quickQuestions = useMemo(() => buildQuickQuestions(weddingStyle), [weddingStyle]);
   const greeting = STYLE_GREETING[weddingStyle] ?? STYLE_GREETING.general;
@@ -295,6 +307,23 @@ const AIPlanner = () => {
                 </p>
               </div>
 
+              {needsWeddingSetup && (
+                <button
+                  onClick={() => weddingInfoPrompt.openManually()}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl border border-primary/30 bg-primary/8 active:scale-[0.98] transition-all text-left"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-bold text-foreground leading-tight">
+                      결혼식 정보를 1분만 알려주세요
+                    </p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                      날짜·지역만 입력해도 맞춤 추천이 정확해져요
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-[11px] font-bold text-primary">설정 →</span>
+                </button>
+              )}
+
               {/* Quick question cards */}
               <div data-tutorial="ai-suggestions" className="grid grid-cols-2 gap-2.5">
                 {quickQuestions.map((q) => (
@@ -421,6 +450,11 @@ const AIPlanner = () => {
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
+      />
+
+      <WeddingInfoSetupModal
+        isOpen={weddingInfoPrompt.open}
+        onClose={weddingInfoPrompt.dismiss}
       />
     </div>
   );

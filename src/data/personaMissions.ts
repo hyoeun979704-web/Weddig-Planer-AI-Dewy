@@ -7,6 +7,7 @@
 // UI can render a check mark and (eventually) award points.
 
 import type { WeddingStyle } from "@/lib/weddingStyle";
+import type { PregnancyTrimester } from "@/lib/pregnancy";
 
 export interface PersonaMission {
   key: string;
@@ -94,6 +95,68 @@ const STYLE_SPECIFIC: Record<WeddingStyle, PersonaMission[]> = {
   ],
 };
 
+// 임신 모드 — 일정 압박이 큰 페르소나라 "오늘 한 발자국" 단위를 다르게.
+// 차수별로 우선순위가 달라진다:
+//   1st: 입덧·정보 탐색 단계. 메이크업샵 사전 조사·산부인과 협의 우선.
+//   2nd: 안정기. 가봉·촬영을 본격 진행 — 일정 정합성 점검.
+//   3rd: 컨디션·동선 부담. 본식 직전 가봉·당일 편의·신혼여행 단거리.
+const PREGNANCY_MISSIONS_FIRST: PersonaMission[] = [
+  {
+    key: "pregnancy-ob-consult",
+    label: "산부인과에 본식 컨디션 미리 상의",
+    hint: "초기 안정·입덧 관리 가이드",
+    emoji: "🏥",
+    href: "/ai-planner",
+  },
+  {
+    key: "pregnancy-makeup",
+    label: "임산부 가능 메이크업샵 알아보기",
+    hint: "케라틴·블리치 회피 옵션 우선",
+    emoji: "💄",
+    href: "/ai-planner",
+  },
+];
+
+const PREGNANCY_MISSIONS_SECOND: PersonaMission[] = [
+  {
+    key: "pregnancy-fitting",
+    label: "임신 주수 고려해 드레스 가봉 확인",
+    hint: "본식 2~3주 전 추가 가봉 + 사이즈 여유",
+    emoji: "👰",
+    href: "/my-schedule",
+  },
+  {
+    key: "pregnancy-shoot",
+    label: "본식 촬영 일정·동선 사전 점검",
+    hint: "체력 부담 적게 시간대 조율",
+    emoji: "📸",
+    href: "/my-schedule",
+  },
+];
+
+const PREGNANCY_MISSIONS_THIRD: PersonaMission[] = [
+  {
+    key: "pregnancy-shortdistance",
+    label: "신혼여행 단거리·연기 옵션 검토",
+    hint: "임신 후기 항공 제약 사전 대응",
+    emoji: "✈️",
+    href: "/honeymoon",
+  },
+  {
+    key: "pregnancy-comfort",
+    label: "본식 당일 의자·간식·낮은 굽 준비",
+    hint: "대기 동선 컨디션 보호",
+    emoji: "🪑",
+    href: "/my-schedule",
+  },
+];
+
+const PREGNANCY_MISSIONS_BY_TRIMESTER: Record<PregnancyTrimester, PersonaMission[]> = {
+  first: PREGNANCY_MISSIONS_FIRST,
+  second: PREGNANCY_MISSIONS_SECOND,
+  third: PREGNANCY_MISSIONS_THIRD,
+};
+
 const STYLE_INTRO: Record<WeddingStyle, { title: string; subtitle: string; accentEmoji: string }> = {
   general: {
     title: "오늘의 일반 결혼 준비",
@@ -117,11 +180,22 @@ const STYLE_INTRO: Record<WeddingStyle, { title: string; subtitle: string; accen
   },
 };
 
-export function getMissionsForStyle(style: WeddingStyle | null | undefined): PersonaMission[] {
+export function getMissionsForStyle(
+  style: WeddingStyle | null | undefined,
+  options: { pregnant?: boolean; pregnancyTrimester?: PregnancyTrimester | null } = {},
+): PersonaMission[] {
   const s = (style ?? "general") as WeddingStyle;
   const styleList = STYLE_SPECIFIC[s] ?? STYLE_SPECIFIC.general;
-  // Cap at 3 to keep the dashboard glanceable. Style-specific first, then
-  // common — the home page is the user's daily landing pad, not a task list.
+  // Cap at 3 to keep the dashboard glanceable. 임신이면 차수별 우선순위
+  // 2개 + 스타일 미션 1개 — 스타일 미션 + COMMON 보다 컨디션·시간 압박
+  // 큰 페르소나라 우선순위 위에 둠. trimester=null 이면 second 사용.
+  if (options.pregnant) {
+    const trimester = options.pregnancyTrimester ?? "second";
+    const pregnancyMissions = PREGNANCY_MISSIONS_BY_TRIMESTER[trimester];
+    return [pregnancyMissions[0], styleList[0] ?? COMMON[0], pregnancyMissions[1]].filter(
+      (m): m is PersonaMission => !!m,
+    ).slice(0, 3);
+  }
   return [...styleList, ...COMMON].slice(0, 3);
 }
 
