@@ -13,6 +13,8 @@ export interface UserData {
     planning_stage: string | null;
     wedding_date_tbd: boolean | null;
     wedding_region_tbd: boolean | null;
+    marital_history: "first" | "remarriage" | null;
+    pregnant: boolean | null;
   } | null;
   budgetSettings: {
     total_budget: number | null;
@@ -30,7 +32,7 @@ export async function fetchUserData(supabase: any, userId: string): Promise<User
     supabase.from("favorites").select("item_type, item_id").eq("user_id", userId),
     supabase
       .from("user_wedding_settings")
-      .select("wedding_date, wedding_region, partner_name, planning_stage, wedding_date_tbd, wedding_region_tbd")
+      .select("wedding_date, wedding_region, partner_name, planning_stage, wedding_date_tbd, wedding_region_tbd, marital_history, pregnant")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -122,6 +124,18 @@ export function buildUserContext(userData: UserData): string {
   if (ws?.planning_stage) {
     const label = STAGE_LABELS[ws.planning_stage] ?? ws.planning_stage;
     parts.push(`진행 단계: ${label}`);
+  }
+
+  // 결혼 차수·임신 — 답변 톤·우선순위 분기에 사용. NULL/false는 침묵.
+  if (ws?.marital_history === "remarriage") {
+    parts.push(
+      "결혼 차수: 재혼 (양가 설득·작은 가족식·예단 간소화 등 톤을 고려해 답변하세요)"
+    );
+  }
+  if (ws?.pregnant) {
+    parts.push(
+      "임신 중: 신부가 임신 중입니다. 드레스 가봉·본식 촬영·허니문 일정을 가능하면 앞당기고, 식사·동선·컨디션 부담을 줄이는 옵션을 우선 추천하세요. 알코올·장거리 항공 등은 부적절합니다."
+    );
   }
 
   const bs = userData.budgetSettings;

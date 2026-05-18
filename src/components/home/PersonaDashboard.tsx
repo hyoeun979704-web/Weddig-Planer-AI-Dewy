@@ -152,6 +152,16 @@ const PersonaDashboard = () => {
                   {urgencyTone.hint}
                 </span>
               )}
+              {weddingSettings.pregnant && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-700">
+                  🌷 임신 모드
+                </span>
+              )}
+              {weddingSettings.marital_history === "remarriage" && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700">
+                  재혼
+                </span>
+              )}
               {tutorialOverall.total > 0 && tutorialOverall.percent < 100 && (
                 <button
                   onClick={() => navigate("/tutorial")}

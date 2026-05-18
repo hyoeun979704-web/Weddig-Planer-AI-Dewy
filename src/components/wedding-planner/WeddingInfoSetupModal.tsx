@@ -58,6 +58,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const [stage, setStage] = useState<PlanningStage>("just_started");
   const [weddingStyle, setWeddingStyle] = useState<WeddingStyle>("general");
   const [excludedCategories, setExcludedCategories] = useState<string[]>([]);
+  const [maritalHistory, setMaritalHistory] = useState<"first" | "remarriage" | null>(null);
+  const [pregnant, setPregnant] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -85,6 +87,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
         ? weddingSettings.excluded_categories
         : defaultExclusionsFor((weddingSettings.wedding_style ?? "general") as WeddingStyle)
     );
+    setMaritalHistory(weddingSettings.marital_history);
+    setPregnant(weddingSettings.pregnant);
     setErrors({});
   }, [
     isOpen,
@@ -96,6 +100,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     weddingSettings.planning_stage,
     weddingSettings.wedding_style,
     weddingSettings.excluded_categories,
+    weddingSettings.marital_history,
+    weddingSettings.pregnant,
   ]);
 
   const validate = () => {
@@ -120,6 +126,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       wedding_region_tbd: regionTbd,
       wedding_style: weddingStyle,
       excluded_categories: excludedCategories,
+      marital_history: maritalHistory,
+      pregnant,
     });
 
     if (ok) {
@@ -307,6 +315,54 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
               setExcludedCategories(excluded);
             }}
           />
+        </div>
+
+        {/* 결혼 차수 — 재혼 페르소나의 양가 설득·작은 가족식 톤 분기에 사용 */}
+        <div>
+          <label className={labelCls}>
+            결혼 차수 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <div className="grid grid-cols-3 gap-1.5">
+            {([
+              { v: null, label: "선택 안 함" },
+              { v: "first", label: "초혼" },
+              { v: "remarriage", label: "재혼" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.label}
+                type="button"
+                onClick={() => setMaritalHistory(opt.v)}
+                className={cn(
+                  "py-2 rounded-xl text-sm border transition-colors",
+                  maritalHistory === opt.v
+                    ? "border-[#C9A96E] bg-[#C9A96E]/5 text-gray-800 font-semibold"
+                    : "border-gray-200 text-gray-500"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 임신 여부 — true일 때 일정 압축·체크리스트 가중치·AI 답변 톤이 바뀜 */}
+        <div>
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={pregnant}
+              onChange={(e) => setPregnant(e.target.checked)}
+              className="w-4 h-4 accent-[#C9A96E] mt-0.5"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-800">
+                임신 중이에요 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+              </p>
+              <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+                체크하시면 촬영·드레스 가봉 일정을 앞당겨 추천해드리고, AI 답변도 신체 컨디션을 고려해 안내해드려요.
+              </p>
+            </div>
+          </label>
         </div>
 
         <div className="flex gap-2 pt-2">

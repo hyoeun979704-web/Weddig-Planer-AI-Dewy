@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { BASE_SYSTEM_PROMPT } from "./prompt.ts";
 import { fetchUserData, buildUserContext } from "./user-data.ts";
 import { extractAndStoreMemories } from "./memory.ts";
+import { ALWAYS_ON_CAPSULES, buildConditionalCapsules } from "./domain-capsules.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,6 +71,7 @@ serve(async (req) => {
     }
 
     let userContext = "";
+    let conditionalCapsules = "";
     let dailyRemaining = -1;
 
     const authHeader = req.headers.get("Authorization");
@@ -97,7 +99,14 @@ serve(async (req) => {
 
           const userData = await fetchUserData(supabase, user.id);
           userContext = buildUserContext(userData);
-          console.log("User context loaded for:", user.id, "premium:", usageResult.isPremium, "remaining:", usageResult.remaining, "memories:", userData.memories.length);
+          conditionalCapsules = buildConditionalCapsules(userData.weddingSettings);
+          console.log(
+            "User context loaded for:", user.id,
+            "premium:", usageResult.isPremium,
+            "remaining:", usageResult.remaining,
+            "memories:", userData.memories.length,
+            "capsules:", conditionalCapsules ? "yes" : "no",
+          );
 
           // Fire-and-forget memory extraction on the user's most recent
           // message. Doesn't block the streaming response — the next chat
@@ -114,7 +123,7 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = BASE_SYSTEM_PROMPT + userContext;
+    const systemPrompt = BASE_SYSTEM_PROMPT + ALWAYS_ON_CAPSULES + conditionalCapsules + userContext;
     console.log("Dewy AI Planner request received, messages count:", messages.length, "has user context:", !!userContext);
 
     let streamResponse: Response | null = null;
