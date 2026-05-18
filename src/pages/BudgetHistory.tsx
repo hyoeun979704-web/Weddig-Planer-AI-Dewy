@@ -145,7 +145,13 @@ const BudgetHistory = () => {
       <div key={item.id} className="flex items-center gap-3 py-2.5 border-b border-border last:border-0 group">
         <button className="flex-1 flex items-center gap-3 text-left min-w-0"
           onClick={() => { setEditItem(item); setAddOpen(true); }}>
-          {!compact && <span className="text-lg shrink-0">{cat?.emoji || "📋"}</span>}
+          {!compact && (
+            <span
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: cat?.color || "#6B7280" }}
+              aria-hidden
+            />
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
             <p className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
@@ -323,7 +329,11 @@ const BudgetHistory = () => {
                     onClick={() => toggleVendor(key)}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left active:bg-muted/40 transition-colors"
                   >
-                    <span className="text-base">{cat?.emoji || "📋"}</span>
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: cat?.color || "#6B7280" }}
+                      aria-hidden
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">{vendorName}</p>
                       <p className="text-[10px] text-muted-foreground">

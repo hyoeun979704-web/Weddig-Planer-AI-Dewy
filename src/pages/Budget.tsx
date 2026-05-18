@@ -509,7 +509,11 @@ const Budget = () => {
                 return (
                   <div key={task.id} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-sm">{cat.emoji}</span>
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: cat.color }}
+                        aria-hidden
+                      />
                       <span className="text-xs text-foreground truncate">{task.title}</span>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -545,10 +549,15 @@ const Budget = () => {
             <div className="space-y-2.5">
               {upcomingBalances.map(item => {
                 const overdue = item.daysLeft < 0;
+                const catColor = categories[item.category as BudgetCategory]?.color || "#6B7280";
                 return (
                   <div key={item.id} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-sm">{categories[item.category as BudgetCategory]?.emoji || "📋"}</span>
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: catColor }}
+                        aria-hidden
+                      />
                       <span className="text-xs text-foreground truncate">{item.title}</span>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -795,7 +804,11 @@ const Budget = () => {
                     <button className="flex-1 flex items-center gap-3 text-left min-w-0"
                       onClick={() => { setEditItem(item); setAddOpen(true); }}>
                       <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm">{cat?.emoji || "📋"}</span>
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: cat?.color || "#6B7280" }}
+                          aria-hidden
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{item.title}</p>

@@ -95,7 +95,18 @@ const BudgetCategoryDetail = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <PageHeader title={`${catInfo.emoji} ${catInfo.label}`} />
+      <PageHeader
+        title={
+          <>
+            <span
+              className="w-3 h-3 rounded-full shrink-0"
+              style={{ backgroundColor: catInfo.color }}
+              aria-hidden
+            />
+            <span className="truncate">{catInfo.label}</span>
+          </>
+        }
+      />
 
       <div className="px-4 py-4 pb-24 space-y-4">
         {/* Summary */}

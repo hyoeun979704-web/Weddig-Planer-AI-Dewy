@@ -19,7 +19,7 @@ interface Slide {
 const SLIDES: Slide[] = [
   {
     key: "deals",
-    icon: "🎁",
+    icon: "",
     title: "이달의 혜택",
     subtitle: "최대 30% 할인 + 사은품",
     path: "/deals",
@@ -28,7 +28,7 @@ const SLIDES: Slide[] = [
   },
   {
     key: "events",
-    icon: "✨",
+    icon: "",
     title: "이벤트",
     subtitle: "신규 가입 1달 프리미엄 무료",
     path: "/events",
@@ -67,7 +67,7 @@ const CompactBannerCarousel = () => {
             active.bg
           )}
         >
-          <span className="text-base" aria-hidden>{active.icon}</span>
+          {active.icon && <span className="text-base" aria-hidden>{active.icon}</span>}
           <div className="flex-1 flex flex-col items-start leading-tight">
             <span className={cn("text-[12px] font-bold", active.fg)}>{active.title}</span>
             <span className="text-[10px] font-medium text-black/55">{active.subtitle}</span>

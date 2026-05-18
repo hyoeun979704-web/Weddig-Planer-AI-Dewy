@@ -24,7 +24,7 @@ interface EventCard {
 // migration is a drop-in replacement.
 const FEATURED: EventCard = {
   id: "welcome",
-  icon: "🎁",
+  icon: "",
   title: "신규 가입 1달 프리미엄 무료",
   subtitle: "AI 플래너 무제한 + 예산 분석 PDF + 보너스 하트",
   cta: "지금 시작",
@@ -38,7 +38,7 @@ const FEATURED: EventCard = {
 const LIVE_EVENTS: EventCard[] = [
   {
     id: "referral",
-    icon: "🤝",
+    icon: "",
     title: "친구 초대 1명당 1,000P",
     subtitle: "초대받은 친구도 500P · 무제한 적립",
     cta: "초대하기",
@@ -48,7 +48,7 @@ const LIVE_EVENTS: EventCard[] = [
   },
   {
     id: "attendance",
-    icon: "🎯",
+    icon: "",
     title: "미션 출석 7일 도전",
     subtitle: "연속 출석 시 보너스 하트 +5",
     cta: "미션 보기",
@@ -58,7 +58,7 @@ const LIVE_EVENTS: EventCard[] = [
   },
   {
     id: "review",
-    icon: "📷",
+    icon: "",
     title: "본식 사진 후기 작성",
     subtitle: "리뷰 작성 시 3,000P 즉시 적립",
     cta: "후기 쓰기",
@@ -71,7 +71,7 @@ const LIVE_EVENTS: EventCard[] = [
 const PAST_EVENTS: EventCard[] = [
   {
     id: "mothers-day",
-    icon: "💝",
+    icon: "",
     title: "어머니의 날 후기 이벤트",
     subtitle: "2026.05.01 ~ 05.08 · 종료",
     cta: "결과 보기",
@@ -98,7 +98,7 @@ const EventListRow = ({ event }: { event: EventCard }) => {
           event.thumbBg
         )}
       >
-        <span className="text-[28px]" aria-hidden>{event.icon}</span>
+        {event.icon && <span className="text-[28px]" aria-hidden>{event.icon}</span>}
       </div>
       <div className="flex-1 min-w-0">
         <p className={cn("text-[13px] font-bold truncate", isEnded ? "text-muted-foreground" : "text-foreground")}>
@@ -190,7 +190,7 @@ const Events = () => {
             </div>
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex flex-col text-[11px]">
-                <span className="font-semibold text-muted-foreground">참여 1,287명 · 만족 ★4.8</span>
+                <span className="font-semibold text-muted-foreground">참여 1,287명 · 만족 4.8</span>
                 {FEATURED.endsLabel && <span className="font-bold text-primary">{FEATURED.endsLabel}</span>}
               </div>
               <span className="px-4 py-2 rounded-lg bg-foreground text-background text-[12px] font-bold">

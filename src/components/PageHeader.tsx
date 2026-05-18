@@ -5,7 +5,8 @@ import SearchOverlay from "@/components/home/SearchOverlay";
 import { useCart } from "@/hooks/useCart";
 
 interface PageHeaderProps {
-  title: string;
+  /** 텍스트 타이틀. ReactNode도 허용해 카테고리 dot 등을 앞에 붙일 수 있음. */
+  title: ReactNode;
   /** 우측 아이콘 노출. 페이지별로 선택 가능. */
   search?: boolean;
   bell?: boolean;
@@ -63,7 +64,7 @@ const PageHeader = ({
             >
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
-            <h1 className="text-title text-foreground truncate">{title}</h1>
+            <h1 className="text-title text-foreground truncate flex items-center gap-2">{title}</h1>
           </div>
 
           {/* Right Icons (페이지별 노출 선택) */}
