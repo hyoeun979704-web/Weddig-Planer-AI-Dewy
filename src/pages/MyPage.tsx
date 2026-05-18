@@ -33,7 +33,7 @@ const GuestMyPage = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
           <div className="w-5" />
@@ -65,7 +65,7 @@ const GuestMyPage = () => {
                 <Button
                   variant="outline"
                   onClick={() => navigate("/auth")}
-                  className="gap-1.5 rounded-xl h-11 bg-background/50"
+                  className="gap-1.5 rounded-xl h-11"
                 >
                   <LogIn className="w-4 h-4" />
                   로그인
@@ -194,7 +194,7 @@ const MyPage = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
           <button onClick={() => navigate("/settings")} className="p-2 active:scale-90 transition-transform">

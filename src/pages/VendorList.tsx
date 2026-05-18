@@ -26,7 +26,7 @@ const VendorList = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center px-4 h-14">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ChevronLeft className="w-5 h-5 text-foreground" />
