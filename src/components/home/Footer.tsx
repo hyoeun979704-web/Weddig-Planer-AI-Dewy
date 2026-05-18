@@ -26,7 +26,7 @@ const Footer = () => {
       <div className="flex flex-col gap-[10px] px-[30px] py-[20px] border-t border-border">
         <div className="flex items-center gap-[10px]">
           <DewyLogo size={20} />
-          <span className="font-logo text-[15px] text-black">Dewy</span>
+          <span className="font-logo text-[15px] font-bold tracking-tight text-foreground">Dewy</span>
         </div>
         <div className="text-[12px] leading-[18px] text-black">
           <p>(주)듀이 | 대표: 김효은</p>

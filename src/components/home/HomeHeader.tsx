@@ -26,7 +26,7 @@ const HomeHeader = () => {
               className="flex items-center gap-1.5"
             >
               <DewyLogo size={28} />
-              <span className="font-logo text-[20px] leading-[25px] text-foreground">
+              <span className="font-logo text-[20px] font-bold tracking-tight leading-[25px] text-foreground">
                 Dewy
               </span>
             </button>
