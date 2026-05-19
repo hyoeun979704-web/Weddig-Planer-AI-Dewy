@@ -8,6 +8,7 @@ import CategoryGrid from "@/components/CategoryGrid";
 import ExcludedCategoryBanner from "@/components/ExcludedCategoryBanner";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
+import { openExternal } from "@/lib/native/openExternal";
 
 const Appliances = () => {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ const Appliances = () => {
     const url = item.product_url as string | undefined;
     const type = item.product_type as string | undefined;
     if ((type === "package" || type === "single") && url) {
-      window.open(url, "_blank", "noopener,noreferrer");
+      void openExternal(url);
       return;
     }
     navigate(`/appliances/${item.id}`);

@@ -8,6 +8,7 @@ import CategoryGrid from "@/components/CategoryGrid";
 import ExcludedCategoryBanner from "@/components/ExcludedCategoryBanner";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
+import { openExternal } from "@/lib/native/openExternal";
 
 const Honeymoon = () => {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ const Honeymoon = () => {
   const handleItemClick = (item: CategoryItem) => {
     const url = item.agency_product_url as string | undefined;
     if (url) {
-      window.open(url, "_blank", "noopener,noreferrer");
+      void openExternal(url);
       return;
     }
     navigate(`/honeymoon/${item.id}`);

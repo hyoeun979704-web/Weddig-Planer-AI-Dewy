@@ -18,6 +18,7 @@ import { useCoupleFavorites, type MergedFavorite, type Ownership } from "@/hooks
 import { youTubeUrl } from "@/hooks/useTipVideos";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { openExternal } from "@/lib/native/openExternal";
 import { useQuery } from "@tanstack/react-query";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { type SkippableCategory } from "@/lib/weddingStyle";
@@ -320,7 +321,7 @@ const Favorites = () => {
 
   const handleCardClick = (item: FavItem) => {
     if (item.item_type === "tip_video") {
-      window.open(youTubeUrl(item.item_id), "_blank", "noopener,noreferrer");
+      void openExternal(youTubeUrl(item.item_id));
       return;
     }
     navigate(getDetailPath(item));

@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
 
 type PlanType = "trial" | "monthly" | "yearly";
@@ -59,7 +60,8 @@ const SubscriptionCheckout = () => {
 
       const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
       const redirectUrl = isMobile ? data.next_redirect_mobile_url : data.next_redirect_pc_url;
-      window.location.href = redirectUrl;
+      // 네이티브: Custom Tabs 로 띄워 카카오페이 → 은행/카드 앱 → 복귀 흐름 보존.
+      await openExternal(redirectUrl, { target: '_self' });
     } catch (err: any) {
       console.error("Kakao pay ready failed:", err);
       toast.error(err.message || "결제 요청에 실패했습니다");

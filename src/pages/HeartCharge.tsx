@@ -5,6 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { usePoints } from "@/hooks/usePoints";
+import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
 import {
   HEART_PACKAGES,
@@ -89,9 +90,11 @@ const HeartCharge = () => {
       );
 
       const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-      window.location.href = isMobile
+      const redirectUrl = isMobile
         ? data.next_redirect_mobile_url
         : data.next_redirect_pc_url;
+      // 네이티브: Custom Tabs 로 결제 흐름 위임, 웹: 동일 탭 이동.
+      await openExternal(redirectUrl, { target: '_self' });
     } catch (err: any) {
       console.error("Heart charge ready failed:", err);
       toast.error(err.message || "결제 요청에 실패했습니다");

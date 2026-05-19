@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { openExternal } from "@/lib/native/openExternal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -131,7 +132,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
             className="flex-1 gap-2 h-11"
             onClick={() => {
               if (place.tel) {
-                window.location.href = `tel:${place.tel}`;
+                void openExternal(`tel:${place.tel}`);
               } else {
                 toast.info("전화번호 정보가 아직 없어요.");
               }
@@ -350,7 +351,7 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
             <Row icon={<MapPin className="w-4 h-4" />} label="주소" value={place.address}
               action={
                 <button
-                  onClick={() => window.open(`https://map.kakao.com/?q=${encodeURIComponent(place.address)}`, "_blank")}
+                  onClick={() => void openExternal(`https://map.kakao.com/?q=${encodeURIComponent(place.address)}`)}
                   className="text-xs text-primary underline"
                 >지도</button>
               }
