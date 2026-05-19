@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
+import { isNativeApp } from '@/lib/platform';
+import { preferencesStorage } from './preferencesStorage';
 
 // Supabase project URL + anon publishable key.
 // These are SAFE to embed in the client bundle — anon key is designed to be public,
@@ -32,12 +34,23 @@ const SUPABASE_PUBLISHABLE_KEY =
 
 const isBrowser = typeof window !== 'undefined';
 
+// 세션 저장소 결정 규칙:
+//   - 네이티브 앱(Capacitor): Preferences 어댑터 (SharedPreferences/UserDefaults)
+//   - 웹 브라우저 / PWA:     기본 localStorage
+//   - SSR / Node:            undefined (Supabase 가 기본값 사용)
+// 분기는 platform.ts 한 곳에서만 이뤄진다.
+const authStorage = isNativeApp()
+  ? preferencesStorage
+  : isBrowser
+    ? localStorage
+    : undefined;
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: isBrowser ? localStorage : undefined,
+    storage: authStorage,
     persistSession: true,
     autoRefreshToken: true,
   },
