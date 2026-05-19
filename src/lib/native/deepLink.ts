@@ -29,12 +29,17 @@ export function registerDeepLinks(): void {
 
   void App.addListener('appUrlOpen', async (event: URLOpenListenerEvent) => {
     const url = event.url;
+    console.log('[deepLink] received URL:', url);
     if (!url || !url.startsWith('app.dewy://')) return;
 
     try {
       // PKCE 플로우: URL 의 ?code= 를 세션으로 교환.
       // exchangeCodeForSession 은 전체 URL 또는 code 문자열 모두 받는다.
-      const { error } = await supabase.auth.exchangeCodeForSession(url);
+      const parsed = new URL(url);
+      const code = parsed.searchParams.get('code');
+      console.log('[deepLink] extracted code:', code?.slice(0, 12) + '...');
+      const { error, data } = await supabase.auth.exchangeCodeForSession(code ?? url);
+      console.log('[deepLink] exchange result:', { hasSession: !!data?.session, error: error?.message });
       if (error) console.error('[deepLink] exchangeCodeForSession error:', error);
     } catch (e) {
       console.error('[deepLink] exchange failed:', e);
