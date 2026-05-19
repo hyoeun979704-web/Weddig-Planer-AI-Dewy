@@ -37,6 +37,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
+
+        // 네이티브 앱에서만 푸시 등록을 트리거. listener 기반이라 매 SIGNED_IN 호출되어도
+        // token upsert 는 idempotent — onConflict('token') 으로 안전.
+        if (isNativeApp() && event === 'SIGNED_IN' && session?.user) {
+          void import('@/lib/native/push').then(({ registerPushNotifications }) =>
+            registerPushNotifications(session.user.id),
+          );
+        }
       }
     );
 
