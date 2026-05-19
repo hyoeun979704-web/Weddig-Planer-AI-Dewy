@@ -116,12 +116,6 @@
     font-family: "SUITE Variable", "Noto Sans KR", "Inter", -apple-system,
       BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
-
-  .font-logo {
-    /* Figma 'Geom' substitute — rounded geometric sans */
-    font-family: "Poppins", "SUITE Variable", sans-serif;
-    letter-spacing: -0.02em;
-  }
 }
 
 @layer components {

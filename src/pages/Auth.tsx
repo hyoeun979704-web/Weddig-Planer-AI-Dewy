@@ -157,7 +157,7 @@ const Auth = () => {
         {/* Logo / Title */}
         <div className="flex flex-col items-center text-center mb-6">
           <DewyLogo size={64} />
-          <h2 className="font-logo text-3xl font-bold mt-3 text-foreground tracking-tight">Dewy</h2>
+          <h2 className="text-3xl font-bold mt-3 text-foreground tracking-tight">Dewy</h2>
           <p className="text-muted-foreground mt-2">
             {isSignUp ? "새 계정을 만들어주세요" : "계정에 로그인하세요"}
           </p>
