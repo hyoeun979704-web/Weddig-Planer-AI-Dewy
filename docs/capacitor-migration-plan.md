@@ -85,11 +85,11 @@
 ## 5. Supabase 인증을 앱으로 가져올 때 주의점
 
 - **딥링크 스킴 설계**: `app.dewy://auth/callback` 단일 경로로 통일. Universal Links/App Links(https 도메인)는 호스팅에 `assetlinks.json`/`apple-app-site-association`을 추가해야 하므로 1차 출시는 커스텀 스킴만으로 시작하고, iOS 출시 직전 Universal Link로 승격(보안·UX 개선) 검토.
-- **OAuth redirect URI 등록(3중 동기화 필수)**:
-  1) Supabase Auth URL Configuration의 Additional Redirect URLs
-  2) Google Cloud OAuth Consent Screen 승인 도메인
-  3) Kakao Developers 사이트 도메인/Redirect URI
-  세 곳 모두 `app.dewy://auth/callback` 추가. 어느 하나라도 빠지면 provider 단에서 거부된다.
+- **OAuth redirect URI는 Supabase 화이트리스트만 추가하면 된다 (중요)**: provider 콘솔(Google/Kakao)은 손대지 않는다. Google OAuth client·Kakao Redirect URI 필드는 `http(s)://`만 허용해 `app.dewy://` 등록이 아예 거부된다. 실제 흐름은:
+  1) provider 는 항상 Supabase 의 `https://<project>.supabase.co/auth/v1/callback`(이미 웹 로그인용으로 등록되어 있음) 으로 돌아온다.
+  2) Supabase 가 `signInWithOAuth({ redirectTo: 'app.dewy://auth/callback' })` 의 `redirectTo` 값을 보고 그쪽으로 302 redirect.
+  3) OS 가 커스텀 스킴을 잡아 앱을 깨우고 `appUrlOpen` 리스너가 `exchangeCodeForSession` 호출.
+  → 그래서 등록 위치는 **Supabase → Authentication → URL Configuration → Additional Redirect URLs 한 곳**(`app.dewy://auth/callback`)으로 충분. Google/Kakao 콘솔은 변경 불필요.
 - **세션 저장소**: WebView의 `localStorage`는 OS·사용자 정리 시 휘발 가능. `@capacitor/preferences` 기반 storage 어댑터(get/set/remove async)를 Supabase `auth.storage`에 주입. **주입 후에는 기존 사용자가 한 번 재로그인** 필요 — 1차 출시라 영향 없음, 사후 마이그레이션 시에는 명시 안내.
 - **콜백 처리 위치**: 외부 브라우저(또는 Custom Tabs)에서 돌아오는 URL은 `App.addListener('appUrlOpen', …)`에서만 잡힌다. 앱이 종료 상태였다가 부팅된 케이스도 같은 listener가 deferred로 받으니, 등록을 `main.tsx` 부트스트랩 가장 앞쪽에 둔다.
 - **토큰 자동 갱신**: Capacitor WebView는 백그라운드에서 JS 타이머가 throttle된다. `supabase.auth.autoRefreshToken: true`만 믿지 말고, 앱 resume(`App.addListener('resume', …)`)에서 `supabase.auth.refreshSession()` 한 번 명시 호출.

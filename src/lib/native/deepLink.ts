@@ -3,11 +3,15 @@ import { Browser } from '@capacitor/browser';
 import { supabase } from '@/integrations/supabase/client';
 import { isNativeApp } from '@/lib/platform';
 
-// 앱이 OAuth 콜백을 받는 단일 스킴. Supabase / Google Cloud / Kakao 개발자 콘솔
-// "허용 redirect URL" 목록에 동일하게 등록되어야 한다.
-//   - Supabase: Authentication → URL Configuration → Additional Redirect URLs
-//   - Google : OAuth 동의 화면 / 클라이언트 ID redirect URIs
-//   - Kakao  : 내 애플리케이션 → 카카오 로그인 → Redirect URI
+// 앱이 OAuth 콜백을 받는 단일 스킴.
+//
+// 등록 위치는 **Supabase 한 곳**(Authentication → URL Configuration → Additional Redirect URLs)
+// 만으로 충분하다. provider(Google/Kakao) 콘솔은 손대지 않는다 — 해당 콘솔의
+// redirect URI 필드는 http(s) 만 허용해 커스텀 스킴 등록이 거부된다.
+//
+// 실제 흐름:
+//   provider → https://<project>.supabase.co/auth/v1/callback (이미 등록된 웹 콜백)
+//            → Supabase 가 signInWithOAuth({ redirectTo }) 값을 보고 app.dewy:// 로 302
 export const APP_CALLBACK_URL = 'app.dewy://auth/callback';
 
 let registered = false;
