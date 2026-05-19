@@ -38,13 +38,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         setIsLoading(false);
 
-        // 네이티브 앱에서만 푸시 등록을 트리거. listener 기반이라 매 SIGNED_IN 호출되어도
-        // token upsert 는 idempotent — onConflict('token') 으로 안전.
-        if (isNativeApp() && event === 'SIGNED_IN' && session?.user) {
-          void import('@/lib/native/push').then(({ registerPushNotifications }) =>
-            registerPushNotifications(session.user.id),
-          );
-        }
+        // 푸시 알림은 1차 출시에서 제외 (Firebase 미설정).
+        // 활성화 시: SIGNED_IN 분기에서 isNativeApp() 가드 후 push 모듈을 동적 import.
+        // 참고: supabase/functions/send-push, supabase/migrations/...device_tokens.sql 미배포 상태.
       }
     );
 

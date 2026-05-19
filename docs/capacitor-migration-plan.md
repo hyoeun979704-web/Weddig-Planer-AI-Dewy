@@ -17,7 +17,7 @@
 | **P2** | 실행 환경 감지 유틸 + Supabase 클라이언트 storage 분기 (웹=`localStorage`, 앱=`@capacitor/preferences`) | 앱 콜드스타트 세션 유지의 단일 실패점. P3 OAuth 작업의 전제. |
 | **P3** | Supabase OAuth 딥링크 처리 (`@capacitor/app` listener + 커스텀 스킴 등록 + Supabase Redirect URL 화이트리스트) | 현 코드가 `window.location.origin`을 redirectTo로 박아 둬, 앱에서 Google/Kakao 로그인이 그대로 깨진다. |
 | **P4** | 빌드 모드 분리 (`vite build --mode capacitor`) + 환경 분기 디렉터리 규칙 + 외부 링크/결제 위임 어댑터 | 같은 코드베이스로 web/app 두 산출물을 안전하게 만들기 위한 규약. 한 번 정해 두지 않으면 분기 코드가 페이지마다 흩어진다. |
-| **P5** | `@capacitor/push-notifications` + FCM 연동 및 `device_tokens` 테이블 추가 | 앱의 첫 가시적 차별 가치이자 마케팅 트리거. 1~4 가 안정된 뒤 붙여야 안전. |
+| **P5** | `@capacitor/push-notifications` + FCM 연동 및 `device_tokens` 테이블 추가 | **1차 출시에서는 보류** — 코드/마이그레이션/Edge Function 은 작성·커밋되어 있으나 의존성·호출은 제거된 상태. Firebase 콘솔 작업이 동반되므로 출시 후 별도 PR 로 재활성화. |
 
 ---
 
@@ -58,11 +58,16 @@
 - 수정: `package.json` — `cap:build` = `vite build --mode capacitor && npx cap sync`.
 - 신규(컨벤션): `src/lib/native/` (앱 전용), `src/integrations/` (공용 어댑터), `src/pages/`·`src/components/`는 분기 호출만 한다. → 4번 항목에서 상술.
 
-**P5** (P1~4 정착 후 착수)
-- 신규: `src/lib/native/push.ts` — 권한 요청, 토큰 등록, foreground 핸들러.
-- 신규: Supabase 마이그레이션 `supabase/migrations/xxxx_device_tokens.sql` — `device_tokens(user_id, token, platform, updated_at)` + RLS.
-- 신규: Supabase Edge Function `send-push` (FCM HTTP v1 호출).
-- 수정: `AuthContext` — 로그인 직후 토큰 upsert, 로그아웃 시 삭제.
+**P5** (1차 출시 보류 — 향후 재활성화 가이드)
+- `supabase/migrations/20260519050000_device_tokens.sql` — 적용 시점에 `supabase db push` 또는 SQL 에디터로 한 번만 실행.
+- `supabase/functions/send-push/index.ts` — `supabase functions deploy send-push`.
+- 콘솔: Firebase 프로젝트 생성 → Android 앱(`app.dewy`) 추가 → `google-services.json` 다운로드 → `android/app/` 에 배치. Supabase Secrets 에 `FCM_PROJECT_ID` / `FCM_CLIENT_EMAIL` / `FCM_PRIVATE_KEY` 등록.
+- 코드 재활성화:
+  1) `npm i @capacitor/push-notifications`
+  2) `src/lib/native/push.ts` 복원 (git log 에 P5 커밋 그대로 있음)
+  3) `AuthContext` 의 SIGNED_IN 분기에 `void import('@/lib/native/push').then(({ registerPushNotifications }) => registerPushNotifications(session.user.id))` 한 줄 추가
+  4) `android/app/src/main/AndroidManifest.xml` 에 `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />` 추가
+  5) Android `build.gradle` 에 Firebase `google-services` plugin 적용 (Capacitor 공식 가이드 참조)
 
 ---
 
