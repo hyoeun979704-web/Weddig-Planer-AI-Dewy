@@ -48,10 +48,17 @@ const authStorage = isNativeApp()
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// PKCE 플로우는 모바일 OAuth 의 표준이고, 웹에서도 그대로 동작한다.
+// 네이티브 앱은 WebView 가 콜백 URL 을 직접 보지 않으므로(딥링크로 들어옴)
+// detectSessionInUrl 을 꺼서 의도치 않은 자동 교환을 막는다.
+const native = isNativeApp();
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: authStorage,
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: !native,
+    flowType: 'pkce',
   },
 });

@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { isNativeApp } from "@/lib/platform";
+import { signInWithOAuthNative } from "@/lib/native/oauth";
 
 interface AuthContextType {
   user: User | null;
@@ -73,17 +75,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithGoogle = async () => {
+    // 네이티브에선 Custom Tabs + 딥링크 콜백, 웹에선 기존 origin 리다이렉트.
+    if (isNativeApp()) return signInWithOAuthNative('google');
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/`,
       },
     });
-    
+
     return { error: error as Error | null };
   };
 
   const signInWithKakao = async () => {
+    if (isNativeApp()) return signInWithOAuthNative('kakao');
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: {
