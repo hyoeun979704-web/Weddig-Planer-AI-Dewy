@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "seed:invitation-templates": "tsx scripts/seedInvitationTemplates.ts",
     "collect": "tsx scripts/collect-places/index.ts",
     "backfill-images": "tsx scripts/collect-places/backfill-images.ts",
     "enrich-source-refs": "tsx scripts/collect-places/enrich-source-refs.ts",
