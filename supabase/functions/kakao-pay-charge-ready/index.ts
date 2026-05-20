@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveAllowedOrigin } from "../_shared/allowedOrigins.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,6 +65,15 @@ Deno.serve(async (req) => {
     if (!pkg || !origin) {
       return new Response(JSON.stringify({ error: "Invalid request body" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const safeOrigin = resolveAllowedOrigin(origin);
+    if (!safeOrigin) {
+      console.warn("Rejected payment origin:", origin);
+      return new Response(JSON.stringify({ error: "Invalid origin" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -142,9 +152,9 @@ Deno.serve(async (req) => {
       quantity: "1",
       total_amount: String(finalAmount),
       tax_free_amount: "0",
-      approval_url: `${origin}/points/charge/success?package=${packageId}&order=${partnerOrderId}`,
-      cancel_url: `${origin}/points/charge/fail?reason=cancel`,
-      fail_url: `${origin}/points/charge/fail?reason=fail`,
+      approval_url: `${safeOrigin}/points/charge/success?package=${packageId}&order=${partnerOrderId}`,
+      cancel_url: `${safeOrigin}/points/charge/fail?reason=cancel`,
+      fail_url: `${safeOrigin}/points/charge/fail?reason=fail`,
     });
 
     const kakaoRes = await fetch("https://kapi.kakao.com/v1/payment/ready", {
