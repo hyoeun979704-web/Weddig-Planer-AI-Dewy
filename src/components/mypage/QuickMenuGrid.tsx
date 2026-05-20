@@ -85,8 +85,8 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
             onClick={() => navigate(item.href)}
             className="flex flex-col items-center gap-1.5 p-2 bg-card rounded-2xl border border-border hover:border-primary/20 active:scale-[0.96] transition-all"
           >
-            <div className="w-11 h-11 flex items-center justify-center">
-              <item.icon className={`w-7 h-7 ${item.iconClass}`} />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <item.icon className={`w-6 h-6 ${item.iconClass}`} />
             </div>
             <span className="text-[10px] font-medium text-foreground/80">
               {item.label}
