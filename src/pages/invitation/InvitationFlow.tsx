@@ -207,9 +207,9 @@ const InvitationFlow = () => {
   };
 
   // ─────────────────────────────────────────────
-  // 사진 슬롯 자동 분배
-  //   layout 의 image / map 슬롯들을 image_order 오름차순으로 정렬,
-  //   첨부된 사진을 그 순서에 매핑.
+  // 사진 슬롯 자동 분배 — image_order 그룹 기반
+  //   같은 image_order 를 가진 슬롯들은 같은 사진을 공유한다
+  //   (원본 슬롯 + 누낀 슬롯이 image_order=1 로 매칭되면 둘 다 첫 사진 사용).
   // ─────────────────────────────────────────────
   const distributePhotos = useCallback(
     (
@@ -219,19 +219,96 @@ const InvitationFlow = () => {
       const paths: Record<string, string> = {};
       const urls: Record<string, string> = {};
 
-      const imageSlots = tpl.layout.slots
-        .filter((s) => s.type === "image" || s.type === "map")
-        .sort((a, b) => (a.image_order ?? 99) - (b.image_order ?? 99));
+      const imageSlots = tpl.layout.slots.filter(
+        (s) => s.type === "image" || s.type === "map",
+      );
 
-      uploadedPhotos.forEach((p, i) => {
-        const slot = imageSlots[i];
-        if (slot) {
-          paths[slot.id] = p.path;
-          urls[slot.id] = p.url;
+      // 1) image_order 의 unique 한 값을 오름차순 정렬
+      const uniqueOrders = Array.from(
+        new Set(imageSlots.map((s) => s.image_order ?? 999)),
+      ).sort((a, b) => a - b);
+
+      // 2) 각 order 에 photo[i] 할당
+      const orderToPhotoIdx = new Map<number, number>();
+      uniqueOrders.forEach((order, i) => {
+        if (i < uploadedPhotos.length) {
+          orderToPhotoIdx.set(order, i);
+        }
+      });
+
+      // 3) 슬롯 별로 매핑 (같은 order 슬롯은 같은 사진)
+      imageSlots.forEach((slot) => {
+        const order = slot.image_order ?? 999;
+        const photoIdx = orderToPhotoIdx.get(order);
+        if (photoIdx !== undefined) {
+          const photo = uploadedPhotos[photoIdx];
+          paths[slot.id] = photo.path;
+          urls[slot.id] = photo.url;
         }
       });
 
       return { paths, urls };
+    },
+    [],
+  );
+
+  // ─────────────────────────────────────────────
+  // 누끼 처리 — auto_cutout 슬롯의 사진을 remove.bg 로 변환
+  //   같은 source_path 는 한 번만 호출되어 결과 재사용됨 (Edge function 측 dedup).
+  // ─────────────────────────────────────────────
+  const applyCutoutToSlots = useCallback(
+    async (
+      tpl: Template,
+      currentPaths: Record<string, string>,
+      currentUrls: Record<string, string>,
+    ): Promise<{
+      paths: Record<string, string>;
+      urls: Record<string, string>;
+    }> => {
+      const cutoutSlots = tpl.layout.slots.filter(
+        (s) => s.auto_cutout && (s.type === "image" || s.type === "map"),
+      );
+      if (cutoutSlots.length === 0) {
+        return { paths: currentPaths, urls: currentUrls };
+      }
+
+      // 누낄 source path 수집
+      const sourcePaths = Array.from(
+        new Set(
+          cutoutSlots.map((s) => currentPaths[s.id]).filter(Boolean) as string[],
+        ),
+      );
+      if (sourcePaths.length === 0) {
+        // 첨부된 사진 없음 — 누끼 안 함
+        return { paths: currentPaths, urls: currentUrls };
+      }
+
+      const { data, error } = await supabase.functions.invoke(
+        "invitation-cutout",
+        { body: { source_paths: sourcePaths } },
+      );
+      if (error) throw error;
+      const result = data as {
+        cutout_paths?: Record<string, string>;
+        cutout_urls?: Record<string, string>;
+        error?: string;
+      };
+      if (result.error) throw new Error(result.error);
+
+      // auto_cutout 슬롯들의 path/url 을 누낀 결과로 덮어쓰기
+      // (원본 슬롯들은 그대로 유지)
+      const nextPaths = { ...currentPaths };
+      const nextUrls = { ...currentUrls };
+      cutoutSlots.forEach((slot) => {
+        const src = currentPaths[slot.id];
+        if (src && result.cutout_paths?.[src]) {
+          nextPaths[slot.id] = result.cutout_paths[src];
+          if (result.cutout_urls?.[src]) {
+            nextUrls[slot.id] = result.cutout_urls[src];
+          }
+        }
+      });
+      return { paths: nextPaths, urls: nextUrls };
     },
     [],
   );
@@ -250,28 +327,41 @@ const InvitationFlow = () => {
       return;
     }
 
+    // 발행 총 비용 미리 검증 — 템플릿 가격 + AI 인사말 옵션
+    const aiSlots = template.layout.slots.filter(
+      (s) => s.type === "text" && s.ai_promptable,
+    );
+    const aiCost = aiAuto ? aiSlots.length : 0;
+    const totalCost = template.price_hearts + aiCost;
+    if ((hearts ?? 0) < totalCost) {
+      toast({
+        title: "하트가 부족해요",
+        description: `발행에 ${totalCost} 하트가 필요해요 (템플릿 ${template.price_hearts} + AI ${aiCost}). 현재 ${hearts ?? 0}하트.`,
+        variant: "destructive",
+      });
+      navigate("/points");
+      return;
+    }
+
     setIsGenerating(true);
     try {
       // 1) 사진 자동 분배
-      const { paths, urls } = distributePhotos(template, photos);
+      let paths = distributePhotos(template, photos).paths;
+      let urls = distributePhotos(template, photos).urls;
+
+      // 2) 누끼 처리 (auto_cutout 슬롯이 있고 매핑된 사진이 있으면)
+      const hasCutoutSlot = template.layout.slots.some((s) => s.auto_cutout);
+      if (hasCutoutSlot) {
+        const cutoutResult = await applyCutoutToSlots(template, paths, urls);
+        paths = cutoutResult.paths;
+        urls = cutoutResult.urls;
+      }
       setImagePaths(paths);
       setImageUrls(urls);
 
-      // 2) AI 인사말 토글 ON 이면 ai_promptable + text 슬롯들 자동 호출
-      const aiSlots = template.layout.slots.filter(
-        (s) => s.type === "text" && s.ai_promptable,
-      );
+      // 3) AI 인사말 (토글 ON 일 때)
       const generatedAi: Record<string, string> = {};
-
       if (aiAuto && aiSlots.length > 0) {
-        if ((hearts ?? 0) < aiSlots.length) {
-          toast({
-            title: "하트가 부족해요",
-            description: `AI 추천 ${aiSlots.length}개 = ${aiSlots.length} 하트 필요. 토글을 끄거나 충전해주세요.`,
-          });
-          setIsGenerating(false);
-          return;
-        }
         for (const slot of aiSlots) {
           try {
             const { data, error } = await supabase.functions.invoke(
@@ -296,7 +386,6 @@ const InvitationFlow = () => {
             if (error) throw error;
             const result = data as { suggestions?: string[]; error?: string };
             if (result.error) throw new Error(result.error);
-            // 첫 번째 옵션 채택 (사용자가 result 페이지에서 직접 수정 가능)
             const first = result.suggestions?.[0];
             if (first) generatedAi[slot.id] = first;
           } catch (e) {
@@ -304,12 +393,48 @@ const InvitationFlow = () => {
           }
         }
         setAiText(generatedAi);
-        await fetchHearts();
       }
 
+      // 4) 템플릿 가격 차감 (price_hearts > 0 시)
+      let publishOk = true;
+      if (template.price_hearts > 0) {
+        const { data: spendData, error: spendError } = await (supabase as any).rpc(
+          "spend_hearts",
+          {
+            p_user_id: user.id,
+            p_amount: template.price_hearts,
+            p_reason: "invitation_publish",
+            p_ref_id: null,
+          },
+        );
+        if (spendError) {
+          publishOk = false;
+          toast({
+            title: "하트 차감 실패",
+            description: spendError.message,
+            variant: "destructive",
+          });
+        } else {
+          const row = Array.isArray(spendData) ? spendData[0] : spendData;
+          if (!row?.success) {
+            publishOk = false;
+            toast({
+              title: "하트가 부족해요",
+              description: row?.message ?? "",
+              variant: "destructive",
+            });
+          }
+        }
+      }
+      if (!publishOk) {
+        setIsGenerating(false);
+        return;
+      }
+
+      await fetchHearts();
       setStep("result");
 
-      // 3) draft 자동 저장
+      // 5) draft 자동 저장
       const payload = {
         user_id: user.id,
         template_id: template.id,
@@ -804,14 +929,48 @@ const WizardCombined = ({
       )}
 
       {/* 가격 안내 */}
-      <section className="p-3 bg-emerald-50 rounded-lg flex items-center justify-between">
-        <span className="text-[13px] font-bold text-emerald-900">
-          🎉 무료 템플릿
-        </span>
-        <span className="text-[11px] text-emerald-700">
-          잔액 {hearts ?? 0} 하트
-        </span>
-      </section>
+      {(() => {
+        const hasCutout = template.layout.slots.some((s) => s.auto_cutout);
+        const total = template.price_hearts + (aiAuto ? aiSlotCount : 0);
+        if (template.price_hearts === 0 && total === 0) {
+          return (
+            <section className="p-3 bg-emerald-50 rounded-lg flex items-center justify-between">
+              <span className="text-[13px] font-bold text-emerald-900">
+                🎉 무료 발행
+              </span>
+              <span className="text-[11px] text-emerald-700">
+                잔액 {hearts ?? 0} 하트
+              </span>
+            </section>
+          );
+        }
+        return (
+          <section className="p-3 bg-pink-50 rounded-lg border border-pink-100 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-bold text-foreground">
+                발행 시 차감
+              </span>
+              <div className="flex items-center gap-1 text-[14px]">
+                <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                <span className="font-bold text-foreground">{total}</span>
+                <span className="text-muted-foreground text-[12px]">하트</span>
+              </div>
+            </div>
+            <div className="text-[11px] text-muted-foreground space-y-0.5">
+              {template.price_hearts > 0 && (
+                <p>
+                  · 템플릿 발행 {template.price_hearts}하트
+                  {hasCutout && " (누끼 효과 포함)"}
+                </p>
+              )}
+              {aiAuto && aiSlotCount > 0 && (
+                <p>· AI 인사말 {aiSlotCount}하트 (토글로 끌 수 있음)</p>
+              )}
+              <p>잔액 {hearts ?? 0} 하트</p>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* 생성 버튼 */}
       <Button
