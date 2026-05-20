@@ -102,6 +102,27 @@ const InvitationFlow = () => {
   // ─────────────────────────────────────────────
   // 하트 잔액
   // ─────────────────────────────────────────────
+  // ─────────────────────────────────────────────
+  // AuthGuard — 비로그인 진입 차단
+  //   AuthContext 가 user 를 fetch 하는 동안 user 가 잠시 null 일 수 있어,
+  //   user 값이 변할 때마다 다시 평가. null 상태가 확정되면 /auth 로.
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    if (user === null) {
+      // AuthContext 가 로딩 중이라 진짜 null 인지 모를 수 있음 → 짧게 기다림
+      const t = window.setTimeout(() => {
+        if (user === null) {
+          toast({
+            title: "로그인이 필요해요",
+            description: "청첩장은 로그인 후 사용 가능해요.",
+          });
+          navigate("/auth", { replace: true });
+        }
+      }, 500);
+      return () => window.clearTimeout(t);
+    }
+  }, [user, navigate]);
+
   const fetchHearts = useCallback(async () => {
     if (!user) return;
     const { data } = await (supabase as any)
@@ -317,7 +338,23 @@ const InvitationFlow = () => {
   // 생성하기 (제출) — wizard → result 전이
   // ─────────────────────────────────────────────
   const handleGenerate = async () => {
-    if (!template || !user) return;
+    if (!template) {
+      toast({
+        title: "템플릿이 선택되지 않았어요",
+        description: "다시 템플릿을 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!user) {
+      toast({
+        title: "로그인이 필요해요",
+        description: "세션이 만료됐을 수 있어요. 다시 로그인해주세요.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
     if (!userData.groom_name?.trim() || !userData.bride_name?.trim()) {
       toast({ title: "신랑·신부 이름을 입력해주세요" });
       return;
@@ -696,40 +733,58 @@ const TemplatePicker = ({
       </p>
     ) : (
       <div className="grid grid-cols-2 gap-3">
-        {templates.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => onPick(t)}
-            className="bg-card rounded-xl overflow-hidden border border-border text-left active:scale-[0.98] transition-transform"
-          >
-            <div className="aspect-[3/4] bg-muted relative">
-              {t.thumbnail_url ? (
-                <img
-                  src={t.thumbnail_url}
-                  alt={t.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
-                  미리보기 준비중
-                </div>
-              )}
-            </div>
-            <div className="p-2.5">
-              <p className="text-[12px] font-semibold text-foreground truncate">
-                {t.name}
-              </p>
-              <p className="text-[10px] font-bold mt-0.5">
-                {t.price_hearts > 0 ? (
-                  <span className="text-rose-500">{t.price_hearts}하트</span>
+        {templates.map((t) => {
+          const photoSlots = t.layout.slots.filter(
+            (s) => s.type === "image" || s.type === "map",
+          ).length;
+          // image_order 가 같은 것은 같은 사진 → unique 수만 카운트
+          const uniquePhotoOrders = new Set(
+            t.layout.slots
+              .filter((s) => s.type === "image" || s.type === "map")
+              .map((s) => s.image_order ?? 999),
+          ).size;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onPick(t)}
+              className="bg-card rounded-xl overflow-hidden border border-border text-left active:scale-[0.98] transition-transform"
+            >
+              <div className="aspect-[3/4] bg-muted relative">
+                {t.thumbnail_url ? (
+                  <img
+                    src={t.thumbnail_url}
+                    alt={t.name}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <span className="text-emerald-600">무료</span>
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
+                    미리보기 준비중
+                  </div>
                 )}
-              </p>
-            </div>
-          </button>
-        ))}
+              </div>
+              <div className="p-2.5">
+                <p className="text-[12px] font-semibold text-foreground truncate">
+                  {t.name}
+                </p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-[10px] font-bold">
+                    {t.price_hearts > 0 ? (
+                      <span className="text-rose-500">{t.price_hearts}하트</span>
+                    ) : (
+                      <span className="text-emerald-600">무료</span>
+                    )}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {photoSlots === 0
+                      ? "사진 없음"
+                      : `사진 ${uniquePhotoOrders}장`}
+                  </p>
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
     )}
   </main>
@@ -843,7 +898,14 @@ const WizardCombined = ({
         />
       </section>
 
-      {/* 사진 첨부 */}
+      {/* 사진 첨부 — 슬롯 0개면 안내만 */}
+      {photoSlotCount === 0 && (
+        <section className="p-3 bg-blue-50 rounded-lg text-[12px] text-blue-900 leading-relaxed">
+          이 디자인은 텍스트·캘린더 중심이라 사진 없이 진행돼요.
+          사진 들어간 디자인을 원하시면 뒤로 가서 다른 템플릿을 선택해주세요.
+        </section>
+      )}
+
       {photoSlotCount > 0 && (
         <section className="space-y-2">
           <h2 className="text-sm font-bold text-foreground">
