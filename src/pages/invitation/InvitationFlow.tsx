@@ -317,7 +317,32 @@ const InvitationFlow = () => {
   // 생성하기 (제출) — wizard → result 전이
   // ─────────────────────────────────────────────
   const handleGenerate = async () => {
-    if (!template || !user) return;
+    // [진단] 핸들러 fire 자체 확인용 로그
+    console.log("[invitation] handleGenerate fired", {
+      hasTemplate: !!template,
+      hasUser: !!user,
+      userData,
+      photosCount: photos.length,
+      aiAuto,
+      hearts,
+    });
+    if (!template) {
+      toast({
+        title: "템플릿이 선택되지 않았어요",
+        description: "다시 템플릿을 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!user) {
+      toast({
+        title: "로그인이 필요해요",
+        description: "세션이 만료됐을 수 있어요. 다시 로그인해주세요.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
     if (!userData.groom_name?.trim() || !userData.bride_name?.trim()) {
       toast({ title: "신랑·신부 이름을 입력해주세요" });
       return;
@@ -974,7 +999,14 @@ const WizardCombined = ({
 
       {/* 생성 버튼 */}
       <Button
-        onClick={onGenerate}
+        onClick={() => {
+          // [진단] Button onClick 자체가 호출되는지 확인용
+          console.log("[invitation] '청첩장 만들기' Button clicked", {
+            isGenerating,
+            onGenerate: typeof onGenerate,
+          });
+          onGenerate();
+        }}
         disabled={isGenerating}
         className="w-full h-12 text-[15px] font-bold"
       >
