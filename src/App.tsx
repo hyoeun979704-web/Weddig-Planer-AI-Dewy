@@ -83,6 +83,7 @@ const MakeupRecommend = lazy(() => import("./pages/MakeupRecommend"));
 const InvitationFlow = lazy(() => import("./pages/invitation/InvitationFlow"));
 const InvitationStudio = lazy(() => import("./pages/invitation/InvitationStudio"));
 const InvitationGallery = lazy(() => import("./pages/invitation/InvitationGallery"));
+const InvitationViewer = lazy(() => import("./pages/invitation/InvitationViewer"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
 const AdminMakeupSamples = lazy(() => import("./pages/admin/AdminMakeupSamples"));
@@ -259,6 +260,7 @@ const App = () => (
               <Route path="/invitation/my" element={<InvitationGallery />} />
               <Route path="/invitation/new" element={<InvitationFlow />} />
               <Route path="/invitation/:id/edit" element={<InvitationStudio />} />
+              <Route path="/i/:slug" element={<InvitationViewer />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/dress-samples" element={<AdminDressSamples />} />
               <Route path="/admin/makeup-samples" element={<AdminMakeupSamples />} />

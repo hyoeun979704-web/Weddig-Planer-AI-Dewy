@@ -538,6 +538,150 @@ export const SEED_INVITATION_TEMPLATES: SeedTemplate[] = [
   },
 
   // ──────────────────────────────────────────────────────────────
+  // 모바일 무료 — 1080×1920 세로 (인스타 스토리 비율)
+  // 큰 커플 사진 + 인사말 + 캘린더 + 식 정보 + 부모님
+  // ──────────────────────────────────────────────────────────────
+  {
+    slug: "mobile-modern-01",
+    name: "모바일 — 모던 세로",
+    format: "mobile",
+    tone: "MODERN",
+    price_hearts: 0,
+    text_prompt_hint:
+      "단정하고 따뜻한 모바일 청첩장 인사말. 모바일 화면에서 읽기 좋은 짧고 명료한 톤.",
+    thumbnail_file: "mobile-modern-01-thumb.png",
+    background_file: "mobile-modern-01-bg.png",
+    display_order: 50,
+    is_active: true,
+    layout: {
+      canvas: { w: 1080, h: 1920, bg: "#FAF8F4" },
+      slots: [
+        // 상단 — 큰 사진 영역 (1080×1080 정사각)
+        {
+          id: "main_photo",
+          type: "image",
+          x: 0,
+          y: 0,
+          w: 1080,
+          h: 1080,
+          z: 1,
+          fit: "cover",
+          image_order: 1,
+        },
+
+        // 사진 위 영문 이름 (좌상단)
+        {
+          id: "names_en",
+          type: "text",
+          x: 60,
+          y: 60,
+          w: 960,
+          h: 60,
+          z: 3,
+          placeholder: "Hong Gildong & Kim Younghee",
+          font_family: "script",
+          font_size: 36,
+          font_style: "italic",
+          color: "#FFFFFF",
+          align: "left",
+        },
+
+        // 사진 위 결혼 날짜 (우하단)
+        {
+          id: "wedding_date_overlay",
+          type: "text",
+          x: 60,
+          y: 980,
+          w: 960,
+          h: 50,
+          z: 3,
+          field: "wedding_date",
+          font_size: 18,
+          color: "#FFFFFF",
+          align: "right",
+          letter_spacing: 4,
+        },
+
+        // 사진 아래 — 인사말
+        {
+          id: "intro_message",
+          type: "text",
+          x: 80,
+          y: 1130,
+          w: 920,
+          h: 260,
+          z: 2,
+          role: "intro",
+          placeholder:
+            "두 사람이 사랑으로 만나\n작은 결실을 맺습니다.\n\n귀한 걸음으로 축복해주세요.",
+          ai_promptable: true,
+          font_size: 24,
+          color: "#1A1A1A",
+          align: "center",
+          line_height: 1.7,
+        },
+
+        // 신랑·신부 이름 한글
+        {
+          id: "names_ko",
+          type: "text",
+          x: 80,
+          y: 1420,
+          w: 920,
+          h: 50,
+          z: 2,
+          placeholder: "신랑 · 신부",
+          font_size: 22,
+          color: "#1A1A1A",
+          align: "center",
+          letter_spacing: 4,
+        },
+
+        // 부모님
+        {
+          id: "groom_parents",
+          type: "text",
+          x: 80,
+          y: 1490,
+          w: 920,
+          h: 36,
+          z: 2,
+          field: "groom_parents",
+          font_size: 16,
+          color: "#666",
+          align: "center",
+        },
+        {
+          id: "bride_parents",
+          type: "text",
+          x: 80,
+          y: 1530,
+          w: 920,
+          h: 36,
+          z: 2,
+          field: "bride_parents",
+          font_size: 16,
+          color: "#666",
+          align: "center",
+        },
+
+        // 캘린더
+        {
+          id: "wedding_calendar",
+          type: "calendar",
+          x: 240,
+          y: 1600,
+          w: 600,
+          h: 280,
+          z: 2,
+          calendar_color: "#1A1A1A",
+          calendar_accent_color: "#E0364B",
+        },
+      ],
+    },
+  },
+
+  // ──────────────────────────────────────────────────────────────
   // 3. free_moody_01 — "Getting Married" 무디 스타일
   //    검정 배경 사진 카드 + 흰 배경 텍스트 카드 양면 시뮬레이션
   // ──────────────────────────────────────────────────────────────

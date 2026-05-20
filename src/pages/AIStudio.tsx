@@ -39,8 +39,9 @@ const cards: StudioCard[] = [
   {
     id: "mobile-invitation",
     title: "간편 모바일 청첩장",
-    description: "정보 입력만으로 모바일 청첩장 자동 생성",
-    status: "coming_soon",
+    description: "정보 입력 + 공유 링크 + QR 코드까지 한 번에",
+    status: "active",
+    href: "/invitation/new?format=mobile",
   },
   {
     id: "wedding-photo",

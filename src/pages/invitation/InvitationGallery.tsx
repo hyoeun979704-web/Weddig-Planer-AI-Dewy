@@ -68,9 +68,7 @@ const InvitationGallery = () => {
             className="h-auto py-3 flex flex-col items-center gap-1.5"
           >
             <Smartphone className="w-5 h-5" />
-            <span className="text-[12px] text-muted-foreground">
-              모바일 (준비중)
-            </span>
+            <span className="text-[12px]">모바일 청첩장</span>
           </Button>
         </div>
 
