@@ -30,15 +30,16 @@ const cards: StudioCard[] = [
     href: "/ai-studio/makeup-room",
   },
   {
+    id: "paper-invitation",
+    title: "정성가득 종이 청첩장",
+    description: "인쇄용 PDF로 받는 종이 청첩장 — 무료 템플릿 시작",
+    status: "active",
+    href: "/invitation/new?format=paper",
+  },
+  {
     id: "mobile-invitation",
     title: "간편 모바일 청첩장",
     description: "정보 입력만으로 모바일 청첩장 자동 생성",
-    status: "coming_soon",
-  },
-  {
-    id: "paper-invitation",
-    title: "정성가득 종이 청첩장",
-    description: "인쇄용 PDF로 받는 종이 청첩장",
     status: "coming_soon",
   },
   {
