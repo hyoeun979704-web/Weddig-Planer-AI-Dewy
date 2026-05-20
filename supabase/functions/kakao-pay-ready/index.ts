@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveAllowedOrigin } from "../_shared/allowedOrigins.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +54,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    // CSRF·피싱 방어: 클라이언트가 보낸 origin 을 그대로 redirect URL 에 박지 않는다.
+    // 화이트리스트와 정확히 일치하는 경우에만 그 표준 표기를 사용.
+    const safeOrigin = resolveAllowedOrigin(origin);
+    if (!safeOrigin) {
+      console.warn("Rejected payment origin:", origin);
+      return new Response(JSON.stringify({ error: "Invalid origin" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const plan = PLAN_INFO[type];
 
     const adminKey = Deno.env.get("KAKAO_ADMIN_KEY");
@@ -76,9 +88,9 @@ Deno.serve(async (req) => {
       quantity: "1",
       total_amount: String(plan.amount),
       tax_free_amount: "0",
-      approval_url: `${origin}/premium/payment/success?type=${type}&order=${partnerOrderId}`,
-      cancel_url: `${origin}/premium/payment/fail?reason=cancel`,
-      fail_url: `${origin}/premium/payment/fail?reason=fail`,
+      approval_url: `${safeOrigin}/premium/payment/success?type=${type}&order=${partnerOrderId}`,
+      cancel_url: `${safeOrigin}/premium/payment/fail?reason=cancel`,
+      fail_url: `${safeOrigin}/premium/payment/fail?reason=fail`,
     });
 
     const kakaoRes = await fetch("https://kapi.kakao.com/v1/payment/ready", {

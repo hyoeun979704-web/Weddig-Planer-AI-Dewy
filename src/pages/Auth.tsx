@@ -5,11 +5,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Mail, Lock, Eye, EyeOff, User, Building2 } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Eye, EyeOff, User, Building2, Calendar } from "lucide-react";
 
 const emailSchema = z.string().email("올바른 이메일 형식을 입력해주세요");
 const passwordSchema = z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다");
+
+const MIN_AGE = 14;
+
+// 한국 나이 셈법이 아닌 "만 나이" — Play Store / GDPR 등 글로벌 기준.
+function calculateAge(birth: Date, today: Date = new Date()): number {
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
 
 type AccountType = "individual" | "business";
 
@@ -20,9 +31,17 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [accountType, setAccountType] = useState<AccountType>("individual");
-  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+    birthDate?: string;
+    ageConfirmed?: string;
+  }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isKakaoLoading, setIsKakaoLoading] = useState(false);
@@ -55,6 +74,23 @@ const Auth = () => {
       newErrors.confirmPassword = "비밀번호가 일치하지 않습니다";
     }
 
+    if (isSignUp) {
+      if (!birthDate) {
+        newErrors.birthDate = "생년월일을 입력해주세요";
+      } else {
+        const parsed = new Date(birthDate);
+        if (Number.isNaN(parsed.getTime()) || parsed > new Date()) {
+          newErrors.birthDate = "올바른 생년월일을 입력해주세요";
+        } else if (calculateAge(parsed) < MIN_AGE) {
+          newErrors.birthDate = `만 ${MIN_AGE}세 이상만 가입할 수 있습니다`;
+        }
+      }
+
+      if (!ageConfirmed) {
+        newErrors.ageConfirmed = `만 ${MIN_AGE}세 이상이며 이용약관에 동의해야 가입할 수 있습니다`;
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -68,7 +104,15 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
-        const metadata = accountType === "business" ? { account_type: "business" } : undefined;
+        // user_metadata 에 14세 이상 확인 흔적 + 생년월일 보관.
+        // 외부 감사 시 "가입 시점에 만 나이 확인했다" 는 증거가 되며,
+        // 추후 profiles 테이블로 이관할 때도 그대로 옮길 수 있다.
+        const metadata: Record<string, unknown> = {
+          birth_date: birthDate,
+          age_confirmed_at: new Date().toISOString(),
+          age_confirmed_min: MIN_AGE,
+        };
+        if (accountType === "business") metadata.account_type = "business";
         const { error } = await signUp(email, password, metadata);
         if (error) {
           if (error.message.includes("already registered")) {
@@ -102,7 +146,20 @@ const Auth = () => {
     }
   };
 
+  // 소셜 로그인 + 신규 가입을 외부 OAuth 콜백으로 처리하다 보니
+  // 가입 시점에 생년월일을 입력받을 수 없다. 대신 회원가입 모드일 땐
+  // 약관·만 나이 체크박스 동의를 클라이언트에서 강제하고,
+  // 그 외 연령 검증은 외부 provider 정책(카카오 14세+ 정책 등) 에 위임.
+  const guardSocialSignUp = (): boolean => {
+    if (isSignUp && !ageConfirmed) {
+      toast.error(`만 ${MIN_AGE}세 이상이며 약관에 동의해야 가입할 수 있습니다`);
+      return false;
+    }
+    return true;
+  };
+
   const handleGoogleSignIn = async () => {
+    if (!guardSocialSignUp()) return;
     setIsGoogleLoading(true);
     try {
       const { error } = await signInWithGoogle();
@@ -115,6 +172,7 @@ const Auth = () => {
   };
 
   const handleKakaoSignIn = async () => {
+    if (!guardSocialSignUp()) return;
     setIsKakaoLoading(true);
     try {
       const { error } = await signInWithKakao();
@@ -275,6 +333,59 @@ const Auth = () => {
             </div>
           )}
 
+          {isSignUp && (
+            <div className="space-y-2">
+              <Label htmlFor="birthDate">생년월일</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                <Input
+                  id="birthDate"
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  max={new Date().toISOString().split("T")[0]}
+                  className="pl-10"
+                />
+              </div>
+              {errors.birthDate && (
+                <p className="text-sm text-destructive">{errors.birthDate}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                만 {MIN_AGE}세 이상만 가입하실 수 있습니다.
+              </p>
+            </div>
+          )}
+
+          {isSignUp && (
+            <div className="space-y-2 pt-2">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="ageConfirmed"
+                  checked={ageConfirmed}
+                  onCheckedChange={(checked) => setAgeConfirmed(checked === true)}
+                  className="mt-0.5"
+                />
+                <Label
+                  htmlFor="ageConfirmed"
+                  className="text-sm leading-relaxed font-normal cursor-pointer"
+                >
+                  본인은 만 {MIN_AGE}세 이상이며,{" "}
+                  <a href="/terms" target="_blank" rel="noopener" className="text-primary underline">
+                    이용약관
+                  </a>{" "}
+                  및{" "}
+                  <a href="/privacy" target="_blank" rel="noopener" className="text-primary underline">
+                    개인정보처리방침
+                  </a>
+                  에 동의합니다.
+                </Label>
+              </div>
+              {errors.ageConfirmed && (
+                <p className="text-sm text-destructive">{errors.ageConfirmed}</p>
+              )}
+            </div>
+          )}
+
           <Button
             type="submit"
             className="w-full h-12 text-base font-medium mt-6"
@@ -353,6 +464,8 @@ const Auth = () => {
                 setIsSignUp(!isSignUp);
                 setErrors({});
                 setAccountType("individual");
+                setBirthDate("");
+                setAgeConfirmed(false);
               }}
               className="text-primary font-medium"
             >

@@ -35,7 +35,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "대시보드", href: "/admin", icon: LayoutDashboard },
   { label: "드레스 카탈로그", href: "/admin/dress-samples", icon: Shirt },
-  { label: "메이크업 카탈로그", href: "/admin/makeup-samples", icon: Sparkles, badge: "준비중" },
+  { label: "메이크업 카탈로그", href: "/admin/makeup-samples", icon: Sparkles },
   { label: "청첩장 템플릿", href: "/admin/invitation-templates", icon: FileText, badge: "준비중" },
   { label: "촬영 시안", href: "/admin/wedding-photo-refs", icon: Camera, badge: "준비중" },
   { label: "사전알림 신청", href: "/admin/service-waitlist", icon: Bell },

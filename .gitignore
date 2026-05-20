@@ -35,3 +35,18 @@ out/
 tsconfig.tsbuildinfo
 scripts/collect-places/.env
 scripts/collect-places/.env.local
+
+# Capacitor / Android
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/local.properties
+/android/app/release/
+/android/captures/
+*.keystore
+*.jks
+
+# iOS (추가 시점 대비)
+/ios/App/build/
+/ios/App/Pods/
+/ios/App/output/

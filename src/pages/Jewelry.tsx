@@ -7,6 +7,7 @@ import CategoryFilterBar from "@/components/CategoryFilterBar";
 import CategoryGrid from "@/components/CategoryGrid";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
+import { openExternal } from "@/lib/native/openExternal";
 
 const Jewelry = () => {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ const Jewelry = () => {
   const handleItemClick = (item: CategoryItem) => {
     const url = item.product_url as string | undefined;
     if (url) {
-      window.open(url, "_blank", "noopener,noreferrer");
+      void openExternal(url);
       return;
     }
     navigate(`/jewelry/${item.id}`);

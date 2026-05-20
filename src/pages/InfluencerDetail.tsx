@@ -5,6 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import { useInfluencerDetail, useCategoryLabels } from "@/hooks/useInfluencers";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { openExternal } from "@/lib/native/openExternal";
 
 const platformNames: Record<string, string> = {
   instagram: "Instagram",
@@ -148,7 +149,7 @@ const InfluencerDetail = () => {
                     <div
                       key={content.id}
                       className="flex gap-3 p-3 bg-card rounded-xl border border-border"
-                      onClick={() => content.content_url && window.open(content.content_url, "_blank")}
+                      onClick={() => { if (content.content_url) void openExternal(content.content_url); }}
                     >
                       {content.thumbnail_url ? (
                         <img

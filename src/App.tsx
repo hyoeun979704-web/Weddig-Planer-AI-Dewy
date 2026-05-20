@@ -75,6 +75,11 @@ const LocationTerms = lazy(() => import("./pages/LocationTerms"));
 const DressFitting = lazy(() => import("./pages/DressFitting"));
 const DressFittingResult = lazy(() => import("./pages/DressFittingResult"));
 const DressFittingGallery = lazy(() => import("./pages/DressFittingGallery"));
+const MakeupFitting = lazy(() => import("./pages/MakeupFitting"));
+const MakeupFittingResult = lazy(() => import("./pages/MakeupFittingResult"));
+const MakeupFittingGallery = lazy(() => import("./pages/MakeupFittingGallery"));
+const DressRecommend = lazy(() => import("./pages/DressRecommend"));
+const MakeupRecommend = lazy(() => import("./pages/MakeupRecommend"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
 const AdminMakeupSamples = lazy(() => import("./pages/admin/AdminMakeupSamples"));
@@ -82,6 +87,7 @@ const AdminInvitationTemplates = lazy(() => import("./pages/admin/AdminInvitatio
 const AdminWeddingPhotoRefs = lazy(() => import("./pages/admin/AdminWeddingPhotoRefs"));
 const AdminServiceWaitlist = lazy(() => import("./pages/admin/AdminServiceWaitlist"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
 const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
@@ -240,6 +246,11 @@ const App = () => (
               <Route path="/ai-studio/dress-tour" element={<DressFitting />} />
               <Route path="/ai-studio/dress-tour/result/:id" element={<DressFittingResult />} />
               <Route path="/ai-studio/dress-tour/gallery" element={<DressFittingGallery />} />
+              <Route path="/ai-studio/makeup-room" element={<MakeupFitting />} />
+              <Route path="/ai-studio/makeup-room/result/:id" element={<MakeupFittingResult />} />
+              <Route path="/ai-studio/makeup-room/gallery" element={<MakeupFittingGallery />} />
+              <Route path="/ai-studio/dress-tour/recommend" element={<DressRecommend />} />
+              <Route path="/ai-studio/makeup-room/recommend" element={<MakeupRecommend />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/dress-samples" element={<AdminDressSamples />} />
               <Route path="/admin/makeup-samples" element={<AdminMakeupSamples />} />
@@ -247,6 +258,7 @@ const App = () => (
               <Route path="/admin/wedding-photo-refs" element={<AdminWeddingPhotoRefs />} />
               <Route path="/admin/service-waitlist" element={<AdminServiceWaitlist />} />
               <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/reports" element={<AdminReports />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

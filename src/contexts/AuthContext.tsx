@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { isNativeApp } from "@/lib/platform";
+import { signInWithOAuthNative } from "@/lib/native/oauth";
 
 interface AuthContextType {
   user: User | null;
@@ -35,6 +37,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
+
+        // 푸시 알림은 1차 출시에서 제외 (Firebase 미설정).
+        // 활성화 시: SIGNED_IN 분기에서 isNativeApp() 가드 후 push 모듈을 동적 import.
+        // 참고: supabase/functions/send-push, supabase/migrations/...device_tokens.sql 미배포 상태.
       }
     );
 
@@ -73,17 +79,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithGoogle = async () => {
+    // 네이티브에선 Custom Tabs + 딥링크 콜백, 웹에선 기존 origin 리다이렉트.
+    if (isNativeApp()) return signInWithOAuthNative('google');
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/`,
       },
     });
-    
+
     return { error: error as Error | null };
   };
 
   const signInWithKakao = async () => {
+    if (isNativeApp()) return signInWithOAuthNative('kakao');
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: {
