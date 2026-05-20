@@ -325,6 +325,7 @@ const DressFitting = () => {
           <IntroSection
             hearts={hearts}
             onStart={handleStart}
+            onRecommend={() => navigate("/ai-studio/dress-tour/recommend")}
             onGallery={() => navigate("/ai-studio/dress-tour/gallery")}
           />
         )}
@@ -400,10 +401,12 @@ const DressFitting = () => {
 const IntroSection = ({
   hearts,
   onStart,
+  onRecommend,
   onGallery,
 }: {
   hearts: number | null;
   onStart: () => void;
+  onRecommend: () => void;
   onGallery: () => void;
 }) => (
   <>
@@ -459,14 +462,22 @@ const IntroSection = ({
       </p>
     </section>
 
-    <section className="mb-6">
+    <section className="mb-6 space-y-2">
       <button
         type="button"
         onClick={onStart}
         className="w-full bg-primary text-primary-foreground rounded-xl py-4 font-bold text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
       >
         <Camera className="w-5 h-5" />
-        시작하기
+        직접 골라서 시작
+      </button>
+      <button
+        type="button"
+        onClick={onRecommend}
+        className="w-full bg-card border border-primary/40 text-primary rounded-xl py-4 font-bold text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+      >
+        <Sparkles className="w-5 h-5" />
+        AI 추천받기 (체형 입력)
       </button>
       <p className="mt-2 text-[11px] text-center text-muted-foreground">
         시작 시{" "}

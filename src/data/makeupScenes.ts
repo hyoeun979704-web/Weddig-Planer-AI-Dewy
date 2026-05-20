@@ -217,3 +217,86 @@ DO NOT
 
 Output: one photorealistic vertical 3:4 close-up bridal portrait.`;
 };
+
+/**
+ * 추천 모드 프롬프트 — 레퍼런스 메이크업 이미지 없이 사용자 셀카만 입력.
+ *
+ * gpt-image-2 가 셀카를 분석해서 (퍼스널컬러·얼굴형·눈매·입술 등)
+ * 그에 어울리는 신부 메이크업을 알아서 디자인해 적용한다.
+ *
+ * dewy-makeup-recommend Edge Function 에서 사용.
+ */
+export const buildRecommendMakeupPrompt = (
+  sceneCode: MakeupSceneCode,
+): string => {
+  const scene = makeupSceneByCode(sceneCode);
+  if (!scene) throw new Error(`unknown makeup scene code: ${sceneCode}`);
+
+  return `You're generating a photorealistic Korean bridal beauty portrait.
+
+REFERENCE
+- Image 1: the bride (user's selfie). This is the only reference.
+
+TOP PRIORITY — IDENTITY MATCH
+The face in the output must clearly be the same person from Image 1.
+Match her eye shape and size, eyelid type (monolid / double / hooded),
+brow position, nose, lip shape, jawline, face shape, skin tone, and
+overall likeness so closely that someone who knows her would
+recognize her immediately. DO NOT change her facial features. Apply
+makeup ONTO her existing features. This rule takes priority over
+everything else.
+
+TASK
+Act as a senior Korean bridal makeup artist with expertise in
+personal color analysis. Look at the bride's face in Image 1 and
+silently determine:
+  - her personal color season (warm-spring / cool-summer /
+    warm-autumn / cool-winter)
+  - her face shape (round / long / oval / square / heart)
+  - her eye shape (double-lid / monolid / hooded / down-turned /
+    up-turned)
+  - her lip fullness and Cupid's bow definition
+  - her nose bridge / tip characteristics
+  - her undertone and skin clarity
+
+Then design a SINGLE coherent Korean bridal makeup look that
+specifically flatters HER features — choosing a base finish, lip
+color and finish, eye shadow palette and placement, eyeliner style,
+brow shape, blush color and placement, contour intensity, and a few
+tasteful accent details that suit her personal color and bone
+structure. The look must read intentional and unified, not a
+random mix.
+
+Produce a single close-up bridal beauty portrait — head and
+shoulders, eye-level, sharp focus on the face — wearing the makeup
+you just designed. Vertical 3:4, photorealistic.
+
+BRIDE — keep exactly from Image 1
+- Face: SAME PERSON, recognizable at a glance
+- Skin tone and undertone (DO NOT lighten or alter race)
+- Bone structure, age, freckles or moles
+- Hair color and natural texture; soft bridal styling allowed
+
+LIGHTING
+${scene.promptBlock}
+
+POSE & FRAMING
+- Head-and-shoulders close-up, head straight or slight tilt
+- Eyes engaging the camera, soft natural expression
+- Tasteful neckline visible — neutral white / cream draped fabric
+- Crisp focus on the eyes
+- Vertical 3:4 framing
+
+DO NOT
+- Reshape facial features (eyes, nose, lips, jaw, brow position)
+- Lighten or change skin tone / undertone
+- Idealize toward a generic "AI beauty" face
+- Apply colors that fight her personal color (e.g. cool-toned
+  makeup on warm-toned skin)
+- Mix conflicting moods (e.g. heavy smoky eye with no-makeup lip)
+- Add accessories or veil unless clearly suggested by Image 1
+- Add watermarks, text, logos
+- Stylize (cartoon, illustration, anime, painterly)
+
+Output: one photorealistic vertical 3:4 close-up bridal portrait.`;
+};

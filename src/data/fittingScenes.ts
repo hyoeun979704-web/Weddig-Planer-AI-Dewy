@@ -294,3 +294,96 @@ ${
 
 Output: one photorealistic 3:4 vertical image.`;
 };
+
+/**
+ * 추천 모드 프롬프트 — 참조 드레스 이미지 없이 사용자 사진 1장만 입력.
+ *
+ * gpt-image-2 가 사용자 사진과 체형 가이드를 읽고 어울리는 드레스를
+ * 알아서 결정해서 적용한다. (Gemini 등 별도 추론 단계 없음)
+ *
+ * dewy-dress-recommend Edge Function 에서 사용.
+ */
+export const buildRecommendDressPrompt = (
+  sceneCode: SceneCode,
+  bodyShapeLabel: string,
+  bodyShapeGuide: string,
+): string => {
+  const scene = sceneByCode(sceneCode);
+  if (!scene) throw new Error(`unknown scene code: ${sceneCode}`);
+
+  const isCeremony = scene.scene === "CEREMONY";
+
+  return `You're generating a photorealistic Korean bridal portrait.
+
+REFERENCE
+- Image 1: the bride (user's photo). This is the only reference.
+
+TOP PRIORITY — IDENTITY MATCH
+The face in the output must clearly be the same person from Image 1.
+Match her eye shape and size, nose, lips, jawline, face shape, and
+overall likeness so closely that someone who knows her would
+recognize her immediately. Do NOT drift toward a generic "AI bridal
+model" look. This rule takes priority over everything else.
+
+TASK
+Act as a senior Korean bridal stylist. The bride's body type is
+"${bodyShapeLabel}". Choose the SINGLE most flattering wedding dress
+for this body type and the venue described below, then produce a
+single full-body bridal photograph of the bride wearing it. Vertical
+3:4, photorealistic.
+
+BRIDE BODY TYPE — choose a flattering dress based on this guide
+${bodyShapeGuide}
+Pick exactly ONE silhouette, one neckline, one sleeve style, one
+back design, one fabric, and a coherent embellishment level that
+the guide recommends. Avoid the silhouettes/details the guide warns
+against. Stick to bridal colors (white / ivory / off-white /
+champagne / blush). The chosen dress must look intentional and
+fully designed, not a mix of conflicting elements.
+
+BRIDE — keep exactly from Image 1
+- Face: SAME PERSON, recognizable at a glance
+- Skin tone, complexion, age, hair color and natural texture
+- Body proportions:
+  · Full-body input → COPY EVERYTHING from the photo (height, build,
+    torso/leg ratio, shoulder width, hand size). The photo wins.
+  · Upper-body input → infer a plausible Korean woman body
+    consistent with the stated "${bodyShapeLabel}" body type.
+- Never produce doll-like / chibi or stretched fashion-illustration
+  proportions.
+
+VENUE
+${scene.promptBlock}
+
+POSE
+${
+  isCeremony
+    ? `- Mid-stride walking motion down the aisle, slight contrapposto
+- Dress train flowing behind her (natural fabric movement)
+- May hold a small bouquet at waist height, or hands rest naturally
+- Soft confident smile, eyes engaging the camera ahead`
+    : `- Natural standing pose with subtle contrapposto
+- One hand may rest at hip, touch collarbone, lift the skirt edge,
+  or hold a small bouquet; the other arm relaxed
+- Soft natural smile, eyes warm and engaged`
+}
+- Full body or 3/4 body visible, centered
+- Avoid symmetric mannequin-stiff stance
+
+DO NOT
+- Drift the face toward generic / idealized features
+- Slim, broaden, or alter the bride's actual body
+- Mix conflicting design elements (e.g. boho lace with sharp modern
+  satin column) — the dress must read as one cohesive design
+- Show a mannequin, stand, or pole
+- Add watermarks, text, logos
+- Stylize (cartoon, illustration, anime)
+${
+  isCeremony
+    ? `- Add guests, audience, photographers, officiants, staff, or any
+  other people besides the bride. Every ceremony chair must be UNOCCUPIED.`
+    : "- Place the bride on a wedding aisle (this is a studio shoot)"
+}
+
+Output: one photorealistic 3:4 vertical image.`;
+};
