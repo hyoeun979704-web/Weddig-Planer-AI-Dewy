@@ -32,9 +32,9 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
     fetchCounts();
   }, [user]);
 
-  // 5열 — 각 항목별 톤 분리 (기존 핑크 primary 와 어울리는 채도)
+  // 5열 — 배경 없이 아이콘 자체로 톤 분리. 라벨·값 텍스트는 검정 통일.
   //   찜       : 핑크 (primary, 변경 없음)
-  //   하트     : 로즈 + 채워진 하트 (자산이므로 시각 강조)
+  //   하트     : 로즈 + 채워진 하트
   //   포인트   : 노랑 (amber)
   //   쿠폰     : 하늘 (sky)
   //   주문내역 : 주황 (orange)
@@ -45,7 +45,6 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
       value: user ? String(favCount) : "-",
       href: "/favorites",
       iconClass: "text-primary",
-      bg: "bg-primary/10",
     },
     {
       icon: Heart,
@@ -53,7 +52,6 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
       value: user ? String(hearts) : "-",
       href: "/points",
       iconClass: "text-rose-500 fill-rose-500",
-      bg: "bg-rose-50",
     },
     {
       icon: Coins,
@@ -61,7 +59,6 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
       value: user ? `${points.toLocaleString()}P` : "-",
       href: "/points",
       iconClass: "text-amber-500",
-      bg: "bg-amber-50",
     },
     {
       icon: Ticket,
@@ -69,7 +66,6 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
       value: "-",
       href: "/coupons",
       iconClass: "text-sky-500",
-      bg: "bg-sky-50",
     },
     {
       icon: ShoppingBag,
@@ -77,7 +73,6 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
       value: user ? String(orderCount) : "-",
       href: "/orders",
       iconClass: "text-orange-500",
-      bg: "bg-orange-50",
     },
   ];
 
@@ -88,13 +83,15 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
           <button
             key={item.label}
             onClick={() => navigate(item.href)}
-            className="flex flex-col items-center gap-1 p-2 bg-card rounded-2xl border border-border hover:border-primary/20 active:scale-[0.96] transition-all"
+            className="flex flex-col items-center gap-1.5 p-2 bg-card rounded-2xl border border-border hover:border-primary/20 active:scale-[0.96] transition-all"
           >
-            <div className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center`}>
-              <item.icon className={`w-4 h-4 ${item.iconClass}`} />
+            <div className="w-11 h-11 flex items-center justify-center">
+              <item.icon className={`w-7 h-7 ${item.iconClass}`} />
             </div>
-            <span className="text-[10px] font-medium text-foreground">{item.label}</span>
-            <span className={`text-[11px] font-bold ${item.iconClass.split(" ")[0]} truncate w-full text-center`}>
+            <span className="text-[10px] font-medium text-foreground/80">
+              {item.label}
+            </span>
+            <span className="text-[11px] font-bold text-foreground/80 truncate w-full text-center">
               {item.value}
             </span>
           </button>
