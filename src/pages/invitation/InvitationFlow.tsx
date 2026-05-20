@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -382,6 +383,25 @@ const InvitationFlow = () => {
 
     setIsGenerating(true);
     try {
+      // 0) wizard 의 자유 텍스트 입력(slot.id 키) 을 textOverrides 로 분리.
+      //    invitations.user_data 에 slot.id 가 섞여있으면 분석·통계에 잡음이
+      //    되니까 textOverrides 로 옮긴 뒤 user_data 에선 제거.
+      const aiSlotIds = new Set(
+        template.layout.slots
+          .filter((s) => s.type === "text" && s.ai_promptable)
+          .map((s) => s.id),
+      );
+      const cleanedUserData: InvitationUserData = {};
+      const directOverrides: Record<string, string> = { ...textOverrides };
+      for (const [k, v] of Object.entries(userData)) {
+        if (aiSlotIds.has(k) && typeof v === "string" && v.trim()) {
+          directOverrides[k] = v;
+        } else if (!aiSlotIds.has(k)) {
+          cleanedUserData[k] = v;
+        }
+      }
+      setTextOverrides(directOverrides);
+
       // 1) 사진 자동 분배
       let paths = distributePhotos(template, photos).paths;
       let urls = distributePhotos(template, photos).urls;
@@ -475,8 +495,8 @@ const InvitationFlow = () => {
       const payload = {
         user_id: user.id,
         template_id: template.id,
-        user_data: userData,
-        layout: { textOverrides, imagePaths: paths },
+        user_data: cleanedUserData,
+        layout: { textOverrides: directOverrides, imagePaths: paths },
         ai_generated_text: generatedAi,
         status: "draft" as const,
       };
@@ -514,7 +534,11 @@ const InvitationFlow = () => {
         template.layout.canvas.h,
         filename,
       );
-      toast({ title: "PDF 다운로드 시작" });
+      toast({
+        title: "PDF 다운로드 시작",
+        description:
+          "130×190mm 비율로 출력됐어요. 인쇄소 사양에 맞춰 크기를 조정해주세요.",
+      });
     } catch (e) {
       toast({
         title: "PDF 실패",
@@ -1041,7 +1065,7 @@ const WizardCombined = ({
 
       {/* AI 인사말 토글 */}
       {aiSlotCount > 0 && (
-        <section className="p-4 bg-card rounded-2xl border border-border space-y-2">
+        <section className="p-4 bg-card rounded-2xl border border-border space-y-3">
           <div className="flex items-start gap-3">
             <Checkbox
               id="ai_auto"
@@ -1068,6 +1092,44 @@ const WizardCombined = ({
               </div>
             </div>
           </div>
+
+          {/* AI OFF 일 때 인사말 직접 입력 UI */}
+          {!aiAuto && (
+            <div className="space-y-2 pt-2 border-t border-border">
+              <p className="text-[11px] text-muted-foreground">
+                AI 추천을 끄셨어요. 인사말을 직접 입력하시려면 ↓
+              </p>
+              {template.layout.slots
+                .filter((s) => s.type === "text" && s.ai_promptable)
+                .map((slot) => (
+                  <div key={slot.id}>
+                    <Label className="text-[12px] text-muted-foreground">
+                      {slot.role
+                        ? slot.role === "intro"
+                          ? "인사말"
+                          : slot.role === "greeting"
+                            ? "인사"
+                            : slot.role === "love_message"
+                              ? "사랑의 약속"
+                              : "자유 문구"
+                        : "자유 문구"}
+                    </Label>
+                    <Textarea
+                      value={userData[slot.id] ?? ""}
+                      onChange={(e) =>
+                        onUserDataChange({
+                          ...userData,
+                          [slot.id]: e.target.value,
+                        })
+                      }
+                      placeholder={slot.placeholder ?? "직접 입력하세요"}
+                      rows={3}
+                      className="mt-1 text-sm"
+                    />
+                  </div>
+                ))}
+            </div>
+          )}
         </section>
       )}
 
