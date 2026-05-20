@@ -137,6 +137,31 @@ const AdminInvitationTemplates = () => {
       });
       return;
     }
+    // 최소 검증: 사용자 측 캔버스가 정상 렌더되려면 canvas.w / canvas.h 필수
+    const canvas = (layout as { canvas?: { w?: unknown; h?: unknown } }).canvas;
+    if (
+      !canvas ||
+      typeof canvas.w !== "number" ||
+      typeof canvas.h !== "number" ||
+      canvas.w <= 0 ||
+      canvas.h <= 0
+    ) {
+      toast({
+        title: "layout.canvas.w / canvas.h 가 필요해요",
+        description:
+          '예: {"canvas": {"w": 800, "h": 1200}, "slots": [...]}',
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!Array.isArray((layout as { slots?: unknown }).slots)) {
+      toast({
+        title: "layout.slots 배열이 필요해요",
+        description: "빈 배열도 가능: \"slots\": []",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSaving(true);
     const payload = { ...form, layout };
@@ -410,13 +435,46 @@ const AdminInvitationTemplates = () => {
                   id="layout"
                   value={layoutJson}
                   onChange={(e) => setLayoutJson(e.target.value)}
-                  rows={8}
+                  rows={12}
                   className="font-mono text-xs"
-                  placeholder='{ "canvas": { "w": 800, "h": 1200 }, "slots": [] }'
+                  placeholder={`{
+  "canvas": {
+    "w": 800,
+    "h": 1200,
+    "bg": "#FFFFFF",
+    "background_url": "디자이너가 export 한 배경 PNG URL (선택)"
+  },
+  "slots": [
+    {
+      "id": "couple_names",
+      "type": "text",
+      "x": 200, "y": 480, "w": 400, "h": 60,
+      "z": 2,
+      "field": "groom_name",
+      "ai_promptable": false,
+      "font_size": 28,
+      "align": "center"
+    }
+  ]
+}`}
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  캔버스 크기 + 텍스트·이미지·에셋 슬롯 정의 (사용자가 데이터를 입력하면 이 슬롯에 자동 매핑).
-                </p>
+                <div className="mt-2 p-3 bg-blue-50 rounded-lg text-[11px] text-blue-900 leading-relaxed">
+                  <p className="font-semibold mb-1">💡 Figma 워크플로우</p>
+                  <ol className="list-decimal list-inside space-y-0.5">
+                    <li>청첩장 프레임 작업 (예: 800×1200)</li>
+                    <li>
+                      두 번 export — 모두 PNG @2x:
+                      <ul className="list-disc list-inside ml-3 mt-0.5">
+                        <li>풀시안 (모든 레이어 ON) → 위 "썸네일"</li>
+                        <li>배경 (텍스트·사진 레이어 OFF) → canvas.background_url</li>
+                      </ul>
+                    </li>
+                    <li>슬롯 박스 선택 → 피그마 우측 X, Y, W, H → slots 배열에 그대로</li>
+                    <li>슬롯 type: text / image / asset / calendar / qr / map</li>
+                    <li>field 값으로 user_data 자동 매핑 (groom_name, bride_name, wedding_date 등)</li>
+                    <li>ai_promptable=true 인 text 슬롯은 8초 후 AI 추천 시트 트리거</li>
+                  </ol>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
