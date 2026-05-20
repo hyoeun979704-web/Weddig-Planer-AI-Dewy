@@ -1,19 +1,24 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  ArrowLeft, 
-  Heart, 
-  MessageSquare, 
-  Eye, 
-  Share2, 
+import {
+  ArrowLeft,
+  Heart,
+  MessageSquare,
+  Eye,
+  Share2,
   Send,
   User,
   Pencil,
   Trash2,
   X,
-  Bookmark
+  Bookmark,
+  Flag,
+  UserX,
 } from "lucide-react";
+import ReportDialog from "@/components/community/ReportDialog";
+import BlockUserDialog from "@/components/community/BlockUserDialog";
+import { useUserBlocks } from "@/hooks/useCommunityModeration";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -69,6 +74,8 @@ const CommunityPostDetail = () => {
   const [editingContent, setEditingContent] = useState("");
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
+  const [reportPostOpen, setReportPostOpen] = useState(false);
+  const [blockAuthorOpen, setBlockAuthorOpen] = useState(false);
   
   // Comment likes hook
   const { getCommentLikeInfo, toggleLike, isToggling: isLikeToggling } = useCommentLikes(id || "");
@@ -93,16 +100,23 @@ const CommunityPostDetail = () => {
     enabled: !!id,
   });
 
-  // Fetch comments
+  const { data: blockedUserIds = [] } = useUserBlocks();
+
+  // Fetch comments — 차단한 사용자 댓글은 숨김.
   const { data: comments = [] } = useQuery({
-    queryKey: ["community-comments", id],
+    queryKey: ["community-comments", id, blockedUserIds],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("community_comments")
         .select("*")
         .eq("post_id", id!)
         .order("created_at", { ascending: true });
-      
+
+      if (blockedUserIds.length > 0) {
+        query = query.not("user_id", "in", `(${blockedUserIds.join(",")})`);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as Comment[];
     },
@@ -405,9 +419,27 @@ const CommunityPostDetail = () => {
             <button onClick={handleShare} className="p-2">
               <Share2 className="w-5 h-5 text-muted-foreground" />
             </button>
+            {user && post.user_id !== user.id && (
+              <>
+                <button
+                  onClick={() => setReportPostOpen(true)}
+                  className="p-2"
+                  aria-label="게시글 신고"
+                >
+                  <Flag className="w-5 h-5 text-muted-foreground" />
+                </button>
+                <button
+                  onClick={() => setBlockAuthorOpen(true)}
+                  className="p-2"
+                  aria-label="작성자 차단"
+                >
+                  <UserX className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </>
+            )}
             {user && post.user_id === user.id && (
               <>
-                <button 
+                <button
                   onClick={() => navigate(`/community/${id}/edit`)}
                   className="p-2"
                 >
@@ -600,6 +632,22 @@ const CommunityPostDetail = () => {
           </Button>
         </div>
       </div>
+
+      {user && post.user_id !== user.id && id && (
+        <>
+          <ReportDialog
+            open={reportPostOpen}
+            onOpenChange={setReportPostOpen}
+            targetType="post"
+            targetId={id}
+          />
+          <BlockUserDialog
+            open={blockAuthorOpen}
+            onOpenChange={setBlockAuthorOpen}
+            blockedUserId={post.user_id}
+          />
+        </>
+      )}
     </div>
   );
 };

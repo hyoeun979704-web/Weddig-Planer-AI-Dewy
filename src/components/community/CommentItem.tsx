@@ -1,4 +1,5 @@
-import { User, Pencil, Trash2, X, Check, MessageSquare, Heart } from "lucide-react";
+import { useState } from "react";
+import { User, Pencil, Trash2, X, Check, MessageSquare, Heart, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -12,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import ReportDialog from "@/components/community/ReportDialog";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -69,6 +71,7 @@ const CommentItem = ({
   isLikeToggling,
 }: CommentItemProps) => {
   const isEditing = editingCommentId === comment.id;
+  const [reportOpen, setReportOpen] = useState(false);
   const formatDate = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), {
       addSuffix: true,
@@ -77,6 +80,8 @@ const CommentItem = ({
   };
 
   const isOwner = currentUserId && comment.user_id === currentUserId;
+  // 본인 댓글엔 신고 의미 없음. 로그인 안 한 사용자도 신고 불가.
+  const canReport = !!currentUserId && !isOwner;
 
   return (
     <div className={`${isReplyMode ? "ml-8 pl-4 border-l-2 border-muted" : ""}`}>
@@ -126,6 +131,15 @@ const CommentItem = ({
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
+            )}
+            {canReport && !isEditing && (
+              <button
+                onClick={() => setReportOpen(true)}
+                className="p-1 hover:bg-muted rounded-md transition-colors"
+                aria-label="댓글 신고"
+              >
+                <Flag className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
             )}
           </div>
           {isEditing ? (
@@ -190,6 +204,15 @@ const CommentItem = ({
           )}
         </div>
       </div>
+
+      {canReport && (
+        <ReportDialog
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          targetType="comment"
+          targetId={comment.id}
+        />
+      )}
 
       {/* Replies */}
       {replies.length > 0 && (

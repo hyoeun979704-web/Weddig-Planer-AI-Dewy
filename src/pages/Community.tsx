@@ -13,6 +13,7 @@ import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserBlocks } from "@/hooks/useCommunityModeration";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import type { WeddingStyle } from "@/lib/weddingStyle";
@@ -124,13 +125,24 @@ const Community = () => {
     }
   }, [myStyle, styleAutoApplied]);
 
+  const { data: blockedUserIds = [] } = useUserBlocks();
+
   const { data: posts = [], isLoading } = useQuery({
-    queryKey: ["community-posts"],
+    queryKey: ["community-posts", blockedUserIds],
     queryFn: async () => {
-      const { data: postsData, error: postsError } = await supabase
+      // 차단된 사용자의 글은 피드에서 숨긴다.
+      // RLS 가 아닌 클라이언트 필터인 이유: 게시글 자체는 본질적으로
+      // 공개 콘텐츠라 RLS 로 막으면 다른 화면(좋아요·북마크 등) 이 깨진다.
+      let query = supabase
         .from("community_posts")
         .select("*")
         .order("created_at", { ascending: false });
+
+      if (blockedUserIds.length > 0) {
+        query = query.not("user_id", "in", `(${blockedUserIds.join(",")})`);
+      }
+
+      const { data: postsData, error: postsError } = await query;
 
       if (postsError) throw postsError;
 
