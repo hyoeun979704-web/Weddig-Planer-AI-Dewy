@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import {
   Calendar, User, Bell, FileText, MessageSquare,
-  HelpCircle, Settings, ChevronRight, LogOut, Building2, Heart
+  HelpCircle, Settings, ChevronRight, LogOut, Building2, Heart,
+  Mail, Shirt, Sparkles
 } from "lucide-react";
 import { User as SupaUser } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -34,6 +35,14 @@ const MenuSection = ({ user, onSignOut, onEditWeddingInfo }: MenuSectionProps) =
           : []),
         { icon: Calendar, title: "내 웨딩 일정", description: "D-Day 설정 및 일정 관리", href: "/my-schedule" },
         { icon: FileText, title: "내 문의/예약", description: "문의 및 예약 내역 확인", href: "/my-inquiries" },
+      ],
+    },
+    {
+      title: "내가 만든 것",
+      items: [
+        { icon: Mail, title: "내 청첩장", description: "발행·임시저장한 청첩장 모음", href: "/invitation/my" },
+        { icon: Shirt, title: "드레스 시뮬레이션", description: "방구석 드레스 투어 결과", href: "/ai-studio/dress-tour/gallery" },
+        { icon: Sparkles, title: "메이크업 시뮬레이션", description: "착붙 메이크업 결과", href: "/ai-studio/makeup-room/gallery" },
       ],
     },
     {

@@ -205,21 +205,8 @@ const MyPage = () => {
       </header>
 
       <main className="pb-20">
-        <UserProfileSection user={user} isLoading={isLoading} />
-        <div className="mt-3">
-          <QuickMenuGrid user={user} />
-        </div>
-        <DdayCard
-          weddingDate={weddingSettings.wedding_date}
-          weddingDateTbd={weddingSettings.wedding_date_tbd}
-        />
-
-        <div className="px-4 mt-3">
-          <PartnerLinkCard variant="mypage" hideWhenLoggedOut />
-        </div>
-
         {isAdmin && (
-          <div className="px-4 mt-3">
+          <div className="px-4 pt-4">
             <button
               type="button"
               onClick={() => navigate("/admin")}
@@ -238,6 +225,19 @@ const MyPage = () => {
             </button>
           </div>
         )}
+
+        <UserProfileSection user={user} isLoading={isLoading} />
+        <div className="mt-3">
+          <QuickMenuGrid user={user} />
+        </div>
+        <DdayCard
+          weddingDate={weddingSettings.wedding_date}
+          weddingDateTbd={weddingSettings.wedding_date_tbd}
+        />
+
+        <div className="px-4 mt-3">
+          <PartnerLinkCard variant="mypage" hideWhenLoggedOut />
+        </div>
 
         <PremiumBanner />
         <MenuSection
