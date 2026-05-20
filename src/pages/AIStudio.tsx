@@ -26,7 +26,8 @@ const cards: StudioCard[] = [
     id: "makeup-finder",
     title: "착붙 메이크업 찾기",
     description: "나에게 어울리는 신부 메이크업 시연",
-    status: "coming_soon",
+    status: "active",
+    href: "/ai-studio/makeup-room",
   },
   {
     id: "mobile-invitation",
