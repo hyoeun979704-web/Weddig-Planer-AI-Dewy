@@ -84,6 +84,8 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
 const AdminMakeupSamples = lazy(() => import("./pages/admin/AdminMakeupSamples"));
 const AdminInvitationTemplates = lazy(() => import("./pages/admin/AdminInvitationTemplates"));
+const AdminInvitationAssets = lazy(() => import("./pages/admin/AdminInvitationAssets"));
+const AdminInvitationFonts = lazy(() => import("./pages/admin/AdminInvitationFonts"));
 const AdminWeddingPhotoRefs = lazy(() => import("./pages/admin/AdminWeddingPhotoRefs"));
 const AdminServiceWaitlist = lazy(() => import("./pages/admin/AdminServiceWaitlist"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
@@ -255,6 +257,8 @@ const App = () => (
               <Route path="/admin/dress-samples" element={<AdminDressSamples />} />
               <Route path="/admin/makeup-samples" element={<AdminMakeupSamples />} />
               <Route path="/admin/invitation-templates" element={<AdminInvitationTemplates />} />
+              <Route path="/admin/invitation-assets" element={<AdminInvitationAssets />} />
+              <Route path="/admin/invitation-fonts" element={<AdminInvitationFonts />} />
               <Route path="/admin/wedding-photo-refs" element={<AdminWeddingPhotoRefs />} />
               <Route path="/admin/service-waitlist" element={<AdminServiceWaitlist />} />
               <Route path="/admin/users" element={<AdminUsers />} />
