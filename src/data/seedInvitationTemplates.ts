@@ -418,6 +418,126 @@ export const SEED_INVITATION_TEMPLATES: SeedTemplate[] = [
   },
 
   // ──────────────────────────────────────────────────────────────
+  // 누끼 데모 — 종이 5하트
+  // 사용자 사진을 두 번 사용 — 원본은 배경(z:1), 누낀 버전은 텍스트 위(z:3).
+  // 같은 image_order=1 → distributePhotos 가 같은 사진을 두 슬롯에 매핑.
+  // 누낀 슬롯이 핑크 인사말 위로 올라와 인물이 텍스트 사이에 끼는 효과.
+  // ──────────────────────────────────────────────────────────────
+  {
+    slug: "paper-cutout-01",
+    name: "누끼 — 인물이 텍스트 위로",
+    format: "paper",
+    tone: "ROMANTIC",
+    price_hearts: 5,
+    text_prompt_hint:
+      "감성적이고 따뜻한 톤. 사진 인물 위에 시처럼 흐르는 인사말.",
+    thumbnail_file: "paper-cutout-01-thumb.png",
+    background_file: "paper-cutout-01-bg.png",
+    display_order: 40,
+    is_active: true,
+    layout: {
+      canvas: { w: 1000, h: 1400, bg: "#FAF6F1" },
+      slots: [
+        // ── 배경 사진 (z:1) — 원본 사진
+        {
+          id: "main_photo_bg",
+          type: "image",
+          x: 0,
+          y: 0,
+          w: 1000,
+          h: 1000,
+          z: 1,
+          fit: "cover",
+          image_order: 1,
+        },
+
+        // ── 사진 위 큰 영문 타이틀 (z:2)
+        {
+          id: "title_en",
+          type: "text",
+          x: 80,
+          y: 380,
+          w: 840,
+          h: 240,
+          z: 2,
+          text: "We're\nGetting\nMarried",
+          font_family: "script",
+          font_size: 96,
+          font_style: "italic",
+          color: "#FFFFFF",
+          align: "center",
+          line_height: 1,
+          locked: true,
+        },
+
+        // ── 인물 누낀 사진 (z:3) — 텍스트 위로 인물이 떠오름
+        {
+          id: "main_photo_cutout",
+          type: "image",
+          x: 0,
+          y: 0,
+          w: 1000,
+          h: 1000,
+          z: 3,
+          fit: "cover",
+          image_order: 1,         // 원본과 같은 사진
+          auto_cutout: true,       // ★ 발행 시 remove.bg 호출
+        },
+
+        // ── 사진 아래 흰 카드 영역 (z:2, 배경 PNG 가 처리)
+
+        // ── 인사말
+        {
+          id: "intro_message",
+          type: "text",
+          x: 80,
+          y: 1060,
+          w: 840,
+          h: 160,
+          z: 2,
+          role: "intro",
+          placeholder:
+            "두 사람이 한 길을 걷기로 했습니다.\n그 첫 걸음에 함께해 주세요.",
+          ai_promptable: true,
+          font_size: 16,
+          color: "#1A1A1A",
+          align: "center",
+          line_height: 1.8,
+        },
+
+        // ── 날짜·식장
+        {
+          id: "wedding_date_short",
+          type: "text",
+          x: 80,
+          y: 1240,
+          w: 840,
+          h: 30,
+          z: 2,
+          field: "wedding_date",
+          font_size: 14,
+          color: "#1A1A1A",
+          align: "center",
+          letter_spacing: 2,
+        },
+        {
+          id: "venue_info",
+          type: "text",
+          x: 80,
+          y: 1290,
+          w: 840,
+          h: 30,
+          z: 2,
+          field: "venue_name",
+          font_size: 13,
+          color: "#666",
+          align: "center",
+        },
+      ],
+    },
+  },
+
+  // ──────────────────────────────────────────────────────────────
   // 3. free_moody_01 — "Getting Married" 무디 스타일
   //    검정 배경 사진 카드 + 흰 배경 텍스트 카드 양면 시뮬레이션
   // ──────────────────────────────────────────────────────────────
