@@ -82,6 +82,7 @@ const AdminInvitationTemplates = lazy(() => import("./pages/admin/AdminInvitatio
 const AdminWeddingPhotoRefs = lazy(() => import("./pages/admin/AdminWeddingPhotoRefs"));
 const AdminServiceWaitlist = lazy(() => import("./pages/admin/AdminServiceWaitlist"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
 const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
@@ -247,6 +248,7 @@ const App = () => (
               <Route path="/admin/wedding-photo-refs" element={<AdminWeddingPhotoRefs />} />
               <Route path="/admin/service-waitlist" element={<AdminServiceWaitlist />} />
               <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/reports" element={<AdminReports />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
