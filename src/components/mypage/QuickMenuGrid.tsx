@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Heart, Coins, Ticket, ShoppingBag, HeartHandshake } from "lucide-react";
+import { Heart, Coins, Ticket, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -32,14 +32,53 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
     fetchCounts();
   }, [user]);
 
-  // 5열 그리드 — 찜 / 하트 / 포인트 / 쿠폰 / 주문내역
-  // 하트는 AI 시뮬·청첩장·메이크업 등 핵심 유료 기능의 결제 수단.
+  // 5열 — 각 항목별 톤 분리 (기존 핑크 primary 와 어울리는 채도)
+  //   찜       : 핑크 (primary, 변경 없음)
+  //   하트     : 로즈 + 채워진 하트 (자산이므로 시각 강조)
+  //   포인트   : 노랑 (amber)
+  //   쿠폰     : 하늘 (sky)
+  //   주문내역 : 주황 (orange)
   const items = [
-    { icon: Heart, label: "찜", value: user ? String(favCount) : "-", href: "/favorites", color: "text-primary", bg: "bg-primary/10" },
-    { icon: HeartHandshake, label: "하트", value: user ? String(hearts) : "-", href: "/points", color: "text-rose-500", bg: "bg-rose-50" },
-    { icon: Coins, label: "포인트", value: user ? `${points.toLocaleString()}P` : "-", href: "/points", color: "text-primary", bg: "bg-primary/10" },
-    { icon: Ticket, label: "쿠폰", value: "-", href: "/coupons", color: "text-primary", bg: "bg-primary/10" },
-    { icon: ShoppingBag, label: "주문내역", value: user ? String(orderCount) : "-", href: "/orders", color: "text-primary", bg: "bg-primary/10" },
+    {
+      icon: Heart,
+      label: "찜",
+      value: user ? String(favCount) : "-",
+      href: "/favorites",
+      iconClass: "text-primary",
+      bg: "bg-primary/10",
+    },
+    {
+      icon: Heart,
+      label: "하트",
+      value: user ? String(hearts) : "-",
+      href: "/points",
+      iconClass: "text-rose-500 fill-rose-500",
+      bg: "bg-rose-50",
+    },
+    {
+      icon: Coins,
+      label: "포인트",
+      value: user ? `${points.toLocaleString()}P` : "-",
+      href: "/points",
+      iconClass: "text-amber-500",
+      bg: "bg-amber-50",
+    },
+    {
+      icon: Ticket,
+      label: "쿠폰",
+      value: "-",
+      href: "/coupons",
+      iconClass: "text-sky-500",
+      bg: "bg-sky-50",
+    },
+    {
+      icon: ShoppingBag,
+      label: "주문내역",
+      value: user ? String(orderCount) : "-",
+      href: "/orders",
+      iconClass: "text-orange-500",
+      bg: "bg-orange-50",
+    },
   ];
 
   return (
@@ -52,10 +91,10 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
             className="flex flex-col items-center gap-1 p-2 bg-card rounded-2xl border border-border hover:border-primary/20 active:scale-[0.96] transition-all"
           >
             <div className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center`}>
-              <item.icon className={`w-4 h-4 ${item.color}`} />
+              <item.icon className={`w-4 h-4 ${item.iconClass}`} />
             </div>
             <span className="text-[10px] font-medium text-foreground">{item.label}</span>
-            <span className={`text-[11px] font-bold ${item.color} truncate w-full text-center`}>
+            <span className={`text-[11px] font-bold ${item.iconClass.split(" ")[0]} truncate w-full text-center`}>
               {item.value}
             </span>
           </button>
