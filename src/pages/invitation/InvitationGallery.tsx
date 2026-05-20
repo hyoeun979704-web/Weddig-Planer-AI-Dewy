@@ -112,7 +112,13 @@ const InvitationGallery = () => {
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       {it.invitation_templates?.format === "paper" ? "📄" : "📱"}{" "}
-                      {it.status === "draft" ? "임시저장" : it.status}
+                      {it.status === "draft"
+                        ? "임시저장"
+                        : it.status === "published"
+                          ? "공유됨"
+                          : it.status === "archived"
+                            ? "보관됨"
+                            : it.status}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       {new Date(it.updated_at).toLocaleDateString("ko-KR")}
