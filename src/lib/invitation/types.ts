@@ -62,6 +62,7 @@ export interface InvitationSlot {
   font_family?: string;
   font_size?: number;
   font_weight?: string | number;
+  font_style?: "normal" | "italic";
   color?: string;
   align?: "left" | "center" | "right";
   line_height?: number;
@@ -70,6 +71,8 @@ export interface InvitationSlot {
   // 이미지/에셋 슬롯 기본값
   image_url?: string;
   fit?: "cover" | "contain";
+  /** 다중 사진 자동 분배 시 우선순위 (작을수록 먼저). image / map 슬롯용. */
+  image_order?: number;
 
   // 에셋 슬롯 — 등록된 에셋 ID
   asset_id?: string;
