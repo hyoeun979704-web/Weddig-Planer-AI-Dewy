@@ -594,6 +594,83 @@ const InvitationFlow = () => {
   };
 
   // ─────────────────────────────────────────────
+  // 모바일 공유 발행 — publish_invitation RPC
+  // ─────────────────────────────────────────────
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+
+  const handlePublish = async () => {
+    if (!invitationId) {
+      toast({
+        title: "먼저 저장해주세요",
+        description: "저장 버튼을 누른 뒤 다시 시도해주세요.",
+      });
+      return;
+    }
+    setIsPublishing(true);
+    try {
+      // 1) 사진 슬롯의 long-lived signed URL 을 layout 에 저장
+      //    (익명 viewer 가 storage 권한 없이 사진 볼 수 있게)
+      const imageUrlsForViewer: Record<string, string> = {};
+      for (const [slotId, path] of Object.entries(imagePaths)) {
+        const { data: signed } = await supabase.storage
+          .from("invitation-uploads")
+          .createSignedUrl(path, 60 * 60 * 24 * 365); // 1년
+        if (signed?.signedUrl) {
+          imageUrlsForViewer[slotId] = signed.signedUrl;
+        }
+      }
+      // 누낀 사진들도 동일 처리는 imagePaths 안에 포함되어 있음 (cutouts/ prefix)
+
+      // 2) invitations layout 에 imageUrlsForViewer 추가 저장
+      await (supabase as any)
+        .from("invitations")
+        .update({
+          layout: { textOverrides, imagePaths, imageUrlsForViewer },
+        })
+        .eq("id", invitationId);
+
+      // 3) publish_invitation RPC 호출 (slug 자동 발급)
+      const { data, error } = await (supabase as any).rpc(
+        "publish_invitation",
+        { p_invitation_id: invitationId },
+      );
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row?.share_slug) throw new Error("slug 발급 실패");
+
+      const url = `${window.location.origin}/i/${row.share_slug}`;
+      setShareUrl(url);
+      toast({ title: "공유 링크 발급 완료" });
+    } catch (e) {
+      toast({
+        title: "발행 실패",
+        description: e instanceof Error ? e.message : "오류",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const handleShareSlug = async () => {
+    if (!shareUrl) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({ url: shareUrl, title: "청첩장" });
+      } catch (e) {
+        if ((e as Error).name !== "AbortError") {
+          await navigator.clipboard.writeText(shareUrl);
+          toast({ title: "URL 복사됨" });
+        }
+      }
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({ title: "URL 복사됨" });
+    }
+  };
+
+  // ─────────────────────────────────────────────
   // 렌더
   // ─────────────────────────────────────────────
   return (
@@ -672,6 +749,10 @@ const InvitationFlow = () => {
           onExportPdf={handleExportPdf}
           onShare={handleShare}
           onOpenStudio={handleOpenStudio}
+          shareUrl={shareUrl}
+          isPublishing={isPublishing}
+          onPublish={handlePublish}
+          onShareSlug={handleShareSlug}
         />
       )}
 
@@ -1095,6 +1176,10 @@ const ResultView = ({
   onExportPdf,
   onShare,
   onOpenStudio,
+  shareUrl,
+  isPublishing,
+  onPublish,
+  onShareSlug,
 }: {
   canvasRef: React.RefObject<InvitationCanvasHandle>;
   template: Template;
@@ -1106,46 +1191,96 @@ const ResultView = ({
   onExportPdf: () => void;
   onShare: () => void;
   onOpenStudio: () => void;
-}) => (
-  <main className="px-4 py-5 space-y-4">
-    <div className="flex justify-center bg-muted/30 rounded-2xl py-5">
-      <InvitationCanvas
-        ref={canvasRef}
-        layout={template.layout}
-        userData={userData}
-        aiText={aiText}
-        textOverrides={textOverrides}
-        imageUrls={imageUrls}
-        selectedSlotId={null}
-        onSelectSlot={() => {}}
-        displayWidth={360}
-      />
-    </div>
+  shareUrl: string | null;
+  isPublishing: boolean;
+  onPublish: () => void;
+  onShareSlug: () => void;
+}) => {
+  const isMobile = template.format === "mobile";
 
-    <div className="grid grid-cols-2 gap-2">
-      <Button onClick={onExportPdf} disabled={isExporting} className="h-12">
-        {isExporting ? (
-          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-        ) : (
-          <Download className="w-4 h-4 mr-1" />
-        )}
-        PDF
-      </Button>
-      <Button variant="outline" onClick={onShare} className="h-12">
-        <Share2 className="w-4 h-4 mr-1" />
-        공유
-      </Button>
-    </div>
+  return (
+    <main className="px-4 py-5 space-y-4">
+      <div className="flex justify-center bg-muted/30 rounded-2xl py-5">
+        <InvitationCanvas
+          ref={canvasRef}
+          layout={template.layout}
+          userData={userData}
+          aiText={aiText}
+          textOverrides={textOverrides}
+          imageUrls={imageUrls}
+          selectedSlotId={null}
+          onSelectSlot={() => {}}
+          displayWidth={360}
+          shareUrl={shareUrl ?? undefined}
+        />
+      </div>
 
-    <button
-      type="button"
-      onClick={onOpenStudio}
-      className="w-full flex items-center justify-center gap-2 text-[13px] text-muted-foreground py-3 underline"
-    >
-      <Pencil className="w-3.5 h-3.5" />
-      텍스트·사진 위치 직접 편집
-    </button>
-  </main>
-);
+      {isMobile ? (
+        // 모바일 청첩장 — 공유 발행 메인 액션
+        <>
+          {shareUrl ? (
+            <section className="space-y-2">
+              <div className="p-3 bg-emerald-50 rounded-lg">
+                <p className="text-[11px] text-emerald-700 mb-1">
+                  ✅ 공유 링크가 발급됐어요
+                </p>
+                <p className="text-[12px] font-mono text-emerald-900 break-all">
+                  {shareUrl}
+                </p>
+              </div>
+              <Button onClick={onShareSlug} className="w-full h-12">
+                <Share2 className="w-4 h-4 mr-2" />
+                카카오·인스타·문자로 공유
+              </Button>
+            </section>
+          ) : (
+            <Button
+              onClick={onPublish}
+              disabled={isPublishing}
+              className="w-full h-12 text-[15px] font-bold"
+            >
+              {isPublishing ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  공유 링크 만드는 중...
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-5 h-5 mr-2" />
+                  공유 링크 발급하기
+                </>
+              )}
+            </Button>
+          )}
+        </>
+      ) : (
+        // 종이 청첩장 — PDF 다운로드 메인 액션
+        <div className="grid grid-cols-2 gap-2">
+          <Button onClick={onExportPdf} disabled={isExporting} className="h-12">
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-1" />
+            )}
+            PDF
+          </Button>
+          <Button variant="outline" onClick={onShare} className="h-12">
+            <Share2 className="w-4 h-4 mr-1" />
+            이미지 공유
+          </Button>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={onOpenStudio}
+        className="w-full flex items-center justify-center gap-2 text-[13px] text-muted-foreground py-3 underline"
+      >
+        <Pencil className="w-3.5 h-3.5" />
+        텍스트·사진 위치 직접 편집
+      </button>
+    </main>
+  );
+};
 
 export default InvitationFlow;

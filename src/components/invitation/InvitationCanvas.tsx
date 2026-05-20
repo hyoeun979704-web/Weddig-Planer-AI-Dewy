@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from "re
 import { Stage, Layer, Rect, Text, Image as KonvaImage, Group, Line } from "react-konva";
 import type Konva from "konva";
 import useImage from "use-image";
+import QRCode from "qrcode";
 import type {
   InvitationLayout,
   InvitationSlot,
@@ -40,6 +41,8 @@ interface Props {
   /** 화면 표시 폭(px). default 360. */
   displayWidth?: number;
   background?: string;  // 캔버스 외부 영역 배경
+  /** 발행된 모바일 청첩장 share URL — QR 슬롯이 렌더할 데이터 */
+  shareUrl?: string;
 }
 
 const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
@@ -54,6 +57,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       onSelectSlot,
       displayWidth = 360,
       background = "transparent",
+      shareUrl,
     },
     ref,
   ) => {
@@ -123,6 +127,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                   aiText={aiText}
                   textOverrides={textOverrides}
                   imageUrls={imageUrls}
+                  shareUrl={shareUrl}
                   isSelected={slot.id === selectedSlotId}
                   onClick={() => onSelectSlot(slot.id)}
                 />
@@ -172,6 +177,7 @@ interface SlotNodeProps {
   aiText: Record<string, string>;
   textOverrides: Record<string, string>;
   imageUrls: Record<string, string>;
+  shareUrl?: string;
   isSelected: boolean;
   onClick: () => void;
 }
@@ -216,7 +222,7 @@ function renderSlotBody(props: SlotNodeProps) {
     case "calendar":
       return <CalendarSlotBody {...props} />;
     case "qr":
-      return <PlaceholderSlotBody label="QR 코드" {...props} />;
+      return <QrSlotBody {...props} />;
     case "map":
       return <ImageSlotBody {...props} />;
     default:
@@ -536,7 +542,52 @@ const Heart = ({ cx, cy, size, color }: HeartProps) => {
 };
 
 // ════════════════════════════════════════════════════════════════
-// Placeholder (qr 등)
+// QR 슬롯 — share URL 을 QR 코드로 렌더
+// ════════════════════════════════════════════════════════════════
+const QrSlotBody = ({ slot, shareUrl }: SlotNodeProps) => {
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!shareUrl) {
+      setQrDataUrl(null);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(shareUrl, {
+      errorCorrectionLevel: "M",
+      margin: 1,
+      width: Math.max(slot.w, slot.h),
+      color: { dark: slot.color ?? "#000000", light: "#FFFFFF" },
+    }).then((url) => {
+      if (!cancelled) setQrDataUrl(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [shareUrl, slot.w, slot.h, slot.color]);
+
+  const [img] = useImage(qrDataUrl ?? "", "anonymous");
+
+  if (!shareUrl) {
+    return <PlaceholderInner slot={slot} label="QR (발행 후 표시)" />;
+  }
+  if (!img) {
+    return (
+      <Rect
+        x={0}
+        y={0}
+        width={slot.w}
+        height={slot.h}
+        fill="#FFFFFF"
+        stroke="#E5E5E5"
+      />
+    );
+  }
+  return <KonvaImage image={img} x={0} y={0} width={slot.w} height={slot.h} />;
+};
+
+// ════════════════════════════════════════════════════════════════
+// Placeholder (map 등)
 // ════════════════════════════════════════════════════════════════
 const PlaceholderSlotBody = ({
   label,
