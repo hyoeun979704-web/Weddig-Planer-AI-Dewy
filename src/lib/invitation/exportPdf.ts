@@ -14,12 +14,13 @@ export function exportInvitationPdf(
   filename: string,
 ) {
   // mm 단위로 페이지 크기 결정 (캔버스 픽셀 → A6 비율 유지)
-  // 기본 폭 130mm, 비율에 맞춰 높이 자동 계산
+  // 기본 폭 130mm, 비율에 맞춰 높이 자동 계산.
+  // 커스텀 format 을 지정하므로 orientation 인자는 무시되거나 충돌 가능 →
+  // 명시적으로 빼고 jsPDF 가 format 만 보고 페이지 크기를 결정하게 둔다.
   const pageWmm = 130;
   const pageHmm = (canvasH / canvasW) * pageWmm;
 
   const pdf = new jsPDF({
-    orientation: pageHmm > pageWmm ? "portrait" : "landscape",
     unit: "mm",
     format: [pageWmm, pageHmm],
   });

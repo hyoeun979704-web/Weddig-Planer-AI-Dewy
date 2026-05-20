@@ -84,7 +84,14 @@ export interface InvitationSlot {
 export interface InvitationCanvas {
   w: number;
   h: number;
-  bg?: string;  // hex 색상 (default '#FFFFFF')
+  bg?: string;  // 단색 fallback (default '#FFFFFF')
+  /**
+   * 배경 이미지 (텍스트·사진 자리가 빠진 디자이너의 배경 PNG).
+   * 있으면 캔버스 맨 아래에 깔리고 그 위에 슬롯들이 렌더링된다.
+   * 풀시안 PNG 는 thumbnail_url 로 따로 보관 — 두 자산은 디자이너가
+   * 각각 export 해서 운영자에게 전달.
+   */
+  background_url?: string;
 }
 
 export interface InvitationLayout {

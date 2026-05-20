@@ -33,8 +33,8 @@ interface Props {
   aiText: Record<string, string>;
   /** 사용자가 직접 수정한 텍스트 (priority 최상) */
   textOverrides: Record<string, string>;
-  /** slot.id → uploaded image URL */
-  imageOverrides: Record<string, string>;
+  /** slot.id → 화면 표시용 signed URL (만료되니 DB 에 저장하지 말 것) */
+  imageUrls: Record<string, string>;
   selectedSlotId: string | null;
   onSelectSlot: (id: string | null) => void;
   /** 화면 표시 폭(px). default 360. */
@@ -49,7 +49,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       userData,
       aiText,
       textOverrides,
-      imageOverrides,
+      imageUrls,
       selectedSlotId,
       onSelectSlot,
       displayWidth = 360,
@@ -94,7 +94,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
           }}
         >
           <Layer>
-            {/* 캔버스 배경 */}
+            {/* 캔버스 배경 색 + (있다면) 배경 이미지 */}
             <Rect
               x={0}
               y={0}
@@ -103,6 +103,14 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
               fill={layout.canvas.bg ?? "#FFFFFF"}
               onClick={() => onSelectSlot(null)}
             />
+            {layout.canvas.background_url && (
+              <CanvasBackgroundImage
+                url={layout.canvas.background_url}
+                w={canvasW}
+                h={canvasH}
+                onClick={() => onSelectSlot(null)}
+              />
+            )}
 
             {/* 슬롯들 z 순서대로 */}
             {[...layout.slots]
@@ -114,7 +122,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                   userData={userData}
                   aiText={aiText}
                   textOverrides={textOverrides}
-                  imageOverrides={imageOverrides}
+                  imageUrls={imageUrls}
                   isSelected={slot.id === selectedSlotId}
                   onClick={() => onSelectSlot(slot.id)}
                 />
@@ -130,6 +138,32 @@ InvitationCanvas.displayName = "InvitationCanvas";
 export default InvitationCanvas;
 
 // ════════════════════════════════════════════════════════════════
+// 배경 이미지 — 디자이너가 텍스트·사진 레이어 빼고 export 한 PNG
+// ════════════════════════════════════════════════════════════════
+interface CanvasBackgroundImageProps {
+  url: string;
+  w: number;
+  h: number;
+  onClick: () => void;
+}
+const CanvasBackgroundImage = ({ url, w, h, onClick }: CanvasBackgroundImageProps) => {
+  const [img] = useImage(url, "anonymous");
+  if (!img) return null;
+  return (
+    <KonvaImage
+      image={img}
+      x={0}
+      y={0}
+      width={w}
+      height={h}
+      onClick={onClick}
+      onTap={onClick}
+      listening
+    />
+  );
+};
+
+// ════════════════════════════════════════════════════════════════
 // 슬롯 라우터
 // ════════════════════════════════════════════════════════════════
 interface SlotNodeProps {
@@ -137,7 +171,7 @@ interface SlotNodeProps {
   userData: InvitationUserData;
   aiText: Record<string, string>;
   textOverrides: Record<string, string>;
-  imageOverrides: Record<string, string>;
+  imageUrls: Record<string, string>;
   isSelected: boolean;
   onClick: () => void;
 }
@@ -242,8 +276,8 @@ const TextSlotBody = ({
 // ════════════════════════════════════════════════════════════════
 // 이미지 슬롯 (image / map)
 // ════════════════════════════════════════════════════════════════
-const ImageSlotBody = ({ slot, imageOverrides }: SlotNodeProps) => {
-  const url = imageOverrides[slot.id] ?? slot.image_url ?? "";
+const ImageSlotBody = ({ slot, imageUrls }: SlotNodeProps) => {
+  const url = imageUrls[slot.id] ?? slot.image_url ?? "";
   const [img] = useImage(url, "anonymous");
 
   if (!url) {

@@ -107,6 +107,17 @@ serve(async (req) => {
   }
 });
 
+// AI 추천에 컨텍스트로 넘길 수 있는 사용자 데이터 필드 — allowlist.
+// 호출자가 user_data 객체 전체를 보낼 수 있으니 여기서 한 번 필터.
+// 연락처·계좌·부모님 성함 같은 민감 정보는 의도적으로 제외.
+const ALLOWED_USER_DATA_FIELDS = [
+  "groom_name",
+  "bride_name",
+  "wedding_date",
+  "wedding_time",
+  "venue_name",
+] as const;
+
 async function callGemini(
   apiKey: string,
   body: RequestBody,
@@ -115,13 +126,19 @@ async function callGemini(
   const role = body.slot_role;
   const placeholder = body.slot_placeholder ?? "";
   const hint = body.template_hint ?? "";
-  const userData = body.user_data ?? {};
+  const rawUserData = body.user_data ?? {};
+  // allowlist 적용 — 그 외 필드는 Gemini 에 전달하지 않는다
+  const userData: Record<string, string> = {};
+  for (const key of ALLOWED_USER_DATA_FIELDS) {
+    const v = rawUserData[key];
+    if (typeof v === "string" && v.trim()) userData[key] = v;
+  }
 
   const userContextLines: string[] = [];
   if (userData.groom_name) userContextLines.push(`신랑 이름: ${userData.groom_name}`);
   if (userData.bride_name) userContextLines.push(`신부 이름: ${userData.bride_name}`);
   if (userData.wedding_date) userContextLines.push(`결혼 날짜: ${userData.wedding_date}`);
-  if (userData.venue) userContextLines.push(`식장: ${userData.venue}`);
+  if (userData.venue_name) userContextLines.push(`식장: ${userData.venue_name}`);
 
   const systemPrompt = `당신은 한국어 청첩장 카피라이터입니다. 청첩장의
 특정 슬롯(${role})에 들어갈 문구를 3개 옵션으로 제안합니다. 각 옵션은

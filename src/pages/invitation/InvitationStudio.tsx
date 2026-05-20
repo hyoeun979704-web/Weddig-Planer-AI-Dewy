@@ -82,7 +82,10 @@ const InvitationStudio = () => {
   const [template, setTemplate] = useState<Template | null>(null);
 
   const [textOverrides, setTextOverrides] = useState<Record<string, string>>({});
-  const [imageOverrides, setImageOverrides] = useState<Record<string, string>>({});
+  // storage path 만 DB 에 저장 (signed URL 은 만료되니까).
+  const [imagePaths, setImagePaths] = useState<Record<string, string>>({});
+  // 화면 표시용 signed URL — load / upload 시점에 refresh, DB 에는 저장 X.
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [aiText, setAiText] = useState<Record<string, string>>({});
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
 
@@ -120,7 +123,19 @@ const InvitationStudio = () => {
       setTemplate(tpl);
       const ld = data.layout ?? {};
       setTextOverrides(ld.textOverrides ?? {});
-      setImageOverrides(ld.imageOverrides ?? {});
+      const paths: Record<string, string> = ld.imagePaths ?? {};
+      setImagePaths(paths);
+      // 저장된 storage path 들을 다시 signed URL 로 변환 (24h 유효)
+      const urls: Record<string, string> = {};
+      await Promise.all(
+        Object.entries(paths).map(async ([slotId, path]) => {
+          const { data: s } = await supabase.storage
+            .from("invitation-uploads")
+            .createSignedUrl(path, 60 * 60 * 24);
+          if (s?.signedUrl) urls[slotId] = s.signedUrl;
+        }),
+      );
+      setImageUrls(urls);
       setAiText(data.ai_generated_text ?? {});
       setStep("studio");
     })();
@@ -206,9 +221,10 @@ const InvitationStudio = () => {
     }
     const { data: signed } = await supabase.storage
       .from("invitation-uploads")
-      .createSignedUrl(path, 60 * 60 * 24 * 7);
+      .createSignedUrl(path, 60 * 60 * 24);  // 화면 표시용 24h
+    setImagePaths((p) => ({ ...p, [selectedSlot.id]: path }));
     if (signed?.signedUrl) {
-      setImageOverrides((p) => ({ ...p, [selectedSlot.id]: signed.signedUrl }));
+      setImageUrls((p) => ({ ...p, [selectedSlot.id]: signed.signedUrl }));
     }
   };
 
@@ -223,7 +239,8 @@ const InvitationStudio = () => {
         user_id: user.id,
         template_id: template.id,
         user_data: userData,
-        layout: { textOverrides, imageOverrides },
+        // signed URL 은 만료되니까 저장 X — storage path 만 영구 보존
+        layout: { textOverrides, imagePaths },
         ai_generated_text: aiText,
         status: "draft" as const,
       };
@@ -346,7 +363,7 @@ const InvitationStudio = () => {
           template={template}
           userData={userData}
           textOverrides={textOverrides}
-          imageOverrides={imageOverrides}
+          imageUrls={imageUrls}
           aiText={aiText}
           selectedSlot={selectedSlot ?? null}
           selectedSlotId={selectedSlotId}
@@ -588,7 +605,7 @@ const StudioView = ({
   template,
   userData,
   textOverrides,
-  imageOverrides,
+  imageUrls,
   aiText,
   selectedSlot,
   selectedSlotId,
@@ -602,7 +619,7 @@ const StudioView = ({
   template: Template;
   userData: InvitationUserData;
   textOverrides: Record<string, string>;
-  imageOverrides: Record<string, string>;
+  imageUrls: Record<string, string>;
   aiText: Record<string, string>;
   selectedSlot: InvitationSlot | null;
   selectedSlotId: string | null;
@@ -633,7 +650,7 @@ const StudioView = ({
           userData={userData}
           aiText={aiText}
           textOverrides={textOverrides}
-          imageOverrides={imageOverrides}
+          imageUrls={imageUrls}
           selectedSlotId={selectedSlotId}
           onSelectSlot={onSelectSlot}
           displayWidth={340}
@@ -682,16 +699,16 @@ const StudioView = ({
             <ImageIcon className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-bold text-foreground">사진 교체</h3>
           </div>
-          {imageOverrides[selectedSlot.id] && (
+          {imageUrls[selectedSlot.id] && (
             <img
-              src={imageOverrides[selectedSlot.id]}
+              src={imageUrls[selectedSlot.id]}
               alt=""
               className="w-full max-h-40 object-contain rounded-lg bg-muted"
             />
           )}
           <Button onClick={onPickPhoto} variant="outline" className="w-full">
             <ImageIcon className="w-4 h-4 mr-2" />
-            {imageOverrides[selectedSlot.id] ? "다른 사진" : "사진 업로드"}
+            {imageUrls[selectedSlot.id] ? "다른 사진" : "사진 업로드"}
           </Button>
           <p className="text-[10px] text-muted-foreground">JPG/PNG, 최대 5MB</p>
         </section>
