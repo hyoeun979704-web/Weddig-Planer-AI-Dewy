@@ -30,7 +30,6 @@
     "android:open": "cap open android"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.90.0",
     "@capacitor/android": "^6.2.1",
     "@capacitor/app": "^6.0.3",
     "@capacitor/browser": "^6.0.6",
@@ -80,7 +79,6 @@
     "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",
     "jspdf": "^4.2.0",
-    "konva": "^9.3.22",
     "lucide-react": "^0.462.0",
     "matter-js": "^0.20.0",
     "next": "^16.2.3",
@@ -89,7 +87,6 @@
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.61.1",
-    "react-konva": "^18.2.10",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.9",
     "react-router-dom": "^6.30.1",
