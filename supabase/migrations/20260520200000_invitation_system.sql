@@ -21,12 +21,23 @@ CREATE TABLE public.invitation_templates (
   thumbnail_url TEXT NOT NULL,
   preview_url TEXT,                  -- 큰 미리보기 (선택)
 
+  -- 매체: 모바일 청첩장 / 종이 청첩장 (PDF 출력)
+  format TEXT NOT NULL DEFAULT 'mobile'
+    CHECK (format IN ('mobile', 'paper')),
+
   -- 톤·무드 — 사용자가 첫 진입에서 톤만 고르면 그 톤 매칭 템플릿 노출
   tone TEXT NOT NULL,                -- ROMANTIC | MODERN | CLASSIC | MINIMAL | CUTE | LUXURY
 
+  -- 가격 (하트). 0 = 무료. 가격대 가이드:
+  --   · 종이: 0 (무료), 5 (누끼·복합), 15 (일러스트 변환·프리미엄)
+  --   · 모바일: 0 (무료), 10 (누끼·복합), 20 (일러스트 변환·프리미엄)
+  price_hearts INTEGER NOT NULL DEFAULT 0,
+
   -- 캔버스 기본 레이아웃 (JSON)
-  --   { canvas: { w, h, bg }, slots: [{id, type:"text"|"image"|"asset",
-  --     x, y, w, h, rotation, defaults:{...}}] }
+  --   { canvas: { w, h, bg }, slots: [{id, type, x, y, w, h, z, field,
+  --     placeholder, ai_promptable, auto_cutout, auto_illustration,
+  --     movable, resizable, editable_color, editable_font, locked, ...}] }
+  -- 슬롯 type: text | image | asset | calendar | qr | map
   layout JSONB NOT NULL DEFAULT '{}'::jsonb,
 
   -- 기본 폰트 (선택)
@@ -45,6 +56,7 @@ CREATE INDEX idx_invitation_templates_active
   ON public.invitation_templates(is_active, display_order DESC)
   WHERE is_active = TRUE;
 CREATE INDEX idx_invitation_templates_tone ON public.invitation_templates(tone);
+CREATE INDEX idx_invitation_templates_format ON public.invitation_templates(format);
 
 ALTER TABLE public.invitation_templates ENABLE ROW LEVEL SECURITY;
 

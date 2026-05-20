@@ -36,7 +36,9 @@ interface Template {
   name: string;
   thumbnail_url: string;
   preview_url: string | null;
+  format: string;            // 'mobile' | 'paper'
   tone: string;
+  price_hearts: number;
   layout: Record<string, unknown>;
   default_font_id: string | null;
   text_prompt_hint: string | null;
@@ -51,13 +53,20 @@ const emptyForm: Form = {
   name: "",
   thumbnail_url: "",
   preview_url: null,
+  format: "mobile",
   tone: "ROMANTIC",
+  price_hearts: 0,
   layout: {},
   default_font_id: null,
   text_prompt_hint: null,
   display_order: 0,
   is_active: true,
 };
+
+const FORMAT_OPTIONS = [
+  { value: "mobile", label: "📱 모바일", priceGuide: "0 (무료) / 10 (누끼·복합) / 20 (일러스트)" },
+  { value: "paper", label: "📄 종이", priceGuide: "0 (무료) / 5 (누끼·복합) / 15 (일러스트)" },
+];
 
 const TONE_OPTIONS = [
   { value: "ROMANTIC", label: "로맨틱" },
@@ -160,7 +169,9 @@ const AdminInvitationTemplates = () => {
       name: t.name,
       thumbnail_url: t.thumbnail_url,
       preview_url: t.preview_url,
+      format: t.format ?? "mobile",
       tone: t.tone,
+      price_hearts: t.price_hearts ?? 0,
       layout: t.layout ?? {},
       default_font_id: t.default_font_id,
       text_prompt_hint: t.text_prompt_hint,
@@ -272,6 +283,49 @@ const AdminInvitationTemplates = () => {
                       }
                       placeholder="예: 로맨틱 봄꽃 #001"
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="format">매체</Label>
+                    <Select
+                      value={form.format}
+                      onValueChange={(v) =>
+                        setForm((p) => ({ ...p, format: v }))
+                      }
+                    >
+                      <SelectTrigger id="format">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FORMAT_OPTIONS.map((f) => (
+                          <SelectItem key={f.value} value={f.value}>
+                            {f.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="price">가격 (하트)</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      min={0}
+                      value={form.price_hearts}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          price_hearts: parseInt(e.target.value) || 0,
+                        }))
+                      }
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {
+                        FORMAT_OPTIONS.find((f) => f.value === form.format)
+                          ?.priceGuide
+                      }
+                    </p>
                   </div>
 
                   <div>
@@ -418,7 +472,17 @@ const AdminInvitationTemplates = () => {
                     </div>
                   )}
                   <span className="absolute top-1.5 left-1.5 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
+                    {t.format === "paper" ? "📄" : "📱"}{" "}
                     {TONE_OPTIONS.find((o) => o.value === t.tone)?.label ?? t.tone}
+                  </span>
+                  <span
+                    className={`absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded ${
+                      t.price_hearts > 0
+                        ? "bg-rose-500 text-white"
+                        : "bg-emerald-500 text-white"
+                    }`}
+                  >
+                    {t.price_hearts > 0 ? `${t.price_hearts}하트` : "무료"}
                   </span>
                 </div>
                 <div className="p-3">

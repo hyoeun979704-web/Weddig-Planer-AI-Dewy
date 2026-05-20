@@ -80,6 +80,8 @@ const MakeupFittingResult = lazy(() => import("./pages/MakeupFittingResult"));
 const MakeupFittingGallery = lazy(() => import("./pages/MakeupFittingGallery"));
 const DressRecommend = lazy(() => import("./pages/DressRecommend"));
 const MakeupRecommend = lazy(() => import("./pages/MakeupRecommend"));
+const InvitationStudio = lazy(() => import("./pages/invitation/InvitationStudio"));
+const InvitationGallery = lazy(() => import("./pages/invitation/InvitationGallery"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
 const AdminMakeupSamples = lazy(() => import("./pages/admin/AdminMakeupSamples"));
@@ -253,6 +255,9 @@ const App = () => (
               <Route path="/ai-studio/makeup-room/gallery" element={<MakeupFittingGallery />} />
               <Route path="/ai-studio/dress-tour/recommend" element={<DressRecommend />} />
               <Route path="/ai-studio/makeup-room/recommend" element={<MakeupRecommend />} />
+              <Route path="/invitation/my" element={<InvitationGallery />} />
+              <Route path="/invitation/new" element={<InvitationStudio />} />
+              <Route path="/invitation/:id/edit" element={<InvitationStudio />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/dress-samples" element={<AdminDressSamples />} />
               <Route path="/admin/makeup-samples" element={<AdminMakeupSamples />} />
