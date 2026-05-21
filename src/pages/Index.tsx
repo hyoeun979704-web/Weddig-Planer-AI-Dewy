@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
@@ -6,19 +7,54 @@ import TabContent from "@/components/home/TabContent";
 import HomeEntryPopup from "@/components/home/HomeEntryPopup";
 import Footer from "@/components/home/Footer";
 import TutorialOverlay from "@/components/TutorialOverlay";
+import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
+import { useHomeFirstRun } from "@/hooks/useHomeFirstRun";
+
+const WEDDING_INFO_DISMISS_KEY = "dewy:wedding-info-modal:dismissed";
 
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  // 홈 콘텐츠 레이아웃은 'ai-planner' 분기를 그대로 사용하지만, 상단탭은
-  // 어떤 카테고리도 아니라서 강조하지 않음 (null 전달).
-  // 로그인 후 첫 홈 방문 시 홈 투어가 1회 실행된다(고정탭 안내 포함).
-  const tutorial = usePageTutorial("home-tour");
   const handleCategoryTabChange = useCategoryTabNavigation();
+
+  // 첫 실행 시퀀스: 이벤트 팝업 → 튜토리얼 → 동의·온보딩 입력 순서로 조율.
+  const flow = useHomeFirstRun();
+
+  // 홈 투어는 시퀀스가 직접 시작(autoStart 끔). ?tutorial= 쿼리 재생은 그대로 동작.
+  const tutorial = usePageTutorial("home-tour", { autoStart: false });
+  const tutorialStarted = useRef(false);
+  const tutorialWasActive = useRef(false);
+
+  // 튜토리얼 단계 진입 시 1회 시작, "활성화됐다가 종료"되면 다음 단계로.
+  useEffect(() => {
+    if (flow.stage !== "tutorial") return;
+    if (!tutorialStarted.current) {
+      tutorialStarted.current = true;
+      tutorial.startTutorial(undefined, "home-tour");
+      return;
+    }
+    if (tutorial.isActive) {
+      tutorialWasActive.current = true;
+    } else if (tutorialWasActive.current) {
+      flow.advance();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flow.stage, tutorial.isActive]);
 
   const handleTabChange = (href: string) => {
     navigate(href);
+  };
+
+  // 온보딩 모달 닫힘(저장 또는 건너뛰기). 건너뛰어도 홈에선 다시 강제하지 않도록
+  // 영구 dismiss 를 기록하고(필요한 페이지의 인라인 안내로 대체), 다음 단계로 진행.
+  const handleOnboardingClose = () => {
+    try {
+      localStorage.setItem(WEDDING_INFO_DISMISS_KEY, "1");
+    } catch {
+      // best effort
+    }
+    flow.advance();
   };
 
   return (
@@ -33,7 +69,12 @@ const Index = () => {
 
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
 
-      <HomeEntryPopup />
+      <HomeEntryPopup open={flow.stage === "event"} onClose={flow.advance} />
+
+      <WeddingInfoSetupModal
+        isOpen={flow.stage === "onboarding"}
+        onClose={handleOnboardingClose}
+      />
 
       {tutorial.isActive && tutorial.currentStep && (
         <TutorialOverlay

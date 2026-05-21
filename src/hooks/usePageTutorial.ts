@@ -17,7 +17,11 @@ const PAGE_SEEN_PREFIX = "dewy_tutorial_page_";
  * lesson sets requiresStyles=['self'] and the user is on a general wedding,
  * we won't auto-start it but the query-param flow still wins (manual replay).
  */
-export const usePageTutorial = (pageGuideId?: string) => {
+export const usePageTutorial = (
+  pageGuideId?: string,
+  options?: { autoStart?: boolean },
+) => {
+  const autoStart = options?.autoStart ?? true;
   const [searchParams, setSearchParams] = useSearchParams();
   const tutorial = useTutorial();
   const { weddingSettings } = useWeddingSchedule();
@@ -47,7 +51,7 @@ export const usePageTutorial = (pageGuideId?: string) => {
     // param 경로로 계속 가능.)
     //  - per-page seen flag (legacy `PAGE_SEEN_PREFIX`)
     //  - lesson-completion flag (new progress hook)
-    if (pageGuideId && user) {
+    if (pageGuideId && user && autoStart) {
       const seenKey = PAGE_SEEN_PREFIX + pageGuideId;
       const hasSeen = localStorage.getItem(seenKey) === "true";
       const alreadyDone = progress.isCompleted(pageGuideId);

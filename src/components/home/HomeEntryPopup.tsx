@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTutorialProgress } from "@/hooks/useTutorialProgress";
 
-const STORAGE_KEY = "dewy.home_entry_popup_dismissed_until";
+export const HOME_POPUP_DISMISS_KEY = "dewy.home_entry_popup_dismissed_until";
 
 const tomorrowMidnightISO = (from: Date = new Date()) => {
   const next = new Date(from);
@@ -13,46 +11,35 @@ const tomorrowMidnightISO = (from: Date = new Date()) => {
   return next.toISOString();
 };
 
-// 첫 진입 1회 모달. 비로그인 사용자에겐 신규 가입 혜택을, 로그인 사용자에겐
-// 진행 중인 이벤트를 안내한다(가입자에게 "지금 가입하면" 카피는 거짓이 되므로
-// 카피·CTA 를 분기). "오늘 하루 보지 않기"로 하루 단위 스킵 가능.
-// shadcn Dialog 를 써서 ESC/focus trap/body scroll lock 자동 처리.
-const HomeEntryPopup = () => {
+interface Props {
+  /** 첫 실행 시퀀스가 제어 — 열림 여부 */
+  open: boolean;
+  /** 닫힘(건너뛰기 포함) 시 다음 단계로 진행 */
+  onClose: () => void;
+}
+
+// 이벤트/혜택 안내 모달. 비로그인 사용자에겐 신규 가입 혜택을, 로그인 사용자에겐
+// 진행 중인 이벤트를 안내(카피·CTA 분기). 노출 순서/타이밍은 홈 첫 실행 시퀀스가
+// 제어하며, "오늘 하루 보지 않기"로 하루 단위 스킵을 기록한다.
+const HomeEntryPopup = ({ open, onClose }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const progress = useTutorialProgress();
-  const homeTourDone = progress.isCompleted("home-tour");
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    // 로그인 사용자는 홈 투어를 끝낸 뒤에만 노출 — 첫 방문에 튜토리얼 코치마크와
-    // 동시에 뜨는 것을 막는다(스플래시 뒤에서 타이머가 겹치는 문제).
-    if (user && !homeTourDone) return;
-    try {
-      const until = localStorage.getItem(STORAGE_KEY);
-      if (until && new Date(until).getTime() > Date.now()) return;
-    } catch {
-      // localStorage 차단 환경 — fail open
-    }
-    const timer = setTimeout(() => setOpen(true), 1000);
-    return () => clearTimeout(timer);
-  }, [user, homeTourDone]);
 
   const handleOpenChange = (next: boolean) => {
-    if (!next) setOpen(false);
+    if (!next) onClose();
   };
 
   const handleDismissForToday = () => {
     try {
-      localStorage.setItem(STORAGE_KEY, tomorrowMidnightISO());
+      localStorage.setItem(HOME_POPUP_DISMISS_KEY, tomorrowMidnightISO());
     } catch {
       // best effort
     }
-    setOpen(false);
+    onClose();
   };
 
   const handleCTA = () => {
-    setOpen(false);
+    onClose();
     navigate(user ? "/events" : "/auth");
   };
 
@@ -119,7 +106,7 @@ const HomeEntryPopup = () => {
             오늘 하루 보지 않기
           </button>
           <button
-            onClick={() => setOpen(false)}
+            onClick={onClose}
             className="text-[12px] font-semibold text-muted-foreground"
           >
             닫기
