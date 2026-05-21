@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, User, Building2, Calendar } from "lucide-react";
+import DewyLogo from "@/components/home/DewyLogo";
 
 const emailSchema = z.string().email("올바른 이메일 형식을 입력해주세요");
 const passwordSchema = z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다");
@@ -121,13 +122,20 @@ const Auth = () => {
             : null,
         };
         if (accountType === "business") metadata.account_type = "business";
-        const { error } = await signUp(email, password, metadata);
+        const { error, needsEmailConfirm } = await signUp(email, password, metadata);
         if (error) {
           if (error.message.includes("already registered")) {
             toast.error("이미 가입된 이메일입니다");
           } else {
             toast.error(error.message);
           }
+        } else if (needsEmailConfirm) {
+          // 이메일 확인이 필요한 설정 — 아직 로그인 상태가 아니므로 홈으로
+          // 보내지 않고 메일 확인을 안내한다.
+          toast.success("인증 메일을 보냈어요. 메일의 링크를 눌러 가입을 완료해주세요", {
+            duration: 6000,
+          });
+          setIsSignUp(false);
         } else {
           toast.success("회원가입이 완료되었습니다!");
           if (accountType === "business") {
@@ -162,6 +170,19 @@ const Auth = () => {
     if (isSignUp && !ageConfirmed) {
       toast.error(`만 ${MIN_AGE}세 이상이며 약관에 동의해야 가입할 수 있습니다`);
       return false;
+    }
+    // OAuth 콜백엔 가입 폼 metadata 를 실어보낼 수 없어, 마케팅 수신 동의를
+    // localStorage 에 잠시 보관한다. 첫 로그인 후 AuthContext 가 이를 읽어
+    // user_consents(marketing_v1) 로 기록한다.
+    if (isSignUp) {
+      try {
+        localStorage.setItem(
+          "dewy:pending-marketing-consent",
+          marketingConsent ? "1" : "0",
+        );
+      } catch {
+        // best effort
+      }
     }
     return true;
   };
@@ -221,7 +242,7 @@ const Auth = () => {
       <div className="p-6">
         {/* Logo / Title */}
         <div className="text-center mb-6">
-          <span className="text-6xl"></span>
+          <DewyLogo size={64} className="mx-auto" />
           <h2 className="text-2xl font-bold mt-4 text-foreground">웨딩 플래너</h2>
           <p className="text-muted-foreground mt-2">
             {isSignUp ? "새 계정을 만들어주세요" : "계정에 로그인하세요"}

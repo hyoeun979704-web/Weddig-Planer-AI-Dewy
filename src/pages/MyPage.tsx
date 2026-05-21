@@ -15,6 +15,7 @@ import PremiumBanner from "@/components/premium/PremiumBanner";
 import PartnerLinkCard from "@/components/partner/PartnerLinkCard";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
 import DataCollectionConsentModal from "@/components/consent/DataCollectionConsentModal";
+import PageTutorial from "@/components/tutorial/PageTutorial";
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import { useDataCollectionConsent } from "@/hooks/useDataCollectionConsent";
 import { Button } from "@/components/ui/button";
@@ -191,7 +192,7 @@ const MyPage = () => {
         )}
 
         <UserProfileSection user={user} isLoading={isLoading} />
-        <div className="mt-3">
+        <div className="mt-3" data-tutorial="mypage-quickmenu">
           <QuickMenuGrid user={user} />
         </div>
         <DdayCard
@@ -204,12 +205,14 @@ const MyPage = () => {
         </div>
 
         <PremiumBanner />
-        <MenuSection
-          user={user}
-          onSignOut={handleSignOut}
-          onEditWeddingInfo={weddingInfoPrompt.openManually}
-          onViewDataConsent={() => setConsentReviewOpen(true)}
-        />
+        <div data-tutorial="mypage-menu">
+          <MenuSection
+            user={user}
+            onSignOut={handleSignOut}
+            onEditWeddingInfo={weddingInfoPrompt.openManually}
+            onViewDataConsent={() => setConsentReviewOpen(true)}
+          />
+        </div>
 
         <div className="px-4 py-6">
           <div className="text-center text-[11px] text-muted-foreground">
@@ -243,6 +246,8 @@ const MyPage = () => {
         }}
         onClose={() => setConsentReviewOpen(false)}
       />
+
+      <PageTutorial id="mypage" />
     </div>
   );
 };

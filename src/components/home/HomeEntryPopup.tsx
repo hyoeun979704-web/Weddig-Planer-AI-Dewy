@@ -12,8 +12,9 @@ const tomorrowMidnightISO = (from: Date = new Date()) => {
   return next.toISOString();
 };
 
-// 첫 진입 1회 모달 — 신규 가입 1달 프리미엄 무료. 비로그인 사용자만
-// 노출(이미 가입한 사용자에게 "지금 가입하면" 카피가 거짓이 되기 때문).
+// 첫 진입 1회 모달. 비로그인 사용자에겐 신규 가입 혜택을, 로그인 사용자에겐
+// 진행 중인 이벤트를 안내한다(가입자에게 "지금 가입하면" 카피는 거짓이 되므로
+// 카피·CTA 를 분기). "오늘 하루 보지 않기"로 하루 단위 스킵 가능.
 // shadcn Dialog 를 써서 ESC/focus trap/body scroll lock 자동 처리.
 const HomeEntryPopup = () => {
   const navigate = useNavigate();
@@ -21,7 +22,6 @@ const HomeEntryPopup = () => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (user) return; // 가입자는 노출 X
     try {
       const until = localStorage.getItem(STORAGE_KEY);
       if (until && new Date(until).getTime() > Date.now()) return;
@@ -47,8 +47,19 @@ const HomeEntryPopup = () => {
 
   const handleCTA = () => {
     setOpen(false);
-    navigate("/auth");
+    navigate(user ? "/events" : "/auth");
   };
+
+  const headline = user ? (
+    <>진행 중인 이벤트를<br />확인해보세요</>
+  ) : (
+    <>지금 가입하면<br />Premium 1달 무료</>
+  );
+  const sub = user
+    ? "출석·초대·후기로 받는 포인트와 하트 혜택을 모아뒀어요"
+    : "AI 플래너 무제한 · 예산 분석 PDF\n결혼 스타일별 맞춤 가이드까지";
+  const badge = user ? "이벤트" : "신규 가입 한정";
+  const ctaLabel = user ? "이벤트 보러가기" : "지금 시작하기";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -73,23 +84,23 @@ const HomeEntryPopup = () => {
           }}
         >
           <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/85 text-[11px] font-bold text-primary">
-            신규 가입 한정
+            {badge}
           </span>
         </div>
 
         {/* Body */}
         <div className="px-6 pt-5 pb-4 flex flex-col items-center text-center">
           <h2 className="text-xl font-extrabold text-foreground leading-snug">
-            지금 가입하면<br />Premium 1달 무료
+            {headline}
           </h2>
-          <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">
-            AI 플래너 무제한 · 예산 분석 PDF<br />결혼 스타일별 맞춤 가이드까지
+          <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed whitespace-pre-line">
+            {sub}
           </p>
           <button
             onClick={handleCTA}
             className="mt-5 w-full h-12 rounded-2xl bg-primary text-primary-foreground font-bold text-[15px] active:scale-[0.98] transition-transform"
           >
-            지금 시작하기
+            {ctaLabel}
           </button>
         </div>
 

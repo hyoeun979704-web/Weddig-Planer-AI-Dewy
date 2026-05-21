@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useTutorial } from "./useTutorial";
 import { useWeddingSchedule } from "./useWeddingSchedule";
 import { useTutorialProgress } from "./useTutorialProgress";
+import { useAuth } from "@/contexts/AuthContext";
 import { findLessonById } from "@/data/tutorialChapters";
 
 const PAGE_SEEN_PREFIX = "dewy_tutorial_page_";
@@ -21,6 +22,7 @@ export const usePageTutorial = (pageGuideId?: string) => {
   const tutorial = useTutorial();
   const { weddingSettings } = useWeddingSchedule();
   const progress = useTutorialProgress();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Priority 1: explicit query param wins — even if requiresStyles
@@ -39,11 +41,13 @@ export const usePageTutorial = (pageGuideId?: string) => {
       }
     }
 
-    // Priority 2: first-visit auto-start. Two gates:
+    // Priority 2: first-visit auto-start. 비로그인 사용자에겐 자동 실행하지
+    // 않는다 — 로그인 게이트(LoginRequiredOverlay) 위로 코치마크가 뜨는 것을
+    // 막고, "로그인 후 튜토리얼" 흐름과 일치시킨다. (수동 replay 는 위 query
+    // param 경로로 계속 가능.)
     //  - per-page seen flag (legacy `PAGE_SEEN_PREFIX`)
-    //  - lesson-completion flag (new progress hook) — handles users that
-    //    came in via query param replay first.
-    if (pageGuideId) {
+    //  - lesson-completion flag (new progress hook)
+    if (pageGuideId && user) {
       const seenKey = PAGE_SEEN_PREFIX + pageGuideId;
       const hasSeen = localStorage.getItem(seenKey) === "true";
       const alreadyDone = progress.isCompleted(pageGuideId);
@@ -67,7 +71,7 @@ export const usePageTutorial = (pageGuideId?: string) => {
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weddingSettings.wedding_style]);
+  }, [weddingSettings.wedding_style, user]);
 
   return tutorial;
 };

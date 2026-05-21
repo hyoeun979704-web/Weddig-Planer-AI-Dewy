@@ -5,6 +5,7 @@ import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { CategoryTab, useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import LockedCard from "@/components/LockedCard";
 import WaitlistSignupSheet from "@/components/studio/WaitlistSignupSheet";
+import PageTutorial from "@/components/tutorial/PageTutorial";
 
 interface StudioCard {
   id: string;
@@ -162,6 +163,8 @@ const AIStudio = () => {
         serviceId={waitlistCard?.id ?? null}
         serviceTitle={waitlistCard?.title ?? ""}
       />
+
+      <PageTutorial id="ai-studio" />
     </div>
   );
 };

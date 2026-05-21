@@ -3,6 +3,7 @@ import { Plus, Heart, Loader2, BookOpen, Trash2 } from "lucide-react";
 import { useState } from "react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import PageTutorial from "@/components/tutorial/PageTutorial";
 import { useCoupleDiary, DiaryEntry } from "@/hooks/useCoupleDiary";
 import { useCoupleLink } from "@/hooks/useCoupleLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -117,6 +118,8 @@ const CoupleDiary = () => {
       </main>
 
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
+
+      <PageTutorial id="couple" />
     </div>
   );
 };

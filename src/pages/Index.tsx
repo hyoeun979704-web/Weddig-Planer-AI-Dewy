@@ -13,7 +13,8 @@ const Index = () => {
   const location = useLocation();
   // 홈 콘텐츠 레이아웃은 'ai-planner' 분기를 그대로 사용하지만, 상단탭은
   // 어떤 카테고리도 아니라서 강조하지 않음 (null 전달).
-  const tutorial = usePageTutorial("app-tour");
+  // 로그인 후 첫 홈 방문 시 홈 투어가 1회 실행된다(고정탭 안내 포함).
+  const tutorial = usePageTutorial("home-tour");
   const handleCategoryTabChange = useCategoryTabNavigation();
 
   const handleTabChange = (href: string) => {

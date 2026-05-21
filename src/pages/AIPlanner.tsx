@@ -19,6 +19,7 @@ import BudgetSurvey from "@/components/wedding-planner/BudgetSurvey";
 import SuggestionPanel from "@/components/wedding-planner/SuggestionPanel";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import BottomNav from "@/components/BottomNav";
+import PageTutorial from "@/components/tutorial/PageTutorial";
 import { motion, AnimatePresence } from "framer-motion";
 import { findSuggestions } from "@/data/chatbotSuggestions";
 import { getFollowUpChips } from "@/lib/chatbot/followUpChips";
@@ -464,6 +465,8 @@ const AIPlanner = () => {
         isOpen={weddingInfoPrompt.open}
         onClose={weddingInfoPrompt.dismiss}
       />
+
+      <PageTutorial id="ai-planner" />
     </div>
   );
 };
