@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Download, Share2, Loader2, RefreshCw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -29,33 +29,57 @@ const DressFittingResult = () => {
   const [fitting, setFitting] = useState<FittingRow | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [polls, setPolls] = useState(0);
+
+  // 약 4초 간격, 최대 ~2분까지 대기 후 타임아웃 안내.
+  const MAX_POLLS = 30;
+
+  const load = useCallback(async () => {
+    if (!id) return;
+    const { data, error } = await (supabase as any)
+      .from("dress_fittings")
+      .select(
+        "id, status, result_image_path, error_message, prompt_params, selected_sample_id, created_at",
+      )
+      .eq("id", id)
+      .single();
+    if (error || !data) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+    setFitting(data);
+    if (data.result_image_path) {
+      const { data: signed } = await supabase.storage
+        .from("dress-results")
+        .createSignedUrl(data.result_image_path, 60 * 60 * 24);
+      setResultUrl(signed?.signedUrl ?? null);
+    }
+    setLoading(false);
+  }, [id]);
 
   useEffect(() => {
-    if (!id) return;
-    (async () => {
-      const { data, error } = await (supabase as any)
-        .from("dress_fittings")
-        .select(
-          "id, status, result_image_path, error_message, prompt_params, selected_sample_id, created_at",
-        )
-        .eq("id", id)
-        .single();
-      if (error || !data) {
-        toast({ title: "결과를 불러올 수 없어요", variant: "destructive" });
-        setLoading(false);
-        return;
-      }
-      setFitting(data);
+    load();
+  }, [load]);
 
-      if (data.result_image_path) {
-        const { data: signed } = await supabase.storage
-          .from("dress-results")
-          .createSignedUrl(data.result_image_path, 60 * 60 * 24);
-        setResultUrl(signed?.signedUrl ?? null);
-      }
-      setLoading(false);
-    })();
-  }, [id]);
+  // 생성 중이면 결과가 나올 때까지 폴링.
+  useEffect(() => {
+    if (fitting?.status !== "pending" || polls >= MAX_POLLS) return;
+    const t = setTimeout(() => {
+      setPolls((p) => p + 1);
+      load();
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [fitting?.status, polls, load]);
+
+  const handleManualRefresh = () => {
+    setPolls(0);
+    setLoading(true);
+    load();
+  };
+
+  const timedOut = fitting?.status === "pending" && polls >= MAX_POLLS;
 
   const handleDownload = async () => {
     if (!resultUrl) return;
@@ -112,10 +136,13 @@ const DressFittingResult = () => {
           <div className="py-20 flex justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
-        ) : !fitting ? (
-          <p className="text-center text-muted-foreground py-20">
-            결과를 찾을 수 없어요.
-          </p>
+        ) : notFound || !fitting ? (
+          <div className="text-center py-16 space-y-4">
+            <p className="text-muted-foreground">결과를 찾을 수 없어요.</p>
+            <Button onClick={() => navigate("/ai-studio/dress-tour")}>
+              드레스 투어로 돌아가기
+            </Button>
+          </div>
         ) : fitting.status === "failed" || fitting.status === "refunded" ? (
           <div className="text-center py-12 space-y-3">
             <p className="text-base font-semibold text-foreground">
@@ -135,10 +162,37 @@ const DressFittingResult = () => {
             </Button>
           </div>
         ) : fitting.status === "pending" ? (
-          <div className="py-20 flex flex-col items-center gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">생성 중...</p>
-          </div>
+          timedOut ? (
+            <div className="text-center py-16 space-y-4">
+              <p className="text-base font-semibold text-foreground">
+                생성이 예상보다 오래 걸리고 있어요
+              </p>
+              <p className="text-[12px] text-muted-foreground">
+                잠시 후 다시 확인하거나 갤러리에서 결과를 찾아볼 수 있어요.
+                하트는 차감된 상태이며, 끝내 실패하면 자동 환불돼요.
+              </p>
+              <div className="flex flex-col gap-2 pt-2">
+                <Button onClick={handleManualRefresh}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  다시 확인하기
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/ai-studio/dress-tour/gallery")}
+                  className="text-[13px] text-muted-foreground underline"
+                >
+                  내 갤러리 보기
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="py-20 flex flex-col items-center gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">
+                생성 중... (약 15~30초)
+              </p>
+            </div>
+          )
         ) : (
           <div className="space-y-4">
             {resultUrl ? (

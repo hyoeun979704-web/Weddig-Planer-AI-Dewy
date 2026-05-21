@@ -29,6 +29,12 @@ const Checkout = () => {
   useEffect(() => {
     if (!user || items.length === 0) return;
 
+    if (!CLIENT_KEY) {
+      console.error("VITE_TOSS_CLIENT_KEY is not configured");
+      toast.error("결제가 일시적으로 불가능해요. 잠시 후 다시 시도해주세요");
+      return;
+    }
+
     (async () => {
       try {
         const widget = await loadPaymentWidget(CLIENT_KEY, user.id);
