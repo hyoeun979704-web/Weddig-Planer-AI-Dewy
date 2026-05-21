@@ -109,7 +109,7 @@ const PhotoUploadConsent = ({
           checked={agreeProcessing}
           onChange={setAgreeProcessing}
           label="사진의 AI 처리·외부 전송에 동의합니다"
-          description="업로드한 사진은 결과 생성을 위해 AI 처리 위탁사 — OpenAI(이미지 생성), remove.bg(배경 제거) — 로 전송됩니다. 청첩장 문구 추천에는 Google Gemini 가 사용됩니다."
+          description="업로드한 사진은 결과 생성을 위해 OpenAI(이미지 생성)·remove.bg(배경 제거) 등 AI 처리 위탁사로 전송됩니다."
         />
 
         <ConsentItem
