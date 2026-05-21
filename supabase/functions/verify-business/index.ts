@@ -49,14 +49,6 @@ serve(async (req) => {
       service_category,
       phone,
       address,
-      vendor_name,
-      vendor_keywords,
-      vendor_amenities,
-      vendor_business_hours,
-      vendor_parking_location,
-      vendor_parking_hours,
-      vendor_tel,
-      vendor_sns_info,
     } = body;
 
     // Validate required fields
