@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, User, Building2, Calendar } from "lucide-react";
+import DewyLogo from "@/components/home/DewyLogo";
 
 const emailSchema = z.string().email("올바른 이메일 형식을 입력해주세요");
 const passwordSchema = z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다");
@@ -221,7 +222,7 @@ const Auth = () => {
       <div className="p-6">
         {/* Logo / Title */}
         <div className="text-center mb-6">
-          <span className="text-6xl"></span>
+          <DewyLogo size={64} className="mx-auto" />
           <h2 className="text-2xl font-bold mt-4 text-foreground">웨딩 플래너</h2>
           <p className="text-muted-foreground mt-2">
             {isSignUp ? "새 계정을 만들어주세요" : "계정에 로그인하세요"}
