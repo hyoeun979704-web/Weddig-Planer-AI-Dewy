@@ -11,17 +11,16 @@ export interface PlaceValueTag {
   /** places.tags 배열에 저장되는 실제 한글 태그 값. */
   value: string;
   label: string;
-  emoji: string;
   hint: string;
   /** 사용자 쪽 weddingValues 키 (있을 때만). 카탈로그 추천 가중치에 사용 가능. */
   userKey?: "eco" | "vegan" | "pet" | "foreign_guests";
 }
 
 export const PLACE_VALUE_TAG_OPTIONS: readonly PlaceValueTag[] = [
-  { value: "친환경",     label: "친환경",       emoji: "", hint: "재사용 소품·제로웨이스트 친화",   userKey: "eco" },
-  { value: "비건옵션",   label: "비건",         emoji: "", hint: "비건·채식 옵션 제공",              userKey: "vegan" },
-  { value: "반려동물",   label: "반려동물 동반", emoji: "", hint: "반려동물 동반 가능",               userKey: "pet" },
-  { value: "영문안내",   label: "영문 안내",     emoji: "", hint: "외국인 하객용 영문 안내 지원",     userKey: "foreign_guests" },
+  { value: "친환경",     label: "친환경",       hint: "재사용 소품·제로웨이스트 친화",   userKey: "eco" },
+  { value: "비건옵션",   label: "비건",         hint: "비건·채식 옵션 제공",              userKey: "vegan" },
+  { value: "반려동물",   label: "반려동물 동반", hint: "반려동물 동반 가능",               userKey: "pet" },
+  { value: "영문안내",   label: "영문 안내",     hint: "외국인 하객용 영문 안내 지원",     userKey: "foreign_guests" },
 ] as const;
 
 const VALUE_TO_OPTION: Record<string, PlaceValueTag> = Object.fromEntries(
