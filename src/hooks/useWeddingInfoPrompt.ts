@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
-const SESSION_DISMISS_KEY = "dewy:wedding-info-modal:dismissed";
+const DISMISS_KEY = "dewy:wedding-info-modal:dismissed";
 
 /**
  * Auto-show controller for the WeddingInfoSetupModal.
@@ -13,11 +13,13 @@ const SESSION_DISMISS_KEY = "dewy:wedding-info-modal:dismissed";
  * Auto-opens when:
  *  - user is signed in
  *  - useWeddingSchedule has loaded
- *  - wedding_date AND wedding_region are both null
- *  - user hasn't dismissed it for this session
+ *  - wedding_date AND wedding_region are both null (not onboarded)
+ *  - user hasn't dismissed it before
  *
- * Dismissal lasts only the browser session (sessionStorage) so the prompt
- * comes back on next visit but doesn't repeat-spam within the session.
+ * Dismissal is persistent (localStorage): once the user skips, we don't
+ * auto-prompt again. Pages that genuinely need the data surface their own
+ * inline CTA / empty-state instead of re-popping the modal. The home screen
+ * uses a non-forced CTA card rather than this auto-prompt.
  */
 export function useWeddingInfoPrompt() {
   const { user } = useAuth();
@@ -26,11 +28,11 @@ export function useWeddingInfoPrompt() {
 
   useEffect(() => {
     if (!user || isLoading) return;
-    if (sessionStorage.getItem(SESSION_DISMISS_KEY) === "1") return;
-    // Onboarded if EITHER concrete data is present OR the user has explicitly
-    // opted into "미정" (so we don't keep nagging early-stage planners). Also
-    // gate on planning_stage — if that's set, the user has gone through
-    // onboarding at least once.
+    try {
+      if (localStorage.getItem(DISMISS_KEY) === "1") return;
+    } catch {
+      // localStorage 차단 환경 — 계속 진행
+    }
     const hasDateInfo = !!weddingSettings.wedding_date || weddingSettings.wedding_date_tbd;
     const hasRegionInfo = !!weddingSettings.wedding_region || weddingSettings.wedding_region_tbd;
     const onboarded = (hasDateInfo && hasRegionInfo) || !!weddingSettings.planning_stage;
@@ -46,7 +48,11 @@ export function useWeddingInfoPrompt() {
   ]);
 
   const dismiss = () => {
-    sessionStorage.setItem(SESSION_DISMISS_KEY, "1");
+    try {
+      localStorage.setItem(DISMISS_KEY, "1");
+    } catch {
+      // best effort
+    }
     setOpen(false);
   };
 

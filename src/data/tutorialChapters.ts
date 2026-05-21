@@ -88,6 +88,31 @@ const HOME_TOUR: TutorialLesson = {
   ],
 };
 
+const MYPAGE_TOUR: TutorialLesson = {
+  id: "mypage",
+  title: "마이페이지 둘러보기",
+  description: "찜·하트·포인트와 내 결혼 정보를 한곳에서",
+  route: "/mypage",
+  reward: 20,
+  steps: [
+    {
+      id: "mypage-quickmenu",
+      title: "빠른 메뉴",
+      description: "찜 · 하트 · 포인트 · 쿠폰 · 주문내역을 바로 확인할 수 있어요.",
+      targetSelector: "[data-tutorial='mypage-quickmenu']",
+      position: "bottom",
+    },
+    {
+      id: "mypage-menu",
+      title: "결혼 준비 메뉴",
+      description:
+        "결혼 정보 수정, 내가 만든 청첩장·시뮬레이션, 계정·고객지원을 여기서 관리해요.",
+      targetSelector: "[data-tutorial='mypage-menu']",
+      position: "top",
+    },
+  ],
+};
+
 const AI_PLANNER: TutorialLesson = {
   id: "ai-planner",
   title: "AI 플래너에게 질문하기",
@@ -302,7 +327,7 @@ const SELF_DIY: TutorialLesson = {
   id: "self-diy",
   title: "셀프웨딩 DIY 시작",
   description: "촬영 · 부케 · 청첩장을 직접 만드는 길잡이",
-  route: "/magazine",
+  route: "/tips",
   reward: 30,
   requiresStyles: ["self"],
   steps: [
@@ -328,7 +353,7 @@ export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
     title: "기초 둘러보기",
     subtitle: "Dewy의 첫인상을 잡는 시간",
     accent: "rose",
-    lessons: [HOME_TOUR],
+    lessons: [HOME_TOUR, MYPAGE_TOUR],
   },
   {
     id: "ai",
