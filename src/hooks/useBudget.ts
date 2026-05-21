@@ -211,5 +211,6 @@ export function useBudget(profileRegionKey?: string) {
     addItem,
     updateItem,
     deleteItem,
+    refetchItems: itemsQuery.refetch,
   };
 }

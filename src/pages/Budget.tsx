@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useBudget } from "@/hooks/useBudget";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   categories, categoryKeys, regions, paidByOptions, paymentStageOptions,
@@ -67,7 +68,7 @@ const Budget = () => {
   const { user } = useAuth();
   const { defaultRegion } = useDefaultRegion();
   const profileRegionKey = resolveRegionKey(defaultRegion);
-  const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem } = useBudget(profileRegionKey);
+  const { settings, items, summary, regionalAverage, isLoading, saveSettings, addItem, updateItem, deleteItem, refetchItems } = useBudget(profileRegionKey);
   const { weddingSettings, scheduleItems } = useWeddingSchedule();
   // Sheets get the filtered list; main page itself iterates all 10 with
   // dimming for hidden ones (visible without forcing edits).
@@ -265,9 +266,8 @@ const Budget = () => {
    * Marks a balance as paid: creates a new "잔금" expense item dated to the
    * user's chosen pay date, THEN clears has_balance on the original item.
    *
-   * Two-step transaction safety: we await each step and roll back the new
-   * "잔금" item if the original update fails — otherwise the user would see
-   * the payment recorded twice (the new item + a still-pending balance card).
+   * pay_balance RPC 가 잔금 항목 INSERT 와 원본 balance 해제를 한 트랜잭션에서
+   * 처리하므로 부분 실패로 인한 고아 데이터가 발생하지 않는다.
    */
   const handleMarkBalancePaid = async (
     item: BudgetItem,
@@ -276,39 +276,21 @@ const Budget = () => {
     if (!item.balance_amount) return;
     setPayBalanceTarget(null);
 
-    let createdItemId: string | null = null;
-    try {
-      const created = await addItem.mutateAsync({
-        category: item.category,
-        title: `${item.title} 잔금`,
-        amount: item.balance_amount,
-        paid_by: item.paid_by,
-        payment_stage: "balance",
-        payment_method: payload.paymentMethod,
-        item_date: payload.payDate,
-        memo: payload.memo,
-        has_balance: false,
-        balance_amount: null,
-        balance_due_date: null,
-      });
-      createdItemId = (created as { id?: string } | undefined)?.id ?? null;
+    const { error } = await (supabase as any).rpc("pay_balance", {
+      p_item_id: item.id,
+      p_pay_date: payload.payDate,
+      p_payment_method: payload.paymentMethod,
+      p_memo: payload.memo,
+    });
 
-      await updateItem.mutateAsync({
-        id: item.id,
-        has_balance: false,
-        balance_amount: null,
-        balance_due_date: null,
-      } as any);
-      toast({ title: "잔금 결제가 기록되었습니다" });
-    } catch (err) {
-      console.error("Balance payment failed:", err);
-      if (createdItemId) {
-        // Compensate: roll back the new 잔금 item so the user doesn't see
-        // a double-recorded payment with a still-pending balance card.
-        try { await deleteItem.mutateAsync(createdItemId); } catch { /* best effort */ }
-      }
+    if (error) {
+      console.error("Balance payment failed:", error);
       toast({ title: "잔금 결제 기록에 실패했어요", variant: "destructive" });
+      return;
     }
+
+    await refetchItems();
+    toast({ title: "잔금 결제가 기록되었습니다" });
   };
 
   return (

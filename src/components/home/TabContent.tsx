@@ -9,7 +9,6 @@ import InvitationTemplateSection from "./InvitationTemplateSection";
 import StudioGallery from "./StudioGallery";
 import TipsSection from "./TipsSection";
 import CommunityChatterSection from "./CommunityChatterSection";
-import ReviewSection from "./ReviewSection";
 import PopularPostsSection from "./PopularPostsSection";
 import EmptyState from "@/components/EmptyState";
 import { emptyCopy } from "@/lib/emptyCopy";
@@ -42,7 +41,6 @@ const TabContent = ({ activeTab }: TabContentProps) => {
         <InvitationTemplateSection />
         <TipsSection activeTab={activeTab} />
         <CommunityChatterSection />
-        <ReviewSection activeTab={activeTab} />
       </div>
     );
   }
@@ -61,7 +59,6 @@ const TabContent = ({ activeTab }: TabContentProps) => {
       <PopularPostsSection hideWhenEmpty />
       <StudioGallery />
       <TipsSection activeTab={activeTab} />
-      <ReviewSection activeTab={activeTab} />
     </div>
   );
 };

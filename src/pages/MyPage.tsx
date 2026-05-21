@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Star, Users, ArrowRight, Crown } from "lucide-react";
+import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Users, ArrowRight, Crown } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import DewyLogo from "@/components/home/DewyLogo";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,12 +27,6 @@ const GuestMyPage = () => {
     { icon: Wallet, label: "예산 관리", desc: "지역별 평균 비교·양가 분담", color: "text-primary", bg: "bg-primary/10" },
     { icon: Sparkles, label: "AI 플래너", desc: "맞춤 업체 추천·타임라인", color: "text-primary", bg: "bg-primary/10" },
     { icon: Users, label: "커뮤니티", desc: "예비부부 후기·꿀팁 공유", color: "text-primary", bg: "bg-primary/10" },
-  ];
-
-  const stats = [
-    { label: "등록 업체", value: "2,400+" },
-    { label: "이용 커플", value: "15,000+" },
-    { label: "리뷰 수", value: "38,000+" },
   ];
 
   return (
@@ -79,18 +73,6 @@ const GuestMyPage = () => {
           </div>
         </div>
 
-        {/* Social proof stats */}
-        <div className="px-4 py-2">
-          <div className="grid grid-cols-3 gap-2">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center py-3 bg-card rounded-2xl border border-border">
-                <p className="text-base font-bold text-primary">{s.value}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Feature preview grid */}
         <div className="px-4 py-3">
           <h3 className="text-xs font-medium text-muted-foreground mb-2 px-1">가입하면 이용할 수 있어요</h3>
@@ -112,29 +94,6 @@ const GuestMyPage = () => {
                   시작하기 <ArrowRight className="w-3 h-3" />
                 </span>
               </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Review teaser */}
-        <div className="px-4 py-3">
-          <h3 className="text-xs font-medium text-muted-foreground mb-2 px-1">실제 이용 후기</h3>
-          <div className="space-y-2">
-            {[
-              { name: "예비신부 김**", text: "예산 관리 기능이 정말 편해요! 양가 분담까지 한눈에 보여서 좋아요 ", stars: 5 },
-              { name: "예비신랑 이**", text: "AI 추천으로 웨딩홀 3곳 방문했는데 다 만족스러웠어요", stars: 5 },
-            ].map((r, i) => (
-              <div key={i} className="p-3.5 bg-card rounded-2xl border border-border">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <div className="flex">
-                    {Array.from({ length: r.stars }).map((_, si) => (
-                      <Star key={si} className="w-3 h-3 fill-primary text-primary" />
-                    ))}
-                  </div>
-                  <span className="text-[11px] text-muted-foreground">{r.name}</span>
-                </div>
-                <p className="text-sm text-foreground leading-relaxed">{r.text}</p>
-              </div>
             ))}
           </div>
         </div>
