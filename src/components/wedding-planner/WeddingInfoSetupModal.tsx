@@ -198,6 +198,17 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
           },
           duration: 6000,
         });
+      } else if (seeded === null) {
+        // 설정은 저장됐지만 추천 일정 생성에 실패 — 빈 일정으로 떨어져 혼란하지
+        // 않도록 안내하고 재시도 경로를 준다.
+        toast.error("추천 일정을 만드는 데 실패했어요", {
+          description: "일정 탭에서 다시 시도하거나 직접 추가할 수 있어요",
+          action: {
+            label: "일정으로",
+            onClick: () => navigate("/my-schedule"),
+          },
+          duration: 6000,
+        });
       }
     }
     setSubmitting(false);
