@@ -9,14 +9,27 @@ export const useCommentLikes = (postId: string) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Fetch all comment likes for comments in this post
+  // 이 글의 댓글에 달린 좋아요만 조회. community_comment_likes 에는 post_id 가
+  // 없으므로 먼저 글의 댓글 id 를 구해 그 범위로만 좁힌다(전체 테이블 스캔 방지).
   const { data: commentLikesData = {} } = useQuery({
     queryKey: ["comment-likes", postId],
     queryFn: async () => {
+      const { data: comments, error: commentsError } = await supabase
+        .from("community_comments")
+        .select("id")
+        .eq("post_id", postId);
+      if (commentsError) throw commentsError;
+
+      const commentIds = (comments ?? []).map((c) => c.id);
+      if (commentIds.length === 0) {
+        return {} as Record<string, { count: number; userLiked: boolean }>;
+      }
+
       const { data, error } = await supabase
         .from("community_comment_likes")
-        .select("comment_id, user_id");
-      
+        .select("comment_id, user_id")
+        .in("comment_id", commentIds);
+
       if (error) throw error;
 
       // Group by comment_id for efficient lookup
