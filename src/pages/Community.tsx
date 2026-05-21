@@ -17,7 +17,6 @@ import { useUserBlocks } from "@/hooks/useCommunityModeration";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import type { WeddingStyle } from "@/lib/weddingStyle";
-import arrowLeftIcon from "@/assets/icons/arrow-left.svg";
 import noteIcon from "@/assets/community/note.svg";
 import searchBoxIcon from "@/assets/community/search-box.svg";
 import editIcon from "@/assets/community/edit.svg";
@@ -296,14 +295,9 @@ const Community = () => {
         className="sticky top-14 z-30 bg-card border-b border-border"
       >
         <div className="flex items-center justify-between px-4 h-14">
+          {/* 커뮤니티는 하단 탭의 1차 목적지라 뒤로가기 버튼 제거 (진입 경로가
+              다양해 navigate(-1)이 의미 있는 이전 화면을 보장하지 못함). */}
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => navigate(-1)}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
-              aria-label="뒤로가기"
-            >
-              <img src={arrowLeftIcon} alt="" className="w-[15px] h-[15px]" />
-            </button>
             <h1 className="text-[18px] font-bold text-foreground">커뮤니티</h1>
           </div>
           <div className="flex items-center gap-1">
