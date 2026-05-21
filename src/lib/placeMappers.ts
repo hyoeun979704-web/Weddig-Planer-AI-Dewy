@@ -23,6 +23,7 @@ export const PLACE_CATEGORY_TO_ITEM_TYPE: Record<string, ItemType> = {
   tailor_shop: "suit",
   honeymoon: "honeymoon",
   appliance: "appliance",
+  jewelry: "jewelry",
   invitation_venue: "invitation_venues",
 };
 
