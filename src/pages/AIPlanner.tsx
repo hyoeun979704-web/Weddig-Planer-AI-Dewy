@@ -40,7 +40,7 @@ const BASE_QUICK_QUESTIONS: QuickQuestion[] = [
   { emoji: "", label: "웨딩홀 추천", desc: "지역·예산 맞춤 추천", modal: "venue" },
   { emoji: "", label: "스드메 가이드", desc: "촬영 순서·견적 안내", modal: "sdme" },
   { emoji: "", label: "준비 타임라인", desc: "월별 체크리스트", modal: "timeline" },
-  { emoji: "", label: "예산 플래너", desc: "항목별 예산 설계", modal: "budget", premium: true },
+  { emoji: "", label: "예산 플래너", desc: "항목별 예산 설계", modal: "budget" },
 ];
 
 // Style-specific quick questions replace one slot in BASE_QUICK_QUESTIONS so
@@ -98,26 +98,24 @@ const buildQuickQuestions = (style: WeddingStyle | null): QuickQuestion[] => {
   return [...overrides, ...baseFiltered].slice(0, 4);
 };
 
-const STYLE_GREETING: Record<WeddingStyle, { title: string; subtitle: string; emoji: string }> = {
+// 호칭은 신랑·신부 모두에게 자연스럽도록 중립 문구 사용.
+// (성별/역할 필드가 없어 "신부님" 고정은 신랑 사용자에게 어색했음)
+const STYLE_GREETING: Record<WeddingStyle, { title: string; subtitle: string }> = {
   general: {
-    title: "안녕하세요, 신부님!",
-    subtitle: "AI 웨딩플래너 Dewy가\n결혼 준비를 도와드릴게요 ",
-    emoji: "",
+    title: "결혼 준비, 함께 시작해요",
+    subtitle: "AI 웨딩플래너 Dewy가\n결혼 준비를 도와드릴게요",
   },
   small: {
-    title: "안녕하세요, 스몰웨딩 신부님!",
-    subtitle: "소규모 예식에 꼭 맞는\n큐레이션을 추천드릴게요 ",
-    emoji: "",
+    title: "스몰웨딩 준비 도와드릴게요",
+    subtitle: "소규모 예식에 꼭 맞는\n큐레이션을 추천드릴게요",
   },
   self: {
-    title: "안녕하세요, 셀프웨딩러님!",
-    subtitle: "DIY부터 셀프촬영까지\n손맛 가득한 준비를 도와드릴게요 ",
-    emoji: "",
+    title: "셀프웨딩 준비 도와드릴게요",
+    subtitle: "DIY부터 셀프촬영까지\n손맛 가득한 준비를 도와드릴게요",
   },
   custom: {
     title: "안녕하세요!",
-    subtitle: "내가 정한 카테고리 중심으로\nDewy가 도와드릴게요 ",
-    emoji: "",
+    subtitle: "내가 정한 카테고리 중심으로\nDewy가 도와드릴게요",
   },
 };
 
@@ -276,7 +274,16 @@ const AIPlanner = () => {
           )}
           {hasConversation && (
             <button
-              onClick={clearMessages}
+              onClick={() => {
+                // 대화는 영속 저장되지 않아 초기화 시 복구 불가 → 실수 방지 확인.
+                if (
+                  window.confirm(
+                    "대화를 모두 지울까요? 지난 대화는 복구할 수 없어요.",
+                  )
+                ) {
+                  clearMessages();
+                }
+              }}
               className="p-1.5 text-muted-foreground hover:text-foreground active:scale-95 transition-all rounded-lg hover:bg-muted"
               title="대화 초기화"
               aria-label="대화 초기화"
