@@ -10,6 +10,8 @@ interface BusinessProfile {
   service_category: string;
   is_verified: boolean;
   vendor_id: number | null;
+  approval_status: string;
+  review_note: string | null;
 }
 
 export const useUserRole = () => {
@@ -41,7 +43,7 @@ export const useUserRole = () => {
         if (userRoles.includes("business")) {
           const { data: bpData } = await (supabase as any)
             .from("business_profiles")
-            .select("id, business_name, business_number, representative_name, service_category, is_verified, vendor_id")
+            .select("id, business_name, business_number, representative_name, service_category, is_verified, vendor_id, approval_status, review_note")
             .eq("user_id", user.id)
             .maybeSingle();
 

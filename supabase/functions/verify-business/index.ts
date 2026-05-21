@@ -205,7 +205,12 @@ serve(async (req) => {
         success: true,
         vendor_id: null,
         is_verified: isVerified,
-        message: verificationMessage || "기업회원 등록이 완료되었습니다.",
+        approval_status: "pending",
+        message:
+          (isVerified
+            ? "사업자 인증이 확인되었어요. "
+            : (verificationMessage ? verificationMessage + " " : "")) +
+          "운영자 검토 후 등록 결과를 알려드릴게요.",
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
