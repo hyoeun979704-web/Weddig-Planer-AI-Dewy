@@ -7,7 +7,8 @@ import {
   FileText,
   Info,
   LogOut,
-  Trash2
+  Trash2,
+  MapPin
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
@@ -15,11 +16,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import { useLocationConsent } from "@/hooks/useLocationConsent";
 
 const Settings = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { state: locationConsent, setConsent: setLocationConsent } = useLocationConsent();
+
+  const handleLocationConsent = async (checked: boolean) => {
+    try {
+      await setLocationConsent(checked);
+      toast.success(checked ? "위치기반서비스 이용에 동의했어요" : "위치기반서비스 동의를 철회했어요");
+    } catch {
+      toast.error("처리에 실패했습니다. 잠시 후 다시 시도해주세요");
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -64,21 +76,69 @@ const Settings = () => {
           </div>
         </div>
 
+        {/* Privacy Consent */}
+        {user && (
+          <div className="p-4">
+            <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">개인정보 동의</h2>
+            <div className="bg-card rounded-2xl border border-border overflow-hidden">
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <span className="text-sm font-medium">위치기반서비스 이용</span>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                      거주·선택 지역 기반 업체 추천과 지역 통계 제공에 활용해요.
+                      <button
+                        type="button"
+                        onClick={() => navigate("/location-terms")}
+                        className="underline ml-1"
+                      >
+                        약관 보기
+                      </button>
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={locationConsent === true}
+                  disabled={locationConsent === undefined}
+                  onCheckedChange={handleLocationConsent}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Legal */}
         <div className="p-4">
           <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">약관 및 정책</h2>
           <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            <button className="w-full flex items-center justify-between p-4 border-b border-border">
+            <button
+              onClick={() => navigate("/terms")}
+              className="w-full flex items-center justify-between p-4 border-b border-border"
+            >
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">이용약관</span>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
-            <button className="w-full flex items-center justify-between p-4 border-b border-border">
+            <button
+              onClick={() => navigate("/privacy")}
+              className="w-full flex items-center justify-between p-4 border-b border-border"
+            >
               <div className="flex items-center gap-3">
                 <Shield className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">개인정보 처리방침</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <button
+              onClick={() => navigate("/location-terms")}
+              className="w-full flex items-center justify-between p-4 border-b border-border"
+            >
+              <div className="flex items-center gap-3">
+                <MapPin className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm font-medium">위치기반서비스 이용약관</span>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>

@@ -13,7 +13,7 @@ const Privacy = () => {
 
       <main className="px-5 py-6 pb-24 text-[13px] leading-7 text-foreground">
         <p className="mb-4 text-muted-foreground">
-          시행일: 2026년 5월 1일 · 최종 개정일: 2026년 5월 1일
+          시행일: 2026년 5월 1일 · 최종 개정일: 2026년 5월 21일
         </p>
 
         <p className="mb-6">
@@ -62,7 +62,26 @@ const Privacy = () => {
             <li>대화 메모리 정보(이전 대화 요약)</li>
           </ul>
 
-          <SubTitle>마. 자동 수집 정보</SubTitle>
+          <SubTitle>마. 민감정보 처리 (임신·건강)</SubTitle>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>임신 여부 및 출산 예정일 등 건강 관련 정보</li>
+          </ul>
+          <p className="mt-2 text-[12px] text-muted-foreground">
+            ※ 위 정보는 「개인정보 보호법」상 민감정보에 해당하며, 드레스·일정 등 맞춤 추천을 위해
+            회원이 직접 입력하는 경우에 한해 별도의 동의를 받아 처리합니다. 동의하지 않아도 그 외의
+            서비스는 정상 이용할 수 있습니다.
+          </p>
+
+          <SubTitle>바. 마케팅 정보 수신 (선택)</SubTitle>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>이메일 등 마케팅·이벤트 정보 수신을 위한 연락처 및 수신 동의 여부</li>
+          </ul>
+          <p className="mt-2 text-[12px] text-muted-foreground">
+            ※ 마케팅 정보 수신은 선택 사항이며, 동의하지 않아도 서비스 이용에 제한이 없습니다.
+            동의는 가입 시 또는 설정에서 언제든지 철회할 수 있습니다.
+          </p>
+
+          <SubTitle>사. 자동 수집 정보</SubTitle>
           <ul className="list-disc pl-5 space-y-1">
             <li>접속 IP, 접속 일시, 서비스 이용 기록</li>
             <li>기기 정보(OS, 브라우저, 디바이스 모델)</li>
@@ -94,6 +113,16 @@ const Privacy = () => {
               <tr>
                 <td className="border border-border p-2">AI 결과물</td>
                 <td className="border border-border p-2">탈퇴 시까지</td>
+                <td className="border border-border p-2">본인 동의</td>
+              </tr>
+              <tr>
+                <td className="border border-border p-2">민감정보(임신·건강)</td>
+                <td className="border border-border p-2">탈퇴 또는 동의 철회 시까지</td>
+                <td className="border border-border p-2">본인 별도 동의</td>
+              </tr>
+              <tr>
+                <td className="border border-border p-2">마케팅 수신 동의 기록</td>
+                <td className="border border-border p-2">탈퇴 또는 동의 철회 시까지</td>
                 <td className="border border-border p-2">본인 동의</td>
               </tr>
               <tr>
@@ -145,8 +174,16 @@ const Privacy = () => {
                 <td className="border border-border p-2">데이터베이스·인증·파일 저장 인프라</td>
               </tr>
               <tr>
+                <td className="border border-border p-2">OpenAI, L.L.C.</td>
+                <td className="border border-border p-2">AI 이미지 생성·편집(드레스·메이크업·청첩장)</td>
+              </tr>
+              <tr>
                 <td className="border border-border p-2">Google LLC</td>
-                <td className="border border-border p-2">AI 챗봇(Gemini), AI 이미지 생성(Nano Banana Pro 2)</td>
+                <td className="border border-border p-2">AI 챗봇·문구 추천(Gemini)</td>
+              </tr>
+              <tr>
+                <td className="border border-border p-2">Kaleido AI GmbH (remove.bg)</td>
+                <td className="border border-border p-2">사진 배경 제거(누끼)</td>
               </tr>
               <tr>
                 <td className="border border-border p-2">PortOne 및 연동 PG사</td>
@@ -164,12 +201,12 @@ const Privacy = () => {
         </Section>
 
         <Section title="6. 개인정보의 국외 이전">
-          AI 처리(Google Gemini, Nano Banana)와 클라우드 인프라(Supabase, Vercel) 이용 과정에서 회원의
-          개인정보가 미국 등 해외에 위치한 서버로 전송될 수 있습니다.
+          AI 처리(OpenAI, Google Gemini, remove.bg)와 클라우드 인프라(Supabase, Vercel) 이용 과정에서
+          회원의 개인정보가 미국 등 해외에 위치한 서버로 전송될 수 있습니다.
           <ul className="list-disc pl-5 mt-2 space-y-1">
-            <li>이전 항목: 사진(AI Studio), 채팅 내용(AI Planner), 인증·결제 정보, 서비스 이용 정보</li>
-            <li>이전 국가: 미국 등 (각 사업자 운영 국가)</li>
-            <li>이전 시점: 서비스 이용 시점</li>
+            <li>이전 항목: 사진(AI Studio·청첩장), 채팅 내용(AI Planner), 인증·결제 정보, 서비스 이용 정보</li>
+            <li>이전 국가: 미국·독일 등 (각 사업자 운영 국가)</li>
+            <li>이전 시점: AI 기능 이용 등 해당 서비스 이용 시점</li>
             <li>보유 기간: 본 방침의 보유 기간 또는 위탁사의 자체 기준에 따름</li>
           </ul>
         </Section>
