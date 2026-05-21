@@ -169,7 +169,13 @@ const MySchedule = () => {
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="flex-1 text-center font-semibold text-lg pr-10">내 웨딩 일정</h1>
+          <h1 className="flex-1 text-center font-semibold text-lg">내 웨딩 일정</h1>
+          <button
+            onClick={() => navigate("/schedule")}
+            className="text-[13px] text-primary font-semibold whitespace-nowrap"
+          >
+            진행 현황
+          </button>
         </div>
       </header>
 

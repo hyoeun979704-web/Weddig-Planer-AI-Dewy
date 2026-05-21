@@ -31,8 +31,6 @@ const FEATURED: EventCard = {
   ctaPath: "/auth",
   thumbBg: "from-[#FFEBC9] to-[#F5BE7A]",
   status: "live",
-  badge: { label: "HOT", color: "bg-[#A86311] text-white" },
-  endsLabel: "종료 D-12",
 };
 
 const LIVE_EVENTS: EventCard[] = [
@@ -68,18 +66,7 @@ const LIVE_EVENTS: EventCard[] = [
   },
 ];
 
-const PAST_EVENTS: EventCard[] = [
-  {
-    id: "mothers-day",
-    icon: "",
-    title: "어머니의 날 후기 이벤트",
-    subtitle: "2026.05.01 ~ 05.08 · 종료",
-    cta: "결과 보기",
-    ctaPath: "/community?event=mothers-day",
-    thumbBg: "from-muted to-muted",
-    status: "ended",
-  },
-];
+const PAST_EVENTS: EventCard[] = [];
 
 const EventListRow = ({ event }: { event: EventCard }) => {
   const navigate = useNavigate();
@@ -188,11 +175,7 @@ const Events = () => {
               <p className="mt-2 text-[18px] font-extrabold text-foreground leading-snug">{FEATURED.title}</p>
               <p className="mt-1 text-[12px] font-medium text-[#6B3F10]">{FEATURED.subtitle}</p>
             </div>
-            <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex flex-col text-[11px]">
-                <span className="font-semibold text-muted-foreground">참여 1,287명 · 만족 4.8</span>
-                {FEATURED.endsLabel && <span className="font-bold text-primary">{FEATURED.endsLabel}</span>}
-              </div>
+            <div className="flex items-center justify-end px-4 py-3">
               <span className="px-4 py-2 rounded-lg bg-foreground text-background text-[12px] font-bold">
                 {FEATURED.cta}
               </span>

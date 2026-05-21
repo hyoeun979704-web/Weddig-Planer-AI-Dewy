@@ -108,6 +108,13 @@ const Community = () => {
   const [styleAutoApplied, setStyleAutoApplied] = useState(initialStyle !== "all");
   const [sortBy, setSortBy] = useState<SortKey>("latest");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const PAGE_SIZE = 15;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // 필터·정렬이 바뀌면 표시 개수를 처음으로 되돌린다.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [selectedCategory, styleFilter, sortBy]);
   const tutorial = usePageTutorial("community");
 
   // 사용자의 결혼 유형이 로드되면 첫 1회만 같은 유형을 기본 필터로 적용.
@@ -141,10 +148,14 @@ const Community = () => {
       // 차단된 사용자의 글은 피드에서 숨긴다.
       // RLS 가 아닌 클라이언트 필터인 이유: 게시글 자체는 본질적으로
       // 공개 콘텐츠라 RLS 로 막으면 다른 화면(좋아요·북마크 등) 이 깨진다.
+      // 최신 100개로 제한 — 전체 메모리 로드로 인한 성능 저하 방지.
+      // 트렌딩·정렬·필터는 이 범위 안에서 클라이언트 계산. 더 깊은 탐색은
+      // 서버 커서 페이지네이션으로 후속 개선.
       let query = supabase
         .from("community_posts")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100);
 
       if (blockedUserIds.length > 0) {
         query = query.not("user_id", "in", `(${blockedUserIds.join(",")})`);
@@ -541,7 +552,17 @@ const Community = () => {
               </div>
             </div>
           ) : (
-            sortedPosts.map(renderPostCard)
+            <>
+              {sortedPosts.slice(0, visibleCount).map(renderPostCard)}
+              {sortedPosts.length > visibleCount && (
+                <button
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  className="w-full py-3 rounded-2xl bg-muted text-foreground text-sm font-semibold"
+                >
+                  더보기
+                </button>
+              )}
+            </>
           )}
         </div>
       </main>
