@@ -3,6 +3,7 @@ import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import SessionTracker from "@/components/SessionTracker";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
+import AdminGuard from "@/components/admin/AdminGuard";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -261,16 +262,19 @@ const App = () => (
               <Route path="/invitation/new" element={<InvitationFlow />} />
               <Route path="/invitation/:id/edit" element={<InvitationStudio />} />
               <Route path="/i/:slug" element={<InvitationViewer />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/dress-samples" element={<AdminDressSamples />} />
-              <Route path="/admin/makeup-samples" element={<AdminMakeupSamples />} />
-              <Route path="/admin/invitation-templates" element={<AdminInvitationTemplates />} />
-              <Route path="/admin/invitation-assets" element={<AdminInvitationAssets />} />
-              <Route path="/admin/invitation-fonts" element={<AdminInvitationFonts />} />
-              <Route path="/admin/wedding-photo-refs" element={<AdminWeddingPhotoRefs />} />
-              <Route path="/admin/service-waitlist" element={<AdminServiceWaitlist />} />
-              <Route path="/admin/users" element={<AdminUsers />} />
-              <Route path="/admin/reports" element={<AdminReports />} />
+              {/* 관리자 라우트는 가드를 라우트 레벨에 둔다 — 페이지가 마운트되기
+                  전에 권한을 확인해, 비관리자가 데이터 fetch 를 트리거하거나 잠깐
+                  내용을 보는 것을 막는다. */}
+              <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+              <Route path="/admin/dress-samples" element={<AdminGuard><AdminDressSamples /></AdminGuard>} />
+              <Route path="/admin/makeup-samples" element={<AdminGuard><AdminMakeupSamples /></AdminGuard>} />
+              <Route path="/admin/invitation-templates" element={<AdminGuard><AdminInvitationTemplates /></AdminGuard>} />
+              <Route path="/admin/invitation-assets" element={<AdminGuard><AdminInvitationAssets /></AdminGuard>} />
+              <Route path="/admin/invitation-fonts" element={<AdminGuard><AdminInvitationFonts /></AdminGuard>} />
+              <Route path="/admin/wedding-photo-refs" element={<AdminGuard><AdminWeddingPhotoRefs /></AdminGuard>} />
+              <Route path="/admin/service-waitlist" element={<AdminGuard><AdminServiceWaitlist /></AdminGuard>} />
+              <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
+              <Route path="/admin/reports" element={<AdminGuard><AdminReports /></AdminGuard>} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
