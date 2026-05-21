@@ -439,7 +439,7 @@ const WizardForm = ({
     <main className="px-5 py-6 space-y-5">
       <section>
         <h2 className="text-lg font-bold text-foreground mb-1">
-          {formatFilter === "paper" ? "📄 종이 청첩장" : "📱 모바일 청첩장"}
+          {formatFilter === "paper" ? "종이 청첩장" : "모바일 청첩장"}
         </h2>
         <p className="text-sm text-muted-foreground">
           기본 정보를 입력하면 템플릿에 자동으로 채워져요.
