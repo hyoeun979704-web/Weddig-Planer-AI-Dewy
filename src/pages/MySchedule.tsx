@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Plus, Check, Trash2, Loader2, Pencil, X, Save, Settings2, PlayCircle } from "lucide-react";
-import { format } from "date-fns";
+import { format, subDays, isBefore, startOfToday } from "date-fns";
 import { ko } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
-import { CATEGORY_OPTIONS, daysUntilWedding, parseLocalDate } from "@/lib/schedule";
+import { CATEGORY_OPTIONS, TIMELINE_PHASES, daysUntilWedding, parseLocalDate } from "@/lib/schedule";
 import {
   CATEGORY_LABELS,
   WEDDING_STYLE_LABEL,
@@ -59,6 +59,20 @@ const MySchedule = () => {
       setIsEditing(false);
     }
     setIsSaving(false);
+  };
+
+  // Selecting a timeline phase suggests a date (wedding date minus the phase's
+  // default lead time) when the user hasn't picked one yet — clamped to today
+  // so near-wedding users don't get a past date. They can still override it.
+  const handleCategoryChange = (value: string) => {
+    setNewTaskCategory(value);
+    if (newTaskDate || value === "general" || !weddingSettings.wedding_date) return;
+    const phase = TIMELINE_PHASES.find(p => p.category === value);
+    if (!phase) return;
+    let suggested = subDays(parseLocalDate(weddingSettings.wedding_date), phase.defaultDaysBeforeWedding);
+    const today = startOfToday();
+    if (isBefore(suggested, today)) suggested = today;
+    setNewTaskDate(format(suggested, "yyyy-MM-dd"));
   };
 
   const handleAddTask = async () => {
@@ -264,7 +278,7 @@ const MySchedule = () => {
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
               />
-              <Select value={newTaskCategory} onValueChange={setNewTaskCategory}>
+              <Select value={newTaskCategory} onValueChange={handleCategoryChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="타임라인 단계 선택" />
                 </SelectTrigger>
