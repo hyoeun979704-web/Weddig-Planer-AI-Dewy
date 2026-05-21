@@ -133,52 +133,30 @@ export const useCoupleLink = () => {
     }
 
     try {
-      // 초대 코드로 링크 찾기
-      const { data: link, error: findError } = await (supabase
-        .from("couple_links" as any)
-        .select("*") as any)
-        .eq("invite_code", normalized)
-        .eq("status", "pending")
-        .maybeSingle();
+      // 초대 코드 lookup + redeem 은 RLS 우회가 필요(파트너 후보는 아직 행을
+      // 조회할 수 없음). SECURITY DEFINER RPC 로 원자 처리한다. 직접 테이블
+      // 쿼리는 RLS 에 막혀 항상 "찾을 수 없어요"가 됐음.
+      const { data, error } = await (supabase as any).rpc(
+        "redeem_couple_invite",
+        { p_code: normalized },
+      );
+      if (error) throw error;
 
-      if (findError) throw findError;
-      if (!link) {
-        toast.error("초대 코드를 찾을 수 없어요. 6자리가 맞는지 확인해주세요");
+      const res = data as { ok: boolean; error?: string };
+      if (!res?.ok) {
+        const messages: Record<string, string> = {
+          not_found: "초대 코드를 찾을 수 없어요. 6자리가 맞는지 확인해주세요",
+          own_code: "본인의 초대 코드는 사용할 수 없어요",
+          already_redeemed: "이미 사용된 초대 코드예요",
+          empty_code: "초대 코드를 입력해주세요",
+          auth_required: "로그인이 필요합니다",
+        };
+        toast.error(messages[res?.error ?? ""] ?? "연결에 실패했습니다");
         return false;
       }
 
-      if ((link as any).user_id === user.id) {
-        toast.error("본인의 초대 코드는 사용할 수 없어요");
-        return false;
-      }
-
-      // 연결 처리
-      const { data: updated, error: updateError } = await (supabase
-        .from("couple_links" as any) as any)
-        .update({
-          partner_user_id: user.id,
-          status: "linked",
-          linked_at: new Date().toISOString(),
-        })
-        .eq("id", (link as any).id)
-        .select()
-        .single();
-
-      if (updateError) throw updateError;
-
-      // 양쪽 user_wedding_settings에 partner_user_id 저장
-      await Promise.all([
-        (supabase
-          .from("user_wedding_settings") as any)
-          .upsert({ user_id: (link as any).user_id, partner_user_id: user.id }, { onConflict: "user_id" }),
-        (supabase
-          .from("user_wedding_settings") as any)
-          .upsert({ user_id: user.id, partner_user_id: (link as any).user_id }, { onConflict: "user_id" }),
-      ]);
-
-      setCoupleLink(updated as any);
-      await fetchCoupleLink(); // 파트너 프로필 다시 로드
-      toast.success("커플이 연결되었습니다! ");
+      await fetchCoupleLink(); // linked 상태 + 파트너 프로필 로드
+      toast.success("커플이 연결되었습니다!");
       return true;
     } catch (error) {
       console.error("Error linking couple:", error);
