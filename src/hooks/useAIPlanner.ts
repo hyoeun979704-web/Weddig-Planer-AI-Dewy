@@ -296,6 +296,11 @@ export const useAIPlanner = () => {
     setMessages([]);
   }, []);
 
+  // 저장해 둔 대화를 화면에 복원할 때 사용 (로컬 저장 기능).
+  const restoreMessages = useCallback((msgs: Message[]) => {
+    setMessages(msgs);
+  }, []);
+
   /**
    * 구조화된 입력 (모달 데이터)을 받아 LLM 호출 없이 즉답 처리.
    * 사용자 메시지는 채팅에 표시하되, 응답은 결정형 핸들러가 생성.
@@ -353,6 +358,7 @@ export const useAIPlanner = () => {
     sendMessage,
     sendStructured,
     clearMessages,
+    restoreMessages,
     showUpgradeModal,
     setShowUpgradeModal,
     dailyRemaining,

@@ -3,10 +3,11 @@ import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import DewyLogo from "@/components/home/DewyLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Send, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
+import { Send, RotateCcw, ChevronDown } from "lucide-react";
 import HomeHeader from "@/components/home/HomeHeader";
-import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
+import CategoryTabBar, { useCategoryTabNavigation, type CategoryTab } from "@/components/home/CategoryTabBar";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
@@ -23,6 +24,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { findSuggestions } from "@/data/chatbotSuggestions";
 import { getFollowUpChips } from "@/lib/chatbot/followUpChips";
 import type { WeddingStyle } from "@/lib/weddingStyle";
+import { supabase } from "@/integrations/supabase/client";
+import type { Message } from "@/hooks/useAIPlanner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+const SAVED_CHAT_KEY = "dewy_ai_planner_saved_chat";
 
 type ModalType = "venue" | "sdme" | "timeline" | "budget" | null;
 
@@ -33,14 +48,13 @@ interface QuickQuestion {
   modal?: ModalType;
   /** When set, clicking sends this string as a chat prompt (no modal). */
   prompt?: string;
-  premium?: boolean;
 }
 
 const BASE_QUICK_QUESTIONS: QuickQuestion[] = [
   { emoji: "", label: "웨딩홀 추천", desc: "지역·예산 맞춤 추천", modal: "venue" },
   { emoji: "", label: "스드메 가이드", desc: "촬영 순서·견적 안내", modal: "sdme" },
   { emoji: "", label: "준비 타임라인", desc: "월별 체크리스트", modal: "timeline" },
-  { emoji: "", label: "예산 플래너", desc: "항목별 예산 설계", modal: "budget", premium: true },
+  { emoji: "", label: "예산 플래너", desc: "항목별 예산 설계", modal: "budget" },
 ];
 
 // Style-specific quick questions replace one slot in BASE_QUICK_QUESTIONS so
@@ -98,14 +112,16 @@ const buildQuickQuestions = (style: WeddingStyle | null): QuickQuestion[] => {
   return [...overrides, ...baseFiltered].slice(0, 4);
 };
 
+// title은 성별 중립으로 둔다 (가입 시 성별을 받지 않아 신랑/신부 구분 불가).
+// 닉네임(profiles.display_name)이 있으면 화면에서 "OO님"으로 덮어쓴다.
 const STYLE_GREETING: Record<WeddingStyle, { title: string; subtitle: string; emoji: string }> = {
   general: {
-    title: "안녕하세요, 신부님!",
+    title: "안녕하세요!",
     subtitle: "AI 웨딩플래너 Dewy가\n결혼 준비를 도와드릴게요 ",
     emoji: "",
   },
   small: {
-    title: "안녕하세요, 스몰웨딩 신부님!",
+    title: "안녕하세요!",
     subtitle: "소규모 예식에 꼭 맞는\n큐레이션을 추천드릴게요 ",
     emoji: "",
   },
@@ -125,8 +141,14 @@ const AIPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { messages, isLoading, sendMessage, sendStructured, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
+  const { messages, isLoading, sendMessage, sendStructured, clearMessages, restoreMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
+  const { isPremium, dailyUsage } = useSubscription();
   const { weddingSettings } = useWeddingSchedule();
+  // 무료 한도 사전 고지: 첫 질문 전에도 잔여 횟수를 보여준다. 권위 있는 값은
+  // 서버 헤더(dailyRemaining)지만 첫 호출 전에는 null이라, 그 전에는 구독
+  // 훅의 일일 사용량(dailyUsage.remaining)으로 대체한다.
+  const premium = isPremium;
+  const freeRemaining = dailyRemaining ?? dailyUsage.remaining;
   const weddingInfoPrompt = useWeddingInfoPrompt();
   // 결혼 정보(날짜·지역)가 모두 비어있으면 LLM이 컨텍스트 없이 일반론 답변을
   // 주게 됨. 첫 진입 화면에 1줄 chip으로 1분 설정을 유도해 무료 한도가
@@ -140,6 +162,32 @@ const AIPlanner = () => {
   const weddingStyle = (weddingSettings.wedding_style ?? "general") as WeddingStyle;
   const quickQuestions = useMemo(() => buildQuickQuestions(weddingStyle), [weddingStyle]);
   const greeting = STYLE_GREETING[weddingStyle] ?? STYLE_GREETING.general;
+
+  // 호칭: 닉네임(profiles.display_name)이 있으면 "OO님", 없으면 스타일별
+  // 중립 인사. 가입 시 성별을 받지 않아 신랑/신부 구분은 하지 않는다.
+  const [nickname, setNickname] = useState("");
+  useEffect(() => {
+    if (!user) {
+      setNickname("");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!cancelled) setNickname((data?.display_name as string | null)?.trim() ?? "");
+      } catch {
+        /* 닉네임 없으면 중립 인사로 폴백 */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+  const greetingTitle = nickname ? `안녕하세요, ${nickname}님!` : greeting.title;
+
   const [input, setInput] = useState("");
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -258,7 +306,73 @@ const AIPlanner = () => {
   // 마지막 응답의 intent에 따라 컨텍스트 맞는 후속 칩. 매핑 없으면 기본 4개.
   const followUpChips = getFollowUpChips(lastMessage?.intent);
 
-  const handleCategoryTabChange = useCategoryTabNavigation();
+  // ── 대화 저장 (이 기기 / localStorage) ──────────────────────
+  // 자동 저장하지 않는다. 탭으로 화면을 떠날 때만 "저장할까요?"를 물어,
+  // 사용자가 원한 대화만 보관한다. 보관된 대화는 다음 진입 시 복원한다.
+  const savedSnapshotRef = useRef<string | null>(null);
+  const [pendingNav, setPendingNav] = useState<null | (() => void)>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SAVED_CHAT_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Message[];
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        restoreMessages(parsed);
+        savedSnapshotRef.current = raw;
+      }
+    } catch {
+      /* 손상된 저장값은 무시 */
+    }
+  }, [restoreMessages]);
+
+  // 떠나기 전 가드: 저장 안 된 대화가 있으면 확인 다이얼로그를 띄운다.
+  const guardNav = (proceed: () => void) => {
+    const snapshot = JSON.stringify(messages);
+    if (messages.length > 0 && snapshot !== savedSnapshotRef.current) {
+      setPendingNav(() => proceed);
+    } else {
+      proceed();
+    }
+  };
+
+  const saveAndGo = () => {
+    const proceed = pendingNav;
+    try {
+      const snapshot = JSON.stringify(messages);
+      localStorage.setItem(SAVED_CHAT_KEY, snapshot);
+      savedSnapshotRef.current = snapshot;
+    } catch {
+      /* 저장 실패해도 이동은 막지 않는다 */
+    }
+    setPendingNav(null);
+    proceed?.();
+  };
+
+  const discardAndGo = () => {
+    const proceed = pendingNav;
+    setPendingNav(null);
+    proceed?.();
+  };
+
+  const handleClearMessages = () => {
+    clearMessages();
+    savedSnapshotRef.current = null;
+    try {
+      localStorage.removeItem(SAVED_CHAT_KEY);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const rawCategoryNav = useCategoryTabNavigation();
+  const handleCategoryTabChange = (tab: CategoryTab) => {
+    if (tab === "ai-planner") {
+      rawCategoryNav(tab);
+      return;
+    }
+    guardNav(() => rawCategoryNav(tab));
+  };
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
@@ -276,7 +390,7 @@ const AIPlanner = () => {
           )}
           {hasConversation && (
             <button
-              onClick={clearMessages}
+              onClick={handleClearMessages}
               className="p-1.5 text-muted-foreground hover:text-foreground active:scale-95 transition-all rounded-lg hover:bg-muted"
               title="대화 초기화"
               aria-label="대화 초기화"
@@ -302,7 +416,7 @@ const AIPlanner = () => {
                 <div className="mx-auto mb-4 flex items-center justify-center">
                   <DewyLogo size={56} />
                 </div>
-                <h2 className="text-lg font-bold text-foreground mb-1">{greeting.title}</h2>
+                <h2 className="text-lg font-bold text-foreground mb-1">{greetingTitle}</h2>
                 <p className="text-sm text-muted-foreground whitespace-pre-line">
                   {greeting.subtitle}
                 </p>
@@ -336,18 +450,22 @@ const AIPlanner = () => {
                     {q.emoji && <span className="text-2xl block mb-2">{q.emoji}</span>}
                     <p className="text-sm font-semibold text-foreground mb-0.5">{q.label}</p>
                     <p className="text-[11px] text-muted-foreground leading-tight">{q.desc}</p>
-                    {q.premium && (
-                      <span className="absolute top-2 right-2 text-[10px] bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium flex items-center gap-0.5">
-                        <Sparkles className="w-3 h-3" /> PRO
-                      </span>
-                    )}
                   </button>
                 ))}
               </div>
 
-              <p className="text-center text-[11px] text-muted-foreground">
-                아래 입력창에 직접 질문할 수도 있어요
-              </p>
+              <div className="text-center space-y-1">
+                <p className="text-[11px] text-muted-foreground">
+                  아래 입력창에 직접 질문할 수도 있어요
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {premium
+                    ? "Premium으로 무제한 질문할 수 있어요"
+                    : freeRemaining !== null
+                      ? `오늘 무료 질문 ${freeRemaining}회 남았어요 · Premium은 무제한`
+                      : "Premium은 질문 무제한이에요"}
+                </p>
+              </div>
             </motion.div>
           )}
 
@@ -441,7 +559,33 @@ const AIPlanner = () => {
         </div>
       </div>
 
-      <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
+      <BottomNav
+        activeTab={location.pathname}
+        onTabChange={(href) =>
+          href === location.pathname ? navigate(href) : guardNav(() => navigate(href))
+        }
+      />
+
+      <AlertDialog open={!!pendingNav} onOpenChange={(open) => { if (!open) setPendingNav(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>이 대화를 저장할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              저장하면 이 기기에서 다음에 다시 볼 수 있어요. 저장하지 않으면 대화가 사라져요.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <button
+              onClick={discardAndGo}
+              className="text-sm text-muted-foreground px-3 py-2 rounded-lg hover:bg-muted active:scale-95 transition-all"
+            >
+              저장 안 함
+            </button>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={saveAndGo}>저장하고 이동</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <VenueSurvey isOpen={activeModal === "venue"} onClose={() => setActiveModal(null)} onSubmit={handleVenueSubmit} />
       <SdmeSurvey isOpen={activeModal === "sdme"} onClose={() => setActiveModal(null)} onSubmit={handleSdmeSubmit} />
