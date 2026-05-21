@@ -16,25 +16,50 @@ const blessings = [
   "둘이니까, 쉬워지니까.\n듀이와 함께해요",
 ];
 
+// 세션당 1회만 노출 — 같은 탭 세션에서 화면 이동·새로고침마다 반복되지 않도록.
+const SESSION_KEY = "dewy.splash_shown";
+
 const WeddingBlessingSplash = () => {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(() => {
+    try {
+      return sessionStorage.getItem(SESSION_KEY) !== "1";
+    } catch {
+      return true;
+    }
+  });
   const [fadeOut, setFadeOut] = useState(false);
   const [blessing] = useState(() => blessings[Math.floor(Math.random() * blessings.length)]);
 
   useEffect(() => {
+    if (!visible) return;
+    try {
+      sessionStorage.setItem(SESSION_KEY, "1");
+    } catch {
+      // best effort
+    }
     const fadeTimer = setTimeout(() => setFadeOut(true), 2000);
     const hideTimer = setTimeout(() => setVisible(false), 2600);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(hideTimer);
     };
-  }, []);
+  }, [visible]);
+
+  // 탭하면 즉시 건너뛰기.
+  const skip = () => {
+    setFadeOut(true);
+    setTimeout(() => setVisible(false), 300);
+  };
 
   if (!visible) return null;
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-b from-primary/5 via-background to-primary/10 transition-opacity duration-600 ${
+      onClick={skip}
+      role="button"
+      tabIndex={0}
+      aria-label="시작 화면 건너뛰기"
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-b from-primary/5 via-background to-primary/10 transition-opacity duration-500 cursor-pointer ${
         fadeOut ? "opacity-0" : "opacity-100"
       }`}
     >
@@ -45,6 +70,7 @@ const WeddingBlessingSplash = () => {
         </p>
         <p className="text-sm text-muted-foreground tracking-widest uppercase">Dewy</p>
       </div>
+      <p className="absolute bottom-10 text-xs text-muted-foreground/70">탭하여 시작하기</p>
     </div>
   );
 };

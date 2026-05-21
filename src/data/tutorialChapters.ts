@@ -55,9 +55,9 @@ const HOME_TOUR: TutorialLesson = {
   steps: [
     {
       id: "home-dashboard",
-      title: "내 결혼 스타일 대시보드",
+      title: "내 맞춤 대시보드",
       description:
-        "결혼 스타일에 따라 D-Day · 진행률 · 다음 액션 · 오늘의 미션이 매일 새로 정렬돼요.",
+        "결혼 정보를 바탕으로 D-Day · 진행률 · 다음 액션 · 오늘의 미션이 이 자리에 매일 새로 정렬돼요.",
       targetSelector: "[data-tutorial='persona-dashboard']",
       position: "bottom",
     },
