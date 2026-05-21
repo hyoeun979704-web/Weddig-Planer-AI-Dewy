@@ -519,46 +519,9 @@ const InvitationFlow = () => {
         setAiText(generatedAi);
       }
 
-      // 4) 템플릿 가격 차감 (price_hearts > 0 시)
-      let publishOk = true;
-      if (template.price_hearts > 0) {
-        const { data: spendData, error: spendError } = await (supabase as any).rpc(
-          "spend_hearts",
-          {
-            p_user_id: user.id,
-            p_amount: template.price_hearts,
-            p_reason: "invitation_publish",
-            p_ref_id: null,
-          },
-        );
-        if (spendError) {
-          publishOk = false;
-          toast({
-            title: "하트 차감 실패",
-            description: spendError.message,
-            variant: "destructive",
-          });
-        } else {
-          const row = Array.isArray(spendData) ? spendData[0] : spendData;
-          if (!row?.success) {
-            publishOk = false;
-            toast({
-              title: "하트가 부족해요",
-              description: row?.message ?? "",
-              variant: "destructive",
-            });
-          }
-        }
-      }
-      if (!publishOk) {
-        setIsGenerating(false);
-        return;
-      }
-
-      await fetchHearts();
-      setStep("result");
-
-      // 5) draft 자동 저장
+      // 4) draft 저장을 먼저 — 하트 차감 후 저장이 실패하면 하트만 날아간다.
+      //    환불 earn_hearts 는 service_role 전용이라 클라에서 못 하므로, 순서를
+      //    뒤집어 저장 성공 후 차감하고 차감 실패 시 방금 만든 draft 를 삭제한다.
       const payload = {
         user_id: user.id,
         template_id: template.id,
@@ -567,12 +530,48 @@ const InvitationFlow = () => {
         ai_generated_text: generatedAi,
         status: "draft" as const,
       };
-      const { data: row } = await (supabase as any)
+      const { data: row, error: insertError } = await (supabase as any)
         .from("invitations")
         .insert(payload)
         .select("id")
         .single();
-      if (row?.id) setInvitationId(row.id);
+      if (insertError || !row?.id) {
+        toast({
+          title: "청첩장 저장에 실패했어요",
+          description: "다시 시도해주세요",
+          variant: "destructive",
+        });
+        setIsGenerating(false);
+        return;
+      }
+
+      // 5) 템플릿 가격 차감 (price_hearts > 0). 실패 시 방금 만든 draft 삭제(보상).
+      if (template.price_hearts > 0) {
+        const { data: spendData, error: spendError } = await (supabase as any).rpc(
+          "spend_hearts",
+          {
+            p_user_id: user.id,
+            p_amount: template.price_hearts,
+            p_reason: "invitation_publish",
+            p_ref_id: row.id,
+          },
+        );
+        const spendRow = Array.isArray(spendData) ? spendData[0] : spendData;
+        if (spendError || !spendRow?.success) {
+          await (supabase as any).from("invitations").delete().eq("id", row.id);
+          toast({
+            title: spendError ? "하트 차감 실패" : "하트가 부족해요",
+            description: spendError ? spendError.message : (spendRow?.message ?? ""),
+            variant: "destructive",
+          });
+          setIsGenerating(false);
+          return;
+        }
+        await fetchHearts();
+      }
+
+      setInvitationId(row.id);
+      setStep("result");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "오류";
       toast({
