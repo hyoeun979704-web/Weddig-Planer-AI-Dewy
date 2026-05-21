@@ -62,28 +62,26 @@ export const useCart = () => {
       return false;
     }
 
-    try {
-      const existing = items.find((i) => i.product_id === productId);
+    const existing = items.find((i) => i.product_id === productId);
 
-      if (existing) {
-        await (supabase
-          .from("cart_items" as any) as any)
+    // Supabase 는 에러를 throw 하지 않으므로 { error } 를 직접 확인. 안 그러면
+    // 실패해도 "담았어요" + true 를 반환해 거짓 성공이 된다(바로구매 등에서 위험).
+    const { error } = existing
+      ? await (supabase.from("cart_items" as any) as any)
           .update({ quantity: existing.quantity + quantity })
-          .eq("id", existing.id);
-      } else {
-        await (supabase
-          .from("cart_items" as any) as any)
+          .eq("id", existing.id)
+      : await (supabase.from("cart_items" as any) as any)
           .insert({ user_id: user.id, product_id: productId, quantity });
-      }
 
-      toast.success("장바구니에 담았어요 ");
-      await fetchCart();
-      return true;
-    } catch (error) {
+    if (error) {
       console.error("Error adding to cart:", error);
       toast.error("장바구니 추가에 실패했습니다");
       return false;
     }
+
+    toast.success("장바구니에 담았어요");
+    await fetchCart();
+    return true;
   };
 
   const updateQuantity = async (cartItemId: string, quantity: number) => {
