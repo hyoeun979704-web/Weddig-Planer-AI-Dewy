@@ -30,14 +30,20 @@ export const useCoupleLink = () => {
     }
 
     try {
-      // 내가 생성한 커플 링크 또는 파트너로 연결된 링크 조회
-      const { data, error } = await (supabase
+      // 내가 생성했거나 파트너로 연결된 '활성'(pending/linked) 링크만 조회.
+      // unlinked 행은 제외해야 재초대가 막히지 않는다. 여러 행이 있어도
+      // linked 를 우선(상태 오름차순: linked < pending)하고 첫 행만 사용한다.
+      const { data: rows, error } = await (supabase
         .from("couple_links" as any)
         .select("*") as any)
         .or(`user_id.eq.${user.id},partner_user_id.eq.${user.id}`)
-        .maybeSingle();
+        .in("status", ["linked", "pending"])
+        .order("status", { ascending: true })
+        .order("linked_at", { ascending: false, nullsFirst: false });
 
-      if (error && error.code !== "PGRST116") throw error;
+      if (error) throw error;
+
+      const data = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
 
       if (data) {
         setCoupleLink(data as any);
@@ -51,7 +57,13 @@ export const useCoupleLink = () => {
             .eq("user_id", partnerId)
             .maybeSingle();
           setPartnerProfile(profile);
+        } else {
+          setPartnerProfile(null);
         }
+      } else {
+        // 활성 링크 없음 — 이전 상태 잔여 제거(해제/만료 후).
+        setCoupleLink(null);
+        setPartnerProfile(null);
       }
     } catch (error) {
       console.error("Error fetching couple link:", error);
@@ -177,13 +189,30 @@ export const useCoupleLink = () => {
 
   // 연결 해제
   const unlinkCouple = async (): Promise<boolean> => {
-    if (!coupleLink) return false;
+    if (!coupleLink || !user) return false;
+
+    // 연결됐던 양쪽 user_id (settings 정리에 사용)
+    const aId = coupleLink.user_id;
+    const bId =
+      coupleLink.partner_user_id ??
+      (coupleLink.user_id === user.id ? null : user.id);
 
     try {
       await (supabase
         .from("couple_links" as any) as any)
         .update({ status: "unlinked", partner_user_id: null })
         .eq("id", coupleLink.id);
+
+      // 양쪽 결혼 설정에서 partner_user_id 제거 — 안 지우면 공유 기능이 계속
+      // 연결된 것으로 동작한다.
+      const ids = [aId, bId].filter((v): v is string => !!v);
+      await Promise.all(
+        ids.map((id) =>
+          (supabase.from("user_wedding_settings") as any)
+            .update({ partner_user_id: null })
+            .eq("user_id", id),
+        ),
+      );
 
       setCoupleLink(null);
       setPartnerProfile(null);
