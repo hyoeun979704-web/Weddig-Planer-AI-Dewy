@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__0c491734-ba61-4166-bfee-75024ea1dcc9__execute_sql",
+      "mcp__0c491734-ba61-4166-bfee-75024ea1dcc9__apply_migration",
+      "mcp__0c491734-ba61-4166-bfee-75024ea1dcc9__list_tables",
+      "mcp__0c491734-ba61-4166-bfee-75024ea1dcc9__list_projects"
+    ]
+  }
+}
