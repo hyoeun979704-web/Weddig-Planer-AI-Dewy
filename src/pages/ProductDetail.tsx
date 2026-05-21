@@ -77,9 +77,10 @@ const ProductDetail = () => {
     if (!product) return;
 
     setIsAdding(true);
-    await addToCart(product.id, quantity);
+    const ok = await addToCart(product.id, quantity);
     setIsAdding(false);
-    navigate("/cart");
+    // 담기에 실패하면(에러 토스트는 useCart 에서) 빈/오래된 카트로 보내지 않는다.
+    if (ok) navigate("/cart");
   };
 
   const handleTabChange = (href: string) => navigate(href);
