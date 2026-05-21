@@ -152,53 +152,9 @@ serve(async (req) => {
       );
     }
 
-    // Get next vendor_id (start from 100000 to avoid conflicts with migrated data)
-    const { data: maxVendor } = await supabase
-      .from("vendors")
-      .select("vendor_id")
-      .order("vendor_id", { ascending: false })
-      .limit(1)
-      .single();
-
-    const newVendorId = Math.max((maxVendor?.vendor_id || 0) + 1, 100000);
-
-    // Map service_category to category_type
-    const categoryMap: Record<string, string> = {
-      wedding_hall: "웨딩홀",
-      studio: "스드메",
-      hanbok: "한복",
-      suit: "예복",
-      honeymoon: "허니문",
-      appliance: "혼수가전",
-      honeymoon_gift: "예물예단",
-      invitation_venue: "상견례",
-      jewelry: "예물",
-    };
-
-    // Create vendor entry
-    const { error: vendorError } = await supabase.from("vendors").insert({
-      vendor_id: newVendorId,
-      name: vendor_name || business_name,
-      category_type: categoryMap[service_category] || service_category,
-      address: address || "",
-      tel: vendor_tel || phone || "",
-      business_hours: vendor_business_hours || "",
-      parking_location: vendor_parking_location || "",
-      parking_hours: vendor_parking_hours || "",
-      keywords: vendor_keywords || "",
-      amenities: vendor_amenities || "",
-      sns_info: vendor_sns_info || null,
-      owner_user_id: user.id,
-      region: address ? address.split(" ").slice(0, 2).join(" ") : "",
-    });
-
-    if (vendorError) {
-      console.error("Vendor creation error:", vendorError);
-      return new Response(
-        JSON.stringify({ error: "업체 등록에 실패했습니다: " + vendorError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // 참고: vendors 테이블은 schema cleanup 으로 삭제되었고, 공개 업체 노출은
+    // places + business_profiles 기반으로 재설계 예정. 따라서 여기서는 vendor 를
+    // 만들지 않고 business_profiles(회원 정보) + 역할만 생성한다. vendor_id 는 null.
 
     // Create business profile
     const { error: profileError } = await supabase.from("business_profiles").insert({
@@ -212,23 +168,32 @@ serve(async (req) => {
       address: address || "",
       is_verified: isVerified,
       verified_at: isVerified ? new Date().toISOString() : null,
-      vendor_id: newVendorId,
+      vendor_id: null,
     });
 
     if (profileError) {
       console.error("Business profile creation error:", profileError);
-      // Rollback vendor
-      await supabase.from("vendors").delete().eq("vendor_id", newVendorId);
       return new Response(
         JSON.stringify({ error: "사업자 프로필 생성에 실패했습니다: " + profileError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Add business role (using service role bypasses RLS)
-    await supabase.from("user_roles").insert({ user_id: user.id, role: "business" });
+    // Add business role (using service role bypasses RLS). 실패 시 사용자가 역할
+    // 없이 남지 않도록 에러를 확인하고 프로필을 롤백한다.
+    const { error: roleError } = await supabase
+      .from("user_roles")
+      .insert({ user_id: user.id, role: "business" });
+    if (roleError) {
+      console.error("Business role assignment error:", roleError);
+      await supabase.from("business_profiles").delete().eq("user_id", user.id);
+      return new Response(
+        JSON.stringify({ error: "권한 부여에 실패했습니다. 다시 시도해주세요" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Remove individual role
+    // Remove individual role (best effort)
     await supabase
       .from("user_roles")
       .delete()
@@ -238,9 +203,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        vendor_id: newVendorId,
+        vendor_id: null,
         is_verified: isVerified,
-        message: verificationMessage || "업체가 등록되었습니다.",
+        message: verificationMessage || "기업회원 등록이 완료되었습니다.",
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
