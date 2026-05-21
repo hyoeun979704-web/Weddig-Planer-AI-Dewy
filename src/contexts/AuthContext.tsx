@@ -17,6 +17,39 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const MARKETING_CONSENT_TYPE = "marketing_v1";
+
+// 가입 시 user_metadata 에 남긴 마케팅 수신 동의를 user_consents 로 1회 backfill.
+// 같은 user + marketing_v1 row 가 이미 있으면 건너뛴다 (이력 보존, 중복 INSERT 방지).
+const backfillMarketingConsent = async (user: User) => {
+  const consent = user.user_metadata?.marketing_consent;
+  if (typeof consent !== "boolean") return;
+
+  try {
+    const { data, error } = await (supabase as any)
+      .from("user_consents")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("consent_type", MARKETING_CONSENT_TYPE)
+      .limit(1);
+    if (error || (data && data.length > 0)) return;
+
+    const agreedAt = user.user_metadata?.marketing_consent_at ?? null;
+    await (supabase as any).from("user_consents").insert({
+      user_id: user.id,
+      consent_type: MARKETING_CONSENT_TYPE,
+      agreed: consent,
+      agreed_at: agreedAt ?? undefined,
+      user_agent:
+        typeof navigator !== "undefined"
+          ? navigator.userAgent?.slice(0, 500)
+          : null,
+    });
+  } catch {
+    // backfill 실패는 무시 — 다음 로그인 때 재시도된다.
+  }
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -37,6 +70,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
+
+        if (event === "SIGNED_IN" && session?.user) {
+          // 동기 콜백 안에서 await 하지 않도록 분리 (Supabase 권장).
+          void backfillMarketingConsent(session.user);
+        }
 
         // 푸시 알림은 1차 출시에서 제외 (Firebase 미설정).
         // 활성화 시: SIGNED_IN 분기에서 isNativeApp() 가드 후 push 모듈을 동적 import.

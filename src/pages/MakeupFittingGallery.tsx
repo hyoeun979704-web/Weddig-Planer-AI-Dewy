@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Sparkles } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import EmptyState from "@/components/ui/empty-state";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { makeupSceneByCode } from "@/data/makeupScenes";
@@ -69,14 +70,16 @@ const MakeupFittingGallery = () => {
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         ) : items.length === 0 ? (
-          <div className="py-16 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">
-              아직 생성한 메이크업이 없어요.
-            </p>
-            <Button onClick={() => navigate("/ai-studio/makeup-room")}>
-              <Plus className="w-4 h-4 mr-1" />첫 메이크업 만들기
-            </Button>
-          </div>
+          <EmptyState
+            icon={Sparkles}
+            title="아직 생성한 메이크업이 없어요"
+            description="원하는 메이크업을 시도해보고 결과를 갤러리에 모아보세요."
+            action={
+              <Button onClick={() => navigate("/ai-studio/makeup-room")}>
+                <Plus className="w-4 h-4 mr-1" />첫 메이크업 만들기
+              </Button>
+            }
+          />
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {items.map((it) => {

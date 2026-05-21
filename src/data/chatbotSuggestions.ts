@@ -230,7 +230,7 @@ export const SUGGESTED_QUESTIONS: SuggestedQuestion[] = [
   },
   {
     text: "놓친 일정 있어?",
-    emoji: "⏰",
+    emoji: "",
     keywords: ["놓친", "일정", "골든타임", "지금"],
     category: "planning",
   },
