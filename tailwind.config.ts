@@ -13,6 +13,15 @@ export default {
       },
     },
     extend: {
+      // 의미론적 타이포 토큰 — 픽셀 임의값(text-[11px] 등) 대신 사용.
+      // 페이지 전반의 글자 크기·행간을 한곳에서 관리하기 위함.
+      fontSize: {
+        caption: ["11px", { lineHeight: "1.45" }],
+        body: ["14px", { lineHeight: "1.6" }],
+        title: ["16px", { lineHeight: "1.4" }],
+        heading: ["20px", { lineHeight: "1.3" }],
+        display: ["28px", { lineHeight: "1.2" }],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
