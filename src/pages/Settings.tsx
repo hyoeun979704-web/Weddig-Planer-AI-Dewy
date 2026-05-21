@@ -51,7 +51,10 @@ const Settings = () => {
               </div>
               <Switch checked={theme === "dark"} onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} />
             </div>
-            <button className="w-full flex items-center justify-between p-4">
+            <button
+              onClick={() => toast.info("현재 한국어만 지원해요")}
+              className="w-full flex items-center justify-between p-4"
+            >
               <div className="flex items-center gap-3">
                 <Globe className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">언어</span>
@@ -68,21 +71,30 @@ const Settings = () => {
         <div className="p-4">
           <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">약관 및 정책</h2>
           <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            <button className="w-full flex items-center justify-between p-4 border-b border-border">
+            <button
+              onClick={() => navigate("/terms")}
+              className="w-full flex items-center justify-between p-4 border-b border-border"
+            >
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">이용약관</span>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
-            <button className="w-full flex items-center justify-between p-4 border-b border-border">
+            <button
+              onClick={() => navigate("/privacy")}
+              className="w-full flex items-center justify-between p-4 border-b border-border"
+            >
               <div className="flex items-center gap-3">
                 <Shield className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">개인정보 처리방침</span>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
-            <button className="w-full flex items-center justify-between p-4">
+            <button
+              onClick={() => toast.info("오픈소스 라이선스는 준비 중이에요")}
+              className="w-full flex items-center justify-between p-4"
+            >
               <div className="flex items-center gap-3">
                 <Info className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">오픈소스 라이선스</span>

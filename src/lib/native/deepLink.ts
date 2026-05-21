@@ -2,6 +2,7 @@ import { App, type URLOpenListenerEvent } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { supabase } from '@/integrations/supabase/client';
 import { isNativeApp } from '@/lib/platform';
+import { toast } from 'sonner';
 
 // 앱이 OAuth 콜백을 받는 단일 스킴.
 //
@@ -40,9 +41,13 @@ export function registerDeepLinks(): void {
       console.log('[deepLink] extracted code:', code?.slice(0, 12) + '...');
       const { error, data } = await supabase.auth.exchangeCodeForSession(code ?? url);
       console.log('[deepLink] exchange result:', { hasSession: !!data?.session, error: error?.message });
-      if (error) console.error('[deepLink] exchangeCodeForSession error:', error);
+      if (error) {
+        console.error('[deepLink] exchangeCodeForSession error:', error);
+        toast.error('로그인 처리에 실패했어요. 다시 시도해주세요');
+      }
     } catch (e) {
       console.error('[deepLink] exchange failed:', e);
+      toast.error('로그인 처리에 실패했어요. 다시 시도해주세요');
     } finally {
       // 외부 브라우저 탭(있다면) 정리.
       try {
