@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTutorialProgress } from "@/hooks/useTutorialProgress";
 
 const STORAGE_KEY = "dewy.home_entry_popup_dismissed_until";
 
@@ -19,18 +20,23 @@ const tomorrowMidnightISO = (from: Date = new Date()) => {
 const HomeEntryPopup = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const progress = useTutorialProgress();
+  const homeTourDone = progress.isCompleted("home-tour");
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    // 로그인 사용자는 홈 투어를 끝낸 뒤에만 노출 — 첫 방문에 튜토리얼 코치마크와
+    // 동시에 뜨는 것을 막는다(스플래시 뒤에서 타이머가 겹치는 문제).
+    if (user && !homeTourDone) return;
     try {
       const until = localStorage.getItem(STORAGE_KEY);
       if (until && new Date(until).getTime() > Date.now()) return;
     } catch {
       // localStorage 차단 환경 — fail open
     }
-    const timer = setTimeout(() => setOpen(true), 600);
+    const timer = setTimeout(() => setOpen(true), 1000);
     return () => clearTimeout(timer);
-  }, [user]);
+  }, [user, homeTourDone]);
 
   const handleOpenChange = (next: boolean) => {
     if (!next) setOpen(false);
