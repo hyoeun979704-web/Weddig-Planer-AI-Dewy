@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -71,7 +72,16 @@ const CommunityChatterSection = () => {
 
   return (
     <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-50))]">
-      <h2 className="text-[16px] font-bold text-black mb-[10px]">오늘의 수다</h2>
+      <div className="flex items-center justify-between mb-[10px]">
+        <h2 className="text-[16px] font-bold text-black">오늘의 수다</h2>
+        <button
+          onClick={() => navigate("/community")}
+          className="flex items-center gap-0.5 text-[12px] font-medium text-primary"
+        >
+          더보기
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
       <div className="flex gap-[8px]">
         {isLoading ? (
           <>

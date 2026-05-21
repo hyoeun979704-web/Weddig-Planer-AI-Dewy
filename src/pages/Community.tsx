@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
@@ -95,9 +95,18 @@ const Community = () => {
   const { user } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
   const myStyle: WeddingStyle | null = weddingSettings.wedding_style;
+  const [searchParams] = useSearchParams();
+  // 홈 카테고리 타일(`/community?style=self` 등)로 들어오면 해당 스타일을
+  // 초기 필터로 적용 — 타일이 약속한 화면을 그대로 보여주기 위함.
+  const styleParam = searchParams.get("style");
+  const initialStyle: StyleFilter =
+    styleParam === "self" || styleParam === "small" || styleParam === "general"
+      ? styleParam
+      : "all";
   const [selectedCategory, setSelectedCategory] = useState("전체");
-  const [styleFilter, setStyleFilter] = useState<StyleFilter>("all");
-  const [styleAutoApplied, setStyleAutoApplied] = useState(false);
+  const [styleFilter, setStyleFilter] = useState<StyleFilter>(initialStyle);
+  // 딥링크로 스타일이 지정되면 myStyle 자동적용/안내 토스트를 건너뛴다.
+  const [styleAutoApplied, setStyleAutoApplied] = useState(initialStyle !== "all");
   const [sortBy, setSortBy] = useState<SortKey>("latest");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const tutorial = usePageTutorial("community");
