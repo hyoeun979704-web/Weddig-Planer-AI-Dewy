@@ -1,338 +1,169 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, GripVertical, Image as ImageIcon, Sparkles, Loader2, X } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Loader2, UtensilsCrossed } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/AuthContext";
-import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface GalleryImage {
+interface MediaItem {
   id: string;
-  image_url: string;
-  storage_path: string;
-  caption: string | null;
-  image_type: string;
-  display_order: number;
+  kind: string;
+  image_url: string | null;
+  title: string | null;
+  price: number | null;
 }
 
-interface Highlight {
-  id: string;
-  title: string;
-  description: string | null;
-  icon: string;
-  display_order: number;
-}
-
+// 업체 사진/메뉴 관리. 모임장소(invitation_venue)는 "메뉴 등록"(메뉴명·가격·사진),
+// 그 외 업체는 "사진 등록"(갤러리). place_media 테이블(공개 읽기·소유자 쓰기).
 const BusinessGallery = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { businessProfile, isBusiness, isLoading: roleLoading } = useUserRole();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [images, setImages] = useState<GalleryImage[]>([]);
-  const [highlights, setHighlights] = useState<Highlight[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [placeId, setPlaceId] = useState<string | null>(null);
+  const [category, setCategory] = useState<string | null>(null);
+  const [items, setItems] = useState<MediaItem[]>([]);
+  const [imageUrl, setImageUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [price, setPrice] = useState("");
+  const [adding, setAdding] = useState(false);
 
-  // New highlight form
-  const [newHighlight, setNewHighlight] = useState({ title: "", description: "", icon: "" });
-  const [showHighlightForm, setShowHighlightForm] = useState(false);
+  const isMenu = category === "invitation_venue";
 
-  const vendorId = businessProfile?.vendor_id;
+  const loadMedia = useCallback(async (pid: string) => {
+    const { data } = await supabase
+      .from("place_media" as any)
+      .select("id, kind, image_url, title, price")
+      .eq("place_id", pid)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    setItems((data ?? []) as unknown as MediaItem[]);
+  }, []);
 
   useEffect(() => {
-    if (roleLoading) return;
-    if (!isBusiness || !vendorId) {
-      navigate("/business/dashboard");
-      return;
-    }
-
-    const fetchData = async () => {
-      const [imgRes, hlRes] = await Promise.all([
-        (supabase as any).from("vendor_gallery").select("*").eq("vendor_id", vendorId).order("display_order"),
-        (supabase as any).from("vendor_highlights").select("*").eq("vendor_id", vendorId).order("display_order"),
-      ]);
-
-      setImages(imgRes.data || []);
-      setHighlights(hlRes.data || []);
-      setIsLoadingData(false);
-    };
-
-    fetchData();
-  }, [roleLoading, isBusiness, vendorId, navigate]);
-
-  const handleUpload = async (files: FileList | null) => {
-    if (!files || !user || !vendorId) return;
-    setIsUploading(true);
-
-    try {
-      for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) {
-          toast.error(`${file.name}은 이미지 파일이 아닙니다`);
-          continue;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error(`${file.name}은 5MB를 초과합니다`);
-          continue;
-        }
-
-        const ext = file.name.split(".").pop();
-        const path = `${user.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("vendor-images")
-          .upload(path, file);
-
-        if (uploadError) {
-          toast.error(`업로드 실패: ${uploadError.message}`);
-          continue;
-        }
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("vendor-images")
-          .getPublicUrl(path);
-
-        const { error: insertError } = await (supabase as any)
-          .from("vendor_gallery")
-          .insert({
-            vendor_id: vendorId,
-            image_url: publicUrl,
-            storage_path: path,
-            display_order: images.length,
-            image_type: "gallery",
-          });
-
-        if (insertError) {
-          toast.error(`등록 실패: ${insertError.message}`);
-        } else {
-          setImages((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              image_url: publicUrl,
-              storage_path: path,
-              caption: null,
-              image_type: "gallery",
-              display_order: prev.length,
-            },
-          ]);
-        }
+    (async () => {
+      const { data } = await (supabase as any).rpc("get_my_listing");
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row?.place_id) {
+        setPlaceId(row.place_id);
+        setCategory(row.category);
+        await loadMedia(row.place_id);
       }
-      toast.success("이미지가 업로드되었습니다");
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast.error("업로드 중 오류가 발생했습니다");
-    } finally {
-      setIsUploading(false);
-    }
+      setLoading(false);
+    })();
+  }, [loadMedia]);
+
+  const handleAdd = async () => {
+    if (!user || !placeId) return;
+    if (!imageUrl.trim()) { toast.error("이미지 URL을 입력해주세요"); return; }
+    if (isMenu && !title.trim()) { toast.error("메뉴명을 입력해주세요"); return; }
+    setAdding(true);
+    const { error } = await (supabase as any).from("place_media").insert({
+      place_id: placeId,
+      owner_user_id: user.id,
+      kind: isMenu ? "menu" : "photo",
+      image_url: imageUrl.trim(),
+      title: isMenu ? title.trim() : null,
+      price: isMenu && price ? parseInt(price, 10) : null,
+      display_order: items.length,
+    });
+    setAdding(false);
+    if (error) { toast.error("추가에 실패했어요"); return; }
+    setImageUrl(""); setTitle(""); setPrice("");
+    toast.success(isMenu ? "메뉴를 추가했어요" : "사진을 추가했어요");
+    await loadMedia(placeId);
   };
 
-  const handleDeleteImage = async (img: GalleryImage) => {
-    try {
-      await supabase.storage.from("vendor-images").remove([img.storage_path]);
-      await (supabase as any).from("vendor_gallery").delete().eq("id", img.id);
-      setImages((prev) => prev.filter((i) => i.id !== img.id));
-      toast.success("이미지가 삭제되었습니다");
-    } catch (error) {
-      toast.error("삭제에 실패했습니다");
-    }
+  const handleDelete = async (id: string) => {
+    const { error } = await (supabase as any).from("place_media").delete().eq("id", id);
+    if (error) { toast.error("삭제에 실패했어요"); return; }
+    setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
-  const handleAddHighlight = async () => {
-    if (!newHighlight.title || !vendorId) return;
-
-    try {
-      const { data, error } = await (supabase as any)
-        .from("vendor_highlights")
-        .insert({
-          vendor_id: vendorId,
-          title: newHighlight.title,
-          description: newHighlight.description || null,
-          icon: newHighlight.icon || "",
-          display_order: highlights.length,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setHighlights((prev) => [...prev, data]);
-      setNewHighlight({ title: "", description: "", icon: "" });
-      setShowHighlightForm(false);
-      toast.success("장점카드가 추가되었습니다");
-    } catch (error) {
-      toast.error("추가에 실패했습니다");
-    }
-  };
-
-  const handleDeleteHighlight = async (id: string) => {
-    try {
-      await (supabase as any).from("vendor_highlights").delete().eq("id", id);
-      setHighlights((prev) => prev.filter((h) => h.id !== id));
-      toast.success("장점카드가 삭제되었습니다");
-    } catch {
-      toast.error("삭제에 실패했습니다");
-    }
-  };
-
-  if (isLoadingData || roleLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
 
-  const ICON_OPTIONS = ["", "", "", "", "", "", "", "", "", "🅿️", "", ""];
+  if (!placeId) {
+    return (
+      <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+        <PageHeader title="사진/메뉴 관리" />
+        <div className="px-5 py-20 text-center">
+          <p className="text-muted-foreground">먼저 업체 기본 정보를 저장해주세요.</p>
+          <Button className="mt-6" onClick={() => navigate("/business/edit")}>업체 정보 입력</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-      <PageHeader title="이미지/장점카드 관리" />
+      <PageHeader title={isMenu ? "메뉴 관리" : "사진 관리"} />
 
-      <Tabs defaultValue="gallery" className="w-full">
-        <TabsList className="w-full rounded-none border-b border-border bg-background h-11">
-          <TabsTrigger value="gallery" className="flex-1 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-            <ImageIcon className="w-4 h-4 mr-1.5" /> 갤러리 ({images.length})
-          </TabsTrigger>
-          <TabsTrigger value="highlights" className="flex-1 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-            <Sparkles className="w-4 h-4 mr-1.5" /> 장점카드 ({highlights.length})
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Gallery Tab */}
-        <TabsContent value="gallery" className="p-4 space-y-4">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(e) => handleUpload(e.target.files)}
-          />
-
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="w-full h-11 gap-2"
-            variant="outline"
-          >
-            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            이미지 업로드
+      <main className="p-4 pb-24 space-y-5">
+        {/* Add form */}
+        <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            {isMenu ? <UtensilsCrossed className="w-4 h-4 text-primary" /> : <ImageIcon className="w-4 h-4 text-primary" />}
+            <h2 className="text-sm font-semibold text-foreground">{isMenu ? "메뉴 등록" : "사진 등록"}</h2>
+          </div>
+          {isMenu && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs">메뉴명</Label>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예: 코스 A" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">가격(원)</Label>
+                <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="59000" />
+              </div>
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label className="text-xs">{isMenu ? "메뉴 사진 URL" : "사진 URL"}</Label>
+            <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
+          </div>
+          <Button onClick={handleAdd} disabled={adding} className="w-full">
+            {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> {isMenu ? "메뉴 추가" : "사진 추가"}</>}
           </Button>
+        </div>
 
-          {images.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">아직 등록된 이미지가 없습니다</p>
-              <p className="text-xs mt-1">상세페이지에 표시될 이미지를 업로드하세요</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-2">
-              {images.map((img) => (
-                <div key={img.id} className="relative aspect-square rounded-xl overflow-hidden group">
-                  <img src={img.image_url} alt="" className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => handleDeleteImage(img)}
-                    className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-destructive/80 text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
+        {/* List */}
+        {items.length === 0 ? (
+          <p className="text-center text-sm text-muted-foreground py-8">
+            {isMenu ? "등록된 메뉴가 없어요" : "등록된 사진이 없어요"}
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {items.map((m) => (
+              <div key={m.id} className="bg-card rounded-2xl border border-border overflow-hidden">
+                <div className="aspect-square bg-muted">
+                  {m.image_url && <img src={m.image_url} alt={m.title ?? ""} className="w-full h-full object-cover" />}
+                </div>
+                <div className="p-2.5">
+                  {isMenu && (
+                    <>
+                      <p className="text-[13px] font-semibold text-foreground truncate">{m.title}</p>
+                      {m.price != null && <p className="text-[12px] text-muted-foreground">{m.price.toLocaleString()}원</p>}
+                    </>
+                  )}
+                  <button onClick={() => handleDelete(m.id)} className="mt-1 text-[11px] text-destructive inline-flex items-center gap-1">
+                    <Trash2 className="w-3 h-3" /> 삭제
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Highlights Tab */}
-        <TabsContent value="highlights" className="p-4 space-y-4">
-          {!showHighlightForm ? (
-            <Button onClick={() => setShowHighlightForm(true)} className="w-full h-11 gap-2" variant="outline">
-              <Plus className="w-4 h-4" /> 장점카드 추가
-            </Button>
-          ) : (
-            <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">새 장점카드</Label>
-                <button onClick={() => setShowHighlightForm(false)}>
-                  <X className="w-4 h-4 text-muted-foreground" />
-                </button>
               </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">아이콘</Label>
-                <div className="flex flex-wrap gap-2">
-                  {ICON_OPTIONS.map((icon) => (
-                    <button
-                      key={icon}
-                      onClick={() => setNewHighlight((p) => ({ ...p, icon }))}
-                      className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center transition-all ${
-                        newHighlight.icon === icon ? "bg-primary/10 ring-2 ring-primary" : "bg-muted"
-                      }`}
-                    >
-                      {icon}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">제목 *</Label>
-                <Input
-                  placeholder="예: 프리미엄 신부대기실"
-                  value={newHighlight.title}
-                  onChange={(e) => setNewHighlight((p) => ({ ...p, title: e.target.value }))}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">설명</Label>
-                <Input
-                  placeholder="예: 넓고 쾌적한 전용 대기실 제공"
-                  value={newHighlight.description}
-                  onChange={(e) => setNewHighlight((p) => ({ ...p, description: e.target.value }))}
-                />
-              </div>
-
-              <Button onClick={handleAddHighlight} disabled={!newHighlight.title} className="w-full">
-                추가
-              </Button>
-            </div>
-          )}
-
-          {highlights.length === 0 && !showHighlightForm ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">아직 등록된 장점카드가 없습니다</p>
-              <p className="text-xs mt-1">업체의 강점을 카드로 만들어보세요</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {highlights.map((hl) => (
-                <div key={hl.id} className="flex items-center gap-3 bg-card rounded-xl border border-border p-3">
-                  <span className="text-2xl">{hl.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{hl.title}</p>
-                    {hl.description && (
-                      <p className="text-xs text-muted-foreground truncate">{hl.description}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleDeleteHighlight(hl.id)}
-                    className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
 };

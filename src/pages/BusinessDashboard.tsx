@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Star, Clock } from "lucide-react";
+import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -10,7 +10,8 @@ const BusinessDashboard = () => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
   const { isBusiness, businessProfile, isLoading: roleLoading } = useUserRole();
-  const [stats, setStats] = useState({ views: 0, favorites: 0, gallery: 0, highlights: 0 });
+  const [placeId, setPlaceId] = useState<string | null>(null);
+  const [stats, setStats] = useState({ media: 0, favorites: 0 });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -24,26 +25,18 @@ const BusinessDashboard = () => {
   }, [authLoading, roleLoading, user, isBusiness, navigate]);
 
   useEffect(() => {
-    if (!businessProfile?.vendor_id) return;
-
-    const fetchStats = async () => {
-      const vid = String(businessProfile.vendor_id);
-
-      const [favRes, galleryRes, highlightRes] = await Promise.all([
-        supabase.from("favorites").select("id", { count: "exact", head: true }).eq("item_id", vid),
-        (supabase as any).from("vendor_gallery").select("id", { count: "exact", head: true }).eq("vendor_id", businessProfile.vendor_id),
-        (supabase as any).from("vendor_highlights").select("id", { count: "exact", head: true }).eq("vendor_id", businessProfile.vendor_id),
+    if (!businessProfile || businessProfile.approval_status !== "approved") return;
+    (async () => {
+      const { data } = await (supabase as any).rpc("get_my_listing");
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row?.place_id) return;
+      setPlaceId(row.place_id);
+      const [favRes, mediaRes] = await Promise.all([
+        supabase.from("favorites").select("id", { count: "exact", head: true }).eq("item_id", row.place_id),
+        (supabase as any).from("place_media").select("id", { count: "exact", head: true }).eq("place_id", row.place_id),
       ]);
-
-      setStats({
-        views: 0, // TODO: implement view tracking
-        favorites: favRes.count ?? 0,
-        gallery: galleryRes.count ?? 0,
-        highlights: highlightRes.count ?? 0,
-      });
-    };
-
-    fetchStats();
+      setStats({ favorites: favRes.count ?? 0, media: mediaRes.count ?? 0 });
+    })();
   }, [businessProfile]);
 
   if (authLoading || roleLoading) {
@@ -98,18 +91,21 @@ const BusinessDashboard = () => {
     );
   }
 
+  const isMenuCategory = businessProfile.service_category === "invitation_venue";
   const menuItems = [
     {
       icon: Edit,
       label: "업체 정보 수정",
-      description: "상세페이지에 표시되는 정보 관리",
+      description: "상세페이지에 표시되는 정보 관리 (검토 후 반영)",
       href: "/business/edit",
       badge: null,
     },
     {
       icon: Image,
-      label: "이미지/갤러리 관리",
-      description: `등록된 이미지 ${stats.gallery}장 · 장점카드 ${stats.highlights}개`,
+      label: isMenuCategory ? "메뉴 관리" : "사진 관리",
+      description: isMenuCategory
+        ? `등록된 메뉴 ${stats.media}개`
+        : `등록된 사진 ${stats.media}장`,
       href: "/business/gallery",
       badge: null,
     },
@@ -152,22 +148,23 @@ const BusinessDashboard = () => {
               <p className="text-xs text-muted-foreground mt-0.5">
                 {businessProfile.is_verified ? "인증된 업체" : "인증 대기중"} · {businessProfile.service_category}
               </p>
-              <button
-                onClick={() => navigate(`/vendor/${businessProfile.vendor_id}`)}
-                className="mt-2 text-xs text-primary font-medium flex items-center gap-0.5"
-              >
-                <Eye className="w-3.5 h-3.5" /> 상세페이지 미리보기
-              </button>
+              {placeId && (
+                <button
+                  onClick={() => navigate(`/vendor/${placeId}`)}
+                  className="mt-2 text-xs text-primary font-medium flex items-center gap-0.5"
+                >
+                  <Eye className="w-3.5 h-3.5" /> 상세페이지 미리보기
+                </button>
+              )}
             </div>
           </div>
         </div>
 
         {/* Quick stats */}
-        <div className="grid grid-cols-3 gap-2 mx-4 mt-4">
+        <div className="grid grid-cols-2 gap-2 mx-4 mt-4">
           {[
             { icon: Heart, label: "찜", value: stats.favorites, color: "text-primary" },
-            { icon: Image, label: "이미지", value: stats.gallery, color: "text-primary" },
-            { icon: Star, label: "장점카드", value: stats.highlights, color: "text-primary" },
+            { icon: Image, label: isMenuCategory ? "메뉴" : "사진", value: stats.media, color: "text-primary" },
           ].map((stat) => (
             <div key={stat.label} className="bg-card rounded-2xl border border-border p-3 text-center">
               <stat.icon className={`w-5 h-5 ${stat.color} mx-auto`} />
