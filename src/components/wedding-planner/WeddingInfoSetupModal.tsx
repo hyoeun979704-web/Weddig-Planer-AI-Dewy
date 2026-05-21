@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import SurveyModal from "@/components/wedding-planner/SurveyModal";
 import WeddingStylePicker from "@/components/schedule/WeddingStylePicker";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useDataCollectionConsent } from "@/hooks/useDataCollectionConsent";
+import DataCollectionConsentModal from "@/components/consent/DataCollectionConsentModal";
 import {
   buildScheduleFromTemplate,
   PLANNING_STAGE_LABELS,
@@ -184,6 +186,41 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const errorCls = (f: string) => (errors[f] ? "border-red-400" : "");
   const helperText = (f: string) =>
     errors[f] ? <p className="text-xs text-red-500 mt-1">날짜 입력 또는 미정 선택해주세요</p> : null;
+
+  // 데이터 수집 동의 게이트 — 모달이 열리려는 시점에 consent 확인.
+  //   undefined  : 아직 fetch 중 → 아무것도 안 보임
+  //   null       : 미동의 → consent 모달 먼저 표시
+  //   false      : 거부됨 → wedding info 모달 안 띄움 + 외부 dismiss
+  //   true       : 동의 → wedding info 모달 정상 표시
+  const consent = useDataCollectionConsent();
+  useEffect(() => {
+    if (isOpen && consent.state === false) {
+      // 사용자가 명시적으로 거부한 상태에서 모달이 열리려고 함 — 즉시 닫음
+      onClose();
+    }
+  }, [isOpen, consent.state, onClose]);
+
+  if (isOpen && consent.state === null) {
+    return (
+      <DataCollectionConsentModal
+        isOpen
+        onAgree={async () => {
+          await consent.agree();
+          // 동의 후엔 wedding info 모달이 자연스럽게 이어 표시됨
+        }}
+        onRefuse={async () => {
+          await consent.refuse();
+          onClose();
+        }}
+      />
+    );
+  }
+
+  // consent.state 가 undefined (loading) 또는 false 면 wedding info 모달
+  // 자체를 띄우지 않음. 진짜 동의(true)일 때만 아래 분기.
+  if (consent.state !== true) {
+    return null;
+  }
 
   return (
     <SurveyModal isOpen={isOpen} onClose={onClose} title="결혼 정보 등록">

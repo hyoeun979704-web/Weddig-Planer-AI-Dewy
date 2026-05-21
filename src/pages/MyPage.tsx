@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Star, Users, ArrowRight, Crown } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -13,7 +14,9 @@ import MenuSection from "@/components/mypage/MenuSection";
 import PremiumBanner from "@/components/premium/PremiumBanner";
 import PartnerLinkCard from "@/components/partner/PartnerLinkCard";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
+import DataCollectionConsentModal from "@/components/consent/DataCollectionConsentModal";
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
+import { useDataCollectionConsent } from "@/hooks/useDataCollectionConsent";
 import { Button } from "@/components/ui/button";
 
 const GuestMyPage = () => {
@@ -174,6 +177,8 @@ const MyPage = () => {
   const { weddingSettings } = useWeddingSchedule();
   const { isAdmin } = useUserRole();
   const weddingInfoPrompt = useWeddingInfoPrompt();
+  const consent = useDataCollectionConsent();
+  const [consentReviewOpen, setConsentReviewOpen] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -244,6 +249,7 @@ const MyPage = () => {
           user={user}
           onSignOut={handleSignOut}
           onEditWeddingInfo={weddingInfoPrompt.openManually}
+          onViewDataConsent={() => setConsentReviewOpen(true)}
         />
 
         <div className="px-4 py-6">
@@ -259,6 +265,24 @@ const MyPage = () => {
       <WeddingInfoSetupModal
         isOpen={weddingInfoPrompt.open}
         onClose={weddingInfoPrompt.dismiss}
+      />
+
+      {/* "내 정보 사용 안내" — 사용자가 메뉴에서 다시 보기 누르면 표시.
+          현재 상태(동의/거부) 와 무관하게 모달을 띄워 항목·목적 재확인 가능.
+          여기서 동의 → 상태 갱신 (agreed=true 새 row), 거부 → false 새 row. */}
+      <DataCollectionConsentModal
+        isOpen={consentReviewOpen}
+        onAgree={async () => {
+          await consent.agree();
+          setConsentReviewOpen(false);
+          toast.success("정보 수집에 동의하셨어요");
+        }}
+        onRefuse={async () => {
+          await consent.refuse();
+          setConsentReviewOpen(false);
+          toast("정보 수집 동의를 철회했어요");
+        }}
+        onClose={() => setConsentReviewOpen(false)}
       />
     </div>
   );

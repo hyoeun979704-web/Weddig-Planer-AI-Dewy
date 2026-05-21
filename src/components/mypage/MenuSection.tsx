@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Calendar, User, Bell, FileText, MessageSquare,
   HelpCircle, Settings, ChevronRight, LogOut, Building2, Heart,
-  Mail, Shirt, Sparkles
+  Mail, Shirt, Sparkles, Shield
 } from "lucide-react";
 import { User as SupaUser } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -13,6 +13,9 @@ interface MenuSectionProps {
   /** Open the WeddingInfoSetupModal — wired by MyPage so users can edit
    *  their wedding info (date / region / partner / planning stage) any time. */
   onEditWeddingInfo?: () => void;
+  /** Re-open the data collection consent modal so the user can review
+   *  what's collected and revoke / re-agree. */
+  onViewDataConsent?: () => void;
 }
 
 // Each item is either a navigation (href) or an action (onClick). The
@@ -22,7 +25,12 @@ type MenuItem =
   | { icon: typeof Calendar; title: string; description: string; href: string; onClick?: undefined }
   | { icon: typeof Calendar; title: string; description: string; onClick: () => void; href?: undefined };
 
-const MenuSection = ({ user, onSignOut, onEditWeddingInfo }: MenuSectionProps) => {
+const MenuSection = ({
+  user,
+  onSignOut,
+  onEditWeddingInfo,
+  onViewDataConsent,
+}: MenuSectionProps) => {
   const navigate = useNavigate();
   const { isBusiness, businessProfile } = useUserRole();
 
@@ -51,6 +59,14 @@ const MenuSection = ({ user, onSignOut, onEditWeddingInfo }: MenuSectionProps) =
         { icon: User, title: "내 정보", description: "프로필 및 계정 관리", href: "/profile" },
         { icon: Bell, title: "알림 설정", description: "푸시 알림 관리", href: "/notifications" },
         { icon: Settings, title: "설정", description: "다크 모드, 언어 등", href: "/settings" },
+        ...(onViewDataConsent
+          ? [{
+              icon: Shield,
+              title: "내 정보 사용 안내",
+              description: "수집 항목 · 사용 목적 · 보관 기간",
+              onClick: onViewDataConsent,
+            } as MenuItem]
+          : []),
       ],
     },
     {
