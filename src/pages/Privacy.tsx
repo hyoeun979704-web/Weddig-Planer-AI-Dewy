@@ -56,13 +56,28 @@ const Privacy = () => {
             ※ 얼굴 사진은 「개인정보 보호법」상 개인정보에 해당하므로 별도 동의를 받습니다.
           </p>
 
-          <SubTitle>라. AI Planner 이용 시 수집</SubTitle>
+          <SubTitle>라. AI Planner 이용 시 수집 (민감정보 포함)</SubTitle>
           <ul className="list-disc pl-5 space-y-1">
             <li>채팅 내용, 입력한 결혼 정보(예식일·예산·선호도 등)</li>
+            <li>맞춤 추천을 위해 회원이 직접 입력하는 임신 여부 등 건강 관련 정보</li>
             <li>대화 메모리 정보(이전 대화 요약)</li>
           </ul>
+          <p className="mt-2 text-[12px] text-muted-foreground">
+            ※ 임신 여부 등 건강 관련 정보는 「개인정보 보호법」상 민감정보에 해당하므로 별도 동의를 받아
+            맞춤 추천 목적에 한해서만 처리하며, 입력은 선택 사항입니다.
+          </p>
 
-          <SubTitle>마. 자동 수집 정보</SubTitle>
+          <SubTitle>마. 마케팅·광고 활용 동의 시 수집</SubTitle>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>마케팅 정보 수신 동의 여부 및 동의·철회 일시</li>
+            <li>이벤트·혜택 안내 발송을 위한 연락처(이메일 등)</li>
+          </ul>
+          <p className="mt-2 text-[12px] text-muted-foreground">
+            ※ 마케팅 활용 동의는 선택 사항이며, 동의하지 않아도 서비스 이용에 제한이 없습니다. 동의는
+            언제든지 철회할 수 있습니다.
+          </p>
+
+          <SubTitle>바. 자동 수집 정보</SubTitle>
           <ul className="list-disc pl-5 space-y-1">
             <li>접속 IP, 접속 일시, 서비스 이용 기록</li>
             <li>기기 정보(OS, 브라우저, 디바이스 모델)</li>
@@ -145,8 +160,16 @@ const Privacy = () => {
                 <td className="border border-border p-2">데이터베이스·인증·파일 저장 인프라</td>
               </tr>
               <tr>
+                <td className="border border-border p-2">OpenAI, L.L.C.</td>
+                <td className="border border-border p-2">AI 이미지 생성(드레스·메이크업·청첩장 시뮬레이션)</td>
+              </tr>
+              <tr>
                 <td className="border border-border p-2">Google LLC</td>
-                <td className="border border-border p-2">AI 챗봇(Gemini), AI 이미지 생성(Nano Banana Pro 2)</td>
+                <td className="border border-border p-2">AI 챗봇·문구 추천(Gemini)</td>
+              </tr>
+              <tr>
+                <td className="border border-border p-2">Kaleido AI GmbH (remove.bg)</td>
+                <td className="border border-border p-2">청첩장 사진 배경 제거(누끼)</td>
               </tr>
               <tr>
                 <td className="border border-border p-2">PortOne 및 연동 PG사</td>
@@ -164,8 +187,9 @@ const Privacy = () => {
         </Section>
 
         <Section title="6. 개인정보의 국외 이전">
-          AI 처리(Google Gemini, Nano Banana)와 클라우드 인프라(Supabase, Vercel) 이용 과정에서 회원의
-          개인정보가 미국 등 해외에 위치한 서버로 전송될 수 있습니다.
+          AI 처리(OpenAI 이미지 생성, Google Gemini 문구 추천, remove.bg 배경 제거)와 클라우드
+          인프라(Supabase, Vercel) 이용 과정에서 회원의 개인정보가 미국 등 해외에 위치한 서버로 전송될 수
+          있습니다.
           <ul className="list-disc pl-5 mt-2 space-y-1">
             <li>이전 항목: 사진(AI Studio), 채팅 내용(AI Planner), 인증·결제 정보, 서비스 이용 정보</li>
             <li>이전 국가: 미국 등 (각 사업자 운영 국가)</li>
