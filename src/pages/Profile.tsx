@@ -43,7 +43,7 @@ const Profile = () => {
         // Load profile
         const { data: profile } = await supabase
           .from("profiles")
-          .select("display_name, avatar_url, birth_year")
+          .select("display_name, avatar_url, birth_year, phone")
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -57,6 +57,7 @@ const Profile = () => {
         if (profile) {
           setDisplayName(profile.display_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "");
           setBirthYear(profile.birth_year ? String(profile.birth_year) : "1997");
+          setPhone((profile as any).phone || "");
         } else {
           setDisplayName(user?.user_metadata?.full_name || user?.user_metadata?.name || "");
         }
@@ -92,9 +93,10 @@ const Profile = () => {
       // Update profile
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ 
+        .update({
           display_name: displayName,
-          birth_year: birthYear ? parseInt(birthYear) : null
+          birth_year: birthYear ? parseInt(birthYear) : null,
+          phone: phone.trim() || null
         } as any)
         .eq("user_id", user.id);
 
