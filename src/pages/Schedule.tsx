@@ -22,6 +22,7 @@ import {
   TIMELINE_PHASES,
   type TimelinePhase,
   daysUntilWedding,
+  getTaskUrgency,
   parseLocalDate,
 } from "@/lib/schedule";
 import {
@@ -231,7 +232,7 @@ const Schedule = () => {
                 <span className="text-xs text-muted-foreground">1년 후 기준 일정</span>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground mb-4">0000년 0월 0일 (0요일)</p>
+              <p className="text-sm text-primary font-medium mb-4">결혼식 날짜를 설정해보세요 →</p>
             )}
             <div className="bg-white rounded-xl px-4 py-3">
               <p className="text-xs font-medium text-foreground mb-1.5">준비 진행률</p>
@@ -249,7 +250,6 @@ const Schedule = () => {
         {showTidyTip && (
           <div className="mx-4 mb-3 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl">
             <div className="flex items-start gap-2.5">
-              <span className="text-base shrink-0" aria-hidden></span>
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-bold text-amber-900">
                   추천 일정이 {incompleteTemplateCount}개 있어요
@@ -313,9 +313,16 @@ const Schedule = () => {
                       )}
                     </div>
                   </div>
-                  <span className={`text-xs font-medium whitespace-nowrap ${getDateUrgency(task.scheduled_date)}`}>
-                    {formatRelativeDate(task.scheduled_date)}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {getTaskUrgency(task.scheduled_date) === "past_due" && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-destructive/10 text-destructive rounded-full font-medium">
+                        지남
+                      </span>
+                    )}
+                    <span className={`text-xs font-medium whitespace-nowrap ${getDateUrgency(task.scheduled_date)}`}>
+                      {formatRelativeDate(task.scheduled_date)}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
