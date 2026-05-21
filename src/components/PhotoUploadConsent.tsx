@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PhotoUploadConsentProps {
   onConsent: () => void;
@@ -27,12 +29,41 @@ const PhotoUploadConsent = ({
   title = "사진 업로드 동의",
   description = "AI Studio 서비스 이용을 위해 사진 처리에 대한 동의가 필요합니다.",
 }: PhotoUploadConsentProps) => {
+  const { user } = useAuth();
   const [agreeOwnPhoto, setAgreeOwnPhoto] = useState(false);
   const [agreeProcessing, setAgreeProcessing] = useState(false);
   const [agreeStorage, setAgreeStorage] = useState(false);
   const [agreeImprovement, setAgreeImprovement] = useState(false);
 
   const allRequiredAgreed = agreeOwnPhoto && agreeProcessing && agreeStorage;
+
+  // 동의 결과를 user_consents 에 기록 (PIPA 이력 보존) 후 onConsent 호출.
+  // 기록 실패가 흐름을 막지 않도록 try/catch — 사진 업로드는 진행.
+  const handleConsent = async () => {
+    if (user) {
+      try {
+        await (supabase as any).from("user_consents").insert({
+          user_id: user.id,
+          consent_type: "photo_upload_v1",
+          consent_version: 1,
+          agreed: true,
+          user_agent:
+            typeof navigator !== "undefined"
+              ? navigator.userAgent?.slice(0, 500)
+              : null,
+          notes: JSON.stringify({
+            own_photo: agreeOwnPhoto,
+            ai_processing: agreeProcessing,
+            storage_30d: agreeStorage,
+            improvement_optional: agreeImprovement,
+          }),
+        });
+      } catch (e) {
+        console.error("photo consent log failed", e);
+      }
+    }
+    onConsent();
+  };
 
   const toggleAll = () => {
     const next = !(agreeOwnPhoto && agreeProcessing && agreeStorage && agreeImprovement);
@@ -78,7 +109,7 @@ const PhotoUploadConsent = ({
           checked={agreeProcessing}
           onChange={setAgreeProcessing}
           label="사진의 AI 처리·외부 전송에 동의합니다"
-          description="업로드한 사진은 AI 결과 생성을 위해 OpenAI GPT-4o 이미지 모델로 전송됩니다."
+          description="업로드한 사진은 결과 생성을 위해 OpenAI(이미지 생성)·remove.bg(배경 제거) 등 AI 처리 위탁사로 전송됩니다."
         />
 
         <ConsentItem
@@ -123,7 +154,7 @@ const PhotoUploadConsent = ({
           </Button>
         )}
         <Button
-          onClick={onConsent}
+          onClick={handleConsent}
           disabled={!allRequiredAgreed}
           className="flex-1"
         >

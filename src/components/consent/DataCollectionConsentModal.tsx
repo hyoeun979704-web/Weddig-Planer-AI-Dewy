@@ -1,4 +1,4 @@
-import { Shield, Database, Eye, Clock, X } from "lucide-react";
+import { Shield, Database, Eye, Clock, X, Share2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -114,6 +114,24 @@ const DataCollectionConsentModal = ({
               <li>AI 업로드 사진은 30일 자동 삭제</li>
               <li>법령상 보관 의무가 있는 항목은 해당 기간까지</li>
             </ul>
+          </section>
+
+          {/* AI 처리 위탁사 */}
+          <section className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Share2 className="w-3.5 h-3.5 text-primary" />
+              <h3 className="text-[13px] font-bold text-foreground">
+                AI 처리 위탁사
+              </h3>
+            </div>
+            <ul className="text-[12px] text-foreground/85 space-y-1 pl-5 list-disc">
+              <li>OpenAI — 드레스·메이크업·청첩장 이미지 생성</li>
+              <li>Google Gemini — AI 인사말·문구 추천</li>
+              <li>remove.bg — 사진 배경 제거(누끼)</li>
+            </ul>
+            <p className="text-[11px] text-muted-foreground pl-5">
+              AI 기능 사용 시에만 해당 항목이 위탁사로 전송돼요.
+            </p>
           </section>
 
           {/* 동의 거부 안내 */}
