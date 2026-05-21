@@ -1,8 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { tutorialActive } from "@/lib/tutorialActive";
 
 const DISMISS_KEY = "dewy:wedding-info-modal:dismissed";
+
+// 페이지 튜토리얼이 시작될 시간을 주기 위한 지연. 튜토리얼 자동 시작(800ms)보다
+// 길게 잡아, 둘 다 뜰 상황이면 튜토리얼이 먼저 떠 활성 신호가 켜지도록 한다.
+const PROMPT_DELAY_MS = 1200;
 
 /**
  * Auto-show controller for the WeddingInfoSetupModal.
@@ -25,6 +30,13 @@ export function useWeddingInfoPrompt() {
   const { user } = useAuth();
   const { weddingSettings, isLoading } = useWeddingSchedule();
   const [open, setOpen] = useState(false);
+  // 어느 페이지에서든 튜토리얼이 최우선 — 활성 동안엔 모달을 띄우지 않고,
+  // 끝나면 effect 가 재평가돼 그때 띄운다.
+  const tutActive = useSyncExternalStore(
+    tutorialActive.subscribe,
+    tutorialActive.get,
+    tutorialActive.get,
+  );
 
   useEffect(() => {
     if (!user || isLoading) return;
@@ -36,10 +48,17 @@ export function useWeddingInfoPrompt() {
     const hasDateInfo = !!weddingSettings.wedding_date || weddingSettings.wedding_date_tbd;
     const hasRegionInfo = !!weddingSettings.wedding_region || weddingSettings.wedding_region_tbd;
     const onboarded = (hasDateInfo && hasRegionInfo) || !!weddingSettings.planning_stage;
-    if (!onboarded) setOpen(true);
+    if (onboarded) return;
+    // 튜토리얼이 떠 있으면 양보. 끝나면 tutActive 변경으로 effect 재실행.
+    if (tutActive) return;
+    const timer = setTimeout(() => {
+      if (!tutorialActive.get()) setOpen(true);
+    }, PROMPT_DELAY_MS);
+    return () => clearTimeout(timer);
   }, [
     user,
     isLoading,
+    tutActive,
     weddingSettings.wedding_date,
     weddingSettings.wedding_region,
     weddingSettings.wedding_date_tbd,

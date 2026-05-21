@@ -59,23 +59,6 @@ export const usePageTutorial = (
 
       if (!lesson || hasSeen || alreadyDone) return;
 
-      // 결혼정보 입력 모달이 뜰 상황(미온보딩 + 미dismiss)이면 코치마크와 겹치지
-      // 않도록 자동 시작을 미룬다 — 온보딩(또는 건너뛰기) 후 다음 방문에 실행.
-      const hasDate =
-        !!weddingSettings.wedding_date || weddingSettings.wedding_date_tbd;
-      const hasRegion =
-        !!weddingSettings.wedding_region || weddingSettings.wedding_region_tbd;
-      const onboarded =
-        (hasDate && hasRegion) || !!weddingSettings.planning_stage;
-      let weddingInfoDismissed = false;
-      try {
-        weddingInfoDismissed =
-          localStorage.getItem("dewy:wedding-info-modal:dismissed") === "1";
-      } catch {
-        // ignore
-      }
-      if (!onboarded && !weddingInfoDismissed) return;
-
       // Style filter: skip auto-start for lessons that don't match.
       if (
         lesson.requiresStyles &&
@@ -92,15 +75,7 @@ export const usePageTutorial = (
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    weddingSettings.wedding_style,
-    weddingSettings.wedding_date,
-    weddingSettings.wedding_region,
-    weddingSettings.wedding_date_tbd,
-    weddingSettings.wedding_region_tbd,
-    weddingSettings.planning_stage,
-    user,
-  ]);
+  }, [weddingSettings.wedding_style, user]);
 
   return tutorial;
 };

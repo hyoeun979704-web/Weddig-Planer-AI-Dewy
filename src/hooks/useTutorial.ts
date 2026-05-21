@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -6,6 +6,7 @@ import {
   findLessonById,
   type TutorialLessonStep,
 } from "@/data/tutorialChapters";
+import { tutorialActive } from "@/lib/tutorialActive";
 
 // Coachmark step shape kept identical for backwards compatibility with
 // TutorialOverlay, which renders `targetSelector` + `position`.
@@ -43,6 +44,14 @@ export const useTutorial = () => {
   const [tourId, setTourId] = useState<string | null>(null);
 
   const hasSeen = localStorage.getItem(TUTORIAL_SEEN_KEY) === "true";
+
+  // 활성 동안 전역 신호 등록 — 다른 화면 요소(결혼정보 모달 등)가 튜토리얼에
+  // 양보하도록. 활성 구간마다 enter/leave 가 균형을 이룬다.
+  useEffect(() => {
+    if (!isActive) return;
+    tutorialActive.enter();
+    return () => tutorialActive.leave();
+  }, [isActive]);
 
   const startTutorial = useCallback(
     (customSteps?: TutorialStep[], guideId?: string) => {
