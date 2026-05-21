@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -99,6 +99,15 @@ const CommunityPostDetail = () => {
     },
     enabled: !!id,
   });
+
+  // 조회수 1 증가 — 글당 1회. community_posts UPDATE 는 작성자만 가능하므로
+  // RLS 우회 RPC 로 처리. (열 때마다 +1; 새로고침도 1 view 로 간주)
+  const viewedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!id || viewedRef.current === id) return;
+    viewedRef.current = id;
+    void (supabase as any).rpc("increment_post_views", { p_post_id: id });
+  }, [id]);
 
   const { data: blockedUserIds = [] } = useUserBlocks();
 
