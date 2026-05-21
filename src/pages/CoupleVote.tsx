@@ -6,6 +6,7 @@ import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCoupleLink } from "@/hooks/useCoupleLink";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface CoupleVoteItem {
@@ -66,21 +67,24 @@ const CoupleVote = () => {
       }
     } catch { /* ignore */ }
 
-    try {
-      await (supabase.from("couple_votes" as any) as any).insert({
-        user_id: user.id,
-        partner_user_id: partnerUserId,
-        topic: topic.trim(),
-        option_a: optionA.trim(),
-        option_b: optionB.trim(),
-        status: "voting",
-      });
-      setTopic(""); setOptionA(""); setOptionB("");
-      setCreateOpen(false);
-      fetchVotes();
-    } catch (e) {
-      console.error(e);
+    // Supabase 는 에러를 throw 하지 않고 { error } 로 반환하므로 직접 확인.
+    // 안 그러면 insert 가 실패해도 폼이 비워져 "만들어진 것처럼" 보인다.
+    const { error } = await (supabase.from("couple_votes" as any) as any).insert({
+      user_id: user.id,
+      partner_user_id: partnerUserId,
+      topic: topic.trim(),
+      option_a: optionA.trim(),
+      option_b: optionB.trim(),
+      status: "voting",
+    });
+    if (error) {
+      console.error("vote create failed:", error);
+      toast.error("투표 만들기에 실패했어요. 다시 시도해주세요");
+      return;
     }
+    setTopic(""); setOptionA(""); setOptionB("");
+    setCreateOpen(false);
+    fetchVotes();
   };
 
   if (!user) {
