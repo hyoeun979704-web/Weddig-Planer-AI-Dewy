@@ -89,34 +89,44 @@ export const useCart = () => {
   const updateQuantity = async (cartItemId: string, quantity: number) => {
     if (quantity < 1) return removeItem(cartItemId);
 
-    try {
-      await (supabase.from("cart_items" as any) as any).update({ quantity }).eq("id", cartItemId);
-      setItems((prev) =>
-        prev.map((i) => (i.id === cartItemId ? { ...i, quantity } : i))
-      );
-    } catch (error) {
+    // Supabase 는 에러를 throw 하지 않으므로 { error } 를 직접 확인. 안 그러면
+    // 실패해도 낙관적 업데이트가 적용돼 화면과 DB 가 어긋난다.
+    const { error } = await (supabase.from("cart_items" as any) as any)
+      .update({ quantity })
+      .eq("id", cartItemId);
+    if (error) {
       console.error("Error updating quantity:", error);
+      toast.error("수량 변경에 실패했어요");
+      return;
     }
+    setItems((prev) =>
+      prev.map((i) => (i.id === cartItemId ? { ...i, quantity } : i))
+    );
   };
 
   const removeItem = async (cartItemId: string) => {
-    try {
-      await (supabase.from("cart_items" as any) as any).delete().eq("id", cartItemId);
-      setItems((prev) => prev.filter((i) => i.id !== cartItemId));
-      toast.success("삭제되었습니다");
-    } catch (error) {
+    const { error } = await (supabase.from("cart_items" as any) as any)
+      .delete()
+      .eq("id", cartItemId);
+    if (error) {
       console.error("Error removing item:", error);
+      toast.error("삭제에 실패했어요");
+      return;
     }
+    setItems((prev) => prev.filter((i) => i.id !== cartItemId));
+    toast.success("삭제되었습니다");
   };
 
   const clearCart = async () => {
     if (!user) return;
-    try {
-      await (supabase.from("cart_items" as any) as any).delete().eq("user_id", user.id);
-      setItems([]);
-    } catch (error) {
+    const { error } = await (supabase.from("cart_items" as any) as any)
+      .delete()
+      .eq("user_id", user.id);
+    if (error) {
       console.error("Error clearing cart:", error);
+      return;
     }
+    setItems([]);
   };
 
   const totalAmount = items.reduce((sum, item) => {
