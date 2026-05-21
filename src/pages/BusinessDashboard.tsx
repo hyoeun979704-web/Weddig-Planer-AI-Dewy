@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Star } from "lucide-react";
+import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Star, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +55,48 @@ const BusinessDashboard = () => {
   }
 
   if (!businessProfile) return null;
+
+  // 운영자 승인 전에는 대시보드 기능 대신 상태 화면을 보여준다.
+  if (businessProfile.approval_status !== "approved") {
+    const rejected = businessProfile.approval_status === "rejected";
+    return (
+      <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+        <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
+          <div className="flex items-center h-14 px-4">
+            <button onClick={() => navigate("/mypage")} className="w-10 h-10 flex items-center justify-center -ml-2">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="flex-1 text-center font-semibold text-lg pr-10">기업회원</h1>
+          </div>
+        </header>
+        <main className="px-5 py-16 text-center space-y-5">
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto ${rejected ? "bg-destructive/10" : "bg-amber-100"}`}>
+            {rejected ? <AlertCircle className="w-10 h-10 text-destructive" /> : <Clock className="w-10 h-10 text-amber-600" />}
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-foreground">
+              {rejected ? "등록이 반려되었어요" : "등록 검토 중이에요"}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+              {rejected
+                ? "아래 사유를 확인하고 다시 신청해주세요."
+                : "운영자 검토 후 결과를 알려드릴게요. 승인되면 업체 상세정보를 입력할 수 있어요."}
+            </p>
+            {rejected && businessProfile.review_note && (
+              <p className="text-sm text-foreground mt-3 bg-muted rounded-lg p-3 text-left whitespace-pre-line">
+                {businessProfile.review_note}
+              </p>
+            )}
+          </div>
+          {rejected && (
+            <Button onClick={() => navigate("/business/onboard")} className="w-full h-12">
+              다시 신청하기
+            </Button>
+          )}
+        </main>
+      </div>
+    );
+  }
 
   const menuItems = [
     {
