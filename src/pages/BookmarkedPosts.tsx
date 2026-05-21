@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -152,22 +153,19 @@ const BookmarkedPosts = () => {
               ))}
             </div>
           ) : posts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Bookmark className="w-10 h-10 text-muted-foreground" />
-              </div>
-              <h2 className="text-lg font-semibold text-foreground mb-2">저장한 게시글이 없습니다</h2>
-              <p className="text-sm text-muted-foreground text-center mb-6">
-                관심있는 게시글을<br />
-                북마크 버튼을 눌러 저장해보세요
-              </p>
-              <button
-                onClick={() => navigate("/community")}
-                className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium"
-              >
-                커뮤니티 둘러보기
-              </button>
-            </div>
+            <EmptyState
+              icon={Bookmark}
+              title="저장한 게시글이 없습니다"
+              description="관심있는 게시글을 북마크 버튼을 눌러 저장해보세요."
+              action={
+                <button
+                  onClick={() => navigate("/community")}
+                  className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium"
+                >
+                  커뮤니티 둘러보기
+                </button>
+              }
+            />
           ) : (
             <div className="space-y-3">
               {posts.map((post) => (
