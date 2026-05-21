@@ -78,6 +78,34 @@ function pickCard<T>(value: T | null | undefined): T | null {
   return value ?? null;
 }
 
+// filterOptions1/2/3(다중 선택 칩)를 각 카테고리 detail 테이블의 backing 컬럼에
+// 매핑. array 컬럼은 overlaps(선택값 중 하나라도 포함)로, scalar 는 in 으로 필터.
+// backing 컬럼이 없는 슬롯은 생략(필터 미적용). detail 컬럼이 없는 슬롯의 UI 칩은
+// 향후 정리 대상.
+type FilterCol = { col: string; array: boolean };
+const FILTER_COLUMN_MAP: Record<
+  CategoryType,
+  { f1?: FilterCol; f2?: FilterCol; f3?: FilterCol }
+> = {
+  venues: { f1: { col: "hall_styles", array: true }, f2: { col: "meal_types", array: true } },
+  studios: { f2: { col: "shoot_styles", array: true } },
+  dress_shops: { f1: { col: "dress_styles", array: true } },
+  makeup_shops: { f1: { col: "makeup_styles", array: true } },
+  hanbok: { f1: { col: "hanbok_types", array: true } },
+  suits: { f1: { col: "suit_styles", array: true } },
+  honeymoon: { f1: { col: "themes", array: true } },
+  jewelry: {
+    f1: { col: "product_categories", array: true },
+    f2: { col: "metals", array: true },
+    f3: { col: "store_type", array: false },
+  },
+  appliances: {
+    f1: { col: "product_categories", array: true },
+    f2: { col: "brand_options", array: true },
+  },
+  invitation_venues: { f1: { col: "venue_types", array: true } },
+};
+
 function toCategoryItem(p: any, category: CategoryType): CategoryItem {
   const card = pickCard<any>(p[CARD_KEY[category]]);
   const price = card?.price_per_person ?? p.min_price ?? undefined;
@@ -222,12 +250,33 @@ async function fetchCategoryItems(
   const from = pageParam * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
+  const cardKey = CARD_KEY[category];
+  const fmap = FILTER_COLUMN_MAP[category];
+  const activeFilters: { col: FilterCol; values: string[] }[] = [];
+  if (fmap.f1 && filters.filterOptions1?.length) activeFilters.push({ col: fmap.f1, values: filters.filterOptions1 });
+  if (fmap.f2 && filters.filterOptions2?.length) activeFilters.push({ col: fmap.f2, values: filters.filterOptions2 });
+  if (fmap.f3 && filters.filterOptions3?.length) activeFilters.push({ col: fmap.f3, values: filters.filterOptions3 });
+
+  // detail 컬럼으로 부모(places)를 거르려면 inner join 이 필요하다. 필터가 있을
+  // 때만 !inner 로 바꿔, 평소엔 detail 행이 없는 장소도 그대로 노출(기존 동작).
+  const detailSelect = activeFilters.length > 0
+    ? CATEGORY_DETAIL_SELECT[category].replace(`${cardKey}(`, `${cardKey}!inner(`)
+    : CATEGORY_DETAIL_SELECT[category];
+
   let query = supabase
     .from("places")
-    .select(`*, ${CATEGORY_DETAIL_SELECT[category]}`, { count: "exact" })
+    .select(`*, ${detailSelect}`, { count: "exact" })
     .eq("category", placeCategory)
     .eq("is_active", true)
     .is("deleted_at", null);
+
+  for (const f of activeFilters) {
+    if (f.col.array) {
+      query = query.overlaps(`${cardKey}.${f.col.col}`, f.values);
+    } else {
+      query = query.in(`${cardKey}.${f.col.col}`, f.values);
+    }
+  }
 
   if (filters.region) {
     if (category === "jewelry") {
