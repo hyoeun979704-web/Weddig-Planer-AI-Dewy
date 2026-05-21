@@ -115,5 +115,3 @@ main `02a5263` 기준. 7명의 페르소나로 홈(`/` → `Index` → `TabConte
 - [ ] 일반 진입(`/community`, 쿼리 없음) → 기존 myStyle 자동 필터 동작 유지
 - [ ] 홈 "오늘의 수다" 헤더 "더보기" 탭 → `/community` 이동
 - [ ] 비로그인 상태 `/community` → `LoginRequiredOverlay` 그대로 (영향 없음)
-</content>
-</invoke>

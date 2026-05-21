@@ -145,4 +145,3 @@ main `02a5263` 기준. 일정(`Schedule`, `MySchedule`)·예산(`Budget`,
 - [ ] 예산 양가 분담 라벨(공동/신랑측/신부측) 앞 공백 없음
 - [ ] 예산 공유(`handleShare`) 텍스트 첫 줄 공백 없이 시작
 - [ ] `npx vitest run src/lib/schedule.test.ts` 5개 통과
-</content>
