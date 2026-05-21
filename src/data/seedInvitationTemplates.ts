@@ -682,6 +682,266 @@ export const SEED_INVITATION_TEMPLATES: SeedTemplate[] = [
   },
 
   // ──────────────────────────────────────────────────────────────
+  // 모바일 누끼 — 1080×1920 세로, 10하트 (Phase 3-D)
+  // paper-cutout-01 의 모바일 버전. 원본 사진을 배경(z:1)으로 깔고
+  // 같은 사진을 누낀 버전(z:3)으로 타이틀 위에 띄운다.
+  // 같은 image_order=1 → distributePhotos 가 같은 사진을 두 슬롯에 매핑.
+  // 발행 시 invitation-cutout 호출 (auto_cutout 슬롯).
+  // ──────────────────────────────────────────────────────────────
+  {
+    slug: "mobile-cutout-01",
+    name: "모바일 누끼 — 인물이 떠오르는",
+    format: "mobile",
+    tone: "ROMANTIC",
+    price_hearts: 10,
+    text_prompt_hint:
+      "감성적이고 따뜻한 모바일 청첩장 인사말. 사진 인물 위에 시처럼 흐르는 짧은 문구.",
+    thumbnail_file: "mobile-cutout-01-thumb.png",
+    background_file: "mobile-cutout-01-bg.png",
+    display_order: 45,
+    is_active: true,
+    layout: {
+      canvas: { w: 1080, h: 1920, bg: "#FAF6F1" },
+      slots: [
+        // ── 배경 사진 (z:1) — 원본 사진 (상단 정사각 영역)
+        {
+          id: "main_photo_bg",
+          type: "image",
+          x: 0,
+          y: 0,
+          w: 1080,
+          h: 1200,
+          z: 1,
+          fit: "cover",
+          image_order: 1,
+        },
+
+        // ── 사진 위 큰 영문 타이틀 (z:2)
+        {
+          id: "title_en",
+          type: "text",
+          x: 80,
+          y: 420,
+          w: 920,
+          h: 320,
+          z: 2,
+          text: "We're\nGetting\nMarried",
+          font_family: "script",
+          font_size: 110,
+          font_style: "italic",
+          color: "#FFFFFF",
+          align: "center",
+          line_height: 1,
+          locked: true,
+        },
+
+        // ── 인물 누낀 사진 (z:3) — 타이틀 위로 인물이 떠오름
+        {
+          id: "main_photo_cutout",
+          type: "image",
+          x: 0,
+          y: 0,
+          w: 1080,
+          h: 1200,
+          z: 3,
+          fit: "cover",
+          image_order: 1, // 원본과 같은 사진
+          auto_cutout: true, // ★ 발행 시 remove.bg 호출
+        },
+
+        // ── 사진 아래 흰 카드 영역 (배경 PNG 가 처리)
+
+        // ── 인사말
+        {
+          id: "intro_message",
+          type: "text",
+          x: 80,
+          y: 1280,
+          w: 920,
+          h: 280,
+          z: 2,
+          role: "intro",
+          placeholder:
+            "두 사람이 한 길을 걷기로 했습니다.\n그 첫 걸음에 함께해 주세요.",
+          ai_promptable: true,
+          font_size: 24,
+          color: "#1A1A1A",
+          align: "center",
+          line_height: 1.8,
+        },
+
+        // ── 신랑·신부 이름 한글
+        {
+          id: "names_ko",
+          type: "text",
+          x: 80,
+          y: 1580,
+          w: 920,
+          h: 50,
+          z: 2,
+          placeholder: "신랑 · 신부",
+          font_size: 22,
+          color: "#1A1A1A",
+          align: "center",
+          letter_spacing: 4,
+        },
+
+        // ── 날짜·식장
+        {
+          id: "wedding_date_short",
+          type: "text",
+          x: 80,
+          y: 1660,
+          w: 920,
+          h: 40,
+          z: 2,
+          field: "wedding_date",
+          font_size: 20,
+          color: "#1A1A1A",
+          align: "center",
+          letter_spacing: 2,
+        },
+        {
+          id: "venue_info",
+          type: "text",
+          x: 80,
+          y: 1720,
+          w: 920,
+          h: 40,
+          z: 2,
+          field: "venue_name",
+          font_size: 18,
+          color: "#666",
+          align: "center",
+        },
+      ],
+    },
+  },
+
+  // ──────────────────────────────────────────────────────────────
+  // 일러스트 데모 — 종이 15하트 (Phase 3-E)
+  // 사용자 사진을 흑백 핸드드로잉 라인 일러스트로 변환 (gpt-image-2).
+  // 발행 시 invitation-illustrate 호출 (auto_illustration 슬롯).
+  // 흰 배경 위 단정한 라인 일러스트 + 인사말 중심 구성.
+  // ──────────────────────────────────────────────────────────────
+  {
+    slug: "paper-illustration-01",
+    name: "일러스트 — 손그림 라인 아트",
+    format: "paper",
+    tone: "MINIMAL",
+    price_hearts: 15,
+    text_prompt_hint:
+      "담백하고 정갈한 톤. 손그림 일러스트와 어울리는 짧고 단정한 인사말.",
+    thumbnail_file: "paper-illustration-01-thumb.png",
+    background_file: "paper-illustration-01-bg.png",
+    display_order: 35,
+    is_active: true,
+    layout: {
+      canvas: { w: 1000, h: 1400, bg: "#FFFFFF" },
+      slots: [
+        // ── 상단 영문 타이틀
+        {
+          id: "title_en",
+          type: "text",
+          x: 80,
+          y: 90,
+          w: 840,
+          h: 80,
+          z: 2,
+          text: "Our Wedding",
+          font_family: "serif",
+          font_size: 48,
+          font_style: "italic",
+          color: "#1A1A1A",
+          align: "center",
+          letter_spacing: 2,
+          locked: true,
+        },
+
+        // ── 중앙 — 일러스트 변환된 인물 (흰 배경 위 라인 아트)
+        {
+          id: "main_illustration",
+          type: "image",
+          x: 200,
+          y: 220,
+          w: 600,
+          h: 720,
+          z: 2,
+          fit: "contain",
+          image_order: 1,
+          auto_illustration: true, // ★ 발행 시 invitation-illustrate 호출
+        },
+
+        // ── 신랑·신부 한글 이름
+        {
+          id: "names_ko",
+          type: "text",
+          x: 80,
+          y: 980,
+          w: 840,
+          h: 50,
+          z: 2,
+          placeholder: "신랑 · 신부",
+          font_family: "serif",
+          font_size: 28,
+          color: "#1A1A1A",
+          align: "center",
+          letter_spacing: 6,
+        },
+
+        // ── 인사말
+        {
+          id: "intro_message",
+          type: "text",
+          x: 120,
+          y: 1060,
+          w: 760,
+          h: 180,
+          z: 2,
+          role: "intro",
+          placeholder:
+            "서로를 마주 보며 그린 첫 그림처럼\n오래도록 함께 그려갈 두 사람을\n축복해 주세요.",
+          ai_promptable: true,
+          font_family: "serif",
+          font_size: 16,
+          color: "#444",
+          align: "center",
+          line_height: 1.9,
+        },
+
+        // ── 날짜·식장
+        {
+          id: "wedding_date_short",
+          type: "text",
+          x: 80,
+          y: 1260,
+          w: 840,
+          h: 36,
+          z: 2,
+          field: "wedding_date",
+          font_size: 15,
+          color: "#1A1A1A",
+          align: "center",
+          letter_spacing: 2,
+        },
+        {
+          id: "venue_info",
+          type: "text",
+          x: 80,
+          y: 1310,
+          w: 840,
+          h: 36,
+          z: 2,
+          field: "venue_name",
+          font_size: 14,
+          color: "#666",
+          align: "center",
+        },
+      ],
+    },
+  },
+
+  // ──────────────────────────────────────────────────────────────
   // 3. free_moody_01 — "Getting Married" 무디 스타일
   //    검정 배경 사진 카드 + 흰 배경 텍스트 카드 양면 시뮬레이션
   // ──────────────────────────────────────────────────────────────

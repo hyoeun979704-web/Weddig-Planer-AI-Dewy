@@ -336,6 +336,67 @@ const InvitationFlow = () => {
   );
 
   // ─────────────────────────────────────────────
+  // 일러스트 변환 — auto_illustration 슬롯의 사진을 gpt-image-2 로
+  //   흑백 라인 일러스트로 변환. applyCutoutToSlots 와 동일 구조.
+  //   같은 source_path 는 Edge function 측에서 한 번만 호출됨.
+  // ─────────────────────────────────────────────
+  const applyIllustrationToSlots = useCallback(
+    async (
+      tpl: Template,
+      currentPaths: Record<string, string>,
+      currentUrls: Record<string, string>,
+    ): Promise<{
+      paths: Record<string, string>;
+      urls: Record<string, string>;
+    }> => {
+      const illustrationSlots = tpl.layout.slots.filter(
+        (s) => s.auto_illustration && (s.type === "image" || s.type === "map"),
+      );
+      if (illustrationSlots.length === 0) {
+        return { paths: currentPaths, urls: currentUrls };
+      }
+
+      const sourcePaths = Array.from(
+        new Set(
+          illustrationSlots
+            .map((s) => currentPaths[s.id])
+            .filter(Boolean) as string[],
+        ),
+      );
+      if (sourcePaths.length === 0) {
+        // 첨부된 사진 없음 — 변환 안 함
+        return { paths: currentPaths, urls: currentUrls };
+      }
+
+      const { data, error } = await supabase.functions.invoke(
+        "invitation-illustrate",
+        { body: { source_paths: sourcePaths } },
+      );
+      if (error) throw error;
+      const result = data as {
+        illustration_paths?: Record<string, string>;
+        illustration_urls?: Record<string, string>;
+        error?: string;
+      };
+      if (result.error) throw new Error(result.error);
+
+      const nextPaths = { ...currentPaths };
+      const nextUrls = { ...currentUrls };
+      illustrationSlots.forEach((slot) => {
+        const src = currentPaths[slot.id];
+        if (src && result.illustration_paths?.[src]) {
+          nextPaths[slot.id] = result.illustration_paths[src];
+          if (result.illustration_urls?.[src]) {
+            nextUrls[slot.id] = result.illustration_urls[src];
+          }
+        }
+      });
+      return { paths: nextPaths, urls: nextUrls };
+    },
+    [],
+  );
+
+  // ─────────────────────────────────────────────
   // 생성하기 (제출) — wizard → result 전이
   // ─────────────────────────────────────────────
   const handleGenerate = async () => {
@@ -412,6 +473,20 @@ const InvitationFlow = () => {
         const cutoutResult = await applyCutoutToSlots(template, paths, urls);
         paths = cutoutResult.paths;
         urls = cutoutResult.urls;
+      }
+
+      // 2.5) 일러스트 변환 (auto_illustration 슬롯이 있고 매핑된 사진이 있으면)
+      const hasIllustrationSlot = template.layout.slots.some(
+        (s) => s.auto_illustration,
+      );
+      if (hasIllustrationSlot) {
+        const illustrationResult = await applyIllustrationToSlots(
+          template,
+          paths,
+          urls,
+        );
+        paths = illustrationResult.paths;
+        urls = illustrationResult.urls;
       }
       setImagePaths(paths);
       setImageUrls(urls);
@@ -1136,6 +1211,9 @@ const WizardCombined = ({
       {/* 가격 안내 */}
       {(() => {
         const hasCutout = template.layout.slots.some((s) => s.auto_cutout);
+        const hasIllustration = template.layout.slots.some(
+          (s) => s.auto_illustration,
+        );
         const total = template.price_hearts + (aiAuto ? aiSlotCount : 0);
         if (template.price_hearts === 0 && total === 0) {
           return (
@@ -1166,6 +1244,7 @@ const WizardCombined = ({
                 <p>
                   · 템플릿 발행 {template.price_hearts}하트
                   {hasCutout && " (누끼 효과 포함)"}
+                  {hasIllustration && " (일러스트 변환 포함)"}
                 </p>
               )}
               {aiAuto && aiSlotCount > 0 && (
