@@ -1141,7 +1141,7 @@ const WizardCombined = ({
           return (
             <section className="p-3 bg-emerald-50 rounded-lg flex items-center justify-between">
               <span className="text-[13px] font-bold text-emerald-900">
-                🎉 무료 발행
+                무료 발행
               </span>
               <span className="text-[11px] text-emerald-700">
                 잔액 {hearts ?? 0} 하트
@@ -1284,7 +1284,7 @@ const ResultView = ({
             <section className="space-y-2">
               <div className="p-3 bg-emerald-50 rounded-lg">
                 <p className="text-[11px] text-emerald-700 mb-1">
-                  ✅ 공유 링크가 발급됐어요
+                  공유 링크가 발급됐어요
                 </p>
                 <p className="text-[12px] font-mono text-emerald-900 break-all">
                   {shareUrl}

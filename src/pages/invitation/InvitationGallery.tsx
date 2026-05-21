@@ -111,7 +111,8 @@ const InvitationGallery = () => {
                       {groom && bride ? `${groom} · ${bride}` : "제목 없음"}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      {it.invitation_templates?.format === "paper" ? "📄" : "📱"}{" "}
+                      {it.invitation_templates?.format === "paper" ? "종이" : "모바일"}
+                      {" · "}
                       {it.status === "draft"
                         ? "임시저장"
                         : it.status === "published"

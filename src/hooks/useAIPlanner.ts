@@ -283,8 +283,8 @@ export const useAIPlanner = () => {
       setMessages(prev => [...prev, {
         role: "assistant",
         content: assistantSoFar
-          ? "\n\n⚠️ 답변이 중간에 끊겼어요. 다시 질문해 주시면 이어서 도와드릴게요."
-          : "⚠️ 답변을 가져오지 못했어요. 잠시 후 다시 질문해 주세요.",
+          ? "\n\n답변이 중간에 끊겼어요. 다시 질문해 주시면 이어서 도와드릴게요."
+          : "답변을 가져오지 못했어요. 잠시 후 다시 질문해 주세요.",
         intent: "error",
       }]);
     } finally {
@@ -339,7 +339,7 @@ export const useAIPlanner = () => {
       });
       setMessages(prev => [...prev, {
         role: "assistant",
-        content: "⚠️ 답변을 만들지 못했어요. 잠시 후 다시 시도해 주세요.",
+        content: "답변을 만들지 못했어요. 잠시 후 다시 시도해 주세요.",
         intent: "error",
       }]);
     } finally {

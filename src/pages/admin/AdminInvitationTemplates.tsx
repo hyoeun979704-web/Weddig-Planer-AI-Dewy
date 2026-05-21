@@ -64,8 +64,8 @@ const emptyForm: Form = {
 };
 
 const FORMAT_OPTIONS = [
-  { value: "mobile", label: "📱 모바일", priceGuide: "0 (무료) / 10 (누끼·복합) / 20 (일러스트)" },
-  { value: "paper", label: "📄 종이", priceGuide: "0 (무료) / 5 (누끼·복합) / 15 (일러스트)" },
+  { value: "mobile", label: "모바일", priceGuide: "0 (무료) / 10 (누끼·복합) / 20 (일러스트)" },
+  { value: "paper", label: "종이", priceGuide: "0 (무료) / 5 (누끼·복합) / 15 (일러스트)" },
 ];
 
 const TONE_OPTIONS = [
@@ -459,7 +459,7 @@ const AdminInvitationTemplates = () => {
 }`}
                 />
                 <div className="mt-2 p-3 bg-blue-50 rounded-lg text-[11px] text-blue-900 leading-relaxed">
-                  <p className="font-semibold mb-1">💡 Figma 워크플로우</p>
+                  <p className="font-semibold mb-1">Figma 워크플로우</p>
                   <ol className="list-decimal list-inside space-y-0.5">
                     <li>청첩장 프레임 작업 (예: 800×1200)</li>
                     <li>
@@ -530,7 +530,8 @@ const AdminInvitationTemplates = () => {
                     </div>
                   )}
                   <span className="absolute top-1.5 left-1.5 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
-                    {t.format === "paper" ? "📄" : "📱"}{" "}
+                    {t.format === "paper" ? "종이" : "모바일"}
+                    {" · "}
                     {TONE_OPTIONS.find((o) => o.value === t.tone)?.label ?? t.tone}
                   </span>
                   <span
