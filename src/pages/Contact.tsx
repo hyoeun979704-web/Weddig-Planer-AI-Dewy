@@ -9,23 +9,45 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Contact = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [category, setCategory] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!category || !title || !content) {
       toast.error("모든 항목을 입력해주세요");
+      return;
+    }
+    if (!user) {
+      toast.error("로그인 후 문의할 수 있어요");
+      navigate("/auth");
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await (supabase as any).from("inquiries").insert({
+      user_id: user.id,
+      category,
+      title: title.trim(),
+      content: content.trim(),
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error("문의 접수에 실패했어요. 잠시 후 다시 시도해주세요");
       return;
     }
     toast.success("문의가 접수되었습니다. 빠른 시일 내에 답변드리겠습니다.");
     setCategory("");
     setTitle("");
     setContent("");
+    navigate("/my-inquiries");
   };
 
   return (
@@ -90,9 +112,9 @@ const Contact = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full" size="lg">
+          <Button type="submit" className="w-full" size="lg" disabled={submitting}>
             <Send className="w-4 h-4 mr-2" />
-            문의하기
+            {submitting ? "접수 중..." : "문의하기"}
           </Button>
         </form>
 
