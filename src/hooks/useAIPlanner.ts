@@ -146,7 +146,8 @@ export const useAIPlanner = () => {
               content: `[참고 컨텍스트 - 사용자 데이터에서 추출됨, 이 정보를 자연스럽게 활용해 답변해주세요]\n${llmContextInjection}`,
             }]
           : []),
-        ...messages,
+        // 인라인 에러 안내 버블은 LLM 컨텍스트에서 제외 (대화 맥락 오염 방지).
+        ...messages.filter(m => m.intent !== "error"),
         userMsg,
       ];
 
@@ -276,7 +277,16 @@ export const useAIPlanner = () => {
         description: "메시지 전송에 실패했어요. 다시 시도해주세요.",
         variant: "destructive",
       });
-      setMessages(prev => prev.filter(m => m !== userMsg));
+      // 토스트는 곧 사라지므로, 사용자의 질문은 그대로 두고 인라인 에러
+      // 버블을 남겨 무엇이 실패했는지·재시도 안내가 대화에 남도록 한다.
+      // 스트리밍 중간에 끊겼다면 부분 답변 뒤에 안내만 덧붙인다.
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: assistantSoFar
+          ? "\n\n⚠️ 답변이 중간에 끊겼어요. 다시 질문해 주시면 이어서 도와드릴게요."
+          : "⚠️ 답변을 가져오지 못했어요. 잠시 후 다시 질문해 주세요.",
+        intent: "error",
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -327,7 +337,11 @@ export const useAIPlanner = () => {
         description: "잠시 후 다시 시도해주세요.",
         variant: "destructive",
       });
-      setMessages(prev => prev.filter(m => m !== userMsg));
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: "⚠️ 답변을 만들지 못했어요. 잠시 후 다시 시도해 주세요.",
+        intent: "error",
+      }]);
     } finally {
       setIsLoading(false);
     }
