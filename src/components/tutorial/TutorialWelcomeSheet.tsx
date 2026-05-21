@@ -75,14 +75,16 @@ const TutorialWelcomeSheet = () => {
   if (!open) return null;
 
   const visibleChapters = chaptersForStyle(style);
-  const firstLesson = visibleChapters[0]?.lessons[0];
   const totalLessons = visibleChapters.reduce((sum, c) => sum + c.lessons.length, 0);
+  // 이미 끝낸 레슨(예: 자동 실행된 홈 투어)은 건너뛰고 다음 미완료 레슨을 제안 —
+  // 같은 투어를 다시 권하지 않기 위함.
+  const next = progress.nextLesson(style);
 
   const handleStart = () => {
     progress.markWelcomeShown();
     setOpen(false);
-    if (firstLesson) {
-      navigate(`${firstLesson.route}?tutorial=${firstLesson.id}`);
+    if (next?.lesson) {
+      navigate(`${next.lesson.route}?tutorial=${next.lesson.id}`);
     } else {
       navigate("/tutorial");
     }

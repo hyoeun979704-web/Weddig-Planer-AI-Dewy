@@ -36,8 +36,8 @@ const Privacy = () => {
         <Section title="2. 수집하는 개인정보의 항목">
           <SubTitle>가. 회원가입 시 수집</SubTitle>
           <ul className="list-disc pl-5 space-y-1">
-            <li>필수: 이메일, 비밀번호(암호화 저장), 닉네임</li>
-            <li>선택: 휴대전화번호, 프로필 사진, 결혼 예정일, 거주 지역</li>
+            <li>필수: 이메일, 비밀번호(암호화 저장), 생년월일(만 14세 이상 확인용)</li>
+            <li>선택: 닉네임, 프로필 사진, 휴대전화번호, 결혼 예정일, 거주 지역</li>
           </ul>
 
           <SubTitle>나. 결제 시 수집</SubTitle>

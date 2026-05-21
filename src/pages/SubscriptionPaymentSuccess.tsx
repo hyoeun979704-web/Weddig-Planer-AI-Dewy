@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -100,7 +100,7 @@ const SubscriptionPaymentSuccess = () => {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4 text-center">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-          <span className="text-3xl"></span>
+          <XCircle className="w-9 h-9 text-destructive" />
         </div>
         <h2 className="text-lg font-bold text-foreground mb-2">처리에 실패했습니다</h2>
         <p className="text-sm text-muted-foreground mb-6">{errorMessage}</p>

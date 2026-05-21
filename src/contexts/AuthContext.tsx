@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, metadata?: Record<string, string>) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, metadata?: Record<string, string>) => Promise<{ error: Error | null; needsEmailConfirm: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signInWithKakao: () => Promise<{ error: Error | null }>;
@@ -18,11 +18,28 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const MARKETING_CONSENT_TYPE = "marketing_v1";
+const PENDING_MARKETING_KEY = "dewy:pending-marketing-consent";
 
-// 가입 시 user_metadata 에 남긴 마케팅 수신 동의를 user_consents 로 1회 backfill.
-// 같은 user + marketing_v1 row 가 이미 있으면 건너뛴다 (이력 보존, 중복 INSERT 방지).
+// 가입 시 남긴 마케팅 수신 동의를 user_consents 로 1회 backfill.
+// 이메일 가입은 user_metadata 에서, 소셜 가입은 OAuth 콜백에 metadata 를 실을
+// 수 없어 localStorage(pending) 에서 읽는다. 같은 user + marketing_v1 row 가
+// 이미 있으면 건너뛴다 (이력 보존, 중복 INSERT 방지).
 const backfillMarketingConsent = async (user: User) => {
-  const consent = user.user_metadata?.marketing_consent;
+  let consent = user.user_metadata?.marketing_consent;
+  let agreedAt = user.user_metadata?.marketing_consent_at ?? null;
+
+  if (typeof consent !== "boolean") {
+    // 소셜 가입 fallback — Auth 화면이 보관한 pending 값.
+    try {
+      const pending = localStorage.getItem(PENDING_MARKETING_KEY);
+      if (pending === "1" || pending === "0") {
+        consent = pending === "1";
+        agreedAt = new Date().toISOString();
+      }
+    } catch {
+      // ignore
+    }
+  }
   if (typeof consent !== "boolean") return;
 
   try {
@@ -32,9 +49,13 @@ const backfillMarketingConsent = async (user: User) => {
       .eq("user_id", user.id)
       .eq("consent_type", MARKETING_CONSENT_TYPE)
       .limit(1);
-    if (error || (data && data.length > 0)) return;
+    if (error) return;
+    if (data && data.length > 0) {
+      // 이미 기록됨 — pending 값만 정리.
+      try { localStorage.removeItem(PENDING_MARKETING_KEY); } catch { /* noop */ }
+      return;
+    }
 
-    const agreedAt = user.user_metadata?.marketing_consent_at ?? null;
     await (supabase as any).from("user_consents").insert({
       user_id: user.id,
       consent_type: MARKETING_CONSENT_TYPE,
@@ -45,6 +66,7 @@ const backfillMarketingConsent = async (user: User) => {
           ? navigator.userAgent?.slice(0, 500)
           : null,
     });
+    try { localStorage.removeItem(PENDING_MARKETING_KEY); } catch { /* noop */ }
   } catch {
     // backfill 실패는 무시 — 다음 로그인 때 재시도된다.
   }
@@ -95,7 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, metadata?: Record<string, string>) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -103,8 +125,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         data: metadata,
       }
     });
-    
-    return { error: error as Error | null };
+
+    // 이메일 확인이 켜져 있으면 user 는 생성되지만 session 은 비어 있다.
+    // 이 경우 즉시 로그인된 게 아니므로 호출부가 "메일 확인" 안내를 띄운다.
+    const needsEmailConfirm = !error && !!data?.user && !data?.session;
+
+    return { error: error as Error | null, needsEmailConfirm };
   };
 
   const signIn = async (email: string, password: string) => {
