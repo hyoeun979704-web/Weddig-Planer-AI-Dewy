@@ -1,5 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import type { Components } from "react-markdown";
 
 type Message = {
   role: "user" | "assistant";
@@ -7,6 +9,43 @@ type Message = {
 };
 
 const ChatBubble = ({ msg }: { msg: Message }) => {
+  const navigate = useNavigate();
+
+  // 챗봇 답변에는 [예산 페이지](/budget) 같은 앱 내부 링크가 자주 들어간다.
+  // 기본 <a>는 전체 페이지를 새로고침해 SPA 상태가 날아가므로, 내부 링크는
+  // React Router로 라우팅하고 외부 링크만 새 탭으로 연다.
+  const markdownComponents: Components = {
+    a: ({ href, children, ...props }) => {
+      const isInternal = !!href && href.startsWith("/") && !href.startsWith("//");
+      if (isInternal) {
+        return (
+          <a
+            href={href}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(href!);
+            }}
+            className="text-primary font-medium underline underline-offset-2"
+            {...props}
+          >
+            {children}
+          </a>
+        );
+      }
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary font-medium underline underline-offset-2"
+          {...props}
+        >
+          {children}
+        </a>
+      );
+    },
+  };
+
   if (msg.role === "user") {
     return (
       <motion.div
@@ -32,7 +71,7 @@ const ChatBubble = ({ msg }: { msg: Message }) => {
       </div>
       <div className="max-w-[85%] bg-card rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-border">
         <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-ul:pl-5 prose-ol:my-2 prose-li:my-1 prose-li:leading-relaxed prose-headings:font-bold prose-headings:text-foreground prose-h2:text-base prose-h2:mt-4 prose-h2:mb-2 prose-h3:text-[15px] prose-h3:mt-3 prose-h3:mb-1.5 prose-strong:text-foreground text-foreground [&_table]:w-full [&_td]:py-1 [&_th]:py-1 [&_th]:text-left [&_th]:font-semibold">
-          <ReactMarkdown>{msg.content}</ReactMarkdown>
+          <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
         </div>
       </div>
     </motion.div>
