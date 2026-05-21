@@ -93,7 +93,13 @@ const MenuSection = ({
             </div>
             <div className="flex-1 text-left min-w-0">
               <p className="text-sm font-semibold text-foreground">{businessProfile?.business_name || "업체 관리"}</p>
-              <p className="text-[11px] text-muted-foreground">업체 정보, 이미지, 문의 관리</p>
+              <p className="text-[11px] text-muted-foreground">
+                {businessProfile?.approval_status === "approved"
+                  ? "업체 정보, 이미지, 문의 관리"
+                  : businessProfile?.approval_status === "rejected"
+                    ? "등록 반려됨 · 다시 신청하기"
+                    : "등록 검토 중"}
+              </p>
             </div>
             <ChevronRight className="w-5 h-5 text-primary flex-shrink-0" />
           </button>
