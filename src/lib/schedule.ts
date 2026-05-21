@@ -91,3 +91,19 @@ export const daysUntilWedding = (weddingDate: string | null | undefined): number
   today.setHours(0, 0, 0, 0);
   return Math.round((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 };
+
+export type TaskUrgency = "past_due" | "urgent" | "this_month" | "later";
+
+// Classifies a "YYYY-MM-DD" task date relative to today into a coarse urgency
+// bucket. `today` is normalized to local midnight so the boundaries line up
+// with the user's wall calendar regardless of the time of day.
+export const getTaskUrgency = (dateStr: string, today: Date = new Date()): TaskUrgency => {
+  const target = parseLocalDate(dateStr);
+  const base = new Date(today);
+  base.setHours(0, 0, 0, 0);
+  const daysLeft = Math.round((target.getTime() - base.getTime()) / (1000 * 60 * 60 * 24));
+  if (daysLeft < 0) return "past_due";
+  if (daysLeft <= 7) return "urgent";
+  if (daysLeft <= 30) return "this_month";
+  return "later";
+};
