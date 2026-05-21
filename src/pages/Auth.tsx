@@ -33,6 +33,7 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [accountType, setAccountType] = useState<AccountType>("individual");
   const [errors, setErrors] = useState<{
@@ -111,6 +112,13 @@ const Auth = () => {
           birth_date: birthDate,
           age_confirmed_at: new Date().toISOString(),
           age_confirmed_min: MIN_AGE,
+          // 마케팅 정보 수신 동의 (정보통신망법 — 선택). 가입 시점 증거로
+          // user_metadata 에 보관. 첫 로그인 후 user_consents(marketing_v1)
+          // 로 backfill 하는 것은 후속 작업.
+          marketing_consent: marketingConsent,
+          marketing_consent_at: marketingConsent
+            ? new Date().toISOString()
+            : null,
         };
         if (accountType === "business") metadata.account_type = "business";
         const { error } = await signUp(email, password, metadata);
@@ -383,6 +391,21 @@ const Auth = () => {
               {errors.ageConfirmed && (
                 <p className="text-sm text-destructive">{errors.ageConfirmed}</p>
               )}
+
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="marketingConsent"
+                  checked={marketingConsent}
+                  onCheckedChange={(checked) => setMarketingConsent(checked === true)}
+                  className="mt-0.5"
+                />
+                <Label
+                  htmlFor="marketingConsent"
+                  className="text-sm leading-relaxed font-normal cursor-pointer text-muted-foreground"
+                >
+                  <span className="text-muted-foreground">[선택]</span> 할인·이벤트·웨딩 꿀팁 등 마케팅 정보 수신에 동의합니다. (이메일·앱 알림, 언제든 해지 가능)
+                </Label>
+              </div>
             </div>
           )}
 

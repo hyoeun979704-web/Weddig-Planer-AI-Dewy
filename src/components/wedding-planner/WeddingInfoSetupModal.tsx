@@ -11,6 +11,8 @@ import WeddingStylePicker from "@/components/schedule/WeddingStylePicker";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useDataCollectionConsent } from "@/hooks/useDataCollectionConsent";
 import DataCollectionConsentModal from "@/components/consent/DataCollectionConsentModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   buildScheduleFromTemplate,
   PLANNING_STAGE_LABELS,
@@ -51,6 +53,7 @@ interface Props {
  */
 const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { saveWeddingSettings, generateScheduleFromTemplate, weddingSettings } = useWeddingSchedule();
 
   const [date, setDate] = useState<Date>();
@@ -123,6 +126,25 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const handleSubmit = async () => {
     if (!validate()) return;
     setSubmitting(true);
+
+    // 임신 정보는 PIPA 민감정보(건강) — 체크 시 별도 동의로 간주하여
+    // user_consents 에 기록. 체크박스 라벨에 민감정보 처리 동의를 명시함.
+    if (pregnant && user) {
+      try {
+        await (supabase as any).from("user_consents").insert({
+          user_id: user.id,
+          consent_type: "sensitive_health_pregnancy_v1",
+          consent_version: 1,
+          agreed: true,
+          user_agent:
+            typeof navigator !== "undefined"
+              ? navigator.userAgent?.slice(0, 500)
+              : null,
+        });
+      } catch (e) {
+        console.error("pregnancy consent log failed", e);
+      }
+    }
 
     const weddingDateStr = !dateTbd && date ? format(date, "yyyy-MM-dd") : null;
     const ok = await saveWeddingSettings({
@@ -424,6 +446,9 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
               </p>
               <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
                 체크하시면 본식 시점 임신 차수에 맞춰 촬영·가봉·신혼여행 일정을 앞당겨 추천드리고, 임산부 가능 메이크업샵·산부인과 상담 같은 일정이 자동으로 추가돼요. AI 답변 톤도 신체 컨디션을 고려해 안내해드려요.
+              </p>
+              <p className="text-[11px] text-amber-700 leading-snug mt-1">
+                ⚠️ 임신 여부는 <strong>민감정보(건강)</strong>에 해당해요. 체크하시면 위 목적의 수집·이용에 별도 동의하는 것으로 간주되며, 동의 기록이 저장돼요. 체크 해제 시 저장되지 않아요.
               </p>
             </div>
           </label>
