@@ -86,10 +86,16 @@ export const useFavorites = () => {
   };
 
   const toggleFavorite = async (itemId: string, itemType: ItemType) => {
-    if (isFavorite(itemId, itemType)) {
-      await removeFavorite.mutateAsync({ itemId, itemType });
-    } else {
-      await addFavorite.mutateAsync({ itemId, itemType });
+    // mutateAsync 는 실패 시 reject 한다. onError 에서 이미 토스트로 안내하므로
+    // 여기선 삼켜 호출부(await toggleFavorite)에 미처리 rejection 이 번지지 않게 한다.
+    try {
+      if (isFavorite(itemId, itemType)) {
+        await removeFavorite.mutateAsync({ itemId, itemType });
+      } else {
+        await addFavorite.mutateAsync({ itemId, itemType });
+      }
+    } catch {
+      /* onError 에서 토스트 처리됨 */
     }
   };
 
