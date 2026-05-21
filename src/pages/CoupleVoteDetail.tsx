@@ -60,7 +60,14 @@ const CoupleVoteDetail = () => {
       ? { my_pick: myPick, my_reason: myReason || null }
       : { partner_pick: myPick, partner_reason: myReason || null };
 
-    await (supabase.from("couple_votes" as any) as any).update(updateData).eq("id", vote.id);
+    const { error } = await (supabase.from("couple_votes" as any) as any)
+      .update(updateData)
+      .eq("id", vote.id);
+    if (error) {
+      console.error("vote save failed:", error);
+      toast.error("투표 저장에 실패했어요. 다시 시도해주세요");
+      return;
+    }
     toast.success("투표가 저장되었어요!");
     fetchVote();
   };
@@ -120,8 +127,19 @@ const CoupleVoteDetail = () => {
 
   const handleDecide = async () => {
     if (!vote) return;
-    await (supabase.from("couple_votes" as any) as any).update({ status: "decided" }).eq("id", vote.id);
-    toast.success("결정 완료! ");
+    if (!bothVoted) {
+      toast.error("양쪽 모두 투표한 뒤 결정할 수 있어요");
+      return;
+    }
+    const { error } = await (supabase.from("couple_votes" as any) as any)
+      .update({ status: "decided" })
+      .eq("id", vote.id);
+    if (error) {
+      console.error("decide failed:", error);
+      toast.error("결정 저장에 실패했어요. 다시 시도해주세요");
+      return;
+    }
+    toast.success("결정 완료!");
     fetchVote();
   };
 
