@@ -25,7 +25,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   honeymoon: "허니문",
   appliance: "혼수가전",
   jewelry: "예물/예단",
-  invitation_venue: "상견례 장소",
+  invitation_venue: "청첩장 모임",
+  tailor_shop: "예복",
 };
 
 const AdminBusinessReview = () => {
@@ -36,19 +37,35 @@ const AdminBusinessReview = () => {
   const [note, setNote] = useState("");
   const [processing, setProcessing] = useState<string | null>(null);
 
+  const [listings, setListings] = useState<{ place_id: string; name: string; city: string | null; category: string }[]>([]);
+  const [processingListing, setProcessingListing] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any).rpc("admin_list_pending_businesses");
-    if (error) {
-      toast.error("목록을 불러오지 못했어요");
-      setItems([]);
-    } else {
-      setItems((data ?? []) as PendingBusiness[]);
-    }
+    const [biz, list] = await Promise.all([
+      (supabase as any).rpc("admin_list_pending_businesses"),
+      (supabase as any).rpc("admin_list_pending_listings"),
+    ]);
+    if (biz.error) { toast.error("목록을 불러오지 못했어요"); setItems([]); }
+    else setItems((biz.data ?? []) as PendingBusiness[]);
+    setListings(list.error ? [] : ((list.data ?? []) as any[]).map((p) => ({ place_id: p.place_id, name: p.name, city: p.city, category: p.category })));
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const reviewListing = async (placeId: string, approved: boolean) => {
+    setProcessingListing(placeId);
+    const { data, error } = await (supabase as any).rpc("admin_review_listing", {
+      p_place_id: placeId,
+      p_approved: approved,
+    });
+    setProcessingListing(null);
+    const res = data as { ok?: boolean } | null;
+    if (error || !res?.ok) { toast.error("처리에 실패했어요"); return; }
+    toast.success(approved ? "리스팅을 승인했어요" : "리스팅을 반려했어요");
+    setListings((prev) => prev.filter((l) => l.place_id !== placeId));
+  };
 
   const review = async (id: string, approved: boolean, reviewNote?: string) => {
     setProcessing(id);
@@ -80,12 +97,16 @@ const AdminBusinessReview = () => {
         </div>
       </header>
 
-      <main className="p-4">
+      <main className="p-4 space-y-6">
         {loading ? (
           <div className="py-20 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-        ) : items.length === 0 ? (
-          <EmptyState icon={Building2} title="검토 대기중인 기업회원이 없어요" />
         ) : (
+        <>
+        <section>
+          <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">가입 검토 ({items.length})</h2>
+          {items.length === 0 ? (
+            <EmptyState icon={Building2} title="검토 대기중인 기업회원이 없어요" />
+          ) : (
           <div className="space-y-3">
             {items.map((b) => (
               <div key={b.id} className="bg-card rounded-2xl border border-border p-4">
@@ -127,6 +148,35 @@ const AdminBusinessReview = () => {
               </div>
             ))}
           </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">업체 정보 검토 ({listings.length})</h2>
+          {listings.length === 0 ? (
+            <EmptyState icon={Building2} title="검토 대기중인 업체 정보가 없어요" />
+          ) : (
+          <div className="space-y-3">
+            {listings.map((l) => (
+              <div key={l.place_id} className="bg-card rounded-2xl border border-border p-4">
+                <p className="font-bold text-foreground">{l.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {CATEGORY_LABELS[l.category] ?? l.category}{l.city ? ` · ${l.city}` : ""}
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <Button size="sm" className="flex-1" disabled={processingListing === l.place_id} onClick={() => reviewListing(l.place_id, true)}>
+                    <Check className="w-4 h-4 mr-1" /> 승인
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1" disabled={processingListing === l.place_id} onClick={() => reviewListing(l.place_id, false)}>
+                    <X className="w-4 h-4 mr-1" /> 반려
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          )}
+        </section>
+        </>
         )}
       </main>
     </div>

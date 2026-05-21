@@ -17,7 +17,7 @@ const SERVICE_CATEGORIES = [
   { value: "honeymoon", label: "허니문" },
   { value: "appliance", label: "혼수가전" },
   { value: "jewelry", label: "예물/예단" },
-  { value: "invitation_venue", label: "상견례 장소" },
+  { value: "invitation_venue", label: "청첩장 모임" },
 ];
 
 // 흐름: 사업자정보 → 카테고리 → (사업자 인증 + 운영자 검토 대기). 업체 상세정보
