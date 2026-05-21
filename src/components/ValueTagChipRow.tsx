@@ -52,7 +52,7 @@ const ValueTagChipRow = ({ placeCategory = "wedding_hall" }: Props) => {
                 category: placeCategory,
                 state: "empty",
               });
-              toast.info(`${opt.emoji} ${opt.label}`, {
+              toast.info(opt.label, {
                 description: "매칭 데이터를 곧 추가할 예정이에요",
               });
               return;
@@ -82,7 +82,6 @@ const ValueTagChipRow = ({ placeCategory = "wedding_hall" }: Props) => {
                   : "bg-card border-border text-muted-foreground hover:border-foreground/30",
               )}
             >
-              <span aria-hidden>{opt.emoji}</span>
               <span>{opt.label}</span>
               {empty && (
                 <span className="text-[10px] font-semibold ml-0.5 px-1 rounded bg-muted text-muted-foreground">

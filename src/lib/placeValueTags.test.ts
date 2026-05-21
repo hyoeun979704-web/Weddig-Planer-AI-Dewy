@@ -11,9 +11,8 @@ describe("PLACE_VALUE_TAG_OPTIONS", () => {
     expect(new Set(values).size).toBe(values.length);
   });
 
-  it("every option exposes emoji + label + hint", () => {
+  it("every option exposes label + hint", () => {
     for (const o of PLACE_VALUE_TAG_OPTIONS) {
-      expect(o.emoji.length).toBeGreaterThan(0);
       expect(o.label.length).toBeGreaterThan(0);
       expect(o.hint.length).toBeGreaterThan(0);
     }
