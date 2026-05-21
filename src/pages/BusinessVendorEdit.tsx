@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
+import BusinessListingDetailForm from "@/components/business/BusinessListingDetailForm";
 
 // 승인된 기업회원이 공개 상세페이지(places) 공통 정보를 입력/수정. 저장하면
 // 운영자 검토 대기(미노출)로 전환되고, 승인 시 공개된다. 카테고리별 상세 항목은
@@ -142,6 +143,13 @@ const BusinessVendorEdit = () => {
         <Button onClick={handleSave} disabled={saving} className="w-full h-12 mt-2">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "저장하고 검토 요청"}
         </Button>
+
+        {placeId && (
+          <div className="pt-4 mt-2 border-t border-border">
+            <h2 className="text-sm font-semibold text-foreground mb-3">업체 종류별 상세 정보</h2>
+            <BusinessListingDetailForm onSaved={() => setModeration("pending")} />
+          </div>
+        )}
 
         {placeId && moderation === "approved" && (
           <button
