@@ -60,10 +60,13 @@ export function useHomeFirstRun() {
 
   useEffect(() => {
     if (stages) return; // 한 번만 계산
-    if (!user || isLoading || !ready) return;
+    if (!ready) return;
+    // 로그인 사용자는 결혼정보 로딩을 기다린다(온보딩 여부 판단). 게스트는 대기 X.
+    if (user && isLoading) return;
 
     const list: FirstRunStage[] = [];
 
+    // 이벤트(가입 유도/혜택) 팝업 — 게스트·로그인 모두 노출(오늘 하루 보지않기 제외).
     let eventBlocked = false;
     try {
       const until = localStorage.getItem(HOME_POPUP_DISMISS_KEY);
@@ -73,15 +76,18 @@ export function useHomeFirstRun() {
     }
     if (!eventBlocked) list.push("event");
 
-    if (!homeTourDone) list.push("tutorial");
+    // 튜토리얼·온보딩은 로그인 사용자만.
+    if (user) {
+      if (!homeTourDone) list.push("tutorial");
 
-    let onbDismissed = false;
-    try {
-      onbDismissed = localStorage.getItem(WEDDING_INFO_DISMISS_KEY) === "1";
-    } catch {
-      // ignore
+      let onbDismissed = false;
+      try {
+        onbDismissed = localStorage.getItem(WEDDING_INFO_DISMISS_KEY) === "1";
+      } catch {
+        // ignore
+      }
+      if (!onboarded && !onbDismissed) list.push("onboarding");
     }
-    if (!onboarded && !onbDismissed) list.push("onboarding");
 
     setStages(list);
   }, [stages, user, isLoading, ready, homeTourDone, onboarded]);
