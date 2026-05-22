@@ -11,7 +11,7 @@ const BusinessDashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { isBusiness, businessProfile, isLoading: roleLoading } = useUserRole();
   const [placeId, setPlaceId] = useState<string | null>(null);
-  const [stats, setStats] = useState({ media: 0, favorites: 0, views: 0 });
+  const [stats, setStats] = useState({ media: 0, favorites: 0, views: 0, couponDownloads: 0 });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -31,11 +31,17 @@ const BusinessDashboard = () => {
       const row = Array.isArray(data) ? data[0] : data;
       if (!row?.place_id) return;
       setPlaceId(row.place_id);
-      const [favRes, mediaRes] = await Promise.all([
+      const [favRes, mediaRes, dlRes] = await Promise.all([
         supabase.from("favorites").select("id", { count: "exact", head: true }).eq("item_id", row.place_id),
         (supabase as any).from("place_media").select("id", { count: "exact", head: true }).eq("place_id", row.place_id),
+        (supabase as any).rpc("get_my_coupon_download_count"),
       ]);
-      setStats({ favorites: favRes.count ?? 0, media: mediaRes.count ?? 0, views: row.view_count ?? 0 });
+      setStats({
+        favorites: favRes.count ?? 0,
+        media: mediaRes.count ?? 0,
+        views: row.view_count ?? 0,
+        couponDownloads: typeof dlRes.data === "number" ? dlRes.data : 0,
+      });
     })();
   }, [businessProfile]);
 
@@ -182,10 +188,11 @@ const BusinessDashboard = () => {
         </div>
 
         {/* Quick stats */}
-        <div className="grid grid-cols-3 gap-2 mx-4 mt-4">
+        <div className="grid grid-cols-4 gap-2 mx-4 mt-4">
           {[
             { icon: Eye, label: "조회수", value: stats.views, color: "text-primary" },
             { icon: Heart, label: "찜", value: stats.favorites, color: "text-primary" },
+            { icon: Ticket, label: "쿠폰받기", value: stats.couponDownloads, color: "text-primary" },
             { icon: Image, label: isMenuCategory ? "메뉴" : "사진", value: stats.media, color: "text-primary" },
           ].map((stat) => (
             <div key={stat.label} className="bg-card rounded-2xl border border-border p-3 text-center">
