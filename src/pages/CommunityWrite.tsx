@@ -12,6 +12,10 @@ import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 const categories = ["웨딩홀", "스드메", "혼수", "허니문", "자유"];
 
+// 작성 중 글이 백그라운드 전환·뒤로가기로 날아가지 않도록 텍스트를 임시 저장한다.
+// (이미지 File 객체는 직렬화 불가라 텍스트만 보존)
+const DRAFT_KEY = "dewy:community-write:draft";
+
 type PostWeddingStyle = "general" | "small" | "self";
 
 const STYLE_OPTIONS: { value: PostWeddingStyle | ""; label: string; hint: string }[] = [
@@ -33,6 +37,34 @@ const CommunityWrite = () => {
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  // 임시 저장된 작성 내용 복원 (마운트 시 1회)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.selectedCategory) setSelectedCategory(d.selectedCategory);
+        if (d.weddingStyle) { setWeddingStyle(d.weddingStyle); setStyleAutoApplied(true); }
+        if (d.title) setTitle(d.title);
+        if (d.content) setContent(d.content);
+      }
+    } catch { /* 손상된 draft 무시 */ }
+    setDraftLoaded(true);
+  }, []);
+
+  // 내용 변경 시 자동 임시 저장
+  useEffect(() => {
+    if (!draftLoaded) return;
+    if (!title && !content && !selectedCategory && !weddingStyle) {
+      localStorage.removeItem(DRAFT_KEY);
+      return;
+    }
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ selectedCategory, weddingStyle, title, content }));
+    } catch { /* 저장 실패 무시 */ }
+  }, [draftLoaded, selectedCategory, weddingStyle, title, content]);
 
   // 사용자의 결혼 유형이 로드되면 첫 1회 자동 선택. 직접 바꾼 뒤에는 덮어쓰지 않음.
   useEffect(() => {
@@ -147,6 +179,7 @@ const CommunityWrite = () => {
 
       if (error) throw error;
 
+      localStorage.removeItem(DRAFT_KEY);
       toast.success("게시글이 작성되었습니다.");
       navigate(`/community/${data.id}`);
     } catch (error) {
@@ -315,6 +348,7 @@ const CommunityWrite = () => {
         {/* Info Notice */}
         <div className="p-4 bg-muted rounded-xl">
           <p className="text-xs text-muted-foreground leading-relaxed">
+            • 작성 중 내용은 자동 임시저장돼요. 나갔다 와도 이어서 쓸 수 있어요. (이미지 제외)<br />
             • 게시글은 익명으로 작성됩니다.<br />
             • 부적절한 내용이 포함된 게시글은 삭제될 수 있습니다.<br />
             • 타인을 비방하거나 불쾌감을 주는 글은 삼가해주세요.

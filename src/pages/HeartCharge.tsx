@@ -196,6 +196,15 @@ const HeartCharge = () => {
             </p>
           </div>
         )}
+
+        {/* 결제 안내 — 무엇을 구매하고 어떻게 충전·환불되는지 명시 (앱스토어 정책) */}
+        <div className="p-4 rounded-2xl border border-border bg-muted/40 space-y-1.5 text-[11px] text-muted-foreground leading-relaxed">
+          <p className="text-xs font-semibold text-foreground">결제 안내</p>
+          <p>• 하트는 AI 드레스·메이크업 등 콘텐츠 생성에 사용하는 충전식 이용권이에요.</p>
+          <p>• 결제 완료 시 즉시 하트가 충전되며, <b>1회성 결제</b>로 정기결제(자동결제)가 아니에요.</p>
+          <p>• 콘텐츠 생성에 실패한 경우 사용한 하트는 자동 환불돼요.</p>
+          <p>• 미사용 하트 환불은 전자상거래법 및 <button onClick={() => navigate("/terms")} className="underline">이용약관</button>의 청약철회 규정을 따라요.</p>
+        </div>
       </main>
 
       {selected && (
