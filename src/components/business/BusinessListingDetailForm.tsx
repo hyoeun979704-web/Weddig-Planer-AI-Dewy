@@ -52,6 +52,27 @@ const DETAIL_SCHEMA: Record<string, FieldDef[]> = {
     { key: "capacity_max", label: "최대 인원", type: "number" },
     { key: "private_room_count", label: "룸 개수", type: "number" },
   ],
+  honeymoon: [
+    { key: "themes", label: "여행 유형", type: "multi", options: ["리조트", "투어", "해변", "도시", "문화"] },
+    { key: "countries", label: "여행 지역", type: "multi", options: ["일본", "동남아", "괌사이판", "유럽", "미주", "대양주", "중화권"] },
+    { key: "nights", label: "박", type: "number" },
+    { key: "days", label: "일", type: "number" },
+    { key: "avg_budget", label: "평균 경비(원)", type: "number" },
+  ],
+  jewelry: [
+    { key: "metals", label: "메탈", type: "multi", options: ["골드", "화이트골드", "로즈골드", "플래티넘"] },
+    { key: "product_categories", label: "상품 유형", type: "multi", options: ["결혼반지", "예물세트", "예단", "시계", "단품주얼리"] },
+    { key: "price_couple_set", label: "커플 세트가(원)", type: "number" },
+    { key: "couple_set_available", label: "커플 세트 가능", type: "bool" },
+    { key: "engraving_available", label: "각인 가능", type: "bool" },
+  ],
+  appliance: [
+    { key: "product_categories", label: "제품 카테고리", type: "multi", options: ["TV", "냉장고", "세탁기", "건조기", "에어컨", "가구", "침대", "소파"] },
+    { key: "brand_options", label: "브랜드", type: "multi", options: ["LG", "삼성", "비스포크", "오브제", "한샘", "이케아", "시몬스", "다이슨"] },
+    { key: "package_set_price", label: "세트 가격(원)", type: "number" },
+    { key: "free_delivery", label: "무료 배송", type: "bool" },
+    { key: "free_installation", label: "무료 설치", type: "bool" },
+  ],
 };
 
 const BusinessListingDetailForm = ({ onSaved }: { onSaved?: () => void }) => {
