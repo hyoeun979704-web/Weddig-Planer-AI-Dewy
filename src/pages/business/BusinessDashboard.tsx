@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket } from "lucide-react";
+import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -114,6 +114,13 @@ const BusinessDashboard = () => {
       label: "쿠폰 관리",
       description: "할인 쿠폰 발행 (검토 없이 즉시 노출)",
       href: "/business/coupons",
+      badge: null,
+    },
+    {
+      icon: Megaphone,
+      label: "이벤트 관리",
+      description: "이벤트 등록 (운영자 검토 후 노출)",
+      href: "/business/events",
       badge: null,
     },
     {
