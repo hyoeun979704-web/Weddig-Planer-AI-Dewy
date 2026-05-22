@@ -4,6 +4,7 @@ import SessionTracker from "@/components/SessionTracker";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import AdminGuard from "@/components/admin/AdminGuard";
+import BusinessGuard from "@/components/business/BusinessGuard";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -246,13 +247,13 @@ const App = () => (
 
               {/* 기업회원 플로우 */}
               <Route path="/business/onboard" element={<BusinessOnboard />} />
-              <Route path="/business/dashboard" element={<BusinessDashboard />} />
-              <Route path="/business/edit" element={<BusinessVendorEdit />} />
-              <Route path="/business/gallery" element={<BusinessGallery />} />
-              <Route path="/business/coupons" element={<BusinessCoupons />} />
-              <Route path="/business/events" element={<BusinessEvents />} />
-              <Route path="/business/products" element={<BusinessProducts />} />
-              <Route path="/business/inquiries" element={<BusinessInquiries />} />
+              <Route path="/business/dashboard" element={<BusinessGuard><BusinessDashboard /></BusinessGuard>} />
+              <Route path="/business/edit" element={<BusinessGuard><BusinessVendorEdit /></BusinessGuard>} />
+              <Route path="/business/gallery" element={<BusinessGuard><BusinessGallery /></BusinessGuard>} />
+              <Route path="/business/coupons" element={<BusinessGuard><BusinessCoupons /></BusinessGuard>} />
+              <Route path="/business/events" element={<BusinessGuard><BusinessEvents /></BusinessGuard>} />
+              <Route path="/business/products" element={<BusinessGuard><BusinessProducts /></BusinessGuard>} />
+              <Route path="/business/inquiries" element={<BusinessGuard><BusinessInquiries /></BusinessGuard>} />
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />

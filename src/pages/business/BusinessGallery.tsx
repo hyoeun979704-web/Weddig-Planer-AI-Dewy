@@ -46,7 +46,8 @@ const BusinessGallery = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await (supabase as any).rpc("get_my_listing");
+      const { data, error } = await (supabase as any).rpc("get_my_listing");
+      if (error) { toast.error("정보를 불러오지 못했어요"); setLoading(false); return; }
       const row = Array.isArray(data) ? data[0] : data;
       if (row?.place_id) {
         setPlaceId(row.place_id);
@@ -79,9 +80,11 @@ const BusinessGallery = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm(isMenu ? "이 메뉴를 삭제할까요?" : "이 사진을 삭제할까요?")) return;
     const { error } = await (supabase as any).from("place_media").delete().eq("id", id);
     if (error) { toast.error("삭제에 실패했어요"); return; }
     setItems((prev) => prev.filter((i) => i.id !== id));
+    toast.success("삭제했어요");
   };
 
   if (loading) {
@@ -109,6 +112,9 @@ const BusinessGallery = () => {
       <PageHeader title={isMenu ? "메뉴 관리" : "사진 관리"} />
 
       <main className="p-4 pb-24 space-y-5">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-[12px] text-emerald-800">
+          {isMenu ? "메뉴는" : "사진은"} 운영자 검토 없이 <b>즉시 노출</b>돼요.
+        </div>
         {/* Add form */}
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <div className="flex items-center gap-2">

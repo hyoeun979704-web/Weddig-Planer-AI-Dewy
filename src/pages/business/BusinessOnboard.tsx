@@ -38,7 +38,7 @@ const BusinessOnboard = () => {
   const [bizPhone, setBizPhone] = useState("");
   const [serviceCategory, setServiceCategory] = useState("");
 
-  const [result, setResult] = useState<{ is_verified: boolean; message: string } | null>(null);
+  const [result, setResult] = useState<{ is_verified: boolean; verification_failed?: boolean; message: string } | null>(null);
 
   const formatBusinessNumber = (value: string) => {
     const nums = value.replace(/\D/g, "").slice(0, 10);
@@ -91,7 +91,11 @@ const BusinessOnboard = () => {
 
       setResult(data);
       setStep(2);
-      toast.success("등록 신청이 접수되었어요");
+      if (data.verification_failed) {
+        toast("사업자 정보가 자동 인증되지 않았어요. 운영자가 직접 확인합니다");
+      } else {
+        toast.success("등록 신청이 접수되었어요");
+      }
     } catch (error) {
       console.error("Business registration error:", error);
       toast.error("등록 중 오류가 발생했습니다");
@@ -160,6 +164,7 @@ const BusinessOnboard = () => {
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium">개업일자</Label>
                   <Input type="date" value={openDate} onChange={(e) => setOpenDate(e.target.value)} />
+                  <p className="text-[11px] text-muted-foreground">국세청 자동 인증에 사용돼요. 입력하면 인증 성공률이 높아집니다.</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium">업태</Label>
@@ -201,7 +206,16 @@ const BusinessOnboard = () => {
                 <Clock className="w-10 h-10 text-amber-600" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">등록 신청 완료 · 검토 중</h2>
+                <h2 className="text-xl font-bold text-foreground">
+                  {result?.verification_failed ? "신청 접수 · 사업자 정보 확인 필요" : "등록 신청 완료 · 검토 중"}
+                </h2>
+                {result?.verification_failed && (
+                  <p className="text-sm text-amber-700 mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3 leading-relaxed text-left">
+                    입력하신 사업자 정보가 국세청 자동 인증과 일치하지 않았어요.
+                    사업자등록번호·상호명·대표자명·개업일자를 다시 확인해 주세요.
+                    그대로 진행해도 운영자가 직접 확인 후 승인할 수 있어요.
+                  </p>
+                )}
                 <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
                   {result?.message ?? "운영자 검토 후 등록 결과를 알려드릴게요."}
                 </p>

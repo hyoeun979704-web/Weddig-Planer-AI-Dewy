@@ -19,38 +19,46 @@ export const useUserRole = () => {
   const [roles, setRoles] = useState<string[]>([]);
   const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // 역할 조회 실패를 "권한 없음"과 구분한다. 일시적 네트워크 오류로 승인된
+  // 사업자가 온보딩 화면으로 튕기는 것을 막기 위해 호출부에서 활용한다.
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     if (!user) {
       setRoles([]);
       setBusinessProfile(null);
+      setIsError(false);
       setIsLoading(false);
       return;
     }
 
     const fetchData = async () => {
+      setIsError(false);
       try {
         // Fetch roles
-        const { data: roleData } = await (supabase as any)
+        const { data: roleData, error: roleError } = await (supabase as any)
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id);
+        if (roleError) throw roleError;
 
         const userRoles = roleData?.map((r: { role: string }) => r.role) || [];
         setRoles(userRoles);
 
         // Fetch business profile if business role
         if (userRoles.includes("business")) {
-          const { data: bpData } = await (supabase as any)
+          const { data: bpData, error: bpError } = await (supabase as any)
             .from("business_profiles")
             .select("id, business_name, business_number, representative_name, service_category, is_verified, vendor_id, approval_status, review_note")
             .eq("user_id", user.id)
             .maybeSingle();
+          if (bpError) throw bpError;
 
           setBusinessProfile(bpData || null);
         }
       } catch (e) {
         console.error("Error fetching user role:", e);
+        setIsError(true);
       } finally {
         setIsLoading(false);
       }
@@ -62,6 +70,7 @@ export const useUserRole = () => {
   return {
     roles,
     isLoading,
+    isError,
     isBusiness: roles.includes("business"),
     isAdmin: roles.includes("admin"),
     isIndividual: roles.includes("individual"),

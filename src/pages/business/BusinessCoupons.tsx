@@ -43,7 +43,8 @@ const BusinessCoupons = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await (supabase as any).rpc("get_my_listing");
+      const { data, error } = await (supabase as any).rpc("get_my_listing");
+      if (error) { toast.error("정보를 불러오지 못했어요"); setLoading(false); return; }
       const row = Array.isArray(data) ? data[0] : data;
       if (row?.place_id) {
         setPlaceId(row.place_id);
@@ -52,6 +53,12 @@ const BusinessCoupons = () => {
       setLoading(false);
     })();
   }, [loadCoupons]);
+
+  const fmtDate = (s: string | null) => {
+    if (!s) return "";
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? s : d.toLocaleDateString("ko-KR");
+  };
 
   const handleAdd = async () => {
     if (!user || !placeId) return;
@@ -76,9 +83,11 @@ const BusinessCoupons = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm("이 쿠폰을 삭제할까요?")) return;
     const { error } = await (supabase as any).from("business_coupons").delete().eq("id", id);
     if (error) { toast.error("삭제에 실패했어요"); return; }
     setItems((prev) => prev.filter((c) => c.id !== id));
+    toast.success("삭제했어요");
   };
 
   if (loading) {
@@ -101,6 +110,9 @@ const BusinessCoupons = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto">
       <PageHeader title="쿠폰 관리" />
       <main className="p-4 pb-24 space-y-5">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-[12px] text-emerald-800">
+          쿠폰은 운영자 검토 없이 <b>즉시 노출</b>돼요.
+        </div>
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Ticket className="w-4 h-4 text-primary" />
@@ -141,7 +153,7 @@ const BusinessCoupons = () => {
                     <p className="text-sm text-primary font-semibold mt-0.5">{c.discount_text}</p>
                     <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-1">
                       {c.min_order_won != null && <span>최소 {c.min_order_won.toLocaleString()}원</span>}
-                      {c.expires_at && <span className="flex items-center gap-0.5"><Calendar className="w-3 h-3" />{c.expires_at}까지</span>}
+                      {c.expires_at && <span className="flex items-center gap-0.5"><Calendar className="w-3 h-3" />{fmtDate(c.expires_at)}까지</span>}
                     </div>
                   </div>
                   <button onClick={() => handleDelete(c.id)} className="text-destructive shrink-0">
