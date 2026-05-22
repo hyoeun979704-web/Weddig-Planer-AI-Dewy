@@ -41,22 +41,36 @@ const AdminBusinessReview = () => {
   const [processingListing, setProcessingListing] = useState<string | null>(null);
   const [events, setEvents] = useState<{ id: string; title: string; description: string | null }[]>([]);
   const [processingEvent, setProcessingEvent] = useState<string | null>(null);
+  const [products, setProducts] = useState<{ id: string; name: string; price: number | null }[]>([]);
+  const [processingProduct, setProcessingProduct] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [biz, list, evt] = await Promise.all([
+    const [biz, list, evt, prod] = await Promise.all([
       (supabase as any).rpc("admin_list_pending_businesses"),
       (supabase as any).rpc("admin_list_pending_listings"),
       (supabase as any).rpc("admin_list_pending_events"),
+      (supabase as any).rpc("admin_list_pending_products"),
     ]);
     if (biz.error) { toast.error("목록을 불러오지 못했어요"); setItems([]); }
     else setItems((biz.data ?? []) as PendingBusiness[]);
     setListings(list.error ? [] : ((list.data ?? []) as any[]).map((p) => ({ place_id: p.place_id, name: p.name, city: p.city, category: p.category })));
     setEvents(evt.error ? [] : ((evt.data ?? []) as any[]).map((e) => ({ id: e.id, title: e.title, description: e.description })));
+    setProducts(prod.error ? [] : ((prod.data ?? []) as any[]).map((p) => ({ id: p.id, name: p.name, price: p.price })));
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const reviewProduct = async (id: string, approved: boolean) => {
+    setProcessingProduct(id);
+    const { data, error } = await (supabase as any).rpc("admin_review_product", { p_id: id, p_approved: approved });
+    setProcessingProduct(null);
+    const res = data as { ok?: boolean } | null;
+    if (error || !res?.ok) { toast.error("처리에 실패했어요"); return; }
+    toast.success(approved ? "상품을 승인했어요" : "상품을 반려했어요");
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+  };
 
   const reviewEvent = async (id: string, approved: boolean) => {
     setProcessingEvent(id);
@@ -206,6 +220,30 @@ const AdminBusinessReview = () => {
                     <Check className="w-4 h-4 mr-1" /> 승인
                   </Button>
                   <Button variant="outline" size="sm" className="flex-1" disabled={processingEvent === e.id} onClick={() => reviewEvent(e.id, false)}>
+                    <X className="w-4 h-4 mr-1" /> 반려
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">상품 검토 ({products.length})</h2>
+          {products.length === 0 ? (
+            <EmptyState icon={Building2} title="검토 대기중인 상품이 없어요" />
+          ) : (
+          <div className="space-y-3">
+            {products.map((p) => (
+              <div key={p.id} className="bg-card rounded-2xl border border-border p-4">
+                <p className="font-bold text-foreground">{p.name}</p>
+                {p.price != null && <p className="text-xs text-muted-foreground mt-0.5">{p.price.toLocaleString()}원</p>}
+                <div className="flex gap-2 mt-3">
+                  <Button size="sm" className="flex-1" disabled={processingProduct === p.id} onClick={() => reviewProduct(p.id, true)}>
+                    <Check className="w-4 h-4 mr-1" /> 승인
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1" disabled={processingProduct === p.id} onClick={() => reviewProduct(p.id, false)}>
                     <X className="w-4 h-4 mr-1" /> 반려
                   </Button>
                 </div>
