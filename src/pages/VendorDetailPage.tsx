@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 import { usePlaceDetail, type LegacyDetail } from "@/hooks/usePlaceDetail";
 import PlaceDetailLayout from "@/components/detail/PlaceDetailLayout";
+import PlaceCoupons from "@/components/place/PlaceCoupons";
 
 // Catch-all detail page wired to PlaceDetailLayout. Used by:
 //  - /vendor/:id (categoryRouteMap fallback for "스드메" combo + legacy links)
@@ -60,7 +61,12 @@ const VendorDetailPage = () => {
       place={place}
       categoryLabel={categoryLabel}
       favoriteType={favoriteType}
-      extraSection={<CategoryExtras place={place} />}
+      extraSection={
+        <>
+          <PlaceCoupons placeId={place.id} />
+          <CategoryExtras place={place} />
+        </>
+      }
     />
   );
 };
