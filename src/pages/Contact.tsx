@@ -11,10 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useContactConfig } from "@/hooks/useAppConfig";
 
 const Contact = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const contact = useContactConfig();
   const [category, setCategory] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -58,9 +60,9 @@ const Contact = () => {
         {/* Contact Info */}
         <div className="p-4 bg-primary/5 border-b border-border">
           <div className="flex gap-4">
-            <a href="mailto:help@dewy-wedding.com" className="flex-1 flex items-center justify-center gap-2 py-3 bg-card rounded-xl border border-border">
+            <a href={`mailto:${contact.email}`} className="flex-1 flex items-center justify-center gap-2 py-3 bg-card rounded-xl border border-border">
               <Mail className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">이메일 문의 (help@dewy-wedding.com)</span>
+              <span className="text-sm font-medium">이메일 문의 ({contact.email})</span>
             </a>
           </div>
           <p className="text-xs text-muted-foreground text-center mt-3">
