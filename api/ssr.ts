@@ -100,7 +100,7 @@ function renderPlace(p: Record<string, unknown>, reviews: Record<string, unknown
   const reviewCount = Number(p.review_count ?? 0);
   const d = (p.place_details ?? null) as Record<string, unknown> | null;
   const card = (p[CARD_KEY[category]] ?? null) as Record<string, unknown> | null;
-  const image = (p.main_image_url as string) ?? `${SITE}/android-launchericon-512-512.png`;
+  const image = (p.main_image_url as string) || `${SITE}/android-launchericon-512-512.png`;
   const desc = (p.description as string) || `${address} ${label} ${name}. Dewy에서 가격·후기·서비스를 확인하세요.`;
 
   // 제공 서비스/특징: advantages + tags + 카테고리 배열 필드를 모은다.
@@ -167,9 +167,7 @@ function renderProduct(p: Record<string, unknown>): Rendered {
   const id = String(p.id ?? "");
   const name = String(p.name ?? "상품");
   const price = Number(p.sale_price ?? p.price ?? 0);
-  const rating = Number(p.rating ?? 0);
-  const reviewCount = Number(p.review_count ?? 0);
-  const image = (p.thumbnail_url as string) ?? `${SITE}/android-launchericon-512-512.png`;
+  const image = (p.thumbnail_url as string) || `${SITE}/android-launchericon-512-512.png`;
   const desc = (p.description as string) || `${name} - Dewy 웨딩 쇼핑몰에서 만나보세요.`;
   const canonical = `${SITE}/store/${id}`;
   const metaDesc = desc.slice(0, 160);
@@ -184,9 +182,6 @@ function renderProduct(p: Record<string, unknown>): Rendered {
     ...(price > 0
       ? { offers: { "@type": "Offer", price, priceCurrency: "KRW", availability: "https://schema.org/InStock" } }
       : {}),
-    ...(reviewCount > 0 && rating > 0
-      ? { aggregateRating: { "@type": "AggregateRating", ratingValue: rating, reviewCount } }
-      : {}),
   };
 
   const title = `${name} | Dewy 웨딩 쇼핑몰`;
@@ -195,7 +190,6 @@ function renderProduct(p: Record<string, unknown>): Rendered {
     <section style="max-width:430px;margin:0 auto;padding:24px;font-family:'Noto Sans KR',sans-serif;color:#3b3b3b;line-height:1.6;">
       <h1>${esc(name)}</h1>
       ${price > 0 ? `<p>${esc(price.toLocaleString("ko-KR"))}원</p>` : ""}
-      ${reviewCount > 0 ? `<p>평점 ${esc(rating.toFixed(1))} · 후기 ${esc(reviewCount)}개</p>` : ""}
       <p>${esc(desc)}</p>
     </section>`;
 
@@ -213,22 +207,41 @@ function headTags(title: string, desc: string, canonical: string, image: string,
     `<meta name="twitter:title" content="${esc(title)}" />`,
     `<meta name="twitter:description" content="${esc(desc)}" />`,
     `<meta name="twitter:image" content="${esc(image)}" />`,
-    `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`,
+    // `<` 를 유니코드로 이스케이프해 본문 데이터에 든 `</script>`/`<!--` 가
+    // 스크립트 태그를 탈출하는 것(XSS)을 막는다.
+    `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>`,
   ].join("\n    ");
 }
 
 function inject(template: string, r: Rendered): string {
+  // 치환 문자열을 함수로 넘겨, 본문 데이터에 든 `$&`/`$1`/`$$` 같은 시퀀스가
+  // String.replace 의 특수 치환 패턴으로 해석돼 출력이 깨지는 것을 막는다.
   let html = template;
-  // <title> 교체
-  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(r.title)}</title>`);
+  html = html.replace(/<title>[\s\S]*?<\/title>/, () => `<title>${esc(r.title)}</title>`);
   // 기존 description/canonical 제거(상세용으로 대체) 후 head 주입
   html = html
     .replace(/<meta name="description"[^>]*>/, "")
     .replace(/<link rel="canonical"[^>]*>/, "");
-  html = html.replace("</head>", `    ${r.head}\n  </head>`);
+  html = html.replace("</head>", () => `    ${r.head}\n  </head>`);
   // #root 안에 본문 주입(앱 부팅 시 React 가 대체). noscript 는 그대로 둔다.
-  html = html.replace('<div id="root">', `<div id="root">\n      ${r.body}`);
+  html = html.replace('<div id="root">', () => `<div id="root">\n      ${r.body}`);
   return html;
+}
+
+// 템플릿(index.html) 확보 실패 시 사용할, 리다이렉트 없는 최소 문서.
+// 무한 리다이렉트를 피하면서 크롤러에는 본문/구조화 데이터를 제공한다.
+function bareDoc(r: Rendered): string {
+  return `<!doctype html><html lang="ko"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${esc(r.title)}</title>\n    ${r.head}\n  </head><body><div id="root">${r.body}</div></body></html>`;
+}
+
+async function getTemplate(origin: string): Promise<string | null> {
+  try {
+    const t = await fetch(`${origin}/index.html`);
+    if (!t.ok) return null;
+    return await t.text();
+  } catch {
+    return null;
+  }
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -238,53 +251,49 @@ export default async function handler(req: Request): Promise<Response> {
   const prefix = url.searchParams.get("prefix") ?? "venue";
   const origin = url.origin;
 
-  // 템플릿(빌드된 index.html)을 먼저 확보 — 실패/예외 시 SPA 그대로 폴백.
-  let template = "";
-  try {
-    const t = await fetch(`${origin}/index.html`);
-    template = await t.text();
-  } catch {
-    return new Response(null, { status: 302, headers: { Location: `/${prefix}/${id ?? ""}` } });
-  }
-
-  const fallback = () =>
-    new Response(template, { headers: { "content-type": "text/html; charset=utf-8" } });
-
-  if (!type || !id) return fallback();
-
-  try {
-    let rendered: Rendered | null = null;
-
-    if (type === "place") {
-      const rows = await sb(`places?place_id=eq.${encodeURIComponent(id)}&select=${encodeURIComponent(PLACE_SELECT)}`);
-      const place = firstRow(rows);
-      if (!place) return fallback();
-      let reviews: Record<string, unknown>[] = [];
-      try {
-        const rv = await sb(
-          `place_reviews?place_id=eq.${encodeURIComponent(id)}&select=title,content,author,rating,review_date&order=review_date.desc.nullslast&limit=20`,
+  // 데이터를 먼저 렌더(있으면). 템플릿은 그 다음 확보한다.
+  let rendered: Rendered | null = null;
+  if (type && id) {
+    try {
+      if (type === "place") {
+        const rows = await sb(
+          `places?place_id=eq.${encodeURIComponent(id)}&select=${encodeURIComponent(PLACE_SELECT)}`,
         );
-        reviews = Array.isArray(rv) ? (rv as Record<string, unknown>[]) : [];
-      } catch {
-        reviews = [];
+        const place = firstRow(rows);
+        if (place) {
+          let reviews: Record<string, unknown>[] = [];
+          try {
+            const rv = await sb(
+              `place_reviews?place_id=eq.${encodeURIComponent(id)}&select=title,content,author,rating,review_date&order=review_date.desc.nullslast&limit=20`,
+            );
+            reviews = Array.isArray(rv) ? (rv as Record<string, unknown>[]) : [];
+          } catch {
+            reviews = [];
+          }
+          rendered = renderPlace(place, reviews, prefix);
+        }
+      } else if (type === "product") {
+        const rows = await sb(`products?id=eq.${encodeURIComponent(id)}&select=*`);
+        const product = firstRow(rows);
+        if (product) rendered = renderProduct(product);
       }
-      rendered = renderPlace(place, reviews, prefix);
-    } else if (type === "product") {
-      const rows = await sb(`products?id=eq.${encodeURIComponent(id)}&select=*`);
-      const product = firstRow(rows);
-      if (!product) return fallback();
-      rendered = renderProduct(product);
+    } catch {
+      rendered = null;
     }
-
-    if (!rendered) return fallback();
-
-    return new Response(inject(template, rendered), {
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-        "cache-control": "public, s-maxage=3600, stale-while-revalidate=86400",
-      },
-    });
-  } catch {
-    return fallback();
   }
+
+  const template = await getTemplate(origin);
+  const htmlHeaders = { "content-type": "text/html; charset=utf-8" } as const;
+
+  if (rendered && template) {
+    return new Response(inject(template, rendered), {
+      headers: { ...htmlHeaders, "cache-control": "public, s-maxage=3600, stale-while-revalidate=86400" },
+    });
+  }
+  // 데이터는 있는데 템플릿을 못 받은 경우: 리다이렉트 없이 최소 문서로 본문 제공.
+  if (rendered) return new Response(bareDoc(rendered), { headers: htmlHeaders });
+  // 데이터가 없으면(존재하지 않는 id 등) SPA 템플릿으로 폴백 → 앱이 처리.
+  if (template) return new Response(template, { headers: htmlHeaders });
+  // 둘 다 실패한 극단적 경우에도 리다이렉트 루프 없이 종료.
+  return new Response("<!doctype html><title>Dewy</title>", { status: 200, headers: htmlHeaders });
 }
