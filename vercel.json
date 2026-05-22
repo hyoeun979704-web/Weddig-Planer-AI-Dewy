@@ -3,6 +3,15 @@
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [
+    { "source": "/venue/:id", "destination": "/api/ssr?type=place&prefix=venue&id=:id" },
+    { "source": "/studio/:id", "destination": "/api/ssr?type=place&prefix=studio&id=:id" },
+    { "source": "/hanbok/:id", "destination": "/api/ssr?type=place&prefix=hanbok&id=:id" },
+    { "source": "/suit/:id", "destination": "/api/ssr?type=place&prefix=suit&id=:id" },
+    { "source": "/honeymoon/:id", "destination": "/api/ssr?type=place&prefix=honeymoon&id=:id" },
+    { "source": "/jewelry/:id", "destination": "/api/ssr?type=place&prefix=jewelry&id=:id" },
+    { "source": "/appliances/:id", "destination": "/api/ssr?type=place&prefix=appliances&id=:id" },
+    { "source": "/invitation-venues/:id", "destination": "/api/ssr?type=place&prefix=invitation-venues&id=:id" },
+    { "source": "/store/:id", "destination": "/api/ssr?type=product&prefix=store&id=:id" },
     { "source": "/((?!api|assets|sw.js|workbox-.*).*)", "destination": "/index.html" }
   ]
 }
