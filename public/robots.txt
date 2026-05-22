@@ -4,6 +4,12 @@ Allow: /
 User-agent: Bingbot
 Allow: /
 
+User-agent: Yeti
+Allow: /
+
+User-agent: Daumoa
+Allow: /
+
 User-agent: Twitterbot
 Allow: /
 
@@ -12,3 +18,5 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://dewy-wedding.com/sitemap.xml
