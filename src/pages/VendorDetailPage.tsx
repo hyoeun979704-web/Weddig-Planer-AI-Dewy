@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { AlertCircle } from "lucide-react";
 import { usePlaceDetail, type LegacyDetail } from "@/hooks/usePlaceDetail";
 import PlaceDetailLayout from "@/components/detail/PlaceDetailLayout";
 
@@ -44,7 +45,7 @@ const VendorDetailPage = () => {
   if (error || !place) {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center p-4">
-        <span className="text-4xl mb-4"></span>
+        <AlertCircle className="w-12 h-12 text-muted-foreground mb-4" />
         <p className="text-muted-foreground text-center mb-4">업체를 찾을 수 없어요.</p>
         <Button onClick={() => navigate(-1)}>뒤로</Button>
       </div>

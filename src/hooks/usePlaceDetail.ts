@@ -1,5 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+
+// 세션 내 같은 place 중복 증가 방지.
+const viewedPlaces = new Set<string>();
 
 /**
  * Single round-trip for the entire detail page payload:
@@ -350,6 +354,13 @@ function asPricePackages(v: unknown): PricePackage[] {
 }
 
 export const usePlaceDetail = (placeId: string | undefined) => {
+  // 상세 진입 시 조회수 +1 (마케팅 대시보드 지표). 세션당 place 1회.
+  useEffect(() => {
+    if (!placeId || viewedPlaces.has(placeId)) return;
+    viewedPlaces.add(placeId);
+    void (supabase as any).rpc("increment_place_views", { p_place_id: placeId });
+  }, [placeId]);
+
   return useQuery({
     queryKey: ["place_detail", placeId],
     queryFn: async (): Promise<LegacyDetail | null> => {
