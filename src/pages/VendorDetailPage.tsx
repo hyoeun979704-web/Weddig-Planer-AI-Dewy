@@ -5,6 +5,7 @@ import { AlertCircle } from "lucide-react";
 import { usePlaceDetail, type LegacyDetail } from "@/hooks/usePlaceDetail";
 import PlaceDetailLayout from "@/components/detail/PlaceDetailLayout";
 import PlaceCoupons from "@/components/place/PlaceCoupons";
+import PlaceBusinessSections from "@/components/place/PlaceBusinessSections";
 
 // Catch-all detail page wired to PlaceDetailLayout. Used by:
 //  - /vendor/:id (categoryRouteMap fallback for "스드메" combo + legacy links)
@@ -64,6 +65,7 @@ const VendorDetailPage = () => {
       extraSection={
         <>
           <PlaceCoupons placeId={place.id} />
+          <PlaceBusinessSections placeId={place.id} category={place.category} />
           <CategoryExtras place={place} />
         </>
       }
