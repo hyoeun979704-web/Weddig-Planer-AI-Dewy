@@ -128,6 +128,7 @@ const BusinessOnboard = lazy(() => import("./pages/BusinessOnboard"));
 const BusinessDashboard = lazy(() => import("./pages/BusinessDashboard"));
 const BusinessVendorEdit = lazy(() => import("./pages/BusinessVendorEdit"));
 const BusinessGallery = lazy(() => import("./pages/BusinessGallery"));
+const BusinessCoupons = lazy(() => import("./pages/BusinessCoupons"));
 const BusinessInquiries = lazy(() => import("./pages/BusinessInquiries"));
 
 const queryClient = new QueryClient();
@@ -246,6 +247,7 @@ const App = () => (
               <Route path="/business/dashboard" element={<BusinessDashboard />} />
               <Route path="/business/edit" element={<BusinessVendorEdit />} />
               <Route path="/business/gallery" element={<BusinessGallery />} />
+              <Route path="/business/coupons" element={<BusinessCoupons />} />
               <Route path="/business/inquiries" element={<BusinessInquiries />} />
 
               <Route path="/terms" element={<Terms />} />
