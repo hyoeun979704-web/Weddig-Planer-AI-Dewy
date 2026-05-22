@@ -151,7 +151,7 @@ function renderPlace(p: Record<string, unknown>, reviews: Record<string, unknown
   const title = `${name} - ${label} 가격·후기 | Dewy`;
   const head = headTags(title, metaDesc, canonical, image, jsonLd);
   const body = `
-    <section style="max-width:430px;margin:0 auto;padding:24px;font-family:'Noto Sans KR',sans-serif;color:#3b3b3b;line-height:1.6;">
+    <section aria-hidden="true" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:normal;border:0;">
       <h1>${esc(name)}</h1>
       <p>${esc(label)}${address ? ` · ${esc(address)}` : ""}</p>
       ${reviewCount > 0 ? `<p>평점 ${esc(rating.toFixed(1))} · 후기 ${esc(reviewCount)}개</p>` : ""}
@@ -187,7 +187,7 @@ function renderProduct(p: Record<string, unknown>): Rendered {
   const title = `${name} | Dewy 웨딩 쇼핑몰`;
   const head = headTags(title, metaDesc, canonical, image, jsonLd);
   const body = `
-    <section style="max-width:430px;margin:0 auto;padding:24px;font-family:'Noto Sans KR',sans-serif;color:#3b3b3b;line-height:1.6;">
+    <section aria-hidden="true" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:normal;border:0;">
       <h1>${esc(name)}</h1>
       ${price > 0 ? `<p>${esc(price.toLocaleString("ko-KR"))}원</p>` : ""}
       <p>${esc(desc)}</p>
