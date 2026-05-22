@@ -4,27 +4,88 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dewy - AI 웨딩플래너와 함께하는 결혼준비</title>
-    <meta name="description" content="둘이니까, 쉬워지니까. Dewy와 함께 스마트한 결혼 준비를 시작하세요.">
+    <meta name="description" content="AI 웨딩플래너 Dewy. 결혼 준비 체크리스트·D-Day, 예산 관리와 양가 분담, 웨딩홀·스드메·예복·한복·신혼여행 추천, AI 드레스·메이크업 시뮬레이션, 모바일 청첩장까지. 둘이니까, 쉬워지니까." />
     <meta name="author" content="Dewy" />
+    <meta name="keywords" content="AI 웨딩플래너, 결혼 준비 앱, 결혼 체크리스트, 웨딩 예산 관리, 스드메 추천, 웨딩홀 추천, AI 드레스 시뮬레이션, 모바일 청첩장, 결혼준비, Dewy" />
+    <link rel="canonical" href="https://dewy-wedding.com/" />
+
     <!-- PWA 메타 태그 -->
     <meta name="theme-color" content="#F4A7B9" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <link rel="apple-touch-icon" href="/icon-192x192.png" />
+    <meta name="apple-mobile-web-app-title" content="Dewy" />
+    <link rel="apple-touch-icon" href="/android-launchericon-192-192.png" />
+    <link rel="icon" type="image/png" href="/android-launchericon-192-192.png" />
 
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Dewy - AI 웨딩플래너와 함께하는 결혼준비">
-    <meta property="og:description" content="둘이니까, 쉬워지니까. Dewy와 함께 스마트한 결혼 준비를 시작하세요.">
+    <meta property="og:site_name" content="Dewy" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:url" content="https://dewy-wedding.com/" />
+    <meta property="og:title" content="Dewy - AI 웨딩플래너와 함께하는 결혼준비" />
+    <meta property="og:description" content="결혼 준비 체크리스트·예산·추천·AI 시뮬레이션까지, 둘이니까 쉬워지는 AI 웨딩플래너 Dewy." />
+    <!-- TODO: 1200x630 전용 OG 이미지를 /og-image.png 로 추가하면 카톡/페북 미리보기가 더 좋아집니다. 현재는 로고 사용. -->
+    <meta property="og:image" content="https://dewy-wedding.com/android-launchericon-512-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Dewy - AI 웨딩플래너와 함께하는 결혼준비">
-    <meta name="twitter:description" content="둘이니까, 쉬워지니까. Dewy와 함께 스마트한 결혼 준비를 시작하세요.">
-    <link rel="icon" type="image/png" href="/icon-192x192.png">
+    <meta name="twitter:title" content="Dewy - AI 웨딩플래너와 함께하는 결혼준비" />
+    <meta name="twitter:description" content="결혼 준비 체크리스트·예산·추천·AI 시뮬레이션까지, 둘이니까 쉬워지는 AI 웨딩플래너 Dewy." />
+    <meta name="twitter:image" content="https://dewy-wedding.com/android-launchericon-512-512.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- 구조화 데이터(JSON-LD): 사이트 + 모바일 앱 -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "name": "Dewy",
+          "url": "https://dewy-wedding.com/",
+          "description": "AI 웨딩플래너와 함께하는 결혼 준비 서비스",
+          "inLanguage": "ko-KR"
+        },
+        {
+          "@type": "MobileApplication",
+          "name": "Dewy - AI 웨딩플래너",
+          "operatingSystem": "ANDROID, iOS, Web",
+          "applicationCategory": "LifestyleApplication",
+          "description": "결혼 준비 체크리스트·예산 관리·웨딩 업체 추천·AI 드레스/메이크업 시뮬레이션·모바일 청첩장을 한 곳에서.",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" },
+          "publisher": { "@type": "Organization", "name": "Dewy" }
+        }
+      ]
+    }
+    </script>
 </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- JS 미실행 크롤러(네이버 Yeti 등)를 위한 정적 콘텐츠. 앱 로드 시 React 가 대체. -->
+      <noscript>
+        <main style="max-width:430px;margin:0 auto;padding:24px;font-family:'Noto Sans KR',sans-serif;color:#3b3b3b;line-height:1.6;">
+          <h1>Dewy — AI 웨딩플래너와 함께하는 결혼 준비</h1>
+          <p>둘이니까, 쉬워지니까. Dewy는 결혼 준비의 처음부터 끝까지를 한 곳에서 도와주는 AI 웨딩플래너 앱입니다.</p>
+          <h2>이런 걸 할 수 있어요</h2>
+          <ul>
+            <li>결혼 준비 체크리스트와 D-Day 기반 일정 관리</li>
+            <li>예산 관리와 양가 분담, 지역별 평균 비교</li>
+            <li>웨딩홀·스드메·예복·한복·예물·신혼여행 맞춤 추천</li>
+            <li>AI 드레스·메이크업 시뮬레이션으로 미리 입어보기</li>
+            <li>모바일 청첩장 제작과 커뮤니티·후기 공유</li>
+          </ul>
+          <h2>지금 시작하기</h2>
+          <p>웹에서 바로 이용하거나 앱을 설치해 결혼 준비를 시작하세요.</p>
+          <p><a href="https://dewy-wedding.com/">Dewy 웹에서 시작하기</a></p>
+          <!-- TODO: 출시된 Play Store / App Store 링크를 여기에 추가하세요. -->
+        </main>
+      </noscript>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
