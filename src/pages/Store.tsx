@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import Seo from "@/components/Seo";
 
 interface Product {
   id: string;
@@ -103,6 +104,7 @@ const Store = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="웨딩 준비 쇼핑몰 | Dewy" description="결혼 준비에 필요한 상품을 한 곳에서. 예비부부를 위한 큐레이션 상품과 혜택을 만나보세요." path="/store" />
       <HomeHeader />
       <CategoryTabBar activeTab="shopping" onTabChange={handleCategoryTabChange} />
 

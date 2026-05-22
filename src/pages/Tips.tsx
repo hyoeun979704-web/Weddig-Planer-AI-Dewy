@@ -6,6 +6,7 @@ import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { Input } from "@/components/ui/input";
 import { TipVideoCard, TipVideoCardSkeleton } from "@/components/TipVideoCard";
+import Seo from "@/components/Seo";
 import { useTipVideos, type TipVideo } from "@/hooks/useTipVideos";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
@@ -209,6 +210,7 @@ const Tips = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-20">
+      <Seo title="결혼 준비 꿀팁·웨딩 가이드 | Dewy" description="예비부부를 위한 결혼 준비 꿀팁과 웨딩 가이드 영상. 스드메·예산·일정·신혼여행까지 알아두면 좋은 정보 모음." path="/tips" />
       <HomeHeader />
       <CategoryTabBar activeTab="tips" onTabChange={handleCategoryTabChange} />
 

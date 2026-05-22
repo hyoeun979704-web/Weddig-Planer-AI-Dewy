@@ -10,6 +10,7 @@ import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 import { normalizeRegion } from "@/lib/regions";
+import Seo from "@/components/Seo";
 
 const InvitationVenues = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const InvitationVenues = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="청첩장 모임 장소 추천 | Dewy" description="청첩장 전달과 결혼 인사 자리에 딱 맞는 모임 장소를 추천해 드려요. 레스토랑·한정식·카페·파인다이닝 등 인원별 공간 비교." path="/invitation-venues" />
       <PageHeader title="청첩장·모임" />
       <main className="pb-20">
         <CategoryHeroBanner category="invitation_venues" />

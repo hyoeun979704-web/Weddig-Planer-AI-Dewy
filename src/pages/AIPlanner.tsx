@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import DewyLogo from "@/components/home/DewyLogo";
+import Seo from "@/components/Seo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Send, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
@@ -261,6 +262,7 @@ const AIPlanner = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
+      <Seo title="AI 웨딩플래너 - 맞춤 결혼 준비 상담 | Dewy" description="AI가 예산·일정·취향에 맞춰 나만의 웨딩 플랜을 설계해드려요. 맞춤 웨딩홀 추천부터 예산 플래너, 준비 타임라인까지." path="/ai-planner" />
       {!user && <LoginRequiredOverlay message="AI가 나만의 맞춤 웨딩 플랜을 설계해드려요" features={["맞춤 웨딩홀 추천", "예산 플래너", "준비 타임라인"]} />}
       <HomeHeader />
       <CategoryTabBar activeTab="ai-planner" onTabChange={handleCategoryTabChange} />

@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Share2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import Seo from "@/components/Seo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -129,6 +130,7 @@ const Events = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="웨딩 이벤트·혜택 | Dewy" description="결혼 준비에 도움되는 이벤트와 혜택을 모았어요. 웨딩 박람회·할인·경품 등 예비부부를 위한 진행 중인 이벤트 확인." path="/events" />
       <PageHeader
         title="이벤트"
         rightExtra={

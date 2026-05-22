@@ -7,6 +7,7 @@ import TabContent from "@/components/home/TabContent";
 import HomeEntryPopup from "@/components/home/HomeEntryPopup";
 import Footer from "@/components/home/Footer";
 import TutorialOverlay from "@/components/TutorialOverlay";
+import Seo from "@/components/Seo";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useHomeFirstRun } from "@/hooks/useHomeFirstRun";
@@ -59,6 +60,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="Dewy - AI 웨딩플래너와 함께하는 결혼준비" description="결혼 준비 체크리스트·예산 관리·웨딩홀·스드메 추천·AI 드레스 시뮬레이션·모바일 청첩장까지. AI 웨딩플래너 Dewy." path="/" />
       <HomeHeader />
       <CategoryTabBar activeTab={null} onTabChange={handleCategoryTabChange} />
 

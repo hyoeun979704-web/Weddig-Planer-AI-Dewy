@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
+import Seo from "@/components/Seo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -287,6 +288,7 @@ const Community = () => {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--pink-50))] max-w-[430px] mx-auto relative">
+      <Seo title="예비부부 커뮤니티 - 결혼 준비 후기·고민 | Dewy" description="예비부부들이 결혼 준비 후기와 고민을 나누는 커뮤니티. 웨딩홀·스드메 실후기와 꿀팁을 실시간으로 확인하세요." path="/community" />
       {!user && (
         <LoginRequiredOverlay
           message="다른 예비부부들의 생생한 후기를 확인하세요"
