@@ -9,9 +9,11 @@ import {
   LogOut,
   Trash2
 } from "lucide-react";
+import { useState } from "react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
@@ -20,6 +22,7 @@ const Settings = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  const [deleting, setDeleting] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -31,8 +34,27 @@ const Settings = () => {
     }
   };
 
-  const handleDeleteAccount = () => {
-    toast.error("계정 삭제 기능은 준비 중입니다");
+  const handleDeleteAccount = async () => {
+    if (deleting) return;
+    const ok = window.confirm(
+      "정말 계정을 삭제할까요?\n\n계정과 모든 데이터(예산·일정·찜·작성글·결제내역 등)가 영구 삭제되며 복구할 수 없어요.",
+    );
+    if (!ok) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.functions.invoke("delete-account");
+      if (error) {
+        toast.error("계정 삭제에 실패했어요. 잠시 후 다시 시도해주세요");
+        return;
+      }
+      await signOut().catch(() => {});
+      toast.success("계정이 삭제되었어요");
+      navigate("/", { replace: true });
+    } catch {
+      toast.error("계정 삭제에 실패했어요. 잠시 후 다시 시도해주세요");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -116,12 +138,13 @@ const Settings = () => {
                 <LogOut className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">로그아웃</span>
               </button>
-              <button 
+              <button
                 onClick={handleDeleteAccount}
-                className="w-full flex items-center gap-3 p-4 text-left"
+                disabled={deleting}
+                className="w-full flex items-center gap-3 p-4 text-left disabled:opacity-50"
               >
                 <Trash2 className="w-5 h-5 text-destructive" />
-                <span className="text-sm font-medium text-destructive">계정 삭제</span>
+                <span className="text-sm font-medium text-destructive">{deleting ? "삭제 중..." : "계정 삭제"}</span>
               </button>
             </div>
           </div>

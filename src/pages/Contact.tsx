@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, MessageSquare, Phone, Mail } from "lucide-react";
+import { Send, MessageSquare, Mail } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
@@ -58,13 +58,9 @@ const Contact = () => {
         {/* Contact Info */}
         <div className="p-4 bg-primary/5 border-b border-border">
           <div className="flex gap-4">
-            <a href="tel:02-1234-5678" className="flex-1 flex items-center justify-center gap-2 py-3 bg-card rounded-xl border border-border">
-              <Phone className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">전화 문의</span>
-            </a>
-            <a href="mailto:help@wedding.com" className="flex-1 flex items-center justify-center gap-2 py-3 bg-card rounded-xl border border-border">
+            <a href="mailto:help@dewy-wedding.com" className="flex-1 flex items-center justify-center gap-2 py-3 bg-card rounded-xl border border-border">
               <Mail className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">이메일 문의</span>
+              <span className="text-sm font-medium">이메일 문의 (help@dewy-wedding.com)</span>
             </a>
           </div>
           <p className="text-xs text-muted-foreground text-center mt-3">
