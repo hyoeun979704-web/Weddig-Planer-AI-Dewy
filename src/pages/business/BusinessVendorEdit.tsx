@@ -22,6 +22,7 @@ const BusinessVendorEdit = () => {
   const [saving, setSaving] = useState(false);
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [moderation, setModeration] = useState<string | null>(null);
+  const [moderationNote, setModerationNote] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -34,10 +35,16 @@ const BusinessVendorEdit = () => {
   useEffect(() => {
     (async () => {
       const { data, error } = await (supabase as any).rpc("get_my_listing");
+      if (error) {
+        toast.error("정보를 불러오지 못했어요. 다시 시도해주세요");
+        setLoading(false);
+        return;
+      }
       const row = Array.isArray(data) ? data[0] : data;
-      if (!error && row) {
+      if (row && row.place_id) {
         setPlaceId(row.place_id);
         setModeration(row.moderation_status);
+        setModerationNote(row.moderation_note ?? null);
         setName(row.name ?? "");
         setDescription(row.description ?? "");
         setCity(row.city ?? "");
@@ -120,7 +127,10 @@ const BusinessVendorEdit = () => {
         )}
         {moderation === "rejected" && (
           <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3 text-[13px] text-destructive">
-            검토에서 반려됐어요. 정보를 수정해 다시 저장해주세요.
+            <p>검토에서 반려됐어요. 정보를 수정해 다시 저장해주세요.</p>
+            {moderationNote && (
+              <p className="mt-2 text-foreground bg-background/60 rounded-lg p-2 whitespace-pre-line">반려 사유: {moderationNote}</p>
+            )}
           </div>
         )}
 
@@ -141,22 +151,27 @@ const BusinessVendorEdit = () => {
         </div>
 
         <Button onClick={handleSave} disabled={saving} className="w-full h-12 mt-2">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "저장하고 검토 요청"}
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "기본 정보 저장하고 검토 요청"}
         </Button>
 
-        {placeId && (
+        {placeId ? (
           <div className="pt-4 mt-2 border-t border-border">
-            <h2 className="text-sm font-semibold text-foreground mb-3">업체 종류별 상세 정보</h2>
+            <h2 className="text-sm font-semibold text-foreground mb-1">업체 종류별 상세 정보</h2>
+            <p className="text-[12px] text-muted-foreground mb-3">아래 "상세 정보 저장"은 위 기본 정보와 별도로 저장돼요. 둘 다 저장하면 함께 검토 요청됩니다.</p>
             <BusinessListingDetailForm onSaved={() => setModeration("pending")} />
           </div>
+        ) : (
+          <p className="text-[12px] text-muted-foreground text-center pt-2">
+            기본 정보를 먼저 저장하면 업체 종류별 상세 항목을 입력할 수 있어요.
+          </p>
         )}
 
-        {placeId && moderation === "approved" && (
+        {placeId && (
           <button
             onClick={() => navigate(`/vendor/${placeId}`)}
             className="w-full text-[13px] text-primary font-medium flex items-center justify-center gap-1 pt-1"
           >
-            <Eye className="w-4 h-4" /> 공개 상세페이지 보기
+            <Eye className="w-4 h-4" /> 상세페이지 미리보기
           </button>
         )}
       </main>

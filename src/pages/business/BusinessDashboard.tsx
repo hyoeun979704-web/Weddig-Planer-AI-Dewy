@@ -5,29 +5,37 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const BusinessDashboard = () => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
-  const { isBusiness, businessProfile, isLoading: roleLoading } = useUserRole();
+  const { isBusiness, isError, businessProfile, isLoading: roleLoading } = useUserRole();
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [stats, setStats] = useState({ media: 0, favorites: 0, views: 0, couponDownloads: 0 });
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (authLoading || roleLoading) return;
+    if (!user) {
       navigate("/auth");
       return;
     }
-    if (!roleLoading && !isBusiness) {
+    // 일시적 역할 조회 오류(isError)일 때는 온보딩으로 보내지 않는다 — 가드가
+    // 처리한다. business 역할인데 프로필이 아직 없을 때만 온보딩으로 안내.
+    if (!isError && isBusiness && !businessProfile) {
       navigate("/business/onboard");
       return;
     }
-  }, [authLoading, roleLoading, user, isBusiness, navigate]);
+  }, [authLoading, roleLoading, user, isBusiness, isError, businessProfile, navigate]);
 
   useEffect(() => {
     if (!businessProfile || businessProfile.approval_status !== "approved") return;
     (async () => {
-      const { data } = await (supabase as any).rpc("get_my_listing");
+      const { data, error } = await (supabase as any).rpc("get_my_listing");
+      if (error) {
+        toast.error("통계를 불러오지 못했어요");
+        return;
+      }
       const row = Array.isArray(data) ? data[0] : data;
       if (!row?.place_id) return;
       setPlaceId(row.place_id);
@@ -78,7 +86,9 @@ const BusinessDashboard = () => {
             </h2>
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
               {rejected
-                ? "아래 사유를 확인하고 다시 신청해주세요."
+                ? businessProfile.review_note
+                  ? "아래 사유를 확인하고 다시 신청해주세요."
+                  : "정보를 다시 확인하고 재신청해주세요. 문의는 고객센터로 연락 주세요."
                 : "운영자 검토 후 결과를 알려드릴게요. 승인되면 업체 상세정보를 입력할 수 있어요."}
             </p>
             {rejected && businessProfile.review_note && (
@@ -166,15 +176,18 @@ const BusinessDashboard = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-foreground truncate">{businessProfile.business_name}</h2>
-                {businessProfile.is_verified ? (
-                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                )}
+                {/* 이 화면은 approval_status === "approved" 일 때만 도달한다. */}
+                <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {businessProfile.is_verified ? "인증된 업체" : "인증 대기중"} · {businessProfile.service_category}
+                승인 완료 · {businessProfile.service_category}
               </p>
+              {/* 국세청 사업자 인증은 운영자 승인과 별개 지표로 분리 표기. */}
+              {!businessProfile.is_verified && (
+                <p className="text-[11px] text-amber-600 mt-0.5 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> 국세청 사업자 인증 대기 중
+                </p>
+              )}
               {placeId && (
                 <button
                   onClick={() => navigate(`/vendor/${placeId}`)}

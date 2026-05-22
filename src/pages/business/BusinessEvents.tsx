@@ -17,7 +17,14 @@ interface EventItem {
   starts_at: string | null;
   ends_at: string | null;
   moderation_status: string;
+  moderation_note: string | null;
 }
+
+const fmtDate = (s: string | null) => {
+  if (!s) return "";
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? s : d.toLocaleDateString("ko-KR");
+};
 
 const STATUS: Record<string, { label: string; color: string }> = {
   approved: { label: "노출중", color: "bg-green-100 text-green-700" },
@@ -41,7 +48,7 @@ const BusinessEvents = () => {
   const loadEvents = useCallback(async (pid: string) => {
     const { data } = await supabase
       .from("business_events" as any)
-      .select("id, title, description, starts_at, ends_at, moderation_status")
+      .select("id, title, description, starts_at, ends_at, moderation_status, moderation_note")
       .eq("place_id", pid)
       .order("created_at", { ascending: false });
     setItems((data ?? []) as unknown as EventItem[]);
@@ -49,7 +56,8 @@ const BusinessEvents = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await (supabase as any).rpc("get_my_listing");
+      const { data, error } = await (supabase as any).rpc("get_my_listing");
+      if (error) { toast.error("정보를 불러오지 못했어요"); setLoading(false); return; }
       const row = Array.isArray(data) ? data[0] : data;
       if (row?.place_id) {
         setPlaceId(row.place_id);
@@ -79,9 +87,11 @@ const BusinessEvents = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm("이 이벤트를 삭제할까요?")) return;
     const { error } = await (supabase as any).from("business_events").delete().eq("id", id);
     if (error) { toast.error("삭제에 실패했어요"); return; }
     setItems((prev) => prev.filter((e) => e.id !== id));
+    toast.success("삭제했어요");
   };
 
   if (loading) {
@@ -146,8 +156,11 @@ const BusinessEvents = () => {
                       {e.description && <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2 whitespace-pre-line">{e.description}</p>}
                       {(e.starts_at || e.ends_at) && (
                         <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />{e.starts_at ?? ""}{e.ends_at ? ` ~ ${e.ends_at}` : ""}
+                          <Calendar className="w-3 h-3" />{fmtDate(e.starts_at)}{e.ends_at ? ` ~ ${fmtDate(e.ends_at)}` : ""}
                         </p>
+                      )}
+                      {e.moderation_status === "rejected" && e.moderation_note && (
+                        <p className="text-[11px] text-destructive mt-1 whitespace-pre-line">반려 사유: {e.moderation_note}</p>
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">

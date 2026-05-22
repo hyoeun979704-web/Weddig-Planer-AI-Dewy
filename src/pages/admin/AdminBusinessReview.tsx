@@ -44,6 +44,10 @@ const AdminBusinessReview = () => {
   const [products, setProducts] = useState<{ id: string; name: string; price: number | null }[]>([]);
   const [processingProduct, setProcessingProduct] = useState<string | null>(null);
 
+  // 업체정보·이벤트·상품 반려 시 사유 입력 대상. { type, id } 로 한 번에 하나만.
+  const [rejectTarget, setRejectTarget] = useState<{ type: "listing" | "event" | "product"; id: string } | null>(null);
+  const [sectionNote, setSectionNote] = useState("");
+
   const load = useCallback(async () => {
     setLoading(true);
     const [biz, list, evt, prod] = await Promise.all([
@@ -52,8 +56,10 @@ const AdminBusinessReview = () => {
       (supabase as any).rpc("admin_list_pending_events"),
       (supabase as any).rpc("admin_list_pending_products"),
     ]);
-    if (biz.error) { toast.error("목록을 불러오지 못했어요"); setItems([]); }
-    else setItems((biz.data ?? []) as PendingBusiness[]);
+    if (biz.error || list.error || evt.error || prod.error) {
+      toast.error("일부 검토 목록을 불러오지 못했어요. 다시 시도해주세요");
+    }
+    setItems(biz.error ? [] : (biz.data ?? []) as PendingBusiness[]);
     setListings(list.error ? [] : ((list.data ?? []) as any[]).map((p) => ({ place_id: p.place_id, name: p.name, city: p.city, category: p.category })));
     setEvents(evt.error ? [] : ((evt.data ?? []) as any[]).map((e) => ({ id: e.id, title: e.title, description: e.description })));
     setProducts(prod.error ? [] : ((prod.data ?? []) as any[]).map((p) => ({ id: p.id, name: p.name, price: p.price })));
@@ -62,36 +68,42 @@ const AdminBusinessReview = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const reviewProduct = async (id: string, approved: boolean) => {
+  const clearReject = () => { setRejectTarget(null); setSectionNote(""); };
+
+  const reviewProduct = async (id: string, approved: boolean, reviewNote?: string) => {
     setProcessingProduct(id);
-    const { data, error } = await (supabase as any).rpc("admin_review_product", { p_id: id, p_approved: approved });
+    const { data, error } = await (supabase as any).rpc("admin_review_product", { p_id: id, p_approved: approved, p_note: reviewNote ?? null });
     setProcessingProduct(null);
     const res = data as { ok?: boolean } | null;
     if (error || !res?.ok) { toast.error("처리에 실패했어요"); return; }
     toast.success(approved ? "상품을 승인했어요" : "상품을 반려했어요");
+    clearReject();
     setProducts((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const reviewEvent = async (id: string, approved: boolean) => {
+  const reviewEvent = async (id: string, approved: boolean, reviewNote?: string) => {
     setProcessingEvent(id);
-    const { data, error } = await (supabase as any).rpc("admin_review_event", { p_id: id, p_approved: approved });
+    const { data, error } = await (supabase as any).rpc("admin_review_event", { p_id: id, p_approved: approved, p_note: reviewNote ?? null });
     setProcessingEvent(null);
     const res = data as { ok?: boolean } | null;
     if (error || !res?.ok) { toast.error("처리에 실패했어요"); return; }
     toast.success(approved ? "이벤트를 승인했어요" : "이벤트를 반려했어요");
+    clearReject();
     setEvents((prev) => prev.filter((e) => e.id !== id));
   };
 
-  const reviewListing = async (placeId: string, approved: boolean) => {
+  const reviewListing = async (placeId: string, approved: boolean, reviewNote?: string) => {
     setProcessingListing(placeId);
     const { data, error } = await (supabase as any).rpc("admin_review_listing", {
       p_place_id: placeId,
       p_approved: approved,
+      p_note: reviewNote ?? null,
     });
     setProcessingListing(null);
     const res = data as { ok?: boolean } | null;
     if (error || !res?.ok) { toast.error("처리에 실패했어요"); return; }
     toast.success(approved ? "리스팅을 승인했어요" : "리스팅을 반려했어요");
+    clearReject();
     setListings((prev) => prev.filter((l) => l.place_id !== placeId));
   };
 
@@ -191,14 +203,25 @@ const AdminBusinessReview = () => {
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {CATEGORY_LABELS[l.category] ?? l.category}{l.city ? ` · ${l.city}` : ""}
                 </p>
-                <div className="flex gap-2 mt-3">
-                  <Button size="sm" className="flex-1" disabled={processingListing === l.place_id} onClick={() => reviewListing(l.place_id, true)}>
-                    <Check className="w-4 h-4 mr-1" /> 승인
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1" disabled={processingListing === l.place_id} onClick={() => reviewListing(l.place_id, false)}>
-                    <X className="w-4 h-4 mr-1" /> 반려
-                  </Button>
-                </div>
+                <button onClick={() => navigate(`/vendor/${l.place_id}`)} className="text-xs text-primary font-medium mt-1">상세 미리보기</button>
+                {rejectTarget?.type === "listing" && rejectTarget.id === l.place_id ? (
+                  <div className="mt-3 space-y-2">
+                    <Textarea value={sectionNote} onChange={(e) => setSectionNote(e.target.value)} placeholder="반려 사유를 입력하세요 (사업자에게 전달됩니다)" rows={2} />
+                    <div className="flex gap-2">
+                      <Button variant="destructive" size="sm" className="flex-1" disabled={processingListing === l.place_id} onClick={() => reviewListing(l.place_id, false, sectionNote)}>반려 확정</Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={clearReject}>취소</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 mt-3">
+                    <Button size="sm" className="flex-1" disabled={processingListing === l.place_id} onClick={() => reviewListing(l.place_id, true)}>
+                      <Check className="w-4 h-4 mr-1" /> 승인
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" disabled={processingListing === l.place_id} onClick={() => { setRejectTarget({ type: "listing", id: l.place_id }); setSectionNote(""); }}>
+                      <X className="w-4 h-4 mr-1" /> 반려
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -214,15 +237,25 @@ const AdminBusinessReview = () => {
             {events.map((e) => (
               <div key={e.id} className="bg-card rounded-2xl border border-border p-4">
                 <p className="font-bold text-foreground">{e.title}</p>
-                {e.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 whitespace-pre-line">{e.description}</p>}
-                <div className="flex gap-2 mt-3">
-                  <Button size="sm" className="flex-1" disabled={processingEvent === e.id} onClick={() => reviewEvent(e.id, true)}>
-                    <Check className="w-4 h-4 mr-1" /> 승인
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1" disabled={processingEvent === e.id} onClick={() => reviewEvent(e.id, false)}>
-                    <X className="w-4 h-4 mr-1" /> 반려
-                  </Button>
-                </div>
+                {e.description && <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-line">{e.description}</p>}
+                {rejectTarget?.type === "event" && rejectTarget.id === e.id ? (
+                  <div className="mt-3 space-y-2">
+                    <Textarea value={sectionNote} onChange={(ev) => setSectionNote(ev.target.value)} placeholder="반려 사유를 입력하세요 (사업자에게 전달됩니다)" rows={2} />
+                    <div className="flex gap-2">
+                      <Button variant="destructive" size="sm" className="flex-1" disabled={processingEvent === e.id} onClick={() => reviewEvent(e.id, false, sectionNote)}>반려 확정</Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={clearReject}>취소</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 mt-3">
+                    <Button size="sm" className="flex-1" disabled={processingEvent === e.id} onClick={() => reviewEvent(e.id, true)}>
+                      <Check className="w-4 h-4 mr-1" /> 승인
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" disabled={processingEvent === e.id} onClick={() => { setRejectTarget({ type: "event", id: e.id }); setSectionNote(""); }}>
+                      <X className="w-4 h-4 mr-1" /> 반려
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -239,14 +272,24 @@ const AdminBusinessReview = () => {
               <div key={p.id} className="bg-card rounded-2xl border border-border p-4">
                 <p className="font-bold text-foreground">{p.name}</p>
                 {p.price != null && <p className="text-xs text-muted-foreground mt-0.5">{p.price.toLocaleString()}원</p>}
-                <div className="flex gap-2 mt-3">
-                  <Button size="sm" className="flex-1" disabled={processingProduct === p.id} onClick={() => reviewProduct(p.id, true)}>
-                    <Check className="w-4 h-4 mr-1" /> 승인
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1" disabled={processingProduct === p.id} onClick={() => reviewProduct(p.id, false)}>
-                    <X className="w-4 h-4 mr-1" /> 반려
-                  </Button>
-                </div>
+                {rejectTarget?.type === "product" && rejectTarget.id === p.id ? (
+                  <div className="mt-3 space-y-2">
+                    <Textarea value={sectionNote} onChange={(e) => setSectionNote(e.target.value)} placeholder="반려 사유를 입력하세요 (사업자에게 전달됩니다)" rows={2} />
+                    <div className="flex gap-2">
+                      <Button variant="destructive" size="sm" className="flex-1" disabled={processingProduct === p.id} onClick={() => reviewProduct(p.id, false, sectionNote)}>반려 확정</Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={clearReject}>취소</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 mt-3">
+                    <Button size="sm" className="flex-1" disabled={processingProduct === p.id} onClick={() => reviewProduct(p.id, true)}>
+                      <Check className="w-4 h-4 mr-1" /> 승인
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" disabled={processingProduct === p.id} onClick={() => { setRejectTarget({ type: "product", id: p.id }); setSectionNote(""); }}>
+                      <X className="w-4 h-4 mr-1" /> 반려
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

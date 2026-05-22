@@ -64,6 +64,8 @@ serve(async (req) => {
     // Verify business number via 국세청 API
     let isVerified = false;
     let verificationMessage = "";
+    // NTS 가 명시적으로 "불일치"를 반환한 경우(API 미연결/오류와 구분).
+    let verificationFailed = false;
 
     if (NTS_API_KEY) {
       try {
@@ -98,6 +100,7 @@ serve(async (req) => {
             isVerified = true;
             verificationMessage = "사업자 인증이 완료되었습니다!";
           } else {
+            verificationFailed = true;
             verificationMessage =
               result?.valid_msg || "사업자 정보가 일치하지 않습니다. 입력 정보를 확인해주세요.";
           }
@@ -116,31 +119,74 @@ serve(async (req) => {
     // If API says invalid, still allow registration but mark as unverified
     // (admin can verify later)
 
-    // Check if business number already registered
-    const { data: existing } = await supabase
+    // 사업자번호가 다른 사용자에게 이미 귀속돼 있으면 차단.
+    const { data: bizOwner } = await supabase
       .from("business_profiles")
-      .select("id")
+      .select("id, user_id")
       .eq("business_number", cleanBizNum)
       .maybeSingle();
 
-    if (existing) {
+    if (bizOwner && bizOwner.user_id !== user.id) {
       return new Response(
         JSON.stringify({ error: "이미 등록된 사업자등록번호입니다" }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if user already has a business profile
-    const { data: existingProfile } = await supabase
+    // 본인의 기존 프로필 — 반려 상태면 재신청(업데이트), 그 외엔 중복 차단.
+    const { data: myProfile } = await supabase
       .from("business_profiles")
-      .select("id")
+      .select("id, approval_status")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (existingProfile) {
+    const profilePayload = {
+      business_name,
+      business_number: cleanBizNum,
+      representative_name,
+      business_type: business_type || "",
+      service_category,
+      phone: phone || "",
+      address: address || "",
+      is_verified: isVerified,
+      verified_at: isVerified ? new Date().toISOString() : null,
+    };
+
+    const buildMessage = () =>
+      (isVerified
+        ? "사업자 인증이 확인되었어요. "
+        : (verificationMessage ? verificationMessage + " " : "")) +
+      "운영자 검토 후 등록 결과를 알려드릴게요.";
+
+    if (myProfile) {
+      if (myProfile.approval_status !== "rejected") {
+        return new Response(
+          JSON.stringify({ error: "이미 업체가 등록되어 있습니다", approval_status: myProfile.approval_status }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      // 반려 → 재신청: 정보 갱신하고 검토 대기로 되돌리며 반려 사유를 비운다.
+      const { error: updError } = await supabase
+        .from("business_profiles")
+        .update({ ...profilePayload, approval_status: "pending", review_note: null })
+        .eq("user_id", user.id);
+      if (updError) {
+        console.error("Business profile re-apply error:", updError);
+        return new Response(
+          JSON.stringify({ error: "재신청 처리에 실패했습니다: " + updError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       return new Response(
-        JSON.stringify({ error: "이미 업체가 등록되어 있습니다" }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          success: true,
+          vendor_id: null,
+          is_verified: isVerified,
+          verification_failed: verificationFailed,
+          approval_status: "pending",
+          message: buildMessage(),
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -151,15 +197,7 @@ serve(async (req) => {
     // Create business profile
     const { error: profileError } = await supabase.from("business_profiles").insert({
       user_id: user.id,
-      business_name,
-      business_number: cleanBizNum,
-      representative_name,
-      business_type: business_type || "",
-      service_category,
-      phone: phone || "",
-      address: address || "",
-      is_verified: isVerified,
-      verified_at: isVerified ? new Date().toISOString() : null,
+      ...profilePayload,
       vendor_id: null,
     });
 
@@ -197,12 +235,9 @@ serve(async (req) => {
         success: true,
         vendor_id: null,
         is_verified: isVerified,
+        verification_failed: verificationFailed,
         approval_status: "pending",
-        message:
-          (isVerified
-            ? "사업자 인증이 확인되었어요. "
-            : (verificationMessage ? verificationMessage + " " : "")) +
-          "운영자 검토 후 등록 결과를 알려드릴게요.",
+        message: buildMessage(),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

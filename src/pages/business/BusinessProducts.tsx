@@ -17,6 +17,7 @@ interface ProductItem {
   description: string | null;
   image_url: string | null;
   moderation_status: string;
+  moderation_note: string | null;
 }
 
 const STATUS: Record<string, { label: string; color: string }> = {
@@ -41,7 +42,7 @@ const BusinessProducts = () => {
   const loadProducts = useCallback(async (pid: string) => {
     const { data } = await supabase
       .from("business_products" as any)
-      .select("id, name, price, description, image_url, moderation_status")
+      .select("id, name, price, description, image_url, moderation_status, moderation_note")
       .eq("place_id", pid)
       .order("created_at", { ascending: false });
     setItems((data ?? []) as unknown as ProductItem[]);
@@ -49,7 +50,8 @@ const BusinessProducts = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await (supabase as any).rpc("get_my_listing");
+      const { data, error } = await (supabase as any).rpc("get_my_listing");
+      if (error) { toast.error("정보를 불러오지 못했어요"); setLoading(false); return; }
       const row = Array.isArray(data) ? data[0] : data;
       if (row?.place_id) {
         setPlaceId(row.place_id);
@@ -79,9 +81,11 @@ const BusinessProducts = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm("이 상품을 삭제할까요?")) return;
     const { error } = await (supabase as any).from("business_products").delete().eq("id", id);
     if (error) { toast.error("삭제에 실패했어요"); return; }
     setItems((prev) => prev.filter((p) => p.id !== id));
+    toast.success("삭제했어요");
   };
 
   if (loading) {
@@ -147,6 +151,9 @@ const BusinessProducts = () => {
                   <div className="p-2.5">
                     <p className="text-[13px] font-semibold text-foreground truncate">{p.name}</p>
                     {p.price != null && <p className="text-[12px] text-muted-foreground">{p.price.toLocaleString()}원</p>}
+                    {p.moderation_status === "rejected" && p.moderation_note && (
+                      <p className="text-[10px] text-destructive mt-0.5 line-clamp-2 whitespace-pre-line">반려: {p.moderation_note}</p>
+                    )}
                     <button onClick={() => handleDelete(p.id)} className="mt-1 text-[11px] text-destructive inline-flex items-center gap-1">
                       <Trash2 className="w-3 h-3" /> 삭제
                     </button>
