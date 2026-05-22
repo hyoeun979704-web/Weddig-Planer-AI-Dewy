@@ -124,12 +124,12 @@ const SubscriptionPaymentSuccess = lazy(() => import("./pages/SubscriptionPaymen
 const SubscriptionPaymentFail = lazy(() => import("./pages/SubscriptionPaymentFail"));
 
 // 기업회원 플로우
-const BusinessOnboard = lazy(() => import("./pages/BusinessOnboard"));
-const BusinessDashboard = lazy(() => import("./pages/BusinessDashboard"));
-const BusinessVendorEdit = lazy(() => import("./pages/BusinessVendorEdit"));
-const BusinessGallery = lazy(() => import("./pages/BusinessGallery"));
-const BusinessCoupons = lazy(() => import("./pages/BusinessCoupons"));
-const BusinessInquiries = lazy(() => import("./pages/BusinessInquiries"));
+const BusinessOnboard = lazy(() => import("./pages/business/BusinessOnboard"));
+const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
+const BusinessVendorEdit = lazy(() => import("./pages/business/BusinessVendorEdit"));
+const BusinessGallery = lazy(() => import("./pages/business/BusinessGallery"));
+const BusinessCoupons = lazy(() => import("./pages/business/BusinessCoupons"));
+const BusinessInquiries = lazy(() => import("./pages/business/BusinessInquiries"));
 
 const queryClient = new QueryClient();
 
