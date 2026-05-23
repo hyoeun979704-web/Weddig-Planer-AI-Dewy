@@ -16,6 +16,15 @@ export interface UserData {
     marital_history: "first" | "remarriage" | null;
     pregnant: boolean | null;
     pregnancy_due_date: string | null;
+    // 페르소나 v1 신호 — 신랑/국제/원격/1인진행/시군구/식 형태 분기에 사용.
+    role: string | null;
+    country: string | null;
+    wedding_country: string | null;
+    wedding_region_sigungu: string | null;
+    has_parents_bride: boolean | null;
+    has_parents_groom: boolean | null;
+    ceremony_type: string | null;
+    persona_mode: string | null;
   } | null;
   budgetSettings: {
     total_budget: number | null;
@@ -33,7 +42,7 @@ export async function fetchUserData(supabase: any, userId: string): Promise<User
     supabase.from("favorites").select("item_type, item_id").eq("user_id", userId),
     supabase
       .from("user_wedding_settings")
-      .select("wedding_date, wedding_region, partner_name, planning_stage, wedding_date_tbd, wedding_region_tbd, marital_history, pregnant, pregnancy_due_date")
+      .select("wedding_date, wedding_region, partner_name, planning_stage, wedding_date_tbd, wedding_region_tbd, marital_history, pregnant, pregnancy_due_date, role, country, wedding_country, wedding_region_sigungu, has_parents_bride, has_parents_groom, ceremony_type, persona_mode")
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
@@ -119,8 +128,62 @@ export function buildUserContext(userData: UserData): string {
     parts.push(`예식일: 미정 (사용자가 아직 정하지 않음)`);
   }
 
-  if (ws?.wedding_region) parts.push(`예식 지역: ${ws.wedding_region}`);
-  else if (ws?.wedding_region_tbd) parts.push(`예식 지역: 미정`);
+  if (ws?.wedding_region) {
+    const sigungu = ws.wedding_region_sigungu ? ` (${ws.wedding_region_sigungu})` : "";
+    parts.push(`예식 지역: ${ws.wedding_region}${sigungu}`);
+  } else if (ws?.wedding_region_tbd) parts.push(`예식 지역: 미정`);
+
+  // 페르소나 신호 — 헤더로 묶어 한 번에 노출. AI가 호칭·답변 톤·우선순위에
+  // 일관 적용하도록 강조.
+  if (ws) {
+    const personaBits: string[] = [];
+    if (ws.role === "groom") {
+      personaBits.push("준비 주체: 신랑 주도 (신랑님 호칭, 신랑 예복·예물·신랑 양가 가이드 우선)");
+    } else if (ws.role === "shared") {
+      personaBits.push("준비 주체: 공동 주도 (양쪽 호칭 균형, 의사결정 분담 가이드)");
+    }
+    const country = ws.country ?? "KR";
+    const weddingCountry = ws.wedding_country ?? "KR";
+    if (country !== "KR") {
+      personaBits.push(`거주 국가: ${country} — 한국 방문 일정 압축·시차·양가 부모 위임 가능 영역을 우선 안내`);
+    }
+    if (weddingCountry !== "KR" || (country !== "KR" && country !== weddingCountry)) {
+      personaBits.push(
+        `국제결혼 모드: 거주 ${country} · 예식 ${weddingCountry}. 한국 관습 + 외국 가족 안내(영문 자료 생성 가능), 두 식 일정 조율 우선. 사용자가 영문 답변을 원하면 영문으로 작성하세요.`
+      );
+    }
+    if (ws.has_parents_bride === false || ws.has_parents_groom === false) {
+      const which = ws.has_parents_bride === false && ws.has_parents_groom === false
+        ? "양가 모두"
+        : ws.has_parents_bride === false ? "신부 측" : "신랑 측";
+      personaBits.push(
+        `부모 부재: ${which} 부모님이 안 계심. 양가 분담·상견례·폐백 표준 가이드 대신 1인 진행 변형(친정/시댁 역할 부재) 및 정서적 톤을 우선 제공하세요. "부모님께 여쭤보세요" 같은 발언 금지.`
+      );
+    }
+    if (ws.ceremony_type) {
+      const map: Record<string, string> = {
+        hotel: "호텔 웨딩 (5천~1억 패키지·진짜 후기·PDF 견적·위임 가능 영역 명시)",
+        small_real: "진짜 스몰 (40~80명·레스토랑/하우스/카페형, 호텔 스몰 패키지가 아님)",
+        outdoor: "야외·가든 (우천 대비·음향·조명·계절·접근성 디테일 강조)",
+        restaurant: "레스토랑 웨딩 (소규모 진행 흐름·식순 가이드 중심)",
+        public_facility: "공공시설(구민회관/시민회관) — 저예산·DIY 가능 영역 명시",
+        self_only: "셀프웨딩 (촬영 노하우·양가 인사 시나리오·혼인신고 체크리스트)",
+        none: "결혼식 안 함 (혼인신고만) — 식 정보 숨기고 신혼여행·신혼집·혼수 중심",
+        snap_only: "스냅 촬영만 — 결혼 정보 숨기고 콘셉트별 작가·기념일 패키지·라이프스타일",
+        dual_ceremony: "이중식 (한국+해외) — 두 식 일정·문화 통합·통역·번역 안내",
+      };
+      const desc = map[ws.ceremony_type] ?? ws.ceremony_type;
+      personaBits.push(`식 형태 세분: ${desc}`);
+    }
+    if (ws.persona_mode) {
+      personaBits.push(
+        `자동 분류 페르소나: ${ws.persona_mode} (위 신호들의 우선순위 결합 결과 — 톤·미션·큐레이션 분기의 단일 anchor로 사용)`
+      );
+    }
+    if (personaBits.length > 0) {
+      parts.push(`\n페르소나 컨텍스트:\n- ${personaBits.join("\n- ")}`);
+    }
+  }
 
   if (ws?.planning_stage) {
     const label = STAGE_LABELS[ws.planning_stage] ?? ws.planning_stage;
