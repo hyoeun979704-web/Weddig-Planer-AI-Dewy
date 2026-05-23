@@ -117,21 +117,15 @@ const Schedule = () => {
   // Get phase status based on D-Day
   const getPhaseStatus = (category: string): "completed" | "current" | "upcoming" => {
     if (days === null) return "upcoming";
-    
-    const phaseRanges: Record<string, [number, number]> = {
-      "phase-1": [365, 180],
-      "phase-2": [180, 120],
-      "phase-3": [120, 60],
-      "phase-4": [60, 30],
-      "phase-5": [30, 0],
-    };
-    
-    const range = phaseRanges[category];
-    if (!range) return "upcoming";
-    
-    const [start, end] = range;
-    if (days > start) return "upcoming";
-    if (days <= end) return "completed";
+
+    // 라벨(buildTimelinePhases)과 status 가 같은 윈도우에서 나와야 함.
+    // 정적 [365,180,...] 범위를 쓰면 압축 모드(P18) 사용자의 phase 라벨은
+    // 'D-120~D-60' 인데 status 는 [180,120] 기준으로 '완료'로 잘못 잡힘.
+    const phase = TIMELINE_PHASES.find((p) => p.category === category);
+    if (!phase) return "upcoming";
+
+    if (days > phase.startDay) return "upcoming";
+    if (days <= phase.endDay) return "completed";
     return "current";
   };
 

@@ -79,6 +79,10 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
     localStorage.setItem("recentSearches", JSON.stringify(updated));
   };
 
+  // ILIKE 와일드카드(%, _, \) 이스케이프 — 사용자 입력이 의도치 않게 와일드카드로 동작하지
+  // 않도록(F#9). Postgres LIKE escape는 backslash 기본.
+  const escapeIlike = (s: string): string => s.replace(/\\/g, "\\\\").replace(/[%_]/g, (m) => `\\${m}`);
+
   // Search across all tables
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -96,7 +100,8 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
       "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "세종",
       "강원", "충남", "충북", "전남", "전북", "경남", "경북", "제주",
     ];
-    const looksLikeSigungu = (t: string) => /시$|군$|구$/.test(t);
+    // 시군구 휴리스틱은 너무 짧은 토큰("구", "시")은 제외 — 단일 글자는 의미 없음(F#8).
+    const looksLikeSigungu = (t: string) => t.length >= 2 && /시$|군$|구$/.test(t);
     let regionToken: string | null = null;
     let sigunguToken: string | null = null;
     const nameTokens: string[] = [];
@@ -111,26 +116,16 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
       }
       nameTokens.push(t);
     }
-    const nameTerm = nameTokens.length > 0 ? `%${nameTokens.join(" ")}%` : null;
+    const nameTerm = nameTokens.length > 0 ? `%${escapeIlike(nameTokens.join(" "))}%` : null;
+    // 지역/시군구 토큰이 잡혀도 원본 쿼리는 name ILIKE 폴백으로도 함께 검색.
+    // 사용자가 "서울" 만 쳐도 '서울숲 채플' 같이 name 매칭이 활성화되도록(F#8).
+    const fallbackNameTerm = !nameTerm ? `%${escapeIlike(searchQuery.trim())}%` : null;
+
+    // 디바운스/race 가드 — 이전 fetch 가 늦게 도착해 setResults 를 덮어쓰지 못하도록(F#12).
+    let cancelled = false;
 
     const fetchResults = async () => {
       try {
-        let query = (supabase as any)
-          .from("places")
-          .select("place_id, name, category, city, district")
-          .eq("is_active", true)
-          .is("deleted_at", null);
-        if (regionToken) query = query.ilike("city", `%${regionToken}%`);
-        if (sigunguToken) query = query.ilike("district", `%${sigunguToken}%`);
-        if (nameTerm) query = query.ilike("name", nameTerm);
-        else if (!regionToken && !sigunguToken) {
-          // 어떤 토큰도 매칭 안 됐으면 원본 전체를 name ILIKE 로
-          query = query.ilike("name", `%${searchQuery}%`);
-        }
-        const { data, error } = await query.limit(24);
-
-        if (error) throw error;
-
         const slugToType: Record<string, SearchResult["type"]> = {
           wedding_hall: "venue",
           studio: "studio",
@@ -145,7 +140,45 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
           planner: "venue",
         };
 
-        const allResults: SearchResult[] = (data ?? []).map((p) => ({
+        // 1) 정밀 쿼리: region + sigungu + name 모두 적용(가능한 경우).
+        const primary = (supabase as any)
+          .from("places")
+          .select("place_id, name, category, city, district")
+          .eq("is_active", true)
+          .is("deleted_at", null);
+        if (regionToken) primary.ilike("city", `%${escapeIlike(regionToken)}%`);
+        if (sigunguToken) primary.ilike("district", `%${escapeIlike(sigunguToken)}%`);
+        if (nameTerm) primary.ilike("name", nameTerm);
+        else if (!regionToken && !sigunguToken) primary.ilike("name", fallbackNameTerm!);
+        const { data, error } = await primary.limit(24);
+        if (error) throw error;
+        if (cancelled) return;
+
+        let merged = (data ?? []) as Array<{ place_id: string; name: string; category: string; city: string | null; district: string | null }>;
+
+        // 2) 지역 토큰만 있고 name 토큰이 없을 때, 원본 쿼리로 name ILIKE 보강 검색.
+        //    user 가 "서울" 만 쳤어도 '서울숲 채플' 같이 name 에 들어간 행을 같이 노출(F#8).
+        if ((regionToken || sigunguToken) && !nameTerm && fallbackNameTerm) {
+          const { data: byName } = await (supabase as any)
+            .from("places")
+            .select("place_id, name, category, city, district")
+            .eq("is_active", true)
+            .is("deleted_at", null)
+            .ilike("name", fallbackNameTerm)
+            .limit(24);
+          if (cancelled) return;
+          if (byName) {
+            const seen = new Set(merged.map((p) => p.place_id));
+            for (const p of byName as typeof merged) {
+              if (!seen.has(p.place_id)) {
+                merged.push(p);
+                seen.add(p.place_id);
+              }
+            }
+          }
+        }
+
+        const allResults: SearchResult[] = merged.slice(0, 24).map((p) => ({
           id: p.place_id,
           name: p.name,
           address: [p.city, p.district].filter(Boolean).join(" ") || undefined,
@@ -154,14 +187,18 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
 
         setResults(allResults);
       } catch (error) {
+        if (cancelled) return;
         console.error("Search error:", error);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     const debounce = setTimeout(fetchResults, 300);
-    return () => clearTimeout(debounce);
+    return () => {
+      cancelled = true;
+      clearTimeout(debounce);
+    };
   }, [searchQuery]);
 
   const handleResultClick = (result: SearchResult) => {

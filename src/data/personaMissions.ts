@@ -373,17 +373,22 @@ export function getMissionsForStyle(
   // Cap at 3 to keep the dashboard glanceable. 임신이면 차수별 우선순위
   // 2개 + 스타일 미션 1개 — 스타일 미션 + COMMON 보다 컨디션·시간 압박
   // 큰 페르소나라 우선순위 위에 둠. trimester=null 이면 second 사용.
+  // 임신 + 비표준 페르소나(예: pregnancy + international) 가 동시에 가능 — 헤더는
+  // international 인데 미션은 임신용만 나오면 카피와 모순(F#10). 둘 다 있으면
+  // 임신 1 + 페르소나 1 + 공통 1 로 합쳐 표시한다.
+  const personaList = options.personaMode ? PERSONA_SPECIFIC[options.personaMode] : undefined;
+  const hasPersona = !!personaList && personaList.length > 0;
+
   if (options.pregnant) {
     const trimester = options.pregnancyTrimester ?? "second";
     const pregnancyMissions = PREGNANCY_MISSIONS_BY_TRIMESTER[trimester];
-    return [pregnancyMissions[0], styleList[0] ?? COMMON[0], pregnancyMissions[1]].filter(
-      (m): m is PersonaMission => !!m,
-    ).slice(0, 3);
+    const second = hasPersona ? personaList![0] : styleList[0] ?? COMMON[0];
+    return [pregnancyMissions[0], second, pregnancyMissions[1]]
+      .filter((m): m is PersonaMission => !!m)
+      .slice(0, 3);
   }
-  // 비표준 페르소나 미션이 있으면 그것 2개 + COMMON 1개로 구성. 없으면 기존 스타일 폴백.
-  const personaList = options.personaMode ? PERSONA_SPECIFIC[options.personaMode] : undefined;
-  if (personaList && personaList.length > 0) {
-    return [...personaList, ...COMMON].slice(0, 3);
+  if (hasPersona) {
+    return [...personaList!, ...COMMON].slice(0, 3);
   }
   return [...styleList, ...COMMON].slice(0, 3);
 }

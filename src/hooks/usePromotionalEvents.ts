@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import type { WeddingPersonaMode } from "@/lib/weddingPersona";
 import type { WeddingStyle } from "@/lib/weddingStyle";
 
@@ -29,7 +30,10 @@ export interface PromotionalEvent {
   endsLabel: string | null;
 }
 
-const FALLBACK: PromotionalEvent[] = [
+// 네트워크/DB 실패 시 또는 DB 결과가 0개일 때 noop 가 아니라 핵심 카드 4종을
+// 노출. 운영팀이 일부러 persona 별로 좁혀 target 했더라도 적립·미션 같은 일반
+// 보상 surface 까지 빈 화면이 되면 안 됨(F#6). welcome 카드만 로그인 여부에 따라 분기.
+const FALLBACK_BASE: PromotionalEvent[] = [
   {
     id: "fallback-welcome",
     slug: "welcome",
@@ -49,7 +53,73 @@ const FALLBACK: PromotionalEvent[] = [
     badgeColor: null,
     endsLabel: null,
   },
+  {
+    id: "fallback-referral",
+    slug: "referral",
+    title: "친구 초대 1명당 1,000P",
+    subtitle: "초대받은 친구도 500P · 무제한 적립",
+    position: 10,
+    thumbBg: "from-[#F3F8ED] to-[#DDEEDC]",
+    icon: null,
+    ctaLabel: "초대하기",
+    ctaPath: "/mypage?tab=invite",
+    status: "live",
+    startsAt: null,
+    endsAt: null,
+    targetPersonas: [],
+    targetStyles: [],
+    badgeLabel: null,
+    badgeColor: null,
+    endsLabel: null,
+  },
+  {
+    id: "fallback-attendance",
+    slug: "attendance",
+    title: "미션 출석 7일 도전",
+    subtitle: "연속 출석 시 보너스 하트 +5",
+    position: 20,
+    thumbBg: "from-[#F5EFFB] to-[#E0CFFB]",
+    icon: null,
+    ctaLabel: "미션 보기",
+    ctaPath: "/mypage?tab=missions",
+    status: "live",
+    startsAt: null,
+    endsAt: null,
+    targetPersonas: [],
+    targetStyles: [],
+    badgeLabel: null,
+    badgeColor: null,
+    endsLabel: null,
+  },
+  {
+    id: "fallback-review",
+    slug: "review",
+    title: "본식 사진 후기 작성",
+    subtitle: "리뷰 작성 시 3,000P 즉시 적립",
+    position: 30,
+    thumbBg: "from-[#F1F4FB] to-[#CFDDF5]",
+    icon: null,
+    ctaLabel: "후기 쓰기",
+    ctaPath: "/community/new",
+    status: "live",
+    startsAt: null,
+    endsAt: null,
+    targetPersonas: [],
+    targetStyles: [],
+    badgeLabel: null,
+    badgeColor: null,
+    endsLabel: null,
+  },
 ];
+
+// 로그인 여부에 따라 welcome 의 CTA 를 분기 — 로그인된 사용자에게 /auth 를 보여주면 혼란.
+function buildFallback(isAuthenticated: boolean): PromotionalEvent[] {
+  return FALLBACK_BASE.map((ev) =>
+    ev.slug === "welcome" && isAuthenticated
+      ? { ...ev, title: "프리미엄으로 더 잘 준비하기", ctaLabel: "혜택 보기", ctaPath: "/premium" }
+      : ev
+  );
+}
 
 function matchesTarget(
   ev: PromotionalEvent,
@@ -75,6 +145,8 @@ export function usePromotionalEvents(
   persona: WeddingPersonaMode | null,
   style: WeddingStyle | null,
 ) {
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
   const [events, setEvents] = useState<PromotionalEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,12 +188,13 @@ export function usePromotionalEvents(
         const filtered = mapped
           .filter((ev) => withinSchedule(ev, now))
           .filter((ev) => matchesTarget(ev, persona, style));
-        setEvents(filtered.length > 0 ? filtered : FALLBACK);
+        // 빈 결과(필터 후 0개 또는 DB 빈 테이블) → 핵심 4종 폴백.
+        setEvents(filtered.length > 0 ? filtered : buildFallback(isAuthenticated));
         setError(null);
       } catch (e) {
         if (!mounted) return;
         console.error("usePromotionalEvents failed", e);
-        setEvents(FALLBACK);
+        setEvents(buildFallback(isAuthenticated));
         setError(String(e));
       } finally {
         if (mounted) setIsLoading(false);
@@ -130,7 +203,7 @@ export function usePromotionalEvents(
     return () => {
       mounted = false;
     };
-  }, [persona, style]);
+  }, [persona, style, isAuthenticated]);
 
   // position 0 을 featured, 그 외를 list 로 분리. featured 가 비면 첫 항목을 승격.
   const featured = events.find((e) => e.position === 0) ?? events[0] ?? null;

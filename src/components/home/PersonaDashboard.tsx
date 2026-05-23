@@ -76,11 +76,22 @@ const PersonaDashboard = () => {
 
   const weddingDate = weddingSettings.wedding_date;
   // 노식·스냅 페르소나는 D-Day 의미가 다름 — "촬영일"·"기념일"로 대체.
+  // 0(오늘) / 음수(지남) 도 표준 분기와 동일하게 다뤄야 함 — F#14.
   const hideCeremony = shouldHideWeddingCeremony(personaMode);
+  const buildLabel = (d: number | null, todayLabel: string, doneLabel: string, futurePrefix: string): string => {
+    if (d === null) return "미정";
+    if (d > 0) return `${futurePrefix}${d}`;
+    if (d === 0) return todayLabel;
+    return `${doneLabel} D+${Math.abs(d)}`;
+  };
   const dDayLabel = hideCeremony
     ? personaMode === "snap_only"
-      ? daysUntilWedding === null ? "기념일 미정" : daysUntilWedding > 0 ? `촬영 D-${daysUntilWedding}` : "촬영 완료"
-      : daysUntilWedding === null ? "노웨딩" : daysUntilWedding > 0 ? `D-${daysUntilWedding}` : "혼인신고 완료"
+      ? daysUntilWedding === null
+        ? "기념일 미정"
+        : buildLabel(daysUntilWedding, "촬영 당일", "촬영 완료", "촬영 D-")
+      : daysUntilWedding === null
+        ? "노웨딩"
+        : buildLabel(daysUntilWedding, "오늘 신고", "혼인신고", "D-")
     : daysUntilWedding === null
       ? "예정일 미정"
       : daysUntilWedding > 0

@@ -222,6 +222,8 @@ export const useWeddingSchedule = () => {
       has_parents_bride: boolean;
       has_parents_groom: boolean;
       ceremony_type: CeremonyType | null;
+      // 명시적 페르소나 override. DB 트리거가 보존하며, 로컬도 patch 에 들어오면 재계산을 건너뜀.
+      persona_mode: WeddingPersonaMode | null;
     }>
   ) => {
     if (!user) {
@@ -245,22 +247,28 @@ export const useWeddingSchedule = () => {
           .from("user_wedding_settings")
           .insert({ user_id: user.id, ...patch });
       }
-      // 로컬 state 갱신 시 패치 결과 + 새 persona_mode 재계산을 같이 반영.
-      // DB 트리거가 권위 소스이지만 로컬은 즉시 분기에 쓰여서 폴백 계산.
+      // 로컬 state 갱신 — DB 트리거가 권위 소스. 클라이언트는 다음 가드 하에 폴백 계산:
+      //   1) patch 에 persona_mode 가 들어있으면(=manual override) 그 값을 그대로 둠.
+      //   2) 아니면 다른 시그널이 패치된 경우만 재계산.
+      //   3) 위 가드 없이 항상 재계산하면, MyPage 등에서 사용자가 직접 지정한
+      //      override 가 저장 직후 자동값으로 되돌아가는 문제(코드 리뷰 F#4).
       setWeddingSettings(prev => {
         const merged = { ...prev, ...patch } as WeddingSettings;
-        merged.persona_mode = derivePersonaMode({
-          wedding_style: merged.wedding_style,
-          ceremony_type: merged.ceremony_type,
-          marital_history: merged.marital_history,
-          pregnant: merged.pregnant,
-          role: merged.role,
-          country: merged.country,
-          wedding_country: merged.wedding_country,
-          wedding_region: merged.wedding_region,
-          has_parents_bride: merged.has_parents_bride,
-          has_parents_groom: merged.has_parents_groom,
-        });
+        const overrode = Object.prototype.hasOwnProperty.call(patch, "persona_mode");
+        if (!overrode) {
+          merged.persona_mode = derivePersonaMode({
+            wedding_style: merged.wedding_style,
+            ceremony_type: merged.ceremony_type,
+            marital_history: merged.marital_history,
+            pregnant: merged.pregnant,
+            role: merged.role,
+            country: merged.country,
+            wedding_country: merged.wedding_country,
+            wedding_region: merged.wedding_region,
+            has_parents_bride: merged.has_parents_bride,
+            has_parents_groom: merged.has_parents_groom,
+          });
+        }
         return merged;
       });
 

@@ -183,15 +183,19 @@ const FilterBar = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const {
     region,
+    sigungu,
     maxPrice,
     maxGuarantee,
+    minGuarantee,
     minRating,
     hallTypes,
     mealOptions,
     eventOptions,
     setRegion,
+    setSigungu,
     setMaxPrice,
     setMaxGuarantee,
+    setMinGuarantee,
     setMinRating,
     toggleHallType,
     setHallTypes,
@@ -203,10 +207,14 @@ const FilterBar = () => {
     hasActiveFilters,
   } = useFilterStore();
 
+  // F#11 — sigungu/minGuarantee 가 store 에서 적용되어도 chip 카운트에 빠지면
+  // 사용자가 어떤 필터가 켜졌는지 모르고 reset 외엔 해제 못 함.
   const activeFiltersCount = [
-    region, 
-    maxPrice, 
-    maxGuarantee, 
+    region,
+    sigungu,
+    maxPrice,
+    maxGuarantee,
+    minGuarantee,
     minRating,
     hallTypes.length > 0 ? hallTypes : null,
     mealOptions.length > 0 ? mealOptions : null,
@@ -440,20 +448,27 @@ const FilterBar = () => {
           </SheetContent>
         </Sheet>
 
-        {/* Quick filter chips with dropdowns */}
+        {/* Quick filter chips with dropdowns. 시군구 가 있으면 "지역" 칩 라벨에 함께 표시. */}
         <QuickFilterChip
-          label={regionLabel(region)}
+          label={[regionLabel(region), sigungu].filter(Boolean).join(" · ")}
           defaultLabel="지역"
-          isActive={!!region}
+          isActive={!!region || !!sigungu}
           icon={<MapPin className="w-3.5 h-3.5" />}
-          onClear={() => setRegion(null)}
+          onClear={() => {
+            setRegion(null);
+            setSigungu(null);
+          }}
         >
           {regions.map((r) => (
             <FilterOption
               key={r.value}
               label={r.label}
               isSelected={region === r.value}
-              onClick={() => setRegion(region === r.value ? null : r.value)}
+              onClick={() => {
+                // 다른 시도를 골랐을 때 이전 시군구가 남으면 결과 0건이 되는 사고 방지.
+                if (sigungu && region !== r.value) setSigungu(null);
+                setRegion(region === r.value ? null : r.value);
+              }}
             />
           ))}
         </QuickFilterChip>

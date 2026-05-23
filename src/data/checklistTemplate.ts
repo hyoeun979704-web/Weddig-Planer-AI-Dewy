@@ -177,6 +177,7 @@ export const REMARRIAGE_TASKS: ChecklistTask[] = [
 //     리허설을 더 앞당기고 막달 일정은 최소화.
 
 import type { PregnancyTrimester } from "@/lib/pregnancy";
+import { parseLocalDate } from "@/lib/schedule";
 
 type DaysShift = Record<string, number>;
 
@@ -266,7 +267,16 @@ export function buildScheduleFromTemplate(
   /** 재혼 여부. true 이면 REMARRIAGE_TASKS 가 추가됨. */
   isRemarriage: boolean = false,
 ): Array<{ title: string; scheduled_date: string; category: string; completed: boolean }> {
-  const anchor = weddingDate ? new Date(weddingDate) : addMonths(new Date(), 12);
+  // F#15 — wedding_date 는 "YYYY-MM-DD" 라 new Date() 가 UTC midnight 으로 해석.
+  // 그러면 negative-UTC 사용자는 local 시각으로 전날 17시 같은 시점으로 잡혀
+  // toISOString().slice(0,10) 결과가 ±1 일 어긋남. parseLocalDate 로 로컬 자정 정렬.
+  // null 분기도 today 의 로컬 자정으로 강제해 두 경로의 anchor 의미가 동일하도록.
+  const todayLocalMidnight = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  })();
+  const anchor = weddingDate ? parseLocalDate(weddingDate) : addMonths(todayLocalMidnight, 12);
   const selectedIdx = STAGE_ORDER.indexOf(selectedStage);
   const excludedSet = new Set(excludedCategories);
 
@@ -302,6 +312,15 @@ export function buildScheduleFromTemplate(
     ...remarriageAddons,
   ];
 
+  // F#15 — toISOString().slice(0,10) 은 UTC 자정 기준이라 negative-UTC 사용자
+  // 에서 로컬 날짜와 어긋남. 로컬 컴포넌트로 직접 YYYY-MM-DD 포맷팅.
+  const fmt = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
   return allTasks.map((task) => {
     const effectiveDays = shifts[task.title] ?? task.daysBeforeWedding;
     const due = new Date(anchor);
@@ -309,7 +328,7 @@ export function buildScheduleFromTemplate(
     const taskStageIdx = STAGE_ORDER.indexOf(task.stage);
     return {
       title: task.title,
-      scheduled_date: due.toISOString().slice(0, 10), // YYYY-MM-DD
+      scheduled_date: fmt(due), // YYYY-MM-DD (local)
       category: task.category,
       // Anything from a stage strictly before the user's current stage is
       // assumed already done. Same-stage tasks stay open.

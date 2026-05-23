@@ -76,10 +76,14 @@ export function derivePersonaMode(s: PersonaInputs): WeddingPersonaMode {
   if (s.ceremony_type === "none") return "no_wedding_travel";
   if (s.ceremony_type === "self_only") return "self_no_ceremony";
 
+  // 스몰 계열 ceremony_type 은 wedding_style 과 무관하게 small_* 페르소나로 매핑.
+  // UI 가 "진짜 스몰 (40~80명)" / "야외" / "공공시설" / "레스토랑" 을 ceremony_type
+  // 선택만으로 노출하므로, wedding_style='general' 인 채로 골라도 그 의도를 살린다.
+  if (s.ceremony_type === "outdoor") return "small_outdoor";
+  if (s.ceremony_type === "public_facility") return "small_budget";
+  if (s.ceremony_type === "small_real" || s.ceremony_type === "restaurant") return "small_intimate";
   if (s.wedding_style === "small") {
     if (s.ceremony_type === "hotel") return "small_luxury";
-    if (s.ceremony_type === "outdoor") return "small_outdoor";
-    if (s.ceremony_type === "public_facility") return "small_budget";
     return "small_intimate";
   }
 

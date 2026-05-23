@@ -12,11 +12,15 @@ export interface TimelinePhase {
   // Days-before-wedding used as a default scheduled_date when the user
   // adopts one of `defaultTasks` from the empty-phase recommendations.
   defaultDaysBeforeWedding: number;
+  // 절댓값 day 범위 — 라벨(period)과 정합. getPhaseStatus 같은 status 계산기는
+  // 반드시 같은 윈도우(label 과 status 가 한 소스에서 나옴)를 써야 사고가 안 남.
+  startDay: number;  // phase 시작 D-day (큰 값)
+  endDay: number;    // phase 종료 D-day (작은 값, D-Day = 0)
 }
 
 // 표준(365일+) phase 윈도우. 압축 모드(4·6·8개월)는 buildTimelinePhases() 에서
 // 비율에 맞춰 동적 계산. 이 표는 "12개월 이상" 기준의 anchor.
-const STANDARD_PHASES: Array<Omit<TimelinePhase, "period" | "defaultDaysBeforeWedding"> & {
+const STANDARD_PHASES: Array<Omit<TimelinePhase, "period" | "defaultDaysBeforeWedding" | "startDay" | "endDay"> & {
   startRatio: number;  // wedding_date 까지 남은 기간 대비. 0=오늘, 1=본식일.
   endRatio: number;
   defaultRatio: number;
@@ -95,7 +99,9 @@ const formatPeriod = (totalDays: number, startRatio: number, endRatio: number): 
  * Returns a copy of TimelinePhase[] with `period` / `defaultDaysBeforeWedding` filled.
  */
 export const buildTimelinePhases = (daysUntil: number | null): TimelinePhase[] => {
-  const total = daysUntil && daysUntil > 0 ? daysUntil : 365;
+  // daysUntil ≤ 0 (오늘/지남) 도 phase 윈도우가 의미 있으려면 마지막 0 이상으로.
+  // 0 → 마지막 phase 만 "current/completed" 로 좁아져야 하므로 1 로 클램프.
+  const total = daysUntil && daysUntil > 0 ? daysUntil : daysUntil === null ? 365 : 1;
   return STANDARD_PHASES.map((p) => ({
     id: p.id,
     title: p.title,
@@ -104,8 +110,11 @@ export const buildTimelinePhases = (daysUntil: number | null): TimelinePhase[] =
     defaultTasks: p.defaultTasks,
     category: p.category,
     period: formatPeriod(total, p.startRatio, p.endRatio),
-    // defaultRatio 는 "phase 중간 정도" — 추천 task scheduled_date 시드 시 사용.
     defaultDaysBeforeWedding: Math.max(1, Math.round(total * (1 - p.defaultRatio))),
+    // 시작/끝 day 절댓값을 함께 노출 — getPhaseStatus 등이 같은 윈도우 기준으로
+    // 정확히 진행 상태를 계산할 수 있도록. 라벨과 status 가 어긋나는 사고 방지.
+    startDay: Math.max(0, Math.round(total * (1 - p.startRatio))),
+    endDay: Math.max(0, Math.round(total * (1 - p.endRatio))),
   }));
 };
 
@@ -113,13 +122,18 @@ export const buildTimelinePhases = (daysUntil: number | null): TimelinePhase[] =
 // 새 코드/임신/임박 사용자는 buildTimelinePhases(daysUntil) 사용 권장.
 export const TIMELINE_PHASES: TimelinePhase[] = buildTimelinePhases(null);
 
-export const CATEGORY_OPTIONS: { value: string; label: string }[] = [
+// 동적 phase 윈도우 기반 카테고리 옵션. MySchedule 등에서 daysUntil 을 넘겨
+// Schedule.tsx 와 같은 라벨을 쓰도록 함(F#7 회귀 방지).
+export const buildCategoryOptions = (daysUntil: number | null): { value: string; label: string }[] => [
   { value: "general", label: "일반" },
-  ...TIMELINE_PHASES.map(p => ({
+  ...buildTimelinePhases(daysUntil).map(p => ({
     value: p.category,
     label: `${p.period.replace(/\s/g, "")}: ${p.title}`,
   })),
 ];
+
+// 호환용 — 정적 import 케이스에 기본 365일 윈도우 노출.
+export const CATEGORY_OPTIONS: { value: string; label: string }[] = buildCategoryOptions(null);
 
 // Parses a "YYYY-MM-DD" date string as local midnight. The default
 // `new Date("YYYY-MM-DD")` treats the value as UTC midnight, which drifts
