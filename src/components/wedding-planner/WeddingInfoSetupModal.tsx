@@ -25,6 +25,7 @@ import {
   type WeddingStyle,
 } from "@/lib/weddingStyle";
 import { computePregnancyContext, trimesterLabel } from "@/lib/pregnancy";
+import type { CeremonyType, UserRole } from "@/lib/weddingPersona";
 
 const REGIONS = [
   "서울특별시", "경기도", "인천광역시", "부산광역시", "대구광역시",
@@ -67,6 +68,14 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const [maritalHistory, setMaritalHistory] = useState<"first" | "remarriage" | null>(null);
   const [pregnant, setPregnant] = useState(false);
   const [pregnancyDueDate, setPregnancyDueDate] = useState<Date | undefined>();
+  // 페르소나 v1 추가 신호 — 모달에서 "선택" 표기로 가볍게 묻고 미입력 시 기본값 유지.
+  const [role, setRole] = useState<UserRole | null>(null);
+  const [country, setCountry] = useState<string>("KR");
+  const [weddingCountry, setWeddingCountry] = useState<string>("KR");
+  const [sigungu, setSigungu] = useState<string>("");
+  const [hasParentsBride, setHasParentsBride] = useState<boolean>(true);
+  const [hasParentsGroom, setHasParentsGroom] = useState<boolean>(true);
+  const [ceremonyType, setCeremonyType] = useState<CeremonyType | null>(null);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -99,6 +108,13 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     setPregnancyDueDate(
       weddingSettings.pregnancy_due_date ? new Date(weddingSettings.pregnancy_due_date) : undefined,
     );
+    setRole(weddingSettings.role);
+    setCountry(weddingSettings.country ?? "KR");
+    setWeddingCountry(weddingSettings.wedding_country ?? "KR");
+    setSigungu(weddingSettings.wedding_region_sigungu ?? "");
+    setHasParentsBride(weddingSettings.has_parents_bride);
+    setHasParentsGroom(weddingSettings.has_parents_groom);
+    setCeremonyType(weddingSettings.ceremony_type);
     setErrors({});
   }, [
     isOpen,
@@ -113,6 +129,13 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     weddingSettings.marital_history,
     weddingSettings.pregnant,
     weddingSettings.pregnancy_due_date,
+    weddingSettings.role,
+    weddingSettings.country,
+    weddingSettings.wedding_country,
+    weddingSettings.wedding_region_sigungu,
+    weddingSettings.has_parents_bride,
+    weddingSettings.has_parents_groom,
+    weddingSettings.ceremony_type,
   ]);
 
   const validate = () => {
@@ -160,6 +183,13 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       pregnant,
       pregnancy_due_date:
         pregnant && pregnancyDueDate ? format(pregnancyDueDate, "yyyy-MM-dd") : null,
+      role,
+      country: country || "KR",
+      wedding_country: weddingCountry || "KR",
+      wedding_region_sigungu: sigungu.trim() || null,
+      has_parents_bride: hasParentsBride,
+      has_parents_groom: hasParentsGroom,
+      ceremony_type: ceremonyType,
     });
 
     if (ok) {
@@ -407,6 +437,160 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
               setExcludedCategories(excluded);
             }}
           />
+        </div>
+
+        {/* 예식 시군구 (선택) — 시도 외 좁힘. 천안·양평·강남 등 시군구 큐레이션 활성화. */}
+        <div>
+          <label className={labelCls}>
+            예식 시군구 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <input
+            type="text"
+            value={sigungu}
+            onChange={(e) => setSigungu(e.target.value)}
+            placeholder="예: 천안시, 마포구, 양평군"
+            disabled={regionTbd}
+            className={cn(
+              "w-full px-3 py-2.5 border rounded-xl text-sm",
+              regionTbd && "bg-gray-50 cursor-not-allowed text-gray-400",
+            )}
+          />
+          <p className="text-[11px] text-gray-400 mt-1">
+            입력하시면 시도 안에서 더 정확한 식장·후기·평균을 보여드려요.
+          </p>
+        </div>
+
+        {/* 사용자 역할 — 호칭·미션·AI 톤 분기. */}
+        <div>
+          <label className={labelCls}>
+            준비 주체 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <div className="grid grid-cols-3 gap-1.5">
+            {([
+              { v: null, label: "선택 안 함" },
+              { v: "bride", label: "신부" },
+              { v: "groom", label: "신랑" },
+              { v: "shared", label: "공동" },
+            ] as const).slice(0, 4).map((opt) => (
+              <button
+                key={opt.label}
+                type="button"
+                onClick={() => setRole(opt.v)}
+                className={cn(
+                  "py-2 rounded-xl text-sm border transition-colors",
+                  role === opt.v
+                    ? "border-[#C9A96E] bg-[#C9A96E]/5 text-gray-800 font-semibold"
+                    : "border-gray-200 text-gray-500"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-1">
+            신랑님이 직접 준비하시면 예복·예물·신랑 양가 가이드를 먼저 보여드려요.
+          </p>
+        </div>
+
+        {/* 거주·예식 국가 — 해외 거주 / 국제결혼 분기. */}
+        <div>
+          <label className={labelCls}>
+            거주·예식 국가 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-[11px] text-gray-500 mb-1">현재 거주</p>
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="w-full px-3 py-2 border rounded-xl text-sm bg-white"
+              >
+                <option value="KR">대한민국</option>
+                <option value="US">미국</option>
+                <option value="JP">일본</option>
+                <option value="SG">싱가포르</option>
+                <option value="GB">영국</option>
+                <option value="DE">독일</option>
+                <option value="AU">호주</option>
+                <option value="OTHER">기타 해외</option>
+              </select>
+            </div>
+            <div>
+              <p className="text-[11px] text-gray-500 mb-1">예식 국가</p>
+              <select
+                value={weddingCountry}
+                onChange={(e) => setWeddingCountry(e.target.value)}
+                className="w-full px-3 py-2 border rounded-xl text-sm bg-white"
+              >
+                <option value="KR">대한민국</option>
+                <option value="US">미국</option>
+                <option value="JP">일본</option>
+                <option value="DUAL">한국 + 해외 (이중식)</option>
+                <option value="OTHER">기타</option>
+              </select>
+            </div>
+          </div>
+          {(country !== "KR" || weddingCountry !== "KR") && (
+            <p className="text-[11px] text-amber-700 mt-1.5 leading-snug">
+              해외/국제결혼 모드로 전환돼요. 원격 진행·양가 부모 위임·영문 자료 안내가 활성화됩니다.
+            </p>
+          )}
+        </div>
+
+        {/* 양가 부모 — 부모 부재 페르소나의 1인 진행 분기. */}
+        <div>
+          <label className={labelCls}>
+            양가 부모 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!hasParentsBride}
+                onChange={(e) => setHasParentsBride(!e.target.checked)}
+                className="w-4 h-4 accent-[#C9A96E]"
+              />
+              신부 측 부모님이 안 계세요
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!hasParentsGroom}
+                onChange={(e) => setHasParentsGroom(!e.target.checked)}
+                className="w-4 h-4 accent-[#C9A96E]"
+              />
+              신랑 측 부모님이 안 계세요
+            </label>
+          </div>
+          {(!hasParentsBride || !hasParentsGroom) && (
+            <p className="text-[11px] text-amber-700 mt-1 leading-snug">
+              양가 분담 시뮬레이터·진행 가이드가 1인 진행 변형으로 바뀌어요.
+            </p>
+          )}
+        </div>
+
+        {/* 식 형태 (세분) — 스몰웨딩·노식·스냅 분기. */}
+        <div>
+          <label className={labelCls}>
+            식 형태 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <select
+            value={ceremonyType ?? ""}
+            onChange={(e) => setCeremonyType((e.target.value || null) as CeremonyType | null)}
+            className="w-full px-3 py-2.5 border rounded-xl text-sm bg-white"
+          >
+            <option value="">선택 안 함 (위 결혼 스타일 따름)</option>
+            <option value="standard">표준 예식장</option>
+            <option value="hotel">호텔 웨딩</option>
+            <option value="small_real">진짜 스몰 (40~80명, 레스토랑·하우스·카페)</option>
+            <option value="restaurant">레스토랑 웨딩</option>
+            <option value="outdoor">야외·가든·정원</option>
+            <option value="public_facility">공공시설(구민회관·시민회관)</option>
+            <option value="self_only">셀프웨딩 (식 진행)</option>
+            <option value="none">결혼식 안 함 (혼인신고만)</option>
+            <option value="snap_only">스냅 촬영만</option>
+            <option value="dual_ceremony">이중식 (한국+해외)</option>
+          </select>
         </div>
 
         {/* 결혼 차수 — 재혼 페르소나의 양가 설득·작은 가족식 톤 분기에 사용 */}

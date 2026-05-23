@@ -3,6 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { WeddingStyle } from "@/lib/weddingStyle";
+import {
+  derivePersonaMode,
+  type CeremonyType,
+  type UserRole,
+  type WeddingPersonaMode,
+} from "@/lib/weddingPersona";
 import { resolveRegionKey } from "@/data/budgetData";
 
 export interface ScheduleItem {
@@ -31,6 +37,17 @@ interface WeddingSettings {
   // 출산예정일. pregnant=true 일 때만 의미. 본식일과의 차이로 임신 차수
   // (초기/중기/후기)를 계산해 일정 시프트·미션·AI 톤이 분기.
   pregnancy_due_date: string | null;
+  // 페르소나 v1 — 사용자 역할/거주지/예식 국가/시군구/부모 존재/식 형태.
+  // 단일 페르소나 enum으로 자동 분류되며 UI/AI/큐레이션 분기의 진입점.
+  role: UserRole | null;
+  country: string | null;
+  wedding_country: string | null;
+  wedding_region_sigungu: string | null;
+  has_parents_bride: boolean;
+  has_parents_groom: boolean;
+  ceremony_type: CeremonyType | null;
+  /** 자동 분류 페르소나. DB 트리거에서 계산, 클라이언트도 동일 로직(weddingPersona.derivePersonaMode)으로 폴백 가능. */
+  persona_mode: WeddingPersonaMode | null;
 }
 
 export const useWeddingSchedule = () => {
@@ -47,6 +64,14 @@ export const useWeddingSchedule = () => {
     marital_history: null,
     pregnant: false,
     pregnancy_due_date: null,
+    role: null,
+    country: "KR",
+    wedding_country: "KR",
+    wedding_region_sigungu: null,
+    has_parents_bride: true,
+    has_parents_groom: true,
+    ceremony_type: null,
+    persona_mode: "standard_bride",
   });
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,9 +89,11 @@ export const useWeddingSchedule = () => {
 
     try {
       const [settingsRes, itemsRes] = await Promise.all([
-        supabase
+        (supabase as any)
           .from("user_wedding_settings")
-          .select("wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant, pregnancy_due_date")
+          .select(
+            "wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant, pregnancy_due_date, role, country, wedding_country, wedding_region_sigungu, has_parents_bride, has_parents_groom, ceremony_type, persona_mode"
+          )
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
@@ -78,6 +105,23 @@ export const useWeddingSchedule = () => {
 
       if (settingsRes.data) {
         const s = settingsRes.data as any;
+        // 페르소나 모드는 DB 트리거가 계산하지만, 마이그레이션 직후·캐시 등
+        // 누락 케이스를 위해 클라이언트에서도 동일 로직으로 폴백 계산.
+        const fallbackMode = derivePersonaMode({
+          wedding_style: (s.wedding_style ?? null) as WeddingStyle | null,
+          ceremony_type: (s.ceremony_type ?? null) as CeremonyType | null,
+          marital_history:
+            s.marital_history === "first" || s.marital_history === "remarriage"
+              ? s.marital_history
+              : null,
+          pregnant: !!s.pregnant,
+          role: (s.role ?? null) as UserRole | null,
+          country: s.country ?? "KR",
+          wedding_country: s.wedding_country ?? "KR",
+          wedding_region: s.wedding_region ?? null,
+          has_parents_bride: s.has_parents_bride !== false,
+          has_parents_groom: s.has_parents_groom !== false,
+        });
         setWeddingSettings({
           wedding_date: s.wedding_date,
           partner_name: s.partner_name,
@@ -93,6 +137,14 @@ export const useWeddingSchedule = () => {
               : null,
           pregnant: !!s.pregnant,
           pregnancy_due_date: s.pregnancy_due_date ?? null,
+          role: (s.role ?? null) as UserRole | null,
+          country: s.country ?? "KR",
+          wedding_country: s.wedding_country ?? "KR",
+          wedding_region_sigungu: s.wedding_region_sigungu ?? null,
+          has_parents_bride: s.has_parents_bride !== false,
+          has_parents_groom: s.has_parents_groom !== false,
+          ceremony_type: (s.ceremony_type ?? null) as CeremonyType | null,
+          persona_mode: (s.persona_mode ?? fallbackMode) as WeddingPersonaMode,
         });
       }
 
@@ -163,6 +215,13 @@ export const useWeddingSchedule = () => {
       marital_history: "first" | "remarriage" | null;
       pregnant: boolean;
       pregnancy_due_date: string | null;
+      role: UserRole | null;
+      country: string | null;
+      wedding_country: string | null;
+      wedding_region_sigungu: string | null;
+      has_parents_bride: boolean;
+      has_parents_groom: boolean;
+      ceremony_type: CeremonyType | null;
     }>
   ) => {
     if (!user) {
@@ -177,16 +236,33 @@ export const useWeddingSchedule = () => {
         .maybeSingle();
 
       if (existing) {
-        await supabase
+        await (supabase as any)
           .from("user_wedding_settings")
           .update(patch)
           .eq("user_id", user.id);
       } else {
-        await supabase
+        await (supabase as any)
           .from("user_wedding_settings")
           .insert({ user_id: user.id, ...patch });
       }
-      setWeddingSettings(prev => ({ ...prev, ...patch }));
+      // 로컬 state 갱신 시 패치 결과 + 새 persona_mode 재계산을 같이 반영.
+      // DB 트리거가 권위 소스이지만 로컬은 즉시 분기에 쓰여서 폴백 계산.
+      setWeddingSettings(prev => {
+        const merged = { ...prev, ...patch } as WeddingSettings;
+        merged.persona_mode = derivePersonaMode({
+          wedding_style: merged.wedding_style,
+          ceremony_type: merged.ceremony_type,
+          marital_history: merged.marital_history,
+          pregnant: merged.pregnant,
+          role: merged.role,
+          country: merged.country,
+          wedding_country: merged.wedding_country,
+          wedding_region: merged.wedding_region,
+          has_parents_bride: merged.has_parents_bride,
+          has_parents_groom: merged.has_parents_groom,
+        });
+        return merged;
+      });
 
       // Mirror region into budget_settings if the user has already set up a
       // budget. Keeps the two pages from drifting when the user updates their

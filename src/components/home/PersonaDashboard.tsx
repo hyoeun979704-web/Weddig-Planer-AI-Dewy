@@ -61,7 +61,17 @@ const PersonaDashboard = () => {
     missions,
     styleLabel,
     styleIntro,
+    personaMode,
+    personaLabel,
+    personaHeader,
   } = insights;
+
+  // 비표준 페르소나(재혼·임신·해외·국제·신랑·1인진행·노식·스냅 등)는 페르소나 헤더가
+  // wedding_style 헤더보다 우선. 표준 신부는 기존 styleIntro 그대로.
+  const isStandardBride = personaMode === "standard_bride";
+  const headerTitle = isStandardBride ? styleIntro.title : personaHeader.title;
+  const headerSubtitle = isStandardBride ? styleIntro.subtitle : personaHeader.subtitle;
+  const modeChipLabel = isStandardBride ? `${styleLabel} 모드` : `${personaLabel} 모드`;
 
   const weddingDate = weddingSettings.wedding_date;
   const dDayLabel = daysUntilWedding === null
@@ -132,7 +142,7 @@ const PersonaDashboard = () => {
             <div className="flex items-center gap-1 flex-wrap mb-1.5">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-card/80 rounded-full text-[10px] font-semibold text-primary">
                 {styleIntro.accentEmoji && <span>{styleIntro.accentEmoji}</span>}
-                <span>{styleLabel} 모드</span>
+                <span>{modeChipLabel}</span>
               </span>
               {urgencyTone && (
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${urgencyTone.chipBg} ${urgencyTone.chipFg}`}>
@@ -167,10 +177,10 @@ const PersonaDashboard = () => {
               )}
             </div>
             <h2 className="text-[15px] font-bold text-foreground leading-tight">
-              {styleIntro.title}
+              {headerTitle}
             </h2>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              {styleIntro.subtitle}
+              {headerSubtitle}
             </p>
           </div>
 
