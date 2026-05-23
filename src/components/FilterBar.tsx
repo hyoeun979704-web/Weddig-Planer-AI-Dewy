@@ -31,6 +31,10 @@ const hallTypeOptions = [
   { value: "채플웨딩", label: "채플" },
   { value: "단독홀", label: "단독홀" },
   { value: "스몰웨딩", label: "스몰웨딩" },
+  // 페르소나 v1 추가: P11(40명 진짜 스몰), P14(저예산 1,200만), P12(야외).
+  // tag 값이 places.tags 와 매칭해야 — 운영팀이 해당 tag를 가진 row 를 만들어 둬야 효과.
+  { value: "레스토랑웨딩", label: "레스토랑" },
+  { value: "공공시설", label: "공공시설" },
 ];
 
 // Most rows tag meals as plain "뷔페" or "코스요리"; the granular
