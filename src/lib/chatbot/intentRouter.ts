@@ -106,6 +106,7 @@ export interface IntentMatch {
     | "free_search"
     | "average_price"
     | "popular_places"
+    | "venue_compare"
     | "web_search";
   /** 매칭된 키워드 (디버깅·로그용) */
   matchedKeyword?: string;
@@ -474,6 +475,18 @@ const PATTERNS: IntentPattern[] = [
     intent: "popular_places" as ChatIntent,
     patterns: [/인기.*(업체|식장|스튜디오|드레스)/, /(평점|별점).*(높은|좋은)/, /TOP|랭킹/i],
     dbHandler: "popular_places",
+  },
+  {
+    // 비교표 — P1/P2/P3/P7 페르소나 시간 효율 핵심. "강남 호텔 5곳 비교", "스튜디오
+    // 비교해줘", "추천 5곳 비교" 같이 비교 의도 명시될 때 표 형태로 즉답.
+    intent: "venue_compare" as ChatIntent,
+    patterns: [
+      /(웨딩홀|식장|호텔|스튜디오|드레스).*비교/,
+      /비교.*(웨딩홀|식장|호텔|스튜디오|드레스)/,
+      /(\d+)\s*곳.*(비교|추천)/,
+      /(비교|매트릭스).*(표|시트|시각화)/,
+    ],
+    dbHandler: "venue_compare",
   },
 
   // 정적 가이드 (지식 기반)

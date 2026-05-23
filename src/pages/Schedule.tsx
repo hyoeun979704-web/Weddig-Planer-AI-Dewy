@@ -8,6 +8,7 @@ import { Heart, Loader2, Plus, Check, BookOpen, Settings } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
+import FamilyAvailabilityOverlap from "@/components/schedule/FamilyAvailabilityOverlap";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
 import PartnerLinkCard from "@/components/partner/PartnerLinkCard";
@@ -421,6 +422,9 @@ const Schedule = () => {
             <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
           </button>
         </section>
+
+        {/* 양가 일정 조율 — P1/P8/P9 페르소나 핵심. has_parents_* 기반으로 자동 노출/숨김. */}
+        <FamilyAvailabilityOverlap />
 
         {/* ── Wedding Timeline ── */}
         <section className="px-4 mb-6" data-tutorial="schedule-timeline">

@@ -56,6 +56,7 @@ import {
   handleAveragePrice,
   handlePopularPlaces,
   handleExplicitWebSearch,
+  handleVenueCompare,
 } from "./handlers/searchHandlers";
 
 export interface DbHandlerContext {
@@ -531,7 +532,8 @@ export type DbHandlerKey =
   | "checklist_progress"
   | "free_search"
   | "average_price"
-  | "popular_places";
+  | "popular_places"
+  | "venue_compare";
 
 const isItemTypeKey = (s: string | undefined): s is ItemTypeKey =>
   !!s && s in ITEM_TYPE_MAP;
@@ -604,6 +606,7 @@ export const runDbHandler = async (
     case "free_search": return { reply: await handleFreeTextSearch(userMessage, { weddingStyle: ctx.weddingStyle, excludedCategories: ctx.excludedCategories }) };
     case "average_price": return { reply: await handleAveragePrice(userMessage, { weddingStyle: ctx.weddingStyle, excludedCategories: ctx.excludedCategories }) };
     case "popular_places": return { reply: await handlePopularPlaces(userMessage, { weddingStyle: ctx.weddingStyle, excludedCategories: ctx.excludedCategories }) };
+    case "venue_compare": return { reply: await handleVenueCompare(userMessage, { weddingStyle: ctx.weddingStyle, excludedCategories: ctx.excludedCategories }) };
     case "web_search": return { reply: await handleExplicitWebSearch(userMessage) };
     default:
       return { reply: "요청을 처리할 수 없어요. 다시 한 번 말씀해주시겠어요?" };

@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { LegacyDetail } from "@/hooks/usePlaceDetail";
 import { usePlaceReviews, REVIEW_SOURCE_META, type PlaceReview } from "@/hooks/usePlaceReviews";
+import HiddenCostsCard from "@/components/detail/HiddenCostsCard";
 
 const handleTagClick = (tag: string) => {
   // Tag-based filtering on the list pages isn't wired yet — the list hooks
@@ -541,17 +542,9 @@ function DetailTab({
         </section>
       )}
 
-      {/* Hidden costs */}
-      {place.hidden_costs.length > 0 && (
-        <section className="px-4 pt-3 pb-2">
-          <h3 className="font-bold text-sm mb-2 flex items-center gap-1.5">
-            <AlertCircle className="w-4 h-4 text-amber-600" />
-            <span className="text-amber-700">계약 전 확인</span>
-          </h3>
-          <ul className="text-xs text-amber-900 space-y-1 bg-amber-50 border border-amber-200 rounded-xl p-3">
-            {place.hidden_costs.map((c, i) => <li key={i} className="flex gap-1.5"><span></span><span>{c}</span></li>)}
-          </ul>
-        </section>
+      {/* Hidden costs — P3 페르소나 핵심 페인. 카테고리 표준 추가금 체크리스트 함께. */}
+      {(place.hidden_costs.length > 0 || ["wedding_hall", "studio", "dress_shop", "makeup_shop", "honeymoon"].includes(place.category)) && (
+        <HiddenCostsCard category={place.category} hiddenCostsByPlace={place.hidden_costs} />
       )}
       {place.contract_policy && (
         <section className="px-4 pt-3 pb-4">

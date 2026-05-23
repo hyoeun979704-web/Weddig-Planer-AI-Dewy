@@ -414,6 +414,61 @@ ${lines}${insightBlock}
 };
 
 // ════════════════════════════════════════════════════════════
+// 비교표 — "강남 호텔 5곳 비교", "스튜디오 비교해줘" 같은 요청 시 표 형태로 응답.
+// P1/P2/P3/P7 페르소나(시간 효율 / 데이터 분석)가 "엑셀 직접 비교" 페인 해소.
+// 별점·후기·시작가·인증·시군구를 한 줄에 배치.
+// ════════════════════════════════════════════════════════════
+export const handleVenueCompare = async (
+  userMessage: string,
+  personaCtx: SearchPersonaCtx = {},
+): Promise<string> => {
+  const category = inferCategory(userMessage) ?? "wedding_hall";
+  const region = inferRegion(userMessage);
+
+  // 비교는 5곳을 기본. 메시지에 숫자가 있으면 그 값(3~10) 으로.
+  const numMatch = userMessage.match(/(\d+)\s*곳/);
+  const limit = numMatch ? Math.max(3, Math.min(10, Number(numMatch[1]))) : 5;
+
+  let query = (supabase as any)
+    .from("places")
+    .select("place_id, name, category, city, district, avg_rating, review_count, min_price, is_partner, is_active")
+    .eq("category", category)
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .gte("review_count", 1)
+    .order("avg_rating", { ascending: false, nullsFirst: false });
+  if (region) query = query.or(`district.ilike.%${region}%,city.ilike.%${region}%`);
+
+  const { data } = await query.limit(limit);
+
+  if (!data || data.length === 0) {
+    return `**${region ?? "전체"} ${PLACE_CATEGORY_LABEL[category]} 비교** \n\n해당 조건에 매칭되는 업체가 없어요. 조건(지역·카테고리)을 바꿔 다시 물어봐 주세요.`;
+  }
+
+  // 표 헤더 — 별점·후기·시작가·시군구.
+  const tableHeader = "| 업체 | 별점 | 후기 | 시작가 | 위치 |\n|---|---:|---:|---:|---|";
+  const rows = (data as any[]).map((p) => {
+    const star = p.avg_rating != null ? p.avg_rating.toFixed(1) : "-";
+    const reviews = p.review_count ?? 0;
+    const price = p.min_price ? `${(p.min_price / 10000).toFixed(0)}만~` : "-";
+    const loc = p.district ?? "-";
+    const partner = p.is_partner ? " ⭐" : "";
+    // 이름 컬럼에 링크 — 사용자가 표에서 바로 상세 페이지로 이동.
+    const link = `[${p.name}${partner}](/${category === "wedding_hall" ? "venue" : category === "studio" ? "studio" : "venue"}/${p.place_id})`;
+    return `| ${link} | ${star} | ${reviews} | ${price} | ${loc} |`;
+  });
+
+  const tip =
+    category === "wedding_hall"
+      ? "별점·시작가는 시작점. **추가금 항목**(원본·헬퍼·식대 보증)이 더 큰 변수예요. 각 업체 상세에서 [계약 전 확인] 카드 꼭 비교."
+      : category === "studio"
+        ? "스튜디오는 **원본 데이터 포함 여부·보정 컷 수**가 가격 차이의 핵심."
+        : "각 업체 상세에서 [계약 전 확인] 카드의 추가금 체크리스트를 비교해보세요.";
+
+  return `**${region ?? "전체"} ${PLACE_CATEGORY_LABEL[category] ?? category} ${data.length}곳 비교**\n\n${tableHeader}\n${rows.join("\n")}\n\n${tip}`;
+};
+
+// ════════════════════════════════════════════════════════════
 // 명시 발동: 사용자가 "웹에서 찾아줘"라고 명시할 때
 // ════════════════════════════════════════════════════════════
 // DB 우회. 항상 Gemini Search Grounding으로 답변. 사용자가 의도적으로
