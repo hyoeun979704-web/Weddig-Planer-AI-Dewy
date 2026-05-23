@@ -86,18 +86,48 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
       return;
     }
 
-    const searchTerm = `%${searchQuery}%`;
     setIsLoading(true);
+
+    // "{지역} {키워드}" 복합 쿼리 파싱 — 천안/마포/강남 같은 시군구 또는
+    // 충남/서울 같은 시도가 첫 토큰이면 region/district 필터에 적용.
+    // 미매칭 토큰은 name ILIKE 로 폴백.
+    const rawTokens = searchQuery.trim().split(/\s+/).filter(Boolean);
+    const REGION_HINTS = [
+      "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "세종",
+      "강원", "충남", "충북", "전남", "전북", "경남", "경북", "제주",
+    ];
+    const looksLikeSigungu = (t: string) => /시$|군$|구$/.test(t);
+    let regionToken: string | null = null;
+    let sigunguToken: string | null = null;
+    const nameTokens: string[] = [];
+    for (const t of rawTokens) {
+      if (!regionToken && REGION_HINTS.some((r) => t.startsWith(r))) {
+        regionToken = t;
+        continue;
+      }
+      if (!sigunguToken && looksLikeSigungu(t)) {
+        sigunguToken = t;
+        continue;
+      }
+      nameTokens.push(t);
+    }
+    const nameTerm = nameTokens.length > 0 ? `%${nameTokens.join(" ")}%` : null;
 
     const fetchResults = async () => {
       try {
-        const { data, error } = await supabase
+        let query = (supabase as any)
           .from("places")
           .select("place_id, name, category, city, district")
           .eq("is_active", true)
-          .is("deleted_at", null)
-          .ilike("name", searchTerm)
-          .limit(24);
+          .is("deleted_at", null);
+        if (regionToken) query = query.ilike("city", `%${regionToken}%`);
+        if (sigunguToken) query = query.ilike("district", `%${sigunguToken}%`);
+        if (nameTerm) query = query.ilike("name", nameTerm);
+        else if (!regionToken && !sigunguToken) {
+          // 어떤 토큰도 매칭 안 됐으면 원본 전체를 name ILIKE 로
+          query = query.ilike("name", `%${searchQuery}%`);
+        }
+        const { data, error } = await query.limit(24);
 
         if (error) throw error;
 

@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { LegacyDetail } from "@/hooks/usePlaceDetail";
-import { usePlaceReviews, type PlaceReview } from "@/hooks/usePlaceReviews";
+import { usePlaceReviews, REVIEW_SOURCE_META, type PlaceReview } from "@/hooks/usePlaceReviews";
 
 const handleTagClick = (tag: string) => {
   // Tag-based filtering on the list pages isn't wired yet — the list hooks
@@ -653,11 +653,23 @@ function ReviewCard({ review }: { review: PlaceReview }) {
         {review.author && (
           <span className="text-sm text-foreground">{review.author}</span>
         )}
-        {review.is_verified && (
-          <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-full">
-            인증
-          </span>
-        )}
+        {/* 출처 칩 — source_type 우선, 없으면 is_verified 폴백. P3·P13·P18 광고/협찬 분간 해소. */}
+        {(() => {
+          const meta = review.source_type
+            ? REVIEW_SOURCE_META[review.source_type]
+            : review.is_verified
+              ? REVIEW_SOURCE_META.user_verified
+              : null;
+          if (!meta) return null;
+          return (
+            <span
+              title={meta.hint}
+              className={`text-[10px] px-1.5 py-0.5 rounded-full border ${meta.tone}`}
+            >
+              {meta.label}
+            </span>
+          );
+        })()}
         {date && (
           <span className="text-xs text-muted-foreground ml-auto">{date}</span>
         )}

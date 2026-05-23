@@ -32,8 +32,22 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
     query = query.ilike("city", `%${filters.region}%`);
   }
 
+  // 시군구 — places.district ILIKE. 시도+시군구 조합으로 P6·P11·P12 페르소나 권역 큐레이션.
+  if (filters.sigungu) {
+    query = query.ilike("district", `%${filters.sigungu}%`);
+  }
+
   if (filters.maxPrice) {
     query = query.lte("min_price", filters.maxPrice);
+  }
+
+  // 보증인원 상한/하한. 하한(minGuarantee) 은 P13(호텔 스몰) 같은 케이스에 사용,
+  // null 이면 P11(40명 진짜 스몰) 처럼 작은 인원도 포함.
+  if (filters.maxGuarantee) {
+    query = query.lte("guarantee_count", filters.maxGuarantee);
+  }
+  if (filters.minGuarantee) {
+    query = query.gte("guarantee_count", filters.minGuarantee);
   }
 
   if (filters.minRating) {
@@ -70,13 +84,18 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
 };
 
 export const useVenues = (partnersOnly: boolean = false) => {
-  const { region, maxPrice, maxGuarantee, minRating, hallTypes, mealOptions, eventOptions } = useFilterStore();
-  const hasFilters = !!(region || maxPrice || maxGuarantee || minRating || hallTypes.length || mealOptions.length || eventOptions.length);
+  const { region, sigungu, maxPrice, maxGuarantee, minGuarantee, minRating, hallTypes, mealOptions, eventOptions } = useFilterStore();
+  const hasFilters = !!(
+    region || sigungu || maxPrice || maxGuarantee || minGuarantee || minRating ||
+    hallTypes.length || mealOptions.length || eventOptions.length
+  );
 
   const filters: FilterState = {
     region,
+    sigungu,
     maxPrice,
     maxGuarantee,
+    minGuarantee,
     minRating,
     hallTypes,
     mealOptions,
