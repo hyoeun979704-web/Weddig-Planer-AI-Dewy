@@ -211,6 +211,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
         weddingStyle,
         pregnant,
         trimesterAtWedding,
+        ceremonyType,
+        maritalHistory === "remarriage",
       );
       const seeded = await generateScheduleFromTemplate(items);
       onSaved?.();

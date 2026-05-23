@@ -38,7 +38,16 @@ interface Post {
   wedding_style: PostWeddingStyle | null;
 }
 
-const categories = ["전체", "웨딩홀", "스드메", "허니문", "혼수", "자유"];
+// 카테고리 — 페르소나 시트 v1에 맞춰 비표준 페르소나 카테고리 추가.
+// 재혼/임신/신랑/해외·국제/노웨딩·셀프/스냅/지방. 빈 카테고리도 노출해 첫 글
+// 유도 — empty state는 카테고리별 카피로 별도 분기.
+const categories = [
+  "전체",
+  "웨딩홀", "스드메", "허니문", "혼수",
+  "신랑 모드", "재혼·자녀", "임신 결혼",
+  "해외·국제결혼", "지방 결혼", "노웨딩·셀프", "스냅·기념일",
+  "자유",
+];
 
 type StyleFilter = "all" | PostWeddingStyle;
 

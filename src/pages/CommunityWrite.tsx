@@ -10,7 +10,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
-const categories = ["웨딩홀", "스드메", "혼수", "허니문", "자유"];
+// Community.tsx 와 동일 카테고리 세트(전체 제외). 페르소나별 카테고리 포함.
+const categories = [
+  "웨딩홀", "스드메", "혼수", "허니문",
+  "신랑 모드", "재혼·자녀", "임신 결혼",
+  "해외·국제결혼", "지방 결혼", "노웨딩·셀프", "스냅·기념일",
+  "자유",
+];
 
 // 작성 중 글이 백그라운드 전환·뒤로가기로 날아가지 않도록 텍스트를 임시 저장한다.
 // (이미지 File 객체는 직렬화 불가라 텍스트만 보존)

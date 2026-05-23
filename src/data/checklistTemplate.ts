@@ -113,6 +113,57 @@ export const STYLE_ADDON_TASKS: Record<string, ChecklistTask[]> = {
   custom: [],
 };
 
+// Ceremony type 별 추가 태스크 — P15(셀프·노식), P16(노웨딩), P19(재혼+자녀),
+// P12(야외), P20(국제결혼) 페르소나 페인 포인트를 schedule에 반영.
+//
+// none 페르소나(P16 노웨딩) 는 base 식 관련 태스크가 의미 없으므로 호출측에서
+// 별도 필터(공통 CHECKLIST_TEMPLATE 무시)하는 게 깔끔하지만, 일단 추가 태스크만
+// 얹어 사용자가 식 카테고리를 hide 해서 정리하도록.
+export const CEREMONY_TYPE_TASKS: Record<string, ChecklistTask[]> = {
+  none: [
+    { title: "혼인신고서 작성·구청 방문", daysBeforeWedding: 0, stage: "wrapping_up", category: "general" },
+    { title: "양가 부모 인사 일정 잡기", daysBeforeWedding: 60, stage: "contracting", category: "general" },
+    { title: "신혼집·혼수 우선순위 정리", daysBeforeWedding: 90, stage: "researching", category: "appliance" },
+    { title: "신혼여행 계획 (식 대신 집중)", daysBeforeWedding: 75, stage: "contracting", category: "honeymoon" },
+  ],
+  snap_only: [
+    { title: "콘셉트·로케이션 결정", daysBeforeWedding: 60, stage: "researching", category: "studio" },
+    { title: "작가 선정·계약", daysBeforeWedding: 45, stage: "contracting", category: "studio" },
+    { title: "의상·소품 준비", daysBeforeWedding: 14, stage: "wrapping_up", category: "general" },
+  ],
+  self_only: [
+    { title: "혼인신고 절차 확인", daysBeforeWedding: 15, stage: "wrapping_up", category: "general" },
+    { title: "양가 인사 시나리오 정리", daysBeforeWedding: 30, stage: "contracting", category: "general" },
+    { title: "셀프 본식 진행 순서 확정", daysBeforeWedding: 21, stage: "wrapping_up", category: "general" },
+  ],
+  outdoor: [
+    { title: "우천 대비 옵션·텐트 견적", daysBeforeWedding: 90, stage: "contracting", category: "wedding_hall" },
+    { title: "음향·조명·의자 배치 시뮬레이션", daysBeforeWedding: 30, stage: "wrapping_up", category: "wedding_hall" },
+    { title: "계절·일몰 시간 본식 시각 확정", daysBeforeWedding: 60, stage: "contracting", category: "wedding_hall" },
+  ],
+  public_facility: [
+    { title: "구민회관·시민회관 일정 확인", daysBeforeWedding: 200, stage: "researching", category: "wedding_hall" },
+    { title: "DIY 답례품·꽃장식 계획", daysBeforeWedding: 45, stage: "wrapping_up", category: "general" },
+  ],
+  hotel: [
+    { title: "호텔 패키지 항목별 비교 시트 작성", daysBeforeWedding: 200, stage: "researching", category: "wedding_hall" },
+    { title: "컨시어지 미팅·맞춤 옵션 확정", daysBeforeWedding: 90, stage: "contracting", category: "wedding_hall" },
+  ],
+  dual_ceremony: [
+    { title: "한국 + 해외 두 식 일정 조율", daysBeforeWedding: 240, stage: "researching", category: "general" },
+    { title: "외국 가족 영문 안내문·청첩장", daysBeforeWedding: 90, stage: "contracting", category: "invitation_venue" },
+    { title: "통역·번역 인력 섭외", daysBeforeWedding: 60, stage: "contracting", category: "general" },
+  ],
+};
+
+// 재혼·자녀 동반(P8, P19) — marital_history=remarriage 일 때 추가.
+// 자녀가 있는 경우 자녀 의상/진행 참여 태스크 포함.
+export const REMARRIAGE_TASKS: ChecklistTask[] = [
+  { title: "양가 인사 톤 다운 — 작은 가족식 협의", daysBeforeWedding: 180, stage: "researching", category: "general" },
+  { title: "자녀 동반 일정·복장 정하기", daysBeforeWedding: 90, stage: "contracting", category: "general" },
+  { title: "자녀 본식 진행 참여 (반지 전달 등) 협의", daysBeforeWedding: 60, stage: "contracting", category: "general" },
+];
+
 // 임신 신부 가중치 — domain-capsules.ts PREGNANCY_CAPSULE 와 정합.
 // 본식 시점 임신 차수 (1st/2nd/3rd) 별로 시프트 강도와 추가 태스크가 다름.
 //
@@ -210,6 +261,10 @@ export function buildScheduleFromTemplate(
   weddingStyle?: string | null,
   pregnant: boolean = false,
   pregnancyTrimester: PregnancyTrimester | null = null,
+  /** ceremony_type 신호 — 노식/스냅/셀프/야외/공공시설/호텔/이중식. NULL이면 일반 */
+  ceremonyType?: string | null,
+  /** 재혼 여부. true 이면 REMARRIAGE_TASKS 가 추가됨. */
+  isRemarriage: boolean = false,
 ): Array<{ title: string; scheduled_date: string; category: string; completed: boolean }> {
   const anchor = weddingDate ? new Date(weddingDate) : addMonths(new Date(), 12);
   const selectedIdx = STAGE_ORDER.indexOf(selectedStage);
@@ -225,9 +280,27 @@ export function buildScheduleFromTemplate(
     ? ADDON_BY_TRIMESTER[trimester].filter((task) => !excludedSet.has(task.category))
     : [];
 
-  const baseTasks = CHECKLIST_TEMPLATE.filter((task) => !excludedSet.has(task.category));
+  // 노식·스냅 페르소나는 base 결혼식 태스크 자체가 의미 없음 → 기본 체크리스트
+  // 건너뛰고 ceremony 전용 태스크만 시드.
+  const skipBase = ceremonyType === "none" || ceremonyType === "snap_only";
+  const baseTasks = skipBase
+    ? []
+    : CHECKLIST_TEMPLATE.filter((task) => !excludedSet.has(task.category));
   const addons = (weddingStyle && STYLE_ADDON_TASKS[weddingStyle]) || [];
-  const allTasks = [...baseTasks, ...addons, ...pregnancyAddons];
+  const ceremonyAddons = ceremonyType
+    ? (CEREMONY_TYPE_TASKS[ceremonyType] ?? []).filter((task) => !excludedSet.has(task.category))
+    : [];
+  const remarriageAddons = isRemarriage
+    ? REMARRIAGE_TASKS.filter((task) => !excludedSet.has(task.category))
+    : [];
+
+  const allTasks = [
+    ...baseTasks,
+    ...addons,
+    ...pregnancyAddons,
+    ...ceremonyAddons,
+    ...remarriageAddons,
+  ];
 
   return allTasks.map((task) => {
     const effectiveDays = shifts[task.title] ?? task.daysBeforeWedding;

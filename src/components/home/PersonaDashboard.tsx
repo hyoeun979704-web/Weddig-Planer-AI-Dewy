@@ -14,6 +14,7 @@ import {
   markMissionComplete,
   type PersonaMission,
 } from "@/data/personaMissions";
+import { shouldHideWeddingCeremony } from "@/lib/weddingPersona";
 
 const formatMinutes = (seconds: number) => {
   if (seconds < 60) return `${seconds}초`;
@@ -74,13 +75,19 @@ const PersonaDashboard = () => {
   const modeChipLabel = isStandardBride ? `${styleLabel} 모드` : `${personaLabel} 모드`;
 
   const weddingDate = weddingSettings.wedding_date;
-  const dDayLabel = daysUntilWedding === null
-    ? "예정일 미정"
-    : daysUntilWedding > 0
-      ? `D-${daysUntilWedding}`
-      : daysUntilWedding === 0
-        ? "오늘!"
-        : `D+${Math.abs(daysUntilWedding)}`;
+  // 노식·스냅 페르소나는 D-Day 의미가 다름 — "촬영일"·"기념일"로 대체.
+  const hideCeremony = shouldHideWeddingCeremony(personaMode);
+  const dDayLabel = hideCeremony
+    ? personaMode === "snap_only"
+      ? daysUntilWedding === null ? "기념일 미정" : daysUntilWedding > 0 ? `촬영 D-${daysUntilWedding}` : "촬영 완료"
+      : daysUntilWedding === null ? "노웨딩" : daysUntilWedding > 0 ? `D-${daysUntilWedding}` : "혼인신고 완료"
+    : daysUntilWedding === null
+      ? "예정일 미정"
+      : daysUntilWedding > 0
+        ? `D-${daysUntilWedding}`
+        : daysUntilWedding === 0
+          ? "오늘!"
+          : `D+${Math.abs(daysUntilWedding)}`;
 
   const handleMissionClick = (m: PersonaMission) => {
     if (!missionProgress.completedKeys.includes(m.key)) {
@@ -314,10 +321,15 @@ const PersonaDashboard = () => {
           <span className="text-[11px] font-bold text-primary">결정이 어려우신가요? Dewy가 추천해드려요</span>
         </button>
 
-        {/* Wedding date footer (small) */}
-        {weddingDate && (
+        {/* Wedding date footer (small). 노식·스냅 페르소나는 식 일자 라벨 숨김. */}
+        {weddingDate && !hideCeremony && (
           <p className="relative text-[10px] text-muted-foreground mt-3 text-center">
             예식 {format(new Date(weddingDate), "yyyy.MM.dd (EEEE)", { locale: ko })}
+          </p>
+        )}
+        {weddingDate && hideCeremony && personaMode === "snap_only" && (
+          <p className="relative text-[10px] text-muted-foreground mt-3 text-center">
+            촬영 예정 {format(new Date(weddingDate), "yyyy.MM.dd", { locale: ko })}
           </p>
         )}
       </div>
