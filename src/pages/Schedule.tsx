@@ -19,7 +19,7 @@ import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import { format, differenceInDays, isToday, isTomorrow } from "date-fns";
 import { ko } from "date-fns/locale";
 import {
-  TIMELINE_PHASES,
+  buildTimelinePhases,
   type TimelinePhase,
   daysUntilWedding,
   getTaskUrgency,
@@ -65,6 +65,9 @@ const Schedule = () => {
   );
 
   const days = daysUntilWedding(weddingSettings.wedding_date);
+  // 압축 모드 — P18(임신 16주 · 식 4개월) / P13(7개월) 등 임박 사용자도 phase
+  // 5단계를 의미 있게 받도록 D-Day 까지 잔여일 기준으로 윈도우 비율을 재계산.
+  const TIMELINE_PHASES = buildTimelinePhases(days);
 
   // Filter out items in user-excluded categories. The DB still has them, but
   // the schedule UI hides them — re-enabling the category brings them back.

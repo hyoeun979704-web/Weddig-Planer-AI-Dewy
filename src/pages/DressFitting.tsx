@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import {
   FITTING_SCENES,
   SCENES_BY_TYPE,
@@ -56,6 +57,8 @@ interface DressSample {
   neckline: string | null;
   sleeve: string | null;
   color: string | null;
+  /** none/light/full — P18(임신) 페르소나에서 임산부 호환 정도. */
+  pregnancy_supported: "none" | "light" | "full" | null;
 }
 
 type Step = "intro" | "photo" | "dress" | "scene" | "tone" | "review";
@@ -66,6 +69,12 @@ const DressFitting = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
+  // 임신 페르소나(P18) — 본식 시점 차수와 무관하게, pregnant=true 이면 임산부
+  // 호환 드레스(pregnancy_supported != 'none')만 활성으로 표시하고 사용자가
+  // 명시적으로 "전체 보기" 토글을 켜면 비호환 드레스도 노출.
+  const [showAllDressesEvenIfPregnant, setShowAllDressesEvenIfPregnant] = useState(false);
+  const isPregnant = weddingSettings.pregnant;
 
   const [step, setStep] = useState<Step>("intro");
   const [hearts, setHearts] = useState<number | null>(null);
@@ -110,7 +119,7 @@ const DressFitting = () => {
     (async () => {
       const { data, error } = await (supabase as any)
         .from("dress_samples")
-        .select("id, name, image_url, silhouette, neckline, sleeve, color")
+        .select("id, name, image_url, silhouette, neckline, sleeve, color, pregnancy_supported")
         .eq("is_active", true)
         .order("display_order", { ascending: false })
         .order("created_at", { ascending: false });
@@ -343,6 +352,9 @@ const DressFitting = () => {
             dresses={dresses}
             loading={loadingDresses}
             onPick={handlePickDress}
+            isPregnant={isPregnant}
+            showAll={showAllDressesEvenIfPregnant}
+            onToggleShowAll={() => setShowAllDressesEvenIfPregnant((v) => !v)}
           />
         )}
 
@@ -573,59 +585,106 @@ const DressStep = ({
   dresses,
   loading,
   onPick,
+  isPregnant,
+  showAll,
+  onToggleShowAll,
 }: {
   dresses: DressSample[];
   loading: boolean;
   onPick: (d: DressSample) => void;
-}) => (
-  <section className="space-y-3">
-    <h2 className="text-lg font-bold text-foreground">드레스 선택</h2>
-    <p className="text-[12px] text-muted-foreground">
-      마음에 드는 드레스를 하나 골라주세요.
-    </p>
-    {loading ? (
-      <div className="py-12 flex justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    ) : dresses.length === 0 ? (
-      <div className="py-12 text-center text-sm text-muted-foreground">
-        등록된 드레스가 없어요.
-      </div>
-    ) : (
-      <div className="grid grid-cols-2 gap-3">
-        {dresses.map((d) => (
-          <button
-            key={d.id}
-            type="button"
-            onClick={() => onPick(d)}
-            className="bg-card rounded-xl overflow-hidden border border-border text-left active:scale-[0.98] transition-transform"
-          >
-            <div className="aspect-[3/4] bg-muted">
-              <img
-                src={d.image_url}
-                alt={d.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="p-2">
-              <p className="text-[12px] font-semibold text-foreground truncate">
-                {d.name}
-              </p>
-              <p className="text-[10px] text-muted-foreground truncate">
-                {[
-                  labelOf("silhouette", d.silhouette),
-                  labelOf("neckline", d.neckline),
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            </div>
-          </button>
-        ))}
-      </div>
-    )}
-  </section>
-);
+  isPregnant: boolean;
+  showAll: boolean;
+  onToggleShowAll: () => void;
+}) => {
+  // 임산부면 임산부 호환 드레스만(default), "전체 보기" 토글로 비호환 포함.
+  // 호환 정렬: full > light > none. 호환이 0개면 토글 자동 비활성 + 안내.
+  const visible = isPregnant && !showAll
+    ? dresses.filter((d) => d.pregnancy_supported && d.pregnancy_supported !== "none")
+    : dresses;
+  const sorted = isPregnant
+    ? [...visible].sort((a, b) => {
+        const rank = (v: string | null) => (v === "full" ? 0 : v === "light" ? 1 : 2);
+        return rank(a.pregnancy_supported) - rank(b.pregnancy_supported);
+      })
+    : visible;
+  const compatibleCount = dresses.filter(
+    (d) => d.pregnancy_supported && d.pregnancy_supported !== "none",
+  ).length;
+  return (
+    <section className="space-y-3">
+      <h2 className="text-lg font-bold text-foreground">드레스 선택</h2>
+      <p className="text-[12px] text-muted-foreground">
+        마음에 드는 드레스를 하나 골라주세요.
+      </p>
+      {isPregnant && (
+        <div className="rounded-xl bg-pink-50 border border-pink-100 p-3">
+          <p className="text-[12px] font-semibold text-pink-800">
+            임신 모드 — 임산부 호환 드레스 우선
+          </p>
+          <p className="text-[11px] text-pink-700 leading-snug mt-0.5">
+            엠파이어·A 라인 등 배 부분 여유가 있는 옵션을 먼저 보여드려요.
+            {compatibleCount === 0 && " 현재 호환 옵션이 없어 전체 드레스를 표시합니다."}
+          </p>
+          {compatibleCount > 0 && (
+            <button
+              type="button"
+              onClick={onToggleShowAll}
+              className="mt-1.5 text-[11px] font-semibold text-pink-800 underline"
+            >
+              {showAll ? "호환 옵션만 보기" : "전체 드레스 보기"}
+            </button>
+          )}
+        </div>
+      )}
+      {loading ? (
+        <div className="py-12 flex justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      ) : sorted.length === 0 ? (
+        <div className="py-12 text-center text-sm text-muted-foreground">
+          등록된 드레스가 없어요.
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {sorted.map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => onPick(d)}
+              className="bg-card rounded-xl overflow-hidden border border-border text-left active:scale-[0.98] transition-transform relative"
+            >
+              <div className="aspect-[3/4] bg-muted">
+                <img
+                  src={d.image_url}
+                  alt={d.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {isPregnant && d.pregnancy_supported && d.pregnancy_supported !== "none" && (
+                <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-pink-200 text-pink-800">
+                  {d.pregnancy_supported === "full" ? "마타니티" : "임산부 호환"}
+                </span>
+              )}
+              <div className="p-2">
+                <p className="text-[12px] font-semibold text-foreground truncate">
+                  {d.name}
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {[
+                    labelOf("silhouette", d.silhouette),
+                    labelOf("neckline", d.neckline),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+};
 
 // ════════════════════════════════════════════════
 // Step 3: SCENE TYPE (본식 / 웨딩촬영)
