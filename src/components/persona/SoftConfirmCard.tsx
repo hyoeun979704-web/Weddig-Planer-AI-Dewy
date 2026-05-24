@@ -25,8 +25,9 @@ export interface SoftConfirmCardProps {
   onConfirm: () => void;
   /** "지금은 괜찮아요" 또는 X dismiss. 호출 측에서 markDismissed 처리. */
   onDecline: () => void;
-  /** F#D3 — async onConfirm 진행 중. true 면 두 버튼 비활성 + aria-busy. 중복 클릭 race 방지. */
-  isBusy?: boolean;
+  /** F#D3·#12 — async onConfirm 진행 중. true 면 두 버튼 비활성 + aria-busy. 중복 클릭 race 방지.
+   *  required(optional 아님) — 새 caller 가 잊으면 race 회귀. 동기 onConfirm 이라면 false 로 명시. */
+  isBusy: boolean;
 }
 
 const TONE_CLS: Record<"neutral" | "warm" | "cool", string> = {
@@ -43,7 +44,7 @@ export default function SoftConfirmCard({
   tone = "neutral",
   onConfirm,
   onDecline,
-  isBusy = false,
+  isBusy,
 }: SoftConfirmCardProps) {
   // 내부 hidden state 제거 (F#5). 부모가 onConfirm/onDecline 결과를 보고
   // 가시성을 결정 — 실패 시 카드가 그대로 남아 retry 가능.

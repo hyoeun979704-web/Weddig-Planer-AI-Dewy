@@ -24,13 +24,21 @@ export default function SensitivePreferencesCard() {
   const [saving, setSaving] = useState<Saving>("none");
   const [expanded, setExpanded] = useState(false);
   // F#D2 — reload 타이머 cleanup. unmount 시 stale reload 가 SPA 라우팅 덮어쓰지 않도록.
+  // F#15 — 추가로 mounted ref 로 in-flight RPC 후 unmount 된 컴포넌트에 toast/state 안 시도.
   const reloadTimerRef = useRef<number | null>(null);
+  const mountedRef = useRef(true);
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       if (reloadTimerRef.current != null) window.clearTimeout(reloadTimerRef.current);
     };
   }, []);
   const scheduleReload = (ms: number) => {
+    if (!mountedRef.current) {
+      // 이미 unmount 된 상태면 reload 도 schedule 안 함 — 다른 surface 가 적절히 refresh.
+      return;
+    }
     if (reloadTimerRef.current != null) window.clearTimeout(reloadTimerRef.current);
     reloadTimerRef.current = window.setTimeout(() => {
       reloadTimerRef.current = null;
@@ -61,13 +69,18 @@ export default function SensitivePreferencesCard() {
       if (field === "marital_history" && value !== "remarriage") {
         resetSignal(SIGNAL_KEYS.remarriageInterest);
       }
-      toast.success("설정이 저장됐어요");
-      scheduleReload(1200);
+      // F#15 — RPC 후 unmount 됐으면 toast/reload 시도 안 함. 다른 surface 가 다음 mount 시 refetch.
+      if (mountedRef.current) {
+        toast.success("설정이 저장됐어요");
+        scheduleReload(1200);
+      }
     } catch (e) {
       console.error("sensitive pref update failed", e);
-      toast.error("저장에 실패했어요. 다시 시도해주세요.");
+      if (mountedRef.current) {
+        toast.error("저장에 실패했어요. 다시 시도해주세요.");
+      }
     } finally {
-      setSaving("none");
+      if (mountedRef.current) setSaving("none");
     }
   };
 

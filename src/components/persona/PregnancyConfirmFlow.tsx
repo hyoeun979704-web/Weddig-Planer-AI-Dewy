@@ -30,31 +30,63 @@ type Stage = "confirm" | "due-date";
 
 // F#A3 — stage 영구화. 사용자가 "받기" 누른 뒤 due-date 입력 중 tab close 시
 // 다음 세션에도 due-date 입력 단계 보존. user 별 key 라 cross-account leak 없음.
+// F#13 — dueDate 도 같이 영속화 (부분 persistence 시 사용자 재입력 부담).
 const STAGE_KEY = (userId: string) => `dewy:pregnancy-confirm-stage:${userId}`;
+const DUE_DATE_KEY = (userId: string) => `dewy:pregnancy-confirm-due-date:${userId}`;
 
 export default function PregnancyConfirmFlow({ show, onChange }: Props) {
   const { user } = useAuth();
-  const [stage, setStage] = useState<Stage>(() => {
-    if (!user) return "confirm";
-    try {
-      const v = localStorage.getItem(STAGE_KEY(user.id));
-      return v === "due-date" ? "due-date" : "confirm";
-    } catch {
-      return "confirm";
-    }
-  });
-  // stage 변경 시 localStorage 동기화. due-date 단계 종료(저장/건너뛰기) 시 폐기.
+  // F#3 — useAuth 가 async 라 첫 render 에 user=null. lazy initializer 에서 읽으면
+  // 항상 'confirm' 반환 → 후속 useEffect 가 localStorage 삭제. 자기-삭제 회귀.
+  // 해결: hydratedFromStorage flag 로 hydration 전엔 write 안 함. user 등장 시 1회 read.
+  const [stage, setStage] = useState<Stage>("confirm");
+  const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [saving, setSaving] = useState(false);
+  const [hydratedFromStorage, setHydratedFromStorage] = useState(false);
+
+  // user 가 등장한 직후 1회만 localStorage 에서 stage + dueDate hydrate.
   useEffect(() => {
-    if (!user) return;
+    if (!user || hydratedFromStorage) return;
     try {
-      if (stage === "due-date") localStorage.setItem(STAGE_KEY(user.id), "due-date");
-      else localStorage.removeItem(STAGE_KEY(user.id));
+      const storedStage = localStorage.getItem(STAGE_KEY(user.id));
+      if (storedStage === "due-date") {
+        setStage("due-date");
+        const storedDate = localStorage.getItem(DUE_DATE_KEY(user.id));
+        if (storedDate) {
+          const d = new Date(storedDate);
+          if (!Number.isNaN(d.getTime())) setDueDate(d);
+        }
+      }
     } catch {
       /* ignore */
     }
-  }, [stage, user]);
-  const [dueDate, setDueDate] = useState<Date | undefined>();
-  const [saving, setSaving] = useState(false);
+    setHydratedFromStorage(true);
+  }, [user, hydratedFromStorage]);
+
+  // stage 변경 시 localStorage 동기화. hydration 전엔 안 함 (clobber 회피).
+  useEffect(() => {
+    if (!user || !hydratedFromStorage) return;
+    try {
+      if (stage === "due-date") {
+        localStorage.setItem(STAGE_KEY(user.id), "due-date");
+      } else {
+        localStorage.removeItem(STAGE_KEY(user.id));
+        localStorage.removeItem(DUE_DATE_KEY(user.id));
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [stage, user, hydratedFromStorage]);
+
+  // dueDate 변경도 stage='due-date' 일 때만 영속화. 다른 단계로 가면 위 effect 가 같이 삭제.
+  useEffect(() => {
+    if (!user || !hydratedFromStorage || stage !== "due-date" || !dueDate) return;
+    try {
+      localStorage.setItem(DUE_DATE_KEY(user.id), dueDate.toISOString());
+    } catch {
+      /* ignore */
+    }
+  }, [dueDate, user, hydratedFromStorage, stage]);
   // F#14 — reload 타이머 cleanup. unmount 시 stale reload 가 SPA 라우팅 덮어쓰지 않도록.
   const reloadTimerRef = useRef<number | null>(null);
   useEffect(() => {

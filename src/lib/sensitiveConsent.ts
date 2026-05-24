@@ -45,7 +45,9 @@ export async function setSensitivePreference(
 
   const { data, error } = await (supabase as any).rpc("set_sensitive_preference", {
     p_field: args.field,
-    p_value: args.value,
+    // F#8 — undefined 가 들어오면 supabase-js 가 키 자체를 omit → PostgREST 'function not found'.
+    // null coerce 로 항상 명시 전달. RPC 측에도 DEFAULT 'null'::jsonb 있음 (이중 안전).
+    p_value: args.value ?? null,
     p_consent_version: args.consentVersion ?? 1,
     p_user_agent: userAgent,
     p_extra_patch: args.extraPatch ?? null,

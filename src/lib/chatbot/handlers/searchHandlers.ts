@@ -473,11 +473,11 @@ export const handleVenueCompare = async (
     }
   };
   const route = detailRoute(category);
-  // F#D5 — markdown link text 의 `[` `]` 와 link URL 의 `(` `)` 이스케이프.
-  // 한국 상호는 흔히 괄호 포함('르브런(강남점)') → 미이스케이프 시 link 가 조기 종료돼
-  // 깨진 markdown 렌더. 표 셀의 `|` 도 함께 처리.
+  // F#D5·#9 — CommonMark 특수문자 전체 이스케이프. 표 셀 `|` 와 link `[]()` 외에도
+  // `*`/`_`/`` ` ``/`~`/`!`/`{}`/`#`/`+`/`-`/`.` 등 마크다운 의미 가진 문자 모두.
+  // backslash 먼저 escape (후속 escape 가 backslash 도입).
   const escapeMd = (s: string): string =>
-    s.replace(/\\/g, "\\\\").replace(/([\[\]()|])/g, "\\$1");
+    s.replace(/\\/g, "\\\\").replace(/([`*_{}\[\]()#+\-.!|~])/g, "\\$1");
   const rows = (data as any[]).map((p) => {
     const star = p.avg_rating != null ? p.avg_rating.toFixed(1) : "-";
     const reviews = p.review_count ?? 0;
