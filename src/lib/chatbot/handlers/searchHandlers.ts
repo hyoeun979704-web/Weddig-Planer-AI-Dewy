@@ -425,6 +425,13 @@ export const handleVenueCompare = async (
   const category = inferCategory(userMessage) ?? "wedding_hall";
   const region = inferRegion(userMessage);
 
+  // F#3 — inferCategory 출력은 user-facing 카테고리 slug. DB 컬럼 places.category
+  // 와는 일부 다름 ('suit' ↔ 'tailor_shop'). 쿼리 전 변환.
+  const inferToDbCategory: Record<string, string> = {
+    suit: "tailor_shop",
+  };
+  const dbCategory = inferToDbCategory[category] ?? category;
+
   // 비교는 5곳을 기본. 메시지에 숫자가 있으면 그 값(3~10) 으로.
   const numMatch = userMessage.match(/(\d+)\s*곳/);
   const limit = numMatch ? Math.max(3, Math.min(10, Number(numMatch[1]))) : 5;
@@ -432,7 +439,7 @@ export const handleVenueCompare = async (
   let query = (supabase as any)
     .from("places")
     .select("place_id, name, category, city, district, avg_rating, review_count, min_price, is_partner, is_active")
-    .eq("category", category)
+    .eq("category", dbCategory)
     .eq("is_active", true)
     .is("deleted_at", null)
     .gte("review_count", 1)
@@ -447,21 +454,22 @@ export const handleVenueCompare = async (
 
   // 표 헤더 — 별점·후기·시작가·시군구.
   const tableHeader = "| 업체 | 별점 | 후기 | 시작가 | 위치 |\n|---|---:|---:|---:|---|";
-  // F#9 — 카테고리별 상세 라우트 매핑. 이전 구현은 dress_shop/hanbok/suit/honeymoon
-  // 등이 모두 /venue/ 로 떨어져 dead-end. App.tsx 라우트와 일치.
+  // F#9·#3·#13 — inferCategory 출력 형식(user-facing slug) 기준 라우트 매핑.
+  // App.tsx 라우트와 일치. inferCategory 가 만들 수 없는 'tailor_shop' 같은 DB
+  // slug 는 매핑할 필요 없음(쿼리 전에 inferToDbCategory 로 변환됨).
   const detailRoute = (cat: string): string => {
     switch (cat) {
-      case "wedding_hall": return "venue";
-      case "studio":       return "studio";
-      case "dress_shop":   return "studio";   // dress 는 studio 상세 페이지에서 처리
-      case "makeup_shop":  return "studio";   // makeup 도 마찬가지
-      case "hanbok":       return "hanbok";
-      case "tailor_shop":  return "suit";
-      case "honeymoon":    return "honeymoon";
-      case "jewelry":      return "jewelry";
-      case "appliance":    return "appliances";
-      case "invitation_venue": return "invitation-venue";
-      default:             return "venue";
+      case "wedding_hall":     return "venue";
+      case "studio":           return "studio";
+      case "dress_shop":       return "studio";       // dress 는 studio 상세 페이지에서 처리
+      case "makeup_shop":      return "studio";       // makeup 도 마찬가지
+      case "hanbok":           return "hanbok";
+      case "suit":             return "suit";         // App.tsx /suit/:id (NOT tailor_shop)
+      case "honeymoon":        return "honeymoon";
+      case "jewelry":          return "jewelry";
+      case "appliance":        return "appliances";   // App.tsx /appliances/:id (plural)
+      case "invitation_venue": return "invitation-venues"; // F#13 plural — App.tsx /invitation-venues/:id
+      default:                 return "venue";
     }
   };
   const route = detailRoute(category);
