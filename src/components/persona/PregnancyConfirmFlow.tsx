@@ -88,15 +88,22 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
     }
   }, [dueDate, user, hydratedFromStorage, stage]);
   // F#14 — reload 타이머 cleanup. unmount 시 stale reload 가 SPA 라우팅 덮어쓰지 않도록.
+  // R6-5 — sibling SensitivePreferencesCard 와 동일한 mountedRef 가드 추가. 사용자가
+  // RPC in-flight 중 라우팅 이동하면 unmount 후 setState/toast 발화 → React dev warning +
+  // stale 토스트. mountedRef 로 await 후 가시성/state 변경 차단.
   const reloadTimerRef = useRef<number | null>(null);
+  const mountedRef = useRef(true);
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       if (reloadTimerRef.current != null) {
         window.clearTimeout(reloadTimerRef.current);
       }
     };
   }, []);
   const scheduleReload = (ms: number) => {
+    if (!mountedRef.current) return;
     if (reloadTimerRef.current != null) {
       window.clearTimeout(reloadTimerRef.current);
     }
@@ -119,13 +126,17 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
     try {
       // RPC v2: server-derived consent_type + agreed. 단순화된 시그니처.
       await setSensitivePreference({ field: "pregnant", value: true });
+      // R6-5 — RPC 후 unmount 됐으면 state/markConfirmed 모두 skip. 다음 mount 시 refetch.
+      if (!mountedRef.current) return;
       markConfirmed(SIGNAL_KEYS.pregnancyInterest);
       setStage("due-date");
     } catch (e) {
       console.error("pregnancy confirm failed", e);
-      toast.error("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      if (mountedRef.current) {
+        toast.error("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      }
     } finally {
-      setSaving(false);
+      if (mountedRef.current) setSaving(false);
     }
   };
 
@@ -147,15 +158,19 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
         value: true,
         extraPatch: { pregnancy_due_date: format(dueDate, "yyyy-MM-dd") },
       });
+      // R6-5 — RPC 후 unmount 됐으면 toast/onChange/reload 모두 skip.
+      if (!mountedRef.current) return;
       toast.success("본식 시점 차수에 맞춰 일정·드레스·신혼여행을 정리해드릴게요");
       onChange();
       scheduleReload(1200);
     } catch (e) {
       console.error("due date save failed", e);
-      toast.error("저장에 실패했어요. 마이페이지에서 다시 입력하실 수 있어요.");
-      onChange();
+      if (mountedRef.current) {
+        toast.error("저장에 실패했어요. 마이페이지에서 다시 입력하실 수 있어요.");
+        onChange();
+      }
     } finally {
-      setSaving(false);
+      if (mountedRef.current) setSaving(false);
     }
   };
 

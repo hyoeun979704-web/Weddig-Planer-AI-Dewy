@@ -87,10 +87,14 @@ BEGIN
   END IF;
 
   -- v3 (a) — F#4 fix: lazy date cast.
+  -- R6-6 — EXCEPTION 범위를 cast 류로 좁힘. WHEN OTHERS 는 out_of_memory,
+  -- deadlock_detected 같은 infra 에러까지 'invalid_due_date' 로 가려 운영 가시성 손실.
   IF p_extra_patch ? 'pregnancy_due_date' THEN
     BEGIN
       v_due_date := NULLIF(p_extra_patch->>'pregnancy_due_date', '')::date;
-    EXCEPTION WHEN OTHERS THEN
+    EXCEPTION WHEN invalid_text_representation
+                OR invalid_datetime_format
+                OR datetime_field_overflow THEN
       RETURN jsonb_build_object('ok', false, 'error', 'invalid_due_date');
     END;
   END IF;
