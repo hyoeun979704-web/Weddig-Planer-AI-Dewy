@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { bumpSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import {
   FITTING_SCENES,
   SCENES_BY_TYPE,
@@ -204,7 +205,16 @@ const DressFitting = () => {
     setStep("dress");
   };
 
+  // L1 행동 신호 — 임산부 호환 드레스를 선택한 사용자는 임신 가이드 후보.
+  // pregnant 가 이미 true 이면 신호 누적 무의미 — 이미 임신 모드.
   const handlePickDress = (d: DressSample) => {
+    if (
+      !isPregnant &&
+      d.pregnancy_supported &&
+      d.pregnancy_supported !== "none"
+    ) {
+      bumpSignal(SIGNAL_KEYS.pregnancyInterest);
+    }
     setSelectedDress(d);
     setStep("scene");
   };

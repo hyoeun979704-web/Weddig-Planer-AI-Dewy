@@ -65,16 +65,17 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const [stage, setStage] = useState<PlanningStage>("just_started");
   const [weddingStyle, setWeddingStyle] = useState<WeddingStyle>("general");
   const [excludedCategories, setExcludedCategories] = useState<string[]>([]);
-  const [maritalHistory, setMaritalHistory] = useState<"first" | "remarriage" | null>(null);
-  const [pregnant, setPregnant] = useState(false);
-  const [pregnancyDueDate, setPregnancyDueDate] = useState<Date | undefined>();
+  // 민감 정보 3종(marital_history / pregnant / has_parents_*) 은 이 모달에서 받지 않는다.
+  // v2 §5 Sensitive Info + §8 A8 Sensitive Cliff 회피: 첫 가입 모달 노출 금지.
+  // 대신 ① 행동 신호 + 부드러운 확인 카드(§4.3) 로 추론, ② 마이페이지에서 자기 관리.
+  // 기존 DB 값은 saveWeddingSettings patch 에 안 넣어 그대로 보존됨.
   // 페르소나 v1 추가 신호 — 모달에서 "선택" 표기로 가볍게 묻고 미입력 시 기본값 유지.
   const [role, setRole] = useState<UserRole | null>(null);
   const [country, setCountry] = useState<string>("KR");
   const [weddingCountry, setWeddingCountry] = useState<string>("KR");
   const [sigungu, setSigungu] = useState<string>("");
-  const [hasParentsBride, setHasParentsBride] = useState<boolean>(true);
-  const [hasParentsGroom, setHasParentsGroom] = useState<boolean>(true);
+  // has_parents_* 는 본 모달에서 받지 않음 (위 주석 참조). 기본값으로 그대로 두면
+  // 트리거가 standard_bride 페르소나로 분기. 부모 부재는 별도 흐름에서 추론.
   const [ceremonyType, setCeremonyType] = useState<CeremonyType | null>(null);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -103,17 +104,11 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
         ? weddingSettings.excluded_categories
         : defaultExclusionsFor((weddingSettings.wedding_style ?? "general") as WeddingStyle)
     );
-    setMaritalHistory(weddingSettings.marital_history);
-    setPregnant(weddingSettings.pregnant);
-    setPregnancyDueDate(
-      weddingSettings.pregnancy_due_date ? new Date(weddingSettings.pregnancy_due_date) : undefined,
-    );
+    // 민감 3종(marital_history/pregnant/has_parents_*) prefill 제거 — 모달 UI에 없음.
     setRole(weddingSettings.role);
     setCountry(weddingSettings.country ?? "KR");
     setWeddingCountry(weddingSettings.wedding_country ?? "KR");
     setSigungu(weddingSettings.wedding_region_sigungu ?? "");
-    setHasParentsBride(weddingSettings.has_parents_bride);
-    setHasParentsGroom(weddingSettings.has_parents_groom);
     setCeremonyType(weddingSettings.ceremony_type);
     setErrors({});
   }, [
@@ -126,15 +121,10 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     weddingSettings.planning_stage,
     weddingSettings.wedding_style,
     weddingSettings.excluded_categories,
-    weddingSettings.marital_history,
-    weddingSettings.pregnant,
-    weddingSettings.pregnancy_due_date,
     weddingSettings.role,
     weddingSettings.country,
     weddingSettings.wedding_country,
     weddingSettings.wedding_region_sigungu,
-    weddingSettings.has_parents_bride,
-    weddingSettings.has_parents_groom,
     weddingSettings.ceremony_type,
   ]);
 
@@ -150,25 +140,9 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     if (!validate()) return;
     setSubmitting(true);
 
-    // 임신 정보는 PIPA 민감정보(건강) — 체크 시 별도 동의로 간주하여
-    // user_consents 에 기록. 체크박스 라벨에 민감정보 처리 동의를 명시함.
-    if (pregnant && user) {
-      try {
-        await (supabase as any).from("user_consents").insert({
-          user_id: user.id,
-          consent_type: "sensitive_health_pregnancy_v1",
-          consent_version: 1,
-          agreed: true,
-          user_agent:
-            typeof navigator !== "undefined"
-              ? navigator.userAgent?.slice(0, 500)
-              : null,
-        });
-      } catch (e) {
-        console.error("pregnancy consent log failed", e);
-      }
-    }
-
+    // 민감 3종(pregnant/marital_history/has_parents_*) 은 이 모달에서 받지 않음.
+    // 기존 DB 값이 있으면 그대로 보존(patch 에 안 넣음). 사용자 별도 흐름
+    // (행동+확인 카드 or 마이페이지 추가 정보) 에서 명시 설정.
     const weddingDateStr = !dateTbd && date ? format(date, "yyyy-MM-dd") : null;
     const ok = await saveWeddingSettings({
       wedding_date: weddingDateStr,
@@ -179,29 +153,22 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       wedding_region_tbd: regionTbd,
       wedding_style: weddingStyle,
       excluded_categories: excludedCategories,
-      marital_history: maritalHistory,
-      pregnant,
-      pregnancy_due_date:
-        pregnant && pregnancyDueDate ? format(pregnancyDueDate, "yyyy-MM-dd") : null,
       role,
       country: country || "KR",
       wedding_country: weddingCountry || "KR",
       wedding_region_sigungu: sigungu.trim() || null,
-      has_parents_bride: hasParentsBride,
-      has_parents_groom: hasParentsGroom,
       ceremony_type: ceremonyType,
     });
 
     if (ok) {
-      // Seed schedule items. When wedding_date is unset, the template anchors
-      // to today + 12 months so the checklist is still actionable. Exclusions
-      // are applied here so the user never sees seeded items for categories
-      // they opted out of.
-      const dueDateStr =
-        pregnant && pregnancyDueDate ? format(pregnancyDueDate, "yyyy-MM-dd") : null;
+      // Seed schedule items. 민감 3종은 기존 DB 값을 그대로 사용해 스케줄 분기.
+      // 모달에서 안 받으므로 사용자가 이전에 설정한 값(또는 false/null 기본값) 기준.
+      const existingPregnant = weddingSettings.pregnant;
+      const existingDueDate = weddingSettings.pregnancy_due_date;
+      const existingMarital = weddingSettings.marital_history;
       const { trimesterAtWedding } = computePregnancyContext(
-        pregnant,
-        dueDateStr,
+        existingPregnant,
+        existingDueDate,
         weddingDateStr,
       );
       const items = buildScheduleFromTemplate(
@@ -209,10 +176,10 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
         stage,
         excludedCategories,
         weddingStyle,
-        pregnant,
+        existingPregnant,
         trimesterAtWedding,
         ceremonyType,
-        maritalHistory === "remarriage",
+        existingMarital === "remarriage",
       );
       const seeded = await generateScheduleFromTemplate(items);
       onSaved?.();
@@ -531,27 +498,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
           </select>
         </div>
 
-          </div>{/* end 더 정확한 큐레이션 */}
-        </details>
-
-        {/* 특수 상황 섹션 — 재혼·임신·해외·1인 진행. 해당 사용자만 펼침으로 첫인상 0 부담.
-            카피를 "해당하시면" 으로 시작해 일반 사용자가 무시할 수 있게.
-            기존 입력이 있으면 자동 펼침. */}
-        <details
-          className="group rounded-xl border border-gray-200 bg-white"
-          open={
-            !!maritalHistory || pregnant ||
-            (country && country !== "KR") || (weddingCountry && weddingCountry !== "KR") ||
-            !hasParentsBride || !hasParentsGroom
-          }
-        >
-          <summary className="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between text-sm font-semibold text-gray-700">
-            <span> 해당하시면 알려주세요 <span className="text-[11px] text-gray-400 font-normal">(재혼·임신·해외 거주·부모 부재)</span></span>
-            <span className="text-gray-400 text-xs group-open:rotate-180 transition-transform"></span>
-          </summary>
-          <div className="px-3 pb-3 pt-1 space-y-4 border-t border-gray-100">
-
-        {/* 거주·예식 국가 — 해외 거주 / 국제결혼 분기. */}
+        {/* 거주·예식 국가 — 해외 거주 / 국제결혼 분기. country !== "KR" 일 때만 정보 가치.
+            기본값은 디바이스 locale 에서 자동 (L2). v2 §1 위계 적용. */}
         <div>
           <label className={labelCls}>
             거주·예식 국가 <span className="text-xs text-gray-400 font-normal">(해외/국제결혼만)</span>
@@ -596,145 +544,9 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
           )}
         </div>
 
-        {/* 양가 부모 — 부모 부재 페르소나의 1인 진행 분기. */}
-        <div>
-          <label className={labelCls}>
-            양가 부모 <span className="text-xs text-gray-400 font-normal">(부모 부재만)</span>
-          </label>
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!hasParentsBride}
-                onChange={(e) => setHasParentsBride(!e.target.checked)}
-                className="w-4 h-4 accent-[#C9A96E]"
-              />
-              신부 측 부모님이 안 계세요
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!hasParentsGroom}
-                onChange={(e) => setHasParentsGroom(!e.target.checked)}
-                className="w-4 h-4 accent-[#C9A96E]"
-              />
-              신랑 측 부모님이 안 계세요
-            </label>
-          </div>
-          {(!hasParentsBride || !hasParentsGroom) && (
-            <p className="text-[11px] text-amber-700 mt-1 leading-snug">
-              양가 분담 시뮬레이터·진행 가이드가 1인 진행 변형으로 바뀌어요.
-            </p>
-          )}
-        </div>
-
-        {/* 결혼 차수 — 재혼 페르소나의 양가 설득·작은 가족식 톤 분기에 사용 */}
-        <div>
-          <label className={labelCls}>
-            결혼 차수 <span className="text-xs text-gray-400 font-normal">(선택)</span>
-          </label>
-          <div className="grid grid-cols-3 gap-1.5">
-            {([
-              { v: null, label: "선택 안 함" },
-              { v: "first", label: "초혼" },
-              { v: "remarriage", label: "재혼" },
-            ] as const).map((opt) => (
-              <button
-                key={opt.label}
-                type="button"
-                onClick={() => setMaritalHistory(opt.v)}
-                className={cn(
-                  "py-2 rounded-xl text-sm border transition-colors",
-                  maritalHistory === opt.v
-                    ? "border-[#C9A96E] bg-[#C9A96E]/5 text-gray-800 font-semibold"
-                    : "border-gray-200 text-gray-500"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 임신 여부 — true일 때 일정 압축·체크리스트 가중치·AI 답변 톤이 바뀜.
-            출산예정일을 입력하면 본식 시점 차수 (초기/중기/후기)별로 시프트 강도가
-            달라진다. dueDate 미입력 시 보수적으로 중기 적용. */}
-        <div>
-          <label className="flex items-start gap-2.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={pregnant}
-              onChange={(e) => {
-                setPregnant(e.target.checked);
-                if (!e.target.checked) setPregnancyDueDate(undefined);
-              }}
-              className="w-4 h-4 accent-[#C9A96E] mt-0.5"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-800">
-                임신 중이에요 <span className="text-xs text-gray-400 font-normal">(선택)</span>
-              </p>
-              <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                체크하시면 본식 시점 임신 차수에 맞춰 촬영·가봉·신혼여행 일정을 앞당겨 추천드리고, 임산부 가능 메이크업샵·산부인과 상담 같은 일정이 자동으로 추가돼요. AI 답변 톤도 신체 컨디션을 고려해 안내해드려요.
-              </p>
-              <p className="text-[11px] text-amber-700 leading-snug mt-1">
-임신 여부는 <strong>민감정보(건강)</strong>에 해당해요. 체크하시면 위 목적의 수집·이용에 별도 동의하는 것으로 간주되며, 동의 기록이 저장돼요. 체크 해제 시 저장되지 않아요.
-              </p>
-            </div>
-          </label>
-
-          {pregnant && (
-            <div className="mt-3 pl-7">
-              <label className={labelCls + " text-xs"}>
-                출산예정일 <span className="text-xs text-gray-400 font-normal">(차수 계산용·선택)</span>
-              </label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2.5 border rounded-xl text-sm text-left",
-                      !pregnancyDueDate && "text-gray-400",
-                    )}
-                  >
-                    <CalendarIcon className="w-4 h-4" />
-                    {pregnancyDueDate ? format(pregnancyDueDate, "yyyy.MM.dd") : "선택 안 함 (중기로 가정)"}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={pregnancyDueDate}
-                    onSelect={setPregnancyDueDate}
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-              {pregnancyDueDate && date && (() => {
-                const ctx = computePregnancyContext(
-                  true,
-                  format(pregnancyDueDate, "yyyy-MM-dd"),
-                  format(date, "yyyy-MM-dd"),
-                );
-                if (ctx.weeksAtWedding === null) {
-                  return (
-                    <p className="text-[11px] text-amber-600 mt-1.5 leading-snug">
-                      본식 시점이 출산예정일 이후라 차수를 계산할 수 없어요. 날짜를 다시 확인해주세요.
-                    </p>
-                  );
-                }
-                return (
-                  <p className="text-[11px] text-gray-500 mt-1.5 leading-snug">
-                    본식 시점에 <span className="font-semibold text-gray-700">{trimesterLabel(ctx.trimesterAtWedding)} · 약 {ctx.weeksAtWedding}주차</span> 예상 — 그에 맞춰 일정이 자동 조정돼요.
-                  </p>
-                );
-              })()}
-            </div>
-          )}
-        </div>
-
-          </div>{/* end 해당하시면 알려주세요 */}
+          </div>{/* end 더 정확한 큐레이션 */}
         </details>
+
 
         <div className="flex gap-2 pt-2">
           <button

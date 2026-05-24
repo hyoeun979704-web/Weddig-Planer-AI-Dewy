@@ -14,6 +14,7 @@ import MenuSection from "@/components/mypage/MenuSection";
 import PremiumBanner from "@/components/premium/PremiumBanner";
 import PartnerLinkCard from "@/components/partner/PartnerLinkCard";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
+import SensitivePreferencesCard from "@/components/mypage/SensitivePreferencesCard";
 import DataCollectionConsentModal from "@/components/consent/DataCollectionConsentModal";
 import PageTutorial from "@/components/tutorial/PageTutorial";
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
@@ -203,6 +204,10 @@ const MyPage = () => {
         <div className="px-4 mt-3">
           <PartnerLinkCard variant="mypage" hideWhenLoggedOut />
         </div>
+
+        {/* 민감 정보 자기 관리 — 가입 모달에서 받지 않는 임신/재혼/부모 부재를
+            사용자가 직접 켜고 끄는 채널. v2 §5 Sensitive Info. */}
+        <SensitivePreferencesCard />
 
         <PremiumBanner />
         <div data-tutorial="mypage-menu">

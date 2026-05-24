@@ -15,6 +15,14 @@ import {
   type PersonaMission,
 } from "@/data/personaMissions";
 import { shouldHideWeddingCeremony } from "@/lib/weddingPersona";
+import {
+  shouldPromptConfirm,
+  markConfirmed,
+  markDismissed,
+  SIGNAL_KEYS,
+} from "@/lib/behavioralSignals";
+import SoftConfirmCard from "@/components/persona/SoftConfirmCard";
+import { supabase } from "@/integrations/supabase/client";
 
 const formatMinutes = (seconds: number) => {
   if (seconds < 60) return `${seconds}초`;
@@ -48,6 +56,59 @@ const PersonaDashboard = () => {
   const tutorialOverall = tutorialProgress.styleProgress(weddingSettings.wedding_style);
 
   const [missionProgress, setMissionProgress] = useState(() => loadMissionProgress());
+
+  // 행동 신호 + 부드러운 확인 카드 — v2 §4.3 + §5.6 + §1 L4.
+  // 임신 관련 콘텐츠 N회 누적 + 가입 후 3일 경과 후에만 노출.
+  // pregnant 이미 true 면 카드 표시 안 함(이미 임신 모드).
+  const accountCreatedAt = user?.created_at ? Date.parse(user.created_at) : null;
+  const [pregnancySignalKey, setPregnancySignalKey] = useState(0); // re-render 트리거
+  const showPregnancyConfirm =
+    !!user &&
+    !weddingSettings.pregnant &&
+    shouldPromptConfirm(SIGNAL_KEYS.pregnancyInterest, {
+      threshold: 3,
+      accountCreatedAt,
+      minAccountAgeDays: 3,
+    });
+  // pregnancySignalKey 가 의존성에 들어가야 confirm/dismiss 후 즉시 재평가됨.
+  // shouldPromptConfirm 자체는 localStorage 만 보므로 React 가 재렌더링 트리거가 필요.
+  void pregnancySignalKey;
+
+  const handlePregnancyConfirm = async () => {
+    if (!user) return;
+    markConfirmed(SIGNAL_KEYS.pregnancyInterest);
+    setPregnancySignalKey((k) => k + 1);
+    // pregnant=true 설정 + 민감정보(건강) 동의 기록. 모달과 동일 패턴.
+    try {
+      await (supabase as any).from("user_consents").insert({
+        user_id: user.id,
+        consent_type: "sensitive_health_pregnancy_v1",
+        consent_version: 1,
+        agreed: true,
+        user_agent:
+          typeof navigator !== "undefined"
+            ? navigator.userAgent?.slice(0, 500)
+            : null,
+      });
+    } catch (e) {
+      console.error("pregnancy consent log failed", e);
+    }
+    try {
+      await (supabase as any)
+        .from("user_wedding_settings")
+        .update({ pregnant: true })
+        .eq("user_id", user.id);
+    } catch (e) {
+      console.error("pregnant flag update failed", e);
+    }
+    // 마이페이지 결혼 정보로 이동해 출산예정일 입력 유도 (정확도 향상).
+    navigate("/mypage?openWeddingInfo=1");
+  };
+
+  const handlePregnancyDecline = () => {
+    markDismissed(SIGNAL_KEYS.pregnancyInterest);
+    setPregnancySignalKey((k) => k + 1);
+  };
 
   if (!user || !insights.isLoaded || !insights.hasOnboarded) {
     return null;
@@ -146,6 +207,20 @@ const PersonaDashboard = () => {
   const ringColor = urgencyTone?.ring ?? "hsl(var(--primary))";
 
   return (
+    <>
+    {/* 임신 관련 콘텐츠 조회 누적 시 부드러운 확인 카드. 본 대시보드 위에 배치 —
+        스크롤 없이 첫 화면에서 보이도록. v2 §4.3·§5 패턴 적용. */}
+    {showPregnancyConfirm && (
+      <SoftConfirmCard
+        tone="warm"
+        title="임신 중에 결혼 준비하시는 분들을 위한 가이드가 있어요"
+        description="본식 시점 차수에 맞춰 일정·드레스·신혼여행이 자동으로 맞춰져요. 한 번에 받아보시겠어요?"
+        confirmLabel="받기"
+        declineLabel="지금은 괜찮아요"
+        onConfirm={handlePregnancyConfirm}
+        onDecline={handlePregnancyDecline}
+      />
+    )}
     <section
       data-tutorial="persona-dashboard"
       className="px-4 pt-4 pb-2 animate-fade-in"
@@ -345,6 +420,7 @@ const PersonaDashboard = () => {
         )}
       </div>
     </section>
+    </>
   );
 };
 
