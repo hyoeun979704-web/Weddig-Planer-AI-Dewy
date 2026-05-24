@@ -30,35 +30,53 @@ interface ReverseGeocoded {
   district: string | null;
 }
 
-// 매우 단순한 한국 좌표 → 시도 매핑 (lat/lng 대략 범위). 정밀 reverse-geocode 는
-// 외부 API 필요(카카오 로컬 API 등). 본 함수는 첫 PR 의 MVP — 사용자가 동의하면
-// "대략 어디" 만 안내. 실제 운영은 카카오 reverse-geocode 권장.
+// 단순 좌표 → 시도 매핑. F#8 — 이전 구현은 sequential if + 겹치는 bounding box
+// 라 첫 매치가 잘못 잡힘(부천 → 서울, 인천 → 경기 같은 오분류). 가장 가까운
+// 중심점(시도별 대표 좌표) 으로 distance 계산해 1위만 반환 — 겹침 0.
+//
+// 한계: 시군구 정확도는 본 함수로 부족(시도 단위 근사). district=null 유지.
+// 정밀 reverse-geocode 필요 시 카카오 로컬 API 통합 권장.
+const KR_CITY_CENTERS: Array<{ city: string; lat: number; lng: number }> = [
+  { city: "서울특별시", lat: 37.5665, lng: 126.978 },
+  { city: "인천광역시", lat: 37.4563, lng: 126.7052 },
+  { city: "경기도",     lat: 37.4138, lng: 127.5183 },  // 수원
+  { city: "강원특별자치도", lat: 37.8228, lng: 128.1555 }, // 춘천
+  { city: "충청북도",   lat: 36.6357, lng: 127.4912 },  // 청주
+  { city: "충청남도",   lat: 36.6588, lng: 126.6728 },  // 홍성
+  { city: "세종특별자치시", lat: 36.4801, lng: 127.289 },
+  { city: "대전광역시", lat: 36.3504, lng: 127.3845 },
+  { city: "전북특별자치도", lat: 35.8242, lng: 127.148 },  // 전주
+  { city: "전라남도",   lat: 34.8161, lng: 126.4629 },  // 무안
+  { city: "광주광역시", lat: 35.1595, lng: 126.8526 },
+  { city: "경상북도",   lat: 36.4919, lng: 128.8889 },  // 안동
+  { city: "대구광역시", lat: 35.8714, lng: 128.6014 },
+  { city: "경상남도",   lat: 35.4606, lng: 128.2132 },  // 창원
+  { city: "부산광역시", lat: 35.1796, lng: 129.0756 },
+  { city: "울산광역시", lat: 35.5384, lng: 129.3114 },
+  { city: "제주특별자치도", lat: 33.4996, lng: 126.5312 },
+];
+
+function squareDist(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const dLat = aLat - bLat;
+  // 경도 1도 ≈ cos(lat) * 111km. 한국은 ~37도라 cos≈0.798. 거리 정확도가 시도 식별에
+  // 충분하면 됨 — 절댓값 거리만 비교하므로 cos 보정 생략해도 1위는 거의 같음.
+  const dLng = aLng - bLng;
+  return dLat * dLat + dLng * dLng;
+}
+
 function roughReverseGeocode(lat: number, lng: number): ReverseGeocoded {
-  if (lat >= 37.4 && lat <= 37.7 && lng >= 126.7 && lng <= 127.2) {
-    return { city: "서울특별시", district: null };
+  // 한국 본토 + 제주 외 좌표는 식별 안 함.
+  if (lat < 33 || lat > 39 || lng < 124 || lng > 132) {
+    return { city: null, district: null };
   }
-  if (lat >= 37.0 && lat <= 38.3 && lng >= 126.5 && lng <= 127.9) {
-    return { city: "경기도", district: null };
+  // 너무 멀면(예: 일본 본토) null 반환. 임계: 1.5도(약 167km) 초과면 미식별.
+  let best: { city: string; d: number } | null = null;
+  for (const center of KR_CITY_CENTERS) {
+    const d = squareDist(lat, lng, center.lat, center.lng);
+    if (!best || d < best.d) best = { city: center.city, d };
   }
-  if (lat >= 37.3 && lat <= 37.8 && lng >= 126.4 && lng <= 126.8) {
-    return { city: "인천광역시", district: null };
-  }
-  if (lat >= 35.0 && lat <= 35.4 && lng >= 128.9 && lng <= 129.3) {
-    return { city: "부산광역시", district: null };
-  }
-  if (lat >= 35.7 && lat <= 36.0 && lng >= 128.5 && lng <= 128.8) {
-    return { city: "대구광역시", district: null };
-  }
-  if (lat >= 35.0 && lat <= 35.3 && lng >= 126.7 && lng <= 127.0) {
-    return { city: "광주광역시", district: null };
-  }
-  if (lat >= 36.2 && lat <= 36.5 && lng >= 127.3 && lng <= 127.5) {
-    return { city: "대전광역시", district: null };
-  }
-  if (lat >= 33.1 && lat <= 33.6 && lng >= 126.1 && lng <= 126.9) {
-    return { city: "제주특별자치도", district: null };
-  }
-  return { city: null, district: null };
+  if (!best || best.d > 1.5 * 1.5) return { city: null, district: null };
+  return { city: best.city, district: null };
 }
 
 export default function LocationJITCard() {
