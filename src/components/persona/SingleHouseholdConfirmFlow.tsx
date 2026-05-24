@@ -20,10 +20,44 @@ interface Props {
 type Stage = "confirm" | "choose-side";
 type Side = "bride" | "groom" | "both";
 
+// Round 9 self-review P0 — choose-side 단계 영구화. 사용자가 '받기' 누른 뒤 side
+// 선택 안 하고 닫으면 stage 가 휘발돼 진입 경로가 없었음. PregnancyConfirmFlow 의
+// stage 영구화 패턴 차용. user 별 key 라 cross-account leak 없음.
+const STAGE_KEY = (userId: string) => `dewy:single-household-stage:${userId}`;
+
 export default function SingleHouseholdConfirmFlow({ show, onChange }: Props) {
   const { user } = useAuth();
   const [stage, setStage] = useState<Stage>("confirm");
   const [saving, setSaving] = useState(false);
+  // useAuth async 라 첫 render 에 user=null. hydratedFromStorage 가드로 hydration
+  // 전엔 localStorage write 안 함(PregnancyConfirmFlow 의 F#3 패턴).
+  const [hydratedFromStorage, setHydratedFromStorage] = useState(false);
+
+  // user 등장 직후 1회만 hydrate.
+  useEffect(() => {
+    if (!user || hydratedFromStorage) return;
+    try {
+      const stored = localStorage.getItem(STAGE_KEY(user.id));
+      if (stored === "choose-side") setStage("choose-side");
+    } catch {
+      /* ignore */
+    }
+    setHydratedFromStorage(true);
+  }, [user, hydratedFromStorage]);
+
+  // stage 변경 시 localStorage 동기. hydration 전엔 write 안 함 (clobber 회피).
+  useEffect(() => {
+    if (!user || !hydratedFromStorage) return;
+    try {
+      if (stage === "choose-side") {
+        localStorage.setItem(STAGE_KEY(user.id), "choose-side");
+      } else {
+        localStorage.removeItem(STAGE_KEY(user.id));
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [stage, user, hydratedFromStorage]);
 
   const reloadTimerRef = useRef<number | null>(null);
   const mountedRef = useRef(true);
@@ -40,9 +74,7 @@ export default function SingleHouseholdConfirmFlow({ show, onChange }: Props) {
 
   const handleConfirm = () => {
     if (saving) return;
-    // markConfirmed 는 side 선택 후로 미룸 — 사용자가 confirm 만 누르고 side 안 고르고
-    // 닫으면 신호는 dismiss(소프트 종결) 가 맞는데 confirmed 도 안 맞아서 중간상태.
-    // 일단 stage 만 전환. 닫기·뒤로가기로 빠지면 다시 다음 진입 시 컨펌 다시 노출.
+    // markConfirmed 는 side 선택 후로 미룸. stage 만 전환 + localStorage 영구화.
     setStage("choose-side");
   };
 

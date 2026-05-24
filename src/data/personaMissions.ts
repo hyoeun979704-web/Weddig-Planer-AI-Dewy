@@ -362,8 +362,11 @@ const STYLE_INTRO: Record<WeddingStyle, { title: string; subtitle: string; accen
 // Round 8 A — role=groom 이 다른 페르소나에 가려졌을 때 신랑 voice 를 미션 1슬롯으로
 // 보강. 페르소나 우선순위가 hotel/regional/overseas/noParents > role 로 바뀌었으므로
 // 호텔 신랑·지방 신랑 등은 personaMode != 'standard_groom' 이지만 신랑 미션이 필요.
+// Round 9 fix — key 를 PERSONA_SPECIFIC.standard_groom 의 'groom-suit' 와 동일하게.
+// 사용자가 페르소나 변경(예: 호텔 빼기) 후 standard_groom 으로 전환돼도 같은 key 로
+// 진행 상태가 이어짐. (localStorage mission progress 키 namespace 일관성.)
 const GROOM_LAYER_MISSION: PersonaMission = {
-  key: "groom-layer-suit",
+  key: "groom-suit",
   label: "신랑 예복 후보 좁히기",
   hint: "맞춤·기성·렌탈 비교 + 가봉 일정",
   emoji: "",

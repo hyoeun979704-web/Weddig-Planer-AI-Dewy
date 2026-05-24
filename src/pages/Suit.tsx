@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import PageHeader from "@/components/PageHeader";
 import BottomNav from "@/components/BottomNav";
 import CategoryHeroBanner from "@/components/CategoryHeroBanner";
@@ -24,14 +24,15 @@ const Suit = () => {
 
   useEffect(() => { if (isLoaded) initWithRegion(normalizeRegion(defaultRegion)); }, [isLoaded]);
 
-  // Round 8 B — 신랑 카테고리 진입 1세션 1회 증분. 사용자가 role 명시하지 않았고
-  // (role===null/bride/shared) 신랑 페르소나 후보가 아닐 때만. 이미 신랑이면 bump 무의미.
-  const bumpedRef = useRef(false);
+  // Round 8 B + Round 9 fix — 신랑 카테고리 진입 1세션 1회 증분 (sessionStorage 가드).
+  // user.id 를 key 에 넣으면 anon→login 전환 시 rebump. 세션 단위 단일 key 가 의도.
   useEffect(() => {
-    if (bumpedRef.current) return;
     if (weddingSettings.role === "groom") return; // 이미 신랑이면 신호 불필요.
+    if (typeof window === "undefined") return;
+    const GUARD = `dewy:signal-bumped:groom-role`;
+    if (sessionStorage.getItem(GUARD) === "1") return;
     bumpSignal(SIGNAL_KEYS.groomRoleHint);
-    bumpedRef.current = true;
+    sessionStorage.setItem(GUARD, "1");
   }, [weddingSettings.role]);
 
   const handleItemClick = (item: CategoryItem) => { navigate(`/suit/${item.id}`); };

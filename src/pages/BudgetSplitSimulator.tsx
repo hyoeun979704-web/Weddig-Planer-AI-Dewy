@@ -39,6 +39,22 @@ const BudgetSplitSimulator = () => {
   const { settings } = useBudget(profileRegionKey);
   const { weddingSettings } = useWeddingSchedule();
 
+  // R8 Round 9 fix — Rules of Hooks. 모든 useState/useEffect 는 early return 전에 호출.
+  // 직전 버전은 familyMode 분기 뒤에 useState 가 와 사용자가 마이페이지에서 has_parents_*
+  // 를 토글하면 hook 호출 순서가 달라져 React 가 'Rendered more hooks than during the
+  // previous render' 로 throw. 모든 hook 을 분기 전에 풀어둠.
+  const [overallRatio, setOverallRatio] = useState(50);
+  const [categorySplits, setCategorySplits] = useState<Record<BudgetCategory, SplitMode>>(() => {
+    const initial: Record<string, SplitMode> = {};
+    categoryKeys.forEach(k => {
+      const t = traditionalSplit[k];
+      if (t.groom === 100) initial[k] = "groom";
+      else if (t.bride === 100) initial[k] = "bride";
+      else initial[k] = "shared";
+    });
+    return initial as Record<BudgetCategory, SplitMode>;
+  });
+
   const totalBudget = settings?.total_budget || 0;
   const catBudgets = (settings?.category_budgets || {}) as Record<BudgetCategory, number>;
 
@@ -84,18 +100,6 @@ const BudgetSplitSimulator = () => {
       </div>
     );
   }
-
-  const [overallRatio, setOverallRatio] = useState(50);
-  const [categorySplits, setCategorySplits] = useState<Record<BudgetCategory, SplitMode>>(() => {
-    const initial: Record<string, SplitMode> = {};
-    categoryKeys.forEach(k => {
-      const t = traditionalSplit[k];
-      if (t.groom === 100) initial[k] = "groom";
-      else if (t.bride === 100) initial[k] = "bride";
-      else initial[k] = "shared";
-    });
-    return initial as Record<BudgetCategory, SplitMode>;
-  });
 
   const handlePreset = (groom: number) => {
     setOverallRatio(groom);

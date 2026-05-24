@@ -126,6 +126,22 @@ const STYLE_GREETING: Record<WeddingStyle, { title: string; subtitle: string }> 
 // 이미 페르소나를 알고 있지만(prompt.ts + user-data.ts) UI 도 같은 voice 로 진입해야
 // "내 결혼식 안내" 라는 인상이 일관됨. STYLE_GREETING 은 fallback.
 const PERSONA_QUICK_QUESTIONS: Partial<Record<WeddingPersonaMode, QuickQuestion[]>> = {
+  // Round 9 fix — 순수 신랑(다른 페르소나 없음) 도 quickQuestions 필요. 빠지면 일반
+  // style 의 양가 분담(신부 코드) 카드가 노출돼 헤더 칩과 모순.
+  standard_groom: [
+    {
+      emoji: "",
+      label: "신랑 예복 후보 좁히기",
+      desc: "맞춤·기성·렌탈 비교",
+      prompt: "내 결혼식에 어울리는 신랑 예복 후보 알려줘",
+    },
+    {
+      emoji: "",
+      label: "신랑 양가 분담 정리",
+      desc: "지역 평균 + 표준 비율",
+      prompt: "신랑 입장에서 양가 분담을 어떻게 정리하면 좋을지 알려줘",
+    },
+  ],
   pregnancy: [
     {
       emoji: "",

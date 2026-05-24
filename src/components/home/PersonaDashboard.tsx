@@ -78,7 +78,9 @@ const PersonaDashboard = () => {
   const showRemarriageConfirm =
     !!user &&
     !showPregnancyConfirm &&
-    weddingSettings.marital_history !== "remarriage" &&
+    // Round 9 fix — marital_history 가 명시적으로 'first' 면 사용자가 이미 선택한 것
+    // → 다시 묻지 않음. null(미선택) 일 때만 prompt. 'remarriage' 면 당연히 prompt X.
+    weddingSettings.marital_history == null &&
     shouldPromptConfirm(SIGNAL_KEYS.remarriageInterest, {
       threshold: 2, // 커뮤니티 카테고리 진입 빈도 낮아 임계값 낮춤.
       accountCreatedAt,
