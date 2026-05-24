@@ -80,31 +80,63 @@ function pickCard<T>(value: T | null | undefined): T | null {
 }
 
 // filterOptions1/2/3(다중 선택 칩)를 각 카테고리 detail 테이블의 backing 컬럼에
-// 매핑. array 컬럼은 overlaps(선택값 중 하나라도 포함)로, scalar 는 in 으로 필터.
-// backing 컬럼이 없는 슬롯은 생략(필터 미적용). detail 컬럼이 없는 슬롯의 UI 칩은
-// 향후 정리 대상.
-type FilterCol = { col: string; array: boolean };
+// 매핑. Round 12 — 실제 DB 컬럼 분포 검증 후 매핑 재정렬:
+//   - array: overlaps (선택값 중 하나라도 포함)
+//   - scalar (text/enum): in (선택값 중 하나라도 매칭)
+//   - boolean: 사용자가 칩 켜면 = "예(true)" 의미. 다중 선택 시 모두 true(AND).
+//     (NULL/false 인 row 는 제외 — 정보 누락된 곳은 노출 안 함.)
+//   - boolean_cols: UI value 자체가 컬럼명. 사용자 칩 = 해당 컬럼 = true. 다중 선택 AND.
+// detail 컬럼이 없는 슬롯은 생략 — 정의되지 않은 f2/f3 는 클릭해도 무시되므로
+// UI 에 노출하지 않는 것이 옳음 (CategoryFilterBar 의 filterConfigs 와 동기화).
+type FilterCol =
+  | { col: string; type: "array" }
+  | { col: string; type: "scalar" }
+  | { col: string; type: "boolean" }
+  | { type: "boolean_cols"; allowed: readonly string[] };
 const FILTER_COLUMN_MAP: Record<
   CategoryType,
   { f1?: FilterCol; f2?: FilterCol; f3?: FilterCol }
 > = {
-  venues: { f1: { col: "hall_styles", array: true }, f2: { col: "meal_types", array: true } },
-  studios: { f2: { col: "shoot_styles", array: true } },
-  dress_shops: { f1: { col: "dress_styles", array: true } },
-  makeup_shops: { f1: { col: "makeup_styles", array: true } },
-  hanbok: { f1: { col: "hanbok_types", array: true } },
-  suits: { f1: { col: "suit_styles", array: true } },
-  honeymoon: { f1: { col: "themes", array: true } },
+  venues: {
+    f1: { col: "hall_styles", type: "array" },
+    f2: { col: "meal_types", type: "array" },
+    f3: { col: "outdoor_available", type: "boolean" },
+  },
+  studios: {
+    f1: { col: "package_types", type: "array" },
+    f2: { col: "shoot_styles", type: "array" },
+    f3: { col: "video_included", type: "boolean" },
+  },
+  dress_shops: { f1: { col: "dress_styles", type: "array" } },
+  makeup_shops: { f1: { col: "makeup_styles", type: "array" } },
+  hanbok: {
+    f1: { col: "hanbok_types", type: "array" },
+    f2: { col: "custom_available", type: "boolean" },
+  },
+  suits: {
+    f1: { col: "suit_styles", type: "array" },
+    f2: { col: "custom_available", type: "boolean" },
+  },
+  honeymoon: {
+    f1: { col: "themes", type: "array" },
+    f2: { col: "product_type", type: "scalar" },
+    f3: { col: "hotel_grade", type: "scalar" },
+  },
   jewelry: {
-    f1: { col: "product_categories", array: true },
-    f2: { col: "metals", array: true },
-    f3: { col: "store_type", array: false },
+    f1: { col: "product_categories", type: "array" },
+    f2: { col: "metals", type: "array" },
+    f3: { col: "store_type", type: "scalar" },
   },
   appliances: {
-    f1: { col: "product_categories", array: true },
-    f2: { col: "brand_options", array: true },
+    f1: { col: "product_categories", type: "array" },
+    f2: { col: "brand_options", type: "array" },
+    f3: {
+      type: "boolean_cols",
+      // 보안: UI 가 보낼 수 있는 컬럼명을 명시 allowlist. 다른 값은 무시.
+      allowed: ["free_delivery", "free_installation", "old_appliance_pickup", "card_discount_available"],
+    },
   },
-  invitation_venues: { f1: { col: "venue_types", array: true } },
+  invitation_venues: { f1: { col: "venue_types", type: "array" } },
 };
 
 function toCategoryItem(p: any, category: CategoryType): CategoryItem {
@@ -275,10 +307,20 @@ async function fetchCategoryItems(
     .is("deleted_at", null);
 
   for (const f of activeFilters) {
-    if (f.col.array) {
+    if (f.col.type === "array") {
       query = query.overlaps(`${cardKey}.${f.col.col}`, f.values);
-    } else {
+    } else if (f.col.type === "scalar") {
       query = query.in(`${cardKey}.${f.col.col}`, f.values);
+    } else if (f.col.type === "boolean") {
+      // 사용자가 칩 켜면 "예" 의미. NULL/false 모두 제외.
+      query = query.eq(`${cardKey}.${f.col.col}`, true);
+    } else if (f.col.type === "boolean_cols") {
+      // UI value = 컬럼명. 다중 선택은 AND (모든 조건 만족). allowlist 외 값은 무시.
+      for (const colName of f.values) {
+        if (f.col.allowed.includes(colName)) {
+          query = query.eq(`${cardKey}.${colName}`, true);
+        }
+      }
     }
   }
 

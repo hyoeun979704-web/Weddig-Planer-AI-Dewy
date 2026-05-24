@@ -75,6 +75,15 @@ export function useTipVideos(opts: UseTipVideosOptions = {}) {
         for (const slug of koreanQueryToCategorySlugs(trimmedQuery)) {
           orParts.push(`categories.cs.{${slug}}`);
         }
+        // Round 12 — tags array 매칭 추가. video.tags 가 자유 키워드라
+        // "한식"/"야외" 같은 검색어로 categories 매칭 0 인 경우에도 tag
+        // contains 로 잡힘. quoteForOr 패턴 그대로 사용 — array cs 는 단어 exact
+        // 매치라 패턴 사용 안 되고, 쉼표·중괄호만 escape 하면 됨.
+        // (cs.{value} 의 value 안에 쉼표 있으면 array 구분자로 해석돼 깨짐.)
+        const safeTag = trimmedQuery.replace(/[,\\{}"]/g, "");
+        if (safeTag.length > 0) {
+          orParts.push(`tags.cs.{${safeTag}}`);
+        }
         q = q.or(orParts.join(","));
       } else if (category) {
         q = q.contains("categories", [category]);
