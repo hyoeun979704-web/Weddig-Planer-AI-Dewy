@@ -8,7 +8,7 @@
 // F#4: navigate('/mypage?openWeddingInfo=1') 제거 — 소비자 없음. 같은 화면에서 끝냄.
 // F#11: 약속한 차수별 개인화가 즉시 활성화되도록 due date 인라인 수집.
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Calendar as CalIcon, X, Sparkles, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -33,6 +33,24 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
   const [stage, setStage] = useState<Stage>("confirm");
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [saving, setSaving] = useState(false);
+  // F#14 — reload 타이머 cleanup. unmount 시 stale reload 가 SPA 라우팅 덮어쓰지 않도록.
+  const reloadTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    return () => {
+      if (reloadTimerRef.current != null) {
+        window.clearTimeout(reloadTimerRef.current);
+      }
+    };
+  }, []);
+  const scheduleReload = (ms: number) => {
+    if (reloadTimerRef.current != null) {
+      window.clearTimeout(reloadTimerRef.current);
+    }
+    reloadTimerRef.current = window.setTimeout(() => {
+      reloadTimerRef.current = null;
+      window.location.reload();
+    }, ms);
+  };
 
   // F#12 — stage='due-date' 는 show prop 과 무관하게 사용자가 명시적으로 저장/건너뛰기
   // 할 때까지 보존. 그렇지 않으면 parent re-render 가 weddingSettings.pregnant=true 를
@@ -81,11 +99,8 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
         extraPatch: { pregnancy_due_date: format(dueDate, "yyyy-MM-dd") },
       });
       toast.success("본식 시점 차수에 맞춰 일정·드레스·신혼여행을 정리해드릴게요");
-      // 토스트가 사용자에게 보이도록 1.2초 후 onChange — refetch.
-      setTimeout(() => {
-        onChange();
-        window.location.reload();
-      }, 1200);
+      onChange();
+      scheduleReload(1200);
     } catch (e) {
       console.error("due date save failed", e);
       toast.error("저장에 실패했어요. 마이페이지에서 다시 입력하실 수 있어요.");
@@ -95,12 +110,13 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
     }
   };
 
+  // F#14 — saving·이미 예약된 reload 중일 때 추가 클릭 무시. 중복 toast / 중복
+  // setTimeout race 방지. unmount 시 timer cleanup 도 useEffect 에서 처리됨.
   const handleSkipDueDate = () => {
+    if (saving || reloadTimerRef.current != null) return;
     toast.info("나중에 마이페이지에서 출산예정일을 입력하시면 더 정확해져요", { duration: 3500 });
-    setTimeout(() => {
-      onChange();
-      window.location.reload();
-    }, 800);
+    onChange();
+    scheduleReload(800);
   };
 
   if (stage === "confirm") {

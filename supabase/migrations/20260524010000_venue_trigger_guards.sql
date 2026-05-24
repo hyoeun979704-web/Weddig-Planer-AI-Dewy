@@ -60,8 +60,11 @@ COMMENT ON FUNCTION public.tg_user_wedding_settings_sync_venue_region() IS
 -- 기존 트리거 둘 다 DROP 후 'a_' / 'b_' prefix 로 재생성. Postgres 는 같은 이벤트
 -- 안에서 트리거를 alphabetical 순서로 실행하므로 a_ 가 먼저, b_ 가 다음.
 
+-- 기존 트리거 (둘 다 명시 DROP — 신규 이름도 DROP IF EXISTS 로 재실행 안전 보장 F#15).
 DROP TRIGGER IF EXISTS user_wedding_settings_derive_persona ON public.user_wedding_settings;
 DROP TRIGGER IF EXISTS user_wedding_settings_sync_venue_region ON public.user_wedding_settings;
+DROP TRIGGER IF EXISTS a_sync_venue_region ON public.user_wedding_settings;
+DROP TRIGGER IF EXISTS b_derive_persona ON public.user_wedding_settings;
 
 -- a_ sync_venue_region: 먼저 wedding_region 을 venue_city 와 동기화.
 CREATE TRIGGER a_sync_venue_region
