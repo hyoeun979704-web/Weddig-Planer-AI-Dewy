@@ -207,13 +207,24 @@ const DressFitting = () => {
 
   // L1 행동 신호 — 임산부 호환 드레스를 선택한 사용자는 임신 가이드 후보.
   // pregnant 가 이미 true 이면 신호 누적 무의미 — 이미 임신 모드.
+  // F#15 — bumpSignal 은 1세션 1회 가드 필요 (lib 주석 명시). 같은 세션에 여러
+  // 임산부 호환 드레스를 빠르게 훑기만 해도 임계값에 도달해 §5 sensitive-cliff
+  // 위험. sessionStorage 로 한 세션에 한 번만 카운트 증가.
   const handlePickDress = (d: DressSample) => {
     if (
       !isPregnant &&
       d.pregnancy_supported &&
       d.pregnancy_supported !== "none"
     ) {
-      bumpSignal(SIGNAL_KEYS.pregnancyInterest);
+      const SESSION_KEY = "dewy:dress-pregnancy-signal-bumped";
+      try {
+        if (!sessionStorage.getItem(SESSION_KEY)) {
+          bumpSignal(SIGNAL_KEYS.pregnancyInterest);
+          sessionStorage.setItem(SESSION_KEY, "1");
+        }
+      } catch {
+        // sessionStorage 실패해도 신호 증분 자체는 건너뛰는 게 안전 (false positive 회피).
+      }
     }
     setSelectedDress(d);
     setStep("scene");

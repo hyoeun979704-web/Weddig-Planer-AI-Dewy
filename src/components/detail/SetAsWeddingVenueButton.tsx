@@ -88,8 +88,9 @@ export default function SetAsWeddingVenueButton({
         description: "다른 카테고리(스튜디오·드레스 등)에서 같은 시군구 업체를 우선 추천해드려요.",
         duration: 4500,
       });
-      // 가벼운 동기화 — useWeddingSchedule 가 다시 fetch 하도록.
-      window.location.reload();
+      // F#13 — 같은 turn 에 reload 하면 토스트 portal 이 destroy 되어 사용자가 못 봄.
+      // 1.2초 지연 → 토스트 표시 보장 후 새로고침.
+      setTimeout(() => window.location.reload(), 1200);
     } catch (e) {
       console.error("set wedding venue failed", e);
       toast.error("식장 등록에 실패했어요. 잠시 후 다시 시도해주세요.");
