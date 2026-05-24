@@ -116,6 +116,8 @@ export function usePersonaInsights(): PersonaInsights {
         pregnant: weddingSettings.pregnant,
         pregnancyTrimester: pregnancy.trimesterAtWedding,
         personaMode,
+        // Round 8 A — role layering 으로 호텔/지방/해외/single 신랑이 신랑 미션 받게.
+        role: weddingSettings.role ?? null,
       }),
       pregnancy,
       personaMode,
@@ -131,6 +133,8 @@ export function usePersonaInsights(): PersonaInsights {
     weddingSettings.pregnant,
     weddingSettings.pregnancy_due_date,
     weddingSettings.persona_mode,
+    // Round 8 A — role layering 활성/비활성이 미션에 영향. dep 누락 시 미션 미동기화.
+    weddingSettings.role,
     scheduleItems,
   ]);
 }

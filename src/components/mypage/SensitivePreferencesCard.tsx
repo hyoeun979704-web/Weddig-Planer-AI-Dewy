@@ -69,6 +69,14 @@ export default function SensitivePreferencesCard() {
       if (field === "marital_history" && value !== "remarriage") {
         resetSignal(SIGNAL_KEYS.remarriageInterest);
       }
+      // Round 8 B — 양가 부모 토글이 둘 다 true 가 되면 single_household 추론 무효.
+      // 한쪽만 false 면 사용자가 이미 인지 — 신호는 의미 없고 markConfirmed 동등.
+      if (
+        (field === "has_parents_bride" && value === true && weddingSettings.has_parents_groom) ||
+        (field === "has_parents_groom" && value === true && weddingSettings.has_parents_bride)
+      ) {
+        resetSignal(SIGNAL_KEYS.singleHouseholdHint);
+      }
       // F#15 — RPC 후 unmount 됐으면 toast/reload 시도 안 함. 다른 surface 가 다음 mount 시 refetch.
       if (mountedRef.current) {
         toast.success("설정이 저장됐어요");

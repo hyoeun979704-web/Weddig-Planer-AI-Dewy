@@ -8,7 +8,7 @@
 
 import type { WeddingStyle } from "@/lib/weddingStyle";
 import type { PregnancyTrimester } from "@/lib/pregnancy";
-import type { WeddingPersonaMode } from "@/lib/weddingPersona";
+import type { WeddingPersonaMode, UserRole } from "@/lib/weddingPersona";
 
 export interface PersonaMission {
   key: string;
@@ -359,6 +359,17 @@ const STYLE_INTRO: Record<WeddingStyle, { title: string; subtitle: string; accen
   },
 };
 
+// Round 8 A — role=groom 이 다른 페르소나에 가려졌을 때 신랑 voice 를 미션 1슬롯으로
+// 보강. 페르소나 우선순위가 hotel/regional/overseas/noParents > role 로 바뀌었으므로
+// 호텔 신랑·지방 신랑 등은 personaMode != 'standard_groom' 이지만 신랑 미션이 필요.
+const GROOM_LAYER_MISSION: PersonaMission = {
+  key: "groom-layer-suit",
+  label: "신랑 예복 후보 좁히기",
+  hint: "맞춤·기성·렌탈 비교 + 가봉 일정",
+  emoji: "",
+  href: "/suit",
+};
+
 export function getMissionsForStyle(
   style: WeddingStyle | null | undefined,
   options: {
@@ -366,6 +377,8 @@ export function getMissionsForStyle(
     pregnancyTrimester?: PregnancyTrimester | null;
     /** 페르소나 모드. 지정 시 PERSONA_SPECIFIC 미션이 스타일 미션보다 우선. */
     personaMode?: WeddingPersonaMode | null;
+    /** Round 8 A — 사용자 role. 'groom' 이면 standard_groom 외 페르소나에 신랑 미션 1개 layering. */
+    role?: UserRole | null;
   } = {},
 ): PersonaMission[] {
   const s = (style ?? "general") as WeddingStyle;
@@ -378,6 +391,9 @@ export function getMissionsForStyle(
   // 임신 1 + 페르소나 1 + 공통 1 로 합쳐 표시한다.
   const personaList = options.personaMode ? PERSONA_SPECIFIC[options.personaMode] : undefined;
   const hasPersona = !!personaList && personaList.length > 0;
+  // groom layering 은 standard_groom 외 페르소나에서만 (그 페르소나는 이미 신랑 voice).
+  const shouldLayerGroom =
+    options.role === "groom" && options.personaMode && options.personaMode !== "standard_groom";
 
   if (options.pregnant) {
     const trimester = options.pregnancyTrimester ?? "second";
@@ -388,7 +404,14 @@ export function getMissionsForStyle(
       .slice(0, 3);
   }
   if (hasPersona) {
+    // 신랑 layering: 페르소나 1 + 신랑 1 + 공통/페르소나 잔여. 페르소나 voice 가 먼저.
+    if (shouldLayerGroom) {
+      return [personaList![0], GROOM_LAYER_MISSION, ...(personaList!.slice(1)), ...COMMON].slice(0, 3);
+    }
     return [...personaList!, ...COMMON].slice(0, 3);
+  }
+  if (shouldLayerGroom) {
+    return [GROOM_LAYER_MISSION, ...styleList, ...COMMON].slice(0, 3);
   }
   return [...styleList, ...COMMON].slice(0, 3);
 }

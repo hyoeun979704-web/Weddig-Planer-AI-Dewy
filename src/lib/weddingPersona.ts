@@ -59,7 +59,15 @@ const METRO_REGIONS = new Set([
   "서울특별시", "서울", "경기도", "경기", "인천광역시", "인천",
 ]);
 
-/** 입력 신호로부터 페르소나 모드를 분류. DB 트리거와 정확히 같은 로직을 유지한다. */
+/** 입력 신호로부터 페르소나 모드를 분류. DB 트리거와 정확히 같은 로직을 유지한다.
+ *
+ * 우선순위 원칙 (Round 8 A 정정):
+ * - "더 구체적·고유한 경험" 이 우선. 임신/재혼/국제/스몰계열/ceremony_type 특화 등.
+ * - role(신랑/신부) 은 **수식자(modifier)** 로 마지막에 적용 — 다른 페르소나가 있으면
+ *   그 페르소나가 이김. 신랑 voice 는 미션 layering + header 보조 자막으로 따로 더한다
+ *   (`isGroomMode` 헬퍼 + getMissionsForStyle 의 role 옵션).
+ * - 이전엔 role 이 hotel/regional/overseas 보다 위에 있어 호텔 신랑이 luxury_hotel
+ *   큐레이션을 못 받고 standard_groom 으로 빠지는 회귀 있었음. role 은 가장 마지막에. */
 export function derivePersonaMode(s: PersonaInputs): WeddingPersonaMode {
   const country = s.country ?? "KR";
   const weddingCountry = s.wedding_country ?? "KR";
@@ -90,9 +98,11 @@ export function derivePersonaMode(s: PersonaInputs): WeddingPersonaMode {
   if (noParents) return "single_household";
   if (isOverseas) return "remote_overseas";
   if (isRegional) return "regional";
-
-  if (s.role === "groom") return "standard_groom";
   if (s.ceremony_type === "hotel") return "luxury_hotel";
+
+  // role 은 마지막에 — 다른 페르소나가 있으면 그쪽이 이기고, 없을 때만 standard_groom.
+  // 다른 페르소나 + role=groom 케이스는 missions/header 의 groom layering 으로 처리.
+  if (s.role === "groom") return "standard_groom";
 
   return "standard_bride";
 }

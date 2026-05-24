@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import PageHeader from "@/components/PageHeader";
 import BottomNav from "@/components/BottomNav";
 import CategoryHeroBanner from "@/components/CategoryHeroBanner";
@@ -11,6 +11,8 @@ import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 import { normalizeRegion } from "@/lib/regions";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { bumpSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 
 const Suit = () => {
   const navigate = useNavigate();
@@ -18,8 +20,19 @@ const Suit = () => {
   const hasActiveFilters = useCategoryFilterStore((state) => state.hasActiveFilters);
   const initWithRegion = useCategoryFilterStore((state) => state.initWithRegion);
   const { defaultRegion, isLoaded } = useDefaultRegion();
+  const { weddingSettings } = useWeddingSchedule();
 
   useEffect(() => { if (isLoaded) initWithRegion(normalizeRegion(defaultRegion)); }, [isLoaded]);
+
+  // Round 8 B — 신랑 카테고리 진입 1세션 1회 증분. 사용자가 role 명시하지 않았고
+  // (role===null/bride/shared) 신랑 페르소나 후보가 아닐 때만. 이미 신랑이면 bump 무의미.
+  const bumpedRef = useRef(false);
+  useEffect(() => {
+    if (bumpedRef.current) return;
+    if (weddingSettings.role === "groom") return; // 이미 신랑이면 신호 불필요.
+    bumpSignal(SIGNAL_KEYS.groomRoleHint);
+    bumpedRef.current = true;
+  }, [weddingSettings.role]);
 
   const handleItemClick = (item: CategoryItem) => { navigate(`/suit/${item.id}`); };
 

@@ -26,6 +26,7 @@ import {
 } from "@/lib/weddingStyle";
 import { computePregnancyContext, trimesterLabel } from "@/lib/pregnancy";
 import type { CeremonyType, UserRole } from "@/lib/weddingPersona";
+import { markConfirmed, resetSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 
 const REGIONS = [
   "서울특별시", "경기도", "인천광역시", "부산광역시", "대구광역시",
@@ -33,6 +34,35 @@ const REGIONS = [
   "강원특별자치도", "충청북도", "충청남도", "전북특별자치도",
   "전라남도", "경상북도", "경상남도", "제주특별자치도",
 ];
+
+// Round 8 F — navigator.language 기반 L2 country 추론. 자동 commit 안 하고
+// 모달 default state 만 채워 사용자가 검토 후 명시 저장(=submit) 하도록.
+// v2 §1 L2 정보 위계 적용 + §11.2 권고 구현.
+const SUPPORTED_COUNTRIES = ["KR", "US", "JP", "SG", "GB", "DE", "AU"] as const;
+const LOCALE_COUNTRY_MAP: Record<string, string> = {
+  "ko": "KR", "ko-KR": "KR",
+  "en-US": "US", "en": "US",
+  "ja-JP": "JP", "ja": "JP",
+  "en-SG": "SG",
+  "en-GB": "GB",
+  "de-DE": "DE", "de": "DE",
+  "en-AU": "AU",
+};
+function inferCountryFromLocale(): string {
+  try {
+    if (typeof navigator === "undefined") return "KR";
+    const lang = (navigator.languages?.[0] ?? navigator.language ?? "").trim();
+    if (!lang) return "KR";
+    if (LOCALE_COUNTRY_MAP[lang]) return LOCALE_COUNTRY_MAP[lang];
+    // ko-XX, en-XX 등 prefix fallback.
+    const prefix = lang.split("-")[0];
+    if (LOCALE_COUNTRY_MAP[prefix]) return LOCALE_COUNTRY_MAP[prefix];
+    // 알 수 없으면 안전한 KR fallback (한국 서비스라 한국이 다수).
+    return "KR";
+  } catch {
+    return "KR";
+  }
+}
 
 interface Props {
   isOpen: boolean;
@@ -106,7 +136,9 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     );
     // 민감 3종(marital_history/pregnant/has_parents_*) prefill 제거 — 모달 UI에 없음.
     setRole(weddingSettings.role);
-    setCountry(weddingSettings.country ?? "KR");
+    // Round 8 F — 저장된 country 가 있으면 그대로, 없으면 navigator.language 추론.
+    // 추론값은 default state 일 뿐 — submit 까지는 weddingSettings 에 commit 안 됨.
+    setCountry(weddingSettings.country ?? inferCountryFromLocale());
     setWeddingCountry(weddingSettings.wedding_country ?? "KR");
     setSigungu(weddingSettings.wedding_region_sigungu ?? "");
     setCeremonyType(weddingSettings.ceremony_type);
@@ -161,6 +193,13 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     });
 
     if (ok) {
+      // Round 8 B — role 명시 시 groomRoleHint 신호 정리. 명시 confirmation 이므로
+      // 행동 신호 재발 안 되게 markConfirmed(=groom) / resetSignal(=다른 role) 적용.
+      if (role === "groom") {
+        markConfirmed(SIGNAL_KEYS.groomRoleHint);
+      } else if (role && role !== "groom") {
+        resetSignal(SIGNAL_KEYS.groomRoleHint);
+      }
       // Seed schedule items. 민감 3종은 기존 DB 값을 그대로 사용해 스케줄 분기.
       // 모달에서 안 받으므로 사용자가 이전에 설정한 값(또는 false/null 기본값) 기준.
       const existingPregnant = weddingSettings.pregnant;
@@ -408,12 +447,46 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
           />
         </div>
 
+        {/* Round 8 F — 준비 주체(role) 를 accordion 밖으로 끌어올림. 신랑이 본인 결혼식
+            큐레이션을 받으려면 가입 첫 인상에서 보여야 함. 컴팩트한 4-칩 strip 로 첫 화면
+            부담은 최소. accordion 내부의 중복은 제거. */}
+        <div>
+          <label className={labelCls}>
+            준비 주체 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <div className="grid grid-cols-4 gap-1.5">
+            {([
+              { v: null, label: "선택 안 함" },
+              { v: "bride", label: "신부" },
+              { v: "groom", label: "신랑" },
+              { v: "shared", label: "공동" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.label}
+                type="button"
+                onClick={() => setRole(opt.v)}
+                className={cn(
+                  "py-2 rounded-xl text-[12px] border transition-colors",
+                  role === opt.v
+                    ? "border-[#C9A96E] bg-[#C9A96E]/5 text-gray-800 font-semibold"
+                    : "border-gray-200 text-gray-500"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-1">
+            신랑님이 직접 준비하시면 예복·예물·신랑 양가 가이드를 먼저 보여드려요.
+          </p>
+        </div>
+
         {/* 정확도 보강 섹션 — 접힘 기본. 사용자가 필요할 때만 펼침으로 첫인상 부담 줄임.
             details/summary 는 네이티브라 의존성 없이 가볍게 동작. 기존 입력값이
             있으면 편집 케이스에서 숨겨지지 않도록 자동 펼침. */}
         <details
           className="group rounded-xl border border-gray-200 bg-white"
-          open={!!(sigungu || role || ceremonyType)}
+          open={!!(sigungu || ceremonyType || country !== "KR" || weddingCountry !== "KR")}
         >
           <summary className="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between text-sm font-semibold text-gray-700">
             <span> 더 정확한 큐레이션 받기 <span className="text-[11px] text-gray-400 font-normal">(선택)</span></span>
@@ -442,39 +515,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
           </p>
         </div>
 
-        {/* 사용자 역할 — 호칭·미션·AI 톤 분기. */}
-        <div>
-          <label className={labelCls}>
-            준비 주체 <span className="text-xs text-gray-400 font-normal">(선택)</span>
-          </label>
-          <div className="grid grid-cols-3 gap-1.5">
-            {([
-              { v: null, label: "선택 안 함" },
-              { v: "bride", label: "신부" },
-              { v: "groom", label: "신랑" },
-              { v: "shared", label: "공동" },
-            ] as const).slice(0, 4).map((opt) => (
-              <button
-                key={opt.label}
-                type="button"
-                onClick={() => setRole(opt.v)}
-                className={cn(
-                  "py-2 rounded-xl text-sm border transition-colors",
-                  role === opt.v
-                    ? "border-[#C9A96E] bg-[#C9A96E]/5 text-gray-800 font-semibold"
-                    : "border-gray-200 text-gray-500"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          <p className="text-[11px] text-gray-400 mt-1">
-            신랑님이 직접 준비하시면 예복·예물·신랑 양가 가이드를 먼저 보여드려요.
-          </p>
-        </div>
-
-        {/* 식 형태 (세분) — 스몰웨딩·노식·스냅 분기. */}
+        {/* 식 형태 (세분) — 스몰웨딩·노식·스냅 분기. (role 은 accordion 위로 이동.) */}
         <div>
           <label className={labelCls}>
             식 형태 <span className="text-xs text-gray-400 font-normal">(선택)</span>

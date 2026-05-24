@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserBlocks } from "@/hooks/useCommunityModeration";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { bumpSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import type { WeddingStyle } from "@/lib/weddingStyle";
 import noteIcon from "@/assets/community/note.svg";
 import searchBoxIcon from "@/assets/community/search-box.svg";
@@ -125,6 +126,19 @@ const Community = () => {
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [selectedCategory, styleFilter, sortBy]);
+
+  // Round 8 B — 재혼·자녀 카테고리 진입 시 remarriageInterest 신호 증분.
+  // 사용자가 이미 marital_history='remarriage' 면 신호 불필요. 카테고리 바꿔도 같은
+  // 세션 1회만 증분되도록 sessionStorage 가드 (재방문/refresh 에 안전한 페르세션 단위).
+  useEffect(() => {
+    if (selectedCategory !== "재혼·자녀") return;
+    if (weddingSettings.marital_history === "remarriage") return;
+    if (typeof window === "undefined") return;
+    const GUARD = `dewy:signal-bumped:remarriage:${user?.id ?? "anon"}`;
+    if (sessionStorage.getItem(GUARD) === "1") return;
+    bumpSignal(SIGNAL_KEYS.remarriageInterest);
+    sessionStorage.setItem(GUARD, "1");
+  }, [selectedCategory, weddingSettings.marital_history, user?.id]);
   const tutorial = usePageTutorial("community");
 
   // 사용자의 결혼 유형이 로드되면 첫 1회만 같은 유형을 기본 필터로 적용.

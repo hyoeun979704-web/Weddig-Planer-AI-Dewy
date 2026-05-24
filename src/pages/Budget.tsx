@@ -40,6 +40,7 @@ import { toast } from "@/hooks/use-toast";
 import type { BudgetItem } from "@/hooks/useBudget";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { familyCollaborationEnabled } from "@/lib/weddingPersona";
 import { WEDDING_STYLE_PRESETS, WEDDING_STYLE_LABEL, visibleBudgetCategories } from "@/lib/weddingStyle";
 import { fmt } from "@/lib/budgetFormat";
 
@@ -73,6 +74,13 @@ const Budget = () => {
   // Sheets get the filtered list; main page itself iterates all 10 with
   // dimming for hidden ones (visible without forcing edits).
   const visibleSheetCategories = visibleBudgetCategories(weddingSettings.excluded_categories || []) as BudgetCategory[];
+  // Round 8 D — single_household 페르소나는 양가 분담 카드 의미 없음. has_parents_*
+  // 둘 다 false 면 분담 진척 카드 + simulator 진입 버튼 숨김. (UI 만 — AI 백엔드는
+  // user-data.ts 가 이미 무시 가이드 제공.)
+  const showFamilySplit = familyCollaborationEnabled({
+    has_parents_bride: weddingSettings.has_parents_bride,
+    has_parents_groom: weddingSettings.has_parents_groom,
+  });
 
   const [setupOpen, setSetupOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -568,11 +576,13 @@ const Budget = () => {
         )}
 
         {/* Partner link — surfaces here because 양가 분담 is the budget-side
-            payoff of linking. Hidden for guests (the login overlay covers them). */}
-        <PartnerLinkCard variant="budget" hideWhenLoggedOut />
+            payoff of linking. Hidden for guests (the login overlay covers them).
+            Round 8 D — single_household 페르소나도 숨김(파트너 연결은 분담 동기). */}
+        {showFamilySplit && <PartnerLinkCard variant="budget" hideWhenLoggedOut />}
 
-        {/* Paid-by bar — whole card is clickable to open the simulator */}
-        {paidTotal > 0 ? (
+        {/* Paid-by bar — whole card is clickable to open the simulator.
+            Round 8 D — single_household 일 때 분담 카드 자체를 숨김. */}
+        {showFamilySplit && paidTotal > 0 ? (
           <button
             onClick={() => navigate("/budget/split-simulator")}
             className="w-full text-left rounded-2xl bg-card border border-border p-4 active:scale-[0.99] transition-transform"
@@ -609,7 +619,7 @@ const Budget = () => {
               {paidBride > 0 && <div className="h-full transition-all bg-primary" style={{ width: `${(paidBride / paidTotal) * 100}%` }} />}
             </div>
           </button>
-        ) : items.length > 0 && (
+        ) : showFamilySplit && items.length > 0 && (
           <button
             onClick={() => navigate("/budget/split-simulator")}
             className="w-full rounded-2xl bg-card border border-border p-4 flex items-center gap-3 text-left active:scale-[0.99] transition-transform"

@@ -17,6 +17,9 @@ import {
 import { shouldHideWeddingCeremony } from "@/lib/weddingPersona";
 import { shouldPromptConfirm, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import PregnancyConfirmFlow from "@/components/persona/PregnancyConfirmFlow";
+import RemarriageConfirmFlow from "@/components/persona/RemarriageConfirmFlow";
+import SingleHouseholdConfirmFlow from "@/components/persona/SingleHouseholdConfirmFlow";
+import GroomConfirmFlow from "@/components/persona/GroomConfirmFlow";
 
 const formatMinutes = (seconds: number) => {
   if (seconds < 60) return `${seconds}초`;
@@ -60,7 +63,10 @@ const PersonaDashboard = () => {
     const ms = Date.parse(user.created_at);
     return Number.isFinite(ms) && ms > 0 ? ms : null;
   })();
-  const [pregnancySignalKey, setPregnancySignalKey] = useState(0); // re-render 트리거
+  const [signalKey, setSignalKey] = useState(0); // re-render 트리거 (4 ConfirmFlow 공유)
+  // Round 8 B — pregnancy 외 remarriage/single-household/groom 도 같은 패턴으로 노출.
+  // 단일 사용자에게 한꺼번에 3장 카드가 뜨는 건 피로 — 우선순위 1장만:
+  //   pregnancy > remarriage > single_household > groom (민감도·고유성 순).
   const showPregnancyConfirm =
     !!user &&
     !weddingSettings.pregnant &&
@@ -69,9 +75,40 @@ const PersonaDashboard = () => {
       accountCreatedAt,
       minAccountAgeDays: 3,
     });
-  // pregnancySignalKey 가 의존성에 들어가야 confirm/dismiss 후 즉시 재평가됨.
-  // shouldPromptConfirm 자체는 localStorage 만 보므로 React 가 재렌더링 트리거가 필요.
-  void pregnancySignalKey;
+  const showRemarriageConfirm =
+    !!user &&
+    !showPregnancyConfirm &&
+    weddingSettings.marital_history !== "remarriage" &&
+    shouldPromptConfirm(SIGNAL_KEYS.remarriageInterest, {
+      threshold: 2, // 커뮤니티 카테고리 진입 빈도 낮아 임계값 낮춤.
+      accountCreatedAt,
+      minAccountAgeDays: 3,
+    });
+  const showSingleHouseholdConfirm =
+    !!user &&
+    !showPregnancyConfirm &&
+    !showRemarriageConfirm &&
+    // has_parents_* 둘 다 true(기본값) 일 때만 노출. 한쪽이라도 false 면 사용자가 이미 인지.
+    weddingSettings.has_parents_bride &&
+    weddingSettings.has_parents_groom &&
+    shouldPromptConfirm(SIGNAL_KEYS.singleHouseholdHint, {
+      threshold: 2,
+      accountCreatedAt,
+      minAccountAgeDays: 3,
+    });
+  const showGroomConfirm =
+    !!user &&
+    !showPregnancyConfirm &&
+    !showRemarriageConfirm &&
+    !showSingleHouseholdConfirm &&
+    weddingSettings.role !== "groom" &&
+    shouldPromptConfirm(SIGNAL_KEYS.groomRoleHint, {
+      threshold: 3, // 예복·신랑한복 자주 보는 사용자가 신랑일 확률 높음.
+      accountCreatedAt,
+      minAccountAgeDays: 3,
+    });
+  // signalKey 가 의존성에 들어가야 confirm/dismiss 후 즉시 재평가됨.
+  void signalKey;
 
   if (!user || !insights.isLoaded || !insights.hasOnboarded) {
     return null;
@@ -171,10 +208,23 @@ const PersonaDashboard = () => {
 
   return (
     <>
-    {/* 임신 관련 콘텐츠 조회 누적 시 부드러운 확인 카드 + due date inline 입력. v2 §4.3·§5. */}
+    {/* 행동 신호 누적 시 부드러운 확인 카드. 동시 1장 — pregnancy > remarriage >
+        single > groom 우선순위. v2 §4.3·§5. */}
     <PregnancyConfirmFlow
       show={showPregnancyConfirm}
-      onChange={() => setPregnancySignalKey((k) => k + 1)}
+      onChange={() => setSignalKey((k) => k + 1)}
+    />
+    <RemarriageConfirmFlow
+      show={showRemarriageConfirm}
+      onChange={() => setSignalKey((k) => k + 1)}
+    />
+    <SingleHouseholdConfirmFlow
+      show={showSingleHouseholdConfirm}
+      onChange={() => setSignalKey((k) => k + 1)}
+    />
+    <GroomConfirmFlow
+      show={showGroomConfirm}
+      onChange={() => setSignalKey((k) => k + 1)}
     />
     <section
       data-tutorial="persona-dashboard"
