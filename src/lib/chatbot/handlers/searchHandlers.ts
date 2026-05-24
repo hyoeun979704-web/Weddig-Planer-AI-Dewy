@@ -473,14 +473,18 @@ export const handleVenueCompare = async (
     }
   };
   const route = detailRoute(category);
+  // F#D5 — markdown link text 의 `[` `]` 와 link URL 의 `(` `)` 이스케이프.
+  // 한국 상호는 흔히 괄호 포함('르브런(강남점)') → 미이스케이프 시 link 가 조기 종료돼
+  // 깨진 markdown 렌더. 표 셀의 `|` 도 함께 처리.
+  const escapeMd = (s: string): string =>
+    s.replace(/\\/g, "\\\\").replace(/([\[\]()|])/g, "\\$1");
   const rows = (data as any[]).map((p) => {
     const star = p.avg_rating != null ? p.avg_rating.toFixed(1) : "-";
     const reviews = p.review_count ?? 0;
     const price = p.min_price ? `${(p.min_price / 10000).toFixed(0)}만~` : "-";
-    const loc = p.district ?? "-";
+    const loc = p.district ? escapeMd(p.district) : "-";
     const partner = p.is_partner ? " ⭐" : "";
-    // 이름 컬럼에 링크 — 사용자가 표에서 바로 상세 페이지로 이동.
-    const link = `[${p.name}${partner}](/${route}/${p.place_id})`;
+    const link = `[${escapeMd(p.name)}${partner}](/${route}/${p.place_id})`;
     return `| ${link} | ${star} | ${reviews} | ${price} | ${loc} |`;
   });
 

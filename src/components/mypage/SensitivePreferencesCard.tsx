@@ -8,12 +8,12 @@
 // "잊혀짐 (§5.4)" — 사용자가 OFF 토글 시 즉시 컬럼 NULL/false 화 + 관련 콘텐츠
 // 노출 중단. 동의 기록은 PIPA 의무로 보존 (revoked_at 마킹은 별도 작업).
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Settings2, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { resetSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
-import { setSensitivePreference, type SensitiveConsentType } from "@/lib/sensitiveConsent";
+import { setSensitivePreference, type SensitiveField } from "@/lib/sensitiveConsent";
 import { toast } from "sonner";
 
 type Saving = "none" | "pregnant" | "marital" | "parents-bride" | "parents-groom";
@@ -23,33 +23,37 @@ export default function SensitivePreferencesCard() {
   const { weddingSettings } = useWeddingSchedule();
   const [saving, setSaving] = useState<Saving>("none");
   const [expanded, setExpanded] = useState(false);
+  // F#D2 — reload 타이머 cleanup. unmount 시 stale reload 가 SPA 라우팅 덮어쓰지 않도록.
+  const reloadTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    return () => {
+      if (reloadTimerRef.current != null) window.clearTimeout(reloadTimerRef.current);
+    };
+  }, []);
+  const scheduleReload = (ms: number) => {
+    if (reloadTimerRef.current != null) window.clearTimeout(reloadTimerRef.current);
+    reloadTimerRef.current = window.setTimeout(() => {
+      reloadTimerRef.current = null;
+      window.location.reload();
+    }, ms);
+  };
 
   if (!user) return null;
 
-  // 통합 sensitive 토글 — setSensitivePreference 가 다음을 보장:
-  //   ① upsert(onConflict=user_id) — user_wedding_settings 행 없어도 신규 생성 (F#3)
-  //   ② Supabase {error} 명시 throw — await 만으로 안 throw 되던 회귀(F#2) 회피
-  //   ③ user_consents 동의 기록 함께 INSERT — PIPA 의무, 모든 진입 경로 일관(F#5)
-  // 페이지 리로드는 toast 가 보이도록 setTimeout 1.2s 지연 (F#13).
+  // 통합 sensitive 토글 — set_sensitive_preference RPC v2 가:
+  //   ① UPSERT (ON CONFLICT) — 행 없어도 신규 생성, race-safe (F#3·F#E4)
+  //   ② server-derived consent_type + agreed (p_field 매핑 기반) — client 변조 X (F#E1·E2·E7)
+  //   ③ 실제 active 전환 시에만 consent INSERT — 중복/spurious revoke 0 (F#5·E5·E11)
+  //   ④ user_agent / consent_version 자동 첨부 (F#E3·E6)
+  // 페이지 리로드는 toast 가 보이도록 ref 기반 timer + cleanup (F#D2).
   const updateField = async (
-    field: "pregnant" | "marital_history" | "has_parents_bride" | "has_parents_groom",
+    field: SensitiveField,
     value: boolean | "first" | "remarriage" | null,
-    consentType: SensitiveConsentType,
-    agreedForConsent: boolean,
     label: Saving,
-    // F#11 — 실제 consent 상태 변화가 없는 토글에선 consent INSERT 생략.
-    // 예: marital_history first → null 은 "이미 non-remarriage" 였으므로 추가 revoke 행 불필요.
-    recordConsent: boolean = true,
   ) => {
     setSaving(label);
     try {
-      await setSensitivePreference({
-        field,
-        value,
-        consentType,
-        agreedForConsent,
-        recordConsent,
-      });
+      await setSensitivePreference({ field, value });
       // OFF 전환 시 관련 행동 신호도 함께 폐기 — 사용자가 명시적으로 잊고 싶다는 의미.
       if (field === "pregnant" && value === false) {
         resetSignal(SIGNAL_KEYS.pregnancyInterest);
@@ -58,8 +62,7 @@ export default function SensitivePreferencesCard() {
         resetSignal(SIGNAL_KEYS.remarriageInterest);
       }
       toast.success("설정이 저장됐어요");
-      // 토스트가 사용자에게 보이도록 1.2초 후 리로드 — 이전에는 같은 turn 에 reload 해 토스트가 destroy 됨(F#13).
-      setTimeout(() => window.location.reload(), 1200);
+      scheduleReload(1200);
     } catch (e) {
       console.error("sensitive pref update failed", e);
       toast.error("저장에 실패했어요. 다시 시도해주세요.");
@@ -68,52 +71,22 @@ export default function SensitivePreferencesCard() {
     }
   };
 
-  const togglePregnant = () => {
-    const next = !weddingSettings.pregnant;
-    updateField("pregnant", next, "sensitive_health_pregnancy_v1", next, "pregnant");
-  };
-  // 3-state cycle (NULL → 'remarriage' → 'first' → NULL). 사용자가 "선택 안 함" 까지
-  // 되돌아갈 수 있게 함. F#11 — consent 기록은 remarriage boolean 상태가 실제로
-  // 바뀔 때만(NULL→remarriage / remarriage→first 두 케이스). first→NULL 은 이미
-  // non-remarriage 상태였으므로 추가 revoke 행 생성하지 않음.
+  // 모든 토글이 단순 (field, next-value) 만 전달. consent_type / agreed / recordConsent
+  // 같은 client-derived 의 인수는 server-derived 로 이전돼 caller 책임 0.
+  const togglePregnant = () =>
+    updateField("pregnant", !weddingSettings.pregnant, "pregnant");
+  // 3-state cycle (NULL → 'remarriage' → 'first' → NULL).
   const toggleRemarriage = () => {
     const cur = weddingSettings.marital_history;
     const next: "first" | "remarriage" | null =
       cur === null ? "remarriage" : cur === "remarriage" ? "first" : null;
-    const wasRemarriage = cur === "remarriage";
-    const isRemarriage = next === "remarriage";
-    const consentStateChanged = wasRemarriage !== isRemarriage;
-    updateField(
-      "marital_history",
-      next,
-      "sensitive_family_remarriage_v1",
-      isRemarriage,
-      "marital",
-      consentStateChanged,
-    );
+    updateField("marital_history", next, "marital");
   };
-  // F#10 — bride/groom 분리 consent_type. 한 type 으로 두 컬럼 토글하면 audit 가
-  // 어느 쪽 변경인지 구별 못함. 별도 enum 사용.
-  const toggleParentsBride = () => {
-    const next = !weddingSettings.has_parents_bride;
-    updateField(
-      "has_parents_bride",
-      next,
-      "sensitive_family_no_parents_bride_v1",
-      !next,
-      "parents-bride",
-    );
-  };
-  const toggleParentsGroom = () => {
-    const next = !weddingSettings.has_parents_groom;
-    updateField(
-      "has_parents_groom",
-      next,
-      "sensitive_family_no_parents_groom_v1",
-      !next,
-      "parents-groom",
-    );
-  };
+  // has_parents_*=false 가 active(부재) 신호. 서버가 자동 도출해 consent_type 도 분리.
+  const toggleParentsBride = () =>
+    updateField("has_parents_bride", !weddingSettings.has_parents_bride, "parents-bride");
+  const toggleParentsGroom = () =>
+    updateField("has_parents_groom", !weddingSettings.has_parents_groom, "parents-groom");
 
   const activeCount =
     (weddingSettings.pregnant ? 1 : 0) +

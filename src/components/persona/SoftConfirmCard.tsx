@@ -25,6 +25,8 @@ export interface SoftConfirmCardProps {
   onConfirm: () => void;
   /** "지금은 괜찮아요" 또는 X dismiss. 호출 측에서 markDismissed 처리. */
   onDecline: () => void;
+  /** F#D3 — async onConfirm 진행 중. true 면 두 버튼 비활성 + aria-busy. 중복 클릭 race 방지. */
+  isBusy?: boolean;
 }
 
 const TONE_CLS: Record<"neutral" | "warm" | "cool", string> = {
@@ -41,19 +43,31 @@ export default function SoftConfirmCard({
   tone = "neutral",
   onConfirm,
   onDecline,
+  isBusy = false,
 }: SoftConfirmCardProps) {
   // 내부 hidden state 제거 (F#5). 부모가 onConfirm/onDecline 결과를 보고
   // 가시성을 결정 — 실패 시 카드가 그대로 남아 retry 가능.
-  const handleDecline = () => onDecline();
-  const handleConfirm = () => onConfirm();
+  // F#D3 — isBusy 진행 중엔 두 핸들러 모두 무시 → 동시 클릭 race 차단.
+  const handleDecline = () => {
+    if (isBusy) return;
+    onDecline();
+  };
+  const handleConfirm = () => {
+    if (isBusy) return;
+    onConfirm();
+  };
 
   return (
-    <section className={`mx-4 my-3 rounded-2xl border p-3.5 ${TONE_CLS[tone]} relative`}>
+    <section
+      className={`mx-4 my-3 rounded-2xl border p-3.5 ${TONE_CLS[tone]} relative`}
+      aria-busy={isBusy}
+    >
       <button
         type="button"
         aria-label="닫기"
         onClick={handleDecline}
-        className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center opacity-50 hover:opacity-100"
+        disabled={isBusy}
+        className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center opacity-50 hover:opacity-100 disabled:opacity-30"
       >
         <X className="w-3.5 h-3.5" />
       </button>
@@ -70,14 +84,16 @@ export default function SoftConfirmCard({
           <button
             type="button"
             onClick={handleConfirm}
-            className="flex-1 py-2 rounded-xl bg-primary text-primary-foreground text-[12px] font-bold active:scale-[0.98] transition-transform"
+            disabled={isBusy}
+            className="flex-1 py-2 rounded-xl bg-primary text-primary-foreground text-[12px] font-bold active:scale-[0.98] transition-transform disabled:opacity-60"
           >
             {confirmLabel}
           </button>
           <button
             type="button"
             onClick={handleDecline}
-            className="flex-1 py-2 rounded-xl bg-transparent border border-border text-foreground text-[12px] font-semibold active:scale-[0.98] transition-transform"
+            disabled={isBusy}
+            className="flex-1 py-2 rounded-xl bg-transparent border border-border text-foreground text-[12px] font-semibold active:scale-[0.98] transition-transform disabled:opacity-60"
           >
             {declineLabel}
           </button>

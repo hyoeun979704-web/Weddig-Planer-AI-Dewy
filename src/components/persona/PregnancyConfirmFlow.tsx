@@ -28,9 +28,31 @@ interface Props {
 
 type Stage = "confirm" | "due-date";
 
+// F#A3 — stage 영구화. 사용자가 "받기" 누른 뒤 due-date 입력 중 tab close 시
+// 다음 세션에도 due-date 입력 단계 보존. user 별 key 라 cross-account leak 없음.
+const STAGE_KEY = (userId: string) => `dewy:pregnancy-confirm-stage:${userId}`;
+
 export default function PregnancyConfirmFlow({ show, onChange }: Props) {
   const { user } = useAuth();
-  const [stage, setStage] = useState<Stage>("confirm");
+  const [stage, setStage] = useState<Stage>(() => {
+    if (!user) return "confirm";
+    try {
+      const v = localStorage.getItem(STAGE_KEY(user.id));
+      return v === "due-date" ? "due-date" : "confirm";
+    } catch {
+      return "confirm";
+    }
+  });
+  // stage 변경 시 localStorage 동기화. due-date 단계 종료(저장/건너뛰기) 시 폐기.
+  useEffect(() => {
+    if (!user) return;
+    try {
+      if (stage === "due-date") localStorage.setItem(STAGE_KEY(user.id), "due-date");
+      else localStorage.removeItem(STAGE_KEY(user.id));
+    } catch {
+      /* ignore */
+    }
+  }, [stage, user]);
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [saving, setSaving] = useState(false);
   // F#14 — reload 타이머 cleanup. unmount 시 stale reload 가 SPA 라우팅 덮어쓰지 않도록.
@@ -59,17 +81,13 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
   if (!show && stage !== "due-date") return null;
 
   const handleConfirm = async () => {
+    // F#D3 — double-click race 가드. setSaving 비동기라 동시 클릭 가능 → 명시 가드.
+    if (saving) return;
     setSaving(true);
     try {
-      // RPC 가 column + consent 를 atomic 처리. 행 없는 사용자도 OK.
-      await setSensitivePreference({
-        field: "pregnant",
-        value: true,
-        consentType: "sensitive_health_pregnancy_v1",
-        agreedForConsent: true,
-      });
+      // RPC v2: server-derived consent_type + agreed. 단순화된 시그니처.
+      await setSensitivePreference({ field: "pregnant", value: true });
       markConfirmed(SIGNAL_KEYS.pregnancyInterest);
-      // 2단계로 — 같은 화면에서 due date 받음 (F#11).
       setStage("due-date");
     } catch (e) {
       console.error("pregnancy confirm failed", e);
@@ -90,12 +108,11 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
     try {
       // pregnancy_due_date 만 추가 저장 (pregnant 는 이미 true).
       // F#6 — recordConsent=false 로 중복 consent 행 방지 (handleConfirm 에서 이미 기록함).
+      // RPC v2: pregnant=true 는 이미 같은 값이라 server 가 active 전환 없음 감지 →
+      // consent INSERT 자동 skip. recordConsent 옵션 제거됨(server-derived).
       await setSensitivePreference({
         field: "pregnant",
         value: true,
-        consentType: "sensitive_health_pregnancy_v1",
-        agreedForConsent: true,
-        recordConsent: false,
         extraPatch: { pregnancy_due_date: format(dueDate, "yyyy-MM-dd") },
       });
       toast.success("본식 시점 차수에 맞춰 일정·드레스·신혼여행을 정리해드릴게요");
@@ -129,6 +146,7 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
         declineLabel="지금은 괜찮아요"
         onConfirm={handleConfirm}
         onDecline={handleDecline}
+        isBusy={saving}
       />
     );
   }

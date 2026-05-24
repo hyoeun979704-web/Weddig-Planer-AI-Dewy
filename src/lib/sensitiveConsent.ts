@@ -1,54 +1,64 @@
-// 민감 정보 동의 기록 헬퍼 — PIPA 의무 + v2 §5 Sensitive Info.
+// 민감 정보 안전 setter — set_sensitive_preference RPC v2 wrapper.
+// v2 RPC 가 다음을 server 측에서 강제:
+//   - p_field → consent_type 매핑 (client 변조 불가)
+//   - active 상태 변화 여부 비교 → agreed 자동 도출, 실제 전환 시에만 user_consents INSERT
+//   - INSERT … ON CONFLICT (user_id) DO UPDATE — race-safe
+//   - extra_patch 키 sub-allowlist (pregnant 만 pregnancy_due_date 허용)
 //
-// 단일 SECURITY DEFINER RPC(set_sensitive_preference) 호출로 column upsert +
-// consent INSERT 를 한 트랜잭션에서 처리 — 둘 중 하나 실패 시 rollback 되어
-// PIPA orphan(column 만 저장된 채 consent 없는 상태) 회피. F#1 회귀 수정.
+// TODO: supabase gen types typescript 재실행 후 (supabase as any) 제거해 컴파일
+// 타임 시그니처 검증 회복. 현재는 RPC 신규/시그니처 변경이라 types.ts 미반영.
 
 import { supabase } from "@/integrations/supabase/client";
 
-export type SensitiveConsentType =
-  | "sensitive_health_pregnancy_v1"
-  | "sensitive_family_remarriage_v1"
-  // bride/groom 분리 — 한 consent_type 으로 두 컬럼 토글하면 audit 가 어느 쪽
-  // 변경인지 구별 못함(F#10). 별도 enum 으로 분리.
-  | "sensitive_family_no_parents_bride_v1"
-  | "sensitive_family_no_parents_groom_v1";
+export type SensitiveField =
+  | "pregnant"
+  | "marital_history"
+  | "has_parents_bride"
+  | "has_parents_groom";
+
+export interface SetSensitivePreferenceArgs {
+  field: SensitiveField;
+  /** boolean 또는 marital_history 의 'first'/'remarriage'/null. */
+  value: boolean | "first" | "remarriage" | null;
+  /** pregnant 일 때 pregnancy_due_date 동시 patch (선택). */
+  extraPatch?: Record<string, unknown>;
+  /** 동의 정책 버전. 기본 1, v2 정책 도입 시 호출자가 올림. */
+  consentVersion?: number;
+}
+
+export interface SetSensitivePreferenceResult {
+  /** consent 행이 실제 INSERT 됐는지 — server 가 active 상태 전환을 감지했을 때만 true. */
+  consentRecorded: boolean;
+  oldActive: boolean;
+  newActive: boolean;
+}
 
 /**
- * 사용자 wedding settings 의 민감 필드 한 개를 안전하게 토글.
- * RPC 가 column + consent 를 atomic 처리. 실패 시 throw — 호출자가 catch.
- *
- * @param recordConsent — false 시 consent INSERT 생략. 같은 ON 상태에서 다른 컬럼
- *   patch 만 갱신할 때(예: pregnancy_due_date 추가 입력) 사용. 중복 consent 회피.
+ * 민감 정보 컬럼 + 동의 기록을 single transaction 으로 안전 처리.
+ * 실패 시 throw. user_agent 는 navigator.userAgent 자동 캡처 — 호출자가 추가 정보 줄 필요 X.
  */
-export async function setSensitivePreference(args: {
-  field: "pregnant" | "marital_history" | "has_parents_bride" | "has_parents_groom";
-  value: boolean | "first" | "remarriage" | null;
-  consentType: SensitiveConsentType;
-  agreedForConsent: boolean;
-  recordConsent?: boolean;
-  extraPatch?: Record<string, unknown>;
-}): Promise<void> {
-  const {
-    field,
-    value,
-    consentType,
-    agreedForConsent,
-    recordConsent = true,
-    extraPatch,
-  } = args;
+export async function setSensitivePreference(
+  args: SetSensitivePreferenceArgs,
+): Promise<SetSensitivePreferenceResult> {
+  const userAgent =
+    typeof navigator !== "undefined" ? navigator.userAgent?.slice(0, 500) ?? null : null;
 
   const { data, error } = await (supabase as any).rpc("set_sensitive_preference", {
-    p_field: field,
-    p_value: value,
-    p_consent_type: consentType,
-    p_agreed_for_consent: agreedForConsent,
-    p_record_consent: recordConsent,
-    p_extra_patch: extraPatch ?? null,
+    p_field: args.field,
+    p_value: args.value,
+    p_consent_version: args.consentVersion ?? 1,
+    p_user_agent: userAgent,
+    p_extra_patch: args.extraPatch ?? null,
   });
   if (error) throw error;
   if (data && typeof data === "object" && data.ok === false) {
-    throw new Error(String(data.error ?? "set_sensitive_preference failed"));
+    const err = new Error(String(data.error ?? "set_sensitive_preference failed"));
+    (err as any).rpcError = data;
+    throw err;
   }
+  return {
+    consentRecorded: !!(data && data.consent_recorded),
+    oldActive: !!(data && data.old_active),
+    newActive: !!(data && data.new_active),
+  };
 }
-
