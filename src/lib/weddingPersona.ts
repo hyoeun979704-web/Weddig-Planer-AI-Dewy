@@ -76,11 +76,15 @@ export function derivePersonaMode(s: PersonaInputs): WeddingPersonaMode {
   const noParents = !s.has_parents_bride && !s.has_parents_groom;
   const isRegional = !!s.wedding_region && !METRO_REGIONS.has(s.wedding_region);
 
+  // Round 11 self-review fix — pregnancy 를 international 위로. 임신은 의료·안전
+  // (드레스 fitting 동선, 항공 제약, 입덧 톤) 이 international voice (영문 자료) 보다
+  // 더 critical. 임신 + 국제결혼 사용자는 pregnancy 페르소나 받고 international 컨텐츠는
+  // 별도 surface (AI 프롬프트에서 wedding_country 조건으로 추가).
+  if (s.pregnant) return "pregnancy";
   // Round 10 — ceremony_type='dual_ceremony' 도 international 로 매핑. wedding_country
   // 를 KR 로 두고 ceremony_type 만 dual 로 고른 사용자(예: 식은 한국에서, 또는 한국식
   // 시뮬레이션 + 추후 해외식) 도 영문 자료·이중 일정 가이드가 필요. 두 조건 OR.
   if (isInternational || s.ceremony_type === "dual_ceremony") return "international";
-  if (s.pregnant) return "pregnancy";
   if (s.marital_history === "remarriage") return "remarriage";
 
   if (s.ceremony_type === "snap_only") return "snap_only";

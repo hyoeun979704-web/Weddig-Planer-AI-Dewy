@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MapPin, Wallet, Users, Star, X, SlidersHorizontal, ChevronDown, Check, Building2, UtensilsCrossed, PartyPopper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -218,6 +218,14 @@ const FilterBar = () => {
     weddingSettings.wedding_style === "small" ||
     (weddingSettings.persona_mode != null && weddingSettings.persona_mode.startsWith("small_"));
   const guaranteeMin = isSmallPersona ? GUARANTEE_MIN_SMALL : GUARANTEE_MIN;
+
+  // Round 11 self-review fix — guaranteeMin 이 변하면(small persona 진출입) maxGuarantee 가
+  // 새 min 미만 값으로 남아 슬라이더 value &lt; min 인 부정확 상태가 됨. min 미만 값은 min 으로
+  // clamp. minGuarantee 도 동일 — small 칩으로 30 명 잡았다가 일반 페르소나로 바뀌면 50 이상으로.
+  useEffect(() => {
+    if (maxGuarantee != null && maxGuarantee < guaranteeMin) setMaxGuarantee(guaranteeMin);
+    if (minGuarantee != null && minGuarantee < guaranteeMin) setMinGuarantee(guaranteeMin);
+  }, [guaranteeMin, maxGuarantee, minGuarantee, setMaxGuarantee, setMinGuarantee]);
 
   // F#11 — sigungu/minGuarantee 가 store 에서 적용되어도 chip 카운트에 빠지면
   // 사용자가 어떤 필터가 켜졌는지 모르고 reset 외엔 해제 못 함.

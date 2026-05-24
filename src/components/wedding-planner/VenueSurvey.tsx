@@ -40,16 +40,20 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   // 저장된 결혼일·지역·하객 수 + ceremony_type 으로 prefill (BudgetSurvey 동일 패턴).
+  // Round 11 self-review fix — styles 는 styles.length===0 일 때만 prefill. 재오픈 시
+  // 사용자가 이전 세션에서 수동 선택한 값을 ceremony_type 매핑으로 덮어쓰지 않도록.
   useEffect(() => {
     if (!isOpen) return;
     if (defaultWeddingDate) setDate(defaultWeddingDate);
     setRegion(defaultRegion ?? "");
     setGuests(defaultGuests ?? "");
-    // 사용자가 styles 를 이미 본 modal session 에서 바꿨다면 덮어쓰지 않음 — open 시점에만.
     const prefilledStyles = weddingSettings.ceremony_type
       ? CEREMONY_TYPE_TO_STYLES[weddingSettings.ceremony_type] ?? []
       : [];
-    if (prefilledStyles.length > 0) setStyles(prefilledStyles);
+    if (prefilledStyles.length > 0 && styles.length === 0) setStyles(prefilledStyles);
+    // styles 는 read-only dependency — guard 가 자체적으로 idempotent 보장. 의존성에
+    // 넣으면 사용자가 deselect → 빈 배열 → 다시 prefill 의 무한 fire 우려. 의존성 제외.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, defaultWeddingDate, defaultRegion, defaultGuests, weddingSettings.ceremony_type]);
 
   const toggleStyle = (s: string) => setStyles(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);

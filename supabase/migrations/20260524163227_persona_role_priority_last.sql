@@ -24,9 +24,10 @@ DECLARE
   is_regional BOOLEAN := s.wedding_region IS NOT NULL
                     AND NOT (s.wedding_region = ANY(metro_set));
 BEGIN
+  -- Round 11 self-review fix — pregnancy 를 international 위로 (health-safety 우선).
+  IF COALESCE(s.pregnant, FALSE) THEN RETURN 'pregnancy'; END IF;
   -- Round 10 — dual_ceremony 도 international 매핑. client 와 일관.
   IF is_international OR s.ceremony_type = 'dual_ceremony' THEN RETURN 'international'; END IF;
-  IF COALESCE(s.pregnant, FALSE) THEN RETURN 'pregnancy'; END IF;
   IF s.marital_history = 'remarriage' THEN RETURN 'remarriage'; END IF;
 
   IF s.ceremony_type = 'snap_only' THEN RETURN 'snap_only'; END IF;
