@@ -4,9 +4,10 @@
 // 2지선다를 부드러운 카피로 제시. 객체화 어조 금지 — "..분들을 위한" 어법.
 //
 // 트리거 가드는 호출 측에서 shouldPromptConfirm() 으로 처리. 본 컴포넌트는
-// "노출 결정 후 어떻게 보일지" 만 책임.
+// "노출 결정 후 어떻게 보일지" 만 책임. F#5 — 내부 hidden state 가 onConfirm
+// 실패 시 카드를 강제 hide 해 retry 불가하던 회귀 회피: 가시성은 전적으로
+// 부모(show prop·conditional 렌더)가 결정.
 
-import { useState } from "react";
 import { X, Sparkles } from "lucide-react";
 
 export interface SoftConfirmCardProps {
@@ -41,17 +42,10 @@ export default function SoftConfirmCard({
   onConfirm,
   onDecline,
 }: SoftConfirmCardProps) {
-  const [hidden, setHidden] = useState(false);
-  if (hidden) return null;
-
-  const handleDecline = () => {
-    setHidden(true);
-    onDecline();
-  };
-  const handleConfirm = () => {
-    setHidden(true);
-    onConfirm();
-  };
+  // 내부 hidden state 제거 (F#5). 부모가 onConfirm/onDecline 결과를 보고
+  // 가시성을 결정 — 실패 시 카드가 그대로 남아 retry 가능.
+  const handleDecline = () => onDecline();
+  const handleConfirm = () => onConfirm();
 
   return (
     <section className={`mx-4 my-3 rounded-2xl border p-3.5 ${TONE_CLS[tone]} relative`}>

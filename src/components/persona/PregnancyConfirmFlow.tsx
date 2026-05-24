@@ -34,7 +34,11 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [saving, setSaving] = useState(false);
 
-  if (!show || !user) return null;
+  // F#12 — stage='due-date' 는 show prop 과 무관하게 사용자가 명시적으로 저장/건너뛰기
+  // 할 때까지 보존. 그렇지 않으면 parent re-render 가 weddingSettings.pregnant=true 를
+  // 감지해 show=false 가 되며 due-date UI 가 입력 중에 unmount.
+  if (!user) return null;
+  if (!show && stage !== "due-date") return null;
 
   const handleConfirm = async () => {
     setSaving(true);
