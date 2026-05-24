@@ -447,6 +447,24 @@ export const handleVenueCompare = async (
 
   // 표 헤더 — 별점·후기·시작가·시군구.
   const tableHeader = "| 업체 | 별점 | 후기 | 시작가 | 위치 |\n|---|---:|---:|---:|---|";
+  // F#9 — 카테고리별 상세 라우트 매핑. 이전 구현은 dress_shop/hanbok/suit/honeymoon
+  // 등이 모두 /venue/ 로 떨어져 dead-end. App.tsx 라우트와 일치.
+  const detailRoute = (cat: string): string => {
+    switch (cat) {
+      case "wedding_hall": return "venue";
+      case "studio":       return "studio";
+      case "dress_shop":   return "studio";   // dress 는 studio 상세 페이지에서 처리
+      case "makeup_shop":  return "studio";   // makeup 도 마찬가지
+      case "hanbok":       return "hanbok";
+      case "tailor_shop":  return "suit";
+      case "honeymoon":    return "honeymoon";
+      case "jewelry":      return "jewelry";
+      case "appliance":    return "appliances";
+      case "invitation_venue": return "invitation-venue";
+      default:             return "venue";
+    }
+  };
+  const route = detailRoute(category);
   const rows = (data as any[]).map((p) => {
     const star = p.avg_rating != null ? p.avg_rating.toFixed(1) : "-";
     const reviews = p.review_count ?? 0;
@@ -454,7 +472,7 @@ export const handleVenueCompare = async (
     const loc = p.district ?? "-";
     const partner = p.is_partner ? " ⭐" : "";
     // 이름 컬럼에 링크 — 사용자가 표에서 바로 상세 페이지로 이동.
-    const link = `[${p.name}${partner}](/${category === "wedding_hall" ? "venue" : category === "studio" ? "studio" : "venue"}/${p.place_id})`;
+    const link = `[${p.name}${partner}](/${route}/${p.place_id})`;
     return `| ${link} | ${star} | ${reviews} | ${price} | ${loc} |`;
   });
 
