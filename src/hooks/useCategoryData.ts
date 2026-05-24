@@ -292,7 +292,18 @@ async function fetchCategoryItems(
     } else {
       query = query.ilike("city", `%${filters.region}%`);
     }
-  } else if (filters.venueCity && category !== "jewelry" && category !== "appliances") {
+  } else if (
+    filters.venueCity &&
+    category !== "jewelry" &&
+    category !== "appliances" &&
+    // F#6 — honeymoon 은 places.city 가 한국 시도가 아닌 destination("일본","동남아" 등).
+    // venue anchor city("서울특별시") 로 ILIKE 매칭 시 항상 0 results. Honeymoon.tsx 가
+    // 의도적으로 region=null 로 두는 이유와 일관.
+    category !== "honeymoon" &&
+    // invitation_venues 도 식장 부속 상견례 장소라 식장 city 매칭이 의미 있지만,
+    // 데이터 형태가 식장과 다를 수 있어 일단 제외 (분리 작업으로 검토).
+    category !== "invitation_venues"
+  ) {
     // 사용자가 명시 region 필터 없으면 venue anchor 의 city 로 자동 좁힘.
     // venue 가 없으면 전국 노출 (기존 동작). v2 §6: 사용자 명시 식장이 primary anchor.
     query = query.ilike("city", `%${filters.venueCity}%`);
