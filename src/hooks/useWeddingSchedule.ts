@@ -48,6 +48,15 @@ interface WeddingSettings {
   ceremony_type: CeremonyType | null;
   /** 자동 분류 페르소나. DB 트리거에서 계산, 클라이언트도 동일 로직(weddingPersona.derivePersonaMode)으로 폴백 가능. */
   persona_mode: WeddingPersonaMode | null;
+  // 결혼식장 anchor — 사용자가 명시 등록한 식장 위치. 큐레이션 기준점.
+  // place_id 가 있으면 DEWY 카탈로그 내 식장. NULL 이면 외부 식장(name/주소만 사용자 입력).
+  wedding_venue_place_id: string | null;
+  wedding_venue_name: string | null;
+  wedding_venue_address: string | null;
+  wedding_venue_city: string | null;
+  wedding_venue_district: string | null;
+  wedding_venue_lat: number | null;
+  wedding_venue_lng: number | null;
 }
 
 export const useWeddingSchedule = () => {
@@ -72,6 +81,13 @@ export const useWeddingSchedule = () => {
     has_parents_groom: true,
     ceremony_type: null,
     persona_mode: "standard_bride",
+    wedding_venue_place_id: null,
+    wedding_venue_name: null,
+    wedding_venue_address: null,
+    wedding_venue_city: null,
+    wedding_venue_district: null,
+    wedding_venue_lat: null,
+    wedding_venue_lng: null,
   });
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -92,7 +108,7 @@ export const useWeddingSchedule = () => {
         (supabase as any)
           .from("user_wedding_settings")
           .select(
-            "wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant, pregnancy_due_date, role, country, wedding_country, wedding_region_sigungu, has_parents_bride, has_parents_groom, ceremony_type, persona_mode"
+            "wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant, pregnancy_due_date, role, country, wedding_country, wedding_region_sigungu, has_parents_bride, has_parents_groom, ceremony_type, persona_mode, wedding_venue_place_id, wedding_venue_name, wedding_venue_address, wedding_venue_city, wedding_venue_district, wedding_venue_lat, wedding_venue_lng"
           )
           .eq("user_id", user.id)
           .maybeSingle(),
@@ -145,6 +161,13 @@ export const useWeddingSchedule = () => {
           has_parents_groom: s.has_parents_groom !== false,
           ceremony_type: (s.ceremony_type ?? null) as CeremonyType | null,
           persona_mode: (s.persona_mode ?? fallbackMode) as WeddingPersonaMode,
+          wedding_venue_place_id: s.wedding_venue_place_id ?? null,
+          wedding_venue_name: s.wedding_venue_name ?? null,
+          wedding_venue_address: s.wedding_venue_address ?? null,
+          wedding_venue_city: s.wedding_venue_city ?? null,
+          wedding_venue_district: s.wedding_venue_district ?? null,
+          wedding_venue_lat: s.wedding_venue_lat ?? null,
+          wedding_venue_lng: s.wedding_venue_lng ?? null,
         });
       }
 
@@ -224,6 +247,14 @@ export const useWeddingSchedule = () => {
       ceremony_type: CeremonyType | null;
       // 명시적 페르소나 override. DB 트리거가 보존하며, 로컬도 patch 에 들어오면 재계산을 건너뜀.
       persona_mode: WeddingPersonaMode | null;
+      // 결혼식장 anchor — "이 식장으로 정하기" CTA 에서 한 번에 전체 필드 patch.
+      wedding_venue_place_id: string | null;
+      wedding_venue_name: string | null;
+      wedding_venue_address: string | null;
+      wedding_venue_city: string | null;
+      wedding_venue_district: string | null;
+      wedding_venue_lat: number | null;
+      wedding_venue_lng: number | null;
     }>
   ) => {
     if (!user) {

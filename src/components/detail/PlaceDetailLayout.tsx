@@ -25,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { LegacyDetail } from "@/hooks/usePlaceDetail";
 import { usePlaceReviews, REVIEW_SOURCE_META, type PlaceReview } from "@/hooks/usePlaceReviews";
 import HiddenCostsCard from "@/components/detail/HiddenCostsCard";
+import SetAsWeddingVenueButton from "@/components/detail/SetAsWeddingVenueButton";
 
 const handleTagClick = (tag: string) => {
   // Tag-based filtering on the list pages isn't wired yet — the list hooks
@@ -263,6 +264,21 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
         <h2 className="text-xl font-bold text-foreground mb-1.5">{place.name}</h2>
         {place.description && (
           <p className="text-sm text-muted-foreground leading-relaxed">{place.description}</p>
+        )}
+        {/* 결혼식장 anchor 등록 CTA — wedding_hall 카테고리에만 표시.
+            식장 상세를 보던 흐름 그대로 1탭 등록(§1 L5 JIT). */}
+        {place.category === "wedding_hall" && (
+          <div className="mt-3">
+            <SetAsWeddingVenueButton
+              placeId={place.id}
+              placeName={place.name}
+              city={place.city ?? null}
+              district={place.district ?? null}
+              address={place.address ?? null}
+              lat={place.latitude ?? null}
+              lng={place.longitude ?? null}
+            />
+          </div>
         )}
         {place.tags && place.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">

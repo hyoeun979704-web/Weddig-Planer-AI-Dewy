@@ -6,6 +6,7 @@ import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import CategoryFilterBar from "@/components/CategoryFilterBar";
 import CategoryGrid from "@/components/CategoryGrid";
 import ExcludedCategoryBanner from "@/components/ExcludedCategoryBanner";
+import VenueAnchorBanner from "@/components/persona/VenueAnchorBanner";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
@@ -28,6 +29,7 @@ const Suit = () => {
       <main className="pb-20">
         <ExcludedCategoryBanner scheduleCategories="tailor_shop" />
         <CategoryHeroBanner category="suits" />
+        <VenueAnchorBanner />
         <CategoryFilterBar category="suits" />
         <div className="px-4 py-3">
           <h2 className="text-lg font-bold text-foreground">{hasActiveFilters() ? "검색 결과" : "인기 예복"}</h2>

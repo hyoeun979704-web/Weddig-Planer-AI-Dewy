@@ -44,6 +44,13 @@ export interface LegacyDetail {
   name: string;
   category: string;
   address: string;
+  /** 정규화 시도 (예: "서울특별시"). venue anchor / 큐레이션 매칭에 사용. */
+  city: string | null;
+  /** 정규화 시군구 (예: "강남구"). venue anchor 의 district. */
+  district: string | null;
+  /** 위·경도 — 근접 정렬·지도 표시용. NULL 가능. */
+  latitude: number | null;
+  longitude: number | null;
   thumbnail_url: string | null;
   rating: number;
   review_count: number;
@@ -408,6 +415,10 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         name: p.name,
         category: p.category,
         address,
+        city: (p.city as string | null) ?? null,
+        district: (p.district as string | null) ?? null,
+        latitude: (p.latitude as number | null) ?? null,
+        longitude: (p.longitude as number | null) ?? null,
         thumbnail_url: p.main_image_url ?? null,
         rating: p.avg_rating ?? 0,
         review_count: p.review_count ?? 0,

@@ -8,6 +8,7 @@ import ExcludedCategoryBanner from "@/components/ExcludedCategoryBanner";
 import VenueGrid from "@/components/VenueGrid";
 import FilterBar from "@/components/FilterBar";
 import VenueCrossLink from "@/components/VenueCrossLink";
+import LocationJITCard from "@/components/persona/LocationJITCard";
 import { Venue } from "@/hooks/useVenues";
 import { useFilterStore } from "@/stores/useFilterStore";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
@@ -39,6 +40,8 @@ const Venues = () => {
       <main className="pb-20">
         <ExcludedCategoryBanner scheduleCategories="wedding_hall" />
         <CategoryHeroBanner category="venues" />
+        {/* 위치 권한 JIT — 식장 미등록·지역 미설정 사용자에게만 노출. v2 §6. */}
+        <LocationJITCard />
         <VenueCrossLink variant="venues" />
         <FilterBar />
         {weddingStyle === "small" && (

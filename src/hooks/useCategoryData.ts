@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCategoryFilterStore, CategoryType } from "@/stores/useCategoryFilterStore";
+import { useWeddingVenue } from "@/hooks/useWeddingVenue";
 
 export interface CategoryItem {
   id: string;
@@ -239,6 +240,9 @@ interface FetchParams {
   filterOptions1?: string[];
   filterOptions2?: string[];
   filterOptions3?: string[];
+  /** 결혼식장 anchor — 같은 시·시군구 업체 우선 매칭. v2 §6 위치 전략. */
+  venueCity?: string | null;
+  venueDistrict?: string | null;
 }
 
 async function fetchCategoryItems(
@@ -288,6 +292,10 @@ async function fetchCategoryItems(
     } else {
       query = query.ilike("city", `%${filters.region}%`);
     }
+  } else if (filters.venueCity && category !== "jewelry" && category !== "appliances") {
+    // 사용자가 명시 region 필터 없으면 venue anchor 의 city 로 자동 좁힘.
+    // venue 가 없으면 전국 노출 (기존 동작). v2 §6: 사용자 명시 식장이 primary anchor.
+    query = query.ilike("city", `%${filters.venueCity}%`);
   }
   if (filters.minRating) {
     query = query.gte("avg_rating", filters.minRating);
@@ -316,13 +324,27 @@ export function useCategoryData(category: CategoryType) {
   const filterOptions1 = useCategoryFilterStore((state) => state.filterOptions1);
   const filterOptions2 = useCategoryFilterStore((state) => state.filterOptions2);
   const filterOptions3 = useCategoryFilterStore((state) => state.filterOptions3);
+  // 결혼식장 anchor — 명시 region 필터가 없으면 자동 큐레이션 기준점.
+  // jewelry/appliances 는 위치보단 카테고리 의미가 강해 venue 매칭 안 함.
+  const venue = useWeddingVenue();
 
   return useInfiniteQuery({
-    queryKey: [category, region, minRating, filterOptions1, filterOptions2, filterOptions3],
+    queryKey: [
+      category, region, minRating, filterOptions1, filterOptions2, filterOptions3,
+      venue.city, venue.district,
+    ],
     queryFn: ({ pageParam = 0 }) =>
       fetchCategoryItems(
         category,
-        { region, minRating, filterOptions1, filterOptions2, filterOptions3 },
+        {
+          region,
+          minRating,
+          filterOptions1,
+          filterOptions2,
+          filterOptions3,
+          venueCity: venue.city,
+          venueDistrict: venue.district,
+        },
         pageParam
       ),
     getNextPageParam: (lastPage) => lastPage.nextPage,
