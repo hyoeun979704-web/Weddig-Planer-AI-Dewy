@@ -10,10 +10,10 @@
 
 import { useState } from "react";
 import { Settings2, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { resetSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
+import { setSensitivePreference, type SensitiveConsentType } from "@/lib/sensitiveConsent";
 import { toast } from "sonner";
 
 type Saving = "none" | "pregnant" | "marital" | "parents-bride" | "parents-groom";
@@ -26,17 +26,27 @@ export default function SensitivePreferencesCard() {
 
   if (!user) return null;
 
+  // 통합 sensitive 토글 — setSensitivePreference 가 다음을 보장:
+  //   ① upsert(onConflict=user_id) — user_wedding_settings 행 없어도 신규 생성 (F#3)
+  //   ② Supabase {error} 명시 throw — await 만으로 안 throw 되던 회귀(F#2) 회피
+  //   ③ user_consents 동의 기록 함께 INSERT — PIPA 의무, 모든 진입 경로 일관(F#5)
+  // 페이지 리로드는 toast 가 보이도록 setTimeout 1.2s 지연 (F#13).
   const updateField = async (
     field: "pregnant" | "marital_history" | "has_parents_bride" | "has_parents_groom",
     value: boolean | "first" | "remarriage" | null,
-    label: Saving
+    consentType: SensitiveConsentType,
+    agreedForConsent: boolean,
+    label: Saving,
   ) => {
     setSaving(label);
     try {
-      await (supabase as any)
-        .from("user_wedding_settings")
-        .update({ [field]: value })
-        .eq("user_id", user.id);
+      await setSensitivePreference({
+        userId: user.id,
+        field,
+        value,
+        consentType,
+        agreedForConsent,
+      });
       // OFF 전환 시 관련 행동 신호도 함께 폐기 — 사용자가 명시적으로 잊고 싶다는 의미.
       if (field === "pregnant" && value === false) {
         resetSignal(SIGNAL_KEYS.pregnancyInterest);
@@ -45,8 +55,8 @@ export default function SensitivePreferencesCard() {
         resetSignal(SIGNAL_KEYS.remarriageInterest);
       }
       toast.success("설정이 저장됐어요");
-      // 즉시 반영 위해 페이지 리로드 — useWeddingSchedule 재조회. 가벼운 패턴.
-      window.location.reload();
+      // 토스트가 사용자에게 보이도록 1.2초 후 리로드 — 이전에는 같은 turn 에 reload 해 토스트가 destroy 됨(F#13).
+      setTimeout(() => window.location.reload(), 1200);
     } catch (e) {
       console.error("sensitive pref update failed", e);
       toast.error("저장에 실패했어요. 다시 시도해주세요.");
@@ -55,18 +65,47 @@ export default function SensitivePreferencesCard() {
     }
   };
 
-  const togglePregnant = () =>
-    updateField("pregnant", !weddingSettings.pregnant, "pregnant");
-  const toggleRemarriage = () =>
+  const togglePregnant = () => {
+    const next = !weddingSettings.pregnant;
+    updateField("pregnant", next, "sensitive_health_pregnancy_v1", next, "pregnant");
+  };
+  // 3-state 의 NULL 도 도달 가능하도록 사이클: NULL → 'remarriage' → 'first' → NULL.
+  // F#E4 — 한 번 'first' 가 박히면 NULL 로 못 돌아가던 회귀 회피. 사용자가 다시
+  // "선택 안 함" 상태로 되돌아갈 수 있도록 3-step cycle.
+  const toggleRemarriage = () => {
+    const cur = weddingSettings.marital_history;
+    const next: "first" | "remarriage" | null =
+      cur === null ? "remarriage" : cur === "remarriage" ? "first" : null;
+    // remarriage 일 때만 agreed=true 동의. 그 외(first/null)는 OFF 로 간주.
     updateField(
       "marital_history",
-      weddingSettings.marital_history === "remarriage" ? "first" : "remarriage",
-      "marital"
+      next,
+      "sensitive_family_remarriage_v1",
+      next === "remarriage",
+      "marital",
     );
-  const toggleParentsBride = () =>
-    updateField("has_parents_bride", !weddingSettings.has_parents_bride, "parents-bride");
-  const toggleParentsGroom = () =>
-    updateField("has_parents_groom", !weddingSettings.has_parents_groom, "parents-groom");
+  };
+  const toggleParentsBride = () => {
+    const next = !weddingSettings.has_parents_bride;
+    // has_parents=false (부모 부재) 가 민감 신호. true 로 돌아가면 OFF.
+    updateField(
+      "has_parents_bride",
+      next,
+      "sensitive_family_no_parents_v1",
+      !next,
+      "parents-bride",
+    );
+  };
+  const toggleParentsGroom = () => {
+    const next = !weddingSettings.has_parents_groom;
+    updateField(
+      "has_parents_groom",
+      next,
+      "sensitive_family_no_parents_v1",
+      !next,
+      "parents-groom",
+    );
+  };
 
   const activeCount =
     (weddingSettings.pregnant ? 1 : 0) +

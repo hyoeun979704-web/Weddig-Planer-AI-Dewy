@@ -417,8 +417,10 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         address,
         city: (p.city as string | null) ?? null,
         district: (p.district as string | null) ?? null,
-        latitude: (p.latitude as number | null) ?? null,
-        longitude: (p.longitude as number | null) ?? null,
+        // places 테이블 컬럼은 lat / lng (not latitude/longitude). 오타로 항상 null
+        // 저장되던 회귀(F#1) 수정 — venue anchor 의 distance 큐레이션이 활성화됨.
+        latitude: (p.lat as number | null) ?? null,
+        longitude: (p.lng as number | null) ?? null,
         thumbnail_url: p.main_image_url ?? null,
         rating: p.avg_rating ?? 0,
         review_count: p.review_count ?? 0,
