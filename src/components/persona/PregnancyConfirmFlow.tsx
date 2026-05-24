@@ -39,9 +39,8 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
   const handleConfirm = async () => {
     setSaving(true);
     try {
-      // upsert + 동의 기록 atomic. 행 없는 사용자도 OK (F#3·F#4).
+      // RPC 가 column + consent 를 atomic 처리. 행 없는 사용자도 OK.
       await setSensitivePreference({
-        userId: user.id,
         field: "pregnant",
         value: true,
         consentType: "sensitive_health_pregnancy_v1",
@@ -67,13 +66,14 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
     if (!dueDate) return;
     setSaving(true);
     try {
-      // pregnancy_due_date 만 추가 저장 (pregnant 는 이미 true). upsert 동일 패턴.
+      // pregnancy_due_date 만 추가 저장 (pregnant 는 이미 true).
+      // F#6 — recordConsent=false 로 중복 consent 행 방지 (handleConfirm 에서 이미 기록함).
       await setSensitivePreference({
-        userId: user.id,
-        field: "pregnant",          // 같은 컬럼 재기입은 무해, 트리거가 idempotent
+        field: "pregnant",
         value: true,
         consentType: "sensitive_health_pregnancy_v1",
         agreedForConsent: true,
+        recordConsent: false,
         extraPatch: { pregnancy_due_date: format(dueDate, "yyyy-MM-dd") },
       });
       toast.success("본식 시점 차수에 맞춰 일정·드레스·신혼여행을 정리해드릴게요");

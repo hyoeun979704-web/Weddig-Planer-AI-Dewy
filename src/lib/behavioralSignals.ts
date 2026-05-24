@@ -97,7 +97,10 @@ export function shouldPromptConfirm(
   if (s.confirmedAt != null) return false;
   if (s.count < options.threshold) return false;
   if (s.dismissedAt != null && Date.now() - s.dismissedAt < COOLDOWN_MS) return false;
-  if (options.minAccountAgeDays && options.accountCreatedAt) {
+  // F#2 — minAccountAgeDays 가 설정됐는데 accountCreatedAt 을 못 알아내면(NaN/null)
+  // 가드 우회 대신 거부. "정보 없음 → 안 보임" 이 v2 §5.6 보수 기본값.
+  if (options.minAccountAgeDays) {
+    if (options.accountCreatedAt == null) return false;
     const ageMs = Date.now() - options.accountCreatedAt;
     if (ageMs < options.minAccountAgeDays * 24 * 60 * 60 * 1000) return false;
   }

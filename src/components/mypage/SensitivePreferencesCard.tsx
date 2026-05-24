@@ -37,15 +37,18 @@ export default function SensitivePreferencesCard() {
     consentType: SensitiveConsentType,
     agreedForConsent: boolean,
     label: Saving,
+    // F#11 — 실제 consent 상태 변화가 없는 토글에선 consent INSERT 생략.
+    // 예: marital_history first → null 은 "이미 non-remarriage" 였으므로 추가 revoke 행 불필요.
+    recordConsent: boolean = true,
   ) => {
     setSaving(label);
     try {
       await setSensitivePreference({
-        userId: user.id,
         field,
         value,
         consentType,
         agreedForConsent,
+        recordConsent,
       });
       // OFF 전환 시 관련 행동 신호도 함께 폐기 — 사용자가 명시적으로 잊고 싶다는 의미.
       if (field === "pregnant" && value === false) {
@@ -69,29 +72,34 @@ export default function SensitivePreferencesCard() {
     const next = !weddingSettings.pregnant;
     updateField("pregnant", next, "sensitive_health_pregnancy_v1", next, "pregnant");
   };
-  // 3-state 의 NULL 도 도달 가능하도록 사이클: NULL → 'remarriage' → 'first' → NULL.
-  // F#E4 — 한 번 'first' 가 박히면 NULL 로 못 돌아가던 회귀 회피. 사용자가 다시
-  // "선택 안 함" 상태로 되돌아갈 수 있도록 3-step cycle.
+  // 3-state cycle (NULL → 'remarriage' → 'first' → NULL). 사용자가 "선택 안 함" 까지
+  // 되돌아갈 수 있게 함. F#11 — consent 기록은 remarriage boolean 상태가 실제로
+  // 바뀔 때만(NULL→remarriage / remarriage→first 두 케이스). first→NULL 은 이미
+  // non-remarriage 상태였으므로 추가 revoke 행 생성하지 않음.
   const toggleRemarriage = () => {
     const cur = weddingSettings.marital_history;
     const next: "first" | "remarriage" | null =
       cur === null ? "remarriage" : cur === "remarriage" ? "first" : null;
-    // remarriage 일 때만 agreed=true 동의. 그 외(first/null)는 OFF 로 간주.
+    const wasRemarriage = cur === "remarriage";
+    const isRemarriage = next === "remarriage";
+    const consentStateChanged = wasRemarriage !== isRemarriage;
     updateField(
       "marital_history",
       next,
       "sensitive_family_remarriage_v1",
-      next === "remarriage",
+      isRemarriage,
       "marital",
+      consentStateChanged,
     );
   };
+  // F#10 — bride/groom 분리 consent_type. 한 type 으로 두 컬럼 토글하면 audit 가
+  // 어느 쪽 변경인지 구별 못함. 별도 enum 사용.
   const toggleParentsBride = () => {
     const next = !weddingSettings.has_parents_bride;
-    // has_parents=false (부모 부재) 가 민감 신호. true 로 돌아가면 OFF.
     updateField(
       "has_parents_bride",
       next,
-      "sensitive_family_no_parents_v1",
+      "sensitive_family_no_parents_bride_v1",
       !next,
       "parents-bride",
     );
@@ -101,7 +109,7 @@ export default function SensitivePreferencesCard() {
     updateField(
       "has_parents_groom",
       next,
-      "sensitive_family_no_parents_v1",
+      "sensitive_family_no_parents_groom_v1",
       !next,
       "parents-groom",
     );
