@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { useFilterStore } from "@/stores/useFilterStore";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 // value uses substring that matches both legacy and current city naming
 // (e.g. "충청북" matches both "충청북도" and any abbreviated form). The
@@ -56,6 +57,9 @@ const PRICE_MAX = 200000;
 const PRICE_STEP = 10000;
 
 const GUARANTEE_MIN = 50;
+// Round 10 — 스몰 페르소나(P11 진짜 스몰 40~80명, P12 야외, P14 1천만원대) 가 50명 미만
+// 옵션을 보려면 floor 가 더 낮아야 함. wedding_style='small' 또는 small_* persona 면 20.
+const GUARANTEE_MIN_SMALL = 20;
 const GUARANTEE_MAX = 300;
 const GUARANTEE_STEP = 10;
 
@@ -207,6 +211,14 @@ const FilterBar = () => {
     hasActiveFilters,
   } = useFilterStore();
 
+  // Round 10 — 스몰 페르소나 floor 분기. wedding_style='small' 또는 persona_mode 가
+  // small_* 면 20명 floor 로 낮춰 진짜 스몰 식장 후보가 노출되도록.
+  const { weddingSettings } = useWeddingSchedule();
+  const isSmallPersona =
+    weddingSettings.wedding_style === "small" ||
+    (weddingSettings.persona_mode != null && weddingSettings.persona_mode.startsWith("small_"));
+  const guaranteeMin = isSmallPersona ? GUARANTEE_MIN_SMALL : GUARANTEE_MIN;
+
   // F#11 — sigungu/minGuarantee 가 store 에서 적용되어도 chip 카운트에 빠지면
   // 사용자가 어떤 필터가 켜졌는지 모르고 reset 외엔 해제 못 함.
   const activeFiltersCount = [
@@ -341,7 +353,7 @@ const FilterBar = () => {
                 </h3>
                 <div className="px-2">
                   <div className="flex justify-between text-sm text-muted-foreground mb-3">
-                    <span>{GUARANTEE_MIN}명</span>
+                    <span>{guaranteeMin}명</span>
                     <span className="font-semibold text-foreground">
                       {maxGuarantee ? `${maxGuarantee}명 이하` : "전체"}
                     </span>
@@ -350,7 +362,7 @@ const FilterBar = () => {
                   <Slider
                     value={[maxGuarantee || GUARANTEE_MAX]}
                     onValueChange={(value) => setMaxGuarantee(value[0] === GUARANTEE_MAX ? null : value[0])}
-                    min={GUARANTEE_MIN}
+                    min={guaranteeMin}
                     max={GUARANTEE_MAX}
                     step={GUARANTEE_STEP}
                     className="w-full"
@@ -515,13 +527,13 @@ const FilterBar = () => {
             <Slider
               value={[maxGuarantee || GUARANTEE_MAX]}
               onValueChange={(value) => setMaxGuarantee(value[0] === GUARANTEE_MAX ? null : value[0])}
-              min={GUARANTEE_MIN}
+              min={guaranteeMin}
               max={GUARANTEE_MAX}
               step={GUARANTEE_STEP}
               className="w-full"
             />
             <div className="flex justify-between text-xs text-muted-foreground mt-2">
-              <span>{GUARANTEE_MIN}명</span>
+              <span>{guaranteeMin}명</span>
               <span>{GUARANTEE_MAX}명</span>
             </div>
           </div>

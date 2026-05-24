@@ -43,8 +43,10 @@ const backfillMarketingConsent = async (user: User) => {
   if (typeof consent !== "boolean") return;
 
   try {
+    // Round 10 — canonical view 로 reads 통일. (marketing_v1 은 backfill 대상 아니라
+    // 동일 결과지만 reader 규약 일관성.)
     const { data, error } = await (supabase as any)
-      .from("user_consents")
+      .from("user_consents_canonical")
       .select("id")
       .eq("user_id", user.id)
       .eq("consent_type", MARKETING_CONSENT_TYPE)

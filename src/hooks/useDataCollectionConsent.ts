@@ -29,8 +29,10 @@ export function useDataCollectionConsent() {
       setState(null);
       return;
     }
+    // Round 10 — canonical view 로 reads 통일. backfill synthesized + 레거시 분리
+    // 전 type 제외. data_collection_v1 자체는 backfill 대상 아니지만 reader 규약 일관성.
     const { data } = await (supabase as any)
-      .from("user_consents")
+      .from("user_consents_canonical")
       .select("agreed, consent_version")
       .eq("user_id", user.id)
       .eq("consent_type", DATA_COLLECTION_CONSENT_TYPE)

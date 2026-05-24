@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import SurveyModal from "./SurveyModal";
 import { REGIONS, BUDGET_OPTIONS_VENUE, WEDDING_STYLES } from "./constants";
 import { useWeddingFormContext } from "@/hooks/useWeddingFormContext";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import type { CeremonyType } from "@/lib/weddingPersona";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,8 +16,19 @@ interface Props {
   onSubmit: (data: any) => void;
 }
 
+// Round 10 — ceremony_type → WEDDING_STYLES 칩 매핑. picker fatigue 완화.
+// ceremony_type 이 명시돼있으면 그 의도와 일치하는 venue style 을 prefill 한다.
+const CEREMONY_TYPE_TO_STYLES: Partial<Record<CeremonyType, string[]>> = {
+  hotel: ["호텔 웨딩"],
+  small_real: ["스몰웨딩 (50인 이하)"],
+  restaurant: ["스몰웨딩 (50인 이하)"],
+  outdoor: ["야외 가든"],
+  public_facility: ["스몰웨딩 (50인 이하)"],
+};
+
 const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const { defaultWeddingDate, defaultRegion, defaultGuests } = useWeddingFormContext();
+  const { weddingSettings } = useWeddingSchedule();
   const [date, setDate] = useState<Date>();
   const [region, setRegion] = useState("");
   const [guests, setGuests] = useState("");
@@ -26,13 +39,18 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const [special, setSpecial] = useState("");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
-  // 저장된 결혼일·지역·하객 수로 prefill (BudgetSurvey 동일 패턴).
+  // 저장된 결혼일·지역·하객 수 + ceremony_type 으로 prefill (BudgetSurvey 동일 패턴).
   useEffect(() => {
     if (!isOpen) return;
     if (defaultWeddingDate) setDate(defaultWeddingDate);
     setRegion(defaultRegion ?? "");
     setGuests(defaultGuests ?? "");
-  }, [isOpen, defaultWeddingDate, defaultRegion, defaultGuests]);
+    // 사용자가 styles 를 이미 본 modal session 에서 바꿨다면 덮어쓰지 않음 — open 시점에만.
+    const prefilledStyles = weddingSettings.ceremony_type
+      ? CEREMONY_TYPE_TO_STYLES[weddingSettings.ceremony_type] ?? []
+      : [];
+    if (prefilledStyles.length > 0) setStyles(prefilledStyles);
+  }, [isOpen, defaultWeddingDate, defaultRegion, defaultGuests, weddingSettings.ceremony_type]);
 
   const toggleStyle = (s: string) => setStyles(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 

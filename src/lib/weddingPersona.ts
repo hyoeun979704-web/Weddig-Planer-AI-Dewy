@@ -76,7 +76,10 @@ export function derivePersonaMode(s: PersonaInputs): WeddingPersonaMode {
   const noParents = !s.has_parents_bride && !s.has_parents_groom;
   const isRegional = !!s.wedding_region && !METRO_REGIONS.has(s.wedding_region);
 
-  if (isInternational) return "international";
+  // Round 10 — ceremony_type='dual_ceremony' 도 international 로 매핑. wedding_country
+  // 를 KR 로 두고 ceremony_type 만 dual 로 고른 사용자(예: 식은 한국에서, 또는 한국식
+  // 시뮬레이션 + 추후 해외식) 도 영문 자료·이중 일정 가이드가 필요. 두 조건 OR.
+  if (isInternational || s.ceremony_type === "dual_ceremony") return "international";
   if (s.pregnant) return "pregnancy";
   if (s.marital_history === "remarriage") return "remarriage";
 
