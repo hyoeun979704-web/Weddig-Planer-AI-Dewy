@@ -97,25 +97,29 @@ const FILTER_COLUMN_MAP: Record<
   CategoryType,
   { f1?: FilterCol; f2?: FilterCol; f3?: FilterCol }
 > = {
+  // Round 12 self-review fix — 단일 boolean 슬롯도 boolean_cols 로 통일.
+  // 'boolean' type 은 col 이 고정이라 슬롯에 옵션 1개 이상 추가되면 silent wrong
+  // (모든 칩이 같은 컬럼=true 만 보냄). boolean_cols 는 allowlist 안의 어떤 컬럼이든
+  // UI value(=컬럼명) 로 분기. 슬롯이 단일이어도 미래 옵션 확장 시 안전.
   venues: {
     f1: { col: "hall_styles", type: "array" },
     f2: { col: "meal_types", type: "array" },
-    f3: { col: "outdoor_available", type: "boolean" },
+    f3: { type: "boolean_cols", allowed: ["outdoor_available"] },
   },
   studios: {
     f1: { col: "package_types", type: "array" },
     f2: { col: "shoot_styles", type: "array" },
-    f3: { col: "video_included", type: "boolean" },
+    f3: { type: "boolean_cols", allowed: ["video_included"] },
   },
   dress_shops: { f1: { col: "dress_styles", type: "array" } },
   makeup_shops: { f1: { col: "makeup_styles", type: "array" } },
   hanbok: {
     f1: { col: "hanbok_types", type: "array" },
-    f2: { col: "custom_available", type: "boolean" },
+    f2: { type: "boolean_cols", allowed: ["custom_available"] },
   },
   suits: {
     f1: { col: "suit_styles", type: "array" },
-    f2: { col: "custom_available", type: "boolean" },
+    f2: { type: "boolean_cols", allowed: ["custom_available"] },
   },
   honeymoon: {
     f1: { col: "themes", type: "array" },
