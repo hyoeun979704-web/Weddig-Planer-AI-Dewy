@@ -61,9 +61,10 @@ interface DressSample {
   pregnancy_supported: "none" | "light" | "full" | null;
 }
 
-type Step = "intro" | "photo" | "dress" | "scene" | "tone" | "review";
+// "tone" 단계는 scene 안에 통합되어 별도 단계 아님.
+type Step = "intro" | "photo" | "dress" | "scene" | "review";
 
-const STEP_ORDER: Step[] = ["intro", "photo", "dress", "scene", "tone", "review"];
+const STEP_ORDER: Step[] = ["intro", "photo", "dress", "scene", "review"];
 
 const DressFitting = () => {
   const navigate = useNavigate();
@@ -208,9 +209,11 @@ const DressFitting = () => {
     setStep("scene");
   };
 
+  // scene/tone 통합: 같은 화면에서 type 토글 → tone 선택까지. 단계 분기 제거로
+  // 피로 한 단계 줄임. (5단계 → 4단계 효과)
   const handlePickSceneType = (t: SceneType) => {
     setSelectedSceneType(t);
-    setStep("tone");
+    // step 전환 없음 — 같은 scene 단계에서 tone 그리드가 같이 보임.
   };
 
   const handlePickTone = (code: SceneCode) => {
@@ -276,15 +279,13 @@ const DressFitting = () => {
     photo: 1,
     dress: 2,
     scene: 3,
-    tone: 4,
-    review: 5,
+    review: 4,
   };
   const stepLabel: Record<Step, string> = {
     intro: "시작",
     photo: "사진 업로드",
     dress: "드레스 선택",
-    scene: "촬영 컷 선택",
-    tone: "배경 선택",
+    scene: "컷·배경 선택",
     review: "확인",
   };
 
@@ -358,10 +359,12 @@ const DressFitting = () => {
           />
         )}
 
-        {step === "scene" && <SceneStep onPick={handlePickSceneType} />}
-
-        {step === "tone" && selectedSceneType && (
-          <ToneStep sceneType={selectedSceneType} onPick={handlePickTone} />
+        {step === "scene" && (
+          <SceneToneStep
+            sceneType={selectedSceneType}
+            onPickType={handlePickSceneType}
+            onPickTone={handlePickTone}
+          />
         )}
 
         {step === "review" && (
@@ -687,62 +690,72 @@ const DressStep = ({
 };
 
 // ════════════════════════════════════════════════
-// Step 3: SCENE TYPE (본식 / 웨딩촬영)
+// Step 3: SCENE TYPE + TONE — 한 화면에서 type 토글 + tone 선택까지 끝냄.
+// 기존 5단계 (scene 별도, tone 별도) 를 4단계로 줄여 피로 감소.
+// type 미선택 상태에서는 type 카드 2개만 보이고, type 누르면 그 type 의 tone 옵션이 같은 화면 하단에 펼쳐짐.
 // ════════════════════════════════════════════════
-const SceneStep = ({ onPick }: { onPick: (t: SceneType) => void }) => (
-  <section className="space-y-3">
-    <h2 className="text-lg font-bold text-foreground">어떤 컷이 좋으세요?</h2>
-    <div className="grid grid-cols-1 gap-3">
-      {(["CEREMONY", "STUDIO"] as SceneType[]).map((t) => (
-        <button
-          key={t}
-          type="button"
-          onClick={() => onPick(t)}
-          className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.98] transition-transform"
-        >
-          <p className="text-base font-bold text-foreground mb-1">
-            {SCENE_TYPE_LABEL[t]}
-          </p>
-          <p className="text-[12px] text-muted-foreground">
-            {SCENE_TYPE_DESC[t]}
-          </p>
-        </button>
-      ))}
-    </div>
-  </section>
-);
-
-// ════════════════════════════════════════════════
-// Step 4: TONE
-// ════════════════════════════════════════════════
-const ToneStep = ({
+const SceneToneStep = ({
   sceneType,
-  onPick,
+  onPickType,
+  onPickTone,
 }: {
-  sceneType: SceneType;
-  onPick: (code: SceneCode) => void;
+  sceneType: SceneType | null;
+  onPickType: (t: SceneType) => void;
+  onPickTone: (code: SceneCode) => void;
 }) => {
-  const list = SCENES_BY_TYPE[sceneType];
+  const toneList = sceneType ? SCENES_BY_TYPE[sceneType] : [];
   return (
-    <section className="space-y-3">
-      <h2 className="text-lg font-bold text-foreground">
-        {SCENE_TYPE_LABEL[sceneType]} · 배경 분위기
-      </h2>
-      <div className="grid grid-cols-1 gap-3">
-        {list.map((s) => (
-          <button
-            key={s.code}
-            type="button"
-            onClick={() => onPick(s.code)}
-            className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.98] transition-transform"
-          >
-            <p className="text-base font-bold text-foreground mb-1">
-              {s.shortLabel}
-            </p>
-            <p className="text-[12px] text-muted-foreground">{s.description}</p>
-          </button>
-        ))}
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-2">어떤 컷이 좋으세요?</h2>
+        <div className="grid grid-cols-2 gap-2">
+          {(["CEREMONY", "STUDIO"] as SceneType[]).map((t) => {
+            const active = sceneType === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => onPickType(t)}
+                className={`rounded-2xl border p-3 text-left active:scale-[0.98] transition-all ${
+                  active
+                    ? "bg-primary/10 border-primary"
+                    : "bg-card border-border hover:border-primary/30"
+                }`}
+              >
+                <p className={`text-sm font-bold mb-0.5 ${active ? "text-primary" : "text-foreground"}`}>
+                  {SCENE_TYPE_LABEL[t]}
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  {SCENE_TYPE_DESC[t]}
+                </p>
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {sceneType && (
+        <div className="animate-fade-in">
+          <h3 className="text-sm font-bold text-foreground mb-2">
+            배경 분위기 골라주세요
+          </h3>
+          <div className="grid grid-cols-1 gap-2">
+            {toneList.map((s) => (
+              <button
+                key={s.code}
+                type="button"
+                onClick={() => onPickTone(s.code)}
+                className="bg-card rounded-xl border border-border p-3 text-left active:scale-[0.98] transition-transform"
+              >
+                <p className="text-sm font-bold text-foreground mb-0.5">
+                  {s.shortLabel}
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-snug">{s.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 };

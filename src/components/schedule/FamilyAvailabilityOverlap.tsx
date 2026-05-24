@@ -2,13 +2,18 @@
 // 신부측·신랑측 가용 일자를 각각 입력받아 교집합을 시각화한다.
 // localStorage 로컬 저장 — 본격 서버 동기화는 family_invites 와 연결 시 별도 작업.
 //
+// 피로도 줄이기:
+//   - 캘린더 멀티 선택 (한 picker 에서 여러 날 클릭)
+//   - "다음 4주 토요일 자동 추가" 빠른 시드 버튼
+//   - 픽커가 닫혀도 추가 일자가 칩으로 즉시 반영
+//
 // MVP 동작:
-//   1. 사용자가 신부측 가용일·신랑측 가용일을 칩으로 추가
+//   1. 사용자가 신부측 가용일·신랑측 가용일을 칩으로 추가 (멀티/원클릭 시드)
 //   2. 교집합 일자를 하단에 굵게 표시(식장 투어·상견례 후보일)
 //   3. 양가 부재 페르소나(P10)에선 신랑측만 / 신부측만 입력 가능
 
 import { useState, useEffect } from "react";
-import { Calendar as CalIcon, Plus, X, Sparkles } from "lucide-react";
+import { Calendar as CalIcon, Plus, X, Sparkles, Zap } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -51,10 +56,27 @@ const toKey = (d: Date): string => {
   return `${y}-${m}-${day}`;
 };
 
-const formatChip = (s: string): string => {
-  const [y, m, d] = s.split("-").map(Number);
-  return format(new Date(y, m - 1, d), "M.d (E)", { locale: ko });
+const fromKey = (k: string): Date => {
+  const [y, m, d] = k.split("-").map(Number);
+  return new Date(y, m - 1, d);
 };
+
+const formatChip = (s: string): string => {
+  return format(fromKey(s), "M.d (E)", { locale: ko });
+};
+
+// 빠른 시드 — 오늘 기준 N주간 매주 토/일 자동 생성. 가장 자주 쓰는 케이스를 1클릭.
+function nextNWeekendDates(weeks: number = 4): string[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const out: string[] = [];
+  for (let i = 0; i < weeks * 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    if (d.getDay() === 0 || d.getDay() === 6) out.push(toKey(d));
+  }
+  return out;
+}
 
 export default function FamilyAvailabilityOverlap() {
   const { weddingSettings } = useWeddingSchedule();
@@ -66,19 +88,27 @@ export default function FamilyAvailabilityOverlap() {
 
   useEffect(() => save(state), [state]);
 
-  const addDate = (side: "bride" | "groom", date: Date | undefined) => {
-    if (!date) return;
-    const key = toKey(date);
-    setState((s) => {
-      const cur = s[side];
-      if (cur.includes(key)) return s;
-      return { ...s, [side]: [...cur, key].sort() };
-    });
-    setPickerSide(null);
+  // 멀티 선택 모드 캘린더 — 사용자가 같은 picker 안에서 여러 일자를 토글로 추가/제거.
+  // picker 닫을 필요 없이 한 번에 여러 일을 시드.
+  const handleMultiSelect = (side: "bride" | "groom", days: Date[] | undefined) => {
+    const keys = (days ?? []).map(toKey);
+    setState((s) => ({ ...s, [side]: keys.sort() }));
   };
 
   const removeDate = (side: "bride" | "groom", key: string) => {
     setState((s) => ({ ...s, [side]: s[side].filter((k) => k !== key) }));
+  };
+
+  const quickAddWeekends = (side: "bride" | "groom") => {
+    const seeds = nextNWeekendDates(4);
+    setState((s) => {
+      const merged = Array.from(new Set([...s[side], ...seeds])).sort();
+      return { ...s, [side]: merged };
+    });
+  };
+
+  const clearSide = (side: "bride" | "groom") => {
+    setState((s) => ({ ...s, [side]: [] }));
   };
 
   const overlap = state.bride.filter((b) => state.groom.includes(b));
@@ -105,11 +135,12 @@ export default function FamilyAvailabilityOverlap() {
             label="신부측 가능"
             tone="bg-pink-50 border-pink-200 text-pink-900"
             dates={state.bride}
-            onAdd={() => setPickerSide("bride")}
             onRemove={(k) => removeDate("bride", k)}
             pickerOpen={pickerSide === "bride"}
-            onPick={(d) => addDate("bride", d)}
+            onSelectMulti={(d) => handleMultiSelect("bride", d)}
             onPickerOpenChange={(open) => setPickerSide(open ? "bride" : null)}
+            onQuickAddWeekends={() => quickAddWeekends("bride")}
+            onClearAll={() => clearSide("bride")}
           />
         )}
         {hasParentsGroom && (
@@ -118,11 +149,12 @@ export default function FamilyAvailabilityOverlap() {
             label="신랑측 가능"
             tone="bg-sky-50 border-sky-200 text-sky-900"
             dates={state.groom}
-            onAdd={() => setPickerSide("groom")}
             onRemove={(k) => removeDate("groom", k)}
             pickerOpen={pickerSide === "groom"}
-            onPick={(d) => addDate("groom", d)}
+            onSelectMulti={(d) => handleMultiSelect("groom", d)}
             onPickerOpenChange={(open) => setPickerSide(open ? "groom" : null)}
+            onQuickAddWeekends={() => quickAddWeekends("groom")}
+            onClearAll={() => clearSide("groom")}
           />
         )}
       </div>
@@ -167,46 +199,84 @@ interface SideColumnProps {
   label: string;
   tone: string;
   dates: string[];
-  onAdd: () => void;
   onRemove: (key: string) => void;
   pickerOpen: boolean;
-  onPick: (date: Date | undefined) => void;
+  onSelectMulti: (dates: Date[] | undefined) => void;
   onPickerOpenChange: (open: boolean) => void;
+  onQuickAddWeekends: () => void;
+  onClearAll: () => void;
 }
 
-function SideColumn({ label, tone, dates, onRemove, pickerOpen, onPick, onPickerOpenChange }: SideColumnProps) {
+function SideColumn({ label, tone, dates, onRemove, pickerOpen, onSelectMulti, onPickerOpenChange, onQuickAddWeekends, onClearAll }: SideColumnProps) {
+  const selected = dates.map(fromKey);
   return (
     <div className={`rounded-xl border p-2.5 ${tone}`}>
-      <p className="text-[11px] font-bold mb-1.5">{label}</p>
-      <div className="flex flex-wrap gap-1 mb-1.5">
-        {dates.map((k) => (
-          <span key={k} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-white/70 rounded-full text-[10px] font-medium">
-            {formatChip(k)}
-            <button
-              type="button"
-              onClick={() => onRemove(k)}
-              className="ml-0.5 opacity-60 hover:opacity-100"
-              aria-label="제거"
-            >
-              <X className="w-2.5 h-2.5" />
-            </button>
-          </span>
-        ))}
-      </div>
-      <Popover open={pickerOpen} onOpenChange={onPickerOpenChange}>
-        <PopoverTrigger asChild>
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-[11px] font-bold">{label}</p>
+        {dates.length > 0 && (
           <button
             type="button"
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/80 border border-current/20 text-[11px] font-semibold"
+            onClick={onClearAll}
+            className="text-[10px] opacity-60 hover:opacity-100"
           >
-            <Plus className="w-3 h-3" />
-            일자 추가
+            전체 지우기
           </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar mode="single" onSelect={onPick} className="p-3 pointer-events-auto" />
-        </PopoverContent>
-      </Popover>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1 mb-1.5 min-h-[20px]">
+        {dates.length === 0 ? (
+          <span className="text-[10px] opacity-50">아직 없어요 — 아래 버튼으로 추가</span>
+        ) : (
+          dates.map((k) => (
+            <span key={k} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-white/70 rounded-full text-[10px] font-medium">
+              {formatChip(k)}
+              <button
+                type="button"
+                onClick={() => onRemove(k)}
+                className="ml-0.5 opacity-60 hover:opacity-100"
+                aria-label="제거"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          ))
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1">
+        <Popover open={pickerOpen} onOpenChange={onPickerOpenChange}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/80 border border-current/20 text-[11px] font-semibold"
+            >
+              <Plus className="w-3 h-3" />
+              여러 일자
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            {/* 멀티 모드 — 한 picker 안에서 여러 날을 클릭/해제. picker 안 닫고 한 번에 시드. */}
+            <Calendar
+              mode="multiple"
+              selected={selected}
+              onSelect={onSelectMulti}
+              className="p-3 pointer-events-auto"
+            />
+            <div className="border-t px-3 py-2 text-[10px] text-muted-foreground">
+              여러 날 누르고 바깥 영역을 클릭해 닫기
+            </div>
+          </PopoverContent>
+        </Popover>
+        <button
+          type="button"
+          onClick={onQuickAddWeekends}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/80 border border-current/20 text-[11px] font-semibold"
+          title="다음 4주간의 토·일을 자동 추가"
+        >
+          <Zap className="w-3 h-3" />
+          4주 주말
+        </button>
+      </div>
     </div>
   );
 }
+

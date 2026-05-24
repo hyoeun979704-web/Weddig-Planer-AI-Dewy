@@ -441,6 +441,19 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
           />
         </div>
 
+        {/* 정확도 보강 섹션 — 접힘 기본. 사용자가 필요할 때만 펼침으로 첫인상 부담 줄임.
+            details/summary 는 네이티브라 의존성 없이 가볍게 동작. 기존 입력값이
+            있으면 편집 케이스에서 숨겨지지 않도록 자동 펼침. */}
+        <details
+          className="group rounded-xl border border-gray-200 bg-white"
+          open={!!(sigungu || role || ceremonyType)}
+        >
+          <summary className="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between text-sm font-semibold text-gray-700">
+            <span> 더 정확한 큐레이션 받기 <span className="text-[11px] text-gray-400 font-normal">(선택)</span></span>
+            <span className="text-gray-400 text-xs group-open:rotate-180 transition-transform"></span>
+          </summary>
+          <div className="px-3 pb-3 pt-1 space-y-4 border-t border-gray-100">
+
         {/* 예식 시군구 (선택) — 시도 외 좁힘. 천안·양평·강남 등 시군구 큐레이션 활성화. */}
         <div>
           <label className={labelCls}>
@@ -494,10 +507,54 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
           </p>
         </div>
 
+        {/* 식 형태 (세분) — 스몰웨딩·노식·스냅 분기. */}
+        <div>
+          <label className={labelCls}>
+            식 형태 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <select
+            value={ceremonyType ?? ""}
+            onChange={(e) => setCeremonyType((e.target.value || null) as CeremonyType | null)}
+            className="w-full px-3 py-2.5 border rounded-xl text-sm bg-white"
+          >
+            <option value="">선택 안 함 (위 결혼 스타일 따름)</option>
+            <option value="standard">표준 예식장</option>
+            <option value="hotel">호텔 웨딩</option>
+            <option value="small_real">진짜 스몰 (40~80명, 레스토랑·하우스·카페)</option>
+            <option value="restaurant">레스토랑 웨딩</option>
+            <option value="outdoor">야외·가든·정원</option>
+            <option value="public_facility">공공시설(구민회관·시민회관)</option>
+            <option value="self_only">셀프웨딩 (식 진행)</option>
+            <option value="none">결혼식 안 함 (혼인신고만)</option>
+            <option value="snap_only">스냅 촬영만</option>
+            <option value="dual_ceremony">이중식 (한국+해외)</option>
+          </select>
+        </div>
+
+          </div>{/* end 더 정확한 큐레이션 */}
+        </details>
+
+        {/* 특수 상황 섹션 — 재혼·임신·해외·1인 진행. 해당 사용자만 펼침으로 첫인상 0 부담.
+            카피를 "해당하시면" 으로 시작해 일반 사용자가 무시할 수 있게.
+            기존 입력이 있으면 자동 펼침. */}
+        <details
+          className="group rounded-xl border border-gray-200 bg-white"
+          open={
+            !!maritalHistory || pregnant ||
+            (country && country !== "KR") || (weddingCountry && weddingCountry !== "KR") ||
+            !hasParentsBride || !hasParentsGroom
+          }
+        >
+          <summary className="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between text-sm font-semibold text-gray-700">
+            <span> 해당하시면 알려주세요 <span className="text-[11px] text-gray-400 font-normal">(재혼·임신·해외 거주·부모 부재)</span></span>
+            <span className="text-gray-400 text-xs group-open:rotate-180 transition-transform"></span>
+          </summary>
+          <div className="px-3 pb-3 pt-1 space-y-4 border-t border-gray-100">
+
         {/* 거주·예식 국가 — 해외 거주 / 국제결혼 분기. */}
         <div>
           <label className={labelCls}>
-            거주·예식 국가 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+            거주·예식 국가 <span className="text-xs text-gray-400 font-normal">(해외/국제결혼만)</span>
           </label>
           <div className="grid grid-cols-2 gap-2">
             <div>
@@ -542,7 +599,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
         {/* 양가 부모 — 부모 부재 페르소나의 1인 진행 분기. */}
         <div>
           <label className={labelCls}>
-            양가 부모 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+            양가 부모 <span className="text-xs text-gray-400 font-normal">(부모 부재만)</span>
           </label>
           <div className="space-y-1.5">
             <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
@@ -569,30 +626,6 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
               양가 분담 시뮬레이터·진행 가이드가 1인 진행 변형으로 바뀌어요.
             </p>
           )}
-        </div>
-
-        {/* 식 형태 (세분) — 스몰웨딩·노식·스냅 분기. */}
-        <div>
-          <label className={labelCls}>
-            식 형태 <span className="text-xs text-gray-400 font-normal">(선택)</span>
-          </label>
-          <select
-            value={ceremonyType ?? ""}
-            onChange={(e) => setCeremonyType((e.target.value || null) as CeremonyType | null)}
-            className="w-full px-3 py-2.5 border rounded-xl text-sm bg-white"
-          >
-            <option value="">선택 안 함 (위 결혼 스타일 따름)</option>
-            <option value="standard">표준 예식장</option>
-            <option value="hotel">호텔 웨딩</option>
-            <option value="small_real">진짜 스몰 (40~80명, 레스토랑·하우스·카페)</option>
-            <option value="restaurant">레스토랑 웨딩</option>
-            <option value="outdoor">야외·가든·정원</option>
-            <option value="public_facility">공공시설(구민회관·시민회관)</option>
-            <option value="self_only">셀프웨딩 (식 진행)</option>
-            <option value="none">결혼식 안 함 (혼인신고만)</option>
-            <option value="snap_only">스냅 촬영만</option>
-            <option value="dual_ceremony">이중식 (한국+해외)</option>
-          </select>
         </div>
 
         {/* 결혼 차수 — 재혼 페르소나의 양가 설득·작은 가족식 톤 분기에 사용 */}
@@ -699,6 +732,9 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
             </div>
           )}
         </div>
+
+          </div>{/* end 해당하시면 알려주세요 */}
+        </details>
 
         <div className="flex gap-2 pt-2">
           <button
