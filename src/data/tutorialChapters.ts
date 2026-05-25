@@ -47,6 +47,9 @@ export interface TutorialLesson {
   /** True 면 페이지에 아직 cutout target 셀렉터가 없는 lesson 으로 표시 — 자동
    *  시작/클릭 모두 차단되고 UI 는 "준비 중" 배지 노출. */
   placeholder?: boolean;
+  /** 같은 콘텐츠의 과거 lesson ID. tutorial_completions 중복 award 가드
+   *  (useTutorial.awardCompletion) 가 alias 도 함께 체크한다. */
+  aliases?: string[];
   steps: TutorialLessonStep[];
 }
 

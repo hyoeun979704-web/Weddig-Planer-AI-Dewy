@@ -90,14 +90,12 @@ const TutorialWelcomeSheet = () => {
   const totalLessons = visibleChapters.reduce((sum, c) => sum + c.lessons.length, 0);
   // 이미 끝낸 레슨(예: 자동 실행된 홈 투어)은 건너뛰고 다음 미완료 레슨을 제안 —
   // 같은 투어를 다시 권하지 않기 위함.
-  const next = progress.nextLesson(style);
-  // Round 18 — '30초' CTA 가 약속하는 lesson 은 placeholder 가 아닌 첫 startable.
-  // home-tour 가 미완료면 그게 우선. nextLesson 은 placeholder 도 반환할 수 있어
-  // CTA 약속이 깨질 수 있어 분리.
+  const next = progress.nextLesson(userCtx);
+  // Round 18 — '30초' CTA 가 약속하는 lesson. progress.nextLesson 은 이미
+  // placeholder 를 건너뛰지만, 모든 startable 이 완료된 returning user 케이스 용
+  // fallback 으로 firstStartable 도 함께 둔다.
   const firstStartable = firstStartableLessonForUser(userCtx);
-  const startTarget = next?.lesson && !next.lesson.placeholder
-    ? next.lesson
-    : firstStartable?.lesson;
+  const startTarget = next?.lesson ?? firstStartable?.lesson;
 
   const handleStart = () => {
     progress.markWelcomeShown();

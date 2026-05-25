@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   TUTORIAL_CHAPTERS,
-  chaptersForStyle,
-  totalLessonCountForStyle,
+  chaptersForUser,
   findChapterByLessonId,
+  type TutorialUserContext,
 } from "@/data/tutorialChapters";
 import type { WeddingStyle } from "@/lib/weddingStyle";
 import { useAuth } from "@/contexts/AuthContext";
@@ -165,10 +165,22 @@ export function useTutorialProgress() {
     [completedLessons],
   );
 
+  // Round 18 — style 단독 호출도 지원하기 위해 union 시그니처. 첫 번째 인자가
+  // WeddingStyle string 이면 자동 wrap, 객체면 그대로 사용. 호출처는 점진적으로
+  // 객체 ctx 형태로 마이그레이션.
+  const toCtx = (
+    arg: WeddingStyle | null | undefined | TutorialUserContext,
+  ): TutorialUserContext => {
+    if (arg && typeof arg === "object") return arg;
+    return { style: arg ?? null };
+  };
+
   const styleProgress = useCallback(
-    (style: WeddingStyle | null | undefined) => {
-      const total = totalLessonCountForStyle(style);
-      const visible = chaptersForStyle(style).flatMap((c) => c.lessons.map((l) => l.id));
+    (arg: WeddingStyle | null | undefined | TutorialUserContext) => {
+      const ctx = toCtx(arg);
+      const chapters = chaptersForUser(ctx);
+      const visible = chapters.flatMap((c) => c.lessons.map((l) => l.id));
+      const total = visible.length;
       const done = visible.filter((id) => completedLessons.includes(id)).length;
       const percent = total === 0 ? 0 : Math.round((done / total) * 100);
       return { done, total, percent };
@@ -177,10 +189,14 @@ export function useTutorialProgress() {
   );
 
   const nextLesson = useCallback(
-    (style: WeddingStyle | null | undefined) => {
-      const chapters = chaptersForStyle(style);
+    (arg: WeddingStyle | null | undefined | TutorialUserContext) => {
+      const ctx = toCtx(arg);
+      const chapters = chaptersForUser(ctx);
       for (const ch of chapters) {
         for (const l of ch.lessons) {
+          // Round 18 — placeholder lesson 은 nextLesson 후보에서 제외. CTA 가
+          // 시작 불가 lesson 으로 이동하는 회귀를 막는다.
+          if (l.placeholder) continue;
           if (!completedLessons.includes(l.id)) {
             return { lesson: l, chapter: ch };
           }

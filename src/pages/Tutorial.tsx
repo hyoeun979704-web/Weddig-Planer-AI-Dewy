@@ -33,17 +33,17 @@ const Tutorial = () => {
   const style = weddingSettings.wedding_style;
   const progress = useTutorialProgress();
 
-  const visibleChapters = useMemo(
-    () =>
-      chaptersForUser({
-        style,
-        persona: weddingSettings.persona_mode,
-        role: weddingSettings.role,
-      }),
+  const userCtx = useMemo(
+    () => ({
+      style,
+      persona: weddingSettings.persona_mode,
+      role: weddingSettings.role,
+    }),
     [style, weddingSettings.persona_mode, weddingSettings.role],
   );
-  const overall = progress.styleProgress(style);
-  const nextUp = progress.nextLesson(style);
+  const visibleChapters = useMemo(() => chaptersForUser(userCtx), [userCtx]);
+  const overall = progress.styleProgress(userCtx);
+  const nextUp = progress.nextLesson(userCtx);
 
   // Lessons that are hidden by the style filter but technically available
   // (e.g. self-wedding user wants to peek at the SDM lesson). Surfaced in a
