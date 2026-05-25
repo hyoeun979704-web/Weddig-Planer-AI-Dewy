@@ -7,11 +7,15 @@
 //
 // "잊혀짐 (§5.4)" — 사용자가 OFF 토글 시 즉시 컬럼 NULL/false 화 + 관련 콘텐츠
 // 노출 중단. 동의 기록은 PIPA 의무로 보존 (revoked_at 마킹은 별도 작업).
+//
+// 마이그레이션(React Query): window.location.reload() 제거 — RPC 후
+// invalidateQueries(['wedding_settings', userId]) 한 번이면 본 카드(useWeddingSchedule)
+// 와 다른 호출자(PersonaDashboard 등) 모두 자동 refetch.
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Settings2, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useWeddingSchedule, useInvalidateWeddingSettings } from "@/hooks/useWeddingSchedule";
 import { resetSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import { setSensitivePreference, type SensitiveField } from "@/lib/sensitiveConsent";
 import { toast } from "sonner";
@@ -21,30 +25,9 @@ type Saving = "none" | "pregnant" | "marital" | "parents-bride" | "parents-groom
 export default function SensitivePreferencesCard() {
   const { user } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
+  const invalidateWeddingSettings = useInvalidateWeddingSettings();
   const [saving, setSaving] = useState<Saving>("none");
   const [expanded, setExpanded] = useState(false);
-  // F#D2 — reload 타이머 cleanup. unmount 시 stale reload 가 SPA 라우팅 덮어쓰지 않도록.
-  // F#15 — 추가로 mounted ref 로 in-flight RPC 후 unmount 된 컴포넌트에 toast/state 안 시도.
-  const reloadTimerRef = useRef<number | null>(null);
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      if (reloadTimerRef.current != null) window.clearTimeout(reloadTimerRef.current);
-    };
-  }, []);
-  const scheduleReload = (ms: number) => {
-    if (!mountedRef.current) {
-      // 이미 unmount 된 상태면 reload 도 schedule 안 함 — 다른 surface 가 적절히 refresh.
-      return;
-    }
-    if (reloadTimerRef.current != null) window.clearTimeout(reloadTimerRef.current);
-    reloadTimerRef.current = window.setTimeout(() => {
-      reloadTimerRef.current = null;
-      window.location.reload();
-    }, ms);
-  };
 
   if (!user) return null;
 
@@ -53,7 +36,7 @@ export default function SensitivePreferencesCard() {
   //   ② server-derived consent_type + agreed (p_field 매핑 기반) — client 변조 X (F#E1·E2·E7)
   //   ③ 실제 active 전환 시에만 consent INSERT — 중복/spurious revoke 0 (F#5·E5·E11)
   //   ④ user_agent / consent_version 자동 첨부 (F#E3·E6)
-  // 페이지 리로드는 toast 가 보이도록 ref 기반 timer + cleanup (F#D2).
+  // RPC 후 invalidateQueries 한 번으로 모든 useWeddingSchedule 소비자가 refetch.
   const updateField = async (
     field: SensitiveField,
     value: boolean | "first" | "remarriage" | null,
@@ -77,18 +60,13 @@ export default function SensitivePreferencesCard() {
       ) {
         resetSignal(SIGNAL_KEYS.singleHouseholdHint);
       }
-      // F#15 — RPC 후 unmount 됐으면 toast/reload 시도 안 함. 다른 surface 가 다음 mount 시 refetch.
-      if (mountedRef.current) {
-        toast.success("설정이 저장됐어요");
-        scheduleReload(1200);
-      }
+      toast.success("설정이 저장됐어요");
+      void invalidateWeddingSettings();
     } catch (e) {
       console.error("sensitive pref update failed", e);
-      if (mountedRef.current) {
-        toast.error("저장에 실패했어요. 다시 시도해주세요.");
-      }
+      toast.error("저장에 실패했어요. 다시 시도해주세요.");
     } finally {
-      if (mountedRef.current) setSaving("none");
+      setSaving("none");
     }
   };
 

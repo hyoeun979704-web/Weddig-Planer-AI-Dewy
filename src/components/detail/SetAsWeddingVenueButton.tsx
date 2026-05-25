@@ -10,7 +10,10 @@
 import { useState } from "react";
 import { Check, MapPin, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import {
+  useWeddingSchedule,
+  useInvalidateWeddingSettings,
+} from "@/hooks/useWeddingSchedule";
 import { useWeddingVenue } from "@/hooks/useWeddingVenue";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -41,6 +44,7 @@ export default function SetAsWeddingVenueButton({
   const { user } = useAuth();
   const venue = useWeddingVenue();
   const { weddingSettings } = useWeddingSchedule();
+  const invalidateWeddingSettings = useInvalidateWeddingSettings();
   const [saving, setSaving] = useState(false);
 
   const isCurrent = venue.placeId === placeId;
@@ -88,9 +92,9 @@ export default function SetAsWeddingVenueButton({
         description: "다른 카테고리(스튜디오·드레스 등)에서 같은 시군구 업체를 우선 추천해드려요.",
         duration: 4500,
       });
-      // F#13 — 같은 turn 에 reload 하면 토스트 portal 이 destroy 되어 사용자가 못 봄.
-      // 1.2초 지연 → 토스트 표시 보장 후 새로고침.
-      setTimeout(() => window.location.reload(), 1200);
+      // window.location.reload 제거 (마이그레이션) — wedding_settings 캐시 invalidate
+      // 한 번이면 useWeddingSchedule / useWeddingVenue 양쪽 호출자가 자동 refetch.
+      void invalidateWeddingSettings();
     } catch (e) {
       console.error("set wedding venue failed", e);
       toast.error("식장 등록에 실패했어요. 잠시 후 다시 시도해주세요.");

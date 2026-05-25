@@ -3,10 +3,14 @@
 // 행동 신호(singleHouseholdHint) 누적 시 SoftConfirmCard + inline 3-옵션
 // (신부측/신랑측/양쪽) 입력. 사용자가 측을 선택하면 해당 has_parents_* 를 false 로
 // 저장 + 동의 기록. 양쪽 둘 다는 single_household 페르소나로 자동 전환.
+//
+// 마이그레이션(React Query): window.location.reload() 제거 — setSensitivePreference 후
+// useInvalidateWeddingSettings() 로 ['wedding_settings', userId] 캐시 invalidate.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Sparkles, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInvalidateWeddingSettings } from "@/hooks/useWeddingSchedule";
 import { setSensitivePreference } from "@/lib/sensitiveConsent";
 import { markConfirmed, markDismissed, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import { toast } from "sonner";
@@ -27,6 +31,7 @@ const STAGE_KEY = (userId: string) => `dewy:single-household-stage:${userId}`;
 
 export default function SingleHouseholdConfirmFlow({ show, onChange }: Props) {
   const { user } = useAuth();
+  const invalidateWeddingSettings = useInvalidateWeddingSettings();
   const [stage, setStage] = useState<Stage>("confirm");
   const [saving, setSaving] = useState(false);
   // useAuth async 라 첫 render 에 user=null. hydratedFromStorage 가드로 hydration
@@ -59,16 +64,6 @@ export default function SingleHouseholdConfirmFlow({ show, onChange }: Props) {
     }
   }, [stage, user, hydratedFromStorage]);
 
-  const reloadTimerRef = useRef<number | null>(null);
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      if (reloadTimerRef.current != null) window.clearTimeout(reloadTimerRef.current);
-    };
-  }, []);
-
   if (!user) return null;
   if (!show && stage !== "choose-side") return null;
 
@@ -94,23 +89,15 @@ export default function SingleHouseholdConfirmFlow({ show, onChange }: Props) {
       if (side === "groom" || side === "both") {
         await setSensitivePreference({ field: "has_parents_groom", value: false });
       }
-      if (!mountedRef.current) return;
       markConfirmed(SIGNAL_KEYS.singleHouseholdHint);
       toast.success("1인 진행 가이드를 활성화했어요");
       onChange();
-      if (mountedRef.current) {
-        reloadTimerRef.current = window.setTimeout(() => {
-          reloadTimerRef.current = null;
-          window.location.reload();
-        }, 1200);
-      }
+      void invalidateWeddingSettings();
     } catch (e) {
       console.error("single household confirm failed", e);
-      if (mountedRef.current) {
-        toast.error("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
-      }
+      toast.error("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
     } finally {
-      if (mountedRef.current) setSaving(false);
+      setSaving(false);
     }
   };
 

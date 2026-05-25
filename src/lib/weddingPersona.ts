@@ -5,14 +5,18 @@
 // 동일해야 한다. DB 트리거는 영속화 정합성을, 클라이언트 헬퍼는 즉시 분기를
 // 책임진다. 둘 다 같은 입력을 받아 같은 결과를 내야 한다.
 //
-// IMPORTANT — persona_mode override 안전성 미보장:
-// trigger 의 override 가드 `IF NEW.persona_mode IS DISTINCT FROM OLD.persona_mode`
-// 는 단 1회 UPDATE 에만 유효. 사용자가 "view-as luxury_hotel" 같은 override 저장 후
-// 다른 컬럼(예: guest_count) 만 UPDATE 하면 client patch 에 persona_mode 없어
-// NEW.persona_mode = OLD.persona_mode → trigger 가 자동 derive 로 덮어씀. 즉
-// override 단명. 현재 client view-as UI 없어 잠재 함정. UI 추가 시 별도 컬럼
-// (persona_mode_overridden_at) 으로 override 표시 + trigger 가 그 컬럼 set 됐으면
-// derive 스킵하도록 수정 필요.
+// persona_mode override 안전성 (Round 16 마이그레이션 적용 완료):
+// `user_wedding_settings.persona_mode_overridden_at` (TIMESTAMPTZ) 마커 컬럼이 추가됨.
+// trigger 가 이 컬럼을 보고:
+//   - marker NOT NULL → override 영구 보존 (자동 derive 스킵)
+//   - marker NULL → 기존 derive 로직 적용 (자동 분류)
+// override set/reset 규칙:
+//   - client 가 persona_mode 를 자동 derive 결과와 다른 값으로 set 하면 trigger 가
+//     persona_mode_overridden_at = NOW() 자동 마킹 (INSERT/UPDATE 양쪽).
+//   - client 가 persona_mode_overridden_at = NULL 로 set 하면 override 해제 +
+//     자동 derive 복귀 (같은 UPDATE 에서 즉시 v_auto 적용).
+// 따라서 view-as UI 는 persona_mode 만 patch 하면 충분 (marker 는 trigger 가 알아서).
+// reset 버튼은 `update({ persona_mode_overridden_at: null })` 호출.
 
 import type { WeddingStyle } from "./weddingStyle";
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -59,147 +59,174 @@ interface WeddingSettings {
   wedding_venue_lng: number | null;
 }
 
+const DEFAULT_SETTINGS: WeddingSettings = {
+  wedding_date: null,
+  partner_name: null,
+  wedding_region: null,
+  planning_stage: null,
+  wedding_date_tbd: false,
+  wedding_region_tbd: false,
+  wedding_style: null,
+  excluded_categories: [],
+  marital_history: null,
+  pregnant: false,
+  pregnancy_due_date: null,
+  role: null,
+  country: "KR",
+  wedding_country: "KR",
+  wedding_region_sigungu: null,
+  has_parents_bride: true,
+  has_parents_groom: true,
+  ceremony_type: null,
+  persona_mode: "standard_bride",
+  wedding_venue_place_id: null,
+  wedding_venue_name: null,
+  wedding_venue_address: null,
+  wedding_venue_city: null,
+  wedding_venue_district: null,
+  wedding_venue_lat: null,
+  wedding_venue_lng: null,
+};
+
+const SETTINGS_SELECT =
+  "wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant, pregnancy_due_date, role, country, wedding_country, wedding_region_sigungu, has_parents_bride, has_parents_groom, ceremony_type, persona_mode, wedding_venue_place_id, wedding_venue_name, wedding_venue_address, wedding_venue_city, wedding_venue_district, wedding_venue_lat, wedding_venue_lng";
+
+const SCHEDULE_SELECT =
+  "id, title, scheduled_date, completed, notes, category, source";
+
+// Query key helpers — 외부에서도 invalidate 할 수 있도록 export.
+export const weddingSettingsKey = (userId: string | undefined): QueryKey => [
+  "wedding_settings",
+  userId ?? null,
+];
+export const scheduleItemsKey = (userId: string | undefined): QueryKey => [
+  "schedule_items",
+  userId ?? null,
+];
+
+function mapSettingsRow(row: any): WeddingSettings {
+  // 페르소나 모드는 DB 트리거가 계산하지만, 마이그레이션 직후·캐시 등
+  // 누락 케이스를 위해 클라이언트에서도 동일 로직으로 폴백 계산.
+  const fallbackMode = derivePersonaMode({
+    wedding_style: (row.wedding_style ?? null) as WeddingStyle | null,
+    ceremony_type: (row.ceremony_type ?? null) as CeremonyType | null,
+    marital_history:
+      row.marital_history === "first" || row.marital_history === "remarriage"
+        ? row.marital_history
+        : null,
+    pregnant: !!row.pregnant,
+    role: (row.role ?? null) as UserRole | null,
+    country: row.country ?? "KR",
+    wedding_country: row.wedding_country ?? "KR",
+    wedding_region: row.wedding_region ?? null,
+    has_parents_bride: row.has_parents_bride !== false,
+    has_parents_groom: row.has_parents_groom !== false,
+  });
+  return {
+    wedding_date: row.wedding_date ?? null,
+    partner_name: row.partner_name ?? null,
+    wedding_region: row.wedding_region || null,
+    planning_stage: row.planning_stage || null,
+    wedding_date_tbd: !!row.wedding_date_tbd,
+    wedding_region_tbd: !!row.wedding_region_tbd,
+    wedding_style: (row.wedding_style ?? null) as WeddingStyle | null,
+    excluded_categories: Array.isArray(row.excluded_categories) ? row.excluded_categories : [],
+    marital_history:
+      row.marital_history === "first" || row.marital_history === "remarriage"
+        ? row.marital_history
+        : null,
+    pregnant: !!row.pregnant,
+    pregnancy_due_date: row.pregnancy_due_date ?? null,
+    role: (row.role ?? null) as UserRole | null,
+    country: row.country ?? "KR",
+    wedding_country: row.wedding_country ?? "KR",
+    wedding_region_sigungu: row.wedding_region_sigungu ?? null,
+    has_parents_bride: row.has_parents_bride !== false,
+    has_parents_groom: row.has_parents_groom !== false,
+    ceremony_type: (row.ceremony_type ?? null) as CeremonyType | null,
+    persona_mode: (row.persona_mode ?? fallbackMode) as WeddingPersonaMode,
+    wedding_venue_place_id: row.wedding_venue_place_id ?? null,
+    wedding_venue_name: row.wedding_venue_name ?? null,
+    wedding_venue_address: row.wedding_venue_address ?? null,
+    wedding_venue_city: row.wedding_venue_city ?? null,
+    wedding_venue_district: row.wedding_venue_district ?? null,
+    wedding_venue_lat: row.wedding_venue_lat ?? null,
+    wedding_venue_lng: row.wedding_venue_lng ?? null,
+  };
+}
+
 export const useWeddingSchedule = () => {
   const { user } = useAuth();
-  const [weddingSettings, setWeddingSettings] = useState<WeddingSettings>({
-    wedding_date: null,
-    partner_name: null,
-    wedding_region: null,
-    planning_stage: null,
-    wedding_date_tbd: false,
-    wedding_region_tbd: false,
-    wedding_style: null,
-    excluded_categories: [],
-    marital_history: null,
-    pregnant: false,
-    pregnancy_due_date: null,
-    role: null,
-    country: "KR",
-    wedding_country: "KR",
-    wedding_region_sigungu: null,
-    has_parents_bride: true,
-    has_parents_groom: true,
-    ceremony_type: null,
-    persona_mode: "standard_bride",
-    wedding_venue_place_id: null,
-    wedding_venue_name: null,
-    wedding_venue_address: null,
-    wedding_venue_city: null,
-    wedding_venue_district: null,
-    wedding_venue_lat: null,
-    wedding_venue_lng: null,
-  });
-  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Fetch wedding settings and schedule items.
-  // Depends on user.id (stable string), not the user object — useAuth may
-  // hand back a fresh-reference user on every render which would re-fire
-  // the query when nothing meaningful changed.
   const userId = user?.id;
-  const fetchData = useCallback(async () => {
-    if (!user) {
-      setIsLoading(false);
-      return;
-    }
+  const queryClient = useQueryClient();
 
-    try {
-      const [settingsRes, itemsRes] = await Promise.all([
-        (supabase as any)
-          .from("user_wedding_settings")
-          .select(
-            "wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant, pregnancy_due_date, role, country, wedding_country, wedding_region_sigungu, has_parents_bride, has_parents_groom, ceremony_type, persona_mode, wedding_venue_place_id, wedding_venue_name, wedding_venue_address, wedding_venue_city, wedding_venue_district, wedding_venue_lat, wedding_venue_lng"
-          )
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("user_schedule_items")
-          .select("id, title, scheduled_date, completed, notes, category, source")
-          .eq("user_id", user.id)
-          .order("scheduled_date", { ascending: true }),
-      ]);
-
-      if (settingsRes.data) {
-        const s = settingsRes.data as any;
-        // 페르소나 모드는 DB 트리거가 계산하지만, 마이그레이션 직후·캐시 등
-        // 누락 케이스를 위해 클라이언트에서도 동일 로직으로 폴백 계산.
-        const fallbackMode = derivePersonaMode({
-          wedding_style: (s.wedding_style ?? null) as WeddingStyle | null,
-          ceremony_type: (s.ceremony_type ?? null) as CeremonyType | null,
-          marital_history:
-            s.marital_history === "first" || s.marital_history === "remarriage"
-              ? s.marital_history
-              : null,
-          pregnant: !!s.pregnant,
-          role: (s.role ?? null) as UserRole | null,
-          country: s.country ?? "KR",
-          wedding_country: s.wedding_country ?? "KR",
-          wedding_region: s.wedding_region ?? null,
-          has_parents_bride: s.has_parents_bride !== false,
-          has_parents_groom: s.has_parents_groom !== false,
-        });
-        setWeddingSettings({
-          wedding_date: s.wedding_date,
-          partner_name: s.partner_name,
-          wedding_region: s.wedding_region || null,
-          planning_stage: s.planning_stage || null,
-          wedding_date_tbd: !!s.wedding_date_tbd,
-          wedding_region_tbd: !!s.wedding_region_tbd,
-          wedding_style: (s.wedding_style ?? null) as WeddingStyle | null,
-          excluded_categories: Array.isArray(s.excluded_categories) ? s.excluded_categories : [],
-          marital_history:
-            s.marital_history === "first" || s.marital_history === "remarriage"
-              ? s.marital_history
-              : null,
-          pregnant: !!s.pregnant,
-          pregnancy_due_date: s.pregnancy_due_date ?? null,
-          role: (s.role ?? null) as UserRole | null,
-          country: s.country ?? "KR",
-          wedding_country: s.wedding_country ?? "KR",
-          wedding_region_sigungu: s.wedding_region_sigungu ?? null,
-          has_parents_bride: s.has_parents_bride !== false,
-          has_parents_groom: s.has_parents_groom !== false,
-          ceremony_type: (s.ceremony_type ?? null) as CeremonyType | null,
-          persona_mode: (s.persona_mode ?? fallbackMode) as WeddingPersonaMode,
-          wedding_venue_place_id: s.wedding_venue_place_id ?? null,
-          wedding_venue_name: s.wedding_venue_name ?? null,
-          wedding_venue_address: s.wedding_venue_address ?? null,
-          wedding_venue_city: s.wedding_venue_city ?? null,
-          wedding_venue_district: s.wedding_venue_district ?? null,
-          wedding_venue_lat: s.wedding_venue_lat ?? null,
-          wedding_venue_lng: s.wedding_venue_lng ?? null,
-        });
+  // React Query 로 단일 source of truth. 같은 queryKey 를 쓰는 모든 useWeddingSchedule
+  // 호출자가 동일 cached data 를 공유 → SELECT 중복 fetch 제거 + mutation 후
+  // invalidateQueries 한 번이면 전체 화면이 동기화됨.
+  const settingsQuery = useQuery<WeddingSettings>({
+    queryKey: weddingSettingsKey(userId),
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return DEFAULT_SETTINGS;
+      const { data, error } = await (supabase as any)
+        .from("user_wedding_settings")
+        .select(SETTINGS_SELECT)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) {
+        console.error("Error fetching wedding settings:", error);
+        throw error;
       }
+      if (!data) return DEFAULT_SETTINGS;
+      return mapSettingsRow(data);
+    },
+    // 페르소나/식장 변경이 잦지 않으므로 conservative stale time. 변경이 일어나는 곳은
+    // mutation 이 명시적으로 invalidate 하므로 staleTime 길어도 안전.
+    staleTime: 60_000,
+  });
 
-      if (itemsRes.data) {
-        setScheduleItems(itemsRes.data as unknown as ScheduleItem[]);
+  const scheduleQuery = useQuery<ScheduleItem[]>({
+    queryKey: scheduleItemsKey(userId),
+    enabled: !!userId,
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from("user_schedule_items")
+        .select(SCHEDULE_SELECT)
+        .eq("user_id", userId)
+        .order("scheduled_date", { ascending: true });
+      if (error) {
+        console.error("Error fetching schedule items:", error);
+        throw error;
       }
-    } catch (error) {
-      console.error("Error fetching wedding schedule:", error);
-    } finally {
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+      return (data ?? []) as unknown as ScheduleItem[];
+    },
+    staleTime: 30_000,
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const weddingSettings = settingsQuery.data ?? DEFAULT_SETTINGS;
+  const scheduleItems = scheduleQuery.data ?? [];
+  // user 없을 때(로그인 전)는 빠르게 false 로. enabled=false 일 때 isLoading 이 true 로
+  // 머무는 React Query 동작 회피.
+  const isLoading = !!userId && (settingsQuery.isLoading || scheduleQuery.isLoading);
 
-  // Save wedding date
-  const saveWeddingDate = async (date: string) => {
+  const invalidateSettings = () =>
+    queryClient.invalidateQueries({ queryKey: weddingSettingsKey(userId) });
+  const invalidateSchedule = () =>
+    queryClient.invalidateQueries({ queryKey: scheduleItemsKey(userId) });
+
+  // Save wedding date — 기존 시그니처 유지.
+  const saveWeddingDate = async (date: string): Promise<boolean> => {
     if (!user) {
       toast.error("로그인이 필요합니다");
       return false;
     }
-
     try {
       const { data: existing } = await supabase
         .from("user_wedding_settings")
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
-
       if (existing) {
         await supabase
           .from("user_wedding_settings")
@@ -210,8 +237,7 @@ export const useWeddingSchedule = () => {
           .from("user_wedding_settings")
           .insert({ user_id: user.id, wedding_date: date });
       }
-
-      setWeddingSettings(prev => ({ ...prev, wedding_date: date }));
+      await invalidateSettings();
       toast.success("결혼식 날짜가 저장되었습니다");
       return true;
     } catch (error) {
@@ -221,42 +247,40 @@ export const useWeddingSchedule = () => {
     }
   };
 
+  type WeddingSettingsPatch = Partial<{
+    wedding_date: string | null;
+    partner_name: string | null;
+    wedding_region: string | null;
+    planning_stage: string | null;
+    wedding_date_tbd: boolean;
+    wedding_region_tbd: boolean;
+    wedding_style: WeddingStyle | null;
+    excluded_categories: string[];
+    marital_history: "first" | "remarriage" | null;
+    pregnant: boolean;
+    pregnancy_due_date: string | null;
+    role: UserRole | null;
+    country: string | null;
+    wedding_country: string | null;
+    wedding_region_sigungu: string | null;
+    has_parents_bride: boolean;
+    has_parents_groom: boolean;
+    ceremony_type: CeremonyType | null;
+    persona_mode: WeddingPersonaMode | null;
+    wedding_venue_place_id: string | null;
+    wedding_venue_name: string | null;
+    wedding_venue_address: string | null;
+    wedding_venue_city: string | null;
+    wedding_venue_district: string | null;
+    wedding_venue_lat: number | null;
+    wedding_venue_lng: number | null;
+  }>;
+
   // Bulk save (date + region + partner_name + planning_stage + tbd flags
   // in one call). Used by the shared WeddingInfoSetupModal that auto-pops
   // on Schedule/Budget/MyPage when the user hasn't entered basic wedding
   // info yet.
-  const saveWeddingSettings = async (
-    patch: Partial<{
-      wedding_date: string | null;
-      partner_name: string | null;
-      wedding_region: string | null;
-      planning_stage: string | null;
-      wedding_date_tbd: boolean;
-      wedding_region_tbd: boolean;
-      wedding_style: WeddingStyle | null;
-      excluded_categories: string[];
-      marital_history: "first" | "remarriage" | null;
-      pregnant: boolean;
-      pregnancy_due_date: string | null;
-      role: UserRole | null;
-      country: string | null;
-      wedding_country: string | null;
-      wedding_region_sigungu: string | null;
-      has_parents_bride: boolean;
-      has_parents_groom: boolean;
-      ceremony_type: CeremonyType | null;
-      // 명시적 페르소나 override. DB 트리거가 보존하며, 로컬도 patch 에 들어오면 재계산을 건너뜀.
-      persona_mode: WeddingPersonaMode | null;
-      // 결혼식장 anchor — "이 식장으로 정하기" CTA 에서 한 번에 전체 필드 patch.
-      wedding_venue_place_id: string | null;
-      wedding_venue_name: string | null;
-      wedding_venue_address: string | null;
-      wedding_venue_city: string | null;
-      wedding_venue_district: string | null;
-      wedding_venue_lat: number | null;
-      wedding_venue_lng: number | null;
-    }>
-  ) => {
+  const saveWeddingSettings = async (patch: WeddingSettingsPatch): Promise<boolean> => {
     if (!user) {
       toast.error("로그인이 필요합니다");
       return false;
@@ -278,30 +302,29 @@ export const useWeddingSchedule = () => {
           .from("user_wedding_settings")
           .insert({ user_id: user.id, ...patch });
       }
-      // 로컬 state 갱신 — DB 트리거가 권위 소스. 클라이언트는 다음 가드 하에 폴백 계산:
-      //   1) patch 에 persona_mode 가 들어있으면(=manual override) 그 값을 그대로 둠.
-      //   2) 아니면 다른 시그널이 패치된 경우만 재계산.
-      //   3) 위 가드 없이 항상 재계산하면, MyPage 등에서 사용자가 직접 지정한
-      //      override 가 저장 직후 자동값으로 되돌아가는 문제(코드 리뷰 F#4).
-      setWeddingSettings(prev => {
-        const merged = { ...prev, ...patch } as WeddingSettings;
-        const overrode = Object.prototype.hasOwnProperty.call(patch, "persona_mode");
-        if (!overrode) {
-          merged.persona_mode = derivePersonaMode({
-            wedding_style: merged.wedding_style,
-            ceremony_type: merged.ceremony_type,
-            marital_history: merged.marital_history,
-            pregnant: merged.pregnant,
-            role: merged.role,
-            country: merged.country,
-            wedding_country: merged.wedding_country,
-            wedding_region: merged.wedding_region,
-            has_parents_bride: merged.has_parents_bride,
-            has_parents_groom: merged.has_parents_groom,
-          });
-        }
-        return merged;
-      });
+
+      // Optimistic cache update — 모든 호출자가 즉시 새 값을 보도록 setQueryData.
+      // 그 다음 invalidate 로 DB 트리거 결과(persona_mode 등) 재반영.
+      // 가드: patch 에 persona_mode 가 들어있으면(=manual override) 그 값을 그대로 둠.
+      //       아니면 다른 시그널이 패치된 경우만 재계산. (Round 코드리뷰 F#4)
+      const prev = queryClient.getQueryData<WeddingSettings>(weddingSettingsKey(user.id)) ?? DEFAULT_SETTINGS;
+      const merged: WeddingSettings = { ...prev, ...patch } as WeddingSettings;
+      const overrode = Object.prototype.hasOwnProperty.call(patch, "persona_mode");
+      if (!overrode) {
+        merged.persona_mode = derivePersonaMode({
+          wedding_style: merged.wedding_style,
+          ceremony_type: merged.ceremony_type,
+          marital_history: merged.marital_history,
+          pregnant: merged.pregnant,
+          role: merged.role,
+          country: merged.country,
+          wedding_country: merged.wedding_country,
+          wedding_region: merged.wedding_region,
+          has_parents_bride: merged.has_parents_bride,
+          has_parents_groom: merged.has_parents_groom,
+        });
+      }
+      queryClient.setQueryData(weddingSettingsKey(user.id), merged);
 
       // Mirror region into budget_settings if the user has already set up a
       // budget. Keeps the two pages from drifting when the user updates their
@@ -320,9 +343,15 @@ export const useWeddingSchedule = () => {
               .from("budget_settings")
               .update({ region: regionKey })
               .eq("id", budget.id);
+            // budget cache 도 같이 무효화 — Budget 페이지가 새 region 보도록.
+            queryClient.invalidateQueries({ queryKey: ["budget-settings", user.id] });
           }
         }
       }
+
+      // 마지막에 invalidate — DB 트리거가 다시 계산한 persona_mode / sync_venue_region
+      // 등의 권위적 값을 다음 fetch 에 반영.
+      await invalidateSettings();
 
       toast.success("결혼 정보가 저장되었어요");
       return true;
@@ -354,13 +383,7 @@ export const useWeddingSchedule = () => {
       const rows = items.map((it) => ({ user_id: user.id, source: "template", ...it }));
       const { error } = await supabase.from("user_schedule_items").insert(rows);
       if (error) throw error;
-      // Refresh local list so the page renders the new items immediately.
-      const { data } = await supabase
-        .from("user_schedule_items")
-        .select("id, title, scheduled_date, completed, notes, category, source")
-        .eq("user_id", user.id)
-        .order("scheduled_date", { ascending: true });
-      if (data) setScheduleItems(data as unknown as ScheduleItem[]);
+      await invalidateSchedule();
       return rows.length;
     } catch (error) {
       console.error("Error seeding schedule:", error);
@@ -369,26 +392,30 @@ export const useWeddingSchedule = () => {
   };
 
   // Add schedule item
-  const addScheduleItem = async (title: string, scheduledDate: string, category: string = 'general') => {
+  const addScheduleItem = async (
+    title: string,
+    scheduledDate: string,
+    category: string = "general",
+  ): Promise<boolean> => {
     if (!user) {
       toast.error("로그인이 필요합니다");
       return false;
     }
-
     try {
       const { data, error } = await supabase
         .from("user_schedule_items")
         .insert({ user_id: user.id, title, scheduled_date: scheduledDate, category })
-        .select("id, title, scheduled_date, completed, notes, category, source")
+        .select(SCHEDULE_SELECT)
         .single();
-
       if (error) throw error;
 
-      setScheduleItems(prev =>
-        ([...prev, data] as ScheduleItem[]).sort((a, b) =>
-          new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
-        )
-      );
+      // 캐시 즉시 갱신 + sort.
+      queryClient.setQueryData<ScheduleItem[]>(scheduleItemsKey(user.id), (prev) => {
+        const next = [...(prev ?? []), data as unknown as ScheduleItem];
+        return next.sort(
+          (a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime(),
+        );
+      });
       toast.success("일정이 추가되었습니다");
       return true;
     } catch (error) {
@@ -405,11 +432,9 @@ export const useWeddingSchedule = () => {
         .from("user_schedule_items")
         .update({ notes })
         .eq("id", id);
-
       if (error) throw error;
-
-      setScheduleItems(prev =>
-        prev.map(i => (i.id === id ? { ...i, notes } : i))
+      queryClient.setQueryData<ScheduleItem[]>(scheduleItemsKey(userId), (prev) =>
+        (prev ?? []).map((i) => (i.id === id ? { ...i, notes } : i)),
       );
       toast.success("메모가 저장되었습니다");
       return true;
@@ -422,17 +447,15 @@ export const useWeddingSchedule = () => {
 
   // Toggle item completion
   const toggleItemCompletion = async (id: string) => {
-    const item = scheduleItems.find(i => i.id === id);
+    const item = scheduleItems.find((i) => i.id === id);
     if (!item) return;
-
     try {
       await supabase
         .from("user_schedule_items")
         .update({ completed: !item.completed })
         .eq("id", id);
-
-      setScheduleItems(prev =>
-        prev.map(i => (i.id === id ? { ...i, completed: !i.completed } : i))
+      queryClient.setQueryData<ScheduleItem[]>(scheduleItemsKey(userId), (prev) =>
+        (prev ?? []).map((i) => (i.id === id ? { ...i, completed: !i.completed } : i)),
       );
     } catch (error) {
       console.error("Error toggling item:", error);
@@ -444,7 +467,9 @@ export const useWeddingSchedule = () => {
   const deleteScheduleItem = async (id: string) => {
     try {
       await supabase.from("user_schedule_items").delete().eq("id", id);
-      setScheduleItems(prev => prev.filter(i => i.id !== id));
+      queryClient.setQueryData<ScheduleItem[]>(scheduleItemsKey(userId), (prev) =>
+        (prev ?? []).filter((i) => i.id !== id),
+      );
       toast.success("일정이 삭제되었습니다");
     } catch (error) {
       console.error("Error deleting item:", error);
@@ -453,18 +478,22 @@ export const useWeddingSchedule = () => {
   };
 
   // Update schedule item
-  const updateScheduleItem = async (id: string, updates: { title?: string; scheduled_date?: string; category?: string }) => {
+  const updateScheduleItem = async (
+    id: string,
+    updates: { title?: string; scheduled_date?: string; category?: string },
+  ): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from("user_schedule_items")
         .update(updates)
         .eq("id", id);
-
       if (error) throw error;
-
-      setScheduleItems(prev =>
-        prev.map(i => (i.id === id ? { ...i, ...updates } : i))
-          .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())
+      queryClient.setQueryData<ScheduleItem[]>(scheduleItemsKey(userId), (prev) =>
+        (prev ?? [])
+          .map((i) => (i.id === id ? { ...i, ...updates } : i))
+          .sort(
+            (a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime(),
+          ),
       );
       toast.success("일정이 수정되었습니다");
       return true;
@@ -489,3 +518,13 @@ export const useWeddingSchedule = () => {
     updateScheduleItem,
   };
 };
+
+// 외부에서도 wedding settings cache 를 무효화할 수 있도록 작은 helper.
+// 페르소나 변경 등 useWeddingSchedule 의 saveWeddingSettings 우회 경로
+// (직접 supabase.upsert 호출하는 컴포넌트) 에서도 일관된 invalidate 가 가능.
+export function useInvalidateWeddingSettings() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return () =>
+    queryClient.invalidateQueries({ queryKey: weddingSettingsKey(user?.id) });
+}

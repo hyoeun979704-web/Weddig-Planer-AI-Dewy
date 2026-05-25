@@ -34,13 +34,14 @@ DECLARE
   v_auto TEXT := public.derive_wedding_persona(NEW);
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    -- INSERT: persona_mode 명시 → override 의도. marker 가 비어 있으면 자동으로 NOW() 마킹.
-    IF NEW.persona_mode IS NOT NULL AND NEW.persona_mode_overridden_at IS NULL THEN
-      NEW.persona_mode_overridden_at := NOW();
-    END IF;
-    -- persona_mode 미지정 → 자동 derive (marker 도 NULL 유지).
+    -- INSERT: persona_mode 가 NULL 이면 자동 derive (marker NULL 유지).
+    -- 명시 값이 들어왔어도 그 값이 v_auto 와 같으면 column DEFAULT('standard_bride') 의
+    -- 결과인지 사용자가 직접 박은 건지 구분 불가. 보수적으로 override 로 안 본다 (어차피
+    -- 동작은 같음). v_auto 와 다른 명시 값일 때만 진짜 override 로 간주 + marker 마킹.
     IF NEW.persona_mode IS NULL THEN
       NEW.persona_mode := v_auto;
+    ELSIF NEW.persona_mode IS DISTINCT FROM v_auto AND NEW.persona_mode_overridden_at IS NULL THEN
+      NEW.persona_mode_overridden_at := NOW();
     END IF;
     RETURN NEW;
   END IF;

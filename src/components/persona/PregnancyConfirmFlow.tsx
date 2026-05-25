@@ -7,13 +7,17 @@
 //
 // F#4: navigate('/mypage?openWeddingInfo=1') 제거 — 소비자 없음. 같은 화면에서 끝냄.
 // F#11: 약속한 차수별 개인화가 즉시 활성화되도록 due date 인라인 수집.
+// 마이그레이션(React Query): window.location.reload() 제거 — setSensitivePreference 가
+// user_wedding_settings 를 변경하므로, RPC 후 useInvalidateWeddingSettings() 로
+// ['wedding_settings', userId] 캐시만 invalidate 하면 모든 호출자가 refetch.
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Calendar as CalIcon, X, Sparkles, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInvalidateWeddingSettings } from "@/hooks/useWeddingSchedule";
 import { setSensitivePreference } from "@/lib/sensitiveConsent";
 import { markConfirmed, markDismissed, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import { toast } from "sonner";
@@ -36,6 +40,7 @@ const DUE_DATE_KEY = (userId: string) => `dewy:pregnancy-confirm-due-date:${user
 
 export default function PregnancyConfirmFlow({ show, onChange }: Props) {
   const { user } = useAuth();
+  const invalidateWeddingSettings = useInvalidateWeddingSettings();
   // F#3 — useAuth 가 async 라 첫 render 에 user=null. lazy initializer 에서 읽으면
   // 항상 'confirm' 반환 → 후속 useEffect 가 localStorage 삭제. 자기-삭제 회귀.
   // 해결: hydratedFromStorage flag 로 hydration 전엔 write 안 함. user 등장 시 1회 read.
@@ -87,31 +92,6 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
       /* ignore */
     }
   }, [dueDate, user, hydratedFromStorage, stage]);
-  // F#14 — reload 타이머 cleanup. unmount 시 stale reload 가 SPA 라우팅 덮어쓰지 않도록.
-  // R6-5 — sibling SensitivePreferencesCard 와 동일한 mountedRef 가드 추가. 사용자가
-  // RPC in-flight 중 라우팅 이동하면 unmount 후 setState/toast 발화 → React dev warning +
-  // stale 토스트. mountedRef 로 await 후 가시성/state 변경 차단.
-  const reloadTimerRef = useRef<number | null>(null);
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      if (reloadTimerRef.current != null) {
-        window.clearTimeout(reloadTimerRef.current);
-      }
-    };
-  }, []);
-  const scheduleReload = (ms: number) => {
-    if (!mountedRef.current) return;
-    if (reloadTimerRef.current != null) {
-      window.clearTimeout(reloadTimerRef.current);
-    }
-    reloadTimerRef.current = window.setTimeout(() => {
-      reloadTimerRef.current = null;
-      window.location.reload();
-    }, ms);
-  };
 
   // F#12 — stage='due-date' 는 show prop 과 무관하게 사용자가 명시적으로 저장/건너뛰기
   // 할 때까지 보존. 그렇지 않으면 parent re-render 가 weddingSettings.pregnant=true 를
@@ -126,17 +106,16 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
     try {
       // RPC v2: server-derived consent_type + agreed. 단순화된 시그니처.
       await setSensitivePreference({ field: "pregnant", value: true });
-      // R6-5 — RPC 후 unmount 됐으면 state/markConfirmed 모두 skip. 다음 mount 시 refetch.
-      if (!mountedRef.current) return;
+      // pregnant=true 가 DB 에 들어갔으니 wedding_settings 캐시 무효화 → 모든 호출자
+      // (PersonaDashboard 등) 가 자동 refetch. React Query 가 unmount 후 setState 자동 가드.
+      void invalidateWeddingSettings();
       markConfirmed(SIGNAL_KEYS.pregnancyInterest);
       setStage("due-date");
     } catch (e) {
       console.error("pregnancy confirm failed", e);
-      if (mountedRef.current) {
-        toast.error("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
-      }
+      toast.error("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
     } finally {
-      if (mountedRef.current) setSaving(false);
+      setSaving(false);
     }
   };
 
@@ -158,29 +137,24 @@ export default function PregnancyConfirmFlow({ show, onChange }: Props) {
         value: true,
         extraPatch: { pregnancy_due_date: format(dueDate, "yyyy-MM-dd") },
       });
-      // R6-5 — RPC 후 unmount 됐으면 toast/onChange/reload 모두 skip.
-      if (!mountedRef.current) return;
       toast.success("본식 시점 차수에 맞춰 일정·드레스·신혼여행을 정리해드릴게요");
       onChange();
-      scheduleReload(1200);
+      void invalidateWeddingSettings();
     } catch (e) {
       console.error("due date save failed", e);
-      if (mountedRef.current) {
-        toast.error("저장에 실패했어요. 마이페이지에서 다시 입력하실 수 있어요.");
-        onChange();
-      }
+      toast.error("저장에 실패했어요. 마이페이지에서 다시 입력하실 수 있어요.");
+      onChange();
     } finally {
-      if (mountedRef.current) setSaving(false);
+      setSaving(false);
     }
   };
 
-  // F#14 — saving·이미 예약된 reload 중일 때 추가 클릭 무시. 중복 toast / 중복
-  // setTimeout race 방지. unmount 시 timer cleanup 도 useEffect 에서 처리됨.
   const handleSkipDueDate = () => {
-    if (saving || reloadTimerRef.current != null) return;
+    if (saving) return;
     toast.info("나중에 마이페이지에서 출산예정일을 입력하시면 더 정확해져요", { duration: 3500 });
     onChange();
-    scheduleReload(800);
+    // pregnant=true 가 이미 저장됐을 수 있으므로 다른 surface refresh 위해 invalidate.
+    void invalidateWeddingSettings();
   };
 
   if (stage === "confirm") {

@@ -3,9 +3,13 @@
 // 행동 신호(remarriageInterest) 누적 임계값 도달 시 SoftConfirmCard 노출 →
 // 사용자가 "받기" 누르면 marital_history='remarriage' 저장 + 동의 기록.
 // 임신과 달리 inline 2단계 입력 없음 (single field).
+//
+// 마이그레이션(React Query): window.location.reload() 제거 — setSensitivePreference 후
+// useInvalidateWeddingSettings() 로 ['wedding_settings', userId] 캐시 invalidate.
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInvalidateWeddingSettings } from "@/hooks/useWeddingSchedule";
 import { setSensitivePreference } from "@/lib/sensitiveConsent";
 import { markConfirmed, markDismissed, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import { toast } from "sonner";
@@ -18,17 +22,8 @@ interface Props {
 
 export default function RemarriageConfirmFlow({ show, onChange }: Props) {
   const { user } = useAuth();
+  const invalidateWeddingSettings = useInvalidateWeddingSettings();
   const [saving, setSaving] = useState(false);
-
-  const reloadTimerRef = useRef<number | null>(null);
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      if (reloadTimerRef.current != null) window.clearTimeout(reloadTimerRef.current);
-    };
-  }, []);
 
   if (!user || !show) return null;
 
@@ -37,23 +32,15 @@ export default function RemarriageConfirmFlow({ show, onChange }: Props) {
     setSaving(true);
     try {
       await setSensitivePreference({ field: "marital_history", value: "remarriage" });
-      if (!mountedRef.current) return;
       markConfirmed(SIGNAL_KEYS.remarriageInterest);
       toast.success("작은 가족식 톤·자녀 동반 가이드를 활성화했어요");
       onChange();
-      if (mountedRef.current) {
-        reloadTimerRef.current = window.setTimeout(() => {
-          reloadTimerRef.current = null;
-          window.location.reload();
-        }, 1200);
-      }
+      void invalidateWeddingSettings();
     } catch (e) {
       console.error("remarriage confirm failed", e);
-      if (mountedRef.current) {
-        toast.error("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
-      }
+      toast.error("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
     } finally {
-      if (mountedRef.current) setSaving(false);
+      setSaving(false);
     }
   };
 
