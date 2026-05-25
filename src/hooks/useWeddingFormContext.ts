@@ -1,6 +1,45 @@
 import { useWeddingSchedule } from "./useWeddingSchedule";
 import { useBudget } from "./useBudget";
-import { BUDGET_OPTIONS_VENUE, BUDGET_OPTIONS_SDME } from "@/components/wedding-planner/constants";
+import { BUDGET_OPTIONS_VENUE, BUDGET_OPTIONS_SDME, REGIONS as SURVEY_REGIONS } from "@/components/wedding-planner/constants";
+import { normalizeRegion } from "@/lib/regions";
+
+// Round 14 self-review P0 fix — budgetSettings.region 은 영문 key("chungnam"/"seoul" 등)
+// 로 저장됨. Survey REGIONS.searchKey 는 한글("충청남"/"서울" 등). 매핑 안 하면 단축 카드가
+// region 없이 submit. lib/regions normalizeRegion 으로 한글 풀네임("충청남도")→약자
+// ("충청남") 매핑 후 영문 key 도 동일한 약자로 변환.
+const BUDGET_REGION_TO_SEARCH_KEY: Record<string, string> = {
+  seoul: "서울",
+  gyeonggi: "경기",
+  incheon: "인천",
+  busan: "부산",
+  daegu: "대구",
+  gwangju: "광주",
+  daejeon: "대전",
+  ulsan: "울산",
+  sejong: "세종",
+  gangwon: "강원",
+  chungbuk: "충청북",
+  chungnam: "충청남",
+  jeonbuk: "전북",
+  jeonnam: "전라남",
+  gyeongbuk: "경상북",
+  gyeongnam: "경상남",
+  jeju: "제주",
+};
+
+/** 어떤 형태(wedding_region 풀네임 / budget region 영문 key / 약자) 가 들어와도
+ *  Survey REGIONS.searchKey 와 매칭되는 값으로 정규화. 매칭 실패 시 null (prefill skip). */
+function normalizeToSurveyKey(input: string | null | undefined): string | null {
+  if (!input) return null;
+  // 1차 — 영문 key 직접 매핑
+  if (BUDGET_REGION_TO_SEARCH_KEY[input]) return BUDGET_REGION_TO_SEARCH_KEY[input];
+  // 2차 — 한글 (풀네임/약자/value) → lib/regions value 로 정규화
+  const normalized = normalizeRegion(input);
+  if (!normalized) return null;
+  // 3차 — Survey REGIONS.searchKey 에 실제 존재하는지 검증 (없으면 select <option> 매칭 안 됨)
+  if (SURVEY_REGIONS.some((r) => r.searchKey === normalized)) return normalized;
+  return null;
+}
 
 /**
  * 챗봇 Survey 모달들이 매번 빈 상태로 열려서 사용자가 같은 정보를 반복 입력해야
@@ -53,9 +92,16 @@ export const useWeddingFormContext = (): WeddingFormContext => {
   const venueBudget = (cat as Record<string, number>)["venue"] ?? null;
   const sdmeBudget = (cat as Record<string, number>)["sdm"] ?? null;
 
+  // Round 14 P0 fix — Survey REGIONS.searchKey 와 매칭되는 정규화 값 반환. raw wedding_region
+  // ("충청남도") 또는 budget region ("chungnam") 그대로 반환하면 모달 select 매칭 0 + 단축
+  // 카드가 region 없이 submit 하는 회귀. 매칭 실패 시 null → prefill 안 함.
+  const normalizedRegion =
+    normalizeToSurveyKey(weddingSettings.wedding_region) ??
+    normalizeToSurveyKey(budgetSettings?.region);
+
   return {
     defaultWeddingDate: weddingDate,
-    defaultRegion: weddingSettings.wedding_region ?? budgetSettings?.region ?? null,
+    defaultRegion: normalizedRegion,
     defaultGuests: budgetSettings?.guest_count ? String(budgetSettings.guest_count) : null,
     defaultTotalBudget: budgetSettings?.total_budget ? String(budgetSettings.total_budget) : null,
     defaultVenueBudgetLabel: findBudgetLabel(venueBudget, BUDGET_OPTIONS_VENUE),
