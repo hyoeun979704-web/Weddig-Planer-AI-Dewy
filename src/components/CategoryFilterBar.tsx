@@ -3,7 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useCategoryFilterStore, CategoryType } from "@/stores/useCategoryFilterStore";
+import { REGIONS } from "@/lib/regions";
 import React, { useState, forwardRef } from "react";
+
+// Round 13 — 한국 17개 시·도. lib REGIONS 에서 value/label 통일된 약자 사용 (전북/전남
+// /충북/충남/서울/경기/...). ILIKE '%약자%' 가 DB places.city 풀네임 매칭하므로 동작 보존.
+// 모든 카테고리 region 칩에서 동일 17개 노출 (데이터 없는 곳은 클릭 시 0건이 정직한 신호).
+const KOREA_REGIONS = REGIONS.map((r) => ({ value: r.value, label: r.label }));
 
 interface FilterConfig {
   title: string;
@@ -20,25 +26,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   venues: {
     title: "웨딩홀 필터",
     regionLabel: "지역",
-    regions: [
-      { value: "서울특별시", label: "서울" },
-      { value: "경기도", label: "경기" },
-      { value: "인천광역시", label: "인천" },
-      { value: "부산광역시", label: "부산" },
-      { value: "대구광역시", label: "대구" },
-      { value: "대전광역시", label: "대전" },
-      { value: "광주광역시", label: "광주" },
-      { value: "울산광역시", label: "울산" },
-      { value: "세종", label: "세종" },
-      { value: "강원", label: "강원" },
-      { value: "충청북", label: "충북" },
-      { value: "충청남", label: "충남" },
-      { value: "전북", label: "전북" },
-      { value: "전라남", label: "전남" },
-      { value: "경상북", label: "경북" },
-      { value: "경상남", label: "경남" },
-      { value: "제주", label: "제주" },
-    ],
+    regions: KOREA_REGIONS,
     // Round 12 — place_wedding_halls.hall_styles 실제 분포 기준. 컨벤션(129)/하우스(106)/
     // 호텔(93)/가든(67)/야외(63)/모던(45)/채플(27)/클래식(23)/한옥(5) 만 의미있게 노출.
     filterOptions1: {
@@ -76,25 +64,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   studios: {
     title: "스드메 필터",
     regionLabel: "지역",
-    regions: [
-      { value: "서울특별시", label: "서울" },
-      { value: "경기도", label: "경기" },
-      { value: "인천광역시", label: "인천" },
-      { value: "부산광역시", label: "부산" },
-      { value: "대구광역시", label: "대구" },
-      { value: "대전광역시", label: "대전" },
-      { value: "광주광역시", label: "광주" },
-      { value: "울산광역시", label: "울산" },
-      { value: "세종", label: "세종" },
-      { value: "강원", label: "강원" },
-      { value: "충청북", label: "충북" },
-      { value: "충청남", label: "충남" },
-      { value: "전북", label: "전북" },
-      { value: "전라남", label: "전남" },
-      { value: "경상북", label: "경북" },
-      { value: "경상남", label: "경남" },
-      { value: "제주", label: "제주" },
-    ],
+    regions: KOREA_REGIONS,
     // Round 12 — place_studios.package_types 실제: 스냅(69)/본식(50)/리허설(33)/
     // 풀패키지(20)/웨딩화보(9)/본식+리허설(9)/데이트스냅(7).
     filterOptions1: {
@@ -132,15 +102,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   dress_shops: {
     title: "드레스샵 필터",
     regionLabel: "지역",
-    regions: [
-      { value: "서울특별시", label: "서울" },
-      { value: "경기도", label: "경기" },
-      { value: "인천광역시", label: "인천" },
-      { value: "부산광역시", label: "부산" },
-      { value: "대구광역시", label: "대구" },
-      { value: "대전광역시", label: "대전" },
-      { value: "광주광역시", label: "광주" },
-    ],
+    regions: KOREA_REGIONS,
     // Round 12 — place_dress_shops.dress_styles 실제: 심플(5)/모던(5)/로맨틱(4)/
     // 비즈(3)/머메이드(3)/A라인(2)/벨라인(2). 데이터 자체가 적어 일관성 약함.
     // UI 칩 = DB 값 정확 매칭으로만 노출.
@@ -164,15 +126,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   makeup_shops: {
     title: "메이크업샵 필터",
     regionLabel: "지역",
-    regions: [
-      { value: "서울특별시", label: "서울" },
-      { value: "경기도", label: "경기" },
-      { value: "인천광역시", label: "인천" },
-      { value: "부산광역시", label: "부산" },
-      { value: "대구광역시", label: "대구" },
-      { value: "대전광역시", label: "대전" },
-      { value: "광주광역시", label: "광주" },
-    ],
+    regions: KOREA_REGIONS,
     // Round 12 — place_makeup_shops.makeup_styles 실제: 내추럴(9)/모던(2)/리허설(2)/
     // 트렌디(2)/청순(2)/세련된(2)/우아한(2)/맞춤형(2). 매우 적어 의미 약함.
     // 글램/로맨틱 같은 기존 UI 값은 DB 0건.
@@ -337,25 +291,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   suits: {
     title: "예복 필터",
     regionLabel: "지역",
-    regions: [
-      { value: "서울특별시", label: "서울" },
-      { value: "경기도", label: "경기" },
-      { value: "인천광역시", label: "인천" },
-      { value: "부산광역시", label: "부산" },
-      { value: "대구광역시", label: "대구" },
-      { value: "대전광역시", label: "대전" },
-      { value: "광주광역시", label: "광주" },
-      { value: "울산광역시", label: "울산" },
-      { value: "세종", label: "세종" },
-      { value: "강원", label: "강원" },
-      { value: "충청북", label: "충북" },
-      { value: "충청남", label: "충남" },
-      { value: "전북", label: "전북" },
-      { value: "전라남", label: "전남" },
-      { value: "경상북", label: "경북" },
-      { value: "경상남", label: "경남" },
-      { value: "제주", label: "제주" },
-    ],
+    regions: KOREA_REGIONS,
     // Round 12 — place_tailor_shops.suit_styles 실제: 정장(97)/클래식(18)/턱시도(11)/
     // 비스포크(3)/모던(2)/MTM(2). 기존 UI [예복/캐주얼/프리미엄] 은 DB 0건.
     filterOptions1: {
@@ -382,25 +318,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   hanbok: {
     title: "한복 필터",
     regionLabel: "지역",
-    regions: [
-      { value: "서울특별시", label: "서울" },
-      { value: "경기도", label: "경기" },
-      { value: "인천광역시", label: "인천" },
-      { value: "부산광역시", label: "부산" },
-      { value: "대구광역시", label: "대구" },
-      { value: "대전광역시", label: "대전" },
-      { value: "광주광역시", label: "광주" },
-      { value: "울산광역시", label: "울산" },
-      { value: "세종", label: "세종" },
-      { value: "강원", label: "강원" },
-      { value: "충청북", label: "충북" },
-      { value: "충청남", label: "충남" },
-      { value: "전북", label: "전북" },
-      { value: "전라남", label: "전남" },
-      { value: "경상북", label: "경북" },
-      { value: "경상남", label: "경남" },
-      { value: "제주", label: "제주" },
-    ],
+    regions: KOREA_REGIONS,
     // Round 12 — place_hanboks.hanbok_types 실제: 혼주(151)/대여(117)/신부(102)/
     // 신랑(72)/맞춤(50)/어머님(27)/폐백(16)/돌잔치(15)/아버님(14)/가족(6)/아동/행사/
     // 웨딩촬영(4)/하객. 기존 UI [신부한복/혼주한복/폐백한복] 는 잘못된 suffix 로 0 매칭.
@@ -433,25 +351,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
   invitation_venues: {
     title: "청첩장 모임 필터",
     regionLabel: "지역",
-    regions: [
-      { value: "서울특별시", label: "서울" },
-      { value: "경기도", label: "경기" },
-      { value: "인천광역시", label: "인천" },
-      { value: "부산광역시", label: "부산" },
-      { value: "대구광역시", label: "대구" },
-      { value: "대전광역시", label: "대전" },
-      { value: "광주광역시", label: "광주" },
-      { value: "울산광역시", label: "울산" },
-      { value: "세종", label: "세종" },
-      { value: "강원", label: "강원" },
-      { value: "충청북", label: "충북" },
-      { value: "충청남", label: "충남" },
-      { value: "전북", label: "전북" },
-      { value: "전라남", label: "전남" },
-      { value: "경상북", label: "경북" },
-      { value: "경상남", label: "경남" },
-      { value: "제주", label: "제주" },
-    ],
+    regions: KOREA_REGIONS,
     // Round 12 — place_invitation_venues.venue_types 실제: 한식(65)/룸(20)/프라이빗(20)/
     // 양식(13)/코스(10)/일식(7)/이탈리안(3)/캐주얼다이닝(2)/중식(2). venue_types 는
     // 음식/공간 속성이 섞여있는 단일 컬럼이라 UI 도 단일 차원으로 통합.

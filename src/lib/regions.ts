@@ -10,24 +10,26 @@ export interface RegionEntry {
   fullName: string;  // 행정 풀네임 (저장 시 사용)
 }
 
+// Round 13 — value/label 모두 약자로 통일. ILIKE '%약자%' 가 풀네임 매칭하므로
+// 동작 보존. 통일 후 사용자가 "서울특별시" 같은 풀네임을 어디서도 보지 않음.
 export const REGIONS: RegionEntry[] = [
-  { value: "서울특별시", label: "서울", fullName: "서울특별시" },
-  { value: "경기도",     label: "경기", fullName: "경기도" },
-  { value: "인천광역시", label: "인천", fullName: "인천광역시" },
-  { value: "부산광역시", label: "부산", fullName: "부산광역시" },
-  { value: "대구광역시", label: "대구", fullName: "대구광역시" },
-  { value: "대전광역시", label: "대전", fullName: "대전광역시" },
-  { value: "광주광역시", label: "광주", fullName: "광주광역시" },
-  { value: "울산광역시", label: "울산", fullName: "울산광역시" },
-  { value: "세종",       label: "세종", fullName: "세종특별자치시" },
-  { value: "강원",       label: "강원", fullName: "강원특별자치도" },
-  { value: "충청북",     label: "충북", fullName: "충청북도" },
-  { value: "충청남",     label: "충남", fullName: "충청남도" },
-  { value: "전북",       label: "전북", fullName: "전북특별자치도" },
-  { value: "전라남",     label: "전남", fullName: "전라남도" },
-  { value: "경상북",     label: "경북", fullName: "경상북도" },
-  { value: "경상남",     label: "경남", fullName: "경상남도" },
-  { value: "제주",       label: "제주", fullName: "제주특별자치도" },
+  { value: "서울", label: "서울", fullName: "서울특별시" },
+  { value: "경기", label: "경기", fullName: "경기도" },
+  { value: "인천", label: "인천", fullName: "인천광역시" },
+  { value: "부산", label: "부산", fullName: "부산광역시" },
+  { value: "대구", label: "대구", fullName: "대구광역시" },
+  { value: "대전", label: "대전", fullName: "대전광역시" },
+  { value: "광주", label: "광주", fullName: "광주광역시" },
+  { value: "울산", label: "울산", fullName: "울산광역시" },
+  { value: "세종", label: "세종", fullName: "세종특별자치시" },
+  { value: "강원", label: "강원", fullName: "강원특별자치도" },
+  { value: "충북", label: "충북", fullName: "충청북도" },
+  { value: "충남", label: "충남", fullName: "충청남도" },
+  { value: "전북", label: "전북", fullName: "전북특별자치도" },
+  { value: "전남", label: "전남", fullName: "전라남도" },
+  { value: "경북", label: "경북", fullName: "경상북도" },
+  { value: "경남", label: "경남", fullName: "경상남도" },
+  { value: "제주", label: "제주", fullName: "제주특별자치도" },
 ];
 
 /** 어떤 형태(label/value/fullName)로 들어와도 ILIKE 검색에 안전한 value로 정규화.
