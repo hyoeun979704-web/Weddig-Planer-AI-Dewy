@@ -153,7 +153,9 @@ async function main(): Promise<void> {
         categories,
         search_query: "rss-sync",
         collected_at: new Date().toISOString(),
-        is_active: true,
+        // Round 21 — 분류 0개 = off-topic 으로 간주, is_active=false 로 저장하여
+        // UI 에서 자동 차단. video_id PK 충돌이 idempotent 가드.
+        is_active: categories.length > 0,
       };
     });
 

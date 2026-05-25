@@ -131,7 +131,10 @@ async function main() {
       categories,
       search_query: v.search_query,
       collected_at: new Date().toISOString(),
-      is_active: true,
+      // Round 21 — 분류 0개 영상은 is_active=false 로 저장. useTipVideos 가 자동
+      // 제외 (UI 노출 차단). idempotent: 같은 video_id 가 매 run 재유입돼도 한
+      // 번만 분류 시도 + UI 영향 0. 운영자가 DB 에서 noise 확인 가능.
+      is_active: categories.length > 0,
     };
   });
   console.log(
