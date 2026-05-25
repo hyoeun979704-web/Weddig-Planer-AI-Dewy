@@ -9,20 +9,6 @@ import { Button } from "@/components/ui/button";
 import { venueToCardData } from "@/lib/categoryCardAdapter";
 import { regionLabel } from "@/lib/regions";
 
-// Round 14 — 도 단위 region 의 데이터 부재 케이스 인접 광역시 매핑. CategoryGrid 와 동일.
-const REGION_NEIGHBORS: Record<string, { value: string; label: string }[]> = {
-  "충청남": [{ value: "대전", label: "대전" }, { value: "세종", label: "세종" }],
-  "충청북": [{ value: "대전", label: "대전" }, { value: "세종", label: "세종" }],
-  "강원":   [{ value: "서울", label: "서울" }, { value: "경기", label: "경기" }],
-  "전라남": [{ value: "광주", label: "광주" }],
-  "전북":   [{ value: "광주", label: "광주" }],
-  "경상남": [{ value: "부산", label: "부산" }, { value: "대구", label: "대구" }, { value: "울산", label: "울산" }],
-  "경상북": [{ value: "대구", label: "대구" }, { value: "부산", label: "부산" }],
-  "제주":   [{ value: "부산", label: "부산" }],
-  "세종":   [{ value: "대전", label: "대전" }],
-  "울산":   [{ value: "부산", label: "부산" }],
-};
-
 interface VenueGridProps {
   onVenueClick?: (venue: Venue) => void;
   partnersOnly?: boolean;
@@ -124,7 +110,6 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
       !!sigungu || !!maxPrice || !!maxGuarantee || !!minGuarantee || !!minRating ||
       hallTypes.length > 0 || mealOptions.length > 0 || eventOptions.length > 0;
     const regionOnly = !!region && !hasNonRegionFilter;
-    const neighbors = region ? REGION_NEIGHBORS[region] ?? [] : [];
     const regionName = region ? regionLabel(region) : "";
 
     if (regionOnly) {
@@ -134,26 +119,15 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
           <div className="space-y-1">
             <p className="text-foreground font-semibold">{regionName} 웨딩홀 데이터가 아직 없어요</p>
             <p className="text-sm text-muted-foreground">
-              {neighbors.length > 0
-                ? `인접 지역 (${neighbors.map((n) => n.label).join("·")}) 또는 전국 결과를 보여드릴 수 있어요.`
-                : "전국 결과를 보여드릴 수 있어요."}
+              곧 추가될 예정이에요. 전국 결과를 먼저 둘러보시겠어요?
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 justify-center pt-1">
-            {neighbors.slice(0, 2).map((n) => (
-              <Button
-                key={n.value}
-                variant="outline"
-                size="sm"
-                onClick={() => setRegion(n.value)}
-                className="text-xs"
-              >
-                <MapPin className="w-3 h-3 mr-1" />
-                {n.label} 보기
-              </Button>
-            ))}
+          <div className="flex gap-2 justify-center pt-1">
             <Button variant="default" size="sm" onClick={() => setRegion(null)} className="text-xs">
               전국 보기
+            </Button>
+            <Button variant="outline" size="sm" onClick={resetFilters} className="text-xs">
+              필터 초기화
             </Button>
           </div>
         </div>
