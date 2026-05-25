@@ -22,6 +22,7 @@
 import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import { searchVideos, fetchVideoStats } from "./youtube";
+import { fetchTranscript } from "./transcript";
 import { TIP_QUERIES, TIP_CATEGORIES, type TipCategory } from "./queries";
 import { normalizeTipCategories } from "../../src/lib/tipNormalize";
 import { classifyTipCategories } from "../../src/lib/tipClassify";
@@ -104,17 +105,35 @@ async function main() {
   console.log(`\n[collect-tips] pooled ${pool.size} unique videos`);
   if (pool.size === 0) return;
 
-  // Enrich with stats (view/like/duration) — 1 batched call per 50 videos.
+  // Enrich with stats — videos.list 1 unit/50 ids, now also returns full
+  // description + creator self-tags (snippet.tags). part=snippet 추가는 무료.
   const ids = Array.from(pool.keys());
   console.log(`[collect-tips] fetching stats for ${ids.length} videos…`);
   const stats = await fetchVideoStats(ids, apiKey);
 
+  // Round 21 — 자막 fetch (quota 0, youtube-transcript 라이브러리). 자막 있는
+  // 영상에서 약 1-2초 / 없는 영상은 즉시 반환. 직렬 처리 — IP throttle 회피.
+  console.log(`[collect-tips] fetching transcripts (quota-free)…`);
+  const transcripts = new Map<string, string>();
+  let withTranscript = 0;
+  for (const id of ids) {
+    const t = await fetchTranscript(id);
+    transcripts.set(id, t);
+    if (t) withTranscript++;
+  }
+  console.log(`[collect-tips] transcripts: ${withTranscript}/${ids.length}`);
+
   let uncategorized = 0;
   const rows = Array.from(pool.values()).map((v) => {
     const s = stats.get(v.video_id);
-    const text = `${v.title} ${v.description} ${v.channel_name}`;
+    const transcript = transcripts.get(v.video_id) ?? "";
+    // 분류 입력: title + (videos.list full description ?? search snippet desc) +
+    // tags 텍스트화 + transcript + channel. 패턴 매치 토큰량 ~10배 증가.
+    const fullDesc = s?.fullDescription || v.description || "";
+    const tagsText = (s?.tags ?? []).join(" ");
+    const classifyText = `${v.title} ${fullDesc} ${tagsText} ${transcript} ${v.channel_name}`;
     const categories = normalizeTipCategories(
-      classifyTipCategories(text, TIP_CATEGORIES),
+      classifyTipCategories(classifyText, TIP_CATEGORIES),
     );
     if (categories.length === 0) uncategorized++;
     return {
@@ -127,8 +146,11 @@ async function main() {
       view_count: s?.viewCount ?? 0,
       like_count: s?.likeCount ?? 0,
       published_at: v.published_at,
-      description: v.description,
+      description: fullDesc,
       categories,
+      // YouTube creator 가 영상에 단 자가-태그. UI 검색 (useTipVideos.tags.cs)
+      // 에서도 활용됨. 분류와 별개로 보존.
+      tags: s?.tags ?? [],
       search_query: v.search_query,
       collected_at: new Date().toISOString(),
       // Round 21 — 분류 0개 영상은 is_active=false 로 저장. useTipVideos 가 자동

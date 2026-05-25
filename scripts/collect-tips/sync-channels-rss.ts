@@ -18,6 +18,7 @@ import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import { fetchChannelRss, type RssVideo } from "./rss";
 import { fetchVideoStats } from "./youtube";
+import { fetchTranscript } from "./transcript";
 import { TIP_CATEGORIES } from "./queries";
 import { normalizeTipCategories } from "../../src/lib/tipNormalize";
 import { classifyTipCategories } from "../../src/lib/tipClassify";
@@ -127,16 +128,32 @@ async function main(): Promise<void> {
   let uncategorized = 0;
 
   if (pool.size > 0) {
-    // Stats enrich: video.list 는 50 IDs / 1 unit.
+    // Stats enrich: video.list 는 50 IDs / 1 unit. snippet 추가는 무료.
     const ids = Array.from(pool.keys());
     console.log(`[sync-channels-rss] fetching stats for ${ids.length} videos…`);
     const stats = await fetchVideoStats(ids, apiKey);
 
+    // Round 21 — 자막 fetch (quota 0). 자막 있는 영상에서만 분류 입력 강화.
+    console.log(`[sync-channels-rss] fetching transcripts…`);
+    const transcripts = new Map<string, string>();
+    let withTranscript = 0;
+    for (const id of ids) {
+      const t = await fetchTranscript(id);
+      transcripts.set(id, t);
+      if (t) withTranscript++;
+    }
+    console.log(`[sync-channels-rss] transcripts: ${withTranscript}/${ids.length}`);
+
     rows = Array.from(pool.values()).map((v) => {
       const s = stats.get(v.videoId);
-      const text = `${v.title} ${v.description} ${v.channelTitle}`;
+      const transcript = transcripts.get(v.videoId) ?? "";
+      // 분류 입력: title + videos.list 의 full description (RSS desc 가 비어있을
+      // 때 fallback) + tags + transcript + channel.
+      const fullDesc = s?.fullDescription || v.description || "";
+      const tagsText = (s?.tags ?? []).join(" ");
+      const classifyText = `${v.title} ${fullDesc} ${tagsText} ${transcript} ${v.channelTitle}`;
       const categories = normalizeTipCategories(
-        classifyTipCategories(text, TIP_CATEGORIES),
+        classifyTipCategories(classifyText, TIP_CATEGORIES),
       );
       if (categories.length === 0) uncategorized++;
       return {
@@ -149,8 +166,9 @@ async function main(): Promise<void> {
         view_count: s?.viewCount ?? v.viewCountFromFeed ?? 0,
         like_count: s?.likeCount ?? 0,
         published_at: v.publishedAt,
-        description: v.description,
+        description: fullDesc,
         categories,
+        tags: s?.tags ?? [],
         search_query: "rss-sync",
         collected_at: new Date().toISOString(),
         // Round 21 — 분류 0개 = off-topic 으로 간주, is_active=false 로 저장하여
