@@ -530,7 +530,10 @@ export function isLessonVisible(
     return false;
   }
   // requires* 가 있는데 ctx 값이 null 이면 화이트리스트 매치 불가 — 숨김.
+  // Round 22: requiresStyles 도 동일하게 처리. 변경 전엔 style=null 이면 통과되어
+  // self 전용 lesson 이 onboarding 미완료 사용자에게도 노출되는 불일치 발생.
   if (lesson.requiresPersonas && !ctx.persona) return false;
+  if (lesson.requiresStyles && !ctx.style) return false;
   if (lesson.excludePersonas && ctx.persona && lesson.excludePersonas.includes(ctx.persona)) {
     return false;
   }

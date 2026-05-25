@@ -122,3 +122,29 @@ export function classifyTipCategories(
   }
   return order.filter((c) => matched.has(c));
 }
+
+/**
+ * 분류 입력 텍스트의 표준 구성. collect-tips/index.ts, sync-channels-rss.ts,
+ * reclassify.ts 가 동일한 순서·구성으로 텍스트를 생성하도록 보장 —
+ * 세 스크립트의 drift 가능성을 차단.
+ *
+ * 순서: title → full description (videos.list) → creator tags (snippet.tags)
+ * → transcript (youtube-transcript) → channel name.
+ *
+ * 각 필드는 빈 문자열로 안전하게 default — undefined 가 "undefined" 문자열로
+ * stringify 되는 회귀 방지.
+ */
+export function buildClassifyText(parts: {
+  title?: string | null;
+  description?: string | null;
+  tags?: ReadonlyArray<string> | null;
+  transcript?: string | null;
+  channelName?: string | null;
+}): string {
+  const title = parts.title ?? "";
+  const description = parts.description ?? "";
+  const tagsText = (parts.tags ?? []).join(" ");
+  const transcript = parts.transcript ?? "";
+  const channelName = parts.channelName ?? "";
+  return `${title} ${description} ${tagsText} ${transcript} ${channelName}`;
+}

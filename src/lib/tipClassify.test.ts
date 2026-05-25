@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classifyTipCategories } from "./tipClassify";
+import { classifyTipCategories, buildClassifyText } from "./tipClassify";
 import { normalizeTipCategories } from "./tipNormalize";
 
 const ORDER = [
@@ -265,5 +265,70 @@ describe("classifyTipCategories", () => {
       expect(cats).toContain("appliance");
       expect(cats).not.toContain("makeup_shop");
     });
+  });
+
+  // Round 22 — anti-pattern 정확성 추가 검증 (false-negative 회귀 방지).
+  // 클릭베이트 키워드가 좁은 컨텍스트에서 hit 하더라도 정당한 결혼 영상이
+  // 부주의하게 차단되지 않는지 확인.
+  describe("Round 22 회귀: anti-pattern false-negative 방지", () => {
+    it("'1분' 단어만 들어간 정당한 결혼 영상은 살아남는다", () => {
+      // anti-pattern 은 /1분\s*순삭/ — '1분 만에' / '1분짜리' 같은 표현은 통과.
+      const cats = classifyTipCategories("결혼 준비 1분 꿀팁", ORDER);
+      expect(cats.length).toBeGreaterThan(0);
+      expect(cats).toContain("general");
+    });
+
+    it("'드라마' 가 결혼 컨텍스트에서 hit 해도 anti-pattern 안 잡힘", () => {
+      // anti-pattern 은 /드라마\s*몰아|드라마\s*요약|드라마\s*박스/ — '드라마 같은'
+      // 같은 비교 표현은 통과.
+      const cats = classifyTipCategories(
+        "드라마 같은 웨딩 사진 본식 스냅 후기",
+        ORDER,
+      );
+      expect(cats.length).toBeGreaterThan(0);
+      expect(cats).toContain("studio");
+    });
+
+    it("'썰' 단어가 결혼 컨텍스트에서 hit 해도 anti-pattern 안 잡힘", () => {
+      // anti-pattern 은 /썰\s*티비|썰\s*풀이/ — 일반 '썰' 표현은 통과.
+      const cats = classifyTipCategories("결혼 준비 실패 썰 모음", ORDER);
+      // general 매치는 안 될 수도 있지만 anti-pattern 으로 무효화되진 않아야.
+      // 명시적으로 빈 배열은 아니어야 함을 검증하는 게 어려움 — 대신 직접 검증.
+      const cats2 = classifyTipCategories("결혼 후기 진짜 썰", ORDER);
+      expect(cats2).toContain("general");
+    });
+
+    it("'TV' 가 정당한 가전 추천 컨텍스트에서는 appliance 매치", () => {
+      // 채널명의 'TV' 제거했지만 '혼수 TV' / 'TV 추천' 은 잡혀야.
+      expect(
+        classifyTipCategories("혼수 TV 추천 4K 화질 비교", ORDER),
+      ).toContain("appliance");
+    });
+  });
+});
+
+describe("buildClassifyText", () => {
+  it("composes parts in canonical order", () => {
+    const text = buildClassifyText({
+      title: "결혼식",
+      description: "본식 후기",
+      tags: ["wedding", "hall"],
+      transcript: "안녕하세요",
+      channelName: "웨딩언니",
+    });
+    expect(text).toBe("결혼식 본식 후기 wedding hall 안녕하세요 웨딩언니");
+  });
+
+  it("safely defaults missing fields to empty strings", () => {
+    // undefined / null 이 'undefined' 같은 문자열로 stringify 되는 회귀 방지.
+    const text = buildClassifyText({});
+    expect(text).toBe("    ");
+    expect(text).not.toContain("undefined");
+    expect(text).not.toContain("null");
+  });
+
+  it("joins tags with single spaces", () => {
+    const text = buildClassifyText({ tags: ["a", "b", "c"] });
+    expect(text).toContain("a b c");
   });
 });

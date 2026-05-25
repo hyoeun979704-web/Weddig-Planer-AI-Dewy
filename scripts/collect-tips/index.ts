@@ -25,7 +25,7 @@ import { searchVideos, fetchVideoStats } from "./youtube";
 import { fetchTranscript } from "./transcript";
 import { TIP_QUERIES, TIP_CATEGORIES, type TipCategory } from "./queries";
 import { normalizeTipCategories } from "../../src/lib/tipNormalize";
-import { classifyTipCategories } from "../../src/lib/tipClassify";
+import { classifyTipCategories, buildClassifyText } from "../../src/lib/tipClassify";
 
 interface Args {
   category?: TipCategory;
@@ -127,11 +127,16 @@ async function main() {
   const rows = Array.from(pool.values()).map((v) => {
     const s = stats.get(v.video_id);
     const transcript = transcripts.get(v.video_id) ?? "";
-    // 분류 입력: title + (videos.list full description ?? search snippet desc) +
-    // tags 텍스트화 + transcript + channel. 패턴 매치 토큰량 ~10배 증가.
+    // 분류 입력: 표준 helper (buildClassifyText) 사용으로 sync/reclassify 와
+    // 순서·구성 동일성 보장. 패턴 매치 토큰량 ~10배 증가.
     const fullDesc = s?.fullDescription || v.description || "";
-    const tagsText = (s?.tags ?? []).join(" ");
-    const classifyText = `${v.title} ${fullDesc} ${tagsText} ${transcript} ${v.channel_name}`;
+    const classifyText = buildClassifyText({
+      title: v.title,
+      description: fullDesc,
+      tags: s?.tags,
+      transcript,
+      channelName: v.channel_name,
+    });
     const categories = normalizeTipCategories(
       classifyTipCategories(classifyText, TIP_CATEGORIES),
     );

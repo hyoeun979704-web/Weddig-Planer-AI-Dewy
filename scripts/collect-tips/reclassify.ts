@@ -23,7 +23,7 @@ import { fetchVideoStats } from "./youtube";
 import { fetchTranscript } from "./transcript";
 import { TIP_CATEGORIES } from "./queries";
 import { normalizeTipCategories } from "../../src/lib/tipNormalize";
-import { classifyTipCategories } from "../../src/lib/tipClassify";
+import { classifyTipCategories, buildClassifyText } from "../../src/lib/tipClassify";
 
 interface Args {
   dryRun: boolean;
@@ -142,7 +142,14 @@ async function main(): Promise<void> {
     const desc = en?.description ?? v.description ?? "";
     const tags = en?.tags ?? v.tags ?? [];
     const transcript = transcriptMap.get(v.video_id) ?? "";
-    const text = `${v.title ?? ""} ${desc} ${tags.join(" ")} ${transcript} ${v.channel_name ?? ""}`;
+    // 표준 helper — index/sync 와 분류 입력 구성 동일.
+    const text = buildClassifyText({
+      title: v.title,
+      description: desc,
+      tags,
+      transcript,
+      channelName: v.channel_name,
+    });
     const newCats = normalizeTipCategories(
       classifyTipCategories(text, TIP_CATEGORIES),
     );

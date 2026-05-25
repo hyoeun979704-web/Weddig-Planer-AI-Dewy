@@ -533,7 +533,8 @@ export type DbHandlerKey =
   | "free_search"
   | "average_price"
   | "popular_places"
-  | "venue_compare";
+  | "venue_compare"
+  | "web_search";
 
 const isItemTypeKey = (s: string | undefined): s is ItemTypeKey =>
   !!s && s in ITEM_TYPE_MAP;

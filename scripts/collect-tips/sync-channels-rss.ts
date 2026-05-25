@@ -21,7 +21,7 @@ import { fetchVideoStats } from "./youtube";
 import { fetchTranscript } from "./transcript";
 import { TIP_CATEGORIES } from "./queries";
 import { normalizeTipCategories } from "../../src/lib/tipNormalize";
-import { classifyTipCategories } from "../../src/lib/tipClassify";
+import { classifyTipCategories, buildClassifyText } from "../../src/lib/tipClassify";
 
 interface Args {
   limit: number | null;
@@ -147,11 +147,15 @@ async function main(): Promise<void> {
     rows = Array.from(pool.values()).map((v) => {
       const s = stats.get(v.videoId);
       const transcript = transcripts.get(v.videoId) ?? "";
-      // 분류 입력: title + videos.list 의 full description (RSS desc 가 비어있을
-      // 때 fallback) + tags + transcript + channel.
+      // 분류 입력: 표준 helper 사용 — index/reclassify 와 순서·구성 동일.
       const fullDesc = s?.fullDescription || v.description || "";
-      const tagsText = (s?.tags ?? []).join(" ");
-      const classifyText = `${v.title} ${fullDesc} ${tagsText} ${transcript} ${v.channelTitle}`;
+      const classifyText = buildClassifyText({
+        title: v.title,
+        description: fullDesc,
+        tags: s?.tags,
+        transcript,
+        channelName: v.channelTitle,
+      });
       const categories = normalizeTipCategories(
         classifyTipCategories(classifyText, TIP_CATEGORIES),
       );

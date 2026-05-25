@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
 import { chaptersForUser, firstStartableLessonForUser } from "@/data/tutorialChapters";
+import { isOnboarded } from "@/lib/onboarding";
 
 // Round 18 — subline 톤 정정:
 // '30초만에 둘러보기' 는 home-tour 1개 만 약속. 나머지 챕터는 천천히 진행할 수
@@ -59,11 +60,9 @@ const TutorialWelcomeSheet = () => {
     // 이라도 returning user 에게 다시 안 띄움.
     if (progress.welcomeShown) return;
     // Wait until onboarding is finished — otherwise we'd race the wedding-info
-    // modal and stack two sheets.
-    const hasDateInfo = !!weddingSettings.wedding_date || weddingSettings.wedding_date_tbd;
-    const hasRegionInfo = !!weddingSettings.wedding_region || weddingSettings.wedding_region_tbd;
-    const onboarded = (hasDateInfo && hasRegionInfo) || !!weddingSettings.planning_stage;
-    if (!onboarded) return;
+    // modal and stack two sheets. 판정 로직은 lib/onboarding.ts 의 공유 함수
+    // 사용 (useHomeFirstRun 등과 동일 기준 보장).
+    if (!isOnboarded(weddingSettings)) return;
     // Small delay so the user sees the home screen first; otherwise the
     // welcome feels like another mandatory modal.
     const t = setTimeout(() => setOpen(true), 1200);
