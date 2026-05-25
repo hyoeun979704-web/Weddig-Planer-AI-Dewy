@@ -174,11 +174,13 @@ const Auth = () => {
     // OAuth 콜백엔 가입 폼 metadata 를 실어보낼 수 없어, 마케팅 수신 동의를
     // localStorage 에 잠시 보관한다. 첫 로그인 후 AuthContext 가 이를 읽어
     // user_consents(marketing_v1) 로 기록한다.
+    // Round 22 — JSON + timestamp 로 강화. 같은 키 stale 값이 다른 탭/다른
+    // 가입 시도에서 잘못 적용되는 것 방지. 24시간 후 만료 (backfill 안에서 체크).
     if (isSignUp) {
       try {
         localStorage.setItem(
           "dewy:pending-marketing-consent",
-          marketingConsent ? "1" : "0",
+          JSON.stringify({ value: marketingConsent ? "1" : "0", ts: Date.now() }),
         );
       } catch {
         // best effort

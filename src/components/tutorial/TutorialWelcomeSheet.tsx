@@ -174,7 +174,9 @@ const TutorialWelcomeSheet = () => {
             className="flex-[2] h-11 rounded-xl text-primary-foreground font-bold text-sm bg-primary flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
           >
             <Play className="w-4 h-4" />
-            홈 화면 30초 둘러보기
+            {/* Round 22 — startTarget 이 없으면 (모든 startable 완료된 returning
+                user) "둘러보기" 약속 대신 정직하게 가이드 목록으로 안내. */}
+            {startTarget ? "홈 화면 30초 둘러보기" : "전체 가이드 목록 열기"}
           </button>
         </div>
 

@@ -19,6 +19,7 @@ const baseProfile: WeddingProfilePrefill = {
   displayName: "",
   partnerName: "",
   weddingStyle: "general",
+  personaMode: null,
   excludedCategories: [],
   completedCategories: [],
   isLoaded: true,
@@ -509,6 +510,123 @@ describe("persona simulations (6 personas)", () => {
     });
     const ranked = rankTipVideosForUser([stacked, plain], profile, { now: NOW });
     expect(ranked[0].video_id).toBe("plain");
+  });
+
+  // Round 22 — 페르소나 boost 회귀 테스트.
+  describe("페르소나 카테고리 boost (Round 22)", () => {
+    it("pregnancy user 가 임신 결혼 영상을 wedding_hall 영상보다 위로 본다", () => {
+      const profile: WeddingProfilePrefill = {
+        ...baseProfile,
+        weddingDate: "2026-12-15", // D-214 (wedding_hall phase)
+        personaMode: "pregnancy",
+      };
+      const pregnancyVideo = mkVideo({
+        video_id: "preg",
+        view_count: 50_000,
+        categories: ["pregnancy_wedding"],
+      });
+      const venueVideo = mkVideo({
+        video_id: "venue",
+        view_count: 1_000_000, // 훨씬 인기 있지만 페르소나 매치 X
+        categories: ["wedding_hall"],
+      });
+      const ranked = rankTipVideosForUser([venueVideo, pregnancyVideo], profile, { now: NOW });
+      expect(ranked[0].video_id).toBe("preg");
+    });
+
+    it("remarriage user 가 재혼 가족 영상을 상위로 본다", () => {
+      const profile: WeddingProfilePrefill = {
+        ...baseProfile,
+        weddingDate: "2026-11-15",
+        personaMode: "remarriage",
+      };
+      const remarriageVideo = mkVideo({
+        video_id: "rem",
+        view_count: 30_000,
+        categories: ["remarriage_family"],
+      });
+      const generalVideo = mkVideo({
+        video_id: "gen",
+        view_count: 5_000_000,
+        categories: ["general"],
+      });
+      const ranked = rankTipVideosForUser([generalVideo, remarriageVideo], profile, { now: NOW });
+      expect(ranked[0].video_id).toBe("rem");
+    });
+
+    it("international user 가 국제결혼 영상을 상위로 본다", () => {
+      const profile: WeddingProfilePrefill = {
+        ...baseProfile,
+        weddingDate: "2026-11-15",
+        personaMode: "international",
+      };
+      const intlVideo = mkVideo({
+        video_id: "intl",
+        view_count: 20_000,
+        categories: ["international_wedding"],
+      });
+      const honeymoonVideo = mkVideo({
+        video_id: "hm",
+        view_count: 2_000_000,
+        categories: ["honeymoon"],
+      });
+      const ranked = rankTipVideosForUser([honeymoonVideo, intlVideo], profile, { now: NOW });
+      expect(ranked[0].video_id).toBe("intl");
+    });
+
+    it("표준 페르소나 (standard_bride) 는 boost 영향 없음 — 기존 동작 유지", () => {
+      const profile: WeddingProfilePrefill = {
+        ...baseProfile,
+        weddingDate: "2026-12-15",
+        personaMode: "standard_bride",
+      };
+      const venueVideo = mkVideo({
+        video_id: "venue",
+        view_count: 1_000_000,
+        categories: ["wedding_hall"],
+      });
+      const generalVideo = mkVideo({
+        video_id: "gen",
+        view_count: 100,
+        categories: ["general"],
+      });
+      // wedding_hall 이 phase boost 받아서 1위. personaCategories 빈 배열이라
+      // 페르소나 boost 는 0 — 회귀 없음.
+      const ranked = rankTipVideosForUser([generalVideo, venueVideo], profile, { now: NOW });
+      expect(ranked[0].video_id).toBe("venue");
+    });
+
+    it("personaMode=null 일 때도 회귀 없음 (온보딩 미완)", () => {
+      const profile: WeddingProfilePrefill = {
+        ...baseProfile,
+        weddingDate: "2026-12-15",
+        personaMode: null,
+      };
+      const factors = buildCurationFactors(profile, NOW);
+      expect(factors.personaCategories).toEqual([]);
+    });
+
+    it("standard_groom 이 groom_focus 영상을 상위로 본다", () => {
+      // queries.ts 의 groom_focus seed (신랑 단독 결혼 준비 등) 가 수집됐어도
+      // 표준 신랑 페르소나가 boost 안 받으면 popularity 에 묻힘. Round 22 매핑.
+      const profile: WeddingProfilePrefill = {
+        ...baseProfile,
+        weddingDate: "2026-12-15",
+        personaMode: "standard_groom",
+      };
+      const groomVideo = mkVideo({
+        video_id: "groom",
+        view_count: 20_000,
+        categories: ["groom_focus"],
+      });
+      const venueVideo = mkVideo({
+        video_id: "venue",
+        view_count: 1_000_000,
+        categories: ["wedding_hall"],
+      });
+      const ranked = rankTipVideosForUser([venueVideo, groomVideo], profile, { now: NOW });
+      expect(ranked[0].video_id).toBe("groom");
+    });
   });
 
   it("opposite hint is mild: a viral off-style video still beats an obscure same-category one", () => {

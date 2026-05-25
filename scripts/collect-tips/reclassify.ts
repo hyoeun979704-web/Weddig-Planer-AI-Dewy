@@ -198,6 +198,8 @@ async function main(): Promise<void> {
   // PostgREST 의 upsert 는 INSERT 실패 시 NOT NULL 위반 — 같은 행을 UPDATE 하려면
   // 1 row 씩 .update() 호출. 778 rows × ~30ms ≈ 25초.
   let done = 0;
+  let failed = 0;
+  const failures: Array<{ video_id: string; error: string }> = [];
   for (const u of updates) {
     const patch: Record<string, unknown> = {
       categories: u.categories,
@@ -210,13 +212,26 @@ async function main(): Promise<void> {
       .update(patch)
       .eq("video_id", u.video_id);
     if (upErr) {
+      failed++;
+      failures.push({ video_id: u.video_id, error: upErr.message });
       console.error(`failed ${u.video_id}:`, upErr.message);
       continue;
     }
     done++;
     if (done % 100 === 0) console.log(`  updated ${done}/${updates.length}`);
   }
-  console.log(`\ndone — ${done}/${updates.length} updated.`);
+  console.log(
+    `\ndone — ${done}/${updates.length} updated, ${failed} failed.`,
+  );
+  if (failed > 0) {
+    // 부분 실패 시 운영자가 잡을 수 있게 마지막 10개 실패 video_id 와 사유 출력.
+    console.warn(`\nfirst ${Math.min(10, failures.length)} failures:`);
+    for (const f of failures.slice(0, 10)) {
+      console.warn(`  · ${f.video_id}: ${f.error}`);
+    }
+    // 부분 실패는 exit code 0 으로 끝내 cron 같은 자동화에서 silent fail 안 되도록.
+    process.exitCode = 2;
+  }
 }
 
 main().catch((e) => {

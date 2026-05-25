@@ -1,6 +1,7 @@
 import type { TipVideo } from "@/hooks/useTipVideos";
 import type { WeddingProfilePrefill } from "@/hooks/useWeddingProfile";
 import type { WeddingStyle } from "@/lib/weddingStyle";
+import type { WeddingPersonaMode } from "@/lib/weddingPersona";
 
 // Korean wedding planning timeline: couples typically book vendors in this
 // order. Each phase boosts the categories that are most relevant *right now*
@@ -44,6 +45,28 @@ const CROSS_PHASE_BOOSTS: ReadonlyArray<{
   // 예단·예물 — 식 4개월 ~ 1개월 전.
   { minDays: 30, maxDays: 120, categories: ["wedding_gifts"] },
 ];
+
+// Round 22 — 페르소나(비표준 사용자) 카테고리 boost.
+//
+// queries.ts 의 Round 20 페르소나 5종 카테고리 (pregnancy_wedding,
+// remarriage_family, international_wedding, self_no_ceremony, groom_focus)
+// 는 tipClassify 로 잘 분류되지만, 큐레이션 단에서 booster 없으면 일반 viewcount
+// 정렬에 묻혀 정작 페르소나 user 가 자기 카테고리 영상을 못 보는 회귀.
+//
+// 각 persona_mode 는 자기 영역의 카테고리에 PERSONA_BOOST 점수 부여. STYLE_HINTS
+// 와 직교적으로 동작 (페르소나 영상 = 결혼 스타일과 무관하게 신호 강함).
+const PERSONA_CATEGORY_BOOSTS: Partial<Record<WeddingPersonaMode, ReadonlyArray<string>>> = {
+  pregnancy: ["pregnancy_wedding"],
+  remarriage: ["remarriage_family"],
+  international: ["international_wedding"],
+  remote_overseas: ["international_wedding"],
+  self_no_ceremony: ["self_no_ceremony", "ceremony", "legal_paperwork"],
+  no_wedding_travel: ["self_no_ceremony", "ceremony"],
+  snap_only: ["studio", "self_no_ceremony"],
+  // standard_groom: "신랑이 챙길 일" 류 영상 (groom_focus) 우대. queries.ts 의
+  // groom_focus seed 가 이걸 수집하지만 boost 가 없으면 popularity 정렬에 묻힘.
+  standard_groom: ["groom_focus", "tailor_shop"],
+};
 
 // Round 19 — 사전 확장 (시뮬레이션 P3: small 1.6%, self 4.3% hit rate 너무 낮음).
 // 자주 쓰이는 동의어/변형 추가 → small/self user 가 자기 정체성 콘텐츠 더 자주 만남.
@@ -109,6 +132,10 @@ export interface CurationFactors {
   // demoted — still findable, but they shouldn't dominate the feed when
   // the work is behind the user. See COMPLETED_PENALTY.
   completedCategories: ReadonlyArray<string>;
+  // Round 22 — 페르소나 매칭 카테고리. PERSONA_BOOST 만큼 score 가산. 표준
+  // 페르소나 (standard_bride / standard_groom 등) 는 비어있어 phase + style
+  // 만으로 결정 — 회귀 없음.
+  personaCategories: ReadonlyArray<string>;
   hasSignal: boolean; // false → fall back to popularity sort
 }
 
@@ -132,14 +159,18 @@ export function buildCurationFactors(
   // needed — TS guarantees the lookup is total.
   const style = STYLE_HINTS[profile.weddingStyle];
   const opposite = STYLE_OPPOSITE_HINTS[profile.weddingStyle];
+  // 페르소나 매칭 — null 이거나 PERSONA_CATEGORY_BOOSTS 에 없는 표준 페르소나는 [].
+  const personaCategories =
+    (profile.personaMode && PERSONA_CATEGORY_BOOSTS[profile.personaMode]) ?? [];
   return {
     phaseCategories: phase,
     styleHints: style,
     oppositeHints: opposite,
     excludedCategories: excluded,
     completedCategories: completed,
+    personaCategories,
     // Personalization activates only when the user has expressed a
-    // preference (date, style, exclusions, or completed schedule items).
+    // preference (date, style, exclusions, completed schedule, or persona).
     // Opposite hints are a *modifier* on existing ranking — they fire
     // when something else already triggers scoring, but on their own
     // they shouldn't override popularity for a brand-new profile that
@@ -148,7 +179,8 @@ export function buildCurationFactors(
       phase.length > 0 ||
       style.length > 0 ||
       excluded.length > 0 ||
-      completed.length > 0,
+      completed.length > 0 ||
+      personaCategories.length > 0,
   };
 }
 
@@ -173,6 +205,13 @@ const OPPOSITE_HINT_PENALTY = -0.3;
 // EXCLUDED_PENALTY so a viral completed-category video can still rise
 // above an obscure unrelated one (the work is done, not unwanted).
 const COMPLETED_PENALTY = -0.8;
+
+// Round 22 — 페르소나 매칭 카테고리에 강한 boost. phase boost (0.9) + 일반적
+// popularity 차이(~0.2-0.3) 도 넘기게 1.5 로 설정. 페르소나 user (임신·재혼·국제결혼
+// 등) 는 자기 영역 컨텐츠를 최우선으로 보길 기대하므로 강하게 잡음.
+// 표준 페르소나 (standard_bride 등) 는 personaCategories=[] 라 영향 없음.
+const PERSONA_BOOST_PRIMARY = 1.5;
+const PERSONA_BOOST_SECONDARY = 0.7;
 
 // Higher score = more relevant. Popularity is log-normalized so a 10M-view
 // video can still lose to a 100k-view video that matches the user's phase.
@@ -205,6 +244,17 @@ export function scoreTipVideo(
     const primary = video.categories[0];
     if (primary && factors.completedCategories.includes(primary)) {
       score += COMPLETED_PENALTY;
+    }
+  }
+
+  // Round 22 — 페르소나 boost. phase 보다 먼저 평가하여 표준 페르소나는 영향 없고
+  // (personaCategories=[]), 비표준 페르소나만 자기 영역 영상을 phase 영상보다 위로.
+  if (factors.personaCategories.length > 0) {
+    const primary = video.categories[0];
+    if (primary && factors.personaCategories.includes(primary)) {
+      score += PERSONA_BOOST_PRIMARY;
+    } else if (video.categories.some((c) => factors.personaCategories.includes(c))) {
+      score += PERSONA_BOOST_SECONDARY;
     }
   }
 
