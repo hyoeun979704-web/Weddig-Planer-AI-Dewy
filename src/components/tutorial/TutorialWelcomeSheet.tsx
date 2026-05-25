@@ -4,27 +4,30 @@ import { Sparkles, X, ArrowRight, Play } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
-import { chaptersForStyle } from "@/data/tutorialChapters";
+import { chaptersForUser, firstStartableLessonForUser } from "@/data/tutorialChapters";
 
+// Round 18 — subline 톤 정정:
+// '30초만에 둘러보기' 는 home-tour 1개 만 약속. 나머지 챕터는 천천히 진행할 수
+// 있다는 점을 분명히 해 '30초 = 전체' 오해를 막는다.
 const STYLE_BLURB: Record<string, { headline: string; subline: string; emoji: string }> = {
   general: {
-    headline: "결혼 준비, 어디서부터 시작할까요?",
-    subline: "검증된 일반 결혼식 동선을 30초만에 둘러보세요.",
+    headline: "준비, 어디서부터 시작할까요?",
+    subline: "먼저 홈 화면을 30초 안에 함께 둘러볼게요.",
     emoji: "",
   },
   small: {
     headline: "스몰웨딩이 처음이라면",
-    subline: "꼭 필요한 베뉴·답례품 가이드만 짧게 모아드릴게요.",
+    subline: "먼저 홈 화면을 30초 안에 함께 둘러볼게요.",
     emoji: "",
   },
   self: {
     headline: "셀프웨딩 DIY 가이드",
-    subline: "셀프 촬영·부케·청첩장까지 한 번에 길을 잡아드릴게요.",
+    subline: "먼저 홈 화면을 30초 안에 함께 둘러볼게요.",
     emoji: "",
   },
   custom: {
     headline: "내 스타일에 맞춰 안내드릴게요",
-    subline: "직접 정한 카테고리 위주로 30초 코스로 시작합니다.",
+    subline: "먼저 홈 화면을 30초 안에 함께 둘러볼게요.",
     emoji: "",
   },
 };

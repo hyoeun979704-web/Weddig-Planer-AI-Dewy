@@ -4,12 +4,21 @@
 // start. Each lesson keeps the same `targetSelector` coachmark shape the
 // existing TutorialOverlay already understands.
 //
-// Style filtering: when `requiresStyles` is set, the lesson is hidden for
-// users whose wedding_style isn't in the list. e.g. SDM lessons skip self,
-// 한복 lessons skip self/small. The lesson is still discoverable manually
-// via the Tutorial page footer ("내 스타일에 안 보이는 가이드 보기").
+// Filtering (Round 18 — persona/role 분기 추가):
+//   - `requiresStyles` : wedding_style 화이트리스트
+//   - `requiresPersonas` : persona_mode 화이트리스트
+//   - `excludePersonas` : persona_mode 블랙리스트 (예: 노식 사용자에게 호텔 가이드 X)
+//   - `excludeRoles`    : role 블랙리스트 (예: 신랑 페르소나에게 신부 호칭 lesson X)
+// 모두 매칭되어야 lesson 이 노출됨. 매칭 안 된 lesson 은 Tutorial 페이지의
+// "내 스타일에 안 보이는 가이드" footer 에 collapsible 로 surface 됨.
+//
+// Placeholder lessons (Round 18):
+//   `placeholder: true` 인 lesson 은 아직 페이지에 data-tutorial 셀렉터가
+//   부착되지 않아 풀스크린 cutout 으로 의미 없는 안내가 뜨던 문제를 막기
+//   위한 임시 차단. UI 는 "준비 중" 배지로 표시하고 자동 시작·클릭 모두 비활성.
 
 import type { WeddingStyle } from "@/lib/weddingStyle";
+import type { UserRole, WeddingPersonaMode } from "@/lib/weddingPersona";
 
 export interface TutorialLessonStep {
   id: string;
@@ -29,6 +38,15 @@ export interface TutorialLesson {
   reward: number;
   /** When set, lesson only shown for matching wedding_style. */
   requiresStyles?: WeddingStyle[];
+  /** When set, lesson only shown for matching persona_mode. */
+  requiresPersonas?: WeddingPersonaMode[];
+  /** When set, lesson hidden for matching persona_mode (블랙리스트). */
+  excludePersonas?: WeddingPersonaMode[];
+  /** When set, lesson hidden for matching role (예: 신랑 전용 X 신부). */
+  excludeRoles?: UserRole[];
+  /** True 면 페이지에 아직 cutout target 셀렉터가 없는 lesson 으로 표시 — 자동
+   *  시작/클릭 모두 차단되고 UI 는 "준비 중" 배지 노출. */
+  placeholder?: boolean;
   steps: TutorialLessonStep[];
 }
 
@@ -41,6 +59,12 @@ export interface TutorialChapter {
   accent: "rose" | "amber" | "emerald" | "violet" | "sky";
   lessons: TutorialLesson[];
 }
+
+/** 톤 정정용: 노식·스냅 페르소나는 일반 결혼 가이드가 무가치 — 광역 블랙리스트. */
+const NON_WEDDING_PERSONAS: WeddingPersonaMode[] = [
+  "no_wedding_travel",
+  "snap_only",
+];
 
 // ─────────────────────────────────────────────────────────────────────────
 // Lessons
@@ -57,7 +81,7 @@ const HOME_TOUR: TutorialLesson = {
       id: "home-dashboard",
       title: "내 맞춤 대시보드",
       description:
-        "결혼 정보를 바탕으로 D-Day · 진행률 · 다음 액션 · 오늘의 미션이 이 자리에 매일 새로 정렬돼요.",
+        "입력한 정보를 바탕으로 D-Day · 진행률 · 다음 액션 · 오늘의 미션이 이 자리에 매일 새로 정렬돼요.",
       targetSelector: "[data-tutorial='persona-dashboard']",
       position: "bottom",
     },
@@ -91,7 +115,7 @@ const HOME_TOUR: TutorialLesson = {
 const MYPAGE_TOUR: TutorialLesson = {
   id: "mypage",
   title: "마이페이지 둘러보기",
-  description: "찜·하트·포인트와 내 결혼 정보를 한곳에서",
+  description: "찜·하트·포인트와 내 정보를 한곳에서",
   route: "/mypage",
   reward: 20,
   steps: [
@@ -104,9 +128,9 @@ const MYPAGE_TOUR: TutorialLesson = {
     },
     {
       id: "mypage-menu",
-      title: "결혼 준비 메뉴",
+      title: "준비 메뉴",
       description:
-        "결혼 정보 수정, 내가 만든 청첩장·시뮬레이션, 계정·고객지원을 여기서 관리해요.",
+        "내 정보 수정, 직접 만든 청첩장·시뮬레이션, 계정·고객지원을 여기서 관리해요.",
       targetSelector: "[data-tutorial='mypage-menu']",
       position: "top",
     },
@@ -116,14 +140,14 @@ const MYPAGE_TOUR: TutorialLesson = {
 const AI_PLANNER: TutorialLesson = {
   id: "ai-planner",
   title: "AI 플래너에게 질문하기",
-  description: "결혼 준비 중 막힐 때 가장 먼저 가볼 곳",
+  description: "준비 중 막힐 때 가장 먼저 가볼 곳",
   route: "/ai-planner",
   reward: 40,
   steps: [
     {
       id: "ai-header",
       title: "AI 웨딩플래너 Dewy",
-      description: "결혼 스타일에 맞춰 첫 질문 카드가 자동으로 바뀌어요.",
+      description: "내 스타일에 맞춰 첫 질문 카드가 자동으로 바뀌어요.",
       targetSelector: "[data-tutorial='ai-header']",
       position: "bottom",
     },
@@ -131,20 +155,22 @@ const AI_PLANNER: TutorialLesson = {
       id: "ai-suggestions",
       title: "추천 질문 카드",
       description:
-        "탭 한 번이면 모달이나 즉답 채팅으로 바로 연결돼요. 셀프 · 스몰 · 일반 결혼식별로 다른 카드가 뜹니다.",
+        "탭 한 번이면 모달이나 즉답 채팅으로 바로 연결돼요. 셀프 · 스몰 · 일반별로 다른 카드가 뜹니다.",
       targetSelector: "[data-tutorial='ai-suggestions']",
       position: "bottom",
     },
     {
       id: "ai-input",
       title: "자유 질문 입력",
-      description: "예) “양가 1억 5천 예산이면 어디까지 가능해?”",
+      description: "예) “예산 1억 5천이면 어디까지 가능해?”",
       targetSelector: "[data-tutorial='ai-input']",
       position: "top",
     },
   ],
 };
 
+// Placeholder: AI 스튜디오 페이지에 아직 data-tutorial 셀렉터가 없어 'main'
+// 풀스크린 cutout 만 떴음. 셀렉터 부착 전까지 placeholder 로 차단.
 const AI_STUDIO: TutorialLesson = {
   id: "ai-studio",
   title: "AI로 드레스 미리 입어보기",
@@ -152,6 +178,9 @@ const AI_STUDIO: TutorialLesson = {
   route: "/ai-studio",
   reward: 50,
   requiresStyles: ["general", "small", "self"],
+  // 노식·스냅·노웨딩 페르소나는 드레스/메이크업 자체가 무의미 — 숨김.
+  excludePersonas: [...NON_WEDDING_PERSONAS, "self_no_ceremony"],
+  placeholder: true,
   steps: [
     {
       id: "studio-entry",
@@ -187,8 +216,9 @@ const SCHEDULE_FLOW: TutorialLesson = {
     },
     {
       id: "schedule-couple",
-      title: "커플 연동",
-      description: "파트너를 초대하면 일정이 자동 동기화돼요.",
+      title: "커플 연동 (선택)",
+      description:
+        "파트너를 초대하면 일정이 자동 동기화돼요. 혼자 진행하면 건너뛰셔도 됩니다.",
       targetSelector: "[data-tutorial='schedule-couple']",
       position: "top",
     },
@@ -205,7 +235,7 @@ const SCHEDULE_FLOW: TutorialLesson = {
 const BUDGET_FLOW: TutorialLesson = {
   id: "budget",
   title: "예산 한눈에 정리",
-  description: "카테고리별 분배 · 양가 분담 · 변경 이력",
+  description: "카테고리별 분배 · 분담 · 변경 이력",
   route: "/budget",
   reward: 30,
   steps: [
@@ -251,7 +281,7 @@ const COMMUNITY: TutorialLesson = {
     {
       id: "community-header",
       title: "커뮤니티 홈",
-      description: "다른 예비 신혼부부의 글을 둘러보세요.",
+      description: "다른 사용자의 후기와 글을 둘러보세요.",
       targetSelector: "[data-tutorial='community-header']",
       position: "bottom",
     },
@@ -272,12 +302,20 @@ const COMMUNITY: TutorialLesson = {
   ],
 };
 
+// Placeholder: /couple-diary 페이지에 data-tutorial 셀렉터가 없어 main 풀스크린
+// cutout 만 떴음. 또한 1인 진행·노식·스냅 사용자에겐 무의미.
 const COUPLE_FLOW: TutorialLesson = {
   id: "couple",
   title: "커플로 함께 쓰기",
   description: "다이어리 · 투표 · 일정 공유",
   route: "/couple-diary",
   reward: 30,
+  excludePersonas: [
+    ...NON_WEDDING_PERSONAS,
+    "single_household",
+    "snap_only",
+  ],
+  placeholder: true,
   steps: [
     {
       id: "couple-entry",
@@ -292,7 +330,7 @@ const COUPLE_FLOW: TutorialLesson = {
 const PREMIUM_PDF: TutorialLesson = {
   id: "premium",
   title: "프리미엄 PDF 도구",
-  description: "양가 안내서 · 견적서 · 스태프 가이드",
+  description: "안내서 · 견적서 · 스태프 가이드",
   route: "/premium/content",
   reward: 40,
   steps: [
@@ -308,7 +346,7 @@ const PREMIUM_PDF: TutorialLesson = {
       id: "premium-reports",
       title: "AI 리포트",
       description:
-        "결혼 정보만 입력하면 AI가 견적서와 예산 리포트를 자동 생성해요.",
+        "기본 정보만 입력하면 AI가 견적서와 예산 리포트를 자동 생성해요.",
       targetSelector: "[data-tutorial='premium-reports']",
       position: "bottom",
     },
@@ -322,7 +360,7 @@ const PREMIUM_PDF: TutorialLesson = {
   ],
 };
 
-// Self-wedding focused lesson (no SDM/dress/makeup vendors).
+// Placeholder: /tips 페이지에 셀렉터 없음.
 const SELF_DIY: TutorialLesson = {
   id: "self-diy",
   title: "셀프웨딩 DIY 시작",
@@ -330,12 +368,79 @@ const SELF_DIY: TutorialLesson = {
   route: "/tips",
   reward: 30,
   requiresStyles: ["self"],
+  placeholder: true,
   steps: [
     {
       id: "self-magazine",
       title: "DIY 매거진",
       description:
         "셀프촬영 로케이션 · DIY 부케 · 직접 만드는 청첩장 가이드를 모아두었어요.",
+      targetSelector: "main",
+      position: "bottom",
+    },
+  ],
+};
+
+// Round 18 — 페르소나 특화 추가 lesson.
+// 재혼(P3) — 일반 결혼 가이드 무가치 페르소나. 작고 따뜻한 가족식 톤.
+const REMARRIAGE_FAMILY: TutorialLesson = {
+  id: "remarriage-family",
+  title: "간소한 가족식 진행 가이드",
+  description: "양가 톤 다운 · 자녀 동반 · 작은 식 순서",
+  route: "/tips",
+  reward: 30,
+  requiresPersonas: ["remarriage"],
+  placeholder: true,
+  steps: [
+    {
+      id: "remarriage-overview",
+      title: "재혼 가족식 가이드",
+      description:
+        "공식 식순 없이 가족과 함께 진행하는 시나리오·자녀 동반 케이스를 모아두었어요.",
+      targetSelector: "main",
+      position: "bottom",
+    },
+  ],
+};
+
+// 노식·스냅 (P5 snap_only) — 일반 결혼 흐름 대신 셀프 촬영 흐름.
+const SNAP_FLOW: TutorialLesson = {
+  id: "snap-flow",
+  title: "셀프 촬영 흐름 잡기",
+  description: "콘셉트별 작가 매칭 · 라이프 스타일 패키지",
+  route: "/ai-planner",
+  reward: 30,
+  requiresPersonas: ["snap_only", "self_no_ceremony"],
+  placeholder: true,
+  steps: [
+    {
+      id: "snap-overview",
+      title: "셀프 촬영 가이드",
+      description:
+        "콘셉트·로케이션·작가 매칭 흐름을 AI 플래너에서 바로 시작할 수 있어요.",
+      targetSelector: "main",
+      position: "bottom",
+    },
+  ],
+};
+
+// 신랑 주도 (P10 standard_groom) — 신부 호칭 lesson 과 분리.
+const GROOM_TASKS: TutorialLesson = {
+  id: "groom-tasks",
+  title: "신랑이 챙길 일",
+  description: "예복 · 예물 · 양가 인사 분담",
+  route: "/ai-planner",
+  reward: 30,
+  excludeRoles: ["bride"],
+  // 신랑 주도 페르소나만 노출. (role=shared 사용자도 보고 싶을 수 있어
+  // requiresRoles 가 아닌 excludeRoles 로 분리.)
+  placeholder: true,
+  steps: [
+    {
+      id: "groom-overview",
+      title: "신랑 체크리스트",
+      description:
+        "신랑 주도 페르소나용 예복·예물·신랑 양가 가이드를 모아두었어요.",
       targetSelector: "main",
       position: "bottom",
     },
@@ -387,29 +492,77 @@ export const TUTORIAL_CHAPTERS: TutorialChapter[] = [
     accent: "amber",
     lessons: [PREMIUM_PDF, SELF_DIY],
   },
+  {
+    id: "persona",
+    icon: "",
+    title: "내 페르소나용 가이드",
+    subtitle: "재혼 · 스냅 · 신랑 주도 등 특화 안내",
+    accent: "amber",
+    lessons: [REMARRIAGE_FAMILY, SNAP_FLOW, GROOM_TASKS],
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────
 
-/** Filter lessons by wedding_style, dropping irrelevant ones. */
-export function filterLessonsByStyle(
-  lessons: TutorialLesson[],
-  style: WeddingStyle | null | undefined
-): TutorialLesson[] {
-  if (!style) return lessons;
-  return lessons.filter(l => !l.requiresStyles || l.requiresStyles.includes(style));
+/** 사용자 컨텍스트 — chaptersForUser 가 받는 매칭 신호 묶음. */
+export interface TutorialUserContext {
+  style?: WeddingStyle | null;
+  persona?: WeddingPersonaMode | null;
+  role?: UserRole | null;
 }
 
-/** Get visible chapters for the given style. Chapters with zero remaining
- *  lessons after filter are dropped entirely. */
+/** 단일 lesson 이 사용자에게 보여져야 하는지 판단. 모든 필터가 OR-of-AND:
+ *  requires* 가 있으면 해당 차원에서 화이트리스트 매치 필수,
+ *  exclude* 가 있으면 블랙리스트 매치 시 차단. */
+export function isLessonVisible(
+  lesson: TutorialLesson,
+  ctx: TutorialUserContext,
+): boolean {
+  if (lesson.requiresStyles && ctx.style && !lesson.requiresStyles.includes(ctx.style)) {
+    return false;
+  }
+  if (lesson.requiresPersonas && ctx.persona && !lesson.requiresPersonas.includes(ctx.persona)) {
+    return false;
+  }
+  // requires* 가 있는데 ctx 값이 null 이면 화이트리스트 매치 불가 — 숨김.
+  if (lesson.requiresPersonas && !ctx.persona) return false;
+  if (lesson.excludePersonas && ctx.persona && lesson.excludePersonas.includes(ctx.persona)) {
+    return false;
+  }
+  if (lesson.excludeRoles && ctx.role && lesson.excludeRoles.includes(ctx.role)) {
+    return false;
+  }
+  return true;
+}
+
+/** Filter lessons by wedding_style, dropping irrelevant ones.
+ *  Legacy helper — 새 코드는 chaptersForUser 사용 권장. */
+export function filterLessonsByStyle(
+  lessons: TutorialLesson[],
+  style: WeddingStyle | null | undefined,
+): TutorialLesson[] {
+  if (!style) return lessons.filter((l) => !l.requiresPersonas);
+  return lessons.filter((l) => isLessonVisible(l, { style }));
+}
+
+/** Get visible chapters for the given style only. Chapters with zero remaining
+ *  lessons after filter are dropped entirely. Legacy — chaptersForUser 권장. */
 export function chaptersForStyle(
-  style: WeddingStyle | null | undefined
+  style: WeddingStyle | null | undefined,
 ): TutorialChapter[] {
+  return chaptersForUser({ style });
+}
+
+/** Round 18 — style + persona + role 통합 필터. excludeRoles/excludePersonas 도 검사. */
+export function chaptersForUser(ctx: TutorialUserContext): TutorialChapter[] {
   return TUTORIAL_CHAPTERS
-    .map(ch => ({ ...ch, lessons: filterLessonsByStyle(ch.lessons, style) }))
-    .filter(ch => ch.lessons.length > 0);
+    .map((ch) => ({
+      ...ch,
+      lessons: ch.lessons.filter((l) => isLessonVisible(l, ctx)),
+    }))
+    .filter((ch) => ch.lessons.length > 0);
 }
 
 /** Total visible lessons across all chapters for the given style. */
@@ -417,10 +570,29 @@ export function totalLessonCountForStyle(style: WeddingStyle | null | undefined)
   return chaptersForStyle(style).reduce((sum, ch) => sum + ch.lessons.length, 0);
 }
 
-/** Find a lesson by id (across all chapters, ignoring style filter). */
+/** Round 18 — user 컨텍스트 기반 lesson 총합. placeholder lesson 도 포함
+ *  (사용자에게 가이드 개수는 보이지만 클릭은 막힘). */
+export function totalLessonCountForUser(ctx: TutorialUserContext): number {
+  return chaptersForUser(ctx).reduce((sum, ch) => sum + ch.lessons.length, 0);
+}
+
+/** Round 18 — 자동 시작 가능한 lesson (placeholder 제외) 의 첫 번째 진입점.
+ *  Welcome sheet 의 '30초 둘러보기' CTA 가 약속하는 lesson 을 결정한다. */
+export function firstStartableLessonForUser(
+  ctx: TutorialUserContext,
+): { chapter: TutorialChapter; lesson: TutorialLesson } | null {
+  for (const ch of chaptersForUser(ctx)) {
+    for (const l of ch.lessons) {
+      if (!l.placeholder) return { chapter: ch, lesson: l };
+    }
+  }
+  return null;
+}
+
+/** Find a lesson by id (across all chapters, ignoring filters). */
 export function findLessonById(id: string): TutorialLesson | undefined {
   for (const ch of TUTORIAL_CHAPTERS) {
-    const found = ch.lessons.find(l => l.id === id);
+    const found = ch.lessons.find((l) => l.id === id);
     if (found) return found;
   }
   return undefined;
@@ -428,5 +600,5 @@ export function findLessonById(id: string): TutorialLesson | undefined {
 
 /** Find the chapter a lesson belongs to. */
 export function findChapterByLessonId(lessonId: string): TutorialChapter | undefined {
-  return TUTORIAL_CHAPTERS.find(ch => ch.lessons.some(l => l.id === lessonId));
+  return TUTORIAL_CHAPTERS.find((ch) => ch.lessons.some((l) => l.id === lessonId));
 }

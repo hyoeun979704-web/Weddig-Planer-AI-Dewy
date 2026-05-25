@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -40,10 +41,12 @@ const TUTORIAL_SEEN_KEY = "dewy_tutorial_seen";
 
 export const useTutorial = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [isActive, setIsActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [steps, setSteps] = useState<TutorialStep[]>(DEFAULT_STEPS);
   const [tourId, setTourId] = useState<string | null>(null);
+  const startedPathRef = useRef<string | null>(null);
 
   const hasSeen = localStorage.getItem(TUTORIAL_SEEN_KEY) === "true";
 
@@ -54,6 +57,23 @@ export const useTutorial = () => {
     tutorialActive.enter();
     return () => tutorialActive.leave();
   }, [isActive]);
+
+  // Round 17 P1 — 라우트 변경 시 튜토리얼 자동 종료 (award X). 사용자가 alarm 클릭 /
+  // back / link click 등으로 다른 페이지 이동하면 isActive 가 true 인 채 stuck → 다음
+  // 화면에 stale 코치마크 + tutorialActive count 누수. 시작 path 기억 후 변동 시 reset.
+  useEffect(() => {
+    if (!isActive) return;
+    if (startedPathRef.current === null) {
+      startedPathRef.current = location.pathname;
+      return;
+    }
+    if (startedPathRef.current !== location.pathname) {
+      setIsActive(false);
+      setCurrentStepIndex(0);
+      setTourId(null);
+      startedPathRef.current = null;
+    }
+  }, [isActive, location.pathname]);
 
   const startTutorial = useCallback(
     (customSteps?: TutorialStep[], guideId?: string) => {
@@ -82,6 +102,23 @@ export const useTutorial = () => {
 
   const awardCompletion = useCallback(async (id: string) => {
     try {
+      // Round 17 P0 — lesson alias 가드. 같은 콘텐츠가 ID rename (예: app-tour →
+      // home-tour) 으로 award 중복 발생했던 회귀. 사용자가 user_id 로 이미 alias tour_id
+      // 받은 적 있으면 새 ID 로 award 안 함. lesson.aliases 정의는 tutorialChapters.ts.
+      const lesson = findLessonById(id);
+      const candidates = [id, ...(lesson?.aliases ?? [])].map((x) => `feature_${x}`);
+      if (candidates.length > 1) {
+        const { data: existing } = await supabase
+          .from("tutorial_completions" as any)
+          .select("tour_id")
+          .in("tour_id", candidates)
+          .limit(1)
+          .maybeSingle();
+        if (existing) {
+          // 이미 alias 로 받은 적 있음 — RPC 호출 skip (PK 가드 의존 대신 명시 차단).
+          return;
+        }
+      }
       const { data, error } = await supabase.rpc("complete_tutorial" as any, {
         p_tour_id: `feature_${id}`,
       });
