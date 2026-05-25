@@ -25,6 +25,7 @@
     "fetch-honeymoon-og-images": "tsx scripts/collect-places/fetch-honeymoon-og-images.ts",
     "fetch-jewelry-og-images": "tsx scripts/collect-places/fetch-jewelry-og-images.ts",
     "collect-tips": "tsx scripts/collect-tips/index.ts",
+    "sync-channels": "tsx scripts/collect-tips/sync-channels-rss.ts",
     "cap:sync": "cap sync",
     "cap:build": "vite build --mode capacitor && cap sync",
     "android:dev": "npm run cap:build && cap run android",

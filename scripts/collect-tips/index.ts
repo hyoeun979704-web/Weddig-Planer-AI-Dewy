@@ -165,6 +165,28 @@ async function main() {
     process.exit(1);
   }
   console.log(`\nupserted: ${rows.length}`);
+
+  // 채널 디스커버리 피드백 루프 — search 로 새로 발견된 채널을 tip_channels 에
+  // 자동 등록. 다음날부터 sync-channels-rss 가 무료로 그 채널의 신규 업로드를
+  // 풀어옴 → search.list 의존을 점차 줄이는 self-bootstrap 메커니즘.
+  const channelMap = new Map<string, string>();
+  for (const r of rows) {
+    if (r.channel_id && !channelMap.has(r.channel_id)) {
+      channelMap.set(r.channel_id, r.channel_name ?? "");
+    }
+  }
+  if (channelMap.size > 0) {
+    const channelRows = Array.from(channelMap, ([channel_id, channel_name]) => ({
+      channel_id,
+      channel_name: channel_name || "(unknown)",
+    }));
+    // ignoreDuplicates: true → 기존 채널은 건드리지 않음 (video_count / last_synced_at 등 보존).
+    const { error: chErr } = await supabase
+      .from("tip_channels")
+      .upsert(channelRows, { onConflict: "channel_id", ignoreDuplicates: true });
+    if (chErr) console.warn("tip_channels register failed:", chErr.message);
+    else console.log(`registered channels (new or no-op): ${channelRows.length}`);
+  }
 }
 
 main().catch((e) => {
