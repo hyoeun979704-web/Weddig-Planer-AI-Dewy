@@ -9,6 +9,7 @@ import ExcludedCategoryBanner from "@/components/ExcludedCategoryBanner";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
 import { openExternal } from "@/lib/native/openExternal";
+import PregnancyHoneymoonBanner from "@/components/honeymoon/PregnancyHoneymoonBanner";
 
 const Honeymoon = () => {
   const navigate = useNavigate();
@@ -38,6 +39,8 @@ const Honeymoon = () => {
       <main className="pb-20">
         <ExcludedCategoryBanner scheduleCategories="honeymoon" />
         <CategoryHeroBanner category="honeymoon" />
+        {/* P18 임신 페르소나만 표시 — 본식 시점 차수에 따른 안전 거리·항공·의료 가이드 */}
+        <PregnancyHoneymoonBanner />
         <CategoryFilterBar category="honeymoon" />
         <div className="px-4 py-3">
           <h2 className="text-lg font-bold text-foreground">{hasActiveFilters() ? "검색 결과" : "인기 허니문"}</h2>

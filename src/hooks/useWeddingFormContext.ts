@@ -1,5 +1,53 @@
 import { useWeddingSchedule } from "./useWeddingSchedule";
 import { useBudget } from "./useBudget";
+import { BUDGET_OPTIONS_VENUE, BUDGET_OPTIONS_SDME, REGIONS as SURVEY_REGIONS } from "@/components/wedding-planner/constants";
+import { normalizeRegion } from "@/lib/regions";
+
+// Round 15 P1 fix — wedding_region_sigungu 가 있을 때 Survey 서울 4분할 옵션(강남/마포/
+// 종로) 으로 매핑. 강남 사용자가 매번 '서울 기타'로 다운그레이드되던 회귀 완화.
+const SIGUNGU_TO_SURVEY_KEY: Record<string, string> = {
+  "강남구": "강남", "서초구": "강남",
+  "마포구": "마포",
+  "종로구": "종로", "중구": "종로",
+};
+
+// Round 14 self-review P0 fix — budgetSettings.region 은 영문 key("chungnam"/"seoul" 등)
+// 로 저장됨. Survey REGIONS.searchKey 는 한글("충청남"/"서울" 등). 매핑 안 하면 단축 카드가
+// region 없이 submit. lib/regions normalizeRegion 으로 한글 풀네임("충청남도")→약자
+// ("충청남") 매핑 후 영문 key 도 동일한 약자로 변환.
+const BUDGET_REGION_TO_SEARCH_KEY: Record<string, string> = {
+  seoul: "서울",
+  gyeonggi: "경기",
+  incheon: "인천",
+  busan: "부산",
+  daegu: "대구",
+  gwangju: "광주",
+  daejeon: "대전",
+  ulsan: "울산",
+  sejong: "세종",
+  gangwon: "강원",
+  chungbuk: "충청북",
+  chungnam: "충청남",
+  jeonbuk: "전북",
+  jeonnam: "전라남",
+  gyeongbuk: "경상북",
+  gyeongnam: "경상남",
+  jeju: "제주",
+};
+
+/** 어떤 형태(wedding_region 풀네임 / budget region 영문 key / 약자) 가 들어와도
+ *  Survey REGIONS.searchKey 와 매칭되는 값으로 정규화. 매칭 실패 시 null (prefill skip). */
+function normalizeToSurveyKey(input: string | null | undefined): string | null {
+  if (!input) return null;
+  // 1차 — 영문 key 직접 매핑
+  if (BUDGET_REGION_TO_SEARCH_KEY[input]) return BUDGET_REGION_TO_SEARCH_KEY[input];
+  // 2차 — 한글 (풀네임/약자/value) → lib/regions value 로 정규화
+  const normalized = normalizeRegion(input);
+  if (!normalized) return null;
+  // 3차 — Survey REGIONS.searchKey 에 실제 존재하는지 검증 (없으면 select <option> 매칭 안 됨)
+  if (SURVEY_REGIONS.some((r) => r.searchKey === normalized)) return normalized;
+  return null;
+}
 
 /**
  * 챗봇 Survey 모달들이 매번 빈 상태로 열려서 사용자가 같은 정보를 반복 입력해야
@@ -19,6 +67,30 @@ export interface WeddingFormContext {
   defaultRegion: string | null;
   defaultGuests: string | null;
   defaultTotalBudget: string | null;
+  /** Round 14 — 식장(category 'venue') 예산 금액(만원). picker fatigue 완화: VenueSurvey
+   *  의 budgetLabel 칩을 BUDGET_OPTIONS_VENUE 와 매칭해 auto-prefill. */
+  defaultVenueBudgetLabel: string | null;
+  /** Round 14 — 스드메(sdm) 예산 → BUDGET_OPTIONS_SDME 라벨 매칭. */
+  defaultSdmeBudgetLabel: string | null;
+}
+
+/** 금액(만원) → BUDGET_OPTIONS_VENUE / SDME label 매칭. 옵션 list 의 max 가 가장 가까운
+ *  range. amount <= max 인 첫 옵션 선택. amount=null 또는 0 이면 null.
+ *
+ *  INVARIANT — options 가 ascending order 로 정렬되어 있어야 함 (max 작은 것부터, null 은
+ *  마지막). 호출자가 항상 이 순서 보장해야 하며, 마지막에 max=null 옵션이 있어야 amount
+ *  가 모든 max 초과해도 무성 실패 안 함. options 정렬 깨지면 마지막 옵션으로 fallback. */
+function findBudgetLabel(
+  amount: number | null | undefined,
+  options: ReadonlyArray<{ label: string; max: number | null }>,
+): string | null {
+  if (!amount || amount <= 0) return null;
+  for (const opt of options) {
+    if (opt.max === null) return opt.label;
+    if (amount <= opt.max) return opt.label;
+  }
+  // amount > 모든 max 인데 max:null 옵션 없는 경우 — invariant 깨진 fallback
+  return options.length > 0 ? options[options.length - 1].label : null;
 }
 
 export const useWeddingFormContext = (): WeddingFormContext => {
@@ -29,10 +101,30 @@ export const useWeddingFormContext = (): WeddingFormContext => {
     ? new Date(weddingSettings.wedding_date)
     : null;
 
+  const cat = budgetSettings?.category_budgets ?? {};
+  const venueBudget = (cat as Record<string, number>)["venue"] ?? null;
+  const sdmeBudget = (cat as Record<string, number>)["sdm"] ?? null;
+
+  // Round 14 P0 fix — Survey REGIONS.searchKey 와 매칭되는 정규화 값 반환. raw wedding_region
+  // ("충청남도") 또는 budget region ("chungnam") 그대로 반환하면 모달 select 매칭 0 + 단축
+  // 카드가 region 없이 submit 하는 회귀. 매칭 실패 시 null → prefill 안 함.
+  //
+  // Round 15 P1 — sigungu (강남구/마포구/종로구/서초구/중구) 우선 매핑 → Survey 의 서울
+  // 4분할 옵션(강남/마포/종로) 보존. 시군구 매칭 실패 시 시도 단위로 fallback.
+  const sigunguKey = weddingSettings.wedding_region_sigungu
+    ? SIGUNGU_TO_SURVEY_KEY[weddingSettings.wedding_region_sigungu] ?? null
+    : null;
+  const normalizedRegion =
+    sigunguKey ??
+    normalizeToSurveyKey(weddingSettings.wedding_region) ??
+    normalizeToSurveyKey(budgetSettings?.region);
+
   return {
     defaultWeddingDate: weddingDate,
-    defaultRegion: weddingSettings.wedding_region ?? budgetSettings?.region ?? null,
+    defaultRegion: normalizedRegion,
     defaultGuests: budgetSettings?.guest_count ? String(budgetSettings.guest_count) : null,
     defaultTotalBudget: budgetSettings?.total_budget ? String(budgetSettings.total_budget) : null,
+    defaultVenueBudgetLabel: findBudgetLabel(venueBudget, BUDGET_OPTIONS_VENUE),
+    defaultSdmeBudgetLabel: findBudgetLabel(sdmeBudget, BUDGET_OPTIONS_SDME),
   };
 };

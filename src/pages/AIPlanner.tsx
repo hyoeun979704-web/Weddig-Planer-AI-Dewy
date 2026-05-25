@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { findSuggestions } from "@/data/chatbotSuggestions";
 import { getFollowUpChips } from "@/lib/chatbot/followUpChips";
 import type { WeddingStyle } from "@/lib/weddingStyle";
+import { PERSONA_HEADER, isGroomMode, type WeddingPersonaMode } from "@/lib/weddingPersona";
 
 type ModalType = "venue" | "sdme" | "timeline" | "budget" | null;
 
@@ -121,6 +122,138 @@ const STYLE_GREETING: Record<WeddingStyle, { title: string; subtitle: string }> 
   },
 };
 
+// Round 8 C — 비표준 페르소나는 PERSONA_HEADER 의 카피로 greeting 분기. AI 백엔드는
+// 이미 페르소나를 알고 있지만(prompt.ts + user-data.ts) UI 도 같은 voice 로 진입해야
+// "내 결혼식 안내" 라는 인상이 일관됨. STYLE_GREETING 은 fallback.
+const PERSONA_QUICK_QUESTIONS: Partial<Record<WeddingPersonaMode, QuickQuestion[]>> = {
+  // Round 9 fix — 순수 신랑(다른 페르소나 없음) 도 quickQuestions 필요. 빠지면 일반
+  // style 의 양가 분담(신부 코드) 카드가 노출돼 헤더 칩과 모순.
+  standard_groom: [
+    {
+      emoji: "",
+      label: "신랑 예복 후보 좁히기",
+      desc: "맞춤·기성·렌탈 비교",
+      prompt: "내 결혼식에 어울리는 신랑 예복 후보 알려줘",
+    },
+    {
+      emoji: "",
+      label: "신랑 양가 분담 정리",
+      desc: "지역 평균 + 표준 비율",
+      prompt: "신랑 입장에서 양가 분담을 어떻게 정리하면 좋을지 알려줘",
+    },
+  ],
+  pregnancy: [
+    {
+      emoji: "",
+      label: "임신 차수별 일정 압축",
+      desc: "초기·중기·후기 동선 안내",
+      prompt: "임신 중 결혼 준비 일정을 차수별로 정리해줘",
+    },
+    {
+      emoji: "",
+      label: "임산부 드레스 후보",
+      desc: "마라매니티 지원 브랜드",
+      prompt: "임산부도 입을 수 있는 드레스 브랜드를 추천해줘",
+    },
+  ],
+  remarriage: [
+    {
+      emoji: "",
+      label: "작은 가족식 진행",
+      desc: "양가 톤·자녀 동반 시나리오",
+      prompt: "재혼 가족식 진행 톤과 식순 알려줘",
+    },
+    {
+      emoji: "",
+      label: "재혼 청첩장 카피",
+      desc: "톤 다운 문구 예시",
+      prompt: "재혼인데 자연스러운 청첩장 카피 예시 보여줘",
+    },
+  ],
+  single_household: [
+    {
+      emoji: "",
+      label: "1인 진행 가이드",
+      desc: "친정·시댁 역할 부재 대안",
+      prompt: "양가 부모님이 안 계신데 결혼 준비를 어떻게 해야 할지 알려줘",
+    },
+    {
+      emoji: "",
+      label: "혼자 준비 체크리스트",
+      desc: "위임 가능 항목 정리",
+      prompt: "혼자 준비하는 결혼식 체크리스트를 알려줘",
+    },
+  ],
+  international: [
+    {
+      emoji: "",
+      label: "한국 결혼 관습 영문",
+      desc: "외국 가족에게 보낼 안내",
+      prompt: "한국의 결혼 관습을 외국 가족에게 영문으로 설명해줘",
+    },
+    {
+      emoji: "",
+      label: "이중식 일정 조율",
+      desc: "한국·해외 동선 최적화",
+      prompt: "한국과 미국 양쪽에서 결혼식을 하려는데 일정을 어떻게 잡을지 알려줘",
+    },
+  ],
+  remote_overseas: [
+    {
+      emoji: "",
+      label: "한국 방문 일정 압축",
+      desc: "2~3회 방문에 미팅 압축",
+      prompt: "해외 거주 중 한국에 결혼 준비하러 왔는데 며칠로 압축해서 미팅 잡고 싶어",
+    },
+  ],
+  self_no_ceremony: [
+    {
+      emoji: "",
+      label: "셀프 촬영 노하우",
+      desc: "장비·동선·후보정",
+      prompt: "셀프웨딩 촬영을 처음 해보는데 준비물과 동선 알려줘",
+    },
+    {
+      emoji: "",
+      label: "혼인신고만 준비",
+      desc: "필요 서류·절차",
+      prompt: "혼인신고만 할 건데 필요한 서류와 절차 알려줘",
+    },
+  ],
+  no_wedding_travel: [
+    {
+      emoji: "",
+      label: "신혼여행 큐레이션",
+      desc: "식 없이 여행 우선",
+      prompt: "결혼식 없이 신혼여행만 가는데 추천 코스 알려줘",
+    },
+  ],
+  snap_only: [
+    {
+      emoji: "",
+      label: "콘셉트별 스냅 작가",
+      desc: "내추럴·필름·라이프스타일",
+      prompt: "기념일 스냅 콘셉트와 작가 추천해줘",
+    },
+  ],
+  luxury_hotel: [
+    {
+      emoji: "",
+      label: "호텔 패키지 비교",
+      desc: "5천~1억 옵션 정렬",
+      prompt: "호텔 웨딩 패키지를 가격대별로 비교해줘",
+    },
+  ],
+  regional: [
+    {
+      emoji: "",
+      label: "지역 식장 통합",
+      desc: "시도·시군구 + 인접 권역",
+      prompt: "내 지역 + 인근 식장 추천해줘",
+    },
+  ],
+};
+
 const AIPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -138,8 +271,37 @@ const AIPlanner = () => {
     !weddingSettings.wedding_region &&
     !weddingSettings.wedding_region_tbd;
   const weddingStyle = (weddingSettings.wedding_style ?? "general") as WeddingStyle;
-  const quickQuestions = useMemo(() => buildQuickQuestions(weddingStyle), [weddingStyle]);
-  const greeting = STYLE_GREETING[weddingStyle] ?? STYLE_GREETING.general;
+  // Round 8 C — 비표준 페르소나에 페르소나 기반 greeting + quickQuestions. 백엔드는 이미
+  // 페르소나 voice 로 응답하지만 진입 UI 가 wedding_style 만 보고 분기하면 카피가 어긋남.
+  const personaMode = (weddingSettings.persona_mode ?? null) as WeddingPersonaMode | null;
+  const isGroom = isGroomMode(weddingSettings.role, personaMode ?? "standard_bride");
+  const quickQuestions = useMemo(
+    () => {
+      // 페르소나 우선 — 정의돼있으면 페르소나 quick questions 사용, 없으면 style.
+      const personaList = personaMode ? PERSONA_QUICK_QUESTIONS[personaMode] : undefined;
+      if (personaList && personaList.length > 0) {
+        // 페르소나 1~2개 + 기본 베이스 chip 으로 채워 4-card grid 유지.
+        return [...personaList, ...BASE_QUICK_QUESTIONS].slice(0, 4);
+      }
+      return buildQuickQuestions(weddingStyle);
+    },
+    [personaMode, weddingStyle],
+  );
+  // greeting: 페르소나 우선, fallback 스타일. 신랑이면 자막에 "(신랑님 관점)" 보조.
+  const greeting = useMemo(() => {
+    if (personaMode && personaMode !== "standard_bride") {
+      const h = PERSONA_HEADER[personaMode];
+      const subtitle = isGroom && personaMode !== "standard_groom"
+        ? `${h.subtitle}\n(신랑님 관점에서 안내해드릴게요)`
+        : h.subtitle;
+      return { title: h.title, subtitle };
+    }
+    const styleG = STYLE_GREETING[weddingStyle] ?? STYLE_GREETING.general;
+    if (isGroom) {
+      return { title: styleG.title, subtitle: `${styleG.subtitle}\n(신랑님 관점에서 안내해드릴게요)` };
+    }
+    return styleG;
+  }, [personaMode, isGroom, weddingStyle]);
   const [input, setInput] = useState("");
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);

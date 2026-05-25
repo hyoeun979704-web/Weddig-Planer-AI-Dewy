@@ -10,6 +10,11 @@ import {
   type PersonaMission,
 } from "@/data/personaMissions";
 import { computePregnancyContext, type PregnancyContext } from "@/lib/pregnancy";
+import {
+  PERSONA_HEADER,
+  PERSONA_LABEL,
+  type WeddingPersonaMode,
+} from "@/lib/weddingPersona";
 
 export interface PersonaInsights {
   isLoaded: boolean;
@@ -27,6 +32,11 @@ export interface PersonaInsights {
   missions: PersonaMission[];
   /** 임신 차수·주수 컨텍스트. pregnant=false 거나 dueDate 미설정이면 모든 필드 null. */
   pregnancy: PregnancyContext;
+  /** 페르소나 모드(P1~P20 매핑). NULL이면 standard_bride 폴백. */
+  personaMode: WeddingPersonaMode;
+  personaLabel: string;
+  /** 페르소나별 홈 헤더 카피 — styleIntro 보다 우선하는 비표준 페르소나용 라벨. */
+  personaHeader: { title: string; subtitle: string };
 }
 
 const computeDaysUntil = (date: string | null): number | null => {
@@ -87,6 +97,10 @@ export function usePersonaInsights(): PersonaInsights {
       .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
       .slice(0, 3);
 
+    const personaMode = (weddingSettings.persona_mode ?? "standard_bride") as WeddingPersonaMode;
+    const personaHeader = PERSONA_HEADER[personaMode] ?? PERSONA_HEADER.standard_bride;
+    const personaLabel = PERSONA_LABEL[personaMode] ?? PERSONA_LABEL.standard_bride;
+
     return {
       isLoaded: !isLoading,
       hasOnboarded,
@@ -101,8 +115,16 @@ export function usePersonaInsights(): PersonaInsights {
       missions: getMissionsForStyle(style, {
         pregnant: weddingSettings.pregnant,
         pregnancyTrimester: pregnancy.trimesterAtWedding,
+        personaMode,
+        // Round 8 A — role layering 으로 호텔/지방/해외/single 신랑이 신랑 미션 받게.
+        role: weddingSettings.role ?? null,
+        // Round 15 P1 — pregnant + 비표준 ceremony (야외/스몰 등) secondary missions layering.
+        ceremonyType: weddingSettings.ceremony_type ?? null,
       }),
       pregnancy,
+      personaMode,
+      personaLabel,
+      personaHeader,
     };
   }, [
     isLoading,
@@ -112,6 +134,11 @@ export function usePersonaInsights(): PersonaInsights {
     weddingSettings.planning_stage,
     weddingSettings.pregnant,
     weddingSettings.pregnancy_due_date,
+    weddingSettings.persona_mode,
+    // Round 8 A — role layering 활성/비활성이 미션에 영향. dep 누락 시 미션 미동기화.
+    weddingSettings.role,
+    // Round 15 P1 — pregnant + 비표준 ceremony secondary missions layering.
+    weddingSettings.ceremony_type,
     scheduleItems,
   ]);
 }

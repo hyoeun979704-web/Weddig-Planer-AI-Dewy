@@ -25,6 +25,8 @@ import {
   type WeddingStyle,
 } from "@/lib/weddingStyle";
 import { computePregnancyContext, trimesterLabel } from "@/lib/pregnancy";
+import type { CeremonyType, UserRole } from "@/lib/weddingPersona";
+import { markConfirmed, resetSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 
 const REGIONS = [
   "서울특별시", "경기도", "인천광역시", "부산광역시", "대구광역시",
@@ -32,6 +34,35 @@ const REGIONS = [
   "강원특별자치도", "충청북도", "충청남도", "전북특별자치도",
   "전라남도", "경상북도", "경상남도", "제주특별자치도",
 ];
+
+// Round 8 F — navigator.language 기반 L2 country 추론. 자동 commit 안 하고
+// 모달 default state 만 채워 사용자가 검토 후 명시 저장(=submit) 하도록.
+// v2 §1 L2 정보 위계 적용 + §11.2 권고 구현.
+const SUPPORTED_COUNTRIES = ["KR", "US", "JP", "SG", "GB", "DE", "AU"] as const;
+const LOCALE_COUNTRY_MAP: Record<string, string> = {
+  "ko": "KR", "ko-KR": "KR",
+  "en-US": "US", "en": "US",
+  "ja-JP": "JP", "ja": "JP",
+  "en-SG": "SG",
+  "en-GB": "GB",
+  "de-DE": "DE", "de": "DE",
+  "en-AU": "AU",
+};
+function inferCountryFromLocale(): string {
+  try {
+    if (typeof navigator === "undefined") return "KR";
+    const lang = (navigator.languages?.[0] ?? navigator.language ?? "").trim();
+    if (!lang) return "KR";
+    if (LOCALE_COUNTRY_MAP[lang]) return LOCALE_COUNTRY_MAP[lang];
+    // ko-XX, en-XX 등 prefix fallback.
+    const prefix = lang.split("-")[0];
+    if (LOCALE_COUNTRY_MAP[prefix]) return LOCALE_COUNTRY_MAP[prefix];
+    // 알 수 없으면 안전한 KR fallback (한국 서비스라 한국이 다수).
+    return "KR";
+  } catch {
+    return "KR";
+  }
+}
 
 interface Props {
   isOpen: boolean;
@@ -64,9 +95,18 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   const [stage, setStage] = useState<PlanningStage>("just_started");
   const [weddingStyle, setWeddingStyle] = useState<WeddingStyle>("general");
   const [excludedCategories, setExcludedCategories] = useState<string[]>([]);
-  const [maritalHistory, setMaritalHistory] = useState<"first" | "remarriage" | null>(null);
-  const [pregnant, setPregnant] = useState(false);
-  const [pregnancyDueDate, setPregnancyDueDate] = useState<Date | undefined>();
+  // 민감 정보 3종(marital_history / pregnant / has_parents_*) 은 이 모달에서 받지 않는다.
+  // v2 §5 Sensitive Info + §8 A8 Sensitive Cliff 회피: 첫 가입 모달 노출 금지.
+  // 대신 ① 행동 신호 + 부드러운 확인 카드(§4.3) 로 추론, ② 마이페이지에서 자기 관리.
+  // 기존 DB 값은 saveWeddingSettings patch 에 안 넣어 그대로 보존됨.
+  // 페르소나 v1 추가 신호 — 모달에서 "선택" 표기로 가볍게 묻고 미입력 시 기본값 유지.
+  const [role, setRole] = useState<UserRole | null>(null);
+  const [country, setCountry] = useState<string>("KR");
+  const [weddingCountry, setWeddingCountry] = useState<string>("KR");
+  const [sigungu, setSigungu] = useState<string>("");
+  // has_parents_* 는 본 모달에서 받지 않음 (위 주석 참조). 기본값으로 그대로 두면
+  // 트리거가 standard_bride 페르소나로 분기. 부모 부재는 별도 흐름에서 추론.
+  const [ceremonyType, setCeremonyType] = useState<CeremonyType | null>(null);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -94,11 +134,14 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
         ? weddingSettings.excluded_categories
         : defaultExclusionsFor((weddingSettings.wedding_style ?? "general") as WeddingStyle)
     );
-    setMaritalHistory(weddingSettings.marital_history);
-    setPregnant(weddingSettings.pregnant);
-    setPregnancyDueDate(
-      weddingSettings.pregnancy_due_date ? new Date(weddingSettings.pregnancy_due_date) : undefined,
-    );
+    // 민감 3종(marital_history/pregnant/has_parents_*) prefill 제거 — 모달 UI에 없음.
+    setRole(weddingSettings.role);
+    // Round 8 F — 저장된 country 가 있으면 그대로, 없으면 navigator.language 추론.
+    // 추론값은 default state 일 뿐 — submit 까지는 weddingSettings 에 commit 안 됨.
+    setCountry(weddingSettings.country ?? inferCountryFromLocale());
+    setWeddingCountry(weddingSettings.wedding_country ?? "KR");
+    setSigungu(weddingSettings.wedding_region_sigungu ?? "");
+    setCeremonyType(weddingSettings.ceremony_type);
     setErrors({});
   }, [
     isOpen,
@@ -110,9 +153,11 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     weddingSettings.planning_stage,
     weddingSettings.wedding_style,
     weddingSettings.excluded_categories,
-    weddingSettings.marital_history,
-    weddingSettings.pregnant,
-    weddingSettings.pregnancy_due_date,
+    weddingSettings.role,
+    weddingSettings.country,
+    weddingSettings.wedding_country,
+    weddingSettings.wedding_region_sigungu,
+    weddingSettings.ceremony_type,
   ]);
 
   const validate = () => {
@@ -127,25 +172,9 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     if (!validate()) return;
     setSubmitting(true);
 
-    // 임신 정보는 PIPA 민감정보(건강) — 체크 시 별도 동의로 간주하여
-    // user_consents 에 기록. 체크박스 라벨에 민감정보 처리 동의를 명시함.
-    if (pregnant && user) {
-      try {
-        await (supabase as any).from("user_consents").insert({
-          user_id: user.id,
-          consent_type: "sensitive_health_pregnancy_v1",
-          consent_version: 1,
-          agreed: true,
-          user_agent:
-            typeof navigator !== "undefined"
-              ? navigator.userAgent?.slice(0, 500)
-              : null,
-        });
-      } catch (e) {
-        console.error("pregnancy consent log failed", e);
-      }
-    }
-
+    // 민감 3종(pregnant/marital_history/has_parents_*) 은 이 모달에서 받지 않음.
+    // 기존 DB 값이 있으면 그대로 보존(patch 에 안 넣음). 사용자 별도 흐름
+    // (행동+확인 카드 or 마이페이지 추가 정보) 에서 명시 설정.
     const weddingDateStr = !dateTbd && date ? format(date, "yyyy-MM-dd") : null;
     const ok = await saveWeddingSettings({
       wedding_date: weddingDateStr,
@@ -156,22 +185,29 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       wedding_region_tbd: regionTbd,
       wedding_style: weddingStyle,
       excluded_categories: excludedCategories,
-      marital_history: maritalHistory,
-      pregnant,
-      pregnancy_due_date:
-        pregnant && pregnancyDueDate ? format(pregnancyDueDate, "yyyy-MM-dd") : null,
+      role,
+      country: country || "KR",
+      wedding_country: weddingCountry || "KR",
+      wedding_region_sigungu: sigungu.trim() || null,
+      ceremony_type: ceremonyType,
     });
 
     if (ok) {
-      // Seed schedule items. When wedding_date is unset, the template anchors
-      // to today + 12 months so the checklist is still actionable. Exclusions
-      // are applied here so the user never sees seeded items for categories
-      // they opted out of.
-      const dueDateStr =
-        pregnant && pregnancyDueDate ? format(pregnancyDueDate, "yyyy-MM-dd") : null;
+      // Round 8 B — role 명시 시 groomRoleHint 신호 정리. 명시 confirmation 이므로
+      // 행동 신호 재발 안 되게 markConfirmed(=groom) / resetSignal(=다른 role) 적용.
+      if (role === "groom") {
+        markConfirmed(SIGNAL_KEYS.groomRoleHint);
+      } else if (role && role !== "groom") {
+        resetSignal(SIGNAL_KEYS.groomRoleHint);
+      }
+      // Seed schedule items. 민감 3종은 기존 DB 값을 그대로 사용해 스케줄 분기.
+      // 모달에서 안 받으므로 사용자가 이전에 설정한 값(또는 false/null 기본값) 기준.
+      const existingPregnant = weddingSettings.pregnant;
+      const existingDueDate = weddingSettings.pregnancy_due_date;
+      const existingMarital = weddingSettings.marital_history;
       const { trimesterAtWedding } = computePregnancyContext(
-        pregnant,
-        dueDateStr,
+        existingPregnant,
+        existingDueDate,
         weddingDateStr,
       );
       const items = buildScheduleFromTemplate(
@@ -179,8 +215,10 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
         stage,
         excludedCategories,
         weddingStyle,
-        pregnant,
+        existingPregnant,
         trimesterAtWedding,
+        ceremonyType,
+        existingMarital === "remarriage",
       );
       const seeded = await generateScheduleFromTemplate(items);
       onSaved?.();
@@ -409,24 +447,27 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
           />
         </div>
 
-        {/* 결혼 차수 — 재혼 페르소나의 양가 설득·작은 가족식 톤 분기에 사용 */}
+        {/* Round 8 F — 준비 주체(role) 를 accordion 밖으로 끌어올림. 신랑이 본인 결혼식
+            큐레이션을 받으려면 가입 첫 인상에서 보여야 함. 컴팩트한 4-칩 strip 로 첫 화면
+            부담은 최소. accordion 내부의 중복은 제거. */}
         <div>
           <label className={labelCls}>
-            결혼 차수 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+            준비 주체 <span className="text-xs text-gray-400 font-normal">(선택)</span>
           </label>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-4 gap-1.5">
             {([
               { v: null, label: "선택 안 함" },
-              { v: "first", label: "초혼" },
-              { v: "remarriage", label: "재혼" },
+              { v: "bride", label: "신부" },
+              { v: "groom", label: "신랑" },
+              { v: "shared", label: "공동" },
             ] as const).map((opt) => (
               <button
                 key={opt.label}
                 type="button"
-                onClick={() => setMaritalHistory(opt.v)}
+                onClick={() => setRole(opt.v)}
                 className={cn(
-                  "py-2 rounded-xl text-sm border transition-colors",
-                  maritalHistory === opt.v
+                  "py-2 rounded-xl text-[12px] border transition-colors",
+                  role === opt.v
                     ? "border-[#C9A96E] bg-[#C9A96E]/5 text-gray-800 font-semibold"
                     : "border-gray-200 text-gray-500"
                 )}
@@ -435,84 +476,118 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
               </button>
             ))}
           </div>
+          <p className="text-[11px] text-gray-400 mt-1">
+            신랑님이 직접 준비하시면 예복·예물·신랑 양가 가이드를 먼저 보여드려요.
+          </p>
         </div>
 
-        {/* 임신 여부 — true일 때 일정 압축·체크리스트 가중치·AI 답변 톤이 바뀜.
-            출산예정일을 입력하면 본식 시점 차수 (초기/중기/후기)별로 시프트 강도가
-            달라진다. dueDate 미입력 시 보수적으로 중기 적용. */}
-        <div>
-          <label className="flex items-start gap-2.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={pregnant}
-              onChange={(e) => {
-                setPregnant(e.target.checked);
-                if (!e.target.checked) setPregnancyDueDate(undefined);
-              }}
-              className="w-4 h-4 accent-[#C9A96E] mt-0.5"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-800">
-                임신 중이에요 <span className="text-xs text-gray-400 font-normal">(선택)</span>
-              </p>
-              <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                체크하시면 본식 시점 임신 차수에 맞춰 촬영·가봉·신혼여행 일정을 앞당겨 추천드리고, 임산부 가능 메이크업샵·산부인과 상담 같은 일정이 자동으로 추가돼요. AI 답변 톤도 신체 컨디션을 고려해 안내해드려요.
-              </p>
-              <p className="text-[11px] text-amber-700 leading-snug mt-1">
-임신 여부는 <strong>민감정보(건강)</strong>에 해당해요. 체크하시면 위 목적의 수집·이용에 별도 동의하는 것으로 간주되며, 동의 기록이 저장돼요. 체크 해제 시 저장되지 않아요.
-              </p>
-            </div>
-          </label>
+        {/* 정확도 보강 섹션 — 접힘 기본. 사용자가 필요할 때만 펼침으로 첫인상 부담 줄임.
+            details/summary 는 네이티브라 의존성 없이 가볍게 동작. 기존 입력값이
+            있으면 편집 케이스에서 숨겨지지 않도록 자동 펼침. */}
+        <details
+          className="group rounded-xl border border-gray-200 bg-white"
+          open={!!(sigungu || ceremonyType || country !== "KR" || weddingCountry !== "KR")}
+        >
+          <summary className="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between text-sm font-semibold text-gray-700">
+            <span> 더 정확한 큐레이션 받기 <span className="text-[11px] text-gray-400 font-normal">(선택)</span></span>
+            <span className="text-gray-400 text-xs group-open:rotate-180 transition-transform"></span>
+          </summary>
+          <div className="px-3 pb-3 pt-1 space-y-4 border-t border-gray-100">
 
-          {pregnant && (
-            <div className="mt-3 pl-7">
-              <label className={labelCls + " text-xs"}>
-                출산예정일 <span className="text-xs text-gray-400 font-normal">(차수 계산용·선택)</span>
-              </label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2.5 border rounded-xl text-sm text-left",
-                      !pregnancyDueDate && "text-gray-400",
-                    )}
-                  >
-                    <CalendarIcon className="w-4 h-4" />
-                    {pregnancyDueDate ? format(pregnancyDueDate, "yyyy.MM.dd") : "선택 안 함 (중기로 가정)"}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={pregnancyDueDate}
-                    onSelect={setPregnancyDueDate}
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-              {pregnancyDueDate && date && (() => {
-                const ctx = computePregnancyContext(
-                  true,
-                  format(pregnancyDueDate, "yyyy-MM-dd"),
-                  format(date, "yyyy-MM-dd"),
-                );
-                if (ctx.weeksAtWedding === null) {
-                  return (
-                    <p className="text-[11px] text-amber-600 mt-1.5 leading-snug">
-                      본식 시점이 출산예정일 이후라 차수를 계산할 수 없어요. 날짜를 다시 확인해주세요.
-                    </p>
-                  );
-                }
-                return (
-                  <p className="text-[11px] text-gray-500 mt-1.5 leading-snug">
-                    본식 시점에 <span className="font-semibold text-gray-700">{trimesterLabel(ctx.trimesterAtWedding)} · 약 {ctx.weeksAtWedding}주차</span> 예상 — 그에 맞춰 일정이 자동 조정돼요.
-                  </p>
-                );
-              })()}
+        {/* 예식 시군구 (선택) — 시도 외 좁힘. 천안·양평·강남 등 시군구 큐레이션 활성화. */}
+        <div>
+          <label className={labelCls}>
+            예식 시군구 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <input
+            type="text"
+            value={sigungu}
+            onChange={(e) => setSigungu(e.target.value)}
+            placeholder="예: 천안시, 마포구, 양평군"
+            disabled={regionTbd}
+            className={cn(
+              "w-full px-3 py-2.5 border rounded-xl text-sm",
+              regionTbd && "bg-gray-50 cursor-not-allowed text-gray-400",
+            )}
+          />
+          <p className="text-[11px] text-gray-400 mt-1">
+            입력하시면 시도 안에서 더 정확한 식장·후기·평균을 보여드려요.
+          </p>
+        </div>
+
+        {/* 식 형태 (세분) — 스몰웨딩·노식·스냅 분기. (role 은 accordion 위로 이동.) */}
+        <div>
+          <label className={labelCls}>
+            식 형태 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <select
+            value={ceremonyType ?? ""}
+            onChange={(e) => setCeremonyType((e.target.value || null) as CeremonyType | null)}
+            className="w-full px-3 py-2.5 border rounded-xl text-sm bg-white"
+          >
+            <option value="">선택 안 함 (위 결혼 스타일 따름)</option>
+            <option value="standard">표준 예식장</option>
+            <option value="hotel">호텔 웨딩</option>
+            <option value="small_real">진짜 스몰 (40~80명, 레스토랑·하우스·카페)</option>
+            <option value="restaurant">레스토랑 웨딩</option>
+            <option value="outdoor">야외·가든·정원</option>
+            <option value="public_facility">공공시설(구민회관·시민회관)</option>
+            <option value="self_only">셀프웨딩 (식 진행)</option>
+            <option value="none">결혼식 안 함 (혼인신고만)</option>
+            <option value="snap_only">스냅 촬영만</option>
+            <option value="dual_ceremony">이중식 (한국+해외)</option>
+          </select>
+        </div>
+
+        {/* 거주·예식 국가 — 해외 거주 / 국제결혼 분기. country !== "KR" 일 때만 정보 가치.
+            기본값은 디바이스 locale 에서 자동 (L2). v2 §1 위계 적용. */}
+        <div>
+          <label className={labelCls}>
+            거주·예식 국가 <span className="text-xs text-gray-400 font-normal">(해외/국제결혼만)</span>
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-[11px] text-gray-500 mb-1">현재 거주</p>
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="w-full px-3 py-2 border rounded-xl text-sm bg-white"
+              >
+                <option value="KR">대한민국</option>
+                <option value="US">미국</option>
+                <option value="JP">일본</option>
+                <option value="SG">싱가포르</option>
+                <option value="GB">영국</option>
+                <option value="DE">독일</option>
+                <option value="AU">호주</option>
+                <option value="OTHER">기타 해외</option>
+              </select>
             </div>
+            <div>
+              <p className="text-[11px] text-gray-500 mb-1">예식 국가</p>
+              <select
+                value={weddingCountry}
+                onChange={(e) => setWeddingCountry(e.target.value)}
+                className="w-full px-3 py-2 border rounded-xl text-sm bg-white"
+              >
+                <option value="KR">대한민국</option>
+                <option value="US">미국</option>
+                <option value="JP">일본</option>
+                <option value="DUAL">한국 + 해외 (이중식)</option>
+                <option value="OTHER">기타</option>
+              </select>
+            </div>
+          </div>
+          {(country !== "KR" || weddingCountry !== "KR") && (
+            <p className="text-[11px] text-amber-700 mt-1.5 leading-snug">
+              해외/국제결혼 모드로 전환돼요. 원격 진행·양가 부모 위임·영문 자료 안내가 활성화됩니다.
+            </p>
           )}
         </div>
+
+          </div>{/* end 더 정확한 큐레이션 */}
+        </details>
+
 
         <div className="flex gap-2 pt-2">
           <button

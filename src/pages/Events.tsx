@@ -6,70 +6,10 @@ import Seo from "@/components/Seo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { usePromotionalEvents, type PromotionalEvent } from "@/hooks/usePromotionalEvents";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
-interface EventCard {
-  id: string;
-  icon: string;
-  title: string;
-  subtitle: string;
-  cta: string;
-  ctaPath: string;
-  thumbBg: string;
-  status: "live" | "ended";
-  badge?: { label: string; color: string };
-  endsLabel?: string;
-}
-
-// Static catalog for now — once we have a partner_events / promotions table
-// these can be backed by Supabase. The shape mirrors what we'd query so
-// migration is a drop-in replacement.
-const FEATURED: EventCard = {
-  id: "welcome",
-  icon: "",
-  title: "신규 가입 1달 프리미엄 무료",
-  subtitle: "AI 플래너 무제한 + 예산 분석 PDF + 보너스 하트",
-  cta: "지금 시작",
-  ctaPath: "/auth",
-  thumbBg: "from-[#FFEBC9] to-[#F5BE7A]",
-  status: "live",
-};
-
-const LIVE_EVENTS: EventCard[] = [
-  {
-    id: "referral",
-    icon: "",
-    title: "친구 초대 1명당 1,000P",
-    subtitle: "초대받은 친구도 500P · 무제한 적립",
-    cta: "초대하기",
-    ctaPath: "/mypage?tab=invite",
-    thumbBg: "from-[#F3F8ED] to-[#DDEEDC]",
-    status: "live",
-  },
-  {
-    id: "attendance",
-    icon: "",
-    title: "미션 출석 7일 도전",
-    subtitle: "연속 출석 시 보너스 하트 +5",
-    cta: "미션 보기",
-    ctaPath: "/mypage?tab=missions",
-    thumbBg: "from-[#F5EFFB] to-[#E0CFFB]",
-    status: "live",
-  },
-  {
-    id: "review",
-    icon: "",
-    title: "본식 사진 후기 작성",
-    subtitle: "리뷰 작성 시 3,000P 즉시 적립",
-    cta: "후기 쓰기",
-    ctaPath: "/community/new",
-    thumbBg: "from-[#F1F4FB] to-[#CFDDF5]",
-    status: "live",
-  },
-];
-
-const PAST_EVENTS: EventCard[] = [];
-
-const EventListRow = ({ event }: { event: EventCard }) => {
+const EventListRow = ({ event }: { event: PromotionalEvent }) => {
   const navigate = useNavigate();
   const isEnded = event.status === "ended";
   return (
@@ -83,7 +23,7 @@ const EventListRow = ({ event }: { event: EventCard }) => {
       <div
         className={cn(
           "w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br",
-          event.thumbBg
+          event.thumbBg ?? "from-muted to-muted"
         )}
       >
         {event.icon && <span className="text-[28px]" aria-hidden>{event.icon}</span>}
@@ -92,11 +32,13 @@ const EventListRow = ({ event }: { event: EventCard }) => {
         <p className={cn("text-[13px] font-bold truncate", isEnded ? "text-muted-foreground" : "text-foreground")}>
           {event.title}
         </p>
-        <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1">{event.subtitle}</p>
+        {event.subtitle && (
+          <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1">{event.subtitle}</p>
+        )}
       </div>
       {!isEnded && (
         <span className="flex-shrink-0 px-3 py-1.5 rounded-full bg-[hsl(var(--pink-50))] text-primary text-[11px] font-bold">
-          {event.cta}
+          {event.ctaLabel}
         </span>
       )}
     </button>
@@ -107,6 +49,11 @@ const Events = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
+  const { featured: FEATURED, list: LIVE_EVENTS, isLoading } = usePromotionalEvents(
+    weddingSettings.persona_mode,
+    weddingSettings.wedding_style,
+  );
 
   const { toast } = useToast();
 
@@ -154,7 +101,7 @@ const Events = () => {
           }}
         >
           <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/60 text-[11px] font-bold text-[#1B6BA8]">
-            진행중 이벤트 {LIVE_EVENTS.length + 1}
+            진행중 이벤트 {LIVE_EVENTS.length + (FEATURED ? 1 : 0)}
           </span>
           <h2 className="mt-3 text-[26px] font-extrabold text-foreground leading-tight">Dewy 이벤트</h2>
           <p className="mt-1 text-[13px] font-medium text-[#1B6BA8] leading-relaxed">
@@ -162,52 +109,54 @@ const Events = () => {
           </p>
         </section>
 
-        {/* Featured large card */}
-        <section className="px-4 pt-5">
-          <button
-            onClick={() => navigate(user ? FEATURED.ctaPath : "/auth")}
-            className="w-full rounded-2xl overflow-hidden border border-border/60 bg-card active:scale-[0.99] transition-transform text-left"
-          >
-            <div className={cn("px-4 pt-4 pb-5 bg-gradient-to-br", FEATURED.thumbBg)}>
-              {FEATURED.badge && (
-                <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold", FEATURED.badge.color)}>
-                  {FEATURED.badge.label}
+        {/* Featured large card — DB driven. 로딩 중엔 스켈레톤. */}
+        {FEATURED && (
+          <section className="px-4 pt-5">
+            <button
+              onClick={() => navigate(user ? FEATURED.ctaPath : "/auth")}
+              className="w-full rounded-2xl overflow-hidden border border-border/60 bg-card active:scale-[0.99] transition-transform text-left"
+            >
+              <div className={cn("px-4 pt-4 pb-5 bg-gradient-to-br", FEATURED.thumbBg ?? "from-muted to-muted")}>
+                {FEATURED.badgeLabel && (
+                  <span className={cn(
+                    "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold",
+                    FEATURED.badgeColor ?? "bg-foreground text-background",
+                  )}>
+                    {FEATURED.badgeLabel}
+                  </span>
+                )}
+                <p className="mt-2 text-[18px] font-extrabold text-foreground leading-snug">{FEATURED.title}</p>
+                {FEATURED.subtitle && (
+                  <p className="mt-1 text-[12px] font-medium text-[#6B3F10]">{FEATURED.subtitle}</p>
+                )}
+              </div>
+              <div className="flex items-center justify-end px-4 py-3">
+                <span className="px-4 py-2 rounded-lg bg-foreground text-background text-[12px] font-bold">
+                  {FEATURED.ctaLabel}
                 </span>
-              )}
-              <p className="mt-2 text-[18px] font-extrabold text-foreground leading-snug">{FEATURED.title}</p>
-              <p className="mt-1 text-[12px] font-medium text-[#6B3F10]">{FEATURED.subtitle}</p>
-            </div>
-            <div className="flex items-center justify-end px-4 py-3">
-              <span className="px-4 py-2 rounded-lg bg-foreground text-background text-[12px] font-bold">
-                {FEATURED.cta}
-              </span>
-            </div>
-          </button>
-        </section>
+              </div>
+            </button>
+          </section>
+        )}
 
         {/* Live events list */}
         <section className="px-4 pt-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[14px] font-bold text-foreground">진행중 이벤트 {LIVE_EVENTS.length}</h3>
+            <h3 className="text-[14px] font-bold text-foreground">
+              진행중 이벤트 {isLoading ? "" : LIVE_EVENTS.length}
+            </h3>
           </div>
           <div className="flex flex-col gap-2">
-            {LIVE_EVENTS.map((e) => (
-              <EventListRow key={e.id} event={e} />
-            ))}
+            {isLoading && LIVE_EVENTS.length === 0 ? (
+              <>
+                <div className="h-16 rounded-2xl bg-muted/40 animate-pulse" />
+                <div className="h-16 rounded-2xl bg-muted/40 animate-pulse" />
+              </>
+            ) : (
+              LIVE_EVENTS.map((e) => <EventListRow key={e.id} event={e} />)
+            )}
           </div>
         </section>
-
-        {/* Past events */}
-        {PAST_EVENTS.length > 0 && (
-          <section className="px-4 pt-7">
-            <h3 className="text-[14px] font-bold text-muted-foreground mb-3">지난 이벤트</h3>
-            <div className="flex flex-col gap-2">
-              {PAST_EVENTS.map((e) => (
-                <EventListRow key={e.id} event={e} />
-              ))}
-            </div>
-          </section>
-        )}
       </main>
 
       <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />

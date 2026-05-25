@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Sparkles } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { useBudget } from "@/hooks/useBudget";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { categories, categoryKeys, resolveRegionKey, type BudgetCategory } from "@/data/budgetData";
 import { Slider } from "@/components/ui/slider";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
+import { familyCollaborationEnabled } from "@/lib/weddingPersona";
 
 const traditionalSplit: Record<BudgetCategory, { groom: number; bride: number; label: string }> = {
   venue: { groom: 0, bride: 100, label: "전통적 신부측" },
@@ -34,10 +37,12 @@ const BudgetSplitSimulator = () => {
   const { defaultRegion } = useDefaultRegion();
   const profileRegionKey = resolveRegionKey(defaultRegion);
   const { settings } = useBudget(profileRegionKey);
+  const { weddingSettings } = useWeddingSchedule();
 
-  const totalBudget = settings?.total_budget || 0;
-  const catBudgets = (settings?.category_budgets || {}) as Record<BudgetCategory, number>;
-
+  // R8 Round 9 fix — Rules of Hooks. 모든 useState/useEffect 는 early return 전에 호출.
+  // 직전 버전은 familyMode 분기 뒤에 useState 가 와 사용자가 마이페이지에서 has_parents_*
+  // 를 토글하면 hook 호출 순서가 달라져 React 가 'Rendered more hooks than during the
+  // previous render' 로 throw. 모든 hook 을 분기 전에 풀어둠.
   const [overallRatio, setOverallRatio] = useState(50);
   const [categorySplits, setCategorySplits] = useState<Record<BudgetCategory, SplitMode>>(() => {
     const initial: Record<string, SplitMode> = {};
@@ -49,6 +54,52 @@ const BudgetSplitSimulator = () => {
     });
     return initial as Record<BudgetCategory, SplitMode>;
   });
+
+  const totalBudget = settings?.total_budget || 0;
+  const catBudgets = (settings?.category_budgets || {}) as Record<BudgetCategory, number>;
+
+  // Round 8 D — single_household (양가 부모 부재) 사용자에게는 "양가 분담" 자체가
+  // 무의미. familyCollaborationEnabled=false 면 1인 모드 안내로 swap. has_parents_*
+  // 토글을 마이페이지에서 변경하면 이 화면이 다시 일반 모드로 돌아간다.
+  const familyMode = familyCollaborationEnabled({
+    has_parents_bride: weddingSettings.has_parents_bride,
+    has_parents_groom: weddingSettings.has_parents_groom,
+  });
+
+  if (!familyMode) {
+    return (
+      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+        <PageHeader title="양가 분담 시뮬레이터" />
+        <main className="px-4 py-4 pb-20 space-y-4">
+          <section className="p-5 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl text-center space-y-2">
+            <Sparkles className="w-6 h-6 text-primary mx-auto" />
+            <p className="text-[15px] font-bold text-foreground">1인 진행 모드</p>
+            <p className="text-[12px] text-muted-foreground leading-relaxed">
+              양가 부모님이 안 계신 분께는 분담 시뮬레이터가 필요 없을 수 있어요.
+              본인 예산 흐름과 우선순위 정리에 집중하시는 게 더 도움이 되실 거예요.
+            </p>
+          </section>
+          <button
+            type="button"
+            onClick={() => navigate("/budget")}
+            className="w-full py-3 rounded-2xl bg-primary text-primary-foreground text-[13px] font-bold active:scale-[0.98] transition-transform"
+          >
+            내 예산 우선순위로 돌아가기
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/ai-planner")}
+            className="w-full py-3 rounded-2xl bg-card border border-border text-foreground text-[13px] font-semibold active:scale-[0.98] transition-transform"
+          >
+            Dewy 에게 1인 진행 팁 묻기
+          </button>
+          <p className="text-[10px] text-muted-foreground text-center pt-2">
+            상황이 바뀌었다면 마이페이지의 "추가 정보" 에서 다시 설정하실 수 있어요.
+          </p>
+        </main>
+      </div>
+    );
+  }
 
   const handlePreset = (groom: number) => {
     setOverallRatio(groom);

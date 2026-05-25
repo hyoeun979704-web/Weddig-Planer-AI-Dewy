@@ -14,6 +14,12 @@ import {
   markMissionComplete,
   type PersonaMission,
 } from "@/data/personaMissions";
+import { shouldHideWeddingCeremony } from "@/lib/weddingPersona";
+import { shouldPromptConfirm, SIGNAL_KEYS } from "@/lib/behavioralSignals";
+import PregnancyConfirmFlow from "@/components/persona/PregnancyConfirmFlow";
+import RemarriageConfirmFlow from "@/components/persona/RemarriageConfirmFlow";
+import SingleHouseholdConfirmFlow from "@/components/persona/SingleHouseholdConfirmFlow";
+import GroomConfirmFlow from "@/components/persona/GroomConfirmFlow";
 
 const formatMinutes = (seconds: number) => {
   if (seconds < 60) return `${seconds}초`;
@@ -48,6 +54,64 @@ const PersonaDashboard = () => {
 
   const [missionProgress, setMissionProgress] = useState(() => loadMissionProgress());
 
+  // 행동 신호 + 부드러운 확인 카드 — v2 §4.3 + §5.6 + §1 L4.
+  // 임신 관련 콘텐츠 N회 누적 + 가입 후 3일 경과 후에만 노출.
+  // pregnant 이미 true 면 카드 표시 안 함(이미 임신 모드).
+  // F#14: Date.parse 결과가 NaN 이면 minAccountAgeDays 가드가 우회됨. Number.isFinite 로 명시 검증.
+  const accountCreatedAt = (() => {
+    if (!user?.created_at) return null;
+    const ms = Date.parse(user.created_at);
+    return Number.isFinite(ms) && ms > 0 ? ms : null;
+  })();
+  const [signalKey, setSignalKey] = useState(0); // re-render 트리거 (4 ConfirmFlow 공유)
+  // Round 8 B — pregnancy 외 remarriage/single-household/groom 도 같은 패턴으로 노출.
+  // 단일 사용자에게 한꺼번에 3장 카드가 뜨는 건 피로 — 우선순위 1장만:
+  //   pregnancy > remarriage > single_household > groom (민감도·고유성 순).
+  const showPregnancyConfirm =
+    !!user &&
+    !weddingSettings.pregnant &&
+    shouldPromptConfirm(SIGNAL_KEYS.pregnancyInterest, {
+      threshold: 3,
+      accountCreatedAt,
+      minAccountAgeDays: 3,
+    });
+  const showRemarriageConfirm =
+    !!user &&
+    !showPregnancyConfirm &&
+    // Round 9 fix — marital_history 가 명시적으로 'first' 면 사용자가 이미 선택한 것
+    // → 다시 묻지 않음. null(미선택) 일 때만 prompt. 'remarriage' 면 당연히 prompt X.
+    weddingSettings.marital_history == null &&
+    shouldPromptConfirm(SIGNAL_KEYS.remarriageInterest, {
+      threshold: 2, // 커뮤니티 카테고리 진입 빈도 낮아 임계값 낮춤.
+      accountCreatedAt,
+      minAccountAgeDays: 3,
+    });
+  const showSingleHouseholdConfirm =
+    !!user &&
+    !showPregnancyConfirm &&
+    !showRemarriageConfirm &&
+    // has_parents_* 둘 다 true(기본값) 일 때만 노출. 한쪽이라도 false 면 사용자가 이미 인지.
+    weddingSettings.has_parents_bride &&
+    weddingSettings.has_parents_groom &&
+    shouldPromptConfirm(SIGNAL_KEYS.singleHouseholdHint, {
+      threshold: 2,
+      accountCreatedAt,
+      minAccountAgeDays: 3,
+    });
+  const showGroomConfirm =
+    !!user &&
+    !showPregnancyConfirm &&
+    !showRemarriageConfirm &&
+    !showSingleHouseholdConfirm &&
+    weddingSettings.role !== "groom" &&
+    shouldPromptConfirm(SIGNAL_KEYS.groomRoleHint, {
+      threshold: 3, // 예복·신랑한복 자주 보는 사용자가 신랑일 확률 높음.
+      accountCreatedAt,
+      minAccountAgeDays: 3,
+    });
+  // signalKey 가 의존성에 들어가야 confirm/dismiss 후 즉시 재평가됨.
+  void signalKey;
+
   if (!user || !insights.isLoaded || !insights.hasOnboarded) {
     return null;
   }
@@ -61,16 +125,43 @@ const PersonaDashboard = () => {
     missions,
     styleLabel,
     styleIntro,
+    personaMode,
+    personaLabel,
+    personaHeader,
   } = insights;
 
+  // 비표준 페르소나(재혼·임신·해외·국제·신랑·1인진행·노식·스냅 등)는 페르소나 헤더가
+  // wedding_style 헤더보다 우선. 표준 신부는 기존 styleIntro 그대로.
+  const isStandardBride = personaMode === "standard_bride";
+  const headerTitle = isStandardBride ? styleIntro.title : personaHeader.title;
+  const headerSubtitle = isStandardBride ? styleIntro.subtitle : personaHeader.subtitle;
+  const modeChipLabel = isStandardBride ? `${styleLabel} 모드` : `${personaLabel} 모드`;
+
   const weddingDate = weddingSettings.wedding_date;
-  const dDayLabel = daysUntilWedding === null
-    ? "예정일 미정"
-    : daysUntilWedding > 0
-      ? `D-${daysUntilWedding}`
-      : daysUntilWedding === 0
-        ? "오늘!"
-        : `D+${Math.abs(daysUntilWedding)}`;
+  // 노식·스냅 페르소나는 D-Day 의미가 다름 — "촬영일"·"기념일"로 대체.
+  // 0(오늘) / 음수(지남) 도 표준 분기와 동일하게 다뤄야 함 — F#14.
+  const hideCeremony = shouldHideWeddingCeremony(personaMode);
+  const buildLabel = (d: number | null, todayLabel: string, doneLabel: string, futurePrefix: string): string => {
+    if (d === null) return "미정";
+    if (d > 0) return `${futurePrefix}${d}`;
+    if (d === 0) return todayLabel;
+    return `${doneLabel} D+${Math.abs(d)}`;
+  };
+  const dDayLabel = hideCeremony
+    ? personaMode === "snap_only"
+      ? daysUntilWedding === null
+        ? "기념일 미정"
+        : buildLabel(daysUntilWedding, "촬영 당일", "촬영 완료", "촬영 D-")
+      : daysUntilWedding === null
+        ? "노웨딩"
+        : buildLabel(daysUntilWedding, "오늘 신고", "혼인신고", "D-")
+    : daysUntilWedding === null
+      ? "예정일 미정"
+      : daysUntilWedding > 0
+        ? `D-${daysUntilWedding}`
+        : daysUntilWedding === 0
+          ? "오늘!"
+          : `D+${Math.abs(daysUntilWedding)}`;
 
   const handleMissionClick = (m: PersonaMission) => {
     if (!missionProgress.completedKeys.includes(m.key)) {
@@ -118,6 +209,25 @@ const PersonaDashboard = () => {
   const ringColor = urgencyTone?.ring ?? "hsl(var(--primary))";
 
   return (
+    <>
+    {/* 행동 신호 누적 시 부드러운 확인 카드. 동시 1장 — pregnancy > remarriage >
+        single > groom 우선순위. v2 §4.3·§5. */}
+    <PregnancyConfirmFlow
+      show={showPregnancyConfirm}
+      onChange={() => setSignalKey((k) => k + 1)}
+    />
+    <RemarriageConfirmFlow
+      show={showRemarriageConfirm}
+      onChange={() => setSignalKey((k) => k + 1)}
+    />
+    <SingleHouseholdConfirmFlow
+      show={showSingleHouseholdConfirm}
+      onChange={() => setSignalKey((k) => k + 1)}
+    />
+    <GroomConfirmFlow
+      show={showGroomConfirm}
+      onChange={() => setSignalKey((k) => k + 1)}
+    />
     <section
       data-tutorial="persona-dashboard"
       className="px-4 pt-4 pb-2 animate-fade-in"
@@ -132,7 +242,7 @@ const PersonaDashboard = () => {
             <div className="flex items-center gap-1 flex-wrap mb-1.5">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-card/80 rounded-full text-[10px] font-semibold text-primary">
                 {styleIntro.accentEmoji && <span>{styleIntro.accentEmoji}</span>}
-                <span>{styleLabel} 모드</span>
+                <span>{modeChipLabel}</span>
               </span>
               {urgencyTone && (
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${urgencyTone.chipBg} ${urgencyTone.chipFg}`}>
@@ -167,10 +277,10 @@ const PersonaDashboard = () => {
               )}
             </div>
             <h2 className="text-[15px] font-bold text-foreground leading-tight">
-              {styleIntro.title}
+              {headerTitle}
             </h2>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              {styleIntro.subtitle}
+              {headerSubtitle}
             </p>
           </div>
 
@@ -304,14 +414,20 @@ const PersonaDashboard = () => {
           <span className="text-[11px] font-bold text-primary">결정이 어려우신가요? Dewy가 추천해드려요</span>
         </button>
 
-        {/* Wedding date footer (small) */}
-        {weddingDate && (
+        {/* Wedding date footer (small). 노식·스냅 페르소나는 식 일자 라벨 숨김. */}
+        {weddingDate && !hideCeremony && (
           <p className="relative text-[10px] text-muted-foreground mt-3 text-center">
             예식 {format(new Date(weddingDate), "yyyy.MM.dd (EEEE)", { locale: ko })}
           </p>
         )}
+        {weddingDate && hideCeremony && personaMode === "snap_only" && (
+          <p className="relative text-[10px] text-muted-foreground mt-3 text-center">
+            촬영 예정 {format(new Date(weddingDate), "yyyy.MM.dd", { locale: ko })}
+          </p>
+        )}
       </div>
     </section>
+    </>
   );
 };
 

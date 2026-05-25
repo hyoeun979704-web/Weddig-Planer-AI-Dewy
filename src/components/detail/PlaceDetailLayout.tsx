@@ -23,7 +23,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { LegacyDetail } from "@/hooks/usePlaceDetail";
-import { usePlaceReviews, type PlaceReview } from "@/hooks/usePlaceReviews";
+import { usePlaceReviews, REVIEW_SOURCE_META, type PlaceReview } from "@/hooks/usePlaceReviews";
+import HiddenCostsCard from "@/components/detail/HiddenCostsCard";
+import SetAsWeddingVenueButton from "@/components/detail/SetAsWeddingVenueButton";
 
 const handleTagClick = (tag: string) => {
   // Tag-based filtering on the list pages isn't wired yet — the list hooks
@@ -262,6 +264,21 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
         <h2 className="text-xl font-bold text-foreground mb-1.5">{place.name}</h2>
         {place.description && (
           <p className="text-sm text-muted-foreground leading-relaxed">{place.description}</p>
+        )}
+        {/* 결혼식장 anchor 등록 CTA — wedding_hall 카테고리에만 표시.
+            식장 상세를 보던 흐름 그대로 1탭 등록(§1 L5 JIT). */}
+        {place.category === "wedding_hall" && (
+          <div className="mt-3">
+            <SetAsWeddingVenueButton
+              placeId={place.id}
+              placeName={place.name}
+              city={place.city ?? null}
+              district={place.district ?? null}
+              address={place.address ?? null}
+              lat={place.latitude ?? null}
+              lng={place.longitude ?? null}
+            />
+          </div>
         )}
         {place.tags && place.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">
@@ -541,17 +558,9 @@ function DetailTab({
         </section>
       )}
 
-      {/* Hidden costs */}
-      {place.hidden_costs.length > 0 && (
-        <section className="px-4 pt-3 pb-2">
-          <h3 className="font-bold text-sm mb-2 flex items-center gap-1.5">
-            <AlertCircle className="w-4 h-4 text-amber-600" />
-            <span className="text-amber-700">계약 전 확인</span>
-          </h3>
-          <ul className="text-xs text-amber-900 space-y-1 bg-amber-50 border border-amber-200 rounded-xl p-3">
-            {place.hidden_costs.map((c, i) => <li key={i} className="flex gap-1.5"><span></span><span>{c}</span></li>)}
-          </ul>
-        </section>
+      {/* Hidden costs — P3 페르소나 핵심 페인. 카테고리 표준 추가금 체크리스트 함께. */}
+      {(place.hidden_costs.length > 0 || ["wedding_hall", "studio", "dress_shop", "makeup_shop", "honeymoon"].includes(place.category)) && (
+        <HiddenCostsCard category={place.category} hiddenCostsByPlace={place.hidden_costs} />
       )}
       {place.contract_policy && (
         <section className="px-4 pt-3 pb-4">
@@ -653,11 +662,23 @@ function ReviewCard({ review }: { review: PlaceReview }) {
         {review.author && (
           <span className="text-sm text-foreground">{review.author}</span>
         )}
-        {review.is_verified && (
-          <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-full">
-            인증
-          </span>
-        )}
+        {/* 출처 칩 — source_type 우선, 없으면 is_verified 폴백. P3·P13·P18 광고/협찬 분간 해소. */}
+        {(() => {
+          const meta = review.source_type
+            ? REVIEW_SOURCE_META[review.source_type]
+            : review.is_verified
+              ? REVIEW_SOURCE_META.user_verified
+              : null;
+          if (!meta) return null;
+          return (
+            <span
+              title={meta.hint}
+              className={`text-[10px] px-1.5 py-0.5 rounded-full border ${meta.tone}`}
+            >
+              {meta.label}
+            </span>
+          );
+        })()}
         {date && (
           <span className="text-xs text-muted-foreground ml-auto">{date}</span>
         )}

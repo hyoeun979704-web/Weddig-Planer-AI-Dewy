@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MapPin, Wallet, Users, Star, X, SlidersHorizontal, ChevronDown, Check, Building2, UtensilsCrossed, PartyPopper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { useFilterStore } from "@/stores/useFilterStore";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 // value uses substring that matches both legacy and current city naming
 // (e.g. "충청북" matches both "충청북도" and any abbreviated form). The
@@ -19,18 +20,19 @@ const ratingOptions = [
   { value: 4.9, label: "4.9점 이상" },
 ];
 
-// Values aligned to the most-popular tag spelling in `places.tags` so
-// `overlaps()` actually matches rows. e.g. "야외웨딩" (46 venues) is far
-// more common than the bare "야외" (3 venues).
+// Round 13 — places.tags 의 실측 빈도 기준. wedding_hall 카테고리에서 매칭 행이 있는
+// tag 만 노출. 0건 옵션은 사용자가 클릭해도 결과 없음 → UI 피로만 유발.
+// 호텔웨딩(62)/하우스웨딩(81)/야외웨딩(46)/가든웨딩(36)/컨벤션웨딩(33)/채플웨딩(12)/
+// 단독홀(101)/스몰웨딩(40). 레스토랑웨딩·공공시설(둘 다 0건) 제거.
 const hallTypeOptions = [
-  { value: "호텔웨딩", label: "호텔" },
+  { value: "단독홀", label: "단독홀" },
   { value: "하우스웨딩", label: "하우스" },
+  { value: "호텔웨딩", label: "호텔" },
   { value: "야외웨딩", label: "야외" },
+  { value: "스몰웨딩", label: "스몰웨딩" },
   { value: "가든웨딩", label: "가든" },
   { value: "컨벤션웨딩", label: "컨벤션" },
   { value: "채플웨딩", label: "채플" },
-  { value: "단독홀", label: "단독홀" },
-  { value: "스몰웨딩", label: "스몰웨딩" },
 ];
 
 // Most rows tag meals as plain "뷔페" or "코스요리"; the granular
@@ -52,6 +54,9 @@ const PRICE_MAX = 200000;
 const PRICE_STEP = 10000;
 
 const GUARANTEE_MIN = 50;
+// Round 10 — 스몰 페르소나(P11 진짜 스몰 40~80명, P12 야외, P14 1천만원대) 가 50명 미만
+// 옵션을 보려면 floor 가 더 낮아야 함. wedding_style='small' 또는 small_* persona 면 20.
+const GUARANTEE_MIN_SMALL = 20;
 const GUARANTEE_MAX = 300;
 const GUARANTEE_STEP = 10;
 
@@ -179,15 +184,19 @@ const FilterBar = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const {
     region,
+    sigungu,
     maxPrice,
     maxGuarantee,
+    minGuarantee,
     minRating,
     hallTypes,
     mealOptions,
     eventOptions,
     setRegion,
+    setSigungu,
     setMaxPrice,
     setMaxGuarantee,
+    setMinGuarantee,
     setMinRating,
     toggleHallType,
     setHallTypes,
@@ -199,10 +208,30 @@ const FilterBar = () => {
     hasActiveFilters,
   } = useFilterStore();
 
+  // Round 10 — 스몰 페르소나 floor 분기. wedding_style='small' 또는 persona_mode 가
+  // small_* 면 20명 floor 로 낮춰 진짜 스몰 식장 후보가 노출되도록.
+  const { weddingSettings } = useWeddingSchedule();
+  const isSmallPersona =
+    weddingSettings.wedding_style === "small" ||
+    (weddingSettings.persona_mode != null && weddingSettings.persona_mode.startsWith("small_"));
+  const guaranteeMin = isSmallPersona ? GUARANTEE_MIN_SMALL : GUARANTEE_MIN;
+
+  // Round 11 self-review fix — guaranteeMin 이 변하면(small persona 진출입) maxGuarantee 가
+  // 새 min 미만 값으로 남아 슬라이더 value &lt; min 인 부정확 상태가 됨. min 미만 값은 min 으로
+  // clamp. minGuarantee 도 동일 — small 칩으로 30 명 잡았다가 일반 페르소나로 바뀌면 50 이상으로.
+  useEffect(() => {
+    if (maxGuarantee != null && maxGuarantee < guaranteeMin) setMaxGuarantee(guaranteeMin);
+    if (minGuarantee != null && minGuarantee < guaranteeMin) setMinGuarantee(guaranteeMin);
+  }, [guaranteeMin, maxGuarantee, minGuarantee, setMaxGuarantee, setMinGuarantee]);
+
+  // F#11 — sigungu/minGuarantee 가 store 에서 적용되어도 chip 카운트에 빠지면
+  // 사용자가 어떤 필터가 켜졌는지 모르고 reset 외엔 해제 못 함.
   const activeFiltersCount = [
-    region, 
-    maxPrice, 
-    maxGuarantee, 
+    region,
+    sigungu,
+    maxPrice,
+    maxGuarantee,
+    minGuarantee,
     minRating,
     hallTypes.length > 0 ? hallTypes : null,
     mealOptions.length > 0 ? mealOptions : null,
@@ -329,7 +358,7 @@ const FilterBar = () => {
                 </h3>
                 <div className="px-2">
                   <div className="flex justify-between text-sm text-muted-foreground mb-3">
-                    <span>{GUARANTEE_MIN}명</span>
+                    <span>{guaranteeMin}명</span>
                     <span className="font-semibold text-foreground">
                       {maxGuarantee ? `${maxGuarantee}명 이하` : "전체"}
                     </span>
@@ -338,7 +367,7 @@ const FilterBar = () => {
                   <Slider
                     value={[maxGuarantee || GUARANTEE_MAX]}
                     onValueChange={(value) => setMaxGuarantee(value[0] === GUARANTEE_MAX ? null : value[0])}
-                    min={GUARANTEE_MIN}
+                    min={guaranteeMin}
                     max={GUARANTEE_MAX}
                     step={GUARANTEE_STEP}
                     className="w-full"
@@ -436,20 +465,27 @@ const FilterBar = () => {
           </SheetContent>
         </Sheet>
 
-        {/* Quick filter chips with dropdowns */}
+        {/* Quick filter chips with dropdowns. 시군구 가 있으면 "지역" 칩 라벨에 함께 표시. */}
         <QuickFilterChip
-          label={regionLabel(region)}
+          label={[regionLabel(region), sigungu].filter(Boolean).join(" · ")}
           defaultLabel="지역"
-          isActive={!!region}
+          isActive={!!region || !!sigungu}
           icon={<MapPin className="w-3.5 h-3.5" />}
-          onClear={() => setRegion(null)}
+          onClear={() => {
+            setRegion(null);
+            setSigungu(null);
+          }}
         >
           {regions.map((r) => (
             <FilterOption
               key={r.value}
               label={r.label}
               isSelected={region === r.value}
-              onClick={() => setRegion(region === r.value ? null : r.value)}
+              onClick={() => {
+                // 다른 시도를 골랐을 때 이전 시군구가 남으면 결과 0건이 되는 사고 방지.
+                if (sigungu && region !== r.value) setSigungu(null);
+                setRegion(region === r.value ? null : r.value);
+              }}
             />
           ))}
         </QuickFilterChip>
@@ -496,13 +532,13 @@ const FilterBar = () => {
             <Slider
               value={[maxGuarantee || GUARANTEE_MAX]}
               onValueChange={(value) => setMaxGuarantee(value[0] === GUARANTEE_MAX ? null : value[0])}
-              min={GUARANTEE_MIN}
+              min={guaranteeMin}
               max={GUARANTEE_MAX}
               step={GUARANTEE_STEP}
               className="w-full"
             />
             <div className="flex justify-between text-xs text-muted-foreground mt-2">
-              <span>{GUARANTEE_MIN}명</span>
+              <span>{guaranteeMin}명</span>
               <span>{GUARANTEE_MAX}명</span>
             </div>
           </div>

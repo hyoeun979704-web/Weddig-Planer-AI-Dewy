@@ -29,8 +29,10 @@ export function useDataCollectionConsent() {
       setState(null);
       return;
     }
+    // Round 10 — canonical view 로 reads 통일. backfill synthesized + 레거시 분리
+    // 전 type 제외. data_collection_v1 자체는 backfill 대상 아니지만 reader 규약 일관성.
     const { data } = await (supabase as any)
-      .from("user_consents")
+      .from("user_consents_canonical")
       .select("agreed, consent_version")
       .eq("user_id", user.id)
       .eq("consent_type", DATA_COLLECTION_CONSENT_TYPE)
@@ -61,13 +63,17 @@ export function useDataCollectionConsent() {
         typeof navigator !== "undefined"
           ? navigator.userAgent?.slice(0, 500)
           : null;
-      await (supabase as any).from("user_consents").insert({
+      // Round 15 P1 fix — insert error 미체크 회귀. RLS / network / unique violation
+      // 실패 시 silent → UI 는 consent 완료로 보이지만 DB 미반영 → PIPA-gated 다운스트림
+      // 코드가 false premise 로 실행. error throw 로 caller 가 catch 하도록.
+      const { error: insertError } = await (supabase as any).from("user_consents").insert({
         user_id: user.id,
         consent_type: DATA_COLLECTION_CONSENT_TYPE,
         consent_version: DATA_COLLECTION_CONSENT_VERSION,
         agreed,
         user_agent: ua,
       });
+      if (insertError) throw insertError;
       setState(agreed);
     },
     [user],

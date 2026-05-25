@@ -8,6 +8,19 @@
 
 import type { WeddingStyle } from "@/lib/weddingStyle";
 import type { PregnancyTrimester } from "@/lib/pregnancy";
+import type { WeddingPersonaMode, UserRole, CeremonyType } from "@/lib/weddingPersona";
+
+// Round 15 P1 fix — pregnant 사용자가 비표준 ceremony_type 일 때 PERSONA_SPECIFIC
+// missions 가 layering 안 되던 회귀. derivePersonaMode 우선순위: pregnancy > 모든 것 →
+// PERSONA_SPECIFIC['pregnancy'] 없어 임산부 야외웨딩이 'outdoor-weather' 같은 critical
+// 미션 영영 못 받음. ceremonyType 인자로 secondary persona 추론해 layering.
+const CEREMONY_TO_SECONDARY_PERSONA: Partial<Record<CeremonyType, WeddingPersonaMode>> = {
+  hotel: "luxury_hotel",
+  small_real: "small_intimate",
+  restaurant: "small_intimate",
+  outdoor: "small_outdoor",
+  public_facility: "small_budget",
+};
 
 export interface PersonaMission {
   key: string;
@@ -157,6 +170,184 @@ const PREGNANCY_MISSIONS_BY_TRIMESTER: Record<PregnancyTrimester, PersonaMission
   third: PREGNANCY_MISSIONS_THIRD,
 };
 
+// 페르소나 모드별 미션 — 일반 wedding_style 분기로 부족한 비표준 페르소나
+// (재혼·신랑·해외·국제·1인진행·노식·스냅 등)의 첫 액션을 보강한다.
+// 페르소나가 standard_bride/small_intimate 등 wedding_style 위에 1:1로
+// 매핑되는 경우는 STYLE_SPECIFIC 폴백을 그대로 쓰고 여기엔 안 적는다.
+const PERSONA_SPECIFIC: Partial<Record<WeddingPersonaMode, PersonaMission[]>> = {
+  standard_groom: [
+    {
+      key: "groom-suit",
+      label: "신랑 예복 후보 좁히기",
+      hint: "맞춤·기성·렌탈 비교 + 가봉 일정",
+      emoji: "",
+      href: "/suit",
+    },
+    {
+      key: "groom-budget-talk",
+      label: "양가 분담 협의 — 신랑 입장 정리",
+      hint: "지역 평균 + 표준 비율로 시작",
+      emoji: "",
+      href: "/budget/split-simulator",
+    },
+  ],
+  remarriage: [
+    {
+      key: "remarriage-tone",
+      label: "작은 가족식 진행 톤 정리",
+      hint: "양가 인사·자녀 동반 시나리오 살펴보기",
+      emoji: "",
+      href: "/ai-planner",
+    },
+    {
+      key: "remarriage-community",
+      label: "재혼 익명 커뮤니티 둘러보기",
+      hint: "같은 입장 후기로 정서적 연결",
+      emoji: "",
+      href: "/community",
+    },
+  ],
+  remote_overseas: [
+    {
+      key: "overseas-trip",
+      label: "한국 방문 일정 최적화",
+      hint: "2~3회 방문에 미팅 압축 배치",
+      emoji: "",
+      href: "/my-schedule",
+    },
+    {
+      key: "overseas-delegate",
+      label: "양가 부모께 위임 가능한 항목 정리",
+      hint: "상견례·시식·답례품 등",
+      emoji: "",
+      href: "/ai-planner",
+    },
+  ],
+  international: [
+    {
+      key: "intl-bilingual",
+      label: "한국 결혼 관습 영문 요약 생성",
+      hint: "외국 가족에게 보낼 안내문",
+      emoji: "",
+      href: "/ai-planner",
+    },
+    {
+      key: "intl-dual-schedule",
+      label: "한국·해외 이중식 일정 조율",
+      hint: "신혼여행·체류 비자 동선 포함",
+      emoji: "",
+      href: "/my-schedule",
+    },
+  ],
+  single_household: [
+    {
+      key: "single-self-plan",
+      label: "1인 진행 가이드 체크",
+      hint: "친정/시댁 역할 부재 시 대안",
+      emoji: "",
+      href: "/ai-planner",
+    },
+    {
+      key: "single-community",
+      label: "같은 입장 커뮤니티 찾기",
+      hint: "혼자 준비하는 분들의 후기",
+      emoji: "",
+      href: "/community",
+    },
+  ],
+  self_no_ceremony: [
+    {
+      key: "self-shoot",
+      label: "셀프 촬영 노하우 정독",
+      hint: "장비·동선·후보정 가이드",
+      emoji: "",
+      href: "/magazine",
+    },
+    {
+      key: "self-marriage-register",
+      label: "혼인신고 체크리스트 확인",
+      hint: "필요 서류·진행 절차",
+      emoji: "",
+      href: "/my-schedule",
+    },
+  ],
+  no_wedding_travel: [
+    {
+      key: "no-wed-travel",
+      label: "신혼여행 큐레이션 살펴보기",
+      hint: "식 없이 한 번에 잘 다녀오기",
+      emoji: "",
+      href: "/honeymoon",
+    },
+    {
+      key: "no-wed-home",
+      label: "신혼집·혼수 우선순위 정리",
+      hint: "가전·가구·예산 우선순위",
+      emoji: "",
+      href: "/appliances",
+    },
+  ],
+  snap_only: [
+    {
+      key: "snap-concept",
+      label: "콘셉트별 스냅 작가 둘러보기",
+      hint: "내추럴·도시·필름·라이프스타일",
+      emoji: "",
+      href: "/studios",
+    },
+    {
+      key: "snap-anniversary",
+      label: "기념일 패키지 비교",
+      hint: "1주년·5주년·임산부·반려동물",
+      emoji: "",
+      href: "/studios",
+    },
+  ],
+  regional: [
+    {
+      key: "regional-venue",
+      label: "권역 식장 통합 큐레이션",
+      hint: "시도+시군구 + 인접 권역 함께",
+      emoji: "",
+      href: "/venues",
+    },
+    {
+      key: "regional-avg",
+      label: "지역 평균 가격 확인",
+      hint: "수도권 대비 합리성 비교",
+      emoji: "",
+      href: "/budget",
+    },
+  ],
+  small_outdoor: [
+    {
+      key: "outdoor-weather",
+      label: "야외 우천 대비 옵션 확인",
+      hint: "텐트·실내 보조 동선",
+      emoji: "",
+      href: "/ai-planner",
+    },
+  ],
+  small_budget: [
+    {
+      key: "budget-public",
+      label: "공공시설(구민회관) 사례 보기",
+      hint: "1천만원대 진짜 케이스",
+      emoji: "",
+      href: "/venues",
+    },
+  ],
+  small_luxury: [
+    {
+      key: "luxury-compare",
+      label: "호텔 스몰 패키지 비교",
+      hint: "프라이빗·컨시어지 옵션 정렬",
+      emoji: "",
+      href: "/venues",
+    },
+  ],
+};
+
 const STYLE_INTRO: Record<WeddingStyle, { title: string; subtitle: string; accentEmoji: string }> = {
   general: {
     title: "오늘의 일반 결혼 준비",
@@ -180,21 +371,75 @@ const STYLE_INTRO: Record<WeddingStyle, { title: string; subtitle: string; accen
   },
 };
 
+// Round 8 A — role=groom 이 다른 페르소나에 가려졌을 때 신랑 voice 를 미션 1슬롯으로
+// 보강. 페르소나 우선순위가 hotel/regional/overseas/noParents > role 로 바뀌었으므로
+// 호텔 신랑·지방 신랑 등은 personaMode != 'standard_groom' 이지만 신랑 미션이 필요.
+// Round 9 fix — key 를 PERSONA_SPECIFIC.standard_groom 의 'groom-suit' 와 동일하게.
+// 사용자가 페르소나 변경(예: 호텔 빼기) 후 standard_groom 으로 전환돼도 같은 key 로
+// 진행 상태가 이어짐. (localStorage mission progress 키 namespace 일관성.)
+const GROOM_LAYER_MISSION: PersonaMission = {
+  key: "groom-suit",
+  label: "신랑 예복 후보 좁히기",
+  hint: "맞춤·기성·렌탈 비교 + 가봉 일정",
+  emoji: "",
+  href: "/suit",
+};
+
 export function getMissionsForStyle(
   style: WeddingStyle | null | undefined,
-  options: { pregnant?: boolean; pregnancyTrimester?: PregnancyTrimester | null } = {},
+  options: {
+    pregnant?: boolean;
+    pregnancyTrimester?: PregnancyTrimester | null;
+    /** 페르소나 모드. 지정 시 PERSONA_SPECIFIC 미션이 스타일 미션보다 우선. */
+    personaMode?: WeddingPersonaMode | null;
+    /** Round 8 A — 사용자 role. 'groom' 이면 standard_groom 외 페르소나에 신랑 미션 1개 layering. */
+    role?: UserRole | null;
+    /** Round 15 P1 fix — ceremony_type. pregnant 사용자가 야외/스몰 등 비표준 ceremony 일 때
+     *  CEREMONY_TO_SECONDARY_PERSONA 로 매핑된 PERSONA_SPECIFIC missions 도 함께 노출. */
+    ceremonyType?: CeremonyType | null;
+  } = {},
 ): PersonaMission[] {
   const s = (style ?? "general") as WeddingStyle;
   const styleList = STYLE_SPECIFIC[s] ?? STYLE_SPECIFIC.general;
   // Cap at 3 to keep the dashboard glanceable. 임신이면 차수별 우선순위
   // 2개 + 스타일 미션 1개 — 스타일 미션 + COMMON 보다 컨디션·시간 압박
   // 큰 페르소나라 우선순위 위에 둠. trimester=null 이면 second 사용.
+  // 임신 + 비표준 페르소나(예: pregnancy + international) 가 동시에 가능 — 헤더는
+  // international 인데 미션은 임신용만 나오면 카피와 모순(F#10). 둘 다 있으면
+  // 임신 1 + 페르소나 1 + 공통 1 로 합쳐 표시한다.
+  const personaList = options.personaMode ? PERSONA_SPECIFIC[options.personaMode] : undefined;
+  const hasPersona = !!personaList && personaList.length > 0;
+  // groom layering 은 standard_groom 외 페르소나에서만 (그 페르소나는 이미 신랑 voice).
+  const shouldLayerGroom =
+    options.role === "groom" && options.personaMode && options.personaMode !== "standard_groom";
+
   if (options.pregnant) {
     const trimester = options.pregnancyTrimester ?? "second";
     const pregnancyMissions = PREGNANCY_MISSIONS_BY_TRIMESTER[trimester];
-    return [pregnancyMissions[0], styleList[0] ?? COMMON[0], pregnancyMissions[1]].filter(
-      (m): m is PersonaMission => !!m,
-    ).slice(0, 3);
+    // Round 15 P1 fix — pregnant 가 다른 페르소나 모두를 가려서 'pregnancy' 만 노출되던
+    // 회귀. ceremony_type 기반 secondary persona missions 도 second slot 으로 layering.
+    // 우선순위: PERSONA_SPECIFIC[personaMode]('pregnancy' 면 없음) > secondary by ceremony >
+    // styleList > COMMON. 임산부 야외웨딩 사용자가 'outdoor-weather' 미션 받게 됨.
+    const secondaryMode = options.ceremonyType ? CEREMONY_TO_SECONDARY_PERSONA[options.ceremonyType] : undefined;
+    const secondaryList = secondaryMode ? PERSONA_SPECIFIC[secondaryMode] : undefined;
+    const second =
+      (hasPersona ? personaList![0] : undefined)
+      ?? (secondaryList && secondaryList.length > 0 ? secondaryList[0] : undefined)
+      ?? styleList[0]
+      ?? COMMON[0];
+    return [pregnancyMissions[0], second, pregnancyMissions[1]]
+      .filter((m): m is PersonaMission => !!m)
+      .slice(0, 3);
+  }
+  if (hasPersona) {
+    // 신랑 layering: 페르소나 1 + 신랑 1 + 공통/페르소나 잔여. 페르소나 voice 가 먼저.
+    if (shouldLayerGroom) {
+      return [personaList![0], GROOM_LAYER_MISSION, ...(personaList!.slice(1)), ...COMMON].slice(0, 3);
+    }
+    return [...personaList!, ...COMMON].slice(0, 3);
+  }
+  if (shouldLayerGroom) {
+    return [GROOM_LAYER_MISSION, ...styleList, ...COMMON].slice(0, 3);
   }
   return [...styleList, ...COMMON].slice(0, 3);
 }

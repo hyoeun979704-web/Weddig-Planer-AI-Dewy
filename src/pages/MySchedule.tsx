@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
-import { CATEGORY_OPTIONS, TIMELINE_PHASES, daysUntilWedding, parseLocalDate } from "@/lib/schedule";
+import { buildCategoryOptions, buildTimelinePhases, daysUntilWedding, parseLocalDate } from "@/lib/schedule";
 import {
   CATEGORY_LABELS,
   WEDDING_STYLE_LABEL,
@@ -120,6 +120,10 @@ const MySchedule = () => {
   };
 
   const days = daysUntilWedding(weddingSettings.wedding_date);
+  // Schedule.tsx 와 같은 압축 윈도우 — MySchedule 만 정적 365일 고정이면 같은
+  // 사용자의 두 페이지가 다른 phase 라벨/날짜 제안을 보임(코드 리뷰 F#7).
+  const TIMELINE_PHASES = buildTimelinePhases(days);
+  const CATEGORY_OPTIONS = buildCategoryOptions(days);
 
   const formattedWeddingDate = weddingSettings.wedding_date
     ? format(parseLocalDate(weddingSettings.wedding_date), "yyyy년 M월 d일 (EEEE)", { locale: ko })

@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SurveyModal from "./SurveyModal";
 import { TIME_OPTIONS } from "./constants";
 import { cn } from "@/lib/utils";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import type { CeremonyType } from "@/lib/weddingPersona";
 
 interface Props {
   isOpen: boolean;
@@ -9,7 +11,16 @@ interface Props {
   onSubmit: (data: any) => void;
 }
 
+// Round 14 — ceremony_type → venueType radio 옵션 매핑. picker fatigue 완화.
+const CEREMONY_TO_VENUE_TYPE: Partial<Record<CeremonyType, string>> = {
+  hotel: "호텔",
+  outdoor: "야외",
+  small_real: "하우스웨딩",
+  restaurant: "하우스웨딩",
+};
+
 const TimelineSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
+  const { weddingSettings } = useWeddingSchedule();
   const [ceremonyTime, setCeremonyTime] = useState("");
   const [venueType, setVenueType] = useState("");
   const [duration, setDuration] = useState("");
@@ -21,6 +32,16 @@ const TimelineSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const [groomRoom, setGroomRoom] = useState("");
   const [special, setSpecial] = useState("");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  // Round 14 — ceremony_type 으로 venueType prefill (재오픈 시 사용자 수동 선택 보존).
+  useEffect(() => {
+    if (!isOpen) return;
+    if (weddingSettings.ceremony_type && venueType === "") {
+      const mapped = CEREMONY_TO_VENUE_TYPE[weddingSettings.ceremony_type];
+      if (mapped) setVenueType(mapped);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, weddingSettings.ceremony_type]);
 
   const togglePhoto = (p: string) => setPhotoTeam(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
 

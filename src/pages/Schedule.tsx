@@ -8,6 +8,7 @@ import { Heart, Loader2, Plus, Check, BookOpen, Settings } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
+import FamilyAvailabilityOverlap from "@/components/schedule/FamilyAvailabilityOverlap";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
 import PartnerLinkCard from "@/components/partner/PartnerLinkCard";
@@ -19,7 +20,7 @@ import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import { format, differenceInDays, isToday, isTomorrow } from "date-fns";
 import { ko } from "date-fns/locale";
 import {
-  TIMELINE_PHASES,
+  buildTimelinePhases,
   type TimelinePhase,
   daysUntilWedding,
   getTaskUrgency,
@@ -65,6 +66,9 @@ const Schedule = () => {
   );
 
   const days = daysUntilWedding(weddingSettings.wedding_date);
+  // 압축 모드 — P18(임신 16주 · 식 4개월) / P13(7개월) 등 임박 사용자도 phase
+  // 5단계를 의미 있게 받도록 D-Day 까지 잔여일 기준으로 윈도우 비율을 재계산.
+  const TIMELINE_PHASES = buildTimelinePhases(days);
 
   // Filter out items in user-excluded categories. The DB still has them, but
   // the schedule UI hides them — re-enabling the category brings them back.
@@ -114,21 +118,15 @@ const Schedule = () => {
   // Get phase status based on D-Day
   const getPhaseStatus = (category: string): "completed" | "current" | "upcoming" => {
     if (days === null) return "upcoming";
-    
-    const phaseRanges: Record<string, [number, number]> = {
-      "phase-1": [365, 180],
-      "phase-2": [180, 120],
-      "phase-3": [120, 60],
-      "phase-4": [60, 30],
-      "phase-5": [30, 0],
-    };
-    
-    const range = phaseRanges[category];
-    if (!range) return "upcoming";
-    
-    const [start, end] = range;
-    if (days > start) return "upcoming";
-    if (days <= end) return "completed";
+
+    // 라벨(buildTimelinePhases)과 status 가 같은 윈도우에서 나와야 함.
+    // 정적 [365,180,...] 범위를 쓰면 압축 모드(P18) 사용자의 phase 라벨은
+    // 'D-120~D-60' 인데 status 는 [180,120] 기준으로 '완료'로 잘못 잡힘.
+    const phase = TIMELINE_PHASES.find((p) => p.category === category);
+    if (!phase) return "upcoming";
+
+    if (days > phase.startDay) return "upcoming";
+    if (days <= phase.endDay) return "completed";
     return "current";
   };
 
@@ -424,6 +422,9 @@ const Schedule = () => {
             <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
           </button>
         </section>
+
+        {/* 양가 일정 조율 — P1/P8/P9 페르소나 핵심. has_parents_* 기반으로 자동 노출/숨김. */}
+        <FamilyAvailabilityOverlap />
 
         {/* ── Wedding Timeline ── */}
         <section className="px-4 mb-6" data-tutorial="schedule-timeline">

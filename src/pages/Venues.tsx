@@ -8,6 +8,7 @@ import ExcludedCategoryBanner from "@/components/ExcludedCategoryBanner";
 import VenueGrid from "@/components/VenueGrid";
 import FilterBar from "@/components/FilterBar";
 import VenueCrossLink from "@/components/VenueCrossLink";
+import LocationJITCard from "@/components/persona/LocationJITCard";
 import { Venue } from "@/hooks/useVenues";
 import { useFilterStore } from "@/stores/useFilterStore";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
@@ -20,12 +21,15 @@ const Venues = () => {
   const location = useLocation();
   const hasActiveFilters = useFilterStore((state) => state.hasActiveFilters);
   const initWithRegion = useFilterStore((state) => state.initWithRegion);
-  const { defaultRegion, isLoaded } = useDefaultRegion();
+  const { defaultRegion, defaultSigungu, isLoaded } = useDefaultRegion();
   const { weddingStyle } = useWeddingProfile();
 
   // wedding_region이 라벨 형태("충남","제주")로 저장되면 ILIKE %충남% 가
   // DB의 "충청남도" 와 매칭 안됨. value 형태("충청남")로 정규화 후 적용.
-  useEffect(() => { if (isLoaded) initWithRegion(normalizeRegion(defaultRegion)); }, [isLoaded]);
+  // 시군구가 있으면 함께 시드(places.district ILIKE) — P6·P12 페르소나.
+  useEffect(() => {
+    if (isLoaded) initWithRegion(normalizeRegion(defaultRegion), defaultSigungu);
+  }, [isLoaded]);
 
   const handleVenueClick = (venue: Venue) => { navigate(`/venue/${venue.id}`); };
 
@@ -36,6 +40,8 @@ const Venues = () => {
       <main className="pb-20">
         <ExcludedCategoryBanner scheduleCategories="wedding_hall" />
         <CategoryHeroBanner category="venues" />
+        {/* 위치 권한 JIT — 식장 미등록·지역 미설정 사용자에게만 노출. v2 §6. */}
+        <LocationJITCard />
         <VenueCrossLink variant="venues" />
         <FilterBar />
         {weddingStyle === "small" && (

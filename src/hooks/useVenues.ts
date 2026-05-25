@@ -17,9 +17,22 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
   const from = pageParam * VENUES_PER_PAGE;
   const to = from + VENUES_PER_PAGE - 1;
 
+  // Round 13 P0 fix — 보증인원/홀스타일/식사옵션 등 detail 컬럼으로 places 를 거르려면
+  // PostgREST embedded resource 의 inner join 필요. 평소엔 detail 없는 row 도 노출하므로
+  // 필터 켰을 때만 !inner 로 전환. 기존 코드는 places.guarantee_count 라는 존재하지 않는
+  // 컬럼을 쿼리해 SQL error → 사용자가 보증인원 슬라이더 만지면 결과가 전부 사라졌음.
+  // Round 15 P1 fix — falsy-zero. `!!(null || 0) === false` 라 사용자가 슬라이더를
+  // 0 으로 설정 시 hasGuaranteeFilter=false → outer join → 그러나 line ~52 의 query
+  // .gte(`place_wedding_halls.min_guarantee`, 0) 는 그대로 발화 → PostgREST 가 embedded
+  // resource filter 적용하려는데 inner 없어 parse 깨짐. null check 명시.
+  const hasGuaranteeFilter = filters.maxGuarantee != null || filters.minGuarantee != null;
+  const detailSelect = hasGuaranteeFilter
+    ? "place_wedding_halls!inner(*)"
+    : "place_wedding_halls(*)";
+
   let query = supabase
     .from("places")
-    .select("*, place_wedding_halls(*)", { count: "exact" })
+    .select(`*, ${detailSelect}`, { count: "exact" })
     .eq("category", "wedding_hall")
     .eq("is_active", true)
     .is("deleted_at", null);
@@ -32,8 +45,25 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
     query = query.ilike("city", `%${filters.region}%`);
   }
 
+  // 시군구 — places.district ILIKE. 시도+시군구 조합으로 P6·P11·P12 페르소나 권역 큐레이션.
+  if (filters.sigungu) {
+    query = query.ilike("district", `%${filters.sigungu}%`);
+  }
+
   if (filters.maxPrice) {
     query = query.lte("min_price", filters.maxPrice);
+  }
+
+  // 보증인원 상·하한 — place_wedding_halls.max_guarantee / min_guarantee 와 매칭.
+  // - maxGuarantee 칩(상한): "300명 이하" → DB max_guarantee <= 300
+  // - minGuarantee 칩(하한): "50명 이상" → DB min_guarantee >= 50
+  // 이전엔 places.guarantee_count(없는 컬럼)로 쿼리해 슬라이더 켜면 결과 전멸.
+  // Round 15 — null 명시 가드. 0 은 valid 값(small persona 가 0~ 슬라이더 가능).
+  if (filters.maxGuarantee != null) {
+    query = query.lte("place_wedding_halls.max_guarantee", filters.maxGuarantee);
+  }
+  if (filters.minGuarantee != null) {
+    query = query.gte("place_wedding_halls.min_guarantee", filters.minGuarantee);
   }
 
   if (filters.minRating) {
@@ -70,13 +100,18 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
 };
 
 export const useVenues = (partnersOnly: boolean = false) => {
-  const { region, maxPrice, maxGuarantee, minRating, hallTypes, mealOptions, eventOptions } = useFilterStore();
-  const hasFilters = !!(region || maxPrice || maxGuarantee || minRating || hallTypes.length || mealOptions.length || eventOptions.length);
+  const { region, sigungu, maxPrice, maxGuarantee, minGuarantee, minRating, hallTypes, mealOptions, eventOptions } = useFilterStore();
+  const hasFilters = !!(
+    region || sigungu || maxPrice || maxGuarantee || minGuarantee || minRating ||
+    hallTypes.length || mealOptions.length || eventOptions.length
+  );
 
   const filters: FilterState = {
     region,
+    sigungu,
     maxPrice,
     maxGuarantee,
+    minGuarantee,
     minRating,
     hallTypes,
     mealOptions,

@@ -47,8 +47,9 @@ const Notifications = () => {
     if (!user) return;
     let active = true;
     (async () => {
+      // Round 10 — canonical view 로 reads 통일. backfill 행 자동 제외.
       const { data } = await (supabase as any)
-        .from("user_consents")
+        .from("user_consents_canonical")
         .select("agreed")
         .eq("user_id", user.id)
         .eq("consent_type", MARKETING_CONSENT_TYPE)

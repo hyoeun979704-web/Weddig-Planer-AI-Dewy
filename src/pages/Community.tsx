@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserBlocks } from "@/hooks/useCommunityModeration";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { bumpSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import type { WeddingStyle } from "@/lib/weddingStyle";
 import noteIcon from "@/assets/community/note.svg";
 import searchBoxIcon from "@/assets/community/search-box.svg";
@@ -38,7 +39,16 @@ interface Post {
   wedding_style: PostWeddingStyle | null;
 }
 
-const categories = ["전체", "웨딩홀", "스드메", "허니문", "혼수", "자유"];
+// 카테고리 — 페르소나 시트 v1에 맞춰 비표준 페르소나 카테고리 추가.
+// 재혼/임신/신랑/해외·국제/노웨딩·셀프/스냅/지방. 빈 카테고리도 노출해 첫 글
+// 유도 — empty state는 카테고리별 카피로 별도 분기.
+const categories = [
+  "전체",
+  "웨딩홀", "스드메", "허니문", "혼수",
+  "신랑 모드", "재혼·자녀", "임신 결혼",
+  "해외·국제결혼", "지방 결혼", "노웨딩·셀프", "스냅·기념일",
+  "자유",
+];
 
 type StyleFilter = "all" | PostWeddingStyle;
 
@@ -116,6 +126,21 @@ const Community = () => {
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [selectedCategory, styleFilter, sortBy]);
+
+  // Round 8 B — 재혼·자녀 카테고리 진입 시 remarriageInterest 신호 증분.
+  // 사용자가 이미 marital_history='remarriage' 면 신호 불필요. 같은 세션 1회만 증분.
+  // Round 9 fix — user.id 를 GUARD key 에 넣으면 anon→login 전환 시 key 가 달라져 재증분.
+  // 세션 단위 1회만이 의도라 user 식별 빼고 단일 key 사용. 동일 세션 내 로그아웃·재로그인
+  // 다른 계정 전환은 sessionStorage 가 페이지 닫을 때까지 유지되므로 자연 차단.
+  useEffect(() => {
+    if (selectedCategory !== "재혼·자녀") return;
+    if (weddingSettings.marital_history === "remarriage") return;
+    if (typeof window === "undefined") return;
+    const GUARD = `dewy:signal-bumped:remarriage`;
+    if (sessionStorage.getItem(GUARD) === "1") return;
+    bumpSignal(SIGNAL_KEYS.remarriageInterest);
+    sessionStorage.setItem(GUARD, "1");
+  }, [selectedCategory, weddingSettings.marital_history]);
   const tutorial = usePageTutorial("community");
 
   // 사용자의 결혼 유형이 로드되면 첫 1회만 같은 유형을 기본 필터로 적용.

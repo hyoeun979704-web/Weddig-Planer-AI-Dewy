@@ -10,6 +10,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { escapeLikePattern, quoteForOr } from "@/lib/postgrestEscape";
 import { callWebSearch, formatWebSearchReply } from "./webSearchFallback";
 
 export interface SearchPersonaCtx {
@@ -90,16 +91,47 @@ const PLACE_CATEGORY_KEYWORDS: Record<string, string> = {
   혼수: "appliance",
 };
 
-const REGION_KEYWORDS = [
+// Round 15 P0 fix — 약자(충남/충북/전남/전북/경남/경북)가 DB 풀네임("충청남도" 등)에
+// 비연속 substring 이라 ILIKE 매칭 0건. Round 13 region 회귀 재발. 사용자 입력은
+// 약자/풀네임 모두 받되 ILIKE-safe substring 으로 정규화 후 query 전달.
+// 키 = 사용자 입력 alias, 값 = ILIKE 안전 substring (lib/regions.ts REGIONS.value 와 일치).
+const REGION_ALIAS_TO_SEARCH_KEY: Record<string, string> = {
+  // 약자 → 풀네임 contiguous substring
+  "충남": "충청남", "충청남": "충청남", "충청남도": "충청남",
+  "충북": "충청북", "충청북": "충청북", "충청북도": "충청북",
+  "전남": "전라남", "전라남": "전라남", "전라남도": "전라남",
+  "경남": "경상남", "경상남": "경상남", "경상남도": "경상남",
+  "경북": "경상북", "경상북": "경상북", "경상북도": "경상북",
+  // 풀네임도 substring 형태로 정규화 (정확성)
+  "전북": "전북", "전북특별자치도": "전북",
+  "강원": "강원", "강원특별자치도": "강원",
+  "제주": "제주", "제주특별자치도": "제주",
+  "세종": "세종", "세종특별자치시": "세종",
+  "서울": "서울", "서울특별시": "서울",
+  "경기": "경기", "경기도": "경기",
+  "인천": "인천", "인천광역시": "인천",
+  "부산": "부산", "부산광역시": "부산",
+  "대구": "대구", "대구광역시": "대구",
+  "광주": "광주", "광주광역시": "광주",
+  "대전": "대전", "대전광역시": "대전",
+  "울산": "울산", "울산광역시": "울산",
+};
+
+// 시군구 키워드 — district.ilike 매칭용 (city 와 별개로 사용자 입력 인식). 그대로 substring.
+const SIGUNGU_KEYWORDS = [
   "강남", "강북", "강동", "강서", "서초", "송파", "마포", "용산",
   "종로", "중구", "성동", "광진", "동대문", "성북", "도봉",
   "노원", "은평", "양천", "구로", "금천", "관악", "동작",
   "영등포", "서대문", "중랑", "강화",
-  "서울", "경기", "인천", "성남", "수원", "용인", "안양", "고양",
-  "부산", "대구", "대전", "광주", "울산", "세종",
-  "강원", "충남", "충북", "전남", "전북", "경남", "경북", "제주",
+  "성남", "수원", "용인", "안양", "고양",
   "천안", "청주", "춘천", "원주", "제천",
 ];
+
+// inferRegion 호환을 위한 모든 키워드 (정렬 — 긴 것 먼저 매칭).
+const REGION_KEYWORDS = [
+  ...Object.keys(REGION_ALIAS_TO_SEARCH_KEY),
+  ...SIGUNGU_KEYWORDS,
+].sort((a, b) => b.length - a.length);
 
 const inferCategory = (text: string): string | null => {
   for (const [kw, cat] of Object.entries(PLACE_CATEGORY_KEYWORDS)) {
@@ -110,7 +142,10 @@ const inferCategory = (text: string): string | null => {
 
 const inferRegion = (text: string): string | null => {
   for (const r of REGION_KEYWORDS) {
-    if (text.includes(r)) return r;
+    if (text.includes(r)) {
+      // 시도 약자/풀네임 → ILIKE-safe substring 매핑 (Round 15 P0 fix). 시군구는 그대로.
+      return REGION_ALIAS_TO_SEARCH_KEY[r] ?? r;
+    }
   }
   return null;
 };
@@ -147,7 +182,12 @@ export const handleFreeTextSearch = async (
     .limit(15);
 
   if (category) query = query.eq("category", category);
-  if (region) query = query.or(`district.ilike.%${region}%,city.ilike.%${region}%`);
+  if (region) {
+    // Round 15 P1 — ILIKE wildcards + .or() commas/parens 둘 다 escape. inferRegion 이
+    // 현재 allowlist 라 안전하지만 향후 raw 입력 확장 시 injection 방어.
+    const safe = quoteForOr(`%${escapeLikePattern(region)}%`);
+    query = query.or(`district.ilike.${safe},city.ilike.${safe}`);
+  }
 
   const { data, error } = await query;
 
@@ -259,7 +299,12 @@ export const handleAveragePrice = async (
     .eq("is_active", true)
     .not("min_price", "is", null);
 
-  if (region) query = query.or(`district.ilike.%${region}%,city.ilike.%${region}%`);
+  if (region) {
+    // Round 15 P1 — ILIKE wildcards + .or() commas/parens 둘 다 escape. inferRegion 이
+    // 현재 allowlist 라 안전하지만 향후 raw 입력 확장 시 injection 방어.
+    const safe = quoteForOr(`%${escapeLikePattern(region)}%`);
+    query = query.or(`district.ilike.${safe},city.ilike.${safe}`);
+  }
 
   const { data } = await query;
 
@@ -345,7 +390,12 @@ export const handlePopularPlaces = async (
     .order("avg_rating", { ascending: false });
 
   if (category) query = query.eq("category", category);
-  if (region) query = query.or(`district.ilike.%${region}%,city.ilike.%${region}%`);
+  if (region) {
+    // Round 15 P1 — ILIKE wildcards + .or() commas/parens 둘 다 escape. inferRegion 이
+    // 현재 allowlist 라 안전하지만 향후 raw 입력 확장 시 injection 방어.
+    const safe = quoteForOr(`%${escapeLikePattern(region)}%`);
+    query = query.or(`district.ilike.${safe},city.ilike.${safe}`);
+  }
 
   const { data } = await query.limit(fetchLimit);
 
@@ -411,6 +461,96 @@ ${filters || "전체"}
 ${lines}${insightBlock}
 
 별점 기준 상위. 자세히 보고 비교는 [전체 페이지](/venues)에서 가능해요.${conflictNote}`;
+};
+
+// ════════════════════════════════════════════════════════════
+// 비교표 — "강남 호텔 5곳 비교", "스튜디오 비교해줘" 같은 요청 시 표 형태로 응답.
+// P1/P2/P3/P7 페르소나(시간 효율 / 데이터 분석)가 "엑셀 직접 비교" 페인 해소.
+// 별점·후기·시작가·인증·시군구를 한 줄에 배치.
+// ════════════════════════════════════════════════════════════
+export const handleVenueCompare = async (
+  userMessage: string,
+  personaCtx: SearchPersonaCtx = {},
+): Promise<string> => {
+  const category = inferCategory(userMessage) ?? "wedding_hall";
+  const region = inferRegion(userMessage);
+
+  // F#3 — inferCategory 출력은 user-facing 카테고리 slug. DB 컬럼 places.category
+  // 와는 일부 다름 ('suit' ↔ 'tailor_shop'). 쿼리 전 변환.
+  const inferToDbCategory: Record<string, string> = {
+    suit: "tailor_shop",
+  };
+  const dbCategory = inferToDbCategory[category] ?? category;
+
+  // 비교는 5곳을 기본. 메시지에 숫자가 있으면 그 값(3~10) 으로.
+  const numMatch = userMessage.match(/(\d+)\s*곳/);
+  const limit = numMatch ? Math.max(3, Math.min(10, Number(numMatch[1]))) : 5;
+
+  let query = (supabase as any)
+    .from("places")
+    .select("place_id, name, category, city, district, avg_rating, review_count, min_price, is_partner, is_active")
+    .eq("category", dbCategory)
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .gte("review_count", 1)
+    .order("avg_rating", { ascending: false, nullsFirst: false });
+  if (region) {
+    // Round 15 P1 — ILIKE wildcards + .or() commas/parens 둘 다 escape. inferRegion 이
+    // 현재 allowlist 라 안전하지만 향후 raw 입력 확장 시 injection 방어.
+    const safe = quoteForOr(`%${escapeLikePattern(region)}%`);
+    query = query.or(`district.ilike.${safe},city.ilike.${safe}`);
+  }
+
+  const { data } = await query.limit(limit);
+
+  if (!data || data.length === 0) {
+    return `**${region ?? "전체"} ${PLACE_CATEGORY_LABEL[category]} 비교** \n\n해당 조건에 매칭되는 업체가 없어요. 조건(지역·카테고리)을 바꿔 다시 물어봐 주세요.`;
+  }
+
+  // 표 헤더 — 별점·후기·시작가·시군구.
+  const tableHeader = "| 업체 | 별점 | 후기 | 시작가 | 위치 |\n|---|---:|---:|---:|---|";
+  // F#9·#3·#13 — inferCategory 출력 형식(user-facing slug) 기준 라우트 매핑.
+  // App.tsx 라우트와 일치. inferCategory 가 만들 수 없는 'tailor_shop' 같은 DB
+  // slug 는 매핑할 필요 없음(쿼리 전에 inferToDbCategory 로 변환됨).
+  const detailRoute = (cat: string): string => {
+    switch (cat) {
+      case "wedding_hall":     return "venue";
+      case "studio":           return "studio";
+      case "dress_shop":       return "studio";       // dress 는 studio 상세 페이지에서 처리
+      case "makeup_shop":      return "studio";       // makeup 도 마찬가지
+      case "hanbok":           return "hanbok";
+      case "suit":             return "suit";         // App.tsx /suit/:id (NOT tailor_shop)
+      case "honeymoon":        return "honeymoon";
+      case "jewelry":          return "jewelry";
+      case "appliance":        return "appliances";   // App.tsx /appliances/:id (plural)
+      case "invitation_venue": return "invitation-venues"; // F#13 plural — App.tsx /invitation-venues/:id
+      default:                 return "venue";
+    }
+  };
+  const route = detailRoute(category);
+  // F#D5·#9 — CommonMark 특수문자 전체 이스케이프. 표 셀 `|` 와 link `[]()` 외에도
+  // `*`/`_`/`` ` ``/`~`/`!`/`{}`/`#`/`+`/`-`/`.` 등 마크다운 의미 가진 문자 모두.
+  // backslash 먼저 escape (후속 escape 가 backslash 도입).
+  const escapeMd = (s: string): string =>
+    s.replace(/\\/g, "\\\\").replace(/([`*_{}\[\]()#+\-.!|~])/g, "\\$1");
+  const rows = (data as any[]).map((p) => {
+    const star = p.avg_rating != null ? p.avg_rating.toFixed(1) : "-";
+    const reviews = p.review_count ?? 0;
+    const price = p.min_price ? `${(p.min_price / 10000).toFixed(0)}만~` : "-";
+    const loc = p.district ? escapeMd(p.district) : "-";
+    const partner = p.is_partner ? " ⭐" : "";
+    const link = `[${escapeMd(p.name)}${partner}](/${route}/${p.place_id})`;
+    return `| ${link} | ${star} | ${reviews} | ${price} | ${loc} |`;
+  });
+
+  const tip =
+    category === "wedding_hall"
+      ? "별점·시작가는 시작점. **추가금 항목**(원본·헬퍼·식대 보증)이 더 큰 변수예요. 각 업체 상세에서 [계약 전 확인] 카드 꼭 비교."
+      : category === "studio"
+        ? "스튜디오는 **원본 데이터 포함 여부·보정 컷 수**가 가격 차이의 핵심."
+        : "각 업체 상세에서 [계약 전 확인] 카드의 추가금 체크리스트를 비교해보세요.";
+
+  return `**${region ?? "전체"} ${PLACE_CATEGORY_LABEL[category] ?? category} ${data.length}곳 비교**\n\n${tableHeader}\n${rows.join("\n")}\n\n${tip}`;
 };
 
 // ════════════════════════════════════════════════════════════

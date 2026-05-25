@@ -1,0 +1,199 @@
+// 마이페이지 추가 정보 (민감) 자기 관리 카드 — v2 §5.4 Forgettable + §5.5 카피 톤.
+//
+// 모달에서 직접 입력 받지 않는 3종(임신/재혼/부모 부재)을 사용자가 명시적으로
+// 켜고 끄는 채널. 행동 신호 + 부드러운 확인 카드와 함께 두 갈래 진입을 제공:
+//   - 자동 추론 (행동 누적 → SoftConfirmCard) — 메인 진입
+//   - 자기 관리 (본 카드) — 마이페이지에서 직접 토글
+//
+// "잊혀짐 (§5.4)" — 사용자가 OFF 토글 시 즉시 컬럼 NULL/false 화 + 관련 콘텐츠
+// 노출 중단. 동의 기록은 PIPA 의무로 보존 (revoked_at 마킹은 별도 작업).
+//
+// 마이그레이션(React Query): window.location.reload() 제거 — RPC 후
+// invalidateQueries(['wedding_settings', userId]) 한 번이면 본 카드(useWeddingSchedule)
+// 와 다른 호출자(PersonaDashboard 등) 모두 자동 refetch.
+
+import { useState } from "react";
+import { Settings2, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWeddingSchedule, useInvalidateWeddingSettings } from "@/hooks/useWeddingSchedule";
+import { resetSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
+import { setSensitivePreference, type SensitiveField } from "@/lib/sensitiveConsent";
+import { toast } from "sonner";
+
+type Saving = "none" | "pregnant" | "marital" | "parents-bride" | "parents-groom";
+
+export default function SensitivePreferencesCard() {
+  const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
+  const invalidateWeddingSettings = useInvalidateWeddingSettings();
+  const [saving, setSaving] = useState<Saving>("none");
+  const [expanded, setExpanded] = useState(false);
+
+  if (!user) return null;
+
+  // 통합 sensitive 토글 — set_sensitive_preference RPC v2 가:
+  //   ① UPSERT (ON CONFLICT) — 행 없어도 신규 생성, race-safe (F#3·F#E4)
+  //   ② server-derived consent_type + agreed (p_field 매핑 기반) — client 변조 X (F#E1·E2·E7)
+  //   ③ 실제 active 전환 시에만 consent INSERT — 중복/spurious revoke 0 (F#5·E5·E11)
+  //   ④ user_agent / consent_version 자동 첨부 (F#E3·E6)
+  // RPC 후 invalidateQueries 한 번으로 모든 useWeddingSchedule 소비자가 refetch.
+  const updateField = async (
+    field: SensitiveField,
+    value: boolean | "first" | "remarriage" | null,
+    label: Saving,
+  ) => {
+    setSaving(label);
+    try {
+      await setSensitivePreference({ field, value });
+      // OFF 전환 시 관련 행동 신호도 함께 폐기 — 사용자가 명시적으로 잊고 싶다는 의미.
+      if (field === "pregnant" && value === false) {
+        resetSignal(SIGNAL_KEYS.pregnancyInterest);
+      }
+      if (field === "marital_history" && value !== "remarriage") {
+        resetSignal(SIGNAL_KEYS.remarriageInterest);
+      }
+      // Round 8 B — 양가 부모 토글이 둘 다 true 가 되면 single_household 추론 무효.
+      // 한쪽만 false 면 사용자가 이미 인지 — 신호는 의미 없고 markConfirmed 동등.
+      if (
+        (field === "has_parents_bride" && value === true && weddingSettings.has_parents_groom) ||
+        (field === "has_parents_groom" && value === true && weddingSettings.has_parents_bride)
+      ) {
+        resetSignal(SIGNAL_KEYS.singleHouseholdHint);
+      }
+      toast.success("설정이 저장됐어요");
+      void invalidateWeddingSettings();
+    } catch (e) {
+      console.error("sensitive pref update failed", e);
+      toast.error("저장에 실패했어요. 다시 시도해주세요.");
+    } finally {
+      setSaving("none");
+    }
+  };
+
+  // 모든 토글이 단순 (field, next-value) 만 전달. consent_type / agreed / recordConsent
+  // 같은 client-derived 의 인수는 server-derived 로 이전돼 caller 책임 0.
+  const togglePregnant = () =>
+    updateField("pregnant", !weddingSettings.pregnant, "pregnant");
+  // Round 15 P0 fix — 이전 3-state cycle (NULL → remarriage → first → NULL) 가 사용자가
+  // 실제로는 초혼인데 한 번 클릭으로 'remarriage' state 거치게 강제 → set_sensitive_preference
+  // RPC 가 그 진입을 sensitive consent grant 로 audit log → 다음 클릭에 revoke. PIPA/DSAR
+  // 로그에 사용자 의도 없는 sensitive 분류 grant+revoke 기록되는 audit 오염.
+  // 2-state 로 단순화: NULL(default, 의미적 초혼) ↔ 'remarriage'. 'first' 명시 입력은
+  // 별도 segmented control 도입 시 분리.
+  const toggleRemarriage = () => {
+    const next: "remarriage" | null =
+      weddingSettings.marital_history === "remarriage" ? null : "remarriage";
+    updateField("marital_history", next, "marital");
+  };
+  // has_parents_*=false 가 active(부재) 신호. 서버가 자동 도출해 consent_type 도 분리.
+  const toggleParentsBride = () =>
+    updateField("has_parents_bride", !weddingSettings.has_parents_bride, "parents-bride");
+  const toggleParentsGroom = () =>
+    updateField("has_parents_groom", !weddingSettings.has_parents_groom, "parents-groom");
+
+  const activeCount =
+    (weddingSettings.pregnant ? 1 : 0) +
+    (weddingSettings.marital_history === "remarriage" ? 1 : 0) +
+    (!weddingSettings.has_parents_bride ? 1 : 0) +
+    (!weddingSettings.has_parents_groom ? 1 : 0);
+
+  return (
+    <section className="mx-4 my-3 rounded-2xl border border-border bg-card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <Settings2 className="w-4 h-4 text-muted-foreground" />
+          <div>
+            <p className="text-[13px] font-bold text-foreground">추가 정보</p>
+            <p className="text-[11px] text-muted-foreground">
+              {activeCount > 0
+                ? `맞춤 가이드 ${activeCount}개 활성`
+                : "임신·재혼·1인 진행 등 — 해당하시면 더 정확한 안내"}
+            </p>
+          </div>
+        </div>
+        <span className={`text-muted-foreground text-xs transition-transform ${expanded ? "rotate-180" : ""}`}></span>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-border px-4 py-3 space-y-3">
+          <Row
+            title="임신 중에 결혼 준비"
+            description="본식 시점 차수에 맞춰 일정·드레스·신혼여행 가이드"
+            active={weddingSettings.pregnant}
+            loading={saving === "pregnant"}
+            onToggle={togglePregnant}
+          />
+          <Row
+            title="두 번째 결혼"
+            description="작은 가족식 진행·양가 톤·자녀 동반 가이드"
+            active={weddingSettings.marital_history === "remarriage"}
+            loading={saving === "marital"}
+            onToggle={toggleRemarriage}
+          />
+          <Row
+            title="신부측 부모님 안 계세요"
+            description="양가 분담 시뮬레이터를 1인 진행 변형으로"
+            active={!weddingSettings.has_parents_bride}
+            loading={saving === "parents-bride"}
+            onToggle={toggleParentsBride}
+          />
+          <Row
+            title="신랑측 부모님 안 계세요"
+            description="양가 분담 시뮬레이터를 1인 진행 변형으로"
+            active={!weddingSettings.has_parents_groom}
+            loading={saving === "parents-groom"}
+            onToggle={toggleParentsGroom}
+          />
+          <p className="text-[10px] text-muted-foreground leading-snug pt-1 border-t border-border">
+            본 항목들은 민감정보로 분류돼 별도 동의 기록과 함께 보관돼요. 끄면
+            관련 콘텐츠 노출이 즉시 중단되며, 동의 기록은 PIPA 규정상 일정 기간 보관 후 폐기됩니다.
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Row({
+  title,
+  description,
+  active,
+  loading,
+  onToggle,
+}: {
+  title: string;
+  description: string;
+  active: boolean;
+  loading: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="flex-1 min-w-0">
+        <p className="text-[12px] font-semibold text-foreground">{title}</p>
+        <p className="text-[11px] text-muted-foreground leading-snug">{description}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={loading}
+        className={`shrink-0 w-10 h-6 rounded-full transition-colors relative ${
+          active ? "bg-primary" : "bg-muted"
+        } ${loading ? "opacity-60" : ""}`}
+        aria-label={active ? "끄기" : "켜기"}
+      >
+        <span
+          className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+            active ? "translate-x-[18px]" : "translate-x-0.5"
+          } flex items-center justify-center`}
+        >
+          {loading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+        </span>
+      </button>
+    </div>
+  );
+}

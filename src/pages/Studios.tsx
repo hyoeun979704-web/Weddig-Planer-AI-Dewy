@@ -6,6 +6,7 @@ import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import CategoryFilterBar from "@/components/CategoryFilterBar";
 import CategoryGrid from "@/components/CategoryGrid";
 import ExcludedCategoryBanner from "@/components/ExcludedCategoryBanner";
+import VenueAnchorBanner from "@/components/persona/VenueAnchorBanner";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
 import { useDefaultRegion } from "@/hooks/useDefaultRegion";
@@ -32,6 +33,7 @@ const Studios = () => {
           scheduleCategories={["studio", "dress_shop", "makeup_shop"]}
         />
         <CategoryHeroBanner category="studios" />
+        <VenueAnchorBanner />
         <CategoryFilterBar category="studios" />
         <div className="px-4 py-3">
           <h2 className="text-lg font-bold text-foreground">{hasActiveFilters() ? "검색 결과" : "인기 스드메"}</h2>

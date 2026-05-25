@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCategoryFilterStore, CategoryType } from "@/stores/useCategoryFilterStore";
+import { useWeddingVenue } from "@/hooks/useWeddingVenue";
 
 export interface CategoryItem {
   id: string;
@@ -79,31 +80,67 @@ function pickCard<T>(value: T | null | undefined): T | null {
 }
 
 // filterOptions1/2/3(다중 선택 칩)를 각 카테고리 detail 테이블의 backing 컬럼에
-// 매핑. array 컬럼은 overlaps(선택값 중 하나라도 포함)로, scalar 는 in 으로 필터.
-// backing 컬럼이 없는 슬롯은 생략(필터 미적용). detail 컬럼이 없는 슬롯의 UI 칩은
-// 향후 정리 대상.
-type FilterCol = { col: string; array: boolean };
+// 매핑. Round 12 — 실제 DB 컬럼 분포 검증 후 매핑 재정렬:
+//   - array: overlaps (선택값 중 하나라도 포함)
+//   - scalar (text/enum): in (선택값 중 하나라도 매칭)
+//   - boolean: 사용자가 칩 켜면 = "예(true)" 의미. 다중 선택 시 모두 true(AND).
+//     (NULL/false 인 row 는 제외 — 정보 누락된 곳은 노출 안 함.)
+//   - boolean_cols: UI value 자체가 컬럼명. 사용자 칩 = 해당 컬럼 = true. 다중 선택 AND.
+// detail 컬럼이 없는 슬롯은 생략 — 정의되지 않은 f2/f3 는 클릭해도 무시되므로
+// UI 에 노출하지 않는 것이 옳음 (CategoryFilterBar 의 filterConfigs 와 동기화).
+type FilterCol =
+  | { col: string; type: "array" }
+  | { col: string; type: "scalar" }
+  | { col: string; type: "boolean" }
+  | { type: "boolean_cols"; allowed: readonly string[] };
 const FILTER_COLUMN_MAP: Record<
   CategoryType,
   { f1?: FilterCol; f2?: FilterCol; f3?: FilterCol }
 > = {
-  venues: { f1: { col: "hall_styles", array: true }, f2: { col: "meal_types", array: true } },
-  studios: { f2: { col: "shoot_styles", array: true } },
-  dress_shops: { f1: { col: "dress_styles", array: true } },
-  makeup_shops: { f1: { col: "makeup_styles", array: true } },
-  hanbok: { f1: { col: "hanbok_types", array: true } },
-  suits: { f1: { col: "suit_styles", array: true } },
-  honeymoon: { f1: { col: "themes", array: true } },
+  // Round 12 self-review fix — 단일 boolean 슬롯도 boolean_cols 로 통일.
+  // 'boolean' type 은 col 이 고정이라 슬롯에 옵션 1개 이상 추가되면 silent wrong
+  // (모든 칩이 같은 컬럼=true 만 보냄). boolean_cols 는 allowlist 안의 어떤 컬럼이든
+  // UI value(=컬럼명) 로 분기. 슬롯이 단일이어도 미래 옵션 확장 시 안전.
+  venues: {
+    f1: { col: "hall_styles", type: "array" },
+    f2: { col: "meal_types", type: "array" },
+    f3: { type: "boolean_cols", allowed: ["outdoor_available"] },
+  },
+  studios: {
+    f1: { col: "package_types", type: "array" },
+    f2: { col: "shoot_styles", type: "array" },
+    f3: { type: "boolean_cols", allowed: ["video_included"] },
+  },
+  dress_shops: { f1: { col: "dress_styles", type: "array" } },
+  makeup_shops: { f1: { col: "makeup_styles", type: "array" } },
+  hanbok: {
+    f1: { col: "hanbok_types", type: "array" },
+    f2: { type: "boolean_cols", allowed: ["custom_available"] },
+  },
+  suits: {
+    f1: { col: "suit_styles", type: "array" },
+    f2: { type: "boolean_cols", allowed: ["custom_available"] },
+  },
+  honeymoon: {
+    f1: { col: "themes", type: "array" },
+    f2: { col: "product_type", type: "scalar" },
+    f3: { col: "hotel_grade", type: "scalar" },
+  },
   jewelry: {
-    f1: { col: "product_categories", array: true },
-    f2: { col: "metals", array: true },
-    f3: { col: "store_type", array: false },
+    f1: { col: "product_categories", type: "array" },
+    f2: { col: "metals", type: "array" },
+    f3: { col: "store_type", type: "scalar" },
   },
   appliances: {
-    f1: { col: "product_categories", array: true },
-    f2: { col: "brand_options", array: true },
+    f1: { col: "product_categories", type: "array" },
+    f2: { col: "brand_options", type: "array" },
+    f3: {
+      type: "boolean_cols",
+      // 보안: UI 가 보낼 수 있는 컬럼명을 명시 allowlist. 다른 값은 무시.
+      allowed: ["free_delivery", "free_installation", "old_appliance_pickup", "card_discount_available"],
+    },
   },
-  invitation_venues: { f1: { col: "venue_types", array: true } },
+  invitation_venues: { f1: { col: "venue_types", type: "array" } },
 };
 
 function toCategoryItem(p: any, category: CategoryType): CategoryItem {
@@ -239,6 +276,9 @@ interface FetchParams {
   filterOptions1?: string[];
   filterOptions2?: string[];
   filterOptions3?: string[];
+  /** 결혼식장 anchor — 같은 시·시군구 업체 우선 매칭. v2 §6 위치 전략. */
+  venueCity?: string | null;
+  venueDistrict?: string | null;
 }
 
 async function fetchCategoryItems(
@@ -271,10 +311,20 @@ async function fetchCategoryItems(
     .is("deleted_at", null);
 
   for (const f of activeFilters) {
-    if (f.col.array) {
+    if (f.col.type === "array") {
       query = query.overlaps(`${cardKey}.${f.col.col}`, f.values);
-    } else {
+    } else if (f.col.type === "scalar") {
       query = query.in(`${cardKey}.${f.col.col}`, f.values);
+    } else if (f.col.type === "boolean") {
+      // 사용자가 칩 켜면 "예" 의미. NULL/false 모두 제외.
+      query = query.eq(`${cardKey}.${f.col.col}`, true);
+    } else if (f.col.type === "boolean_cols") {
+      // UI value = 컬럼명. 다중 선택은 AND (모든 조건 만족). allowlist 외 값은 무시.
+      for (const colName of f.values) {
+        if (f.col.allowed.includes(colName)) {
+          query = query.eq(`${cardKey}.${colName}`, true);
+        }
+      }
     }
   }
 
@@ -288,6 +338,21 @@ async function fetchCategoryItems(
     } else {
       query = query.ilike("city", `%${filters.region}%`);
     }
+  } else if (
+    filters.venueCity &&
+    category !== "jewelry" &&
+    category !== "appliances" &&
+    // F#6 — honeymoon 은 places.city 가 한국 시도가 아닌 destination("일본","동남아" 등).
+    // venue anchor city("서울특별시") 로 ILIKE 매칭 시 항상 0 results. Honeymoon.tsx 가
+    // 의도적으로 region=null 로 두는 이유와 일관.
+    category !== "honeymoon" &&
+    // invitation_venues 도 식장 부속 상견례 장소라 식장 city 매칭이 의미 있지만,
+    // 데이터 형태가 식장과 다를 수 있어 일단 제외 (분리 작업으로 검토).
+    category !== "invitation_venues"
+  ) {
+    // 사용자가 명시 region 필터 없으면 venue anchor 의 city 로 자동 좁힘.
+    // venue 가 없으면 전국 노출 (기존 동작). v2 §6: 사용자 명시 식장이 primary anchor.
+    query = query.ilike("city", `%${filters.venueCity}%`);
   }
   if (filters.minRating) {
     query = query.gte("avg_rating", filters.minRating);
@@ -316,13 +381,27 @@ export function useCategoryData(category: CategoryType) {
   const filterOptions1 = useCategoryFilterStore((state) => state.filterOptions1);
   const filterOptions2 = useCategoryFilterStore((state) => state.filterOptions2);
   const filterOptions3 = useCategoryFilterStore((state) => state.filterOptions3);
+  // 결혼식장 anchor — 명시 region 필터가 없으면 자동 큐레이션 기준점.
+  // jewelry/appliances 는 위치보단 카테고리 의미가 강해 venue 매칭 안 함.
+  const venue = useWeddingVenue();
 
   return useInfiniteQuery({
-    queryKey: [category, region, minRating, filterOptions1, filterOptions2, filterOptions3],
+    queryKey: [
+      category, region, minRating, filterOptions1, filterOptions2, filterOptions3,
+      venue.city, venue.district,
+    ],
     queryFn: ({ pageParam = 0 }) =>
       fetchCategoryItems(
         category,
-        { region, minRating, filterOptions1, filterOptions2, filterOptions3 },
+        {
+          region,
+          minRating,
+          filterOptions1,
+          filterOptions2,
+          filterOptions3,
+          venueCity: venue.city,
+          venueDistrict: venue.district,
+        },
         pageParam
       ),
     getNextPageParam: (lastPage) => lastPage.nextPage,

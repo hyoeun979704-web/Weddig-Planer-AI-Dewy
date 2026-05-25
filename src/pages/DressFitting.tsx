@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { bumpSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import {
   FITTING_SCENES,
   SCENES_BY_TYPE,
@@ -56,16 +58,25 @@ interface DressSample {
   neckline: string | null;
   sleeve: string | null;
   color: string | null;
+  /** none/light/full — P18(임신) 페르소나에서 임산부 호환 정도. */
+  pregnancy_supported: "none" | "light" | "full" | null;
 }
 
-type Step = "intro" | "photo" | "dress" | "scene" | "tone" | "review";
+// "tone" 단계는 scene 안에 통합되어 별도 단계 아님.
+type Step = "intro" | "photo" | "dress" | "scene" | "review";
 
-const STEP_ORDER: Step[] = ["intro", "photo", "dress", "scene", "tone", "review"];
+const STEP_ORDER: Step[] = ["intro", "photo", "dress", "scene", "review"];
 
 const DressFitting = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
+  // 임신 페르소나(P18) — 본식 시점 차수와 무관하게, pregnant=true 이면 임산부
+  // 호환 드레스(pregnancy_supported != 'none')만 활성으로 표시하고 사용자가
+  // 명시적으로 "전체 보기" 토글을 켜면 비호환 드레스도 노출.
+  const [showAllDressesEvenIfPregnant, setShowAllDressesEvenIfPregnant] = useState(false);
+  const isPregnant = weddingSettings.pregnant;
 
   const [step, setStep] = useState<Step>("intro");
   const [hearts, setHearts] = useState<number | null>(null);
@@ -110,7 +121,7 @@ const DressFitting = () => {
     (async () => {
       const { data, error } = await (supabase as any)
         .from("dress_samples")
-        .select("id, name, image_url, silhouette, neckline, sleeve, color")
+        .select("id, name, image_url, silhouette, neckline, sleeve, color, pregnancy_supported")
         .eq("is_active", true)
         .order("display_order", { ascending: false })
         .order("created_at", { ascending: false });
@@ -194,14 +205,36 @@ const DressFitting = () => {
     setStep("dress");
   };
 
+  // L1 행동 신호 — 임산부 호환 드레스를 선택한 사용자는 임신 가이드 후보.
+  // pregnant 가 이미 true 이면 신호 누적 무의미 — 이미 임신 모드.
+  // F#15 — bumpSignal 은 1세션 1회 가드 필요 (lib 주석 명시). 같은 세션에 여러
+  // 임산부 호환 드레스를 빠르게 훑기만 해도 임계값에 도달해 §5 sensitive-cliff
+  // 위험. sessionStorage 로 한 세션에 한 번만 카운트 증가.
   const handlePickDress = (d: DressSample) => {
+    if (
+      !isPregnant &&
+      d.pregnancy_supported &&
+      d.pregnancy_supported !== "none"
+    ) {
+      const SESSION_KEY = "dewy:dress-pregnancy-signal-bumped";
+      try {
+        if (!sessionStorage.getItem(SESSION_KEY)) {
+          bumpSignal(SIGNAL_KEYS.pregnancyInterest);
+          sessionStorage.setItem(SESSION_KEY, "1");
+        }
+      } catch {
+        // sessionStorage 실패해도 신호 증분 자체는 건너뛰는 게 안전 (false positive 회피).
+      }
+    }
     setSelectedDress(d);
     setStep("scene");
   };
 
+  // scene/tone 통합: 같은 화면에서 type 토글 → tone 선택까지. 단계 분기 제거로
+  // 피로 한 단계 줄임. (5단계 → 4단계 효과)
   const handlePickSceneType = (t: SceneType) => {
     setSelectedSceneType(t);
-    setStep("tone");
+    // step 전환 없음 — 같은 scene 단계에서 tone 그리드가 같이 보임.
   };
 
   const handlePickTone = (code: SceneCode) => {
@@ -267,15 +300,13 @@ const DressFitting = () => {
     photo: 1,
     dress: 2,
     scene: 3,
-    tone: 4,
-    review: 5,
+    review: 4,
   };
   const stepLabel: Record<Step, string> = {
     intro: "시작",
     photo: "사진 업로드",
     dress: "드레스 선택",
-    scene: "촬영 컷 선택",
-    tone: "배경 선택",
+    scene: "컷·배경 선택",
     review: "확인",
   };
 
@@ -343,13 +374,18 @@ const DressFitting = () => {
             dresses={dresses}
             loading={loadingDresses}
             onPick={handlePickDress}
+            isPregnant={isPregnant}
+            showAll={showAllDressesEvenIfPregnant}
+            onToggleShowAll={() => setShowAllDressesEvenIfPregnant((v) => !v)}
           />
         )}
 
-        {step === "scene" && <SceneStep onPick={handlePickSceneType} />}
-
-        {step === "tone" && selectedSceneType && (
-          <ToneStep sceneType={selectedSceneType} onPick={handlePickTone} />
+        {step === "scene" && (
+          <SceneToneStep
+            sceneType={selectedSceneType}
+            onPickType={handlePickSceneType}
+            onPickTone={handlePickTone}
+          />
         )}
 
         {step === "review" && (
@@ -573,117 +609,174 @@ const DressStep = ({
   dresses,
   loading,
   onPick,
+  isPregnant,
+  showAll,
+  onToggleShowAll,
 }: {
   dresses: DressSample[];
   loading: boolean;
   onPick: (d: DressSample) => void;
-}) => (
-  <section className="space-y-3">
-    <h2 className="text-lg font-bold text-foreground">드레스 선택</h2>
-    <p className="text-[12px] text-muted-foreground">
-      마음에 드는 드레스를 하나 골라주세요.
-    </p>
-    {loading ? (
-      <div className="py-12 flex justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    ) : dresses.length === 0 ? (
-      <div className="py-12 text-center text-sm text-muted-foreground">
-        등록된 드레스가 없어요.
-      </div>
-    ) : (
-      <div className="grid grid-cols-2 gap-3">
-        {dresses.map((d) => (
-          <button
-            key={d.id}
-            type="button"
-            onClick={() => onPick(d)}
-            className="bg-card rounded-xl overflow-hidden border border-border text-left active:scale-[0.98] transition-transform"
-          >
-            <div className="aspect-[3/4] bg-muted">
-              <img
-                src={d.image_url}
-                alt={d.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="p-2">
-              <p className="text-[12px] font-semibold text-foreground truncate">
-                {d.name}
-              </p>
-              <p className="text-[10px] text-muted-foreground truncate">
-                {[
-                  labelOf("silhouette", d.silhouette),
-                  labelOf("neckline", d.neckline),
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            </div>
-          </button>
-        ))}
-      </div>
-    )}
-  </section>
-);
-
-// ════════════════════════════════════════════════
-// Step 3: SCENE TYPE (본식 / 웨딩촬영)
-// ════════════════════════════════════════════════
-const SceneStep = ({ onPick }: { onPick: (t: SceneType) => void }) => (
-  <section className="space-y-3">
-    <h2 className="text-lg font-bold text-foreground">어떤 컷이 좋으세요?</h2>
-    <div className="grid grid-cols-1 gap-3">
-      {(["CEREMONY", "STUDIO"] as SceneType[]).map((t) => (
-        <button
-          key={t}
-          type="button"
-          onClick={() => onPick(t)}
-          className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.98] transition-transform"
-        >
-          <p className="text-base font-bold text-foreground mb-1">
-            {SCENE_TYPE_LABEL[t]}
-          </p>
-          <p className="text-[12px] text-muted-foreground">
-            {SCENE_TYPE_DESC[t]}
-          </p>
-        </button>
-      ))}
-    </div>
-  </section>
-);
-
-// ════════════════════════════════════════════════
-// Step 4: TONE
-// ════════════════════════════════════════════════
-const ToneStep = ({
-  sceneType,
-  onPick,
-}: {
-  sceneType: SceneType;
-  onPick: (code: SceneCode) => void;
+  isPregnant: boolean;
+  showAll: boolean;
+  onToggleShowAll: () => void;
 }) => {
-  const list = SCENES_BY_TYPE[sceneType];
+  // 임산부면 임산부 호환 드레스만(default), "전체 보기" 토글로 비호환 포함.
+  // 호환 정렬: full > light > none. 호환이 0개면 토글 자동 비활성 + 안내.
+  const visible = isPregnant && !showAll
+    ? dresses.filter((d) => d.pregnancy_supported && d.pregnancy_supported !== "none")
+    : dresses;
+  const sorted = isPregnant
+    ? [...visible].sort((a, b) => {
+        const rank = (v: string | null) => (v === "full" ? 0 : v === "light" ? 1 : 2);
+        return rank(a.pregnancy_supported) - rank(b.pregnancy_supported);
+      })
+    : visible;
+  const compatibleCount = dresses.filter(
+    (d) => d.pregnancy_supported && d.pregnancy_supported !== "none",
+  ).length;
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-bold text-foreground">
-        {SCENE_TYPE_LABEL[sceneType]} · 배경 분위기
-      </h2>
-      <div className="grid grid-cols-1 gap-3">
-        {list.map((s) => (
-          <button
-            key={s.code}
-            type="button"
-            onClick={() => onPick(s.code)}
-            className="bg-card rounded-2xl border border-border p-4 text-left active:scale-[0.98] transition-transform"
-          >
-            <p className="text-base font-bold text-foreground mb-1">
-              {s.shortLabel}
-            </p>
-            <p className="text-[12px] text-muted-foreground">{s.description}</p>
-          </button>
-        ))}
+      <h2 className="text-lg font-bold text-foreground">드레스 선택</h2>
+      <p className="text-[12px] text-muted-foreground">
+        마음에 드는 드레스를 하나 골라주세요.
+      </p>
+      {isPregnant && (
+        <div className="rounded-xl bg-pink-50 border border-pink-100 p-3">
+          <p className="text-[12px] font-semibold text-pink-800">
+            임신 모드 — 임산부 호환 드레스 우선
+          </p>
+          <p className="text-[11px] text-pink-700 leading-snug mt-0.5">
+            엠파이어·A 라인 등 배 부분 여유가 있는 옵션을 먼저 보여드려요.
+            {compatibleCount === 0 && " 현재 호환 옵션이 없어 전체 드레스를 표시합니다."}
+          </p>
+          {compatibleCount > 0 && (
+            <button
+              type="button"
+              onClick={onToggleShowAll}
+              className="mt-1.5 text-[11px] font-semibold text-pink-800 underline"
+            >
+              {showAll ? "호환 옵션만 보기" : "전체 드레스 보기"}
+            </button>
+          )}
+        </div>
+      )}
+      {loading ? (
+        <div className="py-12 flex justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      ) : sorted.length === 0 ? (
+        <div className="py-12 text-center text-sm text-muted-foreground">
+          등록된 드레스가 없어요.
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {sorted.map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => onPick(d)}
+              className="bg-card rounded-xl overflow-hidden border border-border text-left active:scale-[0.98] transition-transform relative"
+            >
+              <div className="aspect-[3/4] bg-muted">
+                <img
+                  src={d.image_url}
+                  alt={d.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {isPregnant && d.pregnancy_supported && d.pregnancy_supported !== "none" && (
+                <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-pink-200 text-pink-800">
+                  {d.pregnancy_supported === "full" ? "마타니티" : "임산부 호환"}
+                </span>
+              )}
+              <div className="p-2">
+                <p className="text-[12px] font-semibold text-foreground truncate">
+                  {d.name}
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {[
+                    labelOf("silhouette", d.silhouette),
+                    labelOf("neckline", d.neckline),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+};
+
+// ════════════════════════════════════════════════
+// Step 3: SCENE TYPE + TONE — 한 화면에서 type 토글 + tone 선택까지 끝냄.
+// 기존 5단계 (scene 별도, tone 별도) 를 4단계로 줄여 피로 감소.
+// type 미선택 상태에서는 type 카드 2개만 보이고, type 누르면 그 type 의 tone 옵션이 같은 화면 하단에 펼쳐짐.
+// ════════════════════════════════════════════════
+const SceneToneStep = ({
+  sceneType,
+  onPickType,
+  onPickTone,
+}: {
+  sceneType: SceneType | null;
+  onPickType: (t: SceneType) => void;
+  onPickTone: (code: SceneCode) => void;
+}) => {
+  const toneList = sceneType ? SCENES_BY_TYPE[sceneType] : [];
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-lg font-bold text-foreground mb-2">어떤 컷이 좋으세요?</h2>
+        <div className="grid grid-cols-2 gap-2">
+          {(["CEREMONY", "STUDIO"] as SceneType[]).map((t) => {
+            const active = sceneType === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => onPickType(t)}
+                className={`rounded-2xl border p-3 text-left active:scale-[0.98] transition-all ${
+                  active
+                    ? "bg-primary/10 border-primary"
+                    : "bg-card border-border hover:border-primary/30"
+                }`}
+              >
+                <p className={`text-sm font-bold mb-0.5 ${active ? "text-primary" : "text-foreground"}`}>
+                  {SCENE_TYPE_LABEL[t]}
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  {SCENE_TYPE_DESC[t]}
+                </p>
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {sceneType && (
+        <div className="animate-fade-in">
+          <h3 className="text-sm font-bold text-foreground mb-2">
+            배경 분위기 골라주세요
+          </h3>
+          <div className="grid grid-cols-1 gap-2">
+            {toneList.map((s) => (
+              <button
+                key={s.code}
+                type="button"
+                onClick={() => onPickTone(s.code)}
+                className="bg-card rounded-xl border border-border p-3 text-left active:scale-[0.98] transition-transform"
+              >
+                <p className="text-sm font-bold text-foreground mb-0.5">
+                  {s.shortLabel}
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-snug">{s.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 };
