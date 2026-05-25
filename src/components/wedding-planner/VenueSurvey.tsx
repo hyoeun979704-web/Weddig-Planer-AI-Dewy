@@ -27,7 +27,7 @@ const CEREMONY_TYPE_TO_STYLES: Partial<Record<CeremonyType, string[]>> = {
 };
 
 const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
-  const { defaultWeddingDate, defaultRegion, defaultGuests } = useWeddingFormContext();
+  const { defaultWeddingDate, defaultRegion, defaultGuests, defaultVenueBudgetLabel } = useWeddingFormContext();
   const { weddingSettings } = useWeddingSchedule();
   const [date, setDate] = useState<Date>();
   const [region, setRegion] = useState("");
@@ -39,7 +39,7 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const [special, setSpecial] = useState("");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
-  // 저장된 결혼일·지역·하객 수 + ceremony_type 으로 prefill (BudgetSurvey 동일 패턴).
+  // 저장된 결혼일·지역·하객 수 + ceremony_type + 식장 예산으로 prefill.
   // Round 11 self-review fix — styles 는 styles.length===0 일 때만 prefill. 재오픈 시
   // 사용자가 이전 세션에서 수동 선택한 값을 ceremony_type 매핑으로 덮어쓰지 않도록.
   useEffect(() => {
@@ -47,14 +47,20 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
     if (defaultWeddingDate) setDate(defaultWeddingDate);
     setRegion(defaultRegion ?? "");
     setGuests(defaultGuests ?? "");
+    // Round 14 — 식장 예산 prefill (budgetSettings.category_budgets.venue → BUDGET_OPTIONS_VENUE 라벨).
+    if (defaultVenueBudgetLabel && budgetLabel === "") setBudgetLabel(defaultVenueBudgetLabel);
     const prefilledStyles = weddingSettings.ceremony_type
       ? CEREMONY_TYPE_TO_STYLES[weddingSettings.ceremony_type] ?? []
       : [];
     if (prefilledStyles.length > 0 && styles.length === 0) setStyles(prefilledStyles);
-    // styles 는 read-only dependency — guard 가 자체적으로 idempotent 보장. 의존성에
-    // 넣으면 사용자가 deselect → 빈 배열 → 다시 prefill 의 무한 fire 우려. 의존성 제외.
+    // styles/budgetLabel 은 read-only dependency — guard 가 자체적으로 idempotent 보장.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, defaultWeddingDate, defaultRegion, defaultGuests, weddingSettings.ceremony_type]);
+  }, [isOpen, defaultWeddingDate, defaultRegion, defaultGuests, defaultVenueBudgetLabel, weddingSettings.ceremony_type]);
+
+  // Round 14 — 모든 required field 가 prefilled 면 단축 진행 버튼 노출. 사용자가
+  // 매번 같은 정보 재입력 안 하도록 (A4 picker fatigue 완화).
+  const allRequiredPrefilled =
+    !!date && !!region && !!guests && !!budgetLabel && styles.length > 0;
 
   const toggleStyle = (s: string) => setStyles(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
@@ -96,6 +102,27 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   return (
     <SurveyModal isOpen={isOpen} onClose={onClose} title="웨딩홀 추천을 위한 정보 입력">
       <div className="space-y-5">
+        {/* Round 14 — 모든 required 가 prefilled 면 단축 진행 카드 노출 (A4 picker fatigue 완화) */}
+        {allRequiredPrefilled && (
+          <div className="rounded-2xl border border-[#C9A96E]/30 bg-[#FBF5E8] p-3 space-y-2">
+            <div className="space-y-0.5">
+              <p className="text-[12px] font-bold text-gray-800">저장된 정보로 바로 답변받기</p>
+              <p className="text-[11px] text-gray-600">
+                {format(date!, "yyyy.MM.dd")} · {REGIONS.find(r => r.searchKey === region)?.label ?? region} · {guests}명 · {budgetLabel} · {styles.join("·")}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="w-full py-2 rounded-xl text-white font-bold text-[12px] transition-opacity"
+              style={{ background: "linear-gradient(135deg, #F9B8C6, #C9A96E)" }}
+            >
+              이 정보로 답변받기 →
+            </button>
+            <p className="text-[10px] text-gray-500 text-center">아래 항목을 바꾸려면 그대로 수정하세요.</p>
+          </div>
+        )}
+
         {/* Date */}
         <div>
           <label className={labelCls}>희망 예식 날짜 {reqMark}</label>

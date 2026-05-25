@@ -1,5 +1,6 @@
 import { useWeddingSchedule } from "./useWeddingSchedule";
 import { useBudget } from "./useBudget";
+import { BUDGET_OPTIONS_VENUE, BUDGET_OPTIONS_SDME } from "@/components/wedding-planner/constants";
 
 /**
  * 챗봇 Survey 모달들이 매번 빈 상태로 열려서 사용자가 같은 정보를 반복 입력해야
@@ -19,6 +20,25 @@ export interface WeddingFormContext {
   defaultRegion: string | null;
   defaultGuests: string | null;
   defaultTotalBudget: string | null;
+  /** Round 14 — 식장(category 'venue') 예산 금액(만원). picker fatigue 완화: VenueSurvey
+   *  의 budgetLabel 칩을 BUDGET_OPTIONS_VENUE 와 매칭해 auto-prefill. */
+  defaultVenueBudgetLabel: string | null;
+  /** Round 14 — 스드메(sdm) 예산 → BUDGET_OPTIONS_SDME 라벨 매칭. */
+  defaultSdmeBudgetLabel: string | null;
+}
+
+/** 금액(만원) → BUDGET_OPTIONS_VENUE / SDME label 매칭. 옵션 list 의 max 가 가장 가까운
+ *  range. amount <= max 인 첫 옵션 선택. amount=null 또는 0 이면 null. */
+function findBudgetLabel(
+  amount: number | null | undefined,
+  options: ReadonlyArray<{ label: string; max: number | null }>,
+): string | null {
+  if (!amount || amount <= 0) return null;
+  for (const opt of options) {
+    if (opt.max === null) return opt.label; // 최상단 "X 이상"
+    if (amount <= opt.max) return opt.label;
+  }
+  return null;
 }
 
 export const useWeddingFormContext = (): WeddingFormContext => {
@@ -29,10 +49,16 @@ export const useWeddingFormContext = (): WeddingFormContext => {
     ? new Date(weddingSettings.wedding_date)
     : null;
 
+  const cat = budgetSettings?.category_budgets ?? {};
+  const venueBudget = (cat as Record<string, number>)["venue"] ?? null;
+  const sdmeBudget = (cat as Record<string, number>)["sdm"] ?? null;
+
   return {
     defaultWeddingDate: weddingDate,
     defaultRegion: weddingSettings.wedding_region ?? budgetSettings?.region ?? null,
     defaultGuests: budgetSettings?.guest_count ? String(budgetSettings.guest_count) : null,
     defaultTotalBudget: budgetSettings?.total_budget ? String(budgetSettings.total_budget) : null,
+    defaultVenueBudgetLabel: findBudgetLabel(venueBudget, BUDGET_OPTIONS_VENUE),
+    defaultSdmeBudgetLabel: findBudgetLabel(sdmeBudget, BUDGET_OPTIONS_SDME),
   };
 };

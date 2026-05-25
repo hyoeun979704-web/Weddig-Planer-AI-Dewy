@@ -17,7 +17,7 @@ interface Props {
 const DRESS_OPTIONS = ["국내 브랜드 대여", "해외 브랜드 대여", "드레스 구매", "한복 포함", "미정"];
 
 const SdmeSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
-  const { defaultWeddingDate, defaultRegion } = useWeddingFormContext();
+  const { defaultWeddingDate, defaultRegion, defaultSdmeBudgetLabel } = useWeddingFormContext();
   const [date, setDate] = useState<Date>();
   const [region, setRegion] = useState("");
   const [studioStyle, setStudioStyle] = useState("");
@@ -28,12 +28,19 @@ const SdmeSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const [priority, setPriority] = useState("");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
-  // 저장된 결혼일·지역으로 prefill.
+  // 저장된 결혼일·지역 + 스드메 예산으로 prefill (Round 14).
   useEffect(() => {
     if (!isOpen) return;
     if (defaultWeddingDate) setDate(defaultWeddingDate);
     setRegion(defaultRegion ?? "");
-  }, [isOpen, defaultWeddingDate, defaultRegion]);
+    if (defaultSdmeBudgetLabel && budgetLabel === "") setBudgetLabel(defaultSdmeBudgetLabel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, defaultWeddingDate, defaultRegion, defaultSdmeBudgetLabel]);
+
+  // Round 14 — required (date, region, studioStyle, makeup, budgetLabel) 중 prefilled 가능
+  // 한 건 date/region/budgetLabel 3개. studioStyle, makeup 은 사용자가 매번 선택. 즉 단축
+  // 진행 불가능 — 다만 prefilled 정보 요약은 보여주는 게 도움.
+  const allRequiredPrefilled = !!date && !!region && !!studioStyle && !!makeup && !!budgetLabel;
 
   const toggleDress = (d: string) => setDressOptions(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
 
@@ -85,6 +92,27 @@ const SdmeSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   return (
     <SurveyModal isOpen={isOpen} onClose={onClose} title="스드메 견적을 위한 정보 입력">
       <div className="space-y-5">
+        {/* Round 14 — 모든 required 채워지면 단축 진행 카드 노출 */}
+        {allRequiredPrefilled && (
+          <div className="rounded-2xl border border-[#C9A96E]/30 bg-[#FBF5E8] p-3 space-y-2">
+            <div className="space-y-0.5">
+              <p className="text-[12px] font-bold text-gray-800">저장된 정보로 바로 답변받기</p>
+              <p className="text-[11px] text-gray-600">
+                {format(date!, "yyyy.MM.dd")} · {REGIONS.find(r => r.searchKey === region)?.label ?? region} · {studioStyle} · {makeup} · {budgetLabel}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="w-full py-2 rounded-xl text-white font-bold text-[12px]"
+              style={{ background: "linear-gradient(135deg, #F9B8C6, #C9A96E)" }}
+            >
+              이 정보로 답변받기 →
+            </button>
+            <p className="text-[10px] text-gray-500 text-center">아래 항목을 바꾸려면 그대로 수정하세요.</p>
+          </div>
+        )}
+
         <div>
           <label className={labelCls}>예식 날짜 {reqMark}</label>
           <Popover>
