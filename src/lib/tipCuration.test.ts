@@ -58,12 +58,19 @@ describe("phaseCategoriesFor", () => {
     expect(phaseCategoriesFor(null)).toEqual([]);
   });
 
-  it("D-200 → wedding hall focus", () => {
-    expect(phaseCategoriesFor(200)).toEqual(["wedding_hall"]);
+  it("D-200 → wedding hall focus + cross-phase (newlywed_home)", () => {
+    // Round 19 — CROSS_PHASE_BOOSTS 의 newlywed_home (-90~180) 이 D-200 에도 union.
+    expect(phaseCategoriesFor(200)).toContain("wedding_hall");
+    expect(phaseCategoriesFor(200)).toContain("newlywed_home");
   });
 
-  it("D-100 → dress/makeup phase", () => {
-    expect(phaseCategoriesFor(100)).toEqual(["dress_shop", "makeup_shop", "hanbok"]);
+  it("D-100 → dress/makeup phase + cross-phase (newlywed_home, ceremony, family_meeting, wedding_gifts)", () => {
+    const cats = phaseCategoriesFor(100);
+    expect(cats).toContain("dress_shop");
+    expect(cats).toContain("makeup_shop");
+    expect(cats).toContain("hanbok");
+    expect(cats).toContain("ceremony");
+    expect(cats).toContain("newlywed_home");
   });
 
   it("D-45 → invitation/honeymoon phase", () => {
@@ -71,8 +78,12 @@ describe("phaseCategoriesFor", () => {
     expect(phaseCategoriesFor(45)).toContain("honeymoon");
   });
 
-  it("post-wedding → honeymoon + general only", () => {
-    expect(phaseCategoriesFor(-10)).toEqual(["honeymoon", "general"]);
+  it("post-wedding → honeymoon + general + cross-phase (newlywed_home, bridal_care)", () => {
+    const cats = phaseCategoriesFor(-10);
+    expect(cats).toContain("honeymoon");
+    expect(cats).toContain("general");
+    expect(cats).toContain("newlywed_home");
+    expect(cats).toContain("bridal_care");
   });
 });
 
