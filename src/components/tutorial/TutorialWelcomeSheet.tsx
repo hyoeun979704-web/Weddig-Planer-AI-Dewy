@@ -81,17 +81,29 @@ const TutorialWelcomeSheet = () => {
 
   if (!open) return null;
 
-  const visibleChapters = chaptersForStyle(style);
+  const userCtx = {
+    style,
+    persona: weddingSettings.persona_mode,
+    role: weddingSettings.role,
+  };
+  const visibleChapters = chaptersForUser(userCtx);
   const totalLessons = visibleChapters.reduce((sum, c) => sum + c.lessons.length, 0);
   // 이미 끝낸 레슨(예: 자동 실행된 홈 투어)은 건너뛰고 다음 미완료 레슨을 제안 —
   // 같은 투어를 다시 권하지 않기 위함.
   const next = progress.nextLesson(style);
+  // Round 18 — '30초' CTA 가 약속하는 lesson 은 placeholder 가 아닌 첫 startable.
+  // home-tour 가 미완료면 그게 우선. nextLesson 은 placeholder 도 반환할 수 있어
+  // CTA 약속이 깨질 수 있어 분리.
+  const firstStartable = firstStartableLessonForUser(userCtx);
+  const startTarget = next?.lesson && !next.lesson.placeholder
+    ? next.lesson
+    : firstStartable?.lesson;
 
   const handleStart = () => {
     progress.markWelcomeShown();
     setOpen(false);
-    if (next?.lesson) {
-      navigate(`${next.lesson.route}?tutorial=${next.lesson.id}`);
+    if (startTarget) {
+      navigate(`${startTarget.route}?tutorial=${startTarget.id}`);
     } else {
       navigate("/tutorial");
     }
@@ -144,12 +156,12 @@ const TutorialWelcomeSheet = () => {
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
             <p className="text-xs font-bold text-foreground">
-              {totalLessons}개의 짧은 레슨이 준비됐어요
+              전체 안내 자료 {totalLessons}개
             </p>
           </div>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            챕터별로 끊어서 들을 수 있고, 완료할 때마다 포인트가 적립돼요.
-            언제든 마이페이지에서 다시 볼 수 있어요.
+            나머지 가이드는 챕터별로 천천히, 원할 때 시작하세요. 완료할 때마다
+            포인트가 적립되고 마이페이지에서 다시 볼 수 있어요.
           </p>
         </div>
 
@@ -165,7 +177,7 @@ const TutorialWelcomeSheet = () => {
             className="flex-[2] h-11 rounded-xl text-primary-foreground font-bold text-sm bg-primary flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
           >
             <Play className="w-4 h-4" />
-            지금 시작 (30초)
+            홈 화면 30초 둘러보기
           </button>
         </div>
 
