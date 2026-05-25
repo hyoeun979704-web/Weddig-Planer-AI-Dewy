@@ -20,22 +20,19 @@ const ratingOptions = [
   { value: 4.9, label: "4.9점 이상" },
 ];
 
-// Values aligned to the most-popular tag spelling in `places.tags` so
-// `overlaps()` actually matches rows. e.g. "야외웨딩" (46 venues) is far
-// more common than the bare "야외" (3 venues).
+// Round 13 — places.tags 의 실측 빈도 기준. wedding_hall 카테고리에서 매칭 행이 있는
+// tag 만 노출. 0건 옵션은 사용자가 클릭해도 결과 없음 → UI 피로만 유발.
+// 호텔웨딩(62)/하우스웨딩(81)/야외웨딩(46)/가든웨딩(36)/컨벤션웨딩(33)/채플웨딩(12)/
+// 단독홀(101)/스몰웨딩(40). 레스토랑웨딩·공공시설(둘 다 0건) 제거.
 const hallTypeOptions = [
-  { value: "호텔웨딩", label: "호텔" },
+  { value: "단독홀", label: "단독홀" },
   { value: "하우스웨딩", label: "하우스" },
+  { value: "호텔웨딩", label: "호텔" },
   { value: "야외웨딩", label: "야외" },
+  { value: "스몰웨딩", label: "스몰웨딩" },
   { value: "가든웨딩", label: "가든" },
   { value: "컨벤션웨딩", label: "컨벤션" },
   { value: "채플웨딩", label: "채플" },
-  { value: "단독홀", label: "단독홀" },
-  { value: "스몰웨딩", label: "스몰웨딩" },
-  // 페르소나 v1 추가: P11(40명 진짜 스몰), P14(저예산 1,200만), P12(야외).
-  // tag 값이 places.tags 와 매칭해야 — 운영팀이 해당 tag를 가진 row 를 만들어 둬야 효과.
-  { value: "레스토랑웨딩", label: "레스토랑" },
-  { value: "공공시설", label: "공공시설" },
 ];
 
 // Most rows tag meals as plain "뷔페" or "코스요리"; the granular

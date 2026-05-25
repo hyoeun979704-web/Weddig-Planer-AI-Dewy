@@ -17,9 +17,18 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
   const from = pageParam * VENUES_PER_PAGE;
   const to = from + VENUES_PER_PAGE - 1;
 
+  // Round 13 P0 fix — 보증인원/홀스타일/식사옵션 등 detail 컬럼으로 places 를 거르려면
+  // PostgREST embedded resource 의 inner join 필요. 평소엔 detail 없는 row 도 노출하므로
+  // 필터 켰을 때만 !inner 로 전환. 기존 코드는 places.guarantee_count 라는 존재하지 않는
+  // 컬럼을 쿼리해 SQL error → 사용자가 보증인원 슬라이더 만지면 결과가 전부 사라졌음.
+  const hasGuaranteeFilter = !!(filters.maxGuarantee || filters.minGuarantee);
+  const detailSelect = hasGuaranteeFilter
+    ? "place_wedding_halls!inner(*)"
+    : "place_wedding_halls(*)";
+
   let query = supabase
     .from("places")
-    .select("*, place_wedding_halls(*)", { count: "exact" })
+    .select(`*, ${detailSelect}`, { count: "exact" })
     .eq("category", "wedding_hall")
     .eq("is_active", true)
     .is("deleted_at", null);
@@ -41,13 +50,15 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
     query = query.lte("min_price", filters.maxPrice);
   }
 
-  // 보증인원 상한/하한. 하한(minGuarantee) 은 P13(호텔 스몰) 같은 케이스에 사용,
-  // null 이면 P11(40명 진짜 스몰) 처럼 작은 인원도 포함.
+  // 보증인원 상·하한 — place_wedding_halls.max_guarantee / min_guarantee 와 매칭.
+  // - maxGuarantee 칩(상한): "300명 이하" → DB max_guarantee <= 300
+  // - minGuarantee 칩(하한): "50명 이상" → DB min_guarantee >= 50
+  // 이전엔 places.guarantee_count(없는 컬럼)로 쿼리해 슬라이더 켜면 결과 전멸.
   if (filters.maxGuarantee) {
-    query = query.lte("guarantee_count", filters.maxGuarantee);
+    query = query.lte("place_wedding_halls.max_guarantee", filters.maxGuarantee);
   }
   if (filters.minGuarantee) {
-    query = query.gte("guarantee_count", filters.minGuarantee);
+    query = query.gte("place_wedding_halls.min_guarantee", filters.minGuarantee);
   }
 
   if (filters.minRating) {
