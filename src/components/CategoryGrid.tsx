@@ -2,15 +2,46 @@ import { useEffect, useRef, forwardRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { MapPin } from "lucide-react";
 import { useCategoryData, CategoryItem } from "@/hooks/useCategoryData";
 import { useCategoryFilterStore, CategoryType } from "@/stores/useCategoryFilterStore";
 import VendorMediaCard from "@/components/home/VendorMediaCard";
 import { categoryItemToCardData } from "@/lib/categoryCardAdapter";
+import { regionLabel } from "@/lib/regions";
 
 interface CategoryGridProps {
   category: CategoryType;
   onItemClick?: (item: CategoryItem) => void;
 }
+
+// Round 14 — 도 단위 region 에 데이터 부재 케이스의 인접 광역시 매핑.
+// 키 = lib REGIONS.value (예: "충청남"), 값 = 인접 region value 배열 (광역시 우선).
+// 사용자에게 0건 시 "인접 지역 (대전·세종) 도 함께 볼까요?" 안내. 클릭 시 자동 전환.
+const REGION_NEIGHBORS: Record<string, { value: string; label: string }[]> = {
+  "충청남": [{ value: "대전", label: "대전" }, { value: "세종", label: "세종" }],
+  "충청북": [{ value: "대전", label: "대전" }, { value: "세종", label: "세종" }],
+  "강원":   [{ value: "서울", label: "서울" }, { value: "경기", label: "경기" }],
+  "전라남": [{ value: "광주", label: "광주" }],
+  "전북":   [{ value: "광주", label: "광주" }],
+  "경상남": [{ value: "부산", label: "부산" }, { value: "대구", label: "대구" }, { value: "울산", label: "울산" }],
+  "경상북": [{ value: "대구", label: "대구" }, { value: "부산", label: "부산" }],
+  "제주":   [{ value: "부산", label: "부산" }],
+  "세종":   [{ value: "대전", label: "대전" }],
+  "울산":   [{ value: "부산", label: "부산" }],
+};
+
+const CATEGORY_KOREAN: Record<CategoryType, string> = {
+  venues: "웨딩홀",
+  studios: "스튜디오",
+  dress_shops: "드레스",
+  makeup_shops: "메이크업",
+  hanbok: "한복",
+  suits: "예복",
+  honeymoon: "허니문",
+  jewelry: "예물",
+  appliances: "혼수",
+  invitation_venues: "청첩장 모임",
+};
 
 // Fluid card placeholder — matches the 195px fluid card (100 image + 95 text).
 const CardSkeleton = () => (
@@ -26,7 +57,7 @@ const CardSkeleton = () => (
 
 const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function CategoryGrid({ category, onItemClick }, ref) {
   const { toast } = useToast();
-  const { resetFilters, hasActiveFilters } = useCategoryFilterStore();
+  const { resetFilters, hasActiveFilters, region, setRegion, filterOptions1, filterOptions2, filterOptions3, minRating } = useCategoryFilterStore();
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -79,18 +110,72 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
   }
 
   if (allItems.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-        <p className="text-muted-foreground mb-4">
-          {hasActiveFilters()
-            ? "필터 조건에 맞는 결과가 없습니다"
-            : "등록된 업체가 없습니다"}
-        </p>
-        {hasActiveFilters() && (
+    // Round 14 — empty state 분기:
+    //   1. region 만 켜짐 + 0건 → 카테고리·지역 명시 + 인접 광역시 안내 + 전국 보기 CTA
+    //   2. region + 다른 필터 + 0건 → 다른 필터 풀기 권유
+    //   3. 필터 없음 + 0건 → 기존 "등록된 업체가 없습니다"
+    const hasNonRegionFilter =
+      !!minRating ||
+      filterOptions1.length > 0 ||
+      filterOptions2.length > 0 ||
+      filterOptions3.length > 0;
+    const regionOnly = !!region && !hasNonRegionFilter;
+    const neighbors = region ? REGION_NEIGHBORS[region] ?? [] : [];
+    const categoryName = CATEGORY_KOREAN[category] ?? "";
+    const regionName = region ? regionLabel(region) : "";
+
+    if (regionOnly) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center gap-3">
+          <MapPin className="w-8 h-8 text-muted-foreground/40" />
+          <div className="space-y-1">
+            <p className="text-foreground font-semibold">
+              {regionName} {categoryName} 데이터가 아직 없어요
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {neighbors.length > 0
+                ? `인접 지역 (${neighbors.map((n) => n.label).join("·")}) 또는 전국 결과를 보여드릴 수 있어요.`
+                : "전국 결과를 보여드릴 수 있어요."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 justify-center pt-1">
+            {neighbors.slice(0, 2).map((n) => (
+              <Button
+                key={n.value}
+                variant="outline"
+                size="sm"
+                onClick={() => setRegion(n.value)}
+                className="text-xs"
+              >
+                <MapPin className="w-3 h-3 mr-1" />
+                {n.label} 보기
+              </Button>
+            ))}
+            <Button variant="default" size="sm" onClick={() => setRegion(null)} className="text-xs">
+              전국 보기
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    if (hasActiveFilters()) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center gap-3">
+          <p className="text-muted-foreground">필터 조건에 맞는 결과가 없습니다</p>
+          <p className="text-xs text-muted-foreground">
+            지역·옵션 칩을 일부 풀면 더 많은 결과가 나올 수 있어요.
+          </p>
           <Button variant="outline" size="sm" onClick={resetFilters}>
             필터 초기화
           </Button>
-        )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+        <p className="text-muted-foreground mb-4">등록된 업체가 없습니다</p>
       </div>
     );
   }
