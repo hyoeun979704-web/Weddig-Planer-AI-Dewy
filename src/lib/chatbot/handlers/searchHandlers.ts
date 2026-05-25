@@ -10,6 +10,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { escapeLikePattern, quoteForOr } from "@/lib/postgrestEscape";
 import { callWebSearch, formatWebSearchReply } from "./webSearchFallback";
 
 export interface SearchPersonaCtx {
@@ -181,7 +182,12 @@ export const handleFreeTextSearch = async (
     .limit(15);
 
   if (category) query = query.eq("category", category);
-  if (region) query = query.or(`district.ilike.%${region}%,city.ilike.%${region}%`);
+  if (region) {
+    // Round 15 P1 — ILIKE wildcards + .or() commas/parens 둘 다 escape. inferRegion 이
+    // 현재 allowlist 라 안전하지만 향후 raw 입력 확장 시 injection 방어.
+    const safe = quoteForOr(`%${escapeLikePattern(region)}%`);
+    query = query.or(`district.ilike.${safe},city.ilike.${safe}`);
+  }
 
   const { data, error } = await query;
 
@@ -293,7 +299,12 @@ export const handleAveragePrice = async (
     .eq("is_active", true)
     .not("min_price", "is", null);
 
-  if (region) query = query.or(`district.ilike.%${region}%,city.ilike.%${region}%`);
+  if (region) {
+    // Round 15 P1 — ILIKE wildcards + .or() commas/parens 둘 다 escape. inferRegion 이
+    // 현재 allowlist 라 안전하지만 향후 raw 입력 확장 시 injection 방어.
+    const safe = quoteForOr(`%${escapeLikePattern(region)}%`);
+    query = query.or(`district.ilike.${safe},city.ilike.${safe}`);
+  }
 
   const { data } = await query;
 
@@ -379,7 +390,12 @@ export const handlePopularPlaces = async (
     .order("avg_rating", { ascending: false });
 
   if (category) query = query.eq("category", category);
-  if (region) query = query.or(`district.ilike.%${region}%,city.ilike.%${region}%`);
+  if (region) {
+    // Round 15 P1 — ILIKE wildcards + .or() commas/parens 둘 다 escape. inferRegion 이
+    // 현재 allowlist 라 안전하지만 향후 raw 입력 확장 시 injection 방어.
+    const safe = quoteForOr(`%${escapeLikePattern(region)}%`);
+    query = query.or(`district.ilike.${safe},city.ilike.${safe}`);
+  }
 
   const { data } = await query.limit(fetchLimit);
 
@@ -478,7 +494,12 @@ export const handleVenueCompare = async (
     .is("deleted_at", null)
     .gte("review_count", 1)
     .order("avg_rating", { ascending: false, nullsFirst: false });
-  if (region) query = query.or(`district.ilike.%${region}%,city.ilike.%${region}%`);
+  if (region) {
+    // Round 15 P1 — ILIKE wildcards + .or() commas/parens 둘 다 escape. inferRegion 이
+    // 현재 allowlist 라 안전하지만 향후 raw 입력 확장 시 injection 방어.
+    const safe = quoteForOr(`%${escapeLikePattern(region)}%`);
+    query = query.or(`district.ilike.${safe},city.ilike.${safe}`);
+  }
 
   const { data } = await query.limit(limit);
 
