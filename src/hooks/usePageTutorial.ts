@@ -29,12 +29,18 @@ export const usePageTutorial = (
   const { user } = useAuth();
 
   useEffect(() => {
+    // Round 17 — 비로그인 사용자는 어느 경로로든 자동 시작 X (튜토리얼은 로그인 후만).
+    // query-param 경로(replay) 도 user 가드 추가 — 이전엔 누구나 ?tutorial=X 로 시작 가능.
+    if (!user) return;
+
     // Priority 1: explicit query param wins — even if requiresStyles
     // doesn't match, the user is explicitly asking to replay.
     const tutorialParam = searchParams.get("tutorial");
     if (tutorialParam) {
       const lesson = findLessonById(tutorialParam);
       if (lesson) {
+        // Round 17 — 이미 완료한 lesson 이라도 사용자가 명시적으로 replay 한 경로 (Tutorial
+        // 페이지에서 "다시 보기" 클릭) → progress 차단 안 함. RPC 가 PK 가드라 중복 award X.
         const timer = setTimeout(
           () => tutorial.startTutorial(lesson.steps, lesson.id),
           500
@@ -45,13 +51,10 @@ export const usePageTutorial = (
       }
     }
 
-    // Priority 2: first-visit auto-start. 비로그인 사용자에겐 자동 실행하지
-    // 않는다 — 로그인 게이트(LoginRequiredOverlay) 위로 코치마크가 뜨는 것을
-    // 막고, "로그인 후 튜토리얼" 흐름과 일치시킨다. (수동 replay 는 위 query
-    // param 경로로 계속 가능.)
-    //  - per-page seen flag (legacy `PAGE_SEEN_PREFIX`)
-    //  - lesson-completion flag (new progress hook)
-    if (pageGuideId && user && autoStart) {
+    // Priority 2: first-visit auto-start. 로그인 + autoStart 가 켜진 페이지만.
+    //   - per-page seen flag (legacy `PAGE_SEEN_PREFIX`)
+    //   - lesson-completion flag (new progress hook — DB-backed)
+    if (pageGuideId && autoStart) {
       const seenKey = PAGE_SEEN_PREFIX + pageGuideId;
       const hasSeen = localStorage.getItem(seenKey) === "true";
       const alreadyDone = progress.isCompleted(pageGuideId);
@@ -74,8 +77,9 @@ export const usePageTutorial = (
       }, 800);
       return () => clearTimeout(timer);
     }
+    // Round 17 — progress.isCompleted 가 DB cache 반영하도록 dep 에 추가.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weddingSettings.wedding_style, user]);
+  }, [weddingSettings.wedding_style, user, progress.completedLessons.length]);
 
   return tutorial;
 };

@@ -7,6 +7,7 @@ import {
   type TutorialLessonStep,
 } from "@/data/tutorialChapters";
 import { tutorialActive } from "@/lib/tutorialActive";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Coachmark step shape kept identical for backwards compatibility with
 // TutorialOverlay, which renders `targetSelector` + `position`.
@@ -38,6 +39,7 @@ const DEFAULT_STEPS: TutorialStep[] = TUTORIAL_CHAPTERS[0].lessons[0].steps;
 const TUTORIAL_SEEN_KEY = "dewy_tutorial_seen";
 
 export const useTutorial = () => {
+  const { user } = useAuth();
   const [isActive, setIsActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [steps, setSteps] = useState<TutorialStep[]>(DEFAULT_STEPS);
@@ -55,6 +57,9 @@ export const useTutorial = () => {
 
   const startTutorial = useCallback(
     (customSteps?: TutorialStep[], guideId?: string) => {
+      // Round 17 — 로그인 후만 튜토리얼 진행. 비로그인은 LoginRequiredOverlay 위로
+      // 코치마크가 떠 혼란만 유발 + RPC 호출이 'Not authenticated' 로 silently fail.
+      if (!user) return;
       // Allow callers to pass a guideId alone — we'll resolve the steps from
       // the chapter source. Older callers pass steps directly.
       if (!customSteps && guideId) {
@@ -72,7 +77,7 @@ export const useTutorial = () => {
       setCurrentStepIndex(0);
       setIsActive(true);
     },
-    []
+    [user]
   );
 
   const awardCompletion = useCallback(async (id: string) => {

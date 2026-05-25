@@ -49,7 +49,11 @@ const TutorialWelcomeSheet = () => {
   const blurb = STYLE_BLURB[style ?? "general"] ?? STYLE_BLURB.general;
 
   useEffect(() => {
+    // Round 17 — 로그인 후만 튜토리얼 진행 (사용자 요구). 비로그인 사용자에겐
+    // 튜토리얼 시스템 자체가 의미 없음 (포인트 적립 / 진행 저장 모두 user 의존).
     if (!user || isLoading) return;
+    // progress.welcomeShown 가 DB completed 1개 이상 자동 TRUE — 캐시 wipe 후 재접속
+    // 이라도 returning user 에게 다시 안 띄움.
     if (progress.welcomeShown) return;
     // Wait until onboarding is finished — otherwise we'd race the wedding-info
     // modal and stack two sheets.
