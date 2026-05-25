@@ -67,17 +67,22 @@ export interface WeddingFormContext {
 }
 
 /** 금액(만원) → BUDGET_OPTIONS_VENUE / SDME label 매칭. 옵션 list 의 max 가 가장 가까운
- *  range. amount <= max 인 첫 옵션 선택. amount=null 또는 0 이면 null. */
+ *  range. amount <= max 인 첫 옵션 선택. amount=null 또는 0 이면 null.
+ *
+ *  INVARIANT — options 가 ascending order 로 정렬되어 있어야 함 (max 작은 것부터, null 은
+ *  마지막). 호출자가 항상 이 순서 보장해야 하며, 마지막에 max=null 옵션이 있어야 amount
+ *  가 모든 max 초과해도 무성 실패 안 함. options 정렬 깨지면 마지막 옵션으로 fallback. */
 function findBudgetLabel(
   amount: number | null | undefined,
   options: ReadonlyArray<{ label: string; max: number | null }>,
 ): string | null {
   if (!amount || amount <= 0) return null;
   for (const opt of options) {
-    if (opt.max === null) return opt.label; // 최상단 "X 이상"
+    if (opt.max === null) return opt.label;
     if (amount <= opt.max) return opt.label;
   }
-  return null;
+  // amount > 모든 max 인데 max:null 옵션 없는 경우 — invariant 깨진 fallback
+  return options.length > 0 ? options[options.length - 1].label : null;
 }
 
 export const useWeddingFormContext = (): WeddingFormContext => {

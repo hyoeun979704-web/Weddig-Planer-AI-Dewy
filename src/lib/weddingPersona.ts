@@ -4,6 +4,15 @@
 // DB 측 trigger(derive_wedding_persona)와 동기 — 두 곳의 우선순위 로직이
 // 동일해야 한다. DB 트리거는 영속화 정합성을, 클라이언트 헬퍼는 즉시 분기를
 // 책임진다. 둘 다 같은 입력을 받아 같은 결과를 내야 한다.
+//
+// IMPORTANT — persona_mode override 안전성 미보장:
+// trigger 의 override 가드 `IF NEW.persona_mode IS DISTINCT FROM OLD.persona_mode`
+// 는 단 1회 UPDATE 에만 유효. 사용자가 "view-as luxury_hotel" 같은 override 저장 후
+// 다른 컬럼(예: guest_count) 만 UPDATE 하면 client patch 에 persona_mode 없어
+// NEW.persona_mode = OLD.persona_mode → trigger 가 자동 derive 로 덮어씀. 즉
+// override 단명. 현재 client view-as UI 없어 잠재 함정. UI 추가 시 별도 컬럼
+// (persona_mode_overridden_at) 으로 override 표시 + trigger 가 그 컬럼 set 됐으면
+// derive 스킵하도록 수정 필요.
 
 import type { WeddingStyle } from "./weddingStyle";
 
