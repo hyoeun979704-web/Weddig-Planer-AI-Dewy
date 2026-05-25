@@ -90,16 +90,47 @@ const PLACE_CATEGORY_KEYWORDS: Record<string, string> = {
   혼수: "appliance",
 };
 
-const REGION_KEYWORDS = [
+// Round 15 P0 fix — 약자(충남/충북/전남/전북/경남/경북)가 DB 풀네임("충청남도" 등)에
+// 비연속 substring 이라 ILIKE 매칭 0건. Round 13 region 회귀 재발. 사용자 입력은
+// 약자/풀네임 모두 받되 ILIKE-safe substring 으로 정규화 후 query 전달.
+// 키 = 사용자 입력 alias, 값 = ILIKE 안전 substring (lib/regions.ts REGIONS.value 와 일치).
+const REGION_ALIAS_TO_SEARCH_KEY: Record<string, string> = {
+  // 약자 → 풀네임 contiguous substring
+  "충남": "충청남", "충청남": "충청남", "충청남도": "충청남",
+  "충북": "충청북", "충청북": "충청북", "충청북도": "충청북",
+  "전남": "전라남", "전라남": "전라남", "전라남도": "전라남",
+  "경남": "경상남", "경상남": "경상남", "경상남도": "경상남",
+  "경북": "경상북", "경상북": "경상북", "경상북도": "경상북",
+  // 풀네임도 substring 형태로 정규화 (정확성)
+  "전북": "전북", "전북특별자치도": "전북",
+  "강원": "강원", "강원특별자치도": "강원",
+  "제주": "제주", "제주특별자치도": "제주",
+  "세종": "세종", "세종특별자치시": "세종",
+  "서울": "서울", "서울특별시": "서울",
+  "경기": "경기", "경기도": "경기",
+  "인천": "인천", "인천광역시": "인천",
+  "부산": "부산", "부산광역시": "부산",
+  "대구": "대구", "대구광역시": "대구",
+  "광주": "광주", "광주광역시": "광주",
+  "대전": "대전", "대전광역시": "대전",
+  "울산": "울산", "울산광역시": "울산",
+};
+
+// 시군구 키워드 — district.ilike 매칭용 (city 와 별개로 사용자 입력 인식). 그대로 substring.
+const SIGUNGU_KEYWORDS = [
   "강남", "강북", "강동", "강서", "서초", "송파", "마포", "용산",
   "종로", "중구", "성동", "광진", "동대문", "성북", "도봉",
   "노원", "은평", "양천", "구로", "금천", "관악", "동작",
   "영등포", "서대문", "중랑", "강화",
-  "서울", "경기", "인천", "성남", "수원", "용인", "안양", "고양",
-  "부산", "대구", "대전", "광주", "울산", "세종",
-  "강원", "충남", "충북", "전남", "전북", "경남", "경북", "제주",
+  "성남", "수원", "용인", "안양", "고양",
   "천안", "청주", "춘천", "원주", "제천",
 ];
+
+// inferRegion 호환을 위한 모든 키워드 (정렬 — 긴 것 먼저 매칭).
+const REGION_KEYWORDS = [
+  ...Object.keys(REGION_ALIAS_TO_SEARCH_KEY),
+  ...SIGUNGU_KEYWORDS,
+].sort((a, b) => b.length - a.length);
 
 const inferCategory = (text: string): string | null => {
   for (const [kw, cat] of Object.entries(PLACE_CATEGORY_KEYWORDS)) {
@@ -110,7 +141,10 @@ const inferCategory = (text: string): string | null => {
 
 const inferRegion = (text: string): string | null => {
   for (const r of REGION_KEYWORDS) {
-    if (text.includes(r)) return r;
+    if (text.includes(r)) {
+      // 시도 약자/풀네임 → ILIKE-safe substring 매핑 (Round 15 P0 fix). 시군구는 그대로.
+      return REGION_ALIAS_TO_SEARCH_KEY[r] ?? r;
+    }
   }
   return null;
 };

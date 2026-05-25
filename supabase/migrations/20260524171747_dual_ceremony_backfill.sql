@@ -15,7 +15,18 @@
 --     'international' 이면 이미 정정됨, 다른 값(remarriage/pregnancy 등) 이면 derive
 --     우선순위로 정당화 가능한 결과라 손대지 않음.
 
-ALTER TABLE public.user_wedding_settings DISABLE TRIGGER user_wedding_settings_derive_persona;
+-- Round 15 P0 fix — trigger 이름이 20260524010000_venue_trigger_guards.sql 에서
+-- 'user_wedding_settings_derive_persona' → 'b_derive_persona' 로 rename 됨. 이전
+-- 코드는 존재하지 않는 trigger 이름 참조 → 새 환경 deploy 시 마이그레이션 abort.
+-- DO 블록으로 둘 다 시도 (어느 환경에서도 동작 보장).
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'b_derive_persona') THEN
+    EXECUTE 'ALTER TABLE public.user_wedding_settings DISABLE TRIGGER b_derive_persona';
+  ELSIF EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'user_wedding_settings_derive_persona') THEN
+    EXECUTE 'ALTER TABLE public.user_wedding_settings DISABLE TRIGGER user_wedding_settings_derive_persona';
+  END IF;
+END $$;
 
 -- (1) dual_ceremony 매핑 누락분 정정.
 UPDATE public.user_wedding_settings
@@ -31,4 +42,11 @@ SET persona_mode = 'pregnancy'
 WHERE COALESCE(pregnant, FALSE) = TRUE
   AND persona_mode = 'international';
 
-ALTER TABLE public.user_wedding_settings ENABLE TRIGGER user_wedding_settings_derive_persona;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'b_derive_persona') THEN
+    EXECUTE 'ALTER TABLE public.user_wedding_settings ENABLE TRIGGER b_derive_persona';
+  ELSIF EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'user_wedding_settings_derive_persona') THEN
+    EXECUTE 'ALTER TABLE public.user_wedding_settings ENABLE TRIGGER user_wedding_settings_derive_persona';
+  END IF;
+END $$;

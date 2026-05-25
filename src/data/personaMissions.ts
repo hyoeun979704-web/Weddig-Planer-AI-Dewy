@@ -8,7 +8,19 @@
 
 import type { WeddingStyle } from "@/lib/weddingStyle";
 import type { PregnancyTrimester } from "@/lib/pregnancy";
-import type { WeddingPersonaMode, UserRole } from "@/lib/weddingPersona";
+import type { WeddingPersonaMode, UserRole, CeremonyType } from "@/lib/weddingPersona";
+
+// Round 15 P1 fix — pregnant 사용자가 비표준 ceremony_type 일 때 PERSONA_SPECIFIC
+// missions 가 layering 안 되던 회귀. derivePersonaMode 우선순위: pregnancy > 모든 것 →
+// PERSONA_SPECIFIC['pregnancy'] 없어 임산부 야외웨딩이 'outdoor-weather' 같은 critical
+// 미션 영영 못 받음. ceremonyType 인자로 secondary persona 추론해 layering.
+const CEREMONY_TO_SECONDARY_PERSONA: Partial<Record<CeremonyType, WeddingPersonaMode>> = {
+  hotel: "luxury_hotel",
+  small_real: "small_intimate",
+  restaurant: "small_intimate",
+  outdoor: "small_outdoor",
+  public_facility: "small_budget",
+};
 
 export interface PersonaMission {
   key: string;
@@ -382,6 +394,9 @@ export function getMissionsForStyle(
     personaMode?: WeddingPersonaMode | null;
     /** Round 8 A — 사용자 role. 'groom' 이면 standard_groom 외 페르소나에 신랑 미션 1개 layering. */
     role?: UserRole | null;
+    /** Round 15 P1 fix — ceremony_type. pregnant 사용자가 야외/스몰 등 비표준 ceremony 일 때
+     *  CEREMONY_TO_SECONDARY_PERSONA 로 매핑된 PERSONA_SPECIFIC missions 도 함께 노출. */
+    ceremonyType?: CeremonyType | null;
   } = {},
 ): PersonaMission[] {
   const s = (style ?? "general") as WeddingStyle;
@@ -401,7 +416,17 @@ export function getMissionsForStyle(
   if (options.pregnant) {
     const trimester = options.pregnancyTrimester ?? "second";
     const pregnancyMissions = PREGNANCY_MISSIONS_BY_TRIMESTER[trimester];
-    const second = hasPersona ? personaList![0] : styleList[0] ?? COMMON[0];
+    // Round 15 P1 fix — pregnant 가 다른 페르소나 모두를 가려서 'pregnancy' 만 노출되던
+    // 회귀. ceremony_type 기반 secondary persona missions 도 second slot 으로 layering.
+    // 우선순위: PERSONA_SPECIFIC[personaMode]('pregnancy' 면 없음) > secondary by ceremony >
+    // styleList > COMMON. 임산부 야외웨딩 사용자가 'outdoor-weather' 미션 받게 됨.
+    const secondaryMode = options.ceremonyType ? CEREMONY_TO_SECONDARY_PERSONA[options.ceremonyType] : undefined;
+    const secondaryList = secondaryMode ? PERSONA_SPECIFIC[secondaryMode] : undefined;
+    const second =
+      (hasPersona ? personaList![0] : undefined)
+      ?? (secondaryList && secondaryList.length > 0 ? secondaryList[0] : undefined)
+      ?? styleList[0]
+      ?? COMMON[0];
     return [pregnancyMissions[0], second, pregnancyMissions[1]]
       .filter((m): m is PersonaMission => !!m)
       .slice(0, 3);

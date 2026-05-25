@@ -53,7 +53,14 @@ export async function setSensitivePreference(
     p_extra_patch: args.extraPatch ?? null,
   });
   if (error) throw error;
-  if (data && typeof data === "object" && data.ok === false) {
+  // Round 15 P1 fix — PostgREST RPC 가 function-not-found / RLS 거부 / supabase-js
+  // network short-circuit 으로 `{data: null, error: null}` 반환 시 두 가드 모두 통과
+  // → silent success. ConfirmFlow 가 markConfirmed + toast.success + reload 실행하지만
+  // DB 미반영 → 다음 세션에 또 confirm card 노출(loop). 명시 가드.
+  if (data == null) {
+    throw new Error("set_sensitive_preference returned no data — RPC may not be deployed");
+  }
+  if (typeof data === "object" && data.ok === false) {
     const err = new Error(String(data.error ?? "set_sensitive_preference failed"));
     (err as any).rpcError = data;
     throw err;

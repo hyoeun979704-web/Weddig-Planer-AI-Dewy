@@ -21,7 +21,11 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
   // PostgREST embedded resource 의 inner join 필요. 평소엔 detail 없는 row 도 노출하므로
   // 필터 켰을 때만 !inner 로 전환. 기존 코드는 places.guarantee_count 라는 존재하지 않는
   // 컬럼을 쿼리해 SQL error → 사용자가 보증인원 슬라이더 만지면 결과가 전부 사라졌음.
-  const hasGuaranteeFilter = !!(filters.maxGuarantee || filters.minGuarantee);
+  // Round 15 P1 fix — falsy-zero. `!!(null || 0) === false` 라 사용자가 슬라이더를
+  // 0 으로 설정 시 hasGuaranteeFilter=false → outer join → 그러나 line ~52 의 query
+  // .gte(`place_wedding_halls.min_guarantee`, 0) 는 그대로 발화 → PostgREST 가 embedded
+  // resource filter 적용하려는데 inner 없어 parse 깨짐. null check 명시.
+  const hasGuaranteeFilter = filters.maxGuarantee != null || filters.minGuarantee != null;
   const detailSelect = hasGuaranteeFilter
     ? "place_wedding_halls!inner(*)"
     : "place_wedding_halls(*)";
@@ -54,10 +58,11 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
   // - maxGuarantee 칩(상한): "300명 이하" → DB max_guarantee <= 300
   // - minGuarantee 칩(하한): "50명 이상" → DB min_guarantee >= 50
   // 이전엔 places.guarantee_count(없는 컬럼)로 쿼리해 슬라이더 켜면 결과 전멸.
-  if (filters.maxGuarantee) {
+  // Round 15 — null 명시 가드. 0 은 valid 값(small persona 가 0~ 슬라이더 가능).
+  if (filters.maxGuarantee != null) {
     query = query.lte("place_wedding_halls.max_guarantee", filters.maxGuarantee);
   }
-  if (filters.minGuarantee) {
+  if (filters.minGuarantee != null) {
     query = query.gte("place_wedding_halls.min_guarantee", filters.minGuarantee);
   }
 

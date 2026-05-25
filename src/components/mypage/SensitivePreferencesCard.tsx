@@ -96,11 +96,15 @@ export default function SensitivePreferencesCard() {
   // 같은 client-derived 의 인수는 server-derived 로 이전돼 caller 책임 0.
   const togglePregnant = () =>
     updateField("pregnant", !weddingSettings.pregnant, "pregnant");
-  // 3-state cycle (NULL → 'remarriage' → 'first' → NULL).
+  // Round 15 P0 fix — 이전 3-state cycle (NULL → remarriage → first → NULL) 가 사용자가
+  // 실제로는 초혼인데 한 번 클릭으로 'remarriage' state 거치게 강제 → set_sensitive_preference
+  // RPC 가 그 진입을 sensitive consent grant 로 audit log → 다음 클릭에 revoke. PIPA/DSAR
+  // 로그에 사용자 의도 없는 sensitive 분류 grant+revoke 기록되는 audit 오염.
+  // 2-state 로 단순화: NULL(default, 의미적 초혼) ↔ 'remarriage'. 'first' 명시 입력은
+  // 별도 segmented control 도입 시 분리.
   const toggleRemarriage = () => {
-    const cur = weddingSettings.marital_history;
-    const next: "first" | "remarriage" | null =
-      cur === null ? "remarriage" : cur === "remarriage" ? "first" : null;
+    const next: "remarriage" | null =
+      weddingSettings.marital_history === "remarriage" ? null : "remarriage";
     updateField("marital_history", next, "marital");
   };
   // has_parents_*=false 가 active(부재) 신호. 서버가 자동 도출해 consent_type 도 분리.

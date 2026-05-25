@@ -188,8 +188,13 @@ export function usePromotionalEvents(
         const filtered = mapped
           .filter((ev) => withinSchedule(ev, now))
           .filter((ev) => matchesTarget(ev, persona, style));
-        // 빈 결과(필터 후 0개 또는 DB 빈 테이블) → 핵심 4종 폴백.
-        setEvents(filtered.length > 0 ? filtered : buildFallback(isAuthenticated));
+        // Round 15 P0 fix — DB 매칭 1개라도 있을 때 4종 evergreen fallback(welcome/
+        // referral/attendance/review)이 사라지던 회귀. 페르소나 타겟 이벤트와 evergreen
+        // 둘 다 보장 — slug 로 dedupe 해서 DB 가 같은 slug 로 override 한 경우만 우선.
+        const fallback = buildFallback(isAuthenticated);
+        const dbSlugs = new Set(filtered.map((ev) => ev.slug));
+        const merged = [...filtered, ...fallback.filter((ev) => !dbSlugs.has(ev.slug))];
+        setEvents(merged);
         setError(null);
       } catch (e) {
         if (!mounted) return;

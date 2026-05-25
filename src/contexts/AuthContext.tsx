@@ -3,6 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { isNativeApp } from "@/lib/platform";
 import { signInWithOAuthNative } from "@/lib/native/oauth";
+import { resetAllSignals } from "@/lib/behavioralSignals";
 
 interface AuthContextType {
   user: User | null;
@@ -172,6 +173,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Round 15 P1 fix — behavioral signals 공유 device cross-account leak 방지.
+    // 이전 사용자가 dress/community/suit 본 신호가 다음 로그인 사용자에게 sensitive
+    // confirm card false positive 트리거되던 회귀. signOut 시 일괄 wipe.
+    resetAllSignals();
     await supabase.auth.signOut();
   };
 

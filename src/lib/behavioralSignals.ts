@@ -128,6 +128,25 @@ export function resetSignal(key: string): void {
   }
 }
 
+/** Round 15 P1 fix — signOut 시 dewy:signal:* + dewy:signal-bumped:* 일괄 wipe.
+ *  공유 device cross-account leak 방지 (이전 사용자의 sensitive 추론이 다음 사용자에게
+ *  false positive 트리거되던 회귀). PregnancyConfirmFlow stage / due-date key 등 user.id
+ *  로 namespace 된 키는 영향 없음 (그건 user 별로 격리됨). */
+export function resetAllSignals(): void {
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith(STORAGE_PREFIX) || k.startsWith("dewy:signal-bumped:"))) {
+        keys.push(k);
+      }
+    }
+    for (const k of keys) localStorage.removeItem(k);
+  } catch {
+    /* best effort */
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // DEWY 특정 신호 키 — 한 곳에서 관리해 오타·중복 방지.
 // ─────────────────────────────────────────────────────────────────────────

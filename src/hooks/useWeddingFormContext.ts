@@ -3,6 +3,14 @@ import { useBudget } from "./useBudget";
 import { BUDGET_OPTIONS_VENUE, BUDGET_OPTIONS_SDME, REGIONS as SURVEY_REGIONS } from "@/components/wedding-planner/constants";
 import { normalizeRegion } from "@/lib/regions";
 
+// Round 15 P1 fix — wedding_region_sigungu 가 있을 때 Survey 서울 4분할 옵션(강남/마포/
+// 종로) 으로 매핑. 강남 사용자가 매번 '서울 기타'로 다운그레이드되던 회귀 완화.
+const SIGUNGU_TO_SURVEY_KEY: Record<string, string> = {
+  "강남구": "강남", "서초구": "강남",
+  "마포구": "마포",
+  "종로구": "종로", "중구": "종로",
+};
+
 // Round 14 self-review P0 fix — budgetSettings.region 은 영문 key("chungnam"/"seoul" 등)
 // 로 저장됨. Survey REGIONS.searchKey 는 한글("충청남"/"서울" 등). 매핑 안 하면 단축 카드가
 // region 없이 submit. lib/regions normalizeRegion 으로 한글 풀네임("충청남도")→약자
@@ -100,7 +108,14 @@ export const useWeddingFormContext = (): WeddingFormContext => {
   // Round 14 P0 fix — Survey REGIONS.searchKey 와 매칭되는 정규화 값 반환. raw wedding_region
   // ("충청남도") 또는 budget region ("chungnam") 그대로 반환하면 모달 select 매칭 0 + 단축
   // 카드가 region 없이 submit 하는 회귀. 매칭 실패 시 null → prefill 안 함.
+  //
+  // Round 15 P1 — sigungu (강남구/마포구/종로구/서초구/중구) 우선 매핑 → Survey 의 서울
+  // 4분할 옵션(강남/마포/종로) 보존. 시군구 매칭 실패 시 시도 단위로 fallback.
+  const sigunguKey = weddingSettings.wedding_region_sigungu
+    ? SIGUNGU_TO_SURVEY_KEY[weddingSettings.wedding_region_sigungu] ?? null
+    : null;
   const normalizedRegion =
+    sigunguKey ??
     normalizeToSurveyKey(weddingSettings.wedding_region) ??
     normalizeToSurveyKey(budgetSettings?.region);
 
