@@ -73,6 +73,7 @@ const BudgetSplitSimulator = lazy(() => import("./pages/BudgetSplitSimulator"));
 const Tutorial = lazy(() => import("./pages/Tutorial"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const AccountDeletion = lazy(() => import("./pages/AccountDeletion"));
 const LocationTerms = lazy(() => import("./pages/LocationTerms"));
 const DressFitting = lazy(() => import("./pages/DressFitting"));
 const DressFittingResult = lazy(() => import("./pages/DressFittingResult"));
@@ -257,6 +258,7 @@ const App = () => (
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/dress-tour" element={<DressFitting />} />
               <Route path="/ai-studio/dress-tour/result/:id" element={<DressFittingResult />} />
