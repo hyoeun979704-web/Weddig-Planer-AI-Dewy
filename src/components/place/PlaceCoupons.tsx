@@ -22,11 +22,14 @@ const PlaceCoupons = ({ placeId }: { placeId: string }) => {
 
   const load = useCallback(async () => {
     const today = new Date().toISOString().slice(0, 10);
+    // moderation_status='approved' 명시 필터 — RLS 가 이미 차단하지만,
+    // owner 본인이 자기 가게 페이지 볼 때 자기 pending 쿠폰이 새지 않게.
     const { data } = await supabase
       .from("business_coupons" as any)
-      .select("id, title, discount_text, min_order_won, expires_at, is_active, expires_at")
+      .select("id, title, discount_text, min_order_won, expires_at, is_active")
       .eq("place_id", placeId)
       .eq("is_active", true)
+      .eq("moderation_status", "approved")
       .order("created_at", { ascending: false });
     const active = ((data ?? []) as unknown as (Coupon & { is_active: boolean })[])
       .filter((c) => !c.expires_at || c.expires_at >= today);
@@ -38,7 +41,7 @@ const PlaceCoupons = ({ placeId }: { placeId: string }) => {
         .select("coupon_id")
         .eq("user_id", user.id)
         .in("coupon_id", active.map((c) => c.id));
-      setDownloaded(new Set(((dl ?? []) as { coupon_id: string }[]).map((d) => d.coupon_id)));
+      setDownloaded(new Set(((dl ?? []) as unknown as { coupon_id: string }[]).map((d) => d.coupon_id)));
     }
   }, [placeId, user]);
 

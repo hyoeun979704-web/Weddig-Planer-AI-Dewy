@@ -41,6 +41,8 @@ interface Stats {
   // 알림
   pendingWaitlist: number;
   pendingFittings: number;
+  // 기업회원 콘텐츠 검토 대기 (Events + Coupons 합산)
+  pendingContentReview: number;
 }
 
 interface RecentItem {
@@ -115,6 +117,8 @@ const AdminDashboard = () => {
         recentFittingsRes,
         recentTxnRes,
         recentWaitlistRes,
+        pendingEventsRes,
+        pendingCouponsRes,
       ] = await Promise.all([
         (supabase as any).from("dress_samples").select("id", { count: "exact", head: true }),
         (supabase as any)
@@ -159,6 +163,15 @@ const AdminDashboard = () => {
           .select("id, service_id, created_at")
           .order("created_at", { ascending: false })
           .limit(3),
+        // 기업회원 콘텐츠 검토 대기 — events / coupons 별도 count
+        (supabase as any)
+          .from("business_events")
+          .select("id", { count: "exact", head: true })
+          .eq("moderation_status", "pending"),
+        (supabase as any)
+          .from("business_coupons")
+          .select("id", { count: "exact", head: true })
+          .eq("moderation_status", "pending"),
       ]);
 
       // 하트 거래 요약
@@ -182,6 +195,7 @@ const AdminDashboard = () => {
         heartSpent,
         pendingWaitlist: waitlistRes.count ?? 0,
         pendingFittings: pendingFittingsRes.count ?? 0,
+        pendingContentReview: (pendingEventsRes.count ?? 0) + (pendingCouponsRes.count ?? 0),
       });
 
       // 최근 활동 합치기
@@ -252,10 +266,13 @@ const AdminDashboard = () => {
     <AdminGuard>
       <AdminLayout title="운영자 대시보드" description="듀이 서비스 통계 및 빠른 진입">
         {/* 알림 배너 */}
-        {stats && (stats.pendingWaitlist > 0 || stats.pendingFittings > 0) && (
+        {stats && (stats.pendingWaitlist > 0 || stats.pendingFittings > 0 || stats.pendingContentReview > 0) && (
           <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 rounded-lg flex gap-2 items-start">
             <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-amber-900 dark:text-amber-200">
+              {stats.pendingContentReview > 0 && (
+                <div>검토 대기 중인 기업 콘텐츠 {stats.pendingContentReview}건</div>
+              )}
               {stats.pendingFittings > 0 && (
                 <div>처리 대기 중인 드레스 피팅 {stats.pendingFittings}건</div>
               )}
@@ -353,7 +370,12 @@ const AdminDashboard = () => {
               badge={stats?.pendingWaitlist}
             />
             <QuickActionCard to="/admin/business-review" label="기업회원 검토" icon={Building2} />
-            <QuickActionCard to="/admin/content-review" label="콘텐츠 검토" icon={Megaphone} />
+            <QuickActionCard
+              to="/admin/content-review"
+              label="콘텐츠 검토"
+              icon={Megaphone}
+              badge={stats?.pendingContentReview}
+            />
             <QuickActionCard to="/admin/users" label="사용자 관리" icon={Users} />
             <QuickActionCard to="/admin/reports" label="신고 처리" icon={Flag} />
             <QuickActionCard to="/" label="앱으로 돌아가기" icon={Sparkles} />
