@@ -31,14 +31,15 @@ export default defineConfig(({ mode }) => {
             start_url: "/",
             icons: [
               {
-                src: "/android-launchericon-192-192.png",
+                src: "/dewy-logo.png",
                 sizes: "192x192",
                 type: "image/png",
               },
               {
-                src: "/android-launchericon-512-512.png",
-                sizes: "512x512",
+                src: "/dewy-logo.png",
+                sizes: "500x500",
                 type: "image/png",
+                purpose: "any maskable",
               },
             ],
           },
