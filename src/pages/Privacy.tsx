@@ -206,7 +206,7 @@ const Privacy = () => {
             <li>회원 탈퇴(전체 정보 삭제)</li>
           </ul>
           <p className="mt-2">
-            권리 행사는 마이페이지 또는 help@dewy-wedding.com으로 요청 가능하며, 회사는 지체 없이
+            권리 행사는 마이페이지 또는 kheceo@dewy-wedding.com으로 요청 가능하며, 회사는 지체 없이
             처리합니다.
           </p>
         </Section>
@@ -248,7 +248,7 @@ const Privacy = () => {
               </tr>
               <tr>
                 <td className="border border-border p-2 font-semibold">이메일</td>
-                <td className="border border-border p-2">help@dewy-wedding.com</td>
+                <td className="border border-border p-2">kheceo@dewy-wedding.com</td>
               </tr>
             </tbody>
           </table>

@@ -57,7 +57,7 @@ const LocationTerms = () => {
           <ol className="list-decimal pl-5 space-y-1">
             <li>회원은 언제든지 위치기반서비스 이용에 대한 동의를 철회할 수 있습니다.</li>
             <li>회원은 자신의 위치정보 수집·이용·제공 사실의 확인 및 정정을 요청할 수 있습니다.</li>
-            <li>철회·확인·정정 요청은 마이페이지 또는 help@dewy-wedding.com을 통해 가능합니다.</li>
+            <li>철회·확인·정정 요청은 마이페이지 또는 kheceo@dewy-wedding.com을 통해 가능합니다.</li>
           </ol>
         </Section>
 
@@ -89,7 +89,7 @@ const LocationTerms = () => {
               </tr>
               <tr>
                 <td className="border border-border p-2 font-semibold">이메일</td>
-                <td className="border border-border p-2">help@dewy-wedding.com</td>
+                <td className="border border-border p-2">kheceo@dewy-wedding.com</td>
               </tr>
             </tbody>
           </table>

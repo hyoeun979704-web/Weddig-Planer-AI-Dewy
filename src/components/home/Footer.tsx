@@ -33,7 +33,7 @@ const Footer = () => {
           <p>사업자등록번호: 218-38-01132</p>
           <p>충청남도 천안시 서북구 천안대로 1446, 16층 듀이</p>
           <p>고객센터: 1588-1234 (평일 10:00~18:00)</p>
-          <p>이메일: help@dewy-wedding.com</p>
+          <p>이메일: kheceo@dewy-wedding.com</p>
         </div>
       </div>
 

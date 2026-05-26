@@ -7,7 +7,7 @@ export type ContactConfig = { email: string; kakao_url: string };
 export type AnnouncementConfig = { enabled: boolean; text: string; link: string };
 
 const DEFAULTS = {
-  contact: { email: "help@dewy-wedding.com", kakao_url: "" } as ContactConfig,
+  contact: { email: "kheceo@dewy-wedding.com", kakao_url: "" } as ContactConfig,
   announcement: { enabled: false, text: "", link: "" } as AnnouncementConfig,
 };
 

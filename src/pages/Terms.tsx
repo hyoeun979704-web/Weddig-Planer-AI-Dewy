@@ -235,7 +235,7 @@ const Terms = () => {
         </Section>
 
         <p className="mt-8 text-muted-foreground text-[12px]">
-          문의: help@dewy-wedding.com
+          문의: kheceo@dewy-wedding.com
         </p>
       </main>
 
