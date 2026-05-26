@@ -1,14 +1,18 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { ArrowRight, BookOpen, Check, Flame, Sparkles, Timer } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Flame, Sparkles, Timer, Gift } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { usePersonaInsights } from "@/hooks/usePersonaInsights";
 import { useDailyStreak } from "@/hooks/useDailyStreak";
 import { useSessionTimer } from "@/hooks/useSessionTimer";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
+import { useAttendance } from "@/hooks/useAttendance";
+import { usePoints } from "@/hooks/usePoints";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   loadMissionProgress,
   markMissionComplete,
@@ -53,6 +57,11 @@ const PersonaDashboard = () => {
   const tutorialOverall = tutorialProgress.styleProgress(weddingSettings.wedding_style);
 
   const [missionProgress, setMissionProgress] = useState(() => loadMissionProgress());
+  // 100P 보너스 RPC 가 같은 mount 안에서 중복 호출되지 않도록 가드 (DB 측 partial
+  // unique index 가 최종 가드지만 RPC 자체를 안 부르는 게 더 깔끔).
+  const claimedBonusRef = useRef(false);
+  const attendance = useAttendance();
+  const { refetch: refetchPoints } = usePoints();
 
   // 행동 신호 + 부드러운 확인 카드 — v2 §4.3 + §5.6 + §1 L4.
   // 임신 관련 콘텐츠 N회 누적 + 가입 후 3일 경과 후에만 노출.
@@ -165,7 +174,28 @@ const PersonaDashboard = () => {
 
   const handleMissionClick = (m: PersonaMission) => {
     if (!missionProgress.completedKeys.includes(m.key)) {
-      setMissionProgress(markMissionComplete(m.key));
+      const next = markMissionComplete(m.key);
+      setMissionProgress(next);
+      // 마지막 미션 완료 시 100P 보너스 RPC 호출 (idempotent — partial unique
+      // index 가 같은 KST 날짜 두 번째 INSERT 차단).
+      if (
+        next.completedKeys.length >= missions.length &&
+        !claimedBonusRef.current
+      ) {
+        claimedBonusRef.current = true;
+        void (async () => {
+          const { data, error } = await (supabase as any).rpc("claim_mission_bonus");
+          if (error) {
+            console.error("claim_mission_bonus failed", error);
+            return;
+          }
+          const row = Array.isArray(data) ? data[0] : data;
+          if (row?.claimed) {
+            toast.success(`🎉 오늘의 미션 완료! ${row.amount}P 보너스 적립`);
+            await refetchPoints();
+          }
+        })();
+      }
     }
     navigate(m.href);
   };
@@ -367,7 +397,59 @@ const PersonaDashboard = () => {
           </div>
         )}
 
-        {/* Row 4: daily missions */}
+        {/* Row 3.5: 출석 체크 — useAttendance 활용. KST 기준 1일 1회 50P + 연속 보너스. */}
+        {user && (
+          <button
+            onClick={async () => {
+              if (attendance.alreadyClaimedToday || attendance.isClaiming) return;
+              const result = await attendance.claim();
+              if (!result) {
+                toast.error("출석 처리에 실패했어요");
+                return;
+              }
+              if (!result.claimed) {
+                toast.info("오늘은 이미 출석을 완료했어요");
+                return;
+              }
+              await refetchPoints();
+              const bonusText = result.bonusAmount > 0
+                ? ` + 연속 ${result.currentStreak}일 보너스 ${result.bonusAmount}P!`
+                : "";
+              toast.success(`출석 완료! ${result.baseAmount}P 적립${bonusText}`);
+            }}
+            disabled={attendance.alreadyClaimedToday || attendance.isClaiming}
+            className={`relative mt-3 w-full flex items-center gap-3 p-3 rounded-2xl border transition-all active:scale-[0.99] text-left ${
+              attendance.alreadyClaimedToday
+                ? "bg-muted/50 border-border"
+                : "bg-gradient-to-r from-primary/15 to-primary/5 border-primary/30"
+            }`}
+          >
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+              attendance.alreadyClaimedToday ? "bg-muted-foreground/20" : "bg-primary/20"
+            }`}>
+              {attendance.alreadyClaimedToday
+                ? <Check className="w-4 h-4 text-muted-foreground" />
+                : <Flame className="w-4 h-4 text-primary" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-bold text-foreground">
+                {attendance.alreadyClaimedToday ? "오늘 출석 완료" : "오늘 출석하고 50P 받기"}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {attendance.currentStreak > 0
+                  ? `연속 ${attendance.currentStreak}일 출석 중`
+                  : "오늘부터 시작!"}
+              </p>
+            </div>
+            {!attendance.alreadyClaimedToday && (
+              <span className="text-[11px] font-bold text-primary shrink-0">받기 →</span>
+            )}
+          </button>
+        )}
+
+        {/* Row 4: daily missions — vertical stack with horizontal card layout.
+            각 카드 안에서 [체크 아이콘] | [라벨 / 힌트] 가로 배치. 카드 자체는
+            화면 너비 100% 사용해 한 줄에 하나씩 — 텍스트 잘림·가독성 회복. */}
         <div className="relative mt-3">
           <div className="flex items-center justify-between mb-1.5 px-1">
             <p className="text-[11px] font-bold text-foreground flex items-center gap-1">
@@ -376,29 +458,42 @@ const PersonaDashboard = () => {
                 <span className="text-primary">({completedMissions}/{missions.length})</span>
               )}
             </p>
+            {/* 보너스 표시 — 미완료 시 안내. */}
+            {completedMissions < missions.length && (
+              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                <Gift className="w-2.5 h-2.5 text-primary" />
+                모두 완료 시 100P
+              </span>
+            )}
           </div>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="space-y-1.5">
             {missions.map(m => {
               const done = missionProgress.completedKeys.includes(m.key);
               return (
                 <button
                   key={m.key}
                   onClick={() => handleMissionClick(m)}
-                  className={`text-left p-2 rounded-xl border transition-all active:scale-[0.97] ${
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-xl border transition-all active:scale-[0.99] text-left ${
                     done
                       ? "bg-primary/10 border-primary/30"
                       : "bg-card/80 border-border hover:border-primary/30"
                   }`}
                 >
-                  <div className="flex items-center justify-end mb-0.5 min-h-[16px]">
-                    {done && <Check className="w-3 h-3 text-primary" />}
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    done ? "bg-primary/20" : "bg-muted/60"
+                  }`}>
+                    {done
+                      ? <Check className="w-4 h-4 text-primary" />
+                      : <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />}
                   </div>
-                  <p className="text-[11px] font-semibold text-foreground leading-tight">
-                    {m.label}
-                  </p>
-                  <p className="text-[9px] text-muted-foreground leading-tight mt-0.5">
-                    {m.hint}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold text-foreground truncate">
+                      {m.label}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {m.hint}
+                    </p>
+                  </div>
                 </button>
               );
             })}

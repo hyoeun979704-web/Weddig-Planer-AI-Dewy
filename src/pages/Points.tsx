@@ -109,38 +109,58 @@ const Points = () => {
           </div>
         )}
 
-        {/* 게임 카드 */}
-        <div className="px-4 pt-4">
-          <button
-            onClick={() => navigate('/merge-game')}
-            className="w-full p-4 bg-gradient-to-r from-secondary to-accent rounded-2xl border border-border flex items-center gap-4 text-left hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
-              
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-foreground text-sm">꽃 머지 게임</p>
-              <p className="text-xs text-muted-foreground mt-0.5">게임하고 포인트 받기! 광고 시청 시 2배</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-          </button>
-        </div>
+        {/* 포인트 더 모으기 섹션 — 출석체크 외 추가 적립 경로 일괄 안내. */}
+        <div className="px-4 pt-5">
+          <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <Coins className="w-4 h-4 text-primary" />
+            포인트 더 모으기
+          </h2>
+          <div className="space-y-2">
+            {/* 미니게임 */}
+            <button
+              onClick={() => navigate('/merge-game')}
+              className="w-full p-4 bg-gradient-to-r from-secondary to-accent rounded-2xl border border-border flex items-center gap-4 text-left hover:shadow-md transition-shadow"
+            >
+              <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                <span className="text-xl">🌸</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-foreground text-sm">꽃 머지 미니게임</p>
+                <p className="text-xs text-muted-foreground mt-0.5">게임하고 포인트 받기 · 광고 시청 시 2배</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </button>
 
-        {/* 친구 초대 카드 */}
-        <div className="px-4 pt-3">
-          <button
-            onClick={() => navigate('/referral')}
-            className="w-full p-4 bg-card border border-border rounded-2xl flex items-center gap-4 text-left hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
-              
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-foreground text-sm">친구 초대하기</p>
-              <p className="text-xs text-muted-foreground mt-0.5">친구 가입 시 1,000P · 코드 입력자 500P</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-          </button>
+            {/* 커뮤니티 글 작성 */}
+            <button
+              onClick={() => navigate('/community/write')}
+              className="w-full p-4 bg-card border border-border rounded-2xl flex items-center gap-4 text-left hover:shadow-md transition-shadow"
+            >
+              <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                <span className="text-xl">✍️</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-foreground text-sm">커뮤니티 글 작성</p>
+                <p className="text-xs text-muted-foreground mt-0.5">첫 게시물·첫 댓글·첫 좋아요 보너스</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </button>
+
+            {/* 친구 초대 */}
+            <button
+              onClick={() => navigate('/referral')}
+              className="w-full p-4 bg-card border border-border rounded-2xl flex items-center gap-4 text-left hover:shadow-md transition-shadow"
+            >
+              <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                <span className="text-xl">🎁</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-foreground text-sm">친구 초대하기</p>
+                <p className="text-xs text-muted-foreground mt-0.5">친구 가입 시 1,000P · 코드 입력자 500P</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </button>
+          </div>
         </div>
 
         {/* Point History */}
