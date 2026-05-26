@@ -117,6 +117,20 @@
       BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
+  /* Capacitor 네이티브 앱 (iOS·Android) 의 상태바·하단 indicator 영역 자동 회피.
+     env(safe-area-inset-*) 가 웹에선 0 이라 영향 없음. iOS notch / Android
+     status bar 가 있는 환경에서만 실제 inset 만큼 padding 부여.
+
+     적용 대상: 화면 최상단 sticky 헤더 (HomeHeader / PageHeader / 각 페이지의
+     fixed-top 헤더). 페이지 중간의 sticky 요소 (CategoryTabBar 등) 는 영향
+     받지 않도록 [data-safe-area-skip] 으로 opt-out 가능. */
+  header.sticky.top-0:not([data-safe-area-skip]) {
+    padding-top: env(safe-area-inset-top);
+  }
+  nav.fixed.bottom-0:not([data-safe-area-skip]) {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
   .font-logo {
     /* Figma 'Geom' substitute — rounded geometric sans */
     font-family: "Poppins", "SUITE Variable", sans-serif;

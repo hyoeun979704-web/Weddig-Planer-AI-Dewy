@@ -53,7 +53,11 @@ const PageHeader = ({
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border">
+      {/* pt-safe — Capacitor 앱 상단 상태바 영역 침범 방지 (env() 는 웹에서 0). */}
+      <header
+        className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <div className="flex items-center justify-between px-4 h-14">
           {/* Back + Title (좌측 정렬) */}
           <div className="flex items-center gap-1 min-w-0">

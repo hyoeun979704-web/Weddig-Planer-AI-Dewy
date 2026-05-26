@@ -112,10 +112,15 @@ interface BottomNavProps {
   onTabChange?: (href: string) => void;
 }
 
+// pb-safe — iPhone home indicator (하단 흰 막대) 와 콘텐츠 겹침 방지.
+// Capacitor 앱에서 env() 가 실제 inset 값, 웹에서는 0.
 const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border">
-      <div className="max-w-[430px] mx-auto flex justify-around items-center h-16 px-2 safe-area-inset-bottom">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="max-w-[430px] mx-auto flex justify-around items-center h-16 px-2">
         {navItems.map(({ Icon, ...item }) => {
           const isActive = activeTab === item.href;
           return (
