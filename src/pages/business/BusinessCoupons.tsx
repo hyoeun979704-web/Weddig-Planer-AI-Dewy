@@ -16,9 +16,17 @@ interface Coupon {
   min_order_won: number | null;
   expires_at: string | null;
   is_active: boolean;
+  moderation_status: string;
+  moderation_note: string | null;
 }
 
-// 업체 쿠폰 발행/관리. 운영자 검토 면제 — 저장 즉시 노출.
+const STATUS: Record<string, { label: string; color: string }> = {
+  approved: { label: "노출중", color: "bg-green-100 text-green-700" },
+  pending: { label: "검토 중", color: "bg-amber-100 text-amber-700" },
+  rejected: { label: "반려됨", color: "bg-destructive/10 text-destructive" },
+};
+
+// 업체 쿠폰 발행/관리. 운영자 검토 필수 — 저장 시 검토 대기, 승인 시 노출.
 const BusinessCoupons = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -35,7 +43,7 @@ const BusinessCoupons = () => {
   const loadCoupons = useCallback(async (pid: string) => {
     const { data } = await supabase
       .from("business_coupons" as any)
-      .select("id, title, discount_text, min_order_won, expires_at, is_active")
+      .select("id, title, discount_text, min_order_won, expires_at, is_active, moderation_status, moderation_note")
       .eq("place_id", pid)
       .order("created_at", { ascending: false });
     setItems((data ?? []) as unknown as Coupon[]);
@@ -78,7 +86,7 @@ const BusinessCoupons = () => {
     setAdding(false);
     if (error) { toast.error("발행에 실패했어요"); return; }
     setTitle(""); setDiscount(""); setMinOrder(""); setExpires("");
-    toast.success("쿠폰을 발행했어요");
+    toast.success("쿠폰을 등록했어요. 운영자 검토 후 노출됩니다");
     await loadCoupons(placeId);
   };
 
@@ -110,8 +118,8 @@ const BusinessCoupons = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto">
       <PageHeader title="쿠폰 관리" />
       <main className="p-4 pb-24 space-y-5">
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-[12px] text-emerald-800">
-          쿠폰은 운영자 검토 없이 <b>즉시 노출</b>돼요.
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800">
+          쿠폰은 <b>운영자 검토 후 노출</b>됩니다. (보통 1영업일 이내)
         </div>
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -145,23 +153,32 @@ const BusinessCoupons = () => {
           <p className="text-center text-sm text-muted-foreground py-8">발행한 쿠폰이 없어요</p>
         ) : (
           <div className="space-y-3">
-            {items.map((c) => (
-              <div key={c.id} className="bg-card rounded-2xl border border-border p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-bold text-foreground">{c.title}</p>
-                    <p className="text-sm text-primary font-semibold mt-0.5">{c.discount_text}</p>
-                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-1">
-                      {c.min_order_won != null && <span>최소 {c.min_order_won.toLocaleString()}원</span>}
-                      {c.expires_at && <span className="flex items-center gap-0.5"><Calendar className="w-3 h-3" />{fmtDate(c.expires_at)}까지</span>}
+            {items.map((c) => {
+              const st = STATUS[c.moderation_status] ?? STATUS.pending;
+              return (
+                <div key={c.id} className="bg-card rounded-2xl border border-border p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-bold text-foreground">{c.title}</p>
+                      <p className="text-sm text-primary font-semibold mt-0.5">{c.discount_text}</p>
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-1">
+                        {c.min_order_won != null && <span>최소 {c.min_order_won.toLocaleString()}원</span>}
+                        {c.expires_at && <span className="flex items-center gap-0.5"><Calendar className="w-3 h-3" />{fmtDate(c.expires_at)}까지</span>}
+                      </div>
+                      {c.moderation_status === "rejected" && c.moderation_note && (
+                        <p className="text-[11px] text-destructive mt-1 whitespace-pre-line">반려 사유: {c.moderation_note}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <span className={`text-[11px] px-2 py-1 rounded-full ${st.color}`}>{st.label}</span>
+                      <button onClick={() => handleDelete(c.id)} className="text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(c.id)} className="text-destructive shrink-0">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
