@@ -90,6 +90,8 @@ const InvitationViewer = lazy(() => import("./pages/invitation/InvitationViewer"
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
 const AdminContentReview = lazy(() => import("./pages/admin/AdminContentReview"));
+const AdminPlaceEdit = lazy(() => import("./pages/admin/AdminPlaceEdit"));
+const AdminPlaces = lazy(() => import("./pages/admin/AdminPlaces"));
 const AdminMakeupSamples = lazy(() => import("./pages/admin/AdminMakeupSamples"));
 const AdminInvitationTemplates = lazy(() => import("./pages/admin/AdminInvitationTemplates"));
 const AdminInvitationAssets = lazy(() => import("./pages/admin/AdminInvitationAssets"));
@@ -278,6 +280,8 @@ const App = () => (
                   내용을 보는 것을 막는다. */}
               <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
               <Route path="/admin/content-review" element={<AdminGuard><AdminContentReview /></AdminGuard>} />
+              <Route path="/admin/places" element={<AdminGuard><AdminPlaces /></AdminGuard>} />
+              <Route path="/admin/places/:id" element={<AdminGuard><AdminPlaceEdit /></AdminGuard>} />
               <Route path="/admin/dress-samples" element={<AdminGuard><AdminDressSamples /></AdminGuard>} />
               <Route path="/admin/makeup-samples" element={<AdminGuard><AdminMakeupSamples /></AdminGuard>} />
               <Route path="/admin/invitation-templates" element={<AdminGuard><AdminInvitationTemplates /></AdminGuard>} />
