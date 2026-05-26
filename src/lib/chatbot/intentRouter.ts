@@ -312,7 +312,7 @@ const PATTERNS: IntentPattern[] = [
     intent: "contact",
     patterns: [/문의|연락|이메일|메일|고객.*센터|cs/i],
     staticReply:
-      "고객 문의는 다음 채널로 받고 있어요 \n\n• 이메일: help@dewy-wedding.com\n• 1:1 문의: [고객센터](/contact)\n• FAQ: [자주 묻는 질문](/faq)\n\n결혼 준비 관련 질문은 저(듀이)에게 바로 물어봐 주셔도 돼요 ",
+      "고객 문의는 다음 채널로 받고 있어요 \n\n• 이메일: kheceo@dewy-wedding.com\n• 1:1 문의: [고객센터](/contact)\n• FAQ: [자주 묻는 질문](/faq)\n\n결혼 준비 관련 질문은 저(듀이)에게 바로 물어봐 주셔도 돼요 ",
   },
 
   // ════════════════════════════════════════════════════════════

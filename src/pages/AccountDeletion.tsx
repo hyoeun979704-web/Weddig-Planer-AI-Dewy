@@ -57,10 +57,10 @@ const AccountDeletion = () => {
           <div className="mt-3 p-3 bg-muted/40 rounded-lg">
             <p className="font-semibold mb-1">담당자 이메일</p>
             <a
-              href="mailto:hyoeun979704@gmail.com?subject=Dewy%20계정%20삭제%20요청"
+              href="mailto:kheceo@dewy-wedding.com?subject=Dewy%20계정%20삭제%20요청"
               className="text-primary underline break-all"
             >
-              hyoeun979704@gmail.com
+              kheceo@dewy-wedding.com
             </a>
             <p className="mt-3 text-[12px] text-muted-foreground">
               메일 제목: <em>Dewy 계정 삭제 요청</em>
