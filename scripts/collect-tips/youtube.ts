@@ -23,6 +23,13 @@ export interface YouTubeVideoStats {
   viewCount: number;
   likeCount: number;
   durationSeconds: number;
+  // Round 21 — videos.list 의 snippet.tags 추가 (creator 가 SEO 위해 단 자가-태그).
+  // RSS / search.list 의 snippet 보다 풍부한 키워드 시그널. videos.list 비용은
+  // part 개수 무관 1 unit 고정이라 추가 비용 0.
+  tags: string[];
+  // snippet.description 전체 (cap 없음). search.list snippet 의 description 은
+  // 짧지만 videos.list 의 것은 full text. 분류 입력 토큰량 ~5배 증가 → 정확도 ↑.
+  fullDescription: string;
 }
 
 interface SearchResponse {
@@ -46,6 +53,10 @@ interface SearchResponse {
 interface VideosResponse {
   items: Array<{
     id: string;
+    snippet?: {
+      tags?: string[];
+      description?: string;
+    };
     statistics?: {
       viewCount?: string;
       likeCount?: string;
@@ -125,7 +136,9 @@ export async function fetchVideoStats(
     const batch = videoIds.slice(i, i + 50);
     const params = new URLSearchParams({
       key: apiKey,
-      part: "statistics,contentDetails",
+      // Round 21 — snippet 추가 (tags + full description). videos.list 비용은
+      // part 개수와 무관하게 1 unit/call 이라 추가 비용 0.
+      part: "snippet,statistics,contentDetails",
       id: batch.join(","),
     });
     const res = await fetch(`${VIDEOS_ENDPOINT}?${params.toString()}`);
@@ -140,6 +153,8 @@ export async function fetchVideoStats(
         viewCount: +(it.statistics?.viewCount ?? 0),
         likeCount: +(it.statistics?.likeCount ?? 0),
         durationSeconds: parseIsoDuration(it.contentDetails?.duration ?? ""),
+        tags: it.snippet?.tags ?? [],
+        fullDescription: it.snippet?.description ?? "",
       });
     }
   }

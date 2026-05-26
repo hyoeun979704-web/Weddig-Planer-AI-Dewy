@@ -31,11 +31,38 @@ const backfillMarketingConsent = async (user: User) => {
 
   if (typeof consent !== "boolean") {
     // 소셜 가입 fallback — Auth 화면이 보관한 pending 값.
+    // Round 22 — JSON + timestamp 형식 (Auth.tsx 의 write 강화 호환). 24시간 후
+    // stale 값은 무시 — 잠재적으로 다른 탭/다른 가입 시도의 잔재가 적용되는 것 방지.
+    // 구 형식 ("1"/"0" raw string) backward compat 도 함께 처리.
     try {
-      const pending = localStorage.getItem(PENDING_MARKETING_KEY);
-      if (pending === "1" || pending === "0") {
-        consent = pending === "1";
-        agreedAt = new Date().toISOString();
+      const raw = localStorage.getItem(PENDING_MARKETING_KEY);
+      if (raw) {
+        let pendingValue: string | null = null;
+        let pendingTs: number | null = null;
+        if (raw === "1" || raw === "0") {
+          // 구 형식 (Round 21 이전). timestamp 없음 → 그대로 신뢰.
+          pendingValue = raw;
+        } else {
+          try {
+            const parsed = JSON.parse(raw) as { value?: string; ts?: number };
+            if (parsed && typeof parsed.value === "string") {
+              pendingValue = parsed.value;
+              pendingTs = typeof parsed.ts === "number" ? parsed.ts : null;
+            }
+          } catch {
+            // malformed — 그대로 무시 후 정리.
+          }
+        }
+        const STALE_MS = 24 * 60 * 60 * 1000;
+        const isFresh =
+          pendingTs === null || Date.now() - pendingTs < STALE_MS;
+        if (isFresh && (pendingValue === "1" || pendingValue === "0")) {
+          consent = pendingValue === "1";
+          agreedAt = new Date().toISOString();
+        } else if (!isFresh) {
+          // stale — 정리만 하고 패스.
+          try { localStorage.removeItem(PENDING_MARKETING_KEY); } catch { /* noop */ }
+        }
       }
     } catch {
       // ignore

@@ -13,6 +13,15 @@ interface TutorialOverlayProps {
   onSkip: () => void;
 }
 
+// Round 17 P0 — viewport margin 계산에 sticky bottom-nav 높이 (64px) + safe-area 반영.
+// tooltip 이 BottomNav 뒤에 안 가도록.
+const BOTTOM_NAV_HEIGHT = 64;
+
+// Round 17 P0 — targetSelector miss 시 retry. lazy mount / skeleton 동안 발화될 수 있음.
+// 5회 × 200ms = 최대 1초 안에 element 안 나타나면 onSkip (회색 풀스크린 어둠 회피).
+const TARGET_RETRY_MAX = 5;
+const TARGET_RETRY_INTERVAL_MS = 200;
+
 const TutorialOverlay = ({
   isActive,
   currentStep,
@@ -24,7 +33,9 @@ const TutorialOverlay = ({
 }: TutorialOverlayProps) => {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [tooltipRect, setTooltipRect] = useState<{ width: number; height: number }>({ width: 300, height: 200 });
+  const [targetMissing, setTargetMissing] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const retryRef = useRef(0);
 
   // Measure tooltip after render
   useEffect(() => {
@@ -33,7 +44,6 @@ const TutorialOverlay = ({
       const r = tooltipRef.current?.getBoundingClientRect();
       if (r) setTooltipRect({ width: r.width, height: r.height });
     };
-    // Measure after animation settles
     const t = setTimeout(measure, 50);
     return () => clearTimeout(t);
   }, [currentStepIndex, isActive]);
@@ -42,26 +52,64 @@ const TutorialOverlay = ({
     if (!currentStep) return;
     const el = document.querySelector(currentStep.targetSelector);
     if (el) {
-      // First scroll into view
+      setTargetMissing(false);
+      retryRef.current = 0;
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      // Then re-measure after scroll completes
       const measure = () => {
         const rect = el.getBoundingClientRect();
         setTargetRect(rect);
       };
-      // Measure immediately and again after scroll settles
       measure();
       setTimeout(measure, 400);
-    } else {
-      setTargetRect(null);
+      return true;
     }
+    return false;
   }, [currentStep]);
 
+  // Round 17 P0 fix — target retry. lazy mount / async skeleton 동안 element 없을 수 있음.
   useEffect(() => {
     if (!isActive || !currentStep) return;
-    const timer = setTimeout(findAndSetTarget, 150);
-    return () => clearTimeout(timer);
+    retryRef.current = 0;
+    setTargetMissing(false);
+    setTargetRect(null);
+
+    let cancelled = false;
+    const attempt = () => {
+      if (cancelled) return;
+      const found = findAndSetTarget();
+      if (found) return;
+      retryRef.current += 1;
+      if (retryRef.current >= TARGET_RETRY_MAX) {
+        setTargetMissing(true);
+        return;
+      }
+      setTimeout(attempt, TARGET_RETRY_INTERVAL_MS);
+    };
+    const initial = setTimeout(attempt, 150);
+    return () => {
+      cancelled = true;
+      clearTimeout(initial);
+    };
   }, [isActive, currentStep, findAndSetTarget]);
+
+  // Round 17 P0 a11y — ESC=skip / ArrowRight=next / ArrowLeft=prev 키보드 네비게이션.
+  useEffect(() => {
+    if (!isActive) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onSkip();
+      } else if (e.key === "ArrowRight" || e.key === "Enter") {
+        e.preventDefault();
+        onNext();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        onPrev();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isActive, onNext, onPrev, onSkip]);
 
   if (!isActive || !currentStep) return null;
 
@@ -69,7 +117,6 @@ const TutorialOverlay = ({
   const isFirstStep = currentStepIndex === 0;
   const padding = 8;
 
-  // Calculate tooltip position
   const getTooltipStyle = (): React.CSSProperties => {
     if (!targetRect) {
       return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
@@ -80,22 +127,22 @@ const TutorialOverlay = ({
     const tH = tooltipRect.height;
     const gap = 12;
     const margin = 16;
+    // Round 17 — BottomNav 가 화면 하단 64px 고정. tooltip 하단 clamp 시 그만큼 빼야
+    // BottomNav 뒤로 안 숨음. SafeArea-inset-bottom 도 함께.
+    const bottomReserved = BOTTOM_NAV_HEIGHT + margin;
 
     let top = 0;
     let left = 0;
 
-    // Horizontal centering relative to target
     left = targetRect.left + targetRect.width / 2 - tW / 2;
 
     if (pos === "bottom") {
       top = targetRect.bottom + gap;
-      // If tooltip goes below viewport, flip to top
-      if (top + tH > window.innerHeight - margin) {
+      if (top + tH > window.innerHeight - bottomReserved) {
         top = targetRect.top - gap - tH;
       }
     } else if (pos === "top") {
       top = targetRect.top - gap - tH;
-      // If tooltip goes above viewport, flip to bottom
       if (top < margin) {
         top = targetRect.bottom + gap;
       }
@@ -107,15 +154,48 @@ const TutorialOverlay = ({
       left = targetRect.left - gap - tW;
     }
 
-    // Final clamp to viewport
-    top = Math.max(margin, Math.min(top, window.innerHeight - tH - margin));
+    top = Math.max(margin, Math.min(top, window.innerHeight - tH - bottomReserved));
     left = Math.max(margin, Math.min(left, window.innerWidth - tW - margin));
 
     return { position: "fixed", top, left };
   };
 
+  // Round 17 P0 — target 못 찾고 retry 다 소진 시 자동 skip + 안내.
+  if (targetMissing) {
+    return (
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tut-missing-title"
+      >
+        <div className="bg-card rounded-2xl shadow-xl border border-border p-5 max-w-[300px] mx-4">
+          <h3 id="tut-missing-title" className="text-base font-bold text-foreground mb-1.5">
+            안내를 표시할 수 없어요
+          </h3>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+            화면이 아직 준비 중이거나 해당 영역이 보이지 않아요. 잠시 후 다시 시도하거나
+            마이페이지의 가이드 메뉴에서 다시 시작할 수 있어요.
+          </p>
+          <button
+            onClick={onSkip}
+            className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
+          >
+            닫기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-[9999]">
+    <div
+      className="fixed inset-0 z-[9999]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tut-step-title"
+      aria-describedby="tut-step-desc"
+    >
       {/* Overlay with cutout */}
       <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: "none" }}>
         <defs>
@@ -153,8 +233,45 @@ const TutorialOverlay = ({
         />
       )}
 
-      {/* Click catcher */}
-      <div className="absolute inset-0" onClick={onNext} />
+      {/* Round 17 P0 — Click catcher 변경: cutout 외부(dim 영역) 만 click-to-next.
+          cutout 안쪽은 pointer-events 통과 안 함 → 사용자가 강조된 요소 직접 클릭 가능.
+          SVG 4분할 dim 영역(target 위/아래/좌/우)에만 onClick. interactive step 학습 지원. */}
+      {targetRect ? (
+        <>
+          <div
+            className="absolute"
+            style={{ left: 0, top: 0, right: 0, height: Math.max(0, targetRect.top - padding) }}
+            onClick={onNext}
+          />
+          <div
+            className="absolute"
+            style={{ left: 0, top: targetRect.bottom + padding, right: 0, bottom: 0 }}
+            onClick={onNext}
+          />
+          <div
+            className="absolute"
+            style={{
+              left: 0,
+              top: Math.max(0, targetRect.top - padding),
+              width: Math.max(0, targetRect.left - padding),
+              height: targetRect.height + padding * 2,
+            }}
+            onClick={onNext}
+          />
+          <div
+            className="absolute"
+            style={{
+              left: targetRect.right + padding,
+              top: Math.max(0, targetRect.top - padding),
+              right: 0,
+              height: targetRect.height + padding * 2,
+            }}
+            onClick={onNext}
+          />
+        </>
+      ) : (
+        <div className="absolute inset-0" onClick={onNext} />
+      )}
 
       {/* Tooltip card + skip */}
       <div
@@ -164,7 +281,6 @@ const TutorialOverlay = ({
         className="fixed z-[10000] w-[300px] animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
       >
         <div className="bg-card rounded-2xl shadow-xl border border-border p-5">
-          {/* Step indicator */}
           <div className="flex items-center gap-1.5 mb-3">
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div
@@ -184,8 +300,10 @@ const TutorialOverlay = ({
             </span>
           </div>
 
-          <h3 className="text-base font-bold text-foreground mb-1.5">{currentStep.title}</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+          <h3 id="tut-step-title" className="text-base font-bold text-foreground mb-1.5">
+            {currentStep.title}
+          </h3>
+          <p id="tut-step-desc" className="text-sm text-muted-foreground leading-relaxed mb-4">
             {currentStep.description}
           </p>
 
@@ -193,6 +311,7 @@ const TutorialOverlay = ({
             <button
               onClick={onPrev}
               disabled={isFirstStep}
+              aria-label="이전 단계"
               className={cn(
                 "flex items-center gap-1 text-sm px-3 py-1.5 rounded-lg transition-colors",
                 isFirstStep
@@ -204,6 +323,8 @@ const TutorialOverlay = ({
             </button>
             <button
               onClick={onNext}
+              aria-label={isLastStep ? "튜토리얼 완료" : "다음 단계"}
+              autoFocus
               className="flex items-center gap-1 text-sm px-4 py-1.5 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
             >
               {isLastStep ? "완료" : "다음"} {!isLastStep && <ChevronRight className="w-4 h-4" />}
@@ -211,10 +332,10 @@ const TutorialOverlay = ({
           </div>
         </div>
 
-        {/* Skip button below tooltip */}
         <div className="flex justify-center mt-2">
           <button
             onClick={(e) => { e.stopPropagation(); onSkip(); }}
+            aria-label="튜토리얼 건너뛰기"
             className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-card/90 backdrop-blur-sm text-muted-foreground text-xs border border-border hover:bg-card transition-colors"
           >
             건너뛰기 <X className="w-3 h-3" />

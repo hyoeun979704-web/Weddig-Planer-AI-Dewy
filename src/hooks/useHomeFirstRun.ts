@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
 import { HOME_POPUP_DISMISS_KEY } from "@/components/home/HomeEntryPopup";
+import { isOnboarded } from "@/lib/onboarding";
 
 const WEDDING_INFO_DISMISS_KEY = "dewy:wedding-info-modal:dismissed";
 
@@ -44,19 +45,16 @@ export function useHomeFirstRun() {
 
   const homeTourDone = progress.isCompleted("home-tour");
 
-  const onboarded = useMemo(() => {
-    const hasDate =
-      !!weddingSettings.wedding_date || weddingSettings.wedding_date_tbd;
-    const hasRegion =
-      !!weddingSettings.wedding_region || weddingSettings.wedding_region_tbd;
-    return (hasDate && hasRegion) || !!weddingSettings.planning_stage;
-  }, [
-    weddingSettings.wedding_date,
-    weddingSettings.wedding_region,
-    weddingSettings.wedding_date_tbd,
-    weddingSettings.wedding_region_tbd,
-    weddingSettings.planning_stage,
-  ]);
+  const onboarded = useMemo(
+    () => isOnboarded(weddingSettings),
+    [
+      weddingSettings.wedding_date,
+      weddingSettings.wedding_region,
+      weddingSettings.wedding_date_tbd,
+      weddingSettings.wedding_region_tbd,
+      weddingSettings.planning_stage,
+    ],
+  );
 
   useEffect(() => {
     if (stages) return; // 한 번만 계산

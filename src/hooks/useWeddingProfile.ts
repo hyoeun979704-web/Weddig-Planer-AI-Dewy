@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useBudget } from "@/hooks/useBudget";
 import type { WeddingStyle } from "@/lib/weddingStyle";
+import type { WeddingPersonaMode } from "@/lib/weddingPersona";
 
 export interface WeddingProfilePrefill {
   weddingDate: string;        // YYYY-MM-DD, "" if unset
@@ -13,6 +14,12 @@ export interface WeddingProfilePrefill {
   displayName: string;         // logged-in user's display name (profiles)
   partnerName: string;         // partner name from wedding settings
   weddingStyle: WeddingStyle;  // general | small | self | custom, "general" if unset
+  /**
+   * 자동 추론 + 사용자 override 결합한 페르소나 식별자. tipCuration 등 큐레이션
+   * 단계에서 비표준 사용자 (pregnancy/remarriage/international/self_no_ceremony 등)
+   * 의 카테고리 boost 에 사용. null = 아직 추론 불가 (온보딩 미완).
+   */
+  personaMode: WeddingPersonaMode | null;
   // Schedule-side category slugs the user opted out of (e.g. ["studio",
   // "dress_shop", "makeup_shop"] for a self-wedding). Drives hiding logic
   // in Schedule, Budget, Home and Tips so the user only sees prep work
@@ -89,6 +96,7 @@ export const useWeddingProfile = (): WeddingProfilePrefill => {
     displayName,
     partnerName: weddingSettings.partner_name ?? "",
     weddingStyle: weddingSettings.wedding_style ?? "general",
+    personaMode: (weddingSettings.persona_mode as WeddingPersonaMode | null) ?? null,
     excludedCategories: weddingSettings.excluded_categories ?? [],
     completedCategories,
     isLoaded: !weddingLoading && profileLoaded,

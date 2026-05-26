@@ -1,6 +1,7 @@
 import type { TipVideo } from "@/hooks/useTipVideos";
 import type { WeddingProfilePrefill } from "@/hooks/useWeddingProfile";
 import type { WeddingStyle } from "@/lib/weddingStyle";
+import type { WeddingPersonaMode } from "@/lib/weddingPersona";
 
 // Korean wedding planning timeline: couples typically book vendors in this
 // order. Each phase boosts the categories that are most relevant *right now*
@@ -21,11 +22,57 @@ const PHASE_BOOSTS: ReadonlyArray<{
   { minDays: -Infinity, maxDays: 0, categories: ["honeymoon", "general"] },
 ];
 
-// Hint values are stored already-lowercased (matching uses a lowercased
-// haystack), so Korean tokens look unchanged while English ones are flat.
+// Round 19 — PHASE_BOOSTS 사각지대 (ceremony 221건 / newlywed_home 108 / bridal_care 65
+// / family_meeting 32 / legal_paperwork 20 — 코퍼스의 ~50%) 가 어느 phase 에서도 부스트
+// 못 받아 순수 viewcount 로만 떠올라 페르소나 부적합 콘텐츠 상위 노출 회귀 (시뮬레이션
+// S3 셀프웨딩 user 가 신혼집 7/10 받은 사례). 결혼 준비 D-day 와 의미상 광범위하게 관련된
+// 카테고리들 cross-phase 부스트 별도 정의. phaseCategoriesFor 가 두 set 의 union 반환.
+const CROSS_PHASE_BOOSTS: ReadonlyArray<{
+  minDays: number;
+  maxDays: number;
+  categories: ReadonlyArray<string>;
+}> = [
+  // 신혼집 — 결혼 준비 전반 광범위 관련 (계약·인테리어·가구 6개월+ 소요 가능).
+  { minDays: -90, maxDays: Infinity, categories: ["newlywed_home"] },
+  // 결혼식 진행 — 식 4개월 전부터 식 당일까지 (식순/혼주 한복/축의/혼인신고 등).
+  { minDays: 0, maxDays: 120, categories: ["ceremony"] },
+  // 신부 관리 — 식 3개월 전부터 식 후 1개월까지 (다이어트·피부·시술).
+  { minDays: -30, maxDays: 90, categories: ["bridal_care"] },
+  // 상견례 — 식 5개월 ~ 1개월 전 (상견례 시기).
+  { minDays: 30, maxDays: 150, categories: ["family_meeting"] },
+  // 혼인신고 — 식 임박 + 식 후.
+  { minDays: -30, maxDays: 60, categories: ["legal_paperwork"] },
+  // 예단·예물 — 식 4개월 ~ 1개월 전.
+  { minDays: 30, maxDays: 120, categories: ["wedding_gifts"] },
+];
+
+// Round 22 — 페르소나(비표준 사용자) 카테고리 boost.
+//
+// queries.ts 의 Round 20 페르소나 5종 카테고리 (pregnancy_wedding,
+// remarriage_family, international_wedding, self_no_ceremony, groom_focus)
+// 는 tipClassify 로 잘 분류되지만, 큐레이션 단에서 booster 없으면 일반 viewcount
+// 정렬에 묻혀 정작 페르소나 user 가 자기 카테고리 영상을 못 보는 회귀.
+//
+// 각 persona_mode 는 자기 영역의 카테고리에 PERSONA_BOOST 점수 부여. STYLE_HINTS
+// 와 직교적으로 동작 (페르소나 영상 = 결혼 스타일과 무관하게 신호 강함).
+const PERSONA_CATEGORY_BOOSTS: Partial<Record<WeddingPersonaMode, ReadonlyArray<string>>> = {
+  pregnancy: ["pregnancy_wedding"],
+  remarriage: ["remarriage_family"],
+  international: ["international_wedding"],
+  remote_overseas: ["international_wedding"],
+  self_no_ceremony: ["self_no_ceremony", "ceremony", "legal_paperwork"],
+  no_wedding_travel: ["self_no_ceremony", "ceremony"],
+  snap_only: ["studio", "self_no_ceremony"],
+  // standard_groom: "신랑이 챙길 일" 류 영상 (groom_focus) 우대. queries.ts 의
+  // groom_focus seed 가 이걸 수집하지만 boost 가 없으면 popularity 정렬에 묻힘.
+  standard_groom: ["groom_focus", "tailor_shop"],
+};
+
+// Round 19 — 사전 확장 (시뮬레이션 P3: small 1.6%, self 4.3% hit rate 너무 낮음).
+// 자주 쓰이는 동의어/변형 추가 → small/self user 가 자기 정체성 콘텐츠 더 자주 만남.
 const STYLE_HINTS: Record<WeddingStyle, ReadonlyArray<string>> = {
-  small: ["스몰", "스몰웨딩", "하우스", "한옥", "small"],
-  self: ["셀프", "직접", "self", "diy"],
+  small: ["스몰", "스몰웨딩", "하우스", "한옥", "small", "소규모", "가족웨딩", "직계만", "하우스웨딩", "10명", "20명", "30명"],
+  self: ["셀프", "직접", "self", "diy", "셀프웨딩", "셀프촬영", "직접만든", "노웨딩"],
   general: [],
   custom: [],
 };
@@ -36,18 +83,19 @@ const STYLE_HINTS: Record<WeddingStyle, ReadonlyArray<string>> = {
 // the user can still find the video by search, but it won't dominate
 // their default feed.
 //
-// Only "general" is populated: small/self users already have positive
-// style hints (+ exclusion penalty) doing the work, and our corpus has
-// almost no hotel/premium-tagged content for "small" opposites anyway.
-// A general-wedding user has no positive style hint (general is the
-// unmarked default), so without this signal a viral 셀프웨딩 video can
-// outrank standard wedding-prep content purely on popularity.
+// Round 19 — 토큰 정규화 (normalizeTok) 로 공백/하이픈 변형까지 매칭 ('셀프 웨딩' 도
+// '셀프웨딩' 으로 normalize 되어 매칭). 시뮬레이션 P2: 이전엔 '셀프 웨딩' 공백 변형이
+// hit 안 돼 셀프 웨딩드레스 영상이 general user top10 에 침투했던 회귀.
 const STYLE_OPPOSITE_HINTS: Record<WeddingStyle, ReadonlyArray<string>> = {
-  general: ["셀프웨딩", "diy 웨딩", "스몰웨딩"],
+  general: ["셀프웨딩", "diy웨딩", "스몰웨딩"],
   small: [],
   self: [],
   custom: [],
 };
+
+/** 공백/하이픈/언더스코어 제거 + 소문자. 토큰 사전과 haystack 양쪽에 적용해 변형 매칭. */
+const normalizeTok = (s: string): string =>
+  s.toLowerCase().replace(/[\s\-_]/g, "");
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -61,7 +109,12 @@ export function daysUntilWedding(dateStr: string, now: number = Date.now()): num
 export function phaseCategoriesFor(days: number | null): ReadonlyArray<string> {
   if (days === null) return [];
   const phase = PHASE_BOOSTS.find((p) => days >= p.minDays && days < p.maxDays);
-  return phase?.categories ?? [];
+  // Round 19 — cross-phase 카테고리 union. dedupe 위해 Set.
+  const cross = CROSS_PHASE_BOOSTS
+    .filter((c) => days >= c.minDays && days < c.maxDays)
+    .flatMap((c) => c.categories);
+  const all = new Set<string>([...(phase?.categories ?? []), ...cross]);
+  return Array.from(all);
 }
 
 export interface CurationFactors {
@@ -79,6 +132,10 @@ export interface CurationFactors {
   // demoted — still findable, but they shouldn't dominate the feed when
   // the work is behind the user. See COMPLETED_PENALTY.
   completedCategories: ReadonlyArray<string>;
+  // Round 22 — 페르소나 매칭 카테고리. PERSONA_BOOST 만큼 score 가산. 표준
+  // 페르소나 (standard_bride / standard_groom 등) 는 비어있어 phase + style
+  // 만으로 결정 — 회귀 없음.
+  personaCategories: ReadonlyArray<string>;
   hasSignal: boolean; // false → fall back to popularity sort
 }
 
@@ -102,14 +159,18 @@ export function buildCurationFactors(
   // needed — TS guarantees the lookup is total.
   const style = STYLE_HINTS[profile.weddingStyle];
   const opposite = STYLE_OPPOSITE_HINTS[profile.weddingStyle];
+  // 페르소나 매칭 — null 이거나 PERSONA_CATEGORY_BOOSTS 에 없는 표준 페르소나는 [].
+  const personaCategories =
+    (profile.personaMode && PERSONA_CATEGORY_BOOSTS[profile.personaMode]) ?? [];
   return {
     phaseCategories: phase,
     styleHints: style,
     oppositeHints: opposite,
     excludedCategories: excluded,
     completedCategories: completed,
+    personaCategories,
     // Personalization activates only when the user has expressed a
-    // preference (date, style, exclusions, or completed schedule items).
+    // preference (date, style, exclusions, completed schedule, or persona).
     // Opposite hints are a *modifier* on existing ranking — they fire
     // when something else already triggers scoring, but on their own
     // they shouldn't override popularity for a brand-new profile that
@@ -118,7 +179,8 @@ export function buildCurationFactors(
       phase.length > 0 ||
       style.length > 0 ||
       excluded.length > 0 ||
-      completed.length > 0,
+      completed.length > 0 ||
+      personaCategories.length > 0,
   };
 }
 
@@ -143,6 +205,13 @@ const OPPOSITE_HINT_PENALTY = -0.3;
 // EXCLUDED_PENALTY so a viral completed-category video can still rise
 // above an obscure unrelated one (the work is done, not unwanted).
 const COMPLETED_PENALTY = -0.8;
+
+// Round 22 — 페르소나 매칭 카테고리에 강한 boost. phase boost (0.9) + 일반적
+// popularity 차이(~0.2-0.3) 도 넘기게 1.5 로 설정. 페르소나 user (임신·재혼·국제결혼
+// 등) 는 자기 영역 컨텐츠를 최우선으로 보길 기대하므로 강하게 잡음.
+// 표준 페르소나 (standard_bride 등) 는 personaCategories=[] 라 영향 없음.
+const PERSONA_BOOST_PRIMARY = 1.5;
+const PERSONA_BOOST_SECONDARY = 0.7;
 
 // Higher score = more relevant. Popularity is log-normalized so a 10M-view
 // video can still lose to a 100k-view video that matches the user's phase.
@@ -178,28 +247,48 @@ export function scoreTipVideo(
     }
   }
 
+  // Round 22 — 페르소나 boost. phase 보다 먼저 평가하여 표준 페르소나는 영향 없고
+  // (personaCategories=[]), 비표준 페르소나만 자기 영역 영상을 phase 영상보다 위로.
+  if (factors.personaCategories.length > 0) {
+    const primary = video.categories[0];
+    if (primary && factors.personaCategories.includes(primary)) {
+      score += PERSONA_BOOST_PRIMARY;
+    } else if (video.categories.some((c) => factors.personaCategories.includes(c))) {
+      score += PERSONA_BOOST_SECONDARY;
+    }
+  }
+
+  // Round 19 — primary phase 매칭이면 full boost, secondary 만 매칭이면 half. 시뮬레이션
+  // P4 회귀: 멀티카테고리 영상 [ceremony, wedding_hall, hanbok] 이 wedding_hall phase
+  // boost 흡수해 ceremony 영상이 상위 노출. primary 가 phase 카테고리일 때만 강하게 boost.
+  // 또 P0 회귀 (셀프 user 가 신혼집만 봄) 대응 — 0.6 → 0.9 강화로 viewcount 차 이기게.
   if (factors.phaseCategories.length > 0) {
-    const match = video.categories.some((c) => factors.phaseCategories.includes(c));
-    if (match) score += 0.6;
+    const primary = video.categories[0];
+    if (primary && factors.phaseCategories.includes(primary)) {
+      score += 0.9;
+    } else if (video.categories.some((c) => factors.phaseCategories.includes(c))) {
+      score += 0.4;
+    }
   }
 
   if (factors.styleHints.length > 0 || factors.oppositeHints.length > 0) {
-    // Build the haystack once and reuse for both positive and negative
-    // phrase matching — each does a substring check against title + tags.
-    const haystack = [
-      video.title.toLowerCase(),
-      ...(video.tags ?? []).map((t) => t.toLowerCase()),
-    ];
+    // Round 19 — normalizeTok 으로 공백/하이픈 변형 매칭. 이전엔 '셀프 웨딩' (공백)
+    // 같은 변형이 '셀프웨딩' opp_hint 와 매칭 안 돼 회귀 발생.
+    const haystackRaw = [video.title, ...(video.tags ?? [])];
+    const haystackNorm = haystackRaw.map(normalizeTok);
     if (factors.styleHints.length > 0) {
-      const hit = factors.styleHints.some((h) =>
-        haystack.some((s) => s.includes(h.toLowerCase()))
-      );
-      if (hit) score += 0.3;
+      const hit = factors.styleHints.some((h) => {
+        const nh = normalizeTok(h);
+        return haystackNorm.some((s) => s.includes(nh));
+      });
+      // P3 강화: style hit 0.3 → 0.5. small/self user 가 자기 정체성 콘텐츠 더 강하게 받음.
+      if (hit) score += 0.5;
     }
     if (factors.oppositeHints.length > 0) {
-      const hit = factors.oppositeHints.some((h) =>
-        haystack.some((s) => s.includes(h.toLowerCase()))
-      );
+      const hit = factors.oppositeHints.some((h) => {
+        const nh = normalizeTok(h);
+        return haystackNorm.some((s) => s.includes(nh));
+      });
       if (hit) score += OPPOSITE_HINT_PENALTY;
     }
   }

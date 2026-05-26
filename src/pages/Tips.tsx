@@ -153,13 +153,25 @@ const Tips = () => {
   // every render would make `freshList` a fresh reference each time and
   // defeat downstream memoization.
   const sevenDaysAgo = useMemo(() => Date.now() - SEVEN_DAYS_MS, []);
-  const visibleHotPool = (hotPool ?? []).filter((v) => !isExcludedByPrimary(v));
-  const freshList = visibleHotPool.filter(
-    (v) => v.published_at && new Date(v.published_at).getTime() >= sevenDaysAgo
+  // Round 22 — useMemo 적용. visibleHotPool 이 매 render 재계산되며
+  // freshList/hotList 가 새 reference 가 되어 자식 컴포넌트 memoization 무효화.
+  const visibleHotPool = useMemo(
+    () => (hotPool ?? []).filter((v) => !isExcludedByPrimary(v)),
+    [hotPool, excludedSet],
+  );
+  const freshList = useMemo(
+    () =>
+      visibleHotPool.filter(
+        (v) => v.published_at && new Date(v.published_at).getTime() >= sevenDaysAgo,
+      ),
+    [visibleHotPool, sevenDaysAgo],
   );
   // Always render HOT row: prefer last-7-days; fall back to top-by-views
   // when no fresh content (HOT header should always be present per spec).
-  const hotList = (freshList.length > 0 ? freshList : visibleHotPool).slice(0, 8);
+  const hotList = useMemo(
+    () => (freshList.length > 0 ? freshList : visibleHotPool).slice(0, 8),
+    [freshList, visibleHotPool],
+  );
   const hotIsFallback = freshList.length === 0;
 
   // Grid: full list filtered by category (or search), then by format,
@@ -178,14 +190,20 @@ const Tips = () => {
     v.duration_seconds != null && v.duration_seconds <= SHORT_MAX_SECONDS;
   // Exclusions and format filter both bypassed in search mode — the user
   // explicitly asked for a global view.
-  const formatFiltered = (allVideos ?? [])
-    .filter((v) => uiSearchMode || !isExcludedByPrimary(v))
-    .filter((v) => {
-      if (uiSearchMode) return true;
-      if (format === "short") return isShort(v);
-      if (format === "long") return !isShort(v);
-      return true;
-    });
+  // Round 22 — useMemo 로 grid 리스트 안정화 (gridList 가 매 render 재계산되어
+  // 자식 컴포넌트 memoization 무효화 회피).
+  const formatFiltered = useMemo(
+    () =>
+      (allVideos ?? [])
+        .filter((v) => uiSearchMode || !isExcludedByPrimary(v))
+        .filter((v) => {
+          if (uiSearchMode) return true;
+          if (format === "short") return isShort(v);
+          if (format === "long") return !isShort(v);
+          return true;
+        }),
+    [allVideos, uiSearchMode, format, excludedSet],
+  );
   const gridList = (() => {
     // Search mode: keep the server's view_count desc order — relevance
     // ranking would require a smarter scorer than our personalization one.

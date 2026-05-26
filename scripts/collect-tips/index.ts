@@ -22,9 +22,10 @@
 import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import { searchVideos, fetchVideoStats } from "./youtube";
+import { fetchTranscript } from "./transcript";
 import { TIP_QUERIES, TIP_CATEGORIES, type TipCategory } from "./queries";
 import { normalizeTipCategories } from "../../src/lib/tipNormalize";
-import { classifyTipCategories } from "../../src/lib/tipClassify";
+import { classifyTipCategories, buildClassifyText } from "../../src/lib/tipClassify";
 
 interface Args {
   category?: TipCategory;
@@ -104,17 +105,40 @@ async function main() {
   console.log(`\n[collect-tips] pooled ${pool.size} unique videos`);
   if (pool.size === 0) return;
 
-  // Enrich with stats (view/like/duration) — 1 batched call per 50 videos.
+  // Enrich with stats — videos.list 1 unit/50 ids, now also returns full
+  // description + creator self-tags (snippet.tags). part=snippet 추가는 무료.
   const ids = Array.from(pool.keys());
   console.log(`[collect-tips] fetching stats for ${ids.length} videos…`);
   const stats = await fetchVideoStats(ids, apiKey);
 
+  // Round 21 — 자막 fetch (quota 0, youtube-transcript 라이브러리). 자막 있는
+  // 영상에서 약 1-2초 / 없는 영상은 즉시 반환. 직렬 처리 — IP throttle 회피.
+  console.log(`[collect-tips] fetching transcripts (quota-free)…`);
+  const transcripts = new Map<string, string>();
+  let withTranscript = 0;
+  for (const id of ids) {
+    const t = await fetchTranscript(id);
+    transcripts.set(id, t);
+    if (t) withTranscript++;
+  }
+  console.log(`[collect-tips] transcripts: ${withTranscript}/${ids.length}`);
+
   let uncategorized = 0;
   const rows = Array.from(pool.values()).map((v) => {
     const s = stats.get(v.video_id);
-    const text = `${v.title} ${v.description} ${v.channel_name}`;
+    const transcript = transcripts.get(v.video_id) ?? "";
+    // 분류 입력: 표준 helper (buildClassifyText) 사용으로 sync/reclassify 와
+    // 순서·구성 동일성 보장. 패턴 매치 토큰량 ~10배 증가.
+    const fullDesc = s?.fullDescription || v.description || "";
+    const classifyText = buildClassifyText({
+      title: v.title,
+      description: fullDesc,
+      tags: s?.tags,
+      transcript,
+      channelName: v.channel_name,
+    });
     const categories = normalizeTipCategories(
-      classifyTipCategories(text, TIP_CATEGORIES),
+      classifyTipCategories(classifyText, TIP_CATEGORIES),
     );
     if (categories.length === 0) uncategorized++;
     return {
@@ -127,11 +151,17 @@ async function main() {
       view_count: s?.viewCount ?? 0,
       like_count: s?.likeCount ?? 0,
       published_at: v.published_at,
-      description: v.description,
+      description: fullDesc,
       categories,
+      // YouTube creator 가 영상에 단 자가-태그. UI 검색 (useTipVideos.tags.cs)
+      // 에서도 활용됨. 분류와 별개로 보존.
+      tags: s?.tags ?? [],
       search_query: v.search_query,
       collected_at: new Date().toISOString(),
-      is_active: true,
+      // Round 21 — 분류 0개 영상은 is_active=false 로 저장. useTipVideos 가 자동
+      // 제외 (UI 노출 차단). idempotent: 같은 video_id 가 매 run 재유입돼도 한
+      // 번만 분류 시도 + UI 영향 0. 운영자가 DB 에서 noise 확인 가능.
+      is_active: categories.length > 0,
     };
   });
   console.log(
@@ -165,6 +195,28 @@ async function main() {
     process.exit(1);
   }
   console.log(`\nupserted: ${rows.length}`);
+
+  // 채널 디스커버리 피드백 루프 — search 로 새로 발견된 채널을 tip_channels 에
+  // 자동 등록. 다음날부터 sync-channels-rss 가 무료로 그 채널의 신규 업로드를
+  // 풀어옴 → search.list 의존을 점차 줄이는 self-bootstrap 메커니즘.
+  const channelMap = new Map<string, string>();
+  for (const r of rows) {
+    if (r.channel_id && !channelMap.has(r.channel_id)) {
+      channelMap.set(r.channel_id, r.channel_name ?? "");
+    }
+  }
+  if (channelMap.size > 0) {
+    const channelRows = Array.from(channelMap, ([channel_id, channel_name]) => ({
+      channel_id,
+      channel_name: channel_name || "(unknown)",
+    }));
+    // ignoreDuplicates: true → 기존 채널은 건드리지 않음 (video_count / last_synced_at 등 보존).
+    const { error: chErr } = await supabase
+      .from("tip_channels")
+      .upsert(channelRows, { onConflict: "channel_id", ignoreDuplicates: true });
+    if (chErr) console.warn("tip_channels register failed:", chErr.message);
+    else console.log(`registered channels (new or no-op): ${channelRows.length}`);
+  }
 }
 
 main().catch((e) => {

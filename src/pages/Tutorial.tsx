@@ -12,7 +12,7 @@ import PageHeader from "@/components/PageHeader";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
 import {
-  chaptersForStyle,
+  chaptersForUser,
   TUTORIAL_CHAPTERS,
   type TutorialLesson,
   type TutorialChapter,
@@ -33,9 +33,17 @@ const Tutorial = () => {
   const style = weddingSettings.wedding_style;
   const progress = useTutorialProgress();
 
-  const visibleChapters = useMemo(() => chaptersForStyle(style), [style]);
-  const overall = progress.styleProgress(style);
-  const nextUp = progress.nextLesson(style);
+  const userCtx = useMemo(
+    () => ({
+      style,
+      persona: weddingSettings.persona_mode,
+      role: weddingSettings.role,
+    }),
+    [style, weddingSettings.persona_mode, weddingSettings.role],
+  );
+  const visibleChapters = useMemo(() => chaptersForUser(userCtx), [userCtx]);
+  const overall = progress.styleProgress(userCtx);
+  const nextUp = progress.nextLesson(userCtx);
 
   // Lessons that are hidden by the style filter but technically available
   // (e.g. self-wedding user wants to peek at the SDM lesson). Surfaced in a
@@ -140,11 +148,22 @@ const Tutorial = () => {
                 <ul className="divide-y divide-border">
                   {chapter.lessons.map(lesson => {
                     const done = progress.isCompleted(lesson.id);
+                    const placeholder = !!lesson.placeholder;
                     return (
                       <li key={lesson.id}>
                         <button
-                          onClick={() => startLesson(lesson)}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 active:bg-muted/80 transition-colors"
+                          onClick={() => {
+                            if (placeholder) return;
+                            startLesson(lesson);
+                          }}
+                          disabled={placeholder}
+                          aria-disabled={placeholder}
+                          className={cn(
+                            "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
+                            placeholder
+                              ? "opacity-60 cursor-not-allowed"
+                              : "hover:bg-muted/50 active:bg-muted/80",
+                          )}
                         >
                           <span className="w-7 h-7 rounded-full flex items-center justify-center bg-muted shrink-0">
                             {done ? (
@@ -156,19 +175,29 @@ const Tutorial = () => {
                           <div className="flex-1 min-w-0">
                             <p className={cn(
                               "text-sm font-semibold leading-tight",
-                              done ? "text-muted-foreground" : "text-foreground"
+                              done || placeholder ? "text-muted-foreground" : "text-foreground"
                             )}>
                               {lesson.title}
                             </p>
                             <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight truncate">
-                              {lesson.description} · {lesson.steps.length}단계
+                              {placeholder
+                                ? "준비 중인 가이드입니다 — 곧 열려요"
+                                : `${lesson.description} · ${lesson.steps.length}단계`}
                             </p>
                           </div>
                           <span className={cn(
                             "text-[10px] font-semibold shrink-0 px-2 py-0.5 rounded-full",
-                            done ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+                            placeholder
+                              ? "bg-muted text-muted-foreground ring-1 ring-border"
+                              : done
+                                ? "bg-muted text-muted-foreground"
+                                : "bg-primary/10 text-primary",
                           )}>
-                            {done ? "다시 보기" : `+${lesson.reward}P`}
+                            {placeholder
+                              ? "준비 중"
+                              : done
+                                ? "다시 보기"
+                                : `+${lesson.reward}P`}
                           </span>
                         </button>
                       </li>
@@ -189,21 +218,40 @@ const Tutorial = () => {
                 내 스타일에 안 보이는 가이드 ({hiddenLessons.length})
               </summary>
               <ul className="divide-y divide-border border-t border-border">
-                {hiddenLessons.map(({ chapter, lesson }) => (
-                  <li key={lesson.id}>
-                    <button
-                      onClick={() => startLesson(lesson)}
-                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-muted/50 text-left"
-                    >
-                      <span className="text-base">{chapter.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground">{lesson.title}</p>
-                        <p className="text-[11px] text-muted-foreground">{chapter.title}</p>
-                      </div>
-                      <Play className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
-                  </li>
-                ))}
+                {hiddenLessons.map(({ chapter, lesson }) => {
+                  const placeholder = !!lesson.placeholder;
+                  return (
+                    <li key={lesson.id}>
+                      <button
+                        onClick={() => {
+                          if (placeholder) return;
+                          startLesson(lesson);
+                        }}
+                        disabled={placeholder}
+                        aria-disabled={placeholder}
+                        className={cn(
+                          "w-full px-4 py-3 flex items-center gap-3 text-left",
+                          placeholder ? "opacity-60 cursor-not-allowed" : "hover:bg-muted/50",
+                        )}
+                      >
+                        <span className="text-base">{chapter.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground">{lesson.title}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {placeholder ? "준비 중 · " : ""}{chapter.title}
+                          </p>
+                        </div>
+                        {placeholder ? (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground ring-1 ring-border">
+                            준비 중
+                          </span>
+                        ) : (
+                          <Play className="w-3.5 h-3.5 text-muted-foreground" />
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </details>
           </section>

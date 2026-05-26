@@ -4,27 +4,31 @@ import { Sparkles, X, ArrowRight, Play } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
-import { chaptersForStyle } from "@/data/tutorialChapters";
+import { chaptersForUser, firstStartableLessonForUser } from "@/data/tutorialChapters";
+import { isOnboarded } from "@/lib/onboarding";
 
+// Round 18 — subline 톤 정정:
+// '30초만에 둘러보기' 는 home-tour 1개 만 약속. 나머지 챕터는 천천히 진행할 수
+// 있다는 점을 분명히 해 '30초 = 전체' 오해를 막는다.
 const STYLE_BLURB: Record<string, { headline: string; subline: string; emoji: string }> = {
   general: {
-    headline: "결혼 준비, 어디서부터 시작할까요?",
-    subline: "검증된 일반 결혼식 동선을 30초만에 둘러보세요.",
+    headline: "준비, 어디서부터 시작할까요?",
+    subline: "먼저 홈 화면을 30초 안에 함께 둘러볼게요.",
     emoji: "",
   },
   small: {
     headline: "스몰웨딩이 처음이라면",
-    subline: "꼭 필요한 베뉴·답례품 가이드만 짧게 모아드릴게요.",
+    subline: "먼저 홈 화면을 30초 안에 함께 둘러볼게요.",
     emoji: "",
   },
   self: {
     headline: "셀프웨딩 DIY 가이드",
-    subline: "셀프 촬영·부케·청첩장까지 한 번에 길을 잡아드릴게요.",
+    subline: "먼저 홈 화면을 30초 안에 함께 둘러볼게요.",
     emoji: "",
   },
   custom: {
     headline: "내 스타일에 맞춰 안내드릴게요",
-    subline: "직접 정한 카테고리 위주로 30초 코스로 시작합니다.",
+    subline: "먼저 홈 화면을 30초 안에 함께 둘러볼게요.",
     emoji: "",
   },
 };
@@ -49,14 +53,16 @@ const TutorialWelcomeSheet = () => {
   const blurb = STYLE_BLURB[style ?? "general"] ?? STYLE_BLURB.general;
 
   useEffect(() => {
+    // Round 17 — 로그인 후만 튜토리얼 진행 (사용자 요구). 비로그인 사용자에겐
+    // 튜토리얼 시스템 자체가 의미 없음 (포인트 적립 / 진행 저장 모두 user 의존).
     if (!user || isLoading) return;
+    // progress.welcomeShown 가 DB completed 1개 이상 자동 TRUE — 캐시 wipe 후 재접속
+    // 이라도 returning user 에게 다시 안 띄움.
     if (progress.welcomeShown) return;
     // Wait until onboarding is finished — otherwise we'd race the wedding-info
-    // modal and stack two sheets.
-    const hasDateInfo = !!weddingSettings.wedding_date || weddingSettings.wedding_date_tbd;
-    const hasRegionInfo = !!weddingSettings.wedding_region || weddingSettings.wedding_region_tbd;
-    const onboarded = (hasDateInfo && hasRegionInfo) || !!weddingSettings.planning_stage;
-    if (!onboarded) return;
+    // modal and stack two sheets. 판정 로직은 lib/onboarding.ts 의 공유 함수
+    // 사용 (useHomeFirstRun 등과 동일 기준 보장).
+    if (!isOnboarded(weddingSettings)) return;
     // Small delay so the user sees the home screen first; otherwise the
     // welcome feels like another mandatory modal.
     const t = setTimeout(() => setOpen(true), 1200);
@@ -74,17 +80,27 @@ const TutorialWelcomeSheet = () => {
 
   if (!open) return null;
 
-  const visibleChapters = chaptersForStyle(style);
+  const userCtx = {
+    style,
+    persona: weddingSettings.persona_mode,
+    role: weddingSettings.role,
+  };
+  const visibleChapters = chaptersForUser(userCtx);
   const totalLessons = visibleChapters.reduce((sum, c) => sum + c.lessons.length, 0);
   // 이미 끝낸 레슨(예: 자동 실행된 홈 투어)은 건너뛰고 다음 미완료 레슨을 제안 —
   // 같은 투어를 다시 권하지 않기 위함.
-  const next = progress.nextLesson(style);
+  const next = progress.nextLesson(userCtx);
+  // Round 18 — '30초' CTA 가 약속하는 lesson. progress.nextLesson 은 이미
+  // placeholder 를 건너뛰지만, 모든 startable 이 완료된 returning user 케이스 용
+  // fallback 으로 firstStartable 도 함께 둔다.
+  const firstStartable = firstStartableLessonForUser(userCtx);
+  const startTarget = next?.lesson ?? firstStartable?.lesson;
 
   const handleStart = () => {
     progress.markWelcomeShown();
     setOpen(false);
-    if (next?.lesson) {
-      navigate(`${next.lesson.route}?tutorial=${next.lesson.id}`);
+    if (startTarget) {
+      navigate(`${startTarget.route}?tutorial=${startTarget.id}`);
     } else {
       navigate("/tutorial");
     }
@@ -137,12 +153,12 @@ const TutorialWelcomeSheet = () => {
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
             <p className="text-xs font-bold text-foreground">
-              {totalLessons}개의 짧은 레슨이 준비됐어요
+              전체 안내 자료 {totalLessons}개
             </p>
           </div>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            챕터별로 끊어서 들을 수 있고, 완료할 때마다 포인트가 적립돼요.
-            언제든 마이페이지에서 다시 볼 수 있어요.
+            나머지 가이드는 챕터별로 천천히, 원할 때 시작하세요. 완료할 때마다
+            포인트가 적립되고 마이페이지에서 다시 볼 수 있어요.
           </p>
         </div>
 
@@ -158,7 +174,9 @@ const TutorialWelcomeSheet = () => {
             className="flex-[2] h-11 rounded-xl text-primary-foreground font-bold text-sm bg-primary flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
           >
             <Play className="w-4 h-4" />
-            지금 시작 (30초)
+            {/* Round 22 — startTarget 이 없으면 (모든 startable 완료된 returning
+                user) "둘러보기" 약속 대신 정직하게 가이드 목록으로 안내. */}
+            {startTarget ? "홈 화면 30초 둘러보기" : "전체 가이드 목록 열기"}
           </button>
         </div>
 
