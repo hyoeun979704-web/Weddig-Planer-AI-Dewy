@@ -1,11 +1,12 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Pencil } from "lucide-react";
 import { usePlaceDetail, type LegacyDetail } from "@/hooks/usePlaceDetail";
 import PlaceDetailLayout from "@/components/detail/PlaceDetailLayout";
 import PlaceCoupons from "@/components/place/PlaceCoupons";
 import PlaceBusinessSections from "@/components/place/PlaceBusinessSections";
+import { useUserRole } from "@/hooks/useUserRole";
 
 // Catch-all detail page wired to PlaceDetailLayout. Used by:
 //  - /vendor/:id (categoryRouteMap fallback for "스드메" combo + legacy links)
@@ -42,6 +43,7 @@ const VendorDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: place, isLoading, error } = usePlaceDetail(id);
+  const { isAdmin } = useUserRole();
 
   if (isLoading) return <DetailSkeleton />;
   if (error || !place) {
@@ -64,6 +66,27 @@ const VendorDetailPage = () => {
       favoriteType={favoriteType}
       extraSection={
         <>
+          {/* 운영자 진입점 — isAdmin 일 때만 노출. 깨진 이미지·잘못된 정보를
+              사용자 화면에서 발견 즉시 편집할 수 있도록. */}
+          {isAdmin && (
+            <div className="px-4 pt-3">
+              <Link
+                to={`/admin/places/${place.id}`}
+                className="flex items-center justify-between gap-2 rounded-xl border border-dashed border-primary/50 bg-primary/5 p-3 active:scale-[0.99] transition-transform"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                    <Pencil className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-foreground">운영자 도구 — 이 업체 정보 수정</p>
+                    <p className="text-[11px] text-muted-foreground">대표 이미지·설명·좌표 등</p>
+                  </div>
+                </div>
+                <span className="text-[11px] text-primary font-semibold">편집 →</span>
+              </Link>
+            </div>
+          )}
           <PlaceCoupons placeId={place.id} />
           <PlaceBusinessSections placeId={place.id} category={place.category} />
           <CategoryExtras place={place} />

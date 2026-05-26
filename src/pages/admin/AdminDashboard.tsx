@@ -16,6 +16,7 @@ import {
   Flag,
   Building2,
   Megaphone,
+  MapPin,
   type LucideIcon,
 } from "lucide-react";
 import AdminGuard from "@/components/admin/AdminGuard";
@@ -369,6 +370,7 @@ const AdminDashboard = () => {
               icon={Bell}
               badge={stats?.pendingWaitlist}
             />
+            <QuickActionCard to="/admin/places" label="업체 정보 관리" icon={MapPin} />
             <QuickActionCard to="/admin/business-review" label="기업회원 검토" icon={Building2} />
             <QuickActionCard
               to="/admin/content-review"
