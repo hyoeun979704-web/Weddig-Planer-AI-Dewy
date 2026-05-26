@@ -15,6 +15,7 @@ import {
   Clock,
   Flag,
   Building2,
+  Megaphone,
   type LucideIcon,
 } from "lucide-react";
 import AdminGuard from "@/components/admin/AdminGuard";
@@ -352,6 +353,7 @@ const AdminDashboard = () => {
               badge={stats?.pendingWaitlist}
             />
             <QuickActionCard to="/admin/business-review" label="기업회원 검토" icon={Building2} />
+            <QuickActionCard to="/admin/content-review" label="콘텐츠 검토" icon={Megaphone} />
             <QuickActionCard to="/admin/users" label="사용자 관리" icon={Users} />
             <QuickActionCard to="/admin/reports" label="신고 처리" icon={Flag} />
             <QuickActionCard to="/" label="앱으로 돌아가기" icon={Sparkles} />
