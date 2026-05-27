@@ -246,7 +246,7 @@ const Favorites = () => {
         const ids = filteredFavs.map((f) => f.item_id);
         const { data } = await (supabase
           .from("products" as any)
-          .select("id, name, thumbnail_url, price, sale_price, rating, category") as any)
+          .select("id, name, thumbnail_url, price, sale_price, rating, category, categories") as any)
           .in("id", ids);
         if (!data) return [];
         return (data as any[]).map((p) =>
@@ -255,7 +255,7 @@ const Favorites = () => {
             thumbnail_url: p.thumbnail_url,
             rating: p.rating ?? undefined,
             price: p.sale_price ?? p.price ?? undefined,
-            subtitle: p.category,
+            subtitle: Array.isArray(p.categories) && p.categories.length > 0 ? p.categories[0] : p.category,
           }),
         );
       }
