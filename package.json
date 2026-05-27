@@ -28,6 +28,7 @@
     "sync-channels": "tsx scripts/collect-tips/sync-channels-rss.ts",
     "reclassify-tips": "tsx scripts/collect-tips/reclassify.ts",
     "collect-blogs": "tsx scripts/collect-tips/naver-blogs.ts",
+    "collect-magazines": "tsx scripts/collect-tips/magazine-rss.ts",
     "cap:sync": "cap sync",
     "cap:build": "vite build --mode capacitor && cap sync",
     "android:dev": "npm run cap:build && cap run android",
