@@ -24,6 +24,7 @@
     "fix-naver-urls": "tsx scripts/collect-places/fix-naver-place-urls.ts",
     "fetch-honeymoon-og-images": "tsx scripts/collect-places/fetch-honeymoon-og-images.ts",
     "fetch-jewelry-og-images": "tsx scripts/collect-places/fetch-jewelry-og-images.ts",
+    "refresh-place-images": "tsx scripts/refresh-place-images.ts",
     "collect-tips": "tsx scripts/collect-tips/index.ts",
     "sync-channels": "tsx scripts/collect-tips/sync-channels-rss.ts",
     "reclassify-tips": "tsx scripts/collect-tips/reclassify.ts",
