@@ -1,0 +1,42 @@
+[
+  {
+    "tel": null,
+    "city": "세종특별자치시",
+    "name": "대왕해물손칼국수 세종 조치원점",
+    "region": "세종",
+    "address": "세종특별자치시 연서면 도신고복로 913 1층 대왕해물손칼국수 세종 조치원점",
+    "district": "연서면",
+    "naver_category": "한식>칼국수,만두",
+    "naver_place_url": "https://blog.naver.com/daewangson"
+  },
+  {
+    "tel": null,
+    "city": "세종특별자치시",
+    "name": "아름동 쌀국수 &amp; 숯불구이",
+    "region": "세종",
+    "address": "세종특별자치시 보듬3로 104-11 행복프라자 2층 203호",
+    "district": "보듬3로",
+    "naver_category": "음식점>베트남음식",
+    "naver_place_url": "https://blog.naver.com/jshappym"
+  },
+  {
+    "tel": null,
+    "city": "세종특별자치시",
+    "name": "진원소우 세종나성점",
+    "region": "세종",
+    "address": "세종특별자치시 나성북1로 18 203, 204, 205호",
+    "district": "나성북1로",
+    "naver_category": "음식점>한식>육류,고기요리>소고기구이",
+    "naver_place_url": "https://app.catchtable.co.kr/ct/shop/jwsoosj"
+  },
+  {
+    "tel": null,
+    "city": "세종특별자치시",
+    "name": "청미관 세종나성본점",
+    "region": "세종",
+    "address": "세종특별자치시 나성북1로 23 803동 1층 152,153,154호",
+    "district": "나성북1로",
+    "naver_category": "한식>족발,보쌈",
+    "naver_place_url": "https://app.catchtable.co.kr/ct/shop/from_cheongmi?from=share&type=WAITING"
+  }
+]
