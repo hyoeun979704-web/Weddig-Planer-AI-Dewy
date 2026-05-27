@@ -6,6 +6,8 @@ import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { Input } from "@/components/ui/input";
 import { TipVideoCard, TipVideoCardSkeleton } from "@/components/TipVideoCard";
+import BlogTipSection from "@/components/tips/BlogTipSection";
+import InstagramTipSection from "@/components/tips/InstagramTipSection";
 import Seo from "@/components/Seo";
 import { useTipVideos, type TipVideo } from "@/hooks/useTipVideos";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
@@ -313,6 +315,15 @@ const Tips = () => {
               </p>
             )}
           </section>
+        )}
+
+        {/* 출처별 큐레이션 섹션 — 검색 모드에서는 영상 결과 우선이라 숨김.
+            카테고리 chip 선택 시 해당 카테고리만 필터링 (배열 contains). */}
+        {!uiSearchMode && (
+          <>
+            <BlogTipSection category={category ?? undefined} />
+            <InstagramTipSection category={category ?? undefined} />
+          </>
         )}
 
         <section className={`pt-3 pb-6 ${uiSearchMode ? "" : "border-t border-border/50"}`}>

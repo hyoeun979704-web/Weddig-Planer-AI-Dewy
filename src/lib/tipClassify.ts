@@ -70,7 +70,7 @@ const TOPIC_PATTERNS: ReadonlyArray<readonly [string, RegExp]> = [
   ],
   [
     "ceremony",
-    /결혼식|본식|예식|주례|사회자\s*멘트|식순|축의금|답례품|하객|부케|폐백|혼주\s*인사|결혼\s*진행|결혼\s*순서|결혼식\s*순서|예식\s*순서|신랑\s*입장|신부\s*입장|결혼\s*준비\s*순서|결혼식\s*비용|결혼\s*비용|결혼\s*시간대/i,
+    /결혼식|본식|예식|주례|사회자\s*멘트|식순|축의금|답례품|하객|부케|폐백|혼주\s*인사|결혼\s*진행|결혼\s*순서|결혼식\s*순서|예식\s*순서|신랑\s*입장|신부\s*입장|결혼\s*준비\s*순서|결혼식\s*비용|결혼\s*비용|결혼\s*시간대|결혼식\s*BGM|신부\s*입장곡|축가|본식\s*음악|웨딩\s*송|입장\s*곡|축가\s*추천/i,
   ],
   [
     "wedding_hall",
@@ -106,6 +106,27 @@ const TOPIC_PATTERNS: ReadonlyArray<readonly [string, RegExp]> = [
     /결혼\s*준비|예비부부|결혼\s*꿀팁|웨딩\s*꿀팁|결혼\s*후기|결혼\s*비용|결혼\s*기간|결혼\s*시작|웨딩\s*트렌드|결혼\s*트렌드|시집보내/i,
   ],
 ];
+
+// 네이버 블로그 광고글 시그널. 제목·요약에 한 패턴이라도 매치되면 광고 의심 →
+// tip_blogs.is_ad_suspected = true. 분류는 별개로 시도하되 노출 우선순위 낮춤.
+//
+// 일반적인 한국 블로그 광고 표기 + 강한 CTA 패턴 위주. 자연스러운 후기까지
+// 잘못 잡지 않도록 보수적으로.
+const BLOG_AD_PATTERNS: ReadonlyArray<RegExp> = [
+  /\[광고\]|\[협찬\]|\[체험단\]|\[원고료\]/i,
+  /광고\s*포함|일부\s*원고료|소정의\s*원고료|업체로부터\s*원고료/i,
+  /체험단\s*활동|체험단\s*리뷰|체험단\s*당첨/i,
+  /제휴\s*마케팅|쿠팡\s*파트너스/i,
+  // 강한 CTA — 자연 후기엔 거의 없음. 광고는 끝에 "여기서 예약하기" 같은 패턴 다수.
+  /지금\s*예약하기|지금\s*문의하기|할인\s*받기|쿠폰\s*받기|이벤트\s*응모하기/i,
+];
+
+export function isLikelyAdvertisement(text: string): boolean {
+  for (const re of BLOG_AD_PATTERNS) {
+    if (re.test(text)) return true;
+  }
+  return false;
+}
 
 export function classifyTipCategories(
   text: string,

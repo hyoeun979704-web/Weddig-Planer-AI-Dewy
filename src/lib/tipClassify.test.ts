@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classifyTipCategories, buildClassifyText } from "./tipClassify";
+import { classifyTipCategories, buildClassifyText, isLikelyAdvertisement } from "./tipClassify";
 import { normalizeTipCategories } from "./tipNormalize";
 
 const ORDER = [
@@ -304,6 +304,36 @@ describe("classifyTipCategories", () => {
         classifyTipCategories("혼수 TV 추천 4K 화질 비교", ORDER),
       ).toContain("appliance");
     });
+  });
+});
+
+describe("isLikelyAdvertisement (blog ad filter)", () => {
+  it("flags 명시적 광고 표기", () => {
+    expect(isLikelyAdvertisement("[광고] 강남 웨딩홀 추천")).toBe(true);
+    expect(isLikelyAdvertisement("[협찬] 스튜디오 후기")).toBe(true);
+    expect(isLikelyAdvertisement("[체험단] 한복 대여")).toBe(true);
+  });
+
+  it("flags 원고료·체험단 표현", () => {
+    expect(isLikelyAdvertisement("소정의 원고료를 받고 작성한 글입니다")).toBe(true);
+    expect(isLikelyAdvertisement("체험단 활동으로 작성된 후기")).toBe(true);
+  });
+
+  it("flags 강한 CTA (광고성 마무리)", () => {
+    expect(isLikelyAdvertisement("자세한 정보는 지금 예약하기 클릭!")).toBe(true);
+    expect(isLikelyAdvertisement("결혼 준비 쿠폰 받기")).toBe(true);
+  });
+
+  it("자연 후기는 통과 (false positive 방지)", () => {
+    expect(
+      isLikelyAdvertisement("강남 웨딩홀 다녀온 후기 — 음식 시연 좋았어요"),
+    ).toBe(false);
+    expect(
+      isLikelyAdvertisement("드레스 가봉하면서 느낀 점"),
+    ).toBe(false);
+    expect(
+      isLikelyAdvertisement("결혼 준비 1년차의 솔직한 비용 정리"),
+    ).toBe(false);
   });
 });
 
