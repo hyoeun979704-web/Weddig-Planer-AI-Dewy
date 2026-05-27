@@ -94,8 +94,8 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24 relative">
       {/* Slim top header — back / category chip / favorite */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between h-14 px-4">
+      <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-md border-b border-border">
+        <div className="flex items-center justify-between h-[var(--app-header-height)] px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -107,7 +107,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
       </header>
 
       {/* Detail-page-only tab bar — sticky right under the header */}
-      <nav className="sticky top-14 z-40 bg-card border-b border-border">
+      <nav className="sticky safe-sticky-below-header z-40 bg-card border-b border-border">
         <div className="flex">
           <TabButton label="기본정보" active={tab === "basic"} onClick={() => setTab("basic")} />
           <TabButton label="디테일정보" active={tab === "detail"} onClick={() => setTab("detail")} />

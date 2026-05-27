@@ -190,5 +190,6 @@ export const useRecommendedVendors = (limit = 6) => {
       if (error) throw error;
       return ((data ?? []) as unknown as Parameters<typeof placeToVendor>[0][]).map(placeToVendor);
     },
+    staleTime: 5 * 60_000,
   });
 };

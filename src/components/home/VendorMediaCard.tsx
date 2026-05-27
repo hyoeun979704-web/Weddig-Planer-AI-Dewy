@@ -117,6 +117,9 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
           <img
             src={data.thumbnail_url}
             alt={data.name}
+            width={CARD_W}
+            height={IMG_H}
+            decoding="async"
             className="w-full h-full object-cover"
             loading="lazy"
             onError={(e) => {

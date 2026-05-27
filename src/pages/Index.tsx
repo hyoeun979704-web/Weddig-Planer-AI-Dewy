@@ -66,7 +66,7 @@ const Index = () => {
       <CategoryTabBar activeTab={null} onTabChange={handleCategoryTabChange} />
       <AnnouncementBanner />
 
-      <main className="pb-20" data-tutorial="home-categories">
+      <main className="safe-bottom-scroll" data-tutorial="home-categories">
         <TabContent activeTab="ai-planner" />
         <Footer />
       </main>

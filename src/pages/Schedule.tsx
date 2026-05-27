@@ -181,7 +181,7 @@ const Schedule = () => {
       <HomeHeader />
 
       {/* Sub-header */}
-      <header className="sticky top-14 z-30 bg-card border-b border-border">
+      <header className="sticky safe-sticky-below-header z-30 bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-1">
             <button

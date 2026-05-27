@@ -43,12 +43,33 @@ const CompactBannerCarousel = () => {
   const navigate = useNavigate();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [isDocumentHidden, setIsDocumentHidden] = useState(() =>
+    typeof document === "undefined" ? false : document.hidden
+  );
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
+    typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 
   useEffect(() => {
-    if (paused) return;
+    const handleVisibilityChange = () => setIsDocumentHidden(document.hidden);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleChange = () => setPrefersReducedMotion(media.matches);
+    handleChange();
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (paused || isDocumentHidden || prefersReducedMotion) return;
     const id = setInterval(() => setIndex((i) => (i + 1) % SLIDES.length), SLIDE_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [paused]);
+  }, [isDocumentHidden, paused, prefersReducedMotion]);
 
   const active = SLIDES[index];
 

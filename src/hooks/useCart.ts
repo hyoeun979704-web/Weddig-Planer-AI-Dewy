@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -17,44 +18,47 @@ export interface CartItem {
   };
 }
 
+const cartKey = (userId: string | undefined) => ["cart", userId ?? null] as const;
+
+const fetchCartItems = async (userId: string): Promise<CartItem[]> => {
+  const { data, error } = await (supabase
+    .from("cart_items" as any)
+    .select("id, product_id, quantity, products(id, name, price, sale_price, thumbnail_url, stock)") as any)
+    .eq("user_id", userId);
+
+  if (error) throw error;
+
+  return (data || []).map((item: any) => ({
+    id: item.id,
+    product_id: item.product_id,
+    quantity: item.quantity,
+    product: item.products,
+  }));
+};
+
 export const useCart = () => {
   const { user } = useAuth();
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const userId = user?.id;
+  const queryClient = useQueryClient();
 
-  const fetchCart = useCallback(async () => {
-    if (!user) {
-      setItems([]);
-      setIsLoading(false);
-      return;
-    }
+  const cartQuery = useQuery({
+    queryKey: cartKey(userId),
+    enabled: !!userId,
+    queryFn: () => fetchCartItems(userId!),
+    staleTime: 30_000,
+  });
 
-    try {
-      const { data, error } = await (supabase
-        .from("cart_items" as any)
-        .select("id, product_id, quantity, products(id, name, price, sale_price, thumbnail_url, stock)") as any)
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-
-      const mapped = (data || []).map((item: any) => ({
-        id: item.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        product: item.products,
-      }));
-
-      setItems(mapped);
-    } catch (error) {
-      console.error("Error fetching cart:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
+  const items = cartQuery.data ?? [];
+  const isLoading = !!userId && cartQuery.isLoading;
+  const refreshCart = useCallback(async () => {
+    if (!userId) return [];
+    const next = await queryClient.fetchQuery({
+      queryKey: cartKey(userId),
+      queryFn: () => fetchCartItems(userId),
+      staleTime: 0,
+    });
+    return next;
+  }, [queryClient, userId]);
 
   const addToCart = async (productId: string, quantity: number = 1): Promise<boolean> => {
     if (!user) {
@@ -80,7 +84,7 @@ export const useCart = () => {
     }
 
     toast.success("장바구니에 담았어요");
-    await fetchCart();
+    await refreshCart();
     return true;
   };
 
@@ -97,8 +101,8 @@ export const useCart = () => {
       toast.error("수량 변경에 실패했어요");
       return;
     }
-    setItems((prev) =>
-      prev.map((i) => (i.id === cartItemId ? { ...i, quantity } : i))
+    queryClient.setQueryData<CartItem[]>(cartKey(userId), (prev) =>
+      (prev ?? []).map((i) => (i.id === cartItemId ? { ...i, quantity } : i))
     );
   };
 
@@ -111,7 +115,9 @@ export const useCart = () => {
       toast.error("삭제에 실패했어요");
       return;
     }
-    setItems((prev) => prev.filter((i) => i.id !== cartItemId));
+    queryClient.setQueryData<CartItem[]>(cartKey(userId), (prev) =>
+      (prev ?? []).filter((i) => i.id !== cartItemId)
+    );
     toast.success("삭제되었습니다");
   };
 
@@ -124,7 +130,7 @@ export const useCart = () => {
       console.error("Error clearing cart:", error);
       return;
     }
-    setItems([]);
+    queryClient.setQueryData<CartItem[]>(cartKey(userId), []);
   };
 
   const totalAmount = items.reduce((sum, item) => {
@@ -143,6 +149,6 @@ export const useCart = () => {
     updateQuantity,
     removeItem,
     clearCart,
-    refetch: fetchCart,
+    refetch: refreshCart,
   };
 };

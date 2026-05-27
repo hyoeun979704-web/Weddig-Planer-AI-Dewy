@@ -330,7 +330,7 @@ const Community = () => {
 
       <header
         data-tutorial="community-header"
-        className="sticky top-14 z-30 bg-card border-b border-border"
+        className="sticky safe-sticky-below-header z-30 bg-card border-b border-border"
       >
         <div className="flex items-center justify-between px-4 h-14">
           {/* 커뮤니티는 하단 탭의 1차 목적지라 뒤로가기 버튼 제거 (진입 경로가

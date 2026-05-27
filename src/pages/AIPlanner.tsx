@@ -460,7 +460,7 @@ const AIPlanner = () => {
       )}
 
       {/* Chat area */}
-      <main ref={scrollAreaRef} className="flex-1 overflow-y-auto pb-36 px-4">
+      <main ref={scrollAreaRef} className="flex-1 overflow-y-auto safe-ai-scroll px-4">
         <div className="space-y-4 py-4">
           {/* Welcome & Quick Questions - shown when no conversation */}
           {!hasConversation && (
@@ -560,7 +560,8 @@ const AIPlanner = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
-            className="absolute bottom-40 right-4 w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center z-30"
+            className="absolute right-4 w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center z-30"
+            style={{ bottom: "calc(var(--app-bottom-nav-total-height) + 96px)" }}
           >
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </motion.button>
@@ -570,7 +571,7 @@ const AIPlanner = () => {
       {/* Input area */}
       <div
         data-tutorial="ai-input"
-        className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto z-40"
+        className="fixed safe-ai-input-offset left-0 right-0 max-w-[430px] mx-auto z-40"
       >
         {/* 추천 질문 패널 (입력창 위) */}
         <div className="px-3 pb-2">

@@ -168,7 +168,7 @@ const Deals = () => {
       )}
 
       {/* All Deals */}
-      <main className="px-4 pb-20">
+      <main className="px-4 safe-bottom-scroll">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-foreground flex items-center gap-2">
             <Tag className="w-4 h-4 text-muted-foreground" />

@@ -16,15 +16,8 @@ const HomeHeader = () => {
 
   return (
     <>
-      {/* Note: top-0 and z-50 ensure header stays above CategoryTabBar.
-          pt-safe — Capacitor 네이티브 앱에서 상단 상태바 (시간·배터리) 영역
-          위로 콘텐츠가 가려지지 않도록 safe-area-inset-top 만큼 추가 padding.
-          웹/PWA 에서는 env() 가 0 이라 영향 없음. */}
-      <header
-        className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
-      >
-        <div className="flex items-center justify-between px-4 h-14">
+      <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-md border-b border-border">
+        <div className="flex items-center justify-between px-4 h-[var(--app-header-height)]">
           {/* Logo + Guide */}
           <div className="flex items-center gap-1">
             <button

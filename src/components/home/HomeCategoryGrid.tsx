@@ -70,6 +70,9 @@ const Tile = ({ item, onClick }: { item: CategoryItem; onClick: () => void }) =>
         <img
           src={src}
           alt={item.label}
+          width={68}
+          height={68}
+          decoding="async"
           className="w-full h-full object-cover"
           loading="lazy"
           onError={(e) => {

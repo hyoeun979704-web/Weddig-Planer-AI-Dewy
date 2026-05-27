@@ -88,7 +88,7 @@ const AIStudio = () => {
       <HomeHeader />
       <CategoryTabBar activeTab={activeTab} onTabChange={handleCategoryTabChange} />
 
-      <main className="pb-24">
+      <main className="safe-bottom-scroll">
         <div className="grid grid-cols-2 gap-3 px-4 py-5">
           {cards.map((card) => {
             // 활성 카드 (실제 동작)

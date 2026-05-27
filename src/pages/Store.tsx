@@ -137,7 +137,7 @@ const Store = () => {
         </button>
       </div>
 
-      <main className="pb-20 px-4 py-4">
+      <main className="safe-bottom-scroll px-4 py-4">
         <div className="flex justify-end mb-3">
           <SortToggle value={sortMode} onChange={setSortMode} />
         </div>

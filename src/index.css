@@ -13,6 +13,16 @@
 
 @layer base {
   :root {
+    --android-safe-area-top: 0px;
+    --android-safe-area-bottom: 0px;
+    --safe-top: max(env(safe-area-inset-top), var(--android-safe-area-top));
+    --safe-bottom: max(env(safe-area-inset-bottom), var(--android-safe-area-bottom));
+    --app-header-height: 56px;
+    --app-header-total-height: calc(var(--app-header-height) + var(--safe-top));
+    --app-tab-height: 56px;
+    --app-bottom-nav-height: 64px;
+    --app-bottom-nav-total-height: calc(var(--app-bottom-nav-height) + var(--safe-bottom));
+
     --background: 340 100% 99%;   /* #FFF9FA */
     --foreground: 0 0% 15%;
 
@@ -117,20 +127,6 @@
       BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
-  /* Capacitor 네이티브 앱 (iOS·Android) 의 상태바·하단 indicator 영역 자동 회피.
-     env(safe-area-inset-*) 가 웹에선 0 이라 영향 없음. iOS notch / Android
-     status bar 가 있는 환경에서만 실제 inset 만큼 padding 부여.
-
-     적용 대상: 화면 최상단 sticky 헤더 (HomeHeader / PageHeader / 각 페이지의
-     fixed-top 헤더). 페이지 중간의 sticky 요소 (CategoryTabBar 등) 는 영향
-     받지 않도록 [data-safe-area-skip] 으로 opt-out 가능. */
-  header.sticky.top-0:not([data-safe-area-skip]) {
-    padding-top: env(safe-area-inset-top);
-  }
-  nav.fixed.bottom-0:not([data-safe-area-skip]) {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
   .font-logo {
     /* Figma 'Geom' substitute — rounded geometric sans */
     font-family: "Poppins", "SUITE Variable", sans-serif;
@@ -168,6 +164,29 @@
 }
 
 @layer utilities {
+  .safe-sticky-header {
+    top: 0;
+    padding-top: var(--safe-top);
+  }
+  .safe-category-tabs {
+    top: var(--app-header-total-height);
+    height: var(--app-tab-height);
+  }
+  .safe-sticky-below-header {
+    top: var(--app-header-total-height);
+  }
+  .safe-bottom-nav {
+    padding-bottom: var(--safe-bottom);
+  }
+  .safe-bottom-scroll {
+    padding-bottom: calc(var(--app-bottom-nav-total-height) + 16px);
+  }
+  .safe-ai-input-offset {
+    bottom: var(--app-bottom-nav-total-height);
+  }
+  .safe-ai-scroll {
+    padding-bottom: calc(var(--app-bottom-nav-total-height) + 80px);
+  }
   .scrollbar-hide,
   .no-scrollbar {
     -ms-overflow-style: none;

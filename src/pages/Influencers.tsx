@@ -62,7 +62,7 @@ const Influencers = () => {
       <PageHeader title="웨딩 정보" fav />
 
       {/* Category Tabs + Filter */}
-      <div className="sticky top-14 z-40 bg-card/80 backdrop-blur-md border-b border-border">
+      <div className="sticky safe-sticky-below-header z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
           {categories.map((cat) => (
             <button
