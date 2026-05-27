@@ -40,7 +40,7 @@
 - 무료: 일 5회, Premium: 무제한
 - 예산·일정·지역·선호도 기반 맞춤 답변
 - **장기 메모리** — 사용자의 결혼 정보(예식일·지역·예산 등)를 학습해 후속 대화에 반영
-- **AI Gateway 폴백** — Gemini 장애 시 Lovable AI Gateway 로 자동 전환해 응답 끊김 방지
+- **AI 오류 처리** — Gemini 장애 시 명확한 서비스 오류 응답 반환
 - PDF 견적서·분석 리포트 자동 생성 (Premium)
 
 ### 📸 AI 스튜디오
@@ -99,7 +99,7 @@
 - **UI**: Tailwind CSS + shadcn-ui (Radix UI 기반)
 - **모바일 패키징**: Capacitor 6 (Android 네이티브 wrapping)
 - **백엔드**: Supabase (PostgreSQL + Auth + Storage + Edge Functions)
-- **AI (챗봇)**: Google Gemini 2.5 Flash + Lovable AI Gateway (폴백)
+- **AI (챗봇)**: Google Gemini 2.5 Flash
 - **AI (이미지 편집)**: OpenAI gpt-image-2
 - **결제**: Toss Payments (하트 충전), Kakao Pay (구독)
 - **호스팅**: Vercel (웹), Google Play (Android 앱)

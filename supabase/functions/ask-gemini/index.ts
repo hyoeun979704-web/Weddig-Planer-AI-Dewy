@@ -46,15 +46,6 @@ serve(async (req) => {
       { role: "user", parts: [{ text: userMessage }] },
     ];
 
-    const messages = [
-      { role: "system", content: systemPrompt },
-      ...history.map((m: { role: string; content: string }) => ({
-        role: m.role === "assistant" ? "assistant" : "user",
-        content: m.content,
-      })),
-      { role: "user", content: userMessage },
-    ];
-
     let reply: string | null = null;
 
     // Try Gemini API first
@@ -86,31 +77,8 @@ serve(async (req) => {
       }
     }
 
-    // Fallback to Lovable AI gateway
     if (!reply) {
-      console.log("Falling back to Lovable AI gateway");
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (!LOVABLE_API_KEY) throw new Error("No AI service available");
-
-      const lovableResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages,
-        }),
-      });
-
-      if (!lovableResp.ok) {
-        const errText = await lovableResp.text();
-        throw new Error(`Lovable AI error: ${errText}`);
-      }
-
-      const data = await lovableResp.json();
-      reply = data.choices?.[0]?.message?.content ?? "응답을 받지 못했어요.";
+      throw new Error("AI service is temporarily unavailable");
     }
 
     return new Response(JSON.stringify({ reply }), {

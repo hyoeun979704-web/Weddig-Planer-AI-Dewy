@@ -182,7 +182,6 @@ export default defineConfig(({ mode }) => {
     server: { host: '::', port: 8080 },
     plugins: [
       react(),
-      mode === 'development' && componentTagger(),
       !isCapacitor &&
         VitePWA({
           registerType: 'autoUpdate',

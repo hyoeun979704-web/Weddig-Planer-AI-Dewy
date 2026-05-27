@@ -158,35 +158,10 @@ serve(async (req) => {
     }
 
     if (!streamResponse) {
-      console.log("Falling back to Lovable AI gateway");
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (!LOVABLE_API_KEY) {
-        return new Response(
-          JSON.stringify({ error: "AI 서비스를 이용할 수 없어요. 잠시 후 다시 시도해주세요." }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      const lovableResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [{ role: "system", content: systemPrompt }, ...messages],
-          stream: true,
-        }),
-      });
-      if (!lovableResp.ok) {
-        const errText = await lovableResp.text();
-        console.error("Lovable AI gateway error:", lovableResp.status, errText);
-        if (lovableResp.status === 429) {
-          return new Response(JSON.stringify({ error: "요청 한도를 초과했어요." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-        if (lovableResp.status === 402) {
-          return new Response(JSON.stringify({ error: "크레딧이 부족해요." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-        return new Response(JSON.stringify({ error: "AI 서비스에 문제가 발생했어요." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      streamResponse = lovableResp;
+      return new Response(
+        JSON.stringify({ error: "AI service is temporarily unavailable" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     return new Response(streamResponse.body, {
