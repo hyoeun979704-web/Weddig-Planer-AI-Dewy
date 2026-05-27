@@ -429,7 +429,7 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
     },
   },
   invitation_venues: {
-    title: "청첩장 모임 필터",
+    title: "상견례·청모 필터",
     regionLabel: "지역",
     regions: [
       { value: "서울특별시", label: "서울" },
@@ -451,13 +451,14 @@ const filterConfigs: Record<CategoryType, FilterConfig> = {
       { value: "제주", label: "제주" },
     ],
     filterOptions1: {
-      label: "장소 유형",
+      label: "모임 목적",
       options: [
-        { value: "레스토랑", label: "레스토랑" },
+        { value: "상견례", label: "상견례" },
+        { value: "청첩장모임", label: "청첩장모임" },
+        { value: "양가 식사", label: "양가 식사" },
+        { value: "프라이빗 룸", label: "프라이빗 룸" },
         { value: "한정식", label: "한정식" },
-        { value: "카페", label: "카페" },
         { value: "파인다이닝", label: "파인다이닝" },
-        { value: "호텔레스토랑", label: "호텔레스토랑" },
       ],
     },
     filterOptions2: {

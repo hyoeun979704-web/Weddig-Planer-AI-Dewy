@@ -39,6 +39,8 @@ export const KOREAN_TO_PLACE_CATEGORY: Record<string, string> = {
   "허니문": "honeymoon",
   "혼수": "appliance",
   "청첩장": "invitation_venue",
+  "상견례": "invitation_venue",
+  "상견례·청모": "invitation_venue",
   // Backward-compat aliases
   "스드메": "studio",
 };
@@ -52,7 +54,7 @@ export const PLACE_TO_KOREAN_CATEGORY: Record<string, string> = {
   tailor_shop: "예복",
   honeymoon: "허니문",
   appliance: "혼수",
-  invitation_venue: "청첩장",
+  invitation_venue: "상견례·청모",
   // Video-only categories (no places attached). Used by TipVideoCard for
   // the category badge — see koreanCategoryLabel().
   family_meeting: "상견례",

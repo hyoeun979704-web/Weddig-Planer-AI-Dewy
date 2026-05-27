@@ -28,7 +28,7 @@ const baseTiles: CategoryItem[] = [
   { label: "스드메", image: studioImg, path: "/studios", emoji: "", excludeKey: "studio" },
   { label: "예복", image: suitImg, path: "/suit", emoji: "", excludeKey: "tailor_shop" },
   { label: "한복", image: hanbokImg, path: "/hanbok", emoji: "", excludeKey: "hanbok" },
-  { label: "청첩장 모임", image: invitationImg, path: "/invitation-venues", emoji: "", excludeKey: "invitation_venue" },
+  { label: "상견례·청모", image: invitationImg, path: "/invitation-venues", emoji: "", excludeKey: "invitation_venue" },
   { label: "가전·혼수", image: applianceImg, path: "/appliances", emoji: "", excludeKey: "appliance" },
   { label: "예물·예단", image: jewelryImg, path: "/jewelry", emoji: "" },
   { label: "신혼여행", image: honeymoonImg, path: "/honeymoon", emoji: "", excludeKey: "honeymoon" },
@@ -55,8 +55,8 @@ const SMALL_EXTRA_TILES: CategoryItem[] = [
 // small: 작은 베뉴·스드메·답례 위로.
 // general/null: 기존 순서(이미 일반적 우선순위).
 const TILE_PRIORITY: Record<"self" | "small", string[]> = {
-  self: ["청첩장 모임", "예복", "한복", "스드메", "신혼여행", "예물·예단", "가전·혼수", "웨딩홀"],
-  small: ["스드메", "한복", "예복", "청첩장 모임", "웨딩홀", "신혼여행", "예물·예단", "가전·혼수"],
+  self: ["상견례·청모", "예복", "한복", "스드메", "신혼여행", "예물·예단", "가전·혼수", "웨딩홀"],
+  small: ["스드메", "한복", "예복", "상견례·청모", "웨딩홀", "신혼여행", "예물·예단", "가전·혼수"],
 };
 
 const Tile = ({ item, onClick }: { item: CategoryItem; onClick: () => void }) => {

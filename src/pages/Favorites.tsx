@@ -70,7 +70,7 @@ const VENDOR_SUB_LABELS: Record<string, string> = {
   appliance: "혼수",
   suit: "예복",
   hanbok: "한복",
-  invitation_venues: "소규모예식장",
+  invitation_venues: "상견례·청모",
 };
 
 const ITEM_TYPE_DETAIL_PATH: Record<string, string> = {

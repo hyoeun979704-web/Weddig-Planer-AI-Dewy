@@ -198,7 +198,7 @@ export function buildUserContext(userData: UserData): string {
     const grouped: Record<string, string[]> = {};
     const typeLabels: Record<string, string> = {
       venue: "웨딩홀", studio: "스튜디오", honeymoon: "허니문", hanbok: "한복",
-      suit: "예복", appliance: "혼수가전", honeymoon_gift: "허니문 선물", invitation_venues: "상견례 장소",
+      suit: "예복", appliance: "혼수가전", honeymoon_gift: "허니문 선물", invitation_venues: "상견례·청모",
     };
     for (const fav of userData.favorites) {
       if (!fav.name) continue;

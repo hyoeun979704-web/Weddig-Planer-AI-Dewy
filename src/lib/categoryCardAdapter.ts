@@ -15,7 +15,7 @@ const CATEGORY_LABEL: Record<CategoryType, string> = {
   honeymoon: "신혼여행",
   jewelry: "예물·예단",
   appliances: "혼수·가전",
-  invitation_venues: "청첩장",
+  invitation_venues: "상견례·청모",
 };
 
 // CategoryType → favorites.item_type. dress_shops / makeup_shops aren't in

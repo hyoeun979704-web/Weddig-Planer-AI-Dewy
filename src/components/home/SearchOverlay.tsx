@@ -21,7 +21,7 @@ const TYPE_LABELS: Record<SearchResult["type"], string> = {
   appliance: "가전",
   suit: "예복",
   hanbok: "한복",
-  invitation_venue: "청첩장모임",
+  invitation_venue: "상견례·청모",
 };
 
 const TYPE_ROUTES: Record<SearchResult["type"], string> = {

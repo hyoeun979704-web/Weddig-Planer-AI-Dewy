@@ -21,7 +21,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   honeymoon: "신혼여행",
   jewelry: "예물·예단",
   appliance: "혼수·가전",
-  invitation_venue: "청첩장 모임",
+  invitation_venue: "상견례·청모",
 };
 
 const CARD_KEY: Record<string, string> = {

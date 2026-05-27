@@ -23,7 +23,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   tailor_shop: "예복",
   honeymoon: "허니문",
   appliance: "혼수",
-  invitation_venue: "청첩장",
+  invitation_venue: "상견례·청모",
 };
 
 const FAVORITE_TYPE: Record<string, "venue" | "studio" | "hanbok" | "suit" | "honeymoon" | "appliance" | "invitation_venues"> = {
