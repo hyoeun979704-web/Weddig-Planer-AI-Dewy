@@ -79,14 +79,52 @@ Deno.serve(async (req) => {
     // 멱등성: 이미 같은 tid 로 처리된 결제면 단락
     const { data: existing } = await adminClient
       .from("payments")
-      .select("id, status")
+      .select("id, status, user_id, approved_at, amount")
       .eq("payment_key", tid)
       .maybeSingle();
     if (existing) {
+      if (existing.user_id !== userId) {
+        return new Response(JSON.stringify({ error: "Payment owner mismatch" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const startedAt = existing.approved_at ? new Date(existing.approved_at) : new Date();
+      const expiresAt = new Date(startedAt);
+      if (type === "yearly") {
+        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      } else {
+        expiresAt.setMonth(expiresAt.getMonth() + 1);
+      }
+      const { error: subscriptionError } = await adminClient
+        .from("subscriptions")
+        .upsert({
+          user_id: userId,
+          plan: type === "yearly" ? "yearly" : "monthly",
+          status: "active",
+          price: type === "trial" ? 0 : (existing.amount ?? plan.amount),
+          started_at: startedAt.toISOString(),
+          expires_at: expiresAt.toISOString(),
+          trial_ends_at: type === "trial" ? expiresAt.toISOString() : null,
+          cancelled_at: null,
+          payment_id: tid,
+          payment_method: "kakaopay",
+        }, { onConflict: "user_id" });
+
+      if (subscriptionError) {
+        console.error("existing payment subscription activation failed:", subscriptionError);
+        return new Response(
+          JSON.stringify({ success: false, error: "구독 활성화에 실패했습니다." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
           alreadyProcessed: true,
+          subscriptionActivated: true,
           message: "이미 처리된 결제입니다.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -179,10 +217,36 @@ Deno.serve(async (req) => {
       console.error("payments insert failed:", insertError);
     }
 
-    await adminClient
+    const now = new Date();
+    const expiresAt = new Date(now);
+    if (type === "yearly") {
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    } else {
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+    }
+
+    const { error: subscriptionError } = await adminClient
       .from("subscriptions")
-      .update({ payment_id: tid, payment_method: "kakaopay" })
-      .eq("user_id", userId);
+      .upsert({
+        user_id: userId,
+        plan: type === "yearly" ? "yearly" : "monthly",
+        status: "active",
+        price: type === "trial" ? 0 : plan.amount,
+        started_at: now.toISOString(),
+        expires_at: expiresAt.toISOString(),
+        trial_ends_at: type === "trial" ? expiresAt.toISOString() : null,
+        cancelled_at: null,
+        payment_id: tid,
+        payment_method: "kakaopay",
+      }, { onConflict: "user_id" });
+
+    if (subscriptionError) {
+      console.error("subscription activation failed:", subscriptionError);
+      return new Response(
+        JSON.stringify({ success: false, error: "구독 활성화에 실패했습니다." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     let heartsGranted = 0;
     if (plan.heartReward && plan.heartReason && Date.now() < EARLY_BIRD_END) {
@@ -241,7 +305,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, payment: approveData, refunded, heartsGranted }),
+      JSON.stringify({ success: true, payment: approveData, refunded, heartsGranted, subscriptionActivated: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

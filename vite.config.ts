@@ -60,5 +60,18 @@ export default defineConfig(({ mode }) => {
           : {}),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return undefined;
+            if (id.includes("@supabase")) return "vendor-supabase";
+            if (id.includes("jspdf")) return "vendor-pdf";
+            if (id.includes("html2canvas")) return "vendor-canvas";
+            return undefined;
+          },
+        },
+      },
+    },
   };
 });

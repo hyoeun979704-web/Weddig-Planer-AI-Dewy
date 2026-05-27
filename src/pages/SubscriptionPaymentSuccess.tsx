@@ -12,7 +12,7 @@ const SubscriptionPaymentSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const { startTrial, subscribe, refetch } = useSubscription();
+  const { refetch } = useSubscription();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [heartsGranted, setHeartsGranted] = useState(0);
@@ -64,15 +64,6 @@ const SubscriptionPaymentSuccess = () => {
           setHeartsGranted(data.heartsGranted);
         }
 
-        if (type === "trial") {
-          const ok = await startTrial();
-          if (!ok) throw new Error("체험 활성화 실패");
-        } else {
-          const plan = type as "monthly" | "yearly";
-          const ok = await subscribe(plan);
-          if (!ok) throw new Error("구독 활성화 실패");
-        }
-
         sessionStorage.removeItem(KAKAO_PAY_SESSION_KEY);
         await refetch();
         setStatus("success");
@@ -85,7 +76,7 @@ const SubscriptionPaymentSuccess = () => {
     };
 
     confirmAndActivate();
-  }, [searchParams, user]);
+  }, [searchParams, user, refetch]);
 
   if (status === "loading") {
     return (

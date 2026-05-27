@@ -56,7 +56,7 @@ const faqs = [
 const Premium = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { plan, isPremium, isTrialActive, trialDaysLeft, expiresAt, startTrial, subscribe, cancelSubscription, isLoading } = useSubscription();
+  const { plan, isPremium, isTrialActive, trialDaysLeft, expiresAt, cancelSubscription, isLoading } = useSubscription();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("yearly");
 

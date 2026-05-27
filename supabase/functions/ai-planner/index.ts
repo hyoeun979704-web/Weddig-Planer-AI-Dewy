@@ -70,57 +70,60 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not configured");
     }
 
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ") || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let userContext = "";
     let conditionalCapsules = "";
     let dailyRemaining = -1;
 
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        const token = authHeader.replace("Bearer ", "");
-        const { data: { user } } = await supabase.auth.getUser(token);
+    const usageResult = await checkAndIncrementUsage(supabase, user.id);
+    dailyRemaining = usageResult.remaining;
 
-        if (user) {
-          const usageResult = await checkAndIncrementUsage(supabase, user.id);
-          dailyRemaining = usageResult.remaining;
+    if (!usageResult.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "daily_limit",
+          message: "오늘의 무료 질문 5회를 모두 사용했어요",
+          remaining: 0,
+          upgrade_url: "/premium",
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Daily-Remaining": "0" } },
+      );
+    }
 
-          if (!usageResult.allowed) {
-            return new Response(
-              JSON.stringify({
-                error: "daily_limit",
-                message: "오늘의 무료 질문 5회를 모두 사용했어요",
-                remaining: 0,
-                upgrade_url: "/premium",
-              }),
-              { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Daily-Remaining": "0" } },
-            );
-          }
+    const userData = await fetchUserData(supabase, user.id);
+    userContext = buildUserContext(userData);
+    conditionalCapsules = buildConditionalCapsules(userData.weddingSettings);
+    console.log(
+      "User context loaded for:", user.id,
+      "premium:", usageResult.isPremium,
+      "remaining:", usageResult.remaining,
+      "memories:", userData.memories.length,
+      "capsules:", conditionalCapsules ? "yes" : "no",
+    );
 
-          const userData = await fetchUserData(supabase, user.id);
-          userContext = buildUserContext(userData);
-          conditionalCapsules = buildConditionalCapsules(userData.weddingSettings);
-          console.log(
-            "User context loaded for:", user.id,
-            "premium:", usageResult.isPremium,
-            "remaining:", usageResult.remaining,
-            "memories:", userData.memories.length,
-            "capsules:", conditionalCapsules ? "yes" : "no",
-          );
-
-          // Fire-and-forget memory extraction on the user's most recent
-          // message. Doesn't block the streaming response — the next chat
-          // turn will see the new facts in userContext.
-          const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
-          if (lastUserMsg?.content) {
-            extractAndStoreMemories(supabase, user.id, lastUserMsg.content, GEMINI_API_KEY).catch(
-              (e) => console.warn("memory extraction (bg) failed:", e),
-            );
-          }
-        }
-      } catch (e) {
-        console.log("Could not fetch user data:", e);
-      }
+    // Fire-and-forget memory extraction on the user's most recent message.
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    if (lastUserMsg?.content) {
+      extractAndStoreMemories(supabase, user.id, lastUserMsg.content, GEMINI_API_KEY).catch(
+        (e) => console.warn("memory extraction (bg) failed:", e),
+      );
     }
 
     const systemPrompt = BASE_SYSTEM_PROMPT + ALWAYS_ON_CAPSULES + conditionalCapsules + userContext;

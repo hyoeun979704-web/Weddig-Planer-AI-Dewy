@@ -134,7 +134,15 @@ export const useAIPlanner = () => {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token || ((import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ?? "");
+      const authToken = session?.access_token;
+      if (!authToken) {
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: "AI 플래너는 로그인 후 이용할 수 있어요.\n[로그인 페이지](/auth)에서 가입·로그인 부탁드려요.",
+          intent: "login_required",
+        }]);
+        return;
+      }
 
       // 사용자 컨텍스트는 ai-planner edge function이 user-data.ts로 직접
       // fetch해 시스템 프롬프트에 주입한다. 게이트가 핸들러에서 추출한
@@ -190,6 +198,16 @@ export const useAIPlanner = () => {
           description: "서비스 이용을 위해 크레딧을 충전해주세요.",
           variant: "destructive",
         });
+        setIsLoading(false);
+        return;
+      }
+
+      if (resp.status === 401) {
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: "로그인 세션이 만료되었어요.\n다시 로그인한 뒤 이용해 주세요.",
+          intent: "login_required",
+        }]);
         setIsLoading(false);
         return;
       }

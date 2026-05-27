@@ -99,67 +99,10 @@ export const useSubscription = () => {
     fetchData();
   }, [fetchData]);
 
-  const startTrial = useCallback(async (): Promise<boolean> => {
-    if (!user) return false;
-    try {
-      const trialEnd = new Date();
-      trialEnd.setDate(trialEnd.getDate() + 30);
-
-      const { error } = await supabase.from("subscriptions").upsert({
-        user_id: user.id,
-        plan: "monthly",
-        status: "active",
-        price: 0,
-        trial_ends_at: trialEnd.toISOString(),
-        expires_at: trialEnd.toISOString(),
-        started_at: new Date().toISOString(),
-      }, { onConflict: "user_id" });
-
-      if (error) throw error;
-      await fetchData();
-      return true;
-    } catch (error) {
-      console.error("Failed to start trial:", error);
-      return false;
-    }
-  }, [user, fetchData]);
-
-  const subscribe = useCallback(async (plan: "monthly" | "yearly"): Promise<boolean> => {
-    if (!user) return false;
-    try {
-      const expiresAt = new Date();
-      if (plan === "monthly") expiresAt.setMonth(expiresAt.getMonth() + 1);
-      else expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-
-      const price = plan === "monthly" ? 4900 : 39000;
-
-      const { error } = await supabase.from("subscriptions").upsert({
-        user_id: user.id,
-        plan,
-        status: "active",
-        price,
-        expires_at: expiresAt.toISOString(),
-        started_at: new Date().toISOString(),
-        trial_ends_at: null,
-        cancelled_at: null,
-      }, { onConflict: "user_id" });
-
-      if (error) throw error;
-      await fetchData();
-      return true;
-    } catch (error) {
-      console.error("Failed to subscribe:", error);
-      return false;
-    }
-  }, [user, fetchData]);
-
   const cancelSubscription = useCallback(async (): Promise<boolean> => {
     if (!user) return false;
     try {
-      const { error } = await supabase.from("subscriptions").update({
-        status: "cancelled",
-        cancelled_at: new Date().toISOString(),
-      }).eq("user_id", user.id);
+      const { error } = await supabase.functions.invoke("cancel-subscription");
 
       if (error) throw error;
       await fetchData();
@@ -178,8 +121,6 @@ export const useSubscription = () => {
     expiresAt: subscription?.expires_at ? new Date(subscription.expires_at) : null,
     dailyUsage,
     isLoading,
-    startTrial,
-    subscribe,
     cancelSubscription,
     refetch: fetchData,
   };

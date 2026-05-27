@@ -30,10 +30,18 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!serviceRoleKey || authHeader !== `Bearer ${serviceRoleKey}`) {
+      return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const externalClient = createClient(EXTERNAL_URL, EXTERNAL_KEY);
     const LOCAL_URL = Deno.env.get("SUPABASE_URL")!;
-    const LOCAL_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const localClient = createClient(LOCAL_URL, LOCAL_SERVICE_KEY);
+    const localClient = createClient(LOCAL_URL, serviceRoleKey);
 
     const results: Record<string, any> = {};
 
