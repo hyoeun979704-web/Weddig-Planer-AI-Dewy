@@ -172,8 +172,20 @@ const Privacy = () => {
                 <td className="border border-border p-2">청첩장 사진 배경 제거(누끼)</td>
               </tr>
               <tr>
-                <td className="border border-border p-2">PortOne 및 연동 PG사</td>
-                <td className="border border-border p-2">결제 처리</td>
+                <td className="border border-border p-2">㈜코리아포트원</td>
+                <td className="border border-border p-2">결제 연동·통합 인증·정기결제 빌링키 관리</td>
+              </tr>
+              <tr>
+                <td className="border border-border p-2">㈜카카오페이</td>
+                <td className="border border-border p-2">카카오페이 결제 및 정기결제 처리</td>
+              </tr>
+              <tr>
+                <td className="border border-border p-2">네이버파이낸셜㈜</td>
+                <td className="border border-border p-2">네이버페이 결제 처리</td>
+              </tr>
+              <tr>
+                <td className="border border-border p-2">㈜토스페이먼츠</td>
+                <td className="border border-border p-2">신용카드·계좌이체 결제 처리</td>
               </tr>
               <tr>
                 <td className="border border-border p-2">Vercel Inc.</td>
