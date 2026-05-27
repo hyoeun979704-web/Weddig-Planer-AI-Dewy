@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { LegacyDetail } from "@/hooks/usePlaceDetail";
+import PlaceImagePlaceholder from "@/components/place/PlaceImagePlaceholder";
 import { usePlaceReviews, REVIEW_SOURCE_META, type PlaceReview } from "@/hooks/usePlaceReviews";
 import HiddenCostsCard from "@/components/detail/HiddenCostsCard";
 import SetAsWeddingVenueButton from "@/components/detail/SetAsWeddingVenueButton";
@@ -235,9 +236,12 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
             )}
           </>
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-6xl">
-            
-          </div>
+          /* gallery 비어있을 때 fallback — instagram_url 있으면 인스타 안내,
+             없으면 카테고리 아이콘. 깨진 placeholder.svg 대신 의미 있는 안내. */
+          <PlaceImagePlaceholder
+            category={place.category}
+            instagramUrl={place.instagram_url}
+          />
         )}
         {place.is_partner && (
           <span className="absolute top-3 left-3 px-2.5 py-1 bg-primary text-primary-foreground text-[11px] font-bold rounded-full">

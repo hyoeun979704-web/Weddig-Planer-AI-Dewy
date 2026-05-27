@@ -112,6 +112,9 @@ export interface Vendor {
   review_count: number;
   min_price: number | null;
   is_partner: boolean;
+  /** place_details.instagram_url — main_image_url 없을 때 placeholder 에 안내
+   *  표시. 옵셔널 — fetch hook 이 SELECT 안 하면 그냥 카테고리 placeholder 로 fallback. */
+  instagram_url?: string | null;
   info_lines: VendorInfoLine[];
   style_tags: string[];
   keyword_tags: string[];
