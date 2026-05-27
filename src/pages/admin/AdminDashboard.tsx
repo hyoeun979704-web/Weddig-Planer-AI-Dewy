@@ -100,10 +100,14 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const [freshness, setFreshness] = useState<FreshnessRow[]>([]);
-  const today = startOfToday();
-  const weekAgo = startOfWeek();
 
   useEffect(() => {
+    // P0 — 매 렌더마다 startOfToday() / startOfWeek() 가 새 ISO 를 만들어
+    // useEffect 의존성이 매번 변하면 무한 루프 + supabase 토큰 락 데드락.
+    // effect 내부에서 한 번만 계산.
+    const today = startOfToday();
+    const weekAgo = startOfWeek();
+
     const fetchAll = async () => {
       const [
         dressTotalRes,
@@ -262,7 +266,10 @@ const AdminDashboard = () => {
     };
 
     fetchAll();
-  }, [today, weekAgo]);
+    // mount 시 1회만. today/weekAgo 가 매 렌더 새로 계산되는 값이라 deps 에
+    // 넣으면 무한 루프. 페이지 재방문으로 충분히 fresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <AdminGuard>
