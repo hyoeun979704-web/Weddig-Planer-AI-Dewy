@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites, type ItemType } from "@/hooks/useFavorites";
 import { PLACE_CATEGORY_TO_ITEM_TYPE, type Vendor, type VendorInfoLine } from "@/lib/placeMappers";
+import PlaceImagePlaceholder from "@/components/place/PlaceImagePlaceholder";
 
 export interface VendorMediaCardData {
   id: string;
@@ -16,6 +17,9 @@ export interface VendorMediaCardData {
   mood?: string | null;
   strength?: string | null;
   is_partner?: boolean;
+  /** main_image_url 없을 때의 fallback 안내. 사진을 우리 storage 에 복사하지
+   *  않고 "이 업체는 인스타에서 사진 볼 수 있어요" 라는 placeholder 제공. */
+  instagram_url?: string | null;
   info_lines: VendorInfoLine[];
   // When set, the heart syncs with the favorites table; otherwise it is a
   // local UI-only toggle (e.g. for static template cards).
@@ -34,6 +38,7 @@ export const vendorToCardData = (vendor: Vendor): VendorMediaCardData => ({
   mood: vendor.style_tags[1] ?? null,
   strength: vendor.keyword_tags[3] ?? null,
   is_partner: vendor.is_partner,
+  instagram_url: vendor.instagram_url ?? null,
   info_lines: vendor.info_lines,
   item_type: PLACE_CATEGORY_TO_ITEM_TYPE[vendor.category_slug],
 });
@@ -114,10 +119,20 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
             alt={data.name}
             className="w-full h-full object-cover"
             loading="lazy"
-            onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
+            onError={(e) => {
+              // 외부 URL 깨짐 — 카드 자체를 fallback placeholder 로 교체.
+              // img 숨기고 형제 div (PlaceImagePlaceholder) 가 자동 노출.
+              e.currentTarget.style.display = "none";
+            }}
           />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary/15 to-primary/5" />
+        ) : null}
+        {/* thumbnail_url 없거나 img.onError 시 노출되는 fallback. instagram_url
+            있으면 인스타 안내, 없으면 카테고리 아이콘. */}
+        {!data.thumbnail_url && (
+          <PlaceImagePlaceholder
+            category={data.category}
+            instagramUrl={data.instagram_url}
+          />
         )}
 
         {data.is_partner && (
