@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Search, Loader2, Plus, Pencil, Star, Trash2, ExternalLink } from "lucide-react";
+import { Search, Loader2, Plus, Pencil, Star, Trash2, ExternalLink, RefreshCw } from "lucide-react";
 import AdminGuard from "@/components/admin/AdminGuard";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,6 +69,7 @@ const AdminProductCuration = () => {
   const [filterActive, setFilterActive] = useState<"all" | "on" | "off">("all");
 
   const [editing, setEditing] = useState<PoolProduct | null>(null);
+  const [batchRunning, setBatchRunning] = useState(false);
 
   const fetchPool = useCallback(async () => {
     setPoolLoading(true);
@@ -202,15 +203,69 @@ const AdminProductCuration = () => {
     setPool((prev) => prev.map((p) => (p.id === id ? { ...p, categories: next } : p)));
   };
 
-  const deleteProduct = async (id: string) => {
-    if (!confirm("이 상품을 삭제할까요? (복구 불가)")) return;
-    const { error } = await (supabase.from("products" as any) as any).delete().eq("id", id);
+  const deleteProduct = async (product: PoolProduct) => {
+    if (!confirm("이 상품을 거부 목록으로 보낼까요?\n(자동 수집 시에도 다시 들어오지 않습니다)")) return;
+
+    // 외부 상품이면 blocklist 에 (source, source_product_id) 추가 → 재수집 차단.
+    if (product.source !== "manual" && product.source_product_id) {
+      const { error: blockErr } = await (supabase.from("product_blocklist" as any) as any).upsert(
+        {
+          source: product.source,
+          source_product_id: product.source_product_id,
+          reason: "admin_reject",
+        },
+        { onConflict: "source,source_product_id", ignoreDuplicates: true },
+      );
+      if (blockErr) {
+        toast.error(`거부 목록 추가 실패: ${blockErr.message}`);
+        return;
+      }
+    }
+
+    const { error } = await (supabase.from("products" as any) as any).delete().eq("id", product.id);
     if (error) {
       toast.error(`삭제 실패: ${error.message}`);
       return;
     }
-    setPool((prev) => prev.filter((p) => p.id !== id));
-    toast.success("삭제 완료");
+    setPool((prev) => prev.filter((p) => p.id !== product.id));
+    toast.success("거부 완료");
+  };
+
+  const runBatchCollect = async () => {
+    if (
+      !confirm(
+        "10개 카테고리의 모든 키워드를 네이버에서 검색해 풀에 채웁니다.\n(거부 목록 / 기존 상품은 자동 skip)\n진행하시겠어요?",
+      )
+    ) {
+      return;
+    }
+    setBatchRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("product-batch-collect", {
+        body: {},
+      });
+      if (error) throw error;
+      const r = data as {
+        totalFetched: number;
+        candidates: number;
+        blocked: number;
+        inserted: number;
+        duplicates: number;
+        errors: any[];
+      };
+      toast.success(
+        `자동 수집 완료 — 신규 ${r.inserted}개 / 중복 ${r.duplicates} / 거부 ${r.blocked} (총 ${r.totalFetched} 조회)`,
+      );
+      if (r.errors?.length > 0) {
+        console.warn("batch collect errors", r.errors);
+        toast.warning(`일부 키워드 실패 ${r.errors.length}건 (콘솔 확인)`);
+      }
+      fetchPool();
+    } catch (err: any) {
+      toast.error(`자동 수집 실패: ${err?.message ?? "알 수 없는 오류"}`);
+    } finally {
+      setBatchRunning(false);
+    }
   };
 
   const saveEdit = async (next: Partial<PoolProduct>) => {
@@ -238,11 +293,38 @@ const AdminProductCuration = () => {
   return (
     <AdminGuard>
       <AdminLayout title="상품 큐레이션" description="네이버/쿠팡에서 상품을 수집하고 노출할 항목을 선택합니다">
+        {/* 0. 자동 수집 */}
+        <section className="mb-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+          <div className="flex items-start gap-3">
+            <RefreshCw className="w-5 h-5 text-primary mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <h2 className="text-sm font-bold mb-1">자동 수집 (네이버)</h2>
+              <p className="text-xs text-muted-foreground">
+                10개 카테고리의 시드 키워드로 네이버 검색해 풀에 채워요. 거부 목록 / 기존 상품은 자동 skip 됩니다.
+                권장 주기: 주 1회.
+              </p>
+            </div>
+            <Button onClick={runBatchCollect} disabled={batchRunning}>
+              {batchRunning ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                  수집 중…
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                  지금 자동 수집
+                </>
+              )}
+            </Button>
+          </div>
+        </section>
+
         {/* 1. 검색 패널 */}
         <section className="mb-8 p-4 bg-background rounded-lg border border-border">
           <h2 className="text-sm font-bold mb-3 flex items-center gap-2">
             <Search className="w-4 h-4" />
-            외부 검색
+            수동 검색
           </h2>
           <div className="flex flex-wrap gap-2 items-center mb-3">
             <Select value={searchSource} onValueChange={(v) => setSearchSource(v as any)}>
@@ -385,7 +467,7 @@ const AdminProductCuration = () => {
                   onToggleField={toggleField}
                   onToggleCategory={toggleCategory}
                   onEdit={() => setEditing(p)}
-                  onDelete={() => deleteProduct(p.id)}
+                  onDelete={() => deleteProduct(p)}
                 />
               ))}
             </div>
