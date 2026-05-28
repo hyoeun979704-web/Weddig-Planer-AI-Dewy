@@ -12,7 +12,21 @@ interface Subscription {
   expires_at: string | null;
   trial_ends_at: string | null;
   cancelled_at: string | null;
+  auto_renew: boolean;
+  next_billing_date: string | null;
 }
+
+type SubscriptionRow = {
+  plan: string;
+  status: string;
+  price: number | null;
+  started_at: string | null;
+  expires_at: string | null;
+  trial_ends_at: string | null;
+  cancelled_at: string | null;
+  auto_renew?: boolean | null;
+  next_billing_date?: string | null;
+};
 
 interface DailyUsage {
   used: number;
@@ -63,7 +77,7 @@ export const useSubscription = () => {
         supabase.from("ai_usage_daily").select("message_count").eq("user_id", user.id).eq("usage_date", today).maybeSingle(),
       ]);
 
-      const sub = subRes.data;
+      const sub = subRes.data as SubscriptionRow | null;
       if (sub) {
         setSubscription({
           plan: sub.plan as Plan,
@@ -73,9 +87,21 @@ export const useSubscription = () => {
           expires_at: sub.expires_at,
           trial_ends_at: sub.trial_ends_at,
           cancelled_at: sub.cancelled_at,
+          auto_renew: sub.auto_renew ?? false,
+          next_billing_date: sub.next_billing_date ?? null,
         });
       } else {
-        setSubscription({ plan: "free", status: "active", price: 0, started_at: null, expires_at: null, trial_ends_at: null, cancelled_at: null });
+        setSubscription({
+          plan: "free",
+          status: "active",
+          price: 0,
+          started_at: null,
+          expires_at: null,
+          trial_ends_at: null,
+          cancelled_at: null,
+          auto_renew: false,
+          next_billing_date: null,
+        });
       }
 
       const used = usageRes.data?.message_count || 0;
@@ -139,10 +165,12 @@ export const useSubscription = () => {
         status: "active",
         price,
         expires_at: expiresAt.toISOString(),
+        next_billing_date: expiresAt.toISOString(),
+        auto_renew: true,
         started_at: new Date().toISOString(),
         trial_ends_at: null,
         cancelled_at: null,
-      }, { onConflict: "user_id" });
+      } as never, { onConflict: "user_id" });
 
       if (error) throw error;
       await fetchData();
@@ -157,9 +185,9 @@ export const useSubscription = () => {
     if (!user) return false;
     try {
       const { error } = await supabase.from("subscriptions").update({
-        status: "cancelled",
+        auto_renew: false,
         cancelled_at: new Date().toISOString(),
-      }).eq("user_id", user.id);
+      } as never).eq("user_id", user.id);
 
       if (error) throw error;
       await fetchData();
@@ -176,6 +204,8 @@ export const useSubscription = () => {
     isTrialActive: isTrialActive(),
     trialDaysLeft: trialDaysLeft(),
     expiresAt: subscription?.expires_at ? new Date(subscription.expires_at) : null,
+    autoRenew: subscription?.auto_renew ?? false,
+    nextBillingDate: subscription?.next_billing_date ? new Date(subscription.next_billing_date) : null,
     dailyUsage,
     isLoading,
     startTrial,

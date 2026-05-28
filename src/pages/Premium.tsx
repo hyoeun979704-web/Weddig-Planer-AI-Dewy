@@ -48,15 +48,25 @@ const featureGroups = [
 ];
 
 const faqs = [
-  { q: "무료 체험 후 자동 결제되나요?", a: "아니요. 체험 종료 후 직접 구독을 선택하셔야 합니다." },
-  { q: "구독을 취소하면 어떻게 되나요?", a: "만료일까지 프리미엄을 이용하실 수 있고, 이후 무료로 전환됩니다." },
+  {
+    q: "무료 체험 후 자동 결제되나요?",
+    a: "아니요. 무료 체험은 자동 결제로 이어지지 않습니다. 체험 종료 후 회원이 직접 구독을 시작해야 결제가 진행됩니다.",
+  },
+  {
+    q: "정기 구독은 자동 갱신되나요?",
+    a: "네. 월간·연간 구독은 해지하지 않으면 매 결제 주기에 동일 금액으로 자동 갱신됩니다. 다음 결제 7일 전에 앱 알림으로 사전 고지해 드립니다.",
+  },
+  {
+    q: "구독을 취소하면 어떻게 되나요?",
+    a: "자동 갱신이 즉시 중단되며, 이미 결제된 기간은 만료일까지 정상 이용하실 수 있습니다. 이후 무료 플랜으로 자동 전환됩니다.",
+  },
   { q: "플랜을 변경할 수 있나요?", a: "언제든 월간 ↔ 연간 변경이 가능합니다." },
 ];
 
 const Premium = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { plan, isPremium, isTrialActive, trialDaysLeft, expiresAt, startTrial, subscribe, cancelSubscription, isLoading } = useSubscription();
+  const { plan, isPremium, isTrialActive, trialDaysLeft, expiresAt, autoRenew, nextBillingDate, startTrial, subscribe, cancelSubscription, isLoading } = useSubscription();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("yearly");
 
@@ -72,13 +82,15 @@ const Premium = () => {
 
   const handleCancel = async () => {
     const ok = await cancelSubscription();
-    if (ok) toast.success("구독이 취소되었습니다. 만료일까지 이용 가능합니다.");
-    else toast.error("구독 취소에 실패했습니다");
+    if (ok) toast.success("자동 갱신이 해지되었습니다. 만료일까지 정상 이용 가능합니다.");
+    else toast.error("자동 갱신 해지에 실패했습니다");
   };
 
-  const expiresLabel = expiresAt
-    ? `${expiresAt.getFullYear()}.${String(expiresAt.getMonth() + 1).padStart(2, "0")}.${String(expiresAt.getDate()).padStart(2, "0")}`
-    : "";
+  const formatDate = (d: Date) =>
+    `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+
+  const expiresLabel = expiresAt ? formatDate(expiresAt) : "";
+  const nextBillingLabel = nextBillingDate ? formatDate(nextBillingDate) : expiresLabel;
 
   const trialExpired = plan !== "free" && !isPremium;
 
@@ -98,7 +110,11 @@ const Premium = () => {
                 </p>
               </div>
               <p className="text-sm text-muted-foreground">
-                {isTrialActive ? `체험 종료까지 ${trialDaysLeft}일 남았어요` : `만료일: ${expiresLabel}`}
+                {isTrialActive
+                  ? `체험 종료까지 ${trialDaysLeft}일 남았어요`
+                  : autoRenew
+                    ? `다음 결제일: ${nextBillingLabel} (자동 갱신)`
+                    : `만료일: ${expiresLabel} · 자동 갱신 해지됨`}
               </p>
               <button
                 onClick={() => navigate("/premium/content")}
@@ -245,24 +261,34 @@ const Premium = () => {
           </div>
         </div>
 
-        {/* Cancel */}
-        {isPremium && !isTrialActive && (
+        {/* Cancel auto-renew */}
+        {isPremium && !isTrialActive && autoRenew && (
           <div className="px-4 py-4 text-center">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <button className="text-sm text-muted-foreground underline">구독 취소</button>
+                <button className="text-sm text-muted-foreground underline">자동 갱신 해지</button>
               </AlertDialogTrigger>
               <AlertDialogContent className="max-w-[360px]">
                 <AlertDialogHeader>
-                  <AlertDialogTitle>구독을 취소하시겠어요?</AlertDialogTitle>
-                  <AlertDialogDescription>만료일까지 프리미엄을 이용하실 수 있고, 이후 무료로 전환됩니다.</AlertDialogDescription>
+                  <AlertDialogTitle>자동 갱신을 해지할까요?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    다음 결제일부터 자동 결제가 중단됩니다. 이미 결제된 기간({expiresLabel}까지)은 정상
+                    이용할 수 있으며, 이후 무료 플랜으로 전환됩니다.
+                  </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>유지하기</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleCancel} className="bg-destructive text-destructive-foreground">취소하기</AlertDialogAction>
+                  <AlertDialogAction onClick={handleCancel} className="bg-destructive text-destructive-foreground">해지하기</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          </div>
+        )}
+        {isPremium && !isTrialActive && !autoRenew && (
+          <div className="px-4 py-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              자동 갱신이 해지되었습니다. {expiresLabel}까지 정상 이용할 수 있어요.
+            </p>
           </div>
         )}
       </main>
