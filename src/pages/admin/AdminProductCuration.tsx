@@ -60,6 +60,7 @@ const AdminProductCuration = () => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [collecting, setCollecting] = useState<string | null>(null);
+  const [bulkCollecting, setBulkCollecting] = useState(false);
 
   const [pool, setPool] = useState<PoolProduct[]>([]);
   const [poolLoading, setPoolLoading] = useState(true);
@@ -121,26 +122,27 @@ const AdminProductCuration = () => {
     }
   };
 
+  const buildRow = (item: SearchResult) => ({
+    name: item.name,
+    short_description: item.short_description,
+    thumbnail_url: item.thumbnail_url,
+    price: item.price,
+    sale_price: item.sale_price,
+    source: item.source,
+    source_product_id: item.source_product_id,
+    source_url: item.source_url,
+    source_mall: item.source_mall,
+    raw_data: item.raw,
+    is_active: false,
+    is_featured: false,
+    categories: [],
+    stock: 0,
+    synced_at: new Date().toISOString(),
+  });
+
   const collect = async (item: SearchResult) => {
     setCollecting(item.source_product_id);
-    const row = {
-      name: item.name,
-      short_description: item.short_description,
-      thumbnail_url: item.thumbnail_url,
-      price: item.price,
-      sale_price: item.sale_price,
-      source: item.source,
-      source_product_id: item.source_product_id,
-      source_url: item.source_url,
-      source_mall: item.source_mall,
-      raw_data: item.raw,
-      is_active: false,
-      is_featured: false,
-      categories: [],
-      stock: 0,
-      synced_at: new Date().toISOString(),
-    };
-    const { error } = await (supabase.from("products" as any) as any).insert(row);
+    const { error } = await (supabase.from("products" as any) as any).insert(buildRow(item));
     setCollecting(null);
     if (error) {
       if (error.code === "23505") {
@@ -151,6 +153,24 @@ const AdminProductCuration = () => {
       return;
     }
     toast.success("수집 완료. 풀에 추가되었습니다");
+    fetchPool();
+  };
+
+  const collectAll = async () => {
+    if (searchResults.length === 0) return;
+    setBulkCollecting(true);
+    // (source, source_product_id) 가 unique 라 중복은 DB 가 23505 로 거름.
+    // ignoreDuplicates 옵션으로 한 번에 insert.
+    const rows = searchResults.map(buildRow);
+    const { error, count } = await (supabase.from("products" as any) as any)
+      .upsert(rows, { onConflict: "source,source_product_id", ignoreDuplicates: true, count: "exact" });
+    setBulkCollecting(false);
+    if (error) {
+      toast.error(`일괄 수집 실패: ${error.message}`);
+      return;
+    }
+    const added = typeof count === "number" ? count : rows.length;
+    toast.success(`${added}개 수집 완료 (중복은 건너뜀)`);
     fetchPool();
   };
 
@@ -246,7 +266,17 @@ const AdminProductCuration = () => {
           </div>
 
           {searchResults.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+            <>
+              <div className="flex items-center justify-between mt-4 mb-2">
+                <span className="text-xs text-muted-foreground">
+                  결과 {searchResults.length}개
+                </span>
+                <Button size="sm" onClick={collectAll} disabled={bulkCollecting}>
+                  {bulkCollecting ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Plus className="w-3 h-3 mr-1" />}
+                  결과 전체 수집
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {searchResults.map((item) => (
                 <div key={`${item.source}-${item.source_product_id}`} className="bg-card border border-border rounded-lg overflow-hidden">
                   <div className="h-32 bg-muted">
@@ -275,7 +305,8 @@ const AdminProductCuration = () => {
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            </>
           )}
         </section>
 
