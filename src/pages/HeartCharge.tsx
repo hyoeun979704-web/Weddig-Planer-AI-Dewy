@@ -14,6 +14,8 @@ import {
   krwForPoints,
   maxPointsForPackage,
 } from "@/lib/heartPackages";
+import PaymentTermsConsent from "@/components/checkout/PaymentTermsConsent";
+import CheckoutBusinessInfo from "@/components/checkout/CheckoutBusinessInfo";
 
 const SESSION_KEY = "heart_charge_session";
 
@@ -26,6 +28,7 @@ const HeartCharge = () => {
   const [pointsToUse, setPointsToUse] = useState(0);
   const [isStarterUsed, setIsStarterUsed] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasAgreed, setHasAgreed] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -59,6 +62,10 @@ const HeartCharge = () => {
 
   const handlePay = async () => {
     if (!selected || isSubmitting || !user) return;
+    if (!hasAgreed) {
+      toast.error("필수 약관에 모두 동의해주세요");
+      return;
+    }
     setIsSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke(
@@ -205,6 +212,12 @@ const HeartCharge = () => {
           <p>• 콘텐츠 생성에 실패한 경우 사용한 하트는 자동 환불돼요.</p>
           <p>• 미사용 하트 환불은 전자상거래법 및 <button onClick={() => navigate("/terms")} className="underline">이용약관</button>의 청약철회 규정을 따라요.</p>
         </div>
+
+        {selected && (
+          <PaymentTermsConsent mode="one_time" onAllAgreedChange={setHasAgreed} />
+        )}
+
+        <CheckoutBusinessInfo />
       </main>
 
       {selected && (
@@ -217,12 +230,17 @@ const HeartCharge = () => {
           </div>
           <button
             onClick={handlePay}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !hasAgreed}
             className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
             카카오페이로 결제하기
           </button>
+          {!hasAgreed && (
+            <p className="text-[11px] text-muted-foreground text-center mt-2">
+              필수 약관에 모두 동의하시면 결제가 활성화됩니다.
+            </p>
+          )}
         </div>
       )}
     </div>
