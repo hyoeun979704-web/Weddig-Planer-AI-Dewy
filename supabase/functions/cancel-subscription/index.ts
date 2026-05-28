@@ -37,6 +37,24 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // 정기결제(recurring) 가드: 현재 카카오페이는 TC0ONETIME 단건만 사용하므로
+    // DB 마킹만으로 충분. 향후 TCSUBSCRIP / 토스 빌링키 등 정기결제로 전환되면
+    // 여기서 PG 측 정기결제 해지를 호출해야 한다 — 명시적으로 거부해 회귀 방지.
+    const { data: currentSub } = await adminClient
+      .from("subscriptions")
+      .select("payment_method")
+      .eq("user_id", claimsData.claims.sub)
+      .maybeSingle();
+    const recurringMethods = new Set(["kakaopay_recurring", "toss_billing"]);
+    if (currentSub?.payment_method && recurringMethods.has(currentSub.payment_method)) {
+      console.error("recurring cancel not implemented for:", currentSub.payment_method);
+      return new Response(
+        JSON.stringify({ error: "Recurring cancel not implemented" }),
+        { status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const { error } = await adminClient
       .from("subscriptions")
       .update({

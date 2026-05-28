@@ -7,7 +7,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.cancel-subscription]
-verify_jwt = false
+verify_jwt = true
 
 [functions.migrate-data]
 verify_jwt = false
