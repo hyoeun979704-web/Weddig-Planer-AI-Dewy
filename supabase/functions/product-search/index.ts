@@ -15,7 +15,7 @@
  *   product_search_cache 테이블에 24h 적중 윈도우. 외부 API 호출 절감.
  *
  * 키 누락 graceful:
- *   - 네이버: NAVER_SEARCH_CLIENT_ID / NAVER_SEARCH_CLIENT_SECRET 누락 시
+ *   - 네이버: NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 누락 시
  *     500 + "네이버 API 키가 설정되지 않았습니다" 메시지.
  *   - 쿠팡: COUPANG_ACCESS_KEY / COUPANG_SECRET_KEY 누락 시 동일 형식.
  */
@@ -59,10 +59,10 @@ function stripHtmlTags(s: string): string {
 // 네이버 쇼핑 검색 API.
 // 응답 형태: https://developers.naver.com/docs/serviceapi/search/shopping/shopping.md
 async function searchNaver(query: string): Promise<ProductSearchItem[]> {
-  const clientId = Deno.env.get("NAVER_SEARCH_CLIENT_ID");
-  const clientSecret = Deno.env.get("NAVER_SEARCH_CLIENT_SECRET");
+  const clientId = Deno.env.get("NAVER_CLIENT_ID");
+  const clientSecret = Deno.env.get("NAVER_CLIENT_SECRET");
   if (!clientId || !clientSecret) {
-    throw new Error("네이버 API 키가 설정되지 않았습니다 (NAVER_SEARCH_CLIENT_ID/SECRET).");
+    throw new Error("네이버 API 키가 설정되지 않았습니다 (NAVER_CLIENT_ID/SECRET).");
   }
 
   const url = new URL("https://openapi.naver.com/v1/search/shop.json");
