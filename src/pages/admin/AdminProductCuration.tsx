@@ -57,6 +57,7 @@ interface PoolProduct {
 const AdminProductCuration = () => {
   const [searchSource, setSearchSource] = useState<"naver" | "coupang">("naver");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchCategories, setSearchCategories] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [collecting, setCollecting] = useState<string | null>(null);
@@ -135,7 +136,7 @@ const AdminProductCuration = () => {
     raw_data: item.raw,
     is_active: false,
     is_featured: false,
-    categories: [],
+    categories: searchCategories,
     stock: 0,
     synced_at: new Date().toISOString(),
   });
@@ -263,6 +264,34 @@ const AdminProductCuration = () => {
             <Button onClick={runSearch} disabled={searching}>
               {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : "검색"}
             </Button>
+          </div>
+
+          <div className="mb-2">
+            <p className="text-xs text-muted-foreground mb-1.5">
+              수집 시 자동 태그할 카테고리 (다중 선택 가능, 비워두면 풀에 무태그로 들어감)
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {STORE_CATEGORIES.map((c) => {
+                const active = searchCategories.includes(c.value);
+                return (
+                  <button
+                    key={c.value}
+                    onClick={() =>
+                      setSearchCategories((prev) =>
+                        prev.includes(c.value) ? prev.filter((v) => v !== c.value) : [...prev, c.value],
+                      )
+                    }
+                    className={`px-2 py-1 text-[11px] rounded border ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {searchResults.length > 0 && (
