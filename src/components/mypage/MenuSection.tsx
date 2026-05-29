@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Calendar, User, Bell, FileText, MessageSquare,
   HelpCircle, Settings, ChevronRight, LogOut, Building2, Heart,
-  Mail, Shirt, Sparkles, Shield
+  Mail, Shirt, Sparkles, Shield, Users, Gift
 } from "lucide-react";
 import { User as SupaUser } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -42,6 +42,8 @@ const MenuSection = ({
           ? [{ icon: Heart, title: "결혼 정보 수정", description: "예정일·지역·진행 단계 변경", onClick: onEditWeddingInfo } as MenuItem]
           : []),
         { icon: Calendar, title: "내 웨딩 일정", description: "D-Day 설정 및 일정 관리", href: "/my-schedule" },
+        { icon: Users, title: "가족 초대", description: "부모님·플래너 권한 위임", href: "/family-invite" },
+        { icon: Gift, title: "친구 초대", description: "초대 코드 1명당 1,000P 적립", href: "/referral" },
         { icon: FileText, title: "내 문의/예약", description: "문의 및 예약 내역 확인", href: "/my-inquiries" },
       ],
     },

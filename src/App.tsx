@@ -65,6 +65,7 @@ const InvitationVenueDetail = lazy(() => import("./pages/InvitationVenueDetail")
 const VendorList = lazy(() => import("./pages/VendorList"));
 const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const FamilyInvite = lazy(() => import("./pages/FamilyInvite"));
 const PremiumContent = lazy(() => import("./pages/PremiumContent"));
 const Premium = lazy(() => import("./pages/Premium"));
 const CoupleVote = lazy(() => import("./pages/CoupleVote"));
@@ -200,6 +201,7 @@ const App = () => (
               <Route path="/points/charge/success" element={<HeartChargeSuccess />} />
               <Route path="/points/charge/fail" element={<HeartChargeFail />} />
               <Route path="/referral" element={<Referral />} />
+              <Route path="/family-invite" element={<FamilyInvite />} />
               <Route path="/coupons" element={<Coupons />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/my-schedule" element={<MySchedule />} />

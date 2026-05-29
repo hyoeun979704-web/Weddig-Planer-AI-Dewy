@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type ReviewSourceType =
@@ -25,6 +25,8 @@ export interface PlaceReview {
   is_verified: boolean | null;
   /** 후기 출처 분류 — 광고/협찬/사용자/에디터 구분. P3·P13·P18 페인 해소용. */
   source_type: ReviewSourceType;
+  /** 작성자(로그인 사용자) ID — 외부 scrape row 는 null. 본인 후기 식별·중복 작성 차단용. */
+  user_id: string | null;
 }
 
 /** 후기 출처별 사용자에게 보일 라벨·색상·우선순위(낮을수록 신뢰 높음). */
@@ -74,7 +76,7 @@ export const usePlaceReviews = (placeId: string | undefined, enabled = true) => 
       const { data, error } = await (supabase as any)
         .from("place_reviews")
         .select(
-          "review_id, title, content, author, rating, review_date, ai_summary, sentiment, helpful_count, source_name, hall_name, wedding_date, is_verified, source_type"
+          "review_id, title, content, author, rating, review_date, ai_summary, sentiment, helpful_count, source_name, hall_name, wedding_date, is_verified, source_type, user_id"
         )
         .eq("place_id", placeId)
         .order("review_date", { ascending: false, nullsFirst: false })
@@ -83,5 +85,53 @@ export const usePlaceReviews = (placeId: string | undefined, enabled = true) => 
       return (data ?? []) as PlaceReview[];
     },
     enabled: !!placeId && enabled,
+  });
+};
+
+export interface SubmitReviewInput {
+  placeId: string;
+  rating: number;
+  title?: string;
+  content: string;
+}
+
+export interface SubmitReviewResult {
+  reviewId: string;
+  awarded: boolean;
+  amount: number;
+  balanceAfter: number;
+}
+
+// 후기 작성 — RPC submit_place_review. 장소당 최초 작성 + 사용자별 최초 1회 3,000P.
+// 같은 장소에 두 번째 작성은 unique_violation 으로 차단.
+export const useSubmitPlaceReview = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: SubmitReviewInput): Promise<SubmitReviewResult> => {
+      const { data, error } = await (supabase as any).rpc("submit_place_review", {
+        p_place_id: input.placeId,
+        p_rating: input.rating,
+        p_title: input.title ?? null,
+        p_content: input.content,
+      });
+      if (error) {
+        if ((error.message ?? "").includes("already reviewed")) {
+          throw new Error("ALREADY_REVIEWED");
+        }
+        throw error;
+      }
+      const row = Array.isArray(data) ? data[0] : data;
+      return {
+        reviewId: row?.review_id,
+        awarded: !!row?.awarded,
+        amount: row?.amount ?? 0,
+        balanceAfter: row?.balance_after ?? 0,
+      };
+    },
+    onSuccess: (_res, input) => {
+      queryClient.invalidateQueries({ queryKey: ["place-reviews", input.placeId] });
+      queryClient.invalidateQueries({ queryKey: ["user-points"] });
+      queryClient.invalidateQueries({ queryKey: ["points"] });
+    },
   });
 };

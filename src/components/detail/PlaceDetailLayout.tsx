@@ -24,9 +24,20 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { LegacyDetail } from "@/hooks/usePlaceDetail";
 import PlaceImagePlaceholder from "@/components/place/PlaceImagePlaceholder";
-import { usePlaceReviews, REVIEW_SOURCE_META, type PlaceReview } from "@/hooks/usePlaceReviews";
+import { usePlaceReviews, useSubmitPlaceReview, REVIEW_SOURCE_META, type PlaceReview } from "@/hooks/usePlaceReviews";
 import HiddenCostsCard from "@/components/detail/HiddenCostsCard";
 import SetAsWeddingVenueButton from "@/components/detail/SetAsWeddingVenueButton";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 
 const handleTagClick = (tag: string) => {
   // Tag-based filtering on the list pages isn't wired yet — the list hooks
@@ -591,6 +602,24 @@ function ReviewTab({
   reviewCount: number;
 }) {
   const { data: reviews = [], isLoading } = usePlaceReviews(placeId);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [writeOpen, setWriteOpen] = useState(false);
+
+  const hasMine = !!user && reviews.some((r) => r.user_id === user.id);
+
+  const handleOpenWrite = () => {
+    if (!user) {
+      toast.info("로그인 후 후기를 작성할 수 있어요");
+      navigate("/auth");
+      return;
+    }
+    if (hasMine) {
+      toast.info("이 장소에는 이미 후기를 작성했어요");
+      return;
+    }
+    setWriteOpen(true);
+  };
 
   if (isLoading) {
     return (
@@ -626,6 +655,14 @@ function ReviewTab({
             {reviewCount.toLocaleString()}개 리뷰
           </span>
         </div>
+        <Button
+          type="button"
+          onClick={handleOpenWrite}
+          disabled={hasMine}
+          className="w-full mt-3 h-10 rounded-xl"
+        >
+          {hasMine ? "이미 후기를 작성했어요" : "후기 작성하고 3,000P 받기"}
+        </Button>
       </section>
 
       {/* Review list or empty state */}
@@ -642,7 +679,143 @@ function ReviewTab({
           ))}
         </div>
       )}
+
+      <WriteReviewDialog
+        open={writeOpen}
+        placeId={placeId}
+        onClose={() => setWriteOpen(false)}
+      />
     </>
+  );
+}
+
+function WriteReviewDialog({
+  open,
+  placeId,
+  onClose,
+}: {
+  open: boolean;
+  placeId: string;
+  onClose: () => void;
+}) {
+  const [rating, setRating] = useState(5);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const submit = useSubmitPlaceReview();
+
+  const reset = () => {
+    setRating(5);
+    setTitle("");
+    setContent("");
+  };
+
+  const close = () => {
+    if (submit.isPending) return;
+    reset();
+    onClose();
+  };
+
+  const handleSubmit = async () => {
+    if (content.trim().length < 10) {
+      toast.error("후기는 최소 10자 이상 작성해주세요");
+      return;
+    }
+    try {
+      const res = await submit.mutateAsync({
+        placeId,
+        rating,
+        title: title.trim() || undefined,
+        content: content.trim(),
+      });
+      if (res.awarded) {
+        toast.success(`후기 등록! ${res.amount.toLocaleString()}P 적립됐어요`);
+      } else {
+        toast.success("후기 등록 완료! (장소별 첫 작성 보상은 이미 지급됐어요)");
+      }
+      reset();
+      onClose();
+    } catch (e: any) {
+      if (e?.message === "ALREADY_REVIEWED") {
+        toast.error("이 장소에는 이미 후기를 작성했어요");
+        onClose();
+      } else {
+        toast.error("후기 등록에 실패했어요. 잠시 후 다시 시도해주세요");
+      }
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && close()}>
+      <DialogContent className="max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle>후기 작성</DialogTitle>
+          <DialogDescription>
+            첫 후기 작성 시 3,000P 즉시 적립 (사용자별 1회)
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">별점</p>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: 5 }).map((_, i) => {
+                const v = i + 1;
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setRating(v)}
+                    aria-label={`${v}점`}
+                    className="p-1 active:scale-90 transition-transform"
+                  >
+                    <Star
+                      className={`w-7 h-7 ${
+                        v <= rating
+                          ? "fill-amber-400 text-amber-400"
+                          : "text-muted-foreground/40"
+                      }`}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">
+              제목 <span className="text-xs text-muted-foreground font-normal">(선택)</span>
+            </p>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="한 줄 요약"
+              maxLength={60}
+            />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">
+              내용 <span className="text-xs text-muted-foreground font-normal">(10자 이상)</span>
+            </p>
+            <Textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="실제 경험을 솔직하게 적어주세요"
+              maxLength={2000}
+              rows={6}
+            />
+            <p className="text-right text-[11px] text-muted-foreground mt-1">
+              {content.length} / 2000
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={close} disabled={submit.isPending}>
+            취소
+          </Button>
+          <Button onClick={handleSubmit} disabled={submit.isPending}>
+            {submit.isPending ? "등록 중..." : "후기 등록"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
