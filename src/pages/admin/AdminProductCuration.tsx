@@ -425,8 +425,8 @@ const AdminProductCuration = () => {
   return (
     <AdminGuard>
       <AdminLayout title="상품 큐레이션" description="네이버/쿠팡에서 상품을 수집하고 노출할 항목을 선택합니다">
-        {/* 0. 자동 작업 */}
-        <section className="mb-4 grid gap-3 md:grid-cols-2">
+        {/* 0. 자동 작업 + 추천 관리 진입 */}
+        <section className="mb-4 grid gap-3 md:grid-cols-3">
           <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
             <div className="flex items-start gap-3 mb-3">
               <RefreshCw className="w-5 h-5 text-primary mt-0.5" />
@@ -473,6 +473,21 @@ const AdminProductCuration = () => {
               ) : (
                 "지금 동기화"
               )}
+            </Button>
+          </div>
+
+          <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200/40 dark:border-amber-900/30">
+            <div className="flex items-start gap-3 mb-3">
+              <Star className="w-5 h-5 text-amber-600 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <h2 className="text-sm font-bold mb-1">추천 상품 관리</h2>
+                <p className="text-xs text-muted-foreground">
+                  노출 상품 중 추천(carousel) 토글 + 페르소나별 노출 선택.
+                </p>
+              </div>
+            </div>
+            <Button asChild variant="outline" className="w-full">
+              <a href="/admin/featured-products">추천 관리 열기</a>
             </Button>
           </div>
         </section>
@@ -839,13 +854,12 @@ const PoolRow = ({ product, onToggleField, onToggleCategory, onEdit, onDelete }:
               onCheckedChange={(v) => onToggleField(product.id, "is_active", v)}
             />
           </div>
-          <button
-            onClick={() => onToggleField(product.id, "is_featured", !product.is_featured)}
-            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
-          >
-            <Star className={`w-3 h-3 ${product.is_featured ? "fill-primary text-primary" : ""}`} />
-            추천
-          </button>
+          {product.is_featured && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-primary">
+              <Star className="w-3 h-3 fill-primary text-primary" />
+              추천
+            </span>
+          )}
         </div>
       </div>
 

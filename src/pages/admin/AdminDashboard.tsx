@@ -19,6 +19,7 @@ import {
   MapPin,
   Instagram,
   ShoppingBag,
+  Star,
   type LucideIcon,
 } from "lucide-react";
 import AdminGuard from "@/components/admin/AdminGuard";
@@ -384,6 +385,7 @@ const AdminDashboard = () => {
             <QuickActionCard to="/admin/users" label="사용자 관리" icon={Users} />
             <QuickActionCard to="/admin/reports" label="신고 처리" icon={Flag} />
             <QuickActionCard to="/admin/product-curation" label="상품 큐레이션" icon={ShoppingBag} />
+            <QuickActionCard to="/admin/featured-products" label="추천 상품 관리" icon={Star} />
             <QuickActionCard to="/" label="앱으로 돌아가기" icon={Sparkles} />
           </div>
         </section>

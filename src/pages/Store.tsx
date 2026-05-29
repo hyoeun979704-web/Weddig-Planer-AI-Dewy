@@ -100,12 +100,14 @@ const Store = () => {
   }, [selectedTab, filters, sortMode]);
 
   // 추천 띠 — 선택된 탭에 해당하는 is_featured 상품 8개. 'all' 일 땐 전체 추천.
+  // featured_personas 가 비어있으면 전체 노출, 값이 있으면 사용자 persona_mode 와 매칭 시만.
   useEffect(() => {
     const fetchFeatured = async () => {
+      const persona = weddingSettings.persona_mode ?? null;
       let q = (supabase
         .from("products" as any)
         .select(
-          "id, name, short_description, category, categories, price, sale_price, thumbnail_url, rating, review_count, sold_count, is_featured, source, source_url, source_mall",
+          "id, name, short_description, category, categories, price, sale_price, thumbnail_url, rating, review_count, sold_count, is_featured, source, source_url, source_mall, featured_personas",
         ) as any)
         .eq("is_active", true)
         .eq("is_featured", true)
@@ -113,11 +115,16 @@ const Store = () => {
       if (selectedTab !== "all") {
         q = q.contains("categories", [selectedTab]) as any;
       }
+      // 빈 배열(전체 대상) OR 사용자 persona 가 배열에 포함.
+      const orFilter = persona
+        ? `featured_personas.eq.{},featured_personas.cs.{${persona}}`
+        : "featured_personas.eq.{}";
+      q = q.or(orFilter) as any;
       const { data } = await q;
       setFeatured((data || []) as any);
     };
     fetchFeatured();
-  }, [selectedTab]);
+  }, [selectedTab, weddingSettings.persona_mode]);
 
   const hasActiveFilters =
     filters.category !== null ||

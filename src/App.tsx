@@ -103,6 +103,7 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminBusinessReview = lazy(() => import("./pages/admin/AdminBusinessReview"));
 const AdminProductCuration = lazy(() => import("./pages/admin/AdminProductCuration"));
+const AdminFeaturedProducts = lazy(() => import("./pages/admin/AdminFeaturedProducts"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
 const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
@@ -296,6 +297,7 @@ const App = () => (
               <Route path="/admin/reports" element={<AdminGuard><AdminReports /></AdminGuard>} />
               <Route path="/admin/business-review" element={<AdminGuard><AdminBusinessReview /></AdminGuard>} />
               <Route path="/admin/product-curation" element={<AdminGuard><AdminProductCuration /></AdminGuard>} />
+              <Route path="/admin/featured-products" element={<AdminGuard><AdminFeaturedProducts /></AdminGuard>} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
