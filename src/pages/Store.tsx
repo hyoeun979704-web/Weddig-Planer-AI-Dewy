@@ -108,6 +108,12 @@ const Store = () => {
   const handleCategoryTabChange = useCategoryTabNavigation();
 
   const handleProductClick = (product: Product) => {
+    // 클릭 트래킹 — fire-and-forget. 실패해도 UX 영향 없음.
+    void (supabase.from("product_clicks" as any) as any).insert({
+      product_id: product.id,
+      source_tab: selectedTab,
+    });
+
     // 외부 상품(쿠팡/네이버)은 원본으로 새 탭 이동. 자체 상품은 내부 상세로.
     if (product.source !== "manual" && product.source_url) {
       window.open(product.source_url, "_blank", "noopener,noreferrer");

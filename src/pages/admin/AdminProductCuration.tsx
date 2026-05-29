@@ -52,6 +52,9 @@ interface PoolProduct {
   source_mall: string | null;
   source_product_id: string | null;
   categories: string[];
+  stale_reason: string | null;
+  last_resynced_at: string | null;
+  click_count?: number;
 }
 
 const AdminProductCuration = () => {
@@ -70,13 +73,14 @@ const AdminProductCuration = () => {
 
   const [editing, setEditing] = useState<PoolProduct | null>(null);
   const [batchRunning, setBatchRunning] = useState(false);
+  const [resyncRunning, setResyncRunning] = useState(false);
 
   const fetchPool = useCallback(async () => {
     setPoolLoading(true);
     let q = (supabase
       .from("products" as any)
       .select(
-        "id, name, short_description, description, thumbnail_url, price, sale_price, is_active, is_featured, source, source_url, source_mall, source_product_id, categories",
+        "id, name, short_description, description, thumbnail_url, price, sale_price, is_active, is_featured, source, source_url, source_mall, source_product_id, categories, stale_reason, last_resynced_at",
       ) as any).order("created_at", { ascending: false });
     if (filterSource !== "all") {
       q = q.eq("source", filterSource);
@@ -86,11 +90,21 @@ const AdminProductCuration = () => {
     } else if (filterActive === "off") {
       q = q.eq("is_active", false);
     }
-    const { data, error } = await q;
+    const [{ data, error }, { data: clickRows }] = await Promise.all([
+      q,
+      (supabase as any).rpc("product_click_counts", { p_days: 7 }),
+    ]);
     if (error) {
       toast.error(`풀 조회 실패: ${error.message}`);
     } else {
-      setPool((data || []) as any);
+      const clickMap = new Map<string, number>(
+        ((clickRows as any[]) ?? []).map((r) => [r.product_id, Number(r.click_count) || 0]),
+      );
+      const enriched = ((data ?? []) as any[]).map((p) => ({
+        ...p,
+        click_count: clickMap.get(p.id) ?? 0,
+      }));
+      setPool(enriched);
     }
     setPoolLoading(false);
   }, [filterSource, filterActive]);
@@ -231,6 +245,41 @@ const AdminProductCuration = () => {
     toast.success("거부 완료");
   };
 
+  const runResync = async () => {
+    if (
+      !confirm(
+        "노출 중인 외부 상품의 가격/품절/링크를 네이버에서 다시 조회합니다.\n검색 결과에 없는 상품은 자동으로 노출 OFF 됩니다.\n진행할까요?",
+      )
+    ) {
+      return;
+    }
+    setResyncRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("product-resync", {
+        body: {},
+      });
+      if (error) throw error;
+      const r = data as {
+        scanned: number;
+        updated: number;
+        deactivated: number;
+        errors: any[];
+      };
+      toast.success(
+        `동기화 완료 — ${r.scanned}개 검사 / ${r.updated} 갱신 / ${r.deactivated} 노출 OFF`,
+      );
+      if (r.errors?.length > 0) {
+        console.warn("resync errors", r.errors);
+        toast.warning(`일부 상품 실패 ${r.errors.length}건 (콘솔 확인)`);
+      }
+      fetchPool();
+    } catch (err: any) {
+      toast.error(`동기화 실패: ${err?.message ?? "알 수 없는 오류"}`);
+    } finally {
+      setResyncRunning(false);
+    }
+  };
+
   const runBatchCollect = async () => {
     if (
       !confirm(
@@ -293,28 +342,53 @@ const AdminProductCuration = () => {
   return (
     <AdminGuard>
       <AdminLayout title="상품 큐레이션" description="네이버/쿠팡에서 상품을 수집하고 노출할 항목을 선택합니다">
-        {/* 0. 자동 수집 */}
-        <section className="mb-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
-          <div className="flex items-start gap-3">
-            <RefreshCw className="w-5 h-5 text-primary mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-bold mb-1">자동 수집 (네이버)</h2>
-              <p className="text-xs text-muted-foreground">
-                10개 카테고리의 시드 키워드로 네이버 검색해 풀에 채워요. 거부 목록 / 기존 상품은 자동 skip 됩니다.
-                권장 주기: 주 1회.
-              </p>
+        {/* 0. 자동 작업 */}
+        <section className="mb-4 grid gap-3 md:grid-cols-2">
+          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+            <div className="flex items-start gap-3 mb-3">
+              <RefreshCw className="w-5 h-5 text-primary mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <h2 className="text-sm font-bold mb-1">자동 수집 (네이버)</h2>
+                <p className="text-xs text-muted-foreground">
+                  10개 카테고리 시드 키워드로 풀 채움. 거부/중복은 skip.
+                </p>
+              </div>
             </div>
-            <Button onClick={runBatchCollect} disabled={batchRunning}>
+            <Button onClick={runBatchCollect} disabled={batchRunning} className="w-full">
               {batchRunning ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-1" />
                   수집 중…
                 </>
               ) : (
+                "지금 자동 수집"
+              )}
+            </Button>
+          </div>
+
+          <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200/40 dark:border-emerald-900/30">
+            <div className="flex items-start gap-3 mb-3">
+              <RefreshCw className="w-5 h-5 text-emerald-600 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <h2 className="text-sm font-bold mb-1">가격/품절 동기화</h2>
+                <p className="text-xs text-muted-foreground">
+                  노출 중 상품들의 가격·링크 갱신. 사라진 상품은 자동 노출 OFF.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={runResync}
+              disabled={resyncRunning}
+              variant="outline"
+              className="w-full"
+            >
+              {resyncRunning ? (
                 <>
-                  <RefreshCw className="w-4 h-4 mr-1" />
-                  지금 자동 수집
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                  동기화 중…
                 </>
+              ) : (
+                "지금 동기화"
               )}
             </Button>
           </div>
@@ -522,10 +596,20 @@ const PoolRow = ({ product, onToggleField, onToggleCategory, onEdit, onDelete }:
             )}
           </div>
           <p className="text-sm font-semibold line-clamp-2 leading-tight mb-1">{product.name}</p>
-          <p className="text-xs text-muted-foreground">
-            {product.sale_price ? `${product.sale_price.toLocaleString()}원 / ` : ""}
-            {product.price.toLocaleString()}원
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-xs text-muted-foreground">
+              {product.sale_price ? `${product.sale_price.toLocaleString()}원 / ` : ""}
+              {product.price.toLocaleString()}원
+            </p>
+            {typeof product.click_count === "number" && product.click_count > 0 && (
+              <span className="text-[10px] font-semibold text-primary inline-flex items-center gap-0.5">
+                🔥 {product.click_count}회 (7일)
+              </span>
+            )}
+            {product.stale_reason === "not_found" && (
+              <span className="text-[10px] font-semibold text-rose-600">⚠ 재고 없음</span>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
