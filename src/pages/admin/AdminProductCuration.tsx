@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Search, Loader2, Plus, Pencil, Star, Trash2, ExternalLink, RefreshCw } from "lucide-react";
+import { Search, Loader2, Plus, Pencil, Star, Trash2, ExternalLink, RefreshCw, ChevronLeft, ChevronRight, X, ShoppingCart, Tag } from "lucide-react";
 import AdminGuard from "@/components/admin/AdminGuard";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { STORE_CATEGORIES, PRODUCT_SOURCES, getSourceLabel, ProductSource } from "@/lib/storeCategories";
+import { ProductThumb } from "@/components/store/ProductThumb";
 
 interface SearchResult {
   source: "naver" | "coupang";
@@ -67,21 +68,37 @@ const AdminProductCuration = () => {
   const [bulkCollecting, setBulkCollecting] = useState(false);
 
   const [pool, setPool] = useState<PoolProduct[]>([]);
+  const [poolTotal, setPoolTotal] = useState(0);
   const [poolLoading, setPoolLoading] = useState(true);
   const [filterSource, setFilterSource] = useState<"all" | ProductSource>("all");
   const [filterActive, setFilterActive] = useState<"all" | "on" | "off">("all");
+  const [filterCategory, setFilterCategory] = useState<"all" | string>("all");
+  const [poolKeyword, setPoolKeyword] = useState("");
+  const [poolKeywordInput, setPoolKeywordInput] = useState("");
+  const [page, setPage] = useState(0);
+  const POOL_PAGE_SIZE = 30;
 
   const [editing, setEditing] = useState<PoolProduct | null>(null);
   const [batchRunning, setBatchRunning] = useState(false);
   const [resyncRunning, setResyncRunning] = useState(false);
 
+  // 키워드 관리.
+  const [seedRows, setSeedRows] = useState<Array<{ id: string; category: string; keyword: string }>>([]);
+  const [seedOpen, setSeedOpen] = useState(false);
+  const [seedInputs, setSeedInputs] = useState<Record<string, string>>({});
+
   const fetchPool = useCallback(async () => {
     setPoolLoading(true);
+    const from = page * POOL_PAGE_SIZE;
+    const to = from + POOL_PAGE_SIZE - 1;
     let q = (supabase
       .from("products" as any)
       .select(
         "id, name, short_description, description, thumbnail_url, price, sale_price, is_active, is_featured, source, source_url, source_mall, source_product_id, categories, stale_reason, last_resynced_at",
-      ) as any).order("created_at", { ascending: false });
+        { count: "exact" },
+      ) as any)
+      .order("created_at", { ascending: false })
+      .range(from, to);
     if (filterSource !== "all") {
       q = q.eq("source", filterSource);
     }
@@ -90,7 +107,13 @@ const AdminProductCuration = () => {
     } else if (filterActive === "off") {
       q = q.eq("is_active", false);
     }
-    const [{ data, error }, { data: clickRows }] = await Promise.all([
+    if (filterCategory !== "all") {
+      q = q.contains("categories", [filterCategory]);
+    }
+    if (poolKeyword.trim()) {
+      q = q.ilike("name", `%${poolKeyword.trim()}%`);
+    }
+    const [{ data, count, error }, { data: clickRows }] = await Promise.all([
       q,
       (supabase as any).rpc("product_click_counts", { p_days: 7 }),
     ]);
@@ -105,13 +128,73 @@ const AdminProductCuration = () => {
         click_count: clickMap.get(p.id) ?? 0,
       }));
       setPool(enriched);
+      setPoolTotal(count ?? 0);
     }
     setPoolLoading(false);
-  }, [filterSource, filterActive]);
+  }, [filterSource, filterActive, filterCategory, poolKeyword, page]);
 
   useEffect(() => {
     fetchPool();
   }, [fetchPool]);
+
+  const fetchSeeds = useCallback(async () => {
+    const { data, error } = await (supabase
+      .from("product_seed_keywords" as any)
+      .select("id, category, keyword") as any)
+      .eq("is_active", true)
+      .order("category", { ascending: true })
+      .order("keyword", { ascending: true });
+    if (error) {
+      toast.error(`키워드 조회 실패: ${error.message}`);
+      return;
+    }
+    setSeedRows((data ?? []) as any);
+  }, []);
+
+  useEffect(() => {
+    if (seedOpen && seedRows.length === 0) fetchSeeds();
+  }, [seedOpen, seedRows.length, fetchSeeds]);
+
+  const addSeed = async (category: string) => {
+    const kw = (seedInputs[category] ?? "").trim();
+    if (!kw) return;
+    const { data, error } = await (supabase
+      .from("product_seed_keywords" as any) as any)
+      .upsert(
+        { category, keyword: kw },
+        { onConflict: "category,keyword", ignoreDuplicates: false },
+      )
+      .select("id, category, keyword")
+      .single();
+    if (error) {
+      toast.error(`추가 실패: ${error.message}`);
+      return;
+    }
+    setSeedInputs((p) => ({ ...p, [category]: "" }));
+    if (data) {
+      setSeedRows((prev) => {
+        if (prev.some((r) => r.id === (data as any).id)) return prev;
+        return [...prev, data as any];
+      });
+    } else {
+      fetchSeeds();
+    }
+    toast.success(`'${kw}' 추가됨`);
+  };
+
+  const removeSeed = async (id: string) => {
+    const { error } = await (supabase.from("product_seed_keywords" as any) as any).delete().eq("id", id);
+    if (error) {
+      toast.error(`삭제 실패: ${error.message}`);
+      return;
+    }
+    setSeedRows((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  // 필터/검색 변경 시 페이지 reset.
+  useEffect(() => {
+    setPage(0);
+  }, [filterSource, filterActive, filterCategory, poolKeyword]);
 
   const runSearch = async () => {
     const q = searchQuery.trim();
@@ -464,11 +547,7 @@ const AdminProductCuration = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {searchResults.map((item) => (
                 <div key={`${item.source}-${item.source_product_id}`} className="bg-card border border-border rounded-lg overflow-hidden">
-                  <div className="h-32 bg-muted">
-                    {item.thumbnail_url && (
-                      <img src={item.thumbnail_url} alt={item.name} className="w-full h-full object-cover" />
-                    )}
-                  </div>
+                  <ProductThumb url={item.thumbnail_url} alt={item.name} sizeClass="w-full h-32" />
                   <div className="p-2">
                     <p className="text-xs font-semibold line-clamp-2 mb-1">{item.name}</p>
                     <p className="text-sm font-bold text-primary mb-2">{item.price.toLocaleString()}원</p>
@@ -498,7 +577,7 @@ const AdminProductCuration = () => {
         {/* 2. 풀 관리 */}
         <section>
           <div className="flex flex-wrap items-center gap-2 mb-3">
-            <h2 className="text-sm font-bold mr-2">상품 풀 ({pool.length})</h2>
+            <h2 className="text-sm font-bold mr-2">상품 풀 ({poolTotal})</h2>
             <Select value={filterSource} onValueChange={(v) => setFilterSource(v as any)}>
               <SelectTrigger className="w-32 h-8 text-xs">
                 <SelectValue />
@@ -517,11 +596,47 @@ const AdminProductCuration = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">전체</SelectItem>
+                <SelectItem value="all">노출 전체</SelectItem>
                 <SelectItem value="on">노출 ON</SelectItem>
                 <SelectItem value="off">노출 OFF</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v as any)}>
+              <SelectTrigger className="w-36 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체 카테고리</SelectItem>
+                {STORE_CATEGORIES.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="relative flex-1 min-w-[160px]">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                placeholder="상품명 검색 (Enter)"
+                value={poolKeywordInput}
+                onChange={(e) => setPoolKeywordInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") setPoolKeyword(poolKeywordInput);
+                }}
+                className="h-8 text-xs pl-7 pr-7"
+              />
+              {poolKeywordInput && (
+                <button
+                  onClick={() => {
+                    setPoolKeywordInput("");
+                    setPoolKeyword("");
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
           {poolLoading ? (
@@ -533,17 +648,123 @@ const AdminProductCuration = () => {
               풀이 비어있습니다. 위 검색 패널에서 상품을 수집해주세요.
             </p>
           ) : (
-            <div className="space-y-2">
-              {pool.map((p) => (
-                <PoolRow
-                  key={p.id}
-                  product={p}
-                  onToggleField={toggleField}
-                  onToggleCategory={toggleCategory}
-                  onEdit={() => setEditing(p)}
-                  onDelete={() => deleteProduct(p)}
-                />
-              ))}
+            <>
+              <div className="space-y-2">
+                {pool.map((p) => (
+                  <PoolRow
+                    key={p.id}
+                    product={p}
+                    onToggleField={toggleField}
+                    onToggleCategory={toggleCategory}
+                    onEdit={() => setEditing(p)}
+                    onDelete={() => deleteProduct(p)}
+                  />
+                ))}
+              </div>
+              {poolTotal > POOL_PAGE_SIZE && (
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+                  <p className="text-xs text-muted-foreground">
+                    {page * POOL_PAGE_SIZE + 1} - {Math.min((page + 1) * POOL_PAGE_SIZE, poolTotal)} / {poolTotal}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      disabled={page === 0 || poolLoading}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <span className="text-xs text-muted-foreground px-2">
+                      {page + 1} / {Math.max(1, Math.ceil(poolTotal / POOL_PAGE_SIZE))}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => p + 1)}
+                      disabled={(page + 1) * POOL_PAGE_SIZE >= poolTotal || poolLoading}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+
+        {/* 키워드 관리 — 자동 수집이 사용하는 시드 목록 */}
+        <section className="mt-8 bg-background rounded-lg border border-border overflow-hidden">
+          <button
+            onClick={() => setSeedOpen((v) => !v)}
+            className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/50"
+          >
+            <div className="flex items-center gap-2">
+              <Tag className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-bold">시드 키워드 관리</span>
+              <span className="text-xs text-muted-foreground">(자동 수집이 검색할 키워드)</span>
+            </div>
+            {seedOpen ? (
+              <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-90" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-muted-foreground rotate-90" />
+            )}
+          </button>
+          {seedOpen && (
+            <div className="p-3 border-t border-border space-y-3">
+              {STORE_CATEGORIES.map((cat) => {
+                const kws = seedRows.filter((r) => r.category === cat.value);
+                return (
+                  <div key={cat.value}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-xs font-semibold">{cat.label}</span>
+                      <span className="text-[10px] text-muted-foreground">{kws.length}개</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {kws.map((r) => (
+                        <span
+                          key={r.id}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted text-xs"
+                        >
+                          {r.keyword}
+                          <button
+                            onClick={() => removeSeed(r.id)}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-1.5">
+                      <Input
+                        placeholder="키워드 추가 (Enter)"
+                        value={seedInputs[cat.value] ?? ""}
+                        onChange={(e) =>
+                          setSeedInputs((p) => ({ ...p, [cat.value]: e.target.value }))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") addSeed(cat.value);
+                        }}
+                        className="h-7 text-xs"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => addSeed(cat.value)}
+                        className="h-7 text-xs px-2"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="text-[10px] text-muted-foreground pt-2 border-t border-border">
+                추가/삭제 즉시 반영. 다음 자동 수집(월 12:00 KST)부터 사용됩니다.
+              </p>
             </div>
           )}
         </section>
@@ -573,10 +794,8 @@ const PoolRow = ({ product, onToggleField, onToggleCategory, onEdit, onDelete }:
   return (
     <div className="bg-background border border-border rounded-lg p-3">
       <div className="flex gap-3 items-start">
-        <div className="w-16 h-16 bg-muted rounded flex-shrink-0 overflow-hidden">
-          {product.thumbnail_url && (
-            <img src={product.thumbnail_url} alt={product.name} className="w-full h-full object-cover" />
-          )}
+        <div className="w-16 h-16 rounded flex-shrink-0 overflow-hidden">
+          <ProductThumb url={product.thumbnail_url} alt={product.name} sizeClass="w-full h-full" />
         </div>
 
         <div className="flex-1 min-w-0">

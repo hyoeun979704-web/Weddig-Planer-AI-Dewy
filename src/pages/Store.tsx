@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, Star, Loader2, SlidersHorizontal, ExternalLink } from "lucide-react";
+import { Star, Loader2, SlidersHorizontal, ExternalLink } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
@@ -10,6 +10,7 @@ import SortToggle, { SortMode } from "@/components/SortToggle";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import Seo from "@/components/Seo";
 import { STORE_CATEGORIES, StoreCategoryValue, getSourceLabel } from "@/lib/storeCategories";
+import { ProductThumb } from "@/components/store/ProductThumb";
 
 interface Product {
   id: string;
@@ -43,6 +44,7 @@ const Store = () => {
   const location = useLocation();
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [featured, setFeatured] = useState<Product[]>([]);
   const [selectedTab, setSelectedTab] = useState<TabId>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -96,6 +98,26 @@ const Store = () => {
     };
     fetch();
   }, [selectedTab, filters, sortMode]);
+
+  // 추천 띠 — 선택된 탭에 해당하는 is_featured 상품 8개. 'all' 일 땐 전체 추천.
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      let q = (supabase
+        .from("products" as any)
+        .select(
+          "id, name, short_description, category, categories, price, sale_price, thumbnail_url, rating, review_count, sold_count, is_featured, source, source_url, source_mall",
+        ) as any)
+        .eq("is_active", true)
+        .eq("is_featured", true)
+        .limit(8);
+      if (selectedTab !== "all") {
+        q = q.contains("categories", [selectedTab]) as any;
+      }
+      const { data } = await q;
+      setFeatured((data || []) as any);
+    };
+    fetchFeatured();
+  }, [selectedTab]);
 
   const hasActiveFilters =
     filters.category !== null ||
@@ -158,6 +180,44 @@ const Store = () => {
       </div>
 
       <main className="safe-bottom-scroll px-4 py-4">
+        {/* 추천 띠 — is_featured=true 상품 가로 스크롤. 없으면 숨김. */}
+        {featured.length > 0 && (
+          <section className="mb-5">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Star className="w-4 h-4 fill-primary text-primary" />
+              <h3 className="text-sm font-bold text-foreground">추천 상품</h3>
+            </div>
+            <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
+              {featured.map((product) => {
+                const isExternal = product.source !== "manual";
+                const sourceLabel = isExternal ? getSourceLabel(product.source) : null;
+                return (
+                  <button
+                    key={product.id}
+                    onClick={() => handleProductClick(product)}
+                    className="flex-shrink-0 w-32 bg-card rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow text-left"
+                  >
+                    <div className="relative">
+                      <ProductThumb url={product.thumbnail_url} alt={product.name} sizeClass="w-full h-24" />
+                      {sourceLabel && (
+                        <span className="absolute top-1 left-1 inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-background/90 backdrop-blur-sm text-[9px] font-semibold text-foreground border border-border">
+                          {sourceLabel}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-[11px] font-semibold line-clamp-2 leading-tight mb-1">{product.name}</p>
+                      <p className="text-xs font-bold text-primary">
+                        {formatPrice(product.sale_price ?? product.price)}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         <div className="flex justify-end mb-3">
           <SortToggle value={sortMode} onChange={setSortMode} />
         </div>
@@ -184,12 +244,8 @@ const Store = () => {
                   onClick={() => handleProductClick(product)}
                   className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-md transition-shadow text-left"
                 >
-                  <div className="relative h-36 bg-muted flex items-center justify-center">
-                    {product.thumbnail_url ? (
-                      <img src={product.thumbnail_url} alt={product.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <ShoppingCart className="w-8 h-8 text-muted-foreground/30" />
-                    )}
+                  <div className="relative">
+                    <ProductThumb url={product.thumbnail_url} alt={product.name} sizeClass="w-full h-36" />
                     {sourceLabel && (
                       <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-background/90 backdrop-blur-sm text-[10px] font-semibold text-foreground border border-border">
                         {sourceLabel}

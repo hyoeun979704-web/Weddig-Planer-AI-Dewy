@@ -6,7 +6,7 @@
  *   2) pg_cron 등 서버 자동화: Authorization: Bearer <service_role_key>
  *
  * 동작:
- *   - CATEGORY_KEYWORDS 의 각 키워드를 네이버 쇼핑에서 검색
+ *   - public.product_seed_keywords (is_active=true) 의 각 키워드를 네이버에서 검색
  *   - product_blocklist 에 있는 상품은 skip
  *   - products 에 upsert (onConflict source,source_product_id, ignoreDuplicates)
  *   - 입력으로 받은 source 만 처리 (기본 "naver")
@@ -24,20 +24,6 @@ const corsHeaders = {
 };
 
 const MAX_RESULTS_PER_QUERY = 30;
-
-// 카테고리별 시드 키워드. 키워드를 늘리려면 이 맵을 수정 후 재배포.
-const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  photo_props: ["웨딩 가랜드", "웨딩 풍선", "웨딩 플래카드", "포토존 소품", "웨딩 사인보드"],
-  bouquet: ["조화 부케", "드라이 부케", "부토니에", "프리저브드 부케", "셀프웨딩 부케"],
-  self_wedding_dress: ["셀프 웨딩 드레스", "촬영 드레스", "스몰웨딩 드레스"],
-  second_dress: ["2부 드레스", "피로연 드레스", "이브닝 드레스"],
-  wedding_shoes: ["웨딩 슈즈", "신부 구두", "웨딩 힐"],
-  accessories: ["웨딩 티아라", "신부 이어링", "신부 베일", "신부 장갑"],
-  frame: ["웨딩 액자", "결혼사진 액자"],
-  album: ["웨딩 앨범", "셀프웨딩 앨범", "웨딩 포토북"],
-  paper_invitation: ["종이 청첩장", "청첩장 인쇄"],
-  return_gift: ["결혼 답례품", "웨딩 답례품", "하객 답례품"],
-};
 
 interface NormalizedItem {
   source: "naver";
@@ -169,17 +155,34 @@ serve(async (req) => {
     // 빈 body 허용
   }
 
-  // 3) 카테고리별 키워드 순회 → 결과 누적 → 카테고리 태그 추가.
+  // 3) 키워드 catalog 를 DB 에서 로드 (어드민이 관리).
+  let seedQuery = adminClient
+    .from("product_seed_keywords")
+    .select("category, keyword")
+    .eq("is_active", true);
+  if (onlyCategories) {
+    seedQuery = seedQuery.in("category", onlyCategories);
+  }
+  const { data: seedRows, error: seedErr } = await seedQuery;
+  if (seedErr) {
+    return jsonResp({ error: "db_error", message: `seed_keywords: ${seedErr.message}` }, 500);
+  }
+  const seeds = (seedRows ?? []) as Array<{ category: string; keyword: string }>;
+
+  // category → keyword[] 로 그룹화.
+  const grouped = new Map<string, string[]>();
+  for (const s of seeds) {
+    if (!grouped.has(s.category)) grouped.set(s.category, []);
+    grouped.get(s.category)!.push(s.keyword);
+  }
+
+  // 4) 카테고리별 키워드 순회 → 결과 누적 → 카테고리 태그 추가.
   const collectedByKey = new Map<string, NormalizedItem>();
   const errors: Array<{ category: string; keyword: string; error: string }> = [];
   let totalFetched = 0;
   const now = new Date().toISOString();
 
-  const entries = Object.entries(CATEGORY_KEYWORDS).filter(
-    ([cat]) => !onlyCategories || onlyCategories.includes(cat),
-  );
-
-  for (const [category, keywords] of entries) {
+  for (const [category, keywords] of grouped) {
     for (const keyword of keywords) {
       try {
         const items = await naverSearch(keyword, naverId, naverSecret);
@@ -214,7 +217,7 @@ serve(async (req) => {
 
   const candidates = Array.from(collectedByKey.values());
 
-  // 4) Blocklist 조회 후 제외.
+  // 5) Blocklist 조회 후 제외.
   const ids = candidates.map((c) => c.source_product_id);
   let blockedSet = new Set<string>();
   if (ids.length > 0) {
@@ -230,7 +233,7 @@ serve(async (req) => {
   );
   const blocked = candidates.length - allowed.length;
 
-  // 5) upsert (ignoreDuplicates) — UNIQUE (source, source_product_id) 가 자동 dedupe.
+  // 6) upsert (ignoreDuplicates) — UNIQUE (source, source_product_id) 가 자동 dedupe.
   let inserted = 0;
   let duplicates = 0;
   if (allowed.length > 0) {
