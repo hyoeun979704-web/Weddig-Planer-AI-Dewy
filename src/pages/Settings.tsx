@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import Seo from "@/components/Seo";
 import {
   ChevronRight,
   Moon,
@@ -59,6 +60,7 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="설정 | Dewy" description="알림·테마·계정 설정을 관리하세요." path="/settings" noIndex />
       <PageHeader title="설정" />
 
       <main className="pb-20">

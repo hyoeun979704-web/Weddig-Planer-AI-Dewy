@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import Seo from "@/components/Seo";
 import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Users, ArrowRight, Crown } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import DewyLogo from "@/components/home/DewyLogo";
@@ -33,6 +34,7 @@ const GuestMyPage = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="마이페이지 | Dewy" description="내 결혼 준비 진행 상황·예산·일정을 한눈에 관리하세요." path="/mypage" noIndex />
       <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
@@ -161,6 +163,7 @@ const MyPage = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="마이페이지 | Dewy" description="내 결혼 준비 진행 상황·예산·일정을 한눈에 관리하세요." path="/mypage" noIndex />
       <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>

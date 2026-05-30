@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Seo from "@/components/Seo";
 import { Camera, User, Mail, Phone, Calendar, Save, Loader2, MapPin, CakeSlice } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
@@ -166,6 +167,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="내 정보 | Dewy" description="프로필 정보를 관리하세요." path="/profile" noIndex />
       <PageHeader title="내 정보" />
 
       <main className="pb-20">

@@ -19,9 +19,15 @@ type SeoProps = {
   title: string;
   description: string;
   path: string;
+  /**
+   * 색인 거부할 때 true. 개인 데이터 페이지(마이페이지·장바구니·주문) 처럼
+   * Google 검색 결과에 노출될 가치가 없거나, 노출되면 사생활·보안 문제가 있는
+   * 경로에 사용. SPA 라 라우트 마다 동적으로 meta robots 를 갱신해야 한다.
+   */
+  noIndex?: boolean;
 };
 
-const Seo = ({ title, description, path }: SeoProps) => {
+const Seo = ({ title, description, path, noIndex = false }: SeoProps) => {
   useEffect(() => {
     const url = `${SITE}${path}`;
     const prevTitle = document.title;
@@ -34,18 +40,28 @@ const Seo = ({ title, description, path }: SeoProps) => {
     setMeta('meta[name="twitter:title"]', "name", "twitter:title", title);
     setMeta('meta[name="twitter:description"]', "name", "twitter:description", description);
 
+    // robots / canonical 은 noIndex 페이지에서 다르게 처리
+    const robotsContent = noIndex ? "noindex, nofollow" : "index, follow";
+    setMeta('meta[name="robots"]', "name", "robots", robotsContent);
+
     let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.setAttribute("rel", "canonical");
-      document.head.appendChild(canonical);
+    if (noIndex) {
+      // noindex 페이지는 canonical 도 제거 — Google 에게 "이 URL 은 색인 대상 아님"
+      // 신호를 일관되게 줘서 중복 시그널 방지.
+      if (canonical) canonical.remove();
+    } else {
+      if (!canonical) {
+        canonical = document.createElement("link");
+        canonical.setAttribute("rel", "canonical");
+        document.head.appendChild(canonical);
+      }
+      canonical.setAttribute("href", url);
     }
-    canonical.setAttribute("href", url);
 
     return () => {
       document.title = prevTitle;
     };
-  }, [title, description, path]);
+  }, [title, description, path, noIndex]);
 
   return null;
 };

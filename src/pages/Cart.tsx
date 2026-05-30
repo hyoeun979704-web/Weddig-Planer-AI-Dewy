@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import Seo from "@/components/Seo";
 import { Minus, Plus, Trash2, ShoppingCart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
@@ -24,6 +25,7 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="장바구니 | Dewy" description="선택한 상품을 확인하고 결제하세요." path="/cart" noIndex />
       <PageHeader title={`장바구니 (${items.length})`} />
 
       <main className="pb-36 px-4 py-4">

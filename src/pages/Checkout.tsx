@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Seo from "@/components/Seo";
 import { Loader2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { loadPaymentWidget, PaymentWidgetInstance } from "@tosspayments/payment-widget-sdk";
@@ -103,6 +104,7 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="주문·결제 | Dewy" description="주문 정보를 확인하고 결제를 진행하세요." path="/checkout" noIndex />
       <PageHeader title="주문/결제" />
 
       <main className="pb-32 px-4 py-4 space-y-4">
