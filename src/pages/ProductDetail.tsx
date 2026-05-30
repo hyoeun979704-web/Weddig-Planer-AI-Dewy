@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, ShoppingCart, Star, Minus, Plus, Loader2, Check } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Star, Minus, Plus, Loader2, Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { getSourceLabel } from "@/lib/storeCategories";
 
 interface Product {
   id: string;
@@ -22,6 +23,9 @@ interface Product {
   rating: number;
   review_count: number;
   sold_count: number;
+  source: string;
+  source_url: string | null;
+  source_mall: string | null;
 }
 
 const formatPrice = (price: number) => price.toLocaleString() + "원";
@@ -105,6 +109,14 @@ const ProductDetail = () => {
     ? Math.round((1 - product.sale_price / product.price) * 100)
     : null;
   const finalPrice = product.sale_price ?? product.price;
+  const isExternal = product.source !== "manual" && !!product.source_url;
+  const sourceLabel = isExternal ? getSourceLabel(product.source) : null;
+
+  const handleGoExternal = () => {
+    if (product.source_url) {
+      window.open(product.source_url, "_blank", "noopener,noreferrer");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
@@ -130,11 +142,17 @@ const ProductDetail = () => {
 
       <main className="pb-36">
         {/* Image */}
-        <div className="h-80 bg-muted flex items-center justify-center">
+        <div className="relative h-80 bg-muted flex items-center justify-center">
           {product.thumbnail_url ? (
             <img src={product.thumbnail_url} alt={product.name} className="w-full h-full object-cover" />
           ) : (
             <ShoppingCart className="w-16 h-16 text-muted-foreground/20" />
+          )}
+          {sourceLabel && (
+            <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background/90 backdrop-blur-sm text-xs font-semibold text-foreground border border-border">
+              {sourceLabel}
+              <ExternalLink className="w-3 h-3" />
+            </span>
           )}
         </div>
 
@@ -167,31 +185,34 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Quantity */}
-          <div className="flex items-center justify-between mb-4 p-3 bg-card rounded-xl border border-border">
-            <span className="text-sm font-medium text-foreground">수량</span>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <span className="text-lg font-bold text-foreground w-8 text-center">{quantity}</span>
-              <button
-                onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          {/* Quantity (자체 상품 only) */}
+          {!isExternal && (
+            <>
+              <div className="flex items-center justify-between mb-4 p-3 bg-card rounded-xl border border-border">
+                <span className="text-sm font-medium text-foreground">수량</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="text-lg font-bold text-foreground w-8 text-center">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                    className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
 
-          {/* Total */}
-          <div className="flex items-center justify-between mb-6">
-            <span className="text-sm text-muted-foreground">총 상품 금액</span>
-            <span className="text-lg font-bold text-primary">{formatPrice(finalPrice * quantity)}</span>
-          </div>
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-sm text-muted-foreground">총 상품 금액</span>
+                <span className="text-lg font-bold text-primary">{formatPrice(finalPrice * quantity)}</span>
+              </div>
+            </>
+          )}
 
           {/* Description */}
           {product.description && (
@@ -201,42 +222,55 @@ const ProductDetail = () => {
             </div>
           )}
 
-          {/* Stock info */}
-          <p className="text-xs text-muted-foreground mt-4">재고: {product.stock}개 남음</p>
+          {/* Stock / external notice */}
+          {isExternal ? (
+            <p className="text-xs text-muted-foreground mt-4">
+              {sourceLabel}에서 판매되는 외부 상품입니다. 구매하기를 누르면 {sourceLabel} 페이지로 이동합니다.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-4">재고: {product.stock}개 남음</p>
+          )}
         </div>
       </main>
 
       {/* Fixed Bottom CTA */}
       <div className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto p-4 bg-background border-t border-border">
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleAddToCart}
-            disabled={isAdding || product.stock === 0}
-            className="flex-1 h-12"
-          >
-            {isAdding ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : added ? (
-              <>
-                <Check className="w-5 h-5 mr-1" />
-                담았어요
-              </>
-            ) : (
-              <>
-                <ShoppingCart className="w-5 h-5 mr-1" />
-                장바구니
-              </>
-            )}
+        {isExternal ? (
+          <Button onClick={handleGoExternal} className="w-full h-12 font-semibold">
+            <ExternalLink className="w-5 h-5 mr-1" />
+            {sourceLabel}에서 구매하기
           </Button>
-          <Button
-            onClick={handleBuyNow}
-            disabled={isAdding || product.stock === 0}
-            className="flex-1 h-12 font-semibold"
-          >
-            바로 구매
-          </Button>
-        </div>
+        ) : (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleAddToCart}
+              disabled={isAdding || product.stock === 0}
+              className="flex-1 h-12"
+            >
+              {isAdding ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : added ? (
+                <>
+                  <Check className="w-5 h-5 mr-1" />
+                  담았어요
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="w-5 h-5 mr-1" />
+                  장바구니
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleBuyNow}
+              disabled={isAdding || product.stock === 0}
+              className="flex-1 h-12 font-semibold"
+            >
+              바로 구매
+            </Button>
+          </div>
+        )}
       </div>
 
       <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
