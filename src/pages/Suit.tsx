@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
 import BottomNav from "@/components/BottomNav";
 import CategoryHeroBanner from "@/components/CategoryHeroBanner";
@@ -39,6 +40,7 @@ const Suit = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="신랑 예복·맞춤 정장 | Dewy" description="비스포크·세미·기성 예복 비교, 원단·디자인 가이드. 지역별 예복 업체와 가격대 추천." path="/suit" />
       <PageHeader title="예복" />
       <main className="pb-20">
         <ExcludedCategoryBanner scheduleCategories="tailor_shop" />

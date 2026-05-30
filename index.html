@@ -7,7 +7,10 @@
     <meta name="description" content="AI 웨딩플래너 Dewy. 결혼 준비 체크리스트·D-Day, 예산 관리와 양가 분담, 웨딩홀·스드메·예복·한복·신혼여행 추천, AI 드레스·메이크업 시뮬레이션, 모바일 청첩장까지. 둘이니까, 쉬워지니까." />
     <meta name="author" content="Dewy" />
     <meta name="keywords" content="AI 웨딩플래너, 결혼 준비 앱, 결혼 체크리스트, 웨딩 예산 관리, 스드메 추천, 웨딩홀 추천, AI 드레스 시뮬레이션, 모바일 청첩장, 결혼준비, Dewy" />
-    <link rel="canonical" href="https://dewy-wedding.com/" />
+
+    <!-- canonical / og:url 은 src/components/Seo.tsx 가 페이지별로 동적 설정.
+         index.html 에 하드코딩하면 모든 라우트의 canonical 이 홈으로 잡혀
+         Google "Page with redirect" 로 색인이 거부됨. -->
 
     <!-- 검색엔진 소유확인 -->
     <meta name="naver-site-verification" content="c3567424bfdd91019b02f3f9f8fffbdcdfb26e2d" />
@@ -23,7 +26,6 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Dewy" />
     <meta property="og:locale" content="ko_KR" />
-    <meta property="og:url" content="https://dewy-wedding.com/" />
     <meta property="og:title" content="Dewy - AI 웨딩플래너와 함께하는 결혼준비" />
     <meta property="og:description" content="결혼 준비 체크리스트·예산·추천·AI 시뮬레이션까지, 둘이니까 쉬워지는 AI 웨딩플래너 Dewy." />
     <!-- 브랜드 로고 (그라데이션 하트). ?v=2 는 디스코드/카톡 OG 캐시 무효화용 — 향후

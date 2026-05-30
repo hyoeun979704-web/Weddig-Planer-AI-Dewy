@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import Seo from "@/components/Seo";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 
@@ -27,6 +28,7 @@ const Gallery = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="웨딩 갤러리·시안 모음 | Dewy" description="실제 결혼식·웨딩 촬영 갤러리와 스타일별 시안. 본식·촬영·청첩장 영감을 한 곳에서." path="/gallery" />
       <PageHeader title="갤러리" />
 
       {/* Main Content */}

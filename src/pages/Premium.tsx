@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import Seo from "@/components/Seo";
 import { Check, X, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -84,6 +85,7 @@ const Premium = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
+      <Seo title="Dewy 프리미엄 — AI 무제한·결혼 준비 PDF 9종" description="AI 플래너 무제한 대화, 본식 타임라인·견적서 등 9종 PDF, 첫 1개월 무료 체험. 결혼 준비를 든든하게." path="/premium" />
       <PageHeader title="프리미엄" />
 
       <main className="flex-1 pb-20 overflow-y-auto">
