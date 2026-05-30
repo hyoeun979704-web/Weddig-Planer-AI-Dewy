@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import Seo from "@/components/Seo";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useNavigate, useLocation } from "react-router-dom";
 import TutorialOverlay from "@/components/TutorialOverlay";
@@ -303,6 +304,7 @@ const Budget = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="결혼 예산 관리·지역별 평균 비교 | Dewy" description="결혼 예산 항목별 분석, 양가 분담, 한국소비자원 지역별 평균과 비교. 잔금 일정 알림까지 한 곳에서." path="/budget" />
       {showLoginOverlay && <LoginRequiredOverlay message="지역별 평균 비교, 양가 분담 현황까지 체계적으로 관리하세요" features={["지역별 평균 비교", "양가 분담 관리", "잔금 알림"]} />}
       {/* Header */}
       <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">

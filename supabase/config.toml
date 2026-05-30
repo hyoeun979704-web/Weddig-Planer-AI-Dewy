@@ -7,7 +7,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.cancel-subscription]
-verify_jwt = false
+verify_jwt = true
 
 [functions.migrate-data]
 verify_jwt = false
@@ -19,4 +19,14 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.kakao-chatbot-skill]
+verify_jwt = false
+
+# 인스타그램 카드뉴스 파이프라인 (운영자·service_role 만 호출 가능 — 자체 admin 검증)
+[functions.instagram-draft-generator]
+verify_jwt = false
+
+[functions.instagram-card-renderer]
+verify_jwt = false
+
+[functions.instagram-publisher]
 verify_jwt = false

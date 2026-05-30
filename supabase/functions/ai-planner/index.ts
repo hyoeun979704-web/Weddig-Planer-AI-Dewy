@@ -70,8 +70,17 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not configured");
     }
 
+    // 서버 환경변수 누락 — 클라이언트가 디버깅하기 쉽도록 500 (config 오류)으로 응답.
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("ai-planner misconfigured: SUPABASE_URL / SERVICE_ROLE_KEY missing");
+      return new Response(
+        JSON.stringify({ error: "server_misconfigured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ") || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -88,12 +97,9 @@ serve(async (req) => {
       });
     }
 
-    let userContext = "";
-    let conditionalCapsules = "";
-    let dailyRemaining = -1;
-
+    // 일일 사용량 체크는 entitlement 게이트 — 실패하면 fail-closed.
     const usageResult = await checkAndIncrementUsage(supabase, user.id);
-    dailyRemaining = usageResult.remaining;
+    const dailyRemaining = usageResult.remaining;
 
     if (!usageResult.allowed) {
       return new Response(
@@ -107,16 +113,23 @@ serve(async (req) => {
       );
     }
 
-    const userData = await fetchUserData(supabase, user.id);
-    userContext = buildUserContext(userData);
-    conditionalCapsules = buildConditionalCapsules(userData.weddingSettings);
-    console.log(
-      "User context loaded for:", user.id,
-      "premium:", usageResult.isPremium,
-      "remaining:", usageResult.remaining,
-      "memories:", userData.memories.length,
-      "capsules:", conditionalCapsules ? "yes" : "no",
-    );
+    // 사용자 컨텍스트 로드는 best-effort — 실패해도 빈 컨텍스트로 답변은 이어간다.
+    let userContext = "";
+    let conditionalCapsules = "";
+    try {
+      const userData = await fetchUserData(supabase, user.id);
+      userContext = buildUserContext(userData);
+      conditionalCapsules = buildConditionalCapsules(userData.weddingSettings);
+      console.log(
+        "User context loaded for:", user.id,
+        "premium:", usageResult.isPremium,
+        "remaining:", usageResult.remaining,
+        "memories:", userData.memories.length,
+        "capsules:", conditionalCapsules ? "yes" : "no",
+      );
+    } catch (e) {
+      console.warn("Could not load user context, proceeding without it:", e);
+    }
 
     // Fire-and-forget memory extraction on the user's most recent message.
     const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");

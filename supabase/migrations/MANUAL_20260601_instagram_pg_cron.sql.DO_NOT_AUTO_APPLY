@@ -1,0 +1,83 @@
+-- ============================================================================
+-- 인스타그램 카드뉴스 자동 발행 — pg_cron 스케줄
+-- ============================================================================
+--
+-- ⚠️ 이 파일은 자동 적용되지 않음 (.sql 확장자 아님).
+--    적용 조건이 충족된 후에 운영자가 수동으로 SQL Editor 에서 실행:
+--
+--    1) 5단계 instagram-publisher 가 배포되어 있고
+--    2) Meta App Review 통과 + IG_PAGE_ACCESS_TOKEN / IG_BUSINESS_ACCOUNT_ID secret 등록 완료
+--    3) Supabase Storage 버킷 instagram-cards 가 public 으로 생성됨
+--    4) instagram_post_drafts 에 status='scheduled' 인 행이 들어가는 흐름이 정상 작동
+--
+-- 적용 방법:
+--   파일명을 `20260601000000_instagram_pg_cron.sql` 로 바꾸고 git 에 add → push
+--   또는 Supabase Dashboard → SQL Editor 에 내용 그대로 붙여넣고 RUN.
+--
+-- 활성화 즉시 매분 publisher 가 호출되므로 신중하게.
+-- ============================================================================
+
+-- pg_cron extension 활성화 (이미 있으면 무시)
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;
+
+-- pg_net extension (http 호출에 필요)
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+
+-- ============================================================================
+-- 1) 매일 09:00 KST (= 00:00 UTC) — instagram-draft-generator 가 새 draft 자동 발굴
+--    ※ 현재는 코드만 — 자동 발굴 로직(12_데이터소스_매핑) 구현 후 활성화
+-- ============================================================================
+-- SELECT cron.schedule(
+--   'dewy-instagram-daily-draft',
+--   '0 0 * * *',  -- 매일 00:00 UTC = 09:00 KST
+--   $$
+--   SELECT net.http_post(
+--     url := 'https://<PROJECT_REF>.supabase.co/functions/v1/instagram-draft-generator',
+--     headers := jsonb_build_object(
+--       'Content-Type', 'application/json',
+--       'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
+--     ),
+--     body := jsonb_build_object('mode', 'auto-discover')
+--   );
+--   $$
+-- );
+
+-- ============================================================================
+-- 2) 매분 — instagram-publisher 가 status='scheduled' AND scheduled_for <= now() 픽업
+--    ※ 발행 시간 매일 10:00 KST 이지만 1분 단위 정확도를 위해 매분 체크
+-- ============================================================================
+SELECT cron.schedule(
+  'dewy-instagram-publish-queue',
+  '* * * * *',
+  $$
+  SELECT net.http_post(
+    url := 'https://<PROJECT_REF>.supabase.co/functions/v1/instagram-publisher',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
+    ),
+    body := '{}'::jsonb
+  );
+  $$
+);
+
+-- ============================================================================
+-- 적용 전 준비 (한 번만)
+-- ============================================================================
+-- service_role 키를 안전하게 사용하기 위해 DB setting 으로 등록:
+-- ALTER DATABASE postgres SET app.settings.service_role_key = '<SERVICE_ROLE_KEY>';
+-- 또는 vault 사용 권장.
+
+-- ============================================================================
+-- 비활성화 (롤백)
+-- ============================================================================
+-- SELECT cron.unschedule('dewy-instagram-publish-queue');
+-- SELECT cron.unschedule('dewy-instagram-daily-draft');
+
+-- ============================================================================
+-- 모니터링
+-- ============================================================================
+-- 최근 cron 실행 결과:
+-- SELECT * FROM cron.job_run_details
+-- WHERE jobid IN (SELECT jobid FROM cron.job WHERE jobname LIKE 'dewy-instagram-%')
+-- ORDER BY start_time DESC LIMIT 20;

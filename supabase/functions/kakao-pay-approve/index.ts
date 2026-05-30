@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     // 멱등성: 이미 같은 tid 로 처리된 결제면 단락
     const { data: existing } = await adminClient
       .from("payments")
-      .select("id, status, user_id, approved_at, amount")
+      .select("id, status, user_id, approved_at, amount, plan_type")
       .eq("payment_key", tid)
       .maybeSingle();
     if (existing) {
@@ -90,6 +90,45 @@ Deno.serve(async (req) => {
         });
       }
 
+      // 원본 결제의 plan_type 을 진실 소스로 사용. backfill 안 된 과거 행은 amount 로 역추론.
+      const originalType = existing.plan_type
+        ?? (existing.amount === 100 ? "trial"
+          : existing.amount === PLAN_INFO.monthly.amount ? "monthly"
+          : existing.amount === PLAN_INFO.yearly.amount ? "yearly"
+          : null);
+
+      // 클라이언트가 보낸 type 이 원본과 다르면 거부 (무료 업그레이드 방지).
+      if (originalType && originalType !== type) {
+        return new Response(
+          JSON.stringify({ error: "Payment type mismatch", expected: originalType }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // 이미 active + 미만료 구독이 있으면 upsert 자체를 skip — 취소 상태도 보존.
+      const { data: currentSub } = await adminClient
+        .from("subscriptions")
+        .select("status, expires_at, payment_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const hasValidActive = currentSub?.status === "active"
+        && currentSub.expires_at
+        && new Date(currentSub.expires_at) > new Date();
+
+      if (hasValidActive) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            alreadyProcessed: true,
+            subscriptionActivated: true,
+            message: "이미 처리된 결제입니다.",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // 구독 row 가 없거나 만료/취소된 경우에만 복구성 활성화 — 원래 결제 시점 기준.
       const startedAt = existing.approved_at ? new Date(existing.approved_at) : new Date();
       const expiresAt = new Date(startedAt);
       if (type === "yearly") {
@@ -97,13 +136,27 @@ Deno.serve(async (req) => {
       } else {
         expiresAt.setMonth(expiresAt.getMonth() + 1);
       }
+
+      // 원래 결제 시점 + 기간이 이미 과거면 복구할 entitlement 없음 → upsert 안 함.
+      if (expiresAt <= new Date()) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            alreadyProcessed: true,
+            subscriptionActivated: false,
+            message: "이미 처리된 결제입니다. (만료된 결제)",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
       const { error: subscriptionError } = await adminClient
         .from("subscriptions")
         .upsert({
           user_id: userId,
           plan: type === "yearly" ? "yearly" : "monthly",
           status: "active",
-          price: type === "trial" ? 0 : (existing.amount ?? plan.amount),
+          price: type === "trial" ? 0 : plan.amount,
           started_at: startedAt.toISOString(),
           expires_at: expiresAt.toISOString(),
           trial_ends_at: type === "trial" ? expiresAt.toISOString() : null,
@@ -210,6 +263,7 @@ Deno.serve(async (req) => {
       amount: paidAmount,
       status: "approved",
       method: "kakaopay",
+      plan_type: type,
       approved_at: approveData.approved_at || new Date().toISOString(),
       raw_response: approveData,
     });

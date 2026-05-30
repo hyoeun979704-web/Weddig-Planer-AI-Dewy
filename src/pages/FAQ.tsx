@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
+import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
 import BottomNav from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
@@ -68,6 +69,7 @@ const FAQ = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="자주 묻는 질문 | Dewy" description="결혼 준비 시작부터 본식까지, 예비부부가 가장 궁금해하는 질문과 답변." path="/faq" />
       <PageHeader title="자주 묻는 질문" />
 
       <main className="pb-20">

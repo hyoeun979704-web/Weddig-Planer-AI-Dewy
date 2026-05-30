@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
 import BottomNav from "@/components/BottomNav";
 import CategoryHeroBanner from "@/components/CategoryHeroBanner";
@@ -35,6 +36,7 @@ const Honeymoon = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <Seo title="신혼여행 추천·예약 가이드 | Dewy" description="지역·예산·시즌별 신혼여행 추천. 휴양·관광·혼합 테마와 항공·호텔·일수까지 한눈에 비교." path="/honeymoon" />
       <PageHeader title="허니문" />
       <main className="pb-20">
         <ExcludedCategoryBanner scheduleCategories="honeymoon" />

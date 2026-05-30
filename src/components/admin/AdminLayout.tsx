@@ -13,6 +13,7 @@ import {
   X,
   Home,
   LogOut,
+  Instagram,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
   { label: "청첩장 에셋", href: "/admin/invitation-assets", icon: FileText },
   { label: "청첩장 폰트", href: "/admin/invitation-fonts", icon: FileText },
   { label: "촬영 시안", href: "/admin/wedding-photo-refs", icon: Camera, badge: "준비중" },
+  { label: "인스타 카드뉴스", href: "/admin/instagram-posts", icon: Instagram, badge: "1단계" },
   { label: "사전알림 신청", href: "/admin/service-waitlist", icon: Bell },
   { label: "사용자 관리", href: "/admin/users", icon: Users },
 ];
