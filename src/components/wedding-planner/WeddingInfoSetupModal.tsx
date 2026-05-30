@@ -197,7 +197,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       // 행동 신호 재발 안 되게 markConfirmed(=groom) / resetSignal(=다른 role) 적용.
       if (role === "groom") {
         markConfirmed(SIGNAL_KEYS.groomRoleHint);
-      } else if (role && role !== "groom") {
+      } else if (role) {
         resetSignal(SIGNAL_KEYS.groomRoleHint);
       }
       // Seed schedule items. 민감 3종은 기존 DB 값을 그대로 사용해 스케줄 분기.

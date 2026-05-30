@@ -115,7 +115,8 @@ const CoupleVoteDetail = () => {
         }
       }
 
-      await (supabase.from("couple_votes" as any) as any).update({ ai_suggestion: result, status: "discussed" }).eq("id", vote.id);
+      const { error: saveError } = await (supabase.from("couple_votes" as any) as any).update({ ai_suggestion: result, status: "discussed" }).eq("id", vote.id);
+      if (saveError) throw saveError;
       fetchVote();
     } catch (e) {
       console.error(e);
