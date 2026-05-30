@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { X, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
+import { STORE_CATEGORIES } from "@/lib/storeCategories";
 
 export interface StoreFilters {
   category: string | null;
@@ -20,8 +21,6 @@ const initialFilters: StoreFilters = {
   sizes: [],
   keyword: "",
 };
-
-const filterCategories = ["셀프웨딩", "스냅", "촬영소품", "드레스소품", "답례품", "데코/소품", "청첩장", "뷰티"];
 const colorOptions = ["화이트", "블랙", "핑크", "레드", "블루", "골드", "실버", "아이보리"];
 const sizeOptions = ["FREE", "XS", "S", "M", "L", "XL"];
 
@@ -76,17 +75,17 @@ const StoreFilterSheet = ({ open, onOpenChange, filters, onApply }: StoreFilterS
           <section>
             <h3 className="text-sm font-semibold text-foreground mb-3">카테고리</h3>
             <div className="flex flex-wrap gap-2">
-              {filterCategories.map((cat) => (
+              {STORE_CATEGORIES.map((cat) => (
                 <button
-                  key={cat}
-                  onClick={() => setLocal((p) => ({ ...p, category: p.category === cat ? null : cat }))}
+                  key={cat.value}
+                  onClick={() => setLocal((p) => ({ ...p, category: p.category === cat.value ? null : cat.value }))}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                    local.category === cat
+                    local.category === cat.value
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-background text-muted-foreground border-border hover:border-primary/50"
                   }`}
                 >
-                  {cat}
+                  {cat.label}
                 </button>
               ))}
             </div>

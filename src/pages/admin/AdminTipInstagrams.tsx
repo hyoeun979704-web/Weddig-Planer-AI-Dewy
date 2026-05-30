@@ -95,6 +95,18 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   rejected: { label: "반려", color: "bg-destructive/10 text-destructive" },
 };
 
+// 자주 쓰이는 인스타 큐레이션 반려 사유. 다중 선택 + '기타' textarea 로 보완.
+const REJECT_REASONS = [
+  "웨딩 관련 콘텐츠 부족",
+  "광고/홍보 과다",
+  "비활성 (최근 게시물 없음)",
+  "중복 계정",
+  "비공개 / 접근 불가",
+  "게시물 수 부족",
+  "이미지 품질 낮음",
+  "카테고리 매칭 안 됨",
+] as const;
+
 const AdminTipInstagrams = () => {
   const [items, setItems] = useState<InstagramPost[]>([]);
   const [loading, setLoading] = useState(false);
@@ -103,6 +115,7 @@ const AdminTipInstagrams = () => {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+  const [rejectReasons, setRejectReasons] = useState<string[]>([]);
   const [rejectNote, setRejectNote] = useState("");
 
   const load = useCallback(async () => {
@@ -171,10 +184,14 @@ const AdminTipInstagrams = () => {
 
   const reject = async () => {
     if (!rejectTarget) return;
-    const trimmed = rejectNote.trim();
+    const parts = [...rejectReasons];
+    const trimmedNote = rejectNote.trim();
+    if (trimmedNote) parts.push(trimmedNote);
+    const combined = parts.length > 0 ? parts.join(", ") : null;
+
     const { error } = await (supabase as any)
       .from("tip_instagrams")
-      .update({ moderation_status: "rejected", moderation_note: trimmed || null })
+      .update({ moderation_status: "rejected", moderation_note: combined })
       .eq("id", rejectTarget);
     if (error) {
       toast({ title: "반려 실패", description: error.message, variant: "destructive" });
@@ -182,6 +199,7 @@ const AdminTipInstagrams = () => {
     }
     toast({ title: "반려됨" });
     setRejectTarget(null);
+    setRejectReasons([]);
     setRejectNote("");
     await load();
   };
@@ -285,7 +303,13 @@ const AdminTipInstagrams = () => {
                           variant="destructive"
                           onClick={() => {
                             setRejectTarget(p.id);
-                            setRejectNote(p.moderation_note ?? "");
+                            // 기존 노트가 있으면 알려진 사유는 체크박스로 복원, 나머지는 textarea 로.
+                            const existing = p.moderation_note ?? "";
+                            const parts = existing.split(",").map((s) => s.trim()).filter(Boolean);
+                            const known = parts.filter((s) => (REJECT_REASONS as readonly string[]).includes(s));
+                            const unknown = parts.filter((s) => !(REJECT_REASONS as readonly string[]).includes(s));
+                            setRejectReasons(known);
+                            setRejectNote(unknown.join(", "));
                           }}
                         >
                           <X className="w-3 h-3 mr-0.5" /> 반려
@@ -380,18 +404,63 @@ const AdminTipInstagrams = () => {
           </DialogContent>
         </Dialog>
 
-        {/* 반려 사유 다이얼로그 */}
-        <Dialog open={!!rejectTarget} onOpenChange={(open) => !open && setRejectTarget(null)}>
+        {/* 반려 사유 다이얼로그 — 체크박스 다중 선택 + 기타 자유입력 */}
+        <Dialog
+          open={!!rejectTarget}
+          onOpenChange={(open) => {
+            if (!open) {
+              setRejectTarget(null);
+              setRejectReasons([]);
+              setRejectNote("");
+            }
+          }}
+        >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>반려 사유 (선택)</DialogTitle>
+              <DialogTitle>반려 사유</DialogTitle>
             </DialogHeader>
-            <Textarea
-              value={rejectNote}
-              onChange={(e) => setRejectNote(e.target.value)}
-              placeholder="반려 사유 (선택사항)"
-              rows={3}
-            />
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">자주 쓰는 사유 (다중 선택 가능)</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {REJECT_REASONS.map((r) => {
+                    const active = rejectReasons.includes(r);
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() =>
+                          setRejectReasons((prev) =>
+                            active ? prev.filter((x) => x !== r) : [...prev, r],
+                          )
+                        }
+                        className={`px-2.5 py-1 text-xs rounded border transition-colors ${
+                          active
+                            ? "bg-destructive text-destructive-foreground border-destructive"
+                            : "bg-background text-foreground border-border hover:border-destructive/50"
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">기타 (선택)</p>
+                <Textarea
+                  value={rejectNote}
+                  onChange={(e) => setRejectNote(e.target.value)}
+                  placeholder="추가 메모"
+                  rows={2}
+                />
+              </div>
+              {(rejectReasons.length > 0 || rejectNote.trim()) && (
+                <p className="text-[11px] text-muted-foreground">
+                  저장될 사유: {[...rejectReasons, rejectNote.trim()].filter(Boolean).join(", ")}
+                </p>
+              )}
+            </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setRejectTarget(null)}>취소</Button>
               <Button variant="destructive" onClick={reject}>반려</Button>
