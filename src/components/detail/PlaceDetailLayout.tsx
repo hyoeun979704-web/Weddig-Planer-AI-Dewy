@@ -661,7 +661,7 @@ function ReviewTab({
           disabled={hasMine}
           className="w-full mt-3 h-10 rounded-xl"
         >
-          {hasMine ? "이미 후기를 작성했어요" : "후기 작성하고 3,000P 받기"}
+          {hasMine ? "이미 후기를 작성했어요" : "후기 작성하고 3,000포인트 받기"}
         </Button>
       </section>
 
@@ -728,7 +728,7 @@ function WriteReviewDialog({
         content: content.trim(),
       });
       if (res.awarded) {
-        toast.success(`후기 등록! ${res.amount.toLocaleString()}P 적립됐어요`);
+        toast.success(`후기 등록! ${res.amount.toLocaleString()}포인트 적립됐어요`);
       } else {
         toast.success("후기 등록 완료! (장소별 첫 작성 보상은 이미 지급됐어요)");
       }
@@ -750,7 +750,7 @@ function WriteReviewDialog({
         <DialogHeader>
           <DialogTitle>후기 작성</DialogTitle>
           <DialogDescription>
-            첫 후기 작성 시 3,000P 즉시 적립 (사용자별 1회)
+            첫 후기 작성 시 3,000포인트 즉시 적립 (사용자별 1회)
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">

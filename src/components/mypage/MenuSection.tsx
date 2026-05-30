@@ -43,7 +43,7 @@ const MenuSection = ({
           : []),
         { icon: Calendar, title: "내 웨딩 일정", description: "D-Day 설정 및 일정 관리", href: "/my-schedule" },
         { icon: Users, title: "가족 초대", description: "부모님·플래너 권한 위임", href: "/family-invite" },
-        { icon: Gift, title: "친구 초대", description: "초대 코드 1명당 1,000P 적립", href: "/referral" },
+        { icon: Gift, title: "친구 초대", description: "초대 코드 1명당 1,000포인트 적립", href: "/referral" },
         { icon: FileText, title: "내 문의/예약", description: "문의 및 예약 내역 확인", href: "/my-inquiries" },
       ],
     },

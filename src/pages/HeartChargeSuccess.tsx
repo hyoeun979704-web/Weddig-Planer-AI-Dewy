@@ -103,7 +103,7 @@ const HeartChargeSuccess = () => {
       </p>
       {pointsSpent > 0 && (
         <p className="text-xs text-muted-foreground mb-4">
-          포인트 {pointsSpent.toLocaleString()}P 사용 완료
+          포인트 {pointsSpent.toLocaleString()}포인트 사용 완료
         </p>
       )}
       <div className="flex gap-3 mt-4">

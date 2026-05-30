@@ -56,7 +56,7 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
     {
       icon: Coins,
       label: "포인트",
-      value: user ? `${points.toLocaleString()}P` : "-",
+      value: user ? `${points.toLocaleString()}포인트` : "-",
       href: "/points",
       iconClass: "text-amber-500",
     },

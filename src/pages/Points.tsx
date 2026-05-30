@@ -33,7 +33,7 @@ const Points = () => {
     }
     await refetchPoints();
     const bonusText = result.bonusAmount > 0 ? ` + 연속 ${result.currentStreak}일 보너스 ${result.bonusAmount}P!` : "";
-    toast.success(`출석 완료! ${result.baseAmount}P 적립${bonusText}`);
+    toast.success(`출석 완료! ${result.baseAmount}포인트 적립${bonusText}`);
   };
 
   return (
@@ -49,7 +49,7 @@ const Points = () => {
               <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
             ) : (
               <>
-                <p className="text-4xl font-bold text-primary">{balance.toLocaleString()}P</p>
+                <p className="text-4xl font-bold text-primary">{balance.toLocaleString()}포인트</p>
                 <p className="text-xs text-muted-foreground mt-1">≈ {cashValue.toLocaleString()}원 상당</p>
               </>
             )}
@@ -94,11 +94,11 @@ const Points = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-foreground text-sm">
-                  {attendance.alreadyClaimedToday ? "오늘 출석 완료" : "오늘 출석하고 50P 받기"}
+                  {attendance.alreadyClaimedToday ? "오늘 출석 완료" : "오늘 출석하고 50포인트 받기"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {attendance.currentStreak > 0
-                    ? ` ${attendance.currentStreak}일 연속 출석 중 · 7일마다 +200P / 30일마다 +1,000P`
+                    ? ` ${attendance.currentStreak}일 연속 출석 중 · 7일마다 +200포인트 / 30일마다 +1,000포인트`
                     : "매일 들어와서 포인트 받기"}
                 </p>
               </div>
@@ -156,7 +156,7 @@ const Points = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-foreground text-sm">친구 초대하기</p>
-                <p className="text-xs text-muted-foreground mt-0.5">친구 가입 시 1,000P · 코드 입력자 500P</p>
+                <p className="text-xs text-muted-foreground mt-0.5">친구 가입 시 1,000포인트 · 코드 입력자 500포인트</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             </button>
@@ -186,7 +186,7 @@ const Points = () => {
                     <p className="text-xs text-muted-foreground mt-1">{formatDate(tx.created_at)}</p>
                   </div>
                   <p className={`font-bold ${tx.amount > 0 ? "text-primary" : "text-destructive"}`}>
-                    {tx.amount > 0 ? "+" : ""}{tx.amount.toLocaleString()}P
+                    {tx.amount > 0 ? "+" : ""}{tx.amount.toLocaleString()}포인트
                   </p>
                 </div>
               ))}

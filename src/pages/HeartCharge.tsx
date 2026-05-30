@@ -167,7 +167,7 @@ const HeartCharge = () => {
                 포인트 사용
               </p>
               <p className="text-xs text-muted-foreground">
-                보유 {pointBalance.toLocaleString()}P
+                보유 {pointBalance.toLocaleString()}포인트
               </p>
             </div>
             <div className="space-y-2">
@@ -181,18 +181,18 @@ const HeartCharge = () => {
                 className="w-full accent-primary"
               />
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">0P</span>
+                <span className="text-muted-foreground">0포인트</span>
                 <span className="font-semibold text-primary">
-                  {pointsToUse.toLocaleString()}P ({krwForPoints(pointsToUse).toLocaleString()}원 할인)
+                  {pointsToUse.toLocaleString()}포인트 ({krwForPoints(pointsToUse).toLocaleString()}원 할인)
                 </span>
                 <span className="text-muted-foreground">
-                  최대 {maxUsablePoints.toLocaleString()}P
+                  최대 {maxUsablePoints.toLocaleString()}포인트
                 </span>
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground">
               결제액의 최대 50%까지 포인트로 결제할 수 있어요.
-              1P = {POINT_TO_KRW}원 환산.
+              1포인트 = {POINT_TO_KRW}원 환산.
             </p>
           </div>
         )}

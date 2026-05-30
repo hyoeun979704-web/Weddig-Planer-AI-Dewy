@@ -41,7 +41,7 @@ const Referral = () => {
       return;
     }
     const url = `https://www.dewy-wedding.com/auth?ref=${code}`;
-    const shareText = `Dewy 웨딩플래너에서 같이 결혼 준비해요!\n\n가입 후 마이페이지에서 제 초대코드 ${code}를 입력하면 500P를 받을 수 있어요.\n\n${url}`;
+    const shareText = `Dewy 웨딩플래너에서 같이 결혼 준비해요!\n\n가입 후 마이페이지에서 제 초대코드 ${code}를 입력하면 500포인트를 받을 수 있어요.\n\n${url}`;
     if (typeof navigator.share === "function") {
       try {
         await navigator.share({
@@ -79,7 +79,7 @@ const Referral = () => {
       return;
     }
     if (result.redeemed) {
-      toast.success(` ${result.refereeAmount}P 적립! ${result.message}`);
+      toast.success(` ${result.refereeAmount}포인트 적립! ${result.message}`);
       setInputCode("");
     } else {
       toast.error(result.message);
@@ -103,8 +103,8 @@ const Referral = () => {
             <li>• 초대 코드를 친구에게 공유하세요</li>
             <li>• 친구가 가입 후 내 코드를 입력하면</li>
             <li>
-              <span className="font-bold text-primary">나에게 1,000P</span>,
-              <span className="font-bold text-primary"> 친구에게 500P</span> 적립
+              <span className="font-bold text-primary">나에게 1,000포인트</span>,
+              <span className="font-bold text-primary"> 친구에게 500포인트</span> 적립
             </li>
             <li>• 초대 인원은 무제한이에요</li>
           </ul>
@@ -161,7 +161,7 @@ const Referral = () => {
           <p className="text-xs text-muted-foreground mb-3">
             {ref.hasRedeemed
               ? "이미 코드를 사용하셨어요. (한 번만 입력 가능)"
-              : "친구에게 받은 8자리 코드를 입력하면 500P가 즉시 적립돼요."}
+              : "친구에게 받은 8자리 코드를 입력하면 500포인트가 즉시 적립돼요."}
           </p>
           <div className="flex items-center gap-2">
             <input

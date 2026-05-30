@@ -191,7 +191,7 @@ const PersonaDashboard = () => {
           }
           const row = Array.isArray(data) ? data[0] : data;
           if (row?.claimed) {
-            toast.success(`🎉 오늘의 미션 완료! ${row.amount}P 보너스 적립`);
+            toast.success(`🎉 오늘의 미션 완료! ${row.amount}포인트 보너스 적립`);
             await refetchPoints();
           }
         })();
@@ -415,7 +415,7 @@ const PersonaDashboard = () => {
               const bonusText = result.bonusAmount > 0
                 ? ` + 연속 ${result.currentStreak}일 보너스 ${result.bonusAmount}P!`
                 : "";
-              toast.success(`출석 완료! ${result.baseAmount}P 적립${bonusText}`);
+              toast.success(`출석 완료! ${result.baseAmount}포인트 적립${bonusText}`);
             }}
             disabled={attendance.alreadyClaimedToday || attendance.isClaiming}
             className={`relative mt-3 w-full flex items-center gap-3 p-3 rounded-2xl border transition-all active:scale-[0.99] text-left ${
@@ -433,7 +433,7 @@ const PersonaDashboard = () => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[12px] font-bold text-foreground">
-                {attendance.alreadyClaimedToday ? "오늘 출석 완료" : "오늘 출석하고 50P 받기"}
+                {attendance.alreadyClaimedToday ? "오늘 출석 완료" : "오늘 출석하고 50포인트 받기"}
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
                 {attendance.currentStreak > 0
@@ -462,7 +462,7 @@ const PersonaDashboard = () => {
             {completedMissions < missions.length && (
               <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                 <Gift className="w-2.5 h-2.5 text-primary" />
-                모두 완료 시 100P
+                모두 완료 시 100포인트
               </span>
             )}
           </div>

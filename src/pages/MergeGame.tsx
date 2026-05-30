@@ -115,7 +115,7 @@ export default function MergeGame() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-primary">{r.best_score.toLocaleString()}점</p>
-                      <p className="text-xs text-muted-foreground">{r.total_earned.toLocaleString()}P 획득</p>
+                      <p className="text-xs text-muted-foreground">{r.total_earned.toLocaleString()}포인트 획득</p>
                     </div>
                   </div>
                 ))}

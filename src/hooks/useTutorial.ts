@@ -127,10 +127,10 @@ export const useTutorial = () => {
       if (!row?.awarded) return;
       if (row.bonus_amount > 0) {
         toast.success(
-          ` 튜토리얼 마스터! ${row.base_amount + row.bonus_amount}P 적립`
+          ` 튜토리얼 마스터! ${row.base_amount + row.bonus_amount}포인트 적립`
         );
       } else if (row.base_amount > 0) {
-        toast.success(`튜토리얼 완료! ${row.base_amount}P 적립`);
+        toast.success(`튜토리얼 완료! ${row.base_amount}포인트 적립`);
       }
     } catch {
       // 적립 실패해도 튜토리얼은 정상 종료
