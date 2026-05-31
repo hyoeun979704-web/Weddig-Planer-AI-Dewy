@@ -141,6 +141,7 @@ const InvitationViewer = () => {
           aiText={data.ai_generated_text ?? {}}
           textOverrides={faces.front.textOverrides ?? {}}
           fontOverrides={faces.front.fontOverrides ?? {}}
+          positionOverrides={faces.front.positionOverrides ?? {}}
           fontsReady={fontsReady}
           imageUrls={faces.front.imageUrlsForViewer ?? {}}
           selectedSlotId={null}
@@ -156,6 +157,7 @@ const InvitationViewer = () => {
             aiText={data.ai_generated_text ?? {}}
             textOverrides={faces.back.textOverrides ?? {}}
             fontOverrides={faces.back.fontOverrides ?? {}}
+            positionOverrides={faces.back.positionOverrides ?? {}}
             fontsReady={fontsReady}
             imageUrls={faces.back.imageUrlsForViewer ?? {}}
             selectedSlotId={null}

@@ -79,12 +79,14 @@ const IDLE_MS = 8000;
 interface FaceState {
   textOverrides: Record<string, string>;
   fontOverrides: Record<string, string>;
+  positionOverrides: Record<string, { x: number; y: number }>;
   imagePaths: Record<string, string>; // DB 저장용 storage path
   imageUrls: Record<string, string>; // 화면 표시용 signed URL (저장 X)
 }
 const emptyFace = (): FaceState => ({
   textOverrides: {},
   fontOverrides: {},
+  positionOverrides: {},
   imagePaths: {},
   imageUrls: {},
 });
@@ -182,6 +184,7 @@ const InvitationStudio = () => {
       setFrontFace({
         textOverrides: faces.front.textOverrides ?? {},
         fontOverrides: faces.front.fontOverrides ?? {},
+        positionOverrides: faces.front.positionOverrides ?? {},
         imagePaths: faces.front.imagePaths ?? {},
         imageUrls: await hydrate(faces.front.imagePaths),
       });
@@ -198,6 +201,7 @@ const InvitationStudio = () => {
         setBackFace({
           textOverrides: faces.back.textOverrides ?? {},
           fontOverrides: faces.back.fontOverrides ?? {},
+          positionOverrides: faces.back.positionOverrides ?? {},
           imagePaths: faces.back.imagePaths ?? {},
           imageUrls: await hydrate(faces.back.imagePaths),
         });
@@ -279,6 +283,14 @@ const InvitationStudio = () => {
     });
   };
 
+  // 슬롯 드래그 이동 → 활성 면의 위치 오버라이드 저장
+  const handleMoveSlot = (id: string, x: number, y: number) => {
+    setFace((p) => ({
+      ...p,
+      positionOverrides: { ...p.positionOverrides, [id]: { x, y } },
+    }));
+  };
+
   const handlePhotoUpload = async (file: File) => {
     if (!selectedSlot || !user) return;
     if (file.size > 5 * 1024 * 1024) {
@@ -353,6 +365,7 @@ const InvitationStudio = () => {
         textOverrides: f.textOverrides,
         imagePaths: f.imagePaths,
         fontOverrides: f.fontOverrides,
+        positionOverrides: f.positionOverrides,
       });
       const payload = {
         user_id: user.id,
@@ -509,6 +522,7 @@ const InvitationStudio = () => {
           onSelectSlot={setSelectedSlotId}
           onTextChange={handleTextChange}
           onFontChange={handleFontChange}
+          onMoveSlot={handleMoveSlot}
           onPickPhoto={() => fileInputRef.current?.click()}
           onExportPdf={handleExportPdf}
           isExporting={isExporting}
@@ -761,6 +775,7 @@ const StudioView = ({
   onSelectSlot,
   onTextChange,
   onFontChange,
+  onMoveSlot,
   onPickPhoto,
   onExportPdf,
   isExporting,
@@ -785,6 +800,7 @@ const StudioView = ({
   onSelectSlot: (id: string | null) => void;
   onTextChange: (text: string) => void;
   onFontChange: (family: string | null) => void;
+  onMoveSlot: (id: string, x: number, y: number) => void;
   onPickPhoto: () => void;
   onExportPdf: () => void;
   isExporting: boolean;
@@ -830,10 +846,13 @@ const StudioView = ({
           aiText={aiText}
           textOverrides={fd.textOverrides}
           fontOverrides={fd.fontOverrides}
+          positionOverrides={fd.positionOverrides}
           fontsReady={fontsReady}
           imageUrls={fd.imageUrls}
           selectedSlotId={visible ? selectedSlotId : null}
           onSelectSlot={visible ? onSelectSlot : () => {}}
+          editable={visible}
+          onMoveSlot={onMoveSlot}
           displayWidth={340}
         />
       </div>
@@ -955,8 +974,9 @@ const StudioView = ({
       {/* 슬롯 선택 안내 */}
       {!selectedSlot && (activeFace === "front" || backTemplate) && (
         <div className="p-4 bg-blue-50 rounded-lg text-[12px] text-blue-900 leading-relaxed">
-          편집하고 싶은 영역(텍스트·사진)을 캔버스에서 탭하세요. 빈 텍스트
-          영역에서 8초간 입력이 없으면 AI 추천 문구 시트가 떠요.
+          편집하고 싶은 영역(텍스트·사진)을 캔버스에서 탭하세요. 길게 끌어
+          위치도 옮길 수 있어요. 빈 텍스트 영역에서 8초간 입력이 없으면 AI 추천
+          문구 시트가 떠요.
         </div>
       )}
 

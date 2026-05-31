@@ -57,6 +57,12 @@ interface Props {
   shareUrl?: string;
   /** QR 슬롯 스타일 — 공유 카드 선택과 통일. barcode 는 정사각 슬롯이라 basic 로 폴백. */
   qrStyle?: ShareCodeStyle;
+  /** 편집 모드 — true 면 슬롯 드래그 이동 허용(잠금/movable:false 슬롯 제외). */
+  editable?: boolean;
+  /** slot.id → 사용자가 이동한 위치(캔버스 좌표). 없으면 slot.x/y 사용. */
+  positionOverrides?: Record<string, { x: number; y: number }>;
+  /** 드래그 종료 시 호출 — 이동한 위치 저장용 */
+  onMoveSlot?: (id: string, x: number, y: number) => void;
 }
 
 const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
@@ -75,6 +81,9 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       background = "transparent",
       shareUrl,
       qrStyle = "basic",
+      editable = false,
+      positionOverrides = {},
+      onMoveSlot,
     },
     ref,
   ) => {
@@ -146,6 +155,9 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                       fontOverrides[slot.id] ?? slot.font_family ?? ""
                     }`
                   : slot.id;
+                const pos = positionOverrides[slot.id];
+                const draggable =
+                  editable && !slot.locked && slot.movable !== false;
                 return (
                   <SlotNode
                     key={key}
@@ -159,6 +171,10 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                     qrStyle={qrStyle}
                     isSelected={slot.id === selectedSlotId}
                     onClick={() => onSelectSlot(slot.id)}
+                    posX={pos?.x ?? slot.x}
+                    posY={pos?.y ?? slot.y}
+                    draggable={draggable}
+                    onMoveEnd={onMoveSlot}
                   />
                 );
               })}
@@ -212,6 +228,10 @@ interface SlotNodeProps {
   qrStyle?: ShareCodeStyle;
   isSelected: boolean;
   onClick: () => void;
+  posX?: number;
+  posY?: number;
+  draggable?: boolean;
+  onMoveEnd?: (id: string, x: number, y: number) => void;
 }
 
 /** 슬롯에 적용할 폰트 family: 사용자 선택 > 템플릿 기본 > fallback */
@@ -223,15 +243,17 @@ function resolveFont(
 }
 
 const SlotNode = (props: SlotNodeProps) => {
-  const { slot, isSelected } = props;
+  const { slot, isSelected, posX, posY, draggable, onMoveEnd } = props;
 
   return (
     <Group
-      x={slot.x}
-      y={slot.y}
+      x={posX ?? slot.x}
+      y={posY ?? slot.y}
       rotation={slot.rotation ?? 0}
+      draggable={draggable}
       onClick={props.onClick}
       onTap={props.onClick}
+      onDragEnd={(e) => onMoveEnd?.(slot.id, e.target.x(), e.target.y())}
     >
       {renderSlotBody(props)}
       {isSelected && (

@@ -145,6 +145,8 @@ export interface InvitationFaceData {
   imagePaths?: Record<string, string>;
   /** slot.id → 사용자가 고른 폰트 family */
   fontOverrides?: Record<string, string>;
+  /** slot.id → 사용자가 드래그 이동한 위치(캔버스 좌표). 없으면 슬롯 기본 위치 */
+  positionOverrides?: Record<string, { x: number; y: number }>;
   /** 발행 시점 long-lived signed URL (익명 viewer 용) */
   imageUrlsForViewer?: Record<string, string>;
 }
