@@ -295,16 +295,34 @@ function renderSlotBody(props: SlotNodeProps) {
 // ════════════════════════════════════════════════════════════════
 // 텍스트 슬롯
 // ════════════════════════════════════════════════════════════════
+// 카드 템플릿의 합성 필드 → user_data 조합 (위저드 입력에서 자동 채움)
+function compositeField(
+  field: string,
+  userData: InvitationUserData,
+): string | undefined {
+  if (field === "couple_names") {
+    const g = userData.groom_name?.trim();
+    const b = userData.bride_name?.trim();
+    if (g && b) return `${g} · ${b}`;
+    return g || b || undefined;
+  }
+  return undefined;
+}
+
 function resolveText(
   slot: InvitationSlot,
   userData: InvitationUserData,
   aiText: Record<string, string>,
   textOverrides: Record<string, string>,
 ): string {
-  // priority: textOverrides > aiText > userData[field] > slot.text > placeholder
+  // priority: textOverrides > aiText > userData[field] > 합성필드 > slot.text > placeholder
   if (textOverrides[slot.id] !== undefined) return textOverrides[slot.id];
   if (aiText[slot.id]) return aiText[slot.id];
   if (slot.field && userData[slot.field]) return userData[slot.field]!;
+  if (slot.field) {
+    const c = compositeField(slot.field, userData);
+    if (c) return c;
+  }
   if (slot.text) return slot.text;
   return slot.placeholder ?? "";
 }
