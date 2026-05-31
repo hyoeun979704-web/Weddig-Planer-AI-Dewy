@@ -4,7 +4,7 @@
 //   1. 인증
 //   2. 입력 검증
 //   3. spend_hearts(1, "invitation_text_ai")
-//   4. Gemini Flash 1회 호출 → 옵션 배열
+//   4. OpenAI Chat Completions 1회 호출 → 옵션 배열
 //   5. 응답 반환 (실패 시 환불)
 //
 // 사용자가 청첩장 에디터에서 텍스트 슬롯을 선택 후 8초간 입력 없을 때
@@ -20,6 +20,9 @@ const corsHeaders = {
 };
 
 const HEART_COST = 1;
+
+// 텍스트 추천에 쓰는 OpenAI 모델. 필요 시 OPENAI_TEXT_MODEL 로 override.
+const OPENAI_TEXT_MODEL = Deno.env.get("OPENAI_TEXT_MODEL") ?? "gpt-4o-mini";
 
 interface RequestBody {
   slot_id: string;
@@ -65,8 +68,8 @@ serve(async (req) => {
       return json({ error: "Missing required fields" }, 400);
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) return json({ error: "gemini_not_configured" }, 500);
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) return json({ error: "openai_not_configured" }, 500);
 
     // 하트 차감
     const { data: spendData, error: spendError } = await supabaseAdmin.rpc(
@@ -91,14 +94,14 @@ serve(async (req) => {
     }
 
     try {
-      const suggestions = await callGemini(GEMINI_API_KEY, body);
+      const suggestions = await callOpenAI(OPENAI_API_KEY, body);
       return json(
         { suggestions, balance_after: spendRow.balance_after },
         200,
       );
     } catch (innerError) {
       console.error("inner error:", innerError);
-      await refundHearts(supabaseAdmin, userId, HEART_COST, "gemini_fail");
+      await refundHearts(supabaseAdmin, userId, HEART_COST, "openai_fail");
       return json({ error: "generation_failed" }, 500);
     }
   } catch (error) {
@@ -118,7 +121,7 @@ const ALLOWED_USER_DATA_FIELDS = [
   "venue_name",
 ] as const;
 
-async function callGemini(
+async function callOpenAI(
   apiKey: string,
   body: RequestBody,
 ): Promise<string[]> {
@@ -127,7 +130,7 @@ async function callGemini(
   const placeholder = body.slot_placeholder ?? "";
   const hint = body.template_hint ?? "";
   const rawUserData = body.user_data ?? {};
-  // allowlist 적용 — 그 외 필드는 Gemini 에 전달하지 않는다
+  // allowlist 적용 — 그 외 필드는 OpenAI 에 전달하지 않는다
   const userData: Record<string, string> = {};
   for (const key of ALLOWED_USER_DATA_FIELDS) {
     const v = rawUserData[key];
@@ -142,8 +145,9 @@ async function callGemini(
 
   const systemPrompt = `당신은 한국어 청첩장 카피라이터입니다. 청첩장의
 특정 슬롯(${role})에 들어갈 문구를 3개 옵션으로 제안합니다. 각 옵션은
-서로 다른 표현이어야 하고, 모두 ${tone} 톤이어야 합니다. 출력은 STRICT
-JSON 배열만 (다른 텍스트 없음).`;
+서로 다른 표현이어야 하고, 모두 ${tone} 톤이어야 합니다. 출력은
+{"suggestions": ["문구1", "문구2", "문구3"]} 형태의 STRICT JSON 객체만
+(다른 텍스트 없음).`;
 
   const userPrompt = `슬롯 역할: ${role}
 톤: ${tone}
@@ -151,50 +155,60 @@ ${hint ? `톤 힌트: ${hint}\n` : ""}${placeholder ? `예시 문구 (스타일 
 이 슬롯에 어울리는 한국어 문구를 3개 제안하세요. 각 문구는 2~4 줄,
 청첩장 톤에 맞는 격조와 정성이 느껴져야 합니다.
 
-출력 형식 (반드시 JSON 배열):
-[
-  "첫 번째 문구...",
-  "두 번째 문구...",
-  "세 번째 문구..."
-]
+출력 형식 (반드시 JSON 객체):
+{
+  "suggestions": [
+    "첫 번째 문구...",
+    "두 번째 문구...",
+    "세 번째 문구..."
+  ]
+}
 
 신혼부부 이름이 주어졌다면 적절히 활용. 다른 텍스트는 출력하지 마세요.`;
 
-  const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-        generationConfig: {
-          temperature: 0.9,
-          maxOutputTokens: 1024,
-          responseMimeType: "application/json",
-        },
-      }),
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
     },
-  );
+    body: JSON.stringify({
+      model: OPENAI_TEXT_MODEL,
+      temperature: 0.9,
+      max_tokens: 1024,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    }),
+  });
   if (!resp.ok) {
     const t = await resp.text();
-    throw new Error(`gemini_${resp.status}: ${t.substring(0, 200)}`);
+    throw new Error(`openai_${resp.status}: ${t.substring(0, 200)}`);
   }
   const data = await resp.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error("gemini_no_response");
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error("openai_no_response");
 
-  let parsed: string[];
+  // json_object 모드는 객체를 반환 — {"suggestions": [...]} 를 기대하되,
+  // 모델이 배열을 그대로 줄 수도 있으니 둘 다 처리.
+  let parsed: unknown;
   try {
     parsed = JSON.parse(text);
   } catch {
     const stripped = text.replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
     parsed = JSON.parse(stripped);
   }
-  if (!Array.isArray(parsed) || parsed.length === 0) {
-    throw new Error("gemini_bad_format");
+  const list = Array.isArray(parsed)
+    ? parsed
+    : (parsed as { suggestions?: unknown })?.suggestions;
+  if (!Array.isArray(list) || list.length === 0) {
+    throw new Error("openai_bad_format");
   }
-  return parsed.filter((s) => typeof s === "string" && s.trim().length > 0);
+  return list.filter(
+    (s): s is string => typeof s === "string" && s.trim().length > 0,
+  );
 }
 
 function json(payload: unknown, status: number) {

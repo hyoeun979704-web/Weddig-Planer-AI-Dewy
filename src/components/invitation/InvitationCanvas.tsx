@@ -3,6 +3,10 @@ import { Stage, Layer, Rect, Text, Image as KonvaImage, Group, Line } from "reac
 import type Konva from "konva";
 import useImage from "use-image";
 import QRCode from "qrcode";
+import {
+  shareCodeToDataUrl,
+  type ShareCodeStyle,
+} from "@/lib/invitation/shareCode";
 import type {
   InvitationLayout,
   InvitationSlot,
@@ -43,6 +47,8 @@ interface Props {
   background?: string;  // 캔버스 외부 영역 배경
   /** 발행된 모바일 청첩장 share URL — QR 슬롯이 렌더할 데이터 */
   shareUrl?: string;
+  /** QR 슬롯 스타일 — 공유 카드 선택과 통일. barcode 는 정사각 슬롯이라 basic 로 폴백. */
+  qrStyle?: ShareCodeStyle;
 }
 
 const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
@@ -58,6 +64,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       displayWidth = 360,
       background = "transparent",
       shareUrl,
+      qrStyle = "basic",
     },
     ref,
   ) => {
@@ -128,6 +135,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                   textOverrides={textOverrides}
                   imageUrls={imageUrls}
                   shareUrl={shareUrl}
+                  qrStyle={qrStyle}
                   isSelected={slot.id === selectedSlotId}
                   onClick={() => onSelectSlot(slot.id)}
                 />
@@ -178,6 +186,7 @@ interface SlotNodeProps {
   textOverrides: Record<string, string>;
   imageUrls: Record<string, string>;
   shareUrl?: string;
+  qrStyle?: ShareCodeStyle;
   isSelected: boolean;
   onClick: () => void;
 }
@@ -556,7 +565,7 @@ const Heart = ({ cx, cy, size, color }: HeartProps) => {
 // ════════════════════════════════════════════════════════════════
 // QR 슬롯 — share URL 을 QR 코드로 렌더
 // ════════════════════════════════════════════════════════════════
-const QrSlotBody = ({ slot, shareUrl }: SlotNodeProps) => {
+const QrSlotBody = ({ slot, shareUrl, qrStyle = "basic" }: SlotNodeProps) => {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -565,18 +574,26 @@ const QrSlotBody = ({ slot, shareUrl }: SlotNodeProps) => {
       return;
     }
     let cancelled = false;
-    QRCode.toDataURL(shareUrl, {
-      errorCorrectionLevel: "M",
-      margin: 1,
-      width: Math.max(slot.w, slot.h),
-      color: { dark: slot.color ?? "#000000", light: "#FFFFFF" },
-    }).then((url) => {
-      if (!cancelled) setQrDataUrl(url);
-    });
+    // barcode 는 가로로 길어 정사각 QR 슬롯에 안 맞으므로 basic 으로 폴백.
+    // heart 는 공유 카드와 동일 렌더(shareCodeToDataUrl)로 스타일 통일.
+    if (qrStyle === "heart") {
+      shareCodeToDataUrl(shareUrl, "heart").then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      });
+    } else {
+      QRCode.toDataURL(shareUrl, {
+        errorCorrectionLevel: "M",
+        margin: 1,
+        width: Math.max(slot.w, slot.h),
+        color: { dark: slot.color ?? "#000000", light: "#FFFFFF" },
+      }).then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      });
+    }
     return () => {
       cancelled = true;
     };
-  }, [shareUrl, slot.w, slot.h, slot.color]);
+  }, [shareUrl, slot.w, slot.h, slot.color, qrStyle]);
 
   const [img] = useImage(qrDataUrl ?? "", "anonymous");
 

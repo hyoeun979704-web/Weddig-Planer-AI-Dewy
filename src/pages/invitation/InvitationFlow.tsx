@@ -31,6 +31,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import InvitationCanvas, {
   InvitationCanvasHandle,
 } from "@/components/invitation/InvitationCanvas";
+import ShareCodeCard from "@/components/invitation/ShareCodeCard";
+import type { ShareCodeStyle } from "@/lib/invitation/shareCode";
 import { exportInvitationPdf } from "@/lib/invitation/exportPdf";
 import type {
   InvitationLayout,
@@ -1332,6 +1334,8 @@ const ResultView = ({
   onShareSlug: () => void;
 }) => {
   const isMobile = template.format === "mobile";
+  // 공유 코드 스타일 — 카드와 캔버스 QR 슬롯이 같은 값을 공유(스타일 통일).
+  const [shareCodeStyle, setShareCodeStyle] = useState<ShareCodeStyle>("basic");
 
   return (
     <main className="px-4 py-5 space-y-4">
@@ -1347,6 +1351,7 @@ const ResultView = ({
           onSelectSlot={() => {}}
           displayWidth={360}
           shareUrl={shareUrl ?? undefined}
+          qrStyle={shareCodeStyle}
         />
       </div>
 
@@ -1367,6 +1372,11 @@ const ResultView = ({
                 <Share2 className="w-4 h-4 mr-2" />
                 카카오·인스타·문자로 공유
               </Button>
+              <ShareCodeCard
+                url={shareUrl}
+                style={shareCodeStyle}
+                onStyleChange={setShareCodeStyle}
+              />
             </section>
           ) : (
             <Button
@@ -1389,21 +1399,45 @@ const ResultView = ({
           )}
         </>
       ) : (
-        // 종이 청첩장 — PDF 다운로드 메인 액션
-        <div className="grid grid-cols-2 gap-2">
-          <Button onClick={onExportPdf} disabled={isExporting} className="h-12">
-            {isExporting ? (
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4 mr-1" />
-            )}
-            PDF
-          </Button>
-          <Button variant="outline" onClick={onShare} className="h-12">
-            <Share2 className="w-4 h-4 mr-1" />
-            이미지 공유
-          </Button>
-        </div>
+        // 종이 청첩장 — PDF 다운로드 메인 액션 + 온라인 공유 코드(선택)
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={onExportPdf} disabled={isExporting} className="h-12">
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-1" />
+              )}
+              PDF
+            </Button>
+            <Button variant="outline" onClick={onShare} className="h-12">
+              <Share2 className="w-4 h-4 mr-1" />
+              이미지 공유
+            </Button>
+          </div>
+
+          {shareUrl ? (
+            <ShareCodeCard
+              url={shareUrl}
+              style={shareCodeStyle}
+              onStyleChange={setShareCodeStyle}
+            />
+          ) : (
+            <Button
+              variant="outline"
+              onClick={onPublish}
+              disabled={isPublishing}
+              className="w-full h-11"
+            >
+              {isPublishing ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Share2 className="w-4 h-4 mr-2" />
+              )}
+              온라인 공유 링크·QR 발급 (종이에 인쇄용)
+            </Button>
+          )}
+        </>
       )}
 
       <button
