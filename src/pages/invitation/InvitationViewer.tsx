@@ -6,9 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import InvitationCanvas from "@/components/invitation/InvitationCanvas";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
-import type {
-  InvitationLayout,
-  InvitationUserData,
+import {
+  readFaceLayout,
+  type InvitationLayout,
+  type InvitationUserData,
 } from "@/lib/invitation/types";
 
 /**
@@ -40,6 +41,7 @@ interface PublishedInvitation {
   ai_generated_text: Record<string, string> | null;
   share_slug: string;
   status: string;
+  back_template_id: string | null;
   invitation_templates: {
     name: string;
     layout: InvitationLayout;
@@ -52,6 +54,7 @@ const InvitationViewer = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [data, setData] = useState<PublishedInvitation | null>(null);
+  const [backLayout, setBackLayout] = useState<InvitationLayout | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const { fontsReady } = useInvitationFonts();
@@ -62,7 +65,7 @@ const InvitationViewer = () => {
       const { data: row, error } = await (supabase as any)
         .from("invitations")
         .select(
-          "id, user_data, layout, ai_generated_text, share_slug, status, invitation_templates(name, layout, tone, format)",
+          "id, user_data, layout, ai_generated_text, share_slug, status, back_template_id, invitation_templates(name, layout, tone, format)",
         )
         .eq("share_slug", slug)
         .eq("status", "published")
@@ -73,6 +76,15 @@ const InvitationViewer = () => {
         return;
       }
       setData(row as PublishedInvitation);
+      // 후면 템플릿은 FK 미사용 → 별도 조회
+      if (row.back_template_id) {
+        const { data: bt } = await (supabase as any)
+          .from("invitation_templates")
+          .select("layout")
+          .eq("id", row.back_template_id)
+          .maybeSingle();
+        if (bt?.layout) setBackLayout(bt.layout as InvitationLayout);
+      }
       setLoading(false);
     })();
   }, [slug]);
@@ -117,25 +129,40 @@ const InvitationViewer = () => {
   }
 
   const tpl = data.invitation_templates;
-  const ld = data.layout ?? {};
+  const faces = readFaceLayout(data.layout);
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
-      {/* 캔버스 — 풀스크린 비슷한 비율로 표시 */}
-      <div className="flex justify-center bg-muted/20 py-5">
+      {/* 전면 */}
+      <div className="flex flex-col items-center bg-muted/20 py-5 gap-5">
         <InvitationCanvas
           layout={tpl.layout}
           userData={data.user_data ?? {}}
           aiText={data.ai_generated_text ?? {}}
-          textOverrides={ld.textOverrides ?? {}}
-          fontOverrides={ld.fontOverrides ?? {}}
+          textOverrides={faces.front.textOverrides ?? {}}
+          fontOverrides={faces.front.fontOverrides ?? {}}
           fontsReady={fontsReady}
-          imageUrls={ld.imageUrlsForViewer ?? {}}
+          imageUrls={faces.front.imageUrlsForViewer ?? {}}
           selectedSlotId={null}
           onSelectSlot={() => {}}
           displayWidth={360}
           shareUrl={window.location.href}
         />
+        {/* 후면 (있을 때만) */}
+        {backLayout && (
+          <InvitationCanvas
+            layout={backLayout}
+            userData={data.user_data ?? {}}
+            aiText={data.ai_generated_text ?? {}}
+            textOverrides={faces.back.textOverrides ?? {}}
+            fontOverrides={faces.back.fontOverrides ?? {}}
+            fontsReady={fontsReady}
+            imageUrls={faces.back.imageUrlsForViewer ?? {}}
+            selectedSlotId={null}
+            onSelectSlot={() => {}}
+            displayWidth={360}
+          />
+        )}
       </div>
 
       <div className="px-5 pt-5 space-y-3">
