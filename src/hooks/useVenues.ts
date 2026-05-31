@@ -83,6 +83,10 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
   if (filters.eventOptions && filters.eventOptions.length > 0) {
     query = query.overlaps("tags", filters.eventOptions);
   }
+  // 가치 태그(친환경/비건/반려동물/영문안내) — places.tags 와 overlaps.
+  if (filters.valueTagsSelected && filters.valueTagsSelected.length > 0) {
+    query = query.overlaps("tags", filters.valueTagsSelected);
+  }
 
   // 신뢰도(채움도) 우선, 같으면 평점 — null 데이터 적은 곳이 먼저 노출.
   const { data, error, count } = await query
@@ -100,10 +104,10 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
 };
 
 export const useVenues = (partnersOnly: boolean = false) => {
-  const { region, sigungu, maxPrice, maxGuarantee, minGuarantee, minRating, hallTypes, mealOptions, eventOptions } = useFilterStore();
+  const { region, sigungu, maxPrice, maxGuarantee, minGuarantee, minRating, hallTypes, mealOptions, eventOptions, valueTagsSelected } = useFilterStore();
   const hasFilters = !!(
     region || sigungu || maxPrice || maxGuarantee || minGuarantee || minRating ||
-    hallTypes.length || mealOptions.length || eventOptions.length
+    hallTypes.length || mealOptions.length || eventOptions.length || valueTagsSelected.length
   );
 
   const filters: FilterState = {
@@ -116,6 +120,7 @@ export const useVenues = (partnersOnly: boolean = false) => {
     hallTypes,
     mealOptions,
     eventOptions,
+    valueTagsSelected,
   };
 
   const showPartnersOnly = partnersOnly && !hasFilters;

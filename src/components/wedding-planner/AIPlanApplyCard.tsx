@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, Loader2, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import type { SavableBudgetPlan, SavableTimelinePlan } from "@/lib/chatbot/handlers/quickQuestionHandlers";
+import type { SavableBudgetPlan, SavableTimelinePlan } from "@/lib/chatbot/handlers/planApplication";
 
 /**
  * Renders below an assistant message that produced a savable plan and gives

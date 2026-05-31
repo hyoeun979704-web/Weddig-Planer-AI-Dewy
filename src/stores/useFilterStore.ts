@@ -14,6 +14,9 @@ export interface FilterState {
   hallTypes: string[];
   mealOptions: string[];
   eventOptions: string[];
+  // 가치 태그(친환경/비건/반려동물/영문안내) — places.tags 와 overlaps 매칭.
+  // ValueTagChipRow 가 토글, useVenues 가 쿼리에 반영.
+  valueTagsSelected: string[];
 }
 
 interface FilterStore extends FilterState {
@@ -29,6 +32,7 @@ interface FilterStore extends FilterState {
   toggleMealOption: (mealOption: string) => void;
   setEventOptions: (eventOptions: string[]) => void;
   toggleEventOption: (eventOption: string) => void;
+  toggleValueTagSelected: (valueTag: string) => void;
   resetFilters: () => void;
   initWithRegion: (region: string | null, sigungu?: string | null) => void;
   hasActiveFilters: () => boolean;
@@ -44,6 +48,7 @@ const initialState: FilterState = {
   hallTypes: [],
   mealOptions: [],
   eventOptions: [],
+  valueTagsSelected: [],
 };
 
 export const useFilterStore = create<FilterStore>((set, get) => ({
@@ -86,6 +91,15 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
     }
   },
   
+  toggleValueTagSelected: (valueTag) => {
+    const current = get().valueTagsSelected;
+    if (current.includes(valueTag)) {
+      set({ valueTagsSelected: current.filter((v) => v !== valueTag) });
+    } else {
+      set({ valueTagsSelected: [...current, valueTag] });
+    }
+  },
+
   resetFilters: () => set(initialState),
   initWithRegion: (region, sigungu = null) => set({ ...initialState, region, sigungu }),
 
@@ -100,7 +114,8 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
       state.minRating ||
       state.hallTypes.length > 0 ||
       state.mealOptions.length > 0 ||
-      state.eventOptions.length > 0
+      state.eventOptions.length > 0 ||
+      state.valueTagsSelected.length > 0
     );
   },
 }));

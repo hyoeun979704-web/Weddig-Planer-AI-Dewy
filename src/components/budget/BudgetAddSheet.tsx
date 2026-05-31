@@ -40,7 +40,7 @@ interface BudgetAddSheetProps {
    *  static 540-day threshold. Lets us be tolerant of legitimate D-365+
    *  early bookings but still flag obvious year-typo mistakes. */
   weddingDate?: string | null;
-  onSave: (item: Omit<BudgetItem, "id" | "user_id" | "created_at">) => void;
+  onSave: (item: Omit<BudgetItem, "id" | "user_id" | "created_at" | "updated_at">) => void;
   /** Budget categories the user hasn't excluded via wedding style. Falls back to all 6. */
   visibleCategoryKeys?: BudgetCategory[];
 }
