@@ -7,6 +7,10 @@
 //   - dress-uploads : 사용자가 AI 합성용으로 올린 본인 사진
 //   - dress-results : AI 가 생성한 합성 결과물
 //
+// + 청첩장 draft 30일 정리 (별도 phase):
+//   - 미발행(draft) 청첩장 레코드 + 그 invitation-uploads 사진을 30일 후 삭제.
+//   - 발행본(published, 하객 라이브 링크)과 그 사진은 유지.
+//
 // 다른 버킷(community-images, couple-diary-photos, vendor-images 등)은
 // 사용자가 자발적으로 저장·게시한 콘텐츠라 회원 탈퇴 시까지 보관한다.
 //
@@ -62,6 +66,7 @@ serve(async (req) => {
     retention_days: RETENTION_DAYS,
     deleted_total: 0,
     by_bucket: {} as Record<string, number>,
+    invitation_drafts_deleted: 0,
     errors: [] as string[],
   };
 
@@ -101,8 +106,82 @@ serve(async (req) => {
     }
   }
 
+  // ─────────────────────────────────────────────
+  // 4) 청첩장 draft 30일 정리 (사진 삭제 → 레코드 삭제)
+  //    발행본은 list_expired_invitation_drafts 가 애초에 제외.
+  await cleanupExpiredInvitationDrafts(supabase, summary);
+
   return new Response(JSON.stringify(summary), {
     status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });
+
+// ════════════════════════════════════════════════════════════════
+// 청첩장 draft 정리 — 30일 지난 미발행 청첩장의 사진 + 레코드 삭제.
+//   · list_expired_invitation_drafts: (id, photo_paths[]) 반환 (발행본 제외/보존).
+//   · invitation-uploads 사진 배치 삭제 → invitations row 배치 삭제.
+//   · 사진 삭제가 일부 실패해도 레코드는 삭제(다음 회차 orphan 청소 대상 아님이라
+//     errors 에만 기록). 멱등성: 이미 없는 path/row 는 skip.
+// ════════════════════════════════════════════════════════════════
+interface ExpiredDraft {
+  invitation_id: string;
+  photo_paths: string[] | null;
+}
+
+async function cleanupExpiredInvitationDrafts(
+  supabase: ReturnType<typeof createClient>,
+  summary: {
+    deleted_total: number;
+    by_bucket: Record<string, number>;
+    invitation_drafts_deleted: number;
+    errors: string[];
+  },
+) {
+  const { data, error } = await supabase.rpc(
+    "list_expired_invitation_drafts",
+    { retention_days: RETENTION_DAYS },
+  );
+  if (error) {
+    summary.errors.push(`list_expired_invitation_drafts: ${error.message}`);
+    return;
+  }
+
+  const drafts = (data ?? []) as ExpiredDraft[];
+  if (drafts.length === 0) return;
+
+  // 1) 사진 삭제 (invitation-uploads)
+  const photoPaths = Array.from(
+    new Set(drafts.flatMap((d) => d.photo_paths ?? []).filter(Boolean)),
+  );
+  summary.by_bucket["invitation-uploads"] =
+    summary.by_bucket["invitation-uploads"] ?? 0;
+  for (let i = 0; i < photoPaths.length; i += BATCH_SIZE) {
+    const chunk = photoPaths.slice(i, i + BATCH_SIZE);
+    const { data: removed, error: rmError } = await supabase.storage
+      .from("invitation-uploads")
+      .remove(chunk);
+    if (rmError) {
+      summary.errors.push(`invitation-uploads batch@${i}: ${rmError.message}`);
+      continue;
+    }
+    const n = removed?.length ?? 0;
+    summary.by_bucket["invitation-uploads"] += n;
+    summary.deleted_total += n;
+  }
+
+  // 2) 레코드 삭제 (invitations)
+  const ids = drafts.map((d) => d.invitation_id);
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    const chunk = ids.slice(i, i + BATCH_SIZE);
+    const { error: delError } = await supabase
+      .from("invitations")
+      .delete()
+      .in("id", chunk);
+    if (delError) {
+      summary.errors.push(`invitations delete batch@${i}: ${delError.message}`);
+      continue;
+    }
+    summary.invitation_drafts_deleted += chunk.length;
+  }
+}

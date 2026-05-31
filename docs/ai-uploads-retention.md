@@ -145,3 +145,43 @@ A. 마이페이지에서 본인 폴더(`dress-uploads/{userId}/`) 의 파일을 
 ### Q. 결과 파일(`dress-results`) 도 삭제되면 사용자가 결과물을 못 보지 않나
 A. 의도된 동작. 사용자에게 "결과는 30일간 보관" 임을 UI 에서 명시하고,
    소중한 결과는 본인이 다운로드해서 갤러리에 저장하도록 안내한다.
+
+---
+
+## 청첩장 draft 30일 정리 (같은 cron 에 포함)
+
+### 정책
+사용자 플로우의 "기록 자동 저장(한달 보관)" 을 코드로 보장한다.
+
+| 대상 | 보관 | 비고 |
+|------|------|------|
+| **draft 청첩장 레코드** + 그 `invitation-uploads` 사진 | 생성 후 30일 | 30일 지나면 레코드·사진 삭제 |
+| **발행본**(`status='published'`, 하객 라이브 링크) + 그 사진 | **유지** | 공유 링크가 끊기지 않게 보존 |
+
+> 발행본이 참조하는 사진 path 는 `list_expired_invitation_drafts` 가 보존 목록으로
+> 잡아 draft 정리 시에도 삭제하지 않는다(같은 사진을 공유하는 엣지케이스 방어).
+
+### 구성 요소
+| 파일 | 역할 |
+|---|---|
+| `supabase/migrations/20260531120000_invitation_draft_30day_cleanup.sql` | `list_expired_invitation_drafts()` — 정리 대상 (id + 보존 제외 사진 path) 반환 |
+| `supabase/functions/cleanup-ai-uploads/index.ts` (phase 4) | invitation-uploads 사진 삭제 → invitations row 삭제 |
+
+별도 cron 추가 없음 — 기존 `cleanup-ai-uploads-daily` 가 dress 정리 후 이어서 실행.
+응답 summary 에 `invitation_drafts_deleted`, `by_bucket["invitation-uploads"]` 추가됨.
+
+### 배포
+```bash
+# 마이그레이션 적용 후
+supabase functions deploy cleanup-ai-uploads
+```
+함수 시그니처/스케줄 변경 없음 → Vault·cron 재설정 불필요.
+
+### Q. 발행본 사진도 개인정보처리방침 "30일 삭제" 대상 아닌가?
+A. 발행본 사진은 사용자가 직접 공개·공유한 콘텐츠(하객이 보는 링크)라 자발적
+   게시물로 분류. 방침상 "업로드 후 처리용 임시 사진" 과 구분된다. 결혼식 종료
+   후 일괄 아카이브·삭제가 필요하면 별도 정책(예: 발행 후 N개월)으로 확장 가능.
+
+### Q. 사용자가 draft 를 30일 더 쓰고 싶으면?
+A. 발행(모바일) 하거나, 정책상 `created_at` 기준 30일 고정. 필요하면 `updated_at`
+   기준 / 보관 연장 옵션을 추후 추가.
