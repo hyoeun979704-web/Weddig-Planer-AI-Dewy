@@ -206,6 +206,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // confirm card false positive 트리거되던 회귀. signOut 시 일괄 wipe.
     resetAllSignals();
     await supabase.auth.signOut();
+    // 다른 사용자로 재로그인 시 이전 계정 캐시가 잠깐 노출되지 않도록 React Query 캐시 비움.
+    queryClient.clear();
   };
 
   return (
