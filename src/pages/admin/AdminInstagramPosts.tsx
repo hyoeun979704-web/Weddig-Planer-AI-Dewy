@@ -78,7 +78,7 @@ const AdminInstagramPostsInner = () => {
       return;
     }
     setIsSubmitting(true);
-    const { error } = await supabase.from("instagram_post_drafts").insert({
+    const { error } = await (supabase as any).from("instagram_post_drafts").insert({
       topic: createTopic.trim(),
       caption: createCaption.trim() || null,
       source_type: "manual",

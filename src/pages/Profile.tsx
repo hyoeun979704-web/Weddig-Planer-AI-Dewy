@@ -42,7 +42,7 @@ const Profile = () => {
 
       try {
         // Load profile
-        const { data: profile } = await supabase
+        const { data: profile } = await (supabase as any)
           .from("profiles")
           .select("display_name, avatar_url, birth_year, phone")
           .eq("user_id", user.id)

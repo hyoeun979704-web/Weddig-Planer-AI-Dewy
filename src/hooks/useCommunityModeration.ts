@@ -50,7 +50,7 @@ export function useReportContent() {
     mutationFn: async (input: ReportContentInput) => {
       if (!user) throw new Error("로그인이 필요합니다");
 
-      const { error } = await supabase.from("community_reports").insert({
+      const { error } = await (supabase as any).from("community_reports").insert({
         reporter_id: user.id,
         target_type: input.targetType,
         target_id: input.targetId,
@@ -82,13 +82,13 @@ export function useUserBlocks() {
     queryKey: ["community", "user-blocks", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("user_blocks")
         .select("blocked_id")
         .eq("blocker_id", user!.id);
 
       if (error) throw error;
-      return (data ?? []).map((row) => row.blocked_id as string);
+      return ((data ?? []) as { blocked_id: string }[]).map((row) => row.blocked_id);
     },
     staleTime: 60_000,
   });
@@ -103,7 +103,7 @@ export function useBlockUser() {
       if (!user) throw new Error("로그인이 필요합니다");
       if (user.id === blockedId) throw new Error("본인은 차단할 수 없습니다");
 
-      const { error } = await supabase.from("user_blocks").insert({
+      const { error } = await (supabase as any).from("user_blocks").insert({
         blocker_id: user.id,
         blocked_id: blockedId,
       });
@@ -133,7 +133,7 @@ export function useUnblockUser() {
     mutationFn: async (blockedId: string) => {
       if (!user) throw new Error("로그인이 필요합니다");
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("user_blocks")
         .delete()
         .eq("blocker_id", user.id)
