@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import InvitationCanvas from "@/components/invitation/InvitationCanvas";
+import { useInvitationFonts } from "@/hooks/useInvitationFonts";
 import type {
   InvitationLayout,
   InvitationUserData,
@@ -31,6 +32,7 @@ interface PublishedInvitation {
   user_data: InvitationUserData;
   layout: {
     textOverrides?: Record<string, string>;
+    fontOverrides?: Record<string, string>;
     imagePaths?: Record<string, string>;
     /** viewer 용 long-lived URL — 발행 시점에 함께 저장 */
     imageUrlsForViewer?: Record<string, string>;
@@ -52,6 +54,7 @@ const InvitationViewer = () => {
   const [data, setData] = useState<PublishedInvitation | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const { fontsReady } = useInvitationFonts();
 
   useEffect(() => {
     if (!slug) return;
@@ -125,6 +128,8 @@ const InvitationViewer = () => {
           userData={data.user_data ?? {}}
           aiText={data.ai_generated_text ?? {}}
           textOverrides={ld.textOverrides ?? {}}
+          fontOverrides={ld.fontOverrides ?? {}}
+          fontsReady={fontsReady}
           imageUrls={ld.imageUrlsForViewer ?? {}}
           selectedSlotId={null}
           onSelectSlot={() => {}}

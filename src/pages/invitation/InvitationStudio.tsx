@@ -14,9 +14,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInvitationFonts, type InvitationFont } from "@/hooks/useInvitationFonts";
 import InvitationCanvas, {
   InvitationCanvasHandle,
 } from "@/components/invitation/InvitationCanvas";
@@ -81,7 +91,11 @@ const InvitationStudio = () => {
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [template, setTemplate] = useState<Template | null>(null);
 
+  const { fonts, fontsReady } = useInvitationFonts();
+
   const [textOverrides, setTextOverrides] = useState<Record<string, string>>({});
+  // slot.id → 사용자가 고른 폰트 family. layout JSONB 에 영속화.
+  const [fontOverrides, setFontOverrides] = useState<Record<string, string>>({});
   // storage path 만 DB 에 저장 (signed URL 은 만료되니까).
   const [imagePaths, setImagePaths] = useState<Record<string, string>>({});
   // 화면 표시용 signed URL — load / upload 시점에 refresh, DB 에는 저장 X.
@@ -123,6 +137,7 @@ const InvitationStudio = () => {
       setTemplate(tpl);
       const ld = data.layout ?? {};
       setTextOverrides(ld.textOverrides ?? {});
+      setFontOverrides(ld.fontOverrides ?? {});
       const paths: Record<string, string> = ld.imagePaths ?? {};
       setImagePaths(paths);
       // 저장된 storage path 들을 다시 signed URL 로 변환 (24h 유효)
@@ -199,6 +214,17 @@ const InvitationStudio = () => {
     resetIdleTimer();
   };
 
+  // family === null → override 제거 (템플릿 기본 폰트로 복귀)
+  const handleFontChange = (family: string | null) => {
+    if (!selectedSlot) return;
+    setFontOverrides((p) => {
+      const next = { ...p };
+      if (!family) delete next[selectedSlot.id];
+      else next[selectedSlot.id] = family;
+      return next;
+    });
+  };
+
   const handlePhotoUpload = async (file: File) => {
     if (!selectedSlot || !user) return;
     if (file.size > 5 * 1024 * 1024) {
@@ -240,7 +266,7 @@ const InvitationStudio = () => {
         template_id: template.id,
         user_data: userData,
         // signed URL 은 만료되니까 저장 X — storage path 만 영구 보존
-        layout: { textOverrides, imagePaths },
+        layout: { textOverrides, imagePaths, fontOverrides },
         ai_generated_text: aiText,
         status: "draft" as const,
       };
@@ -363,12 +389,16 @@ const InvitationStudio = () => {
           template={template}
           userData={userData}
           textOverrides={textOverrides}
+          fontOverrides={fontOverrides}
           imageUrls={imageUrls}
           aiText={aiText}
+          fonts={fonts}
+          fontsReady={fontsReady}
           selectedSlot={selectedSlot ?? null}
           selectedSlotId={selectedSlotId}
           onSelectSlot={setSelectedSlotId}
           onTextChange={handleTextChange}
+          onFontChange={handleFontChange}
           onPickPhoto={() => fileInputRef.current?.click()}
           onExportPdf={handleExportPdf}
           isExporting={isExporting}
@@ -605,12 +635,16 @@ const StudioView = ({
   template,
   userData,
   textOverrides,
+  fontOverrides,
   imageUrls,
   aiText,
+  fonts,
+  fontsReady,
   selectedSlot,
   selectedSlotId,
   onSelectSlot,
   onTextChange,
+  onFontChange,
   onPickPhoto,
   onExportPdf,
   isExporting,
@@ -619,12 +653,16 @@ const StudioView = ({
   template: Template;
   userData: InvitationUserData;
   textOverrides: Record<string, string>;
+  fontOverrides: Record<string, string>;
   imageUrls: Record<string, string>;
   aiText: Record<string, string>;
+  fonts: InvitationFont[];
+  fontsReady: boolean;
   selectedSlot: InvitationSlot | null;
   selectedSlotId: string | null;
   onSelectSlot: (id: string | null) => void;
   onTextChange: (text: string) => void;
+  onFontChange: (family: string | null) => void;
   onPickPhoto: () => void;
   onExportPdf: () => void;
   isExporting: boolean;
@@ -650,6 +688,8 @@ const StudioView = ({
           userData={userData}
           aiText={aiText}
           textOverrides={textOverrides}
+          fontOverrides={fontOverrides}
+          fontsReady={fontsReady}
           imageUrls={imageUrls}
           selectedSlotId={selectedSlotId}
           onSelectSlot={onSelectSlot}
@@ -689,6 +729,16 @@ const StudioView = ({
               ? `자동 매핑 필드: ${selectedSlot.field}`
               : "자유 텍스트"}
           </p>
+
+          {/* 폰트 선택 — locked / editable_font:false 슬롯은 숨김 */}
+          {!selectedSlot.locked && selectedSlot.editable_font !== false && (
+            <FontPicker
+              fonts={fonts}
+              value={fontOverrides[selectedSlot.id] ?? null}
+              defaultFamily={selectedSlot.font_family ?? null}
+              onChange={onFontChange}
+            />
+          )}
         </section>
       )}
 
@@ -754,6 +804,84 @@ const StudioView = ({
         </span>
       </div>
     </main>
+  );
+};
+
+// ════════════════════════════════════════════════════════════════
+// Font Picker — 등록된 invitation_fonts 중 선택 (카테고리별 그룹)
+// ════════════════════════════════════════════════════════════════
+const DEFAULT_VALUE = "__default__";
+
+const FONT_CATEGORY_LABELS: Record<string, string> = {
+  SERIF: "명조 / 세리프",
+  SANS_SERIF: "고딕 / 산세리프",
+  SCRIPT: "필기체",
+  DISPLAY: "장식체",
+  HANDWRITING: "손글씨",
+};
+
+const FontPicker = ({
+  fonts,
+  value,
+  defaultFamily,
+  onChange,
+}: {
+  fonts: InvitationFont[];
+  /** 현재 override (null = 템플릿 기본 사용) */
+  value: string | null;
+  /** 템플릿이 지정한 기본 폰트 family (없으면 null) */
+  defaultFamily: string | null;
+  onChange: (family: string | null) => void;
+}) => {
+  // 카테고리별 그룹핑 (display_order 정렬은 이미 fetch 시 적용됨)
+  const grouped = fonts.reduce<Record<string, InvitationFont[]>>((acc, f) => {
+    (acc[f.category] ??= []).push(f);
+    return acc;
+  }, {});
+
+  const effectiveFamily = value ?? defaultFamily ?? "Pretendard, sans-serif";
+
+  return (
+    <div className="pt-2 border-t border-border space-y-1.5">
+      <Label className="text-[12px] text-muted-foreground">폰트</Label>
+      <Select
+        value={value ?? DEFAULT_VALUE}
+        onValueChange={(v) => onChange(v === DEFAULT_VALUE ? null : v)}
+      >
+        <SelectTrigger className="h-9 text-sm">
+          <SelectValue placeholder="폰트 선택" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={DEFAULT_VALUE}>
+            기본{defaultFamily ? ` (${defaultFamily})` : ""}
+          </SelectItem>
+          {fonts.length === 0 && (
+            <div className="px-2 py-3 text-[11px] text-muted-foreground">
+              등록된 폰트가 없어요. 관리자 폰트 등록 후 표시됩니다.
+            </div>
+          )}
+          {Object.entries(grouped).map(([category, list]) => (
+            <SelectGroup key={category}>
+              <SelectLabel>
+                {FONT_CATEGORY_LABELS[category] ?? category}
+              </SelectLabel>
+              {list.map((f) => (
+                <SelectItem key={f.id} value={f.family}>
+                  <span style={{ fontFamily: `'${f.family}'` }}>{f.name}</span>
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          ))}
+        </SelectContent>
+      </Select>
+      {/* 선택 폰트 미리보기 */}
+      <p
+        className="text-[15px] text-foreground/90 leading-snug px-1 pt-1"
+        style={{ fontFamily: `'${effectiveFamily}'` }}
+      >
+        평생을 함께할 두 사람이 결혼합니다
+      </p>
+    </div>
   );
 };
 

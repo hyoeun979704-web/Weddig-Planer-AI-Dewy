@@ -40,6 +40,14 @@ interface Props {
   textOverrides: Record<string, string>;
   /** slot.id → 화면 표시용 signed URL (만료되니 DB 에 저장하지 말 것) */
   imageUrls: Record<string, string>;
+  /** slot.id → 사용자가 고른 폰트 family (없으면 slot.font_family → fallback) */
+  fontOverrides?: Record<string, string>;
+  /**
+   * 폰트 파일 로드 완료 여부. false 면 텍스트가 fallback 으로 그려지므로,
+   * true 로 바뀌는 순간 텍스트·캘린더 슬롯을 재렌더해 올바른 폰트로 다시 그린다.
+   * 폰트를 신경쓰지 않는 호출부는 생략(default true) — 하위호환.
+   */
+  fontsReady?: boolean;
   selectedSlotId: string | null;
   onSelectSlot: (id: string | null) => void;
   /** 화면 표시 폭(px). default 360. */
@@ -59,6 +67,8 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       aiText,
       textOverrides,
       imageUrls,
+      fontOverrides = {},
+      fontsReady = true,
       selectedSlotId,
       onSelectSlot,
       displayWidth = 360,
@@ -126,20 +136,32 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
             {/* 슬롯들 z 순서대로 */}
             {[...layout.slots]
               .sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
-              .map((slot) => (
-                <SlotNode
-                  key={slot.id}
-                  slot={slot}
-                  userData={userData}
-                  aiText={aiText}
-                  textOverrides={textOverrides}
-                  imageUrls={imageUrls}
-                  shareUrl={shareUrl}
-                  qrStyle={qrStyle}
-                  isSelected={slot.id === selectedSlotId}
-                  onClick={() => onSelectSlot(slot.id)}
-                />
-              ))}
+              .map((slot) => {
+                // 텍스트·캘린더 슬롯은 폰트가 바뀌거나(고름) 로드 완료되면 재마운트해
+                // Konva 가 새 폰트로 글자폭을 다시 측정/렌더하도록 한다.
+                // (이미지/QR 슬롯은 stable key 유지 — 불필요한 재로딩 방지)
+                const usesFont = slot.type === "text" || slot.type === "calendar";
+                const key = usesFont
+                  ? `${slot.id}:${fontsReady ? "1" : "0"}:${
+                      fontOverrides[slot.id] ?? slot.font_family ?? ""
+                    }`
+                  : slot.id;
+                return (
+                  <SlotNode
+                    key={key}
+                    slot={slot}
+                    userData={userData}
+                    aiText={aiText}
+                    textOverrides={textOverrides}
+                    imageUrls={imageUrls}
+                    fontOverrides={fontOverrides}
+                    shareUrl={shareUrl}
+                    qrStyle={qrStyle}
+                    isSelected={slot.id === selectedSlotId}
+                    onClick={() => onSelectSlot(slot.id)}
+                  />
+                );
+              })}
           </Layer>
         </Stage>
       </div>
@@ -185,10 +207,19 @@ interface SlotNodeProps {
   aiText: Record<string, string>;
   textOverrides: Record<string, string>;
   imageUrls: Record<string, string>;
+  fontOverrides: Record<string, string>;
   shareUrl?: string;
   qrStyle?: ShareCodeStyle;
   isSelected: boolean;
   onClick: () => void;
+}
+
+/** 슬롯에 적용할 폰트 family: 사용자 선택 > 템플릿 기본 > fallback */
+function resolveFont(
+  slot: InvitationSlot,
+  fontOverrides: Record<string, string>,
+): string {
+  return fontOverrides[slot.id] ?? slot.font_family ?? "Pretendard, sans-serif";
 }
 
 const SlotNode = (props: SlotNodeProps) => {
@@ -261,6 +292,7 @@ const TextSlotBody = ({
   userData,
   aiText,
   textOverrides,
+  fontOverrides,
 }: SlotNodeProps) => {
   const text = resolveText(slot, userData, aiText, textOverrides);
   // 빈 field 슬롯 hide — 사용자가 부모님·계좌 같은 선택 필드를 비워둘 때
@@ -282,7 +314,7 @@ const TextSlotBody = ({
       width={slot.w}
       height={slot.h}
       text={text}
-      fontFamily={slot.font_family ?? "Pretendard, sans-serif"}
+      fontFamily={resolveFont(slot, fontOverrides)}
       fontSize={slot.font_size ?? 18}
       fontStyle={
         typeof slot.font_weight === "number"
@@ -404,7 +436,7 @@ const AssetSlotBody = ({ slot }: SlotNodeProps) => {
 // ════════════════════════════════════════════════════════════════
 // 캘린더 슬롯 — 결혼 날짜의 그 달을 자동 렌더 + 결혼일에 하트 마커
 // ════════════════════════════════════════════════════════════════
-const CalendarSlotBody = ({ slot, userData }: SlotNodeProps) => {
+const CalendarSlotBody = ({ slot, userData, fontOverrides }: SlotNodeProps) => {
   const dateStr = userData.wedding_date;
   if (!dateStr) {
     return <PlaceholderInner slot={slot} label="📅 결혼 날짜 미입력" />;
@@ -414,15 +446,18 @@ const CalendarSlotBody = ({ slot, userData }: SlotNodeProps) => {
     return <PlaceholderInner slot={slot} label="📅 날짜 형식 오류" />;
   }
 
-  return <CalendarMonthGrid slot={slot} date={d} />;
+  return (
+    <CalendarMonthGrid slot={slot} date={d} fontFamily={resolveFont(slot, fontOverrides)} />
+  );
 };
 
 interface CalendarMonthGridProps {
   slot: InvitationSlot;
   date: Date;
+  fontFamily: string;
 }
 
-const CalendarMonthGrid = ({ slot, date }: CalendarMonthGridProps) => {
+const CalendarMonthGrid = ({ slot, date, fontFamily }: CalendarMonthGridProps) => {
   const year = date.getFullYear();
   const month = date.getMonth();
   const targetDay = date.getDate();
@@ -459,7 +494,7 @@ const CalendarMonthGrid = ({ slot, date }: CalendarMonthGridProps) => {
         width={slot.w}
         height={headerH}
         text={`${String(month + 1).padStart(2, "0")} ${monthNameEn(month)}`}
-        fontFamily={slot.font_family ?? "Pretendard, sans-serif"}
+        fontFamily={fontFamily}
         fontSize={headerH * 0.6}
         fill={color}
         align="center"
@@ -476,7 +511,7 @@ const CalendarMonthGrid = ({ slot, date }: CalendarMonthGridProps) => {
           width={cellW}
           height={weekdayH}
           text={w}
-          fontFamily={slot.font_family ?? "Pretendard, sans-serif"}
+          fontFamily={fontFamily}
           fontSize={weekdayH * 0.5}
           fill={color}
           align="center"
@@ -506,7 +541,7 @@ const CalendarMonthGrid = ({ slot, date }: CalendarMonthGridProps) => {
               width={cellW}
               height={cellH}
               text={String(day)}
-              fontFamily={slot.font_family ?? "Pretendard, sans-serif"}
+              fontFamily={fontFamily}
               fontSize={cellFontSize}
               fill={isTarget ? accent : color}
               align="center"

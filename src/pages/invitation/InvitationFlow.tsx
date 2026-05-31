@@ -32,6 +32,7 @@ import InvitationCanvas, {
   InvitationCanvasHandle,
 } from "@/components/invitation/InvitationCanvas";
 import ShareCodeCard from "@/components/invitation/ShareCodeCard";
+import { useInvitationFonts } from "@/hooks/useInvitationFonts";
 import type { ShareCodeStyle } from "@/lib/invitation/shareCode";
 import { exportInvitationPdf } from "@/lib/invitation/exportPdf";
 import type {
@@ -101,6 +102,9 @@ const InvitationFlow = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<InvitationCanvasHandle>(null);
+
+  // 등록된 청첩장 폰트 @font-face 주입 + 로드 완료 신호 (미리보기 폰트 렌더)
+  const { fontsReady } = useInvitationFonts();
 
   // ─────────────────────────────────────────────
   // 하트 잔액
@@ -837,6 +841,7 @@ const InvitationFlow = () => {
           textOverrides={textOverrides}
           imageUrls={imageUrls}
           aiText={aiText}
+          fontsReady={fontsReady}
           isExporting={isExporting}
           onExportPdf={handleExportPdf}
           onShare={handleShare}
@@ -1309,6 +1314,7 @@ const ResultView = ({
   textOverrides,
   imageUrls,
   aiText,
+  fontsReady,
   isExporting,
   onExportPdf,
   onShare,
@@ -1324,6 +1330,7 @@ const ResultView = ({
   textOverrides: Record<string, string>;
   imageUrls: Record<string, string>;
   aiText: Record<string, string>;
+  fontsReady: boolean;
   isExporting: boolean;
   onExportPdf: () => void;
   onShare: () => void;
@@ -1347,6 +1354,7 @@ const ResultView = ({
           aiText={aiText}
           textOverrides={textOverrides}
           imageUrls={imageUrls}
+          fontsReady={fontsReady}
           selectedSlotId={null}
           onSelectSlot={() => {}}
           displayWidth={360}
