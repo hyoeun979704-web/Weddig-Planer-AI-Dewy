@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed:invitation-templates": "tsx scripts/seedInvitationTemplates.ts",
+    "seed:invitation-fonts": "tsx scripts/importInvitationFonts.ts",
     "collect": "tsx scripts/collect-places/index.ts",
     "backfill-images": "tsx scripts/collect-places/backfill-images.ts",
     "enrich-source-refs": "tsx scripts/collect-places/enrich-source-refs.ts",
@@ -134,6 +135,7 @@
     "vite": "^6.1.0",
     "vite-plugin-pwa": "^0.21.1",
     "vitest": "^3.2.4",
+    "wawoff2": "^2.0.1",
     "workbox-window": "^7.0.0",
     "wrangler": "^4.68.0"
   }
