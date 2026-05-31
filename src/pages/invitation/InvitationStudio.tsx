@@ -903,6 +903,8 @@ const StudioView = ({
 }) => {
   const [showBackPicker, setShowBackPicker] = useState(false);
   const aFace = activeFace === "front" ? frontFace : backFace;
+  // 모바일 청첩장은 단면 — 전면/후면 개념 없음
+  const allowBack = template.format !== "mobile";
 
   const currentText =
     selectedSlot?.type === "text"
@@ -957,7 +959,8 @@ const StudioView = ({
 
   return (
     <main className="px-4 py-5 space-y-4">
-      {/* 전면/후면 탭 */}
+      {/* 전면/후면 탭 (모바일은 단면이라 숨김) */}
+      {allowBack && (
       <div className="flex gap-2">
         {(["front", "back"] as const).map((f) => {
           const isActive = activeFace === f;
@@ -985,6 +988,7 @@ const StudioView = ({
           );
         })}
       </div>
+      )}
 
       {/* 캔버스 (전면+후면 모두 마운트, 비활성은 숨김) */}
       <div className="relative flex justify-center bg-muted/30 rounded-2xl py-5 min-h-[200px]">

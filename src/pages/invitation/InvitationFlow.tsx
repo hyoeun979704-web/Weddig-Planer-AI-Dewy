@@ -11,6 +11,8 @@ import {
   Upload,
   X,
   Heart,
+  Printer,
+  Smartphone,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PhotoUploadConsent from "@/components/PhotoUploadConsent";
@@ -893,6 +895,11 @@ const InvitationFlow = () => {
           isPublishing={isPublishing}
           onPublish={handlePublish}
           onShareSlug={handleShareSlug}
+          onMakeOther={() =>
+            navigate(
+              `/invitation/new?format=${template.format === "mobile" ? "paper" : "mobile"}`,
+            )
+          }
         />
       )}
 
@@ -1368,6 +1375,7 @@ const ResultView = ({
   isPublishing,
   onPublish,
   onShareSlug,
+  onMakeOther,
 }: {
   canvasRef: React.RefObject<InvitationCanvasHandle>;
   backCanvasRef: React.RefObject<InvitationCanvasHandle>;
@@ -1386,6 +1394,7 @@ const ResultView = ({
   isPublishing: boolean;
   onPublish: () => void;
   onShareSlug: () => void;
+  onMakeOther: () => void;
 }) => {
   const isMobile = template.format === "mobile";
   // 공유 코드 스타일 — 카드와 캔버스 QR 슬롯이 같은 값을 공유(스타일 통일).
@@ -1525,6 +1534,25 @@ const ResultView = ({
       >
         <Pencil className="w-3.5 h-3.5" />
         텍스트·사진 위치 직접 편집
+      </button>
+
+      {/* 크로스셀 — 다른 형식으로도 만들기 */}
+      <button
+        type="button"
+        onClick={onMakeOther}
+        className="w-full flex items-center justify-center gap-2 h-12 rounded-xl border border-dashed border-border text-[13px] font-semibold text-foreground active:scale-[0.99] transition-transform"
+      >
+        {isMobile ? (
+          <>
+            <Printer className="w-4 h-4" />
+            종이 청첩장도 만들기
+          </>
+        ) : (
+          <>
+            <Smartphone className="w-4 h-4" />
+            모바일 청첩장도 만들기
+          </>
+        )}
       </button>
     </main>
   );
