@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -10,13 +10,23 @@ import {
 } from "@/lib/invitation/shareCode";
 
 /**
- * 모바일 청첩장 공유 코드 카드.
+ * 모바일/종이 청첩장 공유 코드 카드.
  *
  * 발행된 share URL 을 받아 기본 / 하트 포함 / 바코드 3가지 스타일로 렌더하고,
- * 선택한 스타일을 PNG 로 다운로드한다.
+ * 선택한 스타일을 이미지로 공유(navigator.share)하거나 PNG 로 다운로드한다.
+ *
+ * style / onStyleChange 는 controlled — 부모(ResultView)가 소유해서 청첩장
+ * 캔버스의 QR 슬롯과 스타일을 통일한다.
  */
-const ShareCodeCard = ({ url }: { url: string }) => {
-  const [style, setStyle] = useState<ShareCodeStyle>("basic");
+const ShareCodeCard = ({
+  url,
+  style,
+  onStyleChange,
+}: {
+  url: string;
+  style: ShareCodeStyle;
+  onStyleChange: (s: ShareCodeStyle) => void;
+}) => {
   const [rendering, setRendering] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -38,7 +48,7 @@ const ShareCodeCard = ({ url }: { url: string }) => {
     };
   }, [url, style]);
 
-  const handleDownload = () => {
+  const downloadPng = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     try {
@@ -59,12 +69,36 @@ const ShareCodeCard = ({ url }: { url: string }) => {
     }
   };
 
+  const shareImage = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        downloadPng();
+        return;
+      }
+      const file = new File([blob], shareCodeFilename(style), {
+        type: "image/png",
+      });
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: "청첩장 공유 코드" });
+        } catch (e) {
+          if ((e as Error).name !== "AbortError") downloadPng();
+        }
+      } else {
+        // 이미지 공유 미지원 환경 → 다운로드로 폴백
+        downloadPng();
+      }
+    }, "image/png");
+  };
+
   return (
     <section className="p-4 bg-card rounded-2xl border border-border space-y-3">
       <div>
         <h3 className="text-sm font-bold text-foreground">공유 QR / 바코드</h3>
         <p className="text-[11px] text-muted-foreground mt-0.5">
-          하객이 스캔하면 청첩장이 열려요. 스타일을 골라 이미지로 저장하세요.
+          하객이 스캔하면 청첩장이 열려요. 스타일을 골라 공유하거나 저장하세요.
         </p>
       </div>
 
@@ -74,7 +108,7 @@ const ShareCodeCard = ({ url }: { url: string }) => {
           <button
             key={s.value}
             type="button"
-            onClick={() => setStyle(s.value)}
+            onClick={() => onStyleChange(s.value)}
             className={`h-9 rounded-lg text-[12px] font-semibold border transition-colors ${
               style === s.value
                 ? "bg-primary text-primary-foreground border-primary"
@@ -100,10 +134,17 @@ const ShareCodeCard = ({ url }: { url: string }) => {
         />
       </div>
 
-      <Button onClick={handleDownload} variant="outline" className="w-full h-11">
-        <Download className="w-4 h-4 mr-2" />
-        코드 이미지 다운로드
-      </Button>
+      {/* 공유 / 다운로드 */}
+      <div className="grid grid-cols-2 gap-2">
+        <Button onClick={shareImage} className="h-11">
+          <Share2 className="w-4 h-4 mr-2" />
+          이미지로 공유
+        </Button>
+        <Button onClick={downloadPng} variant="outline" className="h-11">
+          <Download className="w-4 h-4 mr-2" />
+          다운로드
+        </Button>
+      </div>
     </section>
   );
 };

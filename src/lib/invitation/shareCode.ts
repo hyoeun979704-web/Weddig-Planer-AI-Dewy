@@ -111,6 +111,19 @@ export async function drawShareCode(
   }
 }
 
+/**
+ * 오프스크린 캔버스에 그려 PNG dataURL 을 반환한다.
+ * 청첩장 캔버스의 QR 슬롯(Konva)과 공유 카드가 같은 렌더 로직을 공유하게 한다.
+ */
+export async function shareCodeToDataUrl(
+  url: string,
+  style: ShareCodeStyle,
+): Promise<string> {
+  const canvas = document.createElement("canvas");
+  await drawShareCode(canvas, url, style);
+  return canvas.toDataURL("image/png");
+}
+
 function drawBarcode(canvas: HTMLCanvasElement, url: string) {
   const bits = code128Modules(url);
   const moduleW = 2;
