@@ -24,7 +24,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const RETENTION_DAYS = 30;
+const RETENTION_DAYS = 30; // AI 업로드(dress-*) — 개인정보처리방침 30일
+// 청첩장 보관 정책:
+//   · 편집 가능 임시저장본(draft): 7일
+//   · 발행본 종이(paper): 30일 / 발행본 모바일 공유링크(mobile): 90일
+const INVITATION_DRAFT_DAYS = 7;
+const PUBLISHED_PAPER_DAYS = 30;
+const PUBLISHED_MOBILE_DAYS = 90;
 const TARGET_BUCKETS = ["dress-uploads", "dress-results"] as const;
 const BATCH_SIZE = 100; // Storage API .remove() 1회 호출당 최대 경로 수
 
@@ -67,6 +73,7 @@ serve(async (req) => {
     deleted_total: 0,
     by_bucket: {} as Record<string, number>,
     invitation_drafts_deleted: 0,
+    invitation_published_deleted: 0,
     errors: [] as string[],
   };
 
@@ -107,9 +114,12 @@ serve(async (req) => {
   }
 
   // ─────────────────────────────────────────────
-  // 4) 청첩장 draft 30일 정리 (사진 삭제 → 레코드 삭제)
+  // 4) 청첩장 draft 7일 정리 (사진 삭제 → 레코드 삭제)
   //    발행본은 list_expired_invitation_drafts 가 애초에 제외.
   await cleanupExpiredInvitationDrafts(supabase, summary);
+
+  // 5) 발행본 만료 정리 (종이 30일 / 모바일 90일)
+  await cleanupExpiredInvitationPublished(supabase, summary);
 
   return new Response(JSON.stringify(summary), {
     status: 200,
@@ -140,7 +150,7 @@ async function cleanupExpiredInvitationDrafts(
 ) {
   const { data, error } = await supabase.rpc(
     "list_expired_invitation_drafts",
-    { retention_days: RETENTION_DAYS },
+    { retention_days: INVITATION_DRAFT_DAYS },
   );
   if (error) {
     summary.errors.push(`list_expired_invitation_drafts: ${error.message}`);
@@ -183,5 +193,69 @@ async function cleanupExpiredInvitationDrafts(
       continue;
     }
     summary.invitation_drafts_deleted += chunk.length;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// 발행본 만료 정리 — 종이 30일 / 모바일 공유링크 90일 초과분 삭제.
+//   · list_expired_invitation_published(paper_days, mobile_days)
+//     → (id, photo_paths[]) 반환. 면별(front/back) 사진 path 포함.
+//   · invitation-uploads 사진 배치 삭제 → invitations row 배치 삭제.
+//   주의: 라이브 하객 링크가 만료·제거되는 비가역 작업.
+// ════════════════════════════════════════════════════════════════
+async function cleanupExpiredInvitationPublished(
+  supabase: ReturnType<typeof createClient>,
+  summary: {
+    deleted_total: number;
+    by_bucket: Record<string, number>;
+    invitation_published_deleted: number;
+    errors: string[];
+  },
+) {
+  const { data, error } = await supabase.rpc(
+    "list_expired_invitation_published",
+    { paper_days: PUBLISHED_PAPER_DAYS, mobile_days: PUBLISHED_MOBILE_DAYS },
+  );
+  if (error) {
+    summary.errors.push(`list_expired_invitation_published: ${error.message}`);
+    return;
+  }
+
+  const rows = (data ?? []) as ExpiredDraft[];
+  if (rows.length === 0) return;
+
+  // 1) 사진 삭제
+  const photoPaths = Array.from(
+    new Set(rows.flatMap((d) => d.photo_paths ?? []).filter(Boolean)),
+  );
+  summary.by_bucket["invitation-uploads"] =
+    summary.by_bucket["invitation-uploads"] ?? 0;
+  for (let i = 0; i < photoPaths.length; i += BATCH_SIZE) {
+    const chunk = photoPaths.slice(i, i + BATCH_SIZE);
+    const { data: removed, error: rmError } = await supabase.storage
+      .from("invitation-uploads")
+      .remove(chunk);
+    if (rmError) {
+      summary.errors.push(`published invitation-uploads@${i}: ${rmError.message}`);
+      continue;
+    }
+    const n = removed?.length ?? 0;
+    summary.by_bucket["invitation-uploads"] += n;
+    summary.deleted_total += n;
+  }
+
+  // 2) 레코드 삭제
+  const ids = rows.map((d) => d.invitation_id);
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    const chunk = ids.slice(i, i + BATCH_SIZE);
+    const { error: delError } = await supabase
+      .from("invitations")
+      .delete()
+      .in("id", chunk);
+    if (delError) {
+      summary.errors.push(`published delete batch@${i}: ${delError.message}`);
+      continue;
+    }
+    summary.invitation_published_deleted += chunk.length;
   }
 }
