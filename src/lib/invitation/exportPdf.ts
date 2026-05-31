@@ -28,3 +28,35 @@ export function exportInvitationPdf(
   pdf.addImage(dataUrl, "PNG", 0, 0, pageWmm, pageHmm, undefined, "FAST");
   pdf.save(filename);
 }
+
+export interface PdfPage {
+  dataUrl: string;
+  /** 캔버스 픽셀 폭/높이 (페이지 비율 계산용) */
+  w: number;
+  h: number;
+}
+
+/**
+ * 다중 페이지 PDF (전면 + 후면 등).
+ *
+ * 각 페이지를 자신의 캔버스 비율에 맞춰 130mm 폭 기준으로 박는다.
+ * 페이지마다 크기가 달라도 addPage 에 개별 format 을 지정해 비율을 유지.
+ */
+export function exportInvitationPdfPages(pages: PdfPage[], filename: string) {
+  const valid = pages.filter((p) => p.dataUrl && p.w > 0 && p.h > 0);
+  if (valid.length === 0) return;
+  if (valid.length === 1) {
+    return exportInvitationPdf(valid[0].dataUrl, valid[0].w, valid[0].h, filename);
+  }
+
+  const pageWmm = 130;
+  const heightOf = (p: PdfPage) => (p.h / p.w) * pageWmm;
+
+  const pdf = new jsPDF({ unit: "mm", format: [pageWmm, heightOf(valid[0])] });
+  valid.forEach((p, i) => {
+    const hmm = heightOf(p);
+    if (i > 0) pdf.addPage([pageWmm, hmm]);
+    pdf.addImage(p.dataUrl, "PNG", 0, 0, pageWmm, hmm, undefined, "FAST");
+  });
+  pdf.save(filename);
+}

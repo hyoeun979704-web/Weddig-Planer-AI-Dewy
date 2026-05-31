@@ -132,3 +132,51 @@ export const labelOfRole: Record<SlotRole, string> = {
   rsvp: "참석 의사",
   free: "자유 문구",
 };
+
+// ════════════════════════════════════════════════════════════════
+// 양면(전면/후면) 청첩장 — 면별 편집 데이터
+// ════════════════════════════════════════════════════════════════
+
+/** 한 면(face)의 사용자 편집 오버라이드. invitations.layout 에 면별로 저장. */
+export interface InvitationFaceData {
+  /** slot.id → 사용자가 직접 수정한 텍스트 */
+  textOverrides?: Record<string, string>;
+  /** slot.id → 업로드 사진 storage path (signed URL 은 저장 X) */
+  imagePaths?: Record<string, string>;
+  /** slot.id → 사용자가 고른 폰트 family */
+  fontOverrides?: Record<string, string>;
+  /** 발행 시점 long-lived signed URL (익명 viewer 용) */
+  imageUrlsForViewer?: Record<string, string>;
+}
+
+export type InvitationFace = "front" | "back";
+
+/**
+ * invitations.layout 을 면별 구조로 정규화해 읽는다.
+ *
+ * 하위호환: 기존 평면 구조({textOverrides, imagePaths, fontOverrides})는
+ * 전면(front)으로 간주하고 back 은 빈 객체로 반환한다.
+ */
+export function readFaceLayout(layout: unknown): {
+  front: InvitationFaceData;
+  back: InvitationFaceData;
+} {
+  const l = (layout ?? {}) as Record<string, unknown>;
+  if (l.front || l.back) {
+    return {
+      front: (l.front as InvitationFaceData) ?? {},
+      back: (l.back as InvitationFaceData) ?? {},
+    };
+  }
+  // 평면(단면) → 전면으로 승격
+  return {
+    front: {
+      textOverrides: (l.textOverrides as Record<string, string>) ?? {},
+      imagePaths: (l.imagePaths as Record<string, string>) ?? {},
+      fontOverrides: (l.fontOverrides as Record<string, string>) ?? {},
+      imageUrlsForViewer:
+        (l.imageUrlsForViewer as Record<string, string>) ?? {},
+    },
+    back: {},
+  };
+}

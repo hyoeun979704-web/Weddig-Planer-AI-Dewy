@@ -39,20 +39,13 @@ CREATE INDEX IF NOT EXISTS idx_invitation_templates_face
   ON public.invitation_templates(face, is_active);
 
 -- ── 2) invitation: 후면 템플릿 참조 (template_id = 전면) ─────────
+--   주의: back_template_id 는 일부러 FK 제약을 걸지 않는다.
+--   invitations → invitation_templates FK 가 2개가 되면 PostgREST 의
+--   암묵적 임베드(`invitation_templates(...)`)가 모호해져 기존 뷰어/스튜디오/
+--   갤러리 쿼리가 깨진다. 후면 템플릿은 별도 조회로 가져오고, 참조 정합성은
+--   앱 레벨에서 관리한다. (정합성보다 기존 쿼리 안정성 우선)
 ALTER TABLE public.invitations
   ADD COLUMN IF NOT EXISTS back_template_id UUID;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'invitations_back_template_fk'
-  ) THEN
-    ALTER TABLE public.invitations
-      ADD CONSTRAINT invitations_back_template_fk
-      FOREIGN KEY (back_template_id)
-      REFERENCES public.invitation_templates(id) ON DELETE SET NULL;
-  END IF;
-END $$;
 
 -- ── 3) layout 사진 path 추출 헬퍼 (평면 + 면별 구조 모두 지원) ────
 --   기존 정리 로직은 layout->'imagePaths' 만 봤으나, 양면 구조에서는
