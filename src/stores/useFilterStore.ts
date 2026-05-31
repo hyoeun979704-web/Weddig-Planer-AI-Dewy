@@ -53,14 +53,14 @@ const initialState: FilterState = {
 
 export const useFilterStore = create<FilterStore>((set, get) => ({
   ...initialState,
-  
+
   setRegion: (region) => set({ region }),
   setSigungu: (sigungu) => set({ sigungu }),
   setMaxPrice: (maxPrice) => set({ maxPrice }),
   setMaxGuarantee: (maxGuarantee) => set({ maxGuarantee }),
   setMinGuarantee: (minGuarantee) => set({ minGuarantee }),
   setMinRating: (minRating) => set({ minRating }),
-  
+
   setHallTypes: (hallTypes) => set({ hallTypes }),
   toggleHallType: (hallType) => {
     const current = get().hallTypes;
@@ -70,7 +70,7 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
       set({ hallTypes: [...current, hallType] });
     }
   },
-  
+
   setMealOptions: (mealOptions) => set({ mealOptions }),
   toggleMealOption: (mealOption) => {
     const current = get().mealOptions;
@@ -80,7 +80,7 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
       set({ mealOptions: [...current, mealOption] });
     }
   },
-  
+
   setEventOptions: (eventOptions) => set({ eventOptions }),
   toggleEventOption: (eventOption) => {
     const current = get().eventOptions;
@@ -90,7 +90,7 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
       set({ eventOptions: [...current, eventOption] });
     }
   },
-  
+
   toggleValueTagSelected: (valueTag) => {
     const current = get().valueTagsSelected;
     if (current.includes(valueTag)) {
