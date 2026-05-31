@@ -212,7 +212,7 @@ const Budget = () => {
       if (!excludedSet.has(cat)) continue;
       const bc = scheduleCategoryToBudget(cat);
       if (!bc) continue;
-      const label = cat === "hanbok" ? "한복 제외" : "청첩장 제외";
+      const label = (cat as string) === "hanbok" ? "한복 제외" : "청첩장 제외";
       out[bc] = out[bc] ? `${out[bc]} · ${label}` : label;
     }
     return out;
