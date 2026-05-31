@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { queryClient } from "@/lib/queryClient";
 import { isNativeApp } from "@/lib/platform";
 import { signInWithOAuthNative } from "@/lib/native/oauth";
 import { resetAllSignals } from "@/lib/behavioralSignals";
