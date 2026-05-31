@@ -31,6 +31,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import InvitationCanvas, {
   InvitationCanvasHandle,
 } from "@/components/invitation/InvitationCanvas";
+import ShareCodeCard from "@/components/invitation/ShareCodeCard";
 import { exportInvitationPdf } from "@/lib/invitation/exportPdf";
 import type {
   InvitationLayout,
@@ -1367,6 +1368,7 @@ const ResultView = ({
                 <Share2 className="w-4 h-4 mr-2" />
                 카카오·인스타·문자로 공유
               </Button>
+              <ShareCodeCard url={shareUrl} />
             </section>
           ) : (
             <Button
