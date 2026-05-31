@@ -31,11 +31,16 @@ import InvitationCanvas, {
   InvitationCanvasHandle,
 } from "@/components/invitation/InvitationCanvas";
 import AISuggestSheet from "@/components/invitation/AISuggestSheet";
-import { exportInvitationPdf } from "@/lib/invitation/exportPdf";
-import type {
-  InvitationLayout,
-  InvitationSlot,
-  InvitationUserData,
+import {
+  exportInvitationPdfPages,
+  type PdfPage,
+} from "@/lib/invitation/exportPdf";
+import {
+  readFaceLayout,
+  type InvitationFace,
+  type InvitationLayout,
+  type InvitationSlot,
+  type InvitationUserData,
 } from "@/lib/invitation/types";
 
 /**
@@ -70,6 +75,20 @@ type Step = "wizard" | "template" | "studio";
 
 const IDLE_MS = 8000;
 
+/** 한 면(전면/후면)의 편집 상태 */
+interface FaceState {
+  textOverrides: Record<string, string>;
+  fontOverrides: Record<string, string>;
+  imagePaths: Record<string, string>; // DB 저장용 storage path
+  imageUrls: Record<string, string>; // 화면 표시용 signed URL (저장 X)
+}
+const emptyFace = (): FaceState => ({
+  textOverrides: {},
+  fontOverrides: {},
+  imagePaths: {},
+  imageUrls: {},
+});
+
 const InvitationStudio = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -93,13 +112,16 @@ const InvitationStudio = () => {
 
   const { fonts, fontsReady } = useInvitationFonts();
 
-  const [textOverrides, setTextOverrides] = useState<Record<string, string>>({});
-  // slot.id → 사용자가 고른 폰트 family. layout JSONB 에 영속화.
-  const [fontOverrides, setFontOverrides] = useState<Record<string, string>>({});
-  // storage path 만 DB 에 저장 (signed URL 은 만료되니까).
-  const [imagePaths, setImagePaths] = useState<Record<string, string>>({});
-  // 화면 표시용 signed URL — load / upload 시점에 refresh, DB 에는 저장 X.
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  // 후면 템플릿 (없으면 단면 — 하위호환). template = 전면.
+  const [backTemplate, setBackTemplate] = useState<Template | null>(null);
+  const [backTemplateId, setBackTemplateId] = useState<string | null>(null);
+  const [backTemplates, setBackTemplates] = useState<Template[]>([]);
+  const [activeFace, setActiveFace] = useState<InvitationFace>("front");
+
+  // 면별 편집 상태
+  const [frontFace, setFrontFace] = useState<FaceState>(emptyFace);
+  const [backFace, setBackFace] = useState<FaceState>(emptyFace);
+
   const [aiText, setAiText] = useState<Record<string, string>>({});
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
 
@@ -110,10 +132,14 @@ const InvitationStudio = () => {
   const idleTimerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<InvitationCanvasHandle>(null);
+  const backCanvasRef = useRef<InvitationCanvasHandle>(null);
 
-  const selectedSlot: InvitationSlot | undefined = template?.layout.slots.find(
-    (s) => s.id === selectedSlotId,
-  );
+  // 현재 활성 면 파생값
+  const activeTemplate = activeFace === "front" ? template : backTemplate;
+  const setFace = activeFace === "front" ? setFrontFace : setBackFace;
+
+  const selectedSlot: InvitationSlot | undefined =
+    activeTemplate?.layout.slots.find((s) => s.id === selectedSlotId);
 
   // ────────────────────────────────────────
   // 저장된 청첩장 로드 (id 모드)
@@ -135,22 +161,48 @@ const InvitationStudio = () => {
       setUserData(data.user_data ?? {});
       const tpl = data.invitation_templates as Template;
       setTemplate(tpl);
-      const ld = data.layout ?? {};
-      setTextOverrides(ld.textOverrides ?? {});
-      setFontOverrides(ld.fontOverrides ?? {});
-      const paths: Record<string, string> = ld.imagePaths ?? {};
-      setImagePaths(paths);
-      // 저장된 storage path 들을 다시 signed URL 로 변환 (24h 유효)
-      const urls: Record<string, string> = {};
-      await Promise.all(
-        Object.entries(paths).map(async ([slotId, path]) => {
-          const { data: s } = await supabase.storage
-            .from("invitation-uploads")
-            .createSignedUrl(path, 60 * 60 * 24);
-          if (s?.signedUrl) urls[slotId] = s.signedUrl;
-        }),
-      );
-      setImageUrls(urls);
+
+      // storage path → 표시용 signed URL (24h) 복원
+      const hydrate = async (
+        paths: Record<string, string> = {},
+      ): Promise<Record<string, string>> => {
+        const urls: Record<string, string> = {};
+        await Promise.all(
+          Object.entries(paths).map(async ([slotId, path]) => {
+            const { data: s } = await supabase.storage
+              .from("invitation-uploads")
+              .createSignedUrl(path, 60 * 60 * 24);
+            if (s?.signedUrl) urls[slotId] = s.signedUrl;
+          }),
+        );
+        return urls;
+      };
+
+      const faces = readFaceLayout(data.layout);
+      setFrontFace({
+        textOverrides: faces.front.textOverrides ?? {},
+        fontOverrides: faces.front.fontOverrides ?? {},
+        imagePaths: faces.front.imagePaths ?? {},
+        imageUrls: await hydrate(faces.front.imagePaths),
+      });
+
+      // 후면 템플릿 (FK 미사용 → 별도 조회)
+      if (data.back_template_id) {
+        setBackTemplateId(data.back_template_id);
+        const { data: bt } = await (supabase as any)
+          .from("invitation_templates")
+          .select("*")
+          .eq("id", data.back_template_id)
+          .maybeSingle();
+        if (bt) setBackTemplate(bt as Template);
+        setBackFace({
+          textOverrides: faces.back.textOverrides ?? {},
+          fontOverrides: faces.back.fontOverrides ?? {},
+          imagePaths: faces.back.imagePaths ?? {},
+          imageUrls: await hydrate(faces.back.imagePaths),
+        });
+      }
+
       setAiText(data.ai_generated_text ?? {});
       setStep("studio");
     })();
@@ -210,18 +262,20 @@ const InvitationStudio = () => {
 
   const handleTextChange = (text: string) => {
     if (!selectedSlot) return;
-    setTextOverrides((p) => ({ ...p, [selectedSlot.id]: text }));
+    const id = selectedSlot.id;
+    setFace((p) => ({ ...p, textOverrides: { ...p.textOverrides, [id]: text } }));
     resetIdleTimer();
   };
 
   // family === null → override 제거 (템플릿 기본 폰트로 복귀)
   const handleFontChange = (family: string | null) => {
     if (!selectedSlot) return;
-    setFontOverrides((p) => {
-      const next = { ...p };
-      if (!family) delete next[selectedSlot.id];
-      else next[selectedSlot.id] = family;
-      return next;
+    const id = selectedSlot.id;
+    setFace((p) => {
+      const next = { ...p.fontOverrides };
+      if (!family) delete next[id];
+      else next[id] = family;
+      return { ...p, fontOverrides: next };
     });
   };
 
@@ -231,6 +285,8 @@ const InvitationStudio = () => {
       toast({ title: "파일이 너무 커요 (최대 5MB)", variant: "destructive" });
       return;
     }
+    const id = selectedSlot.id;
+    const applyFace = setFace;
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const filename = `${crypto.randomUUID()}.${ext}`;
     const path = `${user.id}/${filename}`;
@@ -247,11 +303,42 @@ const InvitationStudio = () => {
     }
     const { data: signed } = await supabase.storage
       .from("invitation-uploads")
-      .createSignedUrl(path, 60 * 60 * 24);  // 화면 표시용 24h
-    setImagePaths((p) => ({ ...p, [selectedSlot.id]: path }));
-    if (signed?.signedUrl) {
-      setImageUrls((p) => ({ ...p, [selectedSlot.id]: signed.signedUrl }));
-    }
+      .createSignedUrl(path, 60 * 60 * 24); // 화면 표시용 24h
+    applyFace((p) => ({
+      ...p,
+      imagePaths: { ...p.imagePaths, [id]: path },
+      imageUrls: signed?.signedUrl
+        ? { ...p.imageUrls, [id]: signed.signedUrl }
+        : p.imageUrls,
+    }));
+  };
+
+  // 면 전환 (선택 슬롯 초기화)
+  const handleSwitchFace = (f: InvitationFace) => {
+    setActiveFace(f);
+    setSelectedSlotId(null);
+  };
+
+  // 후면 템플릿 목록 로드 (face in back/both)
+  const loadBackTemplates = useCallback(async () => {
+    if (backTemplates.length > 0) return;
+    const { data } = await (supabase as any)
+      .from("invitation_templates")
+      .select("id, name, thumbnail_url, format, tone, price_hearts, layout, text_prompt_hint")
+      .eq("is_active", true)
+      .in("face", ["back", "both"])
+      .order("display_order", { ascending: false });
+    setBackTemplates((data ?? []) as Template[]);
+  }, [backTemplates.length]);
+
+  // 후면 템플릿 교체
+  const handleChangeBackTemplate = (t: Template) => {
+    setBackTemplate(t);
+    setBackTemplateId(t.id);
+    // 새 후면은 슬롯 id 가 달라 기존 오버라이드는 무의미 → 초기화
+    setBackFace(emptyFace());
+    setActiveFace("back");
+    setSelectedSlotId(null);
   };
 
   // ────────────────────────────────────────
@@ -261,12 +348,18 @@ const InvitationStudio = () => {
     if (!user || !template) return;
     setIsSaving(true);
     try {
+      // signed URL(imageUrls)은 만료되니까 저장 X — storage path 만 영구 보존
+      const faceLayout = (f: FaceState) => ({
+        textOverrides: f.textOverrides,
+        imagePaths: f.imagePaths,
+        fontOverrides: f.fontOverrides,
+      });
       const payload = {
         user_id: user.id,
         template_id: template.id,
+        back_template_id: backTemplateId,
         user_data: userData,
-        // signed URL 은 만료되니까 저장 X — storage path 만 영구 보존
-        layout: { textOverrides, imagePaths, fontOverrides },
+        layout: { front: faceLayout(frontFace), back: faceLayout(backFace) },
         ai_generated_text: aiText,
         status: "draft" as const,
       };
@@ -304,16 +397,30 @@ const InvitationStudio = () => {
     if (!template) return;
     setIsExporting(true);
     try {
-      const dataUrl = canvasRef.current?.toDataUrl(3);
-      if (!dataUrl) throw new Error("캔버스 추출 실패");
+      const pages: PdfPage[] = [];
+      const frontUrl = canvasRef.current?.toDataUrl(3);
+      if (!frontUrl) throw new Error("캔버스 추출 실패");
+      pages.push({
+        dataUrl: frontUrl,
+        w: template.layout.canvas.w,
+        h: template.layout.canvas.h,
+      });
+      if (backTemplate) {
+        const backUrl = backCanvasRef.current?.toDataUrl(3);
+        if (backUrl) {
+          pages.push({
+            dataUrl: backUrl,
+            w: backTemplate.layout.canvas.w,
+            h: backTemplate.layout.canvas.h,
+          });
+        }
+      }
       const filename = `dewy-invitation-${invitationId ?? "draft"}.pdf`;
-      exportInvitationPdf(
-        dataUrl,
-        template.layout.canvas.w,
-        template.layout.canvas.h,
-        filename,
-      );
-      toast({ title: "PDF 다운로드 시작" });
+      exportInvitationPdfPages(pages, filename);
+      toast({
+        title: "PDF 다운로드 시작",
+        description: pages.length > 1 ? "전면·후면 2페이지" : undefined,
+      });
     } catch (err) {
       toast({
         title: "PDF 생성 실패",
@@ -386,11 +493,14 @@ const InvitationStudio = () => {
       {step === "studio" && template && (
         <StudioView
           canvasRef={canvasRef}
+          backCanvasRef={backCanvasRef}
           template={template}
+          backTemplate={backTemplate}
           userData={userData}
-          textOverrides={textOverrides}
-          fontOverrides={fontOverrides}
-          imageUrls={imageUrls}
+          frontFace={frontFace}
+          backFace={backFace}
+          activeFace={activeFace}
+          onSwitchFace={handleSwitchFace}
           aiText={aiText}
           fonts={fonts}
           fontsReady={fontsReady}
@@ -402,6 +512,9 @@ const InvitationStudio = () => {
           onPickPhoto={() => fileInputRef.current?.click()}
           onExportPdf={handleExportPdf}
           isExporting={isExporting}
+          backTemplates={backTemplates}
+          onLoadBackTemplates={loadBackTemplates}
+          onChangeBackTemplate={handleChangeBackTemplate}
         />
       )}
 
@@ -425,10 +538,10 @@ const InvitationStudio = () => {
           userData={userData}
           onAccept={(text) => {
             setAiText((p) => ({ ...p, [selectedSlot.id]: text }));
-            setTextOverrides((p) => {
-              const next = { ...p };
+            setFace((p) => {
+              const next = { ...p.textOverrides };
               delete next[selectedSlot.id];
-              return next;
+              return { ...p, textOverrides: next };
             });
           }}
           onClose={() => {
@@ -632,11 +745,14 @@ const TemplatePicker = ({
 // ════════════════════════════════════════════════════════════════
 const StudioView = ({
   canvasRef,
+  backCanvasRef,
   template,
+  backTemplate,
   userData,
-  textOverrides,
-  fontOverrides,
-  imageUrls,
+  frontFace,
+  backFace,
+  activeFace,
+  onSwitchFace,
   aiText,
   fonts,
   fontsReady,
@@ -648,13 +764,19 @@ const StudioView = ({
   onPickPhoto,
   onExportPdf,
   isExporting,
+  backTemplates,
+  onLoadBackTemplates,
+  onChangeBackTemplate,
 }: {
   canvasRef: React.RefObject<InvitationCanvasHandle>;
+  backCanvasRef: React.RefObject<InvitationCanvasHandle>;
   template: Template;
+  backTemplate: Template | null;
   userData: InvitationUserData;
-  textOverrides: Record<string, string>;
-  fontOverrides: Record<string, string>;
-  imageUrls: Record<string, string>;
+  frontFace: FaceState;
+  backFace: FaceState;
+  activeFace: InvitationFace;
+  onSwitchFace: (f: InvitationFace) => void;
   aiText: Record<string, string>;
   fonts: InvitationFont[];
   fontsReady: boolean;
@@ -666,11 +788,17 @@ const StudioView = ({
   onPickPhoto: () => void;
   onExportPdf: () => void;
   isExporting: boolean;
+  backTemplates: Template[];
+  onLoadBackTemplates: () => void;
+  onChangeBackTemplate: (t: Template) => void;
 }) => {
+  const [showBackPicker, setShowBackPicker] = useState(false);
+  const aFace = activeFace === "front" ? frontFace : backFace;
+
   const currentText =
     selectedSlot?.type === "text"
-      ? textOverrides[selectedSlot.id] !== undefined
-        ? textOverrides[selectedSlot.id]
+      ? aFace.textOverrides[selectedSlot.id] !== undefined
+        ? aFace.textOverrides[selectedSlot.id]
         : aiText[selectedSlot.id] !== undefined
           ? aiText[selectedSlot.id]
           : selectedSlot.field && userData[selectedSlot.field]
@@ -678,27 +806,154 @@ const StudioView = ({
             : selectedSlot.text ?? selectedSlot.placeholder ?? ""
       : "";
 
-  return (
-    <main className="px-4 py-5 space-y-4">
-      {/* 캔버스 */}
-      <div className="flex justify-center bg-muted/30 rounded-2xl py-5">
+  // 전면/후면 캔버스를 모두 마운트(내보내기용 ref 확보)하고, 비활성 면은
+  // 화면 밖으로 보내 숨긴다. (display:none 대신 off-screen — Konva 렌더 보존)
+  const renderFaceCanvas = (f: InvitationFace) => {
+    const isFront = f === "front";
+    const tmpl = isFront ? template : backTemplate;
+    if (!tmpl) return null;
+    const fd = isFront ? frontFace : backFace;
+    const ref = isFront ? canvasRef : backCanvasRef;
+    const visible = activeFace === f;
+    return (
+      <div
+        style={
+          visible
+            ? undefined
+            : { position: "absolute", left: -100000, top: 0, opacity: 0, pointerEvents: "none" }
+        }
+      >
         <InvitationCanvas
-          ref={canvasRef}
-          layout={template.layout}
+          ref={ref}
+          layout={tmpl.layout}
           userData={userData}
           aiText={aiText}
-          textOverrides={textOverrides}
-          fontOverrides={fontOverrides}
+          textOverrides={fd.textOverrides}
+          fontOverrides={fd.fontOverrides}
           fontsReady={fontsReady}
-          imageUrls={imageUrls}
-          selectedSlotId={selectedSlotId}
-          onSelectSlot={onSelectSlot}
+          imageUrls={fd.imageUrls}
+          selectedSlotId={visible ? selectedSlotId : null}
+          onSelectSlot={visible ? onSelectSlot : () => {}}
           displayWidth={340}
         />
       </div>
+    );
+  };
+
+  return (
+    <main className="px-4 py-5 space-y-4">
+      {/* 전면/후면 탭 */}
+      <div className="flex gap-2">
+        {(["front", "back"] as const).map((f) => {
+          const isActive = activeFace === f;
+          const label =
+            f === "front" ? "전면" : backTemplate ? "후면" : "후면 추가";
+          return (
+            <button
+              key={f}
+              type="button"
+              onClick={() => {
+                onSwitchFace(f);
+                if (f === "back" && !backTemplate) {
+                  onLoadBackTemplates();
+                  setShowBackPicker(true);
+                }
+              }}
+              className={`flex-1 h-10 rounded-xl text-sm font-bold border transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card text-muted-foreground border-border"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 캔버스 (전면+후면 모두 마운트, 비활성은 숨김) */}
+      <div className="relative flex justify-center bg-muted/30 rounded-2xl py-5 min-h-[200px]">
+        {renderFaceCanvas("front")}
+        {renderFaceCanvas("back")}
+        {activeFace === "back" && !backTemplate && (
+          <div className="text-center px-6 py-10">
+            <p className="text-sm text-muted-foreground mb-3">
+              후면 디자인을 선택하면 2장(전면·후면)으로 만들어져요.
+            </p>
+            <Button
+              onClick={() => {
+                onLoadBackTemplates();
+                setShowBackPicker(true);
+              }}
+            >
+              후면 템플릿 고르기
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* 후면 템플릿 변경 (후면 탭에서) */}
+      {activeFace === "back" && (
+        <div>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              onLoadBackTemplates();
+              setShowBackPicker((v) => !v);
+            }}
+          >
+            {backTemplate ? "후면 템플릿 변경" : "후면 템플릿 선택"}
+          </Button>
+          {showBackPicker && (
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {backTemplates.length === 0 ? (
+                <p className="col-span-2 text-center text-[12px] text-muted-foreground py-6">
+                  후면 템플릿을 불러오는 중…
+                </p>
+              ) : (
+                backTemplates.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      onChangeBackTemplate(t);
+                      setShowBackPicker(false);
+                    }}
+                    className={`bg-card rounded-xl overflow-hidden border text-left active:scale-[0.98] transition-transform ${
+                      backTemplate?.id === t.id
+                        ? "border-primary"
+                        : "border-border"
+                    }`}
+                  >
+                    <div className="aspect-[3/4] bg-muted flex items-center justify-center">
+                      {t.thumbnail_url ? (
+                        <img
+                          src={t.thumbnail_url}
+                          alt={t.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground px-2 text-center">
+                          {t.name}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-[11px] font-semibold text-foreground truncate">
+                        {t.name}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 슬롯 선택 안내 */}
-      {!selectedSlot && (
+      {!selectedSlot && (activeFace === "front" || backTemplate) && (
         <div className="p-4 bg-blue-50 rounded-lg text-[12px] text-blue-900 leading-relaxed">
           편집하고 싶은 영역(텍스트·사진)을 캔버스에서 탭하세요. 빈 텍스트
           영역에서 8초간 입력이 없으면 AI 추천 문구 시트가 떠요.
@@ -734,7 +989,7 @@ const StudioView = ({
           {!selectedSlot.locked && selectedSlot.editable_font !== false && (
             <FontPicker
               fonts={fonts}
-              value={fontOverrides[selectedSlot.id] ?? null}
+              value={aFace.fontOverrides[selectedSlot.id] ?? null}
               defaultFamily={selectedSlot.font_family ?? null}
               onChange={onFontChange}
             />
@@ -749,16 +1004,16 @@ const StudioView = ({
             <ImageIcon className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-bold text-foreground">사진 교체</h3>
           </div>
-          {imageUrls[selectedSlot.id] && (
+          {aFace.imageUrls[selectedSlot.id] && (
             <img
-              src={imageUrls[selectedSlot.id]}
+              src={aFace.imageUrls[selectedSlot.id]}
               alt=""
               className="w-full max-h-40 object-contain rounded-lg bg-muted"
             />
           )}
           <Button onClick={onPickPhoto} variant="outline" className="w-full">
             <ImageIcon className="w-4 h-4 mr-2" />
-            {imageUrls[selectedSlot.id] ? "다른 사진" : "사진 업로드"}
+            {aFace.imageUrls[selectedSlot.id] ? "다른 사진" : "사진 업로드"}
           </Button>
           <p className="text-[10px] text-muted-foreground">JPG/PNG, 최대 5MB</p>
         </section>
