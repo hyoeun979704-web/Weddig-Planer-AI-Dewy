@@ -412,10 +412,12 @@ const InvitationStudio = () => {
   // 후면 템플릿 목록 로드 (face in back/both)
   const loadBackTemplates = useCallback(async () => {
     if (backTemplates.length > 0) return;
+    // 후면은 종이 카드 전용 — 모바일(세로 긴 캔버스) 템플릿 제외
     const { data } = await (supabase as any)
       .from("invitation_templates")
       .select("id, name, thumbnail_url, format, tone, price_hearts, layout, text_prompt_hint")
       .eq("is_active", true)
+      .eq("format", "paper")
       .in("face", ["back", "both"])
       .order("display_order", { ascending: false });
     setBackTemplates((data ?? []) as Template[]);
