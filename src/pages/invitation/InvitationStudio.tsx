@@ -8,6 +8,7 @@ import {
   Download,
   Image as ImageIcon,
   Type,
+  Trash2,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,9 @@ interface FaceState {
   textOverrides: Record<string, string>;
   fontOverrides: Record<string, string>;
   positionOverrides: Record<string, { x: number; y: number }>;
+  fontSizeOverrides: Record<string, number>;
+  extraSlots: InvitationSlot[];
+  hiddenSlots: string[];
   imagePaths: Record<string, string>; // DB 저장용 storage path
   imageUrls: Record<string, string>; // 화면 표시용 signed URL (저장 X)
 }
@@ -87,6 +91,9 @@ const emptyFace = (): FaceState => ({
   textOverrides: {},
   fontOverrides: {},
   positionOverrides: {},
+  fontSizeOverrides: {},
+  extraSlots: [],
+  hiddenSlots: [],
   imagePaths: {},
   imageUrls: {},
 });
@@ -138,10 +145,16 @@ const InvitationStudio = () => {
 
   // 현재 활성 면 파생값
   const activeTemplate = activeFace === "front" ? template : backTemplate;
+  const activeFaceState = activeFace === "front" ? frontFace : backFace;
   const setFace = activeFace === "front" ? setFrontFace : setBackFace;
 
-  const selectedSlot: InvitationSlot | undefined =
-    activeTemplate?.layout.slots.find((s) => s.id === selectedSlotId);
+  // 템플릿 슬롯 + 사용자가 추가한 요소
+  const activeSlots: InvitationSlot[] = activeTemplate
+    ? [...activeTemplate.layout.slots, ...activeFaceState.extraSlots]
+    : [];
+  const selectedSlot: InvitationSlot | undefined = activeSlots.find(
+    (s) => s.id === selectedSlotId,
+  );
 
   // ────────────────────────────────────────
   // 저장된 청첩장 로드 (id 모드)
@@ -185,6 +198,9 @@ const InvitationStudio = () => {
         textOverrides: faces.front.textOverrides ?? {},
         fontOverrides: faces.front.fontOverrides ?? {},
         positionOverrides: faces.front.positionOverrides ?? {},
+        fontSizeOverrides: faces.front.fontSizeOverrides ?? {},
+        extraSlots: faces.front.extraSlots ?? [],
+        hiddenSlots: faces.front.hiddenSlots ?? [],
         imagePaths: faces.front.imagePaths ?? {},
         imageUrls: await hydrate(faces.front.imagePaths),
       });
@@ -202,6 +218,9 @@ const InvitationStudio = () => {
           textOverrides: faces.back.textOverrides ?? {},
           fontOverrides: faces.back.fontOverrides ?? {},
           positionOverrides: faces.back.positionOverrides ?? {},
+          fontSizeOverrides: faces.back.fontSizeOverrides ?? {},
+          extraSlots: faces.back.extraSlots ?? [],
+          hiddenSlots: faces.back.hiddenSlots ?? [],
           imagePaths: faces.back.imagePaths ?? {},
           imageUrls: await hydrate(faces.back.imagePaths),
         });
@@ -291,6 +310,65 @@ const InvitationStudio = () => {
     }));
   };
 
+  // 텍스트 요소 추가 (캔버스 중앙)
+  const handleAddText = () => {
+    if (!activeTemplate) return;
+    const cw = activeTemplate.layout.canvas.w;
+    const ch = activeTemplate.layout.canvas.h;
+    const w = Math.min(600, cw - 80);
+    const id = `extra-${crypto.randomUUID().slice(0, 8)}`;
+    const newSlot: InvitationSlot = {
+      id,
+      type: "text",
+      x: Math.round((cw - w) / 2),
+      y: Math.round(ch / 2 - 40),
+      w,
+      h: 80,
+      z: 50,
+      text: "새 문구",
+      font_size: 36,
+      align: "center",
+      color: "#1A1A1A",
+      editable_font: true,
+      movable: true,
+    };
+    setFace((p) => ({ ...p, extraSlots: [...p.extraSlots, newSlot] }));
+    setSelectedSlotId(id);
+  };
+
+  // 선택 슬롯 삭제 — 추가 요소는 제거, 템플릿 슬롯은 숨김
+  const handleDeleteSlot = () => {
+    if (!selectedSlot) return;
+    const id = selectedSlot.id;
+    const isExtra = id.startsWith("extra-");
+    setFace((p) => ({
+      ...p,
+      extraSlots: isExtra
+        ? p.extraSlots.filter((s) => s.id !== id)
+        : p.extraSlots,
+      hiddenSlots: isExtra ? p.hiddenSlots : [...p.hiddenSlots, id],
+    }));
+    setSelectedSlotId(null);
+  };
+
+  // 숨긴 템플릿 슬롯 모두 복원
+  const handleRestoreHidden = () => {
+    setFace((p) => ({ ...p, hiddenSlots: [] }));
+  };
+
+  // 폰트 크기 조절 (텍스트 슬롯)
+  const handleFontSizeChange = (delta: number) => {
+    if (!selectedSlot || selectedSlot.type !== "text") return;
+    const id = selectedSlot.id;
+    const base =
+      activeFaceState.fontSizeOverrides[id] ?? selectedSlot.font_size ?? 18;
+    const next = Math.max(8, Math.min(200, base + delta));
+    setFace((p) => ({
+      ...p,
+      fontSizeOverrides: { ...p.fontSizeOverrides, [id]: next },
+    }));
+  };
+
   const handlePhotoUpload = async (file: File) => {
     if (!selectedSlot || !user) return;
     if (file.size > 5 * 1024 * 1024) {
@@ -366,6 +444,9 @@ const InvitationStudio = () => {
         imagePaths: f.imagePaths,
         fontOverrides: f.fontOverrides,
         positionOverrides: f.positionOverrides,
+        fontSizeOverrides: f.fontSizeOverrides,
+        extraSlots: f.extraSlots,
+        hiddenSlots: f.hiddenSlots,
       });
       const payload = {
         user_id: user.id,
@@ -523,6 +604,10 @@ const InvitationStudio = () => {
           onTextChange={handleTextChange}
           onFontChange={handleFontChange}
           onMoveSlot={handleMoveSlot}
+          onAddText={handleAddText}
+          onDeleteSlot={handleDeleteSlot}
+          onRestoreHidden={handleRestoreHidden}
+          onFontSizeChange={handleFontSizeChange}
           onPickPhoto={() => fileInputRef.current?.click()}
           onExportPdf={handleExportPdf}
           isExporting={isExporting}
@@ -776,6 +861,10 @@ const StudioView = ({
   onTextChange,
   onFontChange,
   onMoveSlot,
+  onAddText,
+  onDeleteSlot,
+  onRestoreHidden,
+  onFontSizeChange,
   onPickPhoto,
   onExportPdf,
   isExporting,
@@ -801,6 +890,10 @@ const StudioView = ({
   onTextChange: (text: string) => void;
   onFontChange: (family: string | null) => void;
   onMoveSlot: (id: string, x: number, y: number) => void;
+  onAddText: () => void;
+  onDeleteSlot: () => void;
+  onRestoreHidden: () => void;
+  onFontSizeChange: (delta: number) => void;
   onPickPhoto: () => void;
   onExportPdf: () => void;
   isExporting: boolean;
@@ -847,6 +940,9 @@ const StudioView = ({
           textOverrides={fd.textOverrides}
           fontOverrides={fd.fontOverrides}
           positionOverrides={fd.positionOverrides}
+          fontSizeOverrides={fd.fontSizeOverrides}
+          extraSlots={fd.extraSlots}
+          hiddenSlots={fd.hiddenSlots}
           fontsReady={fontsReady}
           imageUrls={fd.imageUrls}
           selectedSlotId={visible ? selectedSlotId : null}
@@ -971,6 +1067,21 @@ const StudioView = ({
         </div>
       )}
 
+      {/* 요소 추가 / 숨김 복원 */}
+      {(activeFace === "front" || backTemplate) && (
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1" onClick={onAddText}>
+            <Type className="w-4 h-4 mr-1.5" />
+            텍스트 추가
+          </Button>
+          {aFace.hiddenSlots.length > 0 && (
+            <Button variant="ghost" onClick={onRestoreHidden}>
+              숨긴 {aFace.hiddenSlots.length}개 복원
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* 슬롯 선택 안내 */}
       {!selectedSlot && (activeFace === "front" || backTemplate) && (
         <div className="p-4 bg-blue-50 rounded-lg text-[12px] text-blue-900 leading-relaxed">
@@ -1014,6 +1125,36 @@ const StudioView = ({
               onChange={onFontChange}
             />
           )}
+
+          {/* 크기 조절 + 삭제 */}
+          <div className="flex items-center gap-2 pt-2 border-t border-border">
+            <span className="text-[12px] text-muted-foreground">크기</span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => onFontSizeChange(-2)}
+            >
+              −
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => onFontSizeChange(2)}
+            >
+              +
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="ml-auto text-destructive hover:text-destructive"
+              onClick={onDeleteSlot}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              삭제
+            </Button>
+          </div>
         </section>
       )}
 
@@ -1035,7 +1176,18 @@ const StudioView = ({
             <ImageIcon className="w-4 h-4 mr-2" />
             {aFace.imageUrls[selectedSlot.id] ? "다른 사진" : "사진 업로드"}
           </Button>
-          <p className="text-[10px] text-muted-foreground">JPG/PNG, 최대 5MB</p>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] text-muted-foreground">JPG/PNG, 최대 5MB</p>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              onClick={onDeleteSlot}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              삭제
+            </Button>
+          </div>
         </section>
       )}
 

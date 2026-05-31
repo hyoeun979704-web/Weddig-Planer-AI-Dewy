@@ -147,6 +147,12 @@ export interface InvitationFaceData {
   fontOverrides?: Record<string, string>;
   /** slot.id → 사용자가 드래그 이동한 위치(캔버스 좌표). 없으면 슬롯 기본 위치 */
   positionOverrides?: Record<string, { x: number; y: number }>;
+  /** slot.id → 폰트 크기 override (크기 조절) */
+  fontSizeOverrides?: Record<string, number>;
+  /** 사용자가 추가한 텍스트 요소 */
+  extraSlots?: InvitationSlot[];
+  /** 사용자가 숨긴(삭제한) 템플릿 슬롯 id */
+  hiddenSlots?: string[];
   /** 발행 시점 long-lived signed URL (익명 viewer 용) */
   imageUrlsForViewer?: Record<string, string>;
 }

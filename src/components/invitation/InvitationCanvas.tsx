@@ -63,6 +63,12 @@ interface Props {
   positionOverrides?: Record<string, { x: number; y: number }>;
   /** 드래그 종료 시 호출 — 이동한 위치 저장용 */
   onMoveSlot?: (id: string, x: number, y: number) => void;
+  /** slot.id → 폰트 크기 override */
+  fontSizeOverrides?: Record<string, number>;
+  /** 사용자가 추가한 텍스트 요소 */
+  extraSlots?: InvitationSlot[];
+  /** 숨긴(삭제한) 슬롯 id */
+  hiddenSlots?: string[];
 }
 
 const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
@@ -84,6 +90,9 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       editable = false,
       positionOverrides = {},
       onMoveSlot,
+      fontSizeOverrides = {},
+      extraSlots = [],
+      hiddenSlots = [],
     },
     ref,
   ) => {
@@ -142,8 +151,9 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
               />
             )}
 
-            {/* 슬롯들 z 순서대로 */}
-            {[...layout.slots]
+            {/* 슬롯들 z 순서대로 (템플릿 슬롯 + 추가 요소, 숨긴 것 제외) */}
+            {[...layout.slots, ...extraSlots]
+              .filter((s) => !hiddenSlots.includes(s.id))
               .sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
               .map((slot) => {
                 // 텍스트·캘린더 슬롯은 폰트가 바뀌거나(고름) 로드 완료되면 재마운트해
@@ -153,7 +163,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                 const key = usesFont
                   ? `${slot.id}:${fontsReady ? "1" : "0"}:${
                       fontOverrides[slot.id] ?? slot.font_family ?? ""
-                    }`
+                    }:${fontSizeOverrides[slot.id] ?? ""}`
                   : slot.id;
                 const pos = positionOverrides[slot.id];
                 const draggable =
@@ -167,6 +177,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                     textOverrides={textOverrides}
                     imageUrls={imageUrls}
                     fontOverrides={fontOverrides}
+                    fontSizeOverrides={fontSizeOverrides}
                     shareUrl={shareUrl}
                     qrStyle={qrStyle}
                     isSelected={slot.id === selectedSlotId}
@@ -224,6 +235,7 @@ interface SlotNodeProps {
   textOverrides: Record<string, string>;
   imageUrls: Record<string, string>;
   fontOverrides: Record<string, string>;
+  fontSizeOverrides?: Record<string, number>;
   shareUrl?: string;
   qrStyle?: ShareCodeStyle;
   isSelected: boolean;
@@ -333,6 +345,7 @@ const TextSlotBody = ({
   aiText,
   textOverrides,
   fontOverrides,
+  fontSizeOverrides = {},
 }: SlotNodeProps) => {
   const text = resolveText(slot, userData, aiText, textOverrides);
   // 빈 field 슬롯 hide — 사용자가 부모님·계좌 같은 선택 필드를 비워둘 때
@@ -355,7 +368,7 @@ const TextSlotBody = ({
       height={slot.h}
       text={text}
       fontFamily={resolveFont(slot, fontOverrides)}
-      fontSize={slot.font_size ?? 18}
+      fontSize={fontSizeOverrides[slot.id] ?? slot.font_size ?? 18}
       fontStyle={
         typeof slot.font_weight === "number"
           ? slot.font_weight >= 600

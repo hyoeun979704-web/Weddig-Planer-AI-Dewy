@@ -142,6 +142,9 @@ const InvitationViewer = () => {
           textOverrides={faces.front.textOverrides ?? {}}
           fontOverrides={faces.front.fontOverrides ?? {}}
           positionOverrides={faces.front.positionOverrides ?? {}}
+          fontSizeOverrides={faces.front.fontSizeOverrides ?? {}}
+          extraSlots={faces.front.extraSlots ?? []}
+          hiddenSlots={faces.front.hiddenSlots ?? []}
           fontsReady={fontsReady}
           imageUrls={faces.front.imageUrlsForViewer ?? {}}
           selectedSlotId={null}
@@ -158,6 +161,9 @@ const InvitationViewer = () => {
             textOverrides={faces.back.textOverrides ?? {}}
             fontOverrides={faces.back.fontOverrides ?? {}}
             positionOverrides={faces.back.positionOverrides ?? {}}
+            fontSizeOverrides={faces.back.fontSizeOverrides ?? {}}
+            extraSlots={faces.back.extraSlots ?? []}
+            hiddenSlots={faces.back.hiddenSlots ?? []}
             fontsReady={fontsReady}
             imageUrls={faces.back.imageUrlsForViewer ?? {}}
             selectedSlotId={null}
