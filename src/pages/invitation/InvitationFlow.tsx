@@ -34,7 +34,10 @@ import InvitationCanvas, {
 import ShareCodeCard from "@/components/invitation/ShareCodeCard";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
 import type { ShareCodeStyle } from "@/lib/invitation/shareCode";
-import { exportInvitationPdf } from "@/lib/invitation/exportPdf";
+import {
+  exportInvitationPdfPages,
+  type PdfPage,
+} from "@/lib/invitation/exportPdf";
 import type {
   InvitationLayout,
   InvitationUserData,
@@ -62,6 +65,7 @@ interface Template {
   price_hearts: number;
   layout: InvitationLayout;
   text_prompt_hint: string | null;
+  default_back_template_id?: string | null;
 }
 
 type Step = "template" | "wizard" | "result";
@@ -100,11 +104,35 @@ const InvitationFlow = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [invitationId, setInvitationId] = useState<string | null>(null);
 
+  // 후면 템플릿 (전면의 default_back 으로 자동 적용 — 세트). 없으면 단면.
+  const [backTemplate, setBackTemplate] = useState<Template | null>(null);
+  const [backTemplateId, setBackTemplateId] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<InvitationCanvasHandle>(null);
+  const backCanvasRef = useRef<InvitationCanvasHandle>(null);
 
   // 등록된 청첩장 폰트 @font-face 주입 + 로드 완료 신호 (미리보기 폰트 렌더)
   const { fontsReady } = useInvitationFonts();
+
+  // 전면 선택 시 짝꿍 기본 후면 자동 로드 (세트). default_back 없으면 단면.
+  const pickTemplate = async (t: Template) => {
+    setTemplate(t);
+    setStep("wizard");
+    setBackTemplate(null);
+    setBackTemplateId(null);
+    if (t.default_back_template_id) {
+      const { data: bt } = await (supabase as any)
+        .from("invitation_templates")
+        .select("id, name, thumbnail_url, format, tone, price_hearts, layout, text_prompt_hint")
+        .eq("id", t.default_back_template_id)
+        .maybeSingle();
+      if (bt) {
+        setBackTemplate(bt as Template);
+        setBackTemplateId(bt.id);
+      }
+    }
+  };
 
   // ─────────────────────────────────────────────
   // 하트 잔액
@@ -154,10 +182,11 @@ const InvitationFlow = () => {
       const { data, error } = await (supabase as any)
         .from("invitation_templates")
         .select(
-          "id, name, thumbnail_url, format, tone, price_hearts, layout, text_prompt_hint",
+          "id, name, thumbnail_url, format, tone, price_hearts, layout, text_prompt_hint, default_back_template_id",
         )
         .eq("is_active", true)
         .eq("format", formatFilter)
+        .in("face", ["front", "both"]) // 전면으로 쓸 수 있는 템플릿만
         .order("display_order", { ascending: false });
       if (error) {
         toast({
@@ -531,6 +560,7 @@ const InvitationFlow = () => {
       const payload = {
         user_id: user.id,
         template_id: template.id,
+        back_template_id: backTemplateId,
         user_data: cleanedUserData,
         layout: { textOverrides: directOverrides, imagePaths: paths },
         ai_generated_text: generatedAi,
@@ -597,19 +627,32 @@ const InvitationFlow = () => {
     if (!template) return;
     setIsExporting(true);
     try {
-      const dataUrl = canvasRef.current?.toDataUrl(3);
-      if (!dataUrl) throw new Error("캔버스 추출 실패");
+      const pages: PdfPage[] = [];
+      const frontUrl = canvasRef.current?.toDataUrl(3);
+      if (!frontUrl) throw new Error("캔버스 추출 실패");
+      pages.push({
+        dataUrl: frontUrl,
+        w: template.layout.canvas.w,
+        h: template.layout.canvas.h,
+      });
+      if (backTemplate) {
+        const backUrl = backCanvasRef.current?.toDataUrl(3);
+        if (backUrl) {
+          pages.push({
+            dataUrl: backUrl,
+            w: backTemplate.layout.canvas.w,
+            h: backTemplate.layout.canvas.h,
+          });
+        }
+      }
       const filename = `dewy-invitation-${invitationId ?? "draft"}.pdf`;
-      exportInvitationPdf(
-        dataUrl,
-        template.layout.canvas.w,
-        template.layout.canvas.h,
-        filename,
-      );
+      exportInvitationPdfPages(pages, filename);
       toast({
         title: "PDF 다운로드 시작",
         description:
-          "130×190mm 비율로 출력됐어요. 인쇄소 사양에 맞춰 크기를 조정해주세요.",
+          pages.length > 1
+            ? "전면·후면 2페이지 — 인쇄소 사양에 맞춰 크기를 조정해주세요."
+            : "130×190mm 비율로 출력됐어요. 인쇄소 사양에 맞춰 크기를 조정해주세요.",
       });
     } catch (e) {
       toast({
@@ -650,6 +693,7 @@ const InvitationFlow = () => {
       const payload = {
         user_id: user.id,
         template_id: template.id,
+        back_template_id: backTemplateId,
         user_data: userData,
         layout: { textOverrides, imagePaths },
         ai_generated_text: aiText,
@@ -810,10 +854,7 @@ const InvitationFlow = () => {
         <TemplatePicker
           templates={templates}
           loading={loadingTemplates}
-          onPick={(t) => {
-            setTemplate(t);
-            setStep("wizard");
-          }}
+          onPick={pickTemplate}
         />
       )}
 
@@ -836,7 +877,9 @@ const InvitationFlow = () => {
       {step === "result" && template && (
         <ResultView
           canvasRef={canvasRef}
+          backCanvasRef={backCanvasRef}
           template={template}
+          backTemplate={backTemplate}
           userData={userData}
           textOverrides={textOverrides}
           imageUrls={imageUrls}
@@ -1309,7 +1352,9 @@ const Field = ({
 // ════════════════════════════════════════════════════════════════
 const ResultView = ({
   canvasRef,
+  backCanvasRef,
   template,
+  backTemplate,
   userData,
   textOverrides,
   imageUrls,
@@ -1325,7 +1370,9 @@ const ResultView = ({
   onShareSlug,
 }: {
   canvasRef: React.RefObject<InvitationCanvasHandle>;
+  backCanvasRef: React.RefObject<InvitationCanvasHandle>;
   template: Template;
+  backTemplate: Template | null;
   userData: InvitationUserData;
   textOverrides: Record<string, string>;
   imageUrls: Record<string, string>;
@@ -1346,7 +1393,10 @@ const ResultView = ({
 
   return (
     <main className="px-4 py-5 space-y-4">
-      <div className="flex justify-center bg-muted/30 rounded-2xl py-5">
+      <div className="flex flex-col items-center bg-muted/30 rounded-2xl py-5 gap-2">
+        {backTemplate && (
+          <span className="text-[11px] font-bold text-muted-foreground">전면</span>
+        )}
         <InvitationCanvas
           ref={canvasRef}
           layout={template.layout}
@@ -1361,6 +1411,26 @@ const ResultView = ({
           shareUrl={shareUrl ?? undefined}
           qrStyle={shareCodeStyle}
         />
+        {/* 후면 (세트 기본 후면) */}
+        {backTemplate && (
+          <>
+            <span className="text-[11px] font-bold text-muted-foreground mt-3">
+              후면
+            </span>
+            <InvitationCanvas
+              ref={backCanvasRef}
+              layout={backTemplate.layout}
+              userData={userData}
+              aiText={aiText}
+              textOverrides={{}}
+              imageUrls={{}}
+              fontsReady={fontsReady}
+              selectedSlotId={null}
+              onSelectSlot={() => {}}
+              displayWidth={360}
+            />
+          </>
+        )}
       </div>
 
       {isMobile ? (
