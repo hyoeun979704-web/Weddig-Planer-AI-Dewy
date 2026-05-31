@@ -9,6 +9,7 @@ import {
   Image as ImageIcon,
   Type,
   Trash2,
+  Share2,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ import InvitationCanvas, {
   InvitationCanvasHandle,
 } from "@/components/invitation/InvitationCanvas";
 import AISuggestSheet from "@/components/invitation/AISuggestSheet";
+import ShareCodeCard from "@/components/invitation/ShareCodeCard";
+import type { ShareCodeStyle } from "@/lib/invitation/shareCode";
 import {
   exportInvitationPdfPages,
   type PdfPage,
@@ -124,6 +127,11 @@ const InvitationStudio = () => {
   // 후면 템플릿 (없으면 단면 — 하위호환). template = 전면.
   const [backTemplate, setBackTemplate] = useState<Template | null>(null);
   const [backTemplateId, setBackTemplateId] = useState<string | null>(null);
+  // 발행 상태 보존용 + 발행/공유
+  const [loadedStatus, setLoadedStatus] = useState<string>("draft");
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [shareCodeStyle, setShareCodeStyle] = useState<ShareCodeStyle>("basic");
   const [backTemplates, setBackTemplates] = useState<Template[]>([]);
   const [activeFace, setActiveFace] = useState<InvitationFace>("front");
 
@@ -227,6 +235,10 @@ const InvitationStudio = () => {
       }
 
       setAiText(data.ai_generated_text ?? {});
+      setLoadedStatus(data.status ?? "draft");
+      if (data.status === "published" && data.share_slug) {
+        setShareUrl(`${window.location.origin}/i/${data.share_slug}`);
+      }
       setStep("studio");
     })();
   }, [params.id, user, navigate]);
@@ -436,39 +448,67 @@ const InvitationStudio = () => {
   // ────────────────────────────────────────
   // 저장
   // ────────────────────────────────────────
+  // 면별 layout 직렬화. forViewer=true 면 익명 뷰어용 long-lived signed URL 동봉.
+  const buildFaceLayout = async (f: FaceState, forViewer: boolean) => {
+    // signed URL(화면용 imageUrls)은 만료되니 저장 X — storage path 만 영구 보존
+    const base = {
+      textOverrides: f.textOverrides,
+      imagePaths: f.imagePaths,
+      fontOverrides: f.fontOverrides,
+      positionOverrides: f.positionOverrides,
+      fontSizeOverrides: f.fontSizeOverrides,
+      extraSlots: f.extraSlots,
+      hiddenSlots: f.hiddenSlots,
+    };
+    if (!forViewer) return base;
+    const imageUrlsForViewer: Record<string, string> = {};
+    await Promise.all(
+      Object.entries(f.imagePaths).map(async ([slotId, path]) => {
+        const { data: s } = await supabase.storage
+          .from("invitation-uploads")
+          .createSignedUrl(path, 60 * 60 * 24 * 365); // 1년
+        if (s?.signedUrl) imageUrlsForViewer[slotId] = s.signedUrl;
+      }),
+    );
+    return { ...base, imageUrlsForViewer };
+  };
+
+  const buildLayout = async (forViewer: boolean) => ({
+    front: await buildFaceLayout(frontFace, forViewer),
+    back: await buildFaceLayout(backFace, forViewer),
+  });
+
   const handleSave = async () => {
     if (!user || !template) return;
     setIsSaving(true);
     try {
-      // signed URL(imageUrls)은 만료되니까 저장 X — storage path 만 영구 보존
-      const faceLayout = (f: FaceState) => ({
-        textOverrides: f.textOverrides,
-        imagePaths: f.imagePaths,
-        fontOverrides: f.fontOverrides,
-        positionOverrides: f.positionOverrides,
-        fontSizeOverrides: f.fontSizeOverrides,
-        extraSlots: f.extraSlots,
-        hiddenSlots: f.hiddenSlots,
-      });
-      const payload = {
-        user_id: user.id,
-        template_id: template.id,
-        back_template_id: backTemplateId,
-        user_data: userData,
-        layout: { front: faceLayout(frontFace), back: faceLayout(backFace) },
-        ai_generated_text: aiText,
-        status: "draft" as const,
-      };
+      const isPublished = loadedStatus === "published";
+      const layout = await buildLayout(isPublished);
       if (invitationId) {
+        // status 는 보존(미포함) — 발행본을 편집 저장해도 draft 로 강등되지 않음
         const { error } = await (supabase as any)
           .from("invitations")
-          .update(payload)
+          .update({
+            template_id: template.id,
+            back_template_id: backTemplateId,
+            user_data: userData,
+            layout,
+            ai_generated_text: aiText,
+          })
           .eq("id", invitationId);
         if (error) throw error;
       } else {
         const { data, error } = await (supabase as any)
           .from("invitations")
-          .insert(payload)
+          .insert({
+            user_id: user.id,
+            template_id: template.id,
+            back_template_id: backTemplateId,
+            user_data: userData,
+            layout,
+            ai_generated_text: aiText,
+            status: "draft" as const,
+          })
           .select("id")
           .single();
         if (error) throw error;
@@ -483,6 +523,64 @@ const InvitationStudio = () => {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // 발행 & 공유 — 현재 편집 내용을 저장(뷰어 URL 포함)한 뒤 slug 발급
+  const handlePublish = async () => {
+    if (!user || !template) return;
+    setIsPublishing(true);
+    try {
+      const layout = await buildLayout(true);
+      let id = invitationId;
+      if (id) {
+        const { error } = await (supabase as any)
+          .from("invitations")
+          .update({
+            template_id: template.id,
+            back_template_id: backTemplateId,
+            user_data: userData,
+            layout,
+            ai_generated_text: aiText,
+          })
+          .eq("id", id);
+        if (error) throw error;
+      } else {
+        const { data, error } = await (supabase as any)
+          .from("invitations")
+          .insert({
+            user_id: user.id,
+            template_id: template.id,
+            back_template_id: backTemplateId,
+            user_data: userData,
+            layout,
+            ai_generated_text: aiText,
+            status: "draft" as const,
+          })
+          .select("id")
+          .single();
+        if (error) throw error;
+        id = data.id as string;
+        setInvitationId(id);
+      }
+      const { data: pub, error: pubErr } = await (supabase as any).rpc(
+        "publish_invitation",
+        { p_invitation_id: id },
+      );
+      if (pubErr) throw pubErr;
+      const row = Array.isArray(pub) ? pub[0] : pub;
+      if (!row?.share_slug) throw new Error("공유 링크 발급 실패");
+      setShareUrl(`${window.location.origin}/i/${row.share_slug}`);
+      setLoadedStatus("published");
+      toast({ title: "공유 링크가 발급됐어요" });
+    } catch (err) {
+      toast({
+        title: "발행 실패",
+        description: err instanceof Error ? err.message : "오류",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -616,6 +714,11 @@ const InvitationStudio = () => {
           backTemplates={backTemplates}
           onLoadBackTemplates={loadBackTemplates}
           onChangeBackTemplate={handleChangeBackTemplate}
+          shareUrl={shareUrl}
+          isPublishing={isPublishing}
+          onPublish={handlePublish}
+          shareCodeStyle={shareCodeStyle}
+          onShareCodeStyleChange={setShareCodeStyle}
         />
       )}
 
@@ -873,6 +976,11 @@ const StudioView = ({
   backTemplates,
   onLoadBackTemplates,
   onChangeBackTemplate,
+  shareUrl,
+  isPublishing,
+  onPublish,
+  shareCodeStyle,
+  onShareCodeStyleChange,
 }: {
   canvasRef: React.RefObject<InvitationCanvasHandle>;
   backCanvasRef: React.RefObject<InvitationCanvasHandle>;
@@ -902,6 +1010,11 @@ const StudioView = ({
   backTemplates: Template[];
   onLoadBackTemplates: () => void;
   onChangeBackTemplate: (t: Template) => void;
+  shareUrl: string | null;
+  isPublishing: boolean;
+  onPublish: () => void;
+  shareCodeStyle: ShareCodeStyle;
+  onShareCodeStyleChange: (s: ShareCodeStyle) => void;
 }) => {
   const [showBackPicker, setShowBackPicker] = useState(false);
   const aFace = activeFace === "front" ? frontFace : backFace;
@@ -953,6 +1066,7 @@ const StudioView = ({
           onSelectSlot={visible ? onSelectSlot : () => {}}
           editable={visible}
           onMoveSlot={onMoveSlot}
+          shareUrl={shareUrl ?? undefined}
           displayWidth={340}
         />
       </div>
@@ -1206,6 +1320,31 @@ const StudioView = ({
           </p>
         </section>
       )}
+
+      {/* 발행 & 공유 (QR·바코드) */}
+      <section className="space-y-2">
+        {shareUrl ? (
+          <ShareCodeCard
+            url={shareUrl}
+            style={shareCodeStyle}
+            onStyleChange={onShareCodeStyleChange}
+          />
+        ) : (
+          <Button
+            variant="outline"
+            onClick={onPublish}
+            disabled={isPublishing}
+            className="w-full h-12"
+          >
+            {isPublishing ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Share2 className="w-4 h-4 mr-2" />
+            )}
+            공유 링크·QR 발급하기
+          </Button>
+        )}
+      </section>
 
       {/* PDF 다운로드 */}
       <Button
