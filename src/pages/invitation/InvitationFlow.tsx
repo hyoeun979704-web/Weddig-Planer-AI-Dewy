@@ -40,10 +40,11 @@ import {
   exportInvitationPdfPages,
   type PdfPage,
 } from "@/lib/invitation/exportPdf";
-import type {
-  InvitationLayout,
-  InvitationUserData,
-  SlotRole,
+import {
+  readFaceLayout,
+  type InvitationLayout,
+  type InvitationUserData,
+  type SlotRole,
 } from "@/lib/invitation/types";
 
 /**
@@ -118,7 +119,9 @@ const InvitationFlow = () => {
   const { fontsReady } = useInvitationFonts();
 
   // 전면 선택 시 짝꿍 기본 후면 자동 로드 (세트). default_back 없으면 단면.
+  const latestPickRef = useRef<string | null>(null);
   const pickTemplate = async (t: Template) => {
+    latestPickRef.current = t.id;
     setTemplate(t);
     setStep("wizard");
     setBackTemplate(null);
@@ -129,7 +132,8 @@ const InvitationFlow = () => {
         .select("id, name, thumbnail_url, format, tone, price_hearts, layout, text_prompt_hint")
         .eq("id", t.default_back_template_id)
         .maybeSingle();
-      if (bt) {
+      // 연타 레이스 방지 — 그 사이 다른 템플릿을 골랐으면 무시
+      if (bt && latestPickRef.current === t.id) {
         setBackTemplate(bt as Template);
         setBackTemplateId(bt.id);
       }
@@ -751,24 +755,36 @@ const InvitationFlow = () => {
     }
     setIsPublishing(true);
     try {
-      // 1) 사진 슬롯의 long-lived signed URL 을 layout 에 저장
-      //    (익명 viewer 가 storage 권한 없이 사진 볼 수 있게)
-      const imageUrlsForViewer: Record<string, string> = {};
-      for (const [slotId, path] of Object.entries(imagePaths)) {
-        const { data: signed } = await supabase.storage
-          .from("invitation-uploads")
-          .createSignedUrl(path, 60 * 60 * 24 * 365); // 1년
-        if (signed?.signedUrl) {
-          imageUrlsForViewer[slotId] = signed.signedUrl;
+      // 1) 기존 layout 을 읽어 면별 구조를 보존하고, 발행은 익명 viewer 용
+      //    long-lived signed URL 만 가산적으로 추가한다.
+      //    (Studio 에서 편집한 전/후면 오버라이드·위치·추가요소를 유실하지 않도록)
+      const { data: cur } = await (supabase as any)
+        .from("invitations")
+        .select("layout")
+        .eq("id", invitationId)
+        .single();
+      const faces = readFaceLayout(cur?.layout);
+      const signFace = async (f: {
+        imagePaths?: Record<string, string>;
+      }): Promise<Record<string, string>> => {
+        const v: Record<string, string> = {};
+        for (const [slotId, path] of Object.entries(f.imagePaths ?? {})) {
+          const { data: signed } = await supabase.storage
+            .from("invitation-uploads")
+            .createSignedUrl(path, 60 * 60 * 24 * 365); // 1년
+          if (signed?.signedUrl) v[slotId] = signed.signedUrl;
         }
-      }
-      // 누낀 사진들도 동일 처리는 imagePaths 안에 포함되어 있음 (cutouts/ prefix)
+        return v;
+      };
 
-      // 2) invitations layout 에 imageUrlsForViewer 추가 저장
+      // 2) invitations layout 에 면별 imageUrlsForViewer 추가 저장 (기존 필드 보존)
       await (supabase as any)
         .from("invitations")
         .update({
-          layout: { textOverrides, imagePaths, imageUrlsForViewer },
+          layout: {
+            front: { ...faces.front, imageUrlsForViewer: await signFace(faces.front) },
+            back: { ...faces.back, imageUrlsForViewer: await signFace(faces.back) },
+          },
         })
         .eq("id", invitationId);
 

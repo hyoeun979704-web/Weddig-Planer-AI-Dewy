@@ -119,16 +119,18 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
+  -- LEFT JOIN + COALESCE — 템플릿 삭제(template_id=NULL)된 발행본도 정리 대상에 포함
+  -- (format 미상은 종이로 간주). INNER JOIN 이면 그런 행이 영영 정리되지 않음.
   RETURN QUERY
   SELECT
     i.id,
     public.invitation_photo_paths(i.layout) AS photo_paths
   FROM public.invitations i
-  JOIN public.invitation_templates t ON t.id = i.template_id
+  LEFT JOIN public.invitation_templates t ON t.id = i.template_id
   WHERE i.status = 'published'
     AND (
-      (t.format = 'mobile' AND i.created_at < now() - make_interval(days => mobile_days))
-      OR (t.format <> 'mobile' AND i.created_at < now() - make_interval(days => paper_days))
+      (COALESCE(t.format, 'paper') = 'mobile' AND i.created_at < now() - make_interval(days => mobile_days))
+      OR (COALESCE(t.format, 'paper') <> 'mobile' AND i.created_at < now() - make_interval(days => paper_days))
     );
 END;
 $$;
