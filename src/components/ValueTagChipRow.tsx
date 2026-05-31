@@ -24,7 +24,7 @@ interface Props {
  * 쿼리에 그대로 들어간다.
  */
 const ValueTagChipRow = ({ placeCategory = "wedding_hall" }: Props) => {
-  const valueTags = useFilterStore((s) => s.valueTags);
+  const valueTags = useFilterStore((s) => s.selectedValueTags);
   const toggleValueTag = useFilterStore((s) => s.toggleValueTag);
   const availability = useValueTagAvailability(placeCategory);
 
