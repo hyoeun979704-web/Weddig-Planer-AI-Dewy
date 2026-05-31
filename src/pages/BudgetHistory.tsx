@@ -78,7 +78,7 @@ const BudgetHistory = () => {
    * "예약금" so that "스튜디오A 계약금" and "스튜디오A 잔금" collapse into one group.
    */
   const vendorKeyOf = (title: string) => {
-    const stage = paymentStageOptions.map(s => s.label).concat(["잔금", "추가", "추가금", "추가비"]);
+    const stage = paymentStageOptions.map(s => s.label as string).concat(["잔금", "추가", "추가금", "추가비"]);
     let key = title.trim();
     for (const word of stage) {
       key = key.replace(new RegExp(`\\s*${word}$`), "");

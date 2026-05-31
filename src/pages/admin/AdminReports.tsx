@@ -101,7 +101,7 @@ const AdminReports = () => {
       update.resolved_by = me;
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("community_reports")
       .update(update)
       .eq("id", reportId);

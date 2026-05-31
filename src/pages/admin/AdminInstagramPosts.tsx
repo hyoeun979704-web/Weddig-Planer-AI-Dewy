@@ -52,7 +52,7 @@ const AdminInstagramPostsInner = () => {
 
   const fetchDrafts = useCallback(async () => {
     setIsLoading(true);
-    let query = supabase
+    let query = (supabase as any)
       .from("instagram_post_drafts")
       .select("*")
       .order("created_at", { ascending: false })

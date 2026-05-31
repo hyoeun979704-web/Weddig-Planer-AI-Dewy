@@ -154,7 +154,7 @@ export function useBudget(profileRegionKey?: string) {
   // sheet with no new row in the list and no clue why. Caller-supplied
   // onError is still honored.
   const addItem = useMutation({
-    mutationFn: async (item: Omit<BudgetItem, "id" | "user_id" | "created_at">) => {
+    mutationFn: async (item: Omit<BudgetItem, "id" | "user_id" | "created_at" | "updated_at">) => {
       if (!user) throw new Error("로그인이 필요합니다");
       const { data, error } = await (supabase as any)
         .from("budget_items")

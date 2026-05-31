@@ -11,6 +11,8 @@ interface ToastOptions {
   title?: React.ReactNode;
   description?: React.ReactNode;
   variant?: ToastVariant;
+  action?: React.ReactNode;
+  duration?: number;
 }
 
 const titleString = (val: React.ReactNode): string => {
@@ -25,10 +27,11 @@ function toast(opts: ToastOptions = {}) {
   const message = titleText || titleString(opts.description);
   const description = titleText ? opts.description : undefined;
 
+  const extra = { description, action: opts.action, duration: opts.duration };
   if (opts.variant === "destructive") {
-    sonnerToast.error(message, { description });
+    sonnerToast.error(message, extra);
   } else {
-    sonnerToast(message, { description });
+    sonnerToast(message, extra);
   }
   return { id: "", dismiss: () => {}, update: () => {} };
 }

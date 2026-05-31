@@ -33,7 +33,7 @@ const HeartCharge = () => {
       return;
     }
     (async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("heart_transactions")
         .select("id")
         .eq("user_id", user.id)

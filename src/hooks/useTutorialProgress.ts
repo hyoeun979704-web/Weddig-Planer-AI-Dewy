@@ -172,7 +172,7 @@ export function useTutorialProgress() {
     arg: WeddingStyle | null | undefined | TutorialUserContext,
   ): TutorialUserContext => {
     if (arg && typeof arg === "object") return arg;
-    return { style: arg ?? null };
+    return { style: (arg ?? null) as WeddingStyle | null };
   };
 
   const styleProgress = useCallback(
