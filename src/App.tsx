@@ -7,7 +7,8 @@ import AdminGuard from "@/components/admin/AdminGuard";
 import BusinessGuard from "@/components/business/BusinessGuard";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
@@ -143,7 +144,7 @@ const BusinessEvents = lazy(() => import("./pages/business/BusinessEvents"));
 const BusinessProducts = lazy(() => import("./pages/business/BusinessProducts"));
 const BusinessInquiries = lazy(() => import("./pages/business/BusinessInquiries"));
 
-const queryClient = new QueryClient();
+// queryClient 는 @/lib/queryClient 로 이동 (signOut 캐시 clear 와 인스턴스 공유)
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
