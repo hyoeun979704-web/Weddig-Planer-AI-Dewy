@@ -3,6 +3,7 @@ import { Share2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import Seo from "@/components/Seo";
+import DailyBenefitChallenge from "@/components/events/DailyBenefitChallenge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -91,23 +92,26 @@ const Events = () => {
         }
       />
 
-      <main className="pb-24">
-        {/* Hero */}
+      <main className="pb-40">
+        {/* Hero — Dewy 브랜드 핑크 그라데이션 */}
         <section
           className="px-5 pt-7 pb-7"
           style={{
             background:
-              "linear-gradient(135deg, #DDEEFB 0%, #A8D2F0 55%, #6FB3DF 110%)",
+              "linear-gradient(135deg, #FFF1F4 0%, #FBC7D2 55%, #F6909B 110%)",
           }}
         >
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/60 text-[11px] font-bold text-[#1B6BA8]">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/70 text-[11px] font-bold text-[#B23A53]">
             진행중 이벤트 {LIVE_EVENTS.length + (FEATURED ? 1 : 0)}
           </span>
           <h2 className="mt-3 text-[26px] font-extrabold text-foreground leading-tight">Dewy 이벤트</h2>
-          <p className="mt-1 text-[13px] font-medium text-[#1B6BA8] leading-relaxed">
+          <p className="mt-1 text-[13px] font-medium text-[#B23A53] leading-relaxed">
             가입·공유·미션으로 받는 보상<br />포인트·하트·프리미엄까지
           </p>
         </section>
+
+        {/* 데일리 혜택 챌린지 — 레퍼런스 모티프를 브랜드 톤으로 번안 */}
+        <DailyBenefitChallenge />
 
         {/* Featured large card — DB driven. 로딩 중엔 스켈레톤. */}
         {FEATURED && (
@@ -158,6 +162,18 @@ const Events = () => {
           </div>
         </section>
       </main>
+
+      {/* 한정 혜택 sticky CTA — 레퍼런스 하단 고정 배너 차용 */}
+      <button
+        onClick={() => navigate("/coupons")}
+        className="fixed left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[398px] z-40 py-3.5 rounded-full text-white text-[14px] font-extrabold shadow-lg active:scale-[0.99] transition-transform"
+        style={{
+          bottom: "calc(var(--app-bottom-nav-total-height) + 12px)",
+          background: "linear-gradient(135deg, #FBA9B8 0%, #F6909B 100%)",
+        }}
+      >
+        20:00 한정! 웨딩 30% 할인 쿠폰
+      </button>
 
       <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
     </div>
