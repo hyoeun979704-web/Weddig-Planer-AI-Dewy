@@ -263,6 +263,17 @@ const AdminInvitationTemplates = () => {
       return false;
     }
   }, [layoutJson]);
+  // 단일 캔버스(종이 단면 등) 배경 이미지 — pages 배열이 없는 템플릿용
+  const canvasBackgroundUrl = useMemo(() => {
+    try {
+      const parsed = JSON.parse(layoutJson || "{}") as {
+        canvas?: { background_url?: string };
+      };
+      return parsed.canvas?.background_url;
+    } catch {
+      return undefined;
+    }
+  }, [layoutJson]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -371,7 +382,9 @@ const AdminInvitationTemplates = () => {
         return;
       }
     }
-    const mobileRollError = validateMobileRollLayout(layout as InvitationLayout);
+    const mobileRollError = validateMobileRollLayout(
+      layout as unknown as InvitationLayout,
+    );
     if (mobileRollError) {
       toast({
         title: "모바일 롤페이지 규격을 확인해주세요",
@@ -469,6 +482,23 @@ const AdminInvitationTemplates = () => {
     }
   };
 
+  const updateCanvasBackgroundUrl = (url: string) => {
+    try {
+      const layout = JSON.parse(layoutJson || "{}") as {
+        canvas?: Record<string, unknown>;
+        [key: string]: unknown;
+      };
+      layout.canvas = { ...(layout.canvas ?? {}), background_url: url };
+      setLayoutJson(JSON.stringify(layout, null, 2));
+    } catch {
+      toast({
+        title: "배경 이미지 반영 실패",
+        description: "레이아웃 JSON 형식을 먼저 확인해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleLayoutFileSelected = async (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -534,7 +564,7 @@ const AdminInvitationTemplates = () => {
       const normalizedFiles = await Promise.all(
         files.map((file) => normalizeMobileRollFrame(file)),
       );
-      const frames = [];
+      const frames: UploadedRollFrame[] = [];
       for (const [index, file] of files.entries()) {
         const normalized = normalizedFiles[index];
         const extension = normalized.normalized
@@ -580,7 +610,7 @@ const AdminInvitationTemplates = () => {
     setIsRollUploading(true);
     try {
       const bitmap = await createImageBitmap(file);
-      const frames = [];
+      const frames: UploadedRollFrame[] = [];
       try {
         const scale = MOBILE_ROLL_WIDTH / bitmap.width;
         const normalizedHeight = Math.round(bitmap.height * scale);
@@ -997,6 +1027,29 @@ const AdminInvitationTemplates = () => {
   ]
 }`}
                 />
+                {layoutPages.length === 0 && !isMobileRoll && (
+                  <div className="mt-4">
+                    <div className="mb-2">
+                      <p className="text-sm font-semibold text-foreground">
+                        배경 이미지
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                        텍스트·사진 레이어를 끈 배경 PNG를 올리면
+                        canvas.background_url 에 자동 반영돼요. (종이 단면 템플릿 등)
+                      </p>
+                    </div>
+                    <div className="max-w-[200px]">
+                      <ImageUploader
+                        key={`canvas-bg-${editingId ?? "new"}-${canvasBackgroundUrl ?? ""}`}
+                        bucket="invitation-templates"
+                        pathPrefix="pages/"
+                        initialUrl={canvasBackgroundUrl}
+                        maxSizeMB={8}
+                        onUploaded={(_, url) => updateCanvasBackgroundUrl(url)}
+                      />
+                    </div>
+                  </div>
+                )}
                 {layoutPages.length > 0 && (
                   <div className="mt-4">
                     <div className="mb-2">
