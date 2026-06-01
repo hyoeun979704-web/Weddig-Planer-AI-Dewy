@@ -45,6 +45,7 @@ import {
 import {
   getInvitationPages,
   getInvitationSlots,
+  isSeamlessRoll,
   pageToLayout,
 } from "@/lib/invitation/layout";
 import {
@@ -1193,9 +1194,10 @@ const StudioView = ({
     const ref = isFront ? canvasRef : backCanvasRef;
     const visible = activeFace === f;
     const pages = getInvitationPages(tmpl.layout);
+    const seamless = isSeamlessRoll(tmpl.layout);
     return (
       <div
-        className="flex flex-col items-center gap-4"
+        className={`flex flex-col items-center ${seamless ? "gap-0" : "gap-4"}`}
         style={
           visible
             ? undefined
@@ -1203,8 +1205,11 @@ const StudioView = ({
         }
       >
         {pages.map((page, index) => (
-          <div key={page.id} className="flex flex-col items-center gap-2">
-            {pages.length > 1 && (
+          <div
+            key={page.id}
+            className={`flex flex-col items-center ${seamless ? "gap-0" : "gap-2"}`}
+          >
+            {!seamless && pages.length > 1 && (
               <span className="text-[11px] font-bold text-muted-foreground">
                 {page.label ?? `${index + 1}P`}
               </span>

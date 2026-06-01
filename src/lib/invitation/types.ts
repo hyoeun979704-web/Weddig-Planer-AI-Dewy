@@ -120,7 +120,9 @@ export interface InvitationLayout {
   /** Optional V2 pages. Legacy templates without pages are treated as one page. */
   pages?: InvitationPageLayout[];
   print?: InvitationPrintSpec;
-  product_kind?: "card" | "ticket" | "chocolate" | "bifold" | "newspaper" | "mobile";
+  product_kind?: "card" | "ticket" | "chocolate" | "bifold" | "newspaper" | "mobile" | "mobile_roll";
+  /** Multi-frame mobile canvases are rendered without visible page seams. */
+  presentation?: "paged" | "seamless_roll";
 }
 
 export interface InvitationUserData {

@@ -6,7 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import InvitationCanvas from "@/components/invitation/InvitationCanvas";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
-import { getInvitationPages, pageToLayout } from "@/lib/invitation/layout";
+import {
+  getInvitationPages,
+  isSeamlessRoll,
+  pageToLayout,
+} from "@/lib/invitation/layout";
 import {
   readFaceLayout,
   type InvitationLayout,
@@ -131,13 +135,19 @@ const InvitationViewer = () => {
 
   const tpl = data.invitation_templates;
   const faces = readFaceLayout(data.layout);
+  const seamlessRoll = isSeamlessRoll(tpl.layout);
   const renderPages = (
     layout: InvitationLayout,
     overrides: ReturnType<typeof readFaceLayout>["front"],
   ) =>
-    getInvitationPages(layout).map((page, index, pages) => (
-      <div key={page.id} className="flex flex-col items-center gap-2">
-        {pages.length > 1 && (
+    getInvitationPages(layout).map((page, index, pages) => {
+      const seamless = isSeamlessRoll(layout);
+      return (
+      <div
+        key={page.id}
+        className={`flex flex-col items-center ${seamless ? "gap-0" : "gap-2"}`}
+      >
+        {!seamless && pages.length > 1 && (
           <span className="text-[11px] font-bold text-muted-foreground">
             {page.label ?? `${index + 1}P`}
           </span>
@@ -160,12 +170,17 @@ const InvitationViewer = () => {
           shareUrl={window.location.href}
         />
       </div>
-    ));
+      );
+    });
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
       {/* 전면 */}
-      <div className="flex flex-col items-center bg-muted/20 py-5 gap-5">
+      <div
+        className={`flex flex-col items-center bg-muted/20 ${
+          seamlessRoll ? "py-0 gap-0" : "py-5 gap-5"
+        }`}
+      >
         {renderPages(tpl.layout, faces.front)}
         {/* 후면 (있을 때만) */}
         {backLayout && renderPages(backLayout, faces.back)}

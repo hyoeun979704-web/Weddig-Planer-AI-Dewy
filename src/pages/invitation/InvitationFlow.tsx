@@ -45,6 +45,7 @@ import { computeInvitationPrice } from "@/lib/invitation/computePrice";
 import {
   getInvitationPages,
   getInvitationSlots,
+  isSeamlessRoll,
   pageToLayout,
 } from "@/lib/invitation/layout";
 import {
@@ -1552,6 +1553,7 @@ const ResultView = ({
   onMakeOther: () => void;
 }) => {
   const isMobile = template.format === "mobile";
+  const seamlessRoll = isSeamlessRoll(template.layout);
   // 공유 코드 스타일 — 카드와 캔버스 QR 슬롯이 같은 값을 공유(스타일 통일).
   const [shareCodeStyle, setShareCodeStyle] = useState<ShareCodeStyle>("basic");
   const renderTemplatePages = (
@@ -1562,9 +1564,13 @@ const ResultView = ({
     urls: Record<string, string>,
   ) => {
     const pages = getInvitationPages(targetTemplate.layout);
+    const seamless = isSeamlessRoll(targetTemplate.layout);
     return pages.map((page, index) => (
-      <div key={`${scope}:${page.id}`} className="flex flex-col items-center gap-2">
-        {(pages.length > 1 || backTemplate) && (
+      <div
+        key={`${scope}:${page.id}`}
+        className={`flex flex-col items-center ${seamless ? "gap-0" : "gap-2"}`}
+      >
+        {!seamless && (pages.length > 1 || backTemplate) && (
           <span className="text-[11px] font-bold text-muted-foreground mt-3">
             {page.label ?? `${index + 1}P`}
           </span>
@@ -1592,7 +1598,11 @@ const ResultView = ({
 
   return (
     <main className="px-4 py-5 space-y-4">
-      <div className="flex flex-col items-center bg-muted/30 rounded-2xl py-5 gap-2">
+      <div
+        className={`flex flex-col items-center bg-muted/30 rounded-2xl ${
+          seamlessRoll ? "py-0 gap-0 overflow-hidden" : "py-5 gap-2"
+        }`}
+      >
         {renderTemplatePages(template, "front", canvasRef, textOverrides, imageUrls)}
         {/* 후면 (세트 기본 후면) */}
         {backTemplate &&

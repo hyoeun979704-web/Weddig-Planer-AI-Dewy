@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { pixelRatioForPrint } from "@/lib/invitation/exportPdf";
 import {
+  createMobileRollLayout,
   getInvitationPages,
   getInvitationSlots,
+  isSeamlessRoll,
+  MOBILE_ROLL_FRAME_HEIGHT,
+  MOBILE_ROLL_MAX_FRAMES,
+  MOBILE_ROLL_MAX_HEIGHT,
+  MOBILE_ROLL_WIDTH,
   pageToLayout,
+  validateMobileRollLayout,
 } from "@/lib/invitation/layout";
 import type { InvitationLayout } from "@/lib/invitation/types";
 
@@ -56,5 +63,50 @@ describe("invitation layout pages", () => {
 
     expect(Math.round(360 * ratio)).toBe(2480);
     expect(pixelRatioForPrint(360)).toBe(3);
+  });
+
+  it("creates a seamless ten-frame mobile roll up to 19200px", () => {
+    const layout = createMobileRollLayout(MOBILE_ROLL_MAX_FRAMES);
+
+    expect(layout.canvas).toMatchObject({
+      w: MOBILE_ROLL_WIDTH,
+      h: MOBILE_ROLL_MAX_HEIGHT,
+    });
+    expect(layout.pages).toHaveLength(MOBILE_ROLL_MAX_FRAMES);
+    expect(layout.pages?.every((page) => page.canvas.h === MOBILE_ROLL_FRAME_HEIGHT)).toBe(true);
+    expect(isSeamlessRoll(layout)).toBe(true);
+    expect(validateMobileRollLayout(layout)).toBeNull();
+  });
+
+  it("keeps a partial last mobile frame and prevents an empty roll", () => {
+    const partial = createMobileRollLayout([
+      { h: MOBILE_ROLL_FRAME_HEIGHT, backgroundUrl: "/frame-01.png" },
+      { h: 480, backgroundUrl: "/frame-02.png" },
+    ]);
+    const empty = createMobileRollLayout([]);
+
+    expect(partial.canvas).toMatchObject({
+      w: MOBILE_ROLL_WIDTH,
+      h: MOBILE_ROLL_FRAME_HEIGHT + 480,
+      background_url: "/frame-01.png",
+    });
+    expect(partial.pages).toHaveLength(2);
+    expect(empty.pages).toHaveLength(1);
+    expect(empty.canvas.h).toBe(MOBILE_ROLL_FRAME_HEIGHT);
+  });
+
+  it("rejects a mobile roll with more than ten frames", () => {
+    const layout = createMobileRollLayout(MOBILE_ROLL_MAX_FRAMES);
+    layout.pages = [
+      ...(layout.pages ?? []),
+      {
+        id: "frame-11",
+        canvas: { w: MOBILE_ROLL_WIDTH, h: MOBILE_ROLL_FRAME_HEIGHT },
+        slots: [],
+      },
+    ];
+    layout.canvas.h += MOBILE_ROLL_FRAME_HEIGHT;
+
+    expect(validateMobileRollLayout(layout)).toContain("1~10");
   });
 });

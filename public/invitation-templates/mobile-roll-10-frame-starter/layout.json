@@ -1,0 +1,82 @@
+{
+  "product_kind": "mobile_roll",
+  "presentation": "seamless_roll",
+  "canvas": {
+    "w": 1080,
+    "h": 19200,
+    "bg": "#FFFFFF"
+  },
+  "slots": [],
+  "pages": [
+    {
+      "id": "frame-01",
+      "label": "1번 프레임",
+      "order": 1,
+      "canvas": { "w": 1080, "h": 1920, "bg": "#FFFFFF" },
+      "slots": []
+    },
+    {
+      "id": "frame-02",
+      "label": "2번 프레임",
+      "order": 2,
+      "canvas": { "w": 1080, "h": 1920, "bg": "#FFFFFF" },
+      "slots": []
+    },
+    {
+      "id": "frame-03",
+      "label": "3번 프레임",
+      "order": 3,
+      "canvas": { "w": 1080, "h": 1920, "bg": "#FFFFFF" },
+      "slots": []
+    },
+    {
+      "id": "frame-04",
+      "label": "4번 프레임",
+      "order": 4,
+      "canvas": { "w": 1080, "h": 1920, "bg": "#FFFFFF" },
+      "slots": []
+    },
+    {
+      "id": "frame-05",
+      "label": "5번 프레임",
+      "order": 5,
+      "canvas": { "w": 1080, "h": 1920, "bg": "#FFFFFF" },
+      "slots": []
+    },
+    {
+      "id": "frame-06",
+      "label": "6번 프레임",
+      "order": 6,
+      "canvas": { "w": 1080, "h": 1920, "bg": "#FFFFFF" },
+      "slots": []
+    },
+    {
+      "id": "frame-07",
+      "label": "7번 프레임",
+      "order": 7,
+      "canvas": { "w": 1080, "h": 1920, "bg": "#FFFFFF" },
+      "slots": []
+    },
+    {
+      "id": "frame-08",
+      "label": "8번 프레임",
+      "order": 8,
+      "canvas": { "w": 1080, "h": 1920, "bg": "#FFFFFF" },
+      "slots": []
+    },
+    {
+      "id": "frame-09",
+      "label": "9번 프레임",
+      "order": 9,
+      "canvas": { "w": 1080, "h": 1920, "bg": "#FFFFFF" },
+      "slots": []
+    },
+    {
+      "id": "frame-10",
+      "label": "10번 프레임",
+      "order": 10,
+      "canvas": { "w": 1080, "h": 1920, "bg": "#FFFFFF" },
+      "slots": []
+    }
+  ]
+}
