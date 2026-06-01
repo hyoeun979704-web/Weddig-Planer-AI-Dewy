@@ -1205,9 +1205,9 @@ const StudioView = ({
       {/* 슬롯 선택 안내 */}
       {!selectedSlot && (activeFace === "front" || backTemplate) && (
         <div className="p-4 bg-blue-50 rounded-lg text-[12px] text-blue-900 leading-relaxed">
-          편집하고 싶은 영역(텍스트·사진)을 캔버스에서 탭하세요. 길게 끌어
-          위치도 옮길 수 있어요. 빈 텍스트 영역에서 8초간 입력이 없으면 AI 추천
-          문구 시트가 떠요.
+          편집할 영역(텍스트·사진)을 캔버스에서 탭하면 아래에 편집 패널이 열려요.
+          선택한 요소는 끌어서 위치를 옮길 수 있어요. 빈 텍스트 영역에서 8초간
+          입력이 없으면 AI 추천 문구 시트가 떠요.
         </div>
       )}
 

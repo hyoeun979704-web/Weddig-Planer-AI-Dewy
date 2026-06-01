@@ -166,8 +166,14 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                     }:${fontSizeOverrides[slot.id] ?? ""}`
                   : slot.id;
                 const pos = positionOverrides[slot.id];
+                // 선택된 슬롯만 드래그 가능 — 미선택 슬롯을 draggable 로 두면
+                // 터치에서 탭이 드래그로 가로채져 '탭=선택'이 동작하지 않는다.
+                // (1탭 선택 → 선택된 요소만 드래그로 이동)
                 const draggable =
-                  editable && !slot.locked && slot.movable !== false;
+                  editable &&
+                  !slot.locked &&
+                  slot.movable !== false &&
+                  slot.id === selectedSlotId;
                 return (
                   <SlotNode
                     key={key}
