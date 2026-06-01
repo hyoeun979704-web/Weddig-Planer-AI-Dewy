@@ -67,6 +67,12 @@ export interface InvitationSlot {
   align?: "left" | "center" | "right";
   line_height?: number;
   letter_spacing?: number;
+  /** 줄바꿈 방식. 미지정 시 공백 없는 라벨은 자동 'none'(글자 잘림 방지). */
+  wrap?: "word" | "char" | "none";
+  /** wedding_date 필드 표시 포맷. 미지정 시 'full_ko'. */
+  date_format?: "full_ko" | "dot" | "month_en" | "iso";
+  /** 투명도(0~1). 장식 선 등에 사용. */
+  opacity?: number;
 
   // 사진 위 텍스트 가독성 — 그림자. shadow_color 가 있으면 InvitationCanvas 가
   // Konva Text 에 그림자를 적용한다(앞면 사진 위 캘리그래피가 묻히지 않도록).
@@ -85,6 +91,8 @@ export interface InvitationSlot {
   // 에셋 슬롯 — 등록된 에셋 ID
   asset_id?: string;
   tint_color?: string;         // is_recolorable 에셋의 색상 변경
+  /** 이미지 미등록 장식 에셋의 자동 렌더 종류 ('line' 가는선 | 'monogram' 이니셜). */
+  asset_kind?: "line" | "monogram";
 
   // 캘린더 슬롯 옵션
   calendar_locale?: string;    // 'ko' (default) | 'en'

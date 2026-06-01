@@ -260,6 +260,70 @@ const EN_NAME_FIELDS = new Set([
   "couple_names_en",
 ]);
 
+const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+const MONTHS_EN = [
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+];
+
+/** 'HH:mm' → '오후 2시 30분' (분이 0이면 '오후 2시'). */
+function formatTimeKo(time: string | undefined): string {
+  if (!time) return "";
+  const m = time.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return "";
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  const ampm = h < 12 ? "오전" : "오후";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return min === 0 ? `${ampm} ${h12}시` : `${ampm} ${h12}시 ${min}분`;
+}
+
+/**
+ * wedding_date(ISO) 를 슬롯의 date_format 에 맞춰 사람이 읽는 문구로 변환.
+ *  - full_ko(기본): '2025년 11월 22일 토요일 오후 2시 30분'
+ *  - dot:           '2025. 11. 22'
+ *  - month_en:      '2025 NOV 22'
+ *  - iso:           원본 그대로
+ */
+function formatWeddingDate(
+  iso: string,
+  format: InvitationSlot["date_format"],
+  time?: string,
+): string {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return iso;
+  const [, y, mo, d] = m;
+  const date = new Date(Number(y), Number(mo) - 1, Number(d));
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+  switch (format) {
+    case "iso":
+      return iso;
+    case "dot":
+      return `${y}. ${Number(mo)}. ${Number(d)}`;
+    case "month_en":
+      return `${y} ${MONTHS_EN[Number(mo) - 1]} ${Number(d)}`;
+    case "full_ko":
+    default: {
+      const wd = WEEKDAYS_KO[date.getDay()];
+      const t = formatTimeKo(time);
+      const base = `${y}년 ${Number(mo)}월 ${Number(d)}일 ${wd}요일`;
+      return t ? `${base} ${t}` : base;
+    }
+  }
+}
+
+/** field 바인딩 값의 표시용 포맷(날짜 등). 미해당 필드는 원본 그대로. */
+function formatFieldValue(
+  slot: InvitationSlot,
+  value: string,
+  userData: InvitationUserData,
+): string {
+  if (slot.field === "wedding_date" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    return formatWeddingDate(value, slot.date_format, userData.wedding_time);
+  }
+  return value;
+}
+
 /** 슬롯에 적용할 폰트 family: 사용자 선택 > 템플릿 지정 > 영문이름 서명체 > fallback */
 function resolveFont(
   slot: InvitationSlot,
@@ -272,6 +336,26 @@ function resolveFont(
     return "Great Vibes, cursive";
   }
   return "Pretendard, sans-serif";
+}
+
+/** Konva fontStyle — italic(slot.font_style) 와 bold(font_weight) 를 조합. */
+function resolveFontStyle(slot: InvitationSlot): string {
+  const italic = slot.font_style === "italic";
+  const bold =
+    typeof slot.font_weight === "number"
+      ? slot.font_weight >= 600
+      : slot.font_weight === "bold";
+  const parts = [italic ? "italic" : "", bold ? "bold" : ""].filter(Boolean);
+  return parts.length ? parts.join(" ") : "normal";
+}
+
+/**
+ * 줄바꿈 방식. 템플릿이 slot.wrap 을 주면 그대로,
+ * 아니면 공백이 없는 텍스트(단어 1개 라벨)는 'none' 으로 — 단어 쪼개짐/글자 잘림 방지.
+ */
+function resolveWrap(slot: InvitationSlot, text: string): "word" | "char" | "none" {
+  if (slot.wrap) return slot.wrap;
+  return /\s/.test(text) ? "word" : "none";
 }
 
 const SlotNode = (props: SlotNodeProps) => {
@@ -361,7 +445,8 @@ function resolveText(
   // priority: textOverrides > aiText > userData[field] > 합성필드 > slot.text > placeholder
   if (textOverrides[slot.id] !== undefined) return textOverrides[slot.id];
   if (aiText[slot.id]) return aiText[slot.id];
-  if (slot.field && userData[slot.field]) return userData[slot.field]!;
+  if (slot.field && userData[slot.field])
+    return formatFieldValue(slot, userData[slot.field]!, userData);
   if (slot.field) {
     const c = compositeField(slot.field, userData);
     if (c) return c;
@@ -401,13 +486,7 @@ const TextSlotBody = ({
       text={text}
       fontFamily={resolveFont(slot, fontOverrides)}
       fontSize={fontSizeOverrides[slot.id] ?? slot.font_size ?? 18}
-      fontStyle={
-        typeof slot.font_weight === "number"
-          ? slot.font_weight >= 600
-            ? "bold"
-            : "normal"
-          : (slot.font_weight as string) ?? "normal"
-      }
+      fontStyle={resolveFontStyle(slot)}
       fill={slot.color ?? "#1A1A1A"}
       align={slot.align ?? "left"}
       lineHeight={slot.line_height ?? 1.4}
@@ -419,7 +498,10 @@ const TextSlotBody = ({
       shadowOffsetX={slot.shadow_offset_x ?? 0}
       shadowOffsetY={slot.shadow_offset_y ?? 0}
       shadowOpacity={slot.shadow_opacity ?? 1}
-      wrap="word"
+      // 한 줄 라벨(INVITATION 등)은 슬롯폭에 빠듯하면 Konva 가 단어를 쪼개
+      // 마지막 글자를 다음 줄로 흘려 "INVITATIO" 처럼 잘려 보인다.
+      // → 공백 없는 텍스트는 줄바꿈 금지(가로 오버플로 허용)로 글자 보존.
+      wrap={resolveWrap(slot, text)}
     />
   );
 };
@@ -498,31 +580,61 @@ const ImageSlotBody = ({ slot, imageUrls }: SlotNodeProps) => {
 // ════════════════════════════════════════════════════════════════
 // 에셋 슬롯
 // ════════════════════════════════════════════════════════════════
-const AssetSlotBody = ({ slot }: SlotNodeProps) => {
+const AssetSlotBody = ({ slot, userData }: SlotNodeProps) => {
   const [img] = useImage(slot.image_url ?? "", "anonymous");
-  if (!img) {
+  if (slot.image_url) {
+    // 등록 이미지가 있으면 그대로(로딩 중엔 아무것도 안 그림 — 점선 깜빡임 방지).
+    return img ? (
+      <KonvaImage image={img} x={0} y={0} width={slot.w} height={slot.h} />
+    ) : null;
+  }
+
+  // 이미지 미등록 장식 에셋 — 모양에 맞게 직접 그려 마감(점선 디버그 박스 제거).
+  //  · 가는 선(구분선/세로선): 실선 하나
+  //  · 모노그램: 신랑·신부 영문 이니셜을 서명체로
+  //  · 그 외: 숨김(빈 점선 박스보다 깔끔)
+  const kind =
+    slot.asset_kind ?? (Math.min(slot.w, slot.h) <= 4 ? "line" : undefined);
+
+  if (kind === "line") {
     return (
       <Rect
         x={0}
         y={0}
         width={slot.w}
         height={slot.h}
-        fill="transparent"
-        stroke="#A1A1AA"
-        strokeWidth={1}
-        dash={[4, 4]}
+        fill={slot.color ?? "#D9D2C6"}
+        opacity={slot.opacity ?? 1}
       />
     );
   }
-  return (
-    <KonvaImage
-      image={img}
-      x={0}
-      y={0}
-      width={slot.w}
-      height={slot.h}
-    />
-  );
+
+  if (kind === "monogram") {
+    const g = romanizeKoreanName(userData.groom_name);
+    const b = romanizeKoreanName(userData.bride_name);
+    const initials = [g?.[0], b?.[0]].filter(Boolean).join(" & ");
+    if (!initials) return null;
+    return (
+      <Text
+        x={0}
+        y={0}
+        width={slot.w}
+        height={slot.h}
+        text={initials}
+        fontFamily="Great Vibes, cursive"
+        fontSize={slot.font_size ?? slot.h * 0.55}
+        fill={slot.color ?? "#1A1A1A"}
+        align="center"
+        verticalAlign="middle"
+        shadowEnabled={!!slot.shadow_color}
+        shadowColor={slot.shadow_color}
+        shadowBlur={slot.shadow_blur ?? 0}
+        shadowOpacity={slot.shadow_opacity ?? 1}
+      />
+    );
+  }
+
+  return null;
 };
 
 // ════════════════════════════════════════════════════════════════
