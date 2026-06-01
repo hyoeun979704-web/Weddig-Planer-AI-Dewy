@@ -12,6 +12,7 @@ import type {
   InvitationSlot,
   InvitationUserData,
 } from "@/lib/invitation/types";
+import { romanizeKoreanName } from "@/lib/invitation/romanize";
 
 /**
  * 청첩장 캔버스 — Konva 기반 슬롯 렌더링.
@@ -324,6 +325,17 @@ function compositeField(
     if (g && b) return `${g} · ${b}`;
     return g || b || undefined;
   }
+  // 영문 이름 — 한글 이름에서 자동 로마자 변환 (앞면 캘리그래피 슬롯용).
+  // 사용자가 영문 필드를 직접 입력한 경우(userData[field])는 resolveText 가 먼저 쓰므로
+  // 여기 합성은 한글만 입력했을 때의 자동 변환 폴백이다.
+  if (field === "groom_name_en") return romanizeKoreanName(userData.groom_name);
+  if (field === "bride_name_en") return romanizeKoreanName(userData.bride_name);
+  if (field === "couple_names_en") {
+    const g = romanizeKoreanName(userData.groom_name);
+    const b = romanizeKoreanName(userData.bride_name);
+    if (g && b) return `${g} & ${b}`;
+    return g || b || undefined;
+  }
   return undefined;
 }
 
@@ -360,6 +372,7 @@ const TextSlotBody = ({
   const isFieldBoundEmpty =
     slot.field &&
     !userData[slot.field] &&
+    !compositeField(slot.field, userData) && // 합성 필드(couple_names, *_en)도 비었을 때만 숨김
     !textOverrides[slot.id] &&
     !aiText[slot.id] &&
     !slot.text;
@@ -659,8 +672,15 @@ const Heart = ({ cx, cy, size, color }: HeartProps) => {
 // ════════════════════════════════════════════════════════════════
 // QR 슬롯 — share URL 을 QR 코드로 렌더
 // ════════════════════════════════════════════════════════════════
-const QrSlotBody = ({ slot, shareUrl, qrStyle = "basic" }: SlotNodeProps) => {
+const QrSlotBody = ({
+  slot,
+  shareUrl,
+  qrStyle = "basic",
+  imageUrls = {},
+}: SlotNodeProps) => {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  // 사용자가 직접 올린 QR 이미지(있으면 우선) — 종이 청첩장의 외부 QR 등.
+  const attachedQr = imageUrls[slot.id];
 
   useEffect(() => {
     if (!shareUrl) {
@@ -689,10 +709,12 @@ const QrSlotBody = ({ slot, shareUrl, qrStyle = "basic" }: SlotNodeProps) => {
     };
   }, [shareUrl, slot.w, slot.h, slot.color, qrStyle]);
 
-  const [img] = useImage(qrDataUrl ?? "", "anonymous");
+  const [img] = useImage(attachedQr ?? qrDataUrl ?? "", "anonymous");
 
-  if (!shareUrl) {
-    return <PlaceholderInner slot={slot} label="QR (발행 후 표시)" />;
+  // QR 소스가 전혀 없으면(발행 전 + 첨부 이미지 없음) 표시하지 않음 — 사용자 요청.
+  // 빈 자리/플레이스홀더 없이 깔끔하게 숨긴다.
+  if (!shareUrl && !attachedQr) {
+    return null;
   }
   if (!img) {
     return (
