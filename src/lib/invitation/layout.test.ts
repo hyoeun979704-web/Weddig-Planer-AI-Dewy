@@ -5,7 +5,7 @@ import {
   createPaperPagesLayout,
   getInvitationPages,
   getInvitationSlots,
-  getPhotoOrderGroups,
+  getPhotoSlotGroups,
   isSeamlessRoll,
   requiredPhotoCount,
   MOBILE_ROLL_FRAME_HEIGHT,
@@ -151,11 +151,11 @@ describe("invitation layout pages", () => {
     expect(getInvitationSlots(layout)).toEqual([]);
   });
 
-  it("counts required photos by image_order group, excluding map slots", () => {
+  it("shares one photo per image_order group but excludes map slots", () => {
     const layout: InvitationLayout = {
       canvas: { w: 1500, h: 1058 },
       slots: [
-        // 원본 + 누끼 슬롯이 같은 image_order=1 → 사진 1장
+        // 원본 + 누끼 슬롯이 같은 image_order=1 → 사진 1장 공유
         { id: "photo", type: "image", x: 0, y: 0, w: 10, h: 10, image_order: 1 },
         { id: "photo_cut", type: "image", x: 0, y: 0, w: 10, h: 10, image_order: 1 },
         // 다른 그룹 → 사진 1장 추가
@@ -166,8 +166,24 @@ describe("invitation layout pages", () => {
       ],
     };
 
-    expect(getPhotoOrderGroups(layout)).toEqual([1, 2]);
+    expect(getPhotoSlotGroups(layout)).toEqual(["order:1", "order:2"]);
     expect(requiredPhotoCount(layout)).toBe(2);
+  });
+
+  it("counts each image slot WITHOUT image_order as its own photo", () => {
+    // 폴라로이드 콜라주처럼 image_order 없는 슬롯들은 각자 다른 사진이 필요.
+    const layout: InvitationLayout = {
+      canvas: { w: 1080, h: 1920 },
+      slots: [
+        { id: "p1", type: "image", x: 0, y: 0, w: 10, h: 10 },
+        { id: "p2", type: "image", x: 0, y: 0, w: 10, h: 10 },
+        { id: "p3", type: "image", x: 0, y: 0, w: 10, h: 10 },
+        { id: "map", type: "map", x: 0, y: 0, w: 10, h: 10 },
+      ],
+    };
+
+    expect(getPhotoSlotGroups(layout)).toEqual(["slot:p1", "slot:p2", "slot:p3"]);
+    expect(requiredPhotoCount(layout)).toBe(3);
   });
 
   it("returns zero required photos for a text/map-only layout", () => {

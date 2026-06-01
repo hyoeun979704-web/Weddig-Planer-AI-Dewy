@@ -98,22 +98,37 @@ export function getInvitationSlots(layout: InvitationLayout): InvitationSlot[] {
 }
 
 /**
- * 사용자가 채워야 할 사진 묶음(image_order 그룹). 같은 image_order 슬롯은 한 장을
- * 공유하므로 그룹 단위로 센다. map 슬롯은 약도(사진 아님)라 제외한다.
- * 미리보기에 표시하는 "필요 사진 수"와 실제 분배 로직이 같은 기준을 쓰도록 단일화.
+ * 한 image 슬롯이 속한 "사진 그룹" 키.
+ *  - image_order 가 지정돼 있으면 같은 값끼리 한 장을 공유 (원본 + 누끼 슬롯 등).
+ *  - image_order 가 없으면(null) 슬롯마다 독립 → 각자 다른 사진이 필요.
  */
-export function getPhotoOrderGroups(layout: InvitationLayout): number[] {
-  const imageSlots = getInvitationSlots(layout).filter(
-    (s) => s.type === "image",
-  );
-  return Array.from(
-    new Set(imageSlots.map((s) => s.image_order ?? 999)),
-  ).sort((a, b) => a - b);
+export function photoGroupKey(slot: InvitationSlot): string {
+  return slot.image_order != null
+    ? `order:${slot.image_order}`
+    : `slot:${slot.id}`;
+}
+
+/**
+ * 템플릿이 요구하는 사진 그룹 목록(슬롯 등장 순서 유지). 길이 = 필요한 사진 장수.
+ * map 슬롯(약도)은 사진이 아니므로 제외. 미리보기 표시와 실제 분배가 같은 기준을 쓴다.
+ */
+export function getPhotoSlotGroups(layout: InvitationLayout): string[] {
+  const seen = new Set<string>();
+  const groups: string[] = [];
+  for (const s of getInvitationSlots(layout)) {
+    if (s.type !== "image") continue;
+    const key = photoGroupKey(s);
+    if (!seen.has(key)) {
+      seen.add(key);
+      groups.push(key);
+    }
+  }
+  return groups;
 }
 
 /** 이 템플릿이 실제로 요구하는 사진 장수. */
 export function requiredPhotoCount(layout: InvitationLayout): number {
-  return getPhotoOrderGroups(layout).length;
+  return getPhotoSlotGroups(layout).length;
 }
 
 export function pageToLayout(page: InvitationPageLayout): InvitationLayout {

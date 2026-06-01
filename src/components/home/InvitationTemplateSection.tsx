@@ -1,63 +1,68 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import VendorMediaCard, { type VendorMediaCardData } from "./VendorMediaCard";
 
-const TEMPLATES: VendorMediaCardData[] = [
-  {
-    id: "tpl-classic",
-    thumbnail_url: null,
-    name: "클래식 화이트",
-    category: "모바일",
-    concept: "심플",
-    mood: "화이트",
-    strength: "미니멀",
-    info_lines: [
-      { label: "가격", value: "무료", isPrice: true },
-      { label: "발송", value: "100매" },
-    ],
-  },
-  {
-    id: "tpl-floral",
-    thumbnail_url: null,
-    name: "플로럴 무드",
-    category: "모바일",
-    concept: "로맨틱",
-    mood: "플라워",
-    strength: "감성",
-    info_lines: [
-      { label: "가격", value: "무료", isPrice: true },
-      { label: "발송", value: "100매" },
-    ],
-  },
-  {
-    id: "tpl-modern",
-    thumbnail_url: null,
-    name: "모던 베이지",
-    category: "종이",
-    concept: "모던",
-    mood: "베이지",
-    strength: "트렌디",
-    info_lines: [
-      { label: "가격", value: "1만원~", isPrice: true },
-      { label: "최소", value: "100매" },
-    ],
-  },
-  {
-    id: "tpl-luxe",
-    thumbnail_url: null,
-    name: "럭스 골드",
-    category: "종이",
-    concept: "럭셔리",
-    mood: "골드",
-    strength: "프리미엄",
-    info_lines: [
-      { label: "가격", value: "3만원~", isPrice: true },
-      { label: "최소", value: "200매" },
-    ],
-  },
-];
+interface TemplateRow {
+  id: string;
+  name: string;
+  thumbnail_url: string | null;
+  format: string;
+  tone: string | null;
+  price_hearts: number | null;
+}
+
+const TONE_LABEL: Record<string, string> = {
+  ROMANTIC: "로맨틱",
+  MODERN: "모던",
+  CLASSIC: "클래식",
+  MINIMAL: "미니멀",
+  CUTE: "큐트",
+  LUXURY: "럭셔리",
+};
+
+const toCardData = (t: TemplateRow): VendorMediaCardData => ({
+  id: t.id,
+  thumbnail_url: t.thumbnail_url,
+  name: t.name,
+  category: t.format === "paper" ? "종이" : "모바일",
+  concept: t.tone ? TONE_LABEL[t.tone] ?? t.tone : "",
+  mood: "",
+  strength: "",
+  info_lines: [
+    {
+      label: "가격",
+      value: (t.price_hearts ?? 0) > 0 ? `${t.price_hearts}하트` : "무료",
+      isPrice: true,
+    },
+  ],
+});
 
 const InvitationTemplateSection = () => {
   const navigate = useNavigate();
+  const [templates, setTemplates] = useState<TemplateRow[]>([]);
+
+  // 실제 등록된(노출 중인) 청첩장 템플릿을 불러와 카드로 연동.
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("invitation_templates")
+        .select("id, name, thumbnail_url, format, tone, price_hearts")
+        .eq("is_active", true)
+        .in("face", ["front", "both"])
+        .order("display_order", { ascending: false })
+        .limit(10);
+      setTemplates((data as TemplateRow[]) ?? []);
+    })();
+  }, []);
+
+  // 등록된 템플릿이 아직 없으면 섹션을 숨김(가짜 카드 노출 방지).
+  if (templates.length === 0) return null;
+
+  const goCreate = (t: TemplateRow) =>
+    navigate(
+      `/invitation/new?format=${t.format === "paper" ? "paper" : "mobile"}&template=${t.id}`,
+    );
 
   return (
     <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-50))]">
@@ -72,17 +77,11 @@ const InvitationTemplateSection = () => {
         </button>
       </div>
       <div className="flex gap-[8px] overflow-x-auto scrollbar-hide">
-        {TEMPLATES.map((template) => (
+        {templates.map((t) => (
           <VendorMediaCard
-            key={template.id}
-            data={template}
-            onClick={() =>
-              navigate(
-                `/invitation/new?format=${
-                  template.category === "종이" ? "paper" : "mobile"
-                }`,
-              )
-            }
+            key={t.id}
+            data={toCardData(t)}
+            onClick={() => goCreate(t)}
           />
         ))}
       </div>

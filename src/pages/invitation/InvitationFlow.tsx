@@ -45,9 +45,10 @@ import { computeInvitationPrice } from "@/lib/invitation/computePrice";
 import {
   getInvitationPages,
   getInvitationSlots,
-  getPhotoOrderGroups,
+  getPhotoSlotGroups,
   isSeamlessRoll,
   pageToLayout,
+  photoGroupKey,
   requiredPhotoCount,
 } from "@/lib/invitation/layout";
 import {
@@ -197,6 +198,7 @@ const InvitationFlow = () => {
   //   바뀌면(= 새 내비게이션) 위저드 상태를 초기화해 템플릿 선택부터 다시 시작.
   // ─────────────────────────────────────────────
   const prefillTriedRef = useRef(false);
+  const autoPickedRef = useRef<string | null>(null);
   const flowKeyRef = useRef(location.key);
   useEffect(() => {
     if (flowKeyRef.current === location.key) return; // 최초 마운트는 그대로
@@ -213,6 +215,7 @@ const InvitationFlow = () => {
     setTextOverrides({});
     setAiText({});
     prefillTriedRef.current = false; // 새 진입에서 prefill 재허용
+    autoPickedRef.current = null; // 새 진입에서 template 파라미터 재선택 허용
   }, [location.key]);
 
   // ─────────────────────────────────────────────
@@ -298,6 +301,20 @@ const InvitationFlow = () => {
   }, [formatFilter, templates.length]);
 
   // ─────────────────────────────────────────────
+  // 홈피드 카드 등에서 ?template=<id> 로 들어오면 그 템플릿을 자동 선택.
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    const tid = searchParams.get("template");
+    if (!tid || step !== "template" || templates.length === 0) return;
+    if (autoPickedRef.current === tid) return;
+    const t = templates.find((x) => x.id === tid);
+    if (t) {
+      autoPickedRef.current = tid;
+      void pickTemplate(t);
+    }
+  }, [searchParams, templates, step]);
+
+  // ─────────────────────────────────────────────
   // 사진 첨부
   // ─────────────────────────────────────────────
   const handleStartPhotoUpload = () => {
@@ -378,21 +395,17 @@ const InvitationFlow = () => {
         (s) => s.type === "image",
       );
 
-      // 1) image_order 의 unique 한 값을 오름차순 정렬 (표시용 requiredPhotoCount 와 동일 기준)
-      const uniqueOrders = getPhotoOrderGroups(tpl.layout);
-
-      // 2) 각 order 에 photo[i] 할당
-      const orderToPhotoIdx = new Map<number, number>();
-      uniqueOrders.forEach((order, i) => {
-        if (i < uploadedPhotos.length) {
-          orderToPhotoIdx.set(order, i);
-        }
+      // 사진 그룹 목록(순서 유지) → i번째 그룹에 photo[i] 할당.
+      //   image_order 가 같은 슬롯은 한 그룹(같은 사진), null 이면 각자 독립 그룹.
+      const groups = getPhotoSlotGroups(tpl.layout);
+      const groupToPhotoIdx = new Map<string, number>();
+      groups.forEach((g, i) => {
+        if (i < uploadedPhotos.length) groupToPhotoIdx.set(g, i);
       });
 
-      // 3) 슬롯 별로 매핑 (같은 order 슬롯은 같은 사진)
+      // 슬롯 별로 자기 그룹의 사진을 매핑.
       imageSlots.forEach((slot) => {
-        const order = slot.image_order ?? 999;
-        const photoIdx = orderToPhotoIdx.get(order);
+        const photoIdx = groupToPhotoIdx.get(photoGroupKey(slot));
         if (photoIdx !== undefined) {
           const photo = uploadedPhotos[photoIdx];
           paths[slot.id] = photo.path;
@@ -572,12 +585,13 @@ const InvitationFlow = () => {
     if ((hearts ?? 0) < totalCost) {
       const firstNote =
         isFirstUse && template.price_hearts > 0 ? " (첫 사용 반값)" : "";
+      // 입력을 잃지 않도록 페이지를 떠나지 않는다(이전엔 마이페이지로 튕겼음).
+      // 충전이 필요하면 사용자가 직접 충전 페이지로 이동.
       toast({
         title: "하트가 부족해요",
-        description: `발행에 ${totalCost} 하트가 필요해요 (템플릿 ${templateCharge}${firstNote} + AI ${aiCost}). 현재 ${hearts ?? 0}하트.`,
+        description: `발행에 ${totalCost} 하트가 필요해요 (템플릿 ${templateCharge}${firstNote} + AI ${aiCost}). 현재 ${hearts ?? 0}하트. 충전 후 다시 시도해주세요.`,
         variant: "destructive",
       });
-      navigate("/points");
       return;
     }
 

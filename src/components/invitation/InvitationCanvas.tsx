@@ -253,12 +253,25 @@ interface SlotNodeProps {
   onMoveEnd?: (id: string, x: number, y: number) => void;
 }
 
-/** 슬롯에 적용할 폰트 family: 사용자 선택 > 템플릿 기본 > fallback */
+// 영문 이름(캘리그래피) 필드 — 폰트 미지정 시 서명체 기본 적용 (디자인 시그니처)
+const EN_NAME_FIELDS = new Set([
+  "groom_name_en",
+  "bride_name_en",
+  "couple_names_en",
+]);
+
+/** 슬롯에 적용할 폰트 family: 사용자 선택 > 템플릿 지정 > 영문이름 서명체 > fallback */
 function resolveFont(
   slot: InvitationSlot,
   fontOverrides: Record<string, string>,
 ): string {
-  return fontOverrides[slot.id] ?? slot.font_family ?? "Pretendard, sans-serif";
+  const explicit = fontOverrides[slot.id] ?? slot.font_family;
+  if (explicit) return explicit;
+  // 앞면 영문 이름은 폰트를 따로 안 줘도 우아한 서명체로 — 안 보이던 캘리 자동 적용.
+  if (slot.field && EN_NAME_FIELDS.has(slot.field)) {
+    return "Great Vibes, cursive";
+  }
+  return "Pretendard, sans-serif";
 }
 
 const SlotNode = (props: SlotNodeProps) => {
