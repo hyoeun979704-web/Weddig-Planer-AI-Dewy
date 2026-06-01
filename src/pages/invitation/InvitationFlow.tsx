@@ -180,6 +180,61 @@ const InvitationFlow = () => {
   }, [fetchHearts]);
 
   // ─────────────────────────────────────────────
+  // 입력정보 자동 불러오기 — 가장 최근 청첩장의 개인정보 필드를 prefill.
+  //   매번 다시 입력하는 번거로움 제거. 새 청첩장 진입 시 1회만, 아직 아무것도
+  //   입력하지 않았고 편집 중(invitationId)도 아닐 때만 채움.
+  //   user_data(JSONB)에서 "정해진 개인 필드"만 가져옴 — 템플릿별 슬롯 텍스트는
+  //   다른 디자인에 섞이면 안 되므로 제외. (user_wedding_settings 의 venue_* 컬럼은
+  //   DB 미존재 가능성이 있어 사용하지 않음 — 422 회귀 방지)
+  // ─────────────────────────────────────────────
+  const prefillTriedRef = useRef(false);
+  useEffect(() => {
+    if (!user || prefillTriedRef.current) return;
+    if (invitationId) return; // 편집 모드면 건드리지 않음
+    if (Object.keys(userData).length > 0) return; // 이미 입력 시작했으면 보존
+    prefillTriedRef.current = true;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("invitations")
+        .select("user_data")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const prev = data?.user_data as InvitationUserData | undefined;
+      if (!prev) return;
+      const PERSONAL_FIELDS = [
+        "groom_name",
+        "bride_name",
+        "groom_parents",
+        "bride_parents",
+        "wedding_date",
+        "wedding_time",
+        "venue_name",
+        "venue_address",
+        "contact_groom",
+        "contact_bride",
+        "account_groom",
+        "account_bride",
+      ] as const;
+      const prefilled: InvitationUserData = {};
+      for (const k of PERSONAL_FIELDS) {
+        const v = prev[k];
+        if (typeof v === "string" && v.trim() !== "") prefilled[k] = v;
+      }
+      if (Object.keys(prefilled).length === 0) return;
+      // 그 사이 사용자가 입력을 시작했으면 덮어쓰지 않음
+      setUserData((cur) =>
+        Object.keys(cur).length > 0 ? cur : prefilled,
+      );
+      toast({
+        title: "이전에 입력한 정보를 불러왔어요",
+        description: "필요하면 수정해서 쓰세요.",
+      });
+    })();
+  }, [user, invitationId, userData]);
+
+  // ─────────────────────────────────────────────
   // 템플릿 로드 (step=template 일 때)
   // ─────────────────────────────────────────────
   useEffect(() => {
