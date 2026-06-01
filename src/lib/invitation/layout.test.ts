@@ -5,7 +5,9 @@ import {
   createPaperPagesLayout,
   getInvitationPages,
   getInvitationSlots,
+  getPhotoOrderGroups,
   isSeamlessRoll,
+  requiredPhotoCount,
   MOBILE_ROLL_FRAME_HEIGHT,
   MOBILE_ROLL_MAX_FRAMES,
   MOBILE_ROLL_MAX_HEIGHT,
@@ -147,6 +149,36 @@ describe("invitation layout pages", () => {
     });
     expect(layout.pages?.[1].canvas.background_url).toBe("/back.png");
     expect(getInvitationSlots(layout)).toEqual([]);
+  });
+
+  it("counts required photos by image_order group, excluding map slots", () => {
+    const layout: InvitationLayout = {
+      canvas: { w: 1500, h: 1058 },
+      slots: [
+        // 원본 + 누끼 슬롯이 같은 image_order=1 → 사진 1장
+        { id: "photo", type: "image", x: 0, y: 0, w: 10, h: 10, image_order: 1 },
+        { id: "photo_cut", type: "image", x: 0, y: 0, w: 10, h: 10, image_order: 1 },
+        // 다른 그룹 → 사진 1장 추가
+        { id: "photo2", type: "image", x: 0, y: 0, w: 10, h: 10, image_order: 2 },
+        // map 슬롯은 약도 → 사진 수에 포함 안 됨
+        { id: "map", type: "map", x: 0, y: 0, w: 10, h: 10 },
+        { id: "names", type: "text", x: 0, y: 0, w: 10, h: 10 },
+      ],
+    };
+
+    expect(getPhotoOrderGroups(layout)).toEqual([1, 2]);
+    expect(requiredPhotoCount(layout)).toBe(2);
+  });
+
+  it("returns zero required photos for a text/map-only layout", () => {
+    const layout: InvitationLayout = {
+      canvas: { w: 800, h: 1200 },
+      slots: [
+        { id: "map", type: "map", x: 0, y: 0, w: 10, h: 10 },
+        { id: "greeting", type: "text", x: 0, y: 0, w: 10, h: 10 },
+      ],
+    };
+    expect(requiredPhotoCount(layout)).toBe(0);
   });
 
   it("clamps paper pages to the maximum and never produces an empty layout", () => {

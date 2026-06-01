@@ -97,6 +97,25 @@ export function getInvitationSlots(layout: InvitationLayout): InvitationSlot[] {
   return getInvitationPages(layout).flatMap((page) => page.slots);
 }
 
+/**
+ * 사용자가 채워야 할 사진 묶음(image_order 그룹). 같은 image_order 슬롯은 한 장을
+ * 공유하므로 그룹 단위로 센다. map 슬롯은 약도(사진 아님)라 제외한다.
+ * 미리보기에 표시하는 "필요 사진 수"와 실제 분배 로직이 같은 기준을 쓰도록 단일화.
+ */
+export function getPhotoOrderGroups(layout: InvitationLayout): number[] {
+  const imageSlots = getInvitationSlots(layout).filter(
+    (s) => s.type === "image",
+  );
+  return Array.from(
+    new Set(imageSlots.map((s) => s.image_order ?? 999)),
+  ).sort((a, b) => a - b);
+}
+
+/** 이 템플릿이 실제로 요구하는 사진 장수. */
+export function requiredPhotoCount(layout: InvitationLayout): number {
+  return getPhotoOrderGroups(layout).length;
+}
+
 export function pageToLayout(page: InvitationPageLayout): InvitationLayout {
   return {
     canvas: page.canvas,

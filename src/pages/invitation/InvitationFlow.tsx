@@ -45,8 +45,10 @@ import { computeInvitationPrice } from "@/lib/invitation/computePrice";
 import {
   getInvitationPages,
   getInvitationSlots,
+  getPhotoOrderGroups,
   isSeamlessRoll,
   pageToLayout,
+  requiredPhotoCount,
 } from "@/lib/invitation/layout";
 import {
   readFaceLayout,
@@ -346,14 +348,13 @@ const InvitationFlow = () => {
       const paths: Record<string, string> = {};
       const urls: Record<string, string> = {};
 
+      // map 슬롯(약도)은 사용자 사진이 아니므로 분배 대상에서 제외 — 표시 수와 일치.
       const imageSlots = getInvitationSlots(tpl.layout).filter(
-        (s) => s.type === "image" || s.type === "map",
+        (s) => s.type === "image",
       );
 
-      // 1) image_order 의 unique 한 값을 오름차순 정렬
-      const uniqueOrders = Array.from(
-        new Set(imageSlots.map((s) => s.image_order ?? 999)),
-      ).sort((a, b) => a - b);
+      // 1) image_order 의 unique 한 값을 오름차순 정렬 (표시용 requiredPhotoCount 와 동일 기준)
+      const uniqueOrders = getPhotoOrderGroups(tpl.layout);
 
       // 2) 각 order 에 photo[i] 할당
       const orderToPhotoIdx = new Map<number, number>();
@@ -1149,9 +1150,7 @@ const WizardCombined = ({
   isGenerating: boolean;
   onGenerate: () => void;
 }) => {
-  const photoSlotCount = getInvitationSlots(template.layout).filter(
-    (s) => s.type === "image" || s.type === "map",
-  ).length;
+  const photoSlotCount = requiredPhotoCount(template.layout);
   const aiSlotCount = getInvitationSlots(template.layout).filter(
     (s) => s.type === "text" && s.ai_promptable,
   ).length;
