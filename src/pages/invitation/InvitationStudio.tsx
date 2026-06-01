@@ -11,6 +11,7 @@ import {
   Trash2,
   Share2,
   Sparkles,
+  MapPin,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -133,6 +134,7 @@ const InvitationStudio = () => {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [shareCodeStyle, setShareCodeStyle] = useState<ShareCodeStyle>("basic");
+  const [isGeneratingMap, setIsGeneratingMap] = useState(false);
   const [backTemplates, setBackTemplates] = useState<Template[]>([]);
   const [activeFace, setActiveFace] = useState<InvitationFace>("front");
 
@@ -414,6 +416,52 @@ const InvitationStudio = () => {
         ? { ...p.imageUrls, [id]: signed.signedUrl }
         : p.imageUrls,
     }));
+  };
+
+  // 약도 자동 생성 (map 슬롯) — 식장 주소 → 네이버 지도 edge function
+  const handleGenerateMap = async () => {
+    if (!selectedSlot || selectedSlot.type !== "map") return;
+    const address = userData.venue_address?.trim();
+    if (!address) {
+      toast({
+        title: "식장 주소를 먼저 입력해주세요",
+        description: "기본 정보에 주소를 넣으면 약도를 만들 수 있어요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const id = selectedSlot.id;
+    const applyFace = setFace;
+    setIsGeneratingMap(true);
+    try {
+      const { data, error } = await (supabase as any).functions.invoke(
+        "invitation-map",
+        { body: { address } },
+      );
+      const path = data?.path as string | undefined;
+      if (error || !path) {
+        throw new Error(data?.error ?? error?.message ?? "약도 생성 실패");
+      }
+      const { data: signed } = await supabase.storage
+        .from("invitation-uploads")
+        .createSignedUrl(path, 60 * 60 * 24);
+      applyFace((p) => ({
+        ...p,
+        imagePaths: { ...p.imagePaths, [id]: path },
+        imageUrls: signed?.signedUrl
+          ? { ...p.imageUrls, [id]: signed.signedUrl }
+          : p.imageUrls,
+      }));
+      toast({ title: "약도를 생성했어요" });
+    } catch (e) {
+      toast({
+        title: "약도 생성 실패",
+        description: e instanceof Error ? e.message : "오류",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingMap(false);
+    }
   };
 
   // 면 전환 (선택 슬롯 초기화)
@@ -705,6 +753,8 @@ const InvitationStudio = () => {
           onTextChange={handleTextChange}
           onFontChange={handleFontChange}
           onOpenAi={() => setAiSheetOpen(true)}
+          onGenerateMap={handleGenerateMap}
+          isGeneratingMap={isGeneratingMap}
           onMoveSlot={handleMoveSlot}
           onAddText={handleAddText}
           onDeleteSlot={handleDeleteSlot}
@@ -968,6 +1018,8 @@ const StudioView = ({
   onTextChange,
   onFontChange,
   onOpenAi,
+  onGenerateMap,
+  isGeneratingMap,
   onMoveSlot,
   onAddText,
   onDeleteSlot,
@@ -1003,6 +1055,8 @@ const StudioView = ({
   onTextChange: (text: string) => void;
   onFontChange: (family: string | null) => void;
   onOpenAi: () => void;
+  onGenerateMap: () => void;
+  isGeneratingMap: boolean;
   onMoveSlot: (id: string, x: number, y: number) => void;
   onAddText: () => void;
   onDeleteSlot: () => void;
@@ -1300,8 +1354,14 @@ const StudioView = ({
       {(selectedSlot?.type === "image" || selectedSlot?.type === "map") && (
         <section className="p-4 bg-card rounded-2xl border border-border space-y-3">
           <div className="flex items-center gap-2">
-            <ImageIcon className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground">사진 교체</h3>
+            {selectedSlot.type === "map" ? (
+              <MapPin className="w-4 h-4 text-primary" />
+            ) : (
+              <ImageIcon className="w-4 h-4 text-primary" />
+            )}
+            <h3 className="text-sm font-bold text-foreground">
+              {selectedSlot.type === "map" ? "약도" : "사진 교체"}
+            </h3>
           </div>
           {aFace.imageUrls[selectedSlot.id] && (
             <img
@@ -1310,9 +1370,27 @@ const StudioView = ({
               className="w-full max-h-40 object-contain rounded-lg bg-muted"
             />
           )}
+          {selectedSlot.type === "map" && (
+            <Button
+              onClick={onGenerateMap}
+              disabled={isGeneratingMap}
+              className="w-full"
+            >
+              {isGeneratingMap ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <MapPin className="w-4 h-4 mr-2" />
+              )}
+              약도 자동 생성 (식장 주소 기준)
+            </Button>
+          )}
           <Button onClick={onPickPhoto} variant="outline" className="w-full">
             <ImageIcon className="w-4 h-4 mr-2" />
-            {aFace.imageUrls[selectedSlot.id] ? "다른 사진" : "사진 업로드"}
+            {aFace.imageUrls[selectedSlot.id]
+              ? "다른 이미지"
+              : selectedSlot.type === "map"
+                ? "약도 직접 업로드"
+                : "사진 업로드"}
           </Button>
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-muted-foreground">JPG/PNG, 최대 5MB</p>
