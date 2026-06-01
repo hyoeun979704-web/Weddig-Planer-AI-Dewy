@@ -39,8 +39,14 @@ import ShareCodeCard from "@/components/invitation/ShareCodeCard";
 import type { ShareCodeStyle } from "@/lib/invitation/shareCode";
 import {
   exportInvitationPdfPages,
+  pixelRatioForPrint,
   type PdfPage,
 } from "@/lib/invitation/exportPdf";
+import {
+  getInvitationPages,
+  getInvitationSlots,
+  pageToLayout,
+} from "@/lib/invitation/layout";
 import {
   readFaceLayout,
   type InvitationFace,
@@ -154,6 +160,7 @@ const InvitationStudio = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<InvitationCanvasHandle>(null);
   const backCanvasRef = useRef<InvitationCanvasHandle>(null);
+  const pageCanvasRefs = useRef<Record<string, InvitationCanvasHandle | null>>({});
 
   // 현재 활성 면 파생값
   const activeTemplate = activeFace === "front" ? template : backTemplate;
@@ -162,7 +169,7 @@ const InvitationStudio = () => {
 
   // 템플릿 슬롯 + 사용자가 추가한 요소
   const activeSlots: InvitationSlot[] = activeTemplate
-    ? [...activeTemplate.layout.slots, ...activeFaceState.extraSlots]
+    ? [...getInvitationSlots(activeTemplate.layout), ...activeFaceState.extraSlots]
     : [];
   const selectedSlot: InvitationSlot | undefined = activeSlots.find(
     (s) => s.id === selectedSlotId,
@@ -329,8 +336,9 @@ const InvitationStudio = () => {
   // 텍스트 요소 추가 (캔버스 중앙)
   const handleAddText = () => {
     if (!activeTemplate) return;
-    const cw = activeTemplate.layout.canvas.w;
-    const ch = activeTemplate.layout.canvas.h;
+    const canvas = getInvitationPages(activeTemplate.layout)[0].canvas;
+    const cw = canvas.w;
+    const ch = canvas.h;
     const w = Math.min(600, cw - 80);
     const id = `extra-${crypto.randomUUID().slice(0, 8)}`;
     const newSlot: InvitationSlot = {
@@ -707,28 +715,38 @@ const InvitationStudio = () => {
     setIsExporting(true);
     try {
       const pages: PdfPage[] = [];
-      const frontUrl = canvasRef.current?.toDataUrl(3);
-      if (!frontUrl) throw new Error("캔버스 추출 실패");
-      pages.push({
-        dataUrl: frontUrl,
-        w: template.layout.canvas.w,
-        h: template.layout.canvas.h,
-      });
-      if (backTemplate) {
-        const backUrl = backCanvasRef.current?.toDataUrl(3);
-        if (backUrl) {
+      const appendTemplatePages = (
+        targetTemplate: Template,
+        scope: "front" | "back",
+        fallbackRef: React.RefObject<InvitationCanvasHandle>,
+      ) => {
+        getInvitationPages(targetTemplate.layout).forEach((page, index) => {
+          const pageRef =
+            pageCanvasRefs.current[`${scope}:${page.id}`] ??
+            (index === 0 ? fallbackRef.current : null);
+          const dataUrl = pageRef?.toDataUrl(
+            pixelRatioForPrint(340, page.print?.wMm),
+          );
+          if (!dataUrl) return;
           pages.push({
-            dataUrl: backUrl,
-            w: backTemplate.layout.canvas.w,
-            h: backTemplate.layout.canvas.h,
+            dataUrl,
+            w: page.canvas.w,
+            h: page.canvas.h,
+            printWmm: page.print?.wMm,
+            printHmm: page.print?.hMm,
           });
-        }
+        });
+      };
+      appendTemplatePages(template, "front", canvasRef);
+      if (pages.length === 0) throw new Error("캔버스 추출 실패");
+      if (backTemplate) {
+        appendTemplatePages(backTemplate, "back", backCanvasRef);
       }
       const filename = `dewy-invitation-${invitationId ?? "draft"}.pdf`;
       exportInvitationPdfPages(pages, filename);
       toast({
         title: "PDF 다운로드 시작",
-        description: pages.length > 1 ? "전면·후면 2페이지" : undefined,
+        description: pages.length > 1 ? `${pages.length}페이지 인쇄용 PDF` : undefined,
       });
     } catch (err) {
       toast({
@@ -803,6 +821,7 @@ const InvitationStudio = () => {
         <StudioView
           canvasRef={canvasRef}
           backCanvasRef={backCanvasRef}
+          pageCanvasRefs={pageCanvasRefs}
           template={template}
           backTemplate={backTemplate}
           userData={userData}
@@ -1070,6 +1089,7 @@ const TemplatePicker = ({
 const StudioView = ({
   canvasRef,
   backCanvasRef,
+  pageCanvasRefs,
   template,
   backTemplate,
   userData,
@@ -1107,8 +1127,9 @@ const StudioView = ({
   shareCodeStyle,
   onShareCodeStyleChange,
 }: {
-  canvasRef: React.RefObject<InvitationCanvasHandle>;
-  backCanvasRef: React.RefObject<InvitationCanvasHandle>;
+  canvasRef: React.MutableRefObject<InvitationCanvasHandle | null>;
+  backCanvasRef: React.MutableRefObject<InvitationCanvasHandle | null>;
+  pageCanvasRefs: React.MutableRefObject<Record<string, InvitationCanvasHandle | null>>;
   template: Template;
   backTemplate: Template | null;
   userData: InvitationUserData;
@@ -1171,34 +1192,48 @@ const StudioView = ({
     const fd = isFront ? frontFace : backFace;
     const ref = isFront ? canvasRef : backCanvasRef;
     const visible = activeFace === f;
+    const pages = getInvitationPages(tmpl.layout);
     return (
       <div
+        className="flex flex-col items-center gap-4"
         style={
           visible
             ? undefined
             : { position: "absolute", left: -100000, top: 0, opacity: 0, pointerEvents: "none" }
         }
       >
-        <InvitationCanvas
-          ref={ref}
-          layout={tmpl.layout}
-          userData={userData}
-          aiText={aiText}
-          textOverrides={fd.textOverrides}
-          fontOverrides={fd.fontOverrides}
-          positionOverrides={fd.positionOverrides}
-          fontSizeOverrides={fd.fontSizeOverrides}
-          extraSlots={fd.extraSlots}
-          hiddenSlots={fd.hiddenSlots}
-          fontsReady={fontsReady}
-          imageUrls={fd.imageUrls}
-          selectedSlotId={visible ? selectedSlotId : null}
-          onSelectSlot={visible ? onSelectSlot : () => {}}
-          editable={visible}
-          onMoveSlot={onMoveSlot}
-          shareUrl={shareUrl ?? undefined}
-          displayWidth={340}
-        />
+        {pages.map((page, index) => (
+          <div key={page.id} className="flex flex-col items-center gap-2">
+            {pages.length > 1 && (
+              <span className="text-[11px] font-bold text-muted-foreground">
+                {page.label ?? `${index + 1}P`}
+              </span>
+            )}
+            <InvitationCanvas
+              ref={(node) => {
+                pageCanvasRefs.current[`${f}:${page.id}`] = node;
+                if (index === 0) ref.current = node;
+              }}
+              layout={pageToLayout(page)}
+              userData={userData}
+              aiText={aiText}
+              textOverrides={fd.textOverrides}
+              fontOverrides={fd.fontOverrides}
+              positionOverrides={fd.positionOverrides}
+              fontSizeOverrides={fd.fontSizeOverrides}
+              extraSlots={index === 0 ? fd.extraSlots : []}
+              hiddenSlots={fd.hiddenSlots}
+              fontsReady={fontsReady}
+              imageUrls={fd.imageUrls}
+              selectedSlotId={visible ? selectedSlotId : null}
+              onSelectSlot={visible ? onSelectSlot : () => {}}
+              editable={visible}
+              onMoveSlot={onMoveSlot}
+              shareUrl={shareUrl ?? undefined}
+              displayWidth={340}
+            />
+          </div>
+        ))}
       </div>
     );
   };

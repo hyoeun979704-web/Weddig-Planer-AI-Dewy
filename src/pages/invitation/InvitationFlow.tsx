@@ -38,9 +38,15 @@ import { useInvitationFonts } from "@/hooks/useInvitationFonts";
 import type { ShareCodeStyle } from "@/lib/invitation/shareCode";
 import {
   exportInvitationPdfPages,
+  pixelRatioForPrint,
   type PdfPage,
 } from "@/lib/invitation/exportPdf";
 import { computeInvitationPrice } from "@/lib/invitation/computePrice";
+import {
+  getInvitationPages,
+  getInvitationSlots,
+  pageToLayout,
+} from "@/lib/invitation/layout";
 import {
   readFaceLayout,
   type InvitationLayout,
@@ -115,6 +121,7 @@ const InvitationFlow = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<InvitationCanvasHandle>(null);
   const backCanvasRef = useRef<InvitationCanvasHandle>(null);
+  const pageCanvasRefs = useRef<Record<string, InvitationCanvasHandle | null>>({});
 
   // 등록된 청첩장 폰트 @font-face 주입 + 로드 완료 신호 (미리보기 폰트 렌더)
   const { fontsReady } = useInvitationFonts();
@@ -283,7 +290,7 @@ const InvitationFlow = () => {
       const paths: Record<string, string> = {};
       const urls: Record<string, string> = {};
 
-      const imageSlots = tpl.layout.slots.filter(
+      const imageSlots = getInvitationSlots(tpl.layout).filter(
         (s) => s.type === "image" || s.type === "map",
       );
 
@@ -329,7 +336,7 @@ const InvitationFlow = () => {
       paths: Record<string, string>;
       urls: Record<string, string>;
     }> => {
-      const cutoutSlots = tpl.layout.slots.filter(
+      const cutoutSlots = getInvitationSlots(tpl.layout).filter(
         (s) => s.auto_cutout && (s.type === "image" || s.type === "map"),
       );
       if (cutoutSlots.length === 0) {
@@ -390,7 +397,7 @@ const InvitationFlow = () => {
       paths: Record<string, string>;
       urls: Record<string, string>;
     }> => {
-      const illustSlots = tpl.layout.slots.filter(
+      const illustSlots = getInvitationSlots(tpl.layout).filter(
         (s) => s.auto_illustration && (s.type === "image" || s.type === "map"),
       );
       if (illustSlots.length === 0) {
@@ -475,7 +482,7 @@ const InvitationFlow = () => {
     });
 
     // 발행 총 비용 미리 검증 — 템플릿 가격(첫사용 반값) + AI 인사말 옵션
-    const aiSlots = template.layout.slots.filter(
+    const aiSlots = getInvitationSlots(template.layout).filter(
       (s) => s.type === "text" && s.ai_promptable,
     );
     const aiCost = aiAuto ? aiSlots.length : 0;
@@ -498,7 +505,7 @@ const InvitationFlow = () => {
       //    invitations.user_data 에 slot.id 가 섞여있으면 분석·통계에 잡음이
       //    되니까 textOverrides 로 옮긴 뒤 user_data 에선 제거.
       const aiSlotIds = new Set(
-        template.layout.slots
+        getInvitationSlots(template.layout)
           .filter((s) => s.type === "text" && s.ai_promptable)
           .map((s) => s.id),
       );
@@ -518,7 +525,7 @@ const InvitationFlow = () => {
       let urls = distributePhotos(template, photos).urls;
 
       // 2) 누끼 처리 (auto_cutout 슬롯이 있고 매핑된 사진이 있으면)
-      const hasCutoutSlot = template.layout.slots.some((s) => s.auto_cutout);
+      const hasCutoutSlot = getInvitationSlots(template.layout).some((s) => s.auto_cutout);
       if (hasCutoutSlot) {
         const cutoutResult = await applyCutoutToSlots(template, paths, urls);
         paths = cutoutResult.paths;
@@ -526,7 +533,7 @@ const InvitationFlow = () => {
       }
 
       // 2.5) 일러스트 변환 (auto_illustration 슬롯이 있고 매핑된 사진이 있으면)
-      const hasIllustSlot = template.layout.slots.some(
+      const hasIllustSlot = getInvitationSlots(template.layout).some(
         (s) => s.auto_illustration,
       );
       if (hasIllustSlot) {
@@ -647,22 +654,32 @@ const InvitationFlow = () => {
     setIsExporting(true);
     try {
       const pages: PdfPage[] = [];
-      const frontUrl = canvasRef.current?.toDataUrl(3);
-      if (!frontUrl) throw new Error("캔버스 추출 실패");
-      pages.push({
-        dataUrl: frontUrl,
-        w: template.layout.canvas.w,
-        h: template.layout.canvas.h,
-      });
-      if (backTemplate) {
-        const backUrl = backCanvasRef.current?.toDataUrl(3);
-        if (backUrl) {
+      const appendTemplatePages = (
+        targetTemplate: Template,
+        scope: "front" | "back",
+        fallbackRef: React.RefObject<InvitationCanvasHandle>,
+      ) => {
+        getInvitationPages(targetTemplate.layout).forEach((page, index) => {
+          const pageRef =
+            pageCanvasRefs.current[`${scope}:${page.id}`] ??
+            (index === 0 ? fallbackRef.current : null);
+          const dataUrl = pageRef?.toDataUrl(
+            pixelRatioForPrint(360, page.print?.wMm),
+          );
+          if (!dataUrl) return;
           pages.push({
-            dataUrl: backUrl,
-            w: backTemplate.layout.canvas.w,
-            h: backTemplate.layout.canvas.h,
+            dataUrl,
+            w: page.canvas.w,
+            h: page.canvas.h,
+            printWmm: page.print?.wMm,
+            printHmm: page.print?.hMm,
           });
-        }
+        });
+      };
+      appendTemplatePages(template, "front", canvasRef);
+      if (pages.length === 0) throw new Error("캔버스 추출 실패");
+      if (backTemplate) {
+        appendTemplatePages(backTemplate, "back", backCanvasRef);
       }
       const filename = `dewy-invitation-${invitationId ?? "draft"}.pdf`;
       exportInvitationPdfPages(pages, filename);
@@ -670,7 +687,7 @@ const InvitationFlow = () => {
         title: "PDF 다운로드 시작",
         description:
           pages.length > 1
-            ? "전면·후면 2페이지 — 인쇄소 사양에 맞춰 크기를 조정해주세요."
+            ? `${pages.length}페이지 인쇄용 PDF를 만들었어요.`
             : "130×190mm 비율로 출력됐어요. 인쇄소 사양에 맞춰 크기를 조정해주세요.",
       });
     } catch (e) {
@@ -909,6 +926,7 @@ const InvitationFlow = () => {
         <ResultView
           canvasRef={canvasRef}
           backCanvasRef={backCanvasRef}
+          pageCanvasRefs={pageCanvasRefs}
           template={template}
           backTemplate={backTemplate}
           userData={userData}
@@ -991,12 +1009,12 @@ const TemplatePicker = ({
     ) : (
       <div className="grid grid-cols-2 gap-3">
         {templates.map((t) => {
-          const photoSlots = t.layout.slots.filter(
+          const photoSlots = getInvitationSlots(t.layout).filter(
             (s) => s.type === "image" || s.type === "map",
           ).length;
           // image_order 가 같은 것은 같은 사진 → unique 수만 카운트
           const uniquePhotoOrders = new Set(
-            t.layout.slots
+            getInvitationSlots(t.layout)
               .filter((s) => s.type === "image" || s.type === "map")
               .map((s) => s.image_order ?? 999),
           ).size;
@@ -1075,10 +1093,10 @@ const WizardCombined = ({
   isGenerating: boolean;
   onGenerate: () => void;
 }) => {
-  const photoSlotCount = template.layout.slots.filter(
+  const photoSlotCount = getInvitationSlots(template.layout).filter(
     (s) => s.type === "image" || s.type === "map",
   ).length;
-  const aiSlotCount = template.layout.slots.filter(
+  const aiSlotCount = getInvitationSlots(template.layout).filter(
     (s) => s.type === "text" && s.ai_promptable,
   ).length;
   const aiCost = aiSlotCount;
@@ -1249,7 +1267,7 @@ const WizardCombined = ({
               <p className="text-[11px] text-muted-foreground">
                 AI 추천을 끄셨어요. 인사말을 직접 입력하시려면 ↓
               </p>
-              {template.layout.slots
+              {getInvitationSlots(template.layout)
                 .filter((s) => s.type === "text" && s.ai_promptable)
                 .map((slot) => (
                   <div key={slot.id}>
@@ -1285,8 +1303,8 @@ const WizardCombined = ({
 
       {/* 가격 안내 */}
       {(() => {
-        const hasCutout = template.layout.slots.some((s) => s.auto_cutout);
-        const hasIllust = template.layout.slots.some((s) => s.auto_illustration);
+        const hasCutout = getInvitationSlots(template.layout).some((s) => s.auto_cutout);
+        const hasIllust = getInvitationSlots(template.layout).some((s) => s.auto_illustration);
         const total = template.price_hearts + (aiAuto ? aiSlotCount : 0);
         if (template.price_hearts === 0 && total === 0) {
           return (
@@ -1495,6 +1513,7 @@ const VenueAddressField = ({
 const ResultView = ({
   canvasRef,
   backCanvasRef,
+  pageCanvasRefs,
   template,
   backTemplate,
   userData,
@@ -1512,8 +1531,9 @@ const ResultView = ({
   onShareSlug,
   onMakeOther,
 }: {
-  canvasRef: React.RefObject<InvitationCanvasHandle>;
-  backCanvasRef: React.RefObject<InvitationCanvasHandle>;
+  canvasRef: React.MutableRefObject<InvitationCanvasHandle | null>;
+  backCanvasRef: React.MutableRefObject<InvitationCanvasHandle | null>;
+  pageCanvasRefs: React.MutableRefObject<Record<string, InvitationCanvasHandle | null>>;
   template: Template;
   backTemplate: Template | null;
   userData: InvitationUserData;
@@ -1534,20 +1554,31 @@ const ResultView = ({
   const isMobile = template.format === "mobile";
   // 공유 코드 스타일 — 카드와 캔버스 QR 슬롯이 같은 값을 공유(스타일 통일).
   const [shareCodeStyle, setShareCodeStyle] = useState<ShareCodeStyle>("basic");
-
-  return (
-    <main className="px-4 py-5 space-y-4">
-      <div className="flex flex-col items-center bg-muted/30 rounded-2xl py-5 gap-2">
-        {backTemplate && (
-          <span className="text-[11px] font-bold text-muted-foreground">전면</span>
+  const renderTemplatePages = (
+    targetTemplate: Template,
+    scope: "front" | "back",
+    fallbackRef: React.MutableRefObject<InvitationCanvasHandle | null>,
+    overrides: Record<string, string>,
+    urls: Record<string, string>,
+  ) => {
+    const pages = getInvitationPages(targetTemplate.layout);
+    return pages.map((page, index) => (
+      <div key={`${scope}:${page.id}`} className="flex flex-col items-center gap-2">
+        {(pages.length > 1 || backTemplate) && (
+          <span className="text-[11px] font-bold text-muted-foreground mt-3">
+            {page.label ?? `${index + 1}P`}
+          </span>
         )}
         <InvitationCanvas
-          ref={canvasRef}
-          layout={template.layout}
+          ref={(node) => {
+            pageCanvasRefs.current[`${scope}:${page.id}`] = node;
+            if (index === 0) fallbackRef.current = node;
+          }}
+          layout={pageToLayout(page)}
           userData={userData}
           aiText={aiText}
-          textOverrides={textOverrides}
-          imageUrls={imageUrls}
+          textOverrides={overrides}
+          imageUrls={urls}
           fontsReady={fontsReady}
           selectedSlotId={null}
           onSelectSlot={() => {}}
@@ -1555,26 +1586,17 @@ const ResultView = ({
           shareUrl={shareUrl ?? undefined}
           qrStyle={shareCodeStyle}
         />
+      </div>
+    ));
+  };
+
+  return (
+    <main className="px-4 py-5 space-y-4">
+      <div className="flex flex-col items-center bg-muted/30 rounded-2xl py-5 gap-2">
+        {renderTemplatePages(template, "front", canvasRef, textOverrides, imageUrls)}
         {/* 후면 (세트 기본 후면) */}
-        {backTemplate && (
-          <>
-            <span className="text-[11px] font-bold text-muted-foreground mt-3">
-              후면
-            </span>
-            <InvitationCanvas
-              ref={backCanvasRef}
-              layout={backTemplate.layout}
-              userData={userData}
-              aiText={aiText}
-              textOverrides={{}}
-              imageUrls={{}}
-              fontsReady={fontsReady}
-              selectedSlotId={null}
-              onSelectSlot={() => {}}
-              displayWidth={360}
-            />
-          </>
-        )}
+        {backTemplate &&
+          renderTemplatePages(backTemplate, "back", backCanvasRef, {}, {})}
       </div>
 
       {isMobile ? (

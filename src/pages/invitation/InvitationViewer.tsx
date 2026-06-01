@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import InvitationCanvas from "@/components/invitation/InvitationCanvas";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
+import { getInvitationPages, pageToLayout } from "@/lib/invitation/layout";
 import {
   readFaceLayout,
   type InvitationLayout,
@@ -130,47 +131,44 @@ const InvitationViewer = () => {
 
   const tpl = data.invitation_templates;
   const faces = readFaceLayout(data.layout);
-
-  return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
-      {/* 전면 */}
-      <div className="flex flex-col items-center bg-muted/20 py-5 gap-5">
+  const renderPages = (
+    layout: InvitationLayout,
+    overrides: ReturnType<typeof readFaceLayout>["front"],
+  ) =>
+    getInvitationPages(layout).map((page, index, pages) => (
+      <div key={page.id} className="flex flex-col items-center gap-2">
+        {pages.length > 1 && (
+          <span className="text-[11px] font-bold text-muted-foreground">
+            {page.label ?? `${index + 1}P`}
+          </span>
+        )}
         <InvitationCanvas
-          layout={tpl.layout}
+          layout={pageToLayout(page)}
           userData={data.user_data ?? {}}
           aiText={data.ai_generated_text ?? {}}
-          textOverrides={faces.front.textOverrides ?? {}}
-          fontOverrides={faces.front.fontOverrides ?? {}}
-          positionOverrides={faces.front.positionOverrides ?? {}}
-          fontSizeOverrides={faces.front.fontSizeOverrides ?? {}}
-          extraSlots={faces.front.extraSlots ?? []}
-          hiddenSlots={faces.front.hiddenSlots ?? []}
+          textOverrides={overrides.textOverrides ?? {}}
+          fontOverrides={overrides.fontOverrides ?? {}}
+          positionOverrides={overrides.positionOverrides ?? {}}
+          fontSizeOverrides={overrides.fontSizeOverrides ?? {}}
+          extraSlots={index === 0 ? overrides.extraSlots ?? [] : []}
+          hiddenSlots={overrides.hiddenSlots ?? []}
           fontsReady={fontsReady}
-          imageUrls={faces.front.imageUrlsForViewer ?? {}}
+          imageUrls={overrides.imageUrlsForViewer ?? {}}
           selectedSlotId={null}
           onSelectSlot={() => {}}
           displayWidth={360}
           shareUrl={window.location.href}
         />
+      </div>
+    ));
+
+  return (
+    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
+      {/* 전면 */}
+      <div className="flex flex-col items-center bg-muted/20 py-5 gap-5">
+        {renderPages(tpl.layout, faces.front)}
         {/* 후면 (있을 때만) */}
-        {backLayout && (
-          <InvitationCanvas
-            layout={backLayout}
-            userData={data.user_data ?? {}}
-            aiText={data.ai_generated_text ?? {}}
-            textOverrides={faces.back.textOverrides ?? {}}
-            fontOverrides={faces.back.fontOverrides ?? {}}
-            positionOverrides={faces.back.positionOverrides ?? {}}
-            fontSizeOverrides={faces.back.fontSizeOverrides ?? {}}
-            extraSlots={faces.back.extraSlots ?? []}
-            hiddenSlots={faces.back.hiddenSlots ?? []}
-            fontsReady={fontsReady}
-            imageUrls={faces.back.imageUrlsForViewer ?? {}}
-            selectedSlotId={null}
-            onSelectSlot={() => {}}
-            displayWidth={360}
-          />
-        )}
+        {backLayout && renderPages(backLayout, faces.back)}
       </div>
 
       <div className="px-5 pt-5 space-y-3">

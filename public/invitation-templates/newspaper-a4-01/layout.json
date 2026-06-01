@@ -1,0 +1,345 @@
+{
+  "product_kind": "newspaper",
+  "canvas": {
+    "w": 1055,
+    "h": 1490,
+    "bg": "#FFFFFF",
+    "background_url": "/invitation-templates/newspaper-a4-01/p1-cover.png"
+  },
+  "print": {
+    "wMm": 210,
+    "hMm": 297
+  },
+  "slots": [
+    {
+      "id": "p1_hero_photo",
+      "type": "image",
+      "x": 56,
+      "y": 478,
+      "w": 943,
+      "h": 934,
+      "z": 1,
+      "fit": "cover",
+      "image_order": 1,
+      "movable": true,
+      "resizable": true
+    },
+    {
+      "id": "p1_couple_names",
+      "type": "text",
+      "x": 110,
+      "y": 150,
+      "w": 835,
+      "h": 130,
+      "z": 3,
+      "field": "couple_names",
+      "font_family": "Times New Roman",
+      "font_size": 96,
+      "align": "center",
+      "color": "#111111",
+      "movable": true,
+      "editable_font": true
+    },
+    {
+      "id": "p1_venue_name",
+      "type": "text",
+      "x": 163,
+      "y": 394,
+      "w": 185,
+      "h": 48,
+      "z": 3,
+      "field": "venue_name",
+      "font_size": 15,
+      "font_weight": 700,
+      "color": "#111111",
+      "movable": true
+    },
+    {
+      "id": "p1_wedding_date",
+      "type": "text",
+      "x": 486,
+      "y": 394,
+      "w": 210,
+      "h": 48,
+      "z": 3,
+      "field": "wedding_date",
+      "font_size": 15,
+      "font_weight": 700,
+      "color": "#111111",
+      "movable": true
+    },
+    {
+      "id": "p1_wedding_time",
+      "type": "text",
+      "x": 814,
+      "y": 394,
+      "w": 180,
+      "h": 48,
+      "z": 3,
+      "field": "wedding_time",
+      "font_size": 15,
+      "font_weight": 700,
+      "color": "#111111",
+      "movable": true
+    },
+    {
+      "id": "p1_invitation_title",
+      "type": "text",
+      "x": 210,
+      "y": 1045,
+      "w": 635,
+      "h": 115,
+      "z": 4,
+      "text": "INVITATION",
+      "font_family": "Times New Roman",
+      "font_size": 82,
+      "align": "center",
+      "color": "#111111",
+      "locked": true
+    }
+  ],
+  "pages": [
+    {
+      "id": "p1-cover",
+      "label": "1P 표지",
+      "order": 1,
+      "canvas": {
+        "w": 1055,
+        "h": 1490,
+        "bg": "#FFFFFF",
+        "background_url": "/invitation-templates/newspaper-a4-01/p1-cover.png"
+      },
+      "print": {
+        "wMm": 210,
+        "hMm": 297
+      },
+      "slots": [
+        {
+          "id": "p1_hero_photo",
+          "type": "image",
+          "x": 56,
+          "y": 478,
+          "w": 943,
+          "h": 934,
+          "z": 1,
+          "fit": "cover",
+          "image_order": 1,
+          "movable": true,
+          "resizable": true
+        },
+        {
+          "id": "p1_couple_names",
+          "type": "text",
+          "x": 110,
+          "y": 150,
+          "w": 835,
+          "h": 130,
+          "z": 3,
+          "field": "couple_names",
+          "font_family": "Times New Roman",
+          "font_size": 96,
+          "align": "center",
+          "color": "#111111",
+          "movable": true,
+          "editable_font": true
+        },
+        {
+          "id": "p1_venue_name",
+          "type": "text",
+          "x": 163,
+          "y": 394,
+          "w": 185,
+          "h": 48,
+          "z": 3,
+          "field": "venue_name",
+          "font_size": 15,
+          "font_weight": 700,
+          "color": "#111111",
+          "movable": true
+        },
+        {
+          "id": "p1_wedding_date",
+          "type": "text",
+          "x": 486,
+          "y": 394,
+          "w": 210,
+          "h": 48,
+          "z": 3,
+          "field": "wedding_date",
+          "font_size": 15,
+          "font_weight": 700,
+          "color": "#111111",
+          "movable": true
+        },
+        {
+          "id": "p1_wedding_time",
+          "type": "text",
+          "x": 814,
+          "y": 394,
+          "w": 180,
+          "h": 48,
+          "z": 3,
+          "field": "wedding_time",
+          "font_size": 15,
+          "font_weight": 700,
+          "color": "#111111",
+          "movable": true
+        },
+        {
+          "id": "p1_invitation_title",
+          "type": "text",
+          "x": 210,
+          "y": 1045,
+          "w": 635,
+          "h": 115,
+          "z": 4,
+          "text": "INVITATION",
+          "font_family": "Times New Roman",
+          "font_size": 82,
+          "align": "center",
+          "color": "#111111",
+          "locked": true
+        }
+      ]
+    },
+    {
+      "id": "p2-love-story",
+      "label": "2P 내용",
+      "order": 2,
+      "canvas": {
+        "w": 1055,
+        "h": 1490,
+        "bg": "#FFFFFF",
+        "background_url": "/invitation-templates/newspaper-a4-01/p2-love-story.png"
+      },
+      "print": {
+        "wMm": 210,
+        "hMm": 297
+      },
+      "slots": [
+        {
+          "id": "p2_article_photo",
+          "type": "image",
+          "x": 56,
+          "y": 398,
+          "w": 690,
+          "h": 322,
+          "z": 2,
+          "fit": "cover",
+          "image_order": 2,
+          "movable": true,
+          "resizable": true
+        }
+      ]
+    },
+    {
+      "id": "p3-itinerary",
+      "label": "3P 내용",
+      "order": 3,
+      "canvas": {
+        "w": 1055,
+        "h": 1490,
+        "bg": "#FFFFFF",
+        "background_url": "/invitation-templates/newspaper-a4-01/p3-itinerary.png"
+      },
+      "print": {
+        "wMm": 210,
+        "hMm": 297
+      },
+      "slots": [
+        {
+          "id": "p3_couple_photo",
+          "type": "image",
+          "x": 50,
+          "y": 506,
+          "w": 460,
+          "h": 191,
+          "z": 2,
+          "fit": "cover",
+          "image_order": 3,
+          "movable": true,
+          "resizable": true
+        },
+        {
+          "id": "p3_qr",
+          "type": "qr",
+          "x": 684,
+          "y": 779,
+          "w": 150,
+          "h": 150,
+          "z": 3,
+          "locked": true
+        },
+        {
+          "id": "p3_map",
+          "type": "map",
+          "x": 50,
+          "y": 1227,
+          "w": 460,
+          "h": 208,
+          "z": 2,
+          "fit": "cover",
+          "movable": true,
+          "resizable": true
+        },
+        {
+          "id": "p3_venue_name",
+          "type": "text",
+          "x": 592,
+          "y": 1263,
+          "w": 360,
+          "h": 36,
+          "z": 3,
+          "field": "venue_name",
+          "font_size": 16,
+          "font_weight": 700,
+          "color": "#111111",
+          "movable": true
+        },
+        {
+          "id": "p3_venue_address",
+          "type": "text",
+          "x": 592,
+          "y": 1295,
+          "w": 360,
+          "h": 58,
+          "z": 3,
+          "field": "venue_address",
+          "font_size": 14,
+          "color": "#111111",
+          "movable": true
+        }
+      ]
+    },
+    {
+      "id": "p4-interviews",
+      "label": "4P 뒷면",
+      "order": 4,
+      "canvas": {
+        "w": 1055,
+        "h": 1490,
+        "bg": "#FFFFFF",
+        "background_url": "/invitation-templates/newspaper-a4-01/p4-interviews.png"
+      },
+      "print": {
+        "wMm": 210,
+        "hMm": 297
+      },
+      "slots": [
+        {
+          "id": "p4_detail_photo",
+          "type": "image",
+          "x": 67,
+          "y": 1029,
+          "w": 340,
+          "h": 157,
+          "z": 2,
+          "fit": "cover",
+          "image_order": 4,
+          "movable": true,
+          "resizable": true
+        }
+      ]
+    }
+  ]
+}

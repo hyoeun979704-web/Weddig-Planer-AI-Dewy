@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Loader2, Trash2, Eye, EyeOff, Pencil } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Plus, Loader2, Trash2, Eye, EyeOff, Pencil, FileJson } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ interface Font {
 
 interface Template {
   id: string;
+  slug: string | null;
   name: string;
   thumbnail_url: string;
   preview_url: string | null;
@@ -50,6 +51,7 @@ interface Template {
 type Form = Omit<Template, "id" | "created_at">;
 
 const emptyForm: Form = {
+  slug: "",
   name: "",
   thumbnail_url: "",
   preview_url: null,
@@ -86,6 +88,20 @@ const AdminInvitationTemplates = () => {
   const [layoutJson, setLayoutJson] = useState("{}");
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const layoutPages = useMemo(() => {
+    try {
+      const parsed = JSON.parse(layoutJson || "{}") as {
+        pages?: Array<{
+          id?: string;
+          label?: string;
+          canvas?: { background_url?: string };
+        }>;
+      };
+      return Array.isArray(parsed.pages) ? parsed.pages : [];
+    } catch {
+      return [];
+    }
+  }, [layoutJson]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -163,8 +179,40 @@ const AdminInvitationTemplates = () => {
       return;
     }
 
+    const pages = (layout as {
+      pages?: Array<{
+        id?: unknown;
+        canvas?: { w?: unknown; h?: unknown };
+        slots?: unknown;
+      }>;
+    }).pages;
+    if (pages !== undefined) {
+      const hasInvalidPage =
+        !Array.isArray(pages) ||
+        pages.length === 0 ||
+        pages.some(
+          (page) =>
+            typeof page.id !== "string" ||
+            !page.id.trim() ||
+            !page.canvas ||
+            typeof page.canvas.w !== "number" ||
+            typeof page.canvas.h !== "number" ||
+            page.canvas.w <= 0 ||
+            page.canvas.h <= 0 ||
+            !Array.isArray(page.slots),
+        );
+      if (hasInvalidPage) {
+        toast({
+          title: "layout.pages 형식을 확인해주세요",
+          description: "각 페이지에는 id, canvas.w, canvas.h, slots 배열이 필요해요.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsSaving(true);
-    const payload = { ...form, layout };
+    const payload = { ...form, slug: form.slug?.trim() || null, layout };
     const { error } = editingId
       ? await (supabase as any)
           .from("invitation_templates")
@@ -191,6 +239,7 @@ const AdminInvitationTemplates = () => {
   const handleEdit = (t: Template) => {
     setEditingId(t.id);
     setForm({
+      slug: t.slug,
       name: t.name,
       thumbnail_url: t.thumbnail_url,
       preview_url: t.preview_url,
@@ -213,6 +262,59 @@ const AdminInvitationTemplates = () => {
       setEditingId(null);
       setForm(emptyForm);
       setLayoutJson("{}");
+    }
+  };
+
+  const updatePageBackgroundUrl = (pageIndex: number, url: string) => {
+    try {
+      const layout = JSON.parse(layoutJson || "{}") as {
+        canvas?: Record<string, unknown>;
+        pages?: Array<{
+          canvas?: Record<string, unknown>;
+          [key: string]: unknown;
+        }>;
+        [key: string]: unknown;
+      };
+      if (!Array.isArray(layout.pages) || !layout.pages[pageIndex]) return;
+      layout.pages[pageIndex] = {
+        ...layout.pages[pageIndex],
+        canvas: {
+          ...layout.pages[pageIndex].canvas,
+          background_url: url,
+        },
+      };
+      if (pageIndex === 0) {
+        layout.canvas = {
+          ...layout.canvas,
+          background_url: url,
+        };
+      }
+      setLayoutJson(JSON.stringify(layout, null, 2));
+    } catch {
+      toast({
+        title: "페이지 배경 반영 실패",
+        description: "레이아웃 JSON 형식을 먼저 확인해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLayoutFileSelected = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      setLayoutJson(JSON.stringify(parsed, null, 2));
+      toast({ title: "레이아웃 JSON을 불러왔어요" });
+    } catch {
+      toast({
+        title: "JSON 파일을 읽지 못했어요",
+        description: "올바른 JSON 파일인지 확인해주세요.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -298,6 +400,18 @@ const AdminInvitationTemplates = () => {
                 </div>
 
                 <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="slug">Slug</Label>
+                    <Input
+                      id="slug"
+                      value={form.slug ?? ""}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, slug: e.target.value }))
+                      }
+                      placeholder="newspaper-a4-01"
+                    />
+                  </div>
+
                   <div>
                     <Label htmlFor="name">템플릿 이름</Label>
                     <Input
@@ -430,7 +544,19 @@ const AdminInvitationTemplates = () => {
               </div>
 
               <div>
-                <Label htmlFor="layout">레이아웃 JSON</Label>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="layout">레이아웃 JSON</Label>
+                  <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-border bg-background text-xs font-medium cursor-pointer hover:bg-muted">
+                    <FileJson className="w-3.5 h-3.5" />
+                    JSON 불러오기
+                    <input
+                      type="file"
+                      accept="application/json,.json"
+                      className="hidden"
+                      onChange={handleLayoutFileSelected}
+                    />
+                  </label>
+                </div>
                 <Textarea
                   id="layout"
                   value={layoutJson}
@@ -458,6 +584,37 @@ const AdminInvitationTemplates = () => {
   ]
 }`}
                 />
+                {layoutPages.length > 0 && (
+                  <div className="mt-4">
+                    <div className="mb-2">
+                      <p className="text-sm font-semibold text-foreground">
+                        페이지별 배경 이미지
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        JSON의 pages 배열을 기준으로 업로드 칸이 생성됩니다.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {layoutPages.map((page, index) => (
+                        <div key={page.id ?? index}>
+                          <Label className="mb-1.5 block text-[11px]">
+                            {page.label ?? page.id ?? `${index + 1}P`}
+                          </Label>
+                          <ImageUploader
+                            key={`page-bg-${editingId ?? "new"}-${page.id ?? index}-${page.canvas?.background_url ?? ""}`}
+                            bucket="invitation-templates"
+                            pathPrefix="pages/"
+                            initialUrl={page.canvas?.background_url}
+                            maxSizeMB={8}
+                            onUploaded={(_, url) =>
+                              updatePageBackgroundUrl(index, url)
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="mt-2 p-3 bg-blue-50 rounded-lg text-[11px] text-blue-900 leading-relaxed">
                   <p className="font-semibold mb-1">Figma 워크플로우</p>
                   <ol className="list-decimal list-inside space-y-0.5">

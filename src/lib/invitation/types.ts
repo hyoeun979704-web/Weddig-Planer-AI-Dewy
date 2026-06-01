@@ -97,9 +97,30 @@ export interface InvitationCanvas {
   background_url?: string;
 }
 
+export interface InvitationPrintSpec {
+  /** Finished print size in millimeters. */
+  wMm: number;
+  hMm: number;
+  bleedMm?: number;
+  safeMarginMm?: number;
+}
+
+export interface InvitationPageLayout {
+  id: string;
+  label?: string;
+  order?: number;
+  canvas: InvitationCanvas;
+  slots: InvitationSlot[];
+  print?: InvitationPrintSpec;
+}
+
 export interface InvitationLayout {
   canvas: InvitationCanvas;
   slots: InvitationSlot[];
+  /** Optional V2 pages. Legacy templates without pages are treated as one page. */
+  pages?: InvitationPageLayout[];
+  print?: InvitationPrintSpec;
+  product_kind?: "card" | "ticket" | "chocolate" | "bifold" | "newspaper" | "mobile";
 }
 
 export interface InvitationUserData {
