@@ -21,7 +21,7 @@ VALUES
    {"id":"share_qr","type":"qr","x":490,"y":3380,"w":100,"h":100,"z":2}
  ]}'::jsonb,38,true),
 
-('mobile-romantic-floral','로맨틱 플로럴 (모바일)','mobile','both','natural_romantic',3,'basic',ARRAY['Gowun Batang','Pretendard'],'',
+('mobile-romantic-floral','로맨틱 플로럴 (모바일)','mobile','both','natural_romantic',0,'basic',ARRAY['Gowun Batang','Pretendard'],'',
  '{"canvas":{"w":1080,"h":3600},"slots":[
    {"id":"main_photo","type":"image","field":"main_photo","role":"photo","fit":"cover","image_order":1,"placeholder":"대표 사진","x":80,"y":120,"w":920,"h":1120,"z":1},
    {"id":"names_ko","type":"text","field":"couple_names","role":"names","placeholder":"신랑 · 신부","x":90,"y":1340,"w":900,"h":90,"z":2,"font_size":52,"align":"center","color":"#5A4A42","letter_spacing":2},
@@ -34,7 +34,7 @@ VALUES
    {"id":"share_qr","type":"qr","x":490,"y":3470,"w":100,"h":100,"z":2}
  ]}'::jsonb,37,true),
 
-('mobile-film-emotional','필름 감성 (모바일)','mobile','both','cinematic_emotional',4,'photo',ARRAY['Cormorant Garamond','Pretendard'],'',
+('mobile-film-emotional','필름 감성 (모바일)','mobile','both','cinematic_emotional',10,'photo',ARRAY['Cormorant Garamond','Pretendard'],'',
  '{"canvas":{"w":1080,"h":3800},"slots":[
    {"id":"main_photo","type":"image","field":"main_photo","role":"photo","fit":"cover","image_order":1,"placeholder":"대표 사진","x":0,"y":0,"w":1080,"h":1440,"z":1},
    {"id":"names_en","type":"text","role":"names","placeholder":"Groom & Bride","x":90,"y":1180,"w":900,"h":70,"z":2,"font_size":40,"font_style":"italic","align":"center","color":"#FFFFFF","letter_spacing":4},
@@ -48,7 +48,7 @@ VALUES
    {"id":"share_qr","type":"qr","x":490,"y":3680,"w":100,"h":100,"z":2}
  ]}'::jsonb,36,true),
 
-('mobile-classic-letter','클래식 레터 (모바일)','mobile','both','warm_letter',4,'basic',ARRAY['Noto Serif KR','Pretendard'],'',
+('mobile-classic-letter','클래식 레터 (모바일)','mobile','both','warm_letter',0,'basic',ARRAY['Noto Serif KR','Pretendard'],'',
  '{"canvas":{"w":1080,"h":3600},"slots":[
    {"id":"main_photo","type":"image","field":"main_photo","role":"photo","fit":"cover","image_order":1,"placeholder":"대표 사진","x":90,"y":140,"w":900,"h":1140,"z":1},
    {"id":"intro_text","type":"text","field":"intro_text","role":"intro","ai_promptable":true,"placeholder":"두 사람이 사랑과 믿음으로 한 가정을 이루려 합니다. 바쁘시더라도 오셔서 축복해 주시면 감사하겠습니다.","x":150,"y":1380,"w":780,"h":420,"z":2,"font_size":34,"align":"center","color":"#333333","line_height":2.0},
