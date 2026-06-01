@@ -40,6 +40,7 @@ import {
   exportInvitationPdfPages,
   type PdfPage,
 } from "@/lib/invitation/exportPdf";
+import { computeInvitationPrice } from "@/lib/invitation/computePrice";
 import {
   readFaceLayout,
   type InvitationLayout,
@@ -463,16 +464,28 @@ const InvitationFlow = () => {
       return;
     }
 
-    // 발행 총 비용 미리 검증 — 템플릿 가격 + AI 인사말 옵션
+    // 첫 사용(첫 청첩장) 반값 — 검증·차감 동일 기준
+    const { count: priorCount } = await (supabase as any)
+      .from("invitations")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+    const isFirstUse = (priorCount ?? 0) === 0;
+    const templateCharge = computeInvitationPrice(template.price_hearts, {
+      firstUse: isFirstUse,
+    });
+
+    // 발행 총 비용 미리 검증 — 템플릿 가격(첫사용 반값) + AI 인사말 옵션
     const aiSlots = template.layout.slots.filter(
       (s) => s.type === "text" && s.ai_promptable,
     );
     const aiCost = aiAuto ? aiSlots.length : 0;
-    const totalCost = template.price_hearts + aiCost;
+    const totalCost = templateCharge + aiCost;
     if ((hearts ?? 0) < totalCost) {
+      const firstNote =
+        isFirstUse && template.price_hearts > 0 ? " (첫 사용 반값)" : "";
       toast({
         title: "하트가 부족해요",
-        description: `발행에 ${totalCost} 하트가 필요해요 (템플릿 ${template.price_hearts} + AI ${aiCost}). 현재 ${hearts ?? 0}하트.`,
+        description: `발행에 ${totalCost} 하트가 필요해요 (템플릿 ${templateCharge}${firstNote} + AI ${aiCost}). 현재 ${hearts ?? 0}하트.`,
         variant: "destructive",
       });
       navigate("/points");
@@ -587,13 +600,13 @@ const InvitationFlow = () => {
         return;
       }
 
-      // 5) 템플릿 가격 차감 (price_hearts > 0). 실패 시 방금 만든 draft 삭제(보상).
-      if (template.price_hearts > 0) {
+      // 5) 템플릿 가격 차감 (첫 사용 반값 적용). 실패 시 방금 만든 draft 삭제(보상).
+      if (templateCharge > 0) {
         const { data: spendData, error: spendError } = await (supabase as any).rpc(
           "spend_hearts",
           {
             p_user_id: user.id,
-            p_amount: template.price_hearts,
+            p_amount: templateCharge,
             p_reason: "invitation_publish",
             p_ref_id: row.id,
           },

@@ -34,7 +34,7 @@ VALUES
    {"id":"share_qr","type":"qr","x":490,"y":3470,"w":100,"h":100,"z":2}
  ]}'::jsonb,37,true),
 
-('mobile-film-emotional','필름 감성 (모바일)','mobile','both','cinematic_emotional',10,'photo',ARRAY['Cormorant Garamond','Pretendard'],'',
+('mobile-film-emotional','필름 감성 (모바일)','mobile','both','cinematic_emotional',0,'photo',ARRAY['Cormorant Garamond','Pretendard'],'',
  '{"canvas":{"w":1080,"h":3800},"slots":[
    {"id":"main_photo","type":"image","field":"main_photo","role":"photo","fit":"cover","image_order":1,"placeholder":"대표 사진","x":0,"y":0,"w":1080,"h":1440,"z":1},
    {"id":"names_en","type":"text","role":"names","placeholder":"Groom & Bride","x":90,"y":1180,"w":900,"h":70,"z":2,"font_size":40,"font_style":"italic","align":"center","color":"#FFFFFF","letter_spacing":4},
