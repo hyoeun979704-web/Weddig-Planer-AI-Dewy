@@ -68,6 +68,14 @@ export interface InvitationSlot {
   line_height?: number;
   letter_spacing?: number;
 
+  // 사진 위 텍스트 가독성 — 그림자. shadow_color 가 있으면 InvitationCanvas 가
+  // Konva Text 에 그림자를 적용한다(앞면 사진 위 캘리그래피가 묻히지 않도록).
+  shadow_color?: string;
+  shadow_blur?: number;
+  shadow_offset_x?: number;
+  shadow_offset_y?: number;
+  shadow_opacity?: number;
+
   // 이미지/에셋 슬롯 기본값
   image_url?: string;
   fit?: "cover" | "contain";

@@ -412,6 +412,13 @@ const TextSlotBody = ({
       align={slot.align ?? "left"}
       lineHeight={slot.line_height ?? 1.4}
       letterSpacing={slot.letter_spacing}
+      // 사진 위 텍스트 가독성 — 템플릿이 shadow_color 를 주면 그림자 적용.
+      shadowEnabled={!!slot.shadow_color}
+      shadowColor={slot.shadow_color}
+      shadowBlur={slot.shadow_blur ?? 0}
+      shadowOffsetX={slot.shadow_offset_x ?? 0}
+      shadowOffsetY={slot.shadow_offset_y ?? 0}
+      shadowOpacity={slot.shadow_opacity ?? 1}
       wrap="word"
     />
   );
