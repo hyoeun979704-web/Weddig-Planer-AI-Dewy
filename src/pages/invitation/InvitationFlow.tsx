@@ -477,6 +477,69 @@ const InvitationFlow = () => {
   );
 
   // ─────────────────────────────────────────────
+  // 임시저장(자동저장) — 위저드 입력을 2.5초 후 draft 로 저장.
+  //   생성 전에 나가도 작업이 보존되고(내 청첩장에 draft 로 보임), 같은 세션은
+  //   하나의 draft 를 갱신(invitationId 재사용). 생성 시 이 draft 를 그대로 사용.
+  // ─────────────────────────────────────────────
+  const [isFlowSaving, setIsFlowSaving] = useState(false);
+  const [flowSavedAt, setFlowSavedAt] = useState<Date | null>(null);
+  useEffect(() => {
+    if (step !== "wizard" || !user || !template) return;
+    if (isGenerating || isFlowSaving) return;
+    const hasContent =
+      Object.keys(userData).length > 0 ||
+      photos.length > 0 ||
+      Object.keys(qrPaths).length > 0;
+    if (!hasContent) return;
+    const timer = window.setTimeout(async () => {
+      setIsFlowSaving(true);
+      try {
+        const { paths } = distributePhotos(template, photos);
+        const layout = {
+          textOverrides,
+          imagePaths: { ...paths, ...qrPaths },
+        };
+        if (invitationId) {
+          const { error } = await (supabase as any)
+            .from("invitations")
+            .update({
+              template_id: template.id,
+              back_template_id: backTemplateId,
+              user_data: userData,
+              layout,
+              ai_generated_text: aiText,
+            })
+            .eq("id", invitationId);
+          if (error) throw error;
+        } else {
+          const { data, error } = await (supabase as any)
+            .from("invitations")
+            .insert({
+              user_id: user.id,
+              template_id: template.id,
+              back_template_id: backTemplateId,
+              user_data: userData,
+              layout,
+              ai_generated_text: aiText,
+              status: "draft" as const,
+            })
+            .select("id")
+            .single();
+          if (error) throw error;
+          if (data?.id) setInvitationId(data.id);
+        }
+        setFlowSavedAt(new Date());
+      } catch {
+        // 조용히 실패 — 다음 변경 때 재시도. 생성 버튼은 그대로 동작.
+      } finally {
+        setIsFlowSaving(false);
+      }
+    }, 2500);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, userData, photos, qrPaths, textOverrides, aiText, template, backTemplateId]);
+
+  // ─────────────────────────────────────────────
   // 누끼 처리 — auto_cutout 슬롯의 사진을 remove.bg 로 변환
   //   같은 source_path 는 한 번만 호출되어 결과 재사용됨 (Edge function 측 dedup).
   // ─────────────────────────────────────────────
@@ -747,21 +810,41 @@ const InvitationFlow = () => {
         user_data: cleanedUserData,
         layout: { textOverrides: directOverrides, imagePaths: paths },
         ai_generated_text: generatedAi,
-        status: "draft" as const,
       };
-      const { data: row, error: insertError } = await (supabase as any)
-        .from("invitations")
-        .insert(payload)
-        .select("id")
-        .single();
-      if (insertError || !row?.id) {
-        toast({
-          title: "청첩장 저장에 실패했어요",
-          description: "다시 시도해주세요",
-          variant: "destructive",
-        });
-        setIsGenerating(false);
-        return;
+      // 자동저장으로 이미 draft 가 있으면 그걸 갱신, 없으면 새로 만든다.
+      let rowId = invitationId;
+      let createdNew = false;
+      if (rowId) {
+        const { error: updErr } = await (supabase as any)
+          .from("invitations")
+          .update(payload)
+          .eq("id", rowId);
+        if (updErr) {
+          toast({
+            title: "청첩장 저장에 실패했어요",
+            description: "다시 시도해주세요",
+            variant: "destructive",
+          });
+          setIsGenerating(false);
+          return;
+        }
+      } else {
+        const { data: row, error: insertError } = await (supabase as any)
+          .from("invitations")
+          .insert({ ...payload, status: "draft" as const })
+          .select("id")
+          .single();
+        if (insertError || !row?.id) {
+          toast({
+            title: "청첩장 저장에 실패했어요",
+            description: "다시 시도해주세요",
+            variant: "destructive",
+          });
+          setIsGenerating(false);
+          return;
+        }
+        rowId = row.id;
+        createdNew = true;
       }
 
       // 5) 템플릿 가격 차감 (첫 사용 반값 적용). 실패 시 방금 만든 draft 삭제(보상).
@@ -772,12 +855,15 @@ const InvitationFlow = () => {
             p_user_id: user.id,
             p_amount: templateCharge,
             p_reason: "invitation_publish",
-            p_ref_id: row.id,
+            p_ref_id: rowId,
           },
         );
         const spendRow = Array.isArray(spendData) ? spendData[0] : spendData;
         if (spendError || !spendRow?.success) {
-          await (supabase as any).from("invitations").delete().eq("id", row.id);
+          // 보상 삭제는 방금 새로 만든 경우에만 — 자동저장 draft 는 보존.
+          if (createdNew) {
+            await (supabase as any).from("invitations").delete().eq("id", rowId);
+          }
           toast({
             title: spendError ? "하트 차감 실패" : "하트가 부족해요",
             description: spendError ? spendError.message : (spendRow?.message ?? ""),
@@ -789,7 +875,7 @@ const InvitationFlow = () => {
         await fetchHearts();
       }
 
-      setInvitationId(row.id);
+      setInvitationId(rowId);
       setStep("result");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "오류";
@@ -1038,6 +1124,18 @@ const InvitationFlow = () => {
             {step === "wizard" && "정보 입력"}
             {step === "result" && "완성됐어요"}
           </h1>
+          {step === "wizard" && (
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              {isFlowSaving
+                ? "임시저장 중…"
+                : flowSavedAt
+                  ? `임시저장됨 ${flowSavedAt.toLocaleTimeString("ko-KR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`
+                  : ""}
+            </span>
+          )}
           {step === "result" && (
             <Button
               size="sm"
