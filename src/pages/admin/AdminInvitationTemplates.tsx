@@ -1,5 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Loader2, Trash2, Eye, EyeOff, Pencil } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  Plus,
+  Loader2,
+  Trash2,
+  Eye,
+  EyeOff,
+  Pencil,
+  FileJson,
+  Images,
+  Rows3,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +35,16 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import ImageUploader from "@/components/admin/ImageUploader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import {
+  createMobileRollLayout,
+  isSeamlessRoll,
+  MOBILE_ROLL_FRAME_HEIGHT,
+  MOBILE_ROLL_MAX_FRAMES,
+  MOBILE_ROLL_MAX_HEIGHT,
+  MOBILE_ROLL_WIDTH,
+  validateMobileRollLayout,
+} from "@/lib/invitation/layout";
+import type { InvitationLayout } from "@/lib/invitation/types";
 
 interface Font {
   id: string;
@@ -33,6 +53,7 @@ interface Font {
 
 interface Template {
   id: string;
+  slug: string | null;
   name: string;
   thumbnail_url: string;
   preview_url: string | null;
@@ -50,6 +71,7 @@ interface Template {
 type Form = Omit<Template, "id" | "created_at">;
 
 const emptyForm: Form = {
+  slug: "",
   name: "",
   thumbnail_url: "",
   preview_url: null,
@@ -77,6 +99,138 @@ const TONE_OPTIONS = [
   { value: "LUXURY", label: "럭셔리" },
 ];
 
+type UploadedRollFrame = {
+  backgroundUrl: string;
+  h: number;
+};
+
+const readLayoutJson = (json: string): InvitationLayout | null => {
+  try {
+    return JSON.parse(json || "{}") as InvitationLayout;
+  } catch {
+    return null;
+  }
+};
+
+const attachMobileRollBackgrounds = (
+  json: string,
+  frames: UploadedRollFrame[],
+): InvitationLayout => {
+  const fallback = createMobileRollLayout(frames);
+  const current = readLayoutJson(json);
+  const source =
+    current &&
+    isSeamlessRoll(current) &&
+    current.pages?.length === frames.length &&
+    current.pages.every((page) => page.canvas && Array.isArray(page.slots))
+      ? current
+      : fallback;
+  const pages = (source.pages ?? []).map((page, index) => ({
+    ...page,
+    canvas: {
+      ...page.canvas,
+      w: MOBILE_ROLL_WIDTH,
+      h: frames[index].h,
+      background_url: frames[index].backgroundUrl,
+    },
+  }));
+  return {
+    ...source,
+    product_kind: "mobile_roll",
+    presentation: "seamless_roll",
+    canvas: {
+      ...source.canvas,
+      w: MOBILE_ROLL_WIDTH,
+      h: pages.reduce((total, page) => total + page.canvas.h, 0),
+      bg: source.canvas.bg ?? "#FFFFFF",
+      background_url: frames[0]?.backgroundUrl,
+    },
+    slots: source.slots ?? [],
+    pages,
+  };
+};
+
+const preserveMobileRollBackgrounds = (
+  json: string,
+  nextLayout: InvitationLayout,
+): InvitationLayout => {
+  const current = readLayoutJson(json);
+  if (
+    !current ||
+    !isSeamlessRoll(current) ||
+    !isSeamlessRoll(nextLayout) ||
+    current.pages?.length !== nextLayout.pages?.length
+  ) {
+    return nextLayout;
+  }
+  const pages = (nextLayout.pages ?? []).map((page, index) => {
+    const backgroundUrl =
+      page.canvas.background_url || current.pages?.[index]?.canvas.background_url;
+    return {
+      ...page,
+      canvas: {
+        ...page.canvas,
+        ...(backgroundUrl ? { background_url: backgroundUrl } : {}),
+      },
+    };
+  });
+  return {
+    ...nextLayout,
+    canvas: {
+      ...nextLayout.canvas,
+      ...(pages[0]?.canvas.background_url
+        ? { background_url: pages[0].canvas.background_url }
+        : {}),
+    },
+    pages,
+  };
+};
+
+const canvasToPngBlob = (canvas: HTMLCanvasElement) =>
+  new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(
+      (value) =>
+        value ? resolve(value) : reject(new Error("이미지 변환에 실패했어요.")),
+      "image/png",
+    ),
+  );
+
+const normalizeMobileRollFrame = async (file: File) => {
+  const bitmap = await createImageBitmap(file);
+  try {
+    if (
+      bitmap.width === MOBILE_ROLL_WIDTH &&
+      bitmap.height === MOBILE_ROLL_FRAME_HEIGHT
+    ) {
+      return { blob: file as Blob, normalized: false };
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = MOBILE_ROLL_WIDTH;
+    canvas.height = MOBILE_ROLL_FRAME_HEIGHT;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("이미지 변환을 시작하지 못했어요.");
+
+    const scale = Math.min(
+      MOBILE_ROLL_WIDTH / bitmap.width,
+      MOBILE_ROLL_FRAME_HEIGHT / bitmap.height,
+    );
+    const width = bitmap.width * scale;
+    const height = bitmap.height * scale;
+    context.fillStyle = "#FFFFFF";
+    context.fillRect(0, 0, MOBILE_ROLL_WIDTH, MOBILE_ROLL_FRAME_HEIGHT);
+    context.drawImage(
+      bitmap,
+      (MOBILE_ROLL_WIDTH - width) / 2,
+      (MOBILE_ROLL_FRAME_HEIGHT - height) / 2,
+      width,
+      height,
+    );
+    return { blob: await canvasToPngBlob(canvas), normalized: true };
+  } finally {
+    bitmap.close();
+  }
+};
+
 const AdminInvitationTemplates = () => {
   const [items, setItems] = useState<Template[]>([]);
   const [fonts, setFonts] = useState<Font[]>([]);
@@ -86,6 +240,29 @@ const AdminInvitationTemplates = () => {
   const [layoutJson, setLayoutJson] = useState("{}");
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [rollFrameCount, setRollFrameCount] = useState(MOBILE_ROLL_MAX_FRAMES);
+  const [isRollUploading, setIsRollUploading] = useState(false);
+  const layoutPages = useMemo(() => {
+    try {
+      const parsed = JSON.parse(layoutJson || "{}") as {
+        pages?: Array<{
+          id?: string;
+          label?: string;
+          canvas?: { background_url?: string };
+        }>;
+      };
+      return Array.isArray(parsed.pages) ? parsed.pages : [];
+    } catch {
+      return [];
+    }
+  }, [layoutJson]);
+  const isMobileRoll = useMemo(() => {
+    try {
+      return isSeamlessRoll(JSON.parse(layoutJson || "{}") as InvitationLayout);
+    } catch {
+      return false;
+    }
+  }, [layoutJson]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -163,8 +340,49 @@ const AdminInvitationTemplates = () => {
       return;
     }
 
+    const pages = (layout as {
+      pages?: Array<{
+        id?: unknown;
+        canvas?: { w?: unknown; h?: unknown };
+        slots?: unknown;
+      }>;
+    }).pages;
+    if (pages !== undefined) {
+      const hasInvalidPage =
+        !Array.isArray(pages) ||
+        pages.length === 0 ||
+        pages.some(
+          (page) =>
+            typeof page.id !== "string" ||
+            !page.id.trim() ||
+            !page.canvas ||
+            typeof page.canvas.w !== "number" ||
+            typeof page.canvas.h !== "number" ||
+            page.canvas.w <= 0 ||
+            page.canvas.h <= 0 ||
+            !Array.isArray(page.slots),
+        );
+      if (hasInvalidPage) {
+        toast({
+          title: "layout.pages 형식을 확인해주세요",
+          description: "각 페이지에는 id, canvas.w, canvas.h, slots 배열이 필요해요.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    const mobileRollError = validateMobileRollLayout(layout as InvitationLayout);
+    if (mobileRollError) {
+      toast({
+        title: "모바일 롤페이지 규격을 확인해주세요",
+        description: mobileRollError,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSaving(true);
-    const payload = { ...form, layout };
+    const payload = { ...form, slug: form.slug?.trim() || null, layout };
     const { error } = editingId
       ? await (supabase as any)
           .from("invitation_templates")
@@ -191,6 +409,7 @@ const AdminInvitationTemplates = () => {
   const handleEdit = (t: Template) => {
     setEditingId(t.id);
     setForm({
+      slug: t.slug,
       name: t.name,
       thumbnail_url: t.thumbnail_url,
       preview_url: t.preview_url,
@@ -213,6 +432,206 @@ const AdminInvitationTemplates = () => {
       setEditingId(null);
       setForm(emptyForm);
       setLayoutJson("{}");
+    }
+  };
+
+  const updatePageBackgroundUrl = (pageIndex: number, url: string) => {
+    try {
+      const layout = JSON.parse(layoutJson || "{}") as {
+        canvas?: Record<string, unknown>;
+        pages?: Array<{
+          canvas?: Record<string, unknown>;
+          [key: string]: unknown;
+        }>;
+        [key: string]: unknown;
+      };
+      if (!Array.isArray(layout.pages) || !layout.pages[pageIndex]) return;
+      layout.pages[pageIndex] = {
+        ...layout.pages[pageIndex],
+        canvas: {
+          ...layout.pages[pageIndex].canvas,
+          background_url: url,
+        },
+      };
+      if (pageIndex === 0) {
+        layout.canvas = {
+          ...layout.canvas,
+          background_url: url,
+        };
+      }
+      setLayoutJson(JSON.stringify(layout, null, 2));
+    } catch {
+      toast({
+        title: "페이지 배경 반영 실패",
+        description: "레이아웃 JSON 형식을 먼저 확인해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLayoutFileSelected = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const parsed = preserveMobileRollBackgrounds(
+        layoutJson,
+        JSON.parse(await file.text()) as InvitationLayout,
+      );
+      setLayoutJson(JSON.stringify(parsed, null, 2));
+      toast({ title: "레이아웃 JSON을 불러왔어요" });
+    } catch {
+      toast({
+        title: "JSON 파일을 읽지 못했어요",
+        description: "올바른 JSON 파일인지 확인해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const uploadTemplateBlob = async (blob: Blob, extension = "png") => {
+    const path = `pages/${crypto.randomUUID()}.${extension}`;
+    const { error } = await supabase.storage
+      .from("invitation-templates")
+      .upload(path, blob, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: blob.type || "image/png",
+      });
+    if (error) throw error;
+    return supabase.storage.from("invitation-templates").getPublicUrl(path).data
+      .publicUrl;
+  };
+
+  const prepareMobileRoll = () => {
+    setForm((current) => ({ ...current, format: "mobile" }));
+    setLayoutJson(
+      JSON.stringify(createMobileRollLayout(rollFrameCount), null, 2),
+    );
+    toast({
+      title: `${rollFrameCount}개 프레임 등록 칸을 만들었어요`,
+      description: "프레임별 배경 이미지를 올리거나 일괄 등록을 사용해주세요.",
+    });
+  };
+
+  const handleMobileFramesSelected = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    if (files.length > MOBILE_ROLL_MAX_FRAMES) {
+      toast({
+        title: "프레임은 최대 10장까지 등록할 수 있어요",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsRollUploading(true);
+    try {
+      const normalizedFiles = await Promise.all(
+        files.map((file) => normalizeMobileRollFrame(file)),
+      );
+      const frames = [];
+      for (const [index, file] of files.entries()) {
+        const normalized = normalizedFiles[index];
+        const extension = normalized.normalized
+          ? "png"
+          : file.name.split(".").pop()?.toLowerCase() || "png";
+        frames.push({
+          backgroundUrl: await uploadTemplateBlob(normalized.blob, extension),
+          h: MOBILE_ROLL_FRAME_HEIGHT,
+        });
+      }
+      setForm((current) => ({ ...current, format: "mobile" }));
+      setLayoutJson(
+        JSON.stringify(attachMobileRollBackgrounds(layoutJson, frames), null, 2),
+      );
+      setRollFrameCount(frames.length);
+      const normalizedCount = normalizedFiles.filter(
+        (file) => file.normalized,
+      ).length;
+      toast({
+        title: `${frames.length}개 프레임을 연결했어요`,
+        description:
+          normalizedCount > 0
+            ? `${normalizedCount}장은 1080×1920px로 자동 맞춤했어요.`
+            : undefined,
+      });
+    } catch (error) {
+      toast({
+        title: "프레임 일괄 등록 실패",
+        description: error instanceof Error ? error.message : "업로드 오류",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRollUploading(false);
+    }
+  };
+
+  const handleMobileRollSelected = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setIsRollUploading(true);
+    try {
+      const bitmap = await createImageBitmap(file);
+      const frames = [];
+      try {
+        const scale = MOBILE_ROLL_WIDTH / bitmap.width;
+        const normalizedHeight = Math.round(bitmap.height * scale);
+        if (normalizedHeight > MOBILE_ROLL_MAX_HEIGHT) {
+          throw new Error(`긴 이미지는 최대 ${MOBILE_ROLL_MAX_HEIGHT}px까지 등록할 수 있어요.`);
+        }
+        for (let y = 0; y < normalizedHeight; y += MOBILE_ROLL_FRAME_HEIGHT) {
+          const h = Math.min(MOBILE_ROLL_FRAME_HEIGHT, normalizedHeight - y);
+          const canvas = document.createElement("canvas");
+          canvas.width = MOBILE_ROLL_WIDTH;
+          canvas.height = h;
+          const context = canvas.getContext("2d");
+          if (!context) throw new Error("이미지 분할을 시작하지 못했어요.");
+          context.fillStyle = "#FFFFFF";
+          context.fillRect(0, 0, MOBILE_ROLL_WIDTH, h);
+          context.drawImage(
+            bitmap,
+            0,
+            y / scale,
+            bitmap.width,
+            h / scale,
+            0,
+            0,
+            MOBILE_ROLL_WIDTH,
+            h,
+          );
+          frames.push({
+            backgroundUrl: await uploadTemplateBlob(await canvasToPngBlob(canvas)),
+            h,
+          });
+        }
+      } finally {
+        bitmap.close();
+      }
+      setForm((current) => ({ ...current, format: "mobile" }));
+      setLayoutJson(
+        JSON.stringify(attachMobileRollBackgrounds(layoutJson, frames), null, 2),
+      );
+      setRollFrameCount(frames.length);
+      toast({
+        title: `${frames.length}개 프레임으로 자동 분할했어요`,
+        description: `폭 ${MOBILE_ROLL_WIDTH}px · 전체 높이 ${frames.reduce((total, frame) => total + frame.h, 0)}px로 자동 맞춤했어요.`,
+      });
+    } catch (error) {
+      toast({
+        title: "긴 롤 이미지 등록 실패",
+        description: error instanceof Error ? error.message : "업로드 오류",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRollUploading(false);
     }
   };
 
@@ -298,6 +717,18 @@ const AdminInvitationTemplates = () => {
                 </div>
 
                 <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="slug">Slug</Label>
+                    <Input
+                      id="slug"
+                      value={form.slug ?? ""}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, slug: e.target.value }))
+                      }
+                      placeholder="newspaper-a4-01"
+                    />
+                  </div>
+
                   <div>
                     <Label htmlFor="name">템플릿 이름</Label>
                     <Input
@@ -429,8 +860,116 @@ const AdminInvitationTemplates = () => {
                 </div>
               </div>
 
+              {form.format === "mobile" && (
+                <section className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      모바일 롤페이지
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                      세로 이미지를 최대 {MOBILE_ROLL_MAX_FRAMES}장,
+                      전체 높이 {MOBILE_ROLL_MAX_HEIGHT}px까지 등록할 수 있어요.
+                      각 이미지는 1080×1920px로 자동 맞춤되고 사용자 화면에서는
+                      경계 없이 이어집니다.
+                    </p>
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <div className="w-24">
+                      <Label htmlFor="roll-frame-count" className="text-[11px]">
+                        프레임 수
+                      </Label>
+                      <Input
+                        id="roll-frame-count"
+                        type="number"
+                        min={1}
+                        max={MOBILE_ROLL_MAX_FRAMES}
+                        value={rollFrameCount}
+                        onChange={(e) =>
+                          setRollFrameCount(
+                            Math.max(
+                              1,
+                              Math.min(
+                                MOBILE_ROLL_MAX_FRAMES,
+                                parseInt(e.target.value) || 1,
+                              ),
+                            ),
+                          )
+                        }
+                        className="mt-1"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={prepareMobileRoll}
+                      disabled={isRollUploading}
+                      className="flex-1"
+                    >
+                      <Rows3 className="w-4 h-4 mr-2" />
+                      등록 칸 만들기
+                    </Button>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    <label
+                      className={`inline-flex items-center justify-center gap-2 h-10 rounded-md border border-border bg-background text-xs font-semibold cursor-pointer hover:bg-muted ${
+                        isRollUploading ? "pointer-events-none opacity-50" : ""
+                      }`}
+                    >
+                      {isRollUploading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Images className="w-4 h-4" />
+                      )}
+                      9:16 프레임 일괄 등록
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={handleMobileFramesSelected}
+                      />
+                    </label>
+                    <label
+                      className={`inline-flex items-center justify-center gap-2 h-10 rounded-md border border-border bg-background text-xs font-semibold cursor-pointer hover:bg-muted ${
+                        isRollUploading ? "pointer-events-none opacity-50" : ""
+                      }`}
+                    >
+                      {isRollUploading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Rows3 className="w-4 h-4" />
+                      )}
+                      긴 롤 이미지 자동 분할
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleMobileRollSelected}
+                      />
+                    </label>
+                  </div>
+                  {isMobileRoll && (
+                    <p className="text-[11px] font-medium text-emerald-700">
+                      현재 JSON은 모바일 롤페이지 규격입니다.
+                    </p>
+                  )}
+                </section>
+              )}
+
               <div>
-                <Label htmlFor="layout">레이아웃 JSON</Label>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="layout">레이아웃 JSON</Label>
+                  <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-border bg-background text-xs font-medium cursor-pointer hover:bg-muted">
+                    <FileJson className="w-3.5 h-3.5" />
+                    JSON 불러오기
+                    <input
+                      type="file"
+                      accept="application/json,.json"
+                      className="hidden"
+                      onChange={handleLayoutFileSelected}
+                    />
+                  </label>
+                </div>
                 <Textarea
                   id="layout"
                   value={layoutJson}
@@ -458,6 +997,37 @@ const AdminInvitationTemplates = () => {
   ]
 }`}
                 />
+                {layoutPages.length > 0 && (
+                  <div className="mt-4">
+                    <div className="mb-2">
+                      <p className="text-sm font-semibold text-foreground">
+                        {isMobileRoll ? "프레임별 배경 이미지" : "페이지별 배경 이미지"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        JSON의 pages 배열을 기준으로 업로드 칸이 생성됩니다.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {layoutPages.map((page, index) => (
+                        <div key={page.id ?? index}>
+                          <Label className="mb-1.5 block text-[11px]">
+                            {page.label ?? page.id ?? `${index + 1}P`}
+                          </Label>
+                          <ImageUploader
+                            key={`page-bg-${editingId ?? "new"}-${page.id ?? index}-${page.canvas?.background_url ?? ""}`}
+                            bucket="invitation-templates"
+                            pathPrefix="pages/"
+                            initialUrl={page.canvas?.background_url}
+                            maxSizeMB={8}
+                            onUploaded={(_, url) =>
+                              updatePageBackgroundUrl(index, url)
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="mt-2 p-3 bg-blue-50 rounded-lg text-[11px] text-blue-900 leading-relaxed">
                   <p className="font-semibold mb-1">Figma 워크플로우</p>
                   <ol className="list-decimal list-inside space-y-0.5">

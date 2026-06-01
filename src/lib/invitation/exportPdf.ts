@@ -12,13 +12,15 @@ export function exportInvitationPdf(
   canvasW: number,
   canvasH: number,
   filename: string,
+  printWmm?: number,
+  printHmm?: number,
 ) {
   // mm 단위로 페이지 크기 결정 (캔버스 픽셀 → A6 비율 유지)
   // 기본 폭 130mm, 비율에 맞춰 높이 자동 계산.
   // 커스텀 format 을 지정하므로 orientation 인자는 무시되거나 충돌 가능 →
   // 명시적으로 빼고 jsPDF 가 format 만 보고 페이지 크기를 결정하게 둔다.
-  const pageWmm = 130;
-  const pageHmm = (canvasH / canvasW) * pageWmm;
+  const pageWmm = printWmm ?? 130;
+  const pageHmm = printHmm ?? (canvasH / canvasW) * pageWmm;
 
   const pdf = new jsPDF({
     unit: "mm",
@@ -34,6 +36,17 @@ export interface PdfPage {
   /** 캔버스 픽셀 폭/높이 (페이지 비율 계산용) */
   w: number;
   h: number;
+  printWmm?: number;
+  printHmm?: number;
+}
+
+export function pixelRatioForPrint(
+  displayWidth: number,
+  printWmm?: number,
+  dpi = 300,
+) {
+  if (!printWmm) return 3;
+  return Math.max(3, (printWmm / 25.4) * dpi / displayWidth);
 }
 
 /**
@@ -46,17 +59,25 @@ export function exportInvitationPdfPages(pages: PdfPage[], filename: string) {
   const valid = pages.filter((p) => p.dataUrl && p.w > 0 && p.h > 0);
   if (valid.length === 0) return;
   if (valid.length === 1) {
-    return exportInvitationPdf(valid[0].dataUrl, valid[0].w, valid[0].h, filename);
+    return exportInvitationPdf(
+      valid[0].dataUrl,
+      valid[0].w,
+      valid[0].h,
+      filename,
+      valid[0].printWmm,
+      valid[0].printHmm,
+    );
   }
 
-  const pageWmm = 130;
-  const heightOf = (p: PdfPage) => (p.h / p.w) * pageWmm;
+  const widthOf = (p: PdfPage) => p.printWmm ?? 130;
+  const heightOf = (p: PdfPage) => p.printHmm ?? (p.h / p.w) * widthOf(p);
 
-  const pdf = new jsPDF({ unit: "mm", format: [pageWmm, heightOf(valid[0])] });
+  const pdf = new jsPDF({ unit: "mm", format: [widthOf(valid[0]), heightOf(valid[0])] });
   valid.forEach((p, i) => {
+    const wmm = widthOf(p);
     const hmm = heightOf(p);
-    if (i > 0) pdf.addPage([pageWmm, hmm]);
-    pdf.addImage(p.dataUrl, "PNG", 0, 0, pageWmm, hmm, undefined, "FAST");
+    if (i > 0) pdf.addPage([wmm, hmm]);
+    pdf.addImage(p.dataUrl, "PNG", 0, 0, wmm, hmm, undefined, "FAST");
   });
   pdf.save(filename);
 }
