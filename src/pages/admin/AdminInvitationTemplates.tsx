@@ -186,6 +186,51 @@ const preserveMobileRollBackgrounds = (
   };
 };
 
+const canvasToPngBlob = (canvas: HTMLCanvasElement) =>
+  new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(
+      (value) =>
+        value ? resolve(value) : reject(new Error("이미지 변환에 실패했어요.")),
+      "image/png",
+    ),
+  );
+
+const normalizeMobileRollFrame = async (file: File) => {
+  const bitmap = await createImageBitmap(file);
+  try {
+    if (
+      bitmap.width === MOBILE_ROLL_WIDTH &&
+      bitmap.height === MOBILE_ROLL_FRAME_HEIGHT
+    ) {
+      return { blob: file as Blob, normalized: false };
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = MOBILE_ROLL_WIDTH;
+    canvas.height = MOBILE_ROLL_FRAME_HEIGHT;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("이미지 변환을 시작하지 못했어요.");
+
+    const scale = Math.min(
+      MOBILE_ROLL_WIDTH / bitmap.width,
+      MOBILE_ROLL_FRAME_HEIGHT / bitmap.height,
+    );
+    const width = bitmap.width * scale;
+    const height = bitmap.height * scale;
+    context.fillStyle = "#FFFFFF";
+    context.fillRect(0, 0, MOBILE_ROLL_WIDTH, MOBILE_ROLL_FRAME_HEIGHT);
+    context.drawImage(
+      bitmap,
+      (MOBILE_ROLL_WIDTH - width) / 2,
+      (MOBILE_ROLL_FRAME_HEIGHT - height) / 2,
+      width,
+      height,
+    );
+    return { blob: await canvasToPngBlob(canvas), normalized: true };
+  } finally {
+    bitmap.close();
+  }
+};
+
 const AdminInvitationTemplates = () => {
   const [items, setItems] = useState<Template[]>([]);
   const [fonts, setFonts] = useState<Font[]>([]);
@@ -486,26 +531,17 @@ const AdminInvitationTemplates = () => {
     }
     setIsRollUploading(true);
     try {
-      await Promise.all(
-        files.map(async (file) => {
-          const bitmap = await createImageBitmap(file);
-          const { width, height } = bitmap;
-          bitmap.close();
-          if (
-            width !== MOBILE_ROLL_WIDTH ||
-            height !== MOBILE_ROLL_FRAME_HEIGHT
-          ) {
-            throw new Error(
-              `${file.name}: ${MOBILE_ROLL_WIDTH}×${MOBILE_ROLL_FRAME_HEIGHT}px 이미지만 등록할 수 있어요.`,
-            );
-          }
-        }),
+      const normalizedFiles = await Promise.all(
+        files.map((file) => normalizeMobileRollFrame(file)),
       );
       const frames = [];
-      for (const file of files) {
-        const extension = file.name.split(".").pop()?.toLowerCase() || "png";
+      for (const [index, file] of files.entries()) {
+        const normalized = normalizedFiles[index];
+        const extension = normalized.normalized
+          ? "png"
+          : file.name.split(".").pop()?.toLowerCase() || "png";
         frames.push({
-          backgroundUrl: await uploadTemplateBlob(file, extension),
+          backgroundUrl: await uploadTemplateBlob(normalized.blob, extension),
           h: MOBILE_ROLL_FRAME_HEIGHT,
         });
       }
@@ -514,7 +550,16 @@ const AdminInvitationTemplates = () => {
         JSON.stringify(attachMobileRollBackgrounds(layoutJson, frames), null, 2),
       );
       setRollFrameCount(frames.length);
-      toast({ title: `${frames.length}개 프레임을 연결했어요` });
+      const normalizedCount = normalizedFiles.filter(
+        (file) => file.normalized,
+      ).length;
+      toast({
+        title: `${frames.length}개 프레임을 연결했어요`,
+        description:
+          normalizedCount > 0
+            ? `${normalizedCount}장은 1080×1920px로 자동 맞춤했어요.`
+            : undefined,
+      });
     } catch (error) {
       toast({
         title: "프레임 일괄 등록 실패",
@@ -537,39 +582,33 @@ const AdminInvitationTemplates = () => {
       const bitmap = await createImageBitmap(file);
       const frames = [];
       try {
-        if (bitmap.width !== MOBILE_ROLL_WIDTH) {
-          throw new Error(`긴 이미지는 폭이 ${MOBILE_ROLL_WIDTH}px이어야 해요.`);
-        }
-        if (bitmap.height > MOBILE_ROLL_MAX_HEIGHT) {
+        const scale = MOBILE_ROLL_WIDTH / bitmap.width;
+        const normalizedHeight = Math.round(bitmap.height * scale);
+        if (normalizedHeight > MOBILE_ROLL_MAX_HEIGHT) {
           throw new Error(`긴 이미지는 최대 ${MOBILE_ROLL_MAX_HEIGHT}px까지 등록할 수 있어요.`);
         }
-        for (let y = 0; y < bitmap.height; y += MOBILE_ROLL_FRAME_HEIGHT) {
-          const h = Math.min(MOBILE_ROLL_FRAME_HEIGHT, bitmap.height - y);
+        for (let y = 0; y < normalizedHeight; y += MOBILE_ROLL_FRAME_HEIGHT) {
+          const h = Math.min(MOBILE_ROLL_FRAME_HEIGHT, normalizedHeight - y);
           const canvas = document.createElement("canvas");
           canvas.width = MOBILE_ROLL_WIDTH;
           canvas.height = h;
           const context = canvas.getContext("2d");
           if (!context) throw new Error("이미지 분할을 시작하지 못했어요.");
+          context.fillStyle = "#FFFFFF";
+          context.fillRect(0, 0, MOBILE_ROLL_WIDTH, h);
           context.drawImage(
             bitmap,
             0,
-            y,
-            MOBILE_ROLL_WIDTH,
-            h,
+            y / scale,
+            bitmap.width,
+            h / scale,
             0,
             0,
             MOBILE_ROLL_WIDTH,
             h,
-          );
-          const blob = await new Promise<Blob>((resolve, reject) =>
-            canvas.toBlob(
-              (value) =>
-                value ? resolve(value) : reject(new Error("이미지 분할에 실패했어요.")),
-              "image/png",
-            ),
           );
           frames.push({
-            backgroundUrl: await uploadTemplateBlob(blob),
+            backgroundUrl: await uploadTemplateBlob(await canvasToPngBlob(canvas)),
             h,
           });
         }
@@ -583,7 +622,7 @@ const AdminInvitationTemplates = () => {
       setRollFrameCount(frames.length);
       toast({
         title: `${frames.length}개 프레임으로 자동 분할했어요`,
-        description: `전체 높이 ${frames.reduce((total, frame) => total + frame.h, 0)}px`,
+        description: `폭 ${MOBILE_ROLL_WIDTH}px · 전체 높이 ${frames.reduce((total, frame) => total + frame.h, 0)}px로 자동 맞춤했어요.`,
       });
     } catch (error) {
       toast({
@@ -828,9 +867,10 @@ const AdminInvitationTemplates = () => {
                       모바일 롤페이지
                     </p>
                     <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                      1080×1920px 프레임을 최대 {MOBILE_ROLL_MAX_FRAMES}장,
+                      세로 이미지를 최대 {MOBILE_ROLL_MAX_FRAMES}장,
                       전체 높이 {MOBILE_ROLL_MAX_HEIGHT}px까지 등록할 수 있어요.
-                      사용자 화면에서는 경계 없이 이어집니다.
+                      각 이미지는 1080×1920px로 자동 맞춤되고 사용자 화면에서는
+                      경계 없이 이어집니다.
                     </p>
                   </div>
                   <div className="flex items-end gap-2">
