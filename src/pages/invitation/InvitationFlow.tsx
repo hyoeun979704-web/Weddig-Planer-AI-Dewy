@@ -1129,13 +1129,11 @@ const WizardCombined = ({
           onChange={(v) => onUserDataChange({ ...userData, venue_name: v })}
           placeholder="OO웨딩홀"
         />
-        <Field
-          label="식장 주소"
+        <VenueAddressField
           value={userData.venue_address ?? ""}
           onChange={(v) =>
             onUserDataChange({ ...userData, venue_address: v })
           }
-          placeholder="서울시 OO구 ..."
         />
         <Field
           label="신랑 부모님 (선택)"
@@ -1382,6 +1380,114 @@ const Field = ({
     />
   </div>
 );
+
+// 식장 주소 — 네이버 주소 검색(NCP Geocoding)으로 정확한 주소를 채운다.
+interface AddrResult {
+  roadAddress: string;
+  jibunAddress: string;
+  lng: string;
+  lat: string;
+}
+const VenueAddressField = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) => {
+  const [results, setResults] = useState<AddrResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState(false);
+
+  const search = async () => {
+    const q = value.trim();
+    if (q.length < 2) {
+      toast({ title: "식장명이나 주소를 2자 이상 입력해주세요" });
+      return;
+    }
+    setSearching(true);
+    try {
+      const { data, error } = await (supabase as any).functions.invoke(
+        "invitation-address-search",
+        { body: { query: q } },
+      );
+      if (error || data?.error) {
+        throw new Error(data?.error ?? error?.message ?? "검색 실패");
+      }
+      setResults(data?.results ?? []);
+      setSearched(true);
+    } catch (e) {
+      toast({
+        title: "주소 검색 실패",
+        description: e instanceof Error ? e.message : "오류",
+        variant: "destructive",
+      });
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  return (
+    <div>
+      <Label className="text-[12px] text-muted-foreground">식장 주소</Label>
+      <div className="mt-1 flex gap-2">
+        <Input
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setSearched(false);
+          }}
+          placeholder="식장명 또는 주소 입력 후 검색"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              search();
+            }
+          }}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={search}
+          disabled={searching}
+          className="shrink-0"
+        >
+          {searching ? "검색…" : "주소 검색"}
+        </Button>
+      </div>
+      {searched && results.length > 0 && (
+        <ul className="mt-2 rounded-lg border border-border divide-y divide-border overflow-hidden">
+          {results.map((r, i) => (
+            <li key={i}>
+              <button
+                type="button"
+                className="w-full text-left px-3 py-2 hover:bg-muted/50"
+                onClick={() => {
+                  onChange(r.roadAddress || r.jibunAddress);
+                  setSearched(false);
+                }}
+              >
+                <span className="text-[13px] text-foreground">
+                  {r.roadAddress || r.jibunAddress}
+                </span>
+                {r.jibunAddress && r.roadAddress && (
+                  <span className="block text-[11px] text-muted-foreground">
+                    {r.jibunAddress}
+                  </span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {searched && results.length === 0 && (
+        <p className="mt-2 text-[12px] text-muted-foreground">
+          검색 결과가 없어요. 직접 입력해도 돼요.
+        </p>
+      )}
+    </div>
+  );
+};
 
 // ════════════════════════════════════════════════════════════════
 // 3) Result — 큰 미리보기 + 액션

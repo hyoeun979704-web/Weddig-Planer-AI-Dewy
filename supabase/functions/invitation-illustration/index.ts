@@ -31,9 +31,24 @@ const ILLUSTRATION_PROMPT =
   "hand-painted illustration suitable for an elegant wedding invitation. " +
   "Plain or softly washed background.";
 
+// 약도(map) 스타일 — 지도 캡쳐를 청첩장에 어울리는 미니멀 라인아트 약도로.
+// 도로/랜드마크/목적지 마커 위치는 정확히 유지하되 UI·로고·노이즈는 제거.
+const MAP_PROMPT =
+  "Transform this map screenshot into a clean, minimal hand-drawn directions map " +
+  "(약도) illustration suitable for an elegant wedding invitation. Keep the streets, " +
+  "key landmarks, and the destination marker position accurate and in the same " +
+  "layout. Use simple line art, soft muted colors, clear road lines and concise " +
+  "Korean labels. Remove app UI, logos, ads, and photographic noise. Flat, " +
+  "print-friendly, refined style.";
+
+// style='map' 일러스트는 호출당 정가 차감 (반복 가능한 부가기능).
+const MAP_HEART_COST = 3;
+
 interface RequestBody {
   /** invitation-uploads 안 본인 폴더의 사진 경로들 */
   source_paths: string[];
+  /** 변환 스타일 — 기본 portrait(사진→수채화), map(지도→약도) */
+  style?: "portrait" | "map";
 }
 
 interface IllustrationResult {
@@ -85,10 +100,36 @@ serve(async (req) => {
       }
     }
     const uniquePaths = Array.from(new Set(body.source_paths));
+    const style = body.style === "map" ? "map" : "portrait";
+    const prompt = style === "map" ? MAP_PROMPT : ILLUSTRATION_PROMPT;
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) {
       return json({ error: "openai_not_configured" }, 500);
+    }
+
+    // 약도 일러스트는 호출당 3하트 정가 차감 (실패 시 아래에서 환불).
+    // portrait 는 발행 시점에 일괄 차감하므로 여기서 과금하지 않음.
+    if (style === "map") {
+      const { data: spendData, error: spendError } = await supabaseAdmin.rpc(
+        "spend_hearts",
+        {
+          p_user_id: userId,
+          p_amount: MAP_HEART_COST,
+          p_reason: "map_illustration",
+        },
+      );
+      const spendRow = Array.isArray(spendData) ? spendData[0] : spendData;
+      if (spendError) {
+        console.error("spend_hearts error:", spendError);
+        return json({ error: "hearts_error" }, 500);
+      }
+      if (!spendRow?.success) {
+        return json(
+          { error: "insufficient_hearts", message: spendRow?.message },
+          402,
+        );
+      }
     }
 
     // ───────── 각 path 별로 일러스트 변환 ─────────
@@ -109,7 +150,7 @@ serve(async (req) => {
         // 2) OpenAI gpt-image-2 호출 (images/edits)
         const form = new FormData();
         form.append("model", "gpt-image-2");
-        form.append("prompt", ILLUSTRATION_PROMPT);
+        form.append("prompt", prompt);
         form.append("size", "1024x1024");
         form.append("quality", "medium");
         form.append("n", "1");
@@ -177,6 +218,14 @@ serve(async (req) => {
     }
 
     if (Object.keys(illustrationPaths).length === 0) {
+      // 약도 과금분 환불 (earn_hearts 는 service_role 전용)
+      if (style === "map") {
+        await supabaseAdmin.rpc("earn_hearts", {
+          p_user_id: userId,
+          p_amount: MAP_HEART_COST,
+          p_reason: "map_illustration_refund",
+        });
+      }
       return json({ error: "illustration_all_failed" }, 502);
     }
 

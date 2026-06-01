@@ -135,6 +135,7 @@ const InvitationStudio = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [shareCodeStyle, setShareCodeStyle] = useState<ShareCodeStyle>("basic");
   const [isGeneratingMap, setIsGeneratingMap] = useState(false);
+  const [isStylizingMap, setIsStylizingMap] = useState(false);
   const [backTemplates, setBackTemplates] = useState<Template[]>([]);
   const [activeFace, setActiveFace] = useState<InvitationFace>("front");
 
@@ -464,6 +465,71 @@ const InvitationStudio = () => {
     }
   };
 
+  // 템플릿풍 약도 변환 (3하트) — 캡쳐/업로드된 지도 → gpt-image 일러스트 약도.
+  const handleStylizeMap = async () => {
+    if (!selectedSlot || selectedSlot.type !== "map") return;
+    const id = selectedSlot.id;
+    const sourcePath = activeFaceState.imagePaths[id];
+    if (!sourcePath) {
+      toast({
+        title: "먼저 약도를 가져오세요",
+        description: "‘약도 자동 생성’ 또는 직접 업로드 후 템플릿풍으로 변환할 수 있어요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const applyFace = setFace;
+    setIsStylizingMap(true);
+    try {
+      const { data, error } = await (supabase as any).functions.invoke(
+        "invitation-illustration",
+        { body: { source_paths: [sourcePath], style: "map" } },
+      );
+      if (error) {
+        let code: string | undefined;
+        try {
+          const ctx = (error as { context?: { json?: () => Promise<any> } })
+            .context;
+          if (ctx?.json) code = (await ctx.json())?.error;
+        } catch {
+          /* ignore */
+        }
+        if (code === "insufficient_hearts") {
+          toast({
+            title: "하트가 부족해요",
+            description: "약도 일러스트 변환은 3하트가 필요해요.",
+            variant: "destructive",
+          });
+          navigate("/points");
+          return;
+        }
+        throw new Error(code ?? error.message ?? "변환 실패");
+      }
+      if (data?.error) throw new Error(data.error);
+      const newPath = data?.illustration_paths?.[sourcePath] as
+        | string
+        | undefined;
+      const newUrl = data?.illustration_urls?.[sourcePath] as
+        | string
+        | undefined;
+      if (!newPath) throw new Error("변환 결과가 없어요");
+      applyFace((p) => ({
+        ...p,
+        imagePaths: { ...p.imagePaths, [id]: newPath },
+        imageUrls: newUrl ? { ...p.imageUrls, [id]: newUrl } : p.imageUrls,
+      }));
+      toast({ title: "템플릿풍 약도로 변환했어요 (3하트 사용)" });
+    } catch (e) {
+      toast({
+        title: "약도 변환 실패",
+        description: e instanceof Error ? e.message : "오류",
+        variant: "destructive",
+      });
+    } finally {
+      setIsStylizingMap(false);
+    }
+  };
+
   // 면 전환 (선택 슬롯 초기화)
   const handleSwitchFace = (f: InvitationFace) => {
     setActiveFace(f);
@@ -755,6 +821,8 @@ const InvitationStudio = () => {
           onOpenAi={() => setAiSheetOpen(true)}
           onGenerateMap={handleGenerateMap}
           isGeneratingMap={isGeneratingMap}
+          onStylizeMap={handleStylizeMap}
+          isStylizingMap={isStylizingMap}
           onMoveSlot={handleMoveSlot}
           onAddText={handleAddText}
           onDeleteSlot={handleDeleteSlot}
@@ -1020,6 +1088,8 @@ const StudioView = ({
   onOpenAi,
   onGenerateMap,
   isGeneratingMap,
+  onStylizeMap,
+  isStylizingMap,
   onMoveSlot,
   onAddText,
   onDeleteSlot,
@@ -1057,6 +1127,8 @@ const StudioView = ({
   onOpenAi: () => void;
   onGenerateMap: () => void;
   isGeneratingMap: boolean;
+  onStylizeMap: () => void;
+  isStylizingMap: boolean;
   onMoveSlot: (id: string, x: number, y: number) => void;
   onAddText: () => void;
   onDeleteSlot: () => void;
@@ -1371,18 +1443,38 @@ const StudioView = ({
             />
           )}
           {selectedSlot.type === "map" && (
-            <Button
-              onClick={onGenerateMap}
-              disabled={isGeneratingMap}
-              className="w-full"
-            >
-              {isGeneratingMap ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <MapPin className="w-4 h-4 mr-2" />
-              )}
-              약도 자동 생성 (식장 주소 기준)
-            </Button>
+            <div className="space-y-2">
+              <Button
+                onClick={onGenerateMap}
+                disabled={isGeneratingMap || isStylizingMap}
+                variant="outline"
+                className="w-full"
+              >
+                {isGeneratingMap ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <MapPin className="w-4 h-4 mr-2" />
+                )}
+                약도 자동 생성 (무료)
+              </Button>
+              <Button
+                onClick={onStylizeMap}
+                disabled={isGeneratingMap || isStylizingMap}
+                className="w-full"
+              >
+                {isStylizingMap ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 mr-2" />
+                )}
+                템플릿풍 약도 만들기
+                <span className="ml-1 text-[11px] opacity-80">3하트</span>
+              </Button>
+              <p className="text-[11px] text-muted-foreground">
+                먼저 ‘약도 자동 생성(무료)’으로 지도를 불러온 뒤, 템플릿에 어울리는
+                약도로 변환할 수 있어요.
+              </p>
+            </div>
           )}
           <Button onClick={onPickPhoto} variant="outline" className="w-full">
             <ImageIcon className="w-4 h-4 mr-2" />
