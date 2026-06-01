@@ -14,6 +14,18 @@ describe("romanizeKoreanName", () => {
     expect(romanizeKoreanName("강민")).toBe("Kang Min");
   });
 
+  it("romanizes ㅇ/ㅁ/ㅂ/ㅅ batchim correctly (회귀: JONG 표 off-by-one)", () => {
+    // 받침 ㅇ → 'ng' (이름에 매우 흔함). 이전엔 JONG 표가 29개라 't' 로 나왔음.
+    expect(romanizeKoreanName("류근창")).toBe("Ryu Geun chang"); // 창: ...ng
+    expect(romanizeKoreanName("이서영")).toBe("Lee Seo yeong");
+    expect(romanizeKoreanName("김정")).toBe("Kim Jeong");
+    expect(romanizeKoreanName("박성")).toBe("Park Seong");
+    expect(romanizeKoreanName("강동")).toBe("Kang Dong");
+    // ㅂ/ㅅ 받침도 같은 밀림으로 깨졌던 케이스
+    expect(romanizeKoreanName("최갑")).toBe("Choi Gap"); // ㅂ → p
+    expect(romanizeKoreanName("정못")).toBe("Jung Mot"); // ㅅ → t
+  });
+
   it("handles compound surnames", () => {
     expect(romanizeKoreanName("남궁민수")).toBe("Namgung Min su");
     expect(romanizeKoreanName("선우은")).toBe("Sunwoo Eun");
