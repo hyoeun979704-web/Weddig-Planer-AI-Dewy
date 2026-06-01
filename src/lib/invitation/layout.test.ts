@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { pixelRatioForPrint } from "@/lib/invitation/exportPdf";
 import {
   createMobileRollLayout,
+  createPaperPagesLayout,
   getInvitationPages,
   getInvitationSlots,
   isSeamlessRoll,
@@ -9,6 +10,9 @@ import {
   MOBILE_ROLL_MAX_FRAMES,
   MOBILE_ROLL_MAX_HEIGHT,
   MOBILE_ROLL_WIDTH,
+  PAPER_MAX_PAGES,
+  PAPER_PAGE_HEIGHT,
+  PAPER_PAGE_WIDTH,
   pageToLayout,
   validateMobileRollLayout,
 } from "@/lib/invitation/layout";
@@ -108,5 +112,47 @@ describe("invitation layout pages", () => {
     layout.canvas.h += MOBILE_ROLL_FRAME_HEIGHT;
 
     expect(validateMobileRollLayout(layout)).toContain("1~10");
+  });
+
+  it("creates paged paper layout with default size and is not a seamless roll", () => {
+    const layout = createPaperPagesLayout(3);
+
+    expect(layout.pages).toHaveLength(3);
+    expect(getInvitationPages(layout)).toHaveLength(3);
+    expect(layout.canvas).toMatchObject({
+      w: PAPER_PAGE_WIDTH,
+      h: PAPER_PAGE_HEIGHT,
+    });
+    expect(isSeamlessRoll(layout)).toBe(false); // paged, never seamless
+    expect(validateMobileRollLayout(layout)).toBeNull();
+    expect(layout.pages?.map((page) => page.id)).toEqual([
+      "page-01",
+      "page-02",
+      "page-03",
+    ]);
+  });
+
+  it("applies per-image size and background when registering paper pages", () => {
+    const layout = createPaperPagesLayout([
+      { w: 1240, h: 1754, backgroundUrl: "/front.png" },
+      { w: 1240, h: 1754, backgroundUrl: "/back.png" },
+    ]);
+
+    expect(layout.pages).toHaveLength(2);
+    expect(layout.canvas).toMatchObject({ w: 1240, h: 1754 });
+    expect(layout.pages?.[0].canvas).toMatchObject({
+      w: 1240,
+      h: 1754,
+      background_url: "/front.png",
+    });
+    expect(layout.pages?.[1].canvas.background_url).toBe("/back.png");
+    expect(getInvitationSlots(layout)).toEqual([]);
+  });
+
+  it("clamps paper pages to the maximum and never produces an empty layout", () => {
+    expect(createPaperPagesLayout(PAPER_MAX_PAGES + 5).pages).toHaveLength(
+      PAPER_MAX_PAGES,
+    );
+    expect(createPaperPagesLayout([]).pages).toHaveLength(1);
   });
 });

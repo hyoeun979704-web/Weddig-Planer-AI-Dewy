@@ -37,11 +37,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
   createMobileRollLayout,
+  createPaperPagesLayout,
   isSeamlessRoll,
   MOBILE_ROLL_FRAME_HEIGHT,
   MOBILE_ROLL_MAX_FRAMES,
   MOBILE_ROLL_MAX_HEIGHT,
   MOBILE_ROLL_WIDTH,
+  PAPER_MAX_PAGES,
+  type PaperPageInput,
   validateMobileRollLayout,
 } from "@/lib/invitation/layout";
 import type { InvitationLayout } from "@/lib/invitation/types";
@@ -186,6 +189,39 @@ const preserveMobileRollBackgrounds = (
   };
 };
 
+type UploadedPaperPage = { w: number; h: number; backgroundUrl: string };
+
+// 종이 페이지 이미지 일괄 등록 — 이미 같은 개수의 페이지가 있으면 slots 를 보존한 채
+// 배경/크기만 갱신, 아니면 새 종이 레이아웃 생성.
+const attachPaperPageBackgrounds = (
+  json: string,
+  pages: UploadedPaperPage[],
+): InvitationLayout => {
+  const fallback = createPaperPagesLayout(pages as PaperPageInput[]);
+  const current = readLayoutJson(json);
+  const reusable =
+    current &&
+    !isSeamlessRoll(current) &&
+    Array.isArray(current.pages) &&
+    current.pages.length === pages.length &&
+    current.pages.every((page) => page.canvas && Array.isArray(page.slots));
+  if (!current || !reusable) return fallback;
+  const nextPages = (current.pages ?? []).map((page, index) => ({
+    ...page,
+    canvas: {
+      ...page.canvas,
+      w: pages[index].w,
+      h: pages[index].h,
+      background_url: pages[index].backgroundUrl,
+    },
+  }));
+  return {
+    ...current,
+    canvas: { ...current.canvas, ...nextPages[0].canvas },
+    pages: nextPages,
+  };
+};
+
 const canvasToPngBlob = (canvas: HTMLCanvasElement) =>
   new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(
@@ -242,6 +278,8 @@ const AdminInvitationTemplates = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [rollFrameCount, setRollFrameCount] = useState(MOBILE_ROLL_MAX_FRAMES);
   const [isRollUploading, setIsRollUploading] = useState(false);
+  const [paperPageCount, setPaperPageCount] = useState(2);
+  const [isPaperUploading, setIsPaperUploading] = useState(false);
   const layoutPages = useMemo(() => {
     try {
       const parsed = JSON.parse(layoutJson || "{}") as {
@@ -544,6 +582,66 @@ const AdminInvitationTemplates = () => {
       title: `${rollFrameCount}개 프레임 등록 칸을 만들었어요`,
       description: "프레임별 배경 이미지를 올리거나 일괄 등록을 사용해주세요.",
     });
+  };
+
+  const preparePaperPages = () => {
+    setForm((current) => ({ ...current, format: "paper" }));
+    setLayoutJson(
+      JSON.stringify(createPaperPagesLayout(paperPageCount), null, 2),
+    );
+    toast({
+      title: `${paperPageCount}개 페이지 등록 칸을 만들었어요`,
+      description: "페이지별 배경 이미지를 올리거나 일괄 등록을 사용해주세요.",
+    });
+  };
+
+  // 종이 페이지 이미지 일괄 등록 — 각 이미지의 실제 크기를 읽어 페이지 캔버스에 반영.
+  const handlePaperPagesSelected = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    if (files.length > PAPER_MAX_PAGES) {
+      toast({
+        title: `페이지는 최대 ${PAPER_MAX_PAGES}장까지 등록할 수 있어요`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsPaperUploading(true);
+    try {
+      const pages: UploadedPaperPage[] = [];
+      for (const file of files) {
+        const bitmap = await createImageBitmap(file);
+        const w = bitmap.width;
+        const h = bitmap.height;
+        bitmap.close();
+        const extension = file.name.split(".").pop()?.toLowerCase() || "png";
+        pages.push({
+          w,
+          h,
+          backgroundUrl: await uploadTemplateBlob(file, extension),
+        });
+      }
+      setForm((current) => ({ ...current, format: "paper" }));
+      setLayoutJson(
+        JSON.stringify(attachPaperPageBackgrounds(layoutJson, pages), null, 2),
+      );
+      setPaperPageCount(pages.length);
+      toast({
+        title: `${pages.length}개 페이지를 연결했어요`,
+        description: "각 이미지의 원본 크기로 페이지 캔버스를 맞췄어요.",
+      });
+    } catch (error) {
+      toast({
+        title: "페이지 일괄 등록 실패",
+        description: error instanceof Error ? error.message : "업로드 오류",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPaperUploading(false);
+    }
   };
 
   const handleMobileFramesSelected = async (
@@ -983,6 +1081,77 @@ const AdminInvitationTemplates = () => {
                       현재 JSON은 모바일 롤페이지 규격입니다.
                     </p>
                   )}
+                </section>
+              )}
+
+              {form.format === "paper" && (
+                <section className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      종이 페이지
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                      앞·뒤 또는 여러 장(최대 {PAPER_MAX_PAGES}장)을 등록할 수
+                      있어요. 이미지를 올리면 각 장의 원본 크기로 페이지가
+                      만들어지고, 사용자 화면에서는 페이지별로 넘겨 봅니다.
+                      한 장짜리는 아래 "배경 이미지" 한 칸만 써도 돼요.
+                    </p>
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <div className="w-24">
+                      <Label htmlFor="paper-page-count" className="text-[11px]">
+                        페이지 수
+                      </Label>
+                      <Input
+                        id="paper-page-count"
+                        type="number"
+                        min={1}
+                        max={PAPER_MAX_PAGES}
+                        value={paperPageCount}
+                        onChange={(e) =>
+                          setPaperPageCount(
+                            Math.max(
+                              1,
+                              Math.min(
+                                PAPER_MAX_PAGES,
+                                parseInt(e.target.value) || 1,
+                              ),
+                            ),
+                          )
+                        }
+                        className="mt-1"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={preparePaperPages}
+                      disabled={isPaperUploading}
+                      className="flex-1"
+                    >
+                      <Rows3 className="w-4 h-4 mr-2" />
+                      등록 칸 만들기
+                    </Button>
+                  </div>
+                  <label
+                    className={`inline-flex items-center justify-center gap-2 h-10 w-full rounded-md border border-border bg-background text-xs font-semibold cursor-pointer hover:bg-muted ${
+                      isPaperUploading ? "pointer-events-none opacity-50" : ""
+                    }`}
+                  >
+                    {isPaperUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Images className="w-4 h-4" />
+                    )}
+                    페이지 이미지 일괄 등록
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handlePaperPagesSelected}
+                    />
+                  </label>
                 </section>
               )}
 

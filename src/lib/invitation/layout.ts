@@ -17,6 +17,63 @@ export interface MobileRollFrameInput {
   backgroundUrl?: string;
 }
 
+// ── 종이(다중 페이지) ──────────────────────────────
+// 종이 청첩장은 seamless roll 이 아니라 일반 paged 레이아웃.
+// 페이지마다 자기 캔버스(배경 PNG)를 가질 수 있다 (예: 앞/뒤, newspaper p1~p4).
+export const PAPER_PAGE_WIDTH = 800;   // A4 비율 기본값 (관리자가 JSON 에서 조정 가능)
+export const PAPER_PAGE_HEIGHT = 1200;
+export const PAPER_MAX_PAGES = 8;
+
+export interface PaperPageInput {
+  id?: string;
+  label?: string;
+  w?: number;
+  h?: number;
+  backgroundUrl?: string;
+}
+
+/**
+ * 종이 다중 페이지 레이아웃 생성. 숫자를 주면 빈 페이지 N개, 입력 배열을 주면
+ * 각 페이지의 크기·배경 이미지를 그대로 반영. slots 는 빈 배열로 시작 (관리자가
+ * JSON 에서 슬롯 정의). seamless roll 과 달리 페이지별 크기가 자유롭다.
+ */
+export function createPaperPagesLayout(
+  pagesInput: number | PaperPageInput[] = 2,
+): InvitationLayout {
+  const inputs: PaperPageInput[] =
+    typeof pagesInput === "number"
+      ? Array.from(
+          { length: Math.max(1, Math.min(PAPER_MAX_PAGES, pagesInput)) },
+          () => ({}),
+        )
+      : pagesInput.length > 0
+        ? pagesInput.slice(0, PAPER_MAX_PAGES)
+        : [{}];
+  const pages = inputs.map((page, index) => {
+    const w = page.w && page.w > 0 ? page.w : PAPER_PAGE_WIDTH;
+    const h = page.h && page.h > 0 ? page.h : PAPER_PAGE_HEIGHT;
+    return {
+      id: page.id ?? `page-${String(index + 1).padStart(2, "0")}`,
+      label: page.label ?? `${index + 1}P`,
+      order: index + 1,
+      canvas: {
+        w,
+        h,
+        bg: "#FFFFFF",
+        ...(page.backgroundUrl ? { background_url: page.backgroundUrl } : {}),
+      },
+      slots: [],
+    };
+  });
+  return {
+    product_kind: "card",
+    presentation: "paged",
+    canvas: { ...pages[0].canvas },
+    slots: [],
+    pages,
+  };
+}
+
 /** Read V2 pages while keeping every legacy canvas + slots template valid. */
 export function getInvitationPages(layout: InvitationLayout): InvitationPageLayout[] {
   if (Array.isArray(layout.pages) && layout.pages.length > 0) {
@@ -58,7 +115,7 @@ export function isSeamlessRoll(layout: InvitationLayout) {
 export function createMobileRollLayout(
   frames: number | MobileRollFrameInput[] = MOBILE_ROLL_MAX_FRAMES,
 ): InvitationLayout {
-  const inputs =
+  const inputs: MobileRollFrameInput[] =
     typeof frames === "number"
       ? Array.from(
           { length: Math.max(1, Math.min(MOBILE_ROLL_MAX_FRAMES, frames)) },
