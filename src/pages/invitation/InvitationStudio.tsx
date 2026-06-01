@@ -156,6 +156,10 @@ const InvitationStudio = () => {
   const [aiSheetOpen, setAiSheetOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  // 자동저장 — 편집 변경 후 디바운스 저장 + 상태 표시(사용자가 동작을 확인 가능하도록)
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
+  const autosaveHydratedRef = useRef(false);
   const dismissedSlots = useRef<Set<string>>(new Set());
   const idleTimerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -252,8 +256,75 @@ const InvitationStudio = () => {
         setShareUrl(`${window.location.origin}/i/${data.share_slug}`);
       }
       setStep("studio");
+      // 로드로 인한 state 변경이 자동저장을 트리거하지 않도록, 복원 완료 후 hydrate 표시.
+      autosaveHydratedRef.current = true;
     })();
   }, [params.id, user, navigate]);
+
+  // 새로 만들기(저장된 id 없음)는 즉시 편집 가능 → 바로 hydrate.
+  useEffect(() => {
+    if (!params.id) autosaveHydratedRef.current = true;
+  }, [params.id]);
+
+  // ────────────────────────────────────────
+  // 자동저장 — 편집 변경 2.5초 후 조용히 저장 (draft 레이아웃, 이미지 재업로드 없음)
+  // ────────────────────────────────────────
+  useEffect(() => {
+    if (!autosaveHydratedRef.current) return;
+    if (!user || !template) return;
+    if (isSaving || isPublishing || isAutoSaving) return;
+    // 내용이 없으면(빈 새 청첩장) 빈 draft 를 만들지 않음.
+    const hasContent =
+      Object.keys(userData).length > 0 ||
+      Object.keys(frontFace.imagePaths).length > 0 ||
+      Object.keys(frontFace.textOverrides).length > 0 ||
+      frontFace.extraSlots.length > 0 ||
+      Object.keys(aiText).length > 0;
+    if (!invitationId && !hasContent) return;
+
+    const timer = window.setTimeout(async () => {
+      setIsAutoSaving(true);
+      try {
+        const layout = await buildLayout(loadedStatus === "published");
+        if (invitationId) {
+          const { error } = await (supabase as any)
+            .from("invitations")
+            .update({
+              template_id: template.id,
+              back_template_id: backTemplateId,
+              user_data: userData,
+              layout,
+              ai_generated_text: aiText,
+            })
+            .eq("id", invitationId);
+          if (error) throw error;
+        } else {
+          const { data, error } = await (supabase as any)
+            .from("invitations")
+            .insert({
+              user_id: user.id,
+              template_id: template.id,
+              back_template_id: backTemplateId,
+              user_data: userData,
+              layout,
+              ai_generated_text: aiText,
+              status: "draft" as const,
+            })
+            .select("id")
+            .single();
+          if (error) throw error;
+          setInvitationId(data.id);
+        }
+        setAutoSavedAt(new Date());
+      } catch {
+        // 조용히 실패 — 다음 변경 때 다시 시도. 명시적 저장 버튼은 그대로 동작.
+      } finally {
+        setIsAutoSaving(false);
+      }
+    }, 2500);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userData, frontFace, backFace, aiText, backTemplateId]);
 
   // ────────────────────────────────────────
   // 템플릿 로드 (template 단계 진입 시)
@@ -781,6 +852,18 @@ const InvitationStudio = () => {
           <h1 className="text-base font-bold text-foreground flex-1">
             청첩장 만들기
           </h1>
+          {step === "studio" && (
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              {isAutoSaving
+                ? "저장 중…"
+                : autoSavedAt
+                  ? `자동저장됨 ${autoSavedAt.toLocaleTimeString("ko-KR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`
+                  : ""}
+            </span>
+          )}
           {step === "studio" && (
             <Button
               size="sm"
