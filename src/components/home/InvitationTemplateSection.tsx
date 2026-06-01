@@ -65,7 +65,7 @@ const InvitationTemplateSection = () => {
         <h2 className="text-[16px] font-bold text-black">5분 완성! 청첩장 만들기</h2>
         <button
           type="button"
-          onClick={() => navigate("/invitation-venues")}
+          onClick={() => navigate("/invitation/new")}
           className="text-[12px] text-black/50"
         >
           더보기
@@ -76,7 +76,13 @@ const InvitationTemplateSection = () => {
           <VendorMediaCard
             key={template.id}
             data={template}
-            onClick={() => navigate("/invitation-venues")}
+            onClick={() =>
+              navigate(
+                `/invitation/new?format=${
+                  template.category === "종이" ? "paper" : "mobile"
+                }`,
+              )
+            }
           />
         ))}
       </div>
