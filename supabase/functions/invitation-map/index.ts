@@ -7,12 +7,13 @@
 //   4) invitation-uploads/{user_id}/map-{uuid}.png 로 업로드 (service_role)
 //   5) { path } 반환 → 클라이언트가 map 슬롯 imagePaths 에 적용
 //
-// 필요 시크릿:
-//   NAVER_MAP_CLIENT_ID, NAVER_MAP_CLIENT_SECRET  (NCP Maps — Geocoding + Static Map 권한)
+// 필요 시크릿 (둘 중 하나):
+//   NAVER_CLIENT_ID, NAVER_CLIENT_SECRET          (기존 네이버 앱에 Maps 활성화한 경우)
+//   또는 NAVER_MAP_CLIENT_ID, NAVER_MAP_CLIENT_SECRET (별도 NCP Maps 키를 쓰는 경우 — 우선)
 //   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (자동 주입)
 //
-// 주의: NCP 콘솔의 엔드포인트/헤더 버전에 따라 호스트가 다를 수 있음
-//   (naveropenapi.apigw.ntruss.com ↔ maps.apigw.ntruss.com). 키 발급처 기준으로 확인.
+// 헤더: 지도(Geocoding/Static Map)는 콘솔 출처와 무관하게 X-NCP-APIGW-API-KEY-ID 사용.
+//   (X-Naver-Client-* 는 검색 openapi.naver.com 전용이라 지도엔 안 씀)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -40,14 +41,21 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const naverId = Deno.env.get("NAVER_MAP_CLIENT_ID");
-  const naverSecret = Deno.env.get("NAVER_MAP_CLIENT_SECRET");
+  // 별도 Maps 키(NAVER_MAP_*)가 있으면 우선, 없으면 기존 네이버 앱 키(NAVER_*) 재사용.
+  const naverId =
+    Deno.env.get("NAVER_MAP_CLIENT_ID") ?? Deno.env.get("NAVER_CLIENT_ID");
+  const naverSecret =
+    Deno.env.get("NAVER_MAP_CLIENT_SECRET") ??
+    Deno.env.get("NAVER_CLIENT_SECRET");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!naverId || !naverSecret) {
-    return json({ error: "지도 API 키가 설정되지 않았어요 (NAVER_MAP_*)." }, 500);
+    return json(
+      { error: "지도 API 키가 설정되지 않았어요 (NAVER_CLIENT_* 또는 NAVER_MAP_*)." },
+      500,
+    );
   }
   if (!supabaseUrl || !anonKey || !serviceKey) {
     return json({ error: "서버 설정 오류" }, 500);

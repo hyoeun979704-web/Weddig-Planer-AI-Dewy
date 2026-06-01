@@ -6,7 +6,8 @@
 //
 // 비용: NCP Geocoding 은 대표계정 월 무료 제공량이 커서 이 앱 규모에선 사실상 무료.
 //
-// 필요 시크릿: NAVER_MAP_CLIENT_ID, NAVER_MAP_CLIENT_SECRET (NCP Maps - Geocoding 권한)
+// 필요 시크릿 (둘 중 하나): NAVER_CLIENT_ID/SECRET (기존 앱에 Maps 활성화) 또는
+//   NAVER_MAP_CLIENT_ID/SECRET (별도 NCP Maps 키 — 우선). 헤더는 X-NCP-APIGW-API-KEY-ID.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -39,12 +40,18 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const naverId = Deno.env.get("NAVER_MAP_CLIENT_ID");
-  const naverSecret = Deno.env.get("NAVER_MAP_CLIENT_SECRET");
+  const naverId =
+    Deno.env.get("NAVER_MAP_CLIENT_ID") ?? Deno.env.get("NAVER_CLIENT_ID");
+  const naverSecret =
+    Deno.env.get("NAVER_MAP_CLIENT_SECRET") ??
+    Deno.env.get("NAVER_CLIENT_SECRET");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   if (!naverId || !naverSecret) {
-    return json({ error: "지도 API 키가 설정되지 않았어요 (NAVER_MAP_*)." }, 500);
+    return json(
+      { error: "지도 API 키가 설정되지 않았어요 (NAVER_CLIENT_* 또는 NAVER_MAP_*)." },
+      500,
+    );
   }
   if (!supabaseUrl || !anonKey) return json({ error: "서버 설정 오류" }, 500);
 
