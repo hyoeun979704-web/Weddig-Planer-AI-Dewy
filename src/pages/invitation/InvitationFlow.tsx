@@ -102,6 +102,9 @@ const InvitationFlow = () => {
 
   const [userData, setUserData] = useState<InvitationUserData>({});
   const [photos, setPhotos] = useState<{ path: string; url: string }[]>([]);
+  // QR 슬롯에 직접 첨부하는 이미지 (slot.id → storage path / signed url)
+  const [qrPaths, setQrPaths] = useState<Record<string, string>>({});
+  const [qrUrls, setQrUrls] = useState<Record<string, string>>({});
   const [aiAuto, setAiAuto] = useState(true);
   const [consentOpen, setConsentOpen] = useState(false);
   const [pendingPhotoSelect, setPendingPhotoSelect] = useState(false);
@@ -210,6 +213,8 @@ const InvitationFlow = () => {
     setInvitationId(null);
     setUserData({});
     setPhotos([]);
+    setQrPaths({});
+    setQrUrls({});
     setImagePaths({});
     setImageUrls({});
     setTextOverrides({});
@@ -375,6 +380,59 @@ const InvitationFlow = () => {
 
   const removePhoto = (idx: number) => {
     setPhotos((p) => p.filter((_, i) => i !== idx));
+  };
+
+  // ─────────────────────────────────────────────
+  // QR 이미지 첨부 — QR 슬롯에 직접 올리는 외부 QR(모바일 청첩장 링크 등)
+  // ─────────────────────────────────────────────
+  const qrFileInputRef = useRef<HTMLInputElement>(null);
+  const qrTargetSlotRef = useRef<string | null>(null);
+  const onAttachQr = (slotId: string) => {
+    if (!user) {
+      toast({ title: "로그인이 필요해요" });
+      navigate("/auth");
+      return;
+    }
+    qrTargetSlotRef.current = slotId;
+    qrFileInputRef.current?.click();
+  };
+  const handleQrSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const slotId = qrTargetSlotRef.current;
+    if (!file || !user || !slotId) return;
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "QR 이미지가 너무 커요 (5MB 초과)" });
+      return;
+    }
+    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+    const path = `${user.id}/qr-${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("invitation-uploads")
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (error) {
+      toast({ title: "QR 업로드 실패", description: error.message, variant: "destructive" });
+      return;
+    }
+    const { data: signed } = await supabase.storage
+      .from("invitation-uploads")
+      .createSignedUrl(path, 60 * 60 * 24);
+    setQrPaths((p) => ({ ...p, [slotId]: path }));
+    if (signed?.signedUrl)
+      setQrUrls((u) => ({ ...u, [slotId]: signed.signedUrl }));
+  };
+  const removeQr = (slotId: string) => {
+    setQrPaths((p) => {
+      const next = { ...p };
+      delete next[slotId];
+      return next;
+    });
+    setQrUrls((u) => {
+      const next = { ...u };
+      delete next[slotId];
+      return next;
+    });
   };
 
   // ─────────────────────────────────────────────
@@ -637,6 +695,9 @@ const InvitationFlow = () => {
         paths = illustResult.paths;
         urls = illustResult.urls;
       }
+      // QR 슬롯에 직접 첨부한 이미지를 합쳐 렌더/저장에 반영.
+      paths = { ...paths, ...qrPaths };
+      urls = { ...urls, ...qrUrls };
       setImagePaths(paths);
       setImageUrls(urls);
 
@@ -1015,6 +1076,9 @@ const InvitationFlow = () => {
           hearts={hearts}
           isGenerating={isGenerating}
           onGenerate={handleGenerate}
+          qrUrls={qrUrls}
+          onAttachQr={onAttachQr}
+          onRemoveQr={removeQr}
         />
       )}
 
@@ -1053,6 +1117,13 @@ const InvitationFlow = () => {
         multiple
         className="hidden"
         onChange={handleFilesSelected}
+      />
+      <input
+        ref={qrFileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleQrSelected}
       />
 
       <Dialog open={consentOpen} onOpenChange={setConsentOpen}>
@@ -1176,6 +1247,9 @@ const WizardCombined = ({
   hearts,
   isGenerating,
   onGenerate,
+  qrUrls,
+  onAttachQr,
+  onRemoveQr,
 }: {
   template: Template;
   userData: InvitationUserData;
@@ -1188,8 +1262,14 @@ const WizardCombined = ({
   hearts: number | null;
   isGenerating: boolean;
   onGenerate: () => void;
+  qrUrls: Record<string, string>;
+  onAttachQr: (slotId: string) => void;
+  onRemoveQr: (slotId: string) => void;
 }) => {
   const photoSlotCount = requiredPhotoCount(template.layout);
+  const qrSlots = getInvitationSlots(template.layout).filter(
+    (s) => s.type === "qr",
+  );
   const aiSlotCount = getInvitationSlots(template.layout).filter(
     (s) => s.type === "text" && s.ai_promptable,
   ).length;
@@ -1321,6 +1401,50 @@ const WizardCombined = ({
                 </span>
               </button>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* QR 이미지 첨부 — 종이 청첩장의 모바일 청첩장 링크 QR 등 */}
+      {qrSlots.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-bold text-foreground">QR 이미지</h2>
+          <p className="text-[11px] text-muted-foreground">
+            모바일 청첩장 링크 등 QR 이미지를 첨부하세요. 안 올리면 QR 자리는
+            표시되지 않아요.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {qrSlots.map((slot) => {
+              const url = qrUrls[slot.id];
+              return (
+                <div key={slot.id} className="relative">
+                  {url ? (
+                    <div className="w-24 h-24 rounded-lg overflow-hidden border border-border bg-white">
+                      <img src={url} alt="QR" className="w-full h-full object-contain" />
+                      <button
+                        type="button"
+                        onClick={() => onRemoveQr(slot.id)}
+                        className="absolute top-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center"
+                        aria-label="QR 제거"
+                      >
+                        <X className="w-3.5 h-3.5 text-white" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onAttachQr(slot.id)}
+                      className="w-24 h-24 rounded-lg border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center gap-1 active:scale-[0.98]"
+                    >
+                      <Upload className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">
+                        QR 첨부
+                      </span>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
