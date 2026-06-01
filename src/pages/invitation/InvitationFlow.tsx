@@ -190,6 +190,32 @@ const InvitationFlow = () => {
   }, [fetchHearts]);
 
   // ─────────────────────────────────────────────
+  // 새 진입 = 처음부터.
+  //   React Router 는 같은 경로(/invitation/new)로 다시 이동해도 컴포넌트를
+  //   remount 하지 않아, 이전에 만들고 남은 step="result"/invitationId 가 그대로
+  //   보였다(결과의 '다른 형식으로 만들기' 등으로 재진입 시). location.key 가
+  //   바뀌면(= 새 내비게이션) 위저드 상태를 초기화해 템플릿 선택부터 다시 시작.
+  // ─────────────────────────────────────────────
+  const prefillTriedRef = useRef(false);
+  const flowKeyRef = useRef(location.key);
+  useEffect(() => {
+    if (flowKeyRef.current === location.key) return; // 최초 마운트는 그대로
+    flowKeyRef.current = location.key;
+    setStep("template");
+    setTemplate(null);
+    setBackTemplate(null);
+    setBackTemplateId(null);
+    setInvitationId(null);
+    setUserData({});
+    setPhotos([]);
+    setImagePaths({});
+    setImageUrls({});
+    setTextOverrides({});
+    setAiText({});
+    prefillTriedRef.current = false; // 새 진입에서 prefill 재허용
+  }, [location.key]);
+
+  // ─────────────────────────────────────────────
   // 입력정보 자동 불러오기 — 가장 최근 청첩장의 개인정보 필드를 prefill.
   //   매번 다시 입력하는 번거로움 제거. 새 청첩장 진입 시 1회만, 아직 아무것도
   //   입력하지 않았고 편집 중(invitationId)도 아닐 때만 채움.
@@ -197,7 +223,6 @@ const InvitationFlow = () => {
   //   다른 디자인에 섞이면 안 되므로 제외. (user_wedding_settings 의 venue_* 컬럼은
   //   DB 미존재 가능성이 있어 사용하지 않음 — 422 회귀 방지)
   // ─────────────────────────────────────────────
-  const prefillTriedRef = useRef(false);
   useEffect(() => {
     if (!user || prefillTriedRef.current) return;
     if (invitationId) return; // 편집 모드면 건드리지 않음
