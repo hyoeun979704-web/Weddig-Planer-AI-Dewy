@@ -10,6 +10,7 @@ import {
   Type,
   Trash2,
   Share2,
+  Sparkles,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -703,6 +704,7 @@ const InvitationStudio = () => {
           onSelectSlot={setSelectedSlotId}
           onTextChange={handleTextChange}
           onFontChange={handleFontChange}
+          onOpenAi={() => setAiSheetOpen(true)}
           onMoveSlot={handleMoveSlot}
           onAddText={handleAddText}
           onDeleteSlot={handleDeleteSlot}
@@ -965,6 +967,7 @@ const StudioView = ({
   onSelectSlot,
   onTextChange,
   onFontChange,
+  onOpenAi,
   onMoveSlot,
   onAddText,
   onDeleteSlot,
@@ -999,6 +1002,7 @@ const StudioView = ({
   onSelectSlot: (id: string | null) => void;
   onTextChange: (text: string) => void;
   onFontChange: (family: string | null) => void;
+  onOpenAi: () => void;
   onMoveSlot: (id: string, x: number, y: number) => void;
   onAddText: () => void;
   onDeleteSlot: () => void;
@@ -1235,6 +1239,20 @@ const StudioView = ({
               ? `자동 매핑 필드: ${selectedSlot.field}`
               : "자유 텍스트"}
           </p>
+
+          {/* AI 인삿말 추천 — ai_promptable 슬롯 (호출당 1하트) */}
+          {selectedSlot.ai_promptable && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={onOpenAi}
+            >
+              <Sparkles className="w-4 h-4 mr-1.5 text-primary" />
+              AI 인삿말 추천
+              <span className="ml-1 text-[10px] text-muted-foreground">1하트</span>
+            </Button>
+          )}
 
           {/* 폰트 선택 — locked / editable_font:false 슬롯은 숨김 */}
           {!selectedSlot.locked && selectedSlot.editable_font !== false && (
