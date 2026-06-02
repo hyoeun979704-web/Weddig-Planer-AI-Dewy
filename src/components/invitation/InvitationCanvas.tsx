@@ -271,6 +271,10 @@ const MONTHS_EN = [
   "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
   "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
 ];
+const MONTHS_FULL_EN = [
+  "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+  "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
+];
 
 /** 'HH:mm' → '오후 2시 30분' (분이 0이면 '오후 2시'). */
 function formatTimeKo(time: string | undefined): string {
@@ -310,6 +314,10 @@ function formatWeddingDate(
       return `${y} ${MONTHS_EN[Number(mo) - 1]} ${Number(d)}`;
     case "en_mdy":
       return `${MONTHS_EN[Number(mo) - 1]} ${Number(d)}, ${y}`;
+    case "month_year_en":
+      return `${MONTHS_FULL_EN[Number(mo) - 1]} ${y}`;
+    case "mdy_dot":
+      return `${pad2(Number(mo))}.${pad2(Number(d))}.${y}`;
     case "full_ko":
     default: {
       const wd = WEEKDAYS_KO[date.getDay()];
@@ -696,7 +704,9 @@ const CalendarMonthGrid = ({ slot, date, fontFamily }: CalendarMonthGridProps) =
   const color = slot.calendar_color ?? "#1A1A1A";
   const accent = slot.calendar_accent_color ?? "#E91E63";
 
-  const headerH = slot.h * 0.18;
+  // 헤더("09 SEPTEMBER")를 숨기면 요일+날짜만 — 위에 별도 라벨을 둘 때 사용.
+  const showHeader = !slot.calendar_hide_header;
+  const headerH = showHeader ? slot.h * 0.18 : 0;
   const weekdayH = slot.h * 0.1;
   const gridYStart = headerH + weekdayH;
   const gridH = slot.h - gridYStart;
@@ -715,20 +725,22 @@ const CalendarMonthGrid = ({ slot, date, fontFamily }: CalendarMonthGridProps) =
 
   return (
     <Group>
-      {/* 헤더: "MM MARCH" 등 */}
-      <Text
-        x={0}
-        y={0}
-        width={slot.w}
-        height={headerH}
-        text={`${String(month + 1).padStart(2, "0")} ${monthNameEn(month)}`}
-        fontFamily={fontFamily}
-        fontSize={headerH * 0.6}
-        fill={color}
-        align="center"
-        verticalAlign="middle"
-        letterSpacing={2}
-      />
+      {/* 헤더: "MM MARCH" 등 (calendar_hide_header 면 생략) */}
+      {showHeader && (
+        <Text
+          x={0}
+          y={0}
+          width={slot.w}
+          height={headerH}
+          text={`${String(month + 1).padStart(2, "0")} ${monthNameEn(month)}`}
+          fontFamily={fontFamily}
+          fontSize={headerH * 0.6}
+          fill={color}
+          align="center"
+          verticalAlign="middle"
+          letterSpacing={2}
+        />
+      )}
 
       {/* 요일 라인 */}
       {weekdays.map((w, i) => (
