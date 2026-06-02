@@ -136,6 +136,28 @@ export const MAKEUP_SCENE_TYPE_DESC: Record<MakeupSceneType, string> = {
 };
 
 /**
+ * 헤어 자동 스타일링 블록.
+ *
+ * 사용자 본인 머리(색·길이·질감)는 유지하되, 선택한 컷(본식/촬영)·무드(컨셉)·
+ * 조명에 어울리는 신부 헤어스타일로 자동 스타일링하도록 지시한다.
+ */
+const HAIR_BY_SCENE: Record<MakeupSceneType, string> = {
+  CEREMONY:
+    "a refined, elegant ceremony hairstyle — e.g. a clean low chignon, a soft half-up, or a sleek polished updo with a few face-framing strands; formal and wedding-ready",
+  STUDIO:
+    "an editorial photoshoot hairstyle that complements the concept — e.g. soft glossy waves worn down, a soft half-up, or a modern updo; styled and camera-ready",
+};
+
+const buildHairBlock = (scene: MakeupScene): string =>
+  `HAIR — auto-style HER OWN hair to suit the chosen options
+- Keep her natural hair color, length and texture from Image 1 (do not change
+  her identity; no wig-like, extended, or fake-looking hair)
+- Restyle it into ${HAIR_BY_SCENE[scene.scene]}
+- Match the styling to the makeup mood/concept above and to the
+  ${MAKEUP_SCENE_TYPE_LABEL[scene.scene]} setting under the given lighting
+- The hair must look intentionally styled and bridal — never flat, frizzy or messy`;
+
+/**
  * 메인 메이크업 프롬프트 빌더. Edge Function 에서 사용.
  *
  * GPT-4o(gpt-image-2) 에 사용자 셀카 + 메이크업 레퍼런스 이미지를 함께
@@ -151,6 +173,8 @@ export const buildMakeupPrompt = (
   const schemaBlock = makeupDescription
     ? `\nMAKEUP SCHEMA — apply these attributes precisely\n${makeupDescription}\nIf the reference image in Image 2 disagrees with any attribute\nabove, the attribute list wins. Do not invent unspecified colors\nor finishes.\n`
     : "";
+
+  const hairBlock = buildHairBlock(scene);
 
   return `You're generating a photorealistic Korean bridal beauty portrait.
 
@@ -179,8 +203,7 @@ BRIDE — keep exactly from Image 1
   width
 - Skin tone and undertone (do not lighten or change race)
 - Bone structure, age, freckles or moles if visible
-- Hair color and natural texture; soft bridal styling allowed
-  (loose waves, low updo) but identity stays
+- Hair color, length and natural texture (see HAIR — restyle, keep identity)
 
 MAKEUP — copy from Image 2, applied to Image 1's face
 - Base finish (dewy / matte / satin) as in reference
@@ -192,6 +215,8 @@ MAKEUP — copy from Image 2, applied to Image 1's face
 - Blush color and placement
 - Highlight / contour intensity
 ${schemaBlock}
+${hairBlock}
+
 LIGHTING
 ${scene.promptBlock}
 
@@ -231,6 +256,8 @@ export const buildRecommendMakeupPrompt = (
 ): string => {
   const scene = makeupSceneByCode(sceneCode);
   if (!scene) throw new Error(`unknown makeup scene code: ${sceneCode}`);
+
+  const hairBlock = buildHairBlock(scene);
 
   return `You're generating a photorealistic Korean bridal beauty portrait.
 
@@ -275,7 +302,9 @@ BRIDE — keep exactly from Image 1
 - Face: SAME PERSON, recognizable at a glance
 - Skin tone and undertone (DO NOT lighten or alter race)
 - Bone structure, age, freckles or moles
-- Hair color and natural texture; soft bridal styling allowed
+- Hair color, length and natural texture (see HAIR — restyle, keep identity)
+
+${hairBlock}
 
 LIGHTING
 ${scene.promptBlock}
