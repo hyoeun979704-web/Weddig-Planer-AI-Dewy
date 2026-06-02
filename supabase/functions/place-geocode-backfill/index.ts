@@ -18,7 +18,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ADMIN_TOKEN = "bkfl_7Qm2xR9pLv4Wd8KcN3aZ";
+// 관리자 토큰은 시크릿(GEOCODE_ADMIN_TOKEN)으로 주입. 미설정 시 호출 거부.
+const ADMIN_TOKEN = Deno.env.get("GEOCODE_ADMIN_TOKEN") ?? "";
 
 const LOCAL_URL = "https://openapi.naver.com/v1/search/local.json";
 
@@ -156,7 +157,7 @@ async function geocodeOne(
 
 serve(async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
-  if (req.headers.get("x-admin-token") !== ADMIN_TOKEN) {
+  if (!ADMIN_TOKEN || req.headers.get("x-admin-token") !== ADMIN_TOKEN) {
     return json({ error: "unauthorized" }, 401);
   }
 
