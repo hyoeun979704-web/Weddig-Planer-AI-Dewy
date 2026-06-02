@@ -43,6 +43,18 @@ interface FontOpt {
   style: string;
 }
 
+interface AssetOpt {
+  id: string;
+  name: string;
+  image_url: string;
+  category: string;
+  is_recolorable: boolean;
+  natural_width: number | null;
+  natural_height: number | null;
+}
+
+const ASSET_CATS = ["FLOWER", "LINE", "FRAME", "RIBBON", "ICON", "SHAPE", "TEXT_STICKER"];
+
 // 미리보기용 샘플 데이터 (실제 슬롯 field 바인딩이 어떻게 채워지는지 확인)
 const SAMPLE = {
   groom_name: "김충겸",
@@ -158,6 +170,21 @@ const AdminTemplateEditor = ({
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
+  const [assets, setAssets] = useState<AssetOpt[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // 에셋 라이브러리 로드 (편집기에서 카드에 끌어다 놓기용)
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("invitation_assets")
+        .select("id,name,image_url,category,is_recolorable,natural_width,natural_height")
+        .eq("is_active", true)
+        .order("category")
+        .order("display_order");
+      if (data) setAssets(data as AssetOpt[]);
+    })();
+  }, []);
 
   const close = () => {
     if (dirty && !window.confirm("저장하지 않은 변경이 있습니다. 닫을까요?"))
@@ -228,6 +255,27 @@ const AdminTemplateEditor = ({
     };
     setPageSlots((arr) => [...arr, base]);
     setSelId(id);
+  };
+
+  const addAsset = (a: AssetOpt) => {
+    const id = newId("asset");
+    const natW = a.natural_width || 300;
+    const natH = a.natural_height || 300;
+    const w = Math.min(natW, Math.round(page.canvas.w * 0.4));
+    const h = Math.round((w * natH) / natW);
+    const base: InvitationSlot = {
+      id,
+      type: "asset",
+      x: Math.round((page.canvas.w - w) / 2),
+      y: Math.round(page.canvas.h * 0.12),
+      w,
+      h,
+      z: 3,
+      image_url: a.image_url,
+    };
+    setPageSlots((arr) => [...arr, base]);
+    setSelId(id);
+    setPickerOpen(false);
   };
 
   const deleteSlot = (id: string) => {
@@ -423,6 +471,15 @@ const AdminTemplateEditor = ({
             <Button size="sm" variant="outline" onClick={() => addSlot("image")}>
               <Plus className="w-3 h-3 mr-1" />
               사진
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPickerOpen(true)}
+              disabled={assets.length === 0}
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              에셋
             </Button>
           </div>
 
@@ -651,10 +708,81 @@ const AdminTemplateEditor = ({
                   </div>
                 </div>
               )}
+
+              {selected.type === "asset" && (
+                <div>
+                  <Label className="text-[10px]">색 변경 (단색 에셋만)</Label>
+                  <div className="flex gap-1 items-center">
+                    <Input
+                      type="text"
+                      placeholder="#000000 (비우면 원본색)"
+                      value={selected.tint_color ?? ""}
+                      onChange={(e) =>
+                        updateSlot(selected.id, {
+                          tint_color: e.target.value || undefined,
+                        })
+                      }
+                      className="h-8 px-1 text-xs"
+                    />
+                    {selected.tint_color && (
+                      <span
+                        className="w-7 h-7 rounded border shrink-0"
+                        style={{ background: selected.tint_color }}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </aside>
       </div>
+
+      {pickerOpen && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-6"
+          onClick={() => setPickerOpen(false)}
+        >
+          <div
+            className="bg-background rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] overflow-auto p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">에셋 선택</h3>
+              <button onClick={() => setPickerOpen(false)} className="p-1 hover:bg-muted rounded">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {ASSET_CATS.filter((c) => assets.some((a) => a.category === c)).map(
+              (cat) => (
+                <div key={cat} className="mb-4">
+                  <p className="text-[11px] font-semibold text-muted-foreground mb-1.5">
+                    {cat}
+                  </p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {assets
+                      .filter((a) => a.category === cat)
+                      .map((a) => (
+                        <button
+                          key={a.id}
+                          onClick={() => addAsset(a)}
+                          title={a.name}
+                          className="aspect-square border border-border rounded hover:border-primary hover:bg-muted/50 flex items-center justify-center p-2 bg-white"
+                        >
+                          <img
+                            src={a.image_url}
+                            alt={a.name}
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

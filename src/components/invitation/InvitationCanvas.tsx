@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from "react";
+import { useRef, useEffect, useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { Stage, Layer, Rect, Text, Image as KonvaImage, Group, Line } from "react-konva";
 import type Konva from "konva";
 import useImage from "use-image";
@@ -677,8 +677,24 @@ const ImageSlotBody = ({ slot, imageUrls }: SlotNodeProps) => {
 // ════════════════════════════════════════════════════════════════
 // 에셋 슬롯
 // ════════════════════════════════════════════════════════════════
+/** SVG data URI 에셋을 단색(tint_color)으로 치환. 라인/프레임 등 단색 에셋 색변경용. */
+function tintSvgDataUri(url: string | undefined, color: string | undefined): string {
+  if (!url || !color || !url.startsWith("data:image/svg+xml;base64,")) return url ?? "";
+  try {
+    const b64 = url.slice("data:image/svg+xml;base64,".length);
+    const svg = atob(b64).replace(/#[0-9a-fA-F]{6}/g, color);
+    return "data:image/svg+xml;base64," + btoa(svg);
+  } catch {
+    return url;
+  }
+}
+
 const AssetSlotBody = ({ slot, userData }: SlotNodeProps) => {
-  const [img] = useImage(slot.image_url ?? "", "anonymous");
+  const tintedUrl = useMemo(
+    () => tintSvgDataUri(slot.image_url, slot.tint_color),
+    [slot.image_url, slot.tint_color],
+  );
+  const [img] = useImage(tintedUrl, "anonymous");
   if (slot.image_url) {
     // 등록 이미지가 있으면 그대로(로딩 중엔 아무것도 안 그림 — 점선 깜빡임 방지).
     return img ? (
