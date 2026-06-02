@@ -32,6 +32,10 @@ const SUPABASE_PUBLISHABLE_KEY =
     : undefined) ||
   DEFAULT_SUPABASE_ANON_KEY;
 
+// 공개 Edge Function (verify_jwt=false) 을 <img> 등 raw URL 로 부를 때 쓰는 베이스.
+// 예: `${SUPABASE_FUNCTIONS_URL}/place-static-map?lat=..&lng=..`
+export const SUPABASE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
+
 const isBrowser = typeof window !== 'undefined';
 
 // 세션 저장소 결정 규칙:
