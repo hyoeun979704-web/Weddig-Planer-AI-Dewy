@@ -11,7 +11,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-// favorites.item_type 값 ↔ 사용자 친화적 라벨·소스 테이블 매핑
+// favorites.item_type 값 ↔ 사용자 친화적 라벨·소스 테이블 매핑.
+// place 는 단일 item_type 이 아니라 vendor 카테고리 전체(아래 VENDOR_ITEM_TYPES)를
+// 모두 places 테이블로 resolve 하는 '그룹' 키다.
 export const ITEM_TYPE_MAP = {
   place: { label: "장소·업체", table: "places", idCol: "place_id", titleCol: "name" },
   product: { label: "상품", table: "products", idCol: "id", titleCol: "name" },
@@ -21,6 +23,28 @@ export const ITEM_TYPE_MAP = {
 } as const;
 
 export type ItemTypeKey = keyof typeof ITEM_TYPE_MAP;
+
+// 실제 favorites.item_type 중 places 테이블로 resolve 되는 vendor 카테고리들.
+// (useFavorites.ItemType / favorites_item_type_check 제약과 동기화)
+const VENDOR_ITEM_TYPES = [
+  "venue",
+  "studio",
+  "dress",
+  "makeup",
+  "suit",
+  "hanbok",
+  "honeymoon",
+  "jewelry",
+  "appliance",
+  "invitation_venues",
+] as const;
+
+/** 실제 item_type → ITEM_TYPE_MAP resolver 키. vendor 류는 전부 'place'. */
+const resolverKeyOf = (itemType: string): ItemTypeKey | null => {
+  if ((VENDOR_ITEM_TYPES as readonly string[]).includes(itemType)) return "place";
+  if (itemType in ITEM_TYPE_MAP) return itemType as ItemTypeKey;
+  return null;
+};
 
 /** 사용자 자연어에서 카테고리 키워드 → item_type 추론 */
 export const inferItemType = (text: string): ItemTypeKey | "any" => {
@@ -74,16 +98,21 @@ export const queryFavorites = async (
     .eq("user_id", userId);
 
   if (itemType !== "any") {
-    favQuery = favQuery.eq("item_type", itemType);
+    // 'place' 그룹은 단일 값이 아니라 vendor 카테고리 전체를 매칭해야 한다.
+    favQuery =
+      itemType === "place"
+        ? favQuery.in("item_type", VENDOR_ITEM_TYPES as readonly string[])
+        : favQuery.eq("item_type", itemType);
   }
   const { data: favs } = await favQuery;
   if (!favs || favs.length === 0) return [];
 
-  // 2. item_type별로 그룹화
+  // 2. resolver(소스 테이블)별로 그룹화 — vendor 카테고리는 전부 'place'(places).
   const idsByType: Record<string, string[]> = {};
   for (const f of favs as Array<{ item_id: string; item_type: string }>) {
-    if (!(f.item_type in ITEM_TYPE_MAP)) continue;
-    (idsByType[f.item_type] ??= []).push(f.item_id);
+    const rk = resolverKeyOf(f.item_type);
+    if (!rk) continue;
+    (idsByType[rk] ??= []).push(f.item_id);
   }
 
   // 3. 각 그룹별로 콘텐츠 테이블 조회

@@ -1,0 +1,40 @@
+-- ============================================================================
+-- 신규 업체 좌표 자동 백필 — pg_cron 주간 스케줄
+-- ============================================================================
+--
+-- ⚠️ 이 파일은 자동 적용되지 않음 (.sql 확장자 아님).
+--    이미 운영 DB 에는 적용/활성화되어 있음 (jobname='geocode-backfill-weekly').
+--    재현(새 환경)·복구 시 SQL Editor 에서 그대로 실행.
+--
+-- 전제:
+--   1) place-geocode-backfill edge function 배포됨
+--   2) NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 시크릿 등록됨
+--   3) 20260602100000_geocode_backfill_infra.sql 적용됨(geocode_admin 토큰 존재)
+--
+-- 동작: 매주 일요일 18:00 UTC(월 03:00 KST), 좌표 없는 *신규* 업체만 백필.
+--   pick_geocode_targets 가 이미 시도한 행을 제외하므로 매번 신규분만 처리.
+--   토큰은 geocode_admin 테이블에서 읽음(대시보드 시크릿 불필요).
+-- ============================================================================
+
+create extension if not exists pg_cron with schema extensions;
+create extension if not exists pg_net with schema extensions;
+
+select cron.schedule(
+  'geocode-backfill-weekly',
+  '0 18 * * 0',
+  $job$
+    select net.http_post(
+      url := 'https://qabeywyzjsgyqpjqsvkd.supabase.co/functions/v1/place-geocode-backfill',
+      headers := jsonb_build_object(
+        'Content-Type','application/json',
+        'x-admin-token',(select token from geocode_admin where id=1)
+      ),
+      body := jsonb_build_object('dryRun', false, 'limit', 300,
+        'categories', array['wedding_hall','studio','dress_shop','makeup_shop',
+                            'hanbok','tailor_shop','jewelry','invitation_venue']),
+      timeout_milliseconds := 200000
+    );
+  $job$
+);
+
+-- 해제: select cron.unschedule('geocode-backfill-weekly');
