@@ -36,6 +36,7 @@ MAKEUP — apply each of these precisely:
 - Contour: very subtle contour — almost imperceptible.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: soft Korean bridal mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -71,6 +72,7 @@ MAKEUP — apply each of these precisely:
 - Contour: natural contour adding gentle dimension under cheekbones and along the jaw.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: soft Korean bridal mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -108,6 +110,7 @@ MAKEUP — apply each of these precisely:
 - Contour: no contour.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: soft Korean bridal mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -145,6 +148,7 @@ MAKEUP — apply each of these precisely:
 - Contour: no contour.
 - Extra details: shimmer pressed into the inner corners of the eyes; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: ethereal, dreamy mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -182,6 +186,7 @@ MAKEUP — apply each of these precisely:
 - Contour: very subtle contour — almost imperceptible.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: ethereal, dreamy mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -219,6 +224,7 @@ MAKEUP — apply each of these precisely:
 - Contour: no contour.
 - Extra details: shimmer pressed into the inner corners of the eyes; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: ethereal, dreamy mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -252,8 +258,9 @@ MAKEUP — apply each of these precisely:
 - Blush placement: placed on the outer cheekbone for a contoured effect.
 - Brow: boldly defined brows — fully filled in with crisp clean edges and a structured shape, slightly fuller, tinted; clearly made up and prominent, NOT bare natural brows.
 - Contour: defined contour with visible shaping under the cheekbones, sides of the nose, and along the jawline.
-- Extra details: emphasized lashes — long, defined, slightly curled, well-separated; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow); subtly over-lined lips — lip liner drawn just slightly beyond the natural lip line to create a fuller, plumper pout (glam over-lip technique).
+- Extra details: emphasized false lashes / lash extensions — long, dense, curled and well-separated, more dramatic toward the outer corner; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow); subtly over-lined lips — lip liner drawn just slightly beyond the natural lip line to create a fuller, plumper pout (glam over-lip technique).
 - Overall mood: glamorous, statement mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -287,8 +294,9 @@ MAKEUP — apply each of these precisely:
 - Blush placement: placed on the outer cheekbone for a contoured effect.
 - Brow: boldly defined brows — fully filled in with crisp clean edges and a structured shape, slightly fuller, tinted; clearly made up and prominent, NOT bare natural brows.
 - Contour: defined contour with visible shaping under the cheekbones, sides of the nose, and along the jawline.
-- Extra details: emphasized lashes — long, defined, slightly curled, well-separated; subtly over-lined lips — lip liner drawn just slightly beyond the natural lip line to create a fuller, plumper pout (glam over-lip technique).
+- Extra details: emphasized false lashes / lash extensions — long, dense, curled and well-separated, more dramatic toward the outer corner; subtly over-lined lips — lip liner drawn just slightly beyond the natural lip line to create a fuller, plumper pout (glam over-lip technique).
 - Overall mood: glamorous, statement mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -322,8 +330,9 @@ MAKEUP — apply each of these precisely:
 - Blush placement: placed on the outer cheekbone for a contoured effect.
 - Brow: boldly defined brows — fully filled in with crisp clean edges and a structured shape, slightly fuller, tinted; clearly made up and prominent, NOT bare natural brows.
 - Contour: defined contour with visible shaping under the cheekbones, sides of the nose, and along the jawline.
-- Extra details: emphasized lashes — long, defined, slightly curled, well-separated; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow); subtly over-lined lips — lip liner drawn just slightly beyond the natural lip line to create a fuller, plumper pout (glam over-lip technique).
+- Extra details: emphasized false lashes / lash extensions — long, dense, curled and well-separated, more dramatic toward the outer corner; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow); subtly over-lined lips — lip liner drawn just slightly beyond the natural lip line to create a fuller, plumper pout (glam over-lip technique).
 - Overall mood: glamorous, statement mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -361,6 +370,7 @@ MAKEUP — apply each of these precisely:
 - Contour: no contour.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: fresh, no-makeup-makeup mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -396,6 +406,7 @@ MAKEUP — apply each of these precisely:
 - Contour: no contour.
 - Extra details: delicate faux freckles across the nose bridge and upper cheeks.
 - Overall mood: fresh, no-makeup-makeup mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -431,6 +442,7 @@ MAKEUP — apply each of these precisely:
 - Contour: no contour.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: fresh, no-makeup-makeup mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -464,8 +476,9 @@ MAKEUP — apply each of these precisely:
 - Blush placement: placed on the apples of the cheeks (looking forward, the rounded high point when smiling).
 - Brow: clearly made-up soft-arch brows with a gentle peak — brushed up and filled, softly defined edges, tinted to match the hair; visibly groomed, NOT bare natural brows.
 - Contour: natural contour adding gentle dimension under cheekbones and along the jaw.
-- Extra details: emphasized lashes — long, defined, slightly curled, well-separated; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
+- Extra details: emphasized false lashes / lash extensions — long, dense, curled and well-separated, more dramatic toward the outer corner; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: classic timeless bridal mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -501,8 +514,9 @@ MAKEUP — apply each of these precisely:
 - Blush placement: placed on the outer cheekbone for a contoured effect.
 - Brow: clearly made-up soft-arch brows with a gentle peak — brushed up and filled, softly defined edges, tinted to match the hair; visibly groomed, NOT bare natural brows.
 - Contour: natural contour adding gentle dimension under cheekbones and along the jaw.
-- Extra details: emphasized lashes — long, defined, slightly curled, well-separated.
+- Extra details: emphasized false lashes / lash extensions — long, dense, curled and well-separated, more dramatic toward the outer corner.
 - Overall mood: classic timeless bridal mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -538,6 +552,7 @@ MAKEUP — apply each of these precisely:
 - Contour: natural contour adding gentle dimension under cheekbones and along the jaw.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: classic timeless bridal mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -575,6 +590,7 @@ MAKEUP — apply each of these precisely:
 - Contour: very subtle contour — almost imperceptible.
 - Extra details: ombré gradient lip — deeper in the center fading toward the edges; shimmer pressed into the inner corners of the eyes; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: romantic, soft-feminine mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -610,6 +626,7 @@ MAKEUP — apply each of these precisely:
 - Contour: very subtle contour — almost imperceptible.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: romantic, soft-feminine mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
@@ -645,6 +662,7 @@ MAKEUP — apply each of these precisely:
 - Contour: very subtle contour — almost imperceptible.
 - Extra details: ombré gradient lip — deeper in the center fading toward the edges; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: romantic, soft-feminine mood.
+- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.
 
 Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
 props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait

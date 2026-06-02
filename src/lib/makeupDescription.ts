@@ -112,7 +112,7 @@ const DETAIL: Record<string, string> = {
   OMBRE_LIP: "ombré gradient lip — deeper in the center fading toward the edges",
   OVERLINE: "subtly over-lined lips — lip liner drawn just slightly beyond the natural lip line to create a fuller, plumper pout (glam over-lip technique)",
   FAUX_FRECKLE: "delicate faux freckles across the nose bridge and upper cheeks",
-  LASH_EXT: "emphasized lashes — long, defined, slightly curled, well-separated",
+  LASH_EXT: "emphasized false lashes / lash extensions — long, dense, curled and well-separated, more dramatic toward the outer corner",
 };
 
 const MOOD: Record<string, string> = {

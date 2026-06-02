@@ -221,6 +221,11 @@ MAKEUP — copy from Image 2, applied to Image 1's face
   slightly past her natural line for fullness; never drastically)
 - Eye look — shadow color, placement, intensity; eyeliner style and
   weight; copy onto HER eye shape (do not reshape her eyes)
+- LASHES — most brides wear them: add natural-looking curled false
+  lashes / extensions, defined and well-separated along her lash line.
+  Fuller, longer and more dramatic for glam / smoky / cat-eye / defined
+  looks; softer and wispier for natural looks; add lightly defined
+  lower lashes for doll-eye looks
 - EYEBROWS — restyle WITH MAKEUP (this step is the most often missed,
   do NOT skip it): groom and brush the hairs up, fill in with brow
   product, set the shape and tint per the schema. The brows must look
@@ -305,9 +310,10 @@ silently determine:
 Then design a SINGLE coherent Korean bridal makeup look that
 specifically flatters HER features — choosing a base finish, lip
 color and finish, eye shadow palette and placement, eyeliner style,
-brow shape, blush color and placement, contour intensity, and a few
-tasteful accent details that suit her personal color and bone
-structure. The look must read intentional and unified, not a
+natural-looking curled false lashes (fuller for a glam look, wispier
+for a natural look), brow shape, blush color and placement, contour
+intensity, and a few tasteful accent details that suit her personal
+color and bone structure. The look must read intentional and unified, not a
 random mix.
 
 Produce a single close-up bridal beauty portrait — head and

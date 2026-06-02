@@ -111,6 +111,9 @@ while ((m = re.exec(sql))) {
   lines.push("");
   lines.push("MAKEUP — apply each of these precisely:");
   lines.push(describeMakeup(meta));
+  lines.push(
+    "- Lashes: most brides wear them — add natural-looking curled false lashes / extensions, defined and well-separated; fuller, longer and more dramatic for glam / smoky / cat-eye / defined looks, softer and wispier for natural looks, with lightly defined lower lashes for doll-eye looks.",
+  );
   lines.push("");
   lines.push(
     "Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,",
