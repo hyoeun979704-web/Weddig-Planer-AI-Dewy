@@ -302,6 +302,8 @@ function formatWeddingDate(
       return `${y}. ${Number(mo)}. ${Number(d)}`;
     case "month_en":
       return `${y} ${MONTHS_EN[Number(mo) - 1]} ${Number(d)}`;
+    case "en_mdy":
+      return `${MONTHS_EN[Number(mo) - 1]} ${Number(d)}, ${y}`;
     case "full_ko":
     default: {
       const wd = WEEKDAYS_KO[date.getDay()];
@@ -463,7 +465,13 @@ const TextSlotBody = ({
   fontOverrides,
   fontSizeOverrides = {},
 }: SlotNodeProps) => {
-  const text = resolveText(slot, userData, aiText, textOverrides);
+  const rawText = resolveText(slot, userData, aiText, textOverrides);
+  const text =
+    slot.text_transform === "upper"
+      ? rawText.toUpperCase()
+      : slot.text_transform === "lower"
+        ? rawText.toLowerCase()
+        : rawText;
   // 빈 field 슬롯 hide — 사용자가 부모님·계좌 같은 선택 필드를 비워둘 때
   // 빈 줄로 그려져 디자인이 망가지는 걸 방지.
   // 단, ai_promptable 슬롯이나 placeholder 가 있는 슬롯은 그대로 둠 (편집/디자인 의도).

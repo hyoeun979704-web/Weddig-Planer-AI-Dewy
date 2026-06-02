@@ -70,7 +70,9 @@ export interface InvitationSlot {
   /** 줄바꿈 방식. 미지정 시 공백 없는 라벨은 자동 'none'(글자 잘림 방지). */
   wrap?: "word" | "char" | "none";
   /** wedding_date 필드 표시 포맷. 미지정 시 'full_ko'. */
-  date_format?: "full_ko" | "dot" | "month_en" | "iso";
+  date_format?: "full_ko" | "dot" | "month_en" | "en_mdy" | "iso";
+  /** 텍스트 대소문자 변환 ('upper' 대문자 | 'lower' 소문자). */
+  text_transform?: "upper" | "lower" | "none";
   /** 투명도(0~1). 장식 선 등에 사용. */
   opacity?: number;
 
