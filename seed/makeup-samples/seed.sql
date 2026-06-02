@@ -15,7 +15,10 @@
 -- public URL 형식:
 --   https://qabeywyzjsgyqpjqsvkd.supabase.co/storage/v1/object/public/makeup-samples/<파일명>
 --
--- display_order: 한국신부 60 / 에테리얼 50 / 글래머 40 / 프레시 30 / 클래식 20 / 로맨틱 10
+-- display_order (내림차순 정렬, 클수록 상단):
+--   2026 6월 본식 트렌드(물광·투명·번짐 음영·확장 블러셔) 반영해 상단 고정:
+--     2A 투명 햇살 본식 80 · 1C 물광 글로우 75 · 1A 본식 시그니처 70
+--   이후 컨셉 그룹: 한국신부 60 / 에테리얼 50 / 글래머 40 / 프레시 30 / 클래식 20 / 로맨틱 10
 -- (scene[본식/촬영]은 시안 속성이 아니라 사용자가 생성 시 선택하므로 저장하지 않음)
 
 insert into public.makeup_samples
@@ -25,15 +28,15 @@ insert into public.makeup_samples
 values
   -- 컨셉 1 — 한국 신부 (SOFT_KOREAN)
   ('한국 신부 · 본식 시그니처', '__IMG_1A__', 'SATIN', 'MLBB', 'TINTED', 'KOREAN_INNER', 'ROSE_BROWN',
-   'ROSE', 'UNDER_EYE', 'KOREAN_STRAIGHT', 'SUBTLE', '{HIGHLIGHT}', '{SOFT_KOREAN}', 60, true),     -- ref_3
+   'ROSE', 'UNDER_EYE', 'KOREAN_STRAIGHT', 'SUBTLE', '{HIGHLIGHT}', '{SOFT_KOREAN}', 70, true),     -- ref_3 · 2026 본식 트렌드 상단
   ('한국 신부 · 음영 본식', '__IMG_1B__', 'SATIN', 'MLBB', 'TINTED', 'KOREAN_INNER', 'BROWN',
    'ROSE', 'UNDER_EYE', 'KOREAN_STRAIGHT', 'NATURAL', '{HIGHLIGHT}', '{SOFT_KOREAN}', 60, true),     -- auto
   ('한국 신부 · 물광 글로우', '__IMG_1C__', 'DEWY', 'CORAL', 'GLOSSY', 'NATURAL', 'PEACH',
-   'PEACH', 'APPLE', 'KOREAN_STRAIGHT', 'NONE', '{HIGHLIGHT}', '{SOFT_KOREAN}', 60, true),           -- ref_1
+   'PEACH', 'APPLE', 'KOREAN_STRAIGHT', 'NONE', '{HIGHLIGHT}', '{SOFT_KOREAN}', 75, true),           -- ref_1 · 2026 물광 트렌드
 
   -- 컨셉 2 — 에테리얼 (ETHEREAL)
   ('에테리얼 · 투명 햇살 본식', '__IMG_2A__', 'GLOWY', 'ROSE', 'GLOSSY', 'NATURAL', 'PEACH',
-   'PINK', 'APPLE', 'KOREAN_STRAIGHT', 'NONE', '{INNER_CORNER,HIGHLIGHT}', '{ETHEREAL}', 50, true),   -- ref_7
+   'PINK', 'APPLE', 'KOREAN_STRAIGHT', 'NONE', '{INNER_CORNER,HIGHLIGHT}', '{ETHEREAL}', 80, true),   -- ref_7 · 2026 투명물광 1순위
   ('에테리얼 · 글로우 라벤더 본식', '__IMG_2B__', 'DEWY', 'MAUVE', 'GLOSSY', 'NATURAL', 'PLUM',
    'PINK', 'UNDER_EYE', 'KOREAN_STRAIGHT', 'SUBTLE', '{HIGHLIGHT}', '{ETHEREAL}', 50, true),          -- ref_6
   ('에테리얼 · 투명 글로시', '__IMG_2C__', 'DEWY', 'NUDE', 'GLOSSY', 'NATURAL', 'ROSE_BROWN',
