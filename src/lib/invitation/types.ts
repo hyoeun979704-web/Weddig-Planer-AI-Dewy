@@ -178,6 +178,8 @@ export interface InvitationLayout {
   product_kind?: "card" | "ticket" | "chocolate" | "bifold" | "newspaper" | "mobile" | "mobile_roll";
   /** Multi-frame mobile canvases are rendered without visible page seams. */
   presentation?: "paged" | "seamless_roll";
+  /** 모바일 청첩장 루프 장식(스크롤 위에 떠다니는 데코). 없으면 없음. */
+  decor?: "hearts" | "petals" | "confetti";
 }
 
 export interface InvitationUserData {

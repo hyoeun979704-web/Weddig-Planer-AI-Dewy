@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Loader2, Heart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -162,8 +162,9 @@ const InvitationViewer = () => {
     getInvitationPages(layout).map((page, index, pages) => {
       const seamless = isSeamlessRoll(layout);
       return (
-      <div
+      <RevealSection
         key={page.id}
+        enabled={seamless}
         className={`flex flex-col items-center ${seamless ? "gap-0" : "gap-2"}`}
       >
         {!seamless && pages.length > 1 && (
@@ -189,7 +190,7 @@ const InvitationViewer = () => {
           displayWidth={360}
           shareUrl={window.location.href}
         />
-      </div>
+      </RevealSection>
       );
     });
 
@@ -197,10 +198,16 @@ const InvitationViewer = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
       {/* 전면 */}
       <div
-        className={`flex flex-col items-center bg-muted/20 ${
+        className={`relative flex flex-col items-center bg-muted/20 ${
           seamlessRoll ? "py-0 gap-0" : "py-5 gap-5"
         }`}
       >
+        {seamlessRoll && tpl.layout.decor && (
+          <>
+            <style>{DECOR_KEYFRAMES}</style>
+            <FloatingDecor kind={tpl.layout.decor} />
+          </>
+        )}
         {renderPages(tpl.layout, faces.front)}
         {/* 후면 (있을 때만) */}
         {backLayout && renderPages(backLayout, faces.back)}
@@ -233,5 +240,117 @@ const InvitationViewer = () => {
     </div>
   );
 };
+
+// ── 모바일 청첩장 애니메이션 ───────────────────────────────────
+const prefersReduced = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+/** 스크롤 진입 시 페이드업(등장). enabled=false 면 정적. */
+function RevealSection({
+  enabled,
+  className,
+  children,
+}: {
+  enabled: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(!enabled);
+  useEffect(() => {
+    if (!enabled || prefersReduced()) {
+      setShown(true);
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            setShown(true);
+            io.unobserve(e.target);
+          }
+        }),
+      { threshold: 0.12 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [enabled]);
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={
+        enabled
+          ? {
+              opacity: shown ? 1 : 0,
+              transform: shown ? "none" : "translateY(28px)",
+              transition:
+                "opacity .7s ease, transform .7s cubic-bezier(.22,.61,.36,1)",
+              willChange: "opacity, transform",
+            }
+          : undefined
+      }
+    >
+      {children}
+    </div>
+  );
+}
+
+const DECOR_GLYPH: Record<string, string> = {
+  hearts: "♥",
+  petals: "❀",
+  confetti: "✦",
+};
+const DECOR_COLOR: Record<string, string> = {
+  hearts: "rgba(225,120,140,0.55)",
+  petals: "rgba(240,170,190,0.6)",
+  confetti: "rgba(210,180,120,0.6)",
+};
+
+/** 스크롤 위에 떠다니는 루프 데코(하트/꽃잎/컨페티). */
+function FloatingDecor({ kind }: { kind: "hearts" | "petals" | "confetti" }) {
+  if (prefersReduced()) return null;
+  const glyph = DECOR_GLYPH[kind] ?? "♥";
+  const color = DECOR_COLOR[kind] ?? DECOR_COLOR.hearts;
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        pointerEvents: "none",
+        zIndex: 5,
+      }}
+    >
+      {Array.from({ length: 14 }).map((_, i) => {
+        const left = (i * 7.1 + (i % 3) * 5) % 100;
+        const dur = 9 + (i % 5) * 2.2;
+        const delay = (i % 7) * 1.6;
+        const size = 12 + (i % 4) * 7;
+        return (
+          <span
+            key={i}
+            style={{
+              position: "absolute",
+              left: `${left}%`,
+              bottom: "-48px",
+              fontSize: size,
+              color,
+              animation: `dewy-float ${dur}s linear ${delay}s infinite`,
+            }}
+          >
+            {glyph}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+const DECOR_KEYFRAMES = `@keyframes dewy-float{0%{transform:translateY(0) rotate(0);opacity:0}12%{opacity:.85}88%{opacity:.85}100%{transform:translateY(-112vh) rotate(45deg);opacity:0}}`;
 
 export default InvitationViewer;
