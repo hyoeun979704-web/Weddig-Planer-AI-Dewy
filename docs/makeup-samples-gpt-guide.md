@@ -1,0 +1,202 @@
+# AI 스튜디오 — 메이크업 시안(makeup_samples) 제작 가이드
+
+> 대상: `/ai-studio/makeup-room` (착붙 메이크업 찾기)
+> 목적: 비어있는 `makeup_samples` 테이블을 **무드(컨셉) 6종 × 3개 = 18개** 시안으로 채운다.
+
+---
+
+## 0. 이 시안이 어디에 쓰이나 (중요)
+
+메이크업 룸 플로우:
+
+```
+셀카 업로드 → 메이크업 룩 시안 선택 → 컷(본식/촬영) → 조명 → 생성
+```
+
+생성 단계에서 `dewy-makeup` Edge Function이 OpenAI `gpt-image-2`(images.edit)에
+**두 장**을 함께 보낸다:
+
+- **Image 1 = 사용자 셀카** → 얼굴형·이목구비·피부톤은 *전부 여기서* 가져옴
+- **Image 2 = 우리가 만드는 시안 이미지** → **메이크업 색·마감·배치만** 참고
+
+즉 시안 이미지는 "이 모델의 얼굴"이 아니라 **"이 메이크업"** 을 보여주는 레퍼런스다.
+따라서 제작 원칙은 단 하나:
+
+> **메이크업이 또렷하게 읽혀야 한다.**
+> 베이스 광/매트, 립 색·마감, 아이섀도 색·배치, 아이라인, 블러셔 위치, 눈썹, 하이라이트가
+> 사진만 봐도 구분되도록. 얼굴 모델의 미모/정체성은 결과물과 무관하다.
+
+또한 각 시안에는 메타데이터(립 컬러, 아이 스타일 등 enum)가 함께 저장되고,
+`describeMakeup()`가 그 enum을 영어 문장으로 바꿔 프롬프트의 `MAKEUP SCHEMA`에 주입한다.
+**스키마가 레퍼런스 이미지보다 우선**한다. 그러므로 아래 각 시안의
+**이미지 프롬프트와 메타데이터는 반드시 서로 일치**해야 한다 (둘 다 이 문서에 같이 적어둠).
+
+---
+
+## 1. 출력 규격 (모든 18장 공통)
+
+`gpt-image-2`는 `1024x1024`(정사각)로 합성하므로 레퍼런스도 정사각이 가장 자연스럽다.
+
+- **비율/크기**: 1:1 정사각, 1024×1024 이상
+- **프레이밍**: 얼굴 클로즈업 (이마~쇄골). 얼굴이 프레임의 중심, 좌우 대칭
+- **배경**: 단색 시멜리스(seamless) 스튜디오 배경 — 컨셉별 톤만 다르게(아래 명시). 소품·글자·로고·워터마크 금지
+- **조명**: 부드러운 뷰티디시/소프트박스, 얼굴 전체 고르게. 강한 그림자·컬러 조명 금지 (메이크업 색이 왜곡되면 안 됨)
+- **얼굴/표정**: 정면 또는 약한 3/4, 차분한 표정. 입은 다물거나 아주 옅은 미소
+- **가리지 말 것**: 베일·손·머리카락이 눈/입/볼을 덮지 않게. 큰 귀걸이·목걸이 금지(메이크업에 집중)
+- **사실성**: 포토리얼리스틱, 실제 피부결(모공)이 보이는 자연스러운 보정. 과한 뷰티필터·AI 플라스틱 피부 금지
+- **모델**: 20대 후반 한국인 여성, 시안 간 톤 일관성 (단, 정체성은 결과물과 무관하므로 컨셉 분위기에 맞게)
+
+### 공통 베이스 프롬프트 (앞에 붙여 사용)
+
+```
+Ultra-photorealistic Korean bridal beauty close-up, 1:1 square, 1024x1024.
+Head-and-shoulders, face centered and fully visible, even soft beauty-dish
+lighting, true-to-color (no color cast), clean seamless {BACKDROP} studio
+backdrop, no props, no big jewelry, no veil over the face, no text/logo/watermark.
+Realistic skin texture with visible pores, high-end editorial beauty photography,
+85mm lens. The makeup must be clearly readable. {HAIR}. {POSE}.
+MAKEUP: {MAKEUP}.
+```
+
+`{BACKDROP}` `{HAIR}` `{POSE}` `{MAKEUP}` 만 컨셉/시안별로 갈아끼우면 된다.
+아래 표에 그대로 채워둠 — **복사해서 ChatGPT에 붙여넣기만** 하면 된다.
+
+> 💡 이미 가진 사진을 "재생성"으로 규격화하려면: 그 사진을 첨부하고 위 프롬프트 앞에
+> `Keep this person's face and identity. Restyle only hair, pose, and makeup as below:` 를 붙이면
+> 컨셉별 규격(헤어·포즈)으로 통일된다.
+
+---
+
+## 2. 컨셉별 규격 (헤어 · 포즈 · 배경)
+
+컨셉당 헤어/포즈/배경은 **고정**하고, 컨셉 안의 3개는 메이크업만 다르게 한다.
+
+| 컨셉(mood) | 배경 BACKDROP | 헤어 HAIR | 포즈 POSE |
+|---|---|---|---|
+| 한국 신부 `SOFT_KOREAN` | warm ivory | sleek glossy low chignon, clean center part, no flyaways | straight-on, chin slightly down, eyes to camera, very soft closed-lip smile |
+| 에테리얼 `ETHEREAL` | soft cool misty white | airy loose waves, soft half-up, baby hairs framing the face | slight 3/4 turn, eyes gently downcast, serene relaxed lips |
+| 글래머러스 `GLAMOROUS` | deep charcoal grey | voluminous glamorous waves worn down | confident straight-on, chin slightly up, direct intense gaze |
+| 프레시 `FRESH_NATURAL` | bright airy off-white | natural half-up with soft movement, a few face-framing strands | bright open genuine smile, lively, straight-on |
+| 클래식 `CLASSIC` | neutral greige | polished classic elegant updo, clean part | elegant and composed, slight tilt, calm serene expression |
+| 로맨틱 `ROMANTIC` | warm blush-pink | romantic loose updo with soft curled face-framing tendrils | soft 3/4, gentle shy smile, warm romantic gaze |
+
+---
+
+## 3. 18개 시안 — 프롬프트 + 메타데이터
+
+각 항목의 `MAKEUP:` 문장은 메타데이터 enum(`describeMakeup` 매핑)과 1:1로 맞췄다.
+이미지 생성 시 공통 베이스 프롬프트의 `{BACKDROP}/{HAIR}/{POSE}`는 위 표(컨셉별)에서,
+`{MAKEUP}`은 아래에서 가져온다.
+
+> 메타데이터 컬럼: `base_finish, lip_color, lip_finish, eye_style, eye_color,
+> blush_color, blush_placement, brow_shape, contour_intensity, details[], mood[]`
+
+---
+
+### 컨셉 1 — 한국 신부 (SOFT_KOREAN) · 은은한 청순 신부
+
+**1A · 코랄 MLBB**
+- `MAKEUP:` satin base with light reflectance; MLBB lip (slightly enhanced natural tone) with a blurred tinted stain finish; Korean inner-corner soft warm shading in rose-brown; Korean-style soft straight brow; soft peach 'aegyo-sal' blush just under the eyes across the upper cheekbone; subtle almost-imperceptible contour; soft highlighter on the high points.
+- meta: base_finish=`SATIN`, lip_color=`MLBB`, lip_finish=`TINTED`, eye_style=`KOREAN_INNER`, eye_color=`ROSE_BROWN`, blush_color=`PEACH`, blush_placement=`UNDER_EYE`, brow_shape=`KOREAN_STRAIGHT`, contour_intensity=`SUBTLE`, details=`{HIGHLIGHT}`, mood=`{SOFT_KOREAN}`
+
+**1B · 로즈 뉴드**
+- `MAKEUP:` satin base; rose lip (cool muted pink) with blurred tinted stain finish; Korean inner-corner shading in neutral beige-taupe; Korean-style soft straight brow; rose 'aegyo-sal' blush under the eyes; natural gentle contour; soft highlighter.
+- meta: base_finish=`SATIN`, lip_color=`ROSE`, lip_finish=`TINTED`, eye_style=`KOREAN_INNER`, eye_color=`NEUTRAL`, blush_color=`ROSE`, blush_placement=`UNDER_EYE`, brow_shape=`KOREAN_STRAIGHT`, contour_intensity=`NATURAL`, details=`{HIGHLIGHT}`, mood=`{SOFT_KOREAN}`
+
+**1C · 피치 글로우**
+- `MAKEUP:` dewy glass-skin base; peach lip with blurred tinted finish; natural soft eye look in warm peach tones; Korean-style soft straight brow; peach blush on the apples of the cheeks; subtle contour; soft highlighter on the high points.
+- meta: base_finish=`DEWY`, lip_color=`PEACH`, lip_finish=`TINTED`, eye_style=`NATURAL`, eye_color=`PEACH`, blush_color=`PEACH`, blush_placement=`APPLE`, brow_shape=`KOREAN_STRAIGHT`, contour_intensity=`SUBTLE`, details=`{HIGHLIGHT}`, mood=`{SOFT_KOREAN}`
+
+---
+
+### 컨셉 2 — 에테리얼 (ETHEREAL) · 몽환·투명
+
+**2A · 글리터 워시**
+- `MAKEUP:` soft glowy luminous base; nude lip with high-shine glossy finish; shimmer/glitter eye focus with fine pearl on the lid center, rose-brown wash; feathered brow with visible hair strokes; muted nude blush on the apples; no contour; details — fine glitter accent on the lower lash center, shimmer in the inner corners, soft highlighter.
+- meta: base_finish=`GLOWY`, lip_color=`NUDE`, lip_finish=`GLOSSY`, eye_style=`GLITTER`, eye_color=`ROSE_BROWN`, blush_color=`NUDE`, blush_placement=`APPLE`, brow_shape=`FEATHERY`, contour_intensity=`NONE`, details=`{GLITTER_TEAR,INNER_CORNER,HIGHLIGHT}`, mood=`{ETHEREAL}`
+
+**2B · 모브 글로시**
+- `MAKEUP:` dewy glass-skin base; mauve lip (dusty cool pink-brown) glossy finish; natural soft diffused eye in plum tones; feathered brow; rose blush on the apples; very subtle contour; shimmer in the inner corners, soft highlighter.
+- meta: base_finish=`DEWY`, lip_color=`MAUVE`, lip_finish=`GLOSSY`, eye_style=`NATURAL`, eye_color=`PLUM`, blush_color=`ROSE`, blush_placement=`APPLE`, brow_shape=`FEATHERY`, contour_intensity=`SUBTLE`, details=`{INNER_CORNER,HIGHLIGHT}`, mood=`{ETHEREAL}`
+
+**2C · 투명 로즈**
+- `MAKEUP:` soft glowy luminous base; rose lip glossy finish; natural soft eye in rose-brown tones; feathered brow; soft pink blush on the apples; no contour; shimmer in the inner corners, soft highlighter.
+- meta: base_finish=`GLOWY`, lip_color=`ROSE`, lip_finish=`GLOSSY`, eye_style=`NATURAL`, eye_color=`ROSE_BROWN`, blush_color=`PINK`, blush_placement=`APPLE`, brow_shape=`FEATHERY`, contour_intensity=`NONE`, details=`{INNER_CORNER,HIGHLIGHT}`, mood=`{ETHEREAL}`
+
+---
+
+### 컨셉 3 — 글래머러스 (GLAMOROUS) · 화려·또렷
+
+**3A · 클래식 레드**
+- `MAKEUP:` satin base; classic true-red lip with satin finish; smoky gradient eye in warm bronze tones blended into a soft halo; well-defined brow with clear edges; muted nude blush on the outer cheekbone for a contoured effect; defined contour under cheekbones/nose/jaw; emphasized long curled separated lashes; soft highlighter.
+- meta: base_finish=`SATIN`, lip_color=`RED`, lip_finish=`SATIN`, eye_style=`SMOKY`, eye_color=`BRONZE`, blush_color=`NUDE`, blush_placement=`OUTER_CHEEK`, brow_shape=`DEFINED`, contour_intensity=`DEFINED`, details=`{LASH_EXT,HIGHLIGHT}`, mood=`{GLAMOROUS}`
+
+**3B · 버건디 캣아이**
+- `MAKEUP:` matte velvet base; berry lip (deep cool pink-purple) fully matte; cat-eye with winged liner extending up-and-out, burgundy deep-wine shadow; well-defined brow; rose blush on the outer cheekbone; defined contour; emphasized lashes.
+- meta: base_finish=`MATTE`, lip_color=`BERRY`, lip_finish=`MATTE`, eye_style=`CAT_EYE`, eye_color=`BURGUNDY`, blush_color=`ROSE`, blush_placement=`OUTER_CHEEK`, brow_shape=`DEFINED`, contour_intensity=`DEFINED`, details=`{LASH_EXT}`, mood=`{GLAMOROUS}`
+
+**3C · 누드 글램**
+- `MAKEUP:` satin base; nude lip (warm beige-pink) high-shine glossy; smoky gradient eye in neutral deep beige-taupe; well-defined brow; muted nude blush on the outer cheekbone; defined contour; emphasized lashes, soft highlighter.
+- meta: base_finish=`SATIN`, lip_color=`NUDE`, lip_finish=`GLOSSY`, eye_style=`SMOKY`, eye_color=`NEUTRAL`, blush_color=`NUDE`, blush_placement=`OUTER_CHEEK`, brow_shape=`DEFINED`, contour_intensity=`DEFINED`, details=`{LASH_EXT,HIGHLIGHT}`, mood=`{GLAMOROUS}`
+
+---
+
+### 컨셉 4 — 프레시 (FRESH_NATURAL) · 생기·노메이크업 같은
+
+**4A · 코랄 생기**
+- `MAKEUP:` dewy glass-skin base; coral lip (vivid orange-pink) with blurred tinted finish; natural soft eye in warm peach tones; natural lightly-groomed brow; coral blush on the apples of the cheeks; no contour; soft highlighter.
+- meta: base_finish=`DEWY`, lip_color=`CORAL`, lip_finish=`TINTED`, eye_style=`NATURAL`, eye_color=`PEACH`, blush_color=`CORAL`, blush_placement=`APPLE`, brow_shape=`NATURAL_FLAT`, contour_intensity=`NONE`, details=`{HIGHLIGHT}`, mood=`{FRESH_NATURAL}`
+
+**4B · 주근깨 데일리**
+- `MAKEUP:` natural-skin barely-there base letting skin texture show; peach lip with blurred tinted finish; bare almost-no-shadow eye with only a hair-thin tightline, neutral tones; natural brow; peach blush on the apples; no contour; delicate faux freckles across the nose bridge and upper cheeks.
+- meta: base_finish=`NATURAL_SKIN`, lip_color=`PEACH`, lip_finish=`TINTED`, eye_style=`BARE`, eye_color=`NEUTRAL`, blush_color=`PEACH`, blush_placement=`APPLE`, brow_shape=`NATURAL_FLAT`, contour_intensity=`NONE`, details=`{FAUX_FRECKLE}`, mood=`{FRESH_NATURAL}`
+
+**4C · 누드 글로우**
+- `MAKEUP:` dewy glass-skin base; nude lip with blurred tinted finish; natural soft eye in neutral beige-taupe; natural brow; soft pink blush on the apples; no contour; soft highlighter.
+- meta: base_finish=`DEWY`, lip_color=`NUDE`, lip_finish=`TINTED`, eye_style=`NATURAL`, eye_color=`NEUTRAL`, blush_color=`PINK`, blush_placement=`APPLE`, brow_shape=`NATURAL_FLAT`, contour_intensity=`NONE`, details=`{HIGHLIGHT}`, mood=`{FRESH_NATURAL}`
+
+---
+
+### 컨셉 5 — 클래식 (CLASSIC) · 격식·정통
+
+**5A · 로즈 새틴**
+- `MAKEUP:` satin base; rose lip with satin soft-sheen finish; natural soft eye in neutral beige-taupe; soft arched brow with a gentle peak; rose blush on the apples; natural contour adding gentle dimension; emphasized lashes, soft highlighter.
+- meta: base_finish=`SATIN`, lip_color=`ROSE`, lip_finish=`SATIN`, eye_style=`NATURAL`, eye_color=`NEUTRAL`, blush_color=`ROSE`, blush_placement=`APPLE`, brow_shape=`SOFT_ARCH`, contour_intensity=`NATURAL`, details=`{LASH_EXT,HIGHLIGHT}`, mood=`{CLASSIC}`
+
+**5B · MLBB 소프트 캣**
+- `MAKEUP:` satin base; MLBB lip with satin finish; soft cat-eye with a gentle wing in warm brown tones; soft arched brow; muted nude blush on the outer cheekbone; natural contour; emphasized lashes.
+- meta: base_finish=`SATIN`, lip_color=`MLBB`, lip_finish=`SATIN`, eye_style=`CAT_EYE`, eye_color=`BROWN`, blush_color=`NUDE`, blush_placement=`OUTER_CHEEK`, brow_shape=`SOFT_ARCH`, contour_intensity=`NATURAL`, details=`{LASH_EXT}`, mood=`{CLASSIC}`
+
+**5C · 모브 음영**
+- `MAKEUP:` satin base; mauve lip with satin finish; natural soft eye in rose-brown tones; soft arched brow; rose blush on the outer cheekbone; natural contour; soft highlighter.
+- meta: base_finish=`SATIN`, lip_color=`MAUVE`, lip_finish=`SATIN`, eye_style=`NATURAL`, eye_color=`ROSE_BROWN`, blush_color=`ROSE`, blush_placement=`OUTER_CHEEK`, brow_shape=`SOFT_ARCH`, contour_intensity=`NATURAL`, details=`{HIGHLIGHT}`, mood=`{CLASSIC}`
+
+---
+
+### 컨셉 6 — 로맨틱 (ROMANTIC) · 여성스러움·드라마틱
+
+**6A · 핑크 그라데이션**
+- `MAKEUP:` dewy glass-skin base; rose lip with soft-blurred ombré edge (deeper center fading outward); round doll-eye look in warm peach tones; soft arched brow; soft pink blush draped diagonally from the cheekbone toward the temple; subtle contour; details — ombré gradient lip, shimmer in the inner corners, soft highlighter.
+- meta: base_finish=`DEWY`, lip_color=`ROSE`, lip_finish=`BLURRED`, eye_style=`DOLL`, eye_color=`PEACH`, blush_color=`PINK`, blush_placement=`DRAPED`, brow_shape=`SOFT_ARCH`, contour_intensity=`SUBTLE`, details=`{OMBRE_LIP,INNER_CORNER,HIGHLIGHT}`, mood=`{ROMANTIC}`
+
+**6B · 로즈 글로우**
+- `MAKEUP:` dewy glass-skin base; rose lip glossy finish; natural soft eye in rose-brown tones; soft arched brow; rose blush draped from cheekbone toward the temple; subtle contour; soft highlighter.
+- meta: base_finish=`DEWY`, lip_color=`ROSE`, lip_finish=`GLOSSY`, eye_style=`NATURAL`, eye_color=`ROSE_BROWN`, blush_color=`ROSE`, blush_placement=`DRAPED`, brow_shape=`SOFT_ARCH`, contour_intensity=`SUBTLE`, details=`{HIGHLIGHT}`, mood=`{ROMANTIC}`
+
+**6C · 코랄핑크 러블리**
+- `MAKEUP:` satin base; coral lip glossy finish with a soft ombré gradient; round doll-eye look in warm peach tones; soft arched brow; coral blush on the apples of the cheeks; subtle contour; ombré gradient lip, soft highlighter.
+- meta: base_finish=`SATIN`, lip_color=`CORAL`, lip_finish=`GLOSSY`, eye_style=`DOLL`, eye_color=`PEACH`, blush_color=`CORAL`, blush_placement=`APPLE`, brow_shape=`SOFT_ARCH`, contour_intensity=`SUBTLE`, details=`{OMBRE_LIP,HIGHLIGHT}`, mood=`{ROMANTIC}`
+
+---
+
+## 4. 생성 후 — 업로드 & 적재 절차
+
+1. 위 18개 프롬프트로 ChatGPT에서 이미지 생성 (컨셉당 헤어·포즈 고정 확인)
+2. 파일명을 `1A.png … 6C.png` 식으로 저장
+3. 이미지를 전달하면 → `makeup-samples` 버킷(public)에 업로드 → `makeup_samples`에
+   각 행을 위 메타데이터 그대로 `INSERT` (`is_active=true`, `display_order`는 컨셉 순서대로)
+4. `/admin/makeup-samples` 또는 `/ai-studio/makeup-room`에서 18개 노출·선택 가능 확인 (end-to-end)
+
+> `name` 예시: "한국 신부 · 코랄 MLBB", "글래머러스 · 클래식 레드" …
+> `display_order` 제안: 한국신부 60 / 에테리얼 50 / 글래머 40 / 프레시 30 / 클래식 20 / 로맨틱 10
+> (목록은 display_order 내림차순 정렬 → 한국 신부가 먼저 노출)
