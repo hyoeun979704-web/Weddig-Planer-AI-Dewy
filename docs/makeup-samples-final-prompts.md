@@ -26,8 +26,10 @@ proportions and skin tone. Keep her pose, head angle, framing, neutral expressio
 clean light-grey background IDENTICAL to the source. Keep a COMPLETELY BARE FACE (no
 makeup, bare natural brows & lashes, visible skin pores). Change ONLY the hairstyle to the
 one below — like the same person photographed on another day with only her hair restyled;
-keep the front hairline, center part and exposed forehead the same. 1:1 1024², eyes open to
-camera, no veil, no jewelry, no props, no text. Ultra-photorealistic.
+keep the front hairline, center part and exposed forehead the same. The hair must be
+PROFESSIONALLY styled at a high-end bridal salon level — sleek, glossy and smoothly set,
+clean, with NO frizz, NO flyaways, NO loose stray strands, NO home-done look. 1:1 1024²,
+eyes open to camera, no veil, no jewelry, no props, no text. Ultra-photorealistic.
 HAIRSTYLE: {HAIR}
 ```
 
@@ -36,14 +38,14 @@ HAIRSTYLE: {HAIR}
 > 변경 → 얼굴 영역이 안 흔들림. 결과가 다른 얼굴이면 **재생성해서 원본과 가장 닮은 컷 채택.**
 > 배경은 전 컨셉 공통 라이트그레이(통일). 포즈도 전 컨셉 정면 고정(통일).
 
-| 아바타 | {HAIR} (앞 프레이밍은 공통, 뒤/길이/질감만 차이) |
+| 아바타 | {HAIR} — 전부 샵 퀄리티 매끈·윤기 (앞 프레이밍 공통, 뒤/길이/질감만 차이) |
 |---|---|
-| `avatar-soft_korean` | center part, smoothly pulled back into a sleek glossy low chignon; a few fine wispy strands at the temples |
-| `avatar-ethereal` | center part, softly pulled back at the front, falling into airy loose waves behind the shoulders; a few baby hairs |
-| `avatar-glamorous` | center part, smoothed at the crown, voluminous glamorous waves falling down the back |
-| `avatar-fresh` | center part, soft natural half-up, a few relaxed face-framing strands |
-| `avatar-classic` | center part, smoothly pulled back into a polished elegant low updo |
-| `avatar-romantic` | center part, softly pulled back into a romantic loose low updo with a few curled face-framing tendrils |
+| `avatar-soft_korean` | center part, hair smoothed and swept back into a sleek glossy low chignon, salon-set and immaculate |
+| `avatar-ethereal` | center part, smoothed at the front and styled into a glossy, smooth, professional blowout falling in soft waves behind the shoulders |
+| `avatar-glamorous` | deep-smoothed crown, voluminous glossy salon blowout waves falling down the back, polished and sculpted |
+| `avatar-fresh` | center part, a clean polished half-up with a smooth glossy crown, salon-finished |
+| `avatar-classic` | center part, hair smoothed back into a polished elegant low updo, immaculately set |
+| `avatar-romantic` | center part, hair smoothed back into a soft yet polished romantic low updo, glossy and cleanly set |
 
 ---
 

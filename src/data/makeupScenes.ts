@@ -143,19 +143,22 @@ export const MAKEUP_SCENE_TYPE_DESC: Record<MakeupSceneType, string> = {
  */
 const HAIR_BY_SCENE: Record<MakeupSceneType, string> = {
   CEREMONY:
-    "a refined, elegant ceremony hairstyle — e.g. a clean low chignon, a soft half-up, or a sleek polished updo with a few face-framing strands; formal and wedding-ready",
+    "a polished formal bridal updo as done in a high-end wedding salon — a sleek glossy low chignon or an elegant low bun, smoothly swept back with a clean parting and neatly sculpted (not loose) face-framing pieces; immaculate, hotel-wedding caliber",
   STUDIO:
-    "an editorial photoshoot hairstyle that complements the concept — e.g. soft glossy waves worn down, a soft half-up, or a modern updo; styled and camera-ready",
+    "a glossy editorial bridal style as done by a celebrity hair stylist — a smooth voluminous blowout worn down, a refined half-up, or a modern sculpted updo; magazine-shoot caliber with every strand intentional",
 };
 
 const buildHairBlock = (scene: MakeupScene): string =>
-  `HAIR — auto-style HER OWN hair to suit the chosen options
-- Keep her natural hair color, length and texture from Image 1 (do not change
-  her identity; no wig-like, extended, or fake-looking hair)
-- Restyle it into ${HAIR_BY_SCENE[scene.scene]}
-- Match the styling to the makeup mood/concept above and to the
+  `HAIR — restyle into PROFESSIONAL bridal hair (salon-quality, NOT DIY)
+- Keep her hair color and length from Image 1, but style it the way a top
+  professional wedding hair stylist would: ${HAIR_BY_SCENE[scene.scene]}
+- Finish must be sleek, glossy and smooth, neatly set with a clean hairline and
+  parting; absolutely no frizz, no flyaways, no loose stray strands, no messy or
+  home-done look
+- Suit the makeup mood/concept above and the
   ${MAKEUP_SCENE_TYPE_LABEL[scene.scene]} setting under the given lighting
-- The hair must look intentionally styled and bridal — never flat, frizzy or messy`;
+- The hair must look expensive and professionally finished — high-end bridal
+  salon caliber`;
 
 /**
  * 메인 메이크업 프롬프트 빌더. Edge Function 에서 사용.
