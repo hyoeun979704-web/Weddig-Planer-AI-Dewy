@@ -28,6 +28,7 @@ import { usePlaceReviews, REVIEW_SOURCE_META, type PlaceReview } from "@/hooks/u
 import HiddenCostsCard from "@/components/detail/HiddenCostsCard";
 import SetAsWeddingVenueButton from "@/components/detail/SetAsWeddingVenueButton";
 import PlaceMap from "@/components/detail/PlaceMap";
+import PlaceRecommendations from "@/components/detail/PlaceRecommendations";
 
 const handleTagClick = (tag: string) => {
   // Tag-based filtering on the list pages isn't wired yet — the list hooks
@@ -127,6 +128,18 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
           <ReviewTab placeId={place.id} avgRating={place.rating} reviewCount={place.review_count} />
         )}
       </main>
+
+      {/* 필터 기반 추천 — 탭과 무관하게 페이지 하단에 항상 노출 */}
+      <PlaceRecommendations
+        place={{
+          id: place.id,
+          category: place.category,
+          city: place.city,
+          district: place.district,
+          latitude: place.latitude,
+          longitude: place.longitude,
+        }}
+      />
 
       {/* Fixed bottom CTA */}
       <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-background border-t border-border p-3 z-40">
