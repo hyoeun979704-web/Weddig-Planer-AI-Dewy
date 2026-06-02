@@ -9,17 +9,19 @@
 //   · 구 교차검증: 검색결과 주소에 DB district 가 포함될 때만 신뢰(오매칭 방지).
 //
 // 안전장치:
-//   · x-admin-token 헤더가 ADMIN_TOKEN 과 일치해야 실행(임시 관리자 함수).
+//   · x-admin-token 헤더가 env(GEOCODE_ADMIN_TOKEN) 또는 DB(geocode_admin) 토큰과
+//     일치해야 실행. 둘 다 없으면 모든 호출 401.
 //   · dryRun=true(기본): DB 의 places 는 절대 안 건드리고 geocode_backfill_log 에만 기록.
 //   · dryRun=false: district_match 인 행만 places.lat/lng UPDATE + 로그.
 //
-// 호출(서버사이드, pg_net): POST { dryRun, limit, category }
+// 호출: 서버사이드 pg_net(주간 cron 자동화) POST { dryRun, limit, categories }
 // ─────────────────────────────────────────────────────────────────────────
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// 관리자 토큰은 시크릿(GEOCODE_ADMIN_TOKEN)으로 주입. 미설정 시 호출 거부.
-const ADMIN_TOKEN = Deno.env.get("GEOCODE_ADMIN_TOKEN") ?? "";
+// 관리자 토큰은 시크릿(GEOCODE_ADMIN_TOKEN) 또는 RLS 잠금 테이블(geocode_admin)
+// 에서 검증한다(둘 다 없으면 모든 호출 거부). DB 토큰 경로는 자동화 cron 이
+// 대시보드 시크릿 설정 없이 호출할 수 있게 해준다 — serve() 안에서 확인.
 
 const LOCAL_URL = "https://openapi.naver.com/v1/search/local.json";
 
@@ -157,9 +159,25 @@ async function geocodeOne(
 
 serve(async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
-  if (!ADMIN_TOKEN || req.headers.get("x-admin-token") !== ADMIN_TOKEN) {
-    return json({ error: "unauthorized" }, 401);
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  // 인증: x-admin-token 이 env 토큰 또는 DB(geocode_admin) 토큰과 일치해야 함.
+  const provided = req.headers.get("x-admin-token");
+  const envToken = Deno.env.get("GEOCODE_ADMIN_TOKEN");
+  let authorized = !!provided && !!envToken && provided === envToken;
+  if (!authorized && provided) {
+    const { data: cfg } = await supabase
+      .from("geocode_admin")
+      .select("token")
+      .eq("id", 1)
+      .maybeSingle();
+    authorized = !!cfg?.token && provided === cfg.token;
   }
+  if (!authorized) return json({ error: "unauthorized" }, 401);
 
   const body = await req.json().catch(() => ({}));
   const dryRun = body.dryRun !== false; // 기본 true
@@ -176,11 +194,6 @@ serve(async (req) => {
   if (!clientId || !clientSecret) {
     return json({ error: "NAVER_CLIENT_ID/SECRET not set" }, 500);
   }
-
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
 
   // 이미 시도한(non-dryRun 로그 존재) 행은 제외하고 다음 대상 선별.
   // → 반복 호출 시 못 찾은 행을 무한 재시도하지 않고 앞으로 진행.
