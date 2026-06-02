@@ -75,6 +75,33 @@ MAKEUP: {해당 룩의 MAKEUP 문장 — 아래 3번}
 > 아바타는 슬릭 로우번(이마·얼굴 전부 노출)이라 어떤 컨셉 헤어로도 재스타일이 쉽다.
 > 아바타 파일은 `avatar-base.png` 로 저장해두고 18장 생성의 기준으로 재사용한다.
 
+**(권장) 듀얼 이미지 — 아바타 + 메이크업 레퍼런스 사진**
+
+텍스트 설명만으로는 룩 재현이 부정확할 수 있다. 메이크업 레퍼런스 사진을 함께 넣으면
+정확도가 크게 오른다. 이는 `dewy-makeup` 함수의 구조(Image 1=신부 얼굴, Image 2=메이크업
+레퍼런스, *메이크업만 복사*)와 동일하다. **얼굴은 아바타, 메이크업만 레퍼런스**를 강제하는 게 핵심.
+
+```
+[Image 1: avatar-base.png]   [Image 2: 메이크업 레퍼런스 사진]
+
+Image 1 is the BASE PERSON. Image 2 is a MAKEUP STYLE reference ONLY.
+Generate the SAME person as Image 1 — keep her face shape, eyes, nose, lips,
+jawline, skin tone and identity completely unchanged, and keep the 1:1 square
+head-and-shoulders framing. Do NOT borrow the face or identity from Image 2.
+From Image 2 copy ONLY the makeup: base finish, lip color & finish, eyeshadow
+color & placement, eyeliner, lashes, brow style, blush color & placement,
+highlight/contour. Restyle hair & pose as below. Photorealistic, realistic skin
+texture with visible pores, true-to-color, no beauty filter, no text/logo.
+HAIR & POSE: {컨셉별 헤어·포즈 — 2번 표}
+MAKEUP (use as a guide if Image 2 is ambiguous): {해당 룩의 MAKEUP 문장 — 3번}
+```
+
+주의:
+- Image 1·2 역할을 문장에서 명시 → GPT가 레퍼런스 얼굴을 베껴오지 않게 함
+- 레퍼런스는 메이크업이 또렷한 사진으로, 룩의 의도 메타데이터에 맞게 선택
+- 결과 얼굴은 AI 아바타이므로 레퍼런스 인물 초상권 노출 없음. 원본 레퍼런스는 입력용으로만, 배포·저장 금지
+- 레퍼런스로 결과가 계획과 달라지면 `seed/makeup-samples/seed.sql`의 해당 행 메타데이터도 맞춰 수정 (이미지 ↔ 메타데이터 일치 유지)
+
 ---
 
 ## 1. 출력 규격 (모든 18장 공통)
