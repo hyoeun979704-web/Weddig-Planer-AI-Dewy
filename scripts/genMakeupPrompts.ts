@@ -69,30 +69,56 @@ while ((m = re.exec(sql))) {
   lines.push(`## ${img} · ${name}  〔${av}${ref ? ` + ${ref}` : ""}〕`);
   lines.push("```");
   lines.push(`[Image 1: ${av}.png]${ref ? `   [Image 2: ${ref}]` : ""}`);
+  lines.push("");
   lines.push(
-    "LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,",
+    "Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm",
   );
   lines.push(
-    "framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING",
+    "macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high",
   );
   lines.push(
-    "makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).",
+    "resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.",
+  );
+  lines.push("");
+  lines.push(
+    "IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,",
+  );
+  lines.push(
+    "framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only",
+  );
+  lines.push(
+    "change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).",
   );
   if (ref) {
     lines.push(
-      "Use Image 2 as a MAKEUP reference ONLY — copy makeup colors/placement; never copy its",
+      "From Image 2 copy ONLY the makeup colours, finishes and placement — never its face, hair,",
     );
-    lines.push("face, hair, veil, crop or pose.");
+    lines.push("veil, crop or pose.");
   }
+  lines.push("");
   lines.push(
-    "APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render",
+    "RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its",
   );
   lines.push(
-    "the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to",
+    "description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet",
   );
-  lines.push("camera, visible skin pores, no veil/hands/props/text.");
-  lines.push("MAKEUP:");
+  lines.push(
+    "and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full",
+  );
+  lines.push(
+    "professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.",
+  );
+  lines.push("");
+  lines.push("MAKEUP — apply each of these precisely:");
   lines.push(describeMakeup(meta));
+  lines.push("");
+  lines.push(
+    "Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,",
+  );
+  lines.push(
+    "props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait",
+  );
+  lines.push("with every makeup detail crisp and high-fidelity.");
   lines.push("```");
   lines.push("");
 }

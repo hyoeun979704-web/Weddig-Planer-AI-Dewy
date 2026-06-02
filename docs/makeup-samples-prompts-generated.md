@@ -8,15 +8,23 @@
 ## 1A · 한국 신부 · 본식 시그니처  〔avatar-soft_korean + ref_3〕
 ```
 [Image 1: avatar-soft_korean.png]   [Image 2: ref_3]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-Use Image 2 as a MAKEUP reference ONLY — copy makeup colors/placement; never copy its
-face, hair, veil, crop or pose.
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+From Image 2 copy ONLY the makeup colours, finishes and placement — never its face, hair,
+veil, crop or pose.
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: satin base — a soft SEMI-MATTE finish between dewy and matte, smooth with only a subtle natural sheen (no wet shine, but not flat); medium coverage, the most photo-friendly wedding base.
 - Lip color: MLBB lip color — slightly enhanced version of natural lip tone.
 - Lip finish: blurred tinted-stain finish — color pressed into the lips like a juicy tint with soft edges and low shine (Korean 물들임).
@@ -28,18 +36,30 @@ MAKEUP:
 - Contour: very subtle contour — almost imperceptible.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: soft Korean bridal mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 1B · 한국 신부 · 음영 본식  〔avatar-soft_korean〕
 ```
 [Image 1: avatar-soft_korean.png]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: satin base — a soft SEMI-MATTE finish between dewy and matte, smooth with only a subtle natural sheen (no wet shine, but not flat); medium coverage, the most photo-friendly wedding base.
 - Lip color: MLBB lip color — slightly enhanced version of natural lip tone.
 - Lip finish: blurred tinted-stain finish — color pressed into the lips like a juicy tint with soft edges and low shine (Korean 물들임).
@@ -51,20 +71,32 @@ MAKEUP:
 - Contour: natural contour adding gentle dimension under cheekbones and along the jaw.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: soft Korean bridal mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 1C · 한국 신부 · 물광 글로우  〔avatar-soft_korean + ref_1〕
 ```
 [Image 1: avatar-soft_korean.png]   [Image 2: ref_1]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-Use Image 2 as a MAKEUP reference ONLY — copy makeup colors/placement; never copy its
-face, hair, veil, crop or pose.
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+From Image 2 copy ONLY the makeup colours, finishes and placement — never its face, hair,
+veil, crop or pose.
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: high-shine dewy 'glass-skin' base — intense lit-from-within moisture with a visible wet-look sheen on the high points (forehead, cheekbones, nose bridge), plump and glowing; medium coverage, real skin texture kept.
 - Lip color: coral lip color (vivid orange-pink).
 - Lip finish: high-shine glossy lips — a thin natural base topped with a plump glass/oil-like gloss (쫀쫀한 글로시), juicy and reflective.
@@ -76,20 +108,32 @@ MAKEUP:
 - Contour: no contour.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: soft Korean bridal mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 2A · 에테리얼 · 투명 햇살 본식  〔avatar-ethereal + ref_7〕
 ```
 [Image 1: avatar-ethereal.png]   [Image 2: ref_7]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-Use Image 2 as a MAKEUP reference ONLY — copy makeup colors/placement; never copy its
-face, hair, veil, crop or pose.
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+From Image 2 copy ONLY the makeup colours, finishes and placement — never its face, hair,
+veil, crop or pose.
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: luminous satin-glow base — soft natural radiance (a healthy glow, NOT a wet shine), light-to-medium coverage, skin texture visible.
 - Lip color: rose lip color (cool muted pink).
 - Lip finish: high-shine glossy lips — a thin natural base topped with a plump glass/oil-like gloss (쫀쫀한 글로시), juicy and reflective.
@@ -101,20 +145,32 @@ MAKEUP:
 - Contour: no contour.
 - Extra details: shimmer pressed into the inner corners of the eyes; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: ethereal, dreamy mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 2B · 에테리얼 · 글로우 라벤더 본식  〔avatar-ethereal + ref_6〕
 ```
 [Image 1: avatar-ethereal.png]   [Image 2: ref_6]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-Use Image 2 as a MAKEUP reference ONLY — copy makeup colors/placement; never copy its
-face, hair, veil, crop or pose.
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+From Image 2 copy ONLY the makeup colours, finishes and placement — never its face, hair,
+veil, crop or pose.
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: high-shine dewy 'glass-skin' base — intense lit-from-within moisture with a visible wet-look sheen on the high points (forehead, cheekbones, nose bridge), plump and glowing; medium coverage, real skin texture kept.
 - Lip color: mauve lip color (dusty cool pink-brown).
 - Lip finish: high-shine glossy lips — a thin natural base topped with a plump glass/oil-like gloss (쫀쫀한 글로시), juicy and reflective.
@@ -126,20 +182,32 @@ MAKEUP:
 - Contour: very subtle contour — almost imperceptible.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: ethereal, dreamy mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 2C · 에테리얼 · 투명 글로시  〔avatar-ethereal + ref_2〕
 ```
 [Image 1: avatar-ethereal.png]   [Image 2: ref_2]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-Use Image 2 as a MAKEUP reference ONLY — copy makeup colors/placement; never copy its
-face, hair, veil, crop or pose.
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+From Image 2 copy ONLY the makeup colours, finishes and placement — never its face, hair,
+veil, crop or pose.
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: high-shine dewy 'glass-skin' base — intense lit-from-within moisture with a visible wet-look sheen on the high points (forehead, cheekbones, nose bridge), plump and glowing; medium coverage, real skin texture kept.
 - Lip color: nude lip color (warm beige-pink).
 - Lip finish: high-shine glossy lips — a thin natural base topped with a plump glass/oil-like gloss (쫀쫀한 글로시), juicy and reflective.
@@ -151,18 +219,30 @@ MAKEUP:
 - Contour: no contour.
 - Extra details: shimmer pressed into the inner corners of the eyes; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: ethereal, dreamy mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 3A · 글래머러스 · 클래식 레드  〔avatar-glamorous〕
 ```
 [Image 1: avatar-glamorous.png]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: satin base — a soft SEMI-MATTE finish between dewy and matte, smooth with only a subtle natural sheen (no wet shine, but not flat); medium coverage, the most photo-friendly wedding base.
 - Lip color: classic red lip color (true red).
 - Lip finish: satin lips — smooth full color with a soft comfortable mid-sheen (not matte, not high-gloss).
@@ -174,18 +254,30 @@ MAKEUP:
 - Contour: defined contour with visible shaping under the cheekbones, sides of the nose, and along the jawline.
 - Extra details: emphasized lashes — long, defined, slightly curled, well-separated; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow); subtly over-lined lips — lip liner drawn just slightly beyond the natural lip line to create a fuller, plumper pout (glam over-lip technique).
 - Overall mood: glamorous, statement mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 3B · 글래머러스 · 버건디 캣아이  〔avatar-glamorous〕
 ```
 [Image 1: avatar-glamorous.png]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: true MATTE base — soft velvet, shine-free and smoothly blurred (modern soft matte, never flat/cakey); medium-to-full coverage, even poreless-looking complexion.
 - Lip color: berry lip color (deep cool pink-purple).
 - Lip finish: soft modern matte lips — full velvet color, shine-free but smooth and skin-friendly (never dry or cakey).
@@ -197,18 +289,30 @@ MAKEUP:
 - Contour: defined contour with visible shaping under the cheekbones, sides of the nose, and along the jawline.
 - Extra details: emphasized lashes — long, defined, slightly curled, well-separated; subtly over-lined lips — lip liner drawn just slightly beyond the natural lip line to create a fuller, plumper pout (glam over-lip technique).
 - Overall mood: glamorous, statement mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 3C · 글래머러스 · 누드 음영 글램  〔avatar-glamorous〕
 ```
 [Image 1: avatar-glamorous.png]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: satin base — a soft SEMI-MATTE finish between dewy and matte, smooth with only a subtle natural sheen (no wet shine, but not flat); medium coverage, the most photo-friendly wedding base.
 - Lip color: nude lip color (warm beige-pink).
 - Lip finish: high-shine glossy lips — a thin natural base topped with a plump glass/oil-like gloss (쫀쫀한 글로시), juicy and reflective.
@@ -220,20 +324,32 @@ MAKEUP:
 - Contour: defined contour with visible shaping under the cheekbones, sides of the nose, and along the jawline.
 - Extra details: emphasized lashes — long, defined, slightly curled, well-separated; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow); subtly over-lined lips — lip liner drawn just slightly beyond the natural lip line to create a fuller, plumper pout (glam over-lip technique).
 - Overall mood: glamorous, statement mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 4A · 프레시 · 생기 코랄  〔avatar-fresh + ref_5〕
 ```
 [Image 1: avatar-fresh.png]   [Image 2: ref_5]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-Use Image 2 as a MAKEUP reference ONLY — copy makeup colors/placement; never copy its
-face, hair, veil, crop or pose.
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+From Image 2 copy ONLY the makeup colours, finishes and placement — never its face, hair,
+veil, crop or pose.
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: high-shine dewy 'glass-skin' base — intense lit-from-within moisture with a visible wet-look sheen on the high points (forehead, cheekbones, nose bridge), plump and glowing; medium coverage, real skin texture kept.
 - Lip color: coral lip color (vivid orange-pink).
 - Lip finish: high-shine glossy lips — a thin natural base topped with a plump glass/oil-like gloss (쫀쫀한 글로시), juicy and reflective.
@@ -245,18 +361,30 @@ MAKEUP:
 - Contour: no contour.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: fresh, no-makeup-makeup mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 4B · 프레시 · 주근깨 데일리  〔avatar-fresh〕
 ```
 [Image 1: avatar-fresh.png]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: skin-like 'no-makeup' base — sheer barely-there coverage that lets real skin texture, pores and a few natural marks show through; fresh and breathable, only lightly evened out.
 - Lip color: peach lip color (warm soft orange-pink).
 - Lip finish: blurred tinted-stain finish — color pressed into the lips like a juicy tint with soft edges and low shine (Korean 물들임).
@@ -268,18 +396,30 @@ MAKEUP:
 - Contour: no contour.
 - Extra details: delicate faux freckles across the nose bridge and upper cheeks.
 - Overall mood: fresh, no-makeup-makeup mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 4C · 프레시 · 누드 글로우  〔avatar-fresh〕
 ```
 [Image 1: avatar-fresh.png]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: high-shine dewy 'glass-skin' base — intense lit-from-within moisture with a visible wet-look sheen on the high points (forehead, cheekbones, nose bridge), plump and glowing; medium coverage, real skin texture kept.
 - Lip color: nude lip color (warm beige-pink).
 - Lip finish: blurred tinted-stain finish — color pressed into the lips like a juicy tint with soft edges and low shine (Korean 물들임).
@@ -291,18 +431,30 @@ MAKEUP:
 - Contour: no contour.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: fresh, no-makeup-makeup mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 5A · 클래식 · 로즈 새틴 음영  〔avatar-classic〕
 ```
 [Image 1: avatar-classic.png]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: satin base — a soft SEMI-MATTE finish between dewy and matte, smooth with only a subtle natural sheen (no wet shine, but not flat); medium coverage, the most photo-friendly wedding base.
 - Lip color: rose lip color (cool muted pink).
 - Lip finish: satin lips — smooth full color with a soft comfortable mid-sheen (not matte, not high-gloss).
@@ -314,20 +466,32 @@ MAKEUP:
 - Contour: natural contour adding gentle dimension under cheekbones and along the jaw.
 - Extra details: emphasized lashes — long, defined, slightly curled, well-separated; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: classic timeless bridal mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 5B · 클래식 · 시크 에디토리얼  〔avatar-classic + ref_8〕
 ```
 [Image 1: avatar-classic.png]   [Image 2: ref_8]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-Use Image 2 as a MAKEUP reference ONLY — copy makeup colors/placement; never copy its
-face, hair, veil, crop or pose.
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+From Image 2 copy ONLY the makeup colours, finishes and placement — never its face, hair,
+veil, crop or pose.
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: satin base — a soft SEMI-MATTE finish between dewy and matte, smooth with only a subtle natural sheen (no wet shine, but not flat); medium coverage, the most photo-friendly wedding base.
 - Lip color: mauve lip color (dusty cool pink-brown).
 - Lip finish: satin lips — smooth full color with a soft comfortable mid-sheen (not matte, not high-gloss).
@@ -339,18 +503,30 @@ MAKEUP:
 - Contour: natural contour adding gentle dimension under cheekbones and along the jaw.
 - Extra details: emphasized lashes — long, defined, slightly curled, well-separated.
 - Overall mood: classic timeless bridal mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 5C · 클래식 · 모브 음영  〔avatar-classic〕
 ```
 [Image 1: avatar-classic.png]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: satin base — a soft SEMI-MATTE finish between dewy and matte, smooth with only a subtle natural sheen (no wet shine, but not flat); medium coverage, the most photo-friendly wedding base.
 - Lip color: mauve lip color (dusty cool pink-brown).
 - Lip finish: satin lips — smooth full color with a soft comfortable mid-sheen (not matte, not high-gloss).
@@ -362,20 +538,32 @@ MAKEUP:
 - Contour: natural contour adding gentle dimension under cheekbones and along the jaw.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: classic timeless bridal mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 6A · 로맨틱 · 핑크 그라데이션  〔avatar-romantic + ref_4〕
 ```
 [Image 1: avatar-romantic.png]   [Image 2: ref_4]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-Use Image 2 as a MAKEUP reference ONLY — copy makeup colors/placement; never copy its
-face, hair, veil, crop or pose.
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+From Image 2 copy ONLY the makeup colours, finishes and placement — never its face, hair,
+veil, crop or pose.
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: high-shine dewy 'glass-skin' base — intense lit-from-within moisture with a visible wet-look sheen on the high points (forehead, cheekbones, nose bridge), plump and glowing; medium coverage, real skin texture kept.
 - Lip color: coral lip color (vivid orange-pink).
 - Lip finish: blurred fade lips — soft diffused edges with color concentrated in the center fading outward (페이드 / halo lip).
@@ -387,18 +575,30 @@ MAKEUP:
 - Contour: very subtle contour — almost imperceptible.
 - Extra details: ombré gradient lip — deeper in the center fading toward the edges; shimmer pressed into the inner corners of the eyes; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: romantic, soft-feminine mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 6B · 로맨틱 · 로즈 글로우  〔avatar-romantic〕
 ```
 [Image 1: avatar-romantic.png]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: high-shine dewy 'glass-skin' base — intense lit-from-within moisture with a visible wet-look sheen on the high points (forehead, cheekbones, nose bridge), plump and glowing; medium coverage, real skin texture kept.
 - Lip color: rose lip color (cool muted pink).
 - Lip finish: high-shine glossy lips — a thin natural base topped with a plump glass/oil-like gloss (쫀쫀한 글로시), juicy and reflective.
@@ -410,18 +610,30 @@ MAKEUP:
 - Contour: very subtle contour — almost imperceptible.
 - Extra details: soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: romantic, soft-feminine mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
 
 ## 6C · 로맨틱 · 코랄핑크 러블리  〔avatar-romantic〕
 ```
 [Image 1: avatar-romantic.png]
-LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
-framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish = makeup, NOT identity — her bare brows MUST be made up).
-APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and render
-the SPECIFIED finish faithfully (do not default skin to dewy). Editorial quality, eyes OPEN to
-camera, visible skin pores, no veil/hands/props/text.
-MAKEUP:
+
+Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, shot on an 85mm
+macro lens with soft large-softbox beauty lighting that flatters the makeup, ultra-high
+resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
+
+IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle,
+framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only
+change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).
+
+RENDER THE MAKEUP WITH HIGH PRECISION — paint every element below distinctly and true to its
+description, and reproduce the EXACT finishes (a matte base reads matte, a dewy base reads wet
+and glowing, a glossy lip looks juicy, an over-lined lip looks fuller). This is a full
+professional bridal makeup, clearly and visibly applied — NOT a bare or no-makeup face.
+
+MAKEUP — apply each of these precisely:
 - Base finish: satin base — a soft SEMI-MATTE finish between dewy and matte, smooth with only a subtle natural sheen (no wet shine, but not flat); medium coverage, the most photo-friendly wedding base.
 - Lip color: coral lip color (vivid orange-pink).
 - Lip finish: high-shine glossy lips — a thin natural base topped with a plump glass/oil-like gloss (쫀쫀한 글로시), juicy and reflective.
@@ -433,4 +645,8 @@ MAKEUP:
 - Contour: very subtle contour — almost imperceptible.
 - Extra details: ombré gradient lip — deeper in the center fading toward the edges; soft highlighter on the high points (tops of cheekbones, brow bone, bridge of nose, Cupid's bow).
 - Overall mood: romantic, soft-feminine mood.
+
+Eyes open and engaging the camera, serene refined bridal expression. No veil, hands, jewelry,
+props, text or watermark. Output: one hyper-detailed photorealistic 1:1 bridal beauty portrait
+with every makeup detail crisp and high-fidelity.
 ```
