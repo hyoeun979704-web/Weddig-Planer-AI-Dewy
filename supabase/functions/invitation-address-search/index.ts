@@ -6,8 +6,10 @@
 //
 // 비용: NCP Geocoding 은 대표계정 월 무료 제공량이 커서 이 앱 규모에선 사실상 무료.
 //
-// 필요 시크릿 (둘 중 하나): NAVER_CLIENT_ID/SECRET (기존 앱에 Maps 활성화) 또는
-//   NAVER_MAP_CLIENT_ID/SECRET (별도 NCP Maps 키 — 우선). 헤더는 X-NCP-APIGW-API-KEY-ID.
+// 필요 시크릿 (NCP Maps Client ID/Secret — 아래 이름 중 하나로 인식):
+//   NAVER_MAP_CLIENT_ID/SECRET (권장) → NAVER_MAP_ID/SECRET → NAVER_CLIENT_ID/SECRET(폴백).
+//   헤더는 X-NCP-APIGW-API-KEY-ID/KEY. 엔드포인트는 NAVER_MAP_API_BASE 로 override 가능
+//   (신규 Maps 콘솔 키는 maps.apigw.ntruss.com 기본, 레거시면 naveropenapi.apigw.ntruss.com).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -18,8 +20,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const GEOCODE_URL =
-  "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode";
+const MAP_API_BASE =
+  Deno.env.get("NAVER_MAP_API_BASE") ?? "https://maps.apigw.ntruss.com";
+const GEOCODE_URL = `${MAP_API_BASE}/map-geocode/v2/geocode`;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -41,9 +44,12 @@ serve(async (req) => {
   }
 
   const naverId =
-    Deno.env.get("NAVER_MAP_CLIENT_ID") ?? Deno.env.get("NAVER_CLIENT_ID");
+    Deno.env.get("NAVER_MAP_CLIENT_ID") ??
+    Deno.env.get("NAVER_MAP_ID") ??
+    Deno.env.get("NAVER_CLIENT_ID");
   const naverSecret =
     Deno.env.get("NAVER_MAP_CLIENT_SECRET") ??
+    Deno.env.get("NAVER_MAP_SECRET") ??
     Deno.env.get("NAVER_CLIENT_SECRET");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
