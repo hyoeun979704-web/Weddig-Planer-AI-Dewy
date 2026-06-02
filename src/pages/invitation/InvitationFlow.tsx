@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -43,6 +43,7 @@ import {
 } from "@/lib/invitation/exportPdf";
 import { computeInvitationPrice } from "@/lib/invitation/computePrice";
 import {
+  collectFontFamilies,
   getInvitationPages,
   getInvitationSlots,
   getPhotoSlotGroups,
@@ -131,7 +132,17 @@ const InvitationFlow = () => {
   const pageCanvasRefs = useRef<Record<string, InvitationCanvasHandle | null>>({});
 
   // 등록된 청첩장 폰트 @font-face 주입 + 로드 완료 신호 (미리보기 폰트 렌더)
-  const { fontsReady } = useInvitationFonts();
+  // 활성 폰트 전체가 아니라 현재 템플릿(전/후면)이 쓰는 폰트만 on-demand 로드.
+  const usedFonts = useMemo(
+    () =>
+      collectFontFamilies(
+        [template?.layout, backTemplate?.layout].filter(
+          (l): l is InvitationLayout => !!l,
+        ),
+      ),
+    [template, backTemplate],
+  );
+  const { fontsReady } = useInvitationFonts(usedFonts);
 
   // 전면 선택 시 짝꿍 기본 후면 자동 로드 (세트). default_back 없으면 단면.
   const latestPickRef = useRef<string | null>(null);

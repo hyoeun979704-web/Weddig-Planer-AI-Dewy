@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Loader2, Heart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import InvitationCanvas from "@/components/invitation/InvitationCanvas";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
 import {
+  collectFontFamilies,
   getInvitationPages,
   isSeamlessRoll,
   pageToLayout,
@@ -62,7 +63,25 @@ const InvitationViewer = () => {
   const [backLayout, setBackLayout] = useState<InvitationLayout | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const { fontsReady } = useInvitationFonts();
+  // 이 청첩장이 실제 쓰는 폰트만 on-demand 로드 (활성 폰트 전체 X)
+  const usedFonts = useMemo(() => {
+    const tpl = data?.invitation_templates;
+    if (!tpl) return undefined;
+    const f = readFaceLayout(data!.layout);
+    const ov = {
+      ...(f.front.fontOverrides ?? {}),
+      ...(f.back.fontOverrides ?? {}),
+    };
+    const extra = [
+      ...(f.front.extraSlots ?? []),
+      ...(f.back.extraSlots ?? []),
+    ];
+    const layouts = [tpl.layout, backLayout].filter(
+      (l): l is InvitationLayout => !!l,
+    );
+    return collectFontFamilies(layouts, ov, extra);
+  }, [data, backLayout]);
+  const { fontsReady } = useInvitationFonts(usedFonts);
 
   useEffect(() => {
     if (!slug) return;

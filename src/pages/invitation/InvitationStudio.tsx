@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -43,6 +43,7 @@ import {
   type PdfPage,
 } from "@/lib/invitation/exportPdf";
 import {
+  collectFontFamilies,
   getInvitationPages,
   getInvitationSlots,
   isSeamlessRoll,
@@ -131,8 +132,6 @@ const InvitationStudio = () => {
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [template, setTemplate] = useState<Template | null>(null);
 
-  const { fonts, fontsReady } = useInvitationFonts();
-
   // 후면 템플릿 (없으면 단면 — 하위호환). template = 전면.
   const [backTemplate, setBackTemplate] = useState<Template | null>(null);
   const [backTemplateId, setBackTemplateId] = useState<string | null>(null);
@@ -149,6 +148,17 @@ const InvitationStudio = () => {
   // 면별 편집 상태
   const [frontFace, setFrontFace] = useState<FaceState>(emptyFace);
   const [backFace, setBackFace] = useState<FaceState>(emptyFace);
+
+  // 폰트: 피커엔 전체 목록(fonts), 로드는 현재 편집중 템플릿이 쓰는 것 + 사용자가 고른 것만.
+  const usedFonts = useMemo(() => {
+    const layouts = [template?.layout, backTemplate?.layout].filter(
+      (l): l is InvitationLayout => !!l,
+    );
+    const ov = { ...frontFace.fontOverrides, ...backFace.fontOverrides };
+    const extra = [...frontFace.extraSlots, ...backFace.extraSlots];
+    return collectFontFamilies(layouts, ov, extra);
+  }, [template, backTemplate, frontFace, backFace]);
+  const { fonts, fontsReady } = useInvitationFonts(usedFonts);
 
   const [aiText, setAiText] = useState<Record<string, string>>({});
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);

@@ -1,18 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fontFamilyName } from "@/lib/invitation/layout";
 
 /**
- * 청첩장 폰트 로더.
+ * 청첩장 폰트 로더 (on-demand).
  *
  * invitation_fonts(is_active) 를 한 번 읽어와서:
- *   1. @font-face 를 <style id="invitation-fontfaces"> 로 1회 주입 (문서 전역)
- *   2. 실제 폰트 파일 로드 완료(document.fonts.load)를 기다려 fontsReady=true
+ *   1. @font-face 를 <style id="invitation-fontfaces"> 로 1회 주입 (문서 전역, 다운로드 X)
+ *   2. **실제 쓰는 폰트(used)만** document.fonts.load 로 받아 fontsReady=true
  *
- * Konva 캔버스는 폰트 파일이 로드되기 전에 그리면 fallback(Pretendard/시스템)으로
- * 렌더되므로, fontsReady 를 캔버스에 넘겨 로드 후 텍스트 노드를 재렌더해야 한다.
+ * 활성 폰트가 수십 종이어도 @font-face 주입은 가볍고(브라우저는 실제 사용 전까지 안 받음),
+ * 캔버스가 기다리는 건 used 폰트뿐이라 느려지지 않는다. Studio 폰트 피커처럼 목록 전체가
+ * 필요한 곳은 미리보기 컴포넌트가 자기 폰트를 그릴 때 on-demand 로 받는다.
  *
- * 결과는 모듈 캐시에 저장 — 같은 세션에서 여러 화면(스튜디오/뷰어/플로우)이
- * 중복 fetch 하지 않는다.
+ * @param used 이 화면이 실제로 그릴 폰트 family 목록(없으면 전체 로드 — 하위호환).
  */
 
 export interface InvitationFont {
@@ -27,6 +28,7 @@ export interface InvitationFont {
 
 const STYLE_EL_ID = "invitation-fontfaces";
 let fontCache: InvitationFont[] | null = null;
+const loadedFamilies = new Set<string>();
 
 function injectFontFaces(list: InvitationFont[]) {
   if (typeof document === "undefined") return;
@@ -44,23 +46,34 @@ function injectFontFaces(list: InvitationFont[]) {
   document.head.appendChild(styleEl);
 }
 
-async function waitForFonts(list: InvitationFont[]) {
+async function loadFamilies(list: InvitationFont[], families: string[]) {
   const fontSet = (document as unknown as { fonts?: FontFaceSet }).fonts;
   if (!fontSet?.load) return;
+  const want = families.filter((fam) => !loadedFamilies.has(fam));
   await Promise.all(
-    list.map((f) =>
-      fontSet
-        .load(`${f.weight || "400"} 16px "${f.family.replace(/"/g, "")}"`)
-        .catch(() => undefined),
-    ),
+    want.map(async (fam) => {
+      const f = list.find((x) => x.family === fam);
+      const weight = f?.weight || "400";
+      await fontSet
+        .load(`${weight} 16px "${fam.replace(/"/g, "")}"`)
+        .catch(() => undefined);
+      loadedFamilies.add(fam);
+    }),
   );
-  await fontSet.ready?.catch?.(() => undefined);
 }
 
-export function useInvitationFonts() {
+export function useInvitationFonts(used?: string[]) {
   const [fonts, setFonts] = useState<InvitationFont[]>(fontCache ?? []);
-  // 캐시가 있으면(이미 로드됨) 즉시 ready
-  const [fontsReady, setFontsReady] = useState<boolean>(fontCache !== null);
+  const [fontsReady, setFontsReady] = useState<boolean>(false);
+
+  // used 목록을 안정 키로 — family 이름만 정규화해서 비교 (없으면 전체)
+  const usedKey = useMemo(
+    () =>
+      used
+        ? Array.from(new Set(used.map(fontFamilyName))).sort().join(",")
+        : "__ALL__",
+    [used],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -74,7 +87,7 @@ export function useInvitationFonts() {
           .eq("is_active", true)
           .order("display_order", { ascending: false });
         if (error || !data) {
-          if (!cancelled) setFontsReady(true); // 폰트 없어도 진행 (fallback 렌더)
+          if (!cancelled) setFontsReady(true); // 폰트 없어도 진행
           return;
         }
         list = data as InvitationFont[];
@@ -83,18 +96,29 @@ export function useInvitationFonts() {
       if (cancelled) return;
       setFonts(list);
       injectFontFaces(list);
-      try {
-        await waitForFonts(list);
-      } catch {
-        /* noop */
+
+      const available = new Set(list.map((f) => f.family));
+      const families =
+        usedKey === "__ALL__"
+          ? list.map((f) => f.family)
+          : usedKey
+            ? usedKey.split(",").filter((f) => available.has(f))
+            : [];
+
+      // 필요한 게 모두 이미 로드됐으면 즉시 ready
+      if (families.every((f) => loadedFamilies.has(f))) {
+        if (!cancelled) setFontsReady(true);
+        return;
       }
+      if (!cancelled) setFontsReady(false);
+      await loadFamilies(list, families);
       if (!cancelled) setFontsReady(true);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [usedKey]);
 
   return { fonts, fontsReady };
 }

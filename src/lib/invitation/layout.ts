@@ -97,6 +97,57 @@ export function getInvitationSlots(layout: InvitationLayout): InvitationSlot[] {
   return getInvitationPages(layout).flatMap((page) => page.slots);
 }
 
+// 영문 이름 캘리 필드 — font_family 미지정 시 'Great Vibes' 폴백(InvitationCanvas 와 동일).
+const EN_NAME_FIELDS_FONT = new Set([
+  "groom_name_en",
+  "bride_name_en",
+  "couple_names_en",
+]);
+
+/** "Family, fallback" → 첫 family 이름만. */
+export function fontFamilyName(f: string): string {
+  return f.split(",")[0].trim().replace(/['"]/g, "");
+}
+
+/**
+ * 이 레이아웃(+사용자 폰트 override + 추가 슬롯)이 실제로 그릴 때 필요한 폰트 family 목록.
+ * 폰트 on-demand 로딩용 — 활성 폰트 전부가 아니라 "쓰는 것만" 받기 위해 사용.
+ */
+export function collectFontFamilies(
+  layouts: InvitationLayout[],
+  fontOverrides: Record<string, string> = {},
+  extraSlots: InvitationSlot[] = [],
+): string[] {
+  const families = new Set<string>();
+  const slots = [
+    ...layouts.flatMap((l) => getInvitationSlots(l)),
+    ...extraSlots,
+  ];
+  for (const slot of slots) {
+    const ov = fontOverrides[slot.id];
+    if (ov) {
+      families.add(fontFamilyName(ov));
+      continue;
+    }
+    if (slot.font_family) {
+      families.add(fontFamilyName(slot.font_family));
+      continue;
+    }
+    if (slot.field && EN_NAME_FIELDS_FONT.has(slot.field)) {
+      families.add("Great Vibes");
+    }
+    // monogram 에셋도 Great Vibes 폴백
+    if (slot.type === "asset" && slot.asset_kind === "monogram") {
+      families.add(fontFamilyName(slot.font_family ?? "Great Vibes"));
+    }
+  }
+  // 사용자가 고른 폰트(슬롯에 안 걸린 것도 포함)
+  for (const v of Object.values(fontOverrides)) {
+    if (v) families.add(fontFamilyName(v));
+  }
+  return Array.from(families);
+}
+
 /**
  * 한 image 슬롯이 속한 "사진 그룹" 키.
  *  - image_order 가 지정돼 있으면 같은 값끼리 한 장을 공유 (원본 + 누끼 슬롯 등).
