@@ -54,6 +54,8 @@ Framing: 1:1 square, 1024x1024. Head-and-shoulders, face perfectly centered and
 fully visible, symmetrical front-facing, eyes looking straight to camera, calm
 neutral relaxed expression, lips gently closed. Hair pulled back into a clean
 sleek low bun with a center part, no flyaways, forehead and full face uncovered.
+Hair color: natural Korean dark brown — a soft blackish-brown (흑갈색) with a
+subtle warm brown sheen, NOT flat jet-black.
 Even soft neutral beauty-dish lighting, no color cast (true-to-color), clean
 seamless light-grey studio backdrop, bare neck/collarbone visible, no jewelry,
 no clothing detail, no veil, no props, no text/logo/watermark.

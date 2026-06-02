@@ -154,6 +154,8 @@ const buildHairBlock = (scene: MakeupScene): string =>
   stylist would: ${HAIR_BY_SCENE[scene.scene]}
 - Keep her eyebrows fully visible; her forehead MAY be softly framed by bangs or
   side-swept pieces (no need to fully expose the forehead)
+- Keep her own hair color, but render it with natural depth and a soft light sheen
+  (a rich dark tone, not a flat jet-black block)
 - Polished and natural at the same time — smooth and intentional, but never frizzy,
   never messy/home-done, and never stiff or plastic-looking
 - Suit the makeup mood/concept above and the

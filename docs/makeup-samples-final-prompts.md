@@ -27,8 +27,10 @@ clean light-grey background IDENTICAL to the source. Keep a COMPLETELY BARE FACE
 makeup, bare natural brows & lashes, visible skin pores). Change ONLY the hairstyle to the
 one below — like the same person photographed on another day with her hair restyled. Keep
 her EYEBROWS fully visible; her forehead MAY be softly covered by bangs or side-swept
-pieces. The hair must be PROFESSIONALLY styled yet NATURAL — soft, polished and salon-
-quality, never frizzy/DIY and never stiff or severely slicked-back. 1:1 1024², eyes open to
+pieces. Set her hair color to a natural Korean dark brown — a soft blackish-brown (흑갈색)
+with a subtle warm brown sheen in the light, NOT flat jet-black. The hair must be
+PROFESSIONALLY styled yet NATURAL — soft, polished and salon-quality, never frizzy/DIY and
+never stiff or severely slicked-back. 1:1 1024², eyes open to
 camera, no veil, no jewelry, no props, no text. Ultra-photorealistic.
 HAIRSTYLE: {HAIR}
 ```
