@@ -280,6 +280,48 @@ const normalizeMobileRollFrame = async (file: File) => {
   }
 };
 
+// 편집기 "새로 만들기" 시작 레이아웃 (종이 카드 1페이지 + 사진/이름 슬롯)
+const STARTER_LAYOUT: InvitationLayout = {
+  product_kind: "card",
+  presentation: "paged",
+  canvas: { w: 1491, h: 1055, bg: "#666666" },
+  slots: [],
+  pages: [
+    {
+      id: "page-01",
+      label: "1P 앞면",
+      order: 1,
+      canvas: { w: 1491, h: 1055, bg: "#666666" },
+      slots: [
+        {
+          id: "bg-photo",
+          type: "image",
+          role: "free",
+          x: 0,
+          y: 0,
+          w: 1491,
+          h: 1055,
+          fit: "cover",
+          placeholder: "사진",
+        },
+        {
+          id: "names",
+          type: "text",
+          text: "이름",
+          x: 60,
+          y: 850,
+          w: 1000,
+          h: 130,
+          z: 2,
+          font_size: 90,
+          color: "#FFFFFF",
+          align: "left",
+        },
+      ],
+    },
+  ],
+};
+
 const AdminInvitationTemplates = () => {
   const [items, setItems] = useState<Template[]>([]);
   const [fonts, setFonts] = useState<Font[]>([]);
@@ -843,6 +885,25 @@ const AdminInvitationTemplates = () => {
         title="청첩장 템플릿"
         description="모바일 청첩장 디자인 시안 + 기본 레이아웃 관리"
         rightAction={
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() =>
+                setEditorTpl({
+                  name: "새 템플릿",
+                  format: "paper",
+                  tone: "modern",
+                  thumbnail_url: "",
+                  layout: JSON.parse(
+                    JSON.stringify(STARTER_LAYOUT),
+                  ) as InvitationLayout,
+                })
+              }
+            >
+              <Plus className="w-4 h-4" />편집기로 만들기
+            </Button>
           <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
@@ -1359,6 +1420,7 @@ const AdminInvitationTemplates = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         }
       >
         {isLoading ? (

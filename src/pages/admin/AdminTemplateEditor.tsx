@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { X, Plus, Trash2, Copy, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,6 +85,13 @@ const AdminTemplateEditor = ({
   const [pageIdx, setPageIdx] = useState(0);
   const [selId, setSelId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  const close = () => {
+    if (dirty && !window.confirm("저장하지 않은 변경이 있습니다. 닫을까요?"))
+      return;
+    onClose();
+  };
 
   const pages = getInvitationPages(layout);
   const page = pages[Math.min(pageIdx, pages.length - 1)];
@@ -96,6 +103,7 @@ const AdminTemplateEditor = ({
 
   // ── 슬롯 변경 헬퍼 (현재 페이지 슬롯 배열을 갱신) ──
   const setPageSlots = (updater: (s: InvitationSlot[]) => InvitationSlot[]) => {
+    setDirty(true);
     setLayout((prev) => {
       const next = clone(prev);
       if (Array.isArray(next.pages) && next.pages.length > 0) {
@@ -159,6 +167,37 @@ const AdminTemplateEditor = ({
     setSelId(copy.id);
   };
 
+  const bringToFront = (id: string) => {
+    const maxZ = Math.max(0, ...slots.map((s) => s.z ?? 0));
+    updateSlot(id, { z: maxZ + 1 });
+  };
+  const sendToBack = (id: string) => {
+    const minZ = Math.min(0, ...slots.map((s) => s.z ?? 0));
+    updateSlot(id, { z: minZ - 1 });
+  };
+
+  // 키보드: Esc 선택해제, Delete/Backspace 삭제 (입력칸 포커스 중엔 무시)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.isContentEditable)
+      )
+        return;
+      if (e.key === "Escape") setSelId(null);
+      else if ((e.key === "Delete" || e.key === "Backspace") && selId) {
+        e.preventDefault();
+        deleteSlot(selId);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selId]);
+
   const save = async () => {
     if (!name.trim()) {
       toast({ title: "템플릿 이름을 입력해주세요" });
@@ -183,6 +222,7 @@ const AdminTemplateEditor = ({
               is_active: false,
             });
       if (res.error) throw res.error;
+      setDirty(false);
       toast({ title: "템플릿 저장됨" });
       onSaved();
     } catch (e) {
@@ -206,7 +246,10 @@ const AdminTemplateEditor = ({
       <header className="flex items-center gap-2 px-4 h-14 border-b border-border shrink-0">
         <Input
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            setDirty(true);
+          }}
           placeholder="템플릿 이름"
           className="max-w-xs h-9"
         />
@@ -237,7 +280,7 @@ const AdminTemplateEditor = ({
             )}
             저장
           </Button>
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button variant="outline" size="sm" onClick={close}>
             <X className="w-4 h-4" />
           </Button>
         </div>
@@ -304,6 +347,26 @@ const AdminTemplateEditor = ({
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
+              </div>
+
+              {/* z 순서 */}
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] flex-1"
+                  onClick={() => bringToFront(selected.id)}
+                >
+                  맨 앞으로
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] flex-1"
+                  onClick={() => sendToBack(selected.id)}
+                >
+                  맨 뒤로
+                </Button>
               </div>
 
               {/* 위치/크기 */}
@@ -443,6 +506,46 @@ const AdminTemplateEditor = ({
                     />
                   </div>
                 </>
+              )}
+
+              {selected.type === "image" && (
+                <div className="space-y-2">
+                  <div>
+                    <Label className="text-[10px]">채움</Label>
+                    <Select
+                      value={selected.fit ?? "cover"}
+                      onValueChange={(v) =>
+                        updateSlot(selected.id, {
+                          fit: v as InvitationSlot["fit"],
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cover">
+                          cover(꽉 채움·잘림)
+                        </SelectItem>
+                        <SelectItem value="contain">
+                          contain(전체 보임·여백)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">자리표시 문구</Label>
+                    <Input
+                      value={selected.placeholder ?? ""}
+                      onChange={(e) =>
+                        updateSlot(selected.id, {
+                          placeholder: e.target.value || undefined,
+                        })
+                      }
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
               )}
             </div>
           )}
