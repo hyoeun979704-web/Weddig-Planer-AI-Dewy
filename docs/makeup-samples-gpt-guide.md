@@ -33,6 +33,50 @@
 
 ---
 
+## 0.5. 표준 아바타 (쌩얼 베이스) — 먼저 1장 생성
+
+18장은 **같은 얼굴**로 통일한다. 표준 쌩얼 아바타 1장을 먼저 만들고, 그 이미지를
+캔버스로 삼아 룩마다 메이크업·헤어만 입힌다. (실사진 초상권 회피 + 화질·인물 통일)
+
+**아바타 생성 프롬프트:**
+
+```
+A photorealistic studio beauty portrait of a standard, representative Korean
+woman in her late 20s — natural, relatable, average Korean features (not a
+celebrity, not heavily idealized). COMPLETELY BARE FACE, absolutely no makeup:
+no foundation, no concealer, no powder, no eyeshadow, no eyeliner, no mascara,
+no false lashes, no lip tint/lipstick, no blush, no contour, no highlighter.
+Natural untouched eyebrows, bare lips in their true natural color, bare natural
+lashes, clean fresh skin with realistic texture and visible pores (a few subtle
+natural imperfections allowed — no airbrushing, no beauty filter).
+
+Framing: 1:1 square, 1024x1024. Head-and-shoulders, face perfectly centered and
+fully visible, symmetrical front-facing, eyes looking straight to camera, calm
+neutral relaxed expression, lips gently closed. Hair pulled back into a clean
+sleek low bun with a center part, no flyaways, forehead and full face uncovered.
+Even soft neutral beauty-dish lighting, no color cast (true-to-color), clean
+seamless light-grey studio backdrop, bare neck/collarbone visible, no jewelry,
+no clothing detail, no veil, no props, no text/logo/watermark.
+Ultra-photorealistic, 85mm lens, high-resolution editorial beauty photography.
+This is a neutral BASE FACE used as a canvas for applying makeup.
+```
+
+**아바타에 룩 입히는 재사용 템플릿** (아바타 이미지를 첨부 후 18회):
+
+```
+[표준 아바타 이미지 첨부]
+Keep this exact person's identity, face shape, features, and skin tone unchanged,
+and keep the 1:1 square framing. Apply ONLY makeup, and restyle hair & pose as
+specified below.
+HAIR & POSE: {컨셉별 헤어·포즈 — 아래 2번 표}
+MAKEUP: {해당 룩의 MAKEUP 문장 — 아래 3번}
+```
+
+> 아바타는 슬릭 로우번(이마·얼굴 전부 노출)이라 어떤 컨셉 헤어로도 재스타일이 쉽다.
+> 아바타 파일은 `avatar-base.png` 로 저장해두고 18장 생성의 기준으로 재사용한다.
+
+---
+
 ## 1. 출력 규격 (모든 18장 공통)
 
 `gpt-image-2`는 `1024x1024`(정사각)로 합성하므로 레퍼런스도 정사각이 가장 자연스럽다.
