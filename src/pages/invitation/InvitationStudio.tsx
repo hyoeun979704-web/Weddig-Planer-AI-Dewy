@@ -450,7 +450,32 @@ const InvitationStudio = () => {
     setSelectedSlotId(id);
   };
 
-  // 선택 슬롯 삭제 — 추가 요소는 제거, 템플릿 슬롯은 숨김
+  // 약도 요소 추가 (캔버스 중앙) — 추가 후 선택하면 '약도 자동 생성' 패널이 열린다.
+  // 식장 약도를 슬롯으로 가진 템플릿이 아니어도 사용자가 원하면 넣을 수 있게 한다.
+  const handleAddMap = () => {
+    if (!activeTemplate) return;
+    const canvas = getInvitationPages(activeTemplate.layout)[0].canvas;
+    const cw = canvas.w;
+    const ch = canvas.h;
+    const w = Math.min(640, cw - 80);
+    // 네이버 Static Map 비율(640×420 ≈ 1.52)에 맞춰 높이 산출 — export 시 안 늘어남.
+    const h = Math.round((w * 420) / 640);
+    const id = `extra-${crypto.randomUUID().slice(0, 8)}`;
+    const newSlot: InvitationSlot = {
+      id,
+      type: "map",
+      x: Math.round((cw - w) / 2),
+      y: Math.round(ch / 2 - h / 2),
+      w,
+      h,
+      z: 50,
+      fit: "cover",
+      movable: true,
+      resizable: true,
+    };
+    setFace((p) => ({ ...p, extraSlots: [...p.extraSlots, newSlot] }));
+    setSelectedSlotId(id);
+  };
   const handleDeleteSlot = () => {
     if (!selectedSlot) return;
     const id = selectedSlot.id;
@@ -946,6 +971,7 @@ const InvitationStudio = () => {
           isStylizingMap={isStylizingMap}
           onMoveSlot={handleMoveSlot}
           onAddText={handleAddText}
+          onAddMap={handleAddMap}
           onDeleteSlot={handleDeleteSlot}
           onRestoreHidden={handleRestoreHidden}
           onFontSizeChange={handleFontSizeChange}
@@ -1214,6 +1240,7 @@ const StudioView = ({
   isStylizingMap,
   onMoveSlot,
   onAddText,
+  onAddMap,
   onDeleteSlot,
   onRestoreHidden,
   onFontSizeChange,
@@ -1254,6 +1281,7 @@ const StudioView = ({
   isStylizingMap: boolean;
   onMoveSlot: (id: string, x: number, y: number) => void;
   onAddText: () => void;
+  onAddMap: () => void;
   onDeleteSlot: () => void;
   onRestoreHidden: () => void;
   onFontSizeChange: (delta: number) => void;
@@ -1464,6 +1492,10 @@ const StudioView = ({
           <Button variant="outline" className="flex-1" onClick={onAddText}>
             <Type className="w-4 h-4 mr-1.5" />
             텍스트 추가
+          </Button>
+          <Button variant="outline" className="flex-1" onClick={onAddMap}>
+            <MapPin className="w-4 h-4 mr-1.5" />
+            약도 추가
           </Button>
           {aFace.hiddenSlots.length > 0 && (
             <Button variant="ghost" onClick={onRestoreHidden}>

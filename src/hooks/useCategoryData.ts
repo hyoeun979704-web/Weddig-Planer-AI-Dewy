@@ -18,6 +18,9 @@ export interface CategoryItem {
   review_count: number;
   is_partner: boolean;
   thumbnail_url: string | null;
+  /** 근접 거리 배지용 좌표 (places.lat/lng). NULL 가능. */
+  lat?: number | null;
+  lng?: number | null;
   keywords?: string[];
   tags?: string[];
   custom_available?: boolean | null;
@@ -155,6 +158,8 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
     review_count: p.review_count ?? 0,
     is_partner: p.is_partner ?? false,
     thumbnail_url: p.main_image_url,
+    lat: (p.lat as number | null) ?? null,
+    lng: (p.lng as number | null) ?? null,
     keywords: [],
     tags: p.tags ?? [],
   };

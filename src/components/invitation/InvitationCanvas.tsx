@@ -627,7 +627,7 @@ const ImageSlotBody = ({ slot, imageUrls }: SlotNodeProps) => {
           x={0}
           y={slot.h / 2 - 8}
           width={slot.w}
-          text="사진 자리"
+          text={slot.type === "map" ? "약도 자리" : "사진 자리"}
           fontSize={14}
           fill="#71717A"
           align="center"

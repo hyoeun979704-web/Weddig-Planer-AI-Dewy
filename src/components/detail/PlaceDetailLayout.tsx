@@ -27,6 +27,7 @@ import PlaceImagePlaceholder from "@/components/place/PlaceImagePlaceholder";
 import { usePlaceReviews, REVIEW_SOURCE_META, type PlaceReview } from "@/hooks/usePlaceReviews";
 import HiddenCostsCard from "@/components/detail/HiddenCostsCard";
 import SetAsWeddingVenueButton from "@/components/detail/SetAsWeddingVenueButton";
+import PlaceMap from "@/components/detail/PlaceMap";
 
 const handleTagClick = (tag: string) => {
   // Tag-based filtering on the list pages isn't wired yet — the list hooks
@@ -200,6 +201,7 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
     place.tel || place.website_url || place.instagram_url || place.naver_place_url ||
     place.youtube_url || place.kakao_channel_url;
   const hasLocation = place.subway_station || place.parking_location || place.parking_capacity;
+  const hasCoords = place.latitude != null && place.longitude != null;
 
   const gallery = place.image_urls.length > 0 ? place.image_urls : place.thumbnail_url ? [place.thumbnail_url] : [];
 
@@ -366,8 +368,16 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
       )}
 
       {/* Contact / hours / location / SNS */}
-      {(hasContact || place.hours || hasLocation) && (
+      {(hasContact || place.hours || hasLocation || hasCoords) && (
         <section className="px-4 pt-3 pb-2 space-y-3">
+          {hasCoords && (
+            <PlaceMap
+              lat={place.latitude!}
+              lng={place.longitude!}
+              name={place.name}
+              address={place.address}
+            />
+          )}
           {place.address && (
             <Row icon={<MapPin className="w-4 h-4" />} label="주소" value={place.address}
               action={
