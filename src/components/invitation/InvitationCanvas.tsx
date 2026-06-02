@@ -399,6 +399,10 @@ function formatWeddingDate(
       return `${Number(mo)}월`;
     case "md_slash":
       return `${pad2(Number(mo))} / ${pad2(Number(d))}`;
+    case "month_2d":
+      return pad2(Number(mo));
+    case "day_2d":
+      return pad2(Number(d));
     case "full_ko":
     default: {
       const wd = WEEKDAYS_KO[date.getDay()];
