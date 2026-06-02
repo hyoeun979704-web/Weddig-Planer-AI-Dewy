@@ -80,6 +80,7 @@ export interface InvitationSlot {
     | "mdy_dot"
     | "ymd_dot"
     | "weekday_en"
+    | "month_ko"
     | "en_long_time"
     | "iso";
   /** 텍스트 대소문자 변환 ('upper' 대문자 | 'lower' 소문자). */

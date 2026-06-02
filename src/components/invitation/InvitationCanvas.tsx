@@ -351,6 +351,8 @@ function formatWeddingDate(
       return `${y}.${pad2(Number(mo))}.${pad2(Number(d))}`;
     case "weekday_en":
       return WEEKDAYS_FULL_EN[date.getDay()];
+    case "month_ko":
+      return `${Number(mo)}월`;
     case "full_ko":
     default: {
       const wd = WEEKDAYS_KO[date.getDay()];
@@ -498,6 +500,13 @@ function compositeField(
     const b = koreanGivenName(userData.bride_name);
     if (g && b) return `${g} 그리고 ${b}`;
     return g || b || undefined;
+  }
+  // "신랑 김리아 ♥ 신부 이망고" — 달력형 카드 하단 신랑·신부 한 줄
+  if (field === "couple_marriage_ko") {
+    const g = userData.groom_name?.trim();
+    const b = userData.bride_name?.trim();
+    if (g && b) return `신랑 ${g}  ♥  신부 ${b}`;
+    return g ? `신랑 ${g}` : b ? `신부 ${b}` : undefined;
   }
   return undefined;
 }
