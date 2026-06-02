@@ -8,6 +8,7 @@ import { useCategoryFilterStore, CategoryType } from "@/stores/useCategoryFilter
 import VendorMediaCard from "@/components/home/VendorMediaCard";
 import { categoryItemToCardData } from "@/lib/categoryCardAdapter";
 import { regionLabel } from "@/lib/regions";
+import { useWeddingVenue, distanceKm, formatDistanceKm } from "@/hooks/useWeddingVenue";
 
 interface CategoryGridProps {
   category: CategoryType;
@@ -43,6 +44,8 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
   const { toast } = useToast();
   const { resetFilters, hasActiveFilters, region, setRegion, filterOptions1, filterOptions2, filterOptions3, minRating } = useCategoryFilterStore();
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  // 식장 anchor 기준 근접 거리 배지 — 식장 등록 + 좌표 있을 때만.
+  const venue = useWeddingVenue();
 
   const {
     data,
@@ -157,10 +160,15 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
       <div className="grid grid-cols-2 gap-5 px-5">
         {allItems.map((item) => {
           const itemId = item.id || String((item as { number?: string | number }).number);
+          const cardData = categoryItemToCardData(item, category);
+          if (venue.isSet) {
+            const d = distanceKm(venue.lat, venue.lng, item.lat ?? null, item.lng ?? null);
+            if (d != null) cardData.distanceLabel = `식장 ${formatDistanceKm(d)}`;
+          }
           return (
             <VendorMediaCard
               key={itemId}
-              data={categoryItemToCardData(item, category)}
+              data={cardData}
               onClick={() => onItemClick?.(item)}
               fluid
             />

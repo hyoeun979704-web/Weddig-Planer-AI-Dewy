@@ -80,3 +80,9 @@ export function distanceKm(
     Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(x));
 }
+
+/** 거리(km)를 짧은 한국어 표기로. 1km 미만은 100m 단위 반올림. */
+export function formatDistanceKm(km: number): string {
+  if (km < 1) return `${Math.max(50, Math.round((km * 1000) / 50) * 50)}m`;
+  return `${km.toFixed(1)}km`;
+}

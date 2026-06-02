@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart } from "lucide-react";
+import { Heart, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites, type ItemType } from "@/hooks/useFavorites";
@@ -16,6 +16,8 @@ export interface VendorMediaCardData {
   concept?: string | null;
   mood?: string | null;
   strength?: string | null;
+  /** "식장에서 3.2km" 등 근접 배지. 식장 anchor + 양쪽 좌표 있을 때만 채워짐. */
+  distanceLabel?: string | null;
   is_partner?: boolean;
   /** main_image_url 없을 때의 fallback 안내. 사진을 우리 storage 에 복사하지
    *  않고 "이 업체는 인스타에서 사진 볼 수 있어요" 라는 placeholder 제공. */
@@ -141,6 +143,13 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
         {data.is_partner && (
           <span className="absolute left-1.5 top-1.5 z-10 px-1 py-[1px] rounded bg-[hsl(353,75%,55%)] text-white text-[8px] font-bold tracking-tight">
             제휴
+          </span>
+        )}
+
+        {data.distanceLabel && (
+          <span className="absolute left-1.5 bottom-1.5 z-10 inline-flex items-center gap-[2px] px-1 py-[1px] rounded bg-black/55 text-white text-[8px] font-medium leading-none">
+            <MapPin className="h-2.5 w-2.5" />
+            {data.distanceLabel}
           </span>
         )}
 
