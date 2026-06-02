@@ -185,6 +185,7 @@ export const MAKEUP_FILTERS: MakeupFilterAxis[] = [
       { value: "INNER_CORNER", label: "눈 앞머리 펄", description: "또렷한 눈매" },
       { value: "GLITTER_TEAR", label: "눈물점 펄", description: "촬영에서 빛나는 포인트" },
       { value: "OMBRE_LIP", label: "그라데이션 입술", description: "안에서 바깥으로" },
+      { value: "OVERLINE", label: "오버립", description: "입술 라인 살짝 넘겨 도톰하게 (글램)" },
       { value: "FAUX_FRECKLE", label: "주근깨 포인트", description: "자연스러운 분위기" },
       { value: "LASH_EXT", label: "속눈썹 강조", description: "또렷한 눈매" },
     ],

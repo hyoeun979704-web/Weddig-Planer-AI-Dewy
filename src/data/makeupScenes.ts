@@ -136,6 +136,32 @@ export const MAKEUP_SCENE_TYPE_DESC: Record<MakeupSceneType, string> = {
 };
 
 /**
+ * 헤어 자동 스타일링 블록.
+ *
+ * 사용자 본인 머리(색·길이·질감)는 유지하되, 선택한 컷(본식/촬영)·무드(컨셉)·
+ * 조명에 어울리는 신부 헤어스타일로 자동 스타일링하도록 지시한다.
+ */
+const HAIR_BY_SCENE: Record<MakeupSceneType, string> = {
+  CEREMONY:
+    "a CURRENT 2026 Korean bridal style — e.g. a soft low bun with gentle crown volume and deliberate fine face-framing wispy strands (trendy 잔머리 연출), or a soft half-up; modern, soft and pretty, never stiff or old-fashioned",
+  STUDIO:
+    "a current modern editorial style — e.g. soft glossy waves worn down, a soft half-up, or a soft low bun with face-framing wispy strands and crown volume; trendy and natural, never retro",
+};
+
+const buildHairBlock = (scene: MakeupScene): string =>
+  `HAIR — style HER OWN hair like a CURRENT Korean bridal salon (modern, NOT DIY, NOT old-fashioned)
+- Keep her hair color and length from Image 1, styled the way a trendy 2026 wedding
+  hair stylist would: ${HAIR_BY_SCENE[scene.scene]}
+- Keep her eyebrows fully visible; her forehead MAY be softly framed by bangs or
+  side-swept pieces (no need to fully expose the forehead)
+- The fine face-framing wispy strands (잔머리 연출) are INTENTIONAL and stylist-placed —
+  soft and pretty, never frizzy, never messy/home-done, never stiff or plastic
+- Keep her own hair color, but render it with natural depth and a soft light sheen
+  (a rich dark tone, not a flat jet-black block)
+- Suit the makeup mood/concept above and the
+  ${MAKEUP_SCENE_TYPE_LABEL[scene.scene]} setting under the given lighting`;
+
+/**
  * 메인 메이크업 프롬프트 빌더. Edge Function 에서 사용.
  *
  * GPT-4o(gpt-image-2) 에 사용자 셀카 + 메이크업 레퍼런스 이미지를 함께
@@ -152,6 +178,8 @@ export const buildMakeupPrompt = (
     ? `\nMAKEUP SCHEMA — apply these attributes precisely\n${makeupDescription}\nIf the reference image in Image 2 disagrees with any attribute\nabove, the attribute list wins. Do not invent unspecified colors\nor finishes.\n`
     : "";
 
+  const hairBlock = buildHairBlock(scene);
+
   return `You're generating a photorealistic Korean bridal beauty portrait.
 
 REFERENCES
@@ -160,10 +188,11 @@ REFERENCES
 
 TOP PRIORITY — IDENTITY MATCH
 The face in the output must clearly be the same person from Image 1.
-Eye shape and size, double-eyelid / monolid type, brow position,
-nose, lip shape, jawline, face shape, and overall likeness must
-match closely enough that someone who knows the person would
-immediately recognize her. DO NOT borrow the face shape, eye shape,
+Eye shape and size, double-eyelid / monolid type, nose, lip shape,
+jawline, face shape, and overall likeness must match closely enough
+that someone who knows the person would immediately recognize her.
+(Her eyebrows are styled with makeup below — keep them on her own
+brow bone, but their grooming, fullness, shape and tone DO change.) DO NOT borrow the face shape, eye shape,
 or facial proportions from Image 2. Image 2 is for makeup colors
 and placement only. This rule takes priority over all others.
 
@@ -179,19 +208,29 @@ BRIDE — keep exactly from Image 1
   width
 - Skin tone and undertone (do not lighten or change race)
 - Bone structure, age, freckles or moles if visible
-- Hair color and natural texture; soft bridal styling allowed
-  (loose waves, low updo) but identity stays
+- Hair color, length and natural texture (see HAIR — restyle, keep identity)
 
 MAKEUP — copy from Image 2, applied to Image 1's face
-- Base finish (dewy / matte / satin) as in reference
-- Lip color, shape, and finish; transfer color & finish, but follow
-  HER actual lip shape (do not reshape her mouth)
+- Base/skin finish — render EXACTLY the finish in the schema and make
+  it clearly read that way: a matte look must look matte (shine-free),
+  a dewy look must look wet/glowy, a satin look semi-matte. Do NOT
+  default every face to the same dewy skin
+- Lip color, shape, and finish; transfer color & finish onto HER lip
+  shape. Keep her natural mouth — EXCEPT a subtle over-line is allowed
+  ONLY when the schema lists the over-lip detail (then draw just
+  slightly past her natural line for fullness; never drastically)
 - Eye look — shadow color, placement, intensity; eyeliner style and
   weight; copy onto HER eye shape (do not reshape her eyes)
-- Brow color and shape direction (follow her natural brow bones)
+- EYEBROWS — restyle WITH MAKEUP (this step is the most often missed,
+  do NOT skip it): groom and brush the hairs up, fill in with brow
+  product, set the shape and tint per the schema. The brows must look
+  clearly made up — NOT her bare natural brows. Keep them on her own
+  brow bone, but change the grooming, fullness, shape and tone
 - Blush color and placement
 - Highlight / contour intensity
 ${schemaBlock}
+${hairBlock}
+
 LIGHTING
 ${scene.promptBlock}
 
@@ -208,7 +247,8 @@ DO NOT
 - Borrow face shape, eye shape, nose, lips, or skin tone from Image 2
 - Lighten or change the bride's skin tone or undertone
 - Reshape any facial feature; only paint makeup ONTO her existing
-  features
+  features (a subtle lip over-line is the only allowed exception, and
+  only when the schema specifies it)
 - Add accessories, jewelry, or veil unless clearly suggested by
   Image 1
 - Add watermarks, text, logos, brand names
@@ -232,6 +272,8 @@ export const buildRecommendMakeupPrompt = (
   const scene = makeupSceneByCode(sceneCode);
   if (!scene) throw new Error(`unknown makeup scene code: ${sceneCode}`);
 
+  const hairBlock = buildHairBlock(scene);
+
   return `You're generating a photorealistic Korean bridal beauty portrait.
 
 REFERENCE
@@ -240,10 +282,11 @@ REFERENCE
 TOP PRIORITY — IDENTITY MATCH
 The face in the output must clearly be the same person from Image 1.
 Match her eye shape and size, eyelid type (monolid / double / hooded),
-brow position, nose, lip shape, jawline, face shape, skin tone, and
-overall likeness so closely that someone who knows her would
-recognize her immediately. DO NOT change her facial features. Apply
-makeup ONTO her existing features. This rule takes priority over
+nose, lip shape, jawline, face shape, skin tone, and overall likeness
+so closely that someone who knows her would recognize her immediately.
+DO NOT change her facial features. Apply makeup ONTO her existing
+features. (Her eyebrows ARE styled with makeup — keep them on her own
+brow bone, but their grooming, fullness, shape and tone do change.) This rule takes priority over
 everything else.
 
 TASK
@@ -275,7 +318,9 @@ BRIDE — keep exactly from Image 1
 - Face: SAME PERSON, recognizable at a glance
 - Skin tone and undertone (DO NOT lighten or alter race)
 - Bone structure, age, freckles or moles
-- Hair color and natural texture; soft bridal styling allowed
+- Hair color, length and natural texture (see HAIR — restyle, keep identity)
+
+${hairBlock}
 
 LIGHTING
 ${scene.promptBlock}

@@ -22,11 +22,11 @@ export interface MakeupMetadata {
 }
 
 const BASE_FINISH: Record<string, string> = {
-  DEWY: "dewy glass-skin base with strong moisture sheen",
-  GLOWY: "soft glowy base with subtle natural luminosity",
-  SATIN: "satin base — between dewy and matte, with light reflectance",
-  MATTE: "matte base with no shine, smooth velvet finish",
-  NATURAL_SKIN: "natural-skin finish, barely-there base that lets skin texture show",
+  DEWY: "high-shine dewy 'glass-skin' base — intense lit-from-within moisture with a visible wet-look sheen on the high points (forehead, cheekbones, nose bridge), plump and glowing; medium coverage, real skin texture kept",
+  GLOWY: "luminous satin-glow base — soft natural radiance (a healthy glow, NOT a wet shine), light-to-medium coverage, skin texture visible",
+  SATIN: "satin base — a soft SEMI-MATTE finish between dewy and matte, smooth with only a subtle natural sheen (no wet shine, but not flat); medium coverage, the most photo-friendly wedding base",
+  MATTE: "true MATTE base — soft velvet, shine-free and smoothly blurred (modern soft matte, never flat/cakey); medium-to-full coverage, even poreless-looking complexion",
+  NATURAL_SKIN: "skin-like 'no-makeup' base — sheer barely-there coverage that lets real skin texture, pores and a few natural marks show through; fresh and breathable, only lightly evened out",
 };
 
 const LIP_COLOR: Record<string, string> = {
@@ -41,21 +41,21 @@ const LIP_COLOR: Record<string, string> = {
 };
 
 const LIP_FINISH: Record<string, string> = {
-  TINTED: "blurred tinted finish, color sinking into the lips like a stain",
-  GLOSSY: "glossy lacquered finish with high shine",
-  SATIN: "satin finish with soft sheen",
-  MATTE: "fully matte finish, no shine",
-  BLURRED: "soft-blurred edge, gradient ombré from center outward",
+  TINTED: "blurred tinted-stain finish — color pressed into the lips like a juicy tint with soft edges and low shine (Korean 물들임)",
+  GLOSSY: "high-shine glossy lips — a thin natural base topped with a plump glass/oil-like gloss (쫀쫀한 글로시), juicy and reflective",
+  SATIN: "satin lips — smooth full color with a soft comfortable mid-sheen (not matte, not high-gloss)",
+  MATTE: "soft modern matte lips — full velvet color, shine-free but smooth and skin-friendly (never dry or cakey)",
+  BLURRED: "blurred fade lips — soft diffused edges with color concentrated in the center fading outward (페이드 / halo lip)",
 };
 
 const EYE_STYLE: Record<string, string> = {
-  NATURAL: "natural soft eye look — diffused shadow in the crease, no harsh lines",
-  KOREAN_INNER: "Korean-style inner-corner shading — concentrated soft warmth at the inner crease, gradient outward",
-  BARE: "bare, almost-no-shadow look with only a hair-thin tightline along the lashes",
-  DOLL: "round doll-eye look — rounded shadow under the lower lash line plus inner-corner highlight to enlarge the eye",
-  CAT_EYE: "cat-eye look — winged eyeliner extending outward and slightly up from the outer corner",
-  SMOKY: "smoky-eye look — gradient darker at the lash line, blended outward, soft halo around the eye",
-  GLITTER: "shimmer/glitter focus — fine reflective pearl pressed on the lid center",
+  NATURAL: "natural soft eye — a diffused wash through the crease, no harsh lines, just subtle warmth and definition",
+  KOREAN_INNER: "Korean inner-corner shading (이너 음영) — warm tone packed at the inner corner and inner crease, blended outward; adds depth and a deeper-set eye without looking dark",
+  BARE: "bare eye — skin-toned lid with no visible shadow, only an invisible hair-thin tightline between the lashes",
+  DOLL: "round doll-eye — shadow rounded under the lower lash line plus a bright inner-corner highlight to enlarge and round the eye",
+  CAT_EYE: "cat-eye — elongated winged liner lifting up-and-out from the outer corner, slightly smoked for a foxy lift",
+  SMOKY: "smoky eye — darkest at the lash line, gradient-blended up into a soft sultry halo around the eye",
+  GLITTER: "glitter/pearl eye — reflective foil or pearl pressed onto the lid center to catch light, over a sheer wash",
 };
 
 const EYE_COLOR: Record<string, string> = {
@@ -86,11 +86,16 @@ const BLUSH_PLACEMENT: Record<string, string> = {
 };
 
 const BROW: Record<string, string> = {
-  KOREAN_STRAIGHT: "Korean-style soft straight brow — minimal arch, gentle natural shape",
-  SOFT_ARCH: "soft arched brow with a gentle peak",
-  NATURAL_FLAT: "natural brow shape, only lightly groomed",
-  FEATHERY: "feathered brow with visible individual hair strokes",
-  DEFINED: "well-defined brow with clear edges",
+  KOREAN_STRAIGHT:
+    "clearly made-up straight brows (Korean 일자) — brushed up and softly filled with brow product into a clean low-arch flat shape, tinted to match the hair; visibly groomed, NOT bare natural brows",
+  SOFT_ARCH:
+    "clearly made-up soft-arch brows with a gentle peak — brushed up and filled, softly defined edges, tinted to match the hair; visibly groomed, NOT bare natural brows",
+  NATURAL_FLAT:
+    "groomed natural brows — hairs brushed up and lightly filled with feathered strokes so they read neatly done, tinted close to the hair; tidy and defined, NOT bare untouched brows",
+  FEATHERY:
+    "feathered laminated-look brows — individual hairs brushed upward and set, lightly filled for a full fluffy texture, tinted to match the hair; clearly groomed and trendy, NOT bare brows",
+  DEFINED:
+    "boldly defined brows — fully filled in with crisp clean edges and a structured shape, slightly fuller, tinted; clearly made up and prominent, NOT bare natural brows",
 };
 
 const CONTOUR: Record<string, string> = {
@@ -105,6 +110,7 @@ const DETAIL: Record<string, string> = {
   INNER_CORNER: "shimmer pressed into the inner corners of the eyes",
   GLITTER_TEAR: "small accent of fine glitter on the lower lash center to catch light",
   OMBRE_LIP: "ombré gradient lip — deeper in the center fading toward the edges",
+  OVERLINE: "subtly over-lined lips — lip liner drawn just slightly beyond the natural lip line to create a fuller, plumper pout (glam over-lip technique)",
   FAUX_FRECKLE: "delicate faux freckles across the nose bridge and upper cheeks",
   LASH_EXT: "emphasized lashes — long, defined, slightly curled, well-separated",
 };
