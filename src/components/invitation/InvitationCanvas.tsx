@@ -16,6 +16,7 @@ import {
   romanizeKoreanName,
   romanizeKoreanGivenName,
   romanizeKoreanText,
+  koreanGivenName,
 } from "@/lib/invitation/romanize";
 
 /**
@@ -267,6 +268,11 @@ const EN_NAME_FIELDS = new Set([
 ]);
 
 const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS_TITLE_EN = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
 const MONTHS_EN = [
   "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
   "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
@@ -286,6 +292,18 @@ function formatTimeKo(time: string | undefined): string {
   const ampm = h < 12 ? "오전" : "오후";
   const h12 = h % 12 === 0 ? 12 : h % 12;
   return min === 0 ? `${ampm} ${h12}시` : `${ampm} ${h12}시 ${min}분`;
+}
+
+/** 'HH:mm' → '02:30 PM' (영문 12시간 표기). */
+function formatTimeEn(time: string | undefined): string {
+  if (!time) return "";
+  const m = time.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return "";
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  const ampm = h < 12 ? "AM" : "PM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${String(h12).padStart(2, "0")}:${String(min).padStart(2, "0")} ${ampm}`;
 }
 
 /**
@@ -314,6 +332,12 @@ function formatWeddingDate(
       return `${y} ${MONTHS_EN[Number(mo) - 1]} ${Number(d)}`;
     case "en_mdy":
       return `${MONTHS_EN[Number(mo) - 1]} ${Number(d)}, ${y}`;
+    case "en_long_time": {
+      const wd = WEEKDAYS_EN[date.getDay()];
+      const t = formatTimeEn(time);
+      const base = `${MONTHS_TITLE_EN[Number(mo) - 1]} ${Number(d)}, ${y} ${wd}`;
+      return t ? `${base} ${t}` : base;
+    }
     case "month_year_en":
       return `${MONTHS_FULL_EN[Number(mo) - 1]} ${y}`;
     case "ymd_full_en":
@@ -459,6 +483,13 @@ function compositeField(
     const g = romanizeKoreanName(userData.groom_name);
     const b = romanizeKoreanName(userData.bride_name);
     if (g && b) return `${g} & ${b}`;
+    return g || b || undefined;
+  }
+  // 한글 이름(성 제외)만 "호진 그리고 정윤" — 후면 인사말 제목용
+  if (field === "couple_given_ko") {
+    const g = koreanGivenName(userData.groom_name);
+    const b = koreanGivenName(userData.bride_name);
+    if (g && b) return `${g} 그리고 ${b}`;
     return g || b || undefined;
   }
   return undefined;

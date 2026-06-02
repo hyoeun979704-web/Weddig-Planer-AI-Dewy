@@ -163,3 +163,23 @@ export function romanizeKoreanGivenName(
   const givenStr = given.map((s, i) => (i === 0 ? cap(s) : s)).join(" ");
   return givenStr || undefined;
 }
+
+/**
+ * 한글 이름에서 성을 뺀 한글 이름(given)만 반환. ("차호진" → "호진")
+ * 후면 인사말 제목("호진 그리고 정윤") 등 한글 이름만 쓰는 자리용.
+ * 성 분리가 안 되면 전체를 이름으로 본다.
+ */
+export function koreanGivenName(
+  name: string | undefined | null,
+): string | undefined {
+  const trimmed = (name ?? "").trim();
+  if (!trimmed) return undefined;
+  if (![...trimmed].some(isHangulSyllable)) return trimmed; // 영문 등은 그대로
+  const chars = [...trimmed].filter((c) => c.trim() !== "");
+  let givenStart = 1;
+  const firstTwo = chars.slice(0, 2).join("");
+  if (COMPOUND_SURNAME[firstTwo]) givenStart = 2;
+  else if (SURNAME[chars[0]]) givenStart = 1;
+  if (chars.length <= givenStart) givenStart = 0;
+  return chars.slice(givenStart).join("") || undefined;
+}

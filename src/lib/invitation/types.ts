@@ -78,6 +78,7 @@ export interface InvitationSlot {
     | "month_year_en"
     | "ymd_full_en"
     | "mdy_dot"
+    | "en_long_time"
     | "iso";
   /** 텍스트 대소문자 변환 ('upper' 대문자 | 'lower' 소문자). */
   text_transform?: "upper" | "lower" | "none";
