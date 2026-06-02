@@ -157,7 +157,15 @@ const InvitationStudio = () => {
     const ov = { ...frontFace.fontOverrides, ...backFace.fontOverrides };
     const extra = [...frontFace.extraSlots, ...backFace.extraSlots];
     return collectFontFamilies(layouts, ov, extra);
-  }, [template, backTemplate, frontFace, backFace]);
+    // 폰트 무관 편집(위치/텍스트/크기)에는 재계산 안 하도록 폰트 관련 필드만 의존
+  }, [
+    template,
+    backTemplate,
+    frontFace.fontOverrides,
+    frontFace.extraSlots,
+    backFace.fontOverrides,
+    backFace.extraSlots,
+  ]);
   const { fonts, fontsReady } = useInvitationFonts(usedFonts);
 
   const [aiText, setAiText] = useState<Record<string, string>>({});

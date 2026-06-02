@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ChangeEvent } from "react";
 import { X, Plus, Trash2, Copy, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,8 @@ export interface EditorTemplate {
   name: string;
   format: string;
   layout: InvitationLayout;
+  tone?: string;
+  thumbnail_url?: string;
 }
 
 interface FontOpt {
@@ -114,6 +116,17 @@ const AdminTemplateEditor = ({
   const moveSlot = (id: string, x: number, y: number) =>
     updateSlot(id, { x: Math.round(x), y: Math.round(y) });
 
+  // 숫자 입력 — 빈 값/NaN 이면 무시(0 으로 튀지 않게)
+  const numChange =
+    (id: string, key: keyof InvitationSlot) =>
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const v = e.target.value;
+      if (v === "") return;
+      const n = Number(v);
+      if (!Number.isNaN(n))
+        updateSlot(id, { [key]: n } as Partial<InvitationSlot>);
+    };
+
   const addSlot = (type: SlotType) => {
     const id = newId(type);
     const base: InvitationSlot = {
@@ -161,7 +174,14 @@ const AdminTemplateEditor = ({
             .eq("id", template.id)
         : await (supabase as any)
             .from("invitation_templates")
-            .insert({ ...payload, format: template.format, is_active: false });
+            // 신규: NOT NULL 컬럼(thumbnail_url·tone) 기본값 채움 (없으면 insert 실패)
+            .insert({
+              ...payload,
+              format: template.format,
+              tone: template.tone ?? "modern",
+              thumbnail_url: template.thumbnail_url ?? "",
+              is_active: false,
+            });
       if (res.error) throw res.error;
       toast({ title: "템플릿 저장됨" });
       onSaved();
@@ -239,6 +259,7 @@ const AdminTemplateEditor = ({
               onSelectSlot={setSelId}
               displayWidth={Math.min(640, page.canvas.w)}
               editable
+              unlockAll
               onMoveSlot={moveSlot}
               background="#ffffff"
             />
@@ -293,11 +314,7 @@ const AdminTemplateEditor = ({
                     <Input
                       type="number"
                       value={selected[k]}
-                      onChange={(e) =>
-                        updateSlot(selected.id, {
-                          [k]: Number(e.target.value),
-                        } as Partial<InvitationSlot>)
-                      }
+                      onChange={numChange(selected.id, k)}
                       className="h-8 px-1 text-xs"
                     />
                   </div>
@@ -367,11 +384,7 @@ const AdminTemplateEditor = ({
                       <Input
                         type="number"
                         value={selected.font_size ?? 18}
-                        onChange={(e) =>
-                          updateSlot(selected.id, {
-                            font_size: Number(e.target.value),
-                          })
-                        }
+                        onChange={numChange(selected.id, "font_size")}
                         className="h-8 px-1 text-xs"
                       />
                     </div>
@@ -380,11 +393,7 @@ const AdminTemplateEditor = ({
                       <Input
                         type="number"
                         value={selected.letter_spacing ?? 0}
-                        onChange={(e) =>
-                          updateSlot(selected.id, {
-                            letter_spacing: Number(e.target.value),
-                          })
-                        }
+                        onChange={numChange(selected.id, "letter_spacing")}
                         className="h-8 px-1 text-xs"
                       />
                     </div>
@@ -429,11 +438,7 @@ const AdminTemplateEditor = ({
                     <Input
                       type="number"
                       value={selected.rotation ?? 0}
-                      onChange={(e) =>
-                        updateSlot(selected.id, {
-                          rotation: Number(e.target.value),
-                        })
-                      }
+                      onChange={numChange(selected.id, "rotation")}
                       className="h-8 px-1 text-xs"
                     />
                   </div>

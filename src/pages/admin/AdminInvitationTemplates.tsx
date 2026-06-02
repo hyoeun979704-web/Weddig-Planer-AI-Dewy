@@ -1438,6 +1438,8 @@ const AdminInvitationTemplates = () => {
                           id: t.id,
                           name: t.name,
                           format: t.format,
+                          tone: t.tone,
+                          thumbnail_url: t.thumbnail_url,
                           layout: t.layout as unknown as InvitationLayout,
                         })
                       }

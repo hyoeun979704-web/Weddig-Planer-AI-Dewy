@@ -54,17 +54,34 @@ async function loadFamilies(list: InvitationFont[], families: string[]) {
     want.map(async (fam) => {
       const f = list.find((x) => x.family === fam);
       const weight = f?.weight || "400";
+      // 성공한 폰트만 loaded 로 기록 — 일시 실패는 다음에 재시도되게.
       await fontSet
         .load(`${weight} 16px "${fam.replace(/"/g, "")}"`)
+        .then(() => {
+          loadedFamilies.add(fam);
+        })
         .catch(() => undefined);
-      loadedFamilies.add(fam);
     }),
   );
 }
 
+/** 현재 캐시·로드 상태로 즉시 ready 인지(캐시된 재진입에서 fallback 플래시 방지). */
+function alreadyReady(used?: string[]): boolean {
+  if (!fontCache) return false;
+  const avail = new Set(fontCache.map((f) => f.family));
+  const families = used
+    ? Array.from(new Set(used.map(fontFamilyName))).filter((f) =>
+        avail.has(f),
+      )
+    : fontCache.map((f) => f.family);
+  return families.every((f) => loadedFamilies.has(f));
+}
+
 export function useInvitationFonts(used?: string[]) {
   const [fonts, setFonts] = useState<InvitationFont[]>(fontCache ?? []);
-  const [fontsReady, setFontsReady] = useState<boolean>(false);
+  const [fontsReady, setFontsReady] = useState<boolean>(() =>
+    alreadyReady(used),
+  );
 
   // used 목록을 안정 키로 — family 이름만 정규화해서 비교 (없으면 전체)
   const usedKey = useMemo(

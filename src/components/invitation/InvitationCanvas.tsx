@@ -74,6 +74,8 @@ interface Props {
   extraSlots?: InvitationSlot[];
   /** 숨긴(삭제한) 슬롯 id */
   hiddenSlots?: string[];
+  /** 템플릿 편집기 모드 — locked/mov:false 무시하고 모든 슬롯 드래그 허용. */
+  unlockAll?: boolean;
 }
 
 const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
@@ -98,6 +100,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       fontSizeOverrides = {},
       extraSlots = [],
       hiddenSlots = [],
+      unlockAll = false,
     },
     ref,
   ) => {
@@ -176,8 +179,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                 // (1탭 선택 → 선택된 요소만 드래그로 이동)
                 const draggable =
                   editable &&
-                  !slot.locked &&
-                  slot.movable !== false &&
+                  (unlockAll || (!slot.locked && slot.movable !== false)) &&
                   slot.id === selectedSlotId;
                 return (
                   <SlotNode
