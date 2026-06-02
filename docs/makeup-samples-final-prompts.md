@@ -62,14 +62,18 @@ HAIRSTYLE: {HAIR}
 [Image 1: 컨셉 아바타]   (+ [Image 2: ref_N] — ref 룩만)
 LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
 framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
-makeup (eyebrows, lashes, skin-finish count as makeup, NOT identity).
+makeup (eyebrows, lashes, skin-finish count as makeup, NOT identity — her bare brows MUST
+be made up).
 [ref 룩만] Use Image 2 as a MAKEUP reference ONLY — copy makeup colors/placement; never
 copy its face, hair, veil, crop or pose.
 APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and
 well-defined (this is a sample, NOT a bare face). Editorial beauty quality, eyes OPEN to
 camera. Visible skin pores, no veil/hands/props/text.
+EYEBROWS are the most-often-missed step — do NOT keep her bare natural brows: visibly
+groom, brush the hairs up, fill in with brow product, set the shape and tint as the Brows
+line says, so they read clearly made up.
 ```
-그 아래 룩별 7줄 체크리스트를 붙인다.
+그 아래 룩별 7줄 체크리스트를 붙인다. (Brows 줄은 "groom/brush-up/fill/tint … NOT bare"로 항상 명시)
 
 ---
 

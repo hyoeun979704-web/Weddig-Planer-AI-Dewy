@@ -86,11 +86,16 @@ const BLUSH_PLACEMENT: Record<string, string> = {
 };
 
 const BROW: Record<string, string> = {
-  KOREAN_STRAIGHT: "Korean-style soft straight brow — minimal arch, gentle natural shape",
-  SOFT_ARCH: "soft arched brow with a gentle peak",
-  NATURAL_FLAT: "natural brow shape, only lightly groomed",
-  FEATHERY: "feathered brow with visible individual hair strokes",
-  DEFINED: "well-defined brow with clear edges",
+  KOREAN_STRAIGHT:
+    "clearly made-up straight brows (Korean 일자) — brushed up and softly filled with brow product into a clean low-arch flat shape, tinted to match the hair; visibly groomed, NOT bare natural brows",
+  SOFT_ARCH:
+    "clearly made-up soft-arch brows with a gentle peak — brushed up and filled, softly defined edges, tinted to match the hair; visibly groomed, NOT bare natural brows",
+  NATURAL_FLAT:
+    "groomed natural brows — hairs brushed up and lightly filled with feathered strokes so they read neatly done, tinted close to the hair; tidy and defined, NOT bare untouched brows",
+  FEATHERY:
+    "feathered laminated-look brows — individual hairs brushed upward and set, lightly filled for a full fluffy texture, tinted to match the hair; clearly groomed and trendy, NOT bare brows",
+  DEFINED:
+    "boldly defined brows — fully filled in with crisp clean edges and a structured shape, slightly fuller, tinted; clearly made up and prominent, NOT bare natural brows",
 };
 
 const CONTOUR: Record<string, string> = {

@@ -188,10 +188,11 @@ REFERENCES
 
 TOP PRIORITY — IDENTITY MATCH
 The face in the output must clearly be the same person from Image 1.
-Eye shape and size, double-eyelid / monolid type, brow position,
-nose, lip shape, jawline, face shape, and overall likeness must
-match closely enough that someone who knows the person would
-immediately recognize her. DO NOT borrow the face shape, eye shape,
+Eye shape and size, double-eyelid / monolid type, nose, lip shape,
+jawline, face shape, and overall likeness must match closely enough
+that someone who knows the person would immediately recognize her.
+(Her eyebrows are styled with makeup below — keep them on her own
+brow bone, but their grooming, fullness, shape and tone DO change.) DO NOT borrow the face shape, eye shape,
 or facial proportions from Image 2. Image 2 is for makeup colors
 and placement only. This rule takes priority over all others.
 
@@ -215,7 +216,11 @@ MAKEUP — copy from Image 2, applied to Image 1's face
   HER actual lip shape (do not reshape her mouth)
 - Eye look — shadow color, placement, intensity; eyeliner style and
   weight; copy onto HER eye shape (do not reshape her eyes)
-- Brow color and shape direction (follow her natural brow bones)
+- EYEBROWS — restyle WITH MAKEUP (this step is the most often missed,
+  do NOT skip it): groom and brush the hairs up, fill in with brow
+  product, set the shape and tint per the schema. The brows must look
+  clearly made up — NOT her bare natural brows. Keep them on her own
+  brow bone, but change the grooming, fullness, shape and tone
 - Blush color and placement
 - Highlight / contour intensity
 ${schemaBlock}
@@ -271,10 +276,11 @@ REFERENCE
 TOP PRIORITY — IDENTITY MATCH
 The face in the output must clearly be the same person from Image 1.
 Match her eye shape and size, eyelid type (monolid / double / hooded),
-brow position, nose, lip shape, jawline, face shape, skin tone, and
-overall likeness so closely that someone who knows her would
-recognize her immediately. DO NOT change her facial features. Apply
-makeup ONTO her existing features. This rule takes priority over
+nose, lip shape, jawline, face shape, skin tone, and overall likeness
+so closely that someone who knows her would recognize her immediately.
+DO NOT change her facial features. Apply makeup ONTO her existing
+features. (Her eyebrows ARE styled with makeup — keep them on her own
+brow bone, but their grooming, fullness, shape and tone do change.) This rule takes priority over
 everything else.
 
 TASK
