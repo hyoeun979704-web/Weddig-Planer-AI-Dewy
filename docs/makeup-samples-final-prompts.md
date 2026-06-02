@@ -20,23 +20,28 @@
 공통 규칙(6장 모두):
 ```
 [avatar-base.png 첨부]
-Keep this EXACT person and identity (face shape, eye shape, nose, lips, jaw, skin tone).
-Keep a COMPLETELY BARE FACE — no makeup at all (no base/lip/eye/brow makeup, bare natural
-brows, bare lashes, clean skin with visible pores). Change ONLY the hairstyle and pose as
-below. 1:1 square 1024², head-and-shoulders, face fully visible, eyes OPEN looking straight
-at the camera, calm neutral expression, lips gently closed. Clean seamless {BACKDROP}
-backdrop, no veil, no hands, no jewelry, no props, no text. Ultra-photorealistic, 85mm.
+Keep this EXACT person and identity (face shape, eye shape, nose, lips, jaw, skin tone)
+and KEEP the clean seamless light-grey studio backdrop unchanged. Keep a COMPLETELY BARE
+FACE — no makeup at all (no base/lip/eye/brow makeup, bare natural brows, bare lashes,
+clean skin with visible pores). Change ONLY the hairstyle and pose as below. 1:1 square
+1024², head-and-shoulders, face fully visible, eyes OPEN looking straight at the camera,
+calm neutral expression, lips gently closed, no veil, no hands, no jewelry, no props, no
+text. Ultra-photorealistic, 85mm.
 HAIR & POSE: {HAIR_POSE}
 ```
 
-| 아바타 | {BACKDROP} | {HAIR_POSE} |
-|---|---|---|
-| `avatar-soft_korean` | warm ivory | sleek glossy low chignon, clean center part, a few soft wispy strands at the temples; straight-on, eyes to camera |
-| `avatar-ethereal` | cool misty white | airy soft loose waves, half-up, baby hairs framing the face; near-front with a slight tilt, eyes to camera |
-| `avatar-glamorous` | deep charcoal grey | voluminous glamorous waves worn down, deep side part; straight-on, chin slightly up, eyes to camera |
-| `avatar-fresh` | bright airy off-white | natural half-up with soft movement, a few face-framing strands; straight-on, eyes to camera |
-| `avatar-classic` | neutral greige | polished elegant low updo, clean part; straight-on with a slight tilt, eyes to camera |
-| `avatar-romantic` | warm blush-pink | romantic loose updo with soft curled face-framing tendrils; slight 3/4 with eyes to camera |
+> 배경은 **전 컨셉 공통 = 깨끗한 라이트그레이**로 통일한다 (썸네일 일관 + 메이크업 가독성↑).
+> 컨셉별 색 배경을 원하면 위 프롬프트에서 "KEEP the … backdrop unchanged"를
+> `replace the entire background with a solid seamless {색상} backdrop`로 바꾸면 된다.
+
+| 아바타 | {HAIR_POSE} |
+|---|---|
+| `avatar-soft_korean` | sleek glossy low chignon, clean center part, a few soft wispy strands at the temples; straight-on, eyes to camera |
+| `avatar-ethereal` | airy soft loose waves, half-up, baby hairs framing the face; near-front with a slight tilt, eyes to camera |
+| `avatar-glamorous` | voluminous glamorous waves worn down, deep side part; straight-on, chin slightly up, eyes to camera |
+| `avatar-fresh` | natural half-up with soft movement, a few face-framing strands; straight-on, eyes to camera |
+| `avatar-classic` | polished elegant low updo, clean part; straight-on with a slight tilt, eyes to camera |
+| `avatar-romantic` | romantic loose updo with soft curled face-framing tendrils; slight 3/4 with eyes to camera |
 
 ---
 
