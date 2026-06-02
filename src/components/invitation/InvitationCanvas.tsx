@@ -269,6 +269,9 @@ const EN_NAME_FIELDS = new Set([
 
 const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
 const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAYS_FULL_EN = [
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+];
 const MONTHS_TITLE_EN = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -344,6 +347,10 @@ function formatWeddingDate(
       return `${y} ${MONTHS_FULL_EN[Number(mo) - 1]} ${Number(d)}`;
     case "mdy_dot":
       return `${pad2(Number(mo))}.${pad2(Number(d))}.${y}`;
+    case "ymd_dot":
+      return `${y}.${pad2(Number(mo))}.${pad2(Number(d))}`;
+    case "weekday_en":
+      return WEEKDAYS_FULL_EN[date.getDay()];
     case "full_ko":
     default: {
       const wd = WEEKDAYS_KO[date.getDay()];
