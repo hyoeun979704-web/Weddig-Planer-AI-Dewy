@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type CSSProperties,
+} from "react";
 import {
   Plus,
   Loader2,
@@ -52,6 +58,10 @@ import type { InvitationLayout } from "@/lib/invitation/types";
 interface Font {
   id: string;
   name: string;
+  family: string;
+  file_url: string;
+  weight: string;
+  style: string;
 }
 
 interface Template {
@@ -323,7 +333,7 @@ const AdminInvitationTemplates = () => {
         .order("created_at", { ascending: false }),
       (supabase as any)
         .from("invitation_fonts")
-        .select("id, name")
+        .select("id, name, family, file_url, weight, style")
         .eq("is_active", true)
         .order("display_order", { ascending: false }),
     ]);
@@ -343,6 +353,32 @@ const AdminInvitationTemplates = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // 폰트 미리보기용 @font-face 주입 (템플릿 등록 화면에서 폰트 모양 확인)
+  useEffect(() => {
+    if (typeof document === "undefined" || fonts.length === 0) return;
+    const id = "admin-template-fontfaces";
+    let el = document.getElementById(id) as HTMLStyleElement | null;
+    if (!el) {
+      el = document.createElement("style");
+      el.id = id;
+      document.head.appendChild(el);
+    }
+    el.textContent = fonts
+      .filter((f) => f.file_url && f.family)
+      .map(
+        (f) =>
+          `@font-face{font-family:'${f.family.replace(/'/g, "")}';src:url('${f.file_url}');font-weight:${f.weight || "400"};font-style:${f.style || "normal"};font-display:swap;}`,
+      )
+      .join("\n");
+  }, [fonts]);
+
+  const selectedFont = fonts.find((f) => f.id === form.default_font_id) ?? null;
+  const fontStyleOf = (f: Font): CSSProperties => ({
+    fontFamily: `'${f.family.replace(/'/g, "")}', sans-serif`,
+    fontWeight: (f.weight as CSSProperties["fontWeight"]) || 400,
+    fontStyle: f.style || "normal",
+  });
 
   const handleSave = async () => {
     if (!form.thumbnail_url) {
@@ -949,11 +985,37 @@ const AdminInvitationTemplates = () => {
                         <SelectItem value="__none__">없음</SelectItem>
                         {fonts.map((f) => (
                           <SelectItem key={f.id} value={f.id}>
-                            {f.name}
+                            <span className="flex items-baseline gap-2">
+                              <span className="text-xs text-muted-foreground shrink-0">
+                                {f.name}
+                              </span>
+                              <span
+                                className="text-base truncate"
+                                style={fontStyleOf(f)}
+                              >
+                                가나다 Ag 123
+                              </span>
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {/* 선택 폰트 미리보기 */}
+                    {selectedFont && (
+                      <div className="mt-2 p-3 bg-muted rounded-lg">
+                        <p className="text-[10px] text-muted-foreground mb-1">
+                          미리보기 · {selectedFont.name}
+                        </p>
+                        <p
+                          className="text-xl leading-snug"
+                          style={fontStyleOf(selectedFont)}
+                        >
+                          신랑 ♥ 신부 결혼합니다
+                          <br />
+                          CHUNG KYEOM · OCT 5, 2024
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div>
