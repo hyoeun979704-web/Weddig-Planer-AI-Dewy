@@ -316,6 +316,8 @@ function formatWeddingDate(
       return `${MONTHS_EN[Number(mo) - 1]} ${Number(d)}, ${y}`;
     case "month_year_en":
       return `${MONTHS_FULL_EN[Number(mo) - 1]} ${y}`;
+    case "ymd_full_en":
+      return `${y} ${MONTHS_FULL_EN[Number(mo) - 1]} ${Number(d)}`;
     case "mdy_dot":
       return `${pad2(Number(mo))}.${pad2(Number(d))}.${y}`;
     case "full_ko":
