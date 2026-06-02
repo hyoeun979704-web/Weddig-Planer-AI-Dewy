@@ -16,7 +16,7 @@ const re =
   /\('([^']*)',\s*'__IMG_([^']*)__',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'\{([^}]*)\}',\s*'\{([^}]*)\}'/g;
 
 const mood2av: Record<string, string> = {
-  SOFT_KOREAN: "avatar-soft_korean",
+  SOFT_KOREAN: "avatar-basic",
   ETHEREAL: "avatar-ethereal",
   GLAMOROUS: "avatar-glamorous",
   FRESH_NATURAL: "avatar-fresh",
@@ -25,8 +25,8 @@ const mood2av: Record<string, string> = {
 };
 
 const name2ref: Record<string, string> = {
-  "한국 신부 · 본식 시그니처": "ref_3",
-  "한국 신부 · 물광 글로우": "ref_1",
+  "베이직 · 본식 시그니처": "ref_3",
+  "베이직 · 물광 글로우": "ref_1",
   "에테리얼 · 투명 햇살 본식": "ref_7",
   "에테리얼 · 글로우 라벤더 본식": "ref_6",
   "에테리얼 · 투명 글로시": "ref_2",

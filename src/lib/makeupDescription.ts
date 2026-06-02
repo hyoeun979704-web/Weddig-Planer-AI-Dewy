@@ -116,7 +116,7 @@ const DETAIL: Record<string, string> = {
 };
 
 const MOOD: Record<string, string> = {
-  SOFT_KOREAN: "soft Korean bridal mood",
+  SOFT_KOREAN: "basic clean natural Korean bridal mood (베이직)",
   ETHEREAL: "ethereal, dreamy mood",
   GLAMOROUS: "glamorous, statement mood",
   FRESH_NATURAL: "fresh, no-makeup-makeup mood",

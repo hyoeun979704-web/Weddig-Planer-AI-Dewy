@@ -197,7 +197,7 @@ export const MAKEUP_FILTERS: MakeupFilterAxis[] = [
     type: "multi",
     defaultExpanded: false,
     options: [
-      { value: "SOFT_KOREAN", label: "한국 신부", description: "은은한 신부 메이크업" },
+      { value: "SOFT_KOREAN", label: "베이직", description: "은은한 기본 신부 메이크업" },
       { value: "ETHEREAL", label: "에테리얼", description: "몽환적·투명" },
       { value: "GLAMOROUS", label: "글래머러스", description: "화려·또렷" },
       { value: "FRESH_NATURAL", label: "프레시", description: "생기 있는 일상감" },
