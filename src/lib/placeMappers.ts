@@ -19,6 +19,8 @@ export type { VendorInfoLine };
 export const PLACE_CATEGORY_TO_ITEM_TYPE: Record<string, ItemType> = {
   wedding_hall: "venue",
   studio: "studio",
+  dress_shop: "dress",
+  makeup_shop: "makeup",
   hanbok: "hanbok",
   tailor_shop: "suit",
   honeymoon: "honeymoon",
