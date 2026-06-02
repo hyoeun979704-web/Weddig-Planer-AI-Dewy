@@ -67,6 +67,77 @@ const newId = (type: string) => `slot-${type}-${Date.now()}-${slotSeq++}`;
 
 const clone = <T,>(o: T): T => JSON.parse(JSON.stringify(o));
 
+/** 편집 캔버스 위 격자/눈금 오버레이 (캔버스 좌표 기준 — x/y 입력값과 1:1). */
+const GridOverlay = ({ w, h, scale }: { w: number; h: number; scale: number }) => {
+  const minor = 50; // 작은 눈금(캔버스 단위)
+  const major = 250; // 굵은 눈금 + 숫자
+  const vx: number[] = [];
+  for (let x = 0; x <= w; x += minor) vx.push(x);
+  const hy: number[] = [];
+  for (let y = 0; y <= h; y += minor) hy.push(y);
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0"
+      width={w * scale}
+      height={h * scale}
+      style={{ left: 0, top: 0 }}
+    >
+      {vx.map((x) => (
+        <line
+          key={`v${x}`}
+          x1={x * scale}
+          y1={0}
+          x2={x * scale}
+          y2={h * scale}
+          stroke={x % major === 0 ? "#2563eb" : "#60a5fa"}
+          strokeWidth={1}
+          opacity={x % major === 0 ? 0.45 : 0.18}
+        />
+      ))}
+      {hy.map((y) => (
+        <line
+          key={`h${y}`}
+          x1={0}
+          y1={y * scale}
+          x2={w * scale}
+          y2={y * scale}
+          stroke={y % major === 0 ? "#2563eb" : "#60a5fa"}
+          strokeWidth={1}
+          opacity={y % major === 0 ? 0.45 : 0.18}
+        />
+      ))}
+      {vx
+        .filter((x) => x % major === 0)
+        .map((x) => (
+          <text
+            key={`vl${x}`}
+            x={x * scale + 2}
+            y={11}
+            fontSize={9}
+            fill="#2563eb"
+            opacity={0.7}
+          >
+            {x}
+          </text>
+        ))}
+      {hy
+        .filter((y) => y % major === 0)
+        .map((y) => (
+          <text
+            key={`hl${y}`}
+            x={2}
+            y={y * scale + 10}
+            fontSize={9}
+            fill="#2563eb"
+            opacity={0.7}
+          >
+            {y}
+          </text>
+        ))}
+    </svg>
+  );
+};
+
 const AdminTemplateEditor = ({
   template,
   fonts,
@@ -86,6 +157,7 @@ const AdminTemplateEditor = ({
   const [selId, setSelId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
 
   const close = () => {
     if (dirty && !window.confirm("저장하지 않은 변경이 있습니다. 닫을까요?"))
@@ -100,6 +172,10 @@ const AdminTemplateEditor = ({
 
   const usedFonts = useMemo(() => collectFontFamilies([layout]), [layout]);
   const { fontsReady } = useInvitationFonts(usedFonts);
+
+  // 편집 캔버스 표시 폭/배율 (InvitationCanvas 내부 계산과 동일하게 맞춤)
+  const dispW = Math.min(640, page.canvas.w);
+  const dispScale = dispW / page.canvas.w;
 
   // ── 슬롯 변경 헬퍼 (현재 페이지 슬롯 배열을 갱신) ──
   const setPageSlots = (updater: (s: InvitationSlot[]) => InvitationSlot[]) => {
@@ -288,8 +364,29 @@ const AdminTemplateEditor = ({
 
       <div className="flex-1 flex min-h-0">
         {/* 캔버스 */}
-        <div className="flex-1 overflow-auto bg-muted/40 flex items-start justify-center p-6">
-          <div className="shadow-lg">
+        <div className="flex-1 overflow-auto bg-muted/40 flex flex-col items-center justify-start p-6 gap-2">
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground self-start">
+            <button
+              onClick={() => setShowGrid((v) => !v)}
+              className={`px-2 h-7 rounded-md border ${
+                showGrid
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border"
+              }`}
+            >
+              격자 {showGrid ? "ON" : "OFF"}
+            </button>
+            <span>
+              캔버스 {page.canvas.w}×{page.canvas.h}
+              {dispScale < 1 && ` · ${Math.round(dispScale * 100)}%`}
+            </span>
+            {selected && (
+              <span className="font-mono">
+                선택: x{selected.x} y{selected.y} w{selected.w} h{selected.h}
+              </span>
+            )}
+          </div>
+          <div className="relative shadow-lg" style={{ width: dispW }}>
             <InvitationCanvas
               key={`${page.id}:${slots.length}`}
               layout={pageToLayout(page)}
@@ -300,12 +397,19 @@ const AdminTemplateEditor = ({
               fontsReady={fontsReady}
               selectedSlotId={selId}
               onSelectSlot={setSelId}
-              displayWidth={Math.min(640, page.canvas.w)}
+              displayWidth={dispW}
               editable
               unlockAll
               onMoveSlot={moveSlot}
               background="#ffffff"
             />
+            {showGrid && (
+              <GridOverlay
+                w={page.canvas.w}
+                h={page.canvas.h}
+                scale={dispScale}
+              />
+            )}
           </div>
         </div>
 
