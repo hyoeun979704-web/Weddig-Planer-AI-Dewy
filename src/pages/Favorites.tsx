@@ -31,6 +31,8 @@ const favTabs = [
     types: [
       "venue",
       "studio",
+      "dress",
+      "makeup",
       "honeymoon",
       "jewelry",
       "appliance",
@@ -54,6 +56,8 @@ type ViewMode = "all" | "mine" | "partner";
 const ITEM_TYPE_TO_PLACE_CATEGORY: Record<string, SkippableCategory> = {
   venue: "wedding_hall",
   studio: "studio",
+  dress: "dress_shop",
+  makeup: "makeup_shop",
   honeymoon: "honeymoon",
   jewelry: "appliance",
   appliance: "appliance",
@@ -65,6 +69,8 @@ const ITEM_TYPE_TO_PLACE_CATEGORY: Record<string, SkippableCategory> = {
 const VENDOR_SUB_LABELS: Record<string, string> = {
   venue: "웨딩홀",
   studio: "스튜디오",
+  dress: "드레스",
+  makeup: "메이크업",
   honeymoon: "허니문",
   jewelry: "예물",
   appliance: "혼수",
@@ -76,6 +82,8 @@ const VENDOR_SUB_LABELS: Record<string, string> = {
 const ITEM_TYPE_DETAIL_PATH: Record<string, string> = {
   venue: "/venue",
   studio: "/vendor",
+  dress: "/vendor",
+  makeup: "/vendor",
   honeymoon: "/vendor",
   jewelry: "/vendor",
   appliance: "/vendor",
