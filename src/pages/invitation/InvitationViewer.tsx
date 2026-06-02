@@ -183,6 +183,7 @@ const InvitationViewer = () => {
           hiddenSlots={overrides.hiddenSlots ?? []}
           fontsReady={fontsReady}
           imageUrls={overrides.imageUrlsForViewer ?? {}}
+          bgOverride={overrides.bgOverride}
           selectedSlotId={null}
           onSelectSlot={() => {}}
           displayWidth={360}

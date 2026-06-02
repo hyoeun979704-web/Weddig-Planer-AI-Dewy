@@ -9,8 +9,10 @@ import {
 } from "@/lib/invitation/shareCode";
 import type {
   InvitationLayout,
+  InvitationCanvas as InvitationCanvasSpec,
   InvitationSlot,
   InvitationUserData,
+  BgFill,
 } from "@/lib/invitation/types";
 import {
   romanizeKoreanName,
@@ -59,6 +61,8 @@ interface Props {
   /** 화면 표시 폭(px). default 360. */
   displayWidth?: number;
   background?: string;  // 캔버스 외부 영역 배경
+  /** 사용자가 바꾼 캔버스 배경(단색/그라디언트). 없으면 템플릿 canvas.bg 사용. */
+  bgOverride?: BgFill;
   /** 발행된 모바일 청첩장 share URL — QR 슬롯이 렌더할 데이터 */
   shareUrl?: string;
   /** QR 슬롯 스타일 — 공유 카드 선택과 통일. barcode 는 정사각 슬롯이라 basic 로 폴백. */
@@ -79,6 +83,45 @@ interface Props {
   unlockAll?: boolean;
 }
 
+/**
+ * 캔버스 배경 fill 을 Konva Rect props 로 변환.
+ * 우선순위: 사용자 override(그라디언트>단색) → 템플릿 canvas(그라디언트>단색) → 흰색.
+ */
+function resolveBgFill(
+  canvas: InvitationCanvasSpec,
+  override: BgFill | undefined,
+  w: number,
+  h: number,
+): Record<string, unknown> {
+  const grad = override?.gradient ?? canvas.bg_gradient;
+  if (grad && grad.stops?.length >= 2) {
+    const stops = grad.stops
+      .slice()
+      .sort((a, b) => a.offset - b.offset)
+      .flatMap((s) => [s.offset, s.color]);
+    const cx = w / 2;
+    const cy = h / 2;
+    if (grad.type === "radial") {
+      return {
+        fillRadialGradientStartPoint: { x: cx, y: cy },
+        fillRadialGradientStartRadius: 0,
+        fillRadialGradientEndPoint: { x: cx, y: cy },
+        fillRadialGradientEndRadius: (Math.max(w, h) / 2) * 1.25,
+        fillRadialGradientColorStops: stops,
+      };
+    }
+    const rad = ((grad.angle ?? 0) * Math.PI) / 180;
+    const ux = Math.sin(rad);
+    const uy = Math.cos(rad);
+    return {
+      fillLinearGradientStartPoint: { x: cx - (ux * w) / 2, y: cy - (uy * h) / 2 },
+      fillLinearGradientEndPoint: { x: cx + (ux * w) / 2, y: cy + (uy * h) / 2 },
+      fillLinearGradientColorStops: stops,
+    };
+  }
+  return { fill: override?.color ?? canvas.bg ?? "#FFFFFF" };
+}
+
 const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
   (
     {
@@ -93,6 +136,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       onSelectSlot,
       displayWidth = 360,
       background = "transparent",
+      bgOverride,
       shareUrl,
       qrStyle = "basic",
       editable = false,
@@ -148,7 +192,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
               y={0}
               width={canvasW}
               height={canvasH}
-              fill={layout.canvas.bg ?? "#FFFFFF"}
+              {...resolveBgFill(layout.canvas, bgOverride, canvasW, canvasH)}
               onClick={() => onSelectSlot(null)}
             />
             {layout.canvas.background_url && (
