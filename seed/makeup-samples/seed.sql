@@ -44,11 +44,11 @@ values
 
   -- 컨셉 3 — 글래머러스 (GLAMOROUS) · 촬영 (auto)
   ('글래머러스 · 클래식 레드', '__IMG_3A__', 'SATIN', 'RED', 'SATIN', 'SMOKY', 'BRONZE',
-   'NUDE', 'OUTER_CHEEK', 'DEFINED', 'DEFINED', '{LASH_EXT,HIGHLIGHT}', '{GLAMOROUS}', 40, true),
+   'NUDE', 'OUTER_CHEEK', 'DEFINED', 'DEFINED', '{LASH_EXT,HIGHLIGHT,OVERLINE}', '{GLAMOROUS}', 40, true),
   ('글래머러스 · 버건디 캣아이', '__IMG_3B__', 'MATTE', 'BERRY', 'MATTE', 'CAT_EYE', 'BURGUNDY',
-   'ROSE', 'OUTER_CHEEK', 'DEFINED', 'DEFINED', '{LASH_EXT}', '{GLAMOROUS}', 40, true),
+   'ROSE', 'OUTER_CHEEK', 'DEFINED', 'DEFINED', '{LASH_EXT,OVERLINE}', '{GLAMOROUS}', 40, true),
   ('글래머러스 · 누드 음영 글램', '__IMG_3C__', 'SATIN', 'NUDE', 'GLOSSY', 'SMOKY', 'NEUTRAL',
-   'NUDE', 'OUTER_CHEEK', 'DEFINED', 'DEFINED', '{LASH_EXT,HIGHLIGHT}', '{GLAMOROUS}', 40, true),
+   'NUDE', 'OUTER_CHEEK', 'DEFINED', 'DEFINED', '{LASH_EXT,HIGHLIGHT,OVERLINE}', '{GLAMOROUS}', 40, true),
 
   -- 컨셉 4 — 프레시 (FRESH_NATURAL)
   ('프레시 · 생기 코랄', '__IMG_4A__', 'DEWY', 'CORAL', 'GLOSSY', 'NATURAL', 'PEACH',

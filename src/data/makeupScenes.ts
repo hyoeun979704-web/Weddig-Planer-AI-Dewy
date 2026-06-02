@@ -211,9 +211,14 @@ BRIDE — keep exactly from Image 1
 - Hair color, length and natural texture (see HAIR — restyle, keep identity)
 
 MAKEUP — copy from Image 2, applied to Image 1's face
-- Base finish (dewy / matte / satin) as in reference
-- Lip color, shape, and finish; transfer color & finish, but follow
-  HER actual lip shape (do not reshape her mouth)
+- Base/skin finish — render EXACTLY the finish in the schema and make
+  it clearly read that way: a matte look must look matte (shine-free),
+  a dewy look must look wet/glowy, a satin look semi-matte. Do NOT
+  default every face to the same dewy skin
+- Lip color, shape, and finish; transfer color & finish onto HER lip
+  shape. Keep her natural mouth — EXCEPT a subtle over-line is allowed
+  ONLY when the schema lists the over-lip detail (then draw just
+  slightly past her natural line for fullness; never drastically)
 - Eye look — shadow color, placement, intensity; eyeliner style and
   weight; copy onto HER eye shape (do not reshape her eyes)
 - EYEBROWS — restyle WITH MAKEUP (this step is the most often missed,
@@ -242,7 +247,8 @@ DO NOT
 - Borrow face shape, eye shape, nose, lips, or skin tone from Image 2
 - Lighten or change the bride's skin tone or undertone
 - Reshape any facial feature; only paint makeup ONTO her existing
-  features
+  features (a subtle lip over-line is the only allowed exception, and
+  only when the schema specifies it)
 - Add accessories, jewelry, or veil unless clearly suggested by
   Image 1
 - Add watermarks, text, logos, brand names

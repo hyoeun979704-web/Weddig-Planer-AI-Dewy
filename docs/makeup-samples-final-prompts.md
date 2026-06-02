@@ -145,7 +145,7 @@ line says, so they read clearly made up.
 - Skin: satin base
 - Brows: groom, fill & shape into a well-defined, cleanly-shaped brow — not bare
 - Eyes: bronze smoky gradient blended into a soft halo; defined liner; emphasized long curled lashes
-- Lips: classic true-red, satin finish, clearly defined
+- Lips: classic true-red, satin finish, subtly OVER-LINED for a fuller pout, clearly defined
 - Blush: nude on the outer cheekbone, clearly visible
 - Contour: defined sculpted contour
 - Highlight: soft highlighter
@@ -154,7 +154,7 @@ line says, so they read clearly made up.
 - Skin: smooth matte velvet base
 - Brows: groom, fill & shape into a well-defined brow — not bare
 - Eyes: burgundy wine shadow; cat-eye winged liner up-and-out; emphasized lashes
-- Lips: berry, fully matte, clearly defined
+- Lips: berry, fully matte, subtly OVER-LINED for a fuller pout (매트 오버립), clearly defined
 - Blush: rose on the outer cheekbone, clearly visible
 - Contour: defined contour
 - Highlight: minimal
@@ -163,7 +163,7 @@ line says, so they read clearly made up.
 - Skin: satin base
 - Brows: groom, fill & shape into a well-defined brow — not bare
 - Eyes: neutral deep beige-taupe smoky gradient; defined liner; emphasized lashes
-- Lips: nude, high-shine glossy, clearly tinted
+- Lips: nude, high-shine glossy, subtly OVER-LINED for a fuller pout (누디 글로시 오버립), clearly tinted
 - Blush: nude on the outer cheekbone, clearly visible
 - Contour: defined contour
 - Highlight: soft highlighter
