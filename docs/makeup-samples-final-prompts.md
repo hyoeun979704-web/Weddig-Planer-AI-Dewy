@@ -28,9 +28,11 @@ makeup, bare natural brows & lashes, visible skin pores). Change ONLY the hairst
 one below — like the same person photographed on another day with her hair restyled. Keep
 her EYEBROWS fully visible; her forehead MAY be softly covered by bangs or side-swept
 pieces. Set her hair color to a natural Korean dark brown — a soft blackish-brown (흑갈색)
-with a subtle warm brown sheen in the light, NOT flat jet-black. The hair must be
-PROFESSIONALLY styled yet NATURAL — soft, polished and salon-quality, never frizzy/DIY and
-never stiff or severely slicked-back. 1:1 1024², eyes open to
+with a subtle warm brown sheen in the light, NOT flat jet-black. Style it like a CURRENT
+2026 Korean bridal salon look — soft crown volume with deliberate fine face-framing wispy
+strands and see-through bangs (the trendy 잔머리 연출), polished and pretty. (The wispy
+strands are intentional and stylist-placed — NOT frizzy, NOT DIY, NOT stiff or severely
+slicked-back, NOT old-fashioned.) 1:1 1024², eyes open to
 camera, no veil, no jewelry, no props, no text. Ultra-photorealistic.
 HAIRSTYLE: {HAIR}
 ```
@@ -40,14 +42,14 @@ HAIRSTYLE: {HAIR}
 > 결과가 다른 얼굴이면 **재생성해서 원본과 가장 닮은 컷 채택.**
 > 배경은 전 컨셉 공통 라이트그레이(통일). 포즈도 전 컨셉 정면 고정(통일).
 
-| 아바타 | {HAIR} — 실루엣을 확실히 다르게 (전부 자연스러운 샵 퀄리티, 눈썹 보이게, 흑갈색 / 본식·촬영 겸용) |
+| 아바타 | {HAIR} — 2026 모던 한국 웨딩 (전부 잔머리 연출+정수리 볼륨, 실루엣만 다르게, 흑갈색) |
 |---|---|
-| `avatar-soft_korean` | ALL hair swept UP into a clean low bun / chignon, center part, with soft thin see-through bangs framing the brows; demure Korean bridal |
-| `avatar-ethereal` | a soft HALF-UP half-down — top half secured back, the rest flowing DOWN over the shoulders in soft airy waves; middle part, a few wispy strands; dreamy |
-| `avatar-glamorous` | ALL hair worn DOWN in voluminous glamorous Hollywood waves, deep SIDE part sweeping over one side; bold and editorial |
-| `avatar-fresh` | a neat low PONYTAIL gathered at the nape, smooth on top with a little soft movement; youthful and clean |
-| `avatar-classic` | an elegant structured FRENCH-TWIST / sleek high chignon updo, refined, clean forehead with no bangs; timeless |
-| `avatar-romantic` | a soft romantic LOW UPDO with loose curled face-framing tendrils and curtain bangs, plus a delicate twisted/braided accent; feminine and undone |
+| `avatar-soft_korean` | a modern Korean slicked LOW BUN with soft crown volume, see-through bangs and deliberate fine face-framing wispy strands (trendy 잔머리 연출); the signature current bridal bun |
+| `avatar-ethereal` | a soft HALF-UP — top secured with soft crown volume, airy waves flowing down, wispy face-framing strands and see-through bangs; dreamy and modern |
+| `avatar-glamorous` | all hair worn DOWN in modern glossy S-curl waves, deep SIDE part, a few face-framing strands; sleek and editorial (not retro Hollywood) |
+| `avatar-fresh` | a low/mid PONYTAIL with soft waves and fine wispy face-framing strands; youthful, lively, current |
+| `avatar-classic` | a refined textured LOW BUN (메시번 느낌) with soft crown volume and a few minimal wisps, clean forehead, no bangs; modern and elegant |
+| `avatar-romantic` | a soft romantic LOW UPDO with curled face-framing tendrils, curtain bangs and plenty of soft wispy strands; undone goddess vibe |
 
 ---
 

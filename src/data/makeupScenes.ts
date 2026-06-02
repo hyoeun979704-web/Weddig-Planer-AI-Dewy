@@ -143,21 +143,21 @@ export const MAKEUP_SCENE_TYPE_DESC: Record<MakeupSceneType, string> = {
  */
 const HAIR_BY_SCENE: Record<MakeupSceneType, string> = {
   CEREMONY:
-    "a soft, elegant bridal style as done in a good wedding salon — e.g. a soft low chignon, a soft half-up, or an elegant low bun, with natural soft face-framing pieces or gentle curtain bangs; polished yet soft and natural, never stiff or severely slicked-back",
+    "a CURRENT 2026 Korean bridal style — e.g. a soft low bun with gentle crown volume and deliberate fine face-framing wispy strands (trendy 잔머리 연출), or a soft half-up; modern, soft and pretty, never stiff or old-fashioned",
   STUDIO:
-    "a natural editorial photoshoot style — e.g. soft voluminous waves worn down, a soft half-up, or a relaxed low updo, with soft face-framing pieces; camera-ready but natural-looking",
+    "a current modern editorial style — e.g. soft glossy waves worn down, a soft half-up, or a soft low bun with face-framing wispy strands and crown volume; trendy and natural, never retro",
 };
 
 const buildHairBlock = (scene: MakeupScene): string =>
-  `HAIR — style HER OWN hair professionally (natural & salon-quality — NOT stiff, NOT DIY)
-- Keep her hair color and length from Image 1, styled the way a good wedding hair
-  stylist would: ${HAIR_BY_SCENE[scene.scene]}
+  `HAIR — style HER OWN hair like a CURRENT Korean bridal salon (modern, NOT DIY, NOT old-fashioned)
+- Keep her hair color and length from Image 1, styled the way a trendy 2026 wedding
+  hair stylist would: ${HAIR_BY_SCENE[scene.scene]}
 - Keep her eyebrows fully visible; her forehead MAY be softly framed by bangs or
   side-swept pieces (no need to fully expose the forehead)
+- The fine face-framing wispy strands (잔머리 연출) are INTENTIONAL and stylist-placed —
+  soft and pretty, never frizzy, never messy/home-done, never stiff or plastic
 - Keep her own hair color, but render it with natural depth and a soft light sheen
   (a rich dark tone, not a flat jet-black block)
-- Polished and natural at the same time — smooth and intentional, but never frizzy,
-  never messy/home-done, and never stiff or plastic-looking
 - Suit the makeup mood/concept above and the
   ${MAKEUP_SCENE_TYPE_LABEL[scene.scene]} setting under the given lighting`;
 
