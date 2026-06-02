@@ -83,8 +83,8 @@ function parseSeed(): Look[] {
   return looks;
 }
 
-function buildPrompt(look: Look): string {
-  const ref = look.ref ? "\n" +
+function buildPrompt(look: Look, hasRef: boolean): string {
+  const ref = hasRef ? "\n" +
     "From Image 2 copy ONLY the makeup colours, finishes and placement — never its face, hair, veil, crop or pose." : "";
   return `Ultra-detailed editorial Korean bridal beauty close-up — photorealistic, 85mm macro, soft large-softbox beauty lighting that flatters the makeup, ultra-high resolution, razor-sharp focus on the face, lifelike skin with visible pores and fine texture.
 IDENTITY LOCK — keep Image 1's exact person: hair (every strand & parting), head pose, angle, framing, face shape, eye shape, nose, lip shape, jaw and skin tone stay UNCHANGED. The only change is adding professional makeup (eyebrows, lashes and skin-finish count as makeup, not identity).${ref}
@@ -150,14 +150,15 @@ async function main() {
     const avPath = imgFile(look.av);
     if (!avPath) { console.warn(`SKIP ${look.code} ${look.name} — 아바타 ${look.av} 없음`); skip++; continue; }
     const images = [avPath];
+    let hasRef = false;
     if (look.ref) {
       const refPath = imgFile(look.ref);
-      if (refPath) images.push(refPath);
+      if (refPath) { images.push(refPath); hasRef = true; }
       else console.warn(`  (${look.code} ref ${look.ref} 없음 → 텍스트만으로 진행)`);
     }
     try {
       process.stdout.write(`· ${look.code} ${look.name} … `);
-      const buf = await openaiEdit(buildPrompt(look), images);
+      const buf = await openaiEdit(buildPrompt(look, hasRef), images);
       const out = join(OUT, `${look.code}.png`);
       writeFileSync(out, buf);
       results[look.code] = out;
