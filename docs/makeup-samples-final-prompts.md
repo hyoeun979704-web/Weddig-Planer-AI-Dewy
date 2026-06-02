@@ -40,14 +40,14 @@ HAIRSTYLE: {HAIR}
 > 결과가 다른 얼굴이면 **재생성해서 원본과 가장 닮은 컷 채택.**
 > 배경은 전 컨셉 공통 라이트그레이(통일). 포즈도 전 컨셉 정면 고정(통일).
 
-| 아바타 | {HAIR} — 웨딩화보 기준 보편적·자연스러운 샵 퀄리티 (눈썹은 보이게, 이마는 앞머리로 가려도 OK / 본식·촬영 겸용) |
+| 아바타 | {HAIR} — 실루엣을 확실히 다르게 (전부 자연스러운 샵 퀄리티, 눈썹 보이게, 흑갈색 / 본식·촬영 겸용) |
 |---|---|
-| `avatar-soft_korean` | a soft low chignon (Korean signature 로우번) with gentle curtain bangs / soft face-framing pieces; salon-polished but natural |
-| `avatar-ethereal` | a soft airy half-up with wispy curtain bangs and soft loose waves falling behind; dreamy and natural, polished not messy |
-| `avatar-glamorous` | soft voluminous waves worn down with a side-swept fringe; glamorous yet natural, salon blowout |
-| `avatar-fresh` | a natural soft half-up (or low ponytail) with light face-framing bangs; youthful and fresh, neatly polished |
-| `avatar-classic` | a soft elegant low updo with gentle face-framing pieces; refined and timeless, natural finish |
-| `avatar-romantic` | a soft romantic low updo with soft curtain bangs and face-framing waves; feminine and natural, polished not frizzy |
+| `avatar-soft_korean` | ALL hair swept UP into a clean low bun / chignon, center part, with soft thin see-through bangs framing the brows; demure Korean bridal |
+| `avatar-ethereal` | a soft HALF-UP half-down — top half secured back, the rest flowing DOWN over the shoulders in soft airy waves; middle part, a few wispy strands; dreamy |
+| `avatar-glamorous` | ALL hair worn DOWN in voluminous glamorous Hollywood waves, deep SIDE part sweeping over one side; bold and editorial |
+| `avatar-fresh` | a neat low PONYTAIL gathered at the nape, smooth on top with a little soft movement; youthful and clean |
+| `avatar-classic` | an elegant structured FRENCH-TWIST / sleek high chignon updo, refined, clean forehead with no bangs; timeless |
+| `avatar-romantic` | a soft romantic LOW UPDO with loose curled face-framing tendrils and curtain bangs, plus a delicate twisted/braided accent; feminine and undone |
 
 ---
 
