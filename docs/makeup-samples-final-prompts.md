@@ -38,14 +38,14 @@ HAIRSTYLE: {HAIR}
 > 변경 → 얼굴 영역이 안 흔들림. 결과가 다른 얼굴이면 **재생성해서 원본과 가장 닮은 컷 채택.**
 > 배경은 전 컨셉 공통 라이트그레이(통일). 포즈도 전 컨셉 정면 고정(통일).
 
-| 아바타 | {HAIR} — 전부 샵 퀄리티 매끈·윤기 (앞 프레이밍 공통, 뒤/길이/질감만 차이) |
+| 아바타 | {HAIR} — 웨딩화보 기준 보편적·샵 퀄리티 (전부 sleek·glossy, 얼굴 노출, 2026 트렌드) |
 |---|---|
-| `avatar-soft_korean` | center part, hair smoothed and swept back into a sleek glossy low chignon, salon-set and immaculate |
-| `avatar-ethereal` | center part, smoothed at the front and styled into a glossy, smooth, professional blowout falling in soft waves behind the shoulders |
-| `avatar-glamorous` | deep-smoothed crown, voluminous glossy salon blowout waves falling down the back, polished and sculpted |
-| `avatar-fresh` | center part, a clean polished half-up with a smooth glossy crown, salon-finished |
-| `avatar-classic` | center part, hair smoothed back into a polished elegant low updo, immaculately set |
-| `avatar-romantic` | center part, hair smoothed back into a soft yet polished romantic low updo, glossy and cleanly set |
+| `avatar-soft_korean` | center part, hair smoothed and swept back into a sleek clean low chignon (Korean signature 로우번), immaculately salon-set — face fully visible |
+| `avatar-ethereal` | center part, a glossy sophisticated half-up with a smooth sleek crown and soft airy controlled waves falling behind — light but polished |
+| `avatar-glamorous` | center part, a glossy voluminous salon blowout worn down (controlled Hollywood waves), smoothed crown, sculpted and polished |
+| `avatar-fresh` | center part, a sleek low ponytail with a smooth glossy crown — youthful and clean, salon-finished |
+| `avatar-classic` | center part, a structured polished elegant updo (classic chignon with subtle controlled volume), immaculately set |
+| `avatar-romantic` | center part, a soft romantic low updo — polished yet soft, with gentle controlled face-framing waves, glossy and cleanly set |
 
 ---
 
