@@ -82,6 +82,8 @@ export interface InvitationSlot {
     | "weekday_en"
     | "month_ko"
     | "md_slash"
+    | "month_2d"
+    | "day_2d"
     | "en_long_time"
     | "iso";
   /** 텍스트 대소문자 변환 ('upper' 대문자 | 'lower' 소문자). */
@@ -117,10 +119,30 @@ export interface InvitationSlot {
   calendar_hide_header?: boolean;
 }
 
+/** 그라디언트 색 정지점 (offset 0..1). */
+export interface GradientStop {
+  offset: number;
+  color: string;
+}
+/** 캔버스 배경 그라디언트. */
+export interface GradientFill {
+  type: "linear" | "radial";
+  /** linear 전용. 도(deg): 0=위→아래, 90=왼→오, 45=좌상→우하. */
+  angle?: number;
+  stops: GradientStop[];
+}
+/** 사용자가 바꾼 배경 (단색 또는 그라디언트). 둘 다 비면 템플릿 기본값 사용. */
+export interface BgFill {
+  color?: string;
+  gradient?: GradientFill;
+}
+
 export interface InvitationCanvas {
   w: number;
   h: number;
   bg?: string;  // 단색 fallback (default '#FFFFFF')
+  /** 템플릿 기본 배경 그라디언트 (있으면 bg 단색 대신 사용). */
+  bg_gradient?: GradientFill;
   /**
    * 배경 이미지 (텍스트·사진 자리가 빠진 디자이너의 배경 PNG).
    * 있으면 캔버스 맨 아래에 깔리고 그 위에 슬롯들이 렌더링된다.
@@ -211,6 +233,8 @@ export interface InvitationFaceData {
   hiddenSlots?: string[];
   /** 발행 시점 long-lived signed URL (익명 viewer 용) */
   imageUrlsForViewer?: Record<string, string>;
+  /** 사용자가 바꾼 캔버스 배경(단색/그라디언트). 없으면 템플릿 기본. */
+  bgOverride?: BgFill;
 }
 
 export type InvitationFace = "front" | "back";

@@ -55,6 +55,7 @@ import {
   type InvitationLayout,
   type InvitationSlot,
   type InvitationUserData,
+  type BgFill,
 } from "@/lib/invitation/types";
 
 /**
@@ -99,6 +100,7 @@ interface FaceState {
   hiddenSlots: string[];
   imagePaths: Record<string, string>; // DB 저장용 storage path
   imageUrls: Record<string, string>; // 화면 표시용 signed URL (저장 X)
+  bgOverride?: BgFill; // 사용자가 바꾼 배경(단색/그라디언트). 없으면 템플릿 기본.
 }
 const emptyFace = (): FaceState => ({
   textOverrides: {},
@@ -245,6 +247,7 @@ const InvitationStudio = () => {
         hiddenSlots: faces.front.hiddenSlots ?? [],
         imagePaths: faces.front.imagePaths ?? {},
         imageUrls: await hydrate(faces.front.imagePaths),
+        bgOverride: faces.front.bgOverride,
       });
 
       // 후면 템플릿 (FK 미사용 → 별도 조회)
@@ -265,6 +268,7 @@ const InvitationStudio = () => {
           hiddenSlots: faces.back.hiddenSlots ?? [],
           imagePaths: faces.back.imagePaths ?? {},
           imageUrls: await hydrate(faces.back.imagePaths),
+          bgOverride: faces.back.bgOverride,
         });
       }
 
@@ -400,6 +404,12 @@ const InvitationStudio = () => {
     if (!selectedSlot) return;
     const id = selectedSlot.id;
     setFace((p) => ({ ...p, textOverrides: { ...p.textOverrides, [id]: text } }));
+    resetIdleTimer();
+  };
+
+  // 현재 면(전/후)의 캔버스 배경 변경. undefined → 템플릿 기본 배경으로 복귀.
+  const handleBgChange = (bg: BgFill | undefined) => {
+    setFace((p) => ({ ...p, bgOverride: bg }));
     resetIdleTimer();
   };
 
@@ -697,6 +707,7 @@ const InvitationStudio = () => {
       fontSizeOverrides: f.fontSizeOverrides,
       extraSlots: f.extraSlots,
       hiddenSlots: f.hiddenSlots,
+      bgOverride: f.bgOverride,
     };
     if (!forViewer) return base;
     const imageUrlsForViewer: Record<string, string> = {};
@@ -986,6 +997,7 @@ const InvitationStudio = () => {
           onPublish={handlePublish}
           shareCodeStyle={shareCodeStyle}
           onShareCodeStyleChange={setShareCodeStyle}
+          onBgChange={handleBgChange}
         />
       )}
 
@@ -1214,6 +1226,175 @@ const TemplatePicker = ({
 // ════════════════════════════════════════════════════════════════
 // Studio — 캔버스 + 슬롯 편집
 // ════════════════════════════════════════════════════════════════
+const BG_SWATCHES = [
+  "#FFFFFF", "#F4ECDB", "#F6F1E7", "#EAE6DF",
+  "#2F3A26", "#1B2A4A", "#9E2B25", "#3A3A3A",
+];
+const GRAD_PRESETS: { label: string; a: string; b: string }[] = [
+  { label: "크림", a: "#FBF7EE", b: "#ECE0CC" },
+  { label: "블러시", a: "#FDEEF0", b: "#F3D7DE" },
+  { label: "세이지", a: "#EEF3EA", b: "#CBD8C0" },
+  { label: "나이트", a: "#2B3A55", b: "#10182B" },
+];
+
+/** 캔버스 배경(단색/그라디언트) 편집 — 면(전/후)별 적용. */
+const BgControl = ({
+  value,
+  defaultBg,
+  onChange,
+}: {
+  value?: BgFill;
+  defaultBg: string;
+  onChange: (bg: BgFill | undefined) => void;
+}) => {
+  const isGrad = !!value?.gradient;
+  const solid = value?.color ?? (isGrad ? "" : defaultBg);
+  const c0 = value?.gradient?.stops?.[0]?.color ?? defaultBg;
+  const c1 =
+    value?.gradient?.stops?.[value.gradient.stops.length - 1]?.color ?? "#FFFFFF";
+  const angle = value?.gradient?.angle ?? 0;
+  const gtype = value?.gradient?.type ?? "linear";
+
+  const setGrad = (
+    patch: Partial<{ c0: string; c1: string; angle: number; type: "linear" | "radial" }>,
+  ) =>
+    onChange({
+      gradient: {
+        type: patch.type ?? gtype,
+        angle: patch.angle ?? angle,
+        stops: [
+          { offset: 0, color: patch.c0 ?? c0 },
+          { offset: 1, color: patch.c1 ?? c1 },
+        ],
+      },
+    });
+
+  return (
+    <section className="p-4 bg-card rounded-2xl border border-border space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-foreground">배경</h3>
+        {value && (
+          <button
+            type="button"
+            className="text-[11px] text-muted-foreground underline"
+            onClick={() => onChange(undefined)}
+          >
+            기본값으로
+          </button>
+        )}
+      </div>
+
+      {/* 단색 */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {BG_SWATCHES.map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => onChange({ color: c })}
+            className={`w-7 h-7 rounded-full border ${
+              !isGrad && solid?.toUpperCase() === c ? "ring-2 ring-primary" : "border-border"
+            }`}
+            style={{ background: c }}
+            aria-label={c}
+          />
+        ))}
+        <label className="w-7 h-7 rounded-full border border-border overflow-hidden relative cursor-pointer">
+          <span
+            className="absolute inset-0"
+            style={{
+              background:
+                "conic-gradient(red,orange,yellow,lime,cyan,blue,magenta,red)",
+            }}
+          />
+          <input
+            type="color"
+            value={!isGrad && solid ? solid : defaultBg}
+            onChange={(e) => onChange({ color: e.target.value })}
+            className="absolute inset-0 w-[250%] h-[250%] -left-3/4 -top-3/4 opacity-0 cursor-pointer"
+          />
+        </label>
+      </div>
+
+      {/* 그라디언트 프리셋 + 편집 */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-1.5">
+          {GRAD_PRESETS.map((g) => (
+            <button
+              key={g.label}
+              type="button"
+              onClick={() =>
+                onChange({
+                  gradient: {
+                    type: "linear",
+                    angle: 0,
+                    stops: [
+                      { offset: 0, color: g.a },
+                      { offset: 1, color: g.b },
+                    ],
+                  },
+                })
+              }
+              className="h-7 px-2.5 rounded-full border border-border text-[11px] text-foreground/80"
+              style={{ background: `linear-gradient(180deg, ${g.a}, ${g.b})` }}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+        {isGrad && (
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={c0}
+              onChange={(e) => setGrad({ c0: e.target.value })}
+              className="w-8 h-8 rounded cursor-pointer border border-border"
+              aria-label="시작 색"
+            />
+            <input
+              type="color"
+              value={c1}
+              onChange={(e) => setGrad({ c1: e.target.value })}
+              className="w-8 h-8 rounded cursor-pointer border border-border"
+              aria-label="끝 색"
+            />
+            <div className="flex gap-1 ml-auto">
+              {[
+                { a: 0, l: "↓" },
+                { a: 45, l: "↘" },
+                { a: 90, l: "→" },
+              ].map((d) => (
+                <button
+                  key={d.a}
+                  type="button"
+                  onClick={() => setGrad({ type: "linear", angle: d.a })}
+                  className={`w-7 h-7 rounded border text-xs ${
+                    gtype === "linear" && angle === d.a
+                      ? "border-primary text-primary"
+                      : "border-border text-foreground/70"
+                  }`}
+                >
+                  {d.l}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setGrad({ type: "radial" })}
+                className={`w-7 h-7 rounded border text-xs ${
+                  gtype === "radial"
+                    ? "border-primary text-primary"
+                    : "border-border text-foreground/70"
+                }`}
+              >
+                ◎
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
+
 const StudioView = ({
   canvasRef,
   backCanvasRef,
@@ -1255,6 +1436,7 @@ const StudioView = ({
   onPublish,
   shareCodeStyle,
   onShareCodeStyleChange,
+  onBgChange,
 }: {
   canvasRef: React.MutableRefObject<InvitationCanvasHandle | null>;
   backCanvasRef: React.MutableRefObject<InvitationCanvasHandle | null>;
@@ -1296,11 +1478,18 @@ const StudioView = ({
   onPublish: () => void;
   shareCodeStyle: ShareCodeStyle;
   onShareCodeStyleChange: (s: ShareCodeStyle) => void;
+  onBgChange: (bg: BgFill | undefined) => void;
 }) => {
   const [showBackPicker, setShowBackPicker] = useState(false);
   const aFace = activeFace === "front" ? frontFace : backFace;
   // 모바일 청첩장은 단면 — 전면/후면 개념 없음
   const allowBack = template.format !== "mobile";
+  // 배경 컨트롤 기준값 — 현재 면 템플릿의 기본 배경색
+  const activeTpl = activeFace === "front" ? template : backTemplate;
+  const defaultBg =
+    activeTpl?.layout?.pages?.[0]?.canvas?.bg ??
+    activeTpl?.layout?.canvas?.bg ??
+    "#FFFFFF";
 
   const currentText =
     selectedSlot?.type === "text"
@@ -1359,6 +1548,7 @@ const StudioView = ({
               hiddenSlots={fd.hiddenSlots}
               fontsReady={fontsReady}
               imageUrls={fd.imageUrls}
+              bgOverride={fd.bgOverride}
               selectedSlotId={visible ? selectedSlotId : null}
               onSelectSlot={visible ? onSelectSlot : () => {}}
               editable={visible}
@@ -1484,6 +1674,15 @@ const StudioView = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* 배경색 / 그라디언트 */}
+      {(activeFace === "front" || backTemplate) && (
+        <BgControl
+          value={aFace.bgOverride}
+          defaultBg={defaultBg}
+          onChange={onBgChange}
+        />
       )}
 
       {/* 요소 추가 / 숨김 복원 */}
