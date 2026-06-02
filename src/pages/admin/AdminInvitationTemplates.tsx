@@ -39,6 +39,9 @@ import {
 import AdminGuard from "@/components/admin/AdminGuard";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ImageUploader from "@/components/admin/ImageUploader";
+import AdminTemplateEditor, {
+  type EditorTemplate,
+} from "./AdminTemplateEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -280,6 +283,7 @@ const normalizeMobileRollFrame = async (file: File) => {
 const AdminInvitationTemplates = () => {
   const [items, setItems] = useState<Template[]>([]);
   const [fonts, setFonts] = useState<Font[]>([]);
+  const [editorTpl, setEditorTpl] = useState<EditorTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState<Form>(emptyForm);
@@ -1429,6 +1433,22 @@ const AdminInvitationTemplates = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() =>
+                        setEditorTpl({
+                          id: t.id,
+                          name: t.name,
+                          format: t.format,
+                          layout: t.layout as unknown as InvitationLayout,
+                        })
+                      }
+                      className="h-8 px-2 text-[11px]"
+                      aria-label="편집기"
+                    >
+                      편집기
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleDelete(t)}
                       className="h-8 w-8 p-0 text-destructive"
                       aria-label="삭제"
@@ -1442,6 +1462,17 @@ const AdminInvitationTemplates = () => {
           </div>
         )}
       </AdminLayout>
+      {editorTpl && (
+        <AdminTemplateEditor
+          template={editorTpl}
+          fonts={fonts}
+          onClose={() => setEditorTpl(null)}
+          onSaved={() => {
+            setEditorTpl(null);
+            fetchData();
+          }}
+        />
+      )}
     </AdminGuard>
   );
 };
