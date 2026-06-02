@@ -55,6 +55,10 @@ HAIRSTYLE: {HAIR}
 
 ## STEP 2 — 잠금형 메이크업 프롬프트 (18종)
 
+> ✅ **실제 붙여넣기는 `docs/makeup-samples-prompts-generated.md` 사용** (seed + describeMakeup
+> 엔진 자동생성 → 피부·눈·눈썹·블러셔·컨투어·립 모든 디테일이 룩마다 풍부하게 반영, 앱과 동일).
+> 아래 체크리스트는 사람이 읽기 쉬운 요약본. 메타데이터 바꾸면 `npx tsx scripts/genMakeupPrompts.ts`로 재생성.
+
 각 룩은 **해당 컨셉 아바타**를 Image 1로 첨부. ref 표시가 있는 룩은 **레퍼런스 사진을 Image 2로 추가** 첨부.
 공통 잠금 헤더(모든 룩 동일):
 
