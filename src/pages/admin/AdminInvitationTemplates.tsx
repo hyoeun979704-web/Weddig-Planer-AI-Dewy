@@ -894,7 +894,7 @@ const AdminInvitationTemplates = () => {
                 setEditorTpl({
                   name: "새 템플릿",
                   format: "paper",
-                  tone: "modern",
+                  tone: "MODERN",
                   thumbnail_url: "",
                   layout: JSON.parse(
                     JSON.stringify(STARTER_LAYOUT),

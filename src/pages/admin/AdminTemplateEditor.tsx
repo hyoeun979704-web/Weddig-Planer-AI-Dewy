@@ -217,7 +217,7 @@ const AdminTemplateEditor = ({
             .insert({
               ...payload,
               format: template.format,
-              tone: template.tone ?? "modern",
+              tone: template.tone ?? "MODERN",
               thumbnail_url: template.thumbnail_url ?? "",
               is_active: false,
             });
