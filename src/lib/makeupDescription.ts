@@ -124,6 +124,36 @@ const MOOD: Record<string, string> = {
   ROMANTIC: "romantic, soft-feminine mood",
 };
 
+/**
+ * 전체 메이크업 옵션 팔레트 (영문).
+ *
+ * 모든 축(base/lip/eye/blush/brow/contour/detail/mood)의 옵션 묘사를 한 텍스트로 모은다.
+ * AI 추천(랜덤) 모드 프롬프트에 주입해, 모델이 "전체 옵션을 학습한 뒤" 그중에서
+ * 얼굴에 맞는 값을 골라 디자인하도록 한다. describeMakeup 과 같은 맵을 재사용(단일 출처).
+ */
+const CATALOG_AXES: { label: string; multi?: boolean; table: Record<string, string> }[] = [
+  { label: "BASE FINISH (skin) — pick ONE", table: BASE_FINISH },
+  { label: "LIP COLOR — pick ONE", table: LIP_COLOR },
+  { label: "LIP FINISH — pick ONE", table: LIP_FINISH },
+  { label: "EYE STYLE — pick ONE", table: EYE_STYLE },
+  { label: "EYE COLOR — pick ONE", table: EYE_COLOR },
+  { label: "BLUSH COLOR — pick ONE", table: BLUSH_COLOR },
+  { label: "BLUSH PLACEMENT — pick ONE", table: BLUSH_PLACEMENT },
+  { label: "BROW — pick ONE", table: BROW },
+  { label: "CONTOUR — pick ONE", table: CONTOUR },
+  { label: "ACCENT DETAILS — pick a few that fit", multi: true, table: DETAIL },
+  { label: "OVERALL MOOD — pick ONE (or two that blend)", multi: true, table: MOOD },
+];
+
+export const makeupOptionCatalog = (): string =>
+  CATALOG_AXES.map(
+    ({ label, table }) =>
+      `• ${label}:\n` +
+      Object.values(table)
+        .map((v) => `   - ${v}`)
+        .join("\n"),
+  ).join("\n");
+
 const lookup = (
   table: Record<string, string>,
   key: string | null | undefined,

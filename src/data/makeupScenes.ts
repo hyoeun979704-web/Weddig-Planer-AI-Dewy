@@ -8,6 +8,8 @@
  *   - tone:  실내 조명(INDOOR) / 자연광(NATURAL) / 골든아워(GOLDEN)
  */
 
+import { makeupOptionCatalog } from "@/lib/makeupDescription";
+
 export type MakeupSceneType = "CEREMONY" | "STUDIO";
 export type MakeupLightTone = "INDOOR" | "NATURAL" | "GOLDEN";
 export type MakeupSceneCode = `${MakeupSceneType}_${MakeupLightTone}`;
@@ -278,6 +280,7 @@ export const buildRecommendMakeupPrompt = (
   if (!scene) throw new Error(`unknown makeup scene code: ${sceneCode}`);
 
   const hairBlock = buildHairBlock(scene);
+  const palette = makeupOptionCatalog();
 
   return `You're generating a photorealistic Korean bridal beauty portrait.
 
@@ -315,6 +318,12 @@ for a natural look), brow shape, blush color and placement, contour
 intensity, and a few tasteful accent details that suit her personal
 color and bone structure. The look must read intentional and unified, not a
 random mix.
+
+MAKEUP PALETTE — study this full set of professional options, then SELECT a
+coherent combination (one option per dimension, plus a few accent details and
+lashes) that best flatters HER face and personal color. Do not invent finishes
+outside this palette; reproduce the chosen ones exactly and with high detail:
+${palette}
 
 Produce a single close-up bridal beauty portrait — head and
 shoulders, eye-level, sharp focus on the face — wearing the makeup
