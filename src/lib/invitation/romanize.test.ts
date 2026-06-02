@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { romanizeKoreanName } from "@/lib/invitation/romanize";
+import {
+  romanizeKoreanName,
+  romanizeKoreanGivenName,
+} from "@/lib/invitation/romanize";
 
 describe("romanizeKoreanName", () => {
   it("uses the standard surname spelling, not pure RR", () => {
@@ -41,6 +44,17 @@ describe("romanizeKoreanName", () => {
     expect(romanizeKoreanName("   ")).toBeUndefined();
     expect(romanizeKoreanName(undefined)).toBeUndefined();
     expect(romanizeKoreanName(null)).toBeUndefined();
+  });
+
+  it("romanizes given-name only (성 빼고) for photocard front", () => {
+    expect(romanizeKoreanGivenName("김충겸")).toBe("Chung gyeom");
+    expect(romanizeKoreanGivenName("엄수빈")).toBe("Su bin");
+    expect(romanizeKoreanGivenName("이서연")).toBe("Seo yeon");
+    // 외자 이름(성+1글자)
+    expect(romanizeKoreanGivenName("이준")).toBe("Jun");
+    // 한글 없으면 그대로
+    expect(romanizeKoreanGivenName("Su bin")).toBe("Su bin");
+    expect(romanizeKoreanGivenName("")).toBeUndefined();
   });
 
   it("passes through input that has no Hangul (already English)", () => {

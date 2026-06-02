@@ -12,7 +12,10 @@ import type {
   InvitationSlot,
   InvitationUserData,
 } from "@/lib/invitation/types";
-import { romanizeKoreanName } from "@/lib/invitation/romanize";
+import {
+  romanizeKoreanName,
+  romanizeKoreanGivenName,
+} from "@/lib/invitation/romanize";
 
 /**
  * 청첩장 캔버스 — Konva 기반 슬롯 렌더링.
@@ -429,6 +432,11 @@ function compositeField(
   // 여기 합성은 한글만 입력했을 때의 자동 변환 폴백이다.
   if (field === "groom_name_en") return romanizeKoreanName(userData.groom_name);
   if (field === "bride_name_en") return romanizeKoreanName(userData.bride_name);
+  // 성 뺀 이름만 (포토카드 앞면 큰 글씨용) — "김충겸" → "Chung gyeom"
+  if (field === "groom_given_en")
+    return romanizeKoreanGivenName(userData.groom_name);
+  if (field === "bride_given_en")
+    return romanizeKoreanGivenName(userData.bride_name);
   if (field === "couple_names_en") {
     const g = romanizeKoreanName(userData.groom_name);
     const b = romanizeKoreanName(userData.bride_name);

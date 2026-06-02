@@ -114,3 +114,32 @@ export function romanizeKoreanName(
 
   return givenStr ? `${surname} ${givenStr}` : surname;
 }
+
+/**
+ * 한글 이름 → 성을 뺀 "이름(given name)"만 로마자로. ("김충겸" → "Chung gyeom")
+ * 포토카드 앞면처럼 성 없이 이름만 크게 넣는 디자인용.
+ * 성이 사전/규칙으로 분리 안 되면(외자 이름 등) 전체를 이름으로 본다.
+ */
+export function romanizeKoreanGivenName(
+  name: string | undefined | null,
+): string | undefined {
+  const trimmed = (name ?? "").trim();
+  if (!trimmed) return undefined;
+  const hasHangul = [...trimmed].some(isHangulSyllable);
+  if (!hasHangul) return trimmed;
+
+  const chars = [...trimmed].filter((c) => c.trim() !== "");
+  let givenStart = 1;
+  const firstTwo = chars.slice(0, 2).join("");
+  if (COMPOUND_SURNAME[firstTwo]) givenStart = 2;
+  else if (SURNAME[chars[0]]) givenStart = 1;
+  // 성씨가 없으면(한 글자 이름 등) 전체를 이름으로
+  if (chars.length <= givenStart) givenStart = 0;
+
+  const given = chars
+    .slice(givenStart)
+    .map((c) => syllableToRoman(c))
+    .filter((s) => s !== "");
+  const givenStr = given.map((s, i) => (i === 0 ? cap(s) : s)).join(" ");
+  return givenStr || undefined;
+}
