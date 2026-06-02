@@ -25,27 +25,27 @@ eye shape & size, eyelid type, eyebrow shape & position, nose, lip shape, face s
 proportions and skin tone. Keep her pose, head angle, framing, neutral expression and the
 clean light-grey background IDENTICAL to the source. Keep a COMPLETELY BARE FACE (no
 makeup, bare natural brows & lashes, visible skin pores). Change ONLY the hairstyle to the
-one below — like the same person photographed on another day with only her hair restyled;
-keep the front hairline, center part and exposed forehead the same. The hair must be
-PROFESSIONALLY styled at a high-end bridal salon level — sleek, glossy and smoothly set,
-clean, with NO frizz, NO flyaways, NO loose stray strands, NO home-done look. 1:1 1024²,
-eyes open to camera, no veil, no jewelry, no props, no text. Ultra-photorealistic.
+one below — like the same person photographed on another day with her hair restyled. Keep
+her EYEBROWS fully visible; her forehead MAY be softly covered by bangs or side-swept
+pieces. The hair must be PROFESSIONALLY styled yet NATURAL — soft, polished and salon-
+quality, never frizzy/DIY and never stiff or severely slicked-back. 1:1 1024², eyes open to
+camera, no veil, no jewelry, no props, no text. Ultra-photorealistic.
 HAIRSTYLE: {HAIR}
 ```
 
-> **얼굴 드리프트 방지 3원칙**: ① 위 정체성 잠금 문구 그대로 ② 6장 모두 **avatar-base.png에서**
-> 생성(직전 결과 말고 항상 원본에서) ③ 헤어도 앞쪽(가운데 가르마·이마 노출)은 동일, 뒤·길이·질감만
-> 변경 → 얼굴 영역이 안 흔들림. 결과가 다른 얼굴이면 **재생성해서 원본과 가장 닮은 컷 채택.**
+> **얼굴 드리프트 방지**: ① 위 정체성 잠금 문구 그대로 ② 6장 모두 **avatar-base.png에서**
+> 생성(직전 결과 말고 항상 원본에서) ③ 눈썹·이목구비·얼굴형은 동일 유지(이마는 앞머리로 가려도 됨).
+> 결과가 다른 얼굴이면 **재생성해서 원본과 가장 닮은 컷 채택.**
 > 배경은 전 컨셉 공통 라이트그레이(통일). 포즈도 전 컨셉 정면 고정(통일).
 
-| 아바타 | {HAIR} — 웨딩화보 기준 보편적·샵 퀄리티 (전부 sleek·glossy, 얼굴 노출, 2026 트렌드) |
+| 아바타 | {HAIR} — 웨딩화보 기준 보편적·자연스러운 샵 퀄리티 (눈썹은 보이게, 이마는 앞머리로 가려도 OK / 본식·촬영 겸용) |
 |---|---|
-| `avatar-soft_korean` | center part, hair smoothed and swept back into a sleek clean low chignon (Korean signature 로우번), immaculately salon-set — face fully visible |
-| `avatar-ethereal` | center part, a glossy sophisticated half-up with a smooth sleek crown and soft airy controlled waves falling behind — light but polished |
-| `avatar-glamorous` | center part, a glossy voluminous salon blowout worn down (controlled Hollywood waves), smoothed crown, sculpted and polished |
-| `avatar-fresh` | center part, a sleek low ponytail with a smooth glossy crown — youthful and clean, salon-finished |
-| `avatar-classic` | center part, a structured polished elegant updo (classic chignon with subtle controlled volume), immaculately set |
-| `avatar-romantic` | center part, a soft romantic low updo — polished yet soft, with gentle controlled face-framing waves, glossy and cleanly set |
+| `avatar-soft_korean` | a soft low chignon (Korean signature 로우번) with gentle curtain bangs / soft face-framing pieces; salon-polished but natural |
+| `avatar-ethereal` | a soft airy half-up with wispy curtain bangs and soft loose waves falling behind; dreamy and natural, polished not messy |
+| `avatar-glamorous` | soft voluminous waves worn down with a side-swept fringe; glamorous yet natural, salon blowout |
+| `avatar-fresh` | a natural soft half-up (or low ponytail) with light face-framing bangs; youthful and fresh, neatly polished |
+| `avatar-classic` | a soft elegant low updo with gentle face-framing pieces; refined and timeless, natural finish |
+| `avatar-romantic` | a soft romantic low updo with soft curtain bangs and face-framing waves; feminine and natural, polished not frizzy |
 
 ---
 

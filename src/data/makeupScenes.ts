@@ -143,22 +143,21 @@ export const MAKEUP_SCENE_TYPE_DESC: Record<MakeupSceneType, string> = {
  */
 const HAIR_BY_SCENE: Record<MakeupSceneType, string> = {
   CEREMONY:
-    "a polished formal bridal updo as done in a high-end wedding salon — a sleek glossy low chignon or an elegant low bun, smoothly swept back with a clean parting and neatly sculpted (not loose) face-framing pieces; immaculate, hotel-wedding caliber",
+    "a soft, elegant bridal style as done in a good wedding salon — e.g. a soft low chignon, a soft half-up, or an elegant low bun, with natural soft face-framing pieces or gentle curtain bangs; polished yet soft and natural, never stiff or severely slicked-back",
   STUDIO:
-    "a glossy editorial bridal style as done by a celebrity hair stylist — a smooth voluminous blowout worn down, a refined half-up, or a modern sculpted updo; magazine-shoot caliber with every strand intentional",
+    "a natural editorial photoshoot style — e.g. soft voluminous waves worn down, a soft half-up, or a relaxed low updo, with soft face-framing pieces; camera-ready but natural-looking",
 };
 
 const buildHairBlock = (scene: MakeupScene): string =>
-  `HAIR — restyle into PROFESSIONAL bridal hair (salon-quality, NOT DIY)
-- Keep her hair color and length from Image 1, but style it the way a top
-  professional wedding hair stylist would: ${HAIR_BY_SCENE[scene.scene]}
-- Finish must be sleek, glossy and smooth, neatly set with a clean hairline and
-  parting; absolutely no frizz, no flyaways, no loose stray strands, no messy or
-  home-done look
+  `HAIR — style HER OWN hair professionally (natural & salon-quality — NOT stiff, NOT DIY)
+- Keep her hair color and length from Image 1, styled the way a good wedding hair
+  stylist would: ${HAIR_BY_SCENE[scene.scene]}
+- Keep her eyebrows fully visible; her forehead MAY be softly framed by bangs or
+  side-swept pieces (no need to fully expose the forehead)
+- Polished and natural at the same time — smooth and intentional, but never frizzy,
+  never messy/home-done, and never stiff or plastic-looking
 - Suit the makeup mood/concept above and the
-  ${MAKEUP_SCENE_TYPE_LABEL[scene.scene]} setting under the given lighting
-- The hair must look expensive and professionally finished — high-end bridal
-  salon caliber`;
+  ${MAKEUP_SCENE_TYPE_LABEL[scene.scene]} setting under the given lighting`;
 
 /**
  * 메인 메이크업 프롬프트 빌더. Edge Function 에서 사용.
