@@ -17,31 +17,33 @@
 각 프롬프트에 **`avatar-base.png`(첫 아바타)를 첨부** → 같은 인물·쌩얼 유지, 헤어·포즈만 컨셉용으로.
 결과를 `avatar-soft_korean.png` … `avatar-romantic.png` 로 저장.
 
-공통 규칙(6장 모두):
+공통 규칙(6장 모두) — **얼굴 고정이 최우선**:
 ```
 [avatar-base.png 첨부]
-Keep this EXACT person and identity (face shape, eye shape, nose, lips, jaw, skin tone)
-and KEEP the clean seamless light-grey studio backdrop unchanged. Keep a COMPLETELY BARE
-FACE — no makeup at all (no base/lip/eye/brow makeup, bare natural brows, bare lashes,
-clean skin with visible pores). Change ONLY the hairstyle and pose as below. 1:1 square
-1024², head-and-shoulders, face fully visible, eyes OPEN looking straight at the camera,
-calm neutral expression, lips gently closed, no veil, no hands, no jewelry, no props, no
-text. Ultra-photorealistic, 85mm.
-HAIR & POSE: {HAIR_POSE}
+EDIT this exact photo. It MUST remain the SAME woman — preserve her face 100%: identical
+eye shape & size, eyelid type, eyebrow shape & position, nose, lip shape, face shape,
+proportions and skin tone. Keep her pose, head angle, framing, neutral expression and the
+clean light-grey background IDENTICAL to the source. Keep a COMPLETELY BARE FACE (no
+makeup, bare natural brows & lashes, visible skin pores). Change ONLY the hairstyle to the
+one below — like the same person photographed on another day with only her hair restyled;
+keep the front hairline, center part and exposed forehead the same. 1:1 1024², eyes open to
+camera, no veil, no jewelry, no props, no text. Ultra-photorealistic.
+HAIRSTYLE: {HAIR}
 ```
 
-> 배경은 **전 컨셉 공통 = 깨끗한 라이트그레이**로 통일한다 (썸네일 일관 + 메이크업 가독성↑).
-> 컨셉별 색 배경을 원하면 위 프롬프트에서 "KEEP the … backdrop unchanged"를
-> `replace the entire background with a solid seamless {색상} backdrop`로 바꾸면 된다.
+> **얼굴 드리프트 방지 3원칙**: ① 위 정체성 잠금 문구 그대로 ② 6장 모두 **avatar-base.png에서**
+> 생성(직전 결과 말고 항상 원본에서) ③ 헤어도 앞쪽(가운데 가르마·이마 노출)은 동일, 뒤·길이·질감만
+> 변경 → 얼굴 영역이 안 흔들림. 결과가 다른 얼굴이면 **재생성해서 원본과 가장 닮은 컷 채택.**
+> 배경은 전 컨셉 공통 라이트그레이(통일). 포즈도 전 컨셉 정면 고정(통일).
 
-| 아바타 | {HAIR_POSE} |
+| 아바타 | {HAIR} (앞 프레이밍은 공통, 뒤/길이/질감만 차이) |
 |---|---|
-| `avatar-soft_korean` | sleek glossy low chignon, clean center part, a few soft wispy strands at the temples; straight-on, eyes to camera |
-| `avatar-ethereal` | airy soft loose waves, half-up, baby hairs framing the face; near-front with a slight tilt, eyes to camera |
-| `avatar-glamorous` | voluminous glamorous waves worn down, deep side part; straight-on, chin slightly up, eyes to camera |
-| `avatar-fresh` | natural half-up with soft movement, a few face-framing strands; straight-on, eyes to camera |
-| `avatar-classic` | polished elegant low updo, clean part; straight-on with a slight tilt, eyes to camera |
-| `avatar-romantic` | romantic loose updo with soft curled face-framing tendrils; slight 3/4 with eyes to camera |
+| `avatar-soft_korean` | center part, smoothly pulled back into a sleek glossy low chignon; a few fine wispy strands at the temples |
+| `avatar-ethereal` | center part, softly pulled back at the front, falling into airy loose waves behind the shoulders; a few baby hairs |
+| `avatar-glamorous` | center part, smoothed at the crown, voluminous glamorous waves falling down the back |
+| `avatar-fresh` | center part, soft natural half-up, a few relaxed face-framing strands |
+| `avatar-classic` | center part, smoothly pulled back into a polished elegant low updo |
+| `avatar-romantic` | center part, softly pulled back into a romantic loose low updo with a few curled face-framing tendrils |
 
 ---
 
