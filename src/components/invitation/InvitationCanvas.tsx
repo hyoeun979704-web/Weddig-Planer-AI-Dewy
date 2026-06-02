@@ -353,6 +353,8 @@ function formatWeddingDate(
       return WEEKDAYS_FULL_EN[date.getDay()];
     case "month_ko":
       return `${Number(mo)}월`;
+    case "md_slash":
+      return `${pad2(Number(mo))} / ${pad2(Number(d))}`;
     case "full_ko":
     default: {
       const wd = WEEKDAYS_KO[date.getDay()];
@@ -498,6 +500,13 @@ function compositeField(
   if (field === "couple_given_ko") {
     const g = koreanGivenName(userData.groom_name);
     const b = koreanGivenName(userData.bride_name);
+    if (g && b) return `${g} 그리고 ${b}`;
+    return g || b || undefined;
+  }
+  // "김범수 그리고 이난영" — 풀네임 + 그리고 (후면 제목용)
+  if (field === "couple_and_ko") {
+    const g = userData.groom_name?.trim();
+    const b = userData.bride_name?.trim();
     if (g && b) return `${g} 그리고 ${b}`;
     return g || b || undefined;
   }
