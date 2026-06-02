@@ -50,3 +50,7 @@ scripts/collect-places/.env.local
 /ios/App/build/
 /ios/App/Pods/
 /ios/App/output/
+
+# 메이크업 샘플 로컬 생성 입출력
+scripts/makeup-inputs/
+scripts/makeup-output/
