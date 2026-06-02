@@ -7,6 +7,8 @@ import VendorMediaCard, {
 import { PLACE_CATEGORY_TO_ITEM_TYPE } from "@/lib/placeMappers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceKm } from "@/hooks/useWeddingVenue";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { recommendationCopy } from "@/lib/recommendationCopy";
 import {
   usePlaceRecommendations,
   type RecAnchor,
@@ -96,6 +98,8 @@ const Row = ({
 
 export default function PlaceRecommendations({ place }: { place: RecAnchor }) {
   const navigate = useNavigate();
+  const { weddingSettings } = useWeddingSchedule();
+  const copy = recommendationCopy(weddingSettings.persona_mode);
   const { data, isLoading } = usePlaceRecommendations(place);
   const similar = data?.similar ?? [];
   const nearby = data?.nearby ?? [];
@@ -114,7 +118,7 @@ export default function PlaceRecommendations({ place }: { place: RecAnchor }) {
       {(isLoading || similar.length > 0) && (
         <Row
           title={`비슷한 ${labelOf(place.category)}`}
-          hint="같은 지역의 비슷한 업체예요"
+          hint={copy.similarHint}
           items={similar}
           loading={isLoading}
           showCategory={false}
@@ -124,8 +128,8 @@ export default function PlaceRecommendations({ place }: { place: RecAnchor }) {
       )}
       {(isLoading || nearby.length > 0) && (
         <Row
-          title="이 근처 다른 준비"
-          hint="가까운 곳에서 다음 단계도 함께 둘러보세요"
+          title={copy.nearbyTitle}
+          hint={copy.nearbyHint}
           items={nearby}
           loading={isLoading}
           showCategory
