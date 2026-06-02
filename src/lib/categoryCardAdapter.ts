@@ -18,11 +18,13 @@ const CATEGORY_LABEL: Record<CategoryType, string> = {
   invitation_venues: "청첩장",
 };
 
-// CategoryType → favorites.item_type. dress_shops / makeup_shops aren't in
-// the favorites schema, so hearts on those stay non-persistent.
+// CategoryType → favorites.item_type. 전 카테고리가 favorites 스키마에 있으므로
+// 리스트·상세·홈 어디서 찜해도 동일하게 영구 저장된다.
 const CATEGORY_TO_ITEM_TYPE: Partial<Record<CategoryType, ItemType>> = {
   venues: "venue",
   studios: "studio",
+  dress_shops: "dress",
+  makeup_shops: "makeup",
   hanbok: "hanbok",
   suits: "suit",
   honeymoon: "honeymoon",
