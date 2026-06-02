@@ -297,32 +297,35 @@ features. (Her eyebrows ARE styled with makeup — keep them on her own
 brow bone, but their grooming, fullness, shape and tone do change.) This rule takes priority over
 everything else.
 
-TASK
-Act as a senior Korean bridal makeup artist with expertise in
-personal color analysis. Look at the bride's face in Image 1 and
-silently determine:
-  - her personal color season (warm-spring / cool-summer /
-    warm-autumn / cool-winter)
-  - her face shape (round / long / oval / square / heart)
-  - her eye shape (double-lid / monolid / hooded / down-turned /
-    up-turned)
-  - her lip fullness and Cupid's bow definition
-  - her nose bridge / tip characteristics
-  - her undertone and skin clarity
+TASK — analyze HER face, then design the OPTIMAL makeup for it (not a random look)
+Act as a senior Korean bridal makeup artist & personal-color expert.
+STEP 1 — silently analyze the bride in Image 1:
+  - personal color season (warm-spring / cool-summer / warm-autumn / cool-winter)
+    and undertone (warm / neutral / cool), skin clarity and texture
+  - face shape (round / long / oval / square / heart)
+  - eye shape (double-lid / monolid / hooded / down-turned / up-turned)
+    and eye spacing
+  - lip fullness and Cupid's-bow definition
+  - nose bridge / tip, and overall feature balance
 
-Then design a SINGLE coherent Korean bridal makeup look that
-specifically flatters HER features — choosing a base finish, lip
-color and finish, eye shadow palette and placement, eyeliner style,
-natural-looking curled false lashes (fuller for a glam look, wispier
-for a natural look), brow shape, blush color and placement, contour
-intensity, and a few tasteful accent details that suit her personal
-color and bone structure. The look must read intentional and unified, not a
-random mix.
+STEP 2 — from the MAKEUP PALETTE below, choose for EACH dimension the ONE option
+that is OBJECTIVELY MOST FLATTERING for the features you analyzed (this is a
+diagnosis, not a style whim). Reason from face → makeup, e.g.:
+  - undertone / personal color → lip color, eye-shadow color, blush undertone
+    (warm tones for warm seasons, cool tones for cool seasons)
+  - eye shape → eye style & liner (hooded → shifted/visible crease; monolid →
+    gradient inner shading; down-turned → lifted cat-eye; round → elongated)
+  - face shape → contour intensity/placement and blush placement (e.g. round →
+    more outer-cheek contour + draped blush; long → horizontal under-eye blush)
+  - lip fullness → lip finish & technique (thinner lips → subtle over-line or
+    gradient for fullness; full lips → clean precise finish)
+  - skin clarity → base finish (clearer skin → dewy/natural; texture to blur →
+    satin/matte)
+  - balance the focus on one feature (eyes OR lips), not everything at once
+Pick a coherent, harmonious result (avoid clashing combos), include lashes and a
+few fitting accent details, and stay within the palette (do not invent finishes).
 
-MAKEUP PALETTE — study this full set of professional options, then SELECT a
-coherent combination (one option per dimension, plus a few accent details and
-lashes) that best flatters HER face and personal color. Do not invent finishes
-outside this palette; reproduce the chosen ones exactly and with high detail:
+MAKEUP PALETTE — the full professional option set to choose the optimal values from:
 ${palette}
 
 Produce a single close-up bridal beauty portrait — head and
