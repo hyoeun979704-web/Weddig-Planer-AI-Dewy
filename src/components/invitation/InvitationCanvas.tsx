@@ -15,6 +15,7 @@ import type {
 import {
   romanizeKoreanName,
   romanizeKoreanGivenName,
+  romanizeKoreanText,
 } from "@/lib/invitation/romanize";
 
 /**
@@ -437,6 +438,11 @@ function compositeField(
     return romanizeKoreanGivenName(userData.groom_name);
   if (field === "bride_given_en")
     return romanizeKoreanGivenName(userData.bride_name);
+  // 장소명 영문(앞면 세로 텍스트용) — 한글 장소를 로마자로 자동 변환
+  if (field === "venue_address_en")
+    return romanizeKoreanText(userData.venue_address);
+  if (field === "venue_name_en")
+    return romanizeKoreanText(userData.venue_name);
   if (field === "couple_names_en") {
     const g = romanizeKoreanName(userData.groom_name);
     const b = romanizeKoreanName(userData.bride_name);

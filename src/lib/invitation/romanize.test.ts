@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   romanizeKoreanName,
   romanizeKoreanGivenName,
+  romanizeKoreanText,
 } from "@/lib/invitation/romanize";
 
 describe("romanizeKoreanName", () => {
@@ -55,6 +56,14 @@ describe("romanizeKoreanName", () => {
     // 한글 없으면 그대로
     expect(romanizeKoreanGivenName("Su bin")).toBe("Su bin");
     expect(romanizeKoreanGivenName("")).toBeUndefined();
+  });
+
+  it("romanizes arbitrary Korean text (venue) word-by-word", () => {
+    expect(romanizeKoreanText("여의도 더 파티움")).toBe("Yeouido Deo Patium");
+    expect(romanizeKoreanText("호텔")).toBe("Hotel");
+    // 이미 영문이면 그대로
+    expect(romanizeKoreanText("THE PARTIUM")).toBe("THE PARTIUM");
+    expect(romanizeKoreanText("")).toBeUndefined();
   });
 
   it("passes through input that has no Hangul (already English)", () => {

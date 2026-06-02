@@ -116,6 +116,26 @@ export function romanizeKoreanName(
 }
 
 /**
+ * 임의의 한글 텍스트(장소명 등) → 로마자. 단어별 첫 글자 대문자, 공백/영문 보존.
+ * 예: "여의도 더 파티움" → "Yeouido Deo Patium". (브랜드 고유 영문명이 따로 있으면
+ * 사용자가 직접 덮어쓰면 됨 — 이건 자동 폴백.)
+ */
+export function romanizeKoreanText(
+  text: string | undefined | null,
+): string | undefined {
+  const trimmed = (text ?? "").trim();
+  if (!trimmed) return undefined;
+  if (![...trimmed].some(isHangulSyllable)) return trimmed; // 이미 영문 등
+  const words = trimmed.split(/\s+/).map((word) => {
+    const roman = [...word]
+      .map((ch) => (isHangulSyllable(ch) ? syllableToRoman(ch) : ch))
+      .join("");
+    return roman ? roman.charAt(0).toUpperCase() + roman.slice(1) : roman;
+  });
+  return words.join(" ");
+}
+
+/**
  * 한글 이름 → 성을 뺀 "이름(given name)"만 로마자로. ("김충겸" → "Chung gyeom")
  * 포토카드 앞면처럼 성 없이 이름만 크게 넣는 디자인용.
  * 성이 사전/규칙으로 분리 안 되면(외자 이름 등) 전체를 이름으로 본다.
