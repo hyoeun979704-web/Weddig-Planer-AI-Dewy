@@ -501,6 +501,13 @@ function compositeField(
     if (g && b) return `${g} 그리고 ${b}`;
     return g || b || undefined;
   }
+  // "이현우 · 정서연 결혼합니다" — 표지형 카드 신랑·신부 + 결혼합니다
+  if (field === "couple_marry_ko") {
+    const g = userData.groom_name?.trim();
+    const b = userData.bride_name?.trim();
+    if (g && b) return `${g} · ${b} 결혼합니다`;
+    return undefined;
+  }
   // "신랑 김리아 ♥ 신부 이망고" — 달력형 카드 하단 신랑·신부 한 줄
   if (field === "couple_marriage_ko") {
     const g = userData.groom_name?.trim();
