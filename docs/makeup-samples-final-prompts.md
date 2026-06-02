@@ -1,289 +1,251 @@
-# 메이크업 시안 18종 — 최종 프롬프트 (복사 즉시 사용)
+# 메이크업 시안 18종 — 최종 프롬프트 (컨셉 아바타 잠금 방식)
 
 > 검수 완료본. 메타데이터는 `seed/makeup-samples/seed.sql`와 1:1 일치.
-> 헤어/포즈는 **컨셉 표준으로 통일**(레퍼런스의 베일·손·단발·크롭은 쓰지 않음).
-> 모든 룩은 **avatar-base.png(첫 쌩얼 아바타)** 를 첨부해 같은 얼굴로 생성한다.
+> **워크플로우**: ① `avatar-base.png`로 컨셉별 쌩얼 아바타 6장 생성 → ② 각 아바타에
+> "헤어·포즈 잠금 + 메이크업만 추가"로 3장씩 = 18종.
+> 이렇게 하면 **컨셉 안에서 헤어·포즈가 100% 동일**, 차이는 메이크업뿐.
 
-## 공통 규칙
-- 8종(ref)은 해당 레퍼런스 사진을 **2번째 이미지**로 추가 첨부 → 메이크업만 복사
-- 10종(auto)은 아바타 1장만 첨부 → 텍스트 메이크업으로 생성
-- 출력: 1:1 정사각 1024², 이마~쇄골 클로즈업, 얼굴 정면 노출, 깨끗한 배경, 모공 보이는 사실적 피부, 베일·손·소품·큰 장신구·글자 없음
-
----
-
-## 컨셉 1 — 한국 신부 (배경: warm ivory / 헤어·포즈: 슬릭 로우 시뇽, 가운데 가르마 / 정면, 턱 살짝 아래, 아주 옅은 미소)
-
-### 1A · 본식 시그니처 〔ref_3 첨부〕
-```
-[Image 1: avatar-base.png]  [Image 2: ref_3]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate
-the SAME person as Image 1 — keep her face, eyes, nose, lips, jawline, skin tone and
-identity unchanged. Use Image 2 as a MAKEUP reference ONLY: copy its makeup colors,
-finish and placement; do NOT copy its face, hair, veil, crop or pose. Head-and-
-shoulders, face centered and fully visible, even soft beauty-dish lighting, true-to-
-color, clean seamless warm-ivory backdrop, realistic skin texture with visible pores,
-no beauty filter, no veil, no hands, no jewelry, no props, no text. Makeup clearly readable.
-HAIR & POSE: sleek glossy low chignon, clean center part, no flyaways; straight-on,
-chin slightly down, eyes to camera, very soft closed-lip smile.
-MAKEUP: satin base with light reflectance; MLBB lip with a blurred tinted stain finish;
-Korean inner-corner soft warm shading in rose-brown tones with natural lashes; soft
-Korean straight brow; rose blush just under the eyes (애교살); very subtle contour;
-soft highlighter on the high points.
-```
-
-### 1B · 음영 본식 〔auto〕
-```
-[Image 1: avatar-base.png]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the
-SAME person as Image 1 (face, eyes, nose, lips, jawline, skin tone, identity unchanged).
-Apply ONLY makeup; restyle hair/pose as below. Head-and-shoulders, face fully visible,
-even soft beauty-dish lighting, true-to-color, clean seamless warm-ivory backdrop, visible
-skin pores, no beauty filter, no veil, no hands, no props, no text.
-HAIR & POSE: sleek glossy low chignon, clean center part; straight-on, chin slightly down,
-very soft closed-lip smile.
-MAKEUP: satin base; MLBB lip with a blurred tinted finish; Korean inner-corner shading in
-deeper warm brown tones for a soft sculpted 음영 eye, natural lashes; soft Korean straight
-brow; rose blush just under the eyes; natural contour for gentle dimension; soft highlighter.
-```
-
-### 1C · 물광 글로우 〔ref_1 첨부〕
-```
-[Image 1: avatar-base.png]  [Image 2: ref_1]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Use Image 2 as a MAKEUP reference ONLY: copy makeup
-only; do NOT copy its face, hair, crop or pose. Head-and-shoulders, face fully visible, even
-soft lighting, true-to-color, clean seamless warm-ivory backdrop, visible skin pores, no
-beauty filter, no hands, no props, no text. Makeup clearly readable.
-HAIR & POSE: sleek glossy low chignon, clean center part; straight-on, chin slightly down,
-very soft closed-lip smile.
-MAKEUP: dewy glass-skin base with strong moisture sheen (물광); coral lip with a high-shine
-glossy finish; natural soft eye in warm peach tones with natural lashes; soft Korean straight
-brow; peach blush on the apples of the cheeks; no contour; soft dewy highlighter on the high points.
-```
+## 왜 이 방식인가 (지난 시도의 문제)
+- 텍스트로 "컨셉별 헤어·포즈 재스타일"을 시키면 매번 헤어·포즈가 다르게 그려짐 → **아바타에 헤어·포즈를 박아두고 잠근다.**
+- "identity 유지"에 눈썹까지 묶이면 눈썹 메이크업이 안 올라옴 → **눈썹·속눈썹·피부마감은 '메이크업'으로 분리**, 항목별 체크리스트로 "전부 반드시 보이게" 강제.
+- 시선이 아래면 눈 화장이 가려짐 → **눈 정면(open to camera)** 고정.
 
 ---
 
-## 컨셉 2 — 에테리얼 (배경: soft cool misty white / 헤어·포즈: 에어리 루즈 웨이브 + 잔머리 / 약한 3/4, 시선 아래, 차분)
+## STEP 1 — 컨셉별 쌩얼 아바타 6장
 
-### 2A · 투명 햇살 본식 〔ref_7 첨부〕
-```
-[Image 1: avatar-base.png]  [Image 2: ref_7]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Use Image 2 as a MAKEUP reference ONLY; do NOT copy
-its face, hair, veil, crop or pose. Head-and-shoulders, face fully visible, even soft lighting,
-true-to-color, clean seamless cool misty-white backdrop, visible skin pores, no beauty filter,
-no veil, no hands, no props, no text. Makeup clearly readable.
-HAIR & POSE: airy loose waves with soft face-framing strands; slight 3/4 turn, eyes gently
-downcast, serene relaxed lips.
-MAKEUP: soft glowy luminous translucent base (햇살 투명 물광); rose lip with a glossy finish;
-natural soft eye in warm peach tones with natural lashes; soft Korean straight brow; pink blush
-on the apples; no contour; shimmer in the inner corners and abundant dewy highlighter.
-```
+각 프롬프트에 **`avatar-base.png`(첫 아바타)를 첨부** → 같은 인물·쌩얼 유지, 헤어·포즈만 컨셉용으로.
+결과를 `avatar-soft_korean.png` … `avatar-romantic.png` 로 저장.
 
-### 2B · 글로우 라벤더 본식 〔ref_6 첨부〕
+공통 규칙(6장 모두):
 ```
-[Image 1: avatar-base.png]  [Image 2: ref_6]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Use Image 2 as a MAKEUP reference ONLY; do NOT copy its
-face, hair, veil, crop or pose. Head-and-shoulders, face fully visible, even soft lighting,
-true-to-color, clean seamless cool misty-white backdrop, visible skin pores, no beauty filter,
-no veil, no hands, no props, no text. Makeup clearly readable.
-HAIR & POSE: airy loose waves with soft face-framing strands; slight 3/4 turn, eyes gently
-downcast, serene.
-MAKEUP: dewy glass-skin base; mauve lip with a glossy finish; natural soft eye in cool plum
-tones with defined lower lashes; soft Korean straight brow; pink blush just under the eyes;
-very subtle contour; soft dewy highlighter.
+[avatar-base.png 첨부]
+Keep this EXACT person and identity (face shape, eye shape, nose, lips, jaw, skin tone).
+Keep a COMPLETELY BARE FACE — no makeup at all (no base/lip/eye/brow makeup, bare natural
+brows, bare lashes, clean skin with visible pores). Change ONLY the hairstyle and pose as
+below. 1:1 square 1024², head-and-shoulders, face fully visible, eyes OPEN looking straight
+at the camera, calm neutral expression, lips gently closed. Clean seamless {BACKDROP}
+backdrop, no veil, no hands, no jewelry, no props, no text. Ultra-photorealistic, 85mm.
+HAIR & POSE: {HAIR_POSE}
 ```
 
-### 2C · 투명 글로시 〔ref_2 첨부〕
-```
-[Image 1: avatar-base.png]  [Image 2: ref_2]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Use Image 2 as a MAKEUP reference ONLY; do NOT copy its
-face, hair, crop or pose. Head-and-shoulders, face fully visible, even soft lighting, true-to-
-color, clean seamless cool misty-white backdrop, visible skin pores, no beauty filter, no hands,
-no props, no text. Makeup clearly readable.
-HAIR & POSE: airy loose waves with soft face-framing strands; slight 3/4 turn, eyes gently
-downcast, serene.
-MAKEUP: dewy glass-skin base; nude lip with a glossy finish; natural soft eye in rose-brown
-tones; feathered brow with visible hair strokes; pink blush on the apples; no contour; shimmer
-in the inner corners and soft highlighter.
-```
+| 아바타 | {BACKDROP} | {HAIR_POSE} |
+|---|---|---|
+| `avatar-soft_korean` | warm ivory | sleek glossy low chignon, clean center part, a few soft wispy strands at the temples; straight-on, eyes to camera |
+| `avatar-ethereal` | cool misty white | airy soft loose waves, half-up, baby hairs framing the face; near-front with a slight tilt, eyes to camera |
+| `avatar-glamorous` | deep charcoal grey | voluminous glamorous waves worn down, deep side part; straight-on, chin slightly up, eyes to camera |
+| `avatar-fresh` | bright airy off-white | natural half-up with soft movement, a few face-framing strands; straight-on, eyes to camera |
+| `avatar-classic` | neutral greige | polished elegant low updo, clean part; straight-on with a slight tilt, eyes to camera |
+| `avatar-romantic` | warm blush-pink | romantic loose updo with soft curled face-framing tendrils; slight 3/4 with eyes to camera |
 
 ---
 
-## 컨셉 3 — 글래머러스 (배경: deep charcoal grey / 헤어·포즈: 볼륨 글래머 웨이브 다운 / 정면 당당, 턱 살짝 들고, 또렷한 시선) · 전부 auto · 촬영
+## STEP 2 — 잠금형 메이크업 프롬프트 (18종)
 
-### 3A · 클래식 레드
-```
-[Image 1: avatar-base.png]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Apply ONLY makeup; restyle hair/pose as below. Head-and-
-shoulders, face fully visible, even soft lighting, true-to-color, clean seamless deep charcoal-
-grey backdrop, visible skin pores, no beauty filter, no props, no text.
-HAIR & POSE: voluminous glamorous waves worn down; confident straight-on, chin slightly up,
-direct gaze.
-MAKEUP: satin base; classic true-red lip with a satin finish; smoky gradient eye in warm bronze
-tones blended into a soft halo; well-defined brow; nude blush on the outer cheekbone; defined
-sculpted contour; emphasized long curled lashes and soft highlighter.
-```
+각 룩은 **해당 컨셉 아바타**를 Image 1로 첨부. ref 표시가 있는 룩은 **레퍼런스 사진을 Image 2로 추가** 첨부.
+공통 잠금 헤더(모든 룩 동일):
 
-### 3B · 버건디 캣아이
 ```
-[Image 1: avatar-base.png]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Apply ONLY makeup; restyle hair/pose as below. Head-and-
-shoulders, face fully visible, even soft lighting, true-to-color, clean seamless deep charcoal-
-grey backdrop, visible skin pores, no beauty filter, no props, no text.
-HAIR & POSE: voluminous glamorous waves worn down; confident straight-on, chin slightly up,
-direct gaze.
-MAKEUP: matte velvet base; berry lip fully matte; cat-eye with a winged liner extending up-and-
-out in burgundy wine tones; well-defined brow; rose blush on the outer cheekbone; defined
-contour; emphasized lashes.
+[Image 1: 컨셉 아바타]   (+ [Image 2: ref_N] — ref 룩만)
+LOCK Image 1 EXACTLY — do NOT change: hair (every strand & parting), head pose & angle,
+framing, face shape, eye shape, nose, lip shape, jaw, skin tone. The ONLY change is ADDING
+makeup (eyebrows, lashes, skin-finish count as makeup, NOT identity).
+[ref 룩만] Use Image 2 as a MAKEUP reference ONLY — copy makeup colors/placement; never
+copy its face, hair, veil, crop or pose.
+APPLY FULL PROFESSIONAL BRIDAL MAKEUP — EVERY item below must be clearly visible and
+well-defined (this is a sample, NOT a bare face). Editorial beauty quality, eyes OPEN to
+camera. Visible skin pores, no veil/hands/props/text.
 ```
-
-### 3C · 누드 음영 글램
-```
-[Image 1: avatar-base.png]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Apply ONLY makeup; restyle hair/pose as below. Head-and-
-shoulders, face fully visible, even soft lighting, true-to-color, clean seamless deep charcoal-
-grey backdrop, visible skin pores, no beauty filter, no props, no text.
-HAIR & POSE: voluminous glamorous waves worn down; confident straight-on, chin slightly up,
-direct gaze.
-MAKEUP: satin base; nude lip with a high-shine glossy finish; smoky gradient eye in neutral deep
-beige-taupe tones; well-defined brow; nude blush on the outer cheekbone; defined contour;
-emphasized lashes and soft highlighter.
-```
+그 아래 룩별 7줄 체크리스트를 붙인다.
 
 ---
 
-## 컨셉 4 — 프레시 (배경: bright airy off-white / 헤어·포즈: 자연 하프업 + 잔머리 / 밝게 활짝 웃는 정면)
+### 컨셉 1 — 한국 신부 (`avatar-soft_korean`)
 
-### 4A · 생기 코랄 〔ref_5 첨부〕
-```
-[Image 1: avatar-base.png]  [Image 2: ref_5]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Use Image 2 as a MAKEUP reference ONLY; do NOT copy its
-face, hair, crop or pose. Head-and-shoulders, face fully visible, even soft lighting, true-to-
-color, clean seamless bright off-white backdrop, visible skin pores, no beauty filter, no hands,
-no props, no text. Makeup clearly readable.
-HAIR & POSE: natural half-up with soft movement, a few face-framing strands; bright open genuine
-smile, lively, straight-on.
-MAKEUP: dewy base; coral lip with a glossy finish; natural soft eye in warm peach tones with
-natural lashes; natural lightly-groomed brow; coral blush on the apples of the cheeks for a
-youthful flush; no contour; soft dewy highlighter.
-```
+**1A · 본식 시그니처** 〔+ ref_3〕 · 트렌드 상단
+- Skin: satin base with soft glow
+- Brows: groom, fill & shape into a soft Korean straight brow — not bare
+- Eyes: rose-brown Korean inner-corner shading, gradient outward; thin tightline; defined natural lashes
+- Lips: MLBB, blurred tinted stain finish, clearly tinted
+- Blush: rose, just under the eyes (애교살), clearly visible
+- Contour: very subtle
+- Highlight: soft highlighter on the high points
 
-### 4B · 주근깨 데일리 〔auto〕
-```
-[Image 1: avatar-base.png]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Apply ONLY makeup; restyle hair/pose as below. Head-and-
-shoulders, face fully visible, even soft lighting, true-to-color, clean seamless bright off-white
-backdrop, visible skin pores, no beauty filter, no props, no text.
-HAIR & POSE: natural half-up with soft movement, a few face-framing strands; bright open smile,
-lively, straight-on.
-MAKEUP: natural-skin barely-there base that lets skin texture show; peach lip with a blurred
-tinted finish; bare eye with only a hair-thin tightline in neutral tones; natural lightly-groomed
-brow; peach blush on the apples; no contour; delicate faux freckles across the nose and upper cheeks.
-```
+**1B · 음영 본식** 〔auto〕
+- Skin: satin base with soft glow
+- Brows: groom, fill & shape into a soft Korean straight brow — not bare
+- Eyes: deeper warm-brown Korean inner-corner shading, soft blurred 음영 depth; tightline; defined lashes
+- Lips: MLBB, blurred tinted finish, clearly tinted
+- Blush: rose, just under the eyes, clearly visible
+- Contour: natural, gentle dimension
+- Highlight: soft highlighter
 
-### 4C · 누드 글로우 〔auto〕
-```
-[Image 1: avatar-base.png]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Apply ONLY makeup; restyle hair/pose as below. Head-and-
-shoulders, face fully visible, even soft lighting, true-to-color, clean seamless bright off-white
-backdrop, visible skin pores, no beauty filter, no props, no text.
-HAIR & POSE: natural half-up with soft movement; bright open smile, lively, straight-on.
-MAKEUP: dewy base; nude lip with a blurred tinted finish; natural soft eye in neutral beige-taupe
-tones; natural lightly-groomed brow; pink blush on the apples; no contour; soft highlighter.
-```
+**1C · 물광 글로우** 〔+ ref_1〕 · 트렌드 상단
+- Skin: dewy glass-skin, strong 물광 lit-from-within glow
+- Brows: groom, fill & shape into a soft Korean straight brow — not bare
+- Eyes: natural soft warm-peach wash; defined natural lashes
+- Lips: coral, juicy glossy, clearly tinted
+- Blush: peach on the apples of the cheeks, clearly visible
+- Contour: none
+- Highlight: generous dewy highlight (cheekbones, nose, cupid's bow)
 
 ---
 
-## 컨셉 5 — 클래식 (배경: neutral greige / 헤어·포즈: 정통 우아 로우 업두 / 차분 단정, 약한 측면)
+### 컨셉 2 — 에테리얼 (`avatar-ethereal`)
 
-### 5A · 로즈 새틴 음영 〔auto〕
-```
-[Image 1: avatar-base.png]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Apply ONLY makeup; restyle hair/pose as below. Head-and-
-shoulders, face fully visible, even soft lighting, true-to-color, clean seamless neutral greige
-backdrop, visible skin pores, no beauty filter, no props, no text.
-HAIR & POSE: polished classic elegant low updo, clean part; composed, slight tilt, calm serene.
-MAKEUP: satin base; rose lip with a satin finish; natural soft eye in neutral beige-taupe tones;
-soft arched brow; rose blush on the apples; natural contour for gentle dimension; emphasized
-lashes and soft highlighter.
-```
+**2A · 투명 햇살 본식** 〔+ ref_7〕 · 트렌드 1순위
+- Skin: luminous translucent glass-skin, strong 물광 glow
+- Brows: groom, fill & shape into a soft Korean straight brow — not bare
+- Eyes: warm peach wash; bright inner-corner shimmer; defined natural lashes; thin tightline
+- Lips: rose-pink, juicy glossy, clearly tinted
+- Blush: soft pink, spread wide along the cheekbones, clearly visible
+- Contour: none
+- Highlight: generous dewy highlight
 
-### 5B · 시크 에디토리얼 〔ref_8 첨부〕
-```
-[Image 1: avatar-base.png]  [Image 2: ref_8]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged) — keep HER hair (do not give her a bob). Use Image 2 as a
-MAKEUP reference ONLY; do NOT copy its face, hair or pose. Head-and-shoulders, face fully visible,
-even soft lighting, true-to-color, clean seamless neutral greige backdrop, visible skin pores, no
-beauty filter, no props, no text. Makeup clearly readable.
-HAIR & POSE: polished classic elegant low updo, clean part; composed, slight tilt, calm serene.
-MAKEUP: satin base; mauve lip with a satin finish; soft eye in neutral taupe tones with a subtle
-elongated cat-eye liner; soft arched brow; nude blush on the outer cheekbone; natural contour;
-emphasized lashes.
-```
+**2B · 글로우 라벤더 본식** 〔+ ref_6〕
+- Skin: dewy glass-skin, strong glow
+- Brows: groom, fill & shape into a soft Korean straight brow — not bare
+- Eyes: cool plum/lavender wash; defined lower lashes; natural lashes
+- Lips: mauve, glossy, clearly tinted
+- Blush: pink, just under the eyes, clearly visible
+- Contour: very subtle
+- Highlight: dewy highlight
 
-### 5C · 모브 음영 〔auto〕
-```
-[Image 1: avatar-base.png]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Apply ONLY makeup; restyle hair/pose as below. Head-and-
-shoulders, face fully visible, even soft lighting, true-to-color, clean seamless neutral greige
-backdrop, visible skin pores, no beauty filter, no props, no text.
-HAIR & POSE: polished classic elegant low updo, clean part; composed, slight tilt, calm serene.
-MAKEUP: satin base; mauve lip with a satin finish; natural soft eye in rose-brown tones; soft
-arched brow; rose blush on the outer cheekbone; natural contour; soft highlighter.
-```
+**2C · 투명 글로시** 〔+ ref_2〕
+- Skin: dewy glass-skin base
+- Brows: groom into soft FEATHERED fluffy brows, visible upward strokes, lightly filled — not bare
+- Eyes: cool rose-brown wash that clearly defines the eye; inner-corner shimmer; defined natural lashes
+- Lips: nude, juicy glossy, clearly tinted
+- Blush: soft pink on the apples, clearly visible
+- Contour: none
+- Highlight: dewy highlight
 
 ---
 
-## 컨셉 6 — 로맨틱 (배경: warm blush-pink / 헤어·포즈: 로맨틱 루즈 업두 + 컬 잔머리 / 약한 3/4, 수줍은 미소)
+### 컨셉 3 — 글래머러스 (`avatar-glamorous`) · 전부 auto
 
-### 6A · 핑크 그라데이션 〔ref_4 첨부〕
-```
-[Image 1: avatar-base.png]  [Image 2: ref_4]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Use Image 2 as a MAKEUP reference ONLY; do NOT copy its
-face, hair, hands, crop or pose. Head-and-shoulders, face fully visible, even soft lighting,
-true-to-color, clean seamless warm blush-pink backdrop, visible skin pores, no beauty filter, no
-hands, no props, no text. Makeup clearly readable.
-HAIR & POSE: romantic loose updo with soft curled face-framing tendrils; soft 3/4, gentle shy smile.
-MAKEUP: dewy base; coral lip with a soft-blurred ombré edge, deeper in the center; round doll-eye
-look in warm peach tones with inner-corner highlight; soft arched brow; pink blush draped from the
-cheekbone toward the temple; subtle contour; ombré gradient lip, shimmer in the inner corners and
-soft highlighter.
-```
+**3A · 클래식 레드**
+- Skin: satin base
+- Brows: groom, fill & shape into a well-defined, cleanly-shaped brow — not bare
+- Eyes: bronze smoky gradient blended into a soft halo; defined liner; emphasized long curled lashes
+- Lips: classic true-red, satin finish, clearly defined
+- Blush: nude on the outer cheekbone, clearly visible
+- Contour: defined sculpted contour
+- Highlight: soft highlighter
 
-### 6B · 로즈 글로우 〔auto〕
-```
-[Image 1: avatar-base.png]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Apply ONLY makeup; restyle hair/pose as below. Head-and-
-shoulders, face fully visible, even soft lighting, true-to-color, clean seamless warm blush-pink
-backdrop, visible skin pores, no beauty filter, no props, no text.
-HAIR & POSE: romantic loose updo with soft curled face-framing tendrils; soft 3/4, gentle shy smile.
-MAKEUP: dewy base; rose lip with a glossy finish; natural soft eye in rose-brown tones; soft arched
-brow; rose blush draped from the cheekbone toward the temple; subtle contour; soft highlighter.
-```
+**3B · 버건디 캣아이**
+- Skin: smooth matte velvet base
+- Brows: groom, fill & shape into a well-defined brow — not bare
+- Eyes: burgundy wine shadow; cat-eye winged liner up-and-out; emphasized lashes
+- Lips: berry, fully matte, clearly defined
+- Blush: rose on the outer cheekbone, clearly visible
+- Contour: defined contour
+- Highlight: minimal
 
-### 6C · 코랄핑크 러블리 〔auto〕
-```
-[Image 1: avatar-base.png]
-Ultra-photorealistic Korean bridal beauty close-up, 1:1 square 1024x1024. Generate the SAME
-person as Image 1 (identity unchanged). Apply ONLY makeup; restyle hair/pose as below. Head-and-
-shoulders, face fully visible, even soft lighting, true-to-color, clean seamless warm blush-pink
-backdrop, visible skin pores, no beauty filter, no props, no text.
-HAIR & POSE: romantic loose updo with soft curled face-framing tendrils; soft 3/4, gentle shy smile.
-MAKEUP: satin base; coral lip with a glossy finish and a soft ombré gradient; round doll-eye look
-in warm peach tones; soft arched brow; coral blush on the apples of the cheeks; subtle contour;
-ombré gradient lip and soft highlighter.
-```
+**3C · 누드 음영 글램**
+- Skin: satin base
+- Brows: groom, fill & shape into a well-defined brow — not bare
+- Eyes: neutral deep beige-taupe smoky gradient; defined liner; emphasized lashes
+- Lips: nude, high-shine glossy, clearly tinted
+- Blush: nude on the outer cheekbone, clearly visible
+- Contour: defined contour
+- Highlight: soft highlighter
+
+---
+
+### 컨셉 4 — 프레시 (`avatar-fresh`)
+
+**4A · 생기 코랄** 〔+ ref_5〕
+- Skin: dewy base
+- Brows: groom into a natural lightly-groomed brow, filled — not bare
+- Eyes: warm peach natural wash; defined natural lashes
+- Lips: coral, glossy, clearly tinted
+- Blush: coral on the apples, youthful flush, clearly visible
+- Contour: none
+- Highlight: soft dewy highlight
+
+**4B · 주근깨 데일리** 〔auto〕
+- Skin: barely-there natural-skin base, texture shows
+- Brows: natural lightly-groomed brow, lightly filled — not bare
+- Eyes: bare with only a thin tightline, neutral tones; natural lashes
+- Lips: peach, blurred tinted, clearly tinted
+- Blush: peach on the apples, clearly visible
+- Contour: none
+- Details: delicate faux freckles across the nose and upper cheeks
+
+**4C · 누드 글로우** 〔auto〕
+- Skin: dewy base
+- Brows: natural lightly-groomed brow, filled — not bare
+- Eyes: neutral beige-taupe natural soft wash; natural lashes
+- Lips: nude, blurred tinted, clearly tinted
+- Blush: soft pink on the apples, clearly visible
+- Contour: none
+- Highlight: soft highlighter
+
+---
+
+### 컨셉 5 — 클래식 (`avatar-classic`)
+
+**5A · 로즈 새틴 음영** 〔auto〕
+- Skin: satin base
+- Brows: groom, fill & shape into a soft arched brow — not bare
+- Eyes: neutral beige-taupe soft wash; emphasized lashes
+- Lips: rose, satin, clearly tinted
+- Blush: rose on the apples, clearly visible
+- Contour: natural, gentle dimension
+- Highlight: soft highlighter
+
+**5B · 시크 에디토리얼** 〔+ ref_8〕
+- Skin: satin base
+- Brows: groom, fill & shape into a soft arched brow — not bare
+- Eyes: neutral taupe with a subtle elongated cat-eye liner; emphasized lashes
+- Lips: mauve, satin, clearly tinted
+- Blush: nude on the outer cheekbone, clearly visible
+- Contour: natural
+- Highlight: minimal
+
+**5C · 모브 음영** 〔auto〕
+- Skin: satin base
+- Brows: groom, fill & shape into a soft arched brow — not bare
+- Eyes: rose-brown soft wash that defines the eye; natural lashes
+- Lips: mauve, satin, clearly tinted
+- Blush: rose on the outer cheekbone, clearly visible
+- Contour: natural
+- Highlight: soft highlighter
+
+---
+
+### 컨셉 6 — 로맨틱 (`avatar-romantic`)
+
+**6A · 핑크 그라데이션** 〔+ ref_4〕
+- Skin: dewy base
+- Brows: groom, fill & shape into a soft arched brow — not bare
+- Eyes: round doll-eye look in warm peach, inner-corner highlight to enlarge; defined natural lashes
+- Lips: coral ombré gradient, soft-blurred edge deeper in the center, clearly tinted
+- Blush: pink draped from the cheekbone toward the temple, clearly visible
+- Contour: subtle
+- Highlight: soft highlighter + inner-corner shimmer
+
+**6B · 로즈 글로우** 〔auto〕
+- Skin: dewy base
+- Brows: groom, fill & shape into a soft arched brow — not bare
+- Eyes: rose-brown soft wash; defined natural lashes
+- Lips: rose, glossy, clearly tinted
+- Blush: rose draped toward the temple, clearly visible
+- Contour: subtle
+- Highlight: soft highlighter
+
+**6C · 코랄핑크 러블리** 〔auto〕
+- Skin: satin base
+- Brows: groom, fill & shape into a soft arched brow — not bare
+- Eyes: round doll-eye look in warm peach; defined natural lashes
+- Lips: coral, glossy with a soft ombré gradient, clearly tinted
+- Blush: coral on the apples, clearly visible
+- Contour: subtle
+- Highlight: soft highlighter
+
+---
+
+## 적재 매핑 (참고)
+ref 첨부: 1A=ref_3 · 1C=ref_1 · 2A=ref_7 · 2B=ref_6 · 2C=ref_2 · 4A=ref_5 · 5B=ref_8 · 6A=ref_4 / 나머지 10종 auto.
+seed `__IMG_xx__` ↔ 위 룩 코드 1:1.
