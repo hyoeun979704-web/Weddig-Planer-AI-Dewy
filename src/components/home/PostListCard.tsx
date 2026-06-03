@@ -9,6 +9,7 @@ export interface PostListItem {
   like_count: number | null;
   category_tag?: string | null;
   keyword_tags?: string[];
+  author?: string;
 }
 
 function formatCount(n: number | null | undefined): string {
@@ -51,7 +52,11 @@ const PostListCard = ({ post, onClick }: PostListCardProps) => {
         {post.content}
       </p>
 
-      <div className="flex items-center justify-between mt-2 text-[10px] text-black/55">
+      {post.author && (
+        <p className="text-[9px] text-black/45 truncate mt-1">{post.author}</p>
+      )}
+
+      <div className="flex items-center justify-between mt-1 text-[10px] text-black/55">
         <span>조회수 {formatCount(post.views)}</span>
         <span
           role="button"

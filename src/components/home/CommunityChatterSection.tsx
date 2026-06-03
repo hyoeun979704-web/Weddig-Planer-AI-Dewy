@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import PostListCard, { PostListItem } from "./PostListCard";
+import { useCommunityAuthors } from "@/hooks/useCommunityAuthors";
 
 const PLACEHOLDERS: PostListItem[] = [
   {
@@ -32,9 +33,11 @@ const SkeletonCard = () => (
 
 interface CommunityRow {
   id: string;
+  user_id: string;
   title: string;
   content: string;
   views: number | null;
+  like_count: number | null;
   category: string | null;
 }
 
@@ -47,28 +50,33 @@ const extractHashtags = (content: string): string[] => {
 const CommunityChatterSection = () => {
   const navigate = useNavigate();
 
-  const { data: posts, isLoading } = useQuery<PostListItem[]>({
+  const { data: rows, isLoading } = useQuery<CommunityRow[]>({
     queryKey: ["community-chatter-home"],
     queryFn: async () => {
       const { data } = await supabase
         .from("community_posts")
-        .select("id, title, content, views, category")
+        .select("id, user_id, title, content, views, like_count, category")
         .order("created_at", { ascending: false })
         .limit(2);
-      return ((data ?? []) as CommunityRow[]).map((p) => ({
-        id: p.id,
-        title: p.title,
-        content: p.content,
-        views: p.views,
-        like_count: null,
-        category_tag: p.category,
-        keyword_tags: extractHashtags(p.content ?? ""),
-      }));
+      return (data ?? []) as CommunityRow[];
     },
     staleTime: 5 * 60 * 1000,
   });
 
-  const items: PostListItem[] = posts && posts.length >= 2 ? posts.slice(0, 2) : PLACEHOLDERS;
+  const authors = useCommunityAuthors((rows ?? []).map((r) => r.user_id));
+
+  const posts: PostListItem[] = (rows ?? []).map((p) => ({
+    id: p.id,
+    title: p.title,
+    content: p.content,
+    views: p.views,
+    like_count: p.like_count,
+    category_tag: p.category,
+    keyword_tags: extractHashtags(p.content ?? ""),
+    author: authors.get(p.user_id).nickname,
+  }));
+
+  const items: PostListItem[] = posts.length >= 2 ? posts.slice(0, 2) : PLACEHOLDERS;
 
   return (
     <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-50))]">

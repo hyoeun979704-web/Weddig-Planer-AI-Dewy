@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Seo from "@/components/Seo";
-import { Camera, User, Mail, Phone, Calendar, Save, Loader2, MapPin, CakeSlice } from "lucide-react";
+import { Camera, User, Mail, Phone, Calendar, Save, Loader2, MapPin, CakeSlice, MessageCircle } from "lucide-react";
+import { genNickname } from "@/lib/communityIdentity";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +26,7 @@ const Profile = () => {
   const { user } = useAuth();
   
   const [displayName, setDisplayName] = useState("");
+  const [communityNickname, setCommunityNickname] = useState("");
   const [birthYear, setBirthYear] = useState("1997");
   const [phone, setPhone] = useState("");
   const [weddingRegion, setWeddingRegion] = useState("서울");
@@ -44,7 +46,7 @@ const Profile = () => {
         // Load profile
         const { data: profile } = await supabase
           .from("profiles")
-          .select("display_name, avatar_url, birth_year, phone")
+          .select("display_name, avatar_url, birth_year, phone, community_nickname")
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -59,6 +61,7 @@ const Profile = () => {
           setDisplayName(profile.display_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "");
           setBirthYear(profile.birth_year ? String(profile.birth_year) : "1997");
           setPhone((profile as any).phone || "");
+          setCommunityNickname((profile as any).community_nickname || "");
         } else {
           setDisplayName(user?.user_metadata?.full_name || user?.user_metadata?.name || "");
         }
@@ -96,6 +99,7 @@ const Profile = () => {
         .from("profiles")
         .update({
           display_name: displayName,
+          community_nickname: communityNickname.trim() || null,
           birth_year: birthYear ? parseInt(birthYear) : null,
           phone: phone.trim() || null
         } as any)
@@ -200,6 +204,23 @@ const Profile = () => {
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="이름을 입력하세요"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="communityNickname" className="flex items-center gap-2">
+              <MessageCircle className="w-4 h-4" />
+              커뮤니티 닉네임
+            </Label>
+            <Input
+              id="communityNickname"
+              value={communityNickname}
+              onChange={(e) => setCommunityNickname(e.target.value)}
+              maxLength={20}
+              placeholder={user ? genNickname(user.id) : "닉네임"}
+            />
+            <p className="text-xs text-muted-foreground">
+              커뮤니티 글·댓글에 표시돼요. 비우면 “{user ? genNickname(user.id) : "자동 닉네임"}”으로 자동 표시됩니다. (실명·예식일은 공개되지 않아요)
+            </p>
           </div>
 
           <div className="space-y-2">
