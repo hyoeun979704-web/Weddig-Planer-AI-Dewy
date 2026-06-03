@@ -41,6 +41,8 @@ import PostImageGallery from "@/components/community/PostImageGallery";
 import CommentItem from "@/components/community/CommentItem";
 import AuthorChip from "@/components/community/AuthorChip";
 import { useCommunityAuthors } from "@/hooks/useCommunityAuthors";
+import { usePostPlaces } from "@/hooks/useCommunityPlaces";
+import { Store } from "lucide-react";
 import { useCommentLikes } from "@/hooks/useCommentLikes";
 import { useFavorites } from "@/hooks/useFavorites";
 
@@ -138,6 +140,9 @@ const CommunityPostDetail = () => {
     post?.user_id,
     ...comments.map((c) => c.user_id),
   ]);
+
+  // 이 글에 태그된 업체들.
+  const { data: taggedPlaces = [] } = usePostPlaces(id);
 
   // Fetch likes count
   const { data: likesCount = 0 } = useQuery({
@@ -521,6 +526,22 @@ const CommunityPostDetail = () => {
         {/* Image Gallery */}
         {post.image_urls && post.image_urls.length > 0 && (
           <PostImageGallery images={post.image_urls} />
+        )}
+
+        {/* 태그된 업체 */}
+        {taggedPlaces.length > 0 && (
+          <div className="flex flex-wrap gap-2 pb-2">
+            {taggedPlaces.map((v) => (
+              <button
+                key={v.place_id}
+                onClick={() => navigate(`/vendor/${v.place_id}`)}
+                className="flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium active:scale-[0.98]"
+              >
+                <Store className="w-3.5 h-3.5" />
+                {v.name}
+              </button>
+            ))}
+          </div>
         )}
 
         {/* Stats */}
