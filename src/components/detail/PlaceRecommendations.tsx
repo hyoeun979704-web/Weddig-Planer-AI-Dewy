@@ -108,7 +108,7 @@ export default function PlaceRecommendations({ place }: { place: RecAnchor }) {
     <div className="border-t border-border mt-2">
       {(isLoading || similar.length > 0) && (
         <Row
-          title={`비슷한 ${labelOf(place.category)}`}
+          title="여기도 마음에 드실 거예요"
           items={similar}
           loading={isLoading}
           showCategory={false}
@@ -118,7 +118,7 @@ export default function PlaceRecommendations({ place }: { place: RecAnchor }) {
       )}
       {(isLoading || nearby.length > 0) && (
         <Row
-          title="이 근처 다른 준비"
+          title="추천 업체"
           items={nearby}
           loading={isLoading}
           showCategory
