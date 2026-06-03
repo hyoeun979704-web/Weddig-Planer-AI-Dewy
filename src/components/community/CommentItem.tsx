@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Pencil, Trash2, X, Check, MessageSquare, Heart, Flag } from "lucide-react";
+import { Pencil, Trash2, X, Check, MessageSquare, Heart, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -16,6 +16,7 @@ import {
 import ReportDialog from "@/components/community/ReportDialog";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
+import type { AuthorIdentity } from "@/lib/communityIdentity";
 
 interface Comment {
   id: string;
@@ -35,6 +36,7 @@ interface CommentItemProps {
   comment: Comment;
   replies?: Comment[];
   currentUserId?: string;
+  getIdentity: (userId: string) => AuthorIdentity;
   editingCommentId: string | null;
   editingContent: string;
   onStartEdit: (comment: Comment) => void;
@@ -55,6 +57,7 @@ const CommentItem = ({
   comment,
   replies = [],
   currentUserId,
+  getIdentity,
   editingCommentId,
   editingContent,
   onStartEdit,
@@ -86,13 +89,29 @@ const CommentItem = ({
   return (
     <div className={`${isReplyMode ? "ml-8 pl-4 border-l-2 border-muted" : ""}`}>
       <div className="flex gap-3">
-        <div className={`${isReplyMode ? "w-7 h-7" : "w-8 h-8"} rounded-full bg-muted flex items-center justify-center flex-shrink-0`}>
-          <User className={`${isReplyMode ? "w-3.5 h-3.5" : "w-4 h-4"} text-muted-foreground`} />
-        </div>
+        {(() => {
+          const id = getIdentity(comment.user_id);
+          return (
+            <div
+              className={`${isReplyMode ? "w-7 h-7 text-[10px]" : "w-8 h-8 text-xs"} rounded-full flex items-center justify-center flex-shrink-0 font-bold text-white`}
+              style={{ backgroundColor: id.color }}
+              aria-hidden
+            >
+              {id.initial}
+            </div>
+          );
+        })()}
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">익명</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium text-foreground">
+                {getIdentity(comment.user_id).nickname}
+              </span>
+              {getIdentity(comment.user_id).badges.map((b, i) => (
+                <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                  {b}
+                </span>
+              ))}
               <span className="text-xs text-muted-foreground">
                 {formatDate(comment.created_at)}
               </span>
@@ -222,6 +241,7 @@ const CommentItem = ({
                 key={reply.id}
                 comment={reply}
                 currentUserId={currentUserId}
+                getIdentity={getIdentity}
                 editingCommentId={editingCommentId}
                 editingContent={editingContent}
                 onStartEdit={onStartEdit}
