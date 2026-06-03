@@ -15,6 +15,8 @@ import {
   Undo2,
   Redo2,
   Plus,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -1010,7 +1012,11 @@ const InvitationStudio = () => {
     <div
       className="min-h-screen bg-background max-w-[430px] mx-auto"
       style={{
-        paddingBottom: "calc(var(--app-bottom-nav-total-height) + 80px)",
+        // 편집 중엔 글로벌 메뉴를 숨기고 편집 툴바만 하단에 → 툴바 높이만큼만 여백
+        paddingBottom:
+          step === "studio"
+            ? "calc(var(--safe-bottom) + 76px)"
+            : "calc(var(--app-bottom-nav-total-height) + 80px)",
       }}
     >
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border">
@@ -1167,10 +1173,14 @@ const InvitationStudio = () => {
         />
       )}
 
-      <BottomNav
-        activeTab={location.pathname}
-        onTabChange={(href) => navigate(href)}
-      />
+      {/* 편집 화면(studio)에서는 글로벌 메뉴 숨김 — 실수로 눌러 에디터를 벗어나지 않도록.
+          나가기는 헤더의 ← 버튼으로. */}
+      {step !== "studio" && (
+        <BottomNav
+          activeTab={location.pathname}
+          onTabChange={(href) => navigate(href)}
+        />
+      )}
     </div>
   );
 };
@@ -2079,10 +2089,10 @@ const StudioView = ({
       </div>
     </main>
 
-    {/* 하단 고정 편집툴바 — 스크롤·면 전환과 무관하게 항상 접근. BottomNav(safe-area 포함) 위에 띄움 */}
+    {/* 하단 고정 편집툴바 — 편집 중엔 글로벌 메뉴 대신 이 툴바가 하단을 차지(실수 이탈 방지) */}
     <div
       className="fixed left-1/2 -translate-x-1/2 z-40 w-[calc(100%-1.5rem)] max-w-[406px]"
-      style={{ bottom: "calc(var(--app-bottom-nav-total-height) + 8px)" }}
+      style={{ bottom: "calc(var(--safe-bottom) + 8px)" }}
     >
       <div className="flex items-center gap-1 rounded-2xl border border-border bg-background/95 backdrop-blur px-2 py-1.5 shadow-lg">
         <button
@@ -2105,12 +2115,40 @@ const StudioView = ({
           <Redo2 className="w-4 h-4" />
           <span className="text-[9px] leading-none">다시</span>
         </button>
+        {/* 편집 페이지(면) 전환 — 종이 청첩장 전면↔후면 */}
+        {allowBack && (
+          <>
+            <div className="w-px h-7 bg-border mx-0.5" />
+            <button
+              type="button"
+              onClick={() => onSwitchFace("front")}
+              disabled={activeFace === "front"}
+              aria-label="앞면으로"
+              title="앞면 편집"
+              className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg text-foreground disabled:opacity-30 active:bg-muted"
+            >
+              <ChevronUp className="w-4 h-4" />
+              <span className="text-[9px] leading-none">앞면</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onSwitchFace("back")}
+              disabled={activeFace === "back"}
+              aria-label="뒷면으로"
+              title="뒷면 편집"
+              className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg text-foreground disabled:opacity-30 active:bg-muted"
+            >
+              <ChevronDown className="w-4 h-4" />
+              <span className="text-[9px] leading-none">뒷면</span>
+            </button>
+          </>
+        )}
         <div className="w-px h-7 bg-border mx-0.5" />
         <button
           type="button"
           onClick={onAddText}
           aria-label="텍스트 추가"
-          className="flex flex-col items-center justify-center gap-0.5 px-2.5 py-1 rounded-lg text-foreground active:bg-muted"
+          className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg text-foreground active:bg-muted"
         >
           <Plus className="w-4 h-4" />
           <span className="text-[9px] leading-none">텍스트</span>
