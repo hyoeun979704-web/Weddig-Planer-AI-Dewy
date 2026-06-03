@@ -63,16 +63,20 @@ export function useRelatedPosts(placeId: string | undefined, limit = 5) {
     queryKey: ["related-posts", placeId, limit],
     enabled: !!placeId,
     queryFn: async () => {
+      // community_posts 를 루트로 inner-join 필터 → 글의 created_at 으로 정렬.
+      // (community_post_places 를 루트로 두면 .order 가 "태그된 시각" 기준이라
+      //  오래된 글을 오늘 태그하면 최신글처럼 위로 올라오는 버그가 있었음.)
       const { data, error } = await supabase
-        .from("community_post_places")
-        .select("post:community_posts(id, title, category, like_count, comment_count, created_at)")
-        .eq("place_id", placeId!)
+        .from("community_posts")
+        .select("id, title, category, like_count, comment_count, created_at, community_post_places!inner(place_id)")
+        .eq("community_post_places.place_id", placeId!)
         .order("created_at", { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return (data ?? [])
-        .map((r: any) => r.post as RelatedPost)
-        .filter(Boolean);
+      return (data ?? []).map((r: any) => ({
+        id: r.id, title: r.title, category: r.category,
+        like_count: r.like_count, comment_count: r.comment_count, created_at: r.created_at,
+      })) as RelatedPost[];
     },
   });
 }
