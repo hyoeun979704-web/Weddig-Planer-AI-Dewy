@@ -88,6 +88,12 @@ const AdminInvitationFonts = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 필터링 (폰트가 늘어날수록 카테고리·한글지원·검색으로 빠르게 찾기)
+  const [filterCategory, setFilterCategory] = useState<string>("ALL");
+  const [query, setQuery] = useState("");
+  const [koreanOnly, setKoreanOnly] = useState(false);
+  const [activeOnly, setActiveOnly] = useState(false);
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     const { data, error } = await (supabase as any)
@@ -271,6 +277,18 @@ const AdminInvitationFonts = () => {
       fetchData();
     }
   };
+
+  const q = query.trim().toLowerCase();
+  const filtered = items.filter(
+    (f) =>
+      (filterCategory === "ALL" || f.category === filterCategory) &&
+      (!koreanOnly || f.supports_korean) &&
+      (!activeOnly || f.is_active) &&
+      (!q ||
+        f.name.toLowerCase().includes(q) ||
+        f.family.toLowerCase().includes(q) ||
+        (f.license ?? "").toLowerCase().includes(q)),
+  );
 
   return (
     <AdminGuard>
@@ -526,8 +544,75 @@ const AdminInvitationFonts = () => {
         ) : items.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {items.map((f) => (
+          <>
+            {/* 필터: 카테고리 · 검색 · 토글 */}
+            <div className="mb-4 space-y-2">
+              <div className="flex gap-1.5 overflow-x-auto pb-1">
+                <button
+                  type="button"
+                  onClick={() => setFilterCategory("ALL")}
+                  className={`px-3 py-1 rounded-full text-xs flex-shrink-0 ${
+                    filterCategory === "ALL"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-foreground"
+                  }`}
+                >
+                  전체 ({items.length})
+                </button>
+                {CATEGORIES.map((c) => {
+                  const count = items.filter(
+                    (f) => f.category === c.value,
+                  ).length;
+                  return (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => setFilterCategory(c.value)}
+                      className={`px-3 py-1 rounded-full text-xs flex-shrink-0 ${
+                        filterCategory === c.value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground"
+                      }`}
+                    >
+                      {c.label} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="이름·패밀리·라이선스 검색"
+                  className="h-9 text-sm max-w-xs"
+                />
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                  <Checkbox
+                    checked={koreanOnly}
+                    onCheckedChange={(v) => setKoreanOnly(!!v)}
+                  />
+                  한글만
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                  <Checkbox
+                    checked={activeOnly}
+                    onCheckedChange={(v) => setActiveOnly(!!v)}
+                  />
+                  활성만
+                </label>
+                <span className="text-[11px] text-muted-foreground ml-auto">
+                  {filtered.length} / {items.length}
+                </span>
+              </div>
+            </div>
+
+            {filtered.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-16">
+                조건에 맞는 폰트가 없어요.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filtered.map((f) => (
               <article
                 key={f.id}
                 className="bg-background rounded-lg p-4 border border-border"
@@ -597,8 +682,10 @@ const AdminInvitationFonts = () => {
                   </Button>
                 </div>
               </article>
-            ))}
-          </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </AdminLayout>
     </AdminGuard>
