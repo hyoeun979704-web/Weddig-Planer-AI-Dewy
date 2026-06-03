@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import VendorTagPicker from "@/components/community/VendorTagPicker";
+import type { VendorLite } from "@/hooks/useCommunityPlaces";
 
 // Community.tsx 와 동일 카테고리 세트(전체 제외). 페르소나별 카테고리 포함.
 const categories = [
@@ -44,6 +46,7 @@ const CommunityWrite = () => {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [selectedVendors, setSelectedVendors] = useState<VendorLite[]>([]);
 
   // 임시 저장된 작성 내용 복원 (마운트 시 1회)
   useEffect(() => {
@@ -184,6 +187,14 @@ const CommunityWrite = () => {
         .single();
 
       if (error) throw error;
+
+      // 태그한 업체 연결 (실패해도 글 작성은 성공으로 처리).
+      if (selectedVendors.length > 0) {
+        const { error: linkErr } = await supabase
+          .from("community_post_places")
+          .insert(selectedVendors.map((v) => ({ post_id: data.id, place_id: v.place_id })));
+        if (linkErr) console.warn("vendor link failed:", linkErr.message);
+      }
 
       localStorage.removeItem(DRAFT_KEY);
       toast.success("게시글이 작성되었습니다.");
@@ -349,6 +360,11 @@ const CommunityWrite = () => {
               </label>
             )}
           </div>
+        </div>
+
+        {/* Vendor Tag */}
+        <div>
+          <VendorTagPicker value={selectedVendors} onChange={setSelectedVendors} />
         </div>
 
         {/* Info Notice */}

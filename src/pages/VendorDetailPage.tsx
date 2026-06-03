@@ -7,6 +7,7 @@ import { usePlaceDetail, type LegacyDetail } from "@/hooks/usePlaceDetail";
 import PlaceDetailLayout from "@/components/detail/PlaceDetailLayout";
 import PlaceCoupons from "@/components/place/PlaceCoupons";
 import PlaceBusinessSections from "@/components/place/PlaceBusinessSections";
+import RelatedCommunityPosts from "@/components/community/RelatedCommunityPosts";
 import { useUserRole } from "@/hooks/useUserRole";
 
 // Catch-all detail page wired to PlaceDetailLayout. Used by:
@@ -91,6 +92,7 @@ const VendorDetailPage = () => {
           <PlaceCoupons placeId={place.id} />
           <PlaceBusinessSections placeId={place.id} category={place.category} />
           <CategoryExtras place={place} />
+          <RelatedCommunityPosts placeId={place.id} />
         </>
       }
     />
