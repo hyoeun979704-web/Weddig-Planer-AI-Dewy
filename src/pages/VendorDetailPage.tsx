@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -145,26 +146,175 @@ const Stat = ({ label, value }: { label: string; value: string | number }) => (
   </div>
 );
 
+// 원(₩) → "만원" 표기. 식대 98,000 → "9.8만원", 대관료 12,000,000 → "1,200만원".
+const won = (v: number | null | undefined): string | null => {
+  if (v == null) return null;
+  const man = v / 10000;
+  const s =
+    man >= 100
+      ? man.toLocaleString("ko-KR", { maximumFractionDigits: 0 })
+      : man.toLocaleString("ko-KR", { maximumFractionDigits: 1 });
+  return `${s}만원`;
+};
+
+// 홀별/상품별 카드 내부의 라벨-값 한 줄. 값이 없으면 렌더 안 함.
+const KV = ({ label, value }: { label: string; value: string | null }) =>
+  value ? (
+    <div className="flex items-baseline gap-1.5">
+      <span className="text-[11px] text-muted-foreground shrink-0">{label}</span>
+      <span className="text-xs font-semibold text-foreground">{value}</span>
+    </div>
+  ) : null;
+
+const MiniTag = ({ children }: { children: ReactNode }) => (
+  <span className="text-[11px] px-2 py-0.5 bg-primary/10 text-primary rounded-full">{children}</span>
+);
+
+/** 웨딩홀 — 홀별(1:N) 비교 섹션. 기존 앱이 안 주는 핵심 디테일. */
+function HallList({ halls }: { halls: LegacyDetail["halls"] }) {
+  if (halls.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <h3 className="font-bold text-sm">
+        홀별 정보 <span className="text-muted-foreground font-normal">({halls.length}개 홀)</span>
+      </h3>
+      <div className="space-y-2">
+        {halls.map((h) => {
+          const guarantee =
+            h.min_guarantee != null && h.max_guarantee != null
+              ? `${h.min_guarantee}~${h.max_guarantee}명`
+              : h.min_guarantee != null
+                ? `최소 ${h.min_guarantee}명`
+                : h.max_guarantee != null
+                  ? `최대 ${h.max_guarantee}명`
+                  : null;
+          const meal = won(h.meal_price);
+          return (
+            <div key={h.hall_id} className="rounded-xl border border-border p-3 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-sm text-foreground">{h.hall_name}</span>
+                {h.hall_type && <MiniTag>{h.hall_type}</MiniTag>}
+                {h.floor && <span className="text-[11px] text-muted-foreground">{h.floor}</span>}
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                <KV label="보증" value={guarantee} />
+                <KV label="대관료" value={won(h.rental_fee)} />
+                <KV label="식대" value={meal ? (h.includes_drinks ? `${meal}·음료포함` : meal) : null} />
+                <KV label="예식간격" value={h.ceremony_interval_min != null ? `${h.ceremony_interval_min}분` : null} />
+                <KV
+                  label="동시예식"
+                  value={h.simultaneous_events != null ? (h.simultaneous_events ? "있음" : "없음(단독)") : null}
+                />
+                <KV label="층고" value={h.ceiling_height != null ? `${h.ceiling_height}m` : null} />
+                <KV label="버진로드" value={h.virgin_road_length != null ? `${h.virgin_road_length}m` : null} />
+                <KV label="착석" value={h.capacity_seated != null ? `${h.capacity_seated}석` : null} />
+              </div>
+              {h.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {h.tags.map((t, i) => (
+                    <MiniTag key={i}>{t}</MiniTag>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** 스튜디오 — 상품 구성(1:N). 패키지별 구성·컨셉을 한눈에 비교. */
+function StudioProductList({ products }: { products: LegacyDetail["studioProducts"] }) {
+  if (products.length === 0) return null;
+  const incChips = (p: LegacyDetail["studioProducts"][number]) =>
+    [
+      p.dress_included ? "드레스" : null,
+      p.hair_makeup_included ? "헤어·메이크업" : null,
+      p.frame_included ? "액자" : null,
+      p.outdoor_included ? "야외촬영" : null,
+    ].filter(Boolean) as string[];
+  return (
+    <div className="space-y-2">
+      <h3 className="font-bold text-sm">
+        상품 구성 <span className="text-muted-foreground font-normal">({products.length}개)</span>
+      </h3>
+      <div className="space-y-2">
+        {products.map((p) => {
+          const composition = [
+            p.original_count != null ? `원본 ${p.original_count}장` : null,
+            p.retouch_count != null ? `보정 ${p.retouch_count}장` : null,
+            p.album_pages != null ? `앨범 ${p.album_pages}p` : null,
+            p.album_count != null ? `앨범 ${p.album_count}권` : null,
+          ].filter(Boolean) as string[];
+          const chips = incChips(p);
+          return (
+            <div key={p.product_id} className="rounded-xl border border-border p-3 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-sm text-foreground">{p.product_name}</span>
+                  {p.product_type && <MiniTag>{p.product_type}</MiniTag>}
+                </div>
+                {p.price != null && (
+                  <span className="text-sm font-bold text-primary shrink-0">{won(p.price)}</span>
+                )}
+              </div>
+              {p.concepts.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {p.concepts.map((c, i) => (
+                    <MiniTag key={i}>{c}</MiniTag>
+                  ))}
+                </div>
+              )}
+              {composition.length > 0 && (
+                <p className="text-xs text-foreground">{composition.join(" · ")}</p>
+              )}
+              {chips.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">포함: {chips.join(" / ")}</p>
+              )}
+              {p.includes.length > 0 && (
+                <ul className="space-y-0.5">
+                  {p.includes.map((it, i) => (
+                    <li key={i} className="text-[11px] text-muted-foreground flex gap-1">
+                      <span className="text-primary">·</span>
+                      {it}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {p.notes && <p className="text-[11px] text-muted-foreground">{p.notes}</p>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function WeddingHallExtras({ place }: { place: LegacyDetail }) {
   const has =
     place.hall_styles.length > 0 || place.meal_types.length > 0 ||
     place.min_guarantee != null || place.max_guarantee != null ||
     place.food_tasting_available != null || place.outdoor_available != null ||
-    place.ceremony_only_available != null || place.hall_count != null;
+    place.ceremony_only_available != null || place.hall_count != null ||
+    place.halls.length > 0;
   if (!has) return null;
   return (
-    <div className="space-y-3">
-      <h3 className="font-bold text-sm">웨딩홀 정보</h3>
-      <Tags label="홀 분위기" items={place.hall_styles} />
-      <Tags label="식사 형식" items={place.meal_types} />
-      <div className="grid grid-cols-2 gap-2">
-        {place.min_guarantee != null && <Stat label="최소 보증" value={`${place.min_guarantee}명`} />}
-        {place.max_guarantee != null && <Stat label="최대 수용" value={`${place.max_guarantee}명`} />}
-        {place.hall_count != null && <Stat label="홀 개수" value={`${place.hall_count}개`} />}
-        {place.food_tasting_available != null && <Stat label="음식 시연" value={place.food_tasting_available ? "가능" : "불가"} />}
-        {place.outdoor_available != null && <Stat label="야외 예식" value={place.outdoor_available ? "가능" : "불가"} />}
-        {place.ceremony_only_available != null && <Stat label="식만 가능" value={place.ceremony_only_available ? "가능" : "불가"} />}
+    <div className="space-y-4">
+      <div className="space-y-3">
+        <h3 className="font-bold text-sm">웨딩홀 정보</h3>
+        <Tags label="홀 분위기" items={place.hall_styles} />
+        <Tags label="식사 형식" items={place.meal_types} />
+        <div className="grid grid-cols-2 gap-2">
+          {place.min_guarantee != null && <Stat label="최소 보증" value={`${place.min_guarantee}명`} />}
+          {place.max_guarantee != null && <Stat label="최대 수용" value={`${place.max_guarantee}명`} />}
+          {place.hall_count != null && <Stat label="홀 개수" value={`${place.hall_count}개`} />}
+          {place.food_tasting_available != null && <Stat label="음식 시연" value={place.food_tasting_available ? "가능" : "불가"} />}
+          {place.outdoor_available != null && <Stat label="야외 예식" value={place.outdoor_available ? "가능" : "불가"} />}
+          {place.ceremony_only_available != null && <Stat label="식만 가능" value={place.ceremony_only_available ? "가능" : "불가"} />}
+        </div>
       </div>
+      <HallList halls={place.halls} />
     </div>
   );
 }
@@ -180,10 +330,11 @@ function StudioExtras({ place }: { place: LegacyDetail }) {
     place.base_shoot_hours != null || place.base_retouch_count != null ||
     place.author_tiers.length > 0 ||
     place.raw_file_extra_cost != null || place.per_retouch_cost != null ||
-    place.album_extra_cost != null;
+    place.album_extra_cost != null || place.studioProducts.length > 0;
   if (!has) return null;
   return (
     <div className="space-y-4">
+      <StudioProductList products={place.studioProducts} />
       <div className="space-y-3">
         <h3 className="font-bold text-sm">촬영 정보</h3>
         <Tags label="스타일" items={place.shoot_styles} />

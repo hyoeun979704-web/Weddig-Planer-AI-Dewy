@@ -38,6 +38,51 @@ export interface AdvantagePoint {
   content: string | null;
 }
 
+/** 웨딩홀의 개별 홀(1:N). place_halls 한 행 = 한 홀. */
+export interface HallRow {
+  hall_id: string;
+  hall_name: string;
+  hall_type: string | null;
+  floor: string | null;
+  min_guarantee: number | null;
+  max_guarantee: number | null;
+  capacity_seated: number | null;
+  capacity_standing: number | null;
+  rental_fee: number | null;
+  meal_price: number | null;
+  meal_type: string | null;
+  includes_drinks: boolean | null;
+  ceremony_type: string | null;
+  ceremony_interval_min: number | null;
+  simultaneous_events: boolean | null;
+  ceiling_height: number | null;
+  virgin_road_length: number | null;
+  parking_available: boolean | null;
+  tags: string[];
+  main_image_url: string | null;
+}
+
+/** 스튜디오의 개별 상품(1:N). place_studio_products 한 행 = 한 패키지. */
+export interface StudioProductRow {
+  product_id: string;
+  product_name: string;
+  product_type: string | null;
+  price: number | null;
+  concepts: string[];
+  shoot_locations: string[];
+  original_count: number | null;
+  retouch_count: number | null;
+  album_pages: number | null;
+  album_count: number | null;
+  frame_included: boolean | null;
+  dress_included: boolean | null;
+  hair_makeup_included: boolean | null;
+  outdoor_included: boolean | null;
+  includes: string[];
+  notes: string | null;
+  main_image_url: string | null;
+}
+
 export interface LegacyDetail {
   // Core (places)
   id: string;
@@ -111,6 +156,10 @@ export interface LegacyDetail {
   ceremony_only_available: boolean | null;
   dress_code: string | null;
   hall_count: number | null;
+  /** 홀별 상세(1:N). 없으면 빈 배열. */
+  halls: HallRow[];
+  /** 스튜디오 상품 구성(1:N). 없으면 빈 배열. */
+  studioProducts: StudioProductRow[];
   // Studio
   shoot_styles: string[];
   total_photos: number | null;
@@ -319,6 +368,8 @@ const SELECT = [
   "place_appliances(*)",
   "place_jewelry(*)",
   "place_invitation_venues(*)",
+  "place_halls(*)",
+  "place_studio_products(*)",
 ].join(",");
 
 const fmtPrice = (min: number | null): string =>
@@ -410,6 +461,63 @@ export const usePlaceDetail = (placeId: string | undefined) => {
           ? [p.main_image_url as string]
           : [];
 
+      const num = (v: unknown): number | null =>
+        typeof v === "number" ? v : v != null && v !== "" && !isNaN(Number(v)) ? Number(v) : null;
+      const bool = (v: unknown): boolean | null => (typeof v === "boolean" ? v : null);
+
+      // 홀별(1:N) — place_halls. 정렬: 최대 수용 큰 홀 먼저(대표홀 위로).
+      const halls: HallRow[] = Array.isArray(p.place_halls)
+        ? (p.place_halls as Record<string, unknown>[])
+            .map((h) => ({
+              hall_id: String(h.hall_id),
+              hall_name: (h.hall_name as string) ?? "홀",
+              hall_type: (h.hall_type as string) ?? null,
+              floor: (h.floor as string) ?? null,
+              min_guarantee: num(h.min_guarantee),
+              max_guarantee: num(h.max_guarantee),
+              capacity_seated: num(h.capacity_seated),
+              capacity_standing: num(h.capacity_standing),
+              rental_fee: num(h.rental_fee),
+              meal_price: num(h.meal_price),
+              meal_type: (h.meal_type as string) ?? null,
+              includes_drinks: bool(h.includes_drinks),
+              ceremony_type: (h.ceremony_type as string) ?? null,
+              ceremony_interval_min: num(h.ceremony_interval_min),
+              simultaneous_events: bool(h.simultaneous_events),
+              ceiling_height: num(h.ceiling_height),
+              virgin_road_length: num(h.virgin_road_length),
+              parking_available: bool(h.parking_available),
+              tags: asStringArray(h.tags),
+              main_image_url: (h.main_image_url as string) ?? null,
+            }))
+            .sort((a, b) => (b.max_guarantee ?? 0) - (a.max_guarantee ?? 0))
+        : [];
+
+      // 스튜디오 상품 구성(1:N) — place_studio_products. 정렬: 가격 오름차순.
+      const studioProducts: StudioProductRow[] = Array.isArray(p.place_studio_products)
+        ? (p.place_studio_products as Record<string, unknown>[])
+            .map((s) => ({
+              product_id: String(s.product_id),
+              product_name: (s.product_name as string) ?? "상품",
+              product_type: (s.product_type as string) ?? null,
+              price: num(s.price),
+              concepts: asStringArray(s.concepts),
+              shoot_locations: asStringArray(s.shoot_locations),
+              original_count: num(s.original_count),
+              retouch_count: num(s.retouch_count),
+              album_pages: num(s.album_pages),
+              album_count: num(s.album_count),
+              frame_included: bool(s.frame_included),
+              dress_included: bool(s.dress_included),
+              hair_makeup_included: bool(s.hair_makeup_included),
+              outdoor_included: bool(s.outdoor_included),
+              includes: asStringArray(s.includes),
+              notes: (s.notes as string) ?? null,
+              main_image_url: (s.main_image_url as string) ?? null,
+            }))
+            .sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity))
+        : [];
+
       return {
         id: p.place_id,
         name: p.name,
@@ -477,6 +585,8 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         ceremony_only_available: (card?.ceremony_only_available as boolean) ?? null,
         dress_code: (card?.dress_code as string) ?? null,
         hall_count: (card?.hall_count as number) ?? null,
+        halls,
+        studioProducts,
         shoot_styles: asStringArray(card?.shoot_styles),
         total_photos: (card?.total_photos as number) ?? null,
         retouching_included: (card?.retouching_included as boolean) ?? null,
