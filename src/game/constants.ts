@@ -124,8 +124,8 @@ export const FLOWER_LEVELS: FlowerLevel[] = [
     id: 12,
     name: '프리미엄부케',
     radius: 97,
-    color: '#FFD700',
-    emoji: '👰',
+    color: '#F4B8C8',
+    emoji: '💐',
     score: 78,
     nextLevelId: null, // 최종 레벨 - 더 이상 합쳐지지 않음
   },
