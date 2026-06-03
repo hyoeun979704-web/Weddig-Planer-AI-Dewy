@@ -7,7 +7,7 @@ ALTER TABLE public.places ADD COLUMN IF NOT EXISTS view_count INT NOT NULL DEFAU
 CREATE OR REPLACE FUNCTION public.increment_place_views(p_place_id TEXT)
 RETURNS void
 LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
-  UPDATE public.places SET view_count = COALESCE(view_count, 0) + 1 WHERE place_id = p_place_id;
+  UPDATE public.places SET view_count = COALESCE(view_count, 0) + 1 WHERE place_id = p_place_id::uuid;
 $$;
 
 REVOKE ALL ON FUNCTION public.increment_place_views(TEXT) FROM PUBLIC;

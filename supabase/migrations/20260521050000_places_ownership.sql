@@ -45,7 +45,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_uid UUID := auth.uid();
   v_bp RECORD;
-  v_place_id TEXT;
+  v_place_id UUID;
   v_category TEXT;
 BEGIN
   IF v_uid IS NULL THEN
@@ -62,7 +62,7 @@ BEGIN
   SELECT place_id INTO v_place_id FROM public.places WHERE owner_user_id = v_uid LIMIT 1;
 
   IF v_place_id IS NULL THEN
-    v_place_id := 'biz_' || replace(gen_random_uuid()::text, '-', '');
+    v_place_id := gen_random_uuid();
     INSERT INTO public.places (
       place_id, category, owner_user_id, name, description, city, district,
       main_image_url, min_price, tags, is_active, moderation_status, is_partner, data_source
@@ -107,7 +107,7 @@ BEGIN
     moderation_status = CASE WHEN p_approved THEN 'approved' ELSE 'rejected' END,
     is_active = p_approved,
     updated_at = now()
-  WHERE place_id = p_place_id AND owner_user_id IS NOT NULL;
+  WHERE place_id = p_place_id::uuid AND owner_user_id IS NOT NULL;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_found');
   END IF;

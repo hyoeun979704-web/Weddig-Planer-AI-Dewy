@@ -6,7 +6,7 @@
 
 CREATE TABLE IF NOT EXISTS public.place_media (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  place_id TEXT NOT NULL REFERENCES public.places(place_id) ON DELETE CASCADE,
+  place_id UUID NOT NULL REFERENCES public.places(place_id) ON DELETE CASCADE,
   owner_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   kind TEXT NOT NULL DEFAULT 'photo', -- 'photo' | 'menu'
   image_url TEXT,
