@@ -58,6 +58,7 @@ import {
   type InvitationUserData,
   type SlotRole,
 } from "@/lib/invitation/types";
+import { readImageSize, lowResPrintWarning } from "@/lib/invitation/imageQuality";
 
 /**
  * 청첩장 메인 흐름 — One-page UX.
@@ -364,6 +365,14 @@ const InvitationFlow = () => {
         continue;
       }
       if (!file.type.startsWith("image/")) continue;
+
+      // 인쇄(종이) 저해상도 경고 — 차단하지 않고 알림만
+      const warn = lowResPrintWarning(
+        await readImageSize(file),
+        template?.format,
+      );
+      if (warn)
+        toast({ title: `${file.name} · 해상도 확인`, description: warn });
 
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const filename = `${crypto.randomUUID()}.${ext}`;
@@ -1501,7 +1510,8 @@ const WizardCombined = ({
           </h2>
           <p className="text-[11px] text-muted-foreground">
             첨부한 순서대로 디자인에 자동 배치돼요. 디자인에 사진 슬롯이{" "}
-            {photoSlotCount}개 있어요.
+            {photoSlotCount}개 있어요. 선명하게 보이도록 고화질(짧은 변 1200px
+            이상) 사진을 권장해요.
           </p>
           <div className="grid grid-cols-3 gap-2">
             {photos.map((p, i) => (
