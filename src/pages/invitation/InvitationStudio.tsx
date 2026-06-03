@@ -179,6 +179,7 @@ const InvitationStudio = () => {
   // 자동저장 — 편집 변경 후 디바운스 저장 + 상태 표시(사용자가 동작을 확인 가능하도록)
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
+  const [autoSaveFailed, setAutoSaveFailed] = useState(false);
   const autosaveHydratedRef = useRef(false);
   const dismissedSlots = useRef<Set<string>>(new Set());
   const idleTimerRef = useRef<number | null>(null);
@@ -338,8 +339,10 @@ const InvitationStudio = () => {
           setInvitationId(data.id);
         }
         setAutoSavedAt(new Date());
+        setAutoSaveFailed(false);
       } catch {
-        // 조용히 실패 — 다음 변경 때 다시 시도. 명시적 저장 버튼은 그대로 동작.
+        // 실패를 표시해 사용자가 인지하고 명시적 저장/재시도 할 수 있게 한다.
+        setAutoSaveFailed(true);
       } finally {
         setIsAutoSaving(false);
       }
@@ -916,15 +919,21 @@ const InvitationStudio = () => {
             청첩장 만들기
           </h1>
           {step === "studio" && (
-            <span className="text-[11px] text-muted-foreground tabular-nums">
+            <span
+              className={`text-[11px] tabular-nums ${
+                autoSaveFailed ? "text-rose-500 font-medium" : "text-muted-foreground"
+              }`}
+            >
               {isAutoSaving
                 ? "저장 중…"
-                : autoSavedAt
-                  ? `자동저장됨 ${autoSavedAt.toLocaleTimeString("ko-KR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}`
-                  : ""}
+                : autoSaveFailed
+                  ? "저장 실패 · 변경 시 재시도"
+                  : autoSavedAt
+                    ? `자동저장됨 ${autoSavedAt.toLocaleTimeString("ko-KR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}`
+                    : ""}
             </span>
           )}
           {step === "studio" && (

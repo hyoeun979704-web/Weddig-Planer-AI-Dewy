@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { X, Plus, Trash2, Copy, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +78,66 @@ let slotSeq = 0;
 const newId = (type: string) => `slot-${type}-${Date.now()}-${slotSeq++}`;
 
 const clone = <T,>(o: T): T => JSON.parse(JSON.stringify(o));
+
+/**
+ * 선택 슬롯 우하단 리사이즈 핸들 (편집기 전용 HTML 오버레이).
+ * 공유 InvitationCanvas 를 건드리지 않고, 포인터 캡처로 드래그→w/h 갱신.
+ * 좌표 변환: 화면 픽셀 delta / dispScale = 캔버스 단위 delta. 스냅 ON 이면 10px.
+ */
+const ResizeHandle = ({
+  slot,
+  scale,
+  snap,
+  onResize,
+}: {
+  slot: InvitationSlot;
+  scale: number;
+  snap: boolean;
+  onResize: (w: number, h: number) => void;
+}) => {
+  const start = useRef<{ px: number; py: number; w: number; h: number } | null>(
+    null,
+  );
+  return (
+    <div className="absolute inset-0" style={{ pointerEvents: "none", zIndex: 20 }}>
+      <div
+        title="드래그해서 크기 조절"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          (e.currentTarget as Element).setPointerCapture(e.pointerId);
+          start.current = { px: e.clientX, py: e.clientY, w: slot.w, h: slot.h };
+        }}
+        onPointerMove={(e) => {
+          const s = start.current;
+          if (!s) return;
+          const q = (n: number) =>
+            snap ? Math.round(n / 10) * 10 : Math.round(n);
+          const w = Math.max(8, q(s.w + (e.clientX - s.px) / scale));
+          const h = Math.max(8, q(s.h + (e.clientY - s.py) / scale));
+          onResize(w, h);
+        }}
+        onPointerUp={(e) => {
+          start.current = null;
+          (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+        }}
+        style={{
+          position: "absolute",
+          left: (slot.x + slot.w) * scale - 7,
+          top: (slot.y + slot.h) * scale - 7,
+          width: 14,
+          height: 14,
+          background: "#3b82f6",
+          border: "2px solid #fff",
+          borderRadius: 3,
+          cursor: "nwse-resize",
+          pointerEvents: "auto",
+          boxShadow: "0 1px 3px rgba(0,0,0,.4)",
+          touchAction: "none",
+        }}
+      />
+    </div>
+  );
+};
 
 /** 편집 캔버스 위 격자/눈금 오버레이 (캔버스 좌표 기준 — x/y 입력값과 1:1). */
 const GridOverlay = ({ w, h, scale }: { w: number; h: number; scale: number }) => {
@@ -170,6 +230,9 @@ const AdminTemplateEditor = ({
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
+  const [snap, setSnap] = useState(true);
+  // 미리보기용 샘플 데이터 — 긴 이름/실제 식장명으로 넘침·잘림을 확인
+  const [sampleData, setSampleData] = useState<Record<string, string>>(SAMPLE);
   const [assets, setAssets] = useState<AssetOpt[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [assetQuery, setAssetQuery] = useState("");
@@ -225,8 +288,13 @@ const AdminTemplateEditor = ({
       arr.map((s) => (s.id === id ? { ...s, ...patch } : s)),
     );
 
-  const moveSlot = (id: string, x: number, y: number) =>
-    updateSlot(id, { x: Math.round(x), y: Math.round(y) });
+  // 드래그 이동 — 스냅 ON 이면 10px 격자에 맞춰 좌표를 깔끔하게(CLAUDE.md 그리드 규칙).
+  const SNAP_STEP = 10;
+  const moveSlot = (id: string, x: number, y: number) => {
+    const q = (n: number) =>
+      snap ? Math.round(n / SNAP_STEP) * SNAP_STEP : Math.round(n);
+    updateSlot(id, { x: q(x), y: q(y) });
+  };
 
   // 숫자 입력 — 빈 값/NaN 이면 무시(0 으로 튀지 않게)
   const numChange =
@@ -425,6 +493,17 @@ const AdminTemplateEditor = ({
             >
               격자 {showGrid ? "ON" : "OFF"}
             </button>
+            <button
+              onClick={() => setSnap((v) => !v)}
+              title="드래그 시 10px 격자에 맞춤"
+              className={`px-2 h-7 rounded-md border ${
+                snap
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border"
+              }`}
+            >
+              스냅 {snap ? "ON" : "OFF"}
+            </button>
             <span>
               캔버스 {page.canvas.w}×{page.canvas.h}
               {dispScale < 1 && ` · ${Math.round(dispScale * 100)}%`}
@@ -439,7 +518,7 @@ const AdminTemplateEditor = ({
             <InvitationCanvas
               key={`${page.id}:${slots.length}`}
               layout={pageToLayout(page)}
-              userData={SAMPLE}
+              userData={sampleData}
               aiText={{}}
               textOverrides={{}}
               imageUrls={{}}
@@ -457,6 +536,14 @@ const AdminTemplateEditor = ({
                 w={page.canvas.w}
                 h={page.canvas.h}
                 scale={dispScale}
+              />
+            )}
+            {selected && (
+              <ResizeHandle
+                slot={selected}
+                scale={dispScale}
+                snap={snap}
+                onResize={(w, h) => updateSlot(selected.id, { w, h })}
               />
             )}
           </div>
@@ -485,10 +572,44 @@ const AdminTemplateEditor = ({
           </div>
 
           {!selected ? (
-            <p className="text-xs text-muted-foreground pt-4">
-              슬롯을 클릭해 편집하세요. 드래그로 이동, 아래에서 위치·크기·폰트
-              조정.
-            </p>
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground pt-1">
+                슬롯을 클릭해 편집하세요. 드래그로 이동(스냅 {snap ? "ON" : "OFF"}),
+                아래에서 위치·크기·폰트 조정. Esc=선택해제, Delete=삭제.
+              </p>
+              {/* 샘플 데이터 — 미리보기에 들어가는 값(긴 이름/실제 식장명으로 넘침 확인) */}
+              <div className="border-t border-border pt-2 space-y-1.5">
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  샘플 데이터 (미리보기용)
+                </p>
+                {(
+                  [
+                    ["groom_name", "신랑"],
+                    ["bride_name", "신부"],
+                    ["wedding_date", "날짜"],
+                    ["venue_name", "식장"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div key={key} className="flex items-center gap-1.5">
+                    <Label className="text-[10px] w-8 shrink-0">{label}</Label>
+                    <Input
+                      value={sampleData[key] ?? ""}
+                      onChange={(e) =>
+                        setSampleData((p) => ({ ...p, [key]: e.target.value }))
+                      }
+                      className="h-7 px-1.5 text-xs"
+                    />
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setSampleData(SAMPLE)}
+                  className="text-[10px] text-muted-foreground underline"
+                >
+                  기본 샘플로 되돌리기
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
