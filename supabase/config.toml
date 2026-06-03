@@ -34,3 +34,7 @@ verify_jwt = false
 
 [functions.instagram-publisher]
 verify_jwt = false
+
+# 외부 이미지 → 공개 Storage 미러링 (tip_instagrams 썸네일 등). 로그인 사용자만.
+[functions.mirror-image]
+verify_jwt = true

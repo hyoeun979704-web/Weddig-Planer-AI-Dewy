@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Loader2, Check, X, Plus, ExternalLink, Instagram, AlertCircle, Trash2 } from "lucide-react";
+import { Loader2, Check, X, Plus, ExternalLink, Instagram, AlertCircle, Trash2, ImageDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -114,6 +114,8 @@ const AdminTipInstagrams = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [mirroring, setMirroring] = useState(false);
+  const [mirroringId, setMirroringId] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [rejectReasons, setRejectReasons] = useState<string[]>([]);
   const [rejectNote, setRejectNote] = useState("");
@@ -167,6 +169,33 @@ const AdminTipInstagrams = () => {
     setAddOpen(false);
     setForm(emptyForm);
     await load();
+  };
+
+  // 외부 이미지 URL(또는 og:image 가 있는 페이지)을 공개 Storage(tip-thumbnails)로
+  // 미러링해서 핫링크 차단 없이 뜨는 thumbnail_url 을 받아온다. 성공 시 공개 URL 반환.
+  // Instagram 프로필/게시물 페이지 자체는 서버 fetch 가 막혀 실패 → 직접 이미지 URL 필요.
+  const mirror = async (sourceUrl: string): Promise<string | null> => {
+    const trimmed = sourceUrl.trim();
+    if (!trimmed) {
+      toast({ title: "미러링할 URL 이 없어요", description: "썸네일/이미지 URL 을 먼저 입력하세요.", variant: "destructive" });
+      return null;
+    }
+    const { data, error } = await supabase.functions.invoke("mirror-image", { body: { url: trimmed } });
+    if (error) {
+      let msg = error.message;
+      try {
+        const ctx = await (error as { context?: { json?: () => Promise<{ hint?: string; error?: string }> } }).context?.json?.();
+        if (ctx?.hint || ctx?.error) msg = ctx.hint ?? ctx.error ?? msg;
+      } catch { /* 본문 파싱 실패는 무시 */ }
+      toast({ title: "미러링 실패", description: msg, variant: "destructive" });
+      return null;
+    }
+    const url = (data as { thumbnail_url?: string } | null)?.thumbnail_url;
+    if (!url) {
+      toast({ title: "미러링 실패", description: "응답에 thumbnail_url 이 없어요.", variant: "destructive" });
+      return null;
+    }
+    return url;
   };
 
   const approve = async (id: string) => {
@@ -315,6 +344,35 @@ const AdminTipInstagrams = () => {
                           <X className="w-3 h-3 mr-0.5" /> 반려
                         </Button>
                       )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={mirroringId === p.id}
+                        title="썸네일 URL(없으면 게시물 URL)을 공개 Storage로 미러링"
+                        onClick={async () => {
+                          setMirroringId(p.id);
+                          const mirrored = await mirror(p.thumbnail_url ?? p.url);
+                          if (mirrored) {
+                            const { error } = await (supabase as any)
+                              .from("tip_instagrams")
+                              .update({ thumbnail_url: mirrored })
+                              .eq("id", p.id);
+                            if (error) {
+                              toast({ title: "저장 실패", description: error.message, variant: "destructive" });
+                            } else {
+                              toast({ title: "썸네일 미러링 완료" });
+                              await load();
+                            }
+                          }
+                          setMirroringId(null);
+                        }}
+                      >
+                        {mirroringId === p.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <ImageDown className="w-3 h-3" />
+                        )}
+                      </Button>
                       <Button size="sm" variant="outline" onClick={() => remove(p.id)}>
                         <Trash2 className="w-3 h-3" />
                       </Button>
@@ -381,13 +439,35 @@ const AdminTipInstagrams = () => {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">썸네일 URL (선택)</Label>
-                <Input
-                  value={form.thumbnail_url}
-                  onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })}
-                  placeholder="https://... (비워두면 그라데이션 fallback)"
-                />
+                <div className="flex gap-1.5">
+                  <Input
+                    value={form.thumbnail_url}
+                    onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })}
+                    placeholder="https://... (비워두면 그라데이션 fallback)"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="flex-shrink-0"
+                    disabled={mirroring}
+                    title="입력한 이미지 URL을 공개 Storage로 미러링 (핫링크 차단 우회)"
+                    onClick={async () => {
+                      setMirroring(true);
+                      const mirrored = await mirror(form.thumbnail_url);
+                      if (mirrored) {
+                        setForm((f) => ({ ...f, thumbnail_url: mirrored }));
+                        toast({ title: "미러링 완료", description: "공개 Storage URL 로 교체했어요." });
+                      }
+                      setMirroring(false);
+                    }}
+                  >
+                    {mirroring ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageDown className="w-4 h-4" />}
+                  </Button>
+                </div>
                 <p className="text-[10px] text-muted-foreground">
-                  Instagram 직접 핫링크는 막힐 수 있음. 가능하면 외부 저장 URL.
+                  직접 이미지 URL 을 넣고 <ImageDown className="inline w-2.5 h-2.5" /> 를 누르면 공개 Storage 로 복사해
+                  핫링크 차단 없이 떠요. Instagram 페이지 URL 은 서버 fetch 가 막혀 미러링 불가.
                 </p>
               </div>
               <div className="rounded-lg bg-muted/40 p-2 text-[11px] text-muted-foreground flex gap-1.5">
