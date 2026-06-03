@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { X, Plus, Trash2, Copy, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +78,66 @@ let slotSeq = 0;
 const newId = (type: string) => `slot-${type}-${Date.now()}-${slotSeq++}`;
 
 const clone = <T,>(o: T): T => JSON.parse(JSON.stringify(o));
+
+/**
+ * 선택 슬롯 우하단 리사이즈 핸들 (편집기 전용 HTML 오버레이).
+ * 공유 InvitationCanvas 를 건드리지 않고, 포인터 캡처로 드래그→w/h 갱신.
+ * 좌표 변환: 화면 픽셀 delta / dispScale = 캔버스 단위 delta. 스냅 ON 이면 10px.
+ */
+const ResizeHandle = ({
+  slot,
+  scale,
+  snap,
+  onResize,
+}: {
+  slot: InvitationSlot;
+  scale: number;
+  snap: boolean;
+  onResize: (w: number, h: number) => void;
+}) => {
+  const start = useRef<{ px: number; py: number; w: number; h: number } | null>(
+    null,
+  );
+  return (
+    <div className="absolute inset-0" style={{ pointerEvents: "none", zIndex: 20 }}>
+      <div
+        title="드래그해서 크기 조절"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          (e.currentTarget as Element).setPointerCapture(e.pointerId);
+          start.current = { px: e.clientX, py: e.clientY, w: slot.w, h: slot.h };
+        }}
+        onPointerMove={(e) => {
+          const s = start.current;
+          if (!s) return;
+          const q = (n: number) =>
+            snap ? Math.round(n / 10) * 10 : Math.round(n);
+          const w = Math.max(8, q(s.w + (e.clientX - s.px) / scale));
+          const h = Math.max(8, q(s.h + (e.clientY - s.py) / scale));
+          onResize(w, h);
+        }}
+        onPointerUp={(e) => {
+          start.current = null;
+          (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+        }}
+        style={{
+          position: "absolute",
+          left: (slot.x + slot.w) * scale - 7,
+          top: (slot.y + slot.h) * scale - 7,
+          width: 14,
+          height: 14,
+          background: "#3b82f6",
+          border: "2px solid #fff",
+          borderRadius: 3,
+          cursor: "nwse-resize",
+          pointerEvents: "auto",
+          boxShadow: "0 1px 3px rgba(0,0,0,.4)",
+          touchAction: "none",
+        }}
+      />
+    </div>
+  );
+};
 
 /** 편집 캔버스 위 격자/눈금 오버레이 (캔버스 좌표 기준 — x/y 입력값과 1:1). */
 const GridOverlay = ({ w, h, scale }: { w: number; h: number; scale: number }) => {
@@ -476,6 +536,14 @@ const AdminTemplateEditor = ({
                 w={page.canvas.w}
                 h={page.canvas.h}
                 scale={dispScale}
+              />
+            )}
+            {selected && (
+              <ResizeHandle
+                slot={selected}
+                scale={dispScale}
+                snap={snap}
+                onResize={(w, h) => updateSlot(selected.id, { w, h })}
               />
             )}
           </div>
