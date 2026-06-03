@@ -389,13 +389,22 @@ const AdminTemplateEditor = ({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      const inField =
-        t &&
+      // 텍스트 입력칸: 모든 단축키 양보(네이티브 텍스트 편집 유지)
+      const inTextField =
+        !!t &&
         (t.tagName === "INPUT" ||
           t.tagName === "TEXTAREA" ||
           t.isContentEditable);
+      // 인터랙티브 컨트롤(버튼·셀렉트·다이얼로그): 파괴적 키 양보 — 버튼 포커스 중
+      // Backspace 가 슬롯을 지우는 사고 방지.
+      const onControl =
+        inTextField ||
+        (!!t &&
+          (t.tagName === "BUTTON" ||
+            t.tagName === "SELECT" ||
+            !!t.closest('[role="dialog"],[role="menu"],[role="listbox"]')));
       // 되돌리기/다시실행 — 입력칸 밖에서 (입력칸 안은 브라우저 기본 텍스트 undo 유지)
-      if (!inField && (e.ctrlKey || e.metaKey)) {
+      if (!inTextField && (e.ctrlKey || e.metaKey)) {
         const k = e.key.toLowerCase();
         if (k === "z") {
           e.preventDefault();
@@ -410,9 +419,13 @@ const AdminTemplateEditor = ({
           return;
         }
       }
-      if (inField) return;
-      if (e.key === "Escape") setSelId(null);
-      else if ((e.key === "Delete" || e.key === "Backspace") && selId) {
+      if (inTextField) return;
+      if (e.key === "Escape") {
+        setSelId(null);
+        return;
+      }
+      if (onControl) return;
+      if ((e.key === "Delete" || e.key === "Backspace") && selId) {
         e.preventDefault();
         deleteSlot(selId);
       } else if (selId && e.key.startsWith("Arrow")) {

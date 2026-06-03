@@ -707,12 +707,22 @@ const InvitationStudio = () => {
     if (step !== "studio") return;
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      const inField =
-        t &&
+      // 텍스트 입력칸: 되돌리기 등 모든 단축키를 양보(네이티브 텍스트 편집 유지)
+      const inTextField =
+        !!t &&
         (t.tagName === "INPUT" ||
           t.tagName === "TEXTAREA" ||
           t.isContentEditable);
-      if (!inField && (e.ctrlKey || e.metaKey)) {
+      // 인터랙티브 컨트롤(버튼·셀렉트·다이얼로그/메뉴 내부): 파괴적 키(삭제/이동)는
+      // 양보 — 버튼 포커스 중 Backspace 가 슬롯을 지우는 사고 방지.
+      const onControl =
+        inTextField ||
+        (!!t &&
+          (t.tagName === "BUTTON" ||
+            t.tagName === "SELECT" ||
+            !!t.closest('[role="dialog"],[role="menu"],[role="listbox"]')));
+
+      if (!inTextField && (e.ctrlKey || e.metaKey)) {
         const k = e.key.toLowerCase();
         if (k === "z") {
           e.preventDefault();
@@ -726,11 +736,20 @@ const InvitationStudio = () => {
           return;
         }
       }
-      if (inField) return;
+      if (inTextField) return;
       if (e.key === "Escape") {
-        setSelectedSlotId(null);
+        // AI 시트가 열려 있으면 시트부터 닫고(재등장 방지 위해 dismissed 처리),
+        // 아니면 선택 해제
+        if (aiSheetOpen) {
+          setAiSheetOpen(false);
+          if (selectedSlot) dismissedSlots.current.add(selectedSlot.id);
+        } else {
+          setSelectedSlotId(null);
+        }
         return;
       }
+      // 삭제·이동은 컨트롤 포커스/시트 열림 시 차단(실수 삭제·시트 클로버 방지)
+      if (onControl || aiSheetOpen) return;
       if ((e.key === "Delete" || e.key === "Backspace") && selectedSlot) {
         e.preventDefault();
         handleDeleteSlot();
@@ -766,7 +785,7 @@ const InvitationStudio = () => {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, activeFace, selectedSlot]);
+  }, [step, activeFace, selectedSlot, aiSheetOpen]);
 
   // 후면 템플릿 목록 로드 (face in back/both)
   const loadBackTemplates = useCallback(async () => {
