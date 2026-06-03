@@ -21,7 +21,7 @@ on:
       limit:
         description: "분석 limit per 카테고리"
         required: false
-        default: "300"
+        default: "80"
 
 jobs:
   prepare:
@@ -38,7 +38,10 @@ jobs:
           fi
           INPUT_LIMIT="${{ github.event.inputs.limit }}"
           if [ -z "$INPUT_LIMIT" ]; then
-            INPUT_LIMIT="300"
+            # 300 was too large: Gemini 2s/call + Naver throttle pushed a single
+            # category past the 90-min job timeout, so the loop was killed before
+            # the final upsert ran → 0 rows saved. 80 finishes comfortably.
+            INPUT_LIMIT="80"
           fi
           # Convert "a,b,c" to JSON array for matrix
           JSON=$(echo "$INPUT_CATEGORIES" | jq -Rc 'split(",")')

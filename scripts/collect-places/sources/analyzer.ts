@@ -154,17 +154,30 @@ ${input.snippets
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        // Don't let a stalled Gemini connection freeze the candidate loop.
+        signal: AbortSignal.timeout(30_000),
       }
     );
   };
 
-  let res = await callOnce();
+  let res: Response;
+  try {
+    res = await callOnce();
+  } catch (e) {
+    console.warn("Gemini analyze fetch error:", (e as Error).name);
+    return null;
+  }
   if (res.status === 429) {
     const txt = await res.text();
     const wait = parseRetryDelay(txt);
     console.warn(`Gemini 429, sleeping ${(wait / 1000).toFixed(0)}s before retry…`);
     await sleep(wait);
-    res = await callOnce();
+    try {
+      res = await callOnce();
+    } catch (e) {
+      console.warn("Gemini analyze retry fetch error:", (e as Error).name);
+      return null;
+    }
   }
   if (!res.ok) {
     console.warn("Gemini analyze failed:", res.status, (await res.text()).slice(0, 300));

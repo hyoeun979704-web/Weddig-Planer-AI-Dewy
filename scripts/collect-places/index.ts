@@ -355,7 +355,9 @@ async function main() {
   console.log(`\nupserted: ${result.inserted} (failed: ${result.failed})`);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0)) // supabase-js keeps timers/sockets open; exit explicitly so CI doesn't hang to the job timeout
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
