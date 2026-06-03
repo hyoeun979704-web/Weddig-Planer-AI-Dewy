@@ -406,6 +406,24 @@ const AdminTemplateEditor = ({
       else if ((e.key === "Delete" || e.key === "Backspace") && selId) {
         e.preventDefault();
         deleteSlot(selId);
+      } else if (selId && e.key.startsWith("Arrow")) {
+        // 방향키 미세 이동 (Shift=10px, 기본 1px) — 정밀 배치.
+        // 함수형 업데이트로 현재 좌표를 읽어 연속 이동이 누적되게(stale 방지).
+        const step = e.shiftKey ? 10 : 1;
+        const dx =
+          e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+        const dy =
+          e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+        if (dx || dy) {
+          e.preventDefault();
+          setPageSlots(
+            (arr) =>
+              arr.map((s) =>
+                s.id === selId ? { ...s, x: s.x + dx, y: s.y + dy } : s,
+              ),
+            { coalesce: true },
+          );
+        }
       }
     };
     window.addEventListener("keydown", onKey);

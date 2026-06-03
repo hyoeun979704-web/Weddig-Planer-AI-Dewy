@@ -12,6 +12,9 @@ import {
   Share2,
   Sparkles,
   MapPin,
+  Undo2,
+  Redo2,
+  Plus,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -31,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInvitationFonts, type InvitationFont } from "@/hooks/useInvitationFonts";
+import { useUndoable } from "@/hooks/useUndoable";
 import InvitationCanvas, {
   InvitationCanvasHandle,
 } from "@/components/invitation/InvitationCanvas";
@@ -147,9 +151,13 @@ const InvitationStudio = () => {
   const [backTemplates, setBackTemplates] = useState<Template[]>([]);
   const [activeFace, setActiveFace] = useState<InvitationFace>("front");
 
-  // 면별 편집 상태
-  const [frontFace, setFrontFace] = useState<FaceState>(emptyFace);
-  const [backFace, setBackFace] = useState<FaceState>(emptyFace);
+  // 면별 편집 상태 (되돌리기/다시실행 지원 — 면마다 독립 히스토리)
+  const frontHist = useUndoable<FaceState>(emptyFace);
+  const backHist = useUndoable<FaceState>(emptyFace);
+  const frontFace = frontHist.state;
+  const backFace = backHist.state;
+  const setFrontFace = frontHist.set;
+  const setBackFace = backHist.set;
 
   // 폰트: 피커엔 전체 목록(fonts), 로드는 현재 편집중 템플릿이 쓰는 것 + 사용자가 고른 것만.
   const usedFonts = useMemo(() => {
@@ -192,6 +200,8 @@ const InvitationStudio = () => {
   const activeTemplate = activeFace === "front" ? template : backTemplate;
   const activeFaceState = activeFace === "front" ? frontFace : backFace;
   const setFace = activeFace === "front" ? setFrontFace : setBackFace;
+  // 되돌리기/다시실행 — 보고 있는 면(active)을 대상으로
+  const activeHist = activeFace === "front" ? frontHist : backHist;
 
   // 템플릿 슬롯 + 사용자가 추가한 요소
   const activeSlots: InvitationSlot[] = activeTemplate
@@ -239,7 +249,7 @@ const InvitationStudio = () => {
       };
 
       const faces = readFaceLayout(data.layout);
-      setFrontFace({
+      frontHist.reset({
         textOverrides: faces.front.textOverrides ?? {},
         fontOverrides: faces.front.fontOverrides ?? {},
         positionOverrides: faces.front.positionOverrides ?? {},
@@ -260,7 +270,7 @@ const InvitationStudio = () => {
           .eq("id", data.back_template_id)
           .maybeSingle();
         if (bt) setBackTemplate(bt as Template);
-        setBackFace({
+        backHist.reset({
           textOverrides: faces.back.textOverrides ?? {},
           fontOverrides: faces.back.fontOverrides ?? {},
           positionOverrides: faces.back.positionOverrides ?? {},
@@ -406,7 +416,10 @@ const InvitationStudio = () => {
   const handleTextChange = (text: string) => {
     if (!selectedSlot) return;
     const id = selectedSlot.id;
-    setFace((p) => ({ ...p, textOverrides: { ...p.textOverrides, [id]: text } }));
+    setFace(
+      (p) => ({ ...p, textOverrides: { ...p.textOverrides, [id]: text } }),
+      { coalesce: true }, // 연속 타이핑은 한 단계로 묶음
+    );
     resetIdleTimer();
   };
 
@@ -430,10 +443,13 @@ const InvitationStudio = () => {
 
   // 슬롯 드래그 이동 → 활성 면의 위치 오버라이드 저장
   const handleMoveSlot = (id: string, x: number, y: number) => {
-    setFace((p) => ({
-      ...p,
-      positionOverrides: { ...p.positionOverrides, [id]: { x, y } },
-    }));
+    setFace(
+      (p) => ({
+        ...p,
+        positionOverrides: { ...p.positionOverrides, [id]: { x, y } },
+      }),
+      { coalesce: true }, // 드래그 연속 이동은 한 단계로 묶음
+    );
   };
 
   // 텍스트 요소 추가 (캔버스 중앙)
@@ -515,10 +531,13 @@ const InvitationStudio = () => {
     const base =
       activeFaceState.fontSizeOverrides[id] ?? selectedSlot.font_size ?? 18;
     const next = Math.max(8, Math.min(200, base + delta));
-    setFace((p) => ({
-      ...p,
-      fontSizeOverrides: { ...p.fontSizeOverrides, [id]: next },
-    }));
+    setFace(
+      (p) => ({
+        ...p,
+        fontSizeOverrides: { ...p.fontSizeOverrides, [id]: next },
+      }),
+      { coalesce: true }, // 연속 −/+ 탭은 한 단계로
+    );
   };
 
   const handlePhotoUpload = async (file: File) => {
@@ -699,8 +718,8 @@ const InvitationStudio = () => {
   const handleChangeBackTemplate = (t: Template) => {
     setBackTemplate(t);
     setBackTemplateId(t.id);
-    // 새 후면은 슬롯 id 가 달라 기존 오버라이드는 무의미 → 초기화
-    setBackFace(emptyFace());
+    // 새 후면은 슬롯 id 가 달라 기존 오버라이드는 무의미 → 초기화(히스토리도 비움)
+    backHist.reset(emptyFace());
     setActiveFace("back");
     setSelectedSlotId(null);
   };
@@ -1016,6 +1035,10 @@ const InvitationStudio = () => {
           shareCodeStyle={shareCodeStyle}
           onShareCodeStyleChange={setShareCodeStyle}
           onBgChange={handleBgChange}
+          onUndo={activeHist.undo}
+          onRedo={activeHist.redo}
+          canUndo={activeHist.canUndo}
+          canRedo={activeHist.canRedo}
         />
       )}
 
@@ -1455,6 +1478,10 @@ const StudioView = ({
   shareCodeStyle,
   onShareCodeStyleChange,
   onBgChange,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }: {
   canvasRef: React.MutableRefObject<InvitationCanvasHandle | null>;
   backCanvasRef: React.MutableRefObject<InvitationCanvasHandle | null>;
@@ -1497,6 +1524,10 @@ const StudioView = ({
   shareCodeStyle: ShareCodeStyle;
   onShareCodeStyleChange: (s: ShareCodeStyle) => void;
   onBgChange: (bg: BgFill | undefined) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }) => {
   const [showBackPicker, setShowBackPicker] = useState(false);
   const aFace = activeFace === "front" ? frontFace : backFace;
@@ -1581,6 +1612,7 @@ const StudioView = ({
   };
 
   return (
+    <>
     <main className="px-4 py-5 space-y-4">
       {/* 전면/후면 탭 (모바일은 단면이라 숨김) */}
       {allowBack && (
@@ -1954,6 +1986,67 @@ const StudioView = ({
         </span>
       </div>
     </main>
+
+    {/* 하단 고정 편집툴바 — 스크롤·면 전환과 무관하게 항상 접근 가능한 편집 도구 */}
+    <div className="fixed bottom-[68px] left-1/2 -translate-x-1/2 z-40 w-[calc(100%-1.5rem)] max-w-[406px]">
+      <div className="flex items-center gap-1 rounded-2xl border border-border bg-background/95 backdrop-blur px-2 py-1.5 shadow-lg">
+        <button
+          type="button"
+          onClick={onUndo}
+          disabled={!canUndo}
+          aria-label="되돌리기"
+          className="flex flex-col items-center justify-center gap-0.5 px-2.5 py-1 rounded-lg text-foreground disabled:opacity-30 active:bg-muted"
+        >
+          <Undo2 className="w-4 h-4" />
+          <span className="text-[9px] leading-none">되돌리기</span>
+        </button>
+        <button
+          type="button"
+          onClick={onRedo}
+          disabled={!canRedo}
+          aria-label="다시 실행"
+          className="flex flex-col items-center justify-center gap-0.5 px-2.5 py-1 rounded-lg text-foreground disabled:opacity-30 active:bg-muted"
+        >
+          <Redo2 className="w-4 h-4" />
+          <span className="text-[9px] leading-none">다시</span>
+        </button>
+        <div className="w-px h-7 bg-border mx-0.5" />
+        <button
+          type="button"
+          onClick={onAddText}
+          aria-label="텍스트 추가"
+          className="flex flex-col items-center justify-center gap-0.5 px-2.5 py-1 rounded-lg text-foreground active:bg-muted"
+        >
+          <Plus className="w-4 h-4" />
+          <span className="text-[9px] leading-none">텍스트</span>
+        </button>
+        {selectedSlot ? (
+          <>
+            <button
+              type="button"
+              onClick={() => onDeleteSlot()}
+              aria-label="선택 요소 삭제"
+              className="flex flex-col items-center justify-center gap-0.5 px-2.5 py-1 rounded-lg text-destructive active:bg-muted"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="text-[9px] leading-none">삭제</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectSlot(null)}
+              className="ml-auto text-[11px] text-muted-foreground px-2.5 py-1 rounded-lg active:bg-muted"
+            >
+              선택 해제
+            </button>
+          </>
+        ) : (
+          <span className="ml-auto text-[10px] text-muted-foreground pr-1.5">
+            요소를 탭해 편집
+          </span>
+        )}
+      </div>
+    </div>
+    </>
   );
 };
 
