@@ -276,10 +276,10 @@ const AdminTemplateEditor = ({
   const dispScale = dispW / page.canvas.w;
 
   // ── 슬롯 변경 헬퍼 (현재 페이지 슬롯 배열을 갱신) ──
-  // coalesce: 드래그·리사이즈처럼 연속 변경을 한 undo 단계로 묶음.
+  // coalesceKey: 같은 동작(같은 슬롯 드래그/리사이즈)의 연속 변경을 한 undo 단계로 묶음.
   const setPageSlots = (
     updater: (s: InvitationSlot[]) => InvitationSlot[],
-    opts?: { coalesce?: boolean },
+    opts?: { coalesceKey?: string },
   ) => {
     setDirty(true);
     setLayout((prev) => {
@@ -297,7 +297,7 @@ const AdminTemplateEditor = ({
   const updateSlot = (
     id: string,
     patch: Partial<InvitationSlot>,
-    opts?: { coalesce?: boolean },
+    opts?: { coalesceKey?: string },
   ) =>
     setPageSlots(
       (arr) => arr.map((s) => (s.id === id ? { ...s, ...patch } : s)),
@@ -309,7 +309,7 @@ const AdminTemplateEditor = ({
   const moveSlot = (id: string, x: number, y: number) => {
     const q = (n: number) =>
       snap ? Math.round(n / SNAP_STEP) * SNAP_STEP : Math.round(n);
-    updateSlot(id, { x: q(x), y: q(y) }, { coalesce: true });
+    updateSlot(id, { x: q(x), y: q(y) }, { coalesceKey: "move:" + id });
   };
 
   // 숫자 입력 — 빈 값/NaN 이면 무시(0 으로 튀지 않게)
@@ -430,7 +430,7 @@ const AdminTemplateEditor = ({
               arr.map((s) =>
                 s.id === selId ? { ...s, x: s.x + dx, y: s.y + dy } : s,
               ),
-            { coalesce: true },
+            { coalesceKey: "move:" + selId },
           );
         }
       }
@@ -613,7 +613,9 @@ const AdminTemplateEditor = ({
                 scale={dispScale}
                 snap={snap}
                 onResize={(w, h) =>
-                  updateSlot(selected.id, { w, h }, { coalesce: true })
+                  updateSlot(selected.id, { w, h }, {
+                    coalesceKey: "resize:" + selected.id,
+                  })
                 }
               />
             )}
