@@ -721,8 +721,9 @@ const InvitationFlow = () => {
       // 충전이 필요하면 사용자가 직접 충전 페이지로 이동.
       toast({
         title: "하트가 부족해요",
-        description: `발행에 ${totalCost} 하트가 필요해요 (템플릿 ${templateCharge}${firstNote} + AI ${aiCost}). 현재 ${hearts ?? 0}하트. 충전 후 다시 시도해주세요.`,
+        description: `발행에 ${totalCost} 하트가 필요해요 (템플릿 ${templateCharge}${firstNote} + AI ${aiCost}). 현재 ${hearts ?? 0}하트. 작성한 내용은 임시저장돼 있어요.`,
         variant: "destructive",
+        action: { label: "충전하기", onClick: () => navigate("/points") },
       });
       return;
     }

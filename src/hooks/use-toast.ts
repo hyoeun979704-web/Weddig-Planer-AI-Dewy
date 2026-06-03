@@ -11,6 +11,8 @@ interface ToastOptions {
   title?: React.ReactNode;
   description?: React.ReactNode;
   variant?: ToastVariant;
+  /** 토스트 우측 액션 버튼 (예: "충전하기"). sonner action 으로 전달. */
+  action?: { label: string; onClick: () => void };
 }
 
 const titleString = (val: React.ReactNode): string => {
@@ -24,11 +26,14 @@ function toast(opts: ToastOptions = {}) {
   const titleText = titleString(opts.title);
   const message = titleText || titleString(opts.description);
   const description = titleText ? opts.description : undefined;
+  const action = opts.action
+    ? { label: opts.action.label, onClick: opts.action.onClick }
+    : undefined;
 
   if (opts.variant === "destructive") {
-    sonnerToast.error(message, { description });
+    sonnerToast.error(message, { description, action });
   } else {
-    sonnerToast(message, { description });
+    sonnerToast(message, { description, action });
   }
   return { id: "", dismiss: () => {}, update: () => {} };
 }
