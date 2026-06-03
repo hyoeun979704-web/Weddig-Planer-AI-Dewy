@@ -69,8 +69,73 @@ function decodeEntities(s: string): string {
     .replace(/&gt;/g, ">");
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit = {}) {
-  return fetch(url, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+// 리다이렉트를 직접 따라가되 매 홉마다 호스트를 검사한다 — public→internal
+// 리다이렉트로 SSRF 가드를 우회하는 것을 막기 위함 (redirect:"follow" 는 중간
+// 홉을 검사할 수 없다). 최대 5홉.
+async function safeFetch(startUrl: string, init: RequestInit = {}): Promise<Response> {
+  let url = startUrl;
+  for (let hop = 0; hop < 5; hop++) {
+    assertPublicHost(url);
+    const res = await fetch(url, {
+      ...init,
+      redirect: "manual",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get("location");
+      if (!loc) return res;
+      await res.body?.cancel();
+      url = new URL(loc, url).toString();
+      continue;
+    }
+    return res;
+  }
+  throw new Error("too many redirects");
+}
+
+// SSRF 가드: 이 함수는 service_role 로 임의 URL 을 서버에서 fetch 하므로,
+// 내부망/메타데이터/loopback 으로의 요청을 차단한다. (DNS rebinding 등 고급
+// 우회까지 막진 못하지만, 명백한 내부 타겟 탐침은 차단 — admin 전용 도구의
+// 비례적 방어.)
+function assertPublicHost(rawUrl: string): void {
+  const host = new URL(rawUrl).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    host === "metadata.google.internal"
+  ) {
+    throw new Error("blocked host");
+  }
+  // IPv4 리터럴 사설/loopback/link-local 범위 차단
+  const m = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) {
+    const [a, b] = [Number(m[1]), Number(m[2])];
+    if (
+      a === 10 ||
+      a === 127 ||
+      a === 0 ||
+      (a === 192 && b === 168) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 169 && b === 254) ||
+      a >= 224 // multicast/reserved
+    ) {
+      throw new Error("blocked host");
+    }
+  }
+  // IPv6 loopback / unique-local / link-local
+  if (host === "::1" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80")) {
+    throw new Error("blocked host");
+  }
+}
+
+// 헤더의 Content-Length 로 본문을 다 읽기 "전에" 크기를 막는다 (메모리 고갈 방지).
+function assertWithinSize(res: Response): void {
+  const len = Number(res.headers.get("content-length") ?? "");
+  if (Number.isFinite(len) && len > MAX_BYTES) {
+    throw new Error(`image too large (${(len / 1048576).toFixed(1)}MB > 5MB)`);
+  }
 }
 
 async function sha1Hex(bytes: Uint8Array): Promise<string> {
@@ -84,18 +149,20 @@ async function sha1Hex(bytes: Uint8Array): Promise<string> {
 async function resolveImage(
   inputUrl: string,
 ): Promise<{ bytes: Uint8Array; mime: string; source: "direct" | "og:image"; imageUrl: string }> {
-  const res = await fetchWithTimeout(inputUrl, { headers: BROWSER_HEADERS, redirect: "follow" });
+  const res = await safeFetch(inputUrl, { headers: BROWSER_HEADERS });
   if (!res.ok) throw new Error(`source fetch failed: ${res.status}`);
   const ct = (res.headers.get("content-type") ?? "").toLowerCase();
 
   // 1) 이미지 직접
   if (ct.startsWith("image/")) {
+    assertWithinSize(res);
     const buf = new Uint8Array(await res.arrayBuffer());
     return { bytes: buf, mime: ct.split(";")[0].trim(), source: "direct", imageUrl: inputUrl };
   }
 
   // 2) HTML → og:image 추출
   if (ct.includes("html") || ct === "") {
+    assertWithinSize(res);
     const html = await res.text();
     let found: string | null = null;
     for (const re of OG_PATTERNS) {
@@ -107,10 +174,11 @@ async function resolveImage(
     }
     if (!found) throw new Error("no og:image/twitter:image meta tag found on page");
     const imageUrl = new URL(found, res.url || inputUrl).toString();
-    const imgRes = await fetchWithTimeout(imageUrl, { headers: BROWSER_HEADERS, redirect: "follow" });
+    const imgRes = await safeFetch(imageUrl, { headers: BROWSER_HEADERS });
     if (!imgRes.ok) throw new Error(`og:image fetch failed: ${imgRes.status}`);
     const imgCt = (imgRes.headers.get("content-type") ?? "").toLowerCase().split(";")[0].trim();
     if (!imgCt.startsWith("image/")) throw new Error(`og:image is not an image (${imgCt})`);
+    assertWithinSize(imgRes);
     return {
       bytes: new Uint8Array(await imgRes.arrayBuffer()),
       mime: imgCt,
