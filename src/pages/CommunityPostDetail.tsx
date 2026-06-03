@@ -8,7 +8,6 @@ import {
   Eye,
   Share2,
   Send,
-  User,
   Pencil,
   Trash2,
   X,
@@ -40,6 +39,8 @@ import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import PostImageGallery from "@/components/community/PostImageGallery";
 import CommentItem from "@/components/community/CommentItem";
+import AuthorChip from "@/components/community/AuthorChip";
+import { useCommunityAuthors } from "@/hooks/useCommunityAuthors";
 import { useCommentLikes } from "@/hooks/useCommentLikes";
 import { useFavorites } from "@/hooks/useFavorites";
 
@@ -131,6 +132,12 @@ const CommunityPostDetail = () => {
     },
     enabled: !!id,
   });
+
+  // 글 작성자 + 모든 댓글 작성자의 공개 정체성을 한 번에 조회.
+  const authors = useCommunityAuthors([
+    post?.user_id,
+    ...comments.map((c) => c.user_id),
+  ]);
 
   // Fetch likes count
   const { data: likesCount = 0 } = useQuery({
@@ -499,14 +506,11 @@ const CommunityPostDetail = () => {
         <h1 className="text-xl font-bold text-foreground mb-4">{post.title}</h1>
 
         {/* Author */}
-        <div className="flex items-center gap-3 pb-4 border-b border-border">
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-            <User className="w-5 h-5 text-muted-foreground" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-foreground">익명</p>
-            <p className="text-xs text-muted-foreground">{formatDate(post.created_at)}</p>
-          </div>
+        <div className="pb-4 border-b border-border">
+          <AuthorChip
+            identity={authors.get(post.user_id)}
+            meta={formatDate(post.created_at)}
+          />
         </div>
 
         {/* Content */}
@@ -567,6 +571,7 @@ const CommunityPostDetail = () => {
                       comment={comment}
                       replies={replies}
                       currentUserId={user?.id}
+                      getIdentity={authors.get}
                       editingCommentId={editingCommentId}
                       editingContent={editingContent}
                       onStartEdit={handleStartEdit}

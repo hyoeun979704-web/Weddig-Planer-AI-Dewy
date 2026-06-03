@@ -16,6 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserBlocks } from "@/hooks/useCommunityModeration";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
+import AuthorChip from "@/components/community/AuthorChip";
+import { useCommunityAuthors } from "@/hooks/useCommunityAuthors";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { bumpSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import type { WeddingStyle } from "@/lib/weddingStyle";
@@ -28,6 +30,7 @@ type PostWeddingStyle = "general" | "small" | "self";
 
 interface Post {
   id: string;
+  user_id: string;
   category: string;
   title: string;
   content: string;
@@ -191,30 +194,18 @@ const Community = () => {
 
       if (postsError) throw postsError;
 
-      const postsWithCounts = await Promise.all(
-        (postsData || []).map(async (post) => {
-          const [likesResult, commentsResult] = await Promise.all([
-            supabase
-              .from("community_likes")
-              .select("*", { count: "exact", head: true })
-              .eq("post_id", post.id),
-            supabase
-              .from("community_comments")
-              .select("*", { count: "exact", head: true })
-              .eq("post_id", post.id),
-          ]);
-
-          return {
-            ...post,
-            likes_count: likesResult.count || 0,
-            comments_count: commentsResult.count || 0,
-          };
-        })
-      );
-
-      return postsWithCounts as Post[];
+      // 좋아요/댓글 수는 community_posts 의 집계 컬럼(트리거 동기화)에서 직접 읽는다.
+      // 과거 글마다 count 쿼리를 날리던 N+1 제거.
+      return (postsData || []).map((post) => ({
+        ...post,
+        likes_count: post.like_count ?? 0,
+        comments_count: post.comment_count ?? 0,
+      })) as Post[];
     },
   });
+
+  // 작성자 공개 정체성(닉네임·스타일·역할). user_id 만으로도 항상 해석됨.
+  const authors = useCommunityAuthors(posts.map((p) => p.user_id));
 
   // 스타일 필터: 선택된 유형과 일치하는 글 + 유형 미지정(NULL) 글을 함께 노출.
   // NULL = "모든 부부 대상" 글이므로 어떤 필터에서도 가려져선 안 됨 (작성 UI 약속).
@@ -275,6 +266,9 @@ const Community = () => {
       onClick={() => handlePostClick(post.id)}
       className="w-full text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
     >
+      <div className="mb-3">
+        <AuthorChip identity={authors.get(post.user_id)} size="sm" />
+      </div>
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
           {post.category}
