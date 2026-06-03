@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useQuery } from "@tanstack/react-query";
-import { MessageSquare, Flame, Image as ImageIcon, Search } from "lucide-react";
+import { MessageSquare, Flame, Image as ImageIcon, Search, Bell } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
@@ -18,6 +18,7 @@ import { useUserBlocks } from "@/hooks/useCommunityModeration";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
 import AuthorChip from "@/components/community/AuthorChip";
 import { useCommunityAuthors } from "@/hooks/useCommunityAuthors";
+import { useNotifications } from "@/hooks/useNotifications";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { bumpSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import type { WeddingStyle } from "@/lib/weddingStyle";
@@ -207,6 +208,9 @@ const Community = () => {
   // 작성자 공개 정체성(닉네임·스타일·역할). user_id 만으로도 항상 해석됨.
   const authors = useCommunityAuthors(posts.map((p) => p.user_id));
 
+  // 알림 미읽음 배지.
+  const { unreadCount } = useNotifications();
+
   // 스타일 필터: 선택된 유형과 일치하는 글 + 유형 미지정(NULL) 글을 함께 노출.
   // NULL = "모든 부부 대상" 글이므로 어떤 필터에서도 가려져선 안 됨 (작성 UI 약속).
   const matchesStyle = (post: Post, filter: StyleFilter) =>
@@ -333,6 +337,18 @@ const Community = () => {
             <h1 className="text-[18px] font-bold text-foreground">커뮤니티</h1>
           </div>
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate("/community/notifications")}
+              className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="알림"
+            >
+              <Bell className="w-[19px] h-[19px] text-foreground" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => navigate("/community/bookmarks")}
               className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
