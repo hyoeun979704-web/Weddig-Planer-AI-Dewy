@@ -54,29 +54,12 @@ const BookmarkedPosts = () => {
 
       if (postsError) throw postsError;
 
-      // Fetch likes and comments counts for each post
-      const postsWithCounts = await Promise.all(
-        (postsData || []).map(async (post) => {
-          const [likesResult, commentsResult] = await Promise.all([
-            supabase
-              .from("community_likes")
-              .select("*", { count: "exact", head: true })
-              .eq("post_id", post.id),
-            supabase
-              .from("community_comments")
-              .select("*", { count: "exact", head: true })
-              .eq("post_id", post.id),
-          ]);
-
-          return {
-            ...post,
-            likes_count: likesResult.count || 0,
-            comments_count: commentsResult.count || 0,
-          };
-        })
-      );
-
-      return postsWithCounts as Post[];
+      // 좋아요/댓글 수는 집계 컬럼(트리거 동기화)에서 직접 읽는다. (N+1 제거)
+      return (postsData || []).map((post) => ({
+        ...post,
+        likes_count: post.like_count ?? 0,
+        comments_count: post.comment_count ?? 0,
+      })) as Post[];
     },
     enabled: bookmarkedPostIds.length > 0,
   });
