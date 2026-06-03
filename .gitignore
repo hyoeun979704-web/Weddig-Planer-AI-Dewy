@@ -50,3 +50,6 @@ scripts/collect-places/.env.local
 /ios/App/build/
 /ios/App/Pods/
 /ios/App/output/
+
+# local render-harness scratch assets
+public/mob/

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Loader2, Trash2, Eye, EyeOff, Pencil } from "lucide-react";
+import { Plus, Loader2, Trash2, Eye, EyeOff, Pencil, Scissors } from "lucide-react";
+import SheetSplitDialog from "@/components/admin/SheetSplitDialog";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ interface Asset {
   image_url: string;
   thumbnail_url: string | null;
   category: string;
+  collection: string | null;
   tags: string[] | null;
   is_recolorable: boolean;
   natural_width: number | null;
@@ -47,6 +49,7 @@ const emptyForm: Form = {
   image_url: "",
   thumbnail_url: null,
   category: "FLOWER",
+  collection: null,
   tags: [],
   is_recolorable: false,
   natural_width: null,
@@ -63,6 +66,11 @@ const CATEGORIES = [
   { value: "ICON", label: "아이콘" },
   { value: "SHAPE", label: "도형" },
   { value: "TEXT_STICKER", label: "텍스트 스티커" },
+  { value: "STICKER", label: "스티커·오브제" },
+  { value: "TAPE", label: "마스킹테이프" },
+  { value: "OBJECT_3D", label: "3D·Y2K" },
+  { value: "NATURE", label: "자연·바다" },
+  { value: "PHOTO_FRAME", label: "사진 프레임" },
 ];
 
 const AdminInvitationAssets = () => {
@@ -73,7 +81,11 @@ const AdminInvitationAssets = () => {
   const [tagsInput, setTagsInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("ALL");
+  const [filterCollection, setFilterCollection] = useState<string>("ALL");
+  const [query, setQuery] = useState("");
+  const [groupByCollection, setGroupByCollection] = useState(true);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -157,6 +169,7 @@ const AdminInvitationAssets = () => {
       image_url: a.image_url,
       thumbnail_url: a.thumbnail_url,
       category: a.category,
+      collection: a.collection,
       tags: a.tags ?? [],
       is_recolorable: a.is_recolorable,
       natural_width: a.natural_width,
@@ -211,10 +224,95 @@ const AdminInvitationAssets = () => {
     }
   };
 
-  const filtered =
-    filterCategory === "ALL"
-      ? items
-      : items.filter((a) => a.category === filterCategory);
+  const q = query.trim().toLowerCase();
+  const filtered = items.filter(
+    (a) =>
+      (filterCategory === "ALL" || a.category === filterCategory) &&
+      (filterCollection === "ALL" || (a.collection ?? "") === filterCollection) &&
+      (!q ||
+        a.name.toLowerCase().includes(q) ||
+        (a.tags ?? []).some((t: string) => t.toLowerCase().includes(q))),
+  );
+  // 등록된 전체 태그(현재 카테고리 기준) — 빠른 필터 칩
+  const tagPool = Array.from(
+    new Set(
+      items
+        .filter((a) => filterCategory === "ALL" || a.category === filterCategory)
+        .flatMap((a) => (a.tags ?? []) as string[]),
+    ),
+  ).sort();
+  // 등록된 세트·컬렉션 목록
+  const collectionPool = Array.from(
+    new Set(items.map((a) => a.collection).filter(Boolean) as string[]),
+  ).sort();
+  // 컬렉션별 그룹(표시용) — filtered 를 collection 으로 묶음
+  const grouped = filtered.reduce<Record<string, Asset[]>>((acc, a) => {
+    const key = a.collection || "__기타__";
+    (acc[key] ??= []).push(a);
+    return acc;
+  }, {});
+  const groupKeys = Object.keys(grouped).sort((x, y) =>
+    x === "__기타__" ? 1 : y === "__기타__" ? -1 : x.localeCompare(y),
+  );
+
+  const renderCard = (a: Asset) => (
+    <article
+      key={a.id}
+      className="bg-background rounded-lg overflow-hidden border border-border"
+    >
+      <div className="relative aspect-square bg-[linear-gradient(45deg,#f8f8f8_25%,transparent_25%),linear-gradient(-45deg,#f8f8f8_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f8f8f8_75%),linear-gradient(-45deg,transparent_75%,#f8f8f8_75%)] bg-[length:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0]">
+        <img
+          src={a.image_url}
+          alt={a.name}
+          className="w-full h-full object-contain"
+        />
+        {!a.is_active && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <span className="text-white text-[10px] font-semibold">비활성</span>
+          </div>
+        )}
+      </div>
+      <div className="p-2">
+        <p className="text-[11px] font-semibold truncate">{a.name}</p>
+        <p className="text-[9px] text-muted-foreground truncate">
+          {CATEGORIES.find((c) => c.value === a.category)?.label}
+          {a.is_recolorable ? " · 색변경" : ""}
+        </p>
+        <div className="flex gap-0.5 mt-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleToggleActive(a)}
+            className="flex-1 h-7 text-[10px] px-1"
+          >
+            {a.is_active ? (
+              <Eye className="w-3 h-3" />
+            ) : (
+              <EyeOff className="w-3 h-3" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleEdit(a)}
+            className="h-7 w-7 p-0"
+            aria-label="수정"
+          >
+            <Pencil className="w-3 h-3" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDelete(a)}
+            className="h-7 w-7 p-0 text-destructive"
+            aria-label="삭제"
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
 
   return (
     <AdminGuard>
@@ -222,7 +320,16 @@ const AdminInvitationAssets = () => {
         title="청첩장 에셋"
         description="장식 에셋 (꽃·프레임·리본 등) 관리"
         rightAction={
-          <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+          <div className="flex gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => setSheetOpen(true)}
+            >
+              <Scissors className="w-4 h-4" />시트 자동분리
+            </Button>
+            <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
                 <Plus className="w-4 h-4" />새 에셋
@@ -289,6 +396,24 @@ const AdminInvitationAssets = () => {
                   </div>
 
                   <div>
+                    <Label htmlFor="collection">세트·컬렉션 (선택)</Label>
+                    <Input
+                      id="collection"
+                      list="collection-list"
+                      value={form.collection ?? ""}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, collection: e.target.value || null }))
+                      }
+                      placeholder="예: 레드 코케트, 발렌타인 doodle, 크롬 Y2K"
+                    />
+                    <datalist id="collection-list">
+                      {collectionPool.map((c) => (
+                        <option key={c} value={c} />
+                      ))}
+                    </datalist>
+                  </div>
+
+                  <div>
                     <Label htmlFor="tags">태그 (쉼표 구분)</Label>
                     <Input
                       id="tags"
@@ -351,7 +476,8 @@ const AdminInvitationAssets = () => {
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         }
       >
         {/* 카테고리 필터 */}
@@ -386,76 +512,118 @@ const AdminInvitationAssets = () => {
           })}
         </div>
 
+        {/* 태그·이름 검색 + 빠른 태그 칩 */}
+        <div className="mb-4">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="태그·이름 검색 (예: heart, frame, wavy, 레드, bow)"
+            className="w-full h-9 px-3 rounded-lg border border-border bg-background text-sm"
+          />
+          {tagPool.length > 0 && (
+            <div className="flex gap-1.5 flex-wrap mt-2">
+              {tagPool.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setQuery(query === t ? "" : t)}
+                  className={`px-2 py-0.5 rounded-full text-[11px] border transition-colors ${
+                    query === t
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted text-muted-foreground border-border"
+                  }`}
+                >
+                  #{t}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="text-[11px] text-muted-foreground mt-1.5">
+            {filtered.length}개 표시
+          </p>
+        </div>
+
+        {/* 세트·컬렉션 필터 + 그룹 보기 토글 */}
+        <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setGroupByCollection((v) => !v)}
+            className={`px-3 py-1 rounded-full text-xs flex-shrink-0 border ${
+              groupByCollection
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-muted text-foreground border-border"
+            }`}
+          >
+            세트별 묶어보기
+          </button>
+          {collectionPool.length > 0 && (
+            <>
+              <span className="mx-1 text-border">|</span>
+              <button
+                type="button"
+                onClick={() => setFilterCollection("ALL")}
+                className={`px-3 py-1 rounded-full text-xs flex-shrink-0 ${
+                  filterCollection === "ALL"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-foreground"
+                }`}
+              >
+                전체 세트
+              </button>
+              {collectionPool.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() =>
+                    setFilterCollection(filterCollection === c ? "ALL" : c)
+                  }
+                  className={`px-3 py-1 rounded-full text-xs flex-shrink-0 ${
+                    filterCollection === c
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-foreground"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState />
-        ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-            {filtered.map((a) => (
-              <article
-                key={a.id}
-                className="bg-background rounded-lg overflow-hidden border border-border"
-              >
-                <div className="relative aspect-square bg-[linear-gradient(45deg,#f8f8f8_25%,transparent_25%),linear-gradient(-45deg,#f8f8f8_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f8f8f8_75%),linear-gradient(-45deg,transparent_75%,#f8f8f8_75%)] bg-[length:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0]">
-                  <img
-                    src={a.image_url}
-                    alt={a.name}
-                    className="w-full h-full object-contain"
-                  />
-                  {!a.is_active && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="text-white text-[10px] font-semibold">
-                        비활성
-                      </span>
-                    </div>
-                  )}
+        ) : groupByCollection ? (
+          <div className="space-y-6">
+            {groupKeys.map((gk) => (
+              <section key={gk}>
+                <h3 className="text-sm font-bold mb-2 px-0.5">
+                  {gk === "__기타__" ? "기타 (세트 없음)" : gk}
+                  <span className="ml-2 text-[11px] font-normal text-muted-foreground">
+                    {grouped[gk].length}개
+                  </span>
+                </h3>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                  {grouped[gk].map((a) => renderCard(a))}
                 </div>
-                <div className="p-2">
-                  <p className="text-[11px] font-semibold truncate">{a.name}</p>
-                  <p className="text-[9px] text-muted-foreground truncate">
-                    {CATEGORIES.find((c) => c.value === a.category)?.label}
-                    {a.is_recolorable ? " · 색변경" : ""}
-                  </p>
-                  <div className="flex gap-0.5 mt-1.5">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleToggleActive(a)}
-                      className="flex-1 h-7 text-[10px] px-1"
-                    >
-                      {a.is_active ? (
-                        <Eye className="w-3 h-3" />
-                      ) : (
-                        <EyeOff className="w-3 h-3" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(a)}
-                      className="h-7 w-7 p-0"
-                      aria-label="수정"
-                    >
-                      <Pencil className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(a)}
-                      className="h-7 w-7 p-0 text-destructive"
-                      aria-label="삭제"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              </article>
+              </section>
             ))}
           </div>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+            {filtered.map((a) => renderCard(a))}
+          </div>
         )}
+
+        <SheetSplitDialog
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+          onDone={fetchData}
+          categories={CATEGORIES}
+        />
       </AdminLayout>
     </AdminGuard>
   );

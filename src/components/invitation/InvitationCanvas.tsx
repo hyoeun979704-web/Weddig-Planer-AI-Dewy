@@ -93,7 +93,9 @@ function resolveBgFill(
   w: number,
   h: number,
 ): Record<string, unknown> {
-  const grad = override?.gradient ?? canvas.bg_gradient;
+  // 사용자 override 가 단색을 지정하면 템플릿 그라디언트보다 우선(단색 분기로).
+  // override 가 아예 없을 때만 템플릿 canvas.bg_gradient 사용.
+  const grad = override?.gradient ?? (override?.color ? undefined : canvas.bg_gradient);
   if (grad && grad.stops?.length >= 2) {
     const stops = grad.stops
       .slice()
