@@ -170,6 +170,9 @@ const AdminTemplateEditor = ({
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
+  const [snap, setSnap] = useState(true);
+  // 미리보기용 샘플 데이터 — 긴 이름/실제 식장명으로 넘침·잘림을 확인
+  const [sampleData, setSampleData] = useState<Record<string, string>>(SAMPLE);
   const [assets, setAssets] = useState<AssetOpt[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [assetQuery, setAssetQuery] = useState("");
@@ -225,8 +228,13 @@ const AdminTemplateEditor = ({
       arr.map((s) => (s.id === id ? { ...s, ...patch } : s)),
     );
 
-  const moveSlot = (id: string, x: number, y: number) =>
-    updateSlot(id, { x: Math.round(x), y: Math.round(y) });
+  // 드래그 이동 — 스냅 ON 이면 10px 격자에 맞춰 좌표를 깔끔하게(CLAUDE.md 그리드 규칙).
+  const SNAP_STEP = 10;
+  const moveSlot = (id: string, x: number, y: number) => {
+    const q = (n: number) =>
+      snap ? Math.round(n / SNAP_STEP) * SNAP_STEP : Math.round(n);
+    updateSlot(id, { x: q(x), y: q(y) });
+  };
 
   // 숫자 입력 — 빈 값/NaN 이면 무시(0 으로 튀지 않게)
   const numChange =
@@ -425,6 +433,17 @@ const AdminTemplateEditor = ({
             >
               격자 {showGrid ? "ON" : "OFF"}
             </button>
+            <button
+              onClick={() => setSnap((v) => !v)}
+              title="드래그 시 10px 격자에 맞춤"
+              className={`px-2 h-7 rounded-md border ${
+                snap
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border"
+              }`}
+            >
+              스냅 {snap ? "ON" : "OFF"}
+            </button>
             <span>
               캔버스 {page.canvas.w}×{page.canvas.h}
               {dispScale < 1 && ` · ${Math.round(dispScale * 100)}%`}
@@ -439,7 +458,7 @@ const AdminTemplateEditor = ({
             <InvitationCanvas
               key={`${page.id}:${slots.length}`}
               layout={pageToLayout(page)}
-              userData={SAMPLE}
+              userData={sampleData}
               aiText={{}}
               textOverrides={{}}
               imageUrls={{}}
@@ -485,10 +504,44 @@ const AdminTemplateEditor = ({
           </div>
 
           {!selected ? (
-            <p className="text-xs text-muted-foreground pt-4">
-              슬롯을 클릭해 편집하세요. 드래그로 이동, 아래에서 위치·크기·폰트
-              조정.
-            </p>
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground pt-1">
+                슬롯을 클릭해 편집하세요. 드래그로 이동(스냅 {snap ? "ON" : "OFF"}),
+                아래에서 위치·크기·폰트 조정. Esc=선택해제, Delete=삭제.
+              </p>
+              {/* 샘플 데이터 — 미리보기에 들어가는 값(긴 이름/실제 식장명으로 넘침 확인) */}
+              <div className="border-t border-border pt-2 space-y-1.5">
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  샘플 데이터 (미리보기용)
+                </p>
+                {(
+                  [
+                    ["groom_name", "신랑"],
+                    ["bride_name", "신부"],
+                    ["wedding_date", "날짜"],
+                    ["venue_name", "식장"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div key={key} className="flex items-center gap-1.5">
+                    <Label className="text-[10px] w-8 shrink-0">{label}</Label>
+                    <Input
+                      value={sampleData[key] ?? ""}
+                      onChange={(e) =>
+                        setSampleData((p) => ({ ...p, [key]: e.target.value }))
+                      }
+                      className="h-7 px-1.5 text-xs"
+                    />
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setSampleData(SAMPLE)}
+                  className="text-[10px] text-muted-foreground underline"
+                >
+                  기본 샘플로 되돌리기
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
