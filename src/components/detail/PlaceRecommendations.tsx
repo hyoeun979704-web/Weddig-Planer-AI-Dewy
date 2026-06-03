@@ -7,8 +7,6 @@ import VendorMediaCard, {
 import { PLACE_CATEGORY_TO_ITEM_TYPE } from "@/lib/placeMappers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceKm } from "@/hooks/useWeddingVenue";
-import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
-import { recommendationCopy } from "@/lib/recommendationCopy";
 import {
   usePlaceRecommendations,
   type RecAnchor,
@@ -54,7 +52,6 @@ function toCard(
 
 interface RowProps {
   title: string;
-  hint: string;
   items: RecPlace[];
   loading: boolean;
   showCategory: boolean;
@@ -64,7 +61,6 @@ interface RowProps {
 
 const Row = ({
   title,
-  hint,
   items,
   loading,
   showCategory,
@@ -72,10 +68,7 @@ const Row = ({
   onOpen,
 }: RowProps) => (
   <section className="pt-4 pb-1">
-    <div className="px-4 mb-2">
-      <h2 className="text-[15px] font-bold text-foreground">{title}</h2>
-      <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>
-    </div>
+    <h2 className="px-4 mb-2 text-[15px] font-bold text-foreground">{title}</h2>
     <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4">
       {loading
         ? Array.from({ length: 4 }).map((_, i) => (
@@ -98,8 +91,6 @@ const Row = ({
 
 export default function PlaceRecommendations({ place }: { place: RecAnchor }) {
   const navigate = useNavigate();
-  const { weddingSettings } = useWeddingSchedule();
-  const copy = recommendationCopy(weddingSettings.persona_mode);
   const { data, isLoading } = usePlaceRecommendations(place);
   const similar = data?.similar ?? [];
   const nearby = data?.nearby ?? [];
@@ -118,7 +109,6 @@ export default function PlaceRecommendations({ place }: { place: RecAnchor }) {
       {(isLoading || similar.length > 0) && (
         <Row
           title={`비슷한 ${labelOf(place.category)}`}
-          hint={copy.similarHint}
           items={similar}
           loading={isLoading}
           showCategory={false}
@@ -129,7 +119,6 @@ export default function PlaceRecommendations({ place }: { place: RecAnchor }) {
       {(isLoading || nearby.length > 0) && (
         <Row
           title="이 근처 다른 준비"
-          hint={copy.nearbyHint}
           items={nearby}
           loading={isLoading}
           showCategory
