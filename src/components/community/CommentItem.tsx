@@ -17,6 +17,7 @@ import ReportDialog from "@/components/community/ReportDialog";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import type { AuthorIdentity } from "@/lib/communityIdentity";
+import AuthorAvatar from "@/components/community/AuthorAvatar";
 
 interface Comment {
   id: string;
@@ -85,29 +86,19 @@ const CommentItem = ({
   const isOwner = currentUserId && comment.user_id === currentUserId;
   // 본인 댓글엔 신고 의미 없음. 로그인 안 한 사용자도 신고 불가.
   const canReport = !!currentUserId && !isOwner;
+  const id = getIdentity(comment.user_id);
 
   return (
     <div className={`${isReplyMode ? "ml-8 pl-4 border-l-2 border-muted" : ""}`}>
       <div className="flex gap-3">
-        {(() => {
-          const id = getIdentity(comment.user_id);
-          return (
-            <div
-              className={`${isReplyMode ? "w-7 h-7 text-[10px]" : "w-8 h-8 text-xs"} rounded-full flex items-center justify-center flex-shrink-0 font-bold text-white`}
-              style={{ backgroundColor: id.color }}
-              aria-hidden
-            >
-              {id.initial}
-            </div>
-          );
-        })()}
+        <AuthorAvatar identity={id} size={isReplyMode ? "sm" : "md"} />
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium text-foreground">
-                {getIdentity(comment.user_id).nickname}
+                {id.nickname}
               </span>
-              {getIdentity(comment.user_id).badges.map((b, i) => (
+              {id.badges.map((b, i) => (
                 <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                   {b}
                 </span>

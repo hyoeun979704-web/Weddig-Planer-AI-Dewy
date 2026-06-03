@@ -5,6 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications, notificationText, type CommunityNotification } from "@/hooks/useNotifications";
 import { useCommunityAuthors } from "@/hooks/useCommunityAuthors";
+import AuthorAvatar from "@/components/community/AuthorAvatar";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -67,13 +68,7 @@ const CommunityNotifications = () => {
                     onClick={() => goTo(n)}
                     className={`w-full text-left flex items-start gap-3 px-4 py-3.5 active:bg-muted/40 ${n.read_at ? "" : "bg-primary/5"}`}
                   >
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-xs shrink-0"
-                      style={{ backgroundColor: id.color }}
-                      aria-hidden
-                    >
-                      {id.initial}
-                    </div>
+                    <AuthorAvatar identity={id} size="lg" />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-foreground">
                         <span className="font-semibold">{id.nickname}</span>

@@ -48,6 +48,9 @@ export function useNotifications() {
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ["community-notifications-unread", user?.id],
     enabled: !!user,
+    // 실시간 구독은 없으므로 세션 중 주기적으로 새 알림을 반영(배지 신선도).
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { count, error } = await (supabase as any)
         .from("community_notifications")
