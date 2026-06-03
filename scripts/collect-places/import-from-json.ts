@@ -41,7 +41,17 @@
 //         "outdoor_available": false,
 //         "ceremony_only_available": false,
 //         "hall_count": 3
-//       }
+//       },
+//       "halls": [                            // 웨딩홀 전용 1:N (홀별 디테일)
+//         {"hall_name":"그랜드볼룸","hall_type":"컨벤션","floor":"3F",
+//          "min_guarantee":300,"max_guarantee":700,"rental_fee":8000000,
+//          "meal_price":80000,"ceremony_interval_min":120,"simultaneous_events":false}
+//       ],
+//       "studio_products": [                  // 스튜디오 전용 1:N (상품 구성)
+//         {"product_name":"본식+리허설 풀패키지","product_type":"풀패키지","price":1200000,
+//          "concepts":["한옥","야외"],"original_count":600,"retouch_count":20,
+//          "album_pages":20,"frame_included":true,"includes":["원본 전체 제공"]}
+//       ]
 //     },
 //     ...
 //   ]
@@ -71,6 +81,9 @@ interface ImportRow {
   basic_services?: string[] | null;
   tags?: string[] | null;
   category_extras?: Record<string, unknown> | null;
+  // 1:N 서브엔티티 — 웨딩홀 홀별 / 스튜디오 상품 구성.
+  halls?: Record<string, unknown>[] | null;
+  studio_products?: Record<string, unknown>[] | null;
 }
 
 // place_<category> table allow-list per category — same as the live
@@ -140,6 +153,64 @@ const ALLOWED_CARD_COLUMNS: Record<string, string[]> = {
     "atmosphere", "valet_parking", "signature_dishes", "corkage_fee_won", "private_room_count"],
 };
 
+// 1:N 자식 테이블 — 한 place 의 여러 홀/상품. (category, 테이블, 필수키, 허용컬럼)
+const CHILD_TABLES: Record<
+  "halls" | "studio_products",
+  { category: string; table: string; required: string; columns: string[] }
+> = {
+  halls: {
+    category: "wedding_hall",
+    table: "place_halls",
+    required: "hall_name",
+    columns: ["hall_name", "hall_type", "floor", "min_guarantee", "max_guarantee",
+      "capacity_seated", "capacity_standing", "rental_fee", "meal_price", "meal_type",
+      "includes_drinks", "drinks_separate_price", "drinks_type", "ceremony_type",
+      "ceremony_interval_min", "ceremony_duration_min", "simultaneous_events",
+      "ceiling_height", "virgin_road_length", "parking_available", "concierge_fee",
+      "concierge_included", "floral_included", "floral_mandatory", "floral_price",
+      "external_alcohol_allowed", "decoration_diy_allowed", "meal_ticket_provided",
+      "tags", "event_options", "main_image_url"],
+  },
+  studio_products: {
+    category: "studio",
+    table: "place_studio_products",
+    required: "product_name",
+    columns: ["product_name", "product_type", "price", "concepts", "shoot_locations",
+      "original_count", "retouch_count", "album_pages", "album_count",
+      "frame_included", "dress_included", "hair_makeup_included", "outdoor_included",
+      "includes", "notes", "main_image_url", "display_order"],
+  },
+};
+
+// 자식 배열을 place 단위로 멱등 동기화: 기존 행 삭제 후 재삽입.
+async function syncChildren(
+  supabase: ReturnType<typeof createClient>,
+  placeId: string,
+  spec: (typeof CHILD_TABLES)[keyof typeof CHILD_TABLES],
+  items: Record<string, unknown>[],
+  dryRun: boolean,
+): Promise<number> {
+  const rows = items
+    .filter((it) => typeof it?.[spec.required] === "string" && (it[spec.required] as string).trim())
+    .map((it, idx) => {
+      const row: Record<string, unknown> = { place_id: placeId };
+      for (const col of spec.columns) {
+        if (it[col] != null) row[col] = it[col];
+      }
+      if (spec.table === "place_studio_products" && row.display_order == null) row.display_order = idx;
+      return row;
+    });
+  if (rows.length === 0) return 0;
+  if (dryRun) return rows.length;
+  await supabase.from(spec.table).delete().eq("place_id", placeId);
+  const { error } = await supabase.from(spec.table).insert(rows);
+  if (error) {
+    console.log(`  ⚠ ${spec.table}: ${error.message.slice(0, 80)}`);
+    return 0;
+  }
+  return rows.length;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const file = args.find((a) => !a.startsWith("--"));
@@ -172,6 +243,7 @@ async function main() {
   let detailsOk = 0;
   let cardOk = 0;
   let placesOk = 0;
+  let childOk = 0;
   let skipped = 0;
 
   for (let i = 0; i < rows.length; i++) {
@@ -306,10 +378,26 @@ async function main() {
       }
     }
 
+    // 4) 1:N 자식 — 홀별 / 스튜디오 상품 구성. 카테고리가 맞을 때만.
+    if (r.halls && place.category === CHILD_TABLES.halls.category) {
+      const n = await syncChildren(supabase, r.place_id, CHILD_TABLES.halls, r.halls, dryRun);
+      if (n > 0) {
+        childOk += n;
+        if (dryRun) console.log(`  + halls(${n})`);
+      }
+    }
+    if (r.studio_products && place.category === CHILD_TABLES.studio_products.category) {
+      const n = await syncChildren(supabase, r.place_id, CHILD_TABLES.studio_products, r.studio_products, dryRun);
+      if (n > 0) {
+        childOk += n;
+        if (dryRun) console.log(`  + studio_products(${n})`);
+      }
+    }
+
     if (!dryRun) console.log("✓");
   }
 
-  console.log(`\n[import] details=${detailsOk} card=${cardOk} places=${placesOk} skipped=${skipped}`);
+  console.log(`\n[import] details=${detailsOk} card=${cardOk} places=${placesOk} children=${childOk} skipped=${skipped}`);
 }
 
 main().catch((e) => {

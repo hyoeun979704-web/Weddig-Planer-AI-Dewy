@@ -89,6 +89,10 @@ export interface EnrichedPlaceData {
   /** Category-specific fields. Shape varies per category — see category-prompts.ts.
    *  Orchestrator filters to allow-listed columns before card-table upsert. */
   category_extras: Record<string, unknown> | null;
+  /** 1:N 서브엔티티 — 웨딩홀 홀별(place_halls) / 스튜디오 상품 구성(place_studio_products).
+   *  category_extras 와 별도. orchestrator 가 카테고리 일치 시 자식 테이블에 동기화. */
+  halls: Record<string, unknown>[] | null;
+  studio_products: Record<string, unknown>[] | null;
   source_urls: string[];
 }
 
@@ -211,6 +215,8 @@ const SYSTEM = `당신은 한국 웨딩 업체 정보 검증기입니다. Google
   "basic_services": [string]|null,
   "tags": [string]|null,
   "category_extras": object|null,   // 카테고리별 추가 필드 (아래 카테고리 섹션 참조)
+  "halls": [object]|null,           // 웨딩홀 전용 — 홀별 디테일 배열 (아래 웨딩홀 섹션 참조)
+  "studio_products": [object]|null, // 스튜디오 전용 — 상품 구성 배열 (아래 스튜디오 섹션 참조)
   "source_urls": [string]
 }
 
@@ -426,6 +432,11 @@ export function validateEnriched(d: EnrichedPlaceData): ValidationResult {
   // columns per the category-prompts cardColumns list.
   if (d.category_extras && typeof d.category_extras === "object" && Object.keys(d.category_extras).length > 0) {
     cleaned.category_extras = d.category_extras;
+  }
+  // 1:N 자식 배열 — 그대로 통과(orchestrator 가 컬럼 allow-list 로 필터 후 동기화).
+  if (Array.isArray(d.halls) && d.halls.length > 0) cleaned.halls = d.halls;
+  if (Array.isArray(d.studio_products) && d.studio_products.length > 0) {
+    cleaned.studio_products = d.studio_products;
   }
   cleaned.source_urls = d.source_urls;
   const useful = Object.keys(cleaned).some((k) =>
