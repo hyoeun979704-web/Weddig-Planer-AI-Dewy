@@ -1726,8 +1726,10 @@ const Field = ({
   </div>
 );
 
-// 식장 주소 — 네이버 주소 검색(NCP Geocoding)으로 정확한 주소를 채운다.
+// 식장 검색 — 네이버 지역검색(상호명) + 지오코딩(주소)으로 후보를 채운다.
 interface AddrResult {
+  /** 업체/건물명 (지역검색 결과에만 있음) */
+  name?: string;
   roadAddress: string;
   jibunAddress: string;
   lng: string;
@@ -1813,11 +1815,16 @@ const VenueAddressField = ({
                 }}
               >
                 <span className="text-[13px] text-foreground">
-                  {r.roadAddress || r.jibunAddress}
+                  {r.name || r.roadAddress || r.jibunAddress}
                 </span>
-                {r.jibunAddress && r.roadAddress && (
+                {/* 업체명이 제목이면 주소를, 주소가 제목이면 지번을 보조로 */}
+                {(r.name
+                  ? r.roadAddress || r.jibunAddress
+                  : r.roadAddress && r.jibunAddress) && (
                   <span className="block text-[11px] text-muted-foreground">
-                    {r.jibunAddress}
+                    {r.name
+                      ? r.roadAddress || r.jibunAddress
+                      : r.jibunAddress}
                   </span>
                 )}
               </button>
