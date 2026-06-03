@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Tag, Star, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { Tag, Star, ChevronRight, SlidersHorizontal, Sparkles } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { usePartnerDeals } from "@/hooks/usePartnerDeals";
+import { usePromotionalEvents } from "@/hooks/usePromotionalEvents";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import DealFilterSheet, { DealFilters, defaultFilters } from "@/components/deals/DealFilterSheet";
@@ -33,6 +37,13 @@ const Deals = () => {
   }, [isLoaded]);
 
   const { deals, featured, isLoading } = usePartnerDeals(selectedCategory);
+  const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
+  const { featured: promoFeatured, list: promoList } = usePromotionalEvents(
+    weddingSettings.persona_mode,
+    weddingSettings.wedding_style,
+  );
+  const promoEvents = [promoFeatured, ...promoList].filter(Boolean) as NonNullable<typeof promoFeatured>[];
 
   const hasActiveFilters = !!(filters.category || filters.region || filters.maxPrice || filters.keyword);
 
@@ -91,50 +102,35 @@ const Deals = () => {
         </div>
       </div>
 
-      {/* ── 꽃 머지 게임 이벤트 섹션 (full-bleed) ── */}
-      <button
-        onClick={() => navigate("/merge-game")}
-        className="w-full relative overflow-hidden cursor-pointer active:opacity-95 transition-opacity mb-5"
-        style={{
-          background: "linear-gradient(135deg, #FF8FAB 0%, #FFB3C6 40%, #FFC8A2 75%, #FFD700 100%)",
-        }}
-      >
-        {/* 배경 장식 원형들 */}
-        <span className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-white/10" />
-        <span className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full bg-white/10" />
-
-        <div className="relative flex items-center gap-4 px-5 py-5">
-          {/* 꽃 아이콘 그룹 */}
-          <div className="flex-shrink-0 flex flex-col items-center gap-0.5">
-            <span className="text-3xl drop-shadow"></span>
-            <div className="flex gap-0.5 text-base">
-              <span></span><span></span><span></span>
-            </div>
-          </div>
-
-          {/* 텍스트 */}
-          <div className="flex-1 text-left">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
-                 이벤트
-              </span>
-            </div>
-            <p className="font-extrabold text-white text-base leading-tight drop-shadow-sm">
-              꽃 머지 게임
-            </p>
-            <p className="text-white/85 text-xs mt-0.5 leading-snug">
-              꽃을 합쳐 프리미엄 부케를 완성하세요!
-            </p>
-          </div>
-
-          {/* CTA */}
-          <div className="flex-shrink-0 flex flex-col items-center gap-1">
-            <span className="bg-white text-pink-500 font-bold text-xs px-3 py-1.5 rounded-full shadow whitespace-nowrap">
-              지금 하기 →
-            </span>
+      {/* ── 진행 중 이벤트 (promotional_events DB) ── */}
+      {promoEvents.length > 0 && (
+        <div className="px-4 pt-4 pb-2">
+          <h2 className="font-bold text-foreground mb-3 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            진행 중 이벤트
+          </h2>
+          <div className="space-y-2">
+            {promoEvents.map((e) => (
+              <button
+                key={e.id}
+                onClick={() => navigate(user ? e.ctaPath : "/auth")}
+                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-border/60 bg-card text-left active:scale-[0.99] transition-transform"
+              >
+                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br", e.thumbBg ?? "from-muted to-muted")}>
+                  {e.icon && <span className="text-2xl" aria-hidden>{e.icon}</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold text-foreground truncate">{e.title}</p>
+                  {e.subtitle && <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1">{e.subtitle}</p>}
+                </div>
+                <span className="flex-shrink-0 px-3 py-1.5 rounded-full bg-[hsl(var(--pink-50))] text-primary text-[11px] font-bold whitespace-nowrap">
+                  {e.ctaLabel}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
-      </button>
+      )}
 
       {/* Featured Deals */}
       {featured.length > 0 && (
