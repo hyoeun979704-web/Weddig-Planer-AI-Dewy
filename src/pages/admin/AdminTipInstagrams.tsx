@@ -107,6 +107,97 @@ const REJECT_REASONS = [
   "카테고리 매칭 안 됨",
 ] as const;
 
+// 릴스 자동 수집 패널 — 큐레이션한 비즈니스 계정 소스 관리 + "지금 수집"(Business Discovery).
+function ReelAutoCollect({ onCollected }: { onCollected: () => void }) {
+  interface Acc { username: string; category: string; is_active: boolean; last_synced_at: string | null; last_sync_new: number | null; last_sync_error: string | null }
+  const [accounts, setAccounts] = useState<Acc[]>([]);
+  const [username, setUsername] = useState("");
+  const [category, setCategory] = useState("general");
+  const [busy, setBusy] = useState(false);
+  const [collecting, setCollecting] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data } = await (supabase as any)
+      .from("tip_instagram_accounts")
+      .select("username,category,is_active,last_synced_at,last_sync_new,last_sync_error")
+      .order("added_at", { ascending: false });
+    setAccounts((data ?? []) as Acc[]);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const addAccount = async () => {
+    const u = username.trim().replace(/^@/, "");
+    if (!u) return;
+    setBusy(true);
+    const { error } = await (supabase as any)
+      .from("tip_instagram_accounts")
+      .upsert({ username: u, category }, { onConflict: "username" });
+    setBusy(false);
+    if (error) { toast({ title: "추가 실패", description: error.message, variant: "destructive" }); return; }
+    setUsername("");
+    await load();
+  };
+  const removeAccount = async (u: string) => {
+    await (supabase as any).from("tip_instagram_accounts").delete().eq("username", u);
+    await load();
+  };
+  const collect = async () => {
+    setCollecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("instagram-collect-reels", { body: {} });
+      if (error) throw error;
+      const r = data as { total_new?: number; accounts?: number; error?: string };
+      if (r.error) throw new Error(r.error);
+      toast({ title: "수집 완료", description: `${r.accounts ?? 0}개 계정에서 신규 릴스 ${r.total_new ?? 0}건` });
+      await load();
+      onCollected();
+    } catch (e) {
+      toast({ title: "수집 실패", description: e instanceof Error ? e.message : "Meta 토큰/앱 설정을 확인하세요", variant: "destructive" });
+    } finally {
+      setCollecting(false);
+    }
+  };
+
+  return (
+    <div className="mb-5 rounded-xl border border-border p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-bold">릴스 자동 수집 <span className="font-normal text-muted-foreground">· 비즈니스 계정</span></h3>
+        <Button size="sm" onClick={collect} disabled={collecting || accounts.length === 0}>
+          {collecting ? <Loader2 className="w-4 h-4 animate-spin" /> : "지금 수집"}
+        </Button>
+      </div>
+      <p className="text-[11px] text-muted-foreground mb-3">
+        큐레이션한 비즈니스/크리에이터 계정의 최근 릴스를 Business Discovery 로 수집해 검토 대기로 적재합니다. (Meta 토큰·앱 심사 필요)
+      </p>
+      <div className="flex gap-2 mb-3">
+        <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="@username (비즈니스 계정)" className="flex-1" />
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Button size="sm" variant="outline" onClick={addAccount} disabled={busy || !username.trim()}>추가</Button>
+      </div>
+      {accounts.length > 0 && (
+        <div className="space-y-1.5">
+          {accounts.map((a) => (
+            <div key={a.username} className="flex items-center gap-2 text-xs">
+              <span className="font-medium text-foreground">@{a.username}</span>
+              <span className="text-muted-foreground">{CATEGORIES.find((c) => c.value === a.category)?.label ?? a.category}</span>
+              {a.last_synced_at && <span className="text-muted-foreground">· 신규 {a.last_sync_new ?? 0}</span>}
+              {a.last_sync_error && <span className="text-destructive truncate max-w-[140px]" title={a.last_sync_error}>· 오류</span>}
+              <button onClick={() => removeAccount(a.username)} className="ml-auto p-1 hover:bg-muted rounded" aria-label="삭제">
+                <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const AdminTipInstagrams = () => {
   const [items, setItems] = useState<InstagramPost[]>([]);
   const [loading, setLoading] = useState(false);
@@ -255,6 +346,8 @@ const AdminTipInstagrams = () => {
           </Button>
         }
       >
+        <ReelAutoCollect onCollected={load} />
+
         <div className="flex items-center gap-2 mb-4">
           <Button size="sm" variant={filter === "pending" ? "default" : "outline"} onClick={() => setFilter("pending")}>
             검토 대기만
