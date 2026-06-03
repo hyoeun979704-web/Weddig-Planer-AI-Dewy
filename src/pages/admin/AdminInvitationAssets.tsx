@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Loader2, Trash2, Eye, EyeOff, Pencil } from "lucide-react";
+import { Plus, Loader2, Trash2, Eye, EyeOff, Pencil, Scissors } from "lucide-react";
+import SheetSplitDialog from "@/components/admin/SheetSplitDialog";
 import {
   Dialog,
   DialogContent,
@@ -80,6 +81,7 @@ const AdminInvitationAssets = () => {
   const [tagsInput, setTagsInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("ALL");
   const [filterCollection, setFilterCollection] = useState<string>("ALL");
   const [query, setQuery] = useState("");
@@ -318,7 +320,16 @@ const AdminInvitationAssets = () => {
         title="청첩장 에셋"
         description="장식 에셋 (꽃·프레임·리본 등) 관리"
         rightAction={
-          <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+          <div className="flex gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => setSheetOpen(true)}
+            >
+              <Scissors className="w-4 h-4" />시트 자동분리
+            </Button>
+            <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
                 <Plus className="w-4 h-4" />새 에셋
@@ -465,7 +476,8 @@ const AdminInvitationAssets = () => {
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         }
       >
         {/* 카테고리 필터 */}
@@ -605,6 +617,13 @@ const AdminInvitationAssets = () => {
             {filtered.map((a) => renderCard(a))}
           </div>
         )}
+
+        <SheetSplitDialog
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+          onDone={fetchData}
+          categories={CATEGORIES}
+        />
       </AdminLayout>
     </AdminGuard>
   );
