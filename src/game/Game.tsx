@@ -38,6 +38,22 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
   const [adCountdown, setAdCountdown] = useState<number | null>(null);
   const adTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // 꽃 에셋 이미지 캐시. public/game-flowers/{id}.png 가 있으면 그걸 쓰고, 없으면
+  // 기존 이모지+원 렌더로 폴백한다. 물리 충돌은 원(반지름 r)이지만 에셋이 항공샷
+  // 둥근 부케라 실루엣이 거의 일치 — 이미지를 충돌 지름에 맞춰 그려 형태를 맞춘다.
+  const flowerImgRef = useRef<Map<number, HTMLImageElement>>(new Map());
+  const flowerReadyRef = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    for (let id = 1; id <= 12; id++) {
+      if (flowerImgRef.current.has(id)) continue;
+      const img = new Image();
+      img.onload = () => flowerReadyRef.current.add(id);
+      img.onerror = () => flowerReadyRef.current.delete(id);
+      img.src = `/game-flowers/${id}.png`;
+      flowerImgRef.current.set(id, img);
+    }
+  }, []);
+
   const { gameState, dropXRef, mergeFlashesRef, startGame, dropFlower, setDropX, tick, getBodies } =
     useGameLogic({ canvasRef, onScoreChange, onGameOver });
 
@@ -54,6 +70,15 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     ctx.globalAlpha = alpha;
     ctx.translate(x, y);
     ctx.rotate(angle);
+
+    // 에셋 이미지가 준비됐으면 그걸로 렌더(충돌 지름에 맞춰 약간 키워 꽉 차게).
+    if (flowerReadyRef.current.has(levelId)) {
+      const img = flowerImgRef.current.get(levelId)!;
+      const size = r * 2 * 1.08;
+      ctx.drawImage(img, -size / 2, -size / 2, size, size);
+      ctx.restore();
+      return;
+    }
 
     const grad = ctx.createRadialGradient(0, -r * 0.25, r * 0.05, 0, 0, r);
     grad.addColorStop(0, lighten(level.color, 40));
