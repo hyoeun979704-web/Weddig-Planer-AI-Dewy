@@ -395,11 +395,20 @@ const AdminTemplateEditor = ({
           t.tagName === "TEXTAREA" ||
           t.isContentEditable);
       // 되돌리기/다시실행 — 입력칸 밖에서 (입력칸 안은 브라우저 기본 텍스트 undo 유지)
-      if (!inField && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
-        e.preventDefault();
-        if (e.shiftKey) redo();
-        else undo();
-        return;
+      if (!inField && (e.ctrlKey || e.metaKey)) {
+        const k = e.key.toLowerCase();
+        if (k === "z") {
+          e.preventDefault();
+          if (e.shiftKey) redo();
+          else undo();
+          return;
+        }
+        if (k === "y") {
+          // Windows 다시실행 관습
+          e.preventDefault();
+          redo();
+          return;
+        }
       }
       if (inField) return;
       if (e.key === "Escape") setSelId(null);

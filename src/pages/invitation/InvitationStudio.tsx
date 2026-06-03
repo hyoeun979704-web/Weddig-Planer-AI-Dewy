@@ -528,14 +528,14 @@ const InvitationStudio = () => {
   const handleFontSizeChange = (delta: number) => {
     if (!selectedSlot || selectedSlot.type !== "text") return;
     const id = selectedSlot.id;
-    const base =
-      activeFaceState.fontSizeOverrides[id] ?? selectedSlot.font_size ?? 18;
-    const next = Math.max(8, Math.min(200, base + delta));
+    const fallback = selectedSlot.font_size ?? 18;
+    // base 를 업데이터 안(최신 상태)에서 읽어 빠른 연속 탭이 누적되게 (배치 렌더 stale 방지)
     setFace(
-      (p) => ({
-        ...p,
-        fontSizeOverrides: { ...p.fontSizeOverrides, [id]: next },
-      }),
+      (p) => {
+        const base = p.fontSizeOverrides[id] ?? fallback;
+        const next = Math.max(8, Math.min(200, base + delta));
+        return { ...p, fontSizeOverrides: { ...p.fontSizeOverrides, [id]: next } };
+      },
       { coalesce: true }, // 연속 −/+ 탭은 한 단계로
     );
   };
@@ -920,7 +920,12 @@ const InvitationStudio = () => {
   // 렌더링
   // ────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-32">
+    <div
+      className="min-h-screen bg-background max-w-[430px] mx-auto"
+      style={{
+        paddingBottom: "calc(var(--app-bottom-nav-total-height) + 80px)",
+      }}
+    >
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button
@@ -1987,8 +1992,11 @@ const StudioView = ({
       </div>
     </main>
 
-    {/* 하단 고정 편집툴바 — 스크롤·면 전환과 무관하게 항상 접근 가능한 편집 도구 */}
-    <div className="fixed bottom-[68px] left-1/2 -translate-x-1/2 z-40 w-[calc(100%-1.5rem)] max-w-[406px]">
+    {/* 하단 고정 편집툴바 — 스크롤·면 전환과 무관하게 항상 접근. BottomNav(safe-area 포함) 위에 띄움 */}
+    <div
+      className="fixed left-1/2 -translate-x-1/2 z-40 w-[calc(100%-1.5rem)] max-w-[406px]"
+      style={{ bottom: "calc(var(--app-bottom-nav-total-height) + 8px)" }}
+    >
       <div className="flex items-center gap-1 rounded-2xl border border-border bg-background/95 backdrop-blur px-2 py-1.5 shadow-lg">
         <button
           type="button"
