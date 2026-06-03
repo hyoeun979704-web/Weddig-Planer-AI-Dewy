@@ -303,7 +303,7 @@ const InvitationFlow = () => {
         .eq("is_active", true)
         .eq("format", formatFilter)
         .in("face", ["front", "both"]) // 전면으로 쓸 수 있는 템플릿만
-        .order("display_order", { ascending: false });
+        .order("display_order", { ascending: true }); // 작을수록 우선(1번이 최상단)
       if (error) {
         toast({
           title: "템플릿을 불러올 수 없어요",

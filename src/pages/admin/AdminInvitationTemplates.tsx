@@ -375,7 +375,7 @@ const AdminInvitationTemplates = () => {
       (supabase as any)
         .from("invitation_templates")
         .select("*")
-        .order("display_order", { ascending: false })
+        .order("display_order", { ascending: true }) // 작을수록 우선(1번이 최상단)
         .order("created_at", { ascending: false }),
       (supabase as any)
         .from("invitation_fonts")
@@ -1111,6 +1111,9 @@ const AdminInvitationTemplates = () => {
                         }))
                       }
                     />
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      숫자가 작을수록 위에 노출돼요 (1번이 최상단).
+                    </p>
                   </div>
                 </div>
               </div>
