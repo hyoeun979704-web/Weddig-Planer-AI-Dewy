@@ -128,7 +128,7 @@ export default function PlaceRecommendations({ place }: { place: RecAnchor }) {
       )}
       {(isLoading || nearby.length > 0) && (
         <Row
-          title={copy.nearbyTitle}
+          title="이 근처 다른 준비"
           hint={copy.nearbyHint}
           items={nearby}
           loading={isLoading}
