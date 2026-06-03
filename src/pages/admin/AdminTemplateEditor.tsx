@@ -14,6 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import InvitationCanvas from "@/components/invitation/InvitationCanvas";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
+import { useUndoable } from "@/hooks/useUndoable";
+import { Undo2, Redo2 } from "lucide-react";
 import {
   collectFontFamilies,
   getInvitationPages,
@@ -221,9 +223,14 @@ const AdminTemplateEditor = ({
   onClose: () => void;
   onSaved: () => void;
 }) => {
-  const [layout, setLayout] = useState<InvitationLayout>(() =>
-    clone(template.layout),
-  );
+  const {
+    state: layout,
+    set: setLayout,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useUndoable<InvitationLayout>(() => clone(template.layout));
   const [name, setName] = useState(template.name);
   const [pageIdx, setPageIdx] = useState(0);
   const [selId, setSelId] = useState<string | null>(null);
@@ -269,7 +276,11 @@ const AdminTemplateEditor = ({
   const dispScale = dispW / page.canvas.w;
 
   // ── 슬롯 변경 헬퍼 (현재 페이지 슬롯 배열을 갱신) ──
-  const setPageSlots = (updater: (s: InvitationSlot[]) => InvitationSlot[]) => {
+  // coalesce: 드래그·리사이즈처럼 연속 변경을 한 undo 단계로 묶음.
+  const setPageSlots = (
+    updater: (s: InvitationSlot[]) => InvitationSlot[],
+    opts?: { coalesce?: boolean },
+  ) => {
     setDirty(true);
     setLayout((prev) => {
       const next = clone(prev);
@@ -280,12 +291,17 @@ const AdminTemplateEditor = ({
         next.slots = updater(next.slots);
       }
       return next;
-    });
+    }, opts);
   };
 
-  const updateSlot = (id: string, patch: Partial<InvitationSlot>) =>
-    setPageSlots((arr) =>
-      arr.map((s) => (s.id === id ? { ...s, ...patch } : s)),
+  const updateSlot = (
+    id: string,
+    patch: Partial<InvitationSlot>,
+    opts?: { coalesce?: boolean },
+  ) =>
+    setPageSlots(
+      (arr) => arr.map((s) => (s.id === id ? { ...s, ...patch } : s)),
+      opts,
     );
 
   // 드래그 이동 — 스냅 ON 이면 10px 격자에 맞춰 좌표를 깔끔하게(CLAUDE.md 그리드 규칙).
@@ -293,7 +309,7 @@ const AdminTemplateEditor = ({
   const moveSlot = (id: string, x: number, y: number) => {
     const q = (n: number) =>
       snap ? Math.round(n / SNAP_STEP) * SNAP_STEP : Math.round(n);
-    updateSlot(id, { x: q(x), y: q(y) });
+    updateSlot(id, { x: q(x), y: q(y) }, { coalesce: true });
   };
 
   // 숫자 입력 — 빈 값/NaN 이면 무시(0 으로 튀지 않게)
@@ -373,13 +389,19 @@ const AdminTemplateEditor = ({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      if (
+      const inField =
         t &&
         (t.tagName === "INPUT" ||
           t.tagName === "TEXTAREA" ||
-          t.isContentEditable)
-      )
+          t.isContentEditable);
+      // 되돌리기/다시실행 — 입력칸 밖에서 (입력칸 안은 브라우저 기본 텍스트 undo 유지)
+      if (!inField && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
         return;
+      }
+      if (inField) return;
       if (e.key === "Escape") setSelId(null);
       else if ((e.key === "Delete" || e.key === "Backspace") && selId) {
         e.preventDefault();
@@ -389,7 +411,7 @@ const AdminTemplateEditor = ({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selId]);
+  }, [selId, undo, redo]);
 
   const save = async () => {
     if (!name.trim()) {
@@ -465,6 +487,26 @@ const AdminTemplateEditor = ({
           ))}
         </div>
         <div className="ml-auto flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={undo}
+            disabled={!canUndo}
+            title="되돌리기 (Ctrl+Z)"
+            aria-label="되돌리기"
+          >
+            <Undo2 className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={redo}
+            disabled={!canRedo}
+            title="다시 실행 (Ctrl+Shift+Z)"
+            aria-label="다시 실행"
+          >
+            <Redo2 className="w-4 h-4" />
+          </Button>
           <Button onClick={save} disabled={saving} size="sm">
             {saving ? (
               <Loader2 className="w-4 h-4 mr-1 animate-spin" />
@@ -543,7 +585,9 @@ const AdminTemplateEditor = ({
                 slot={selected}
                 scale={dispScale}
                 snap={snap}
-                onResize={(w, h) => updateSlot(selected.id, { w, h })}
+                onResize={(w, h) =>
+                  updateSlot(selected.id, { w, h }, { coalesce: true })
+                }
               />
             )}
           </div>
