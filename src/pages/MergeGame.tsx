@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Trophy, Coins, Medal } from 'lucide-react';
 import { Game } from '@/game/Game';
+import AdBanner from '@/components/ads/AdBanner';
 import { useGamePoints } from '@/hooks/useGamePoints';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -134,6 +135,9 @@ export default function MergeGame() {
           bestScore={effectiveBest}
         />
       </div>
+
+      {/* 하단 광고 배너 (웹=AdSense / 네이티브=AdMob). 미설정 시 아무것도 안 그림. */}
+      <AdBanner className="flex-shrink-0 w-full" />
     </div>
   );
 }
