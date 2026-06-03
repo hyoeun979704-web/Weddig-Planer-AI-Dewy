@@ -74,6 +74,7 @@ const AdminInvitationAssets = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>("ALL");
+  const [query, setQuery] = useState("");
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -211,10 +212,22 @@ const AdminInvitationAssets = () => {
     }
   };
 
-  const filtered =
-    filterCategory === "ALL"
-      ? items
-      : items.filter((a) => a.category === filterCategory);
+  const q = query.trim().toLowerCase();
+  const filtered = items.filter(
+    (a) =>
+      (filterCategory === "ALL" || a.category === filterCategory) &&
+      (!q ||
+        a.name.toLowerCase().includes(q) ||
+        (a.tags ?? []).some((t: string) => t.toLowerCase().includes(q))),
+  );
+  // 등록된 전체 태그(현재 카테고리 기준) — 빠른 필터 칩
+  const tagPool = Array.from(
+    new Set(
+      items
+        .filter((a) => filterCategory === "ALL" || a.category === filterCategory)
+        .flatMap((a) => (a.tags ?? []) as string[]),
+    ),
+  ).sort();
 
   return (
     <AdminGuard>
@@ -384,6 +397,37 @@ const AdminInvitationAssets = () => {
               </button>
             );
           })}
+        </div>
+
+        {/* 태그·이름 검색 + 빠른 태그 칩 */}
+        <div className="mb-4">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="태그·이름 검색 (예: heart, frame, wavy, 레드, bow)"
+            className="w-full h-9 px-3 rounded-lg border border-border bg-background text-sm"
+          />
+          {tagPool.length > 0 && (
+            <div className="flex gap-1.5 flex-wrap mt-2">
+              {tagPool.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setQuery(query === t ? "" : t)}
+                  className={`px-2 py-0.5 rounded-full text-[11px] border transition-colors ${
+                    query === t
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted text-muted-foreground border-border"
+                  }`}
+                >
+                  #{t}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="text-[11px] text-muted-foreground mt-1.5">
+            {filtered.length}개 표시
+          </p>
         </div>
 
         {isLoading ? (
