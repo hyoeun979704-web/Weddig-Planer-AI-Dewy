@@ -418,7 +418,7 @@ const InvitationStudio = () => {
     const id = selectedSlot.id;
     setFace(
       (p) => ({ ...p, textOverrides: { ...p.textOverrides, [id]: text } }),
-      { coalesce: true }, // 연속 타이핑은 한 단계로 묶음
+      { coalesceKey: "text:" + id }, // 같은 슬롯 연속 타이핑만 한 단계로
     );
     resetIdleTimer();
   };
@@ -448,7 +448,7 @@ const InvitationStudio = () => {
         ...p,
         positionOverrides: { ...p.positionOverrides, [id]: { x, y } },
       }),
-      { coalesce: true }, // 드래그 연속 이동은 한 단계로 묶음
+      { coalesceKey: "move:" + id }, // 같은 슬롯 드래그 연속 이동만 한 단계로
     );
   };
 
@@ -536,7 +536,7 @@ const InvitationStudio = () => {
         const next = Math.max(8, Math.min(200, base + delta));
         return { ...p, fontSizeOverrides: { ...p.fontSizeOverrides, [id]: next } };
       },
-      { coalesce: true }, // 연속 −/+ 탭은 한 단계로
+      { coalesceKey: "size:" + id }, // 같은 슬롯 연속 −/+ 만 한 단계로
     );
   };
 
@@ -699,6 +699,74 @@ const InvitationStudio = () => {
     setActiveFace(f);
     setSelectedSlotId(null);
   };
+
+  // 키보드 단축키 (웹에서 편집하는 경우) — Ctrl/Cmd+Z 되돌리기, Shift+Z·Ctrl+Y 다시실행,
+  // Delete/Backspace 삭제, Esc 선택해제, 방향키 미세 이동(Shift=10px).
+  // 입력칸(텍스트 편집) 안에서는 브라우저 기본 동작 유지.
+  useEffect(() => {
+    if (step !== "studio") return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const inField =
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.isContentEditable);
+      if (!inField && (e.ctrlKey || e.metaKey)) {
+        const k = e.key.toLowerCase();
+        if (k === "z") {
+          e.preventDefault();
+          if (e.shiftKey) activeHist.redo();
+          else activeHist.undo();
+          return;
+        }
+        if (k === "y") {
+          e.preventDefault();
+          activeHist.redo();
+          return;
+        }
+      }
+      if (inField) return;
+      if (e.key === "Escape") {
+        setSelectedSlotId(null);
+        return;
+      }
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedSlot) {
+        e.preventDefault();
+        handleDeleteSlot();
+        return;
+      }
+      if (selectedSlot && e.key.startsWith("Arrow")) {
+        const stepPx = e.shiftKey ? 10 : 1;
+        const dx =
+          e.key === "ArrowLeft" ? -stepPx : e.key === "ArrowRight" ? stepPx : 0;
+        const dy =
+          e.key === "ArrowUp" ? -stepPx : e.key === "ArrowDown" ? stepPx : 0;
+        if (dx || dy) {
+          e.preventDefault();
+          const id = selectedSlot.id;
+          const bx = selectedSlot.x;
+          const by = selectedSlot.y;
+          setFace(
+            (p) => {
+              const cur = p.positionOverrides[id] ?? { x: bx, y: by };
+              return {
+                ...p,
+                positionOverrides: {
+                  ...p.positionOverrides,
+                  [id]: { x: cur.x + dx, y: cur.y + dy },
+                },
+              };
+            },
+            { coalesceKey: "move:" + id },
+          );
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, activeFace, selectedSlot]);
 
   // 후면 템플릿 목록 로드 (face in back/both)
   const loadBackTemplates = useCallback(async () => {
