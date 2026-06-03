@@ -77,15 +77,28 @@ async function call<T>(
   if (sort) params.set("sort", sort);
   const url = `${endpoint}?${params.toString()}`;
 
-  // Up to 3 attempts on 429. Backoff: 2s, 4s, 8s.
+  // Up to 3 attempts on 429 or network stall. Backoff: 2s, 4s, 8s.
   for (let attempt = 0; attempt < 3; attempt++) {
     await acquireSlot();
-    const res = await fetch(url, {
-      headers: {
-        "X-Naver-Client-Id": env.clientId,
-        "X-Naver-Client-Secret": env.clientSecret,
-      },
-    });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        headers: {
+          "X-Naver-Client-Id": env.clientId,
+          "X-Naver-Client-Secret": env.clientSecret,
+        },
+        // A hung socket on any single call would freeze the whole serial loop
+        // and burn the 90-min CI budget. Abort + retry instead of waiting forever.
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch (e) {
+      const wait = 2000 * Math.pow(2, attempt);
+      console.warn(
+        `  Naver fetch error (${endpoint.split("/").pop()}): ${(e as Error).name}, retry in ${wait / 1000}s [${attempt + 1}/3]`
+      );
+      await sleep(wait);
+      continue;
+    }
     if (res.status === 429) {
       const wait = 2000 * Math.pow(2, attempt);
       console.warn(
@@ -99,7 +112,7 @@ async function call<T>(
     }
     return (await res.json()) as T;
   }
-  throw new Error(`Naver API ${endpoint} failed: 429 (3 retries exhausted)`);
+  throw new Error(`Naver API ${endpoint} failed (3 retries exhausted: 429 or network timeout)`);
 }
 
 function withinLastNMonths(yyyymmdd: string, months: number): boolean {
