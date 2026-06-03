@@ -1,4 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
+import { showRewardedAd } from '@/lib/ads/adService';
 import { useGameLogic } from './useGameLogic';
 import { GAME_WIDTH, GAME_HEIGHT, DEATH_LINE_Y, DROP_START_Y, FLOWER_LEVEL_MAP } from './constants';
 import type { GameState } from './types';
@@ -35,8 +36,8 @@ const POINTER_CURSOR = (() => {
 export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
-  const [adCountdown, setAdCountdown] = useState<number | null>(null);
-  const adTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [adLoading, setAdLoading] = useState(false);
+  const [rewardClaimed, setRewardClaimed] = useState(false);
 
   // 꽃 에셋 이미지 캐시. public/game-flowers/{id}.png 가 있으면 그걸 쓰고, 없으면
   // 기존 이모지+원 렌더로 폴백한다. 물리 충돌은 원(반지름 r)이지만 에셋이 항공샷
@@ -59,6 +60,23 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
   const gameStateRef = useRef<GameState>(gameState);
   gameStateRef.current = gameState;
+
+  // 포인트 2배 — 진짜 보상형 광고. 시청 완료 시 점수 2배 적립 후 새 게임.
+  const watchRewardedForDouble = useCallback(async () => {
+    if (adLoading || rewardClaimed) return;
+    setAdLoading(true);
+    try {
+      const ok = await showRewardedAd();
+      if (ok) {
+        setRewardClaimed(true);
+        onDoublePoints?.(gameStateRef.current.score);
+        setRewardClaimed(false);
+        startGame();
+      }
+    } finally {
+      setAdLoading(false);
+    }
+  }, [adLoading, rewardClaimed, onDoublePoints, startGame]);
 
   // ─── 꽃 원형 렌더링 ───────────────────────────────────────────────────
   function drawFlower(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, levelId: number, alpha = 1) {
@@ -272,10 +290,9 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       const btn1Y = popY + 112;
       const btn1H = 36;
       const btnX = (GAME_WIDTH - btnW) / 2;
-      const currentAdCountdown = adCountdown;
 
-      if (currentAdCountdown === null) {
-        // 아직 안 눌림 — 광고 시청 시작 버튼
+      if (!adLoading) {
+        // 보상형 광고 시청 → 포인트 2배 버튼
         const goldGrad = ctx.createLinearGradient(btnX, btn1Y, btnX + btnW, btn1Y);
         goldGrad.addColorStop(0, '#C9A96E');
         goldGrad.addColorStop(1, '#E8D5A3');
@@ -286,9 +303,9 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 13px sans-serif';
-        ctx.fillText(` 포인트 2배 받기 (${earnedPoints * 2}P)`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
-      } else if (currentAdCountdown > 0) {
-        // 카운트다운 중 — 비활성 버튼 + 타이머
+        ctx.fillText(`광고 보고 포인트 2배 (${earnedPoints * 2}P)`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
+      } else {
+        // 광고 로딩/시청 중 — 비활성
         ctx.fillStyle = '#999';
         ctx.beginPath();
         ctx.roundRect(btnX, btn1Y, btnW, btn1H, 10);
@@ -296,17 +313,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 13px sans-serif';
-        ctx.fillText(`⏳ 광고 시청 중... ${currentAdCountdown}초`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
-      } else {
-        // 카운트다운 완료 — 비활성 표시 (실제 버튼은 HTML 오버레이)
-        ctx.fillStyle = '#aaa';
-        ctx.beginPath();
-        ctx.roundRect(btnX, btn1Y, btnW, btn1H, 10);
-        ctx.fill();
-
-        ctx.fillStyle = '#ddd';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillText(` 우측 상단에서 포인트 받기`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
+        ctx.fillText('광고 불러오는 중...', GAME_WIDTH / 2, btn1Y + btn1H / 2);
       }
 
       // 다시하기 버튼
@@ -321,7 +328,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.font = 'bold 13px sans-serif';
       ctx.fillText(' 다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
     }
-  }, [getBodies, dropXRef, mergeFlashesRef, adCountdown]);
+  }, [getBodies, dropXRef, mergeFlashesRef, adLoading]);
 
   // ─── RAF 루프 ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -384,20 +391,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         const btn1Y = popY + 112;
         const btn1H = 36;
         if (coords.x >= btnX && coords.x <= btnX + btnW && coords.y >= btn1Y && coords.y <= btn1Y + btn1H) {
-          if (adCountdown === null) {
-            // 15초 카운트다운 시작
-            setAdCountdown(15);
-            if (adTimerRef.current) clearInterval(adTimerRef.current);
-            adTimerRef.current = setInterval(() => {
-              setAdCountdown(prev => {
-                if (prev === null || prev <= 1) {
-                  if (adTimerRef.current) clearInterval(adTimerRef.current);
-                  return 0;
-                }
-                return prev - 1;
-              });
-            }, 1000);
-          }
+          void watchRewardedForDouble();
           return;
         }
 
@@ -405,8 +399,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         const btn2Y = btn1Y + btn1H + 10;
         const btn2H = 36;
         if (coords.x >= btnX && coords.x <= btnX + btnW && coords.y >= btn2Y && coords.y <= btn2Y + btn2H) {
-          setAdCountdown(null);
-          if (adTimerRef.current) clearInterval(adTimerRef.current);
+          setRewardClaimed(false);
           startGame();
           return;
         }
@@ -415,7 +408,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
       dropFlower();
     },
-    [dropFlower, getCanvasCoords, startGame, onDoublePoints, adCountdown]
+    [dropFlower, getCanvasCoords, startGame, watchRewardedForDouble]
   );
 
   return (
@@ -427,23 +420,6 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
           <span className="text-lg font-bold text-primary tabular-nums">{gameState.score}</span>
         </div>
         <div className="flex items-center gap-1">
-          {gameState.phase === 'gameover' && adCountdown === 0 && (
-            <button
-              onClick={() => {
-                onDoublePoints?.(gameState.score);
-                setAdCountdown(null);
-                if (adTimerRef.current) clearInterval(adTimerRef.current);
-                startGame();
-              }}
-              className="px-3 py-1.5 rounded-full text-xs font-bold text-white animate-pulse"
-              style={{
-                background: 'linear-gradient(135deg, #C9A96E, #E8D5A3)',
-                boxShadow: '0 2px 12px rgba(201, 169, 110, 0.5)',
-              }}
-            >
-               포인트 2배 받기!
-            </button>
-          )}
           <div className="flex items-center gap-1 text-muted-foreground">
             <span className="text-xs"></span>
             <span className="text-sm font-semibold text-primary/80 tabular-nums">{bestScore}점</span>
