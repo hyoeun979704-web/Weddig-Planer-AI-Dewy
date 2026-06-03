@@ -92,6 +92,11 @@ function fmtPrice(
 const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }: Props) => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<TabKey>("basic");
+  // 탭 전환 시 새 탭 내용을 위에서부터 보도록 페이지 상단으로 스크롤.
+  const selectTab = (t: TabKey) => {
+    setTab(t);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24 relative">
@@ -111,9 +116,9 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
       {/* Detail-page-only tab bar — sticky right under the header */}
       <nav className="sticky safe-sticky-below-header z-40 bg-card border-b border-border">
         <div className="flex">
-          <TabButton label="기본정보" active={tab === "basic"} onClick={() => setTab("basic")} />
-          <TabButton label="디테일정보" active={tab === "detail"} onClick={() => setTab("detail")} />
-          <TabButton label="리뷰" active={tab === "review"} onClick={() => setTab("review")} count={place.review_count} />
+          <TabButton label="기본정보" active={tab === "basic"} onClick={() => selectTab("basic")} />
+          <TabButton label="디테일정보" active={tab === "detail"} onClick={() => selectTab("detail")} />
+          <TabButton label="리뷰" active={tab === "review"} onClick={() => selectTab("review")} count={place.review_count} />
         </div>
       </nav>
 
@@ -250,13 +255,21 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
               </>
             )}
           </>
+        ) : place.instagram_url ? (
+          /* gallery 비어있고 instagram_url 있을 때 — 인스타 계정으로 실제 링크.
+             기존엔 안내 div 뿐이라 "Instagram 에서 보기" 가 눌리지 않았음(연동 안 됨). */
+          <a
+            href={place.instagram_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full h-full"
+            aria-label="Instagram에서 보기"
+          >
+            <PlaceImagePlaceholder category={place.category} instagramUrl={place.instagram_url} />
+          </a>
         ) : (
-          /* gallery 비어있을 때 fallback — instagram_url 있으면 인스타 안내,
-             없으면 카테고리 아이콘. 깨진 placeholder.svg 대신 의미 있는 안내. */
-          <PlaceImagePlaceholder
-            category={place.category}
-            instagramUrl={place.instagram_url}
-          />
+          /* instagram_url 없으면 카테고리 아이콘 placeholder. */
+          <PlaceImagePlaceholder category={place.category} instagramUrl={place.instagram_url} />
         )}
         {place.is_partner && (
           <span className="absolute top-3 left-3 px-2.5 py-1 bg-primary text-primary-foreground text-[11px] font-bold rounded-full">
