@@ -494,6 +494,7 @@ const InvitationFlow = () => {
   // ─────────────────────────────────────────────
   const [isFlowSaving, setIsFlowSaving] = useState(false);
   const [flowSavedAt, setFlowSavedAt] = useState<Date | null>(null);
+  const [flowSaveFailed, setFlowSaveFailed] = useState(false);
   useEffect(() => {
     if (step !== "wizard" || !user || !template) return;
     if (isGenerating || isFlowSaving) return;
@@ -540,8 +541,10 @@ const InvitationFlow = () => {
           if (data?.id) setInvitationId(data.id);
         }
         setFlowSavedAt(new Date());
+        setFlowSaveFailed(false);
       } catch {
-        // 조용히 실패 — 다음 변경 때 재시도. 생성 버튼은 그대로 동작.
+        // 실패를 표시 — 사용자가 인지하고 재시도/네트워크 확인 가능. 생성 버튼은 그대로 동작.
+        setFlowSaveFailed(true);
       } finally {
         setIsFlowSaving(false);
       }
@@ -932,7 +935,10 @@ const InvitationFlow = () => {
         });
       };
       appendTemplatePages(template, "front", canvasRef);
-      if (pages.length === 0) throw new Error("캔버스 추출 실패");
+      if (pages.length === 0)
+        throw new Error(
+          "미리보기가 아직 준비되지 않았어요. 사진·폰트가 모두 로드된 뒤 다시 시도해주세요.",
+        );
       if (backTemplate) {
         appendTemplatePages(backTemplate, "back", backCanvasRef);
       }
@@ -947,8 +953,10 @@ const InvitationFlow = () => {
       });
     } catch (e) {
       toast({
-        title: "PDF 실패",
-        description: e instanceof Error ? e.message : "오류",
+        title: "PDF 생성 실패",
+        description:
+          (e instanceof Error ? e.message : "알 수 없는 오류") +
+          " 문제가 계속되면 새로고침 후 다시 시도해주세요.",
         variant: "destructive",
       });
     } finally {
@@ -1137,15 +1145,21 @@ const InvitationFlow = () => {
             {step === "result" && "완성됐어요"}
           </h1>
           {step === "wizard" && (
-            <span className="text-[11px] text-muted-foreground tabular-nums">
+            <span
+              className={`text-[11px] tabular-nums ${
+                flowSaveFailed ? "text-rose-500 font-medium" : "text-muted-foreground"
+              }`}
+            >
               {isFlowSaving
                 ? "임시저장 중…"
-                : flowSavedAt
-                  ? `임시저장됨 ${flowSavedAt.toLocaleTimeString("ko-KR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}`
-                  : ""}
+                : flowSaveFailed
+                  ? "임시저장 실패 · 변경 시 재시도"
+                  : flowSavedAt
+                    ? `임시저장됨 ${flowSavedAt.toLocaleTimeString("ko-KR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}`
+                    : ""}
             </span>
           )}
           {step === "result" && (
