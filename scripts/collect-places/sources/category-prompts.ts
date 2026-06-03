@@ -32,7 +32,15 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- outdoor_available (bool): 야외 예식 가능.\n` +
       `- ceremony_only_available (bool): 예식만(식사 없이) 가능.\n` +
       `- hall_count (정수): 보유 홀 개수.\n` +
-      `- dress_code (문자열): 드레스 코드 명시 시.`,
+      `- dress_code (문자열): 드레스 코드 명시 시.\n` +
+      `\n[홀별 정보 → halls 배열 (★ 이 서비스의 핵심 차별 디테일! 보유 홀이 여러 개면 각 홀을 개별 객체로)]\n` +
+      `각 홀 객체 키: hall_name(필수), hall_type(${ENUM(["호텔", "컨벤션", "채플", "하우스", "가든", "스몰웨딩", "한옥", "야외"])}), ` +
+      `floor(예 "B1"/"3F"), min_guarantee(정수), max_guarantee(정수), capacity_seated(착석 정수), ` +
+      `rental_fee(대관료 KRW), meal_price(식대 1인 KRW), meal_type(${ENUM(["뷔페", "코스", "한식", "양식"])}), ` +
+      `includes_drinks(주류·음료 식대 포함 bool), ceremony_interval_min(예식 간격 분), ` +
+      `simultaneous_events(동시예식 여부 bool), ceiling_height(층고 m, 소수), virgin_road_length(버진로드 m, 소수), ` +
+      `tags(["통창","가든뷰","단독홀"] 등).\n` +
+      `※ 홀이 1개여도 1개짜리 배열로. 홀별 정보가 전혀 없으면 halls 생략.`,
     cardColumns: [
       "min_guarantee", "max_guarantee", "hall_styles", "meal_types",
       "food_tasting_available", "outdoor_available", "ceremony_only_available",
@@ -56,7 +64,16 @@ export const CATEGORY_PROMPTS: Record<CategoryLabel, CategoryPromptSpec> = {
       `- dress_provided (bool): 드레스 대여 포함.\n` +
       `- frame_included (bool): 부모님 액자 기본 포함 (별도면 false).\n` +
       `- photobook_pages (정수): 앨범 페이지 수.\n` +
-      `- editing_days (정수): 보정 후 결과물 받기까지 소요 일수.`,
+      `- editing_days (정수): 보정 후 결과물 받기까지 소요 일수.\n` +
+      `\n[상품 구성 → studio_products 배열 (★ 이 서비스의 핵심 차별 디테일! 패키지별 구성·컨셉)]\n` +
+      `각 상품 객체 키: product_name(필수, 예 "본식+리허설 풀패키지"), ` +
+      `product_type(${ENUM(["본식", "리허설", "본식+리허설", "풀패키지", "스냅"])}), price(패키지 정액 KRW), ` +
+      `concepts(컨셉·씬 ${ENUM(["한옥", "야간", "야외", "내추럴", "빈티지", "모던", "스냅"])}), ` +
+      `shoot_locations(["스튜디오","야외"] 등), original_count(원본 장수), retouch_count(보정본 셀렉 수), ` +
+      `album_pages(앨범 페이지), album_count(앨범 권수), frame_included(액자 bool), dress_included(드레스 bool), ` +
+      `hair_makeup_included(헤어·메이크업 bool), outdoor_included(야외촬영 bool), ` +
+      `includes(["원본 전체 제공","수정 1회 무료"] 등), notes("추가 보정 1장 3만원" 등).\n` +
+      `※ 패키지가 여러 개면 각각 객체로. 상품 정보가 없으면 studio_products 생략.`,
     cardColumns: [
       "shoot_styles", "shoot_locations", "total_photos", "original_count",
       "retouching_included", "includes_originals", "dress_provided",

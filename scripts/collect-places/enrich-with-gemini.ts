@@ -223,6 +223,41 @@ async function main() {
       }
     }
 
+    // 1:N children — 홀별(웨딩홀) / 상품 구성(스튜디오). category_extras 와 별도로
+    // 최상위 halls / studio_products 배열을 멱등 동기화(delete→insert).
+    let childMsg = "";
+    {
+      const c2 = c as unknown as Record<string, unknown>;
+      const childSpecs: Array<{ when: string; table: string; required: string; cols: string[]; src: unknown }> = [
+        {
+          when: "wedding_hall", table: "place_halls", required: "hall_name", src: c2.halls,
+          cols: ["hall_name", "hall_type", "floor", "min_guarantee", "max_guarantee", "capacity_seated",
+            "rental_fee", "meal_price", "meal_type", "includes_drinks", "ceremony_interval_min",
+            "simultaneous_events", "ceiling_height", "virgin_road_length", "tags"],
+        },
+        {
+          when: "studio", table: "place_studio_products", required: "product_name", src: c2.studio_products,
+          cols: ["product_name", "product_type", "price", "concepts", "shoot_locations", "original_count",
+            "retouch_count", "album_pages", "album_count", "frame_included", "dress_included",
+            "hair_makeup_included", "outdoor_included", "includes", "notes"],
+        },
+      ];
+      for (const cs of childSpecs) {
+        if (p.category !== cs.when || !Array.isArray(cs.src)) continue;
+        const rows = (cs.src as Record<string, unknown>[])
+          .filter((it) => typeof it?.[cs.required] === "string" && (it[cs.required] as string).trim())
+          .map((it) => {
+            const row: Record<string, unknown> = { place_id: p.place_id };
+            for (const col of cs.cols) if (it[col] != null) row[col] = it[col];
+            return row;
+          });
+        if (rows.length === 0) continue;
+        await supabase.from(cs.table).delete().eq("place_id", p.place_id);
+        const { error } = await supabase.from(cs.table).insert(rows);
+        childMsg += error ? ` ${cs.table}-fail` : ` +${cs.table.replace("place_", "")}(${rows.length})`;
+      }
+    }
+
     // places-level updates: description (only when null) + tags (merge with existing).
     let descMsg = "";
     let tagsMsg = "";
@@ -261,7 +296,7 @@ async function main() {
       errored++;
     } else {
       const fields = Object.keys(detailsUpdate).filter((k) => k !== "place_id").length;
-      console.log(`✓ ${fields} fields${descMsg}${tagsMsg}${cardMsg} [${c.source_urls?.length ?? 0} src]`);
+      console.log(`✓ ${fields} fields${descMsg}${tagsMsg}${cardMsg}${childMsg} [${c.source_urls?.length ?? 0} src]`);
       verified++;
     }
   }
