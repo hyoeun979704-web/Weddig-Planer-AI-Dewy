@@ -182,7 +182,8 @@ const CHILD_TABLES: Record<
   },
 };
 
-// 자식 배열을 place 단위로 멱등 동기화: 기존 행 삭제 후 재삽입.
+// 자식 배열을 place 단위로 멱등 동기화. delete+insert 를 원자적 RPC 로 처리해
+// (insert 실패 시 delete 도 롤백) 부분 실패로 인한 데이터 유실을 방지한다.
 async function syncChildren(
   supabase: ReturnType<typeof createClient>,
   placeId: string,
@@ -193,7 +194,7 @@ async function syncChildren(
   const rows = items
     .filter((it) => typeof it?.[spec.required] === "string" && (it[spec.required] as string).trim())
     .map((it, idx) => {
-      const row: Record<string, unknown> = { place_id: placeId };
+      const row: Record<string, unknown> = {};
       for (const col of spec.columns) {
         if (it[col] != null) row[col] = it[col];
       }
@@ -202,13 +203,13 @@ async function syncChildren(
     });
   if (rows.length === 0) return 0;
   if (dryRun) return rows.length;
-  await supabase.from(spec.table).delete().eq("place_id", placeId);
-  const { error } = await supabase.from(spec.table).insert(rows);
+  const rpc = spec.table === "place_halls" ? "replace_place_halls" : "replace_studio_products";
+  const { data, error } = await supabase.rpc(rpc, { p_place_id: placeId, p_rows: rows });
   if (error) {
     console.log(`  ⚠ ${spec.table}: ${error.message.slice(0, 80)}`);
     return 0;
   }
-  return rows.length;
+  return typeof data === "number" ? data : rows.length;
 }
 
 async function main() {

@@ -515,7 +515,7 @@ export const usePlaceDetail = (placeId: string | undefined) => {
               notes: (s.notes as string) ?? null,
               main_image_url: (s.main_image_url as string) ?? null,
             }))
-            .sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity))
+            .sort((a, b) => (a.price ?? Number.MAX_SAFE_INTEGER) - (b.price ?? Number.MAX_SAFE_INTEGER))
         : [];
 
       return {
