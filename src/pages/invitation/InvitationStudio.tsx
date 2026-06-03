@@ -63,6 +63,7 @@ import {
   type InvitationUserData,
   type BgFill,
 } from "@/lib/invitation/types";
+import { readImageSize, lowResPrintWarning } from "@/lib/invitation/imageQuality";
 
 /**
  * 청첩장 스튜디오 — wizard → template 선택 → studio 편집.
@@ -548,6 +549,9 @@ const InvitationStudio = () => {
       toast({ title: "파일이 너무 커요 (최대 5MB)", variant: "destructive" });
       return;
     }
+    // 인쇄(종이) 저해상도 경고 — 차단하지 않고 알림만(사용자가 가진 사진으로 진행 가능)
+    const warn = lowResPrintWarning(await readImageSize(file), template?.format);
+    if (warn) toast({ title: "사진 해상도 확인", description: warn });
     const id = selectedSlot.id;
     const applyFace = setFace;
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
