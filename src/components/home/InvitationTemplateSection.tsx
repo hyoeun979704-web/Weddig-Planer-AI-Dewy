@@ -50,7 +50,7 @@ const InvitationTemplateSection = () => {
         .select("id, name, thumbnail_url, format, tone, price_hearts")
         .eq("is_active", true)
         .in("face", ["front", "both"])
-        .order("display_order", { ascending: false })
+        .order("display_order", { ascending: true })
         .limit(10);
       setTemplates((data as TemplateRow[]) ?? []);
     })();

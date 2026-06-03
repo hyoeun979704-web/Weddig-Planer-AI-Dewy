@@ -172,6 +172,7 @@ const AdminTemplateEditor = ({
   const [showGrid, setShowGrid] = useState(true);
   const [assets, setAssets] = useState<AssetOpt[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [assetQuery, setAssetQuery] = useState("");
 
   // 에셋 라이브러리 로드 (편집기에서 카드에 끌어다 놓기용)
   useEffect(() => {
@@ -753,15 +754,35 @@ const AdminTemplateEditor = ({
                 <X className="w-4 h-4" />
               </button>
             </div>
-            {ASSET_CATS.filter((c) => assets.some((a) => a.category === c)).map(
-              (cat) => (
+            <Input
+              autoFocus
+              value={assetQuery}
+              onChange={(e) => setAssetQuery(e.target.value)}
+              placeholder="에셋 이름 검색 (예: 꽃, 리본, 하트)"
+              className="h-9 text-sm mb-3"
+            />
+            {(() => {
+              const aq = assetQuery.trim().toLowerCase();
+              const match = (a: AssetOpt) =>
+                !aq || a.name.toLowerCase().includes(aq);
+              const cats = ASSET_CATS.filter((c) =>
+                assets.some((a) => a.category === c && match(a)),
+              );
+              if (cats.length === 0) {
+                return (
+                  <p className="text-center text-xs text-muted-foreground py-12">
+                    검색 결과가 없어요.
+                  </p>
+                );
+              }
+              return cats.map((cat) => (
                 <div key={cat} className="mb-4">
                   <p className="text-[11px] font-semibold text-muted-foreground mb-1.5">
                     {cat}
                   </p>
                   <div className="grid grid-cols-5 gap-2">
                     {assets
-                      .filter((a) => a.category === cat)
+                      .filter((a) => a.category === cat && match(a))
                       .map((a) => (
                         <button
                           key={a.id}
@@ -778,8 +799,8 @@ const AdminTemplateEditor = ({
                       ))}
                   </div>
                 </div>
-              ),
-            )}
+              ));
+            })()}
           </div>
         </div>
       )}

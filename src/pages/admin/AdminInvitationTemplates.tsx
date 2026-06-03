@@ -12,6 +12,7 @@ import {
   Eye,
   EyeOff,
   Pencil,
+  Copy,
   FileJson,
   Images,
   Rows3,
@@ -375,7 +376,7 @@ const AdminInvitationTemplates = () => {
       (supabase as any)
         .from("invitation_templates")
         .select("*")
-        .order("display_order", { ascending: false })
+        .order("display_order", { ascending: true }) // 작을수록 우선(1번이 최상단)
         .order("created_at", { ascending: false }),
       (supabase as any)
         .from("invitation_fonts")
@@ -514,6 +515,56 @@ const AdminInvitationTemplates = () => {
       return;
     }
 
+    // 인쇄 규격(print) 비율 = 캔버스 비율 검증 (CLAUDE.md: 안 맞으면 export 시 늘어남/레터박스)
+    const checkPrintRatio = (
+      cv?: { w?: unknown; h?: unknown },
+      pr?: { wMm?: unknown; hMm?: unknown },
+    ): string | null => {
+      if (!pr) return null;
+      const { wMm, hMm } = pr;
+      if (
+        typeof wMm !== "number" ||
+        typeof hMm !== "number" ||
+        wMm <= 0 ||
+        hMm <= 0
+      )
+        return "print.wMm / print.hMm 은 0보다 큰 숫자여야 해요.";
+      if (
+        !cv ||
+        typeof cv.w !== "number" ||
+        typeof cv.h !== "number" ||
+        cv.w <= 0 ||
+        cv.h <= 0
+      )
+        return null; // 캔버스는 위에서 이미 검증됨
+      const cr = cv.w / cv.h;
+      const prr = wMm / hMm;
+      if (Math.abs(cr - prr) / prr > 0.01)
+        return `캔버스 비율(${cr.toFixed(3)})과 인쇄 비율(${prr.toFixed(3)})이 달라요. export 시 늘어나거나 여백이 생겨요. canvas.w/h 또는 print.wMm/hMm 을 맞춰주세요.`;
+      return null;
+    };
+    let printErr = checkPrintRatio(
+      canvas,
+      (layout as { print?: { wMm?: unknown; hMm?: unknown } }).print,
+    );
+    if (!printErr && Array.isArray(pages)) {
+      for (const page of pages as Array<{
+        canvas?: { w?: unknown; h?: unknown };
+        print?: { wMm?: unknown; hMm?: unknown };
+      }>) {
+        printErr = checkPrintRatio(page.canvas, page.print);
+        if (printErr) break;
+      }
+    }
+    if (printErr) {
+      toast({
+        title: "인쇄 규격(비율)을 확인해주세요",
+        description: printErr,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSaving(true);
     const payload = { ...form, slug: form.slug?.trim() || null, layout };
     const { error } = editingId
@@ -557,6 +608,31 @@ const AdminInvitationTemplates = () => {
     });
     setLayoutJson(JSON.stringify(t.layout ?? {}, null, 2));
     setIsOpen(true);
+  };
+
+  // 복제: 기존 템플릿을 바탕으로 새 항목 폼을 연다(이미지·JSON 재입력 불필요).
+  const handleDuplicate = (t: Template) => {
+    setEditingId(null); // 새 row 로 저장(insert)
+    setForm({
+      slug: null, // slug 는 고유해야 하므로 비움
+      name: `${t.name} (복사)`,
+      thumbnail_url: t.thumbnail_url,
+      preview_url: t.preview_url,
+      format: t.format ?? "mobile",
+      tone: t.tone,
+      price_hearts: t.price_hearts ?? 0,
+      layout: t.layout ?? {},
+      default_font_id: t.default_font_id,
+      text_prompt_hint: t.text_prompt_hint,
+      display_order: t.display_order,
+      is_active: false, // 복사본은 숨김으로 시작 → 검수 후 노출
+    });
+    setLayoutJson(JSON.stringify(t.layout ?? {}, null, 2));
+    setIsOpen(true);
+    toast({
+      title: "복제 폼을 열었어요",
+      description: "이름·내용을 다듬고 저장하면 새 템플릿으로 등록됩니다.",
+    });
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -1111,6 +1187,9 @@ const AdminInvitationTemplates = () => {
                         }))
                       }
                     />
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      숫자가 작을수록 위에 노출돼요 (1번이 최상단).
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1509,6 +1588,16 @@ const AdminInvitationTemplates = () => {
                       aria-label="편집기"
                     >
                       편집기
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDuplicate(t)}
+                      className="h-8 w-8 p-0"
+                      aria-label="복제"
+                      title="복제"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
                     </Button>
                     <Button
                       variant="ghost"

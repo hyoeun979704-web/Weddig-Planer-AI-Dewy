@@ -611,6 +611,14 @@ const InvitationStudio = () => {
       });
       return;
     }
+    // 비용 사전 확인 — 3하트는 환불이 어려우니 진행 전 한 번 더 묻는다.
+    if (
+      !window.confirm(
+        "템플릿풍 약도 변환에 3하트가 차감됩니다. 진행할까요?",
+      )
+    ) {
+      return;
+    }
     const applyFace = setFace;
     setIsStylizingMap(true);
     try {
@@ -628,12 +636,13 @@ const InvitationStudio = () => {
           /* ignore */
         }
         if (code === "insufficient_hearts") {
+          // 에디터를 벗어나면 편집 맥락을 잃으니 이탈하지 않고 액션 버튼으로 유도.
           toast({
             title: "하트가 부족해요",
             description: "약도 일러스트 변환은 3하트가 필요해요.",
             variant: "destructive",
+            action: { label: "충전하기", onClick: () => navigate("/points") },
           });
-          navigate("/points");
           return;
         }
         throw new Error(code ?? error.message ?? "변환 실패");

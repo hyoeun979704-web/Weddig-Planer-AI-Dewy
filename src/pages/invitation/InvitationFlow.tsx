@@ -303,7 +303,7 @@ const InvitationFlow = () => {
         .eq("is_active", true)
         .eq("format", formatFilter)
         .in("face", ["front", "both"]) // 전면으로 쓸 수 있는 템플릿만
-        .order("display_order", { ascending: false });
+        .order("display_order", { ascending: true }); // 작을수록 우선(1번이 최상단)
       if (error) {
         toast({
           title: "템플릿을 불러올 수 없어요",
@@ -721,8 +721,9 @@ const InvitationFlow = () => {
       // 충전이 필요하면 사용자가 직접 충전 페이지로 이동.
       toast({
         title: "하트가 부족해요",
-        description: `발행에 ${totalCost} 하트가 필요해요 (템플릿 ${templateCharge}${firstNote} + AI ${aiCost}). 현재 ${hearts ?? 0}하트. 충전 후 다시 시도해주세요.`,
+        description: `발행에 ${totalCost} 하트가 필요해요 (템플릿 ${templateCharge}${firstNote} + AI ${aiCost}). 현재 ${hearts ?? 0}하트. 작성한 내용은 임시저장돼 있어요.`,
         variant: "destructive",
+        action: { label: "충전하기", onClick: () => navigate("/points") },
       });
       return;
     }
@@ -1275,8 +1276,19 @@ const TemplatePicker = ({
       마음에 드는 디자인을 골라주세요. 무료 디자인부터 시작해보세요.
     </p>
     {loading ? (
-      <div className="py-16 flex justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className="grid grid-cols-2 gap-3" aria-label="템플릿 불러오는 중">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            className="bg-card rounded-xl overflow-hidden border border-border"
+          >
+            <div className="aspect-[3/4] bg-muted animate-pulse" />
+            <div className="p-2.5 space-y-2">
+              <div className="h-3 w-3/4 bg-muted rounded animate-pulse" />
+              <div className="h-2.5 w-1/2 bg-muted rounded animate-pulse" />
+            </div>
+          </div>
+        ))}
       </div>
     ) : templates.length === 0 ? (
       <p className="text-center text-sm text-muted-foreground py-16">
@@ -1397,6 +1409,7 @@ const WizardCombined = ({
         <div className="grid grid-cols-2 gap-2">
           <Field
             label="신랑 이름"
+            required
             value={userData.groom_name ?? ""}
             onChange={(v) =>
               onUserDataChange({ ...userData, groom_name: v })
@@ -1405,6 +1418,7 @@ const WizardCombined = ({
           />
           <Field
             label="신부 이름"
+            required
             value={userData.bride_name ?? ""}
             onChange={(v) =>
               onUserDataChange({ ...userData, bride_name: v })
@@ -1415,6 +1429,7 @@ const WizardCombined = ({
         <Field
           label="결혼 날짜"
           type="date"
+          required
           value={userData.wedding_date ?? ""}
           onChange={(v) => onUserDataChange({ ...userData, wedding_date: v })}
         />
@@ -1488,7 +1503,7 @@ const WizardCombined = ({
                 <button
                   type="button"
                   onClick={() => onRemovePhoto(i)}
-                  className="absolute top-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center"
+                  className="absolute top-1 right-1 w-8 h-8 bg-black/60 rounded-full flex items-center justify-center"
                   aria-label="제거"
                 >
                   <X className="w-3.5 h-3.5 text-white" />
@@ -1533,7 +1548,7 @@ const WizardCombined = ({
                       <button
                         type="button"
                         onClick={() => onRemoveQr(slot.id)}
-                        className="absolute top-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center"
+                        className="absolute top-1 right-1 w-8 h-8 bg-black/60 rounded-full flex items-center justify-center"
                         aria-label="QR 제거"
                       >
                         <X className="w-3.5 h-3.5 text-white" />
@@ -1707,27 +1722,45 @@ const Field = ({
   onChange,
   placeholder,
   type = "text",
+  required = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   type?: string;
-}) => (
-  <div>
-    <Label className="text-[12px] text-muted-foreground">{label}</Label>
-    <Input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="mt-1"
-    />
-  </div>
-);
+  required?: boolean;
+}) => {
+  const [touched, setTouched] = useState(false);
+  const invalid = required && touched && !value.trim();
+  return (
+    <div>
+      <Label className="text-[12px] text-muted-foreground">
+        {label}
+        {required && <span className="text-rose-500"> *</span>}
+      </Label>
+      <Input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={() => setTouched(true)}
+        placeholder={placeholder}
+        aria-invalid={invalid || undefined}
+        className={`mt-1 ${
+          invalid ? "border-rose-400 focus-visible:ring-rose-400" : ""
+        }`}
+      />
+      {invalid && (
+        <p className="mt-1 text-[11px] text-rose-500">필수 항목이에요.</p>
+      )}
+    </div>
+  );
+};
 
-// 식장 주소 — 네이버 주소 검색(NCP Geocoding)으로 정확한 주소를 채운다.
+// 식장 검색 — 네이버 지역검색(상호명) + 지오코딩(주소)으로 후보를 채운다.
 interface AddrResult {
+  /** 업체/건물명 (지역검색 결과에만 있음) */
+  name?: string;
   roadAddress: string;
   jibunAddress: string;
   lng: string;
@@ -1794,30 +1827,40 @@ const VenueAddressField = ({
           type="button"
           variant="outline"
           onClick={search}
-          disabled={searching}
+          disabled={searching || value.trim().length < 2}
           className="shrink-0"
         >
           {searching ? "검색…" : "주소 검색"}
         </Button>
       </div>
+      {value.trim().length > 0 && value.trim().length < 2 && (
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          2자 이상 입력하면 검색할 수 있어요.
+        </p>
+      )}
       {searched && results.length > 0 && (
         <ul className="mt-2 rounded-lg border border-border divide-y divide-border overflow-hidden">
           {results.map((r, i) => (
             <li key={i}>
               <button
                 type="button"
-                className="w-full text-left px-3 py-2 hover:bg-muted/50"
+                className="w-full text-left px-3 py-3 min-h-12 hover:bg-muted/50 active:bg-muted"
                 onClick={() => {
                   onChange(r.roadAddress || r.jibunAddress);
                   setSearched(false);
                 }}
               >
                 <span className="text-[13px] text-foreground">
-                  {r.roadAddress || r.jibunAddress}
+                  {r.name || r.roadAddress || r.jibunAddress}
                 </span>
-                {r.jibunAddress && r.roadAddress && (
+                {/* 업체명이 제목이면 주소를, 주소가 제목이면 지번을 보조로 */}
+                {(r.name
+                  ? r.roadAddress || r.jibunAddress
+                  : r.roadAddress && r.jibunAddress) && (
                   <span className="block text-[11px] text-muted-foreground">
-                    {r.jibunAddress}
+                    {r.name
+                      ? r.roadAddress || r.jibunAddress
+                      : r.jibunAddress}
                   </span>
                 )}
               </button>

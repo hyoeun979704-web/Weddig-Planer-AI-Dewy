@@ -92,7 +92,7 @@ const AdminInvitationAssets = () => {
     const { data, error } = await (supabase as any)
       .from("invitation_assets")
       .select("*")
-      .order("display_order", { ascending: false })
+      .order("display_order", { ascending: true }) // 작을수록 위(선택기와 동일)
       .order("created_at", { ascending: false });
     if (error) {
       toast({
@@ -449,6 +449,9 @@ const AdminInvitationAssets = () => {
                         }))
                       }
                     />
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      숫자가 작을수록 위에 노출돼요 (카테고리 내 정렬).
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-2 pt-1">
