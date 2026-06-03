@@ -29,7 +29,7 @@ const AdminUsers = () => {
     // profiles 기준으로 조회 (auth.users는 직접 조회 어려움)
     const { data: profiles, error } = await (supabase as any)
       .from("profiles")
-      .select("user_id, email, nickname, created_at")
+      .select("user_id, email, display_name, created_at")
       .order("created_at", { ascending: false })
       .limit(200);
 
@@ -76,7 +76,7 @@ const AdminUsers = () => {
     const merged: UserProfile[] = (profiles ?? []).map((p: any) => ({
       user_id: p.user_id,
       email: p.email,
-      nickname: p.nickname,
+      nickname: p.display_name,
       created_at: p.created_at,
       roles: rolesByUser[p.user_id] ?? [],
       hearts_balance: heartsByUser[p.user_id]?.balance ?? 0,
