@@ -45,6 +45,7 @@ const CommunityWrite = lazy(() => import("./pages/CommunityWrite"));
 const CommunityEdit = lazy(() => import("./pages/CommunityEdit"));
 const CommunityPostDetail = lazy(() => import("./pages/CommunityPostDetail"));
 const BookmarkedPosts = lazy(() => import("./pages/BookmarkedPosts"));
+const CommunityNotifications = lazy(() => import("./pages/CommunityNotifications"));
 const MyPage = lazy(() => import("./pages/MyPage"));
 const Points = lazy(() => import("./pages/Points"));
 const HeartCharge = lazy(() => import("./pages/HeartCharge"));
@@ -196,6 +197,7 @@ const App = () => (
               <Route path="/community" element={<Community />} />
               <Route path="/community/write" element={<CommunityWrite />} />
               <Route path="/community/bookmarks" element={<BookmarkedPosts />} />
+              <Route path="/community/notifications" element={<CommunityNotifications />} />
               <Route path="/community/:id" element={<CommunityPostDetail />} />
               <Route path="/community/:id/edit" element={<CommunityEdit />} />
               <Route path="/mypage" element={<MyPage />} />
