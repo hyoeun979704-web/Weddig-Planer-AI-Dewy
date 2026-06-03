@@ -53,7 +53,7 @@ interface AssetOpt {
   natural_height: number | null;
 }
 
-const ASSET_CATS = ["FLOWER", "LINE", "FRAME", "RIBBON", "ICON", "SHAPE", "TEXT_STICKER"];
+const ASSET_CATS = ["FLOWER", "LINE", "FRAME", "RIBBON", "ICON", "SHAPE", "TEXT_STICKER", "STICKER", "TAPE", "OBJECT_3D", "NATURE", "PHOTO_FRAME"];
 
 // 미리보기용 샘플 데이터 (실제 슬롯 field 바인딩이 어떻게 채워지는지 확인)
 const SAMPLE = {

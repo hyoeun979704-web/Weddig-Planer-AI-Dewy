@@ -63,6 +63,11 @@ const CATEGORIES = [
   { value: "ICON", label: "아이콘" },
   { value: "SHAPE", label: "도형" },
   { value: "TEXT_STICKER", label: "텍스트 스티커" },
+  { value: "STICKER", label: "스티커·오브제" },
+  { value: "TAPE", label: "마스킹테이프" },
+  { value: "OBJECT_3D", label: "3D·Y2K" },
+  { value: "NATURE", label: "자연·바다" },
+  { value: "PHOTO_FRAME", label: "사진 프레임" },
 ];
 
 const AdminInvitationAssets = () => {
