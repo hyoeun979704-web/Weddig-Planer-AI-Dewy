@@ -31,6 +31,7 @@ interface Asset {
   image_url: string;
   thumbnail_url: string | null;
   category: string;
+  collection: string | null;
   tags: string[] | null;
   is_recolorable: boolean;
   natural_width: number | null;
@@ -47,6 +48,7 @@ const emptyForm: Form = {
   image_url: "",
   thumbnail_url: null,
   category: "FLOWER",
+  collection: null,
   tags: [],
   is_recolorable: false,
   natural_width: null,
@@ -79,7 +81,9 @@ const AdminInvitationAssets = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>("ALL");
+  const [filterCollection, setFilterCollection] = useState<string>("ALL");
   const [query, setQuery] = useState("");
+  const [groupByCollection, setGroupByCollection] = useState(true);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -163,6 +167,7 @@ const AdminInvitationAssets = () => {
       image_url: a.image_url,
       thumbnail_url: a.thumbnail_url,
       category: a.category,
+      collection: a.collection,
       tags: a.tags ?? [],
       is_recolorable: a.is_recolorable,
       natural_width: a.natural_width,
@@ -221,6 +226,7 @@ const AdminInvitationAssets = () => {
   const filtered = items.filter(
     (a) =>
       (filterCategory === "ALL" || a.category === filterCategory) &&
+      (filterCollection === "ALL" || (a.collection ?? "") === filterCollection) &&
       (!q ||
         a.name.toLowerCase().includes(q) ||
         (a.tags ?? []).some((t: string) => t.toLowerCase().includes(q))),
@@ -233,6 +239,78 @@ const AdminInvitationAssets = () => {
         .flatMap((a) => (a.tags ?? []) as string[]),
     ),
   ).sort();
+  // 등록된 세트·컬렉션 목록
+  const collectionPool = Array.from(
+    new Set(items.map((a) => a.collection).filter(Boolean) as string[]),
+  ).sort();
+  // 컬렉션별 그룹(표시용) — filtered 를 collection 으로 묶음
+  const grouped = filtered.reduce<Record<string, Asset[]>>((acc, a) => {
+    const key = a.collection || "__기타__";
+    (acc[key] ??= []).push(a);
+    return acc;
+  }, {});
+  const groupKeys = Object.keys(grouped).sort((x, y) =>
+    x === "__기타__" ? 1 : y === "__기타__" ? -1 : x.localeCompare(y),
+  );
+
+  const renderCard = (a: Asset) => (
+    <article
+      key={a.id}
+      className="bg-background rounded-lg overflow-hidden border border-border"
+    >
+      <div className="relative aspect-square bg-[linear-gradient(45deg,#f8f8f8_25%,transparent_25%),linear-gradient(-45deg,#f8f8f8_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f8f8f8_75%),linear-gradient(-45deg,transparent_75%,#f8f8f8_75%)] bg-[length:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0]">
+        <img
+          src={a.image_url}
+          alt={a.name}
+          className="w-full h-full object-contain"
+        />
+        {!a.is_active && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <span className="text-white text-[10px] font-semibold">비활성</span>
+          </div>
+        )}
+      </div>
+      <div className="p-2">
+        <p className="text-[11px] font-semibold truncate">{a.name}</p>
+        <p className="text-[9px] text-muted-foreground truncate">
+          {CATEGORIES.find((c) => c.value === a.category)?.label}
+          {a.is_recolorable ? " · 색변경" : ""}
+        </p>
+        <div className="flex gap-0.5 mt-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleToggleActive(a)}
+            className="flex-1 h-7 text-[10px] px-1"
+          >
+            {a.is_active ? (
+              <Eye className="w-3 h-3" />
+            ) : (
+              <EyeOff className="w-3 h-3" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleEdit(a)}
+            className="h-7 w-7 p-0"
+            aria-label="수정"
+          >
+            <Pencil className="w-3 h-3" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDelete(a)}
+            className="h-7 w-7 p-0 text-destructive"
+            aria-label="삭제"
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
 
   return (
     <AdminGuard>
@@ -304,6 +382,24 @@ const AdminInvitationAssets = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="collection">세트·컬렉션 (선택)</Label>
+                    <Input
+                      id="collection"
+                      list="collection-list"
+                      value={form.collection ?? ""}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, collection: e.target.value || null }))
+                      }
+                      placeholder="예: 레드 코케트, 발렌타인 doodle, 크롬 Y2K"
+                    />
+                    <datalist id="collection-list">
+                      {collectionPool.map((c) => (
+                        <option key={c} value={c} />
+                      ))}
+                    </datalist>
                   </div>
 
                   <div>
@@ -435,74 +531,78 @@ const AdminInvitationAssets = () => {
           </p>
         </div>
 
+        {/* 세트·컬렉션 필터 + 그룹 보기 토글 */}
+        <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setGroupByCollection((v) => !v)}
+            className={`px-3 py-1 rounded-full text-xs flex-shrink-0 border ${
+              groupByCollection
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-muted text-foreground border-border"
+            }`}
+          >
+            세트별 묶어보기
+          </button>
+          {collectionPool.length > 0 && (
+            <>
+              <span className="mx-1 text-border">|</span>
+              <button
+                type="button"
+                onClick={() => setFilterCollection("ALL")}
+                className={`px-3 py-1 rounded-full text-xs flex-shrink-0 ${
+                  filterCollection === "ALL"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-foreground"
+                }`}
+              >
+                전체 세트
+              </button>
+              {collectionPool.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() =>
+                    setFilterCollection(filterCollection === c ? "ALL" : c)
+                  }
+                  className={`px-3 py-1 rounded-full text-xs flex-shrink-0 ${
+                    filterCollection === c
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-foreground"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState />
+        ) : groupByCollection ? (
+          <div className="space-y-6">
+            {groupKeys.map((gk) => (
+              <section key={gk}>
+                <h3 className="text-sm font-bold mb-2 px-0.5">
+                  {gk === "__기타__" ? "기타 (세트 없음)" : gk}
+                  <span className="ml-2 text-[11px] font-normal text-muted-foreground">
+                    {grouped[gk].length}개
+                  </span>
+                </h3>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                  {grouped[gk].map((a) => renderCard(a))}
+                </div>
+              </section>
+            ))}
+          </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-            {filtered.map((a) => (
-              <article
-                key={a.id}
-                className="bg-background rounded-lg overflow-hidden border border-border"
-              >
-                <div className="relative aspect-square bg-[linear-gradient(45deg,#f8f8f8_25%,transparent_25%),linear-gradient(-45deg,#f8f8f8_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#f8f8f8_75%),linear-gradient(-45deg,transparent_75%,#f8f8f8_75%)] bg-[length:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0]">
-                  <img
-                    src={a.image_url}
-                    alt={a.name}
-                    className="w-full h-full object-contain"
-                  />
-                  {!a.is_active && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="text-white text-[10px] font-semibold">
-                        비활성
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-2">
-                  <p className="text-[11px] font-semibold truncate">{a.name}</p>
-                  <p className="text-[9px] text-muted-foreground truncate">
-                    {CATEGORIES.find((c) => c.value === a.category)?.label}
-                    {a.is_recolorable ? " · 색변경" : ""}
-                  </p>
-                  <div className="flex gap-0.5 mt-1.5">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleToggleActive(a)}
-                      className="flex-1 h-7 text-[10px] px-1"
-                    >
-                      {a.is_active ? (
-                        <Eye className="w-3 h-3" />
-                      ) : (
-                        <EyeOff className="w-3 h-3" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(a)}
-                      className="h-7 w-7 p-0"
-                      aria-label="수정"
-                    >
-                      <Pencil className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(a)}
-                      className="h-7 w-7 p-0 text-destructive"
-                      aria-label="삭제"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              </article>
-            ))}
+            {filtered.map((a) => renderCard(a))}
           </div>
         )}
       </AdminLayout>
