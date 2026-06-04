@@ -35,6 +35,21 @@ function base64ToBlob(b64: string, contentType: string): Blob {
   for (let i = 0; i < byteChars.length; i++) arr[i] = byteChars.charCodeAt(i);
   return new Blob([arr], { type: contentType });
 }
+// Responses API 출력 텍스트 집계 — output[0].content[0].text 가정 금지(추론 항목 등 혼재).
+function extractOutputText(resp: any): string {
+  if (typeof resp?.output_text === "string") return resp.output_text;
+  const out = resp?.output;
+  if (!Array.isArray(out)) return "";
+  const parts: string[] = [];
+  for (const item of out) {
+    if (item?.type === "message" && Array.isArray(item.content)) {
+      for (const c of item.content) {
+        if (c?.type === "output_text" && typeof c.text === "string") parts.push(c.text);
+      }
+    }
+  }
+  return parts.join("");
+}
 
 // ───────── Step A: Vision 분석 스키마(도메인 결정값) ─────────
 const ANALYSIS_GUIDE = `너는 한국 웨딩 퍼스널컬러·헤어·메이크업·드레스 전문 컨설턴트다.
@@ -152,7 +167,7 @@ serve(async (req) => {
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) return json({ error: "openai_not_configured" }, 500);
-    const MODEL = Deno.env.get("OPENAI_CONSULT_MODEL") ?? "gpt-4o";
+    const MODEL = Deno.env.get("OPENAI_CONSULT_MODEL") ?? "gpt-5.5-2026-04-23";
 
     // 첫 1회 50% 할인 + 과금
     const { data: usageRow } = await admin
@@ -182,31 +197,33 @@ serve(async (req) => {
       let bin = ""; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
       const dataUrl = `data:${blob.type || "image/png"};base64,${btoa(bin)}`;
 
-      // Step A — Vision 분석
+      // Step A — Vision 분석 (Responses API; gpt-5.5 = reasoning 모델 권장 경로)
       let analysis: any = {};
       try {
-        const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        const effort = Deno.env.get("OPENAI_CONSULT_EFFORT") ?? "low";
+        const aiRes = await fetch("https://api.openai.com/v1/responses", {
           method: "POST",
           headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             model: MODEL,
-            temperature: 0.5,
-            max_tokens: 2600,
-            response_format: { type: "json_object" },
-            messages: [
-              { role: "system", content: ANALYSIS_GUIDE },
+            reasoning: { effort },
+            instructions: ANALYSIS_GUIDE,
+            input: [
               { role: "user", content: [
-                { type: "text", text: "이 신부 사진을 분석해 위 JSON 을 채워줘." },
-                { type: "image_url", image_url: { url: dataUrl } },
+                { type: "input_text", text: "이 신부 사진을 분석해 위 JSON 을 채워줘." },
+                { type: "input_image", image_url: dataUrl },
               ] },
             ],
+            // 구조화 출력(JSON) + 추론 토큰까지 감안한 여유분
+            text: { format: { type: "json_object" } },
+            max_output_tokens: 6000,
           }),
         });
         if (aiRes.ok) {
           const j = await aiRes.json();
-          analysis = JSON.parse(j?.choices?.[0]?.message?.content ?? "{}");
+          analysis = JSON.parse(extractOutputText(j) || "{}");
         } else {
-          console.error("analysis fail", aiRes.status, (await aiRes.text()).slice(0, 200));
+          console.error("analysis fail", aiRes.status, (await aiRes.text()).slice(0, 300));
         }
       } catch (e) {
         console.error("analysis error", e);
