@@ -151,7 +151,6 @@ const InvitationStudio = () => {
   const [shareCodeStyle, setShareCodeStyle] = useState<ShareCodeStyle>("basic");
   const [isGeneratingMap, setIsGeneratingMap] = useState(false);
   const [isStylizingMap, setIsStylizingMap] = useState(false);
-  const [isRetouching, setIsRetouching] = useState(false);
   const [backTemplates, setBackTemplates] = useState<Template[]>([]);
   const [activeFace, setActiveFace] = useState<InvitationFace>("front");
 
@@ -701,91 +700,6 @@ const InvitationStudio = () => {
     }
   };
 
-  // 사진 AI 보정 (화질 + 선택적 몸매 프리셋). 계정 첫 1회 무료, 이후 5하트.
-  const handleRetouch = async (
-    bodyPreset:
-      | "none"
-      | "slim_soft"
-      | "slim_strong"
-      | "proportion"
-      | "eighthead",
-  ) => {
-    if (!selectedSlot || selectedSlot.type !== "image") return;
-    const id = selectedSlot.id;
-    const sourcePath = activeFaceState.imagePaths[id];
-    if (!sourcePath) {
-      toast({ title: "먼저 사진을 올려주세요", variant: "destructive" });
-      return;
-    }
-    const label = bodyPreset === "none" ? "화질 개선" : "몸매 보정";
-    if (
-      !window.confirm(
-        `AI ${label}을 적용할까요? 계정 첫 1회는 무료, 이후 5하트가 차감돼요.\n(얼굴·정체성은 유지돼요. 정확한 kg/cm 수치 보정은 불가하며 자연스러운 범위로 보정돼요.)`,
-      )
-    ) {
-      return;
-    }
-    const applyFace = setFace;
-    setIsRetouching(true);
-    try {
-      const { data, error } = await (supabase as any).functions.invoke(
-        "invitation-retouch",
-        { body: { source_path: sourcePath, body: bodyPreset } },
-      );
-      if (error) {
-        let code: string | undefined;
-        try {
-          const ctx = (error as { context?: { json?: () => Promise<any> } })
-            .context;
-          if (ctx?.json) code = (await ctx.json())?.error;
-        } catch {
-          /* ignore */
-        }
-        if (code === "insufficient_hearts") {
-          toast({
-            title: "하트가 부족해요",
-            description: "AI 보정은 5하트가 필요해요.",
-            variant: "destructive",
-            action: { label: "충전하기", onClick: () => navigate("/points") },
-          });
-          return;
-        }
-        if (code === "content_policy") {
-          toast({
-            title: "이 보정은 적용할 수 없어요",
-            description:
-              "정책상 허용되지 않는 보정이에요. 다른 옵션을 사용해주세요. (차감되지 않았어요)",
-            variant: "destructive",
-          });
-          return;
-        }
-        throw new Error(code ?? error.message ?? "보정 실패");
-      }
-      if (data?.error) throw new Error(data.error);
-      const newPath = data?.path as string | undefined;
-      const newUrl = data?.url as string | undefined;
-      if (!newPath) throw new Error("보정 결과가 없어요");
-      applyFace((p) => ({
-        ...p,
-        imagePaths: { ...p.imagePaths, [id]: newPath },
-        imageUrls: newUrl ? { ...p.imageUrls, [id]: newUrl } : p.imageUrls,
-      }));
-      toast({
-        title: data?.was_free
-          ? "AI 보정 완료 (첫 회 무료)"
-          : "AI 보정 완료 (5하트 사용)",
-      });
-    } catch (e) {
-      toast({
-        title: "AI 보정 실패",
-        description: e instanceof Error ? e.message : "오류",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRetouching(false);
-    }
-  };
-
   // 면 전환 (선택 슬롯 초기화)
   const handleSwitchFace = (f: InvitationFace) => {
     setActiveFace(f);
@@ -1205,8 +1119,6 @@ const InvitationStudio = () => {
           isGeneratingMap={isGeneratingMap}
           onStylizeMap={handleStylizeMap}
           isStylizingMap={isStylizingMap}
-          onRetouch={handleRetouch}
-          isRetouching={isRetouching}
           onMoveSlot={handleMoveSlot}
           onAddText={handleAddText}
           onAddMap={handleAddMap}
@@ -1654,8 +1566,6 @@ const StudioView = ({
   isGeneratingMap,
   onStylizeMap,
   isStylizingMap,
-  onRetouch,
-  isRetouching,
   onMoveSlot,
   onAddText,
   onAddMap,
@@ -1702,10 +1612,6 @@ const StudioView = ({
   isGeneratingMap: boolean;
   onStylizeMap: () => void;
   isStylizingMap: boolean;
-  onRetouch: (
-    body: "none" | "slim_soft" | "slim_strong" | "proportion" | "eighthead",
-  ) => void;
-  isRetouching: boolean;
   onMoveSlot: (id: string, x: number, y: number) => void;
   onAddText: () => void;
   onAddMap: () => void;
@@ -2098,53 +2004,6 @@ const StudioView = ({
               </p>
             </div>
           )}
-          {/* 사진 AI 보정 — 업로드된 사진이 있을 때만. 화질 + 자연스러운 몸매 프리셋 */}
-          {selectedSlot.type === "image" &&
-            aFace.imagePaths[selectedSlot.id] && (
-              <div className="space-y-1.5 rounded-xl border border-border p-2.5">
-                <div className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-[12px] font-semibold text-foreground">
-                    AI 보정
-                  </span>
-                  <span className="ml-auto text-[10px] text-muted-foreground">
-                    첫 회 무료 · 이후 5하트
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(
-                    [
-                      ["none", "화질 개선"],
-                      ["slim_soft", "슬림(약)"],
-                      ["slim_strong", "슬림(강)"],
-                      ["proportion", "비율 보정"],
-                      ["eighthead", "8등신 느낌"],
-                    ] as const
-                  ).map(([preset, label]) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => onRetouch(preset)}
-                      disabled={isRetouching}
-                      className="h-8 rounded-lg border border-border bg-background text-[11px] text-foreground active:bg-muted disabled:opacity-40"
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                {isRetouching ? (
-                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    보정 중… 수십 초 걸릴 수 있어요.
-                  </p>
-                ) : (
-                  <p className="text-[10px] text-muted-foreground leading-snug">
-                    얼굴·정체성은 유지돼요. 정확한 kg/cm 수치는 불가하며 자연스러운
-                    범위로 적용돼요.
-                  </p>
-                )}
-              </div>
-            )}
           <Button onClick={onPickPhoto} variant="outline" className="w-full">
             <ImageIcon className="w-4 h-4 mr-2" />
             {aFace.imageUrls[selectedSlot.id]
