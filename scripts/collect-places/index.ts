@@ -133,11 +133,17 @@ async function discover(label: CategoryLabel, region: string | undefined, env: N
   const queries = seedQueries(label, region);
   console.log(`\n[${label}] Stage 1 발견 — ${queries.length} 시드 쿼리`);
   const candidates: CollectedPlace[] = [];
+  // Naver Local caps display at 5 and has no usable pagination, so each seed
+  // surfaces at most 5 businesses. Count seeds that returned the full 5 — a
+  // signal that more exist than we can reach (raise coverage via more seed
+  // templates in utils/categories.ts, not pagination).
+  let cappedSeeds = 0;
   for (let qi = 0; qi < queries.length; qi++) {
     const q = queries[qi];
     process.stdout.write(`  · [${qi + 1}/${queries.length}] ${q} ... `);
     try {
       const local = await searchLocal(q, env, 5);
+      if (local.length >= 5) cappedSeeds++;
       // Hanbok-specific tourist-experience filter (pre-existing).
       const afterHanbok =
         label === "한복"
@@ -161,6 +167,11 @@ async function discover(label: CategoryLabel, region: string | undefined, env: N
       console.log(`error: ${(e as Error).message.slice(0, 80)}`);
     }
   }
+  if (cappedSeeds > 0) {
+    console.log(
+      `  ⓘ ${cappedSeeds}/${queries.length} 시드가 Naver Local 상한(5건)에 도달 — 더 많은 업체가 존재할 수 있음(시드 템플릿 추가 필요)`
+    );
+  }
   return dedupe(candidates);
 }
 
@@ -180,9 +191,17 @@ async function gatherSnippets(
   for (const q of queries) {
     if (snippets.length >= target) break;
     const need = Math.min(20, target - snippets.length);
+    // Log (don't swallow silently) so a Naver outage / quota-exhaustion is
+    // distinguishable from "this place genuinely has no reviews".
     const [blog, cafe] = await Promise.all([
-      searchBlog(q, env, { months: 24, limit: need }).catch(() => []),
-      searchCafe(q, env, { months: 24, limit: need }).catch(() => []),
+      searchBlog(q, env, { months: 24, limit: need }).catch((e) => {
+        console.warn(`  ⚠ blog "${q}": ${(e as Error).message.slice(0, 60)}`);
+        return [];
+      }),
+      searchCafe(q, env, { months: 24, limit: need }).catch((e) => {
+        console.warn(`  ⚠ cafe "${q}": ${(e as Error).message.slice(0, 60)}`);
+        return [];
+      }),
     ]);
     for (const it of [...blog, ...cafe]) {
       if (seen.has(it.link)) continue;
@@ -205,7 +224,7 @@ async function processCategory(
   label: CategoryLabel,
   args: CliArgs,
   flush: FlushFn
-): Promise<{ count: number; avg: number }> {
+): Promise<{ count: number; avg: number; snippetEmpty: number; analysisFailed: number }> {
   const naverEnv: NaverEnv = {
     clientId: process.env.NAVER_CLIENT_ID!,
     clientSecret: process.env.NAVER_CLIENT_SECRET!,
@@ -221,6 +240,8 @@ async function processCategory(
 
   let count = 0;
   let confidenceSum = 0;
+  let snippetEmpty = 0; // candidates with no blog/cafe snippets (skipped analysis)
+  let analysisFailed = 0; // Gemini threw or returned null (vs genuinely not-relevant)
   const pending: CollectedPlace[] = [];
   const emit = async (p: CollectedPlace) => {
     count++;
@@ -230,7 +251,7 @@ async function processCategory(
   };
   const done = async () => {
     if (pending.length > 0) await flush(pending.splice(0));
-    return { count, avg: count > 0 ? confidenceSum / count : 0 };
+    return { count, avg: count > 0 ? confidenceSum / count : 0, snippetEmpty, analysisFailed };
   };
 
   if (args.noAnalyze) {
@@ -247,6 +268,7 @@ async function processCategory(
     const snippets = await gatherSnippets(c, naverEnv, args.reviewSnippets);
     if (snippets.length === 0) {
       console.log("스니펫 0개, 분석 스킵");
+      snippetEmpty++;
       await emit({ ...c, confidence: scoreConfidence(c) });
       continue;
     }
@@ -283,11 +305,21 @@ async function processCategory(
       // Network blip / Gemini outage: keep the candidate w/o analysis instead
       // of killing the whole category job (300+ candidates, hours of work).
       console.log(`분석 예외 (${(e as Error).message.slice(0, 80)}), 스킵`);
+      analysisFailed++;
       await emit({ ...c, confidence: scoreConfidence(c) });
       continue;
     }
 
-    if (!analysis || !analysis.is_relevant) {
+    if (!analysis) {
+      // Gemini returned null (429-after-retry, parse fail, !ok) — a FAILURE,
+      // not a genuine low-relevance signal. Counted separately so an outage
+      // doesn't masquerade as a healthy run of low-quality listings.
+      console.log("분석 실패 (gemini null), 스킵");
+      analysisFailed++;
+      await emit({ ...c, confidence: scoreConfidence(c) });
+      continue;
+    }
+    if (!analysis.is_relevant) {
       console.log(`스킵 (관련성 낮음, snippet=${snippets.length})`);
       await emit({ ...c, confidence: scoreConfidence(c) });
       continue;
@@ -363,6 +395,7 @@ async function main() {
       });
   let totalInserted = 0;
   let totalFailed = 0;
+  let totalChildFailed = 0;
   let wouldUpsert = 0;
   const flush: FlushFn = async (batch) => {
     if (batch.length === 0) return;
@@ -373,19 +406,31 @@ async function main() {
     const r = await upsert(batch);
     totalInserted += r.inserted;
     totalFailed += r.failed;
+    totalChildFailed += r.childFailed;
     console.log(`  ↳ flushed ${batch.length} → upserted ${totalInserted}, failed ${totalFailed} (누적)`);
   };
 
+  let totalSnippetEmpty = 0;
+  let totalAnalysisFailed = 0;
   for (const c of cats) {
-    const { count, avg } = await processCategory(c, args, flush);
-    console.log(`\n[${c}] 완료: ${count}개 (avg conf ${avg.toFixed(0)})`);
+    const { count, avg, snippetEmpty, analysisFailed } = await processCategory(c, args, flush);
+    totalSnippetEmpty += snippetEmpty;
+    totalAnalysisFailed += analysisFailed;
+    console.log(
+      `\n[${c}] 완료: ${count}개 (avg conf ${avg.toFixed(0)}, 스니펫0 ${snippetEmpty}, 분석실패 ${analysisFailed})`
+    );
   }
 
   if (args.dryRun) {
     console.log(`\n[dry-run] would upsert ${wouldUpsert} rows`);
     return;
   }
-  console.log(`\nupserted: ${totalInserted} (failed: ${totalFailed})`);
+  // Surface degradation that used to be invisible: failed places, child-table
+  // upsert failures, analysis failures (≠ genuine low-relevance), empty snippets.
+  console.log(
+    `\nupserted: ${totalInserted} (failed: ${totalFailed}, child-failed: ${totalChildFailed}, ` +
+      `analysis-failed: ${totalAnalysisFailed}, snippet-empty: ${totalSnippetEmpty})`
+  );
 }
 
 main()
