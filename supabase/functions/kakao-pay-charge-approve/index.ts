@@ -215,10 +215,34 @@ Deno.serve(async (req) => {
         p_ref_id: paymentId,
       });
       if (spendError) {
-        console.error("Point spend failed (proceeding):", spendError);
-      } else {
-        pointsSpent = pointsToSpend;
+        // 포인트 차감 실패(잔액부족/ready-approve 사이 소진/동시충전 TOCTOU)면
+        // 사용자는 할인분만큼 이득을 보게 된다 → 결제 전체 환불하고 하트 미적립.
+        // (earn_hearts 실패 처리와 대칭)
+        console.error("Point spend failed — refunding:", spendError);
+        try {
+          await fetch("https://kapi.kakao.com/v1/payment/cancel", {
+            method: "POST",
+            headers: {
+              Authorization: `KakaoAK ${adminKey}`,
+              "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+            },
+            body: new URLSearchParams({
+              cid, tid,
+              cancel_amount: String(paidAmount),
+              cancel_tax_free_amount: "0",
+            }).toString(),
+          });
+          await adminClient.from("payments").update({ status: "refunded" }).eq("payment_key", tid);
+        } catch (e) {
+          console.error("Refund after point-spend fail:", e);
+          await adminClient.from("payments").update({ status: "refund_pending" }).eq("payment_key", tid);
+        }
+        return new Response(
+          JSON.stringify({ success: false, error: "포인트 차감에 실패해 결제를 환불했습니다. 다시 시도해주세요." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
+      pointsSpent = pointsToSpend;
     }
 
     // 하트 적립
