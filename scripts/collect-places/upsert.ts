@@ -23,6 +23,7 @@ const CATEGORY_TABLE: Record<CategorySlug, string> = {
   honeymoon: "place_honeymoons",
   appliance: "place_appliances",
   invitation_venue: "place_invitation_venues",
+  jewelry: "place_jewelry",
 };
 
 // Keyword bank for category-specific array columns.
@@ -48,7 +49,8 @@ const STYLE_KEYWORDS: Record<CategorySlug, Record<string, string[]>> = {
     suit_styles: ["턱시도", "정장", "모닝", "클래식", "모던", "슬림핏", "쓰리피스"],
   },
   honeymoon: {
-    destinations: [
+    // place_honeymoons has `countries` (text[]) — there is no `destinations` column.
+    countries: [
       "유럽", "발리", "몰디브", "하와이", "태국", "베트남", "일본", "괌", "사이판", "스위스", "이탈리아", "프랑스",
     ],
   },
@@ -57,6 +59,11 @@ const STYLE_KEYWORDS: Record<CategorySlug, Record<string, string[]>> = {
   },
   invitation_venue: {
     venue_types: ["한식", "일식", "중식", "양식", "룸", "프라이빗", "이탈리안", "코스"],
+  },
+  jewelry: {
+    // place_jewelry array columns: product_categories, metals.
+    product_categories: ["반지", "목걸이", "귀걸이", "팔찌", "예물세트", "다이아몬드", "주얼리"],
+    metals: ["금", "18K", "14K", "백금", "플래티넘", "은", "로즈골드"],
   },
 };
 
@@ -208,24 +215,35 @@ async function insertOne(
   return { ok: true, placeId };
 }
 
+// Reusable upserter: creates the Supabase client once and returns a function
+// that upserts a batch. Callers flush incrementally (e.g. every N analyzed
+// places) so a job killed mid-category doesn't discard the whole run's work
+// — the final upsert no longer happens only after the entire loop.
+export function makeUpsertPlaces(
+  env: SupabaseEnv
+): (items: CollectedPlace[]) => Promise<UpsertResult> {
+  const supabase = createClient(env.url, env.serviceRoleKey, {
+    auth: { persistSession: false },
+  });
+  return async (items) => {
+    let inserted = 0;
+    let failed = 0;
+    for (const p of items) {
+      const res = await insertOne(supabase, p);
+      if (res.ok) inserted++;
+      else {
+        failed++;
+        console.error(`  ✗ ${p.name}: ${res.reason}`);
+      }
+    }
+    return { inserted, failed };
+  };
+}
+
 export async function upsertPlaces(
   items: CollectedPlace[],
   env: SupabaseEnv
 ): Promise<UpsertResult> {
   if (items.length === 0) return { inserted: 0, failed: 0 };
-  const supabase = createClient(env.url, env.serviceRoleKey, {
-    auth: { persistSession: false },
-  });
-
-  let inserted = 0;
-  let failed = 0;
-  for (const p of items) {
-    const res = await insertOne(supabase, p);
-    if (res.ok) inserted++;
-    else {
-      failed++;
-      console.error(`  ✗ ${p.name}: ${res.reason}`);
-    }
-  }
-  return { inserted, failed };
+  return makeUpsertPlaces(env)(items);
 }
