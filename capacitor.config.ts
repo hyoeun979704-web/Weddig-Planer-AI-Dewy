@@ -22,6 +22,17 @@ const config: CapacitorConfig = {
       ? { url: devUrl, cleartext: devUrl.startsWith('http://') }
       : {}),
   },
+  plugins: {
+    // 로컬 알림(D-day/일정/예산 리마인더). 작은 아이콘/색은 Android 상태바 표기용.
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon',
+      iconColor: '#E89BB0',
+    },
+    // 푸시 알림. 포그라운드에서도 배너/사운드 표시(iOS).
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
+  },
 };
 
 export default config;

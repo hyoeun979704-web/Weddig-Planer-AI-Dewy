@@ -7,8 +7,20 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import {
+  NOTIFICATION_PREF_DEFAULTS,
+  persistDevicePrefs,
+  readDevicePrefs,
+  type NotificationToggleId,
+} from "@/lib/notifications/prefs";
+import { isNativeApp } from "@/lib/platform";
 
-const notificationSettings = [
+const notificationSettings: Array<{
+  id: NotificationToggleId;
+  icon: typeof Bell;
+  title: string;
+  description: string;
+}> = [
   { id: "push", icon: Bell, title: "푸시 알림", description: "앱 푸시 알림 받기" },
   { id: "marketing", icon: Tag, title: "마케팅 알림", description: "할인 및 이벤트 정보" },
   { id: "chat", icon: MessageSquare, title: "채팅 알림", description: "1:1 문의 답변 알림" },
@@ -16,31 +28,17 @@ const notificationSettings = [
   { id: "favorite", icon: Heart, title: "찜 알림", description: "찜한 업체 소식" },
 ];
 
-// 기기 단위 알림 토글은 localStorage 에 보관(서버 푸시는 1차 출시 제외).
-// 마케팅 토글만 PIPA 동의 이력(user_consents.marketing_v1)과 동기화한다.
-const STORAGE_KEY = "dewy.notification.prefs";
+// 기기 단위 알림 토글은 localStorage(prefs.ts)에 보관.
+// 마케팅 토글은 PIPA 동의 이력(user_consents.marketing_v1)과 동기화한다.
+// 로그인 사용자는 서버 푸시 발송 시 토글을 존중하도록 user_notification_prefs 에도 미러링.
 const MARKETING_CONSENT_TYPE = "marketing_v1";
-
-const DEFAULTS: Record<string, boolean> = {
-  push: true,
-  marketing: false,
-  chat: true,
-  schedule: true,
-  favorite: true,
-};
 
 const Notifications = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [settings, setSettings] = useState<Record<string, boolean>>(() => {
-    if (typeof window === "undefined") return DEFAULTS;
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      return saved ? { ...DEFAULTS, ...JSON.parse(saved) } : DEFAULTS;
-    } catch {
-      return DEFAULTS;
-    }
-  });
+  const [settings, setSettings] = useState<Record<string, boolean>>(() =>
+    readDevicePrefs(),
+  );
 
   // 로그인 사용자는 마케팅 동의의 현재 상태를 user_consents 최신 row 에서 동기화.
   useEffect(() => {
@@ -64,19 +62,42 @@ const Notifications = () => {
     };
   }, [user]);
 
-  const persistDevicePrefs = (next: Record<string, boolean>) => {
+  // 서버 푸시가 토글을 존중하도록 카테고리 토글을 user_notification_prefs 에 upsert.
+  // 테이블 미배포 단계에서는 조용히 무시(푸시 미활성).
+  const syncServerPrefs = async (next: Record<string, boolean>) => {
+    if (!user) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      await (supabase as any).from("user_notification_prefs").upsert(
+        {
+          user_id: user.id,
+          push: next.push,
+          marketing: next.marketing,
+          chat: next.chat,
+          schedule: next.schedule,
+          favorite: next.favorite,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
     } catch {
-      // 저장 실패는 무시 — 다음 토글에서 재시도된다.
+      // 테이블 미배포/오프라인 — 무시.
     }
   };
 
-  const toggleSetting = async (id: string) => {
+  const toggleSetting = async (id: NotificationToggleId) => {
     const nextValue = !settings[id];
     const next = { ...settings, [id]: nextValue };
     setSettings(next);
     persistDevicePrefs(next);
+    void syncServerPrefs(next);
+
+    // 마스터 푸시를 켜면 즉시 OS 권한 요청 + 토큰 등록(네이티브).
+    if (id === "push" && nextValue && isNativeApp()) {
+      const { initPushNotifications } = await import(
+        "@/lib/native/pushNotifications"
+      );
+      void initPushNotifications();
+    }
 
     if (id === "marketing") {
       if (!user) {
@@ -98,6 +119,7 @@ const Notifications = () => {
         const reverted = { ...next, marketing: !nextValue };
         setSettings(reverted);
         persistDevicePrefs(reverted);
+        void syncServerPrefs(reverted);
         toast.error("마케팅 수신 설정을 저장하지 못했어요");
         return;
       }
@@ -129,7 +151,7 @@ const Notifications = () => {
                   <p className="text-xs text-muted-foreground">{item.description}</p>
                 </div>
                 <Switch
-                  checked={settings[item.id]}
+                  checked={settings[item.id] ?? NOTIFICATION_PREF_DEFAULTS[item.id]}
                   onCheckedChange={() => toggleSetting(item.id)}
                 />
               </div>

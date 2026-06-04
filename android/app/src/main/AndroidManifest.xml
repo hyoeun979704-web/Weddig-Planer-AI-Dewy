@@ -41,11 +41,52 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- 홈 화면 위젯: D-day / 일정 / 예산. 데이터는 WidgetBridgePlugin 이
+             SharedPreferences 에 기록하고, 각 Provider 가 읽어 RemoteViews 로 렌더한다. -->
+        <receiver
+            android:name="app.dewy.widget.DdayWidgetProvider"
+            android:label="Dewy D-day"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_dday_info" />
+        </receiver>
+
+        <receiver
+            android:name="app.dewy.widget.ScheduleWidgetProvider"
+            android:label="Dewy 일정"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_schedule_info" />
+        </receiver>
+
+        <receiver
+            android:name="app.dewy.widget.BudgetWidgetProvider"
+            android:label="Dewy 예산"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_budget_info" />
+        </receiver>
     </application>
 
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+(API 33) 알림 표시 권한. 로컬 알림(D-day/일정/예산) + 푸시(FCM)
+         모두 런타임 권한이 필요하다. 플러그인이 런타임에 요청한다. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Android 13+ (API 33+) 에서 광고 ID 사용을 위한 명시 권한. AdMob 도입 예정
          이며 Play Console 데이터 보안 폼의 광고 ID 수집 선언과 매칭. 권한 없으면
          광고 ID 가 0 으로 처리 → 광고/분석 수익 손실 + Play Console 오류. -->

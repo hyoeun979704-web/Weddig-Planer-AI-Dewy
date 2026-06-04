@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
+import NativeSync from "@/components/NativeSync";
 import SessionTracker from "@/components/SessionTracker";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
@@ -11,6 +12,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
+import { isNativeApp } from "@/lib/platform";
 
 // Lazy-loaded pages
 const MergeGame = lazy(() => import("./pages/MergeGame"));
@@ -316,6 +318,10 @@ const App = () => (
           {/* First-time tutorial welcome sheet — uses useNavigate so it
               must live inside BrowserRouter. Self-gates on user + onboarding. */}
           <TutorialWelcomeSheet />
+          {/* 네이티브 알림/위젯 동기화 허브 — useNavigate(알림 탭 라우팅) 때문에
+              BrowserRouter 안에 있어야 한다. 네이티브에서만 마운트해 웹에서는
+              추가 쿼리/효과가 전혀 돌지 않도록 한다(isNativeApp 은 세션 내 불변). */}
+          {isNativeApp() && <NativeSync />}
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

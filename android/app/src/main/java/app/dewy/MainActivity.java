@@ -7,6 +7,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.WebViewListener;
+import app.dewy.widget.WidgetBridgePlugin;
 
 public class MainActivity extends BridgeActivity {
     private int safeAreaTopPx = 0;
@@ -14,6 +15,8 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // 커스텀 위젯 브리지 플러그인 등록 — super.onCreate 전에 호출해야 한다.
+        registerPlugin(WidgetBridgePlugin.class);
         super.onCreate(savedInstanceState);
 
         if (bridge != null) {

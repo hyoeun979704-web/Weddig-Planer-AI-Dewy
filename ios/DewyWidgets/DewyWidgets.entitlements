@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 위젯 익스텐션 ↔ 앱 본체가 데이터를 공유하기 위한 App Group.
+	     앱 본체 타깃에도 동일 그룹을 추가해야 한다. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.app.dewy</string>
+	</array>
+</dict>
+</plist>

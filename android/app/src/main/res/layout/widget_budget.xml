@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_budget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="14dp"
+    android:gravity="center_vertical"
+    android:background="@drawable/widget_background">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="예산 현황"
+        android:textColor="#D6336C"
+        android:textStyle="bold"
+        android:textSize="13sp"
+        android:paddingBottom="6dp" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="bottom">
+        <TextView
+            android:id="@+id/widget_budget_spent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0원"
+            android:textColor="#3A2E32"
+            android:textStyle="bold"
+            android:textSize="20sp" />
+        <TextView
+            android:id="@+id/widget_budget_total"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="#9A8B90"
+            android:textSize="12sp"
+            android:paddingStart="6dp"
+            android:paddingBottom="3dp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_budget_remaining"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#6B5B60"
+        android:textSize="12sp"
+        android:paddingTop="4dp" />
+</LinearLayout>
