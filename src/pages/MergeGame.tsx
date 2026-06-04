@@ -136,8 +136,9 @@ export default function MergeGame() {
         />
       </div>
 
-      {/* 하단 광고 배너 (웹=AdSense / 네이티브=AdMob). 미설정 시 아무것도 안 그림. */}
-      <AdBanner className="flex-shrink-0 w-full" />
+      {/* 하단 광고 배너 (웹=AdSense / 네이티브=AdMob). 미설정 시 구간만 예약.
+          배경을 캔버스 하단색과 맞춰 게임 화면에서 광고 구간까지 자연스럽게 이어지게 함. */}
+      <AdBanner className="flex-shrink-0 w-full flex items-center justify-center" height={96} />
     </div>
   );
 }

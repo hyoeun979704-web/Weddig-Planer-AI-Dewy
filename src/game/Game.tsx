@@ -34,58 +34,6 @@ const POINTER_CURSOR = (() => {
   return `url("data:image/svg+xml,${svg}") 12 12, pointer`;
 })();
 
-// 상단 음소거 버튼 좌표(캔버스 좌표) — draw 와 hit-test 가 공유.
-const MUTE_BTN = { cx: 337, cy: 25, r: 15 };
-
-// 버블 칩(pill) — 따뜻한 크림 배경 + 갈색 셀 아웃라인 + 부드러운 그림자.
-// 이미지 스트레치가 없으니(roundRect 직접 그림) 왜곡 위험이 0이다.
-function drawPill(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
-  const r = h / 2;
-  ctx.save();
-  ctx.shadowColor = 'rgba(120,70,50,0.20)';
-  ctx.shadowBlur = 5;
-  ctx.shadowOffsetY = 2;
-  ctx.fillStyle = 'rgba(255,250,244,0.96)';
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
-  ctx.fill();
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(150,95,70,0.55)';
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
-  ctx.stroke();
-  ctx.restore();
-}
-
-// 라벨+값 칩. anchorLeft=true 면 ax 가 좌측 x, false 면 ax 가 우측 끝. 그려진 박스를 반환.
-function drawLabeledChip(
-  ctx: CanvasRenderingContext2D,
-  anchorLeft: boolean, ax: number, y: number,
-  label: string, value: string, valueColor: string
-) {
-  const padX = 11, h = 30, gap = 5;
-  ctx.font = "700 9px 'Noto Sans KR', sans-serif";
-  const lw = ctx.measureText(label).width;
-  ctx.font = "bold 15px 'Noto Sans KR', sans-serif";
-  const vw = ctx.measureText(value).width;
-  const w = padX * 2 + lw + gap + vw;
-  const x = anchorLeft ? ax : ax - w;
-  drawPill(ctx, x, y, w, h);
-  const cy = y + h / 2;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.font = "700 9px 'Noto Sans KR', sans-serif";
-  ctx.fillStyle = 'rgba(150,95,70,0.8)';
-  ctx.fillText(label, x + padX, cy + 1);
-  ctx.font = "bold 15px 'Noto Sans KR', sans-serif";
-  ctx.fillStyle = valueColor;
-  ctx.fillText(value, x + padX + lw + gap, cy);
-  return { x, w };
-}
-
 export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
@@ -132,12 +80,6 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
   // 매 렌더 새 리터럴이라 그대로 의존하면 콜백/RAF 루프가 매 렌더 재생성됨).
   const audio = useGameAudio();
   const { muted: audioMuted, toggleMute, unlock: audioUnlock, playMerge } = audio;
-
-  // 렌더 루프(draw)는 매 프레임 호출되므로 자주 바뀌는 값은 ref 로 읽어 draw 를 안정화한다.
-  const mutedRef = useRef(audioMuted);
-  mutedRef.current = audioMuted;
-  const bestScoreRef = useRef(bestScore);
-  bestScoreRef.current = bestScore;
 
   const { gameState, dropXRef, mergeFlashesRef, startGame, dropFlower, setDropX, tick, getBodies } =
     useGameLogic({ canvasRef, onScoreChange, onGameOver, onMerge: playMerge });
@@ -254,42 +196,30 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
     // 바닥/데드라인 별도 렌더 없음 — 배경 에셋의 유리통이 바닥·벽·데드라인(윗 림)을 모두 표현.
 
-    // ─── 인게임 상단 버블 HUD (유리 림 위 오픈 영역) ──────────────────────────
-    const waitLevel = FLOWER_LEVEL_MAP.get(gs.currentLevelId);
+    // ─── NEXT 미리보기 (유리 림 위 오픈 영역, 프레임 없이 에셋만 크게) ──────────
+    // SCORE/최고/소리는 헤더 아래 React 바로 이동했고, 여기선 다음 꽃만 노출.
     const nextLevel = FLOWER_LEVEL_MAP.get(gs.nextLevelId);
 
-    if (gs.phase !== 'gameover' && waitLevel) {
-      const hudY = 10;
+    if (gs.phase !== 'gameover' && nextLevel) {
+      const iconSz = 46;                 // 프레임 없이 크게(256px 소스라 안 깨짐)
+      const icx = GAME_WIDTH - 12 - iconSz / 2;
+      const labelY = 8;
+      const icy = labelY + 11 + iconSz / 2;
 
-      // SCORE 칩 (좌)
-      drawLabeledChip(ctx, true, 8, hudY, 'SCORE', String(gs.score), '#E0739A');
+      // 'NEXT' 라벨 (박스 없이 텍스트만)
+      ctx.font = "700 10px 'Noto Sans KR', sans-serif";
+      ctx.fillStyle = 'rgba(140,90,65,0.9)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('NEXT', icx, labelY);
 
-      // NEXT 칩 (중앙) — 다음 꽃 미리보기
-      if (nextLevel) {
-        const padX = 10, h = 30, gap = 6, iconSz = 22;
-        ctx.font = "700 9px 'Noto Sans KR', sans-serif";
-        const lw = ctx.measureText('NEXT').width;
-        const w = padX * 2 + lw + gap + iconSz;
-        const nx = (GAME_WIDTH - w) / 2;
-        drawPill(ctx, nx, hudY, w, h);
-        const cy = hudY + h / 2;
-        ctx.textAlign = 'left';
+      if (flowerReadyRef.current.has(gs.nextLevelId)) {
+        ctx.drawImage(flowerImgRef.current.get(gs.nextLevelId)!, icx - iconSz / 2, icy - iconSz / 2, iconSz, iconSz);
+      } else {
+        ctx.font = `${iconSz}px serif`;
         ctx.textBaseline = 'middle';
-        ctx.font = "700 9px 'Noto Sans KR', sans-serif";
-        ctx.fillStyle = 'rgba(150,95,70,0.8)';
-        ctx.fillText('NEXT', nx + padX, cy + 1);
-        const ix = nx + padX + lw + gap + iconSz / 2;
-        if (flowerReadyRef.current.has(gs.nextLevelId)) {
-          ctx.drawImage(flowerImgRef.current.get(gs.nextLevelId)!, ix - iconSz / 2, cy - iconSz / 2, iconSz, iconSz);
-        } else {
-          ctx.font = `${iconSz}px serif`;
-          ctx.textAlign = 'center';
-          ctx.fillText(nextLevel.emoji, ix, cy);
-        }
+        ctx.fillText(nextLevel.emoji, icx, icy);
       }
-
-      // BEST 칩 (우, 음소거 버튼 왼쪽까지)
-      drawLabeledChip(ctx, false, MUTE_BTN.cx - MUTE_BTN.r - 6, hudY, 'BEST', String(bestScoreRef.current), '#C9A96E');
     }
 
     // 머지 이펙트 — 부드러운 글로우 + 확장 링 + 사방으로 튀는 반짝이.
@@ -479,14 +409,6 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.font = "bold 13px 'Noto Sans KR', sans-serif";
       ctx.fillText('다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
     }
-
-    // 음소거 버튼 — 모든 단계에서 항상 그림(게임오버 오버레이 위에도). 음소거가
-    // 어느 화면에서도 가능하도록 맨 마지막에 렌더. (mutedRef 로 매 프레임 최신값)
-    drawPill(ctx, MUTE_BTN.cx - MUTE_BTN.r, MUTE_BTN.cy - MUTE_BTN.r, MUTE_BTN.r * 2, MUTE_BTN.r * 2);
-    ctx.font = "15px serif";
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(mutedRef.current ? '🔇' : '🔊', MUTE_BTN.cx, MUTE_BTN.cy + 1);
   }, [getBodies, dropXRef, mergeFlashesRef, adLoading]);
 
   // ─── RAF 루프 ─────────────────────────────────────────────────────
@@ -538,13 +460,6 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       // 첫 사용자 제스처에서 오디오 잠금 해제 + BGM 시작
       audioUnlock();
 
-      // 음소거 버튼은 모든 단계에서 탭 가능 — 드롭/팝업 처리보다 먼저 검사하고 토글만.
-      const mc = getCanvasCoords(e);
-      if (mc && Math.hypot(mc.x - MUTE_BTN.cx, mc.y - MUTE_BTN.cy) <= MUTE_BTN.r + 2) {
-        toggleMute();
-        return;
-      }
-
       if (gameStateRef.current.phase === 'gameover') {
         // 팝업 내 버튼 히트 테스트
         const coords = getCanvasCoords(e);
@@ -577,35 +492,57 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
       dropFlower();
     },
-    [dropFlower, getCanvasCoords, startGame, watchRewardedForDouble, audioUnlock, toggleMute]
+    [dropFlower, getCanvasCoords, startGame, watchRewardedForDouble, audioUnlock]
   );
 
   return (
     <div
       className="flex flex-col items-center w-full h-full select-none overflow-hidden"
-      style={{
-        backgroundColor: '#fbe6ee',
-        backgroundImage: 'url(/game/bg.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
+      // 배경은 캔버스가 그린다(중복 CSS 배경을 깔면 캔버스와 스케일이 달라 이음새가 생김).
+      // 캔버스를 상단에 붙이고, 캔버스 위/아래로 남는 영역은 배경 끝색으로 채워 자연스럽게.
+      style={{ backgroundColor: '#fbcdb6' }}
     >
-      {/* 스코어/베스트/넥스트/음소거 HUD 는 캔버스 위 버블 칩으로 직접 그림(레퍼런스풍). */}
+      {/* SCORE / 최고점수 / 소리 — 헤더 바로 아래 라인 */}
+      <div className="flex items-center justify-between w-full px-4 py-2 bg-card/90 backdrop-blur border-b border-border flex-shrink-0">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[11px] text-muted-foreground font-semibold tracking-wide">SCORE</span>
+          <span className="text-xl font-bold text-primary tabular-nums leading-none">{gameState.score}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-baseline gap-1">
+            <span className="text-[11px] text-muted-foreground font-semibold tracking-wide">최고</span>
+            <span className="text-base font-bold text-primary/80 tabular-nums leading-none">{bestScore}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => { audioUnlock(); toggleMute(); }}
+            aria-label={audioMuted ? '소리 켜기' : '소리 끄기'}
+            className="flex items-center justify-center w-8 h-8 rounded-full text-lg hover:bg-muted/60 transition-colors"
+          >
+            {audioMuted ? '🔇' : '🔊'}
+          </button>
+        </div>
+      </div>
 
-      {/* 캔버스 — 최대한 넓게 */}
-      <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
+      {/* 캔버스 — 상단 정렬로 배경을 위로 올림. 가능한 폭을 채우되(비율 유지=왜곡 없음)
+          유리가 절대 잘리지 않도록 높이 기준으로도 맞춤:
+            width = min(100%, 가용높이로 환산한 폭) + aspect-ratio 로 비율 고정.
+          → 폭/높이 어느 쪽도 넘치지 않아 유리 전체가 항상 보이고, 남는 영역(아래/좌우)은
+          컨테이너 배경(#fbbba5, 캔버스 하단색)으로 자연스럽게 이어짐. */}
+      <div
+        className="flex-1 min-h-0 w-full overflow-hidden flex items-start justify-center"
+        style={{ backgroundColor: '#fbbba5' }}
+      >
         <canvas
           ref={canvasRef}
           width={GAME_WIDTH}
           height={GAME_HEIGHT}
           className="touch-none block"
           style={{
-            // 컬럼 폭을 채우도록 키움(비율 유지 → 왜곡 없음). 남는 위/아래는 루트 bg.
-            height: 'min(calc(100dvh - 60px), 760px)',
-            width: 'auto',
-            maxWidth: '100%',
+            width: `min(100%, calc((100dvh - 184px) * ${GAME_WIDTH} / ${GAME_HEIGHT}))`,
+            aspectRatio: `${GAME_WIDTH} / ${GAME_HEIGHT}`,
+            height: 'auto',
             cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
-            borderRadius: '0 0 8px 8px',
           }}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
