@@ -13,6 +13,9 @@ if (isNativeApp()) {
     ]);
     registerDeepLinks();
 
+    // 안드로이드 상태바 안전영역(헤더가 상태바 아래로 고정되도록 edge-to-edge 전환).
+    void import("./lib/native/safeArea").then(({ initAndroidSafeArea }) => initAndroidSafeArea());
+
     // WebView 가 백그라운드에서 JS 타이머를 throttle 하므로
     // autoRefreshToken 만 믿지 않고 resume 마다 한 번 명시 갱신한다.
     void CapApp.addListener("resume", async () => {
