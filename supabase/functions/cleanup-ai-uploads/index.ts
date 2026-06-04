@@ -44,17 +44,34 @@ interface ExpiredObject {
   name: string;
 }
 
+// Decode the `role` claim from a JWT WITHOUT verifying the signature — the edge
+// gateway (verify_jwt=true) already rejected anything not signed by the project
+// JWT secret. Authorize cron by role=service_role instead of string-matching the
+// env SERVICE_ROLE_KEY (which drifts across API-key rotations / formats).
+function jwtRole(token: string): string | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, "="));
+    return (JSON.parse(json)?.role as string | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   // ─────────────────────────────────────────────
-  // 1) service_role 인증
-  //    cron(net.http_post) 가 보내는 Bearer 토큰만 통과
+  // 1) service_role 인증 — cron(net.http_post)이 보내는 service_role JWT 만 통과.
+  //    verify_jwt=true 게이트웨이가 서명을 검증하므로 role 클레임으로 인가.
   const auth = req.headers.get("Authorization") ?? "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!serviceRoleKey || auth !== `Bearer ${serviceRoleKey}`) {
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!serviceRoleKey || jwtRole(token) !== "service_role") {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
