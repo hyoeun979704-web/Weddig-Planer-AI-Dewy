@@ -34,6 +34,58 @@ const POINTER_CURSOR = (() => {
   return `url("data:image/svg+xml,${svg}") 12 12, pointer`;
 })();
 
+// 상단 음소거 버튼 좌표(캔버스 좌표) — draw 와 hit-test 가 공유.
+const MUTE_BTN = { cx: 337, cy: 25, r: 15 };
+
+// 버블 칩(pill) — 따뜻한 크림 배경 + 갈색 셀 아웃라인 + 부드러운 그림자.
+// 이미지 스트레치가 없으니(roundRect 직접 그림) 왜곡 위험이 0이다.
+function drawPill(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  const r = h / 2;
+  ctx.save();
+  ctx.shadowColor = 'rgba(120,70,50,0.20)';
+  ctx.shadowBlur = 5;
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle = 'rgba(255,250,244,0.96)';
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(150,95,70,0.55)';
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// 라벨+값 칩. anchorLeft=true 면 ax 가 좌측 x, false 면 ax 가 우측 끝. 그려진 박스를 반환.
+function drawLabeledChip(
+  ctx: CanvasRenderingContext2D,
+  anchorLeft: boolean, ax: number, y: number,
+  label: string, value: string, valueColor: string
+) {
+  const padX = 11, h = 30, gap = 5;
+  ctx.font = "700 9px 'Noto Sans KR', sans-serif";
+  const lw = ctx.measureText(label).width;
+  ctx.font = "bold 15px 'Noto Sans KR', sans-serif";
+  const vw = ctx.measureText(value).width;
+  const w = padX * 2 + lw + gap + vw;
+  const x = anchorLeft ? ax : ax - w;
+  drawPill(ctx, x, y, w, h);
+  const cy = y + h / 2;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = "700 9px 'Noto Sans KR', sans-serif";
+  ctx.fillStyle = 'rgba(150,95,70,0.8)';
+  ctx.fillText(label, x + padX, cy + 1);
+  ctx.font = "bold 15px 'Noto Sans KR', sans-serif";
+  ctx.fillStyle = valueColor;
+  ctx.fillText(value, x + padX + lw + gap, cy);
+  return { x, w };
+}
+
 export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
@@ -193,47 +245,49 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
     // 바닥/데드라인 별도 렌더 없음 — 배경 에셋의 유리통이 바닥·벽·데드라인(윗 림)을 모두 표현.
 
-    // ─── 인게임 상단 HUD (유리 림 위 오픈 영역) ──────────────────────────────
-    // 현재 꽃 (가운데)
+    // ─── 인게임 상단 버블 HUD (유리 림 위 오픈 영역) ──────────────────────────
     const waitLevel = FLOWER_LEVEL_MAP.get(gs.currentLevelId);
     const nextLevel = FLOWER_LEVEL_MAP.get(gs.nextLevelId);
 
     if (gs.phase !== 'gameover' && waitLevel) {
-      // 현재 꽃 라벨 + 아이콘 (가운데 상단)
-      const centerX = GAME_WIDTH / 2;
-      const hudY = 18;
-      const drawIcon = (id: number, lv: typeof waitLevel, cx: number, cy: number, sz: number) => {
-        if (flowerReadyRef.current.has(id)) {
-          ctx.drawImage(flowerImgRef.current.get(id)!, cx - sz / 2, cy - sz / 2, sz, sz);
-        } else {
-          ctx.font = `${sz}px serif`;
-          ctx.textBaseline = 'middle';
-          ctx.fillText(lv!.emoji, cx, cy);
-        }
-      };
+      const hudY = 10;
 
-      ctx.save();
-      ctx.font = "9px 'Noto Sans KR', sans-serif";
-      ctx.fillStyle = 'rgba(120,80,100,0.7)';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText('지금', centerX, hudY - 2);
-      drawIcon(gs.currentLevelId, waitLevel, centerX, hudY + 22, 36);
-      ctx.restore();
+      // SCORE 칩 (좌)
+      drawLabeledChip(ctx, true, 8, hudY, 'SCORE', String(gs.score), '#E0739A');
 
-      // 다음 꽃 (우측)
+      // NEXT 칩 (중앙) — 다음 꽃 미리보기
       if (nextLevel) {
-        const nextX = GAME_WIDTH - 40;
-        ctx.save();
-        ctx.globalAlpha = 0.8;
-        ctx.font = "8px 'Noto Sans KR', sans-serif";
-        ctx.fillStyle = 'rgba(120,80,100,0.6)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.fillText('next', nextX, hudY - 2);
-        drawIcon(gs.nextLevelId, nextLevel, nextX, hudY + 20, 24);
-        ctx.restore();
+        const padX = 10, h = 30, gap = 6, iconSz = 22;
+        ctx.font = "700 9px 'Noto Sans KR', sans-serif";
+        const lw = ctx.measureText('NEXT').width;
+        const w = padX * 2 + lw + gap + iconSz;
+        const nx = (GAME_WIDTH - w) / 2;
+        drawPill(ctx, nx, hudY, w, h);
+        const cy = hudY + h / 2;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.font = "700 9px 'Noto Sans KR', sans-serif";
+        ctx.fillStyle = 'rgba(150,95,70,0.8)';
+        ctx.fillText('NEXT', nx + padX, cy + 1);
+        const ix = nx + padX + lw + gap + iconSz / 2;
+        if (flowerReadyRef.current.has(gs.nextLevelId)) {
+          ctx.drawImage(flowerImgRef.current.get(gs.nextLevelId)!, ix - iconSz / 2, cy - iconSz / 2, iconSz, iconSz);
+        } else {
+          ctx.font = `${iconSz}px serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText(nextLevel.emoji, ix, cy);
+        }
       }
+
+      // BEST 칩 (우, 음소거 버튼 왼쪽까지)
+      drawLabeledChip(ctx, false, MUTE_BTN.cx - MUTE_BTN.r - 6, hudY, 'BEST', String(bestScore), '#C9A96E');
+
+      // 음소거 버튼 (우상단 원형 칩)
+      drawPill(ctx, MUTE_BTN.cx - MUTE_BTN.r, MUTE_BTN.cy - MUTE_BTN.r, MUTE_BTN.r * 2, MUTE_BTN.r * 2);
+      ctx.font = "15px serif";
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(audio.muted ? '🔇' : '🔊', MUTE_BTN.cx, MUTE_BTN.cy + 1);
     }
 
     // 머지 이펙트 — 부드러운 글로우 + 확장 링 + 사방으로 튀는 반짝이.
@@ -423,7 +477,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.font = "bold 13px 'Noto Sans KR', sans-serif";
       ctx.fillText('다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
     }
-  }, [getBodies, dropXRef, mergeFlashesRef, adLoading]);
+  }, [getBodies, dropXRef, mergeFlashesRef, adLoading, bestScore, audio.muted]);
 
   // ─── RAF 루프 ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -474,6 +528,15 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       // 첫 사용자 제스처에서 오디오 잠금 해제 + BGM 시작
       audio.unlock();
 
+      // 음소거 버튼 탭은 드롭하지 않고 토글만 (게임 진행 중)
+      if (gameStateRef.current.phase !== 'gameover') {
+        const mc = getCanvasCoords(e);
+        if (mc && Math.hypot(mc.x - MUTE_BTN.cx, mc.y - MUTE_BTN.cy) <= MUTE_BTN.r + 2) {
+          audio.toggleMute();
+          return;
+        }
+      }
+
       if (gameStateRef.current.phase === 'gameover') {
         // 팝업 내 버튼 히트 테스트
         const coords = getCanvasCoords(e);
@@ -519,27 +582,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         backgroundPosition: 'center',
       }}
     >
-      {/* 상단 스코어 바 — 컴팩트 */}
-      <div className="flex items-center justify-between w-full px-4 py-1.5 bg-card/90 backdrop-blur border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground font-medium">SCORE</span>
-          <span className="text-lg font-bold text-primary tabular-nums">{gameState.score}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <span className="text-xs"></span>
-            <span className="text-sm font-semibold text-primary/80 tabular-nums">{bestScore}점</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => { audio.unlock(); audio.toggleMute(); }}
-            aria-label={audio.muted ? '소리 켜기' : '소리 끄기'}
-            className="flex items-center justify-center w-7 h-7 rounded-full text-base hover:bg-muted/60 transition-colors"
-          >
-            {audio.muted ? '🔇' : '🔊'}
-          </button>
-        </div>
-      </div>
+      {/* 스코어/베스트/넥스트/음소거 HUD 는 캔버스 위 버블 칩으로 직접 그림(레퍼런스풍). */}
 
       {/* 캔버스 — 최대한 넓게 */}
       <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
@@ -550,7 +593,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
           className="touch-none block"
           style={{
             // 컬럼 폭을 채우도록 키움(비율 유지 → 왜곡 없음). 남는 위/아래는 루트 bg.
-            height: 'min(calc(100dvh - 84px), 694px)',
+            height: 'min(calc(100dvh - 60px), 760px)',
             width: 'auto',
             maxWidth: '100%',
             cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
