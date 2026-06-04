@@ -264,27 +264,23 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       // SCORE 칩 (좌)
       drawLabeledChip(ctx, true, 8, hudY, 'SCORE', String(gs.score), '#E0739A');
 
-      // NEXT 칩 (중앙) — 다음 꽃 미리보기
+      // NEXT 미리보기 (중앙) — 프레임 없이 'NEXT' 라벨 + 그 아래 큰 꽃.
       if (nextLevel) {
-        const padX = 10, h = 30, gap = 6, iconSz = 22;
-        ctx.font = "700 9px 'Noto Sans KR', sans-serif";
-        const lw = ctx.measureText('NEXT').width;
-        const w = padX * 2 + lw + gap + iconSz;
-        const nx = (GAME_WIDTH - w) / 2;
-        drawPill(ctx, nx, hudY, w, h);
-        const cy = hudY + h / 2;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.font = "700 9px 'Noto Sans KR', sans-serif";
-        ctx.fillStyle = 'rgba(150,95,70,0.8)';
-        ctx.fillText('NEXT', nx + padX, cy + 1);
-        const ix = nx + padX + lw + gap + iconSz / 2;
+        const cx = GAME_WIDTH / 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = "bold 14px 'Noto Sans KR', sans-serif";
+        ctx.fillStyle = 'rgba(140,90,65,0.95)';
+        ctx.fillText('NEXT', cx, hudY - 4);
+
+        const iconSz = 46;                  // 크게(256px 소스라 안 깨짐), 박스 없음
+        const icy = hudY - 4 + 16 + iconSz / 2;
         if (flowerReadyRef.current.has(gs.nextLevelId)) {
-          ctx.drawImage(flowerImgRef.current.get(gs.nextLevelId)!, ix - iconSz / 2, cy - iconSz / 2, iconSz, iconSz);
+          ctx.drawImage(flowerImgRef.current.get(gs.nextLevelId)!, cx - iconSz / 2, icy - iconSz / 2, iconSz, iconSz);
         } else {
           ctx.font = `${iconSz}px serif`;
-          ctx.textAlign = 'center';
-          ctx.fillText(nextLevel.emoji, ix, cy);
+          ctx.textBaseline = 'middle';
+          ctx.fillText(nextLevel.emoji, cx, icy);
         }
       }
 

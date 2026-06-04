@@ -136,8 +136,8 @@ export default function MergeGame() {
         />
       </div>
 
-      {/* 하단 광고 배너 (웹=AdSense / 네이티브=AdMob). 미설정 시 아무것도 안 그림. */}
-      <AdBanner className="flex-shrink-0 w-full" />
+      {/* 하단 광고 배너 (웹=AdSense / 네이티브=AdMob). 승인 전엔 회색 '광고' 자리표시. */}
+      <AdBanner className="flex-shrink-0 w-full" height={96} placeholder />
     </div>
   );
 }
