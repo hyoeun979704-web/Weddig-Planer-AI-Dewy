@@ -237,53 +237,78 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     }
 
     // 머지 이펙트 — 부드러운 글로우 + 확장 링 + 사방으로 튀는 반짝이.
+    // 프리미엄(최종 레벨) 완성은 더 크고 화려하게(2겹 링·무지개 반짝이·별·더 긴 지속).
     const now = performance.now();
     mergeFlashesRef.current.forEach((f) => {
+      const isPrem = !!f.premium;
+      const dur = isPrem ? 1200 : 600;
       const elapsed = now - f.createdAt;
-      const progress = Math.min(1, elapsed / 600);
+      const progress = Math.min(1, elapsed / dur);
       const ease = 1 - Math.pow(1 - progress, 2); // ease-out
 
       ctx.save();
       ctx.translate(f.x, f.y);
 
       // 1) 중심 글로우 (초반에 확 밝아졌다 사라짐)
-      const glowAlpha = (1 - progress) * 0.5;
+      const glowAlpha = (1 - progress) * (isPrem ? 0.7 : 0.5);
       if (glowAlpha > 0.01) {
-        const gr = f.radius * (0.6 + 0.8 * ease);
+        const gr = f.radius * (isPrem ? 1.0 + 1.4 * ease : 0.6 + 0.8 * ease);
         const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, gr);
-        glow.addColorStop(0, `rgba(255,250,230,${glowAlpha})`);
-        glow.addColorStop(0.5, `rgba(255,215,120,${glowAlpha * 0.5})`);
-        glow.addColorStop(1, 'rgba(255,215,120,0)');
+        glow.addColorStop(0, `rgba(255,252,240,${glowAlpha})`);
+        glow.addColorStop(0.5, `rgba(255,210,150,${glowAlpha * 0.5})`);
+        glow.addColorStop(1, 'rgba(255,200,120,0)');
         ctx.fillStyle = glow;
         ctx.beginPath();
         ctx.arc(0, 0, gr, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // 2) 확장 링
-      const ringR = f.radius + f.radius * 1.2 * ease;
-      ctx.globalAlpha = (1 - progress) * 0.8;
+      // 2) 확장 링 (프리미엄은 2겹)
+      const rings = isPrem ? [1.2, 1.9] : [1.2];
       ctx.strokeStyle = '#FFD27A';
-      ctx.lineWidth = 3 * (1 - progress) + 0.5;
-      ctx.beginPath();
-      ctx.arc(0, 0, ringR, 0, Math.PI * 2);
-      ctx.stroke();
+      rings.forEach((mult, ri) => {
+        const ringR = f.radius + f.radius * mult * ease;
+        ctx.globalAlpha = (1 - progress) * (0.8 - ri * 0.25);
+        ctx.lineWidth = (isPrem ? 4 : 3) * (1 - progress) + 0.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+        ctx.stroke();
+      });
 
-      // 3) 반짝이 입자 — createdAt 기반 결정적 분포로 8방향 튀어나감
-      const sparkCount = 8;
-      const sparkDist = f.radius * (0.9 + 1.6 * ease);
+      // 3) 반짝이 입자 — 결정적 분포로 사방 튀어나감 (프리미엄은 더 많고 무지개색)
+      const sparkCount = isPrem ? 18 : 8;
+      const sparkDist = f.radius * (isPrem ? 1.0 + 2.4 * ease : 0.9 + 1.6 * ease);
       const seed = f.createdAt;
-      ctx.fillStyle = '#FFFFFF';
+      const premColors = ['#FFD700', '#FF9EC4', '#9ED8FF', '#FFFFFF', '#C7A6FF'];
       for (let i = 0; i < sparkCount; i++) {
         const ang = (i / sparkCount) * Math.PI * 2 + seed * 0.0007;
-        const sx = Math.cos(ang) * sparkDist;
-        const sy = Math.sin(ang) * sparkDist;
-        const sparkR = (1 - progress) * (1.6 + (i % 3) * 0.7);
+        const dist = sparkDist * (isPrem ? 0.8 + 0.4 * ((i * 7) % 5) / 5 : 1);
+        const sx = Math.cos(ang) * dist;
+        const sy = Math.sin(ang) * dist;
+        const sparkR = (1 - progress) * (isPrem ? 2.2 + (i % 3) * 1.0 : 1.6 + (i % 3) * 0.7);
         if (sparkR <= 0.1) continue;
         ctx.globalAlpha = (1 - progress) * 0.95;
+        ctx.fillStyle = isPrem ? premColors[i % premColors.length] : '#FFFFFF';
         ctx.beginPath();
         ctx.arc(sx, sy, sparkR, 0, Math.PI * 2);
         ctx.fill();
+      }
+
+      // 4) 프리미엄 전용 — 4방향 별빛(스파클 십자) 버스트
+      if (isPrem) {
+        const starLen = f.radius * (1.0 + 1.6 * ease);
+        const starAlpha = (1 - progress) * 0.9;
+        ctx.globalAlpha = starAlpha;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineCap = 'round';
+        for (let k = 0; k < 4; k++) {
+          const a = (k / 4) * Math.PI * 2 + Math.PI / 4;
+          ctx.lineWidth = 2.5 * (1 - progress) + 0.5;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(Math.cos(a) * starLen, Math.sin(a) * starLen);
+          ctx.stroke();
+        }
       }
       ctx.restore();
     });
@@ -330,12 +355,13 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.roundRect(popX, popY, popW, popH, 16);
       ctx.fill();
 
-      // 제목
-      ctx.fillStyle = '#e53e3e';
+      // 제목 — 프리미엄 부케 완성(클리어) vs 데드라인 초과(게임 오버)
+      const isWin = gs.endReason === 'premium';
+      ctx.fillStyle = isWin ? '#C9A96E' : '#e53e3e';
       ctx.font = "bold 22px 'Noto Sans KR', sans-serif";
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(' Game Over', GAME_WIDTH / 2, popY + 32);
+      ctx.fillText(isWin ? '🎉 프리미엄 부케 완성!' : 'Game Over', GAME_WIDTH / 2, popY + 32);
 
       // 최종 점수
       ctx.fillStyle = '#333';

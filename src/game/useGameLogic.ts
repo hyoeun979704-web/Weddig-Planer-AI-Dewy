@@ -31,6 +31,7 @@ export interface MergeFlash {
   y: number;
   radius: number;   // 머지된 상위 오브젝트의 반지름
   createdAt: number;
+  premium?: boolean; // 프리미엄 부케(최종 레벨) 완성 머지 — 더 화려한 이펙트
 }
 
 interface UseGameLogicOptions {
@@ -127,28 +128,45 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver, onMerge }: 
       gameObjectsRef.current.delete(bodyA.id);
       gameObjectsRef.current.delete(bodyB.id);
 
-      const newBody = createFlowerBody(level.nextLevelId!, midX, midY);
+      const newLevelId = level.nextLevelId!;
+      const newBody = createFlowerBody(newLevelId, midX, midY);
       Matter.World.add(engine.world, newBody);
 
+      // 프리미엄 부케(최종 레벨) 완성 여부 — 더 화려한 이펙트 + 게임 클리어
+      const nextLevel = FLOWER_LEVEL_MAP.get(newLevelId);
+      const isPremium = nextLevel?.nextLevelId === null;
+
       // 머지 이펙트 등록
-      const nextLevel = FLOWER_LEVEL_MAP.get(level.nextLevelId!);
       if (nextLevel) {
         mergeFlashesRef.current.push({
           x: midX,
           y: midY,
           radius: nextLevel.radius,
           createdAt: performance.now(),
+          premium: isPremium,
         });
       }
 
-      // 머지 효과음 트리거 (합쳐진 결과 레벨 전달 → 상위 단계일수록 음 높이 변화 등에 활용)
-      onMergeRef.current?.(level.nextLevelId!);
+      // 머지 효과음 트리거 (합쳐진 결과 레벨 전달 → 프리미엄은 다른 효과음 재생)
+      onMergeRef.current?.(newLevelId);
 
       setGameState((prev) => {
         const newScore = prev.score + level.score;
         onScoreChangeRef.current?.(newScore);
         return { ...prev, score: newScore };
       });
+
+      // 프리미엄 부케 완성 → 잠시 후 게임 클리어로 종료(이펙트·효과음 감상 후)
+      if (isPremium && !isGameOverRef.current) {
+        isGameOverRef.current = true;
+        setTimeout(() => {
+          setGameState((prev) => {
+            if (prev.phase === 'gameover') return prev;
+            onGameOverRef.current?.(prev.score);
+            return { ...prev, phase: 'gameover', endReason: 'premium' };
+          });
+        }, 1300);
+      }
     }, MERGE_DELAY);
   };
 
@@ -187,7 +205,7 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver, onMerge }: 
               isGameOverRef.current = true;
               setGameState((prev) => {
                 onGameOverRef.current?.(prev.score);
-                return { ...prev, phase: 'gameover' };
+                return { ...prev, phase: 'gameover', endReason: 'overflow' };
               });
             }
             deathTimerRef.current = null;
@@ -301,10 +319,10 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver, onMerge }: 
   // ─── 매 프레임 호출: 데스라인 + 이펙트 정리 ─────────────────────────────
   const tick = useCallback(() => {
     if (engineRef.current) checkDeathLine(engineRef.current);
-    // 600ms 지난 머지 이펙트 제거
+    // 지난 머지 이펙트 제거 (프리미엄은 1200ms 동안 유지)
     const now = performance.now();
     mergeFlashesRef.current = mergeFlashesRef.current.filter(
-      (f) => now - f.createdAt < 600
+      (f) => now - f.createdAt < (f.premium ? 1200 : 600)
     );
   }, [checkDeathLine]);
 

@@ -19,10 +19,14 @@ export interface GameObject {
 
 export type GamePhase = 'idle' | 'dropping' | 'gameover';
 
+// 게임 종료 사유: 데드라인 초과(패배) vs 프리미엄 부케 완성(클리어)
+export type EndReason = 'overflow' | 'premium';
+
 export interface GameState {
   phase: GamePhase;
   score: number;
   currentLevelId: number;  // 현재 대기 중인 꽃 레벨
   nextLevelId: number;     // 다음에 나올 꽃 레벨 (미리보기)
   objects: GameObject[];
+  endReason?: EndReason;   // phase==='gameover' 일 때 사유
 }
