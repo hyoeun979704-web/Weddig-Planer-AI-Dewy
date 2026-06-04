@@ -10,6 +10,9 @@ interface SupabaseEnv {
 interface UpsertResult {
   inserted: number;
   failed: number;
+  // place row ok but a place_details / place_<category> child upsert errored.
+  // Surfaced so schema/data drift (e.g. a missing column) isn't silently lost.
+  childFailed: number;
 }
 
 // Tables that hold category-specific card columns (1:1 with places).
@@ -163,7 +166,7 @@ function categoryRow(placeId: string, p: CollectedPlace) {
 async function insertOne(
   supabase: SupabaseClient,
   p: CollectedPlace
-): Promise<{ ok: boolean; placeId?: string; reason?: string }> {
+): Promise<{ ok: boolean; placeId?: string; reason?: string; childFailed: number }> {
   // Upsert by (category, name, city, district) — UNIQUE index uq_places_identity
   // ensures we update the existing row instead of creating duplicates on re-run.
   const { data, error } = await supabase
@@ -176,7 +179,7 @@ async function insertOne(
     .single();
 
   if (error || !data) {
-    return { ok: false, reason: `places: ${error?.message ?? "no row"}` };
+    return { ok: false, reason: `places: ${error?.message ?? "no row"}`, childFailed: 0 };
   }
   const placeId = data.place_id;
 
@@ -209,10 +212,14 @@ async function insertOne(
   }
 
   const results = await Promise.all(tasks);
+  let childFailed = 0;
   for (const r of results) {
-    if (r.error) console.warn(`  ⚠ ${r.table} upsert (${p.name}): ${r.error}`);
+    if (r.error) {
+      childFailed++;
+      console.warn(`  ⚠ ${r.table} upsert (${p.name}): ${r.error}`);
+    }
   }
-  return { ok: true, placeId };
+  return { ok: true, placeId, childFailed };
 }
 
 // Reusable upserter: creates the Supabase client once and returns a function
@@ -228,15 +235,17 @@ export function makeUpsertPlaces(
   return async (items) => {
     let inserted = 0;
     let failed = 0;
+    let childFailed = 0;
     for (const p of items) {
       const res = await insertOne(supabase, p);
+      childFailed += res.childFailed;
       if (res.ok) inserted++;
       else {
         failed++;
         console.error(`  ✗ ${p.name}: ${res.reason}`);
       }
     }
-    return { inserted, failed };
+    return { inserted, failed, childFailed };
   };
 }
 
@@ -244,6 +253,6 @@ export async function upsertPlaces(
   items: CollectedPlace[],
   env: SupabaseEnv
 ): Promise<UpsertResult> {
-  if (items.length === 0) return { inserted: 0, failed: 0 };
+  if (items.length === 0) return { inserted: 0, failed: 0, childFailed: 0 };
   return makeUpsertPlaces(env)(items);
 }
