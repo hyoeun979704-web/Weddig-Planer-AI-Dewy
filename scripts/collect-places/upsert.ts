@@ -10,6 +10,9 @@ interface SupabaseEnv {
 interface UpsertResult {
   inserted: number;
   failed: number;
+  // place row ok but a place_details / place_<category> child upsert errored.
+  // Surfaced so schema/data drift (e.g. a missing column) isn't silently lost.
+  childFailed: number;
 }
 
 // Tables that hold category-specific card columns (1:1 with places).
@@ -23,6 +26,7 @@ const CATEGORY_TABLE: Record<CategorySlug, string> = {
   honeymoon: "place_honeymoons",
   appliance: "place_appliances",
   invitation_venue: "place_invitation_venues",
+  jewelry: "place_jewelry",
 };
 
 // Keyword bank for category-specific array columns.
@@ -48,7 +52,8 @@ const STYLE_KEYWORDS: Record<CategorySlug, Record<string, string[]>> = {
     suit_styles: ["턱시도", "정장", "모닝", "클래식", "모던", "슬림핏", "쓰리피스"],
   },
   honeymoon: {
-    destinations: [
+    // place_honeymoons has `countries` (text[]) — there is no `destinations` column.
+    countries: [
       "유럽", "발리", "몰디브", "하와이", "태국", "베트남", "일본", "괌", "사이판", "스위스", "이탈리아", "프랑스",
     ],
   },
@@ -57,6 +62,11 @@ const STYLE_KEYWORDS: Record<CategorySlug, Record<string, string[]>> = {
   },
   invitation_venue: {
     venue_types: ["한식", "일식", "중식", "양식", "룸", "프라이빗", "이탈리안", "코스"],
+  },
+  jewelry: {
+    // place_jewelry array columns: product_categories, metals.
+    product_categories: ["반지", "목걸이", "귀걸이", "팔찌", "예물세트", "다이아몬드", "주얼리"],
+    metals: ["금", "18K", "14K", "백금", "플래티넘", "은", "로즈골드"],
   },
 };
 
@@ -78,8 +88,12 @@ function placeRow(p: CollectedPlace) {
   return {
     name: p.name,
     category: p.category,
-    city: p.city,
-    district: p.district,
+    // Normalize to '' (never null): the uq_places_identity unique index and the
+    // onConflict target below are plain columns, and the columns are NOT NULL.
+    // A null here would both violate NOT NULL and fail to dedupe against the
+    // existing '' rows.
+    city: p.city ?? "",
+    district: p.district ?? "",
     description: p.description,
     main_image_url: p.main_image_url,
     tags: p.tags,
@@ -152,7 +166,7 @@ function categoryRow(placeId: string, p: CollectedPlace) {
 async function insertOne(
   supabase: SupabaseClient,
   p: CollectedPlace
-): Promise<{ ok: boolean; placeId?: string; reason?: string }> {
+): Promise<{ ok: boolean; placeId?: string; reason?: string; childFailed: number }> {
   // Upsert by (category, name, city, district) — UNIQUE index uq_places_identity
   // ensures we update the existing row instead of creating duplicates on re-run.
   const { data, error } = await supabase
@@ -165,7 +179,7 @@ async function insertOne(
     .single();
 
   if (error || !data) {
-    return { ok: false, reason: `places: ${error?.message ?? "no row"}` };
+    return { ok: false, reason: `places: ${error?.message ?? "no row"}`, childFailed: 0 };
   }
   const placeId = data.place_id;
 
@@ -198,30 +212,47 @@ async function insertOne(
   }
 
   const results = await Promise.all(tasks);
+  let childFailed = 0;
   for (const r of results) {
-    if (r.error) console.warn(`  ⚠ ${r.table} upsert (${p.name}): ${r.error}`);
+    if (r.error) {
+      childFailed++;
+      console.warn(`  ⚠ ${r.table} upsert (${p.name}): ${r.error}`);
+    }
   }
-  return { ok: true, placeId };
+  return { ok: true, placeId, childFailed };
+}
+
+// Reusable upserter: creates the Supabase client once and returns a function
+// that upserts a batch. Callers flush incrementally (e.g. every N analyzed
+// places) so a job killed mid-category doesn't discard the whole run's work
+// — the final upsert no longer happens only after the entire loop.
+export function makeUpsertPlaces(
+  env: SupabaseEnv
+): (items: CollectedPlace[]) => Promise<UpsertResult> {
+  const supabase = createClient(env.url, env.serviceRoleKey, {
+    auth: { persistSession: false },
+  });
+  return async (items) => {
+    let inserted = 0;
+    let failed = 0;
+    let childFailed = 0;
+    for (const p of items) {
+      const res = await insertOne(supabase, p);
+      childFailed += res.childFailed;
+      if (res.ok) inserted++;
+      else {
+        failed++;
+        console.error(`  ✗ ${p.name}: ${res.reason}`);
+      }
+    }
+    return { inserted, failed, childFailed };
+  };
 }
 
 export async function upsertPlaces(
   items: CollectedPlace[],
   env: SupabaseEnv
 ): Promise<UpsertResult> {
-  if (items.length === 0) return { inserted: 0, failed: 0 };
-  const supabase = createClient(env.url, env.serviceRoleKey, {
-    auth: { persistSession: false },
-  });
-
-  let inserted = 0;
-  let failed = 0;
-  for (const p of items) {
-    const res = await insertOne(supabase, p);
-    if (res.ok) inserted++;
-    else {
-      failed++;
-      console.error(`  ✗ ${p.name}: ${res.reason}`);
-    }
-  }
-  return { inserted, failed };
+  if (items.length === 0) return { inserted: 0, failed: 0, childFailed: 0 };
+  return makeUpsertPlaces(env)(items);
 }

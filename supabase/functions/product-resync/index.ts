@@ -7,9 +7,11 @@
  *
  * 동작:
  *   - is_active=true AND source='naver' 인 상품 SELECT (쿠팡 어댑터는 키 등록되면 분기 추가)
- *   - 각 상품의 name 으로 네이버 검색 → 동일 productId 찾기
- *     - 매칭: price/sale_price/source_url/source_mall 업데이트 + last_resynced_at, stale_reason=null
- *     - 미매칭: is_active=false, stale_reason='not_found', last_resynced_at = now
+ *   - 각 상품의 name 으로 네이버 검색 → 매칭 (다단계)
+ *     - PASS1 동일 productId / PASS2 동일 mall + 상품명 토큰 일치(재등록 대응, productId 재바인딩)
+ *     - 매칭: price/sale_price/source_url/source_mall 업데이트, stale_reason=null, stale_count=0
+ *     - 미매칭: stale_count++; 연속 3회(STALE_GRACE_CYCLES) 미매칭일 때만 is_active=false
+ *       (네이버 productId 가 재등록 시 바뀌므로 1회 미스로 즉시 delisting 하지 않음)
  *   - chunkSize 단위로 진행 (timeout 안전, 기본 80개)
  *   - rate-limit: 네이버 RPS 보호 위해 호출 사이 80ms 슬립
  *
@@ -36,14 +38,35 @@ interface ActiveProduct {
   source_product_id: string | null;
   price: number;
   sale_price: number | null;
+  source_mall: string | null;
+  stale_count: number | null;
 }
 
 interface NaverResultItem {
   productId?: string;
+  title?: string;
   lprice?: string;
   hprice?: string;
   link?: string;
   mallName?: string;
+}
+
+// Naver re-lists the same product under a NEW productId on inventory refresh,
+// so an exact-id miss is not proof the product is gone. Only deactivate after
+// this many consecutive resync cycles with no match (resync runs weekly).
+const STALE_GRACE_CYCLES = 3;
+
+// Fraction of the product-name tokens (first 6) present in a candidate title.
+// Used as a conservative fallback match when the productId changed.
+function nameOverlap(name: string, title: string): number {
+  const toks = stripHtmlTags(name)
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length >= 2)
+    .slice(0, 6);
+  if (toks.length === 0) return 0;
+  const hay = stripHtmlTags(title).toLowerCase();
+  return toks.filter((t) => hay.includes(t)).length / toks.length;
 }
 
 function jsonResp(body: unknown, status = 200) {
@@ -51,6 +74,22 @@ function jsonResp(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+// Decode the `role` claim from a JWT WITHOUT verifying the signature — the edge
+// gateway (verify_jwt=true) already rejected anything not signed by the project
+// JWT secret. Authorize cron/service by role=service_role instead of string-
+// matching the env SERVICE_ROLE_KEY (which drifts across API-key rotations).
+function jwtRole(token: string): string | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, "="));
+    return (JSON.parse(json)?.role as string | undefined) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function stripHtmlTags(s: string): string {
@@ -115,7 +154,8 @@ serve(async (req) => {
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-  if (token !== serviceRoleKey) {
+  // service_role JWT (cron/server) → authorized. Otherwise must be an admin user.
+  if (jwtRole(token) !== "service_role") {
     const userClient = createClient(supabaseUrl, serviceRoleKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -142,7 +182,7 @@ serve(async (req) => {
   // 가장 오래 동기화 안 된 active 외부 상품 N 개.
   const { data: rows, error: selErr } = await adminClient
     .from("products")
-    .select("id, name, source, source_product_id, price, sale_price")
+    .select("id, name, source, source_product_id, price, sale_price, source_mall, stale_count")
     .eq("is_active", true)
     .neq("source", "manual")
     .not("source_product_id", "is", null)
@@ -156,6 +196,7 @@ serve(async (req) => {
 
   let updated = 0;
   let deactivated = 0;
+  let graced = 0; // missed this cycle but kept active (within grace window)
   const errors: Array<{ id: string; error: string }> = [];
   const now = new Date().toISOString();
 
@@ -163,37 +204,50 @@ serve(async (req) => {
     if (p.source !== "naver") continue; // 쿠팡 어댑터는 키 등록 후 별도 분기 추가.
     try {
       const items = await naverSearchByName(p.name, naverId, naverSecret);
-      const match = items.find((it) => String(it.productId ?? "") === p.source_product_id);
+      // PASS 1 — exact productId.
+      let match = items.find((it) => String(it.productId ?? "") === p.source_product_id);
+      // PASS 2 — productId likely changed on a re-list: same mall + strong name
+      // overlap. Conservative (same mall required) to avoid matching a different product.
+      let rebind = false;
+      if (!match && p.source_mall) {
+        match = items.find(
+          (it) => (it.mallName ?? "") === p.source_mall && nameOverlap(p.name, it.title ?? "") >= 0.6,
+        );
+        if (match) rebind = true;
+      }
 
       if (!match) {
+        // PASS 3 — grace: don't delist on a single miss (Naver ids are unstable).
+        const nextCount = (p.stale_count ?? 0) + 1;
+        const deactivate = nextCount >= STALE_GRACE_CYCLES;
         const { error } = await adminClient
           .from("products")
           .update({
-            is_active: false,
-            stale_reason: "not_found",
+            stale_count: nextCount,
+            is_active: !deactivate,
+            stale_reason: deactivate ? "not_found" : `grace_${nextCount}`,
             last_resynced_at: now,
           })
           .eq("id", p.id);
-        if (error) {
-          errors.push({ id: p.id, error: `deactivate: ${error.message}` });
-        } else {
-          deactivated++;
-        }
+        if (error) errors.push({ id: p.id, error: `stale: ${error.message}` });
+        else if (deactivate) deactivated++;
+        else graced++;
       } else {
         const newPrice = parseInt(match.lprice ?? "0", 10) || p.price;
         const hprice = parseInt(match.hprice ?? "0", 10) || 0;
         const newSale = hprice > 0 && hprice < newPrice ? hprice : null;
-        const { error } = await adminClient
-          .from("products")
-          .update({
-            price: newPrice,
-            sale_price: newSale,
-            source_url: match.link ?? undefined,
-            source_mall: match.mallName ?? undefined,
-            stale_reason: null,
-            last_resynced_at: now,
-          })
-          .eq("id", p.id);
+        const patch: Record<string, unknown> = {
+          price: newPrice,
+          sale_price: newSale,
+          source_url: match.link ?? undefined,
+          source_mall: match.mallName ?? undefined,
+          stale_reason: null,
+          stale_count: 0, // reset grace counter
+          last_resynced_at: now,
+        };
+        // Re-bind to the new productId so future cycles match on PASS 1 again.
+        if (rebind && match.productId) patch.source_product_id = String(match.productId);
+        const { error } = await adminClient.from("products").update(patch).eq("id", p.id);
         if (error) {
           errors.push({ id: p.id, error: `update: ${error.message}` });
         } else {
@@ -209,6 +263,7 @@ serve(async (req) => {
   return jsonResp({
     scanned: targets.length,
     updated,
+    graced,
     deactivated,
     errors,
   });

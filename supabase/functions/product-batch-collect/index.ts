@@ -50,6 +50,23 @@ function jsonResp(body: unknown, status = 200) {
   });
 }
 
+// Decode the `role` claim from a JWT WITHOUT verifying the signature — the
+// edge gateway (verify_jwt=true) already rejected anything not signed by the
+// project JWT secret, so any token reaching here is authentic. We authorize
+// cron/service calls by role=service_role instead of string-matching the env
+// SERVICE_ROLE_KEY (which drifts across API-key rotations / formats).
+function jwtRole(token: string): string | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, "="));
+    return (JSON.parse(json)?.role as string | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function stripHtmlTags(s: string): string {
   return s.replace(/<[^>]+>/g, "").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
 }
@@ -127,7 +144,8 @@ serve(async (req) => {
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-  if (token !== serviceRoleKey) {
+  // service_role JWT (cron/server) → authorized. Otherwise must be an admin user.
+  if (jwtRole(token) !== "service_role") {
     const userClient = createClient(supabaseUrl, serviceRoleKey, {
       global: { headers: { Authorization: authHeader } },
     });

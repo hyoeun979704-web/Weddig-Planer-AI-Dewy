@@ -1,5 +1,8 @@
 // Fuzzy dedupe by normalized (name, region) tuple.
-// Two records merge when name similarity >= 0.85 AND same district (or both unknown).
+// Two records merge when name similarity >= 0.85 AND same city AND same district
+// (or one district unknown). The city guard prevents merging same-named but
+// distinct businesses in different cities (e.g. "라움웨딩 서울" vs "라움웨딩 부산")
+// when one record's district happens to be missing.
 
 import type { CollectedPlace } from "./types";
 
@@ -58,6 +61,7 @@ export function dedupe(items: CollectedPlace[]): CollectedPlace[] {
     const idx = buckets.findIndex(
       (b) =>
         similarity(b.name, it.name) >= 0.85 &&
+        (b.city ?? "") === (it.city ?? "") &&
         ((b.district ?? "") === (it.district ?? "") || !b.district || !it.district)
     );
     if (idx >= 0) {

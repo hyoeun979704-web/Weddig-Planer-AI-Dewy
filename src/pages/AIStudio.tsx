@@ -18,6 +18,20 @@ interface StudioCard {
 
 const cards: StudioCard[] = [
   {
+    id: "photo-fix",
+    title: "초간단 사진보정",
+    description: "흐린 웨딩 사진 화질 UP — 1회 최대 8장 (첫 1회 50%↓)",
+    status: "active",
+    href: "/ai-studio/photo-fix",
+  },
+  {
+    id: "wedding-consulting",
+    title: "2026 웨딩컨설팅",
+    description: "퍼스널컬러·헤어·메이크업·드레스 맞춤 A4 리포트 (첫 1회 50%↓)",
+    status: "active",
+    href: "/ai-studio/consulting",
+  },
+  {
     id: "dress-tour",
     title: "방구석 드레스 투어",
     description: "내 사진으로 드레스 핏을 미리 확인",

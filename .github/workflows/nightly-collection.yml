@@ -15,13 +15,20 @@ on:
   workflow_dispatch:
     inputs:
       categories:
-        description: "Comma-separated 카테고리 (default: all 9)"
+        description: "Comma-separated 카테고리 (default: all 10)"
         required: false
-        default: "웨딩홀,스튜디오,드레스샵,메이크업샵,한복,예복,허니문,혼수,청첩장"
+        default: "웨딩홀,스튜디오,드레스샵,메이크업샵,한복,예복,허니문,혼수,예물,청첩장"
       limit:
         description: "분석 limit per 카테고리"
         required: false
         default: "80"
+
+# A slow run (Gemini 429 backoffs) can still be going when the next night's
+# cron fires; without this, two runs would hit the same Naver/Gemini quota and
+# upsert the same rows concurrently. Let the in-progress run finish.
+concurrency:
+  group: nightly-place-collection
+  cancel-in-progress: false
 
 jobs:
   prepare:
@@ -34,7 +41,7 @@ jobs:
         run: |
           INPUT_CATEGORIES="${{ github.event.inputs.categories }}"
           if [ -z "$INPUT_CATEGORIES" ]; then
-            INPUT_CATEGORIES="웨딩홀,스튜디오,드레스샵,메이크업샵,한복,예복,허니문,혼수,청첩장"
+            INPUT_CATEGORIES="웨딩홀,스튜디오,드레스샵,메이크업샵,한복,예복,허니문,혼수,예물,청첩장"
           fi
           INPUT_LIMIT="${{ github.event.inputs.limit }}"
           if [ -z "$INPUT_LIMIT" ]; then

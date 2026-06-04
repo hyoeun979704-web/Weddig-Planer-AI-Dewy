@@ -12,7 +12,7 @@ import {
 import { analyzeBusiness } from "./sources/analyzer";
 import { dedupe } from "./dedupe";
 import { scoreConfidence } from "./scoring";
-import { upsertPlaces } from "./upsert";
+import { makeUpsertPlaces } from "./upsert";
 import type { CollectedPlace, SourceRef } from "./types";
 
 interface CliArgs {
@@ -133,11 +133,17 @@ async function discover(label: CategoryLabel, region: string | undefined, env: N
   const queries = seedQueries(label, region);
   console.log(`\n[${label}] Stage 1 발견 — ${queries.length} 시드 쿼리`);
   const candidates: CollectedPlace[] = [];
+  // Naver Local caps display at 5 and has no usable pagination, so each seed
+  // surfaces at most 5 businesses. Count seeds that returned the full 5 — a
+  // signal that more exist than we can reach (raise coverage via more seed
+  // templates in utils/categories.ts, not pagination).
+  let cappedSeeds = 0;
   for (let qi = 0; qi < queries.length; qi++) {
     const q = queries[qi];
     process.stdout.write(`  · [${qi + 1}/${queries.length}] ${q} ... `);
     try {
       const local = await searchLocal(q, env, 5);
+      if (local.length >= 5) cappedSeeds++;
       // Hanbok-specific tourist-experience filter (pre-existing).
       const afterHanbok =
         label === "한복"
@@ -161,6 +167,11 @@ async function discover(label: CategoryLabel, region: string | undefined, env: N
       console.log(`error: ${(e as Error).message.slice(0, 80)}`);
     }
   }
+  if (cappedSeeds > 0) {
+    console.log(
+      `  ⓘ ${cappedSeeds}/${queries.length} 시드가 Naver Local 상한(5건)에 도달 — 더 많은 업체가 존재할 수 있음(시드 템플릿 추가 필요)`
+    );
+  }
   return dedupe(candidates);
 }
 
@@ -180,9 +191,17 @@ async function gatherSnippets(
   for (const q of queries) {
     if (snippets.length >= target) break;
     const need = Math.min(20, target - snippets.length);
+    // Log (don't swallow silently) so a Naver outage / quota-exhaustion is
+    // distinguishable from "this place genuinely has no reviews".
     const [blog, cafe] = await Promise.all([
-      searchBlog(q, env, { months: 24, limit: need }).catch(() => []),
-      searchCafe(q, env, { months: 24, limit: need }).catch(() => []),
+      searchBlog(q, env, { months: 24, limit: need }).catch((e) => {
+        console.warn(`  ⚠ blog "${q}": ${(e as Error).message.slice(0, 60)}`);
+        return [];
+      }),
+      searchCafe(q, env, { months: 24, limit: need }).catch((e) => {
+        console.warn(`  ⚠ cafe "${q}": ${(e as Error).message.slice(0, 60)}`);
+        return [];
+      }),
     ]);
     for (const it of [...blog, ...cafe]) {
       if (seen.has(it.link)) continue;
@@ -194,7 +213,18 @@ async function gatherSnippets(
   return snippets;
 }
 
-async function processCategory(label: CategoryLabel, args: CliArgs): Promise<CollectedPlace[]> {
+// Persist incrementally so a job killed mid-category (e.g. the 90-min timeout
+// under Gemini 429 slowdowns) keeps everything analyzed so far instead of
+// losing the whole batch.
+const FLUSH_BATCH_SIZE = 20;
+
+type FlushFn = (batch: CollectedPlace[]) => Promise<void>;
+
+async function processCategory(
+  label: CategoryLabel,
+  args: CliArgs,
+  flush: FlushFn
+): Promise<{ count: number; avg: number; snippetEmpty: number; analysisFailed: number }> {
   const naverEnv: NaverEnv = {
     clientId: process.env.NAVER_CLIENT_ID!,
     clientSecret: process.env.NAVER_CLIENT_SECRET!,
@@ -208,13 +238,29 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
   // Truncate to limit upfront so we don't waste analysis budget
   const targets = discovered.slice(0, args.limit);
 
+  let count = 0;
+  let confidenceSum = 0;
+  let snippetEmpty = 0; // candidates with no blog/cafe snippets (skipped analysis)
+  let analysisFailed = 0; // Gemini threw or returned null (vs genuinely not-relevant)
+  const pending: CollectedPlace[] = [];
+  const emit = async (p: CollectedPlace) => {
+    count++;
+    confidenceSum += p.confidence;
+    pending.push(p);
+    if (pending.length >= FLUSH_BATCH_SIZE) await flush(pending.splice(0));
+  };
+  const done = async () => {
+    if (pending.length > 0) await flush(pending.splice(0));
+    return { count, avg: count > 0 ? confidenceSum / count : 0, snippetEmpty, analysisFailed };
+  };
+
   if (args.noAnalyze) {
-    return targets.map((p) => ({ ...p, confidence: scoreConfidence(p) }));
+    for (const p of targets) await emit({ ...p, confidence: scoreConfidence(p) });
+    return done();
   }
 
   // Stage 2 + 3
   console.log(`\n[${label}] Stage 2-3 자료수집 + 분석 (${targets.length}개)`);
-  const enriched: CollectedPlace[] = [];
   for (let i = 0; i < targets.length; i++) {
     const c = targets[i];
     process.stdout.write(`  · [${i + 1}/${targets.length}] ${c.name} ... `);
@@ -222,7 +268,8 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
     const snippets = await gatherSnippets(c, naverEnv, args.reviewSnippets);
     if (snippets.length === 0) {
       console.log("스니펫 0개, 분석 스킵");
-      enriched.push({ ...c, confidence: scoreConfidence(c) });
+      snippetEmpty++;
+      await emit({ ...c, confidence: scoreConfidence(c) });
       continue;
     }
 
@@ -258,13 +305,23 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       // Network blip / Gemini outage: keep the candidate w/o analysis instead
       // of killing the whole category job (300+ candidates, hours of work).
       console.log(`분석 예외 (${(e as Error).message.slice(0, 80)}), 스킵`);
-      enriched.push({ ...c, confidence: scoreConfidence(c) });
+      analysisFailed++;
+      await emit({ ...c, confidence: scoreConfidence(c) });
       continue;
     }
 
-    if (!analysis || !analysis.is_relevant) {
+    if (!analysis) {
+      // Gemini returned null (429-after-retry, parse fail, !ok) — a FAILURE,
+      // not a genuine low-relevance signal. Counted separately so an outage
+      // doesn't masquerade as a healthy run of low-quality listings.
+      console.log("분석 실패 (gemini null), 스킵");
+      analysisFailed++;
+      await emit({ ...c, confidence: scoreConfidence(c) });
+      continue;
+    }
+    if (!analysis.is_relevant) {
       console.log(`스킵 (관련성 낮음, snippet=${snippets.length})`);
-      enriched.push({ ...c, confidence: scoreConfidence(c) });
+      await emit({ ...c, confidence: scoreConfidence(c) });
       continue;
     }
 
@@ -301,13 +358,13 @@ async function processCategory(label: CategoryLabel, args: CliArgs): Promise<Col
       max_guarantee: isWeddingHall ? analysis.max_guarantee ?? null : null,
     };
     enhanced.confidence = scoreConfidence(enhanced);
-    enriched.push(enhanced);
+    await emit(enhanced);
     console.log(
       `${analysis.price_tier ?? "?"} | conf=${enhanced.confidence} | snippet=${snippets.length}`
     );
   }
 
-  return enriched;
+  return done();
 }
 
 async function main() {
@@ -329,30 +386,51 @@ async function main() {
   const cats: CategoryLabel[] =
     args.category === "all" ? (Object.keys(CATEGORIES) as CategoryLabel[]) : [args.category];
 
-  const all: CollectedPlace[] = [];
+  // One client, reused across all batch flushes.
+  const upsert = args.dryRun
+    ? null
+    : makeUpsertPlaces({
+        url: process.env.SUPABASE_URL!,
+        serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      });
+  let totalInserted = 0;
+  let totalFailed = 0;
+  let totalChildFailed = 0;
+  let wouldUpsert = 0;
+  const flush: FlushFn = async (batch) => {
+    if (batch.length === 0) return;
+    if (!upsert) {
+      wouldUpsert += batch.length;
+      return;
+    }
+    const r = await upsert(batch);
+    totalInserted += r.inserted;
+    totalFailed += r.failed;
+    totalChildFailed += r.childFailed;
+    console.log(`  ↳ flushed ${batch.length} → upserted ${totalInserted}, failed ${totalFailed} (누적)`);
+  };
+
+  let totalSnippetEmpty = 0;
+  let totalAnalysisFailed = 0;
   for (const c of cats) {
-    const items = await processCategory(c, args);
-    const avg = items.reduce((s, x) => s + x.confidence, 0) / Math.max(1, items.length);
-    console.log(`\n[${c}] 완료: ${items.length}개 (avg conf ${avg.toFixed(0)})`);
-    items.forEach((it) => {
-      const price = it.price_tier ? ` ${it.price_tier}` : "";
-      const atmos = it.atmosphere && it.atmosphere.length > 0 ? ` [${it.atmosphere.slice(0, 2).join(",")}]` : "";
-      console.log(
-        `  · ${it.name} (${it.city ?? "?"} ${it.district ?? ""}) conf=${it.confidence}${price}${atmos}`
-      );
-    });
-    all.push(...items);
+    const { count, avg, snippetEmpty, analysisFailed } = await processCategory(c, args, flush);
+    totalSnippetEmpty += snippetEmpty;
+    totalAnalysisFailed += analysisFailed;
+    console.log(
+      `\n[${c}] 완료: ${count}개 (avg conf ${avg.toFixed(0)}, 스니펫0 ${snippetEmpty}, 분석실패 ${analysisFailed})`
+    );
   }
 
   if (args.dryRun) {
-    console.log(`\n[dry-run] would upsert ${all.length} rows`);
+    console.log(`\n[dry-run] would upsert ${wouldUpsert} rows`);
     return;
   }
-  const result = await upsertPlaces(all, {
-    url: process.env.SUPABASE_URL!,
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  });
-  console.log(`\nupserted: ${result.inserted} (failed: ${result.failed})`);
+  // Surface degradation that used to be invisible: failed places, child-table
+  // upsert failures, analysis failures (≠ genuine low-relevance), empty snippets.
+  console.log(
+    `\nupserted: ${totalInserted} (failed: ${totalFailed}, child-failed: ${totalChildFailed}, ` +
+      `analysis-failed: ${totalAnalysisFailed}, snippet-empty: ${totalSnippetEmpty})`
+  );
 }
 
 main()
