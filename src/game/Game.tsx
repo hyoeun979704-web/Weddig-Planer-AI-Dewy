@@ -55,6 +55,26 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     }
   }, []);
 
+  // 게임 chrome 에셋(배경·데드라인·버튼). 없으면 기존 캔버스 그리기로 폴백.
+  const chromeRef = useRef<Record<string, HTMLImageElement>>({});
+  const chromeReadyRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const assets: Record<string, string> = {
+      bg: '/game/bg.png',
+      line: '/game/line.png',
+      btnGold: '/game/btn-gold.png',
+      btnPink: '/game/btn-pink.png',
+    };
+    for (const [key, src] of Object.entries(assets)) {
+      if (chromeRef.current[key]) continue;
+      const img = new Image();
+      img.onload = () => chromeReadyRef.current.add(key);
+      img.onerror = () => chromeReadyRef.current.delete(key);
+      img.src = src;
+      chromeRef.current[key] = img;
+    }
+  }, []);
+
   const { gameState, dropXRef, mergeFlashesRef, startGame, dropFlower, setDropX, tick, getBodies } =
     useGameLogic({ canvasRef, onScoreChange, onGameOver });
 
@@ -145,15 +165,40 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     const gs = gameStateRef.current;
 
     ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
-    bgGrad.addColorStop(0, '#FFF0F5');
-    bgGrad.addColorStop(1, '#FFF9FA');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    // 배경 — 에셋 있으면 cover 로 채우고, 없으면 핑크 그라데이션 폴백.
+    if (chromeReadyRef.current.has('bg')) {
+      const img = chromeRef.current.bg;
+      const s = Math.max(GAME_WIDTH / img.width, GAME_HEIGHT / img.height);
+      const dw = img.width * s, dh = img.height * s;
+      ctx.drawImage(img, (GAME_WIDTH - dw) / 2, (GAME_HEIGHT - dh) / 2, dw, dh);
+    } else {
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+      bgGrad.addColorStop(0, '#FFF0F5');
+      bgGrad.addColorStop(1, '#FFF9FA');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    }
 
     // 바닥
     ctx.fillStyle = '#F9D5E5';
     ctx.fillRect(0, GAME_HEIGHT - 30, GAME_WIDTH, 30);
+
+    // 데드라인 — garland 에셋이 있으면 그걸로, 없으면 점선 폴백.
+    if (chromeReadyRef.current.has('line')) {
+      const img = chromeRef.current.line;
+      const lh = (img.height / img.width) * GAME_WIDTH;
+      ctx.drawImage(img, 0, DEATH_LINE_Y - lh / 2, GAME_WIDTH, lh);
+    } else {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(220,120,150,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      ctx.moveTo(0, DEATH_LINE_Y);
+      ctx.lineTo(GAME_WIDTH, DEATH_LINE_Y);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // ─── 인게임 상단 HUD (데스라인 위) ──────────────────────────────
     // 현재 꽃 (가운데)
@@ -292,16 +337,19 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       const btnX = (GAME_WIDTH - btnW) / 2;
 
       if (!adLoading) {
-        // 보상형 광고 시청 → 포인트 2배 버튼
-        const goldGrad = ctx.createLinearGradient(btnX, btn1Y, btnX + btnW, btn1Y);
-        goldGrad.addColorStop(0, '#C9A96E');
-        goldGrad.addColorStop(1, '#E8D5A3');
-        ctx.fillStyle = goldGrad;
-        ctx.beginPath();
-        ctx.roundRect(btnX, btn1Y, btnW, btn1H, 10);
-        ctx.fill();
-
-        ctx.fillStyle = '#fff';
+        // 보상형 광고 시청 → 포인트 2배 버튼 (골드 에셋 or 폴백)
+        if (chromeReadyRef.current.has('btnGold')) {
+          ctx.drawImage(chromeRef.current.btnGold, btnX, btn1Y, btnW, btn1H);
+        } else {
+          const goldGrad = ctx.createLinearGradient(btnX, btn1Y, btnX + btnW, btn1Y);
+          goldGrad.addColorStop(0, '#C9A96E');
+          goldGrad.addColorStop(1, '#E8D5A3');
+          ctx.fillStyle = goldGrad;
+          ctx.beginPath();
+          ctx.roundRect(btnX, btn1Y, btnW, btn1H, 10);
+          ctx.fill();
+        }
+        ctx.fillStyle = '#7a5c00';
         ctx.font = 'bold 13px sans-serif';
         ctx.fillText(`광고 보고 포인트 2배 (${earnedPoints * 2}P)`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
       } else {
@@ -316,17 +364,20 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         ctx.fillText('광고 불러오는 중...', GAME_WIDTH / 2, btn1Y + btn1H / 2);
       }
 
-      // 다시하기 버튼
+      // 다시하기 버튼 (핑크 에셋 or 폴백)
       const btn2Y = btn1Y + btn1H + 10;
       const btn2H = 36;
-      ctx.fillStyle = '#F4A7B9';
-      ctx.beginPath();
-      ctx.roundRect(btnX, btn2Y, btnW, btn2H, 10);
-      ctx.fill();
-
-      ctx.fillStyle = '#fff';
+      if (chromeReadyRef.current.has('btnPink')) {
+        ctx.drawImage(chromeRef.current.btnPink, btnX, btn2Y, btnW, btn2H);
+      } else {
+        ctx.fillStyle = '#F4A7B9';
+        ctx.beginPath();
+        ctx.roundRect(btnX, btn2Y, btnW, btn2H, 10);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#8a3a50';
       ctx.font = 'bold 13px sans-serif';
-      ctx.fillText(' 다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
+      ctx.fillText('다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
     }
   }, [getBodies, dropXRef, mergeFlashesRef, adLoading]);
 
