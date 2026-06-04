@@ -12,7 +12,8 @@
 
 import { Capacitor } from "@capacitor/core";
 
-export const ADSENSE_CLIENT = import.meta.env.VITE_ADSENSE_CLIENT as string | undefined;
+// 퍼블리셔 ID 는 index.html <head> 에도 정적 포함됨(소유권 확인용). env 미설정 시 기본값 사용.
+export const ADSENSE_CLIENT = (import.meta.env.VITE_ADSENSE_CLIENT as string | undefined) || "ca-pub-8005269626005297";
 export const ADSENSE_BANNER_SLOT = import.meta.env.VITE_ADSENSE_BANNER_SLOT as string | undefined;
 const ADMOB_BANNER_ID = import.meta.env.VITE_ADMOB_BANNER_ID as string | undefined;
 const ADMOB_REWARDED_ID = import.meta.env.VITE_ADMOB_REWARDED_ID as string | undefined;
@@ -38,12 +39,12 @@ export async function initAds(): Promise<void> {
     } catch (e) {
       console.warn("[ads] AdMob init 실패 (플러그인 미설치?)", e);
     }
-  } else if (ADSENSE_CLIENT && !document.querySelector("script[data-adsbygoogle]")) {
+  } else if (ADSENSE_CLIENT && !document.querySelector('script[src*="adsbygoogle.js"]')) {
+    // index.html 에 이미 정적 포함돼 있으면 재주입하지 않음.
     const s = document.createElement("script");
     s.async = true;
     s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`;
     s.crossOrigin = "anonymous";
-    s.setAttribute("data-adsbygoogle", "1");
     document.head.appendChild(s);
   }
 }
