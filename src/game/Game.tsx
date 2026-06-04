@@ -142,6 +142,15 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     ctx.restore();
   }
 
+  // 버튼 9-slice — 둥근 양끝(cap)은 비율 유지하고 가운데만 늘려 왜곡 방지.
+  function draw9SliceBtn(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
+    const cs = img.height / 2;            // source cap (semicircle) width
+    const cd = Math.min(h / 2, w / 2);    // dest cap width (aspect 유지)
+    ctx.drawImage(img, 0, 0, cs, img.height, x, y, cd, h);
+    ctx.drawImage(img, img.width - cs, 0, cs, img.height, x + w - cd, y, cd, h);
+    ctx.drawImage(img, cs, 0, Math.max(1, img.width - 2 * cs), img.height, x + cd, y, Math.max(1, w - 2 * cd), h);
+  }
+
   // ─── 색상 유틸리티 ───────────────────────────────────────────────────
   function hexToRgb(hex: string): [number, number, number] {
     const n = parseInt(hex.replace('#', ''), 16);
@@ -209,48 +218,39 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       // 현재 꽃 라벨 + 아이콘 (가운데 상단)
       const centerX = GAME_WIDTH / 2;
       const hudY = 18;
+      const drawIcon = (id: number, lv: typeof waitLevel, cx: number, cy: number, sz: number) => {
+        if (flowerReadyRef.current.has(id)) {
+          ctx.drawImage(flowerImgRef.current.get(id)!, cx - sz / 2, cy - sz / 2, sz, sz);
+        } else {
+          ctx.font = `${sz}px serif`;
+          ctx.textBaseline = 'middle';
+          ctx.fillText(lv!.emoji, cx, cy);
+        }
+      };
 
       ctx.save();
-      ctx.font = '9px sans-serif';
-      ctx.fillStyle = 'rgba(120,80,100,0.6)';
+      ctx.font = "9px 'Noto Sans KR', sans-serif";
+      ctx.fillStyle = 'rgba(120,80,100,0.7)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       ctx.fillText('지금', centerX, hudY - 2);
-
-      ctx.font = `${Math.min(28, waitLevel.radius * 1.2)}px serif`;
-      ctx.textBaseline = 'middle';
-      ctx.fillText(waitLevel.emoji, centerX, hudY + 20);
+      drawIcon(gs.currentLevelId, waitLevel, centerX, hudY + 22, 36);
       ctx.restore();
 
       // 다음 꽃 (우측)
       if (nextLevel) {
         const nextX = GAME_WIDTH - 40;
         ctx.save();
-        ctx.globalAlpha = 0.65;
-        ctx.font = '8px sans-serif';
-        ctx.fillStyle = 'rgba(120,80,100,0.5)';
+        ctx.globalAlpha = 0.8;
+        ctx.font = "8px 'Noto Sans KR', sans-serif";
+        ctx.fillStyle = 'rgba(120,80,100,0.6)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.fillText('next', nextX, hudY - 2);
-
-        ctx.font = '18px serif';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(nextLevel.emoji, nextX, hudY + 18);
+        drawIcon(gs.nextLevelId, nextLevel, nextX, hudY + 20, 24);
         ctx.restore();
       }
     }
-
-    // 데스 라인
-    ctx.save();
-    ctx.strokeStyle = 'rgba(220, 38, 38, 0.45)';
-    ctx.setLineDash([6, 5]);
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(0, DEATH_LINE_Y);
-    ctx.lineTo(GAME_WIDTH, DEATH_LINE_Y);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
 
     // 머지 이펙트
     const now = performance.now();
@@ -314,20 +314,20 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
       // 제목
       ctx.fillStyle = '#e53e3e';
-      ctx.font = 'bold 22px sans-serif';
+      ctx.font = "bold 22px 'Noto Sans KR', sans-serif";
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(' Game Over', GAME_WIDTH / 2, popY + 32);
 
       // 최종 점수
       ctx.fillStyle = '#333';
-      ctx.font = '14px sans-serif';
+      ctx.font = "14px 'Noto Sans KR', sans-serif";
       ctx.fillText(`최종 점수: ${gs.score}점`, GAME_WIDTH / 2, popY + 62);
 
       // 획득 포인트
       const earnedPoints = Math.floor(gs.score / 20);
       ctx.fillStyle = '#C9A96E';
-      ctx.font = 'bold 15px sans-serif';
+      ctx.font = "bold 15px 'Noto Sans KR', sans-serif";
       ctx.fillText(` 획득 포인트: ${earnedPoints}P`, GAME_WIDTH / 2, popY + 88);
 
       // 포인트 2배 버튼 (광고)
@@ -339,7 +339,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       if (!adLoading) {
         // 보상형 광고 시청 → 포인트 2배 버튼 (골드 에셋 or 폴백)
         if (chromeReadyRef.current.has('btnGold')) {
-          ctx.drawImage(chromeRef.current.btnGold, btnX, btn1Y, btnW, btn1H);
+          draw9SliceBtn(ctx, chromeRef.current.btnGold, btnX, btn1Y, btnW, btn1H);
         } else {
           const goldGrad = ctx.createLinearGradient(btnX, btn1Y, btnX + btnW, btn1Y);
           goldGrad.addColorStop(0, '#C9A96E');
@@ -350,7 +350,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
           ctx.fill();
         }
         ctx.fillStyle = '#7a5c00';
-        ctx.font = 'bold 13px sans-serif';
+        ctx.font = "bold 13px 'Noto Sans KR', sans-serif";
         ctx.fillText(`광고 보고 포인트 2배 (${earnedPoints * 2}P)`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
       } else {
         // 광고 로딩/시청 중 — 비활성
@@ -360,7 +360,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         ctx.fill();
 
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 13px sans-serif';
+        ctx.font = "bold 13px 'Noto Sans KR', sans-serif";
         ctx.fillText('광고 불러오는 중...', GAME_WIDTH / 2, btn1Y + btn1H / 2);
       }
 
@@ -368,7 +368,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       const btn2Y = btn1Y + btn1H + 10;
       const btn2H = 36;
       if (chromeReadyRef.current.has('btnPink')) {
-        ctx.drawImage(chromeRef.current.btnPink, btnX, btn2Y, btnW, btn2H);
+        draw9SliceBtn(ctx, chromeRef.current.btnPink, btnX, btn2Y, btnW, btn2H);
       } else {
         ctx.fillStyle = '#F4A7B9';
         ctx.beginPath();
@@ -376,7 +376,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         ctx.fill();
       }
       ctx.fillStyle = '#8a3a50';
-      ctx.font = 'bold 13px sans-serif';
+      ctx.font = "bold 13px 'Noto Sans KR', sans-serif";
       ctx.fillText('다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
     }
   }, [getBodies, dropXRef, mergeFlashesRef, adLoading]);
@@ -463,7 +463,15 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
   );
 
   return (
-    <div className="flex flex-col items-center w-full h-full select-none overflow-hidden bg-secondary/30">
+    <div
+      className="flex flex-col items-center w-full h-full select-none overflow-hidden"
+      style={{
+        backgroundColor: '#fbe6ee',
+        backgroundImage: 'url(/game/bg.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
       {/* 상단 스코어 바 — 컴팩트 */}
       <div className="flex items-center justify-between w-full px-4 py-1.5 bg-card/90 backdrop-blur border-b border-border flex-shrink-0">
         <div className="flex items-center gap-1.5">
@@ -486,7 +494,8 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
           height={GAME_HEIGHT}
           className="touch-none block"
           style={{
-            height: 'min(calc(100dvh - 130px), 600px)',
+            // 컬럼 폭을 채우도록 키움(비율 유지 → 왜곡 없음). 남는 위/아래는 루트 bg.
+            height: 'min(calc(100dvh - 84px), 694px)',
             width: 'auto',
             maxWidth: '100%',
             cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
@@ -495,13 +504,6 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
         />
-      </div>
-
-      {/* 하단 광고 배너 */}
-      <div className="w-full px-3 py-2 bg-card/90 backdrop-blur border-t border-border flex-shrink-0">
-        <div className="w-full h-[50px] rounded-lg bg-muted/60 border border-border flex items-center justify-center">
-          <span className="text-xs text-muted-foreground tracking-wide">AD BANNER</span>
-        </div>
       </div>
     </div>
   );
