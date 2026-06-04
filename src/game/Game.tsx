@@ -2,7 +2,7 @@ import { useRef, useEffect, useCallback, useState } from 'react';
 import { showRewardedAd } from '@/lib/ads/adService';
 import { useGameLogic } from './useGameLogic';
 import { useGameAudio } from './useGameAudio';
-import { GAME_WIDTH, GAME_HEIGHT, DEATH_LINE_Y, DROP_START_Y, FLOWER_LEVEL_MAP } from './constants';
+import { GAME_WIDTH, GAME_HEIGHT, JAR_INNER_BOTTOM, DROP_START_Y, FLOWER_LEVEL_MAP } from './constants';
 import type { GameState } from './types';
 
 interface GameProps {
@@ -62,7 +62,6 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
   useEffect(() => {
     const assets: Record<string, string> = {
       bg: '/game/bg.png',
-      line: '/game/line.png',
       btnGold: '/game/btn-gold.png',
       btnPink: '/game/btn-pink.png',
     };
@@ -192,28 +191,9 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
     }
 
-    // 바닥
-    ctx.fillStyle = '#F9D5E5';
-    ctx.fillRect(0, GAME_HEIGHT - 30, GAME_WIDTH, 30);
+    // 바닥/데드라인 별도 렌더 없음 — 배경 에셋의 유리통이 바닥·벽·데드라인(윗 림)을 모두 표현.
 
-    // 데드라인 — garland 에셋이 있으면 그걸로, 없으면 점선 폴백.
-    if (chromeReadyRef.current.has('line')) {
-      const img = chromeRef.current.line;
-      const lh = (img.height / img.width) * GAME_WIDTH;
-      ctx.drawImage(img, 0, DEATH_LINE_Y - lh / 2, GAME_WIDTH, lh);
-    } else {
-      ctx.save();
-      ctx.strokeStyle = 'rgba(220,120,150,0.5)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([6, 5]);
-      ctx.beginPath();
-      ctx.moveTo(0, DEATH_LINE_Y);
-      ctx.lineTo(GAME_WIDTH, DEATH_LINE_Y);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // ─── 인게임 상단 HUD (데스라인 위) ──────────────────────────────
+    // ─── 인게임 상단 HUD (유리 림 위 오픈 영역) ──────────────────────────────
     // 현재 꽃 (가운데)
     const waitLevel = FLOWER_LEVEL_MAP.get(gs.currentLevelId);
     const nextLevel = FLOWER_LEVEL_MAP.get(gs.nextLevelId);
@@ -328,7 +308,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(x, previewY + r);
-      ctx.lineTo(x, GAME_HEIGHT - 32);
+      ctx.lineTo(x, JAR_INNER_BOTTOM);
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.restore();

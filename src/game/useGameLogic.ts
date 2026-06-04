@@ -10,6 +10,9 @@ import {
   DROP_START_Y,
   MERGE_DELAY,
   MAX_DROP_LEVEL,
+  JAR_INNER_LEFT,
+  JAR_INNER_RIGHT,
+  JAR_INNER_BOTTOM,
   FLOWER_LEVEL_MAP,
 } from './constants';
 import type { GameObject, GameState } from './types';
@@ -209,16 +212,18 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver, onMerge }: 
     const engine = Matter.Engine.create({ gravity: { y: GRAVITY_Y } });
     const halfWall = WALL_THICKNESS / 2;
 
+    // 물리 벽을 유리통 내부 면에 맞춰 인셋 — 꽃이 유리 안에서만 떨어지도록.
     const floor = Matter.Bodies.rectangle(
-      GAME_WIDTH / 2, GAME_HEIGHT - halfWall, GAME_WIDTH, WALL_THICKNESS,
+      (JAR_INNER_LEFT + JAR_INNER_RIGHT) / 2, JAR_INNER_BOTTOM + halfWall,
+      (JAR_INNER_RIGHT - JAR_INNER_LEFT) + WALL_THICKNESS, WALL_THICKNESS,
       { isStatic: true, label: 'wall', friction: 0.6 }
     );
     const wallLeft = Matter.Bodies.rectangle(
-      -halfWall, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT,
+      JAR_INNER_LEFT - halfWall, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT,
       { isStatic: true, label: 'wall' }
     );
     const wallRight = Matter.Bodies.rectangle(
-      GAME_WIDTH + halfWall, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT,
+      JAR_INNER_RIGHT + halfWall, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT,
       { isStatic: true, label: 'wall' }
     );
     Matter.World.add(engine.world, [floor, wallLeft, wallRight]);
@@ -289,7 +294,8 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver, onMerge }: 
     if (isGameOverRef.current) return;
     const level = FLOWER_LEVEL_MAP.get(currentLevelId);
     const r = level?.radius ?? 20;
-    dropXRef.current = Math.max(r, Math.min(x, GAME_WIDTH - r));
+    // 유리 내부 폭 안으로 클램핑
+    dropXRef.current = Math.max(JAR_INNER_LEFT + r, Math.min(x, JAR_INNER_RIGHT - r));
   }, []);
 
   // ─── 매 프레임 호출: 데스라인 + 이펙트 정리 ─────────────────────────────
