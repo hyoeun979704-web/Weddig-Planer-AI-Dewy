@@ -1,0 +1,47 @@
+name: CI
+
+# PR 머지 전에 "수집 파이프라인이 조용히 멈추는" 회귀를 잡는 가드.
+#
+# 핵심: package.json 과 package-lock.json 이 어긋난 채로 머지되면
+#   nightly-collection / tip-videos 의 `npm ci` 가 즉시 실패한다(EUSAGE).
+#   그러면 데이터가 며칠간 조용히 안 들어오고, 빨간 신호도 없다(스케줄은
+#   net.http_post/cron 이 "성공"으로 기록되거나 Actions 가 야간에만 도므로).
+#   이 워크플로가 PR 단계에서 그걸 빨갛게 만들어 머지를 막는다.
+#
+# 이 검사가 머지를 "차단"하려면 GitHub → Settings → Branches → main 브랜치
+# 보호 규칙에서 "Require status checks to pass" 에 이 CI 의 verify 잡을
+# 필수로 지정해야 한다. (워크플로만으로는 빨강 표시까지, 차단은 보호 규칙 필요.)
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# 같은 ref 에 새 커밋이 오면 이전 실행 취소 (러너 절약)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify (lockfile & lint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # 핵심 가드 — nightly-collection 이 실제로 돌리는 것과 동일한 `npm ci`.
+      # lockfile 이 어긋나면 install 전에 EUSAGE 로 실패 → PR 이 빨갛게 됨.
+      # 고치는 법: 로컬에서 `npm install` 후 package-lock.json 을 함께 커밋.
+      - name: npm ci (package-lock.json in sync)
+        run: npm ci
+
+      # 보너스: src/scripts 의 lint 에러(경고 아님)를 머지 전에 잡음.
+      - name: Lint
+        run: npm run lint
