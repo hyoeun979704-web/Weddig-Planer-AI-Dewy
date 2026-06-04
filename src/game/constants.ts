@@ -6,11 +6,13 @@ export const GAME_HEIGHT = 580;
 
 // ── 유리통 내부 경계 (배경 에셋 기준, 캔버스 360×580 좌표) ──────────────────
 // 물리 벽·바닥·데드라인을 유리 안쪽에 맞춘다. 데드라인은 유리 윗 림.
-// ※ 채팅 이미지 비율에서 추정값 — public/game/bg.png 교체 후 그리드 실측 보정 예정.
-export const JAR_INNER_LEFT = 26;      // 유리 내부 좌측 벽면 x
-export const JAR_INNER_RIGHT = 334;    // 유리 내부 우측 벽면 x (내부 폭 ≈ 308)
-export const JAR_INNER_BOTTOM = 540;   // 유리 내부 바닥면 y
-export const JAR_RIM_Y = 155;          // 유리 윗 림 y = 데드라인
+// public/game/bg.png(971×1619, cover 렌더) 를 그리드 실측해 보정한 값.
+//   이미지 픽셀: 내부 좌/우 면 ix≈46/923, 윗 립 iy≈536, 내부 바닥 iy≈1443
+//   cover scale 0.3708, 위아래 ~10px 크롭 환산 → 아래 캔버스 좌표.
+export const JAR_INNER_LEFT = 17;      // 유리 내부 좌측 벽면 x
+export const JAR_INNER_RIGHT = 342;    // 유리 내부 우측 벽면 x (내부 폭 ≈ 325)
+export const JAR_INNER_BOTTOM = 525;   // 유리 내부 바닥면 y
+export const JAR_RIM_Y = 189;          // 유리 윗 립 y = 데드라인
 
 // 물리 엔진 설정
 export const GRAVITY_Y = 1.5;          // 중력 강도
@@ -19,7 +21,7 @@ export const DEATH_LINE_Y = JAR_RIM_Y; // 유리 윗 림 위로 오브젝트가 
 export const DEATH_CHECK_DELAY = 2000; // 게임 오버 판정까지 대기 시간 (ms)
 
 // 오브젝트 드롭 시작 Y 좌표 (유리 림 위 오픈 영역)
-export const DROP_START_Y = 120;
+export const DROP_START_Y = 150;
 
 // 충돌 후 머지 대기 시간 (ms) - 너무 빠르면 물리 연산과 충돌함
 export const MERGE_DELAY = 100;
