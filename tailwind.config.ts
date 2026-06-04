@@ -13,6 +13,16 @@ export default {
       },
     },
     extend: {
+      // 모바일 URL바(주소창)가 접히고 펴질 때 100vh 는 '큰 뷰포트'로 고정돼 페이지가
+      // 보이는 영역보다 길어지고, 그 결과 fixed 하단 탭이 흔들린다. 동적 뷰포트 단위
+      // 100dvh 로 바꿔 헤더(sticky)·하단탭(fixed)이 실제 보이는 화면에 정확히 맞도록 한다.
+      // (desktop 에선 dvh==vh 라 영향 없음) — min-h-screen / h-screen 전역에 적용.
+      minHeight: {
+        screen: "100dvh",
+      },
+      height: {
+        screen: "100dvh",
+      },
       // 의미론적 타이포 토큰 — 픽셀 임의값(text-[11px] 등) 대신 사용.
       // 페이지 전반의 글자 크기·행간을 한곳에서 관리하기 위함.
       fontSize: {
