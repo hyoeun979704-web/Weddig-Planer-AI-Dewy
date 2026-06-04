@@ -27,8 +27,9 @@ const cards: StudioCard[] = [
   {
     id: "wedding-consulting",
     title: "2026 웨딩컨설팅",
-    description: "퍼스널컬러·헤어·메이크업·드레스 맞춤 A4 리포트",
-    status: "coming_soon",
+    description: "퍼스널컬러·헤어·메이크업·드레스 맞춤 A4 리포트 (첫 1회 50%↓)",
+    status: "active",
+    href: "/ai-studio/consulting",
   },
   {
     id: "dress-tour",
