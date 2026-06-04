@@ -128,10 +128,19 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
   }, []);
 
   // 사운드 — BGM 루프 + 머지 효과음. 첫 제스처에서 unlock 후 재생.
+  // 메서드는 안정적인 useCallback 이라 구조분해해 deps 에 직접 쓴다(audio 객체는
+  // 매 렌더 새 리터럴이라 그대로 의존하면 콜백/RAF 루프가 매 렌더 재생성됨).
   const audio = useGameAudio();
+  const { muted: audioMuted, toggleMute, unlock: audioUnlock, playMerge } = audio;
+
+  // 렌더 루프(draw)는 매 프레임 호출되므로 자주 바뀌는 값은 ref 로 읽어 draw 를 안정화한다.
+  const mutedRef = useRef(audioMuted);
+  mutedRef.current = audioMuted;
+  const bestScoreRef = useRef(bestScore);
+  bestScoreRef.current = bestScore;
 
   const { gameState, dropXRef, mergeFlashesRef, startGame, dropFlower, setDropX, tick, getBodies } =
-    useGameLogic({ canvasRef, onScoreChange, onGameOver, onMerge: audio.playMerge });
+    useGameLogic({ canvasRef, onScoreChange, onGameOver, onMerge: playMerge });
 
   const gameStateRef = useRef<GameState>(gameState);
   gameStateRef.current = gameState;
@@ -280,14 +289,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       }
 
       // BEST 칩 (우, 음소거 버튼 왼쪽까지)
-      drawLabeledChip(ctx, false, MUTE_BTN.cx - MUTE_BTN.r - 6, hudY, 'BEST', String(bestScore), '#C9A96E');
-
-      // 음소거 버튼 (우상단 원형 칩)
-      drawPill(ctx, MUTE_BTN.cx - MUTE_BTN.r, MUTE_BTN.cy - MUTE_BTN.r, MUTE_BTN.r * 2, MUTE_BTN.r * 2);
-      ctx.font = "15px serif";
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(audio.muted ? '🔇' : '🔊', MUTE_BTN.cx, MUTE_BTN.cy + 1);
+      drawLabeledChip(ctx, false, MUTE_BTN.cx - MUTE_BTN.r - 6, hudY, 'BEST', String(bestScoreRef.current), '#C9A96E');
     }
 
     // 머지 이펙트 — 부드러운 글로우 + 확장 링 + 사방으로 튀는 반짝이.
@@ -477,7 +479,15 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.font = "bold 13px 'Noto Sans KR', sans-serif";
       ctx.fillText('다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
     }
-  }, [getBodies, dropXRef, mergeFlashesRef, adLoading, bestScore, audio.muted]);
+
+    // 음소거 버튼 — 모든 단계에서 항상 그림(게임오버 오버레이 위에도). 음소거가
+    // 어느 화면에서도 가능하도록 맨 마지막에 렌더. (mutedRef 로 매 프레임 최신값)
+    drawPill(ctx, MUTE_BTN.cx - MUTE_BTN.r, MUTE_BTN.cy - MUTE_BTN.r, MUTE_BTN.r * 2, MUTE_BTN.r * 2);
+    ctx.font = "15px serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(mutedRef.current ? '🔇' : '🔊', MUTE_BTN.cx, MUTE_BTN.cy + 1);
+  }, [getBodies, dropXRef, mergeFlashesRef, adLoading]);
 
   // ─── RAF 루프 ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -526,15 +536,13 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       if (e.button !== undefined && e.button !== 0) return;
 
       // 첫 사용자 제스처에서 오디오 잠금 해제 + BGM 시작
-      audio.unlock();
+      audioUnlock();
 
-      // 음소거 버튼 탭은 드롭하지 않고 토글만 (게임 진행 중)
-      if (gameStateRef.current.phase !== 'gameover') {
-        const mc = getCanvasCoords(e);
-        if (mc && Math.hypot(mc.x - MUTE_BTN.cx, mc.y - MUTE_BTN.cy) <= MUTE_BTN.r + 2) {
-          audio.toggleMute();
-          return;
-        }
+      // 음소거 버튼은 모든 단계에서 탭 가능 — 드롭/팝업 처리보다 먼저 검사하고 토글만.
+      const mc = getCanvasCoords(e);
+      if (mc && Math.hypot(mc.x - MUTE_BTN.cx, mc.y - MUTE_BTN.cy) <= MUTE_BTN.r + 2) {
+        toggleMute();
+        return;
       }
 
       if (gameStateRef.current.phase === 'gameover') {
@@ -569,7 +577,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
       dropFlower();
     },
-    [dropFlower, getCanvasCoords, startGame, watchRewardedForDouble, audio]
+    [dropFlower, getCanvasCoords, startGame, watchRewardedForDouble, audioUnlock, toggleMute]
   );
 
   return (

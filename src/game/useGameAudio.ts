@@ -34,7 +34,6 @@ export function useGameAudio() {
   const bgmRef = useRef<HTMLAudioElement | null>(null);
   const sfxMergeRef = useRef<HTMLAudioElement | null>(null);
   const sfxPremiumRef = useRef<HTMLAudioElement | null>(null);
-  const unlockedRef = useRef(false);
 
   // 오디오 엘리먼트 준비 (브라우저 환경에서만)
   useEffect(() => {
@@ -64,13 +63,13 @@ export function useGameAudio() {
     };
   }, []);
 
-  // 첫 제스처에서 호출 — 모바일 자동재생 잠금 해제 + BGM 시작
+  // 사용자 제스처에서 호출 — 모바일 자동재생 잠금 해제 + BGM 시작.
+  // 매 제스처마다 호출돼도 안전(이미 재생 중이면 bgm.paused=false 라 no-op). 첫
+  // play() 가 차단돼도 상태를 래치하지 않으므로 다음 제스처에서 자연히 재시도된다.
   const unlock = useCallback(() => {
-    if (unlockedRef.current) return;
-    unlockedRef.current = true;
     const bgm = bgmRef.current;
-    if (bgm && !mutedRef.current) {
-      bgm.play().catch(() => { /* 자동재생 차단 등 — 무시 */ });
+    if (bgm && !mutedRef.current && bgm.paused) {
+      bgm.play().catch(() => { /* 차단 — 다음 제스처에 재시도 */ });
     }
   }, []);
 
@@ -103,7 +102,8 @@ export function useGameAudio() {
       if (bgm) {
         if (next) {
           bgm.pause();
-        } else if (unlockedRef.current) {
+        } else {
+          // 음소거 해제는 그 자체로 사용자 제스처 — 잠금 여부와 무관하게 재생 시도.
           bgm.play().catch(() => { /* 무시 */ });
         }
       }
