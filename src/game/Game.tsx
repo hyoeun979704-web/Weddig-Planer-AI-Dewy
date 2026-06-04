@@ -588,19 +588,24 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     >
       {/* 스코어/베스트/넥스트/음소거 HUD 는 캔버스 위 버블 칩으로 직접 그림(레퍼런스풍). */}
 
-      {/* 캔버스 — 상단 정렬(칩이 헤더 바로 아래 보이게). 헤더(44)+광고(96) 만큼 빼고,
-          width=min(100%, 가용높이 환산폭)+aspect-ratio 로 폭/높이 어느 쪽도 넘치지
-          않게(잘림·왜곡 없음). 남는 좌우/아래는 루트 배경(유리병)이 자연스럽게 채움. */}
-      <div className="flex-1 flex items-start justify-center w-full overflow-hidden">
+      {/* 캔버스 — 기종 무관 자동 맞춤.
+          뷰포트 매직넘버 대신 '실제 게임 영역(이 컨테이너)' 크기에 맞춘다.
+          flex 가 헤더·광고·URL바를 빼고 남는 높이를 정확히 계산하므로(containerType:size),
+          캔버스는 컨테이너의 height/width 중 작은 쪽에 비율 맞춰 들어가 잘림·왜곡이 없다. */}
+      <div
+        className="flex-1 min-h-0 flex items-center justify-center w-full overflow-hidden"
+        style={{ containerType: 'size' }}
+      >
         <canvas
           ref={canvasRef}
           width={GAME_WIDTH}
           height={GAME_HEIGHT}
           className="touch-none block"
           style={{
-            width: `min(100%, calc((100dvh - 150px) * ${GAME_WIDTH} / ${GAME_HEIGHT}))`,
+            // 컨테이너 높이와 (폭으로 환산한 높이) 중 작은 값 → 어느 쪽도 안 넘침.
+            height: `min(100cqh, calc(100cqw * ${GAME_HEIGHT} / ${GAME_WIDTH}))`,
+            width: 'auto',
             aspectRatio: `${GAME_WIDTH} / ${GAME_HEIGHT}`,
-            height: 'auto',
             cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
           }}
           onPointerMove={handlePointerMove}
