@@ -78,8 +78,12 @@ function placeRow(p: CollectedPlace) {
   return {
     name: p.name,
     category: p.category,
-    city: p.city,
-    district: p.district,
+    // Normalize to '' (never null): the uq_places_identity unique index and the
+    // onConflict target below are plain columns, and the columns are NOT NULL.
+    // A null here would both violate NOT NULL and fail to dedupe against the
+    // existing '' rows.
+    city: p.city ?? "",
+    district: p.district ?? "",
     description: p.description,
     main_image_url: p.main_image_url,
     tags: p.tags,
