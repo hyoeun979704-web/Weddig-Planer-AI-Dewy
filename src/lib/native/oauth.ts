@@ -2,7 +2,7 @@ import { Browser } from '@capacitor/browser';
 import { supabase } from '@/integrations/supabase/client';
 import { APP_CALLBACK_URL } from './deepLink';
 
-type Provider = 'google' | 'kakao';
+type Provider = 'google' | 'kakao' | 'apple';
 
 /**
  * 네이티브 앱에서의 소셜 로그인 흐름.
