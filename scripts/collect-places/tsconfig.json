@@ -1,0 +1,17 @@
+{
+  "// purpose": "Typecheck-only config for the collect-places pipeline. `npm run collect` runs via tsx (no typecheck), so CI runs `tsc -p` against this to catch errors like a category slug missing from CATEGORY_TABLE (which tsx silently ignores). Scoped to the index.ts entrypoint + its transitive imports so unrelated one-off scripts in this dir don't gate CI.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "files": ["index.ts"]
+}

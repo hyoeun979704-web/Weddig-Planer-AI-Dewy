@@ -45,3 +45,9 @@ jobs:
       # 보너스: src/scripts 의 lint 에러(경고 아님)를 머지 전에 잡음.
       - name: Lint
         run: npm run lint
+
+      # collect-places 는 tsx 로 실행돼 타입체크가 안 된다(예: CategorySlug 에
+      # 카테고리를 추가했는데 CATEGORY_TABLE 에 안 넣으면 런타임에 조용히 누락).
+      # 엔트리(index.ts)+import 만 스코프해서 머지 전에 타입에러를 잡는다.
+      - name: Typecheck collect-places
+        run: npx tsc -p scripts/collect-places/tsconfig.json
