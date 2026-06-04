@@ -10,6 +10,9 @@ import {
   DROP_START_Y,
   MERGE_DELAY,
   MAX_DROP_LEVEL,
+  JAR_INNER_LEFT,
+  JAR_INNER_RIGHT,
+  JAR_INNER_BOTTOM,
   FLOWER_LEVEL_MAP,
 } from './constants';
 import type { GameObject, GameState } from './types';
@@ -28,15 +31,17 @@ export interface MergeFlash {
   y: number;
   radius: number;   // 머지된 상위 오브젝트의 반지름
   createdAt: number;
+  premium?: boolean; // 프리미엄 부케(최종 레벨) 완성 머지 — 더 화려한 이펙트
 }
 
 interface UseGameLogicOptions {
   canvasRef: React.RefObject<HTMLCanvasElement>;
   onScoreChange?: (score: number) => void;
   onGameOver?: (score: number) => void;
+  onMerge?: (newLevelId: number) => void;
 }
 
-export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLogicOptions) {
+export function useGameLogic({ canvasRef, onScoreChange, onGameOver, onMerge }: UseGameLogicOptions) {
   const engineRef = useRef<Matter.Engine | null>(null);
   const runnerRef = useRef<Matter.Runner | null>(null);
   const gameObjectsRef = useRef<Map<number, GameObject>>(new Map());
@@ -51,10 +56,12 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
   // ref.current는 항상 최신 함수를 가리키므로 props 변경에도 안전하다.
   const onScoreChangeRef = useRef(onScoreChange);
   const onGameOverRef = useRef(onGameOver);
+  const onMergeRef = useRef(onMerge);
   useEffect(() => {
     onScoreChangeRef.current = onScoreChange;
     onGameOverRef.current = onGameOver;
-  }, [onScoreChange, onGameOver]);
+    onMergeRef.current = onMerge;
+  }, [onScoreChange, onGameOver, onMerge]);
 
   // 머지 이펙트 목록: 렌더링 루프에서 읽어 Canvas에 직접 그린다
   const mergeFlashesRef = useRef<MergeFlash[]>([]);
@@ -121,25 +128,45 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
       gameObjectsRef.current.delete(bodyA.id);
       gameObjectsRef.current.delete(bodyB.id);
 
-      const newBody = createFlowerBody(level.nextLevelId!, midX, midY);
+      const newLevelId = level.nextLevelId!;
+      const newBody = createFlowerBody(newLevelId, midX, midY);
       Matter.World.add(engine.world, newBody);
 
+      // 프리미엄 부케(최종 레벨) 완성 여부 — 더 화려한 이펙트 + 게임 클리어
+      const nextLevel = FLOWER_LEVEL_MAP.get(newLevelId);
+      const isPremium = nextLevel?.nextLevelId === null;
+
       // 머지 이펙트 등록
-      const nextLevel = FLOWER_LEVEL_MAP.get(level.nextLevelId!);
       if (nextLevel) {
         mergeFlashesRef.current.push({
           x: midX,
           y: midY,
           radius: nextLevel.radius,
           createdAt: performance.now(),
+          premium: isPremium,
         });
       }
+
+      // 머지 효과음 트리거 (합쳐진 결과 레벨 전달 → 프리미엄은 다른 효과음 재생)
+      onMergeRef.current?.(newLevelId);
 
       setGameState((prev) => {
         const newScore = prev.score + level.score;
         onScoreChangeRef.current?.(newScore);
         return { ...prev, score: newScore };
       });
+
+      // 프리미엄 부케 완성 → 잠시 후 게임 클리어로 종료(이펙트·효과음 감상 후)
+      if (isPremium && !isGameOverRef.current) {
+        isGameOverRef.current = true;
+        setTimeout(() => {
+          setGameState((prev) => {
+            if (prev.phase === 'gameover') return prev;
+            onGameOverRef.current?.(prev.score);
+            return { ...prev, phase: 'gameover', endReason: 'premium' };
+          });
+        }, 1300);
+      }
     }, MERGE_DELAY);
   };
 
@@ -178,7 +205,7 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
               isGameOverRef.current = true;
               setGameState((prev) => {
                 onGameOverRef.current?.(prev.score);
-                return { ...prev, phase: 'gameover' };
+                return { ...prev, phase: 'gameover', endReason: 'overflow' };
               });
             }
             deathTimerRef.current = null;
@@ -203,16 +230,18 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
     const engine = Matter.Engine.create({ gravity: { y: GRAVITY_Y } });
     const halfWall = WALL_THICKNESS / 2;
 
+    // 물리 벽을 유리통 내부 면에 맞춰 인셋 — 꽃이 유리 안에서만 떨어지도록.
     const floor = Matter.Bodies.rectangle(
-      GAME_WIDTH / 2, GAME_HEIGHT - halfWall, GAME_WIDTH, WALL_THICKNESS,
+      (JAR_INNER_LEFT + JAR_INNER_RIGHT) / 2, JAR_INNER_BOTTOM + halfWall,
+      (JAR_INNER_RIGHT - JAR_INNER_LEFT) + WALL_THICKNESS, WALL_THICKNESS,
       { isStatic: true, label: 'wall', friction: 0.6 }
     );
     const wallLeft = Matter.Bodies.rectangle(
-      -halfWall, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT,
+      JAR_INNER_LEFT - halfWall, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT,
       { isStatic: true, label: 'wall' }
     );
     const wallRight = Matter.Bodies.rectangle(
-      GAME_WIDTH + halfWall, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT,
+      JAR_INNER_RIGHT + halfWall, GAME_HEIGHT / 2, WALL_THICKNESS, GAME_HEIGHT,
       { isStatic: true, label: 'wall' }
     );
     Matter.World.add(engine.world, [floor, wallLeft, wallRight]);
@@ -283,16 +312,17 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
     if (isGameOverRef.current) return;
     const level = FLOWER_LEVEL_MAP.get(currentLevelId);
     const r = level?.radius ?? 20;
-    dropXRef.current = Math.max(r, Math.min(x, GAME_WIDTH - r));
+    // 유리 내부 폭 안으로 클램핑
+    dropXRef.current = Math.max(JAR_INNER_LEFT + r, Math.min(x, JAR_INNER_RIGHT - r));
   }, []);
 
   // ─── 매 프레임 호출: 데스라인 + 이펙트 정리 ─────────────────────────────
   const tick = useCallback(() => {
     if (engineRef.current) checkDeathLine(engineRef.current);
-    // 600ms 지난 머지 이펙트 제거
+    // 지난 머지 이펙트 제거 (프리미엄은 1200ms 동안 유지)
     const now = performance.now();
     mergeFlashesRef.current = mergeFlashesRef.current.filter(
-      (f) => now - f.createdAt < 600
+      (f) => now - f.createdAt < (f.premium ? 1200 : 600)
     );
   }, [checkDeathLine]);
 

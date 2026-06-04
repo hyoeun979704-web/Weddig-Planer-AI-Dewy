@@ -1,7 +1,8 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { showRewardedAd } from '@/lib/ads/adService';
 import { useGameLogic } from './useGameLogic';
-import { GAME_WIDTH, GAME_HEIGHT, DEATH_LINE_Y, DROP_START_Y, FLOWER_LEVEL_MAP } from './constants';
+import { useGameAudio } from './useGameAudio';
+import { GAME_WIDTH, GAME_HEIGHT, JAR_INNER_BOTTOM, DROP_START_Y, FLOWER_LEVEL_MAP } from './constants';
 import type { GameState } from './types';
 
 interface GameProps {
@@ -33,6 +34,58 @@ const POINTER_CURSOR = (() => {
   return `url("data:image/svg+xml,${svg}") 12 12, pointer`;
 })();
 
+// 상단 음소거 버튼 좌표(캔버스 좌표) — draw 와 hit-test 가 공유.
+const MUTE_BTN = { cx: 337, cy: 25, r: 15 };
+
+// 버블 칩(pill) — 따뜻한 크림 배경 + 갈색 셀 아웃라인 + 부드러운 그림자.
+// 이미지 스트레치가 없으니(roundRect 직접 그림) 왜곡 위험이 0이다.
+function drawPill(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  const r = h / 2;
+  ctx.save();
+  ctx.shadowColor = 'rgba(120,70,50,0.20)';
+  ctx.shadowBlur = 5;
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle = 'rgba(255,250,244,0.96)';
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(150,95,70,0.55)';
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// 라벨+값 칩. anchorLeft=true 면 ax 가 좌측 x, false 면 ax 가 우측 끝. 그려진 박스를 반환.
+function drawLabeledChip(
+  ctx: CanvasRenderingContext2D,
+  anchorLeft: boolean, ax: number, y: number,
+  label: string, value: string, valueColor: string
+) {
+  const padX = 11, h = 30, gap = 5;
+  ctx.font = "700 9px 'Noto Sans KR', sans-serif";
+  const lw = ctx.measureText(label).width;
+  ctx.font = "bold 15px 'Noto Sans KR', sans-serif";
+  const vw = ctx.measureText(value).width;
+  const w = padX * 2 + lw + gap + vw;
+  const x = anchorLeft ? ax : ax - w;
+  drawPill(ctx, x, y, w, h);
+  const cy = y + h / 2;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = "700 9px 'Noto Sans KR', sans-serif";
+  ctx.fillStyle = 'rgba(150,95,70,0.8)';
+  ctx.fillText(label, x + padX, cy + 1);
+  ctx.font = "bold 15px 'Noto Sans KR', sans-serif";
+  ctx.fillStyle = valueColor;
+  ctx.fillText(value, x + padX + lw + gap, cy);
+  return { x, w };
+}
+
 export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
@@ -61,7 +114,6 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
   useEffect(() => {
     const assets: Record<string, string> = {
       bg: '/game/bg.png',
-      line: '/game/line.png',
       btnGold: '/game/btn-gold.png',
       btnPink: '/game/btn-pink.png',
     };
@@ -75,8 +127,20 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     }
   }, []);
 
+  // 사운드 — BGM 루프 + 머지 효과음. 첫 제스처에서 unlock 후 재생.
+  // 메서드는 안정적인 useCallback 이라 구조분해해 deps 에 직접 쓴다(audio 객체는
+  // 매 렌더 새 리터럴이라 그대로 의존하면 콜백/RAF 루프가 매 렌더 재생성됨).
+  const audio = useGameAudio();
+  const { muted: audioMuted, toggleMute, unlock: audioUnlock, playMerge } = audio;
+
+  // 렌더 루프(draw)는 매 프레임 호출되므로 자주 바뀌는 값은 ref 로 읽어 draw 를 안정화한다.
+  const mutedRef = useRef(audioMuted);
+  mutedRef.current = audioMuted;
+  const bestScoreRef = useRef(bestScore);
+  bestScoreRef.current = bestScore;
+
   const { gameState, dropXRef, mergeFlashesRef, startGame, dropFlower, setDropX, tick, getBodies } =
-    useGameLogic({ canvasRef, onScoreChange, onGameOver });
+    useGameLogic({ canvasRef, onScoreChange, onGameOver, onMerge: playMerge });
 
   const gameStateRef = useRef<GameState>(gameState);
   gameStateRef.current = gameState;
@@ -188,85 +252,120 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
     }
 
-    // 바닥
-    ctx.fillStyle = '#F9D5E5';
-    ctx.fillRect(0, GAME_HEIGHT - 30, GAME_WIDTH, 30);
+    // 바닥/데드라인 별도 렌더 없음 — 배경 에셋의 유리통이 바닥·벽·데드라인(윗 림)을 모두 표현.
 
-    // 데드라인 — garland 에셋이 있으면 그걸로, 없으면 점선 폴백.
-    if (chromeReadyRef.current.has('line')) {
-      const img = chromeRef.current.line;
-      const lh = (img.height / img.width) * GAME_WIDTH;
-      ctx.drawImage(img, 0, DEATH_LINE_Y - lh / 2, GAME_WIDTH, lh);
-    } else {
-      ctx.save();
-      ctx.strokeStyle = 'rgba(220,120,150,0.5)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([6, 5]);
-      ctx.beginPath();
-      ctx.moveTo(0, DEATH_LINE_Y);
-      ctx.lineTo(GAME_WIDTH, DEATH_LINE_Y);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // ─── 인게임 상단 HUD (데스라인 위) ──────────────────────────────
-    // 현재 꽃 (가운데)
+    // ─── 인게임 상단 버블 HUD (유리 림 위 오픈 영역) ──────────────────────────
     const waitLevel = FLOWER_LEVEL_MAP.get(gs.currentLevelId);
     const nextLevel = FLOWER_LEVEL_MAP.get(gs.nextLevelId);
 
     if (gs.phase !== 'gameover' && waitLevel) {
-      // 현재 꽃 라벨 + 아이콘 (가운데 상단)
-      const centerX = GAME_WIDTH / 2;
-      const hudY = 18;
-      const drawIcon = (id: number, lv: typeof waitLevel, cx: number, cy: number, sz: number) => {
-        if (flowerReadyRef.current.has(id)) {
-          ctx.drawImage(flowerImgRef.current.get(id)!, cx - sz / 2, cy - sz / 2, sz, sz);
-        } else {
-          ctx.font = `${sz}px serif`;
-          ctx.textBaseline = 'middle';
-          ctx.fillText(lv!.emoji, cx, cy);
-        }
-      };
+      const hudY = 10;
 
-      ctx.save();
-      ctx.font = "9px 'Noto Sans KR', sans-serif";
-      ctx.fillStyle = 'rgba(120,80,100,0.7)';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText('지금', centerX, hudY - 2);
-      drawIcon(gs.currentLevelId, waitLevel, centerX, hudY + 22, 36);
-      ctx.restore();
+      // SCORE 칩 (좌)
+      drawLabeledChip(ctx, true, 8, hudY, 'SCORE', String(gs.score), '#E0739A');
 
-      // 다음 꽃 (우측)
+      // NEXT 칩 (중앙) — 다음 꽃 미리보기
       if (nextLevel) {
-        const nextX = GAME_WIDTH - 40;
-        ctx.save();
-        ctx.globalAlpha = 0.8;
-        ctx.font = "8px 'Noto Sans KR', sans-serif";
-        ctx.fillStyle = 'rgba(120,80,100,0.6)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.fillText('next', nextX, hudY - 2);
-        drawIcon(gs.nextLevelId, nextLevel, nextX, hudY + 20, 24);
-        ctx.restore();
+        const padX = 10, h = 30, gap = 6, iconSz = 22;
+        ctx.font = "700 9px 'Noto Sans KR', sans-serif";
+        const lw = ctx.measureText('NEXT').width;
+        const w = padX * 2 + lw + gap + iconSz;
+        const nx = (GAME_WIDTH - w) / 2;
+        drawPill(ctx, nx, hudY, w, h);
+        const cy = hudY + h / 2;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.font = "700 9px 'Noto Sans KR', sans-serif";
+        ctx.fillStyle = 'rgba(150,95,70,0.8)';
+        ctx.fillText('NEXT', nx + padX, cy + 1);
+        const ix = nx + padX + lw + gap + iconSz / 2;
+        if (flowerReadyRef.current.has(gs.nextLevelId)) {
+          ctx.drawImage(flowerImgRef.current.get(gs.nextLevelId)!, ix - iconSz / 2, cy - iconSz / 2, iconSz, iconSz);
+        } else {
+          ctx.font = `${iconSz}px serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText(nextLevel.emoji, ix, cy);
+        }
       }
+
+      // BEST 칩 (우, 음소거 버튼 왼쪽까지)
+      drawLabeledChip(ctx, false, MUTE_BTN.cx - MUTE_BTN.r - 6, hudY, 'BEST', String(bestScoreRef.current), '#C9A96E');
     }
 
-    // 머지 이펙트
+    // 머지 이펙트 — 부드러운 글로우 + 확장 링 + 사방으로 튀는 반짝이.
+    // 프리미엄(최종 레벨) 완성은 더 크고 화려하게(2겹 링·무지개 반짝이·별·더 긴 지속).
     const now = performance.now();
     mergeFlashesRef.current.forEach((f) => {
+      const isPrem = !!f.premium;
+      const dur = isPrem ? 1200 : 600;
       const elapsed = now - f.createdAt;
-      const progress = elapsed / 600;
-      const expandR = f.radius + f.radius * 1.2 * progress;
-      const alpha = (1 - progress) * 0.7;
+      const progress = Math.min(1, elapsed / dur);
+      const ease = 1 - Math.pow(1 - progress, 2); // ease-out
 
       ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = '#FFD700';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(f.x, f.y, expandR, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.translate(f.x, f.y);
+
+      // 1) 중심 글로우 (초반에 확 밝아졌다 사라짐)
+      const glowAlpha = (1 - progress) * (isPrem ? 0.7 : 0.5);
+      if (glowAlpha > 0.01) {
+        const gr = f.radius * (isPrem ? 1.0 + 1.4 * ease : 0.6 + 0.8 * ease);
+        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, gr);
+        glow.addColorStop(0, `rgba(255,252,240,${glowAlpha})`);
+        glow.addColorStop(0.5, `rgba(255,210,150,${glowAlpha * 0.5})`);
+        glow.addColorStop(1, 'rgba(255,200,120,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(0, 0, gr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 2) 확장 링 (프리미엄은 2겹)
+      const rings = isPrem ? [1.2, 1.9] : [1.2];
+      ctx.strokeStyle = '#FFD27A';
+      rings.forEach((mult, ri) => {
+        const ringR = f.radius + f.radius * mult * ease;
+        ctx.globalAlpha = (1 - progress) * (0.8 - ri * 0.25);
+        ctx.lineWidth = (isPrem ? 4 : 3) * (1 - progress) + 0.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      // 3) 반짝이 입자 — 결정적 분포로 사방 튀어나감 (프리미엄은 더 많고 무지개색)
+      const sparkCount = isPrem ? 18 : 8;
+      const sparkDist = f.radius * (isPrem ? 1.0 + 2.4 * ease : 0.9 + 1.6 * ease);
+      const seed = f.createdAt;
+      const premColors = ['#FFD700', '#FF9EC4', '#9ED8FF', '#FFFFFF', '#C7A6FF'];
+      for (let i = 0; i < sparkCount; i++) {
+        const ang = (i / sparkCount) * Math.PI * 2 + seed * 0.0007;
+        const dist = sparkDist * (isPrem ? 0.8 + 0.4 * ((i * 7) % 5) / 5 : 1);
+        const sx = Math.cos(ang) * dist;
+        const sy = Math.sin(ang) * dist;
+        const sparkR = (1 - progress) * (isPrem ? 2.2 + (i % 3) * 1.0 : 1.6 + (i % 3) * 0.7);
+        if (sparkR <= 0.1) continue;
+        ctx.globalAlpha = (1 - progress) * 0.95;
+        ctx.fillStyle = isPrem ? premColors[i % premColors.length] : '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(sx, sy, sparkR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 4) 프리미엄 전용 — 4방향 별빛(스파클 십자) 버스트
+      if (isPrem) {
+        const starLen = f.radius * (1.0 + 1.6 * ease);
+        const starAlpha = (1 - progress) * 0.9;
+        ctx.globalAlpha = starAlpha;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineCap = 'round';
+        for (let k = 0; k < 4; k++) {
+          const a = (k / 4) * Math.PI * 2 + Math.PI / 4;
+          ctx.lineWidth = 2.5 * (1 - progress) + 0.5;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(Math.cos(a) * starLen, Math.sin(a) * starLen);
+          ctx.stroke();
+        }
+      }
       ctx.restore();
     });
 
@@ -290,7 +389,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(x, previewY + r);
-      ctx.lineTo(x, GAME_HEIGHT - 32);
+      ctx.lineTo(x, JAR_INNER_BOTTOM);
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.restore();
@@ -312,12 +411,13 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.roundRect(popX, popY, popW, popH, 16);
       ctx.fill();
 
-      // 제목
-      ctx.fillStyle = '#e53e3e';
+      // 제목 — 프리미엄 부케 완성(클리어) vs 데드라인 초과(게임 오버)
+      const isWin = gs.endReason === 'premium';
+      ctx.fillStyle = isWin ? '#C9A96E' : '#e53e3e';
       ctx.font = "bold 22px 'Noto Sans KR', sans-serif";
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(' Game Over', GAME_WIDTH / 2, popY + 32);
+      ctx.fillText(isWin ? '🎉 프리미엄 부케 완성!' : 'Game Over', GAME_WIDTH / 2, popY + 32);
 
       // 최종 점수
       ctx.fillStyle = '#333';
@@ -379,6 +479,14 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.font = "bold 13px 'Noto Sans KR', sans-serif";
       ctx.fillText('다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
     }
+
+    // 음소거 버튼 — 모든 단계에서 항상 그림(게임오버 오버레이 위에도). 음소거가
+    // 어느 화면에서도 가능하도록 맨 마지막에 렌더. (mutedRef 로 매 프레임 최신값)
+    drawPill(ctx, MUTE_BTN.cx - MUTE_BTN.r, MUTE_BTN.cy - MUTE_BTN.r, MUTE_BTN.r * 2, MUTE_BTN.r * 2);
+    ctx.font = "15px serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(mutedRef.current ? '🔇' : '🔊', MUTE_BTN.cx, MUTE_BTN.cy + 1);
   }, [getBodies, dropXRef, mergeFlashesRef, adLoading]);
 
   // ─── RAF 루프 ─────────────────────────────────────────────────────
@@ -427,6 +535,16 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (e.button !== undefined && e.button !== 0) return;
 
+      // 첫 사용자 제스처에서 오디오 잠금 해제 + BGM 시작
+      audioUnlock();
+
+      // 음소거 버튼은 모든 단계에서 탭 가능 — 드롭/팝업 처리보다 먼저 검사하고 토글만.
+      const mc = getCanvasCoords(e);
+      if (mc && Math.hypot(mc.x - MUTE_BTN.cx, mc.y - MUTE_BTN.cy) <= MUTE_BTN.r + 2) {
+        toggleMute();
+        return;
+      }
+
       if (gameStateRef.current.phase === 'gameover') {
         // 팝업 내 버튼 히트 테스트
         const coords = getCanvasCoords(e);
@@ -459,7 +577,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
       dropFlower();
     },
-    [dropFlower, getCanvasCoords, startGame, watchRewardedForDouble]
+    [dropFlower, getCanvasCoords, startGame, watchRewardedForDouble, audioUnlock, toggleMute]
   );
 
   return (
@@ -472,19 +590,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         backgroundPosition: 'center',
       }}
     >
-      {/* 상단 스코어 바 — 컴팩트 */}
-      <div className="flex items-center justify-between w-full px-4 py-1.5 bg-card/90 backdrop-blur border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground font-medium">SCORE</span>
-          <span className="text-lg font-bold text-primary tabular-nums">{gameState.score}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <span className="text-xs"></span>
-            <span className="text-sm font-semibold text-primary/80 tabular-nums">{bestScore}점</span>
-          </div>
-        </div>
-      </div>
+      {/* 스코어/베스트/넥스트/음소거 HUD 는 캔버스 위 버블 칩으로 직접 그림(레퍼런스풍). */}
 
       {/* 캔버스 — 최대한 넓게 */}
       <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
@@ -495,7 +601,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
           className="touch-none block"
           style={{
             // 컬럼 폭을 채우도록 키움(비율 유지 → 왜곡 없음). 남는 위/아래는 루트 bg.
-            height: 'min(calc(100dvh - 84px), 694px)',
+            height: 'min(calc(100dvh - 60px), 760px)',
             width: 'auto',
             maxWidth: '100%',
             cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
