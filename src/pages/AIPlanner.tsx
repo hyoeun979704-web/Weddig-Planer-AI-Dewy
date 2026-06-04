@@ -271,16 +271,37 @@ const AIPlanner = () => {
   const [consentOpen, setConsentOpen] = useState(false);
   const pendingSendRef = useRef<(() => void) | null>(null);
 
+  // 동의 상태(state: undefined=로딩, null=미결정, true/false=결정)가 확정되면
+  // 대기 중 전송을 처리한다. 이 effect 가 단일 진입점이라:
+  //  - true        → 대기 전송 실행 (로딩 레이스·타 화면 동의 반영·동의 직후 모두 커버)
+  //  - null/false  → 미동의 확정 → 동의 모달 표시
+  //  - undefined   → 아직 로딩 → 대기(모달 안 띄움 → 동의자 깜빡임 방지)
+  // agree() 가 no-op(비로그인) 이면 state 가 true 로 안 바뀌어 전송도 안 됨(안전).
+  useEffect(() => {
+    if (!pendingSendRef.current) return;
+    if (consent.state === true) {
+      setConsentOpen(false);
+      const run = pendingSendRef.current;
+      pendingSendRef.current = null;
+      run();
+    } else if (consent.state === null || consent.state === false) {
+      setConsentOpen(true);
+    }
+  }, [consent.state]);
+
   const guardSend = useCallback(
     (run: () => void) => {
       if (consent.state === true) {
         run();
         return;
       }
+      // 미동의/로딩 → 전송 보류. 최신 동의 상태 재확인(다른 화면에서 이미 동의했을 수
+      // 있음 → refresh 로 reconcile, 위 effect 가 결과 처리). 확정 미동의면 즉시 모달.
       pendingSendRef.current = run;
-      setConsentOpen(true);
+      void consent.refresh();
+      if (consent.state === null || consent.state === false) setConsentOpen(true);
     },
-    [consent.state],
+    [consent],
   );
 
   const sendMessage = useCallback(
@@ -292,25 +313,27 @@ const AIPlanner = () => {
     [guardSend, rawSendStructured],
   );
 
+  // 동의 → state=true 로 바뀌면 위 effect 가 대기 전송을 실행(여기서 직접 전송하지 않아
+  // 이중 전송/비로그인 우회를 방지). 기록 실패 시에는 전송 취소.
   const handleConsentAgree = useCallback(async () => {
     try {
       await consent.agree();
     } catch {
-      // 동의 기록 실패 시 전송하지 않음(다운스트림이 false premise 로 동작 방지)
       pendingSendRef.current = null;
       setConsentOpen(false);
-      return;
     }
-    setConsentOpen(false);
-    const pending = pendingSendRef.current;
-    pendingSendRef.current = null;
-    pending?.();
   }, [consent]);
 
-  const handleConsentDecline = useCallback(() => {
+  // 거부도 이력으로 기록(PIPA). 대기 전송은 취소.
+  const handleConsentDecline = useCallback(async () => {
     pendingSendRef.current = null;
     setConsentOpen(false);
-  }, []);
+    try {
+      await consent.refuse();
+    } catch {
+      /* 기록 실패는 무시 */
+    }
+  }, [consent]);
   const { weddingSettings } = useWeddingSchedule();
   const weddingInfoPrompt = useWeddingInfoPrompt();
   // 결혼 정보(날짜·지역)가 모두 비어있으면 LLM이 컨텍스트 없이 일반론 답변을
