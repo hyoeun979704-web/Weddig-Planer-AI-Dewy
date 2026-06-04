@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import DewyLogo from "@/components/home/DewyLogo";
 import Seo from "@/components/Seo";
@@ -11,6 +11,8 @@ import { useAIPlanner } from "@/hooks/useAIPlanner";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetupModal";
+import DataCollectionConsentModal from "@/components/consent/DataCollectionConsentModal";
+import { useDataCollectionConsent } from "@/hooks/useDataCollectionConsent";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
 import TypingIndicator from "@/components/wedding-planner/TypingIndicator";
 import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
@@ -258,7 +260,57 @@ const AIPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { messages, isLoading, sendMessage, sendStructured, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
+  const { messages, isLoading, sendMessage: rawSendMessage, sendStructured: rawSendStructured, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
+
+  // ── AI 데이터 동의 게이트 (App Store 5.1.2 / PIPA) ──────────────────────────
+  // 채팅 입력은 제3자 AI(OpenAI·Gemini)로 전송되므로, 첫 전송 전 데이터 수집·
+  // AI 위탁 전송 동의를 받는다. 동의 전까지 메시지를 보내지 않고 모달로 막는다.
+  // sendMessage/sendStructured 를 동의 게이트로 감싸 모든 전송 경로(채팅·칩·추천·
+  // 구조화 설문)가 자동으로 동의를 거치게 한다.
+  const consent = useDataCollectionConsent();
+  const [consentOpen, setConsentOpen] = useState(false);
+  const pendingSendRef = useRef<(() => void) | null>(null);
+
+  const guardSend = useCallback(
+    (run: () => void) => {
+      if (consent.state === true) {
+        run();
+        return;
+      }
+      pendingSendRef.current = run;
+      setConsentOpen(true);
+    },
+    [consent.state],
+  );
+
+  const sendMessage = useCallback(
+    (text: string) => guardSend(() => rawSendMessage(text)),
+    [guardSend, rawSendMessage],
+  );
+  const sendStructured = useCallback(
+    (...args: Parameters<typeof rawSendStructured>) => guardSend(() => rawSendStructured(...args)),
+    [guardSend, rawSendStructured],
+  );
+
+  const handleConsentAgree = useCallback(async () => {
+    try {
+      await consent.agree();
+    } catch {
+      // 동의 기록 실패 시 전송하지 않음(다운스트림이 false premise 로 동작 방지)
+      pendingSendRef.current = null;
+      setConsentOpen(false);
+      return;
+    }
+    setConsentOpen(false);
+    const pending = pendingSendRef.current;
+    pendingSendRef.current = null;
+    pending?.();
+  }, [consent]);
+
+  const handleConsentDecline = useCallback(() => {
+    pendingSendRef.current = null;
+    setConsentOpen(false);
+  }, []);
   const { weddingSettings } = useWeddingSchedule();
   const weddingInfoPrompt = useWeddingInfoPrompt();
   // 결혼 정보(날짜·지역)가 모두 비어있으면 LLM이 컨텍스트 없이 일반론 답변을
@@ -629,6 +681,13 @@ const AIPlanner = () => {
       <WeddingInfoSetupModal
         isOpen={weddingInfoPrompt.open}
         onClose={weddingInfoPrompt.dismiss}
+      />
+
+      {/* AI 데이터 동의 — 챗봇 텍스트가 제3자 AI 로 전송되기 전 1회 동의 */}
+      <DataCollectionConsentModal
+        isOpen={consentOpen}
+        onAgree={handleConsentAgree}
+        onRefuse={handleConsentDecline}
       />
 
       <PageTutorial id="ai-planner" />

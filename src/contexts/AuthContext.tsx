@@ -13,6 +13,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signInWithKakao: () => Promise<{ error: Error | null }>;
+  signInWithApple: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -199,6 +200,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null };
   };
 
+  const signInWithApple = async () => {
+    // Apple 로그인 (App Store 4.8 — 제3자 소셜 로그인 제공 시 필수).
+    // Supabase Apple 공급자 + Apple Developer Service ID/Key 설정 필요.
+    if (isNativeApp()) return signInWithOAuthNative('apple');
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+
+    return { error: error as Error | null };
+  };
+
   const signOut = async () => {
     // Round 15 P1 fix — behavioral signals 공유 device cross-account leak 방지.
     // 이전 사용자가 dress/community/suit 본 신호가 다음 로그인 사용자에게 sensitive
@@ -208,7 +224,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signUp, signIn, signInWithGoogle, signInWithKakao, signOut }}>
+    <AuthContext.Provider value={{ user, session, isLoading, signUp, signIn, signInWithGoogle, signInWithKakao, signInWithApple, signOut }}>
       {children}
     </AuthContext.Provider>
   );

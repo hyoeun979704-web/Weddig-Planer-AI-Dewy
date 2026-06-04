@@ -27,7 +27,7 @@ type AccountType = "individual" | "business";
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, isLoading, signUp, signIn, signInWithGoogle, signInWithKakao } = useAuth();
+  const { user, isLoading, signUp, signIn, signInWithGoogle, signInWithKakao, signInWithApple } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,6 +47,7 @@ const Auth = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isKakaoLoading, setIsKakaoLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
 
   useEffect(() => {
     if (user && !isLoading) {
@@ -212,6 +213,19 @@ const Auth = () => {
       }
     } finally {
       setIsKakaoLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    if (!guardSocialSignUp()) return;
+    setIsAppleLoading(true);
+    try {
+      const { error } = await signInWithApple();
+      if (error) {
+        toast.error("Apple 로그인에 실패했습니다");
+      }
+    } finally {
+      setIsAppleLoading(false);
     }
   };
 
@@ -497,6 +511,18 @@ const Auth = () => {
               />
             </svg>
             {isGoogleLoading ? "처리 중..." : "Google로 계속하기"}
+          </Button>
+
+          <Button
+            type="button"
+            className="w-full h-12 text-base font-medium gap-3 bg-black text-white hover:bg-black/90"
+            onClick={handleAppleSignIn}
+            disabled={isAppleLoading}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M17.05 12.54c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.1-2.01-3.77-2.04-1.6-.16-3.13.94-3.94.94-.81 0-2.07-.92-3.4-.9-1.75.03-3.36 1.02-4.26 2.58-1.82 3.15-.46 7.82 1.3 10.38.86 1.25 1.89 2.66 3.23 2.61 1.3-.05 1.79-.84 3.36-.84 1.57 0 2.01.84 3.39.81 1.4-.02 2.29-1.28 3.14-2.54.99-1.45 1.4-2.86 1.42-2.93-.03-.01-2.72-1.04-2.75-4.13M14.5 4.97c.71-.86 1.19-2.06 1.06-3.25-1.02.04-2.26.68-2.99 1.54-.66.76-1.23 1.98-1.08 3.15 1.14.09 2.3-.58 3.01-1.44" />
+            </svg>
+            {isAppleLoading ? "처리 중..." : "Apple로 계속하기"}
           </Button>
         </div>
 
