@@ -588,20 +588,20 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     >
       {/* 스코어/베스트/넥스트/음소거 HUD 는 캔버스 위 버블 칩으로 직접 그림(레퍼런스풍). */}
 
-      {/* 캔버스 — 상단 정렬(칩이 헤더 바로 아래 보이게). 헤더(44)+광고(96) 만큼 빼고,
-          width=min(100%, 가용높이 환산폭)+aspect-ratio 로 폭/높이 어느 쪽도 넘치지
-          않게(잘림·왜곡 없음). 남는 좌우/아래는 루트 배경(유리병)이 자연스럽게 채움. */}
-      <div className="flex-1 flex items-start justify-center w-full overflow-hidden">
+      {/* 캔버스 — 최대한 넓게 */}
+      <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
         <canvas
           ref={canvasRef}
           width={GAME_WIDTH}
           height={GAME_HEIGHT}
           className="touch-none block"
           style={{
-            width: `min(100%, calc((100dvh - 150px) * ${GAME_WIDTH} / ${GAME_HEIGHT}))`,
-            aspectRatio: `${GAME_WIDTH} / ${GAME_HEIGHT}`,
-            height: 'auto',
+            // 컬럼 폭을 채우도록 키움(비율 유지 → 왜곡 없음). 남는 위/아래는 루트 bg.
+            height: 'min(calc(100dvh - 60px), 760px)',
+            width: 'auto',
+            maxWidth: '100%',
             cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
+            borderRadius: '0 0 8px 8px',
           }}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
