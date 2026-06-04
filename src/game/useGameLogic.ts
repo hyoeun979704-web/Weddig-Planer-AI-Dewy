@@ -34,9 +34,10 @@ interface UseGameLogicOptions {
   canvasRef: React.RefObject<HTMLCanvasElement>;
   onScoreChange?: (score: number) => void;
   onGameOver?: (score: number) => void;
+  onMerge?: (newLevelId: number) => void;
 }
 
-export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLogicOptions) {
+export function useGameLogic({ canvasRef, onScoreChange, onGameOver, onMerge }: UseGameLogicOptions) {
   const engineRef = useRef<Matter.Engine | null>(null);
   const runnerRef = useRef<Matter.Runner | null>(null);
   const gameObjectsRef = useRef<Map<number, GameObject>>(new Map());
@@ -51,10 +52,12 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
   // ref.current는 항상 최신 함수를 가리키므로 props 변경에도 안전하다.
   const onScoreChangeRef = useRef(onScoreChange);
   const onGameOverRef = useRef(onGameOver);
+  const onMergeRef = useRef(onMerge);
   useEffect(() => {
     onScoreChangeRef.current = onScoreChange;
     onGameOverRef.current = onGameOver;
-  }, [onScoreChange, onGameOver]);
+    onMergeRef.current = onMerge;
+  }, [onScoreChange, onGameOver, onMerge]);
 
   // 머지 이펙트 목록: 렌더링 루프에서 읽어 Canvas에 직접 그린다
   const mergeFlashesRef = useRef<MergeFlash[]>([]);
@@ -134,6 +137,9 @@ export function useGameLogic({ canvasRef, onScoreChange, onGameOver }: UseGameLo
           createdAt: performance.now(),
         });
       }
+
+      // 머지 효과음 트리거 (합쳐진 결과 레벨 전달 → 상위 단계일수록 음 높이 변화 등에 활용)
+      onMergeRef.current?.(level.nextLevelId!);
 
       setGameState((prev) => {
         const newScore = prev.score + level.score;

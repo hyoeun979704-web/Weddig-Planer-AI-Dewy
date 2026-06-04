@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { showRewardedAd } from '@/lib/ads/adService';
 import { useGameLogic } from './useGameLogic';
+import { useGameAudio } from './useGameAudio';
 import { GAME_WIDTH, GAME_HEIGHT, DEATH_LINE_Y, DROP_START_Y, FLOWER_LEVEL_MAP } from './constants';
 import type { GameState } from './types';
 
@@ -75,8 +76,11 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     }
   }, []);
 
+  // 사운드 — BGM 루프 + 머지 효과음. 첫 제스처에서 unlock 후 재생.
+  const audio = useGameAudio();
+
   const { gameState, dropXRef, mergeFlashesRef, startGame, dropFlower, setDropX, tick, getBodies } =
-    useGameLogic({ canvasRef, onScoreChange, onGameOver });
+    useGameLogic({ canvasRef, onScoreChange, onGameOver, onMerge: audio.playMerge });
 
   const gameStateRef = useRef<GameState>(gameState);
   gameStateRef.current = gameState;
@@ -252,21 +256,55 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       }
     }
 
-    // 머지 이펙트
+    // 머지 이펙트 — 부드러운 글로우 + 확장 링 + 사방으로 튀는 반짝이.
     const now = performance.now();
     mergeFlashesRef.current.forEach((f) => {
       const elapsed = now - f.createdAt;
-      const progress = elapsed / 600;
-      const expandR = f.radius + f.radius * 1.2 * progress;
-      const alpha = (1 - progress) * 0.7;
+      const progress = Math.min(1, elapsed / 600);
+      const ease = 1 - Math.pow(1 - progress, 2); // ease-out
 
       ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = '#FFD700';
-      ctx.lineWidth = 3;
+      ctx.translate(f.x, f.y);
+
+      // 1) 중심 글로우 (초반에 확 밝아졌다 사라짐)
+      const glowAlpha = (1 - progress) * 0.5;
+      if (glowAlpha > 0.01) {
+        const gr = f.radius * (0.6 + 0.8 * ease);
+        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, gr);
+        glow.addColorStop(0, `rgba(255,250,230,${glowAlpha})`);
+        glow.addColorStop(0.5, `rgba(255,215,120,${glowAlpha * 0.5})`);
+        glow.addColorStop(1, 'rgba(255,215,120,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(0, 0, gr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 2) 확장 링
+      const ringR = f.radius + f.radius * 1.2 * ease;
+      ctx.globalAlpha = (1 - progress) * 0.8;
+      ctx.strokeStyle = '#FFD27A';
+      ctx.lineWidth = 3 * (1 - progress) + 0.5;
       ctx.beginPath();
-      ctx.arc(f.x, f.y, expandR, 0, Math.PI * 2);
+      ctx.arc(0, 0, ringR, 0, Math.PI * 2);
       ctx.stroke();
+
+      // 3) 반짝이 입자 — createdAt 기반 결정적 분포로 8방향 튀어나감
+      const sparkCount = 8;
+      const sparkDist = f.radius * (0.9 + 1.6 * ease);
+      const seed = f.createdAt;
+      ctx.fillStyle = '#FFFFFF';
+      for (let i = 0; i < sparkCount; i++) {
+        const ang = (i / sparkCount) * Math.PI * 2 + seed * 0.0007;
+        const sx = Math.cos(ang) * sparkDist;
+        const sy = Math.sin(ang) * sparkDist;
+        const sparkR = (1 - progress) * (1.6 + (i % 3) * 0.7);
+        if (sparkR <= 0.1) continue;
+        ctx.globalAlpha = (1 - progress) * 0.95;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sparkR, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
     });
 
@@ -427,6 +465,9 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (e.button !== undefined && e.button !== 0) return;
 
+      // 첫 사용자 제스처에서 오디오 잠금 해제 + BGM 시작
+      audio.unlock();
+
       if (gameStateRef.current.phase === 'gameover') {
         // 팝업 내 버튼 히트 테스트
         const coords = getCanvasCoords(e);
@@ -459,7 +500,7 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
 
       dropFlower();
     },
-    [dropFlower, getCanvasCoords, startGame, watchRewardedForDouble]
+    [dropFlower, getCanvasCoords, startGame, watchRewardedForDouble, audio]
   );
 
   return (
@@ -478,11 +519,19 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
           <span className="text-xs text-muted-foreground font-medium">SCORE</span>
           <span className="text-lg font-bold text-primary tabular-nums">{gameState.score}</span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 text-muted-foreground">
             <span className="text-xs"></span>
             <span className="text-sm font-semibold text-primary/80 tabular-nums">{bestScore}점</span>
           </div>
+          <button
+            type="button"
+            onClick={() => { audio.unlock(); audio.toggleMute(); }}
+            aria-label={audio.muted ? '소리 켜기' : '소리 끄기'}
+            className="flex items-center justify-center w-7 h-7 rounded-full text-base hover:bg-muted/60 transition-colors"
+          >
+            {audio.muted ? '🔇' : '🔊'}
+          </button>
         </div>
       </div>
 
