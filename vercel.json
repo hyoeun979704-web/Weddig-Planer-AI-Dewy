@@ -12,6 +12,18 @@
     { "source": "/appliances/:id", "destination": "/api/ssr?type=place&prefix=appliances&id=:id" },
     { "source": "/invitation-venues/:id", "destination": "/api/ssr?type=place&prefix=invitation-venues&id=:id" },
     { "source": "/store/:id", "destination": "/api/ssr?type=product&prefix=store&id=:id" },
+
+    { "source": "/결혼어플추천", "destination": "/api/guide?slug=결혼어플추천" },
+    { "source": "/결혼준비앱추천", "destination": "/api/guide?slug=결혼준비앱추천" },
+    { "source": "/ai웨딩플래너앱", "destination": "/api/guide?slug=ai웨딩플래너앱" },
+    { "source": "/결혼준비체크리스트앱", "destination": "/api/guide?slug=결혼준비체크리스트앱" },
+    { "source": "/웨딩예산관리앱", "destination": "/api/guide?slug=웨딩예산관리앱" },
+    { "source": "/스드메준비앱", "destination": "/api/guide?slug=스드메준비앱" },
+    { "source": "/웨딩홀비교앱", "destination": "/api/guide?slug=웨딩홀비교앱" },
+    { "source": "/예비부부일정공유앱", "destination": "/api/guide?slug=예비부부일정공유앱" },
+    { "source": "/모바일청첩장앱", "destination": "/api/guide?slug=모바일청첩장앱" },
+    { "source": "/플래너없이결혼준비", "destination": "/api/guide?slug=플래너없이결혼준비" },
+
     { "source": "/((?!api|assets|sw.js|workbox-.*).*)", "destination": "/index.html" }
   ]
 }

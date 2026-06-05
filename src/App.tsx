@@ -10,6 +10,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { aeoGuides } from "./data/aeoGuides";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 
@@ -72,6 +73,7 @@ const InvitationVenueDetail = lazy(() => import("./pages/InvitationVenueDetail")
 const VendorList = lazy(() => import("./pages/VendorList"));
 const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Guide = lazy(() => import("./pages/Guide"));
 const PremiumContent = lazy(() => import("./pages/PremiumContent"));
 const Premium = lazy(() => import("./pages/Premium"));
 const CoupleVote = lazy(() => import("./pages/CoupleVote"));
@@ -315,6 +317,12 @@ const App = () => (
               <Route path="/admin/business-review" element={<AdminGuard><AdminBusinessReview /></AdminGuard>} />
               <Route path="/admin/product-curation" element={<AdminGuard><AdminProductCuration /></AdminGuard>} />
               <Route path="/admin/featured-products" element={<AdminGuard><AdminFeaturedProducts /></AdminGuard>} />
+
+              {/* AEO 가이드 페이지(결혼어플추천 등). 한글 슬러그 라우트를
+                  src/data/aeoGuides 단일 소스에서 생성. 크롤러용 SSR 은 api/guide.ts. */}
+              {aeoGuides.map((g) => (
+                <Route key={g.slug} path={`/${g.slug}`} element={<Guide slug={g.slug} />} />
+              ))}
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
