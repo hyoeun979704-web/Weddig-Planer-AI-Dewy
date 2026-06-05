@@ -203,6 +203,6 @@
 
 **기대 효과**: 1년차 결제 사용자 250→500명, 매출 1,400→3,000만원, Phase 4 마케팅 본격 확대.
 
-**Contact**: help@dewy-wedding.com / https://dewy-wedding.com
+**Contact**: kheceo@dewy-wedding.com / https://dewy-wedding.com
 
 **문서 끝**

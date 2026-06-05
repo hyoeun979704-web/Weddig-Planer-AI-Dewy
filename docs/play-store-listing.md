@@ -130,7 +130,7 @@ Google Gemini 2.5 Flash 기반 한국 웨딩 특화 AI 챗봇.
 ━━━━━━━━━━━━━━━━━━━━━━
 
 📮 문의 / 제안
-help@dewy-wedding.com
+kheceo@dewy-wedding.com
 https://dewy-wedding.com
 
 듀이 팀은 모든 커플의 가장 빛나는 순간을 응원합니다. 💛
