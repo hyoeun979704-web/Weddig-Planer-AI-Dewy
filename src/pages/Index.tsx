@@ -61,7 +61,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
-      <Seo title="Dewy - AI 웨딩플래너와 함께하는 결혼준비" description="결혼 준비 체크리스트·예산 관리·웨딩홀·스드메 추천·AI 드레스 시뮬레이션·모바일 청첩장까지. AI 웨딩플래너 Dewy." path="/" />
+      <Seo title="Dewy - AI 웨딩플래너와 함께하는 결혼준비" description="결혼 준비 체크리스트, D-Day 일정, 예산과 양가 분담을 한곳에서 정리하는 AI 웨딩플래너 Dewy입니다." path="/" />
       <HomeHeader />
       <CategoryTabBar activeTab={null} onTabChange={handleCategoryTabChange} />
       <AnnouncementBanner />

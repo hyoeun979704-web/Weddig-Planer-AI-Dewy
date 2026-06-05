@@ -12,7 +12,7 @@ import { openExternal } from "@/lib/native/openExternal";
 //   - FEEDBACK_FORM_URL: 베타 피드백 구글폼 링크
 // 비워두면 버튼은 숨겨지고, '웹에서 바로 시작' + 이메일 피드백만 노출됩니다.
 const PLAY_BETA_URL = "";
-const FEEDBACK_FORM_URL = "";
+const FEEDBACK_FORM_URL = "https://forms.gle/MrR7rbfuidFY7RK58";
 
 const FEATURES = [
   "결혼식 날짜 기준 D-Day 체크리스트 자동 정리",
