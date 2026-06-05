@@ -8,7 +8,8 @@ import {
   FileText,
   Info,
   LogOut,
-  Trash2
+  Trash2,
+  Megaphone
 } from "lucide-react";
 import { useState } from "react";
 import BottomNav from "@/components/BottomNav";
@@ -18,12 +19,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import { useDataUsageConsent } from "@/hooks/useDataUsageConsent";
 
 const Settings = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const [deleting, setDeleting] = useState(false);
+  const { state: dataUsageConsent, saving: consentSaving, set: setDataUsageConsent } =
+    useDataUsageConsent();
+
+  const handleDataUsageToggle = async (checked: boolean) => {
+    try {
+      await setDataUsageConsent(checked);
+      toast.success(checked ? "데이터 활용에 동의했어요" : "동의를 철회했어요");
+    } catch {
+      toast.error("처리에 실패했어요. 잠시 후 다시 시도해주세요");
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -90,6 +103,32 @@ const Settings = () => {
             </button>
           </div>
         </div>
+
+        {/* 동의 설정 (선택) */}
+        {user && (
+          <div className="p-4">
+            <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">동의 설정</h2>
+            <div className="bg-card rounded-2xl border border-border overflow-hidden">
+              <div className="flex items-center justify-between gap-3 p-4">
+                <div className="flex items-start gap-3">
+                  <Megaphone className="w-5 h-5 mt-0.5 shrink-0 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">마케팅·서비스 개선 활용 (선택)</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
+                      이벤트·혜택 안내와 서비스·AI 추천 품질 개선에 내 정보를 활용하는 데 동의해요.
+                      동의하지 않아도 서비스 이용에는 제한이 없어요.
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={dataUsageConsent === true}
+                  disabled={dataUsageConsent === undefined || consentSaving}
+                  onCheckedChange={handleDataUsageToggle}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Legal */}
         <div className="p-4">
