@@ -43,16 +43,38 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "실패",
 };
 
+interface HairSample {
+  id: string;
+  name: string;
+  image_url: string;
+  prompt: string | null;
+}
+
 const HairPreview = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [pick, setPick] = useState<{ file: File; url: string } | null>(null);
   const [opts, setOpts] = useState<Set<Kind>>(new Set<Kind>(["style"]));
-  const [style, setStyle] = useState(STYLES[0]);
+  const [style, setStyle] = useState<{ label: string; prompt: string }>(STYLES[0]);
+  const [samples, setSamples] = useState<HairSample[]>([]);
   const [discounted, setDiscounted] = useState<boolean | null>(null);
   const [processing, setProcessing] = useState(false);
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // 단일 헤어 선택지(이미지). 어드민이 등록한 hair_samples. 없으면 텍스트 STYLES 폴백.
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("hair_samples")
+        .select("id, name, image_url, prompt")
+        .eq("is_active", true)
+        .order("display_order", { ascending: false });
+      const list = (data ?? []) as HairSample[];
+      setSamples(list);
+      if (list.length > 0) setStyle({ label: list[0].name, prompt: list[0].prompt ?? list[0].name });
+    })();
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -207,22 +229,48 @@ const HairPreview = () => {
 
         {opts.has("single") && (
           <section className="space-y-2">
-            <h3 className="text-sm font-bold text-foreground">단일 헤어 선택</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {STYLES.map((s) => {
-                const on = style.label === s.label;
-                return (
-                  <button
-                    key={s.label}
-                    type="button"
-                    onClick={() => setStyle(s)}
-                    className={`h-10 rounded-xl border text-[13px] font-medium ${on ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-foreground"}`}
-                  >
-                    {s.label}
-                  </button>
-                );
-              })}
-            </div>
+            <h3 className="text-sm font-bold text-foreground">
+              단일 헤어 선택{" "}
+              <span className="text-[11px] text-muted-foreground font-normal">
+                (정면·측면·후면으로 생성)
+              </span>
+            </h3>
+            {samples.length > 0 ? (
+              <div className="grid grid-cols-3 gap-2">
+                {samples.map((s) => {
+                  const on = style.label === s.name;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setStyle({ label: s.name, prompt: s.prompt ?? s.name })}
+                      className={`rounded-xl overflow-hidden border text-left ${on ? "border-primary ring-2 ring-primary" : "border-border"}`}
+                    >
+                      <div className="aspect-square bg-muted">
+                        <img src={s.image_url} alt={s.name} className="w-full h-full object-cover" />
+                      </div>
+                      <p className={`px-1.5 py-1 text-[11px] truncate ${on ? "text-primary font-medium" : "text-foreground"}`}>{s.name}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {STYLES.map((s) => {
+                  const on = style.label === s.label;
+                  return (
+                    <button
+                      key={s.label}
+                      type="button"
+                      onClick={() => setStyle(s)}
+                      className={`h-10 rounded-xl border text-[13px] font-medium ${on ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-foreground"}`}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </section>
         )}
 

@@ -26,6 +26,13 @@ const IDENTITY =
   "natural skin texture, no plastic skin, no over-smoothing, ultra-high realism, sharp " +
   "focus, professional beauty photography. Do not stylize or cartoonize. No text, no logos, no watermarks.";
 
+// 단일 3뷰용 — 카메라 각도 고정 문구는 빼고 얼굴 정체성만 고정.
+const FACE_LOCK =
+  " Keep the face, facial features (eyes, nose, lips, jawline), head shape, skin tone and " +
+  "identity EXACTLY the same as the provided photo in the views where the face is visible. " +
+  "Natural skin texture, no plastic skin, ultra-high realism, sharp focus, soft studio " +
+  "lighting, clean minimal light-gray background. Do not stylize or cartoonize. No text, no logos, no watermarks.";
+
 const STYLE_GRID =
   "Generate a 3x3 grid (9 cells) of ultra-realistic portrait photos of the SAME person " +
   "with different hairstyles. Only change the hairstyle in each cell, keep perfect facial " +
@@ -40,10 +47,12 @@ const COLOR_GRID =
   "light brown, soft caramel, warm honey blonde, ash brown, copper red, platinum blonde." + IDENTITY;
 
 function singlePrompt(style: string) {
-  const s = (style || "soft natural waves").slice(0, 120);
+  const s = (style || "soft natural waves").slice(0, 160);
   return (
-    "Ultra-realistic head-and-shoulders portrait of the SAME person, restyling ONLY the " +
-    "hair to: " + s + "." + IDENTITY
+    "Generate ONE image showing the SAME person with the chosen hairstyle from THREE angles, " +
+    "side by side left to right: (1) FRONT view, (2) 45-degree SIDE view, (3) BACK view — so " +
+    "the hairstyle is shown fully. Restyle ONLY the hair to: " + s + ". The hair must be " +
+    "identical and consistent across all three views; label nothing." + FACE_LOCK
   );
 }
 
@@ -125,7 +134,7 @@ serve(async (req) => {
             const form = new FormData();
             form.append("model", "gpt-image-2");
             form.append("prompt", promptFor(kind));
-            form.append("size", "1024x1536");
+            form.append("size", kind === "single" ? "1536x1024" : "1024x1536");
             form.append("quality", "medium");
             form.append("n", "1");
             form.append("image[]", blob, "bride.png");

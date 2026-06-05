@@ -105,6 +105,8 @@ const AdminTipInstagrams = lazy(() => import("./pages/admin/AdminTipInstagrams")
 const AdminInstagramPosts = lazy(() => import("./pages/admin/AdminInstagramPosts"));
 const AdminInstagramPostEdit = lazy(() => import("./pages/admin/AdminInstagramPostEdit"));
 const AdminMakeupSamples = lazy(() => import("./pages/admin/AdminMakeupSamples"));
+const AdminHairSamples = lazy(() => import("./pages/admin/AdminHairSamples"));
+const AdminAIJobs = lazy(() => import("./pages/admin/AdminAIJobs"));
 const AdminInvitationTemplates = lazy(() => import("./pages/admin/AdminInvitationTemplates"));
 const AdminInvitationAssets = lazy(() => import("./pages/admin/AdminInvitationAssets"));
 const AdminInvitationFonts = lazy(() => import("./pages/admin/AdminInvitationFonts"));
@@ -307,6 +309,8 @@ const App = () => (
               <Route path="/admin/instagram-posts/:id" element={<AdminGuard><AdminInstagramPostEdit /></AdminGuard>} />
               <Route path="/admin/dress-samples" element={<AdminGuard><AdminDressSamples /></AdminGuard>} />
               <Route path="/admin/makeup-samples" element={<AdminGuard><AdminMakeupSamples /></AdminGuard>} />
+              <Route path="/admin/hair-samples" element={<AdminGuard><AdminHairSamples /></AdminGuard>} />
+              <Route path="/admin/ai-jobs" element={<AdminGuard><AdminAIJobs /></AdminGuard>} />
               <Route path="/admin/invitation-templates" element={<AdminGuard><AdminInvitationTemplates /></AdminGuard>} />
               <Route path="/admin/invitation-assets" element={<AdminGuard><AdminInvitationAssets /></AdminGuard>} />
               <Route path="/admin/invitation-fonts" element={<AdminGuard><AdminInvitationFonts /></AdminGuard>} />
