@@ -1,22 +1,49 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Yeti
-Allow: /
-
-User-agent: Daumoa
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
+# Dewy robots.txt
+#
+# 목표: 공개 마케팅·정보 페이지(홈·FAQ·결혼어플추천 등 AEO 페이지)는 검색·AI 크롤링을
+# 모두 허용해 AI 답변 인용 가능성을 높이고, 관리자·API·계정/결제 등 내부 영역은 차단한다.
+#
+# 주의: robots.txt 는 보안 수단이 아니다(Google 공식). 민감 영역은 인증·권한·noindex 로
+# 반드시 별도 보호한다. 아래 Disallow 는 색인/노출 방지 목적이다.
+#
+# 봇 정책: 아래 단일 '*' 그룹이 Googlebot·Bingbot·네이버(Yeti)·다음(Daumoa)·
+# OAI-SearchBot(ChatGPT 검색)·GPTBot(OpenAI 학습)·Google-Extended(Gemini 학습) 등
+# 모든 크롤러에 동일 적용된다 → 공개 페이지는 전부 허용, 민감 경로만 차단.
+# robots.txt 그룹은 상속되지 않으므로(가장 구체적인 그룹만 적용) 봇별 'Allow: /' 전용
+# 그룹을 따로 두면 오히려 그 봇이 민감 경로 차단을 건너뛴다. 그래서 단일 그룹으로 관리한다.
+#
+# 향후 특정 학습용 봇만 차단하려면(검색 노출은 유지하되 모델 학습만 제외) 해당 봇 전용
+# 그룹을 추가한다. 예:
+#   User-agent: GPTBot
+#   Disallow: /
 
 User-agent: *
 Allow: /
+
+# 관리자·사업자·API
+Disallow: /admin
+Disallow: /business
+Disallow: /api
+
+# 로그인·계정·개인 데이터
+Disallow: /auth
+Disallow: /mypage
+Disallow: /settings
+Disallow: /profile
+Disallow: /favorites
+Disallow: /notifications
+Disallow: /my-inquiries
+
+# 결제·주문·포인트·쿠폰 등 거래 화면
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /order-complete
+Disallow: /points
+Disallow: /heart-charge
+Disallow: /coupons
+Disallow: /referral
+Disallow: /premium/subscribe
+Disallow: /premium/payment
 
 Sitemap: https://dewy-wedding.com/sitemap.xml
