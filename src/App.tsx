@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import SessionTracker from "@/components/SessionTracker";
+import ConsultingNotifier from "@/components/ConsultingNotifier";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import AdminGuard from "@/components/admin/AdminGuard";
@@ -42,6 +43,7 @@ const Schedule = lazy(() => import("./pages/Schedule"));
 const AIStudio = lazy(() => import("./pages/AIStudio"));
 const PhotoFix = lazy(() => import("./pages/PhotoFix"));
 const WeddingConsulting = lazy(() => import("./pages/WeddingConsulting"));
+const ConsultingResult = lazy(() => import("./pages/ConsultingResult"));
 const Community = lazy(() => import("./pages/Community"));
 const CommunityWrite = lazy(() => import("./pages/CommunityWrite"));
 const CommunityEdit = lazy(() => import("./pages/CommunityEdit"));
@@ -274,6 +276,7 @@ const App = () => (
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/photo-fix" element={<PhotoFix />} />
               <Route path="/ai-studio/consulting" element={<WeddingConsulting />} />
+              <Route path="/ai-studio/consulting/result/:id" element={<ConsultingResult />} />
               <Route path="/ai-studio/dress-tour" element={<DressFitting />} />
               <Route path="/ai-studio/dress-tour/result/:id" element={<DressFittingResult />} />
               <Route path="/ai-studio/dress-tour/gallery" element={<DressFittingGallery />} />
@@ -316,6 +319,8 @@ const App = () => (
           {/* First-time tutorial welcome sheet — uses useNavigate so it
               must live inside BrowserRouter. Self-gates on user + onboarding. */}
           <TutorialWelcomeSheet />
+          {/* 웨딩컨설팅 백그라운드 잡 완료 알림 — useNavigate 사용. */}
+          <ConsultingNotifier />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

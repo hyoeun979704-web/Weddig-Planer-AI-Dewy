@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Upload, Download, Sparkles } from "lucide-react";
+import { Loader2, Upload, Sparkles, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { addPendingJob } from "@/lib/consultingJobs";
 
 // 2026 웨딩컨설팅 — 신부 사진 분석 → 매거진급 A4 보드(gpt-image-2 생성) 4종.
 // 가격: 섹션당 10하트, 4섹션(종합) 30하트. 계정당 첫 1회 50% 할인(반올림).
@@ -24,11 +25,18 @@ const LABEL: Record<string, string> = {
   dress: "드레스+부케",
 };
 
-interface BoardResult {
-  section: string;
-  url: string | null;
-  path: string;
+interface ReportRow {
+  id: string;
+  status: "processing" | "completed" | "failed";
+  sections: string[];
+  created_at: string;
 }
+
+const STATUS_LABEL: Record<string, string> = {
+  processing: "생성 중",
+  completed: "완료",
+  failed: "실패",
+};
 
 const costOf = (n: number) => (n >= 4 ? 30 : n * 10);
 
@@ -41,7 +49,7 @@ const WeddingConsulting = () => {
   );
   const [discounted, setDiscounted] = useState<boolean | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [results, setResults] = useState<BoardResult[] | null>(null);
+  const [reports, setReports] = useState<ReportRow[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -53,6 +61,20 @@ const WeddingConsulting = () => {
         .eq("user_id", user.id)
         .maybeSingle();
       setDiscounted((data?.used_count ?? 0) === 0);
+    })();
+  }, [user]);
+
+  // 내 컨설팅 기록 — 진행중/완료 결과를 여기서 다시 확인.
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("wedding_consulting_reports")
+        .select("id, status, sections, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setReports((data ?? []) as ReportRow[]);
     })();
   }, [user]);
 
@@ -93,7 +115,6 @@ const WeddingConsulting = () => {
     )
       return;
     setProcessing(true);
-    setResults(null);
     try {
       const ext = pick.file.name.split(".").pop()?.toLowerCase() || "jpg";
       const path = `${user.id}/consulting/${crypto.randomUUID()}.${ext}`;
@@ -102,6 +123,7 @@ const WeddingConsulting = () => {
         .upload(path, pick.file, { contentType: pick.file.type, upsert: false });
       if (up.error) throw new Error(`업로드 실패: ${up.error.message}`);
 
+      // 잡 생성만 하고 즉시 report_id 를 받는다(생성은 서버 백그라운드).
       const { data, error } = await (supabase as any).functions.invoke(
         "wedding-consulting",
         { body: { source_path: path, sections: selected } },
@@ -124,18 +146,20 @@ const WeddingConsulting = () => {
           });
           return;
         }
-        throw new Error(code ?? error.message ?? "생성 실패");
+        throw new Error(code ?? error.message ?? "요청 실패");
       }
       if (data?.error) throw new Error(data.error);
-      setResults((data?.results ?? []) as BoardResult[]);
+
+      const reportId = data?.report_id as string | undefined;
+      if (!reportId) throw new Error("요청 실패");
+
+      // 완료 알림을 위해 진행중 잡 등록 → 결과 페이지로 이동(거기서 폴링).
+      addPendingJob({ id: reportId, sections: selected, startedAt: Date.now() });
       setDiscounted(false);
-      toast({
-        title: "컨설팅 완료",
-        description: `${data?.results?.length ?? 0}장 · ${data?.charged ?? finalCost}하트 사용`,
-      });
+      navigate(`/ai-studio/consulting/result/${reportId}`);
     } catch (e) {
       toast({
-        title: "컨설팅 실패",
+        title: "컨설팅 요청 실패",
         description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
@@ -148,156 +172,147 @@ const WeddingConsulting = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-28">
       <PageHeader title="2026 웨딩컨설팅" />
       <main className="px-4 py-5 space-y-5">
-        {!results && (
-          <>
-            <section className="rounded-2xl bg-pink-50 p-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <h2 className="text-sm font-bold text-foreground">
-                  맞춤 스타일링 A4 리포트
-                </h2>
-              </div>
-              <p className="mt-1 text-[12px] text-muted-foreground leading-relaxed">
-                신부님 사진을 분석해 퍼스널컬러·헤어·메이크업·드레스를 매거진풍 A4로
-                만들어 드려요. 전문 진단이 아닌 프리미엄 스타일링 제안이에요.
-              </p>
-              <p className="mt-2 text-[12px] text-foreground">
-                섹션당 10하트 · 종합 4장 30하트
-                {discounted && (
-                  <span className="ml-1 text-primary font-semibold">
-                    · 첫 1회 50% 할인
-                  </span>
-                )}
-              </p>
-            </section>
+        <section className="rounded-2xl bg-pink-50 p-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-bold text-foreground">
+              맞춤 스타일링 A4 리포트
+            </h2>
+          </div>
+          <p className="mt-1 text-[12px] text-muted-foreground leading-relaxed">
+            신부님 사진을 분석해 퍼스널컬러·헤어·메이크업·드레스를 매거진풍 A4로
+            만들어 드려요. 전문 진단이 아닌 프리미엄 스타일링 제안이에요.
+          </p>
+          <p className="mt-2 text-[12px] text-foreground">
+            섹션당 10하트 · 종합 4장 30하트
+            {discounted && (
+              <span className="ml-1 text-primary font-semibold">
+                · 첫 1회 50% 할인
+              </span>
+            )}
+          </p>
+        </section>
 
-            <section className="space-y-2">
-              <h3 className="text-sm font-bold text-foreground">신부 사진</h3>
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="w-full aspect-[3/4] max-h-64 rounded-xl border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center gap-2 overflow-hidden"
-              >
-                {pick ? (
-                  <img
-                    src={pick.url}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <>
-                    <Upload className="w-6 h-6 text-muted-foreground" />
-                    <span className="text-[12px] text-muted-foreground">
-                      정면·자연광 사진 권장
-                    </span>
-                  </>
-                )}
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={onPick}
-              />
-            </section>
+        <section className="space-y-2">
+          <h3 className="text-sm font-bold text-foreground">신부 사진</h3>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="w-full aspect-[3/4] max-h-64 rounded-xl border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center gap-2 overflow-hidden"
+          >
+            {pick ? (
+              <img src={pick.url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <>
+                <Upload className="w-6 h-6 text-muted-foreground" />
+                <span className="text-[12px] text-muted-foreground">
+                  정면·자연광 사진 권장
+                </span>
+              </>
+            )}
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onPick}
+          />
+        </section>
 
-            <section className="space-y-2">
-              <h3 className="text-sm font-bold text-foreground">받을 섹션</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {SECTION_META.map((s) => {
-                  const on = sel.has(s.key);
-                  return (
-                    <button
-                      key={s.key}
-                      type="button"
-                      onClick={() => toggle(s.key)}
-                      className={`h-11 rounded-xl border text-[13px] font-medium ${
-                        on
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border bg-background text-foreground"
+        <section className="space-y-2">
+          <h3 className="text-sm font-bold text-foreground">받을 섹션</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {SECTION_META.map((s) => {
+              const on = sel.has(s.key);
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => toggle(s.key)}
+                  className={`h-11 rounded-xl border text-[13px] font-medium ${
+                    on
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-foreground"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            4개 모두 선택하면 종합가(30하트)로 적용돼요.
+          </p>
+        </section>
+
+        {/* 내 컨설팅 기록 — 진행중/완료 결과를 다시 확인 */}
+        {reports.length > 0 && (
+          <section className="space-y-2">
+            <h3 className="text-sm font-bold text-foreground">내 컨설팅 기록</h3>
+            <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+              {reports.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() =>
+                    navigate(`/ai-studio/consulting/result/${r.id}`)
+                  }
+                  className="w-full flex items-center justify-between px-3 py-3 bg-background active:bg-muted/40"
+                >
+                  <div className="text-left">
+                    <p className="text-[13px] font-medium text-foreground">
+                      {r.sections.map((s) => LABEL[s] ?? s).join(" · ")}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(r.created_at).toLocaleString("ko-KR", {
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-[11px] font-semibold ${
+                        r.status === "completed"
+                          ? "text-primary"
+                          : r.status === "failed"
+                            ? "text-destructive"
+                            : "text-muted-foreground"
                       }`}
                     >
-                      {s.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                4개 모두 선택하면 종합가(30하트)로 적용돼요.
-              </p>
-            </section>
-          </>
-        )}
-
-        {/* 결과 보드 이미지 */}
-        {results && (
-          <section className="space-y-4">
-            {results.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                생성된 보드가 없어요. 다시 시도해주세요.
-              </p>
-            )}
-            {results.map((r) => (
-              <div key={r.path} className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-foreground">
-                    {LABEL[r.section] ?? r.section}
-                  </span>
-                  {r.url && (
-                    <a
-                      href={r.url}
-                      download
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1 text-[12px] text-primary"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      이미지 저장
-                    </a>
-                  )}
-                </div>
-                {r.url && (
-                  <img
-                    src={r.url}
-                    alt={LABEL[r.section] ?? r.section}
-                    className="w-full rounded-xl border border-border bg-white"
-                  />
-                )}
-              </div>
-            ))}
-            <p className="text-[11px] text-muted-foreground">
-              이미지를 길게 눌러 저장할 수 있어요. 다운로드 링크는 7일간 유효해요.
-            </p>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setResults(null)}
-            >
-              새 컨설팅 받기
-            </Button>
+                      {r.status === "processing" && (
+                        <Loader2 className="inline w-3 h-3 mr-0.5 animate-spin" />
+                      )}
+                      {STATUS_LABEL[r.status] ?? r.status}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                </button>
+              ))}
+            </div>
           </section>
         )}
       </main>
 
-      {!results && (
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pb-[calc(var(--safe-bottom)+12px)] pt-3 bg-background/95 backdrop-blur border-t border-border">
-          <Button
-            className="w-full h-12"
-            disabled={!pick || processing || selected.length === 0}
-            onClick={handleStart}
-          >
-            {processing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                생성 중… 1~2분 걸릴 수 있어요
-              </>
-            ) : (
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pb-[calc(var(--safe-bottom)+12px)] pt-3 bg-background/95 backdrop-blur border-t border-border">
+        <Button
+          className="w-full h-12"
+          disabled={!pick || processing || selected.length === 0}
+          onClick={handleStart}
+        >
+          {processing ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              요청 중…
+            </>
+          ) : (
               `컨설팅 받기 · ${finalCost}하트`
             )}
           </Button>
         </div>
-      )}
     </div>
   );
 };
