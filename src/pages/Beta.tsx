@@ -92,7 +92,7 @@ const Beta = () => {
             </button>
           ) : (
             <p className="pt-1 text-center text-xs text-muted-foreground">
-              피드백·문의: <a href="mailto:help@dewy-wedding.com" className="underline">help@dewy-wedding.com</a>
+              피드백·문의: <a href="mailto:kheceo@dewy-wedding.com" className="underline">kheceo@dewy-wedding.com</a>
             </p>
           )}
         </section>

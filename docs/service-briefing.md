@@ -122,7 +122,7 @@
 - **회사명**: 듀이 (Dewy)
 - **사업자등록번호**: 218-38-01132
 - **웹사이트**: https://dewy-wedding.com
-- **고객 지원**: **help@dewy-wedding.com**
+- **고객 지원**: **kheceo@dewy-wedding.com**
 - **개인정보처리방침**: https://dewy-wedding.com/privacy
 
 ---
