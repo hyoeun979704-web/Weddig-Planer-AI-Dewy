@@ -108,17 +108,19 @@ function renderGuide(g: AeoGuide): Rendered {
     : "";
 
   const head = headTags(g.title, metaDesc, canonical, jsonLdGraph(g, canonical));
-  // 시각적으로 숨기지만 크롤러는 읽는 본문(앱 부팅 시 React 가 #root 를 대체).
+  // 크롤러·비-JS 사용자에게 그대로 "보이는" 본문(숨김 텍스트 아님). 앱 부팅 시
+  // React 가 #root 를 동일 내용의 화면으로 교체한다 → 사용자/크롤러에 동일 콘텐츠
+  // 제공(클로킹·hidden text 시그널 회피). 구조화 데이터도 이 보이는 본문과 일치한다.
   const body = `
-    <section aria-hidden="true" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:normal;border:0;">
-      <nav aria-label="breadcrumb"><a href="${SITE}/">홈</a> &gt; ${esc(g.breadcrumbName)}</nav>
+    <main style="max-width:480px;margin:0 auto;padding:20px;font-family:'Noto Sans KR',sans-serif;color:#3b3b3b;line-height:1.7;">
+      <nav aria-label="breadcrumb" style="font-size:13px;color:#888;"><a href="${SITE}/" style="color:#888;">홈</a> &gt; ${esc(g.breadcrumbName)}</nav>
       <h1>${esc(g.h1)}</h1>
       <p>${esc(g.answer)}</p>
       ${sectionsHtml}
       ${tableHtml}
       ${faqHtml}
       ${relatedHtml}
-    </section>`;
+    </main>`;
 
   return { title: g.title, description: metaDesc, canonical, head, body };
 }
