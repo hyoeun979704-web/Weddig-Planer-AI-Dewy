@@ -1,13 +1,13 @@
-// 초간단 사진보정(화질) — 1회 최대 8장 일괄 화질 개선 (비동기 잡).
+// 사진 체형 보정 — 1회 최대 8장 일괄 (비동기 잡). 화질 개선을 기본으로 깔고
+// 요청한 강도로 실루엣을 자연스럽게 슬림/비율 보정한다(얼굴·정체성 불변).
 //
-// 정체성 유지 + 해상도/선명도 개선(몸매보정 없음). gpt-image-2 images/edits.
-// 흐름: processing 잡 즉시 생성 → job_id 반환(202) → EdgeRuntime.waitUntil 로
-// 각 장 백그라운드 보정 → photo_retouch_jobs 갱신. 결과는 path 저장(클라가 서명).
+// gpt-image-2 images/edits. 흐름: processing 잡 즉시 생성 → job_id 반환(202) →
+// EdgeRuntime.waitUntil 로 각 장 백그라운드 보정 → photo_retouch_jobs 갱신.
 //
 // 가격: 장당 5하트, n장 = min(n*5, 35) (8장 묶음 35 상한).
 //   계정당 첫 1회는 50% 할인(반올림). 실패한 장수만큼 비례 환불.
 //
-// 입력: { source_paths: string[] }  (본인 폴더, 1~8장)
+// 입력: { source_paths: string[], body_preset?: BodyPreset }
 // 출력: { job_id, status:"processing", charged, discounted }
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -23,14 +23,39 @@ const PER = 5;
 const CAP = 35;
 const MAX_PHOTOS = 8;
 
-const ENHANCE_PROMPT =
-  "Enhance this wedding photo to higher resolution and clarity. " +
-  "CRITICAL: preserve the exact identity of every person — their face, facial " +
-  "features, expression, hairstyle, skin tone, and clothing must stay the same and " +
-  "recognizable. Keep the same pose, framing, and background. Reduce noise, blur, " +
-  "and compression artifacts; sharpen fine detail; keep colors natural and true to " +
-  "the original. Photorealistic result, no illustration or stylization, no body or " +
-  "face reshaping.";
+type BodyPreset = "none" | "slim_soft" | "slim_strong" | "proportion";
+
+// 공통: 정체성 보존 + 고화질 + 색감 보정 (모든 보정의 기본, 항상 적용).
+const BASE_PROMPT =
+  "Retouch this wedding photo to a high-quality, professionally finished result. " +
+  "Increase resolution and clarity: reduce noise, blur and compression artifacts, " +
+  "sharpen fine detail. Apply a natural, flattering wedding color grade: correct " +
+  "white balance, clean and even skin tones, gentle brightening, soft pleasing " +
+  "contrast — polished but true to life, not oversaturated or stylized. " +
+  "CRITICAL: preserve the exact identity of every person — face, facial features, " +
+  "expression, and hairstyle must stay the same and recognizable. Keep the same " +
+  "framing and background. Photorealistic, no illustration or cartoon look.";
+
+// 체형 프리셋(정성) — 자연스러움·비왜곡 방지·얼굴 불변 명시.
+const BODY_PROMPTS: Record<BodyPreset, string> = {
+  none: " Do not reshape the body.",
+  slim_soft:
+    " Subtly and naturally slim the body silhouette (waist, arms, legs) by a small " +
+    "amount. Keep proportions realistic and anatomically correct, avoid any " +
+    "distortion, and keep the face and identity exactly the same.",
+  slim_strong:
+    " Noticeably slim the body silhouette (waist, arms, legs) while keeping it " +
+    "believable and anatomically natural — no warping of limbs, background, or other " +
+    "people. Keep the face and identity exactly the same.",
+  proportion:
+    " Gently refine body proportions and posture: slightly longer and straighter " +
+    "legs, balanced silhouette, upright posture. Keep it natural and realistic, " +
+    "avoid distortion, and keep the face and identity exactly the same.",
+};
+
+function buildPrompt(preset: BodyPreset): string {
+  return BASE_PROMPT + (BODY_PROMPTS[preset] ?? BODY_PROMPTS.slim_soft);
+}
 
 function baseCost(n: number): number {
   return Math.min(n * PER, CAP);
@@ -73,8 +98,15 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const body = (await req.json()) as { source_paths?: string[] };
+    const body = (await req.json()) as { source_paths?: string[]; body_preset?: BodyPreset };
     const paths = Array.from(new Set(body.source_paths ?? []));
+    const preset: BodyPreset =
+      (["none", "slim_soft", "slim_strong", "proportion"] as const).includes(
+        body.body_preset as BodyPreset,
+      )
+        ? (body.body_preset as BodyPreset)
+        : "slim_soft";
+    const prompt = buildPrompt(preset);
     if (paths.length === 0) return json({ error: "Missing source_paths" }, 400);
     if (paths.length > MAX_PHOTOS) return json({ error: "too_many_photos" }, 400);
     for (const p of paths) {
@@ -148,7 +180,7 @@ serve(async (req) => {
             if (dlErr || !srcBlob) continue;
             const form = new FormData();
             form.append("model", "gpt-image-2");
-            form.append("prompt", ENHANCE_PROMPT);
+            form.append("prompt", prompt);
             form.append("size", "auto");
             form.append("quality", "high");
             form.append("n", "1");

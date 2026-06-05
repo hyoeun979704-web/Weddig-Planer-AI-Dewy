@@ -19,8 +19,8 @@ interface StudioCard {
 const cards: StudioCard[] = [
   {
     id: "photo-fix",
-    title: "초간단 사진보정",
-    description: "흐린 웨딩 사진 화질 UP — 1회 최대 8장 (첫 1회 50%↓)",
+    title: "고화질 웨딩 보정",
+    description: "색감·체형까지 초간단 고화질 AI 보정 — 1회 최대 8장 (첫 1회 50%↓)",
     status: "active",
     href: "/ai-studio/photo-fix",
   },
