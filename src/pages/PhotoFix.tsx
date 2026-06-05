@@ -15,12 +15,14 @@ const CAP = 35;
 const MAX_PHOTOS = 8;
 const baseCost = (n: number) => Math.min(n * PER, CAP);
 
-type BodyPreset = "slim_soft" | "slim_strong" | "proportion" | "none";
-const PRESETS: { key: BodyPreset; label: string; desc: string }[] = [
-  { key: "slim_soft", label: "자연스럽게", desc: "살짝 슬림" },
-  { key: "slim_strong", label: "확실하게", desc: "더 슬림하게" },
-  { key: "proportion", label: "비율·다리", desc: "다리 길이·자세" },
-  { key: "none", label: "화질만", desc: "체형 변형 없음" },
+type Op = "skin" | "color" | "slim" | "proportion" | "whiten";
+// 중복 선택 가능한 보정 옵션. (선명도/화질 개선은 항상 기본 적용)
+const OPTIONS: { key: Op; label: string; desc: string }[] = [
+  { key: "skin", label: "피부 보정", desc: "잡티·결 정리" },
+  { key: "color", label: "색감 보정", desc: "화이트밸런스·톤" },
+  { key: "slim", label: "몸매 슬림", desc: "실루엣 슬림" },
+  { key: "proportion", label: "비율 보정", desc: "다리·자세" },
+  { key: "whiten", label: "톤업", desc: "화사하게" },
 ];
 
 interface Pick {
@@ -44,11 +46,20 @@ const PhotoFix = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [picks, setPicks] = useState<Pick[]>([]);
-  const [preset, setPreset] = useState<BodyPreset>("slim_soft");
+  const [opts, setOpts] = useState<Set<Op>>(new Set<Op>(["skin"]));
+  const [customText, setCustomText] = useState("");
   const [discounted, setDiscounted] = useState<boolean | null>(null); // 첫 1회 여부
   const [processing, setProcessing] = useState(false);
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const toggleOpt = (k: Op) =>
+    setOpts((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
 
   // 첫 1회 할인 여부(계정당) 조회
   useEffect(() => {
@@ -116,10 +127,11 @@ const PhotoFix = () => {
       return;
     }
     if (picks.length === 0) return;
-    const presetLabel = PRESETS.find((p) => p.key === preset)?.label ?? "";
+    const selected = OPTIONS.filter((o) => opts.has(o.key)).map((o) => o.label);
+    const summary = [...selected, ...(customText.trim() ? ["요청사항"] : [])].join("·") || "기본 보정";
     if (
       !window.confirm(
-        `사진 ${picks.length}장 보정(${presetLabel})에 ${finalCost}하트가 차감돼요${discounted ? " (첫 1회 50% 할인 적용)" : ""}. 진행할까요?`,
+        `사진 ${picks.length}장 보정(${summary})에 ${finalCost}하트가 차감돼요${discounted ? " (첫 1회 50% 할인 적용)" : ""}. 진행할까요?`,
       )
     )
       return;
@@ -141,7 +153,7 @@ const PhotoFix = () => {
       // 2) 잡 생성만 하고 즉시 job_id 를 받는다(보정은 서버 백그라운드).
       const { data, error } = await (supabase as any).functions.invoke(
         "photo-enhance-batch",
-        { body: { source_paths: sourcePaths, body_preset: preset } },
+        { body: { source_paths: sourcePaths, options: Array.from(opts), custom_text: customText.trim() } },
       );
       if (error) {
         let code: string | undefined;
@@ -198,8 +210,8 @@ const PhotoFix = () => {
             초간단 고화질 AI 보정
           </p>
           <p className="mt-1 text-[12px] text-muted-foreground leading-relaxed">
-            색감·체형까지 한 번에. 모든 결과는 고화질로 출력돼요. 얼굴·정체성은
-            그대로 유지돼요. (전신 사진 권장)
+            선명도 개선은 기본으로 적용되고, 원하는 보정을 골라 조합할 수 있어요.
+            얼굴·정체성은 그대로 유지돼요. (전신 사진 권장)
           </p>
           <p className="mt-2 text-[12px] text-foreground">
             장당 {PER}하트 · 최대 {MAX_PHOTOS}장(묶음 {CAP}하트)
@@ -211,17 +223,22 @@ const PhotoFix = () => {
           </p>
         </section>
 
-        {/* 체형 보정 강도 (색감·고화질은 항상 기본 적용) */}
+        {/* 보정 옵션 (중복 선택) */}
         <section className="space-y-2">
-          <h3 className="text-sm font-bold text-foreground">체형 보정 강도</h3>
-          <div className="grid grid-cols-4 gap-2">
-            {PRESETS.map((p) => {
-              const on = preset === p.key;
+          <h3 className="text-sm font-bold text-foreground">
+            보정 옵션{" "}
+            <span className="text-[11px] text-muted-foreground font-normal">
+              (중복 선택 가능)
+            </span>
+          </h3>
+          <div className="grid grid-cols-3 gap-2">
+            {OPTIONS.map((o) => {
+              const on = opts.has(o.key);
               return (
                 <button
-                  key={p.key}
+                  key={o.key}
                   type="button"
-                  onClick={() => setPreset(p.key)}
+                  onClick={() => toggleOpt(o.key)}
                   className={`rounded-xl border px-1 py-2 text-center ${
                     on
                       ? "border-primary bg-primary/10"
@@ -231,17 +248,24 @@ const PhotoFix = () => {
                   <span
                     className={`block text-[12px] font-medium ${on ? "text-primary" : "text-foreground"}`}
                   >
-                    {p.label}
+                    {o.label}
                   </span>
                   <span className="block text-[10px] text-muted-foreground mt-0.5">
-                    {p.desc}
+                    {o.desc}
                   </span>
                 </button>
               );
             })}
           </div>
+          <textarea
+            value={customText}
+            onChange={(e) => setCustomText(e.target.value.slice(0, 200))}
+            placeholder="추가 요청사항 (예: 배경 더 환하게, 치아 미백, 잡티 제거 등) — 선택"
+            rows={2}
+            className="w-full rounded-xl border border-border bg-background p-3 text-[13px] resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+          />
           <p className="text-[11px] text-muted-foreground">
-            색감 보정과 고화질은 항상 기본으로 적용돼요.
+            선명도·화질 개선은 항상 기본 적용돼요. 색감은 ‘색감 보정’을 골라야 바뀌어요.
           </p>
         </section>
 
