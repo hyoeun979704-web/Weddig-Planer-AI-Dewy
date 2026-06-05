@@ -39,6 +39,13 @@ const cards: StudioCard[] = [
     href: "/ai-studio/makeup-room",
   },
   {
+    id: "hair-room",
+    title: "헤어 변형 미리보기",
+    description: "내 얼굴 그대로, 헤어스타일·컬러 9그리드 (옵션당 5하트)",
+    status: "active",
+    href: "/ai-studio/hair-room",
+  },
+  {
     id: "paper-invitation",
     title: "정성가득 종이 청첩장",
     description: "인쇄용 PDF로 받는 종이 청첩장 — 무료 템플릿 시작",
