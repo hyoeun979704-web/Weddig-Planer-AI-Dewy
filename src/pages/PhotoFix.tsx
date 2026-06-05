@@ -80,8 +80,8 @@ const PhotoFix = () => {
             break;
           }
           if (!f.type.startsWith("image/")) continue;
-          if (f.size > 5 * 1024 * 1024) {
-            toast({ title: `${f.name} 이 너무 커요 (5MB 초과)` });
+          if (f.size > 20 * 1024 * 1024) {
+            toast({ title: `${f.name} 이 너무 커요 (20MB 초과)` });
             continue;
           }
           next.push({ file: f, url: URL.createObjectURL(f) });

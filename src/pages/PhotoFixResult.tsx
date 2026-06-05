@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { removePendingJob } from "@/lib/pendingJobs";
+import ProcessingGuide from "@/components/ProcessingGuide";
 
 // 사진보정 결과 (/ai-studio/photo-fix/result/:id)
 // photo_retouch_jobs row 폴링 — processing/completed/failed.
@@ -18,6 +19,7 @@ interface JobRow {
   id: string;
   status: "processing" | "completed" | "failed";
   results: ResultItem[] | null;
+  source_paths: string[] | null;
   error: string | null;
   charged: number | null;
   created_at: string;
@@ -42,7 +44,7 @@ const PhotoFixResult = () => {
     if (!id) return;
     const { data, error } = await (supabase as any)
       .from("photo_retouch_jobs")
-      .select("id, status, results, error, charged, created_at")
+      .select("id, status, results, source_paths, error, charged, created_at")
       .eq("id", id)
       .single();
     if (error || !data) {
@@ -147,12 +149,17 @@ const PhotoFixResult = () => {
               </div>
             </div>
           ) : (
-            <div className="py-20 flex flex-col items-center gap-3 text-center">
+            <div className="py-10 flex flex-col items-center gap-3 text-center">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">사진을 보정하는 중이에요…</p>
-              <p className="text-[12px] text-muted-foreground/80 leading-relaxed px-6">
-                창을 닫거나 다른 페이지로 가도 계속 진행돼요. 완료되면 알림으로 알려드릴게요.
+              <p className="text-sm text-muted-foreground">
+                사진 {job.source_paths?.length ?? 0}장을 보정하는 중이에요…
               </p>
+              <ProcessingGuide
+                etaText={(() => {
+                  const n = job.source_paths?.length ?? 1;
+                  return n <= 2 ? "1~2분" : n <= 5 ? "2~4분" : "4~6분";
+                })()}
+              />
             </div>
           )
         ) : (

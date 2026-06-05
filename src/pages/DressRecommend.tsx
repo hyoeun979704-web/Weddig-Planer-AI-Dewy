@@ -99,8 +99,8 @@ const DressRecommend = () => {
     e.target.value = "";
     if (!file || !user) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "파일이 너무 커요 (최대 5MB)", variant: "destructive" });
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: "파일이 너무 커요 (최대 20MB)", variant: "destructive" });
       return;
     }
     if (!file.type.startsWith("image/")) {
@@ -405,7 +405,7 @@ const PhotoStep = ({
       >
         <Upload className="w-8 h-8 text-muted-foreground" />
         <p className="text-sm font-medium text-foreground">사진 선택</p>
-        <p className="text-[11px] text-muted-foreground">JPG/PNG, 최대 5MB</p>
+        <p className="text-[11px] text-muted-foreground">JPG/PNG, 최대 20MB</p>
       </button>
     )}
   </section>
