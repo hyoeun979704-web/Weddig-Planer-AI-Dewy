@@ -18,13 +18,6 @@ interface StudioCard {
 
 const cards: StudioCard[] = [
   {
-    id: "photo-fix",
-    title: "고화질 웨딩 보정",
-    description: "색감·체형까지 초간단 고화질 AI 보정 — 1회 최대 8장 (첫 1회 50%↓)",
-    status: "active",
-    href: "/ai-studio/photo-fix",
-  },
-  {
     id: "wedding-consulting",
     title: "2026 웨딩컨설팅",
     description: "퍼스널컬러·헤어·메이크업·드레스 맞춤 A4 리포트 (첫 1회 50%↓)",

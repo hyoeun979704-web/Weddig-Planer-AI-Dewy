@@ -95,6 +95,10 @@ const SHARED =
   "fabricate her full body or full-length figure. Use her photo ONLY in face / hair / " +
   "neckline head-and-shoulders panels; render dresses as faceless croquis on a dress form, " +
   "and bouquets / jewelry / veils / fabrics as real photographic objects — not on her body.\n" +
+  "IDENTITY LOCK — in EVERY panel that shows the bride, keep her face, facial features " +
+  "(eyes, nose, lips, jawline), head shape, skin tone and identity EXACTLY the same as the " +
+  "provided photo. Maintain perfect facial consistency across all panels — no drift, no age, " +
+  "expression or makeup change, no stylization. Ultra-realistic, sharp focus.\n" +
   "Korean must be correct and legible. HEADER BAND y0–9% (serif title left, EN subtitle " +
   "under it, hairline at band bottom). FOOTER y93–98%: centered 'DEWY · 2026 WEDDING'. " +
   "Avoid: gibberish/broken letters, random Latin filler, watermarks, extra people, face " +
@@ -132,10 +136,10 @@ function boardPrompt(section: Section, a: any): string {
       ) +
       "\n[WIREFRAME] TITLE 'HAIRSTYLE BOARD' / SUB 'BRIDAL HAIR STYLING GUIDE'. " +
       "BAND1 y10–28%: [x4–28% 신부 셀카 포트레이트] [x30–62% ① 얼굴형·골격: 머리 다이어그램에 볼륨 ADD vs REDUCE 영역 표시] [x64–96% ② 모발 분석 6항목([DATA] 값 그대로)]. " +
-      "HERO BAND2 y29–52% (와이드): ③ 추천 컷 6종 — 신부 얼굴에 합성한 가로 2×3 미니썸네일(롱레이어·페이스프레이밍·로브·밥·업스타일·반올림), 각 어울림 %, 6컷은 서로 분명히 다른 헤어. " +
-      "BAND3 y53–68% (3컬럼): [④ 앞머리 3옵션 커튼/시스루/없음] [⑤ 스타일링 4옵션 로우번·시뇽·다운웨이브·포니] [⑥ 헤어 컬러 셰이드 스와치 라인업 + 대체톤([DATA] dye_shades)]. " +
-      "BAND4 y69–82%: [x4–55% ⑦ 붙임머리·부분가발 커버 구간: 머리 실루엣에 정수리/길이/옆숱] [x58–96% 베일 페어링 + 피해야 할 스타일 1줄]. " +
-      "BAND5 y83–91% (와이드): ⑧ YOU IN DIFFERENT LOOKS — 신부 head-and-shoulders 4변형(추천 컷/길이/컬러)."
+      "HERO BAND2 y29–52% (와이드): ③ 추천 컷 6종 — 신부 얼굴에 합성한 가로 2×3 미니썸네일(롱레이어·페이스프레이밍·로브·밥·업스타일·반올림), 모두 동일 인물(이목구비 고정), 헤어만 다름. 각 썸네일에 어울림 %를 크게 표기(필수). " +
+      "BAND3 y53–68% (2컬럼): [x4–46% ④ 앞머리 3옵션 커튼/시스루/없음, 각 어울림 % 표기] [x48–96% ⑤ 헤어 컬러 예시 4종 — 신부 머리를 각 염색 톤으로 실제로 보여주는 작은 미리보기 이미지(동일 인물, 헤어 컬러만 변경) + 이름·HEX([DATA] dye_shades)]. " +
+      "BAND4 y69–82%: [x4–55% ⑥ 붙임머리·부분가발 커버 구간: 머리 실루엣에 정수리/길이/옆숱] [x58–96% 베일 페어링 + 피해야 할 스타일 1줄]. " +
+      "BAND5 y83–91% (와이드): ⑦ YOU IN DIFFERENT LOOKS — 신부 head-and-shoulders 4변형(추천 컷/길이/컬러), 모두 동일 인물(이목구비 고정)."
     );
   }
   if (section === "makeup") {
@@ -148,7 +152,7 @@ function boardPrompt(section: Section, a: any): string {
       ) +
       "\n[WIREFRAME] TITLE 'MAKEUP BOARD' / SUB 'BRIDAL MAKEUP STYLING GUIDE'. " +
       "BAND1 y10–28%: [x4–28% 신부 셀카 포트레이트] [x30–62% ① 페이셜 맵: 얼굴 라인드로잉에 컨투어/하이라이트 존] [x64–96% ② 이목구비 보정: 눈·코·입·턱 각 1팁([DATA])]. " +
-      "HERO BAND2 y29–50% (와이드 3패널): ③ 장소별 룩 — 실내홀/야외·자연광/스튜디오, 각 신부 얼굴 미리보기. 세 패널은 마감·강도가 VISIBLY 다르게(홀=세미매트·또렷음영, 야외=속광·내추럴, 스튜디오=HD·고채도) — 같은 얼굴 복붙 금지. " +
+      "HERO BAND2 y29–50% (와이드 3패널): ③ 장소별 룩 — 실내홀/야외·자연광/스튜디오, 각 신부 얼굴 미리보기(동일 인물, 이목구비 고정). 세 패널은 메이크업 마감·광·음영이 확연히 다르게(홀=세미매트·또렷음영 / 야외=속광·내추럴·연한 메이크업 / 스튜디오=HD·고채도·또렷 아이라인) — 절대 같은 이미지 복붙 금지, 각 패널 상단에 홀/야외/스튜디오 라벨. " +
       "BAND3 y51–66%: [x4–48% ④ 부위별 컬러 4스와치+제형([DATA] lip/cheek/eye+베이스)] [x52–96% ⑤ 베이스·스킨 가이드: skin_base별 제형·커버]. " +
       "BAND4 y67–84% (와이드 3패널): ⑥ TRY-ON — 신부 얼굴 데이/내추럴/글램, 세 룩 강도가 분명히 다르게. " +
       "BAND5 y85–91%: [x4–55% ⑦ 추천 카테고리(립·치크·아이·픽서 타입)] [x58–96% ⑧ 피해야 할 메이크업 + QUICK TIP]."
@@ -162,8 +166,8 @@ function boardPrompt(section: Section, a: any): string {
         `dress_white=${a?.dress_white?.name}(${a?.dress_white?.hex}); metal=${a.metal}; season=${a.season_ko}; flower_palette=${swatches(a.flower_palette)}`,
     ) +
     "\n[WIREFRAME] TITLE 'DRESS & BOUQUET BOARD' / SUB 'BRIDAL DRESS STYLING GUIDE'. " +
-    "BAND1 y10–28%: [x4–32% ① 넥라인 매칭: 신부 셀카(얼굴+목·어깨) 기준 1순위 넥라인을 어깨라인 위 일러스트로 오버레이 + 이유] [x34–64% ② 추천 넥라인 4종: 하트·스퀘어·오프숄더·보트넥 미니 일러스트(faceless 어깨 실루엣), 각 적합도] [x66–96% ③ 드레스 화이트 톤 스와치([DATA] dress_white) + 메탈톤 칩]. " +
-    "HERO BAND2 y29–54% (와이드 4컷): ④ 실루엣 CROQUIS 4종 — 볼가운·A라인·머메이드·엠파이어, faceless 패션 일러스트(드레스폼/마네킹), 각 핏·장소·소재 한 줄. 신부 몸 금지. " +
+    "BAND1 y10–28%: [x4–32% ① 넥라인 매칭: 신부 셀카(얼굴+목·어깨) 기준 1순위 넥라인을 어깨라인 위 일러스트로 오버레이 + 이유] [x34–64% ② 추천 넥라인 4종: 하트·스퀘어·오프숄더·보트넥 미니 일러스트(faceless 어깨 실루엣), 각 적합도 %를 크게 표기(필수)] [x66–96% ③ 드레스 화이트 톤 스와치([DATA] dress_white) + 메탈톤 칩]. " +
+    "HERO BAND2 y29–54% (와이드 4컷): ④ 실루엣 CROQUIS 4종 — 볼가운·A라인·머메이드·엠파이어, faceless 패션 일러스트(드레스폼/마네킹), 각 컷에 적합도 %를 크게 표기(필수) + 핏·장소·소재 한 줄. 신부 몸 금지. " +
     "BAND3 y55–70% (사진형 3패널): ⑤ 부케 3스타일 — 라운드·캐스케이드·내추럴, 실제 사진풍 부케 + 시즌 플라워 컬러 팔레트 칩([DATA] flower_palette, 이름+HEX). " +
     "BAND4 y71–91% (사진형 3컬럼): [⑥ 패브릭: 실크·새틴·튤·레이스·미카도 실제 원단 텍스처 5종 + 광택·계절감] [⑦ 주얼리: 귀걸이·목걸이·헤드피스 실제 사진풍, BEST 행 vs AVOID 행] [⑧ 베일: 블러셔·엘보우·채플·캐서드럴 길이 CROQUIS + 추천 1종]."
   );
@@ -190,6 +194,7 @@ async function generateBoard(
     form.append("prompt", boardPrompt(section, analysis ?? {}));
     form.append("size", "1024x1536");
     form.append("quality", "high");
+    form.append("input_fidelity", "high");
     form.append("n", "1");
     form.append("image[]", blob, "bride.png");
     const res = await fetch("https://api.openai.com/v1/images/edits", {

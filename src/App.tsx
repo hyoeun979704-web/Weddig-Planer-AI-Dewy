@@ -41,9 +41,6 @@ const BudgetHistory = lazy(() => import("./pages/BudgetHistory"));
 const BudgetCategoryDetail = lazy(() => import("./pages/BudgetCategoryDetail"));
 const Schedule = lazy(() => import("./pages/Schedule"));
 const AIStudio = lazy(() => import("./pages/AIStudio"));
-const PhotoFix = lazy(() => import("./pages/PhotoFix"));
-const PhotoFixResult = lazy(() => import("./pages/PhotoFixResult"));
-const PhotoFixGallery = lazy(() => import("./pages/PhotoFixGallery"));
 const WeddingConsulting = lazy(() => import("./pages/WeddingConsulting"));
 const ConsultingResult = lazy(() => import("./pages/ConsultingResult"));
 const ConsultingGallery = lazy(() => import("./pages/ConsultingGallery"));
@@ -277,9 +274,6 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />
-              <Route path="/ai-studio/photo-fix" element={<PhotoFix />} />
-              <Route path="/ai-studio/photo-fix/result/:id" element={<PhotoFixResult />} />
-              <Route path="/ai-studio/photo-fix/gallery" element={<PhotoFixGallery />} />
               <Route path="/ai-studio/consulting" element={<WeddingConsulting />} />
               <Route path="/ai-studio/consulting/result/:id" element={<ConsultingResult />} />
               <Route path="/ai-studio/consulting/gallery" element={<ConsultingGallery />} />
