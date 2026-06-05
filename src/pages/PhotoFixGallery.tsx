@@ -49,7 +49,7 @@ const PhotoFixGallery = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
-      <PageHeader title="내 사진보정" />
+      <PageHeader title="내 웨딩 보정" />
 
       <main className="px-4 py-5">
         {loading ? (
@@ -60,7 +60,7 @@ const PhotoFixGallery = () => {
           <EmptyState
             icon={Sparkles}
             title="아직 보정한 사진이 없어요"
-            description="흐린 웨딩 사진의 해상도와 선명도를 AI가 올려드려요."
+            description="색감·체형까지 초간단 고화질 AI 보정을 받아보세요."
             action={
               <Button onClick={() => navigate("/ai-studio/photo-fix")}>
                 <Plus className="w-4 h-4 mr-1" />첫 사진 보정하기

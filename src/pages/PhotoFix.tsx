@@ -8,12 +8,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { addPendingJob } from "@/lib/pendingJobs";
 
-// 초간단 사진보정 — 1회 최대 8장 일괄 화질 개선.
+// 사진 체형 보정 — 1회 최대 8장 일괄. 화질 개선 기본 + 슬림/비율 보정.
 // 가격: 장당 5하트, n장 = min(n*5, 35). 계정당 첫 1회 50% 할인(반올림).
 const PER = 5;
 const CAP = 35;
 const MAX_PHOTOS = 8;
 const baseCost = (n: number) => Math.min(n * PER, CAP);
+
+type BodyPreset = "slim_soft" | "slim_strong" | "proportion" | "none";
+const PRESETS: { key: BodyPreset; label: string; desc: string }[] = [
+  { key: "slim_soft", label: "자연스럽게", desc: "살짝 슬림" },
+  { key: "slim_strong", label: "확실하게", desc: "더 슬림하게" },
+  { key: "proportion", label: "비율·다리", desc: "다리 길이·자세" },
+  { key: "none", label: "화질만", desc: "체형 변형 없음" },
+];
 
 interface Pick {
   file: File;
@@ -36,6 +44,7 @@ const PhotoFix = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [picks, setPicks] = useState<Pick[]>([]);
+  const [preset, setPreset] = useState<BodyPreset>("slim_soft");
   const [discounted, setDiscounted] = useState<boolean | null>(null); // 첫 1회 여부
   const [processing, setProcessing] = useState(false);
   const [jobs, setJobs] = useState<JobRow[]>([]);
@@ -107,9 +116,10 @@ const PhotoFix = () => {
       return;
     }
     if (picks.length === 0) return;
+    const presetLabel = PRESETS.find((p) => p.key === preset)?.label ?? "";
     if (
       !window.confirm(
-        `사진 ${picks.length}장 화질 보정에 ${finalCost}하트가 차감돼요${discounted ? " (첫 1회 50% 할인 적용)" : ""}. 진행할까요?`,
+        `사진 ${picks.length}장 보정(${presetLabel})에 ${finalCost}하트가 차감돼요${discounted ? " (첫 1회 50% 할인 적용)" : ""}. 진행할까요?`,
       )
     )
       return;
@@ -131,7 +141,7 @@ const PhotoFix = () => {
       // 2) 잡 생성만 하고 즉시 job_id 를 받는다(보정은 서버 백그라운드).
       const { data, error } = await (supabase as any).functions.invoke(
         "photo-enhance-batch",
-        { body: { source_paths: sourcePaths } },
+        { body: { source_paths: sourcePaths, body_preset: preset } },
       );
       if (error) {
         let code: string | undefined;
@@ -175,18 +185,21 @@ const PhotoFix = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
-      <PageHeader title="초간단 사진보정" />
+      <PageHeader title="고화질 웨딩 보정" />
       <main className="px-4 py-5 space-y-5">
         <section className="rounded-2xl bg-pink-50 p-4">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
             <h2 className="text-sm font-bold text-foreground">
-              흐린 사진을 또렷하게
+              값비싼 보정은 그만!
             </h2>
           </div>
+          <p className="mt-1 text-[13px] font-semibold text-foreground">
+            초간단 고화질 AI 보정
+          </p>
           <p className="mt-1 text-[12px] text-muted-foreground leading-relaxed">
-            저화질·흔들린 웨딩 사진의 해상도와 선명도를 AI가 올려드려요. 얼굴·구도는
-            그대로 유지돼요. (몸매 보정은 별도 기능)
+            색감·체형까지 한 번에. 모든 결과는 고화질로 출력돼요. 얼굴·정체성은
+            그대로 유지돼요. (전신 사진 권장)
           </p>
           <p className="mt-2 text-[12px] text-foreground">
             장당 {PER}하트 · 최대 {MAX_PHOTOS}장(묶음 {CAP}하트)
@@ -195,6 +208,40 @@ const PhotoFix = () => {
                 · 첫 1회 50% 할인
               </span>
             )}
+          </p>
+        </section>
+
+        {/* 체형 보정 강도 (색감·고화질은 항상 기본 적용) */}
+        <section className="space-y-2">
+          <h3 className="text-sm font-bold text-foreground">체형 보정 강도</h3>
+          <div className="grid grid-cols-4 gap-2">
+            {PRESETS.map((p) => {
+              const on = preset === p.key;
+              return (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => setPreset(p.key)}
+                  className={`rounded-xl border px-1 py-2 text-center ${
+                    on
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-background"
+                  }`}
+                >
+                  <span
+                    className={`block text-[12px] font-medium ${on ? "text-primary" : "text-foreground"}`}
+                  >
+                    {p.label}
+                  </span>
+                  <span className="block text-[10px] text-muted-foreground mt-0.5">
+                    {p.desc}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            색감 보정과 고화질은 항상 기본으로 적용돼요.
           </p>
         </section>
 
