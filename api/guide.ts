@@ -102,7 +102,13 @@ function renderGuide(g: AeoGuide): Rendered {
     : "";
 
   const relatedHtml = g.related.length
-    ? `<nav aria-label="관련 기능"><ul>${g.related
+    ? `<h2>Dewy에서 바로 해보기</h2><nav aria-label="관련 기능"><ul>${g.related
+        .map((r) => `<li><a href="${esc(r.path)}">${esc(r.label)}</a></li>`)
+        .join("")}</ul></nav>`
+    : "";
+
+  const relatedGuidesHtml = g.relatedGuides.length
+    ? `<h2>관련 가이드</h2><nav aria-label="관련 가이드"><ul>${g.relatedGuides
         .map((r) => `<li><a href="${esc(r.path)}">${esc(r.label)}</a></li>`)
         .join("")}</ul></nav>`
     : "";
@@ -120,6 +126,8 @@ function renderGuide(g: AeoGuide): Rendered {
       ${tableHtml}
       ${faqHtml}
       ${relatedHtml}
+      ${relatedGuidesHtml}
+      <p>최종 업데이트: ${esc(g.updated)}</p>
     </main>`;
 
   return { title: g.title, description: metaDesc, canonical, head, body };

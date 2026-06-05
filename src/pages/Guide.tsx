@@ -128,6 +128,28 @@ const Guide = ({ slug }: { slug: string }) => {
               </div>
             </section>
           )}
+
+          {/* 관련 가이드(토픽 클러스터 상호링크) */}
+          {guide.relatedGuides.length > 0 && (
+            <section className="space-y-2">
+              <h2 className="text-base font-semibold">관련 가이드</h2>
+              <ul className="space-y-1.5">
+                {guide.relatedGuides.map((r) => (
+                  <li key={r.path}>
+                    <button
+                      onClick={() => navigate(r.path)}
+                      className="flex w-full items-center justify-between gap-1 text-left text-sm text-primary hover:underline"
+                    >
+                      <span>{r.label}</span>
+                      <ChevronRight className="w-4 h-4 shrink-0" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <p className="pt-2 text-xs text-muted-foreground">최종 업데이트: {guide.updated}</p>
         </article>
       </main>
 
