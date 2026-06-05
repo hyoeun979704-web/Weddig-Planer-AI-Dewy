@@ -180,16 +180,18 @@ serve(async (req) => {
     const job = (async () => {
       try {
         const results: { source: string; path: string }[] = [];
-        for (const sourcePath of paths) {
+        // 한 장 보정. high 1장 ≈ 2~3분 → 워커 월클럭 안에 들도록 동시성 제한(4)으로
+        // 병렬 실행(전체 wall-clock ≈ 가장 느린 장, 합이 아님).
+        const processOne = async (sourcePath: string) => {
           try {
             const { data: srcBlob, error: dlErr } = await admin.storage
               .from("invitation-uploads").download(sourcePath);
-            if (dlErr || !srcBlob) continue;
+            if (dlErr || !srcBlob) return;
             const form = new FormData();
             form.append("model", "gpt-image-2");
             form.append("prompt", prompt);
             form.append("size", "auto");
-            form.append("quality", "medium");
+            form.append("quality", "high");
             form.append("n", "1");
             form.append("image[]", srcBlob, "source.png");
             const res = await fetch("https://api.openai.com/v1/images/edits", {
@@ -199,11 +201,11 @@ serve(async (req) => {
             });
             if (!res.ok) {
               console.error(`OpenAI ${res.status}:`, (await res.text()).slice(0, 200));
-              continue;
+              return;
             }
             const data = (await res.json()) as { data: { b64_json?: string; url?: string }[] };
             const item = data.data?.[0];
-            if (!item) continue;
+            if (!item) return;
             const outBlob = item.b64_json
               ? base64ToBlob(item.b64_json, "image/png")
               : await (await fetch(item.url!)).blob();
@@ -212,12 +214,22 @@ serve(async (req) => {
             const { error: upErr } = await admin.storage
               .from("invitation-uploads")
               .upload(outPath, outBlob, { contentType: "image/png", upsert: false });
-            if (upErr) continue;
+            if (upErr) return;
             results.push({ source: sourcePath, path: outPath });
           } catch (e) {
             console.error(`enhance fail ${sourcePath}:`, e);
           }
-        }
+        };
+        const CONCURRENCY = 4;
+        let cursor = 0;
+        await Promise.all(
+          Array.from({ length: Math.min(CONCURRENCY, paths.length) }, async () => {
+            while (cursor < paths.length) {
+              const idx = cursor++;
+              await processOne(paths[idx]);
+            }
+          }),
+        );
 
         const ok = results.length;
         const failed = paths.length - ok;
