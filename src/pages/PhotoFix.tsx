@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Upload, X, Download, Sparkles } from "lucide-react";
+import { Loader2, Upload, X, Sparkles, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { addPendingJob } from "@/lib/pendingJobs";
 
 // 초간단 사진보정 — 1회 최대 8장 일괄 화질 개선.
 // 가격: 장당 5하트, n장 = min(n*5, 35). 계정당 첫 1회 50% 할인(반올림).
@@ -18,11 +19,18 @@ interface Pick {
   file: File;
   url: string; // 미리보기 objectURL
 }
-interface ResultItem {
-  source: string;
-  path: string;
-  url: string | null;
+interface JobRow {
+  id: string;
+  status: "processing" | "completed" | "failed";
+  source_paths: string[];
+  created_at: string;
 }
+
+const STATUS_LABEL: Record<string, string> = {
+  processing: "보정 중",
+  completed: "완료",
+  failed: "실패",
+};
 
 const PhotoFix = () => {
   const navigate = useNavigate();
@@ -30,7 +38,7 @@ const PhotoFix = () => {
   const [picks, setPicks] = useState<Pick[]>([]);
   const [discounted, setDiscounted] = useState<boolean | null>(null); // 첫 1회 여부
   const [processing, setProcessing] = useState(false);
-  const [results, setResults] = useState<ResultItem[] | null>(null);
+  const [jobs, setJobs] = useState<JobRow[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // 첫 1회 할인 여부(계정당) 조회
@@ -43,6 +51,20 @@ const PhotoFix = () => {
         .eq("user_id", user.id)
         .maybeSingle();
       setDiscounted((data?.used_count ?? 0) === 0);
+    })();
+  }, [user]);
+
+  // 내 보정 기록 — 진행중/완료 결과를 다시 확인.
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("photo_retouch_jobs")
+        .select("id, status, source_paths, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setJobs((data ?? []) as JobRow[]);
     })();
   }, [user]);
 
@@ -93,7 +115,6 @@ const PhotoFix = () => {
       return;
 
     setProcessing(true);
-    setResults(null);
     try {
       // 1) 업로드 → 본인 폴더 경로 수집
       const sourcePaths: string[] = [];
@@ -107,7 +128,7 @@ const PhotoFix = () => {
         sourcePaths.push(path);
       }
 
-      // 2) 일괄 보정 호출
+      // 2) 잡 생성만 하고 즉시 job_id 를 받는다(보정은 서버 백그라운드).
       const { data, error } = await (supabase as any).functions.invoke(
         "photo-enhance-batch",
         { body: { source_paths: sourcePaths } },
@@ -130,18 +151,20 @@ const PhotoFix = () => {
           });
           return;
         }
-        throw new Error(code ?? error.message ?? "보정 실패");
+        throw new Error(code ?? error.message ?? "보정 요청 실패");
       }
       if (data?.error) throw new Error(data.error);
-      setResults((data?.results ?? []) as ResultItem[]);
+
+      const jobId = data?.job_id as string | undefined;
+      if (!jobId) throw new Error("보정 요청 실패");
+
+      // 완료 알림을 위해 진행중 잡 등록 → 결과 페이지로 이동(거기서 폴링).
+      addPendingJob({ id: jobId, type: "photo" });
       setDiscounted(false); // 첫 할인 소진
-      toast({
-        title: "보정 완료",
-        description: `${data?.results?.length ?? 0}장 · ${data?.charged ?? finalCost}하트 사용`,
-      });
+      navigate(`/ai-studio/photo-fix/result/${jobId}`);
     } catch (e) {
       toast({
-        title: "보정 실패",
+        title: "보정 요청 실패",
         description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
@@ -223,36 +246,51 @@ const PhotoFix = () => {
           />
         </section>
 
-        {/* 결과 */}
-        {results && results.length > 0 && (
+        {/* 내 보정 기록 — 진행중/완료 결과를 다시 확인 */}
+        {jobs.length > 0 && (
           <section className="space-y-2">
-            <h3 className="text-sm font-bold text-foreground">보정 결과</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {results.map((r, i) =>
-                r.url ? (
-                  <a
-                    key={i}
-                    href={r.url}
-                    download
-                    target="_blank"
-                    rel="noreferrer"
-                    className="relative aspect-square rounded-lg overflow-hidden bg-muted block"
-                  >
-                    <img
-                      src={r.url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                    <span className="absolute bottom-1 right-1 bg-black/60 text-white rounded-full p-1.5">
-                      <Download className="w-3.5 h-3.5" />
+            <h3 className="text-sm font-bold text-foreground">내 보정 기록</h3>
+            <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+              {jobs.map((j) => (
+                <button
+                  key={j.id}
+                  type="button"
+                  onClick={() => navigate(`/ai-studio/photo-fix/result/${j.id}`)}
+                  className="w-full flex items-center justify-between px-3 py-3 bg-background active:bg-muted/40"
+                >
+                  <div className="text-left">
+                    <p className="text-[13px] font-medium text-foreground">
+                      사진 {j.source_paths?.length ?? 0}장
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(j.created_at).toLocaleString("ko-KR", {
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-[11px] font-semibold ${
+                        j.status === "completed"
+                          ? "text-primary"
+                          : j.status === "failed"
+                            ? "text-destructive"
+                            : "text-muted-foreground"
+                      }`}
+                    >
+                      {j.status === "processing" && (
+                        <Loader2 className="inline w-3 h-3 mr-0.5 animate-spin" />
+                      )}
+                      {STATUS_LABEL[j.status] ?? j.status}
                     </span>
-                  </a>
-                ) : null,
-              )}
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                </button>
+              ))}
             </div>
-            <p className="text-[11px] text-muted-foreground">
-              이미지를 탭하면 저장돼요. 다운로드 링크는 7일간 유효해요.
-            </p>
           </section>
         )}
       </main>
@@ -267,7 +305,7 @@ const PhotoFix = () => {
           {processing ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              보정 중… 수십 초 걸릴 수 있어요
+              요청 중…
             </>
           ) : picks.length === 0 ? (
             "사진을 선택해주세요"

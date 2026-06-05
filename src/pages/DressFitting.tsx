@@ -35,6 +35,7 @@ import {
 import { describeDress } from "@/lib/dressDescription";
 import { FittingProgress } from "@/components/fitting/FittingProgress";
 import { labelOf } from "@/data/dressFilters";
+import { addPendingJob } from "@/lib/pendingJobs";
 
 /**
  * 방구석 드레스 투어 — AI 드레스 피팅 메인 페이지 (b-3).
@@ -272,7 +273,9 @@ const DressFitting = () => {
       }
 
       const fittingId = (data as any)?.fitting_id;
-      toast({ title: "생성 완료!" });
+      if (!fittingId) throw new Error("생성 요청 실패");
+      // 백그라운드 생성 시작 — 완료 알림을 위해 진행중 잡 등록 후 결과 페이지로.
+      addPendingJob({ id: fittingId, type: "dress" });
       await fetchHearts();
       navigate(`/ai-studio/dress-tour/result/${fittingId}`);
     } catch (err) {

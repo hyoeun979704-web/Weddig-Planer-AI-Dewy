@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import SessionTracker from "@/components/SessionTracker";
-import ConsultingNotifier from "@/components/ConsultingNotifier";
+import GenerationNotifier from "@/components/GenerationNotifier";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import AdminGuard from "@/components/admin/AdminGuard";
@@ -42,6 +42,7 @@ const BudgetCategoryDetail = lazy(() => import("./pages/BudgetCategoryDetail"));
 const Schedule = lazy(() => import("./pages/Schedule"));
 const AIStudio = lazy(() => import("./pages/AIStudio"));
 const PhotoFix = lazy(() => import("./pages/PhotoFix"));
+const PhotoFixResult = lazy(() => import("./pages/PhotoFixResult"));
 const WeddingConsulting = lazy(() => import("./pages/WeddingConsulting"));
 const ConsultingResult = lazy(() => import("./pages/ConsultingResult"));
 const Community = lazy(() => import("./pages/Community"));
@@ -275,6 +276,7 @@ const App = () => (
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/photo-fix" element={<PhotoFix />} />
+              <Route path="/ai-studio/photo-fix/result/:id" element={<PhotoFixResult />} />
               <Route path="/ai-studio/consulting" element={<WeddingConsulting />} />
               <Route path="/ai-studio/consulting/result/:id" element={<ConsultingResult />} />
               <Route path="/ai-studio/dress-tour" element={<DressFitting />} />
@@ -319,8 +321,8 @@ const App = () => (
           {/* First-time tutorial welcome sheet — uses useNavigate so it
               must live inside BrowserRouter. Self-gates on user + onboarding. */}
           <TutorialWelcomeSheet />
-          {/* 웨딩컨설팅 백그라운드 잡 완료 알림 — useNavigate 사용. */}
-          <ConsultingNotifier />
+          {/* 생성 기능 백그라운드 잡 완료 알림(컨설팅/드레스/메이크업/사진보정). */}
+          <GenerationNotifier />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

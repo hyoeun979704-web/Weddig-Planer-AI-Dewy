@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { makeupSceneByCode } from "@/data/makeupScenes";
+import { removePendingJob } from "@/lib/pendingJobs";
 
 interface FittingRow {
   id: string;
@@ -57,6 +58,11 @@ const MakeupFittingResult = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  // 결과를 직접 보고 있으니 전역 알림 큐에서 제거(중복 토스트 방지).
+  useEffect(() => {
+    if (id) removePendingJob(id);
+  }, [id]);
 
   useEffect(() => {
     if (fitting?.status !== "pending" || polls >= MAX_POLLS) return;

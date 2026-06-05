@@ -1,12 +1,14 @@
-// 초간단 사진보정(화질) — 1회 최대 8장 일괄 화질 개선.
+// 초간단 사진보정(화질) — 1회 최대 8장 일괄 화질 개선 (비동기 잡).
 //
 // 정체성 유지 + 해상도/선명도 개선(몸매보정 없음). gpt-image-2 images/edits.
+// 흐름: processing 잡 즉시 생성 → job_id 반환(202) → EdgeRuntime.waitUntil 로
+// 각 장 백그라운드 보정 → photo_retouch_jobs 갱신. 결과는 path 저장(클라가 서명).
 //
 // 가격: 장당 5하트, n장 = min(n*5, 35) (8장 묶음 35 상한).
 //   계정당 첫 1회는 50% 할인(반올림). 실패한 장수만큼 비례 환불.
 //
 // 입력: { source_paths: string[] }  (본인 폴더, 1~8장)
-// 출력: { results: {source,path,url}[], charged, discounted }
+// 출력: { job_id, status:"processing", charged, discounted }
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -105,73 +107,113 @@ serve(async (req) => {
       return json({ error: "insufficient_hearts", message: spendRow?.message, required: finalCost }, 402);
     }
 
-    // 각 장 처리
-    const results: { source: string; path: string; url: string | null }[] = [];
-    for (const sourcePath of paths) {
-      try {
-        const { data: srcBlob, error: dlErr } = await admin.storage
-          .from("invitation-uploads").download(sourcePath);
-        if (dlErr || !srcBlob) continue;
-        const form = new FormData();
-        form.append("model", "gpt-image-2");
-        form.append("prompt", ENHANCE_PROMPT);
-        form.append("size", "auto");
-        form.append("quality", "high");
-        form.append("n", "1");
-        form.append("image[]", srcBlob, "source.png");
-        const res = await fetch("https://api.openai.com/v1/images/edits", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-          body: form,
+    const refund = async (amount: number) => {
+      if (amount > 0)
+        await admin.rpc("earn_hearts", {
+          p_user_id: userId,
+          p_amount: amount,
+          p_reason: "photo_fix_batch_refund",
         });
-        if (!res.ok) {
-          console.error(`OpenAI ${res.status}:`, (await res.text()).slice(0, 200));
-          continue;
-        }
-        const data = (await res.json()) as { data: { b64_json?: string; url?: string }[] };
-        const item = data.data?.[0];
-        if (!item) continue;
-        const outBlob = item.b64_json
-          ? base64ToBlob(item.b64_json, "image/png")
-          : await (await fetch(item.url!)).blob();
-        const fname = sourcePath.split("/").pop() ?? "photo.png";
-        const outPath = `${userId}/enhanced/${crypto.randomUUID()}-${fname.replace(/\.[^.]+$/, "")}.png`;
-        const { error: upErr } = await admin.storage
-          .from("invitation-uploads")
-          .upload(outPath, outBlob, { contentType: "image/png", upsert: false });
-        if (upErr) continue;
-        const { data: signed } = await admin.storage
-          .from("invitation-uploads").createSignedUrl(outPath, 60 * 60 * 24 * 7);
-        results.push({ source: sourcePath, path: outPath, url: signed?.signedUrl ?? null });
-      } catch (e) {
-        console.error(`enhance fail ${sourcePath}:`, e);
-      }
-    }
+    };
 
-    const ok = results.length;
-    const failed = paths.length - ok;
-    const refund = failed > 0 ? (ok === 0 ? finalCost : Math.round((failed / paths.length) * finalCost)) : 0;
-    if (refund > 0) {
-      await admin.rpc("earn_hearts", {
-        p_user_id: userId,
-        p_amount: refund,
-        p_reason: "photo_fix_batch_refund",
-      });
-    }
-    if (ok === 0) return json({ error: "all_failed" }, 502);
-
-    // 사용 기록 증가(첫 할인 소진)
-    await admin.from("photo_retouch_usage").upsert(
-      {
+    // 진행중 잡 생성 → 즉시 응답. 무거운 보정은 백그라운드.
+    const { data: jobRow, error: jobErr } = await admin
+      .from("photo_retouch_jobs")
+      .insert({
         user_id: userId,
-        used_count: usedCount + ok,
-        first_free_used: true,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
-    );
+        status: "processing",
+        source_paths: paths,
+        results: [],
+        charged: finalCost,
+        discounted,
+      })
+      .select("id").single();
+    if (jobErr || !jobRow) { await refund(finalCost); return json({ error: "job_insert_failed" }, 500); }
+    const jobId = jobRow.id as string;
 
-    return json({ results, charged: finalCost - refund, discounted }, 200);
+    const finish = async (patch: Record<string, unknown>) => {
+      await admin.from("photo_retouch_jobs")
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq("id", jobId);
+    };
+
+    // ── 백그라운드: 클라가 페이지를 벗어나도 서버에서 계속 진행 ──
+    const job = (async () => {
+      try {
+        const results: { source: string; path: string }[] = [];
+        for (const sourcePath of paths) {
+          try {
+            const { data: srcBlob, error: dlErr } = await admin.storage
+              .from("invitation-uploads").download(sourcePath);
+            if (dlErr || !srcBlob) continue;
+            const form = new FormData();
+            form.append("model", "gpt-image-2");
+            form.append("prompt", ENHANCE_PROMPT);
+            form.append("size", "auto");
+            form.append("quality", "high");
+            form.append("n", "1");
+            form.append("image[]", srcBlob, "source.png");
+            const res = await fetch("https://api.openai.com/v1/images/edits", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+              body: form,
+            });
+            if (!res.ok) {
+              console.error(`OpenAI ${res.status}:`, (await res.text()).slice(0, 200));
+              continue;
+            }
+            const data = (await res.json()) as { data: { b64_json?: string; url?: string }[] };
+            const item = data.data?.[0];
+            if (!item) continue;
+            const outBlob = item.b64_json
+              ? base64ToBlob(item.b64_json, "image/png")
+              : await (await fetch(item.url!)).blob();
+            const fname = sourcePath.split("/").pop() ?? "photo.png";
+            const outPath = `${userId}/enhanced/${crypto.randomUUID()}-${fname.replace(/\.[^.]+$/, "")}.png`;
+            const { error: upErr } = await admin.storage
+              .from("invitation-uploads")
+              .upload(outPath, outBlob, { contentType: "image/png", upsert: false });
+            if (upErr) continue;
+            results.push({ source: sourcePath, path: outPath });
+          } catch (e) {
+            console.error(`enhance fail ${sourcePath}:`, e);
+          }
+        }
+
+        const ok = results.length;
+        const failed = paths.length - ok;
+        const refundAmt = failed > 0 ? (ok === 0 ? finalCost : Math.round((failed / paths.length) * finalCost)) : 0;
+        await refund(refundAmt);
+
+        if (ok === 0) { await finish({ status: "failed", error: "all_failed", charged: 0 }); return; }
+
+        await finish({ status: "completed", results, charged: finalCost - refundAmt });
+        // 사용 기록 증가(첫 할인 소진)
+        await admin.from("photo_retouch_usage").upsert(
+          {
+            user_id: userId,
+            used_count: usedCount + ok,
+            first_free_used: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" },
+        );
+      } catch (e) {
+        console.error("photo job error:", e);
+        await refund(finalCost);
+        await finish({ status: "failed", error: "server_error", charged: 0 });
+      }
+    })();
+
+    // @ts-ignore EdgeRuntime 은 런타임 전역
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(job);
+    } else {
+      await job; // 로컬/폴백
+    }
+
+    return json({ job_id: jobId, status: "processing", charged: finalCost, discounted }, 202);
   } catch (e) {
     console.error("photo-enhance-batch fatal:", e);
     return json({ error: "server_error" }, 500);

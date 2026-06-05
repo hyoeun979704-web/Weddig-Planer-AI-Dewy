@@ -127,127 +127,94 @@ serve(async (req) => {
     }
     const fittingId = fitting.id as string;
 
-    try {
-      const [userImgBlob, makeupImgBlob] = await Promise.all([
-        downloadFromStorage(
-          supabaseAdmin,
-          "makeup-uploads",
-          body.source_image_path,
-        ),
-        downloadFromUrl(makeup.image_url),
-      ]);
+    // 백그라운드 작업 — 페이지 이탈/창닫음에도 서버에서 계속 진행(즉시 202 반환).
+    const job = (async () => {
+      try {
+        const [userImgBlob, makeupImgBlob] = await Promise.all([
+          downloadFromStorage(supabaseAdmin, "makeup-uploads", body.source_image_path),
+          downloadFromUrl(makeup.image_url),
+        ]);
 
-      // OpenAI images.edit — 메이크업은 정사각 클로즈업이 더 자연스러움
-      const form = new FormData();
-      form.append("model", "gpt-image-2");
-      form.append("prompt", body.prompt);
-      form.append("size", "1024x1024");
-      form.append("quality", "medium");
-      form.append("n", "1");
-      form.append("image[]", userImgBlob, "user.png");
-      form.append("image[]", makeupImgBlob, "makeup.png");
+        // OpenAI images.edit — 메이크업은 정사각 클로즈업이 더 자연스러움
+        const form = new FormData();
+        form.append("model", "gpt-image-2");
+        form.append("prompt", body.prompt);
+        form.append("size", "1024x1024");
+        form.append("quality", "medium");
+        form.append("n", "1");
+        form.append("image[]", userImgBlob, "user.png");
+        form.append("image[]", makeupImgBlob, "makeup.png");
 
-      const openaiRes = await fetch("https://api.openai.com/v1/images/edits", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-        body: form,
-      });
-
-      if (!openaiRes.ok) {
-        const errText = await openaiRes.text();
-        console.error(`OpenAI error ${openaiRes.status}:`, errText);
-        await markFailed(supabaseAdmin, fittingId, `openai_${openaiRes.status}`);
-        await refundHearts(
-          supabaseAdmin,
-          userId,
-          HEART_COST,
-          "openai_fail",
-          fittingId,
-        );
-        return json(
-          { error: "generation_failed", detail: errText.substring(0, 200) },
-          502,
-        );
-      }
-
-      const openaiData = (await openaiRes.json()) as {
-        data: { b64_json?: string; url?: string }[];
-      };
-      const item = openaiData.data?.[0];
-      if (!item) {
-        await markFailed(supabaseAdmin, fittingId, "no_image_returned");
-        await refundHearts(
-          supabaseAdmin,
-          userId,
-          HEART_COST,
-          "openai_no_result",
-          fittingId,
-        );
-        return json({ error: "no_image_returned" }, 502);
-      }
-
-      const resultBlob = item.b64_json
-        ? base64ToBlob(item.b64_json, "image/png")
-        : await (await fetch(item.url!)).blob();
-
-      const resultPath = `${userId}/${fittingId}.png`;
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from("makeup-results")
-        .upload(resultPath, resultBlob, {
-          contentType: "image/png",
-          upsert: true,
+        const openaiRes = await fetch("https://api.openai.com/v1/images/edits", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+          body: form,
         });
-      if (uploadError) {
-        console.error("upload error:", uploadError);
-        await markFailed(supabaseAdmin, fittingId, "upload_fail");
-        await refundHearts(
+
+        if (!openaiRes.ok) {
+          const errText = await openaiRes.text();
+          console.error(`OpenAI error ${openaiRes.status}:`, errText);
+          await markFailed(supabaseAdmin, fittingId, `openai_${openaiRes.status}`);
+          await refundHearts(supabaseAdmin, userId, HEART_COST, "openai_fail", fittingId);
+          return;
+        }
+
+        const openaiData = (await openaiRes.json()) as {
+          data: { b64_json?: string; url?: string }[];
+        };
+        const item = openaiData.data?.[0];
+        if (!item) {
+          await markFailed(supabaseAdmin, fittingId, "no_image_returned");
+          await refundHearts(supabaseAdmin, userId, HEART_COST, "openai_no_result", fittingId);
+          return;
+        }
+
+        const resultBlob = item.b64_json
+          ? base64ToBlob(item.b64_json, "image/png")
+          : await (await fetch(item.url!)).blob();
+
+        const resultPath = `${userId}/${fittingId}.png`;
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from("makeup-results")
+          .upload(resultPath, resultBlob, { contentType: "image/png", upsert: true });
+        if (uploadError) {
+          console.error("upload error:", uploadError);
+          await markFailed(supabaseAdmin, fittingId, "upload_fail");
+          await refundHearts(supabaseAdmin, userId, HEART_COST, "upload_fail", fittingId);
+          return;
+        }
+
+        await supabaseAdmin
+          .from("makeup_fittings")
+          .update({
+            status: "done",
+            result_image_path: resultPath,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", fittingId);
+      } catch (innerError) {
+        console.error("inner error:", innerError);
+        await markFailed(
           supabaseAdmin,
-          userId,
-          HEART_COST,
-          "upload_fail",
           fittingId,
+          innerError instanceof Error ? innerError.message : "inner_error",
         );
-        return json({ error: "upload_fail" }, 500);
+        await refundHearts(supabaseAdmin, userId, HEART_COST, "inner_error", fittingId);
       }
+    })();
 
-      await supabaseAdmin
-        .from("makeup_fittings")
-        .update({
-          status: "done",
-          result_image_path: resultPath,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", fittingId);
-
-      const { data: signed } = await supabaseAdmin.storage
-        .from("makeup-results")
-        .createSignedUrl(resultPath, 60 * 60 * 24);
-
-      return json(
-        {
-          fitting_id: fittingId,
-          result_path: resultPath,
-          result_url: signed?.signedUrl ?? null,
-          balance_after: spendRow.balance_after,
-        },
-        200,
-      );
-    } catch (innerError) {
-      console.error("inner error:", innerError);
-      await markFailed(
-        supabaseAdmin,
-        fittingId,
-        innerError instanceof Error ? innerError.message : "inner_error",
-      );
-      await refundHearts(
-        supabaseAdmin,
-        userId,
-        HEART_COST,
-        "inner_error",
-        fittingId,
-      );
-      return json({ error: "generation_failed" }, 500);
+    // @ts-ignore EdgeRuntime 은 런타임 전역
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(job);
+    } else {
+      await job; // 로컬/폴백
     }
+
+    return json(
+      { fitting_id: fittingId, status: "pending", balance_after: spendRow.balance_after },
+      202,
+    );
   } catch (error) {
     console.error("dewy-makeup fatal:", error);
     return json({ error: "server_error" }, 500);

@@ -6,7 +6,7 @@ import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { removePendingJob } from "@/lib/consultingJobs";
+import { removePendingJob } from "@/lib/pendingJobs";
 
 // 2026 웨딩컨설팅 결과 (/ai-studio/consulting/result/:id)
 // reports row 를 폴링 — processing 이면 생성 중, completed 면 보드 표시, failed 면 안내.
