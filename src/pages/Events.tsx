@@ -8,10 +8,28 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { usePromotionalEvents, type PromotionalEvent } from "@/hooks/usePromotionalEvents";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import crownImg from "@/assets/events/crown.png";
+import coinImg from "@/assets/events/coin.png";
+import calendarImg from "@/assets/events/calendar.png";
+import bouquetImg from "@/assets/events/bouquet.png";
+import cameraImg from "@/assets/events/camera.png";
+import heartImg from "@/assets/events/heart.png";
+
+// slug → 일러스트 에셋. 기존 그래디언트 아이콘 박스를 대체. 매핑이 없는 slug 는
+// 기존 박스/이모지 폴백으로 표시(운영팀이 추가한 신규 카드 대비).
+const EVENT_ASSETS: Record<string, string> = {
+  welcome: crownImg,
+  referral: coinImg,
+  attendance: calendarImg,
+  mini_game: bouquetImg,
+  review: cameraImg,
+  partner_link: heartImg,
+};
 
 const EventListRow = ({ event }: { event: PromotionalEvent }) => {
   const navigate = useNavigate();
   const isEnded = event.status === "ended";
+  const asset = EVENT_ASSETS[event.slug];
   return (
     <button
       onClick={() => navigate(event.ctaPath)}
@@ -20,14 +38,26 @@ const EventListRow = ({ event }: { event: PromotionalEvent }) => {
         isEnded ? "bg-muted/60 border-transparent" : "bg-card border-border/60"
       )}
     >
-      <div
-        className={cn(
-          "w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br",
-          event.thumbBg ?? "from-muted to-muted"
-        )}
-      >
-        {event.icon && <span className="text-[28px]" aria-hidden>{event.icon}</span>}
-      </div>
+      {asset ? (
+        <img
+          src={asset}
+          alt=""
+          aria-hidden
+          className={cn(
+            "w-14 h-14 object-contain flex-shrink-0",
+            isEnded && "opacity-50 grayscale"
+          )}
+        />
+      ) : (
+        <div
+          className={cn(
+            "w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br",
+            event.thumbBg ?? "from-muted to-muted"
+          )}
+        >
+          {event.icon && <span className="text-[28px]" aria-hidden>{event.icon}</span>}
+        </div>
+      )}
       <div className="flex-1 min-w-0">
         <p className={cn("text-[13px] font-bold truncate", isEnded ? "text-muted-foreground" : "text-foreground")}>
           {event.title}
@@ -116,18 +146,28 @@ const Events = () => {
               onClick={() => navigate(user ? FEATURED.ctaPath : "/auth")}
               className="w-full rounded-2xl overflow-hidden border border-border/60 bg-card active:scale-[0.99] transition-transform text-left"
             >
-              <div className={cn("px-4 pt-4 pb-5 bg-gradient-to-br", FEATURED.thumbBg ?? "from-muted to-muted")}>
-                {FEATURED.badgeLabel && (
-                  <span className={cn(
-                    "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold",
-                    FEATURED.badgeColor ?? "bg-foreground text-background",
-                  )}>
-                    {FEATURED.badgeLabel}
-                  </span>
-                )}
-                <p className="mt-2 text-[18px] font-extrabold text-foreground leading-snug">{FEATURED.title}</p>
-                {FEATURED.subtitle && (
-                  <p className="mt-1 text-[12px] font-medium text-[#6B3F10]">{FEATURED.subtitle}</p>
+              <div className={cn("px-4 pt-4 pb-5 bg-gradient-to-br flex items-center gap-3", FEATURED.thumbBg ?? "from-muted to-muted")}>
+                <div className="flex-1 min-w-0">
+                  {FEATURED.badgeLabel && (
+                    <span className={cn(
+                      "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold",
+                      FEATURED.badgeColor ?? "bg-foreground text-background",
+                    )}>
+                      {FEATURED.badgeLabel}
+                    </span>
+                  )}
+                  <p className="mt-2 text-[18px] font-extrabold text-foreground leading-snug">{FEATURED.title}</p>
+                  {FEATURED.subtitle && (
+                    <p className="mt-1 text-[12px] font-medium text-[#6B3F10]">{FEATURED.subtitle}</p>
+                  )}
+                </div>
+                {EVENT_ASSETS[FEATURED.slug] && (
+                  <img
+                    src={EVENT_ASSETS[FEATURED.slug]}
+                    alt=""
+                    aria-hidden
+                    className="w-20 h-20 object-contain flex-shrink-0"
+                  />
                 )}
               </div>
               <div className="flex items-center justify-end px-4 py-3">

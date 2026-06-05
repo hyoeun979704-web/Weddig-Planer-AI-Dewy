@@ -22,6 +22,10 @@ export const useCoupleLink = () => {
   const [coupleLink, setCoupleLink] = useState<CoupleLink | null>(null);
   const [partnerProfile, setPartnerProfile] = useState<PartnerProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // couple_links.status='linked' 여도 user_wedding_settings.partner_user_id 가
+  // 동기화 안 됐으면 공유 기능이 실제로는 동작하지 않는 '반쪽 연동'. UI 가
+  // 가짜로 연결된 것처럼 보이지 않도록 별도 추적한다(자가복구도 시도).
+  const [settingsSynced, setSettingsSynced] = useState(true);
 
   const fetchCoupleLink = useCallback(async () => {
     if (!user) {
@@ -57,8 +61,23 @@ export const useCoupleLink = () => {
             .eq("user_id", partnerId)
             .maybeSingle();
           setPartnerProfile(profile);
+
+          // 자가복구 — 내 결혼 설정의 partner_user_id 가 실제 파트너와 일치하는지
+          // 확인. 불일치(옛 연동이라 미동기화 등)면 RLS 우회 RPC 로 양쪽 재동기화.
+          const { data: settings } = await (supabase
+            .from("user_wedding_settings") as any)
+            .select("partner_user_id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          const synced = (settings as any)?.partner_user_id === partnerId;
+          setSettingsSynced(synced);
+          if (!synced) {
+            const { data: res } = await (supabase as any).rpc("resync_couple_settings");
+            if ((res as { ok?: boolean })?.ok) setSettingsSynced(true);
+          }
         } else {
           setPartnerProfile(null);
+          setSettingsSynced(true);
         }
       } else {
         // 활성 링크 없음 — 이전 상태 잔여 제거(해제/만료 후).
@@ -203,16 +222,37 @@ export const useCoupleLink = () => {
     }
   };
 
+  // 사용자가 직접 누르는 '재동기화' — 자동 복구가 실패했을 때의 수동 경로.
+  const resyncSettings = useCallback(async (): Promise<boolean> => {
+    try {
+      const { data: res, error } = await (supabase as any).rpc("resync_couple_settings");
+      if (error) throw error;
+      if ((res as { ok?: boolean })?.ok) {
+        setSettingsSynced(true);
+        toast.success("연동을 다시 동기화했어요");
+        return true;
+      }
+      toast.error("재동기화에 실패했어요");
+      return false;
+    } catch (error) {
+      console.error("Error resyncing couple settings:", error);
+      toast.error("재동기화에 실패했어요");
+      return false;
+    }
+  }, []);
+
   const isLinked = coupleLink?.status === "linked";
 
   return {
     coupleLink,
     partnerProfile,
     isLinked,
+    settingsSynced,
     isLoading,
     generateInviteCode,
     linkWithCode,
     unlinkCouple,
+    resyncSettings,
     refetch: fetchCoupleLink,
   };
 };
