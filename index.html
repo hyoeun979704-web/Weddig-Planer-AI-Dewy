@@ -15,8 +15,12 @@
     <!-- 검색엔진 소유확인 -->
     <meta name="naver-site-verification" content="c3567424bfdd91019b02f3f9f8fffbdcdfb26e2d" />
 
-    <!-- Google AdSense (사이트 소유권 확인 + 광고 게재). 퍼블리셔 ca-pub-8005269626005297 -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8005269626005297" crossorigin="anonymous"></script>
+    <!-- Google AdSense 사이트 소유권 확인. 광고 게재 스크립트(adsbygoogle.js)는
+         index.html 에 정적 포함하지 않는다 — Capacitor 네이티브 WebView 에서도
+         로드돼 "앱 내 AdSense 사용 금지" 정책에 저촉되기 때문. 웹 광고 게재는
+         AdBanner→adService.initAds() 가 웹에서만 런타임 주입한다. 소유권 확인은
+         이 meta 태그 + public/ads.txt 두 경로로 보장. 퍼블리셔 ca-pub-8005269626005297 -->
+    <meta name="google-adsense-account" content="ca-pub-8005269626005297" />
 
     <!-- PWA 메타 태그 -->
     <meta name="theme-color" content="#F4A7B9" />

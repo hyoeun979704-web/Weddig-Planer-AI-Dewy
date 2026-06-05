@@ -12,6 +12,9 @@
     { "source": "/appliances/:id", "destination": "/api/ssr?type=place&prefix=appliances&id=:id" },
     { "source": "/invitation-venues/:id", "destination": "/api/ssr?type=place&prefix=invitation-venues&id=:id" },
     { "source": "/store/:id", "destination": "/api/ssr?type=product&prefix=store&id=:id" },
+    { "source": "/account-deletion", "destination": "/api/ssr?type=legal&page=account-deletion" },
+    { "source": "/privacy", "destination": "/api/ssr?type=legal&page=privacy" },
+    { "source": "/terms", "destination": "/api/ssr?type=legal&page=terms" },
     { "source": "/((?!api|assets|sw.js|workbox-.*).*)", "destination": "/index.html" }
   ]
 }
