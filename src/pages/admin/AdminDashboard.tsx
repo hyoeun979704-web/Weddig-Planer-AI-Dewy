@@ -362,11 +362,18 @@ const AdminDashboard = () => {
           <h2 className="text-sm font-bold text-foreground mb-3">빠른 액션</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <QuickActionCard
+              to="/admin/ai-jobs"
+              label="AI 생성 현황"
+              icon={Sparkles}
+              accent="primary"
+            />
+            <QuickActionCard
               to="/admin/dress-samples"
               label="새 드레스 추가"
               icon={Plus}
-              accent="primary"
             />
+            <QuickActionCard to="/admin/makeup-samples" label="메이크업 샘플 관리" icon={Plus} />
+            <QuickActionCard to="/admin/hair-samples" label="헤어 샘플 관리" icon={Plus} />
             <QuickActionCard
               to="/admin/service-waitlist"
               label="사전알림 확인"
