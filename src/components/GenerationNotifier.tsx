@@ -66,6 +66,14 @@ const CONFIG: Record<JobType, JobConfig> = {
     doneTitle: "사진보정 완료 🎉",
     doneDesc: "보정 결과가 준비됐어요.",
   },
+  hair: {
+    table: "hair_preview_jobs",
+    resolve: (s) =>
+      s === "completed" ? "done" : s === "failed" ? "failed" : "processing",
+    resultRoute: (id) => `/ai-studio/hair-room/result/${id}`,
+    doneTitle: "헤어 미리보기 완료 🎉",
+    doneDesc: "헤어 변형 결과가 준비됐어요.",
+  },
 };
 
 const GenerationNotifier = () => {
