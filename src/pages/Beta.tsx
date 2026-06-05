@@ -11,7 +11,7 @@ import { openExternal } from "@/lib/native/openExternal";
 //   - PLAY_BETA_URL: Google Play 비공개/공개 베타 참여 링크
 //   - FEEDBACK_FORM_URL: 베타 피드백 구글폼 링크
 // 비워두면 버튼은 숨겨지고, '웹에서 바로 시작' + 이메일 피드백만 노출됩니다.
-const PLAY_BETA_URL = "";
+const PLAY_BETA_URL = "https://play.google.com/apps/internaltest/4701375868302560654";
 const FEEDBACK_FORM_URL = "https://forms.gle/MrR7rbfuidFY7RK58";
 
 const FEATURES = [
