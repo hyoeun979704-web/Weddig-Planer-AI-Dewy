@@ -98,6 +98,9 @@ const GenerationNotifier = () => {
           const outcome = cfg.resolve(row.status);
           if (outcome === "processing") continue;
           if (notified.current.has(row.id)) continue;
+          // 결과 페이지를 직접 열면 그쪽에서 큐를 비운다 — 이 tick 도중
+          // 이미 제거됐다면(사용자가 결과를 보고 있으면) 중복 토스트를 막는다.
+          if (!getPendingJobs().some((j) => j.id === row.id)) continue;
           notified.current.add(row.id);
           removePendingJob(row.id);
 
