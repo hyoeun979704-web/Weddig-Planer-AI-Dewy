@@ -43,8 +43,10 @@ const Schedule = lazy(() => import("./pages/Schedule"));
 const AIStudio = lazy(() => import("./pages/AIStudio"));
 const PhotoFix = lazy(() => import("./pages/PhotoFix"));
 const PhotoFixResult = lazy(() => import("./pages/PhotoFixResult"));
+const PhotoFixGallery = lazy(() => import("./pages/PhotoFixGallery"));
 const WeddingConsulting = lazy(() => import("./pages/WeddingConsulting"));
 const ConsultingResult = lazy(() => import("./pages/ConsultingResult"));
+const ConsultingGallery = lazy(() => import("./pages/ConsultingGallery"));
 const Community = lazy(() => import("./pages/Community"));
 const CommunityWrite = lazy(() => import("./pages/CommunityWrite"));
 const CommunityEdit = lazy(() => import("./pages/CommunityEdit"));
@@ -277,8 +279,10 @@ const App = () => (
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/photo-fix" element={<PhotoFix />} />
               <Route path="/ai-studio/photo-fix/result/:id" element={<PhotoFixResult />} />
+              <Route path="/ai-studio/photo-fix/gallery" element={<PhotoFixGallery />} />
               <Route path="/ai-studio/consulting" element={<WeddingConsulting />} />
               <Route path="/ai-studio/consulting/result/:id" element={<ConsultingResult />} />
+              <Route path="/ai-studio/consulting/gallery" element={<ConsultingGallery />} />
               <Route path="/ai-studio/dress-tour" element={<DressFitting />} />
               <Route path="/ai-studio/dress-tour/result/:id" element={<DressFittingResult />} />
               <Route path="/ai-studio/dress-tour/gallery" element={<DressFittingGallery />} />

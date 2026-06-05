@@ -51,8 +51,8 @@ const MenuSection = ({
         { icon: Mail, title: "내 청첩장", description: "발행·임시저장한 청첩장 모음", href: "/invitation/my" },
         { icon: Shirt, title: "드레스 시뮬레이션", description: "방구석 드레스 투어 결과", href: "/ai-studio/dress-tour/gallery" },
         { icon: Sparkles, title: "메이크업 시뮬레이션", description: "착붙 메이크업 결과", href: "/ai-studio/makeup-room/gallery" },
-        { icon: Palette, title: "웨딩컨설팅", description: "퍼스널컬러·헤어·메이크업·드레스 보드", href: "/ai-studio/consulting" },
-        { icon: Wand2, title: "사진보정", description: "초간단 화질 보정 결과", href: "/ai-studio/photo-fix" },
+        { icon: Palette, title: "웨딩컨설팅", description: "퍼스널컬러·헤어·메이크업·드레스 보드", href: "/ai-studio/consulting/gallery" },
+        { icon: Wand2, title: "사진보정", description: "초간단 화질 보정 결과", href: "/ai-studio/photo-fix/gallery" },
       ],
     },
     {
