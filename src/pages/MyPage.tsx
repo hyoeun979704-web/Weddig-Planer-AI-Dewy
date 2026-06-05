@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Seo from "@/components/Seo";
 import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Users, ArrowRight, Crown } from "lucide-react";
@@ -143,6 +143,14 @@ const MyPage = () => {
   const consent = useDataCollectionConsent();
   const [consentReviewOpen, setConsentReviewOpen] = useState(false);
 
+  // 이벤트 페이지 "파트너 연동" 카드 → /mypage#partner-link 진입 시 해당 카드로 스크롤.
+  useEffect(() => {
+    if (isLoading || !user) return;
+    if (location.hash !== "#partner-link") return;
+    const el = document.getElementById("partner-link");
+    if (el) requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }, [isLoading, user, location.hash]);
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -204,7 +212,7 @@ const MyPage = () => {
           weddingDateTbd={weddingSettings.wedding_date_tbd}
         />
 
-        <div className="px-4 mt-3">
+        <div id="partner-link" className="px-4 mt-3 scroll-mt-20">
           <PartnerLinkCard variant="mypage" hideWhenLoggedOut />
         </div>
 
