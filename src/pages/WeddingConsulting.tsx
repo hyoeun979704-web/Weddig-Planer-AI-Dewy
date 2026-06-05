@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { addPendingJob } from "@/lib/consultingJobs";
+import { addPendingJob } from "@/lib/pendingJobs";
 
 // 2026 웨딩컨설팅 — 신부 사진 분석 → 매거진급 A4 보드(gpt-image-2 생성) 4종.
 // 가격: 섹션당 10하트, 4섹션(종합) 30하트. 계정당 첫 1회 50% 할인(반올림).
@@ -154,7 +154,7 @@ const WeddingConsulting = () => {
       if (!reportId) throw new Error("요청 실패");
 
       // 완료 알림을 위해 진행중 잡 등록 → 결과 페이지로 이동(거기서 폴링).
-      addPendingJob({ id: reportId, sections: selected, startedAt: Date.now() });
+      addPendingJob({ id: reportId, type: "consulting" });
       setDiscounted(false);
       navigate(`/ai-studio/consulting/result/${reportId}`);
     } catch (e) {

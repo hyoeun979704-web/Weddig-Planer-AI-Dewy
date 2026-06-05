@@ -33,6 +33,7 @@ import {
 import { describeMakeup } from "@/lib/makeupDescription";
 import { FittingProgress } from "@/components/fitting/FittingProgress";
 import { labelOfMakeup } from "@/data/makeupFilters";
+import { addPendingJob } from "@/lib/pendingJobs";
 
 /**
  * 메이크업 시뮬레이션 — 드레스 피팅과 동일 구조.
@@ -238,7 +239,9 @@ const MakeupFitting = () => {
       }
 
       const fittingId = (data as any)?.fitting_id;
-      toast({ title: "생성 완료!" });
+      if (!fittingId) throw new Error("생성 요청 실패");
+      // 백그라운드 생성 시작 — 완료 알림을 위해 진행중 잡 등록 후 결과 페이지로.
+      addPendingJob({ id: fittingId, type: "makeup" });
       await fetchHearts();
       navigate(`/ai-studio/makeup-room/result/${fittingId}`);
     } catch (err) {

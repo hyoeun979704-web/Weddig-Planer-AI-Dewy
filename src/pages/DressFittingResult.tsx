@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { sceneByCode } from "@/data/fittingScenes";
+import { removePendingJob } from "@/lib/pendingJobs";
 
 /**
  * 드레스 피팅 결과 페이지 (/ai-studio/dress-tour/result/:id)
@@ -62,6 +63,11 @@ const DressFittingResult = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  // 결과를 직접 보고 있으니 전역 알림 큐에서 제거(중복 토스트 방지).
+  useEffect(() => {
+    if (id) removePendingJob(id);
+  }, [id]);
 
   // 생성 중이면 결과가 나올 때까지 폴링.
   useEffect(() => {

@@ -146,136 +146,96 @@ serve(async (req) => {
     const fittingId = fitting.id as string;
 
     // ─────────────────────────────────────────────
-    // 5) 이미지 다운로드 → OpenAI 전송용 준비
+    // 5~7) 백그라운드 작업 — 페이지 이탈/창닫음에도 서버에서 계속 진행
+    //      (즉시 202 반환, 결과는 dress_fittings.status 폴링으로 확인)
     // ─────────────────────────────────────────────
-    try {
-      const [userImgBlob, dressImgBlob] = await Promise.all([
-        downloadFromStorage(
-          supabaseAdmin,
-          "dress-uploads",
-          body.source_image_path,
-        ),
-        downloadFromUrl(dress.image_url),
-      ]);
+    const job = (async () => {
+      try {
+        const [userImgBlob, dressImgBlob] = await Promise.all([
+          downloadFromStorage(supabaseAdmin, "dress-uploads", body.source_image_path),
+          downloadFromUrl(dress.image_url),
+        ]);
 
-      // OpenAI images.edit — multipart/form-data
-      const form = new FormData();
-      form.append("model", "gpt-image-2");
-      form.append("prompt", body.prompt);
-      form.append("size", "1024x1536");
-      form.append("quality", "medium");
-      form.append("n", "1");
-      form.append("image[]", userImgBlob, "user.png");
-      form.append("image[]", dressImgBlob, "dress.png");
+        const form = new FormData();
+        form.append("model", "gpt-image-2");
+        form.append("prompt", body.prompt);
+        form.append("size", "1024x1536");
+        form.append("quality", "medium");
+        form.append("n", "1");
+        form.append("image[]", userImgBlob, "user.png");
+        form.append("image[]", dressImgBlob, "dress.png");
 
-      const openaiRes = await fetch("https://api.openai.com/v1/images/edits", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-        body: form,
-      });
-
-      if (!openaiRes.ok) {
-        const errText = await openaiRes.text();
-        console.error(`OpenAI error ${openaiRes.status}:`, errText);
-        await markFailed(supabaseAdmin, fittingId, `openai_${openaiRes.status}`);
-        await refundHearts(
-          supabaseAdmin,
-          userId,
-          HEART_COST,
-          "openai_fail",
-          fittingId,
-        );
-        return json(
-          { error: "generation_failed", detail: errText.substring(0, 200) },
-          502,
-        );
-      }
-
-      const openaiData = (await openaiRes.json()) as {
-        data: { b64_json?: string; url?: string }[];
-      };
-      const item = openaiData.data?.[0];
-      if (!item) {
-        await markFailed(supabaseAdmin, fittingId, "no_image_returned");
-        await refundHearts(
-          supabaseAdmin,
-          userId,
-          HEART_COST,
-          "openai_no_result",
-          fittingId,
-        );
-        return json({ error: "no_image_returned" }, 502);
-      }
-
-      // ─────────────────────────────────────────────
-      // 6) 결과 이미지를 dress-results 버킷에 업로드
-      // ─────────────────────────────────────────────
-      const resultBlob = item.b64_json
-        ? base64ToBlob(item.b64_json, "image/png")
-        : await (await fetch(item.url!)).blob();
-
-      const resultPath = `${userId}/${fittingId}.png`;
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from("dress-results")
-        .upload(resultPath, resultBlob, {
-          contentType: "image/png",
-          upsert: true,
+        const openaiRes = await fetch("https://api.openai.com/v1/images/edits", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+          body: form,
         });
-      if (uploadError) {
-        console.error("upload error:", uploadError);
-        await markFailed(supabaseAdmin, fittingId, "upload_fail");
-        await refundHearts(
+
+        if (!openaiRes.ok) {
+          const errText = await openaiRes.text();
+          console.error(`OpenAI error ${openaiRes.status}:`, errText);
+          await markFailed(supabaseAdmin, fittingId, `openai_${openaiRes.status}`);
+          await refundHearts(supabaseAdmin, userId, HEART_COST, "openai_fail", fittingId);
+          return;
+        }
+
+        const openaiData = (await openaiRes.json()) as {
+          data: { b64_json?: string; url?: string }[];
+        };
+        const item = openaiData.data?.[0];
+        if (!item) {
+          await markFailed(supabaseAdmin, fittingId, "no_image_returned");
+          await refundHearts(supabaseAdmin, userId, HEART_COST, "openai_no_result", fittingId);
+          return;
+        }
+
+        const resultBlob = item.b64_json
+          ? base64ToBlob(item.b64_json, "image/png")
+          : await (await fetch(item.url!)).blob();
+
+        const resultPath = `${userId}/${fittingId}.png`;
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from("dress-results")
+          .upload(resultPath, resultBlob, { contentType: "image/png", upsert: true });
+        if (uploadError) {
+          console.error("upload error:", uploadError);
+          await markFailed(supabaseAdmin, fittingId, "upload_fail");
+          await refundHearts(supabaseAdmin, userId, HEART_COST, "upload_fail", fittingId);
+          return;
+        }
+
+        await supabaseAdmin
+          .from("dress_fittings")
+          .update({
+            status: "done",
+            result_image_path: resultPath,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", fittingId);
+      } catch (innerError) {
+        console.error("inner error:", innerError);
+        await markFailed(
           supabaseAdmin,
-          userId,
-          HEART_COST,
-          "upload_fail",
           fittingId,
+          innerError instanceof Error ? innerError.message : "inner_error",
         );
-        return json({ error: "upload_fail" }, 500);
+        await refundHearts(supabaseAdmin, userId, HEART_COST, "inner_error", fittingId);
       }
+    })();
 
-      // ─────────────────────────────────────────────
-      // 7) status = done
-      // ─────────────────────────────────────────────
-      await supabaseAdmin
-        .from("dress_fittings")
-        .update({
-          status: "done",
-          result_image_path: resultPath,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", fittingId);
-
-      // signed URL 생성 (private 버킷)
-      const { data: signed } = await supabaseAdmin.storage
-        .from("dress-results")
-        .createSignedUrl(resultPath, 60 * 60 * 24); // 24h
-
-      return json(
-        {
-          fitting_id: fittingId,
-          result_path: resultPath,
-          result_url: signed?.signedUrl ?? null,
-          balance_after: spendRow.balance_after,
-        },
-        200,
-      );
-    } catch (innerError) {
-      console.error("inner error:", innerError);
-      await markFailed(
-        supabaseAdmin,
-        fittingId,
-        innerError instanceof Error ? innerError.message : "inner_error",
-      );
-      await refundHearts(
-        supabaseAdmin,
-        userId,
-        HEART_COST,
-        "inner_error",
-        fittingId,
-      );
-      return json({ error: "generation_failed" }, 500);
+    // 응답 후에도 워커 유지(Supabase Edge 런타임).
+    // @ts-ignore EdgeRuntime 은 런타임 전역
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(job);
+    } else {
+      await job; // 로컬/폴백
     }
+
+    return json(
+      { fitting_id: fittingId, status: "pending", balance_after: spendRow.balance_after },
+      202,
+    );
   } catch (error) {
     console.error("dewy-fitting fatal:", error);
     return json({ error: "server_error" }, 500);
