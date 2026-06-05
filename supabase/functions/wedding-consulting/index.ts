@@ -193,8 +193,7 @@ async function generateBoard(
     form.append("model", "gpt-image-2");
     form.append("prompt", boardPrompt(section, analysis ?? {}));
     form.append("size", "1024x1536");
-    form.append("quality", "high");
-    form.append("input_fidelity", "high");
+    form.append("quality", "medium");
     form.append("n", "1");
     form.append("image[]", blob, "bride.png");
     const res = await fetch("https://api.openai.com/v1/images/edits", {

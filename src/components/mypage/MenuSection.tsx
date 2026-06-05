@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Calendar, User, Bell, FileText, MessageSquare,
   HelpCircle, Settings, ChevronRight, LogOut, Building2, Heart,
-  Mail, Shirt, Sparkles, Shield, Palette
+  Mail, Shirt, Sparkles, Shield, Palette, Scissors
 } from "lucide-react";
 import { User as SupaUser } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -52,6 +52,7 @@ const MenuSection = ({
         { icon: Shirt, title: "드레스 시뮬레이션", description: "방구석 드레스 투어 결과", href: "/ai-studio/dress-tour/gallery" },
         { icon: Sparkles, title: "메이크업 시뮬레이션", description: "착붙 메이크업 결과", href: "/ai-studio/makeup-room/gallery" },
         { icon: Palette, title: "웨딩컨설팅", description: "퍼스널컬러·헤어·메이크업·드레스 보드", href: "/ai-studio/consulting/gallery" },
+        { icon: Scissors, title: "헤어 변형 미리보기", description: "헤어스타일·컬러 시연 결과", href: "/ai-studio/hair-room" },
       ],
     },
     {
