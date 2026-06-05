@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -31,6 +32,13 @@
             </intent-filter>
 
         </activity>
+
+        <!-- AdMob(GMA SDK) 앱 ID. @capacitor-community/admob 가 cap sync 로 들어오면
+             이 meta-data 가 없을 경우 앱 실행 즉시 크래시한다. 값은 strings.xml
+             (admob_app_id) 에서 관리 — 출시 전 실제 AdMob 앱 ID 로 교체할 것. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="@string/admob_app_id" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
