@@ -9,6 +9,7 @@ import PartnerLinkCard from "./PartnerLinkCard";
 const mockGenerateInviteCode = vi.fn();
 const mockLinkWithCode = vi.fn();
 const mockUnlinkCouple = vi.fn();
+const mockResyncSettings = vi.fn();
 
 type MockCoupleLinkState = {
   coupleLink: null | {
@@ -21,6 +22,7 @@ type MockCoupleLinkState = {
   };
   partnerProfile: null | { display_name: string | null; email: string | null };
   isLinked: boolean;
+  settingsSynced: boolean;
   isLoading: boolean;
 };
 
@@ -28,6 +30,7 @@ let mockState: MockCoupleLinkState = {
   coupleLink: null,
   partnerProfile: null,
   isLinked: false,
+  settingsSynced: true,
   isLoading: false,
 };
 
@@ -36,10 +39,12 @@ vi.mock("@/hooks/useCoupleLink", () => ({
     coupleLink: mockState.coupleLink,
     partnerProfile: mockState.partnerProfile,
     isLinked: mockState.isLinked,
+    settingsSynced: mockState.settingsSynced,
     isLoading: mockState.isLoading,
     generateInviteCode: mockGenerateInviteCode,
     linkWithCode: mockLinkWithCode,
     unlinkCouple: mockUnlinkCouple,
+    resyncSettings: mockResyncSettings,
     refetch: vi.fn(),
   }),
 }));
@@ -71,10 +76,12 @@ beforeEach(() => {
   mockGenerateInviteCode.mockReset();
   mockLinkWithCode.mockReset();
   mockUnlinkCouple.mockReset();
+  mockResyncSettings.mockReset();
   mockState = {
     coupleLink: null,
     partnerProfile: null,
     isLinked: false,
+    settingsSynced: true,
     isLoading: false,
   };
 });
@@ -135,6 +142,7 @@ describe("PartnerLinkCard — pending state", () => {
       },
       partnerProfile: null,
       isLinked: false,
+      settingsSynced: true,
       isLoading: false,
     };
   });
@@ -181,6 +189,7 @@ describe("PartnerLinkCard — linked state", () => {
       },
       partnerProfile: { display_name: "지윤", email: "jiyoon@dewy.app" },
       isLinked: true,
+      settingsSynced: true,
       isLoading: false,
     };
   });
@@ -209,5 +218,21 @@ describe("PartnerLinkCard — linked state", () => {
     // Second click on the explicit destructive button performs the action.
     fireEvent.click(screen.getByRole("button", { name: "연결 해제" }));
     await waitFor(() => expect(mockUnlinkCouple).toHaveBeenCalledTimes(1));
+  });
+
+  it("does NOT show the resync warning when settings are synced", () => {
+    renderCard("mypage");
+    expect(screen.queryByRole("button", { name: "재동기화" })).not.toBeInTheDocument();
+  });
+
+  it("surfaces a resync warning and calls resyncSettings when settings are out of sync", async () => {
+    // 반쪽 연동: couple_links 는 linked 지만 user_wedding_settings 미동기화.
+    mockState.settingsSynced = false;
+    mockResyncSettings.mockResolvedValue(true);
+    renderCard("mypage");
+
+    expect(screen.getByText(/공유 정보 동기화가 끊겨/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "재동기화" }));
+    await waitFor(() => expect(mockResyncSettings).toHaveBeenCalledTimes(1));
   });
 });

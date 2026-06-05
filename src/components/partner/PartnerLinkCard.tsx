@@ -11,6 +11,8 @@ import {
   Calendar,
   ChevronRight,
   Unlink,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,10 +86,12 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
     coupleLink,
     partnerProfile,
     isLinked,
+    settingsSynced,
     isLoading,
     generateInviteCode,
     linkWithCode,
     unlinkCouple,
+    resyncSettings,
   } = useCoupleLink();
 
   const [inputCode, setInputCode] = useState("");
@@ -158,6 +162,12 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
     setIsProcessing(false);
   };
 
+  const handleResync = async () => {
+    setIsProcessing(true);
+    await resyncSettings();
+    setIsProcessing(false);
+  };
+
   if (isLoading) {
     return (
       <div
@@ -198,6 +208,31 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
             </p>
           </div>
         </div>
+
+        {!settingsSynced && (
+          <div className="mt-3 rounded-xl border border-amber-300/70 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800/40 p-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <p className="text-[12px] text-amber-800 dark:text-amber-200 leading-snug">
+                연결은 됐지만 공유 정보 동기화가 끊겨 있어요. 재동기화하면 일정·예산·일기 공유가 정상 동작해요.
+              </p>
+            </div>
+            <Button
+              onClick={handleResync}
+              disabled={isProcessing}
+              size="sm"
+              variant="outline"
+              className="mt-2 w-full gap-2 border-amber-300 text-amber-800 dark:text-amber-200"
+            >
+              {isProcessing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              재동기화
+            </Button>
+          </div>
+        )}
 
         {config.linkedCta && (
           <button
