@@ -15,8 +15,10 @@ import { Capacitor } from "@capacitor/core";
 // 퍼블리셔 ID 는 index.html <head> 에도 정적 포함됨(소유권 확인용). env 미설정 시 기본값 사용.
 export const ADSENSE_CLIENT = (import.meta.env.VITE_ADSENSE_CLIENT as string | undefined) || "ca-pub-8005269626005297";
 export const ADSENSE_BANNER_SLOT = import.meta.env.VITE_ADSENSE_BANNER_SLOT as string | undefined;
-const ADMOB_BANNER_ID = import.meta.env.VITE_ADMOB_BANNER_ID as string | undefined;
-const ADMOB_REWARDED_ID = import.meta.env.VITE_ADMOB_REWARDED_ID as string | undefined;
+// AdMob 광고 "단위" ID (앱에 노출되는 공개 값이라 커밋 기본값 안전).
+// ※ AndroidManifest 의 AdMob "앱" ID(strings.xml: admob_app_id, '~' 포함)와는 별개.
+const ADMOB_BANNER_ID = (import.meta.env.VITE_ADMOB_BANNER_ID as string | undefined) || "ca-app-pub-3558095447353368/8611781514";
+const ADMOB_REWARDED_ID = (import.meta.env.VITE_ADMOB_REWARDED_ID as string | undefined) || "ca-app-pub-3558095447353368/8758376311";
 
 export const isNativeAds = () => Capacitor.isNativePlatform();
 
