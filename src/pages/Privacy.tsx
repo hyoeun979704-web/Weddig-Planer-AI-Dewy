@@ -263,7 +263,53 @@ const Privacy = () => {
           </ul>
         </Section>
 
-        <Section title="12. 개인정보처리방침의 변경">
+        <Section title="12. AI 서비스 이용에 관한 안내">
+          회사는 결혼 준비를 돕기 위해 AI 기술을 활용합니다. 회원의 이해와 신뢰를 위해 처리 내용을
+          다음과 같이 투명하게 안내합니다.
+          <ul className="list-disc pl-5 mt-2 space-y-1">
+            <li>
+              <span className="font-semibold">활용 기능:</span> AI Planner(맞춤 상담·추천), AI
+              Studio(드레스·메이크업·청첩장 등 이미지 생성), 문구·배경 자동 처리
+            </li>
+            <li>
+              <span className="font-semibold">AI에 입력되는 정보:</span> 회원이 직접 입력·업로드한 정보에
+              한합니다. — AI Planner: 채팅 내용, 입력한 결혼 정보(예식일·예산·지역·선호도 등), 대화 메모리 /
+              AI Studio: 업로드한 얼굴·전신 사진, 선택한 옵션
+            </li>
+            <li>
+              <span className="font-semibold">처리 위탁·국외 이전:</span> 위 정보는 추천·생성 처리를 위해
+              OpenAI(이미지), Google Gemini(문구·추천), remove.bg(배경 제거) 등 위탁사로 전달되어 미국 등
+              해외 서버에서 처리될 수 있습니다(제5항·제6항 참조).
+            </li>
+            <li>
+              <span className="font-semibold">목적 제한:</span> AI에 전달된 정보는 회원이 요청한 추천·생성
+              결과를 제공하기 위한 목적으로만 이용합니다. 회사는 회원의 입력 정보를 광고 또는 회사 자체 AI
+              모델 학습 목적으로 이용하지 않습니다.
+            </li>
+            <li>
+              <span className="font-semibold">결과의 한계:</span> AI가 제공하는 추천·견적·생성 이미지는
+              참고용이며, 정확성·완전성·특정 목적에의 적합성을 보장하지 않습니다. 최종 결정과 계약은 회원이
+              직접 확인 후 진행해야 합니다.
+            </li>
+            <li>
+              <span className="font-semibold">선택권:</span> AI 기능 이용은 선택 사항입니다. 민감정보(얼굴
+              사진, 건강 관련 정보 등)는 별도 동의 시에만 처리되며, 동의하지 않아도 일반 서비스 이용에는
+              제한이 없습니다.
+            </li>
+            <li>
+              <span className="font-semibold">보관·삭제:</span> AI에 업로드한 사진은 처리 후 30일 내 자동
+              삭제되며, 생성 결과·대화 기록은 제3항의 보유 기간을 따릅니다. 회원은 언제든지 열람·삭제를
+              요청할 수 있습니다(제7항).
+            </li>
+          </ul>
+          <p className="mt-2 text-[12px] text-muted-foreground">
+            ※ AI 추천·생성은 자동화된 처리로 제공되며, 회원에게 법적·재산적으로 중대한 영향을 미치는 결정을
+            AI가 단독으로 내리지 않습니다. AI 처리에 관한 문의·거부는 kheceo@dewy-wedding.com으로 요청할 수
+            있습니다.
+          </p>
+        </Section>
+
+        <Section title="13. 개인정보처리방침의 변경">
           본 방침은 2026년 5월 1일부터 적용되며, 변경 시 변경 내용을 적용일 7일 전부터 서비스 화면에
           공지합니다. 회원에게 불리한 변경의 경우 30일 전부터 공지합니다.
         </Section>
