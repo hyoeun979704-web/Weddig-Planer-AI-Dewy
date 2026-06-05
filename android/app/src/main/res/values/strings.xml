@@ -5,9 +5,8 @@
     <string name="package_name">app.dewy</string>
     <string name="custom_url_scheme">app.dewy</string>
     <!-- AdMob 앱 ID. @capacitor-community/admob(GMA SDK)는 manifest 에 이 값이
-         없으면 MobileAdsInitProvider 가 앱 실행 즉시 크래시시킨다. 따라서 빈 값
-         금지. 아래는 Google 공식 "샘플/테스트 앱 ID"(실제 광고 미게재·정책 위반
-         아님)이며, 출시 전 반드시 AdMob 콘솔의 실제 앱 ID(ca-app-pub-…~…)로 교체.
-         ※ .env 의 VITE_ADMOB_*(광고 단위 ID)와는 별개 — 이건 네이티브 앱 ID. -->
-    <string name="admob_app_id" translatable="false">ca-app-pub-3940256099942544~3347511713</string>
+         없으면 MobileAdsInitProvider 가 앱 실행 즉시 크래시시킨다. 빈 값 금지.
+         실제 운영 앱 ID(AdMob 콘솔 → 앱 설정). 광고 단위 ID(.env VITE_ADMOB_*,
+         '/' 포함)와는 별개의 값이며 이건 네이티브 앱 ID('~' 포함). -->
+    <string name="admob_app_id" translatable="false">ca-app-pub-3558095447353368~7146431266</string>
 </resources>
