@@ -74,6 +74,7 @@ const VendorList = lazy(() => import("./pages/VendorList"));
 const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Guide = lazy(() => import("./pages/Guide"));
+const Beta = lazy(() => import("./pages/Beta"));
 const PremiumContent = lazy(() => import("./pages/PremiumContent"));
 const Premium = lazy(() => import("./pages/Premium"));
 const CoupleVote = lazy(() => import("./pages/CoupleVote"));
@@ -327,6 +328,8 @@ const App = () => (
               {aeoGuides.map((g) => (
                 <Route key={g.slug} path={`/${g.slug}`} element={<Guide slug={g.slug} />} />
               ))}
+              {/* 베타 신청·설치 랜딩(광고 유입 전환) */}
+              <Route path="/beta" element={<Beta />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
