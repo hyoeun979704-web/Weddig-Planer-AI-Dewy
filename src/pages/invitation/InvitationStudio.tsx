@@ -545,8 +545,8 @@ const InvitationStudio = () => {
 
   const handlePhotoUpload = async (file: File) => {
     if (!selectedSlot || !user) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "파일이 너무 커요 (최대 5MB)", variant: "destructive" });
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: "파일이 너무 커요 (최대 20MB)", variant: "destructive" });
       return;
     }
     // 인쇄(종이) 저해상도 경고 — 차단하지 않고 알림만(사용자가 가진 사진으로 진행 가능)
@@ -2013,7 +2013,7 @@ const StudioView = ({
                 : "사진 업로드"}
           </Button>
           <div className="flex items-center justify-between">
-            <p className="text-[10px] text-muted-foreground">JPG/PNG, 최대 5MB</p>
+            <p className="text-[10px] text-muted-foreground">JPG/PNG, 최대 20MB</p>
             <Button
               size="sm"
               variant="ghost"

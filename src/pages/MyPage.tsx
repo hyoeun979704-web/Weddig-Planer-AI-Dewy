@@ -151,6 +151,14 @@ const MyPage = () => {
     if (el) requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "center" }));
   }, [isLoading, user, location.hash]);
 
+  // 생성 대기 화면에서 "결혼 정보 입력하기" → /mypage?setup=wedding 으로 진입 시 모달 자동 오픈.
+  useEffect(() => {
+    if (isLoading || !user) return;
+    if (new URLSearchParams(location.search).get("setup") !== "wedding") return;
+    weddingInfoPrompt.openManually();
+    navigate("/mypage", { replace: true });
+  }, [isLoading, user, location.search, weddingInfoPrompt, navigate]);
+
   const handleSignOut = async () => {
     try {
       await signOut();

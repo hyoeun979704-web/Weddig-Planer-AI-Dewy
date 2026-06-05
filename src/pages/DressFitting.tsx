@@ -173,8 +173,8 @@ const DressFitting = () => {
     e.target.value = "";
     if (!file || !user) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "파일이 너무 커요 (최대 5MB)", variant: "destructive" });
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: "파일이 너무 커요 (최대 20MB)", variant: "destructive" });
       return;
     }
     if (!file.type.startsWith("image/")) {
@@ -484,7 +484,7 @@ const IntroSection = ({
     <section className="mb-6">
       <h3 className="text-sm font-bold text-foreground mb-3">진행 순서</h3>
       <ol className="space-y-2 text-sm text-foreground/85">
-        <StepRow n={1}>본인 사진 업로드 (얼굴/전신, 최대 5MB)</StepRow>
+        <StepRow n={1}>본인 사진 업로드 (얼굴/전신, 최대 20MB)</StepRow>
         <StepRow n={2}>마음에 드는 드레스 선택</StepRow>
         <StepRow n={3}>본식 / 웨딩촬영 컷 선택</StepRow>
         <StepRow n={4}>배경 분위기 선택 (어두운/밝은/가든)</StepRow>
@@ -599,7 +599,7 @@ const PhotoStep = ({
       >
         <Upload className="w-8 h-8 text-muted-foreground" />
         <p className="text-sm font-medium text-foreground">사진 선택</p>
-        <p className="text-[11px] text-muted-foreground">JPG/PNG, 최대 5MB</p>
+        <p className="text-[11px] text-muted-foreground">JPG/PNG, 최대 20MB</p>
       </button>
     )}
   </section>

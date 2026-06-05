@@ -95,8 +95,8 @@ const WeddingConsulting = () => {
     e.target.value = "";
     if (!f) return;
     if (!f.type.startsWith("image/")) return;
-    if (f.size > 5 * 1024 * 1024) {
-      toast({ title: "사진이 너무 커요 (5MB 초과)" });
+    if (f.size > 20 * 1024 * 1024) {
+      toast({ title: "사진이 너무 커요 (20MB 초과)" });
       return;
     }
     if (pick) URL.revokeObjectURL(pick.url);

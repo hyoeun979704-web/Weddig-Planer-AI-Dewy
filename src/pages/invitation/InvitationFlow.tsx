@@ -360,8 +360,8 @@ const InvitationFlow = () => {
     if (!files.length || !user) return;
 
     for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: `${file.name} 이 너무 커요 (5MB 초과)` });
+      if (file.size > 20 * 1024 * 1024) {
+        toast({ title: `${file.name} 이 너무 커요 (20MB 초과)` });
         continue;
       }
       if (!file.type.startsWith("image/")) continue;
@@ -422,8 +422,8 @@ const InvitationFlow = () => {
     const slotId = qrTargetSlotRef.current;
     if (!file || !user || !slotId) return;
     if (!file.type.startsWith("image/")) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "QR 이미지가 너무 커요 (5MB 초과)" });
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: "QR 이미지가 너무 커요 (20MB 초과)" });
       return;
     }
     const ext = file.name.split(".").pop()?.toLowerCase() || "png";

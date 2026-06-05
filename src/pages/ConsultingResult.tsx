@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { removePendingJob } from "@/lib/pendingJobs";
+import ProcessingGuide from "@/components/ProcessingGuide";
 
 // 2026 웨딩컨설팅 결과 (/ai-studio/consulting/result/:id)
 // reports row 를 폴링 — processing 이면 생성 중, completed 면 보드 표시, failed 면 안내.
@@ -179,15 +180,16 @@ const ConsultingResult = () => {
               </div>
             </div>
           ) : (
-            <div className="py-20 flex flex-col items-center gap-3 text-center">
+            <div className="py-10 flex flex-col items-center gap-3 text-center">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">
-                매거진 보드를 그리는 중이에요… (약 1~2분)
+                매거진 보드 {report.sections?.length ?? 0}장을 그리는 중이에요…
               </p>
-              <p className="text-[12px] text-muted-foreground/80 leading-relaxed px-6">
-                창을 닫거나 다른 페이지로 가도 계속 진행돼요.
-                완료되면 알림으로 알려드릴게요.
-              </p>
+              <ProcessingGuide
+                etaText={
+                  (report.sections?.length ?? 1) <= 2 ? "1~2분" : "2~3분"
+                }
+              />
             </div>
           )
         ) : (
