@@ -221,96 +221,119 @@ serve(async (req) => {
         await admin.rpc("earn_hearts", { p_user_id: userId, p_amount: amount, p_reason: "wedding_consulting_refund" });
     };
 
-    try {
-      // 신부 사진 다운로드 (분석 dataURL + 생성 입력 공용)
-      const { data: blob, error: dlErr } = await admin.storage.from("invitation-uploads").download(sourcePath);
-      if (dlErr || !blob) { await refund(finalCost); return json({ error: "source_download_failed" }, 502); }
-      const buf = new Uint8Array(await blob.arrayBuffer());
-      let bin = ""; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-      const dataUrl = `data:${blob.type || "image/png"};base64,${btoa(bin)}`;
+    // 진행중(processing) 리포트 먼저 생성 → 즉시 응답. 무거운 생성은 백그라운드.
+    const { data: rep, error: repErr } = await admin
+      .from("wedding_consulting_reports")
+      .insert({
+        user_id: userId, sections, analysis: {}, results: [],
+        status: "processing", source_path: sourcePath,
+        charged: finalCost, discounted,
+      })
+      .select("id").single();
+    if (repErr || !rep) { await refund(finalCost); return json({ error: "report_insert_failed" }, 500); }
+    const reportId = rep.id as string;
 
-      // Step A — Vision 분석 (Responses API; gpt-5.5 = reasoning 모델 권장 경로)
-      let analysis: any = {};
+    const finish = async (patch: Record<string, unknown>) => {
+      await admin.from("wedding_consulting_reports")
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq("id", reportId);
+    };
+
+    // ── 백그라운드 작업: 클라이언트가 페이지를 벗어나도 서버에서 계속 진행 ──
+    const job = (async () => {
       try {
-        const effort = Deno.env.get("OPENAI_CONSULT_EFFORT") ?? "low";
-        const aiRes = await fetch("https://api.openai.com/v1/responses", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: MODEL,
-            reasoning: { effort },
-            instructions: ANALYSIS_GUIDE,
-            input: [
-              { role: "user", content: [
-                { type: "input_text", text: "이 신부 사진을 분석해 위 JSON 을 채워줘." },
-                { type: "input_image", image_url: dataUrl },
-              ] },
-            ],
-            // 구조화 출력(JSON) + 추론 토큰까지 감안한 여유분
-            text: { format: { type: "json_object" } },
-            max_output_tokens: 6000,
-          }),
-        });
-        if (aiRes.ok) {
-          const j = await aiRes.json();
-          analysis = JSON.parse(extractOutputText(j) || "{}");
-        } else {
-          console.error("analysis fail", aiRes.status, (await aiRes.text()).slice(0, 300));
+        const { data: blob, error: dlErr } = await admin.storage.from("invitation-uploads").download(sourcePath);
+        if (dlErr || !blob) { await refund(finalCost); await finish({ status: "failed", error: "source_download_failed", charged: 0 }); return; }
+        const buf = new Uint8Array(await blob.arrayBuffer());
+        let bin = ""; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+        const dataUrl = `data:${blob.type || "image/png"};base64,${btoa(bin)}`;
+
+        // Step A — Vision 분석 (Responses API; gpt-5.5 = reasoning 모델 권장 경로)
+        let analysis: any = {};
+        try {
+          const effort = Deno.env.get("OPENAI_CONSULT_EFFORT") ?? "low";
+          const aiRes = await fetch("https://api.openai.com/v1/responses", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: MODEL,
+              reasoning: { effort },
+              instructions: ANALYSIS_GUIDE,
+              input: [
+                { role: "user", content: [
+                  { type: "input_text", text: "이 신부 사진을 분석해 위 JSON 을 채워줘." },
+                  { type: "input_image", image_url: dataUrl },
+                ] },
+              ],
+              text: { format: { type: "json_object" } },
+              max_output_tokens: 6000,
+            }),
+          });
+          if (aiRes.ok) analysis = JSON.parse(extractOutputText(await aiRes.json()) || "{}");
+          else console.error("analysis fail", aiRes.status, (await aiRes.text()).slice(0, 300));
+        } catch (e) {
+          console.error("analysis error", e);
         }
+
+        // Step B — 섹션별 보드 생성 (병렬). 결과는 path 로 저장 → 클라이언트가 서명 URL 생성.
+        const gen = async (section: Section) => {
+          const form = new FormData();
+          form.append("model", "gpt-image-2");
+          form.append("prompt", boardPrompt(section, analysis));
+          form.append("size", "1024x1536");
+          form.append("quality", "high");
+          form.append("n", "1");
+          form.append("image[]", blob, "bride.png");
+          const res = await fetch("https://api.openai.com/v1/images/edits", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+            body: form,
+          });
+          if (!res.ok) throw new Error(`openai ${res.status}: ${(await res.text()).slice(0, 160)}`);
+          const d = (await res.json()) as { data: { b64_json?: string; url?: string }[] };
+          const item = d.data?.[0];
+          if (!item) throw new Error("no image");
+          const outBlob = item.b64_json ? base64ToBlob(item.b64_json, "image/png") : await (await fetch(item.url!)).blob();
+          const outPath = `${userId}/consulting/${section}-${crypto.randomUUID()}.png`;
+          const { error: upErr } = await admin.storage.from("invitation-uploads").upload(outPath, outBlob, { contentType: "image/png", upsert: false });
+          if (upErr) throw new Error("upload fail");
+          return { section, path: outPath };
+        };
+
+        const settled = await Promise.allSettled(sections.map(gen));
+        const results = settled.flatMap((s) => (s.status === "fulfilled" ? [s.value] : []));
+        settled.forEach((s) => { if (s.status === "rejected") console.error("board fail", s.reason); });
+
+        const ok = results.length;
+        const failed = sections.length - ok;
+        const refundAmt = failed > 0 ? (ok === 0 ? finalCost : Math.round((failed / sections.length) * finalCost)) : 0;
+        await refund(refundAmt);
+
+        if (ok === 0) { await finish({ status: "failed", error: "all_failed", analysis, charged: 0 }); return; }
+
+        await finish({ status: "completed", analysis, results, charged: finalCost - refundAmt });
+        // 성공 시에만 사용횟수 증가(할인 1회 보장 — 실패 환불 시 할인 유지)
+        await admin.from("wedding_consulting_usage").upsert(
+          { user_id: userId, used_count: usedCount + 1, updated_at: new Date().toISOString() },
+          { onConflict: "user_id" },
+        );
       } catch (e) {
-        console.error("analysis error", e);
+        console.error("consulting job error:", e);
+        await refund(finalCost);
+        await finish({ status: "failed", error: "consulting_failed", charged: 0 });
       }
+    })();
 
-      // Step B — 섹션별 보드 생성 (병렬)
-      const gen = async (section: Section) => {
-        const form = new FormData();
-        form.append("model", "gpt-image-2");
-        form.append("prompt", boardPrompt(section, analysis));
-        form.append("size", "1024x1536");
-        form.append("quality", "high");
-        form.append("n", "1");
-        form.append("image[]", blob, "bride.png");
-        const res = await fetch("https://api.openai.com/v1/images/edits", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-          body: form,
-        });
-        if (!res.ok) throw new Error(`openai ${res.status}: ${(await res.text()).slice(0, 160)}`);
-        const data = (await res.json()) as { data: { b64_json?: string; url?: string }[] };
-        const item = data.data?.[0];
-        if (!item) throw new Error("no image");
-        const outBlob = item.b64_json ? base64ToBlob(item.b64_json, "image/png") : await (await fetch(item.url!)).blob();
-        const outPath = `${userId}/consulting/${section}-${crypto.randomUUID()}.png`;
-        const { error: upErr } = await admin.storage.from("invitation-uploads").upload(outPath, outBlob, { contentType: "image/png", upsert: false });
-        if (upErr) throw new Error("upload fail");
-        const { data: signed } = await admin.storage.from("invitation-uploads").createSignedUrl(outPath, 60 * 60 * 24 * 7);
-        return { section, url: signed?.signedUrl ?? null, path: outPath };
-      };
-
-      const settled = await Promise.allSettled(sections.map(gen));
-      const results = settled.flatMap((s) => (s.status === "fulfilled" ? [s.value] : []));
-      settled.forEach((s) => { if (s.status === "rejected") console.error("board fail", s.reason); });
-
-      const ok = results.length;
-      const failed = sections.length - ok;
-      const refundAmt = failed > 0 ? (ok === 0 ? finalCost : Math.round((failed / sections.length) * finalCost)) : 0;
-      await refund(refundAmt);
-      if (ok === 0) return json({ error: "all_failed" }, 502);
-
-      const { data: rep } = await admin.from("wedding_consulting_reports")
-        .insert({ user_id: userId, sections, analysis: { ...analysis, results } })
-        .select("id").single();
-      await admin.from("wedding_consulting_usage").upsert(
-        { user_id: userId, used_count: usedCount + 1, updated_at: new Date().toISOString() },
-        { onConflict: "user_id" },
-      );
-
-      return json({ results, analysis, report_id: rep?.id ?? null, charged: finalCost - refundAmt, discounted }, 200);
-    } catch (e) {
-      console.error("consulting error:", e);
-      await refund(finalCost);
-      return json({ error: "consulting_failed" }, 502);
+    // 응답을 보낸 뒤에도 워커를 살려둠(Supabase Edge 런타임).
+    // @ts-ignore EdgeRuntime 은 런타임 전역
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(job);
+    } else {
+      await job; // 로컬/폴백
     }
+
+    return json({ report_id: reportId, status: "processing", charged: finalCost, discounted }, 202);
   } catch (e) {
     console.error("wedding-consulting fatal:", e);
     return json({ error: "server_error" }, 500);
