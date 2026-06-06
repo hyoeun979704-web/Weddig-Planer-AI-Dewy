@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCouplePartnerId } from "@/hooks/useCouplePartnerId";
 import { toast } from "@/hooks/use-toast";
 import { regionalAverages, regions, type BudgetCategory } from "@/data/budgetData";
 
@@ -46,18 +47,41 @@ export interface BudgetSummary {
 export function useBudget(profileRegionKey?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  // 커플 연동 시 예산은 둘이 공유한다. 지출 항목은 양쪽 user_id 를 합쳐서 읽고,
+  // 설정(총예산·지역·항목별)은 커플당 하나 — 연결 생성자(linkOwnerId)의 행을
+  // 정식(canonical)으로 본다. (RLS: 20260606190000_couple_data_sharing)
+  const { partnerId, linkOwnerId } = useCouplePartnerId();
+  // 설정의 정식 소유자: 연결돼 있으면 생성자, 아니면 본인.
+  const settingsOwnerId = linkOwnerId ?? user?.id ?? null;
+  const coupleUserIds = useMemo(
+    () => (user ? (partnerId ? [user.id, partnerId] : [user.id]) : []),
+    [user, partnerId],
+  );
 
   const settingsQuery = useQuery({
-    queryKey: ["budget-settings", user?.id],
+    // 키 첫 두 요소는 ["budget-settings", user.id] 로 유지 — 외부 invalidate 가
+    // prefix 매칭되도록. settingsOwnerId 는 연동 전후 캐시 분리용.
+    queryKey: ["budget-settings", user?.id, settingsOwnerId],
     queryFn: async () => {
       if (!user) return null;
+      const owner = settingsOwnerId ?? user.id;
       const { data, error } = await (supabase as any)
         .from("budget_settings")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", owner)
         .maybeSingle();
       if (error) throw error;
-      return data as BudgetSettings | null;
+      if (data) return data as BudgetSettings;
+      // 정식 소유자(파트너)가 아직 예산 설정을 안 만들었으면 내 행으로 폴백.
+      if (owner !== user.id) {
+        const { data: mine } = await (supabase as any)
+          .from("budget_settings")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        return (mine ?? null) as BudgetSettings | null;
+      }
+      return null;
     },
     enabled: !!user,
     // 개인 데이터 — 변경은 mutation 이 invalidate 하므로 탭 복귀마다 refetch 불필요.
@@ -65,13 +89,13 @@ export function useBudget(profileRegionKey?: string) {
   });
 
   const itemsQuery = useQuery({
-    queryKey: ["budget-items", user?.id],
+    queryKey: ["budget-items", user?.id, partnerId],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await (supabase as any)
         .from("budget_items")
         .select("*")
-        .eq("user_id", user.id)
+        .in("user_id", coupleUserIds)
         .order("item_date", { ascending: false });
       if (error) throw error;
       return (data || []) as BudgetItem[];
@@ -111,17 +135,20 @@ export function useBudget(profileRegionKey?: string) {
   const saveSettings = useMutation({
     mutationFn: async (s: Partial<BudgetSettings>) => {
       if (!user) throw new Error("로그인이 필요합니다");
-      const payload = { ...s, user_id: user.id };
       if (settings) {
+        // 정식 행은 파트너 소유일 수 있으므로 user_id 는 절대 덮어쓰지 않는다
+        // (덮어쓰면 행 소유권이 바뀜). 커플 UPDATE RLS 가 파트너 행 수정 허용.
+        const { user_id: _ignore, ...patch } = s as Partial<BudgetSettings>;
+        void _ignore;
         const { error } = await (supabase as any)
           .from("budget_settings")
-          .update(payload)
+          .update(patch)
           .eq("id", settings.id);
         if (error) throw error;
       } else {
         const { error } = await (supabase as any)
           .from("budget_settings")
-          .insert(payload);
+          .insert({ ...s, user_id: user.id });
         if (error) throw error;
       }
 
