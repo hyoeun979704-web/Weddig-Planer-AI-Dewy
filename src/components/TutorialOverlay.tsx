@@ -36,6 +36,9 @@ const TutorialOverlay = ({
   const [targetMissing, setTargetMissing] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const retryRef = useRef(0);
+  // 찾은 타깃 element 참조 — 비동기 콘텐츠 로딩/스크롤로 위치가 바뀌어도
+  // 하이라이트가 따라가도록 재측정에 사용.
+  const targetElRef = useRef<Element | null>(null);
 
   // Measure tooltip after render
   useEffect(() => {
@@ -54,6 +57,7 @@ const TutorialOverlay = ({
     if (el) {
       setTargetMissing(false);
       retryRef.current = 0;
+      targetElRef.current = el;
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       const measure = () => {
         const rect = el.getBoundingClientRect();
@@ -91,6 +95,47 @@ const TutorialOverlay = ({
       clearTimeout(initial);
     };
   }, [isActive, currentStep, findAndSetTarget]);
+
+  // 타깃 위치 추적 — 비동기 콘텐츠(관리자 카드·커플 연동 카드 등)가 타깃 위에서
+  // 뒤늦게 로드되면 타깃이 아래로 밀리는데, 시작 시점에 한 번 잰 rect 만 쓰면
+  // 하이라이트가 옛 위치(예: 프로필 카드)에 남는다. scroll·resize·ResizeObserver +
+  // 초기 폴링으로 계속 재측정해 하이라이트가 실제 요소를 따라가게 한다.
+  useEffect(() => {
+    if (!isActive) return;
+    const remeasure = () => {
+      const el = targetElRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setTargetRect((prev) =>
+        prev &&
+        prev.top === r.top &&
+        prev.left === r.left &&
+        prev.width === r.width &&
+        prev.height === r.height
+          ? prev
+          : r,
+      );
+    };
+    window.addEventListener("scroll", remeasure, true);
+    window.addEventListener("resize", remeasure);
+    const ro = new ResizeObserver(remeasure);
+    ro.observe(document.body);
+    // 초기 ~1.2s rAF 폴링: 부드러운 스크롤 정착 + lazy mount 레이아웃 시프트 대응.
+    let raf = 0;
+    let polls = 0;
+    const poll = () => {
+      remeasure();
+      polls += 1;
+      if (polls < 72) raf = requestAnimationFrame(poll);
+    };
+    raf = requestAnimationFrame(poll);
+    return () => {
+      window.removeEventListener("scroll", remeasure, true);
+      window.removeEventListener("resize", remeasure);
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [isActive, currentStepIndex]);
 
   // Round 17 P0 a11y — ESC=skip / ArrowRight=next / ArrowLeft=prev 키보드 네비게이션.
   useEffect(() => {
