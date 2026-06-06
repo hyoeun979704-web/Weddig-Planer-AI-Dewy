@@ -69,8 +69,10 @@ v_earned := GREATEST(1, p_score / 20);  -- p_score 는 클라가 보낸 값
 | 마이그레이션 | 내용 | 상태 |
 |---|---|---|
 | `20260606193000_points_economy_lockdown` | earn_points·earn_hearts·spend_points anon/authenticated 회수, spend_hearts anon 회수+소유권 가드 | ✅ DB 적용·검증 완료 |
+| `20260606194000_points_farming_guards` | add_game_points 게임 보상 일일 한도(500P/일, KST) + claim_daily_attendance FOR UPDATE 잠금 + point_transactions daily_attendance 일자 부분 유니크 인덱스 | ✅ DB 적용·검증 완료 |
 
-## 남은 작업 (deferred — 결정/구현 필요)
-- [ ] `add_game_points` 점수 상한·일일 한도 (상한값 제품 결정)
-- [ ] `claim_daily_attendance` 경합 방지(FOR UPDATE + daily 부분 유니크 인덱스)
-- [ ] (선택) `add_game_points` 외 클라 직접 호출 함수 전반의 입력 신뢰 점검
+## 남은 작업 (deferred)
+- [x] `add_game_points` 점수 신뢰 → 게임 보상 일일 한도 500P/일 적용(값 조정 가능). — 완료
+- [x] `claim_daily_attendance` 경합 방지(FOR UPDATE + daily 부분 유니크 인덱스). — 완료
+- [ ] (선택) `add_game_points` 외 클라 직접 호출 함수 전반의 입력 신뢰 점검 — 추후
+- [ ] (관찰) `earn_hearts`/`spend_hearts` 본문 들여쓰기 정리(기능 무관)
