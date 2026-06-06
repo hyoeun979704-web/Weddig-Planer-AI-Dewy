@@ -18,6 +18,8 @@ export const useGuestList = () => {
   const itemsQuery = useQuery({
     queryKey: ["guest-list", user?.id],
     enabled: !!user,
+    // 개인 데이터 — 변경은 mutation 이 invalidate 하므로 탭 복귀마다 refetch 불필요.
+    staleTime: 60_000,
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await (supabase as any)

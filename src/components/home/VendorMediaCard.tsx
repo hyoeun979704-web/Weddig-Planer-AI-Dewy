@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -242,4 +242,6 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
   );
 };
 
-export default VendorMediaCard;
+// 리스트 스크롤 시 부모의 무관한 리렌더가 카드까지 번지지 않도록 memo.
+// (호출부에서 data·onClick 을 안정 참조로 넘길 때 효과 — VenueGrid 참고.)
+export default memo(VendorMediaCard);

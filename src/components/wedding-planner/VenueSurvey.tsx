@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SurveyModal from "./SurveyModal";
 import { REGIONS, BUDGET_OPTIONS_VENUE, WEDDING_STYLES } from "./constants";
 import { useWeddingFormContext } from "@/hooks/useWeddingFormContext";
@@ -38,6 +38,8 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
   const [meal, setMeal] = useState("");
   const [special, setSpecial] = useState("");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+  // 달력의 각 날짜 셀마다 new Date() 를 만들지 않도록 기준 '오늘'을 한 번만 생성.
+  const today = useMemo(() => new Date(), []);
 
   // 저장된 결혼일·지역·하객 수 + ceremony_type + 식장 예산으로 prefill.
   // Round 11 self-review fix — styles 는 styles.length===0 일 때만 prefill. 재오픈 시
@@ -134,7 +136,7 @@ const VenueSurvey = ({ isOpen, onClose, onSubmit }: Props) => {
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={date} onSelect={setDate} disabled={d => d < new Date()} className="p-3 pointer-events-auto" />
+              <Calendar mode="single" selected={date} onSelect={setDate} disabled={d => d < today} className="p-3 pointer-events-auto" />
             </PopoverContent>
           </Popover>
           {helperText("date")}

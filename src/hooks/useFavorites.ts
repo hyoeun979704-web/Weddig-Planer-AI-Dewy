@@ -32,6 +32,8 @@ export const useFavorites = () => {
       return (data || []) as Favorite[];
     },
     enabled: !!user,
+    // 개인 데이터 — 찜 토글 mutation 이 invalidate 하므로 탭 복귀마다 refetch 불필요.
+    staleTime: 60_000,
   });
 
   const addFavorite = useMutation({

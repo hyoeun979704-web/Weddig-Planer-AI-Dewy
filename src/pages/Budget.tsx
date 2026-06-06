@@ -105,7 +105,12 @@ const Budget = () => {
 
   const totalBudget = settings?.total_budget || 0;
   const pct = totalBudget > 0 ? Math.min((summary.totalSpent / totalBudget) * 100, 100) : 0;
-  const catBudgets = settings?.category_budgets || {} as Record<BudgetCategory, number>;
+  // 안정 참조로 메모 — settings 로드 전 매 렌더 새 {} 가 sortedCategoryRows 메모를
+  // 무효화하지 않도록. settings.category_budgets 는 쿼리 데이터라 내용 변경 시에만 바뀜.
+  const catBudgets = useMemo(
+    () => (settings?.category_budgets || {}) as Record<BudgetCategory, number>,
+    [settings?.category_budgets]
+  );
 
   // Paid-by
   const paidShared = summary.paidByTotals["shared"] || 0;
@@ -217,6 +222,31 @@ const Budget = () => {
     }
     return out;
   }, [excludedSet]);
+
+  // 카테고리별 현황 행 — 매 렌더(시트 토글 등 무관한 상태 변화)마다 10개 map+sort 를
+  // 다시 돌리지 않도록 지출/예산/제외 상태가 바뀔 때만 재계산.
+  const sortedCategoryRows = useMemo(() => {
+    return [...categoryKeys]
+      .map((key) => {
+        const spent = summary.categoryTotals[key] || 0;
+        const rawBudget = catBudgets[key] || 0;
+        const dimmed = dimmedBudgetCategories.has(key) && spent === 0;
+        // Hide stale budget residue on dimmed (fully-excluded with
+        // no spend) rows — the next save through BudgetSetupSheet
+        // zeros these in the DB; this keeps the display in sync
+        // in the meantime instead of showing "0 / 200만원".
+        const budget = dimmed ? 0 : rawBudget;
+        const catPct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+        const over = spent > budget && budget > 0;
+        return { key, spent, budget, catPct, over, dimmed };
+      })
+      .sort((a, b) => {
+        if (a.dimmed !== b.dimmed) return a.dimmed ? 1 : -1;
+        if (a.over !== b.over) return a.over ? -1 : 1;
+        if (b.spent !== a.spent) return b.spent - a.spent;
+        return b.budget - a.budget;
+      });
+  }, [summary.categoryTotals, catBudgets, dimmedBudgetCategories]);
 
   const openAddWithPrefill = (title: string, category: BudgetCategory) => {
     setEditItem(null);
@@ -648,26 +678,7 @@ const Budget = () => {
             )}
           </div>
           <div className="space-y-3">
-            {[...categoryKeys]
-              .map(key => {
-                const spent = summary.categoryTotals[key] || 0;
-                const rawBudget = catBudgets[key] || 0;
-                const dimmed = dimmedBudgetCategories.has(key) && spent === 0;
-                // Hide stale budget residue on dimmed (fully-excluded with
-                // no spend) rows — the next save through BudgetSetupSheet
-                // zeros these in the DB; this keeps the display in sync
-                // in the meantime instead of showing "0 / 200만원".
-                const budget = dimmed ? 0 : rawBudget;
-                const catPct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
-                const over = spent > budget && budget > 0;
-                return { key, spent, budget, catPct, over, dimmed };
-              })
-              .sort((a, b) => {
-                if (a.dimmed !== b.dimmed) return a.dimmed ? 1 : -1;
-                if (a.over !== b.over) return a.over ? -1 : 1;
-                if (b.spent !== a.spent) return b.spent - a.spent;
-                return b.budget - a.budget;
-              })
+            {sortedCategoryRows
               .map(({ key, spent, budget, catPct, over, dimmed }) => (
                 <button key={key} className={cn("w-full text-left group", dimmed && "opacity-40")} onClick={() => navigate(`/budget/category/${key}`)}>
                   <div className="flex items-center justify-between mb-1">

@@ -1,6 +1,9 @@
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
 import DOMPurify from "dompurify";
+
+// jspdf(~129kB gz)·html2canvas(~48kB gz)는 실제 PDF 생성 시에만 필요하다.
+// top-level import 하면 이 모듈을 정적으로 쓰는 모든 경로(Budget/Premium 시트
+// + Vite preload 헬퍼 동거 청크)가 eager 로드해 버린다. downloadPdf 내부에서
+// 동적 import 해 다운로드를 누르는 순간에만 받아오도록 한다.
 
 /**
  * HTML 특수문자 이스케이프.
@@ -592,6 +595,12 @@ export async function downloadPdf(htmlContent: string, filename: string): Promis
   document.body.appendChild(container);
 
   try {
+    // 무거운 PDF 라이브러리는 이 시점에만 로드 (on-demand 청크).
+    const [{ jsPDF }, { default: html2canvas }] = await Promise.all([
+      import("jspdf"),
+      import("html2canvas"),
+    ]);
+
     // 폰트 로딩 대기 — 임베드된 Google Fonts가 적용되어야 글자가 깨끗하게 캡처됨
     if ((document as any).fonts?.ready) {
       try { await (document as any).fonts.ready; } catch { /* noop */ }

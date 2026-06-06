@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ interface PartnerProfile {
 
 export const useCoupleLink = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [coupleLink, setCoupleLink] = useState<CoupleLink | null>(null);
   const [partnerProfile, setPartnerProfile] = useState<PartnerProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,6 +96,22 @@ export const useCoupleLink = () => {
   useEffect(() => {
     fetchCoupleLink();
   }, [fetchCoupleLink]);
+
+  // 연결/해제 직후 커플 공유 데이터 캐시를 무효화 — 예산·일정·결혼설정(선택 식장)
+  // ·찜·파트너ID 가 즉시 새 연동 상태를 반영하도록. (prefix 매칭이라 user 별 키
+  // 전체가 걸린다.)
+  const invalidateCoupleShared = useCallback(() => {
+    for (const key of [
+      ["couple-partner-id"],
+      ["budget-items"],
+      ["budget-settings"],
+      ["schedule_items"],
+      ["wedding_settings"],
+      ["couple-favorites"],
+    ]) {
+      queryClient.invalidateQueries({ queryKey: key });
+    }
+  }, [queryClient]);
 
   // 초대 코드 생성
   const generateInviteCode = async (): Promise<string | null> => {
@@ -175,6 +193,7 @@ export const useCoupleLink = () => {
       }
 
       await fetchCoupleLink(); // linked 상태 + 파트너 프로필 로드
+      invalidateCoupleShared(); // 예산·일정·식장·찜 즉시 공유 반영
       toast.success("커플이 연결되었습니다!");
       return true;
     } catch (error) {
@@ -213,6 +232,7 @@ export const useCoupleLink = () => {
 
       setCoupleLink(null);
       setPartnerProfile(null);
+      invalidateCoupleShared(); // 공유 해제 즉시 반영 (각자 데이터로 복귀)
       toast.success("커플 연결이 해제되었습니다");
       return true;
     } catch (error) {

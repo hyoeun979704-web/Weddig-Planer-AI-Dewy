@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import Seo from "@/components/Seo";
 import { useAuth } from "@/contexts/AuthContext";
@@ -101,6 +101,11 @@ const isHotPost = (post: Post) => {
   const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 36e5;
   return ageHours <= 168 && post.likes_count + post.comments_count >= 3;
 };
+
+// 스타일 필터: 선택된 유형과 일치하는 글 + 유형 미지정(NULL) 글을 함께 노출.
+// NULL = "모든 부부 대상" 글이므로 어떤 필터에서도 가려져선 안 됨 (작성 UI 약속).
+const matchesStyle = (post: Post, filter: StyleFilter) =>
+  filter === "all" || post.wedding_style === filter || post.wedding_style === null;
 
 const Community = () => {
   const navigate = useNavigate();
@@ -205,42 +210,53 @@ const Community = () => {
   });
 
   // 작성자 공개 정체성(닉네임·스타일·역할). user_id 만으로도 항상 해석됨.
-  const authors = useCommunityAuthors(posts.map((p) => p.user_id));
+  // userIds 를 메모해 매 렌더 새 배열로 인한 useCommunityAuthors 캐시미스·refetch 방지.
+  const userIds = useMemo(() => posts.map((p) => p.user_id), [posts]);
+  const authors = useCommunityAuthors(userIds);
 
   // 알림 미읽음 배지.
   const { unreadCount } = useNotifications();
 
-  // 스타일 필터: 선택된 유형과 일치하는 글 + 유형 미지정(NULL) 글을 함께 노출.
-  // NULL = "모든 부부 대상" 글이므로 어떤 필터에서도 가려져선 안 됨 (작성 UI 약속).
-  const matchesStyle = (post: Post, filter: StyleFilter) =>
-    filter === "all" || post.wedding_style === filter || post.wedding_style === null;
-
   // 콜드스타트 가드: 자동 적용된 스타일 필터에서 결과가 0개면 안전하게 전체로 폴백.
   // 사용자가 직접 칩을 누른 경우(수동)에는 폴백하지 않음 — 의도 존중.
-  const matchedForSelectedStyle = posts.filter((p) => matchesStyle(p, styleFilter));
-  const isColdStartFallback =
-    styleAutoApplied &&
-    styleFilter !== "all" &&
-    posts.length > 0 &&
-    matchedForSelectedStyle.length === 0;
+  const isColdStartFallback = useMemo(
+    () =>
+      styleAutoApplied &&
+      styleFilter !== "all" &&
+      posts.length > 0 &&
+      posts.filter((p) => matchesStyle(p, styleFilter)).length === 0,
+    [posts, styleFilter, styleAutoApplied]
+  );
   const effectiveStyleFilter: StyleFilter = isColdStartFallback ? "all" : styleFilter;
 
-  const styleFiltered = posts.filter((p) => matchesStyle(p, effectiveStyleFilter));
+  // 필터/정렬은 매 렌더가 아닌 입력값이 바뀔 때만 재계산 — 스크롤·입력 시 메인스레드 블로킹 방지.
+  const styleFiltered = useMemo(
+    () => posts.filter((p) => matchesStyle(p, effectiveStyleFilter)),
+    [posts, effectiveStyleFilter]
+  );
 
-  const trendingPosts = [...styleFiltered]
-    .sort((a, b) => trendingScore(b) - trendingScore(a))
-    .slice(0, 5);
+  const trendingPosts = useMemo(
+    () => [...styleFiltered].sort((a, b) => trendingScore(b) - trendingScore(a)).slice(0, 5),
+    [styleFiltered]
+  );
 
-  const filteredPosts =
-    selectedCategory === "전체"
-      ? styleFiltered
-      : styleFiltered.filter((post) => post.category === selectedCategory);
+  const filteredPosts = useMemo(
+    () =>
+      selectedCategory === "전체"
+        ? styleFiltered
+        : styleFiltered.filter((post) => post.category === selectedCategory),
+    [styleFiltered, selectedCategory]
+  );
 
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
-    if (sortBy === "popular") return trendingScore(b) - trendingScore(a);
-    if (sortBy === "comments") return b.comments_count - a.comments_count;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  const sortedPosts = useMemo(
+    () =>
+      [...filteredPosts].sort((a, b) => {
+        if (sortBy === "popular") return trendingScore(b) - trendingScore(a);
+        if (sortBy === "comments") return b.comments_count - a.comments_count;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }),
+    [filteredPosts, sortBy]
+  );
 
   const handleTabChange = (href: string) => navigate(href);
   const handlePostClick = (postId: string) => navigate(`/community/${postId}`);

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   placeToVendor,
   KOREAN_TO_PLACE_CATEGORY,
+  CATEGORY_CARD_TABLE,
   Vendor,
 } from "@/lib/placeMappers";
 
@@ -72,16 +73,26 @@ export const useVendors = (categoryType?: string) => {
   return useQuery({
     queryKey: ["vendors", categoryType],
     queryFn: async (): Promise<Vendor[]> => {
+      // 카테고리가 지정되면 그 카테고리의 detail 테이블 하나만 join (9→1).
+      // 카드 렌더(buildVendorInfoLines/collectStyleTags)는 place.category 에
+      // 해당하는 테이블만 읽으므로 나머지 8개 join 은 행마다 순수 over-fetch 였다.
+      // eq("category") 로 단일 카테고리만 반환되므로 narrowing 은 회귀 없이 안전.
+      // 카테고리 미지정/미매핑(혼합 목록)일 때만 전체 join 으로 폴백.
+      const placeCat = categoryType
+        ? KOREAN_TO_PLACE_CATEGORY[categoryType] || categoryType
+        : undefined;
+      const cardTable = placeCat ? CATEGORY_CARD_TABLE[placeCat] : undefined;
+      const selectClause = cardTable ? `*, ${cardTable}(*)` : VENDOR_WITH_CATEGORY_SELECT;
+
       let query = supabase
         .from("places")
-        .select(VENDOR_WITH_CATEGORY_SELECT)
+        .select(selectClause)
         .eq("is_active", true)
         .is("deleted_at", null)
         .order("data_completeness", { ascending: false })
         .order("avg_rating", { ascending: false, nullsFirst: false });
 
-      if (categoryType) {
-        const placeCat = KOREAN_TO_PLACE_CATEGORY[categoryType] || categoryType;
+      if (placeCat) {
         query = query.eq("category", placeCat);
       }
 

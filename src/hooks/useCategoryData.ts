@@ -385,8 +385,11 @@ export function useCategoryData(category: CategoryType) {
   const venue = useWeddingVenue();
 
   return useInfiniteQuery({
+    // 배열 필터(filterOptions1~3)는 join 으로 안정 직렬화 — 배열 참조가 바뀌어도
+    // 내용이 같으면 같은 key 가 되어 불필요한 refetch 를 막는다.
     queryKey: [
-      category, region, minRating, filterOptions1, filterOptions2, filterOptions3,
+      category, region, minRating,
+      filterOptions1.join(","), filterOptions2.join(","), filterOptions3.join(","),
       venue.city, venue.district,
     ],
     queryFn: ({ pageParam = 0 }) =>

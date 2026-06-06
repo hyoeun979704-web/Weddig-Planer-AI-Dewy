@@ -1,5 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
+import { createElement, type ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// useCoupleLink 가 useQueryClient 를 쓰므로 Provider 로 감싼다.
+const makeWrapper = () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client: qc }, children);
+};
 
 // ── Supabase 모킹 ─────────────────────────────────────────────
 // from(...) 체인은 어느 깊이에서 await 해도 {data:[],error:null} 로 resolve 되는
@@ -55,7 +64,7 @@ describe("useCoupleLink.linkWithCode", () => {
 
   it("redeem_couple_invite RPC 를 정규화된 코드로 호출한다", async () => {
     rpcMock.mockResolvedValue({ data: { ok: true, link_id: "l1" }, error: null });
-    const { result } = renderHook(() => useCoupleLink());
+    const { result } = renderHook(() => useCoupleLink(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     let ok = false;
@@ -72,7 +81,7 @@ describe("useCoupleLink.linkWithCode", () => {
 
   it("not_found 에러를 사용자 메시지로 매핑하고 false 반환", async () => {
     rpcMock.mockResolvedValue({ data: { ok: false, error: "not_found" }, error: null });
-    const { result } = renderHook(() => useCoupleLink());
+    const { result } = renderHook(() => useCoupleLink(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     let ok = true;
@@ -88,7 +97,7 @@ describe("useCoupleLink.linkWithCode", () => {
 
   it("own_code 에러를 매핑한다", async () => {
     rpcMock.mockResolvedValue({ data: { ok: false, error: "own_code" }, error: null });
-    const { result } = renderHook(() => useCoupleLink());
+    const { result } = renderHook(() => useCoupleLink(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await act(async () => {
@@ -101,7 +110,7 @@ describe("useCoupleLink.linkWithCode", () => {
   });
 
   it("빈 코드는 RPC 호출 없이 막는다", async () => {
-    const { result } = renderHook(() => useCoupleLink());
+    const { result } = renderHook(() => useCoupleLink(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     let ok = true;
