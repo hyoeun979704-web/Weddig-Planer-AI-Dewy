@@ -55,6 +55,7 @@ const CoupleDiary = () => {
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <PageHeader
         title="우리의 일기"
+        tutorialId="couple-header"
         onBack={() => navigate("/schedule")}
         rightExtra={
           isLinked ? (

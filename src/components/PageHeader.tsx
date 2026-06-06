@@ -16,6 +16,8 @@ interface PageHeaderProps {
   rightExtra?: ReactNode;
   /** 백 버튼 동작 커스텀 (기본: navigate(-1)) */
   onBack?: () => void;
+  /** 튜토리얼 코치마크 타깃용 data-tutorial 값(선택). */
+  tutorialId?: string;
 }
 
 const HeaderIconButton = ({
@@ -44,6 +46,7 @@ const PageHeader = ({
   cart,
   rightExtra,
   onBack,
+  tutorialId,
 }: PageHeaderProps) => {
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -53,7 +56,7 @@ const PageHeader = ({
 
   return (
     <>
-      <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-md border-b border-border">
+      <header data-tutorial={tutorialId} className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-[var(--app-header-height)]">
           {/* Back + Title (좌측 정렬) */}
           <div className="flex items-center gap-1 min-w-0">
