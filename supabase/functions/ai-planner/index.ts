@@ -32,24 +32,24 @@ async function checkAndIncrementUsage(supabase: any, userId: string): Promise<{ 
     ((sub.trial_ends_at && new Date(sub.trial_ends_at) > now) ||
      (sub.expires_at && new Date(sub.expires_at) > now));
 
-  if (isPremium) {
-    await supabase.rpc("increment_ai_usage", { p_user_id: userId, p_date: today });
-    return { allowed: true, remaining: -1, isPremium: true };
+  // 원자적 check-and-increment — 한도 미만일 때만 +1 하고 새 카운트 반환, 한도 도달이면
+  // NULL. 이전엔 SELECT 후 별도 RPC 로 +1 하는 비원자 구조라 동시 요청이 같은 카운트를
+  // 읽고 둘 다 통과(한도 초과)할 수 있었다. premium 은 사실상 무제한(큰 limit)으로 추적.
+  const limit = isPremium ? 2_147_483_647 : FREE_DAILY_LIMIT;
+  const { data: newCount, error: gateError } = await supabase.rpc("increment_ai_usage_if_allowed", {
+    p_user_id: userId,
+    p_date: today,
+    p_limit: limit,
+  });
+  // 게이트 실패(에러) 또는 한도 도달(null) → fail-closed 거부(강한 정합성, 비용 차단).
+  if (gateError || newCount == null) {
+    return { allowed: false, remaining: 0, isPremium };
   }
-
-  const { data: usage } = await supabase
-    .from("ai_usage_daily")
-    .select("message_count")
-    .eq("user_id", userId)
-    .eq("usage_date", today)
-    .maybeSingle();
-
-  const currentCount = usage?.message_count || 0;
-  if (currentCount >= FREE_DAILY_LIMIT) {
-    return { allowed: false, remaining: 0, isPremium: false };
-  }
-  await supabase.rpc("increment_ai_usage", { p_user_id: userId, p_date: today });
-  return { allowed: true, remaining: FREE_DAILY_LIMIT - currentCount - 1, isPremium: false };
+  return {
+    allowed: true,
+    remaining: isPremium ? -1 : Math.max(0, FREE_DAILY_LIMIT - (newCount as number)),
+    isPremium,
+  };
 }
 
 serve(async (req) => {
