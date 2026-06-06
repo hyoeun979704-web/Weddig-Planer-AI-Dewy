@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     );
 
     // admin client: payments/subscriptions write + RPC 호출용
-    const adminClient = adminClient();
+    const admin = adminClient();
 
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     }
 
     // 멱등성: 이미 같은 tid 로 처리된 결제면 단락
-    const { data: existing } = await adminClient
+    const { data: existing } = await admin
       .from("payments")
       .select("id, status, user_id, approved_at, amount, plan_type")
       .eq("payment_key", tid)
@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
       }
 
       // 이미 active + 미만료 구독이 있으면 upsert 자체를 skip — 취소 상태도 보존.
-      const { data: currentSub } = await adminClient
+      const { data: currentSub } = await admin
         .from("subscriptions")
         .select("status, expires_at, payment_id")
         .eq("user_id", userId)
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const { error: subscriptionError } = await adminClient
+      const { error: subscriptionError } = await admin
         .from("subscriptions")
         .upsert({
           user_id: userId,
@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
     }
 
     // payments insert — UNIQUE(payment_key) 로 중복 결제 자동 차단
-    const { error: insertError } = await adminClient.from("payments").insert({
+    const { error: insertError } = await admin.from("payments").insert({
       user_id: userId,
       payment_key: tid,
       order_number: partnerOrderId,
@@ -273,7 +273,7 @@ Deno.serve(async (req) => {
       expiresAt.setMonth(expiresAt.getMonth() + 1);
     }
 
-    const { error: subscriptionError } = await adminClient
+    const { error: subscriptionError } = await admin
       .from("subscriptions")
       .upsert({
         user_id: userId,
@@ -298,7 +298,7 @@ Deno.serve(async (req) => {
 
     let heartsGranted = 0;
     if (plan.heartReward && plan.heartReason && Date.now() < EARLY_BIRD_END) {
-      const { error: heartError } = await adminClient.rpc("earn_hearts", {
+      const { error: heartError } = await admin.rpc("earn_hearts", {
         p_user_id: userId,
         p_amount: plan.heartReward,
         p_reason: plan.heartReason,
@@ -331,21 +331,21 @@ Deno.serve(async (req) => {
 
         if (cancelRes.ok) {
           refunded = true;
-          await adminClient
+          await admin
             .from("payments")
             .update({ status: "refunded" })
             .eq("payment_key", tid);
         } else {
           const cancelData = await cancelRes.json();
           console.error("Kakao cancel failed:", cancelData);
-          await adminClient
+          await admin
             .from("payments")
             .update({ status: "refund_pending" })
             .eq("payment_key", tid);
         }
       } catch (refundError) {
         console.error("Refund error:", refundError);
-        await adminClient
+        await admin
           .from("payments")
           .update({ status: "refund_pending" })
           .eq("payment_key", tid);

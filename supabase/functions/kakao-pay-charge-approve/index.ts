@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const adminClient = adminClient();
+    const admin = adminClient();
 
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
     }
 
     // 멱등성: 이미 처리된 tid 면 단락
-    const { data: existing } = await adminClient
+    const { data: existing } = await admin
       .from("payments")
       .select("id")
       .eq("payment_key", tid)
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
     }
 
     // payments insert — UNIQUE(payment_key) 중복 시 ON CONFLICT 처리
-    const { data: paymentRow, error: insertError } = await adminClient
+    const { data: paymentRow, error: insertError } = await admin
       .from("payments")
       .insert({
         user_id: userId,
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
     // 포인트 차감 — 결제 직후, 멱등성 확보된 시점에 service_role 로 호출
     let pointsSpent = 0;
     if (pointsToSpend > 0) {
-      const { error: spendError } = await adminClient.rpc("spend_points", {
+      const { error: spendError } = await admin.rpc("spend_points", {
         p_user_id: userId,
         p_amount: pointsToSpend,
         p_reason: "heart_charge",
@@ -226,10 +226,10 @@ Deno.serve(async (req) => {
               cancel_tax_free_amount: "0",
             }).toString(),
           });
-          await adminClient.from("payments").update({ status: "refunded" }).eq("payment_key", tid);
+          await admin.from("payments").update({ status: "refunded" }).eq("payment_key", tid);
         } catch (e) {
           console.error("Refund after point-spend fail:", e);
-          await adminClient.from("payments").update({ status: "refund_pending" }).eq("payment_key", tid);
+          await admin.from("payments").update({ status: "refund_pending" }).eq("payment_key", tid);
         }
         return new Response(
           JSON.stringify({ success: false, error: "포인트 차감에 실패해 결제를 환불했습니다. 다시 시도해주세요." }),
@@ -241,7 +241,7 @@ Deno.serve(async (req) => {
 
     // 하트 적립
     const isStarter = packageId === "starter";
-    const { data: earnData, error: earnError } = await adminClient.rpc("earn_hearts", {
+    const { data: earnData, error: earnError } = await admin.rpc("earn_hearts", {
       p_user_id: userId,
       p_amount: pkg.hearts,
       p_reason: isStarter ? "charge_starter" : `charge_${packageId}`,
@@ -268,13 +268,13 @@ Deno.serve(async (req) => {
             cancel_tax_free_amount: "0",
           }).toString(),
         });
-        await adminClient
+        await admin
           .from("payments")
           .update({ status: "refunded" })
           .eq("payment_key", tid);
       } catch (e) {
         console.error("Auto refund after earn fail:", e);
-        await adminClient
+        await admin
           .from("payments")
           .update({ status: "refund_pending" })
           .eq("payment_key", tid);
