@@ -108,16 +108,28 @@ export const useTutorial = () => {
       const lesson = findLessonById(id);
       const candidates = [id, ...(lesson?.aliases ?? [])].map((x) => `feature_${x}`);
       if (candidates.length > 1) {
-        const { data: existing } = await supabase
-          .from("tutorial_completions" as any)
-          .select("tour_id")
-          .in("tour_id", candidates)
-          .limit(1)
-          .maybeSingle();
-        if (existing) {
-          // 이미 alias 로 받은 적 있음 — RPC 호출 skip (PK 가드 의존 대신 명시 차단).
-          return;
+        // alias 별 tour_id 가 달라 RPC 의 PK 가드만으론 cross-alias 중복 award 를 못 막는다.
+        // alias 체크는 중복 방지의 핵심 가드 — transient 오류 시 무시하고 award 하면 회귀하므로
+        // 3회 재시도(지수 백오프) 후에도 검증 실패면 award 자체를 skip 한다(fail-closed,
+        // 강한 정합성 우선: DB 일시 장애 시 적립을 놓치더라도 중복 발급은 막는다).
+        let verified = false;
+        let existing: unknown = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const { data, error } = await supabase
+            .from("tutorial_completions" as any)
+            .select("tour_id")
+            .in("tour_id", candidates)
+            .limit(1)
+            .maybeSingle();
+          if (!error) {
+            verified = true;
+            existing = data;
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 200 * 2 ** attempt)); // 200/400/800ms
         }
+        if (!verified) return; // 검증 불가 → 중복 award 위험이라 skip
+        if (existing) return; // 이미 alias 로 받은 적 있음
       }
       const { data, error } = await supabase.rpc("complete_tutorial" as any, {
         p_tour_id: `feature_${id}`,
