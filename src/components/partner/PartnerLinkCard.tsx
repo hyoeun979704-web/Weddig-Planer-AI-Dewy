@@ -182,7 +182,8 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
 
   // ── Linked: partner connected ────────────────────────────────────────
   if (isLinked && partnerProfile) {
-    const partnerName = partnerProfile.display_name || "내 파트너";
+    // 이름이 없으면 이메일로라도 '누구와 연결됐는지' 식별 가능하게.
+    const partnerName = partnerProfile.display_name || partnerProfile.email || "내 파트너";
     const partnerInitial = partnerName.charAt(0).toUpperCase();
 
     return (
@@ -206,6 +207,10 @@ const PartnerLinkCard = ({ variant, hideWhenLoggedOut = false }: PartnerLinkCard
               {partnerName}
               <span className="text-muted-foreground font-normal text-sm"> 님과 연결됨</span>
             </p>
+            {/* 이름과 이메일이 다르면 이메일도 표기 — 어떤 계정과 연결됐는지 확인용. */}
+            {partnerProfile.email && partnerProfile.email !== partnerName && (
+              <p className="text-[11px] text-muted-foreground truncate">{partnerProfile.email}</p>
+            )}
           </div>
         </div>
 

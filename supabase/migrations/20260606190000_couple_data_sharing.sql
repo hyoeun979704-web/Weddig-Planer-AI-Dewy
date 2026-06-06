@@ -47,31 +47,38 @@ REVOKE ALL ON FUNCTION public.is_couple_partner(uuid) FROM public;
 GRANT EXECUTE ON FUNCTION public.is_couple_partner(uuid) TO authenticated;
 
 -- Shared predicate, expressed inline per table: own row OR partner's row.
+-- Each CREATE is preceded by DROP IF EXISTS of BOTH the legacy own-only policy
+-- and the new couple policy, so this migration is safe to re-run.
 
 -- ── budget_items: collection, bidirectional ────────────────────────────────
 DROP POLICY IF EXISTS "Users can view own budget_items" ON public.budget_items;
+DROP POLICY IF EXISTS "Couple members can view budget_items" ON public.budget_items;
 CREATE POLICY "Couple members can view budget_items"
 ON public.budget_items FOR SELECT
 USING (auth.uid() = user_id OR public.is_couple_partner(user_id));
 
 DROP POLICY IF EXISTS "Users can update own budget_items" ON public.budget_items;
+DROP POLICY IF EXISTS "Couple members can update budget_items" ON public.budget_items;
 CREATE POLICY "Couple members can update budget_items"
 ON public.budget_items FOR UPDATE
 USING (auth.uid() = user_id OR public.is_couple_partner(user_id))
 WITH CHECK (auth.uid() = user_id OR public.is_couple_partner(user_id));
 
 DROP POLICY IF EXISTS "Users can delete own budget_items" ON public.budget_items;
+DROP POLICY IF EXISTS "Couple members can delete budget_items" ON public.budget_items;
 CREATE POLICY "Couple members can delete budget_items"
 ON public.budget_items FOR DELETE
 USING (auth.uid() = user_id OR public.is_couple_partner(user_id));
 
 -- ── budget_settings: singleton, one shared couple budget ───────────────────
 DROP POLICY IF EXISTS "Users can view own budget_settings" ON public.budget_settings;
+DROP POLICY IF EXISTS "Couple members can view budget_settings" ON public.budget_settings;
 CREATE POLICY "Couple members can view budget_settings"
 ON public.budget_settings FOR SELECT
 USING (auth.uid() = user_id OR public.is_couple_partner(user_id));
 
 DROP POLICY IF EXISTS "Users can update own budget_settings" ON public.budget_settings;
+DROP POLICY IF EXISTS "Couple members can update budget_settings" ON public.budget_settings;
 CREATE POLICY "Couple members can update budget_settings"
 ON public.budget_settings FOR UPDATE
 USING (auth.uid() = user_id OR public.is_couple_partner(user_id))
@@ -80,23 +87,27 @@ WITH CHECK (auth.uid() = user_id OR public.is_couple_partner(user_id));
 
 -- ── user_schedule_items: collection, bidirectional ─────────────────────────
 DROP POLICY IF EXISTS "Users can view their own schedule items" ON public.user_schedule_items;
+DROP POLICY IF EXISTS "Couple members can view schedule items" ON public.user_schedule_items;
 CREATE POLICY "Couple members can view schedule items"
 ON public.user_schedule_items FOR SELECT
 USING (auth.uid() = user_id OR public.is_couple_partner(user_id));
 
 DROP POLICY IF EXISTS "Users can update their own schedule items" ON public.user_schedule_items;
+DROP POLICY IF EXISTS "Couple members can update schedule items" ON public.user_schedule_items;
 CREATE POLICY "Couple members can update schedule items"
 ON public.user_schedule_items FOR UPDATE
 USING (auth.uid() = user_id OR public.is_couple_partner(user_id))
 WITH CHECK (auth.uid() = user_id OR public.is_couple_partner(user_id));
 
 DROP POLICY IF EXISTS "Users can delete their own schedule items" ON public.user_schedule_items;
+DROP POLICY IF EXISTS "Couple members can delete schedule items" ON public.user_schedule_items;
 CREATE POLICY "Couple members can delete schedule items"
 ON public.user_schedule_items FOR DELETE
 USING (auth.uid() = user_id OR public.is_couple_partner(user_id));
 
 -- ── user_wedding_settings: read-share only (persona stays personal) ────────
 DROP POLICY IF EXISTS "Users can view their own wedding settings" ON public.user_wedding_settings;
+DROP POLICY IF EXISTS "Couple members can view wedding settings" ON public.user_wedding_settings;
 CREATE POLICY "Couple members can view wedding settings"
 ON public.user_wedding_settings FOR SELECT
 USING (auth.uid() = user_id OR public.is_couple_partner(user_id));
