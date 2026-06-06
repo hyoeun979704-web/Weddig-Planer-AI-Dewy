@@ -28,7 +28,7 @@ export const CATEGORY_LABELS: Record<SkippableCategory, { label: string; hint: s
   makeup_shop: { label: "메이크업샵", hint: "헤어·메이크업 예약" },
   hanbok: { label: "한복", hint: "혼주·신부 한복 준비" },
   tailor_shop: { label: "예복", hint: "예복 맞춤·가봉" },
-  honeymoon: { label: "신혼여행", hint: "여행지·항공·숙박 예약" },
+  honeymoon: { label: "허니문", hint: "여행지·항공·숙박 예약" },
   appliance: { label: "혼수 가전·가구", hint: "혼수 구매 일정" },
   invitation_venue: { label: "청첩장", hint: "디자인·발송" },
 };

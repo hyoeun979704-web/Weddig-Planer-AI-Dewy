@@ -19,7 +19,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   makeup_shop: "메이크업",
   hanbok: "한복",
   tailor_shop: "예복",
-  honeymoon: "신혼여행",
+  honeymoon: "허니문",
   jewelry: "예물·예단",
   appliance: "혼수·가전",
   invitation_venue: "청첩장 모임",

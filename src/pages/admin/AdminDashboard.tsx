@@ -70,7 +70,7 @@ const PLACE_CATEGORIES = [
   { key: "studio", label: "스튜디오" },
   { key: "dress_shop", label: "드레스샵" },
   { key: "makeup_shop", label: "메이크업샵" },
-  { key: "honeymoon", label: "신혼여행" },
+  { key: "honeymoon", label: "허니문" },
   { key: "hanbok", label: "한복" },
   { key: "suit", label: "예복" },
   { key: "jewelry", label: "예물·반지" },
