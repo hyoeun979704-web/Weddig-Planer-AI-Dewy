@@ -43,6 +43,31 @@ E2E_EMAIL=you@example.com E2E_PASSWORD=... \
 켜지 말 것**(MITM 노출). 로그인 시 **전용 throwaway 테스트 계정**만 쓰고(실유저/관리자 금지),
 자격증명은 셸 env 로만 전달(코드/저장소에 하드코딩 금지) — RLS 가 최종 방어선.
 
+## 로그인 화면(페르소나 모달 등)을 실계정 없이 — 로컬 목(mock)
+
+실백엔드·실계정 없이 로그인 이후 화면을 보려면 `scripts/visual-review/mock-supabase.cjs`
+로 가짜 Supabase 를 띄우고 앱을 거기로 보낸다(터미널 3개):
+
+```bash
+# 1) 목 Supabase (페르소나 시나리오는 env 로: 재혼+자녀+성향)
+MOCK_MARITAL=remarriage MOCK_HAS_CHILDREN=1 MOCK_PLANNING=budget_analytic \
+  node scripts/visual-review/mock-supabase.cjs            # → http://127.0.0.1:9999
+
+# 2) 앱을 목으로 (dev 든 build+preview 든)
+VITE_SUPABASE_URL=http://127.0.0.1:9999 VITE_SUPABASE_ANON_KEY=mock \
+  npm run dev:vite -- --host 127.0.0.1 --port 5199
+
+# 3) 폼 로그인(목이 세션 발급) 후 캡처 — supabase-js 가 정상 플로우로 세션 저장
+E2E_EMAIL=preview@mock.local E2E_PASSWORD=x \
+  node scripts/visual-review/screenshot.cjs /mypage   out/sensitive-card.png --login
+E2E_EMAIL=preview@mock.local E2E_PASSWORD=x \
+  node scripts/visual-review/screenshot.cjs /schedule out/persona-modal.png --login
+```
+
+> 이 목 흐름은 **네트워크가 열린 로컬**에서 동작한다. 일부 샌드박스는 다중 백그라운드
+> 프로세스(목+dev+브라우저 동시)를 불안정하게 다뤄(프로세스가 시그널로 종료) 한 머신에서
+> 셋을 동시에 못 띄울 수 있다 — 그 경우 로컬 개발 머신에서 실행할 것.
+
 ## 네이티브 Android(Play Store) 테스트는?
 
 웹 harness 로는 안 된다. 실기기/에뮬레이터가 필요:
