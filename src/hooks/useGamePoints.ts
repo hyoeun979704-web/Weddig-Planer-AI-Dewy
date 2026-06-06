@@ -39,10 +39,12 @@ export function useGamePoints() {
       return data?.total_points ?? 0;
     },
     enabled: !!user,
+    staleTime: 60_000,
   });
 
   const { data: ranking } = useQuery({
     queryKey: ['game-ranking'],
+    staleTime: 60_000,
     queryFn: async () => {
       const { data } = await supabase
         .from('game_scores')
@@ -86,6 +88,7 @@ export function useGamePoints() {
       return data?.score ?? 0;
     },
     enabled: !!user,
+    staleTime: 60_000,
   });
 
   return { saveScore, isSaving, myPoints: myPoints ?? 0, ranking: ranking ?? [], myBestScore: myBestScore ?? 0 };

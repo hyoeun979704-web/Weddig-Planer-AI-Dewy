@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -47,26 +47,26 @@ export const labelForReason = (reason: string): string => {
   return "포인트 내역";
 };
 
+interface PointsData {
+  balance: number;
+  totalEarned: number;
+  totalSpent: number;
+  transactions: PointTransaction[];
+}
+
+const EMPTY: PointsData = { balance: 0, totalEarned: 0, totalSpent: 0, transactions: [] };
+
+// React Query 로 단일 source of truth. PersonaDashboard(홈)·Points·HeartCharge 가
+// 동시에 마운트해도 같은 queryKey 로 캐시를 공유 → 중복 fetch 제거.
 export const usePoints = () => {
   const { user } = useAuth();
-  const [balance, setBalance] = useState<number>(0);
-  const [totalEarned, setTotalEarned] = useState<number>(0);
-  const [totalSpent, setTotalSpent] = useState<number>(0);
-  const [transactions, setTransactions] = useState<PointTransaction[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const fetchAll = useCallback(async () => {
-    if (!user) {
-      setBalance(0);
-      setTotalEarned(0);
-      setTotalSpent(0);
-      setTransactions([]);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
+  const { data, isLoading, refetch } = useQuery<PointsData>({
+    queryKey: ["user-points-full", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: async () => {
+      if (!user) return EMPTY;
       const [balRes, txRes] = await Promise.all([
         supabase
           .from("user_points")
@@ -80,26 +80,22 @@ export const usePoints = () => {
           .order("created_at", { ascending: false })
           .limit(50),
       ]);
-
-      setBalance(balRes.data?.balance ?? 0);
-      setTotalEarned(balRes.data?.total_earned ?? 0);
-      setTotalSpent(balRes.data?.total_spent ?? 0);
-      setTransactions((txRes.data ?? []) as PointTransaction[]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+      return {
+        balance: balRes.data?.balance ?? 0,
+        totalEarned: balRes.data?.total_earned ?? 0,
+        totalSpent: balRes.data?.total_spent ?? 0,
+        transactions: (txRes.data ?? []) as PointTransaction[],
+      };
+    },
+  });
 
   return {
-    balance,
-    totalEarned,
-    totalSpent,
-    transactions,
-    isLoading,
-    refetch: fetchAll,
+    balance: data?.balance ?? 0,
+    totalEarned: data?.totalEarned ?? 0,
+    totalSpent: data?.totalSpent ?? 0,
+    transactions: data?.transactions ?? [],
+    // enabled=false(비로그인)일 때 isLoading 이 true 로 머무는 동작 회피.
+    isLoading: !!user && isLoading,
+    refetch,
   };
 };

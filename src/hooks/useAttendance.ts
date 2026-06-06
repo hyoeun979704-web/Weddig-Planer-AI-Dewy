@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -25,40 +26,39 @@ interface ClaimResult {
   totalEarned: number;
 }
 
+const DEFAULT_STATE: AttendanceState = {
+  lastDate: null,
+  currentStreak: 0,
+  longestStreak: 0,
+  totalCheckIns: 0,
+};
+
+// React Query 로 전환 — 홈(PersonaDashboard)과 Points 페이지가 동시에 마운트해도
+// 같은 queryKey 로 캐시 공유 → 중복 fetch 제거. claim 은 성공 시 invalidate.
 export const useAttendance = () => {
   const { user } = useAuth();
-  const [state, setState] = useState<AttendanceState>({
-    lastDate: null,
-    currentStreak: 0,
-    longestStreak: 0,
-    totalCheckIns: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [isClaiming, setIsClaiming] = useState(false);
 
-  const fetchState = useCallback(async () => {
-    if (!user) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    const { data } = await supabase
-      .from("user_attendance")
-      .select("last_date, current_streak, longest_streak, total_check_ins")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    setState({
-      lastDate: data?.last_date ?? null,
-      currentStreak: data?.current_streak ?? 0,
-      longestStreak: data?.longest_streak ?? 0,
-      totalCheckIns: data?.total_check_ins ?? 0,
-    });
-    setIsLoading(false);
-  }, [user]);
-
-  useEffect(() => {
-    fetchState();
-  }, [fetchState]);
+  const { data: state = DEFAULT_STATE, isLoading, refetch } = useQuery<AttendanceState>({
+    queryKey: ["attendance", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: async () => {
+      if (!user) return DEFAULT_STATE;
+      const { data } = await supabase
+        .from("user_attendance")
+        .select("last_date, current_streak, longest_streak, total_check_ins")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return {
+        lastDate: data?.last_date ?? null,
+        currentStreak: data?.current_streak ?? 0,
+        longestStreak: data?.longest_streak ?? 0,
+        totalCheckIns: data?.total_check_ins ?? 0,
+      };
+    },
+  });
 
   const claim = useCallback(async (): Promise<ClaimResult | null> => {
     if (!user || isClaiming) return null;
@@ -74,7 +74,7 @@ export const useAttendance = () => {
         currentStreak: row?.current_streak ?? 0,
         totalEarned: row?.total_earned ?? 0,
       };
-      await fetchState();
+      await queryClient.invalidateQueries({ queryKey: ["attendance", user.id] });
       return result;
     } catch (e) {
       console.error("claim_daily_attendance failed", e);
@@ -82,16 +82,16 @@ export const useAttendance = () => {
     } finally {
       setIsClaiming(false);
     }
-  }, [user, isClaiming, fetchState]);
+  }, [user, isClaiming, queryClient]);
 
   const alreadyClaimedToday = state.lastDate === todayKstISO();
 
   return {
     ...state,
-    isLoading,
+    isLoading: !!user && isLoading,
     isClaiming,
     alreadyClaimedToday,
     claim,
-    refetch: fetchState,
+    refetch,
   };
 };
