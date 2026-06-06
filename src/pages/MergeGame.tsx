@@ -1,8 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Trophy, Coins, Medal } from 'lucide-react';
 import { Game } from '@/game/Game';
 import AdBanner from '@/components/ads/AdBanner';
+import RewardedAdModal from '@/components/ads/RewardedAdModal';
+import { setWebRewardedHandler, isNativeAds } from '@/lib/ads/adService';
 import { useGamePoints } from '@/hooks/useGamePoints';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -16,6 +18,27 @@ export default function MergeGame() {
     return Number(localStorage.getItem('mergeGame_best') ?? 0);
   });
   const [showRanking, setShowRanking] = useState(false);
+
+  // 웹 '2배 적립' 광고 모달 — adService 의 showRewardedAd 가 이 핸들러로 연결됨.
+  // 네이티브(AdMob)는 등록하지 않아 AdSense 가 앱 WebView 에 안 뜨게 한다(정책).
+  const [adModalOpen, setAdModalOpen] = useState(false);
+  const adResolveRef = useRef<((rewarded: boolean) => void) | null>(null);
+  useEffect(() => {
+    if (isNativeAds()) return;
+    setWebRewardedHandler(
+      () =>
+        new Promise<boolean>((resolve) => {
+          adResolveRef.current = resolve;
+          setAdModalOpen(true);
+        }),
+    );
+    return () => setWebRewardedHandler(null);
+  }, []);
+  const handleAdComplete = useCallback((rewarded: boolean) => {
+    setAdModalOpen(false);
+    adResolveRef.current?.(rewarded);
+    adResolveRef.current = null;
+  }, []);
 
   const effectiveBest = user ? Math.max(bestScore, myBestScore) : bestScore;
 
@@ -138,8 +161,11 @@ export default function MergeGame() {
         />
       </div>
 
-      {/* 하단 광고 배너 (웹=AdSense / 네이티브=AdMob). 승인 전엔 회색 '광고' 자리표시. */}
+      {/* 하단 광고 배너 (웹=AdSense 슬롯 4600179427 / 네이티브=AdMob). */}
       <AdBanner className="flex-shrink-0 w-full" height={96} placeholder />
+
+      {/* 웹 '포인트 2배' 광고 모달 (슬롯 1646713028). */}
+      <RewardedAdModal open={adModalOpen} onComplete={handleAdComplete} />
     </div>
   );
 }
