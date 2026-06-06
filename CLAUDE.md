@@ -9,7 +9,9 @@
   (URL/npm import 는 external). **`main` push(paths 필터) 시에만 배포** → 브랜치 작업은 배포 영향 0.
 - **브랜치**: `origin/main` 이 정식(로컬 `main` 은 뒤처질 수 있음 — 팀이 main 앞서 개발). PR base = `main`.
 - **재사용 먼저 검색**(중복 금지): `src/lib`(포맷/매핑/escape: priceFormat·relativeTime·placeMappers·postgrestEscape·categoryLabels),
-  `supabase/functions/_shared`(cors·jwt·llm), `api/_lib`(ssr). 새로 짜기 전 grep.
+  `supabase/functions/_shared`(cors·jwt·llm·supabase), `api/_lib`(ssr). 새로 짜기 전 grep.
+- **병렬 작업**: fan-out 탐색은 `Explore`(저토큰·결론만), 깊은 다단계 작업만 `general-purpose`.
+  같은 파일 동시 편집 금지(작업 분할). 안전 검증·읽기 명령은 `.claude/settings.json` 에 사전 허용됨.
 
 ## 코드 작성·리뷰 규칙 — 항상 적용 (바이브코딩 안전장치)
 

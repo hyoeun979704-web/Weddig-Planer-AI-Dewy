@@ -1,0 +1,20 @@
+{
+  "$comment": "병렬 작업 효율: 모든 코드 에이전트가 반복 실행하는 안전한 검증·읽기 명령만 사전 허용해 권한 프롬프트 왕복(=토큰)을 줄인다. 변경·외부·DB쓰기(git push/commit/reset, rm, execute_sql, apply_migration 등)는 의도적으로 제외 — 그대로 확인을 받는다.",
+  "permissions": {
+    "allow": [
+      "Bash(npm run build)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run test)",
+      "Bash(npm run test:*)",
+      "Bash(npm ci)",
+      "Bash(npx esbuild:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)"
+    ]
+  }
+}
