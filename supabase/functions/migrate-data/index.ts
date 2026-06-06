@@ -5,8 +5,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const EXTERNAL_URL = "https://fjzffmmzudhxguvpapxj.supabase.co";
-const EXTERNAL_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqemZmbW16dWRoeGd1dnBhcHhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NDA4NTUsImV4cCI6MjA4ODExNjg1NX0.7HO5dMBHcRQ8edRkkaKAFPXcVem0AazotiM2ngeAocY";
+// 외부 소스 프로젝트 크리덴셜은 Supabase Secrets 로 주입한다(소스에 하드코딩 금지).
+//   supabase secrets set EXTERNAL_SUPABASE_URL=... EXTERNAL_SUPABASE_ANON_KEY=...
+const EXTERNAL_URL = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "";
+const EXTERNAL_KEY = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? "";
 
 // external table -> local table mapping with column renames
 const MIGRATION_MAP: Array<{
@@ -37,6 +39,13 @@ Deno.serve(async (req) => {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (!EXTERNAL_URL || !EXTERNAL_KEY) {
+      return new Response(
+        JSON.stringify({ success: false, error: "External source not configured" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const externalClient = createClient(EXTERNAL_URL, EXTERNAL_KEY);

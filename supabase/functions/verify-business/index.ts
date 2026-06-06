@@ -242,11 +242,10 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    // 내부 에러 상세는 로그로만, 클라에는 제네릭 메시지(스키마/내부정보 누출 방지).
     console.error("verify-business error:", error);
     return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다",
-      }),
+      JSON.stringify({ error: "사업자 인증 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

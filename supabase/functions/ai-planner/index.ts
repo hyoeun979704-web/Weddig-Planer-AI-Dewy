@@ -184,9 +184,10 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Daily-Remaining": String(dailyRemaining) },
     });
   } catch (error) {
+    // 내부 에러 상세(DB 스키마/컬럼명 등)는 로그로만, 클라에는 제네릭 메시지.
     console.error("Dewy AI Planner error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "알 수 없는 오류가 발생했어요." }),
+      JSON.stringify({ error: "AI 플래너 처리 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

@@ -26,6 +26,22 @@ type Payload = {
   data?: Record<string, string>;
 };
 
+// 게이트웨이(verify_jwt=true)가 서명을 검증한 뒤, role 클레임으로 인가한다.
+// 임의의 로그인 사용자가 타인(user_id)에게 푸시를 보내지 못하도록 service_role
+// 토큰(서버/cron 호출)만 통과시킨다. env SERVICE_ROLE_KEY 문자열 매칭은 키
+// 로테이션/포맷 드리프트에 약하므로 role 클레임으로 인가한다.
+function jwtRole(token: string): string | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, "="));
+    return (JSON.parse(json)?.role as string | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── FCM OAuth 토큰 ──────────────────────────────────────────────────────
 // Service account JWT → access token. 1시간 유효, 캐시 가능. 단순화를 위해 매 호출 발급.
 
@@ -122,6 +138,17 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // service_role 토큰(서버/cron)만 허용 — 클라이언트가 임의 user_id 로 타인에게
+  // 푸시(피싱/스팸)하는 것을 차단.
+  const auth = req.headers.get("Authorization") ?? "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (jwtRole(token) !== "service_role") {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const payload = (await req.json()) as Payload;
     if (!payload.user_id || !payload.title || !payload.body) {
@@ -178,6 +205,9 @@ Deno.serve(async (req) => {
     );
   } catch (e) {
     console.error("[send-push] error:", e);
-    return new Response((e as Error).message, { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: "Internal error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
