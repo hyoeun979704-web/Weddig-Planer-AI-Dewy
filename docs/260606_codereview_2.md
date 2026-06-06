@@ -82,7 +82,8 @@ v_earned := GREATEST(1, p_score / 20);  -- p_score 는 클라가 보낸 값
 | 마이그레이션 | 내용 | 상태 |
 |---|---|---|
 | `20260606193000_points_economy_lockdown` | earn_points·earn_hearts·spend_points anon/authenticated 회수, spend_hearts anon 회수+소유권 가드 | ✅ DB 적용·검증 완료 |
-| `20260606194000_points_farming_guards` | add_game_points 게임 보상 일일 한도(500P/일, KST) + claim_daily_attendance FOR UPDATE 잠금 + daily_attendance 일자 부분 유니크 인덱스 | ✅ DB 적용·검증 완료 |
+| `20260606194000_points_farming_guards` | add_game_points 게임 보상 일일 한도(500P/일, KST) + claim_daily_attendance FOR UPDATE 잠금 + daily_attendance 일자 부분 유니크 인덱스 | ✅ 적용 (게임 한도는 196000 으로 대체) |
+| `20260606196000_game_daily_3games_half_points` | 게임 점수책정 절반(score/40) + 하루 3판까지만 적립 + 광고 보너스 서버측 '추가 1×'(총 2×) 처리 | ✅ DB 적용·검증 완료 |
 | `20260606195000_tutorial_tour_allowlist` | tutorial_tours 허용목록 + complete_tutorial 검증(가짜 id 차단)·마스터 >=5 | ✅ DB 적용·검증 완료 |
 
 ## 남은 작업 (deferred)

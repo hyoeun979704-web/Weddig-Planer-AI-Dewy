@@ -20,7 +20,8 @@ export function useGamePoints() {
       return (data as number) ?? 0;
     } catch (e) {
       console.error('Failed to save game score:', e);
-      return Math.max(1, Math.floor(score / 20)) * (doubled ? 2 : 1);
+      // 오프라인 폴백 표시값 — 점수책정 절반(score/40). 기본/보너스 모두 1× 단위.
+      return Math.max(1, Math.floor(score / 40));
     } finally {
       setIsSaving(false);
     }

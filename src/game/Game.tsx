@@ -418,8 +418,8 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
       ctx.font = "14px 'Noto Sans KR', sans-serif";
       ctx.fillText(`최종 점수: ${gs.score}점`, GAME_WIDTH / 2, popY + 62);
 
-      // 획득 포인트
-      const earnedPoints = Math.floor(gs.score / 20);
+      // 획득 포인트 (점수책정 절반: score/40, 서버 add_game_points 와 일치)
+      const earnedPoints = Math.max(1, Math.floor(gs.score / 40));
       ctx.fillStyle = '#C9A96E';
       ctx.font = "bold 15px 'Noto Sans KR', sans-serif";
       ctx.fillText(` 획득 포인트: ${earnedPoints}P`, GAME_WIDTH / 2, popY + 88);
