@@ -10,14 +10,10 @@
 // 입력: { source_path: string, body?: BodyPreset }
 // 출력: { path, url, charged, was_free }
 
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const HEART_COST = 5;
 

@@ -12,14 +12,10 @@
 //
 // OpenAI Images API: https://platform.openai.com/docs/api-reference/images/createEdit
 
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 // 청첩장 톤에 어울리는 부드러운 수채화 일러스트로 변환하는 프롬프트.
 // 인물의 정체성·구도는 유지하되 사진 질감을 일러스트로만 바꾸도록 지시.

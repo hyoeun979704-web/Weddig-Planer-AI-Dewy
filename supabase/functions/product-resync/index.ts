@@ -19,13 +19,11 @@
  *   { scanned, updated, deactivated, errors }
  */
 
+import { corsHeaders } from "../_shared/cors.ts";
+import { jwtRole } from "../_shared/jwt.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 const DEFAULT_CHUNK = 80;
 const PER_QUERY_DISPLAY = 30;
@@ -76,21 +74,6 @@ function jsonResp(body: unknown, status = 200) {
   });
 }
 
-// Decode the `role` claim from a JWT WITHOUT verifying the signature — the edge
-// gateway (verify_jwt=true) already rejected anything not signed by the project
-// JWT secret. Authorize cron/service by role=service_role instead of string-
-// matching the env SERVICE_ROLE_KEY (which drifts across API-key rotations).
-function jwtRole(token: string): string | null {
-  try {
-    const part = token.split(".")[1];
-    if (!part) return null;
-    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
-    const json = atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, "="));
-    return (JSON.parse(json)?.role as string | undefined) ?? null;
-  } catch {
-    return null;
-  }
-}
 
 function stripHtmlTags(s: string): string {
   return s.replace(/<[^>]+>/g, "").replace(/&quot;/g, '"').replace(/&amp;/g, "&");

@@ -1,9 +1,6 @@
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 // 외부 소스 프로젝트 크리덴셜은 Supabase Secrets 로 주입한다(소스에 하드코딩 금지).
 //   supabase secrets set EXTERNAL_SUPABASE_URL=... EXTERNAL_SUPABASE_ANON_KEY=...

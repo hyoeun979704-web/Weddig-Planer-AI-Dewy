@@ -6,7 +6,8 @@
 
 export const config = { runtime: "edge" };
 
-const SITE = "https://dewy-wedding.com";
+import { SITE, esc, headTags, inject, bareDoc, getTemplate, type Rendered } from "./_lib/ssr";
+
 const SUPABASE_URL = "https://qabeywyzjsgyqpjqsvkd.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhYmV5d3l6anNneXFwanFzdmtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NTg4MzUsImV4cCI6MjA5MTEzNDgzNX0.ae0GIokaeczwm0-FaVSoCnkNqBgagsdD1-1I_BP90Jo";
@@ -52,14 +53,6 @@ const PLACE_SELECT = [
   "place_invitation_venues(*)",
 ].join(",");
 
-function esc(v: unknown): string {
-  return String(v ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 function firstRow(json: unknown): Record<string, unknown> | null {
   return Array.isArray(json) && json.length && typeof json[0] === "object"
     ? (json[0] as Record<string, unknown>)
@@ -77,8 +70,6 @@ async function sb(path: string): Promise<unknown> {
   if (!res.ok) throw new Error(`supabase ${res.status}`);
   return res.json();
 }
-
-type Rendered = { title: string; description: string; canonical: string; head: string; body: string };
 
 function advantages(d: Record<string, unknown> | null): string[] {
   if (!d) return [];
@@ -149,7 +140,7 @@ function renderPlace(p: Record<string, unknown>, reviews: Record<string, unknown
   };
 
   const title = `${name} - ${label} 가격·후기 | Dewy`;
-  const head = headTags(title, metaDesc, canonical, image, jsonLd);
+  const head = headTags(title, metaDesc, canonical, jsonLd, image);
   const body = `
     <section aria-hidden="true" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:normal;border:0;">
       <h1>${esc(name)}</h1>
@@ -185,7 +176,7 @@ function renderProduct(p: Record<string, unknown>): Rendered {
   };
 
   const title = `${name} | Dewy 웨딩 쇼핑몰`;
-  const head = headTags(title, metaDesc, canonical, image, jsonLd);
+  const head = headTags(title, metaDesc, canonical, jsonLd, image);
   const body = `
     <section aria-hidden="true" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:normal;border:0;">
       <h1>${esc(name)}</h1>
@@ -194,54 +185,6 @@ function renderProduct(p: Record<string, unknown>): Rendered {
     </section>`;
 
   return { title, description: metaDesc, canonical, head, body };
-}
-
-function headTags(title: string, desc: string, canonical: string, image: string, jsonLd: Record<string, unknown>): string {
-  return [
-    `<meta name="description" content="${esc(desc)}" />`,
-    `<link rel="canonical" href="${esc(canonical)}" />`,
-    `<meta property="og:title" content="${esc(title)}" />`,
-    `<meta property="og:description" content="${esc(desc)}" />`,
-    `<meta property="og:url" content="${esc(canonical)}" />`,
-    `<meta property="og:image" content="${esc(image)}" />`,
-    `<meta name="twitter:title" content="${esc(title)}" />`,
-    `<meta name="twitter:description" content="${esc(desc)}" />`,
-    `<meta name="twitter:image" content="${esc(image)}" />`,
-    // `<` 를 유니코드로 이스케이프해 본문 데이터에 든 `</script>`/`<!--` 가
-    // 스크립트 태그를 탈출하는 것(XSS)을 막는다.
-    `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>`,
-  ].join("\n    ");
-}
-
-function inject(template: string, r: Rendered): string {
-  // 치환 문자열을 함수로 넘겨, 본문 데이터에 든 `$&`/`$1`/`$$` 같은 시퀀스가
-  // String.replace 의 특수 치환 패턴으로 해석돼 출력이 깨지는 것을 막는다.
-  let html = template;
-  html = html.replace(/<title>[\s\S]*?<\/title>/, () => `<title>${esc(r.title)}</title>`);
-  // 기존 description/canonical 제거(상세용으로 대체) 후 head 주입
-  html = html
-    .replace(/<meta name="description"[^>]*>/, "")
-    .replace(/<link rel="canonical"[^>]*>/, "");
-  html = html.replace("</head>", () => `    ${r.head}\n  </head>`);
-  // #root 안에 본문 주입(앱 부팅 시 React 가 대체). noscript 는 그대로 둔다.
-  html = html.replace('<div id="root">', () => `<div id="root">\n      ${r.body}`);
-  return html;
-}
-
-// 템플릿(index.html) 확보 실패 시 사용할, 리다이렉트 없는 최소 문서.
-// 무한 리다이렉트를 피하면서 크롤러에는 본문/구조화 데이터를 제공한다.
-function bareDoc(r: Rendered): string {
-  return `<!doctype html><html lang="ko"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${esc(r.title)}</title>\n    ${r.head}\n  </head><body><div id="root">${r.body}</div></body></html>`;
-}
-
-async function getTemplate(origin: string): Promise<string | null> {
-  try {
-    const t = await fetch(`${origin}/index.html`);
-    if (!t.ok) return null;
-    return await t.text();
-  } catch {
-    return null;
-  }
 }
 
 export default async function handler(req: Request): Promise<Response> {

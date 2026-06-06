@@ -16,14 +16,10 @@
 //   · 참조 드레스 이미지가 없음 (사용자 사진 1장만)
 //   · 모델이 프롬프트만 보고 적절한 드레스를 직접 생성
 
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const HEART_COST = 5;
 

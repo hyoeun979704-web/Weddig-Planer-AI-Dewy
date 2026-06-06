@@ -7,20 +7,9 @@
 // 콘텐츠는 src/data/aeoGuides.ts 단일 소스를 React 페이지와 공유한다.
 
 import { aeoGuides, getGuide, BRAND_DEFINITION, type AeoGuide } from "../src/data/aeoGuides";
+import { SITE, esc, headTags, inject, bareDoc, getTemplate, type Rendered } from "./_lib/ssr";
 
 export const config = { runtime: "edge" };
-
-const SITE = "https://dewy-wedding.com";
-
-function esc(v: unknown): string {
-  return String(v ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-type Rendered = { title: string; description: string; canonical: string; head: string; body: string };
 
 function jsonLdGraph(g: AeoGuide, canonical: string): Record<string, unknown> {
   return {
@@ -55,24 +44,6 @@ function jsonLdGraph(g: AeoGuide, canonical: string): Record<string, unknown> {
       },
     ],
   };
-}
-
-function headTags(title: string, desc: string, canonical: string, jsonLd: Record<string, unknown>): string {
-  const image = `${SITE}/dewy-logo.png?v=3`;
-  return [
-    `<meta name="description" content="${esc(desc)}" />`,
-    `<link rel="canonical" href="${esc(canonical)}" />`,
-    `<meta property="og:title" content="${esc(title)}" />`,
-    `<meta property="og:description" content="${esc(desc)}" />`,
-    `<meta property="og:url" content="${esc(canonical)}" />`,
-    `<meta property="og:image" content="${esc(image)}" />`,
-    `<meta name="twitter:title" content="${esc(title)}" />`,
-    `<meta name="twitter:description" content="${esc(desc)}" />`,
-    `<meta name="twitter:image" content="${esc(image)}" />`,
-    // `<` 를 유니코드로 이스케이프해 데이터에 든 `</script>` 가 스크립트 태그를
-    // 탈출하는 것(XSS)을 막는다.
-    `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>`,
-  ].join("\n    ");
 }
 
 function renderGuide(g: AeoGuide): Rendered {
@@ -131,32 +102,6 @@ function renderGuide(g: AeoGuide): Rendered {
     </main>`;
 
   return { title: g.title, description: metaDesc, canonical, head, body };
-}
-
-function inject(template: string, r: Rendered): string {
-  let html = template;
-  html = html.replace(/<title>[\s\S]*?<\/title>/, () => `<title>${esc(r.title)}</title>`);
-  html = html
-    .replace(/<meta name="description"[^>]*>/, "")
-    .replace(/<link rel="canonical"[^>]*>/, "");
-  html = html.replace("</head>", () => `    ${r.head}\n  </head>`);
-  html = html.replace('<div id="root">', () => `<div id="root">\n      ${r.body}`);
-  return html;
-}
-
-// 템플릿 확보 실패 시 사용할, 리다이렉트 없는 최소 문서.
-function bareDoc(r: Rendered): string {
-  return `<!doctype html><html lang="ko"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${esc(r.title)}</title>\n    ${r.head}\n  </head><body><div id="root">${r.body}</div></body></html>`;
-}
-
-async function getTemplate(origin: string): Promise<string | null> {
-  try {
-    const t = await fetch(`${origin}/index.html`);
-    if (!t.ok) return null;
-    return await t.text();
-  } catch {
-    return null;
-  }
 }
 
 // slug 는 query(rewrite) 또는 pathname(직접 접근) 양쪽에서 받는다.

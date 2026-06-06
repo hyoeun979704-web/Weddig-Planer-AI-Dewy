@@ -11,13 +11,10 @@
 //   POST /functions/v1/send-push
 //   { "user_id": "...", "title": "...", "body": "...", "data": {"deeplink": "/foo"} }
 
+import { corsHeaders } from "../_shared/cors.ts";
+import { jwtRole } from "../_shared/jwt.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 type Payload = {
   user_id: string;
@@ -26,21 +23,6 @@ type Payload = {
   data?: Record<string, string>;
 };
 
-// 게이트웨이(verify_jwt=true)가 서명을 검증한 뒤, role 클레임으로 인가한다.
-// 임의의 로그인 사용자가 타인(user_id)에게 푸시를 보내지 못하도록 service_role
-// 토큰(서버/cron 호출)만 통과시킨다. env SERVICE_ROLE_KEY 문자열 매칭은 키
-// 로테이션/포맷 드리프트에 약하므로 role 클레임으로 인가한다.
-function jwtRole(token: string): string | null {
-  try {
-    const part = token.split(".")[1];
-    if (!part) return null;
-    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
-    const json = atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, "="));
-    return (JSON.parse(json)?.role as string | undefined) ?? null;
-  } catch {
-    return null;
-  }
-}
 
 // ─── FCM OAuth 토큰 ──────────────────────────────────────────────────────
 // Service account JWT → access token. 1시간 유효, 캐시 가능. 단순화를 위해 매 호출 발급.

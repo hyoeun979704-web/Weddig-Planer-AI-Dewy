@@ -1,9 +1,6 @@
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "content-type",
-};
 
 const APP_URL = Deno.env.get("DEWY_APP_URL") ?? "https://dewy.kr";
 const APP_LOGO_URL = Deno.env.get("DEWY_LOGO_URL") ??

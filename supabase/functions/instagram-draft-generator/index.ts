@@ -8,13 +8,9 @@
 //   - admin 만 수동 호출 가능 (verify_jwt + 자체 role 검증)
 //   - 향후 pg_cron 이 service_role 로도 호출 (자동 발굴 시)
 
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 interface CardText {
   title?: string;

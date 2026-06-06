@@ -10,14 +10,10 @@
 // 사용자가 청첩장 에디터에서 텍스트 슬롯을 선택 후 8초간 입력 없을 때
 // 토스트가 뜨고, "추천받기" 클릭 시 이 함수가 호출됨.
 
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const HEART_COST = 1;
 

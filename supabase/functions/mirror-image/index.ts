@@ -16,14 +16,10 @@
 //
 // 호출: POST { url } → { thumbnail_url, source }  (verify_jwt=true: 로그인 필요)
 
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
 const BUCKET = "tip-thumbnails";
 const MAX_BYTES = 5 * 1024 * 1024; // 버킷 file_size_limit 와 일치

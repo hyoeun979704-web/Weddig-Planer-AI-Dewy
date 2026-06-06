@@ -9,14 +9,10 @@
 //
 // verify_jwt=false: START 는 수동 getClaims, BOARD 는 x-internal-secret(서비스 롤 키) 검사.
 
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const ALL_SECTIONS = ["personal_color", "hair", "makeup", "dress"] as const;
 type Section = (typeof ALL_SECTIONS)[number];
