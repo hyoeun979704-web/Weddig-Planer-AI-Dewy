@@ -13,6 +13,7 @@
 //
 // remove.bg API: https://www.remove.bg/api
 
+import { adminClient } from "../_shared/supabase.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -56,10 +57,7 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabaseAdmin = adminClient();
 
     // ───────── 입력 검증 ─────────
     const body = (await req.json()) as RequestBody;

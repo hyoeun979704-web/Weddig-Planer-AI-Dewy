@@ -16,8 +16,8 @@
 //
 // 호출: 서버사이드 pg_net(주간 cron 자동화) POST { dryRun, limit, categories }
 // ─────────────────────────────────────────────────────────────────────────
+import { adminClient } from "../_shared/supabase.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // 관리자 토큰은 시크릿(GEOCODE_ADMIN_TOKEN) 또는 RLS 잠금 테이블(geocode_admin)
 // 에서 검증한다(둘 다 없으면 모든 호출 거부). DB 토큰 경로는 자동화 cron 이
@@ -160,10 +160,7 @@ async function geocodeOne(
 serve(async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  const supabase = adminClient();
 
   // 인증: x-admin-token 이 env 토큰 또는 DB(geocode_admin) 토큰과 일치해야 함.
   const provided = req.headers.get("x-admin-token");

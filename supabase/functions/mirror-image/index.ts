@@ -16,9 +16,9 @@
 //
 // 호출: POST { url } → { thumbnail_url, source }  (verify_jwt=true: 로그인 필요)
 
+import { adminClient } from "../_shared/supabase.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 
 const BUCKET = "tip-thumbnails";
@@ -224,10 +224,7 @@ serve(async (req) => {
   const hash = await sha1Hex(resolved.bytes);
   const path = `${hash}.${ext}`;
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  const supabase = adminClient();
 
   const { error: upErr } = await supabase.storage
     .from(BUCKET)

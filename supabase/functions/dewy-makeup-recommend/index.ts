@@ -15,6 +15,7 @@
 //   · 참조 메이크업 이미지가 없음 (셀카 1장만)
 //   · 모델이 얼굴 분석 + 메이크업 디자인 + 적용을 한 번에 수행
 
+import { adminClient } from "../_shared/supabase.ts";
 import { MODELS } from "../_shared/llm.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -54,10 +55,7 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabaseAdmin = adminClient();
 
     const body = (await req.json()) as RequestBody;
     if (!body.source_image_path || !body.scene_code || !body.prompt) {

@@ -12,6 +12,7 @@
 //
 // 보안: 본인 사진 source_image_path 는 dress-uploads/{userId}/ 폴더 검증
 
+import { adminClient } from "../_shared/supabase.ts";
 import { MODELS } from "../_shared/llm.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -56,10 +57,7 @@ serve(async (req) => {
     const userId = claimsData.claims.sub as string;
 
     // service_role 클라이언트 — RPC·Storage 쓰기용
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabaseAdmin = adminClient();
 
     // ─────────────────────────────────────────────
     // 2) 입력 검증

@@ -11,9 +11,9 @@
 //   POST /functions/v1/send-push
 //   { "user_id": "...", "title": "...", "body": "...", "data": {"deeplink": "/foo"} }
 
+import { adminClient } from "../_shared/supabase.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { jwtRole } from "../_shared/jwt.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
 type Payload = {
@@ -138,10 +138,7 @@ Deno.serve(async (req) => {
     }
 
     // service role 로 RLS 우회해 사용자의 모든 토큰 조회.
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = adminClient();
     const { data: tokens, error } = await supabase
       .from("device_tokens")
       .select("token, platform")

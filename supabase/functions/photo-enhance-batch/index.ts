@@ -10,6 +10,7 @@
 // 입력: { source_paths: string[], body_preset?: BodyPreset }
 // 출력: { job_id, status:"processing", charged, discounted }
 
+import { adminClient } from "../_shared/supabase.ts";
 import { MODELS } from "../_shared/llm.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -95,10 +96,7 @@ serve(async (req) => {
     if (claimsError || !claimsData?.claims) return json({ error: "Unauthorized" }, 401);
     const userId = claimsData.claims.sub as string;
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const admin = adminClient();
 
     const body = (await req.json()) as {
       source_paths?: string[]; options?: string[]; custom_text?: string; body_preset?: string;
