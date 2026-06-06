@@ -1,3 +1,4 @@
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -5,11 +6,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // 사용자 소유 데이터는 대부분 auth.users(id) ON DELETE CASCADE 로 함께 삭제된다.
 // (앱스토어·구글플레이 정책: 인앱 계정 삭제 제공 필수)
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

@@ -21,6 +21,8 @@
 //
 // 멱등성: 같은 날 여러 번 실행되어도 동일 결과. 이미 삭제된 파일은 skip.
 
+import { corsHeaders } from "../_shared/cors.ts";
+import { jwtRole } from "../_shared/jwt.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -34,31 +36,12 @@ const PUBLISHED_MOBILE_DAYS = 90;
 const TARGET_BUCKETS = ["dress-uploads", "dress-results"] as const;
 const BATCH_SIZE = 100; // Storage API .remove() 1회 호출당 최대 경로 수
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 interface ExpiredObject {
   bucket_id: string;
   name: string;
 }
 
-// Decode the `role` claim from a JWT WITHOUT verifying the signature — the edge
-// gateway (verify_jwt=true) already rejected anything not signed by the project
-// JWT secret. Authorize cron by role=service_role instead of string-matching the
-// env SERVICE_ROLE_KEY (which drifts across API-key rotations / formats).
-function jwtRole(token: string): string | null {
-  try {
-    const part = token.split(".")[1];
-    if (!part) return null;
-    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
-    const json = atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, "="));
-    return (JSON.parse(json)?.role as string | undefined) ?? null;
-  } catch {
-    return null;
-  }
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

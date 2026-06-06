@@ -3,6 +3,7 @@ import { Search, X, Clock, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { joinRegion } from "@/lib/placeMappers";
 
 interface SearchResult {
   id: string;
@@ -181,7 +182,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
         const allResults: SearchResult[] = merged.slice(0, 24).map((p) => ({
           id: p.place_id,
           name: p.name,
-          address: [p.city, p.district].filter(Boolean).join(" ") || undefined,
+          address: joinRegion(p.city, p.district) ?? undefined,
           type: slugToType[p.category] ?? "venue",
         }));
 

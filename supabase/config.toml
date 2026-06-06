@@ -16,9 +16,6 @@ verify_jwt = true
 [functions.migrate-data]
 verify_jwt = false
 
-[functions.discover-external]
-verify_jwt = false
-
 [functions.verify-business]
 verify_jwt = false
 

@@ -10,14 +10,12 @@
 // 입력: { source_path: string, body?: BodyPreset }
 // 출력: { path, url, charged, was_free }
 
+import { adminClient } from "../_shared/supabase.ts";
+import { MODELS } from "../_shared/llm.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const HEART_COST = 5;
 
@@ -88,10 +86,7 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabaseAdmin = adminClient();
 
     // ───── 입력 검증 ─────
     const reqBody = (await req.json()) as RequestBody;
@@ -164,7 +159,7 @@ serve(async (req) => {
 
       // 2) OpenAI gpt-image-2 (images/edits) — 입력 비율 유지(auto), 고화질
       const form = new FormData();
-      form.append("model", "gpt-image-2");
+      form.append("model", MODELS.image);
       form.append("prompt", prompt);
       form.append("size", "auto");
       form.append("quality", "high");

@@ -10,14 +10,12 @@
 // 입력: { source_paths: string[], body_preset?: BodyPreset }
 // 출력: { job_id, status:"processing", charged, discounted }
 
+import { adminClient } from "../_shared/supabase.ts";
+import { MODELS } from "../_shared/llm.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const PER = 5;
 const CAP = 35;
@@ -98,10 +96,7 @@ serve(async (req) => {
     if (claimsError || !claimsData?.claims) return json({ error: "Unauthorized" }, 401);
     const userId = claimsData.claims.sub as string;
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const admin = adminClient();
 
     const body = (await req.json()) as {
       source_paths?: string[]; options?: string[]; custom_text?: string; body_preset?: string;
@@ -188,7 +183,7 @@ serve(async (req) => {
               .from("invitation-uploads").download(sourcePath);
             if (dlErr || !srcBlob) return;
             const form = new FormData();
-            form.append("model", "gpt-image-2");
+            form.append("model", MODELS.image);
             form.append("prompt", prompt);
             form.append("size", "auto");
             form.append("quality", "medium");

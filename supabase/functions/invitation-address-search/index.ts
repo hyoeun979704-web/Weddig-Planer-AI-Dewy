@@ -18,14 +18,10 @@
 //     → NAVER_MAP_ID/SECRET → NAVER_CLIENT_*(폴백). 엔드포인트 NAVER_MAP_API_BASE 로 override.
 //   둘 중 한쪽 키만 있어도 그 경로만으로 동작한다.
 
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const MAP_API_BASE =
   Deno.env.get("NAVER_MAP_API_BASE") ?? "https://maps.apigw.ntruss.com";

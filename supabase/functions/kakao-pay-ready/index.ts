@@ -1,11 +1,7 @@
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveAllowedOrigin } from "../_shared/allowedOrigins.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 const PLAN_INFO = {
   trial: { amount: 100, name: "프리미엄 무료 체험 (카드 인증)" },

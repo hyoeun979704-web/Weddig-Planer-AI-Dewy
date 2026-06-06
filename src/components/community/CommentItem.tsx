@@ -14,8 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import ReportDialog from "@/components/community/ReportDialog";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
+import { relativeTime } from "@/lib/relativeTime";
 import type { AuthorIdentity } from "@/lib/communityIdentity";
 import AuthorAvatar from "@/components/community/AuthorAvatar";
 
@@ -76,12 +75,6 @@ const CommentItem = ({
 }: CommentItemProps) => {
   const isEditing = editingCommentId === comment.id;
   const [reportOpen, setReportOpen] = useState(false);
-  const formatDate = (dateString: string) => {
-    return formatDistanceToNow(new Date(dateString), {
-      addSuffix: true,
-      locale: ko,
-    });
-  };
 
   const isOwner = currentUserId && comment.user_id === currentUserId;
   // 본인 댓글엔 신고 의미 없음. 로그인 안 한 사용자도 신고 불가.
@@ -104,7 +97,7 @@ const CommentItem = ({
                 </span>
               ))}
               <span className="text-xs text-muted-foreground">
-                {formatDate(comment.created_at)}
+                {relativeTime(comment.created_at)}
               </span>
             </div>
             {isOwner && !isEditing && (

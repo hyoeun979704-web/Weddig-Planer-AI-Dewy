@@ -1,5 +1,6 @@
 import type { Database } from "@/integrations/supabase/types";
 import type { ItemType } from "@/hooks/useFavorites";
+import { formatManwonRange } from "./priceFormat";
 import {
   buildVendorInfoLines,
   collectKeywordTags,
@@ -92,6 +93,7 @@ export const CATEGORY_CARD_TABLE: Record<string, string> = {
   tailor_shop: "place_tailor_shops",
   honeymoon: "place_honeymoons",
   appliance: "place_appliances",
+  jewelry: "place_jewelry",
   invitation_venue: "place_invitation_venues",
 };
 
@@ -140,11 +142,7 @@ export const formatVendorPrice = (
   v: Pick<Vendor, "category_slug" | "min_price">
 ): { prefix: string; amount: string } | null => {
   if (v.min_price == null || v.min_price <= 0) return null;
-  const won = v.min_price;
-  const amount =
-    won >= 10000
-      ? `${(won / 10000).toFixed(0)}만원~`
-      : `${won.toLocaleString()}원~`;
+  const amount = formatManwonRange(v.min_price);
   return {
     prefix: PRICE_LABEL_PREFIX[v.category_slug] ?? "",
     amount,
@@ -170,7 +168,8 @@ export interface Venue {
   tags: string[];
 }
 
-const joinRegion = (city: string | null, district: string | null) =>
+// 시/구 결합("서울 강남구"). 둘 다 비면 null. 여러 곳에서 인라인 복붙되던 패턴.
+export const joinRegion = (city: string | null, district: string | null) =>
   [city, district].filter(Boolean).join(" ") || null;
 
 export const placeToVendor = (p: PlaceRow | PlaceWithCategory): Vendor => {

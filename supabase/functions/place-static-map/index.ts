@@ -12,12 +12,9 @@
 //
 // 호출: GET ?lat=37.5&lng=127.0&w=600&h=320&level=15
 
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 const MAP_API_BASE =
   Deno.env.get("NAVER_MAP_API_BASE") ?? "https://maps.apigw.ntruss.com";

@@ -12,14 +12,12 @@
 //
 // OpenAI Images API: https://platform.openai.com/docs/api-reference/images/createEdit
 
+import { adminClient } from "../_shared/supabase.ts";
+import { MODELS } from "../_shared/llm.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 // 청첩장 톤에 어울리는 부드러운 수채화 일러스트로 변환하는 프롬프트.
 // 인물의 정체성·구도는 유지하되 사진 질감을 일러스트로만 바꾸도록 지시.
@@ -84,10 +82,7 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabaseAdmin = adminClient();
 
     // ───────── 입력 검증 ─────────
     const body = (await req.json()) as RequestBody;
@@ -149,7 +144,7 @@ serve(async (req) => {
 
         // 2) OpenAI gpt-image-2 호출 (images/edits)
         const form = new FormData();
-        form.append("model", "gpt-image-2");
+        form.append("model", MODELS.image);
         form.append("prompt", prompt);
         form.append("size", "1024x1024");
         form.append("quality", "medium");

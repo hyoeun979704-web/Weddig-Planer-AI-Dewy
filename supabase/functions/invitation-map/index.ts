@@ -19,14 +19,10 @@
 // 헤더: 지도(Geocoding/Static Map)는 X-NCP-APIGW-API-KEY-ID/KEY 사용.
 //   (X-Naver-Client-* 는 검색 openapi.naver.com 전용이라 지도엔 안 씀)
 
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const MAP_API_BASE =
   Deno.env.get("NAVER_MAP_API_BASE") ?? "https://maps.apigw.ntruss.com";

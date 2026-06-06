@@ -10,14 +10,11 @@
 // 사용자가 청첩장 에디터에서 텍스트 슬롯을 선택 후 8초간 입력 없을 때
 // 토스트가 뜨고, "추천받기" 클릭 시 이 함수가 호출됨.
 
+import { adminClient } from "../_shared/supabase.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const HEART_COST = 1;
 
@@ -58,10 +55,7 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabaseAdmin = adminClient();
 
     const body = (await req.json()) as RequestBody;
     if (!body.slot_id || !body.slot_role) {

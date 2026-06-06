@@ -20,7 +20,7 @@ import { resetSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import { setSensitivePreference, type SensitiveField } from "@/lib/sensitiveConsent";
 import { toast } from "sonner";
 
-type Saving = "none" | "pregnant" | "marital" | "parents-bride" | "parents-groom";
+type Saving = "none" | "pregnant" | "marital" | "children" | "parents-bride" | "parents-groom";
 
 export default function SensitivePreferencesCard() {
   const { user } = useAuth();
@@ -85,6 +85,9 @@ export default function SensitivePreferencesCard() {
       weddingSettings.marital_history === "remarriage" ? null : "remarriage";
     updateField("marital_history", next, "marital");
   };
+  // 자녀 동반 — 재혼일 때만 의미(remarriage_with_children). 민감(자녀 정보)이라 동일 RPC.
+  const toggleChildren = () =>
+    updateField("has_children", !weddingSettings.has_children, "children");
   // has_parents_*=false 가 active(부재) 신호. 서버가 자동 도출해 consent_type 도 분리.
   const toggleParentsBride = () =>
     updateField("has_parents_bride", !weddingSettings.has_parents_bride, "parents-bride");
@@ -134,6 +137,15 @@ export default function SensitivePreferencesCard() {
             loading={saving === "marital"}
             onToggle={toggleRemarriage}
           />
+          {weddingSettings.marital_history === "remarriage" && (
+            <Row
+              title="자녀와 함께하는 결혼"
+              description="자녀 동반 식순·새 가족 형성·정서 배려 가이드"
+              active={!!weddingSettings.has_children}
+              loading={saving === "children"}
+              onToggle={toggleChildren}
+            />
+          )}
           <Row
             title="신부측 부모님 안 계세요"
             description="양가 분담 시뮬레이터를 1인 진행 변형으로"

@@ -1,11 +1,7 @@
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -242,11 +238,10 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    // 내부 에러 상세는 로그로만, 클라에는 제네릭 메시지(스키마/내부정보 누출 방지).
     console.error("verify-business error:", error);
     return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다",
-      }),
+      JSON.stringify({ error: "사업자 인증 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

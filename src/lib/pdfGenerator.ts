@@ -5,9 +5,9 @@ import DOMPurify from "dompurify";
 /**
  * HTML 특수문자 이스케이프.
  * 사용자 자유입력(이름, 메모, 장소명 등)을 PDF용 HTML 문자열에 삽입할 때
- * 반드시 통과시켜야 한다. safeSanitize()가 <style> 태그를 보존하는 우회
- * 로직을 쓰기 때문에 사용자 입력에 `<style>...</style>`가 끼면 그대로
- * PDF에 삽입되는 위험이 있다.
+ * 반드시 통과시켜야 한다. splitAndSanitize()가 <style> 블록을 분리 보존하므로
+ * 사용자 입력의 `<style>...</style>`가 정화를 우회할 수 있으나, 스타일은 호출부
+ * 에서 textContent 로 주입해 태그 breakout(XSS)을 막는다.
  */
 export const esc = (value: string | number | undefined | null): string => {
   if (value === null || value === undefined) return "";
@@ -551,13 +551,18 @@ export function generatePdfDashboard(opts: DashboardOptions): string {
 // 케이스가 있다. 우리 PDF는 inline <style>에 grid·flex·색상·SVG 사이즈가 전부
 // 들어있어서 잘리면 레이아웃이 통째로 무너진다. 그래서 sanitize 전에 <style>을
 // 추출해두고, 본문만 sanitize한 뒤 다시 합쳐 안전성과 스타일을 모두 유지한다.
-export const safeSanitize = (html: string): string => {
+// <style> 블록을 분리해 본문만 DOMPurify로 정화하고, CSS 텍스트는 따로 돌려준다.
+// 스타일을 raw 문자열로 innerHTML에 다시 합치면 `</style><img onerror=...>` 같은
+// breakout 으로 정화를 우회당할 수 있으므로, 호출부에서 <style> 노드의 textContent
+// 로 주입한다(HTML 파싱이 일어나지 않아 breakout 무력화). 입력이 사용자 본인 문서라
+// 영향은 낮지만 defense-in-depth.
+export const splitAndSanitize = (html: string): { body: string; styles: string[] } => {
   const styles: string[] = [];
-  const bodyOnly = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, (match) => {
-    styles.push(match);
+  const bodyOnly = html.replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, (_match, css) => {
+    styles.push(String(css ?? ""));
     return "";
   });
-  const sanitizedBody = DOMPurify.sanitize(bodyOnly, {
+  const body = DOMPurify.sanitize(bodyOnly, {
     ADD_TAGS: ["svg", "circle", "text", "g", "path", "rect", "line", "defs", "linearGradient", "stop"],
     ADD_ATTR: [
       "viewBox", "stroke", "stroke-width", "stroke-dasharray", "stroke-dashoffset",
@@ -566,12 +571,19 @@ export const safeSanitize = (html: string): string => {
       "preserveAspectRatio", "offset", "stop-color",
     ],
   });
-  return styles.join("") + sanitizedBody;
+  return { body, styles };
 };
 
 export async function downloadPdf(htmlContent: string, filename: string): Promise<void> {
   const container = document.createElement("div");
-  container.innerHTML = safeSanitize(htmlContent);
+  const { body, styles } = splitAndSanitize(htmlContent);
+  container.innerHTML = body;
+  // <style> 은 textContent 로 주입 — HTML 파싱이 없어 태그 breakout(XSS) 불가.
+  for (const css of styles) {
+    const styleEl = document.createElement("style");
+    styleEl.textContent = css;
+    container.appendChild(styleEl);
+  }
   container.style.position = "absolute";
   container.style.left = "-9999px";
   container.style.top = "0";

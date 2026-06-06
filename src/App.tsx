@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import SessionTracker from "@/components/SessionTracker";
 import GenerationNotifier from "@/components/GenerationNotifier";
@@ -173,6 +174,7 @@ const App = () => (
         <WeddingBlessingSplash />
         <Sonner />
         <BrowserRouter>
+          <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -335,6 +337,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
           {/* First-time tutorial welcome sheet — uses useNavigate so it
               must live inside BrowserRouter. Self-gates on user + onboarding. */}
           <TutorialWelcomeSheet />

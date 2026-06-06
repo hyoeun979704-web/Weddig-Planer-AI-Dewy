@@ -1,3 +1,4 @@
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // 일반 상품 주문(orders 테이블) 결제 확정 함수.
@@ -12,11 +13,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 //   - 같은 orderId 로 payments 가 이미 'approved' 면 다시 처리하지 않고 기존 결과 반환.
 //   - Toss 콜백이 재시도되더라도 안전하게 동작.
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 function jsonResp(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

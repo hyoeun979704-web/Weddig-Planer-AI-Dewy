@@ -12,14 +12,12 @@
 //
 // 보안: 본인 사진 source_image_path 는 dress-uploads/{userId}/ 폴더 검증
 
+import { adminClient } from "../_shared/supabase.ts";
+import { MODELS } from "../_shared/llm.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const HEART_COST = 5;
 
@@ -59,10 +57,7 @@ serve(async (req) => {
     const userId = claimsData.claims.sub as string;
 
     // service_role 클라이언트 — RPC·Storage 쓰기용
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabaseAdmin = adminClient();
 
     // ─────────────────────────────────────────────
     // 2) 입력 검증
@@ -157,7 +152,7 @@ serve(async (req) => {
         ]);
 
         const form = new FormData();
-        form.append("model", "gpt-image-2");
+        form.append("model", MODELS.image);
         form.append("prompt", body.prompt);
         form.append("size", "1024x1536");
         form.append("quality", "medium");

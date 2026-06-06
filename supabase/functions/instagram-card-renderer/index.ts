@@ -12,16 +12,12 @@
 //        Edge Function 콜드 스타트 시 jsdelivr/Google Fonts 에서 한 번 fetch.
 //        매 호출마다 fetch 는 비효율 — Deno 모듈 캐시에 의존.
 
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import satori from "https://esm.sh/satori@0.10.13";
 import { Resvg } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
 import initResvg from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 const STORAGE_BUCKET = "instagram-cards";
 const CARD_WIDTH = 1080;

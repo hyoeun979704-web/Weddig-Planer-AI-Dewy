@@ -19,7 +19,7 @@ interface CategoryItem {
   emoji: string;
   // When set, the tile is hidden if this skippable category is in
   // user_wedding_settings.excluded_categories. Tiles without this stay
-  // visible for everyone (e.g. 신혼여행, 예물).
+  // visible for everyone (e.g. 허니문, 예물).
   excludeKey?: string;
 }
 
@@ -31,7 +31,7 @@ const baseTiles: CategoryItem[] = [
   { label: "청첩장 모임", image: invitationImg, path: "/invitation-venues", emoji: "", excludeKey: "invitation_venue" },
   { label: "가전·혼수", image: applianceImg, path: "/appliances", emoji: "", excludeKey: "appliance" },
   { label: "예물·예단", image: jewelryImg, path: "/jewelry", emoji: "" },
-  { label: "신혼여행", image: honeymoonImg, path: "/honeymoon", emoji: "", excludeKey: "honeymoon" },
+  { label: "허니문", image: honeymoonImg, path: "/honeymoon", emoji: "", excludeKey: "honeymoon" },
 ];
 
 // Style-specific replacement tiles surfaced in slots freed up by excluded
@@ -55,8 +55,8 @@ const SMALL_EXTRA_TILES: CategoryItem[] = [
 // small: 작은 베뉴·스드메·답례 위로.
 // general/null: 기존 순서(이미 일반적 우선순위).
 const TILE_PRIORITY: Record<"self" | "small", string[]> = {
-  self: ["청첩장 모임", "예복", "한복", "스드메", "신혼여행", "예물·예단", "가전·혼수", "웨딩홀"],
-  small: ["스드메", "한복", "예복", "청첩장 모임", "웨딩홀", "신혼여행", "예물·예단", "가전·혼수"],
+  self: ["청첩장 모임", "예복", "한복", "스드메", "허니문", "예물·예단", "가전·혼수", "웨딩홀"],
+  small: ["스드메", "한복", "예복", "청첩장 모임", "웨딩홀", "허니문", "예물·예단", "가전·혼수"],
 };
 
 const Tile = ({ item, onClick }: { item: CategoryItem; onClick: () => void }) => {

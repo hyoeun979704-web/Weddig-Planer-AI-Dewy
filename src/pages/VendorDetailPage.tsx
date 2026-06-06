@@ -4,6 +4,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Pencil } from "lucide-react";
 import { usePlaceDetail, type LegacyDetail } from "@/hooks/usePlaceDetail";
+import { formatManwon } from "@/lib/priceFormat";
+import { APPLIANCE_PRODUCT_TYPE_LABEL, JEWELRY_STORE_TYPE_LABEL } from "@/lib/categoryLabels";
 import PlaceDetailLayout from "@/components/detail/PlaceDetailLayout";
 import PlaceCoupons from "@/components/place/PlaceCoupons";
 import PlaceBusinessSections from "@/components/place/PlaceBusinessSections";
@@ -322,7 +324,7 @@ function WeddingHallExtras({ place }: { place: LegacyDetail }) {
 }
 
 function StudioExtras({ place }: { place: LegacyDetail }) {
-  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
+  const fmtMan = formatManwon;
   const has =
     place.shoot_styles.length > 0 || place.shoot_locations.length > 0 ||
     place.total_photos != null || place.original_count != null ||
@@ -420,7 +422,7 @@ function DressShopExtras({ place }: { place: LegacyDetail }) {
 }
 
 function MakeupExtras({ place }: { place: LegacyDetail }) {
-  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
+  const fmtMan = formatManwon;
   const has =
     place.makeup_styles.length > 0 ||
     place.includes_rehearsal != null || place.hair_makeup_separate != null ||
@@ -509,7 +511,7 @@ function HoneymoonExtras({ place }: { place: LegacyDetail }) {
     pass: "이용권",
   };
   const isPass = place.product_type === "pass";
-  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
+  const fmtMan = formatManwon;
   const has =
     place.agency_name ||
     place.product_type ||
@@ -641,12 +643,8 @@ function HoneymoonExtras({ place }: { place: LegacyDetail }) {
 }
 
 function ApplianceExtras({ place }: { place: LegacyDetail }) {
-  const APPL_TYPE_LABEL: Record<string, string> = {
-    store: "매장",
-    package: "신혼 패키지",
-    single: "단품 모델",
-  };
-  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
+  const APPL_TYPE_LABEL = APPLIANCE_PRODUCT_TYPE_LABEL;
+  const fmtMan = formatManwon;
   const buyUrl =
     place.appliance_product_url || place.website_url || place.naver_place_url || null;
   const buyLabel = place.appliance_product_url
@@ -811,12 +809,8 @@ function ApplianceExtras({ place }: { place: LegacyDetail }) {
 }
 
 function JewelryExtras({ place }: { place: LegacyDetail }) {
-  const STORE_TYPE_LABEL: Record<string, string> = {
-    online: "온라인 판매",
-    offline: "오프라인 매장만",
-    both: "온·오프라인 모두",
-  };
-  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
+  const STORE_TYPE_LABEL = JEWELRY_STORE_TYPE_LABEL;
+  const fmtMan = formatManwon;
   // 구매하기 버튼: product_url > website_url > naver_place_url
   const buyUrl =
     place.product_url || place.website_url || place.naver_place_url || null;
@@ -1000,7 +994,7 @@ function JewelryExtras({ place }: { place: LegacyDetail }) {
 }
 
 function InvitationVenueExtras({ place }: { place: LegacyDetail }) {
-  const fmtMan = (won: number) => `${(won / 10000).toFixed(0)}만원`;
+  const fmtMan = formatManwon;
   const has =
     place.venue_types.length > 0 ||
     place.capacity_min != null || place.capacity_max != null ||

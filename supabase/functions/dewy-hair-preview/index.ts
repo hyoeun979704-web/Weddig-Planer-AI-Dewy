@@ -6,13 +6,12 @@
 // 입력: { source_path, options: ("single"|"style"|"color")[], single_style?: string }
 // 가격: 옵션당 5하트, 계정당 첫 1회 50% 할인. 실패 옵션 비례 환불.
 
+import { adminClient } from "../_shared/supabase.ts";
+import { MODELS } from "../_shared/llm.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 const PER = 5;
 type Kind = "single" | "style" | "color";
@@ -81,7 +80,7 @@ serve(async (req) => {
     if (claimsError || !claimsData?.claims) return json({ error: "Unauthorized" }, 401);
     const userId = claimsData.claims.sub as string;
 
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const admin = adminClient();
 
     const body = (await req.json()) as { source_path?: string; options?: string[]; single_style?: string };
     const sourcePath = body.source_path;
@@ -132,7 +131,7 @@ serve(async (req) => {
         const genOne = async (kind: Kind) => {
           try {
             const form = new FormData();
-            form.append("model", "gpt-image-2");
+            form.append("model", MODELS.image);
             form.append("prompt", promptFor(kind));
             form.append("size", kind === "single" ? "1536x1024" : "1024x1536");
             form.append("quality", "medium");

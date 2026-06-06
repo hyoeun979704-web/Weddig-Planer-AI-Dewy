@@ -11,13 +11,10 @@
 //   POST /functions/v1/send-push
 //   { "user_id": "...", "title": "...", "body": "...", "data": {"deeplink": "/foo"} }
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { adminClient } from "../_shared/supabase.ts";
+import { corsHeaders } from "../_shared/cors.ts";
+import { jwtRole } from "../_shared/jwt.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 type Payload = {
   user_id: string;
@@ -25,6 +22,7 @@ type Payload = {
   body: string;
   data?: Record<string, string>;
 };
+
 
 // ─── FCM OAuth 토큰 ──────────────────────────────────────────────────────
 // Service account JWT → access token. 1시간 유효, 캐시 가능. 단순화를 위해 매 호출 발급.
@@ -122,6 +120,17 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // service_role 토큰(서버/cron)만 허용 — 클라이언트가 임의 user_id 로 타인에게
+  // 푸시(피싱/스팸)하는 것을 차단.
+  const auth = req.headers.get("Authorization") ?? "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (jwtRole(token) !== "service_role") {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const payload = (await req.json()) as Payload;
     if (!payload.user_id || !payload.title || !payload.body) {
@@ -129,10 +138,7 @@ Deno.serve(async (req) => {
     }
 
     // service role 로 RLS 우회해 사용자의 모든 토큰 조회.
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = adminClient();
     const { data: tokens, error } = await supabase
       .from("device_tokens")
       .select("token, platform")
@@ -178,6 +184,9 @@ Deno.serve(async (req) => {
     );
   } catch (e) {
     console.error("[send-push] error:", e);
-    return new Response((e as Error).message, { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: "Internal error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

@@ -26,6 +26,7 @@ import AdminGuard from "@/components/admin/AdminGuard";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { relativeTime } from "@/lib/relativeTime";
 
 interface Stats {
   // 콘텐츠
@@ -69,7 +70,7 @@ const PLACE_CATEGORIES = [
   { key: "studio", label: "스튜디오" },
   { key: "dress_shop", label: "드레스샵" },
   { key: "makeup_shop", label: "메이크업샵" },
-  { key: "honeymoon", label: "신혼여행" },
+  { key: "honeymoon", label: "허니문" },
   { key: "hanbok", label: "한복" },
   { key: "suit", label: "예복" },
   { key: "jewelry", label: "예물·반지" },
@@ -84,18 +85,6 @@ const startOfWeek = () => {
   const d = new Date();
   d.setDate(d.getDate() - 7);
   return d.toISOString();
-};
-
-const formatRelative = (iso: string) => {
-  const diff = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return "방금 전";
-  if (min < 60) return `${min}분 전`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `${h}시간 전`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}일 전`;
-  return new Date(iso).toLocaleDateString("ko-KR");
 };
 
 const AdminDashboard = () => {
@@ -481,7 +470,7 @@ const AdminDashboard = () => {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-foreground truncate">{item.description}</div>
                     <div className="text-[11px] text-muted-foreground">
-                      {formatRelative(item.createdAt)}
+                      {relativeTime(item.createdAt)}
                     </div>
                   </div>
                 </li>
