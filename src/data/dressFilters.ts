@@ -2,11 +2,13 @@
  * 드레스 피팅 필터 정의 (10축, 중요도 순)
  *
  * 각 축은 신부의 의사결정 흐름을 반영한 우선순위로 정렬되어 있다.
- * - 형태축(실루엣·네크라인·슬리브·길이·백·허리): 일러스트 아이콘 사용
- * - 컨텐츠축(소재·디테일·컬러·무드): 색상 칩 또는 마네킹 샘플 썸네일
+ * - 형태축(실루엣·네크라인·슬리브·길이·백·허리): 라벨 텍스트 표시
+ * - 컨텐츠축(소재·디테일·컬러·무드): 색상 칩(swatch) 또는 설명
  *
- * icon 경로는 /public/dress-filters/ 하위에 PNG/SVG 파일이 있다고 가정.
- * 일러스트가 없을 경우 텍스트만 표시되도록 UI에서 fallback 처리.
+ * 참고: 이전에 각 옵션에 `icon: "/dress-filters/*.png"` 경로가 있었으나 해당
+ * 에셋이 존재하지 않고(미렌더) 404 잠복 위험이라 제거했다. 일러스트를 도입하려면
+ * public/dress-filters/ 에 에셋을 추가하면서 icon 필드 + onError fallback 렌더를
+ * 함께 넣을 것(에셋 없이 경로만 박지 말 것).
  */
 
 export type FilterType = "single" | "multi";
@@ -16,8 +18,6 @@ export interface FilterOption {
   value: string;
   /** UI 표시 라벨 (한글) */
   label: string;
-  /** /public/dress-filters/ 기준 상대 경로 (없을 수 있음) */
-  icon?: string;
   /** 색상 칩용 hex (color 축 전용) */
   swatch?: string;
   /** 옵션 부가 설명 (툴팁용) */
@@ -57,15 +57,15 @@ export const DRESS_FILTERS: FilterAxis[] = [
     type: "single",
     defaultExpanded: true,
     options: [
-      { value: "FIT_AND_FLARE", label: "핏앤플레어", icon: "/dress-filters/silhouette-fit-and-flare.png" },
-      { value: "COLUMN", label: "컬럼", icon: "/dress-filters/silhouette-column.png" },
-      { value: "A_LINE", label: "A라인", icon: "/dress-filters/silhouette-a-line.png" },
-      { value: "SHEATH", label: "시스", icon: "/dress-filters/silhouette-sheath.png" },
-      { value: "MERMAID", label: "머메이드", icon: "/dress-filters/silhouette-mermaid.png" },
-      { value: "TRUMPET", label: "트럼펫", icon: "/dress-filters/silhouette-trumpet.png" },
-      { value: "TAPERED", label: "테이퍼드", icon: "/dress-filters/silhouette-tapered.png" },
-      { value: "BALL_GOWN", label: "볼가운", icon: "/dress-filters/silhouette-ball-gown.png" },
-      { value: "DROP_WAIST", label: "드롭웨이스트", icon: "/dress-filters/silhouette-drop-waist.png" },
+      { value: "FIT_AND_FLARE", label: "핏앤플레어" },
+      { value: "COLUMN", label: "컬럼" },
+      { value: "A_LINE", label: "A라인" },
+      { value: "SHEATH", label: "시스" },
+      { value: "MERMAID", label: "머메이드" },
+      { value: "TRUMPET", label: "트럼펫" },
+      { value: "TAPERED", label: "테이퍼드" },
+      { value: "BALL_GOWN", label: "볼가운" },
+      { value: "DROP_WAIST", label: "드롭웨이스트" },
     ],
   },
   {
@@ -75,13 +75,13 @@ export const DRESS_FILTERS: FilterAxis[] = [
     type: "single",
     defaultExpanded: true,
     options: [
-      { value: "V", label: "V넥", icon: "/dress-filters/neckline-v.png" },
-      { value: "SWEETHEART", label: "스위트하트", icon: "/dress-filters/neckline-sweetheart.png" },
-      { value: "OFF_SHOULDER", label: "오프숄더", icon: "/dress-filters/neckline-off-shoulder.png" },
-      { value: "HALTER", label: "홀터", icon: "/dress-filters/neckline-halter.png" },
-      { value: "BOAT", label: "보트넥", icon: "/dress-filters/neckline-boat.png" },
-      { value: "SQUARE", label: "스퀘어", icon: "/dress-filters/neckline-square.png" },
-      { value: "ILLUSION", label: "일루전", icon: "/dress-filters/neckline-illusion.png" },
+      { value: "V", label: "V넥" },
+      { value: "SWEETHEART", label: "스위트하트" },
+      { value: "OFF_SHOULDER", label: "오프숄더" },
+      { value: "HALTER", label: "홀터" },
+      { value: "BOAT", label: "보트넥" },
+      { value: "SQUARE", label: "스퀘어" },
+      { value: "ILLUSION", label: "일루전" },
     ],
   },
   {
@@ -91,13 +91,13 @@ export const DRESS_FILTERS: FilterAxis[] = [
     type: "single",
     defaultExpanded: true,
     options: [
-      { value: "SLEEVELESS", label: "민소매", icon: "/dress-filters/sleeve-sleeveless.png" },
-      { value: "TANK", label: "탑", icon: "/dress-filters/sleeve-tank.png" },
-      { value: "CAP", label: "캡 슬리브", icon: "/dress-filters/sleeve-cap.png" },
-      { value: "SHORT", label: "짧은 소매", icon: "/dress-filters/sleeve-short.png" },
-      { value: "LONG", label: "긴 소매", icon: "/dress-filters/sleeve-long.png" },
-      { value: "OFF_SHOULDER", label: "오프숄더 슬리브", icon: "/dress-filters/sleeve-off-shoulder.png" },
-      { value: "CAPE", label: "케이프", icon: "/dress-filters/sleeve-cape.png" },
+      { value: "SLEEVELESS", label: "민소매" },
+      { value: "TANK", label: "탑" },
+      { value: "CAP", label: "캡 슬리브" },
+      { value: "SHORT", label: "짧은 소매" },
+      { value: "LONG", label: "긴 소매" },
+      { value: "OFF_SHOULDER", label: "오프숄더 슬리브" },
+      { value: "CAPE", label: "케이프" },
     ],
   },
   {
@@ -107,12 +107,12 @@ export const DRESS_FILTERS: FilterAxis[] = [
     type: "single",
     defaultExpanded: false,
     options: [
-      { value: "MINI", label: "미니", icon: "/dress-filters/length-mini.png" },
-      { value: "MIDI", label: "미디", icon: "/dress-filters/length-midi.png" },
-      { value: "FULL", label: "발목 길이", icon: "/dress-filters/length-full.png" },
-      { value: "SHORT_TRAIN", label: "숏 트레인 (1m)", icon: "/dress-filters/length-short-train.png" },
-      { value: "CHAPEL", label: "채플 (1.5m)", icon: "/dress-filters/length-chapel.png" },
-      { value: "CATHEDRAL", label: "캐서드럴 (3m+)", icon: "/dress-filters/length-cathedral.png" },
+      { value: "MINI", label: "미니" },
+      { value: "MIDI", label: "미디" },
+      { value: "FULL", label: "발목 길이" },
+      { value: "SHORT_TRAIN", label: "숏 트레인 (1m)" },
+      { value: "CHAPEL", label: "채플 (1.5m)" },
+      { value: "CATHEDRAL", label: "캐서드럴 (3m+)" },
     ],
   },
   {
@@ -152,12 +152,12 @@ export const DRESS_FILTERS: FilterAxis[] = [
     type: "single",
     defaultExpanded: false,
     options: [
-      { value: "CLOSED", label: "클로즈드", icon: "/dress-filters/back-closed.png" },
-      { value: "ILLUSION", label: "일루전 백", icon: "/dress-filters/back-illusion.png" },
-      { value: "OPEN", label: "오픈 백", icon: "/dress-filters/back-open.png" },
-      { value: "KEYHOLE", label: "키홀", icon: "/dress-filters/back-keyhole.png" },
-      { value: "V_BACK", label: "V 백", icon: "/dress-filters/back-v.png" },
-      { value: "CORSET", label: "코르셋", icon: "/dress-filters/back-corset.png" },
+      { value: "CLOSED", label: "클로즈드" },
+      { value: "ILLUSION", label: "일루전 백" },
+      { value: "OPEN", label: "오픈 백" },
+      { value: "KEYHOLE", label: "키홀" },
+      { value: "V_BACK", label: "V 백" },
+      { value: "CORSET", label: "코르셋" },
     ],
   },
   {
@@ -190,12 +190,12 @@ export const DRESS_FILTERS: FilterAxis[] = [
     type: "single",
     defaultExpanded: false,
     options: [
-      { value: "NONE", label: "절개라인 없음", icon: "/dress-filters/waist-none.png" },
-      { value: "EMPIRE", label: "엠파이어 (가슴 아래)", icon: "/dress-filters/waist-empire.png" },
-      { value: "HIGH", label: "하이 웨이스트", icon: "/dress-filters/waist-high.png" },
-      { value: "NATURAL", label: "내추럴 (자연 허리선)", icon: "/dress-filters/waist-natural.png" },
-      { value: "DROPPED", label: "드롭 웨이스트", icon: "/dress-filters/waist-dropped.png" },
-      { value: "BASQUE", label: "바스크 (V형)", icon: "/dress-filters/waist-basque.png" },
+      { value: "NONE", label: "절개라인 없음" },
+      { value: "EMPIRE", label: "엠파이어 (가슴 아래)" },
+      { value: "HIGH", label: "하이 웨이스트" },
+      { value: "NATURAL", label: "내추럴 (자연 허리선)" },
+      { value: "DROPPED", label: "드롭 웨이스트" },
+      { value: "BASQUE", label: "바스크 (V형)" },
     ],
   },
   {
