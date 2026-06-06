@@ -20,20 +20,8 @@ import { parseLocalDate } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { fmt } from "@/lib/budgetFormat";
+import { relativeTime } from "@/lib/relativeTime";
 import type { BudgetItem } from "@/hooks/useBudget";
-
-const relativeTime = (iso: string): string => {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  if (diffMs < 0) return "방금";
-  const m = Math.round(diffMs / 60_000);
-  if (m < 60) return m <= 1 ? "방금" : `${m}분 전`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  const d = Math.round(h / 24);
-  if (d < 30) return `${d}일 전`;
-  const mo = Math.round(d / 30);
-  return `${mo}개월 전`;
-};
 
 const sortOptions = ["최신순", "오래된순", "금액 높은순", "금액 낮은순"] as const;
 type GroupMode = "month" | "vendor";

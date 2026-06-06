@@ -4,7 +4,7 @@ import VendorMediaCard, {
   CARD_H,
   type VendorMediaCardData,
 } from "@/components/home/VendorMediaCard";
-import { PLACE_CATEGORY_TO_ITEM_TYPE } from "@/lib/placeMappers";
+import { PLACE_CATEGORY_TO_ITEM_TYPE, joinRegion } from "@/lib/placeMappers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceKm } from "@/hooks/useWeddingVenue";
 import {
@@ -33,7 +33,7 @@ function toCard(
   r: RecPlace,
   opts: { showCategory: boolean; showDistance: boolean },
 ): VendorMediaCardData {
-  const region = [r.city, r.district].filter(Boolean).join(" ") || null;
+  const region = joinRegion(r.city, r.district);
   return {
     id: r.place_id,
     thumbnail_url: r.main_image_url,

@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatManwonRange } from "@/lib/priceFormat";
+import { CATEGORY_CARD_TABLE, joinRegion } from "@/lib/placeMappers";
 
 // 세션 내 같은 place 중복 증가 방지.
 const viewedPlaces = new Set<string>();
@@ -342,18 +344,8 @@ export interface LegacyDetail {
   brand: string;               // → brand_options.join(", ") | agency_name
 }
 
-const CARD_KEY: Record<string, string> = {
-  wedding_hall: "place_wedding_halls",
-  studio: "place_studios",
-  dress_shop: "place_dress_shops",
-  makeup_shop: "place_makeup_shops",
-  hanbok: "place_hanboks",
-  tailor_shop: "place_tailor_shops",
-  honeymoon: "place_honeymoons",
-  appliance: "place_appliances",
-  jewelry: "place_jewelry",
-  invitation_venue: "place_invitation_venues",
-};
+// 카테고리 slug → place_<x> 테이블 매핑은 placeMappers 를 단일 소스로 사용.
+const CARD_KEY = CATEGORY_CARD_TABLE;
 
 const SELECT = [
   "*",
@@ -373,7 +365,7 @@ const SELECT = [
 ].join(",");
 
 const fmtPrice = (min: number | null): string =>
-  min != null ? `${(min / 10000).toFixed(0)}만원~` : "가격 문의";
+  min != null ? formatManwonRange(min) : "가격 문의";
 
 function asStringArray(v: unknown): string[] {
   if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string");
@@ -435,7 +427,7 @@ export const usePlaceDetail = (placeId: string | undefined) => {
       const d = (p.place_details ?? null) as Record<string, unknown> | null;
       const cardKey = CARD_KEY[p.category];
       const card = (cardKey ? p[cardKey] : null) as Record<string, unknown> | null;
-      const address = [p.city, p.district].filter(Boolean).join(" ");
+      const address = joinRegion(p.city, p.district) ?? "";
       const cardPrice = (card?.price_per_person as number | undefined) ?? null;
       const price = cardPrice ?? p.min_price ?? null;
 

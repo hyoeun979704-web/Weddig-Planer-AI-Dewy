@@ -8,8 +8,7 @@ import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useQuery } from "@tanstack/react-query";
 import { MessageSquare, Flame, Image as ImageIcon, Search, Bell } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
+import { relativeTime } from "@/lib/relativeTime";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -250,9 +249,6 @@ const Community = () => {
   const getPreview = (content: string) =>
     content.length > 40 ? content.slice(0, 40) + "..." : content;
 
-  const formatRelative = (dateString: string) =>
-    formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: ko })
-      .replace("약 ", "");
 
   const renderStyleBadge = (style: PostWeddingStyle | null) => {
     if (!style) return null;
@@ -294,7 +290,7 @@ const Community = () => {
         {getPreview(post.content)}
       </p>
       <div className="mt-5 flex items-center justify-between text-[12px] text-muted-foreground">
-        <span>{formatRelative(post.created_at)} · 조회 {post.views}</span>
+        <span>{relativeTime(post.created_at)} · 조회 {post.views}</span>
         <span className="flex items-center gap-3">
           <span className="flex items-center gap-1">
             <MessageSquare className="w-[13px] h-[13px]" />
@@ -503,7 +499,7 @@ const Community = () => {
                     {getPreview(post.content)}
                   </p>
                   <div className="mt-6 flex items-center justify-between text-[12px] text-muted-foreground">
-                    <span>{formatRelative(post.created_at)}</span>
+                    <span>{relativeTime(post.created_at)}</span>
                     <span className="flex items-center gap-3">
                       <span className="flex items-center gap-1">
                         <MessageSquare className="w-[13px] h-[13px]" />

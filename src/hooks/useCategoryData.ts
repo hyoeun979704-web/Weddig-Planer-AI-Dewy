@@ -2,6 +2,8 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCategoryFilterStore, CategoryType } from "@/stores/useCategoryFilterStore";
 import { useWeddingVenue } from "@/hooks/useWeddingVenue";
+import { APPLIANCE_PRODUCT_TYPE_LABEL, JEWELRY_STORE_TYPE_LABEL } from "@/lib/categoryLabels";
+import { joinRegion } from "@/lib/placeMappers";
 
 export interface CategoryItem {
   id: string;
@@ -152,7 +154,7 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
   const base: CategoryItem = {
     id: p.place_id,
     name: p.name,
-    address: [p.city, p.district].filter(Boolean).join(" "),
+    address: joinRegion(p.city, p.district) ?? "",
     price_per_person: price,
     rating: p.avg_rating ?? 0,
     review_count: p.review_count ?? 0,
@@ -217,11 +219,7 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
     }
     case "jewelry": {
       // jewelry — 한 행 = 1 브랜드 베스트셀러 컬렉션
-      const STORE_TYPE_LABEL: Record<string, string> = {
-        online: "온라인",
-        offline: "오프라인",
-        both: "온·오프라인",
-      };
+      const STORE_TYPE_LABEL = JEWELRY_STORE_TYPE_LABEL;
       base.brand = card?.brand_name ?? card?.metals?.join(", ");
       base.product_url = card?.product_url ?? undefined;
       base.product_type = card?.product_type ?? undefined;
@@ -243,11 +241,7 @@ function toCategoryItem(p: any, category: CategoryType): CategoryItem {
     }
     case "appliances": {
       // hybrid: product_type ∈ {store, package, single}
-      const APPL_TYPE_LABEL: Record<string, string> = {
-        store: "매장",
-        package: "패키지",
-        single: "단품",
-      };
+      const APPL_TYPE_LABEL = APPLIANCE_PRODUCT_TYPE_LABEL;
       base.product_type = card?.product_type ?? undefined;
       base.product_url = card?.product_url ?? undefined;
       base.store_chain = card?.store_chain ?? undefined;

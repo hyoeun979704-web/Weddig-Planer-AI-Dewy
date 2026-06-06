@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Search, X, Store } from "lucide-react";
 import { useVendorSearch, type VendorLite } from "@/hooks/useCommunityPlaces";
+import { joinRegion } from "@/lib/placeMappers";
 
 // 글에 업체를 태그하는 피커. 선택된 업체는 칩으로 표시, 검색 결과에서 추가.
 interface VendorTagPickerProps {
@@ -21,7 +22,7 @@ const VendorTagPicker = ({ value, onChange, max = 3 }: VendorTagPickerProps) => 
   };
   const remove = (placeId: string) => onChange(value.filter((x) => x.place_id !== placeId));
 
-  const region = (v: VendorLite) => [v.city, v.district].filter(Boolean).join(" ");
+  const region = (v: VendorLite) => joinRegion(v.city, v.district) ?? "";
 
   return (
     <div className="space-y-2">
