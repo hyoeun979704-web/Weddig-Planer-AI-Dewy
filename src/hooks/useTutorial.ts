@@ -149,36 +149,39 @@ export const useTutorial = () => {
     }
   }, []);
 
-  const endTutorial = useCallback(() => {
+  // completed=true 일 때만(끝까지 진행) 포인트 지급 + 진행률 기록. 건너뛰기/닫기/
+  // 라우트 이탈은 지급하지 않는다. (회귀: skip 해도 awardCompletion 이 불려 지급됐음)
+  const endTutorial = useCallback((completed: boolean = false) => {
     setIsActive(false);
     setCurrentStepIndex(0);
     localStorage.setItem(TUTORIAL_SEEN_KEY, "true");
-    if (tourId) {
-      awardCompletion(tourId);
-      // Persist lesson completion locally as well, so progress UI stays
-      // accurate even when the Supabase RPC is unavailable (e.g. anonymous
-      // browsing). useTutorialProgress reads from localStorage.
-      try {
-        const raw = localStorage.getItem("dewy:tutorial-progress:v2");
-        const parsed = raw ? JSON.parse(raw) : { completedLessons: [], welcomeShown: false };
-        const completed: string[] = Array.isArray(parsed.completedLessons)
-          ? parsed.completedLessons
-          : [];
-        if (!completed.includes(tourId)) {
-          completed.push(tourId);
-          localStorage.setItem(
-            "dewy:tutorial-progress:v2",
-            JSON.stringify({
-              ...parsed,
-              completedLessons: completed,
-              lastUpdated: new Date().toISOString(),
-            })
-          );
-        }
-      } catch {
-        // ignore quota/parse errors
+    const finishedTourId = tourId;
+    setTourId(null);
+    if (!completed || !finishedTourId) return;
+
+    awardCompletion(finishedTourId);
+    // Persist lesson completion locally as well, so progress UI stays
+    // accurate even when the Supabase RPC is unavailable (e.g. anonymous
+    // browsing). useTutorialProgress reads from localStorage.
+    try {
+      const raw = localStorage.getItem("dewy:tutorial-progress:v2");
+      const parsed = raw ? JSON.parse(raw) : { completedLessons: [], welcomeShown: false };
+      const completedLessons: string[] = Array.isArray(parsed.completedLessons)
+        ? parsed.completedLessons
+        : [];
+      if (!completedLessons.includes(finishedTourId)) {
+        completedLessons.push(finishedTourId);
+        localStorage.setItem(
+          "dewy:tutorial-progress:v2",
+          JSON.stringify({
+            ...parsed,
+            completedLessons,
+            lastUpdated: new Date().toISOString(),
+          })
+        );
       }
-      setTourId(null);
+    } catch {
+      // ignore quota/parse errors
     }
   }, [tourId, awardCompletion]);
 
@@ -186,7 +189,8 @@ export const useTutorial = () => {
     if (currentStepIndex < steps.length - 1) {
       setCurrentStepIndex((i) => i + 1);
     } else {
-      endTutorial();
+      // 마지막 단계까지 도달 = 완료 → 지급.
+      endTutorial(true);
     }
   }, [currentStepIndex, steps.length, endTutorial]);
 
