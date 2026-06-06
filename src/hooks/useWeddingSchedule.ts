@@ -8,6 +8,7 @@ import {
   type CeremonyType,
   type UserRole,
   type WeddingPersonaMode,
+  type PlanningStyle,
 } from "@/lib/weddingPersona";
 import { resolveRegionKey } from "@/data/budgetData";
 
@@ -32,6 +33,10 @@ interface WeddingSettings {
   excluded_categories: string[];
   // 결혼 차수: first(초혼) | remarriage(재혼). NULL=미선택.
   marital_history: "first" | "remarriage" | null;
+  // 재혼 시 자녀 동반 여부 → remarriage_with_children. (민감, set_sensitive_preference)
+  has_children: boolean | null;
+  // 성향 페르소나 신호 → budget_analytic/designer_late/first_timer. (비민감)
+  planning_style: PlanningStyle | null;
   // 신부 임신 여부. true일 때 체크리스트 우선순위·AI 톤이 조정됨.
   pregnant: boolean;
   // 출산예정일. pregnant=true 일 때만 의미. 본식일과의 차이로 임신 차수
@@ -69,6 +74,8 @@ const DEFAULT_SETTINGS: WeddingSettings = {
   wedding_style: null,
   excluded_categories: [],
   marital_history: null,
+  has_children: null,
+  planning_style: null,
   pregnant: false,
   pregnancy_due_date: null,
   role: null,
@@ -89,7 +96,7 @@ const DEFAULT_SETTINGS: WeddingSettings = {
 };
 
 const SETTINGS_SELECT =
-  "wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, pregnant, pregnancy_due_date, role, country, wedding_country, wedding_region_sigungu, has_parents_bride, has_parents_groom, ceremony_type, persona_mode, wedding_venue_place_id, wedding_venue_name, wedding_venue_address, wedding_venue_city, wedding_venue_district, wedding_venue_lat, wedding_venue_lng";
+  "wedding_date, partner_name, wedding_region, planning_stage, wedding_date_tbd, wedding_region_tbd, wedding_style, excluded_categories, marital_history, has_children, planning_style, pregnant, pregnancy_due_date, role, country, wedding_country, wedding_region_sigungu, has_parents_bride, has_parents_groom, ceremony_type, persona_mode, wedding_venue_place_id, wedding_venue_name, wedding_venue_address, wedding_venue_city, wedding_venue_district, wedding_venue_lat, wedding_venue_lng";
 
 const SCHEDULE_SELECT =
   "id, title, scheduled_date, completed, notes, category, source";
@@ -121,6 +128,8 @@ function mapSettingsRow(row: any): WeddingSettings {
     wedding_region: row.wedding_region ?? null,
     has_parents_bride: row.has_parents_bride !== false,
     has_parents_groom: row.has_parents_groom !== false,
+    has_children: !!row.has_children,
+    planning_style: (row.planning_style ?? null) as PlanningStyle | null,
   });
   return {
     wedding_date: row.wedding_date ?? null,
@@ -143,6 +152,8 @@ function mapSettingsRow(row: any): WeddingSettings {
     wedding_region_sigungu: row.wedding_region_sigungu ?? null,
     has_parents_bride: row.has_parents_bride !== false,
     has_parents_groom: row.has_parents_groom !== false,
+    has_children: row.has_children ?? null,
+    planning_style: (row.planning_style ?? null) as PlanningStyle | null,
     ceremony_type: (row.ceremony_type ?? null) as CeremonyType | null,
     persona_mode: (row.persona_mode ?? fallbackMode) as WeddingPersonaMode,
     wedding_venue_place_id: row.wedding_venue_place_id ?? null,
@@ -255,6 +266,7 @@ export const useWeddingSchedule = () => {
     wedding_date_tbd: boolean;
     wedding_region_tbd: boolean;
     wedding_style: WeddingStyle | null;
+    planning_style: PlanningStyle | null;
     excluded_categories: string[];
     marital_history: "first" | "remarriage" | null;
     pregnant: boolean;
@@ -322,6 +334,8 @@ export const useWeddingSchedule = () => {
           wedding_region: merged.wedding_region,
           has_parents_bride: merged.has_parents_bride,
           has_parents_groom: merged.has_parents_groom,
+          has_children: merged.has_children ?? false,
+          planning_style: merged.planning_style,
         });
       }
       queryClient.setQueryData(weddingSettingsKey(user.id), merged);

@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 export type SensitiveField =
   | "pregnant"
   | "marital_history"
+  | "has_children"
   | "has_parents_bride"
   | "has_parents_groom";
 

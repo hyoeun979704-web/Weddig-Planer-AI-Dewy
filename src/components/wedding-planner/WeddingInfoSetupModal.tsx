@@ -25,7 +25,7 @@ import {
   type WeddingStyle,
 } from "@/lib/weddingStyle";
 import { computePregnancyContext, trimesterLabel } from "@/lib/pregnancy";
-import type { CeremonyType, UserRole } from "@/lib/weddingPersona";
+import type { CeremonyType, UserRole, PlanningStyle } from "@/lib/weddingPersona";
 import { markConfirmed, resetSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 
 const REGIONS = [
@@ -107,6 +107,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
   // has_parents_* 는 본 모달에서 받지 않음 (위 주석 참조). 기본값으로 그대로 두면
   // 트리거가 standard_bride 페르소나로 분기. 부모 부재는 별도 흐름에서 추론.
   const [ceremonyType, setCeremonyType] = useState<CeremonyType | null>(null);
+  const [planningStyle, setPlanningStyle] = useState<PlanningStyle | null>(null);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -142,6 +143,9 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
     setWeddingCountry(weddingSettings.wedding_country ?? "KR");
     setSigungu(weddingSettings.wedding_region_sigungu ?? "");
     setCeremonyType(weddingSettings.ceremony_type);
+    setPlanningStyle(
+      weddingSettings.planning_style === "standard" ? null : (weddingSettings.planning_style ?? null),
+    );
     setErrors({});
   }, [
     isOpen,
@@ -184,6 +188,7 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
       wedding_date_tbd: dateTbd,
       wedding_region_tbd: regionTbd,
       wedding_style: weddingStyle,
+      planning_style: planningStyle,
       excluded_categories: excludedCategories,
       role,
       country: country || "KR",
@@ -478,6 +483,38 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
           </div>
           <p className="text-[11px] text-gray-400 mt-1">
             신랑님이 직접 준비하시면 예복·예물·신랑 양가 가이드를 먼저 보여드려요.
+          </p>
+        </div>
+
+        {/* 준비 스타일 — 성향 페르소나(절약·분석 / 디자이너 / 초보) 자동 큐레이션 */}
+        <div>
+          <label className={labelCls}>
+            준비 스타일 <span className="text-xs text-gray-400 font-normal">(선택)</span>
+          </label>
+          <div className="grid grid-cols-4 gap-1.5">
+            {([
+              { v: null, label: "선택 안 함" },
+              { v: "budget_analytic", label: "절약·꼼꼼" },
+              { v: "designer", label: "컨셉·디자인" },
+              { v: "beginner", label: "처음이라" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.label}
+                type="button"
+                onClick={() => setPlanningStyle(opt.v)}
+                className={cn(
+                  "py-2 rounded-xl text-[12px] border transition-colors",
+                  planningStyle === opt.v
+                    ? "border-[#C9A96E] bg-[#C9A96E]/5 text-gray-800 font-semibold"
+                    : "border-gray-200 text-gray-500"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-1">
+            선택하면 그 성향에 맞춰 비교·컨셉·초보 가이드를 우선 보여드려요.
           </p>
         </div>
 
