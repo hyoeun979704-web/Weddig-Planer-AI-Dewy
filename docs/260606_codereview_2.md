@@ -65,11 +65,25 @@ v_earned := GREATEST(1, p_score / 20);  -- p_score 는 클라가 보낸 값
 
 ---
 
+## 5. 튜토리얼 포인트 적립 검토 (추가)
+- ✅ 중복지급 방지 양호: `tutorial_completions` PK `(user_id, tour_id)` + `ON CONFLICT DO NOTHING`,
+  마스터 보너스 EXISTS+one-shot 인덱스.
+- 🔴 **임의 tour_id 파밍**: `complete_tutorial` 이 클라 제공 `p_tour_id` 무검증 → `feature_<아무거나>`
+  마다 100P. 가짜 id 무한 생성으로 무제한 적립(포인트=상품권/쇼핑 사용 가능). 
+  → **허용목록 테이블 `tutorial_tours`** 도입(유효 14개 시드) + 목록에 없는 id 무시(완료기록도 X).
+  마스터 조건 `=5`→`>=5` 견고화. (마이그레이션 `20260606195000`)
+- 드리프트 가드: `tutorialChapters.ts` 에 "레슨 추가 시 tutorial_tours 갱신" 주석 추가.
+
+## 6. 포인트 내역 한글 통일 (추가)
+- `usePoints.labelForReason` 단일 소스에 실제 사용 사유 전부 한글 매핑 + 동적 `feature_*` →
+  "튜토리얼 완료" 접두사 통일 + 미정의 사유 영문노출 방지(한글 폴백). reason 키(매칭값)는 불변.
+
 ## 적용 마이그레이션
 | 마이그레이션 | 내용 | 상태 |
 |---|---|---|
 | `20260606193000_points_economy_lockdown` | earn_points·earn_hearts·spend_points anon/authenticated 회수, spend_hearts anon 회수+소유권 가드 | ✅ DB 적용·검증 완료 |
-| `20260606194000_points_farming_guards` | add_game_points 게임 보상 일일 한도(500P/일, KST) + claim_daily_attendance FOR UPDATE 잠금 + point_transactions daily_attendance 일자 부분 유니크 인덱스 | ✅ DB 적용·검증 완료 |
+| `20260606194000_points_farming_guards` | add_game_points 게임 보상 일일 한도(500P/일, KST) + claim_daily_attendance FOR UPDATE 잠금 + daily_attendance 일자 부분 유니크 인덱스 | ✅ DB 적용·검증 완료 |
+| `20260606195000_tutorial_tour_allowlist` | tutorial_tours 허용목록 + complete_tutorial 검증(가짜 id 차단)·마스터 >=5 | ✅ DB 적용·검증 완료 |
 
 ## 남은 작업 (deferred)
 - [x] `add_game_points` 점수 신뢰 → 게임 보상 일일 한도 500P/일 적용(값 조정 가능). — 완료

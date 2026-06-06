@@ -72,6 +72,10 @@ const NON_WEDDING_PERSONAS: WeddingPersonaMode[] = [
 // ─────────────────────────────────────────────────────────────────────────
 // Lessons
 // ─────────────────────────────────────────────────────────────────────────
+// ⚠️ 포인트 적립 연동: 레슨 완료 시 'feature_<레슨id>' 로 complete_tutorial 이 호출되어
+//    100P 가 지급된다. 서버는 public.tutorial_tours 허용목록에 있는 tour_id 만 지급하므로,
+//    레슨을 추가/이름변경하면 마이그레이션으로 tutorial_tours 에도 'feature_<id>' 를
+//    넣어야 한다(없으면 포인트가 지급되지 않음). 참고: 20260606195000_tutorial_tour_allowlist.
 
 const HOME_TOUR: TutorialLesson = {
   id: "home-tour",
