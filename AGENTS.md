@@ -53,6 +53,9 @@ API→호출 경로 시뮬레이션). e2e 불가(sandbox 차단 등) 시 "검증
 - **DB 스키마 정합성**: 코드가 참조하는 컬럼/RPC/view 가 **실제 DB 에 있는지** `list_tables`/
   `information_schema` 로 먼저 확인. 마이그레이션 파일 존재 ≠ DB 적용. (회귀: 없는 컬럼 15개
   SELECT → PostgREST 422 → 전체 쿼리 실패) `schema_migrations` 적용 history ≠ repo 파일 수면 경고.
+- **정적 통과 ≠ 런타임 안전**: 빌드·린트·esbuild 통과는 타입/문법 검증일 뿐. 결제·인증 등
+  호출 경로를 직접 안 밟는 코드는 "정적 통과"만으로 완료 보고 금지. import 심볼을 동명 지역
+  변수로 재선언 금지(섀도잉=TDZ). (회귀: `const adminClient = adminClient()` → 결제승인 100% 불능)
 - 회귀 사례 전문: `docs/verification-lessons.md`.
 
 ## 페르소나 UX 검토 (해당 작업만 — 상세 `docs/persona-ux-review-rules.md`)

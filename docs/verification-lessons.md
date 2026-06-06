@@ -29,3 +29,23 @@
 스키마 먼저 확인.** 마이그레이션 파일 존재만으로 안심 금지. `supabase_migrations.
 schema_migrations` 의 적용 history 와 repo 의 마이그레이션 파일 수가 다르면 즉시
 경고 + 적용 가능한 것 식별.
+
+## 회귀 — import 를 동명 const 로 섀도잉 → 런타임 ReferenceError (코드리뷰 라운드)
+
+- 작업: 공통화 리팩터(`_shared/supabase.ts` 의 `adminClient()` 로 15개 함수 통합)
+- 잘못된 적용: `import { adminClient } from "..."` 해놓고 같은 이름으로
+  `const adminClient = adminClient();` — 블록스코프 const 가 import 를 섀도잉,
+  우변 호출이 **TDZ(temporal dead zone)** 에 걸림
+- 결과: kakao-pay-approve / kakao-pay-charge-approve 가 매 호출 즉시
+  `ReferenceError: Cannot access 'adminClient' before initialization` → **구독·하트충전
+  결제 승인 100% 불능**. 인증 통과 직후 결제 쓰기 직전에 throw
+- 검증 실패: `npm run build`·`npm run lint`·esbuild 전부 **통과**. 유효한 문법·합법적
+  JS 라 정적 검사로는 안 잡힘. 런타임 호출/e2e 결제만이 잡을 수 있었음
+- 진짜 검증: 동명 섀도잉을 최소 Node repro 로 재현 → 다른 13개 함수는 로컬명이
+  `admin`/`supabaseAdmin` 으로 달라 무사함을 확인. 로컬 변수를 `admin` 으로 rename
+
+**규칙**: import 심볼을 **같은 이름의 지역 변수로 절대 재선언 금지**(섀도잉=TDZ 폭탄).
+빌드·린트·esbuild 통과는 **타입/문법 검증일 뿐 런타임 안전 보증이 아니다** — 특히
+결제·인증처럼 호출 경로를 직접 안 밟는 코드는 "정적 통과"만으로 완료 보고 금지.
+멀티라인 메서드 체인(`client\n  .from(...)`)은 단순 텍스트 치환으로 놓치기 쉬우니
+rename 후 `grep` 으로 남은 참조 0건 확인.
