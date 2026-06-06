@@ -185,6 +185,8 @@ export const useCoupleLink = () => {
           not_found: "초대 코드를 찾을 수 없어요. 6자리가 맞는지 확인해주세요",
           own_code: "본인의 초대 코드는 사용할 수 없어요",
           already_redeemed: "이미 사용된 초대 코드예요",
+          already_linked: "이미 다른 파트너와 연결돼 있어요. 먼저 연결을 해제해주세요",
+          inviter_already_linked: "상대방이 이미 다른 파트너와 연결돼 있어요",
           empty_code: "초대 코드를 입력해주세요",
           auth_required: "로그인이 필요합니다",
         };
