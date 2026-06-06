@@ -31,6 +31,9 @@ export const MERGE_DELAY = 100;
 export const MAX_DROP_LEVEL = 5;
 
 // 꽃/부케 레벨 테이블
+// 반경 곡선은 '최종 도달 가능성'에 맞춰 튜닝됨(2026-06): 유리 내부 폭 301px 에서
+// 최종-1(L11, r75) 두 개가 가로로 나란히 들어가야 최종(L12) 머지가 물리적으로 가능.
+// 이전 곡선(L11 r89/L12 r97)은 둘이 안 들어가 승률 0% 였음.
 export const FLOWER_LEVELS: FlowerLevel[] = [
   {
     id: 1,
@@ -44,7 +47,7 @@ export const FLOWER_LEVELS: FlowerLevel[] = [
   {
     id: 2,
     name: '새싹',
-    radius: 20,
+    radius: 19,
     color: '#4CAF50',
     emoji: '🌱',
     score: 3,
@@ -53,7 +56,7 @@ export const FLOWER_LEVELS: FlowerLevel[] = [
   {
     id: 3,
     name: '꽃봉우리',
-    radius: 27,
+    radius: 24,
     color: '#FF8C94',
     emoji: '🌸',
     score: 6,
@@ -62,7 +65,7 @@ export const FLOWER_LEVELS: FlowerLevel[] = [
   {
     id: 4,
     name: '흰색 안개꽃',
-    radius: 34,
+    radius: 30,
     color: '#F5F5F5',
     emoji: '🤍',
     score: 10,
@@ -71,7 +74,7 @@ export const FLOWER_LEVELS: FlowerLevel[] = [
   {
     id: 5,
     name: '분홍 부바르디아',
-    radius: 41,
+    radius: 36,
     color: '#FFB7C5',
     emoji: '🌺',
     score: 15,
@@ -80,7 +83,7 @@ export const FLOWER_LEVELS: FlowerLevel[] = [
   {
     id: 6,
     name: '노랑 프리지아',
-    radius: 49,
+    radius: 42,
     color: '#FFE066',
     emoji: '🌼',
     score: 21,
@@ -89,7 +92,7 @@ export const FLOWER_LEVELS: FlowerLevel[] = [
   {
     id: 7,
     name: '코랄 튤립',
-    radius: 57,
+    radius: 48,
     color: '#FF6B6B',
     emoji: '🌷',
     score: 28,
@@ -98,7 +101,7 @@ export const FLOWER_LEVELS: FlowerLevel[] = [
   {
     id: 8,
     name: '빨강 장미꽃',
-    radius: 65,
+    radius: 55,
     color: '#E8001D',
     emoji: '🌹',
     score: 36,
@@ -107,7 +110,7 @@ export const FLOWER_LEVELS: FlowerLevel[] = [
   {
     id: 9,
     name: '흰색 라넌큘러스',
-    radius: 73,
+    radius: 62,
     color: '#FFF0F5',
     emoji: '🏵️',
     score: 45,
@@ -116,7 +119,7 @@ export const FLOWER_LEVELS: FlowerLevel[] = [
   {
     id: 10,
     name: '연분홍 작약',
-    radius: 81,
+    radius: 69,
     color: '#FFAEC9',
     emoji: '💮',
     score: 55,
@@ -125,7 +128,7 @@ export const FLOWER_LEVELS: FlowerLevel[] = [
   {
     id: 11,
     name: '하얀 카라 부케',
-    radius: 89,
+    radius: 75,
     color: '#FFFFF0',
     emoji: '💐',
     score: 66,
@@ -134,7 +137,7 @@ export const FLOWER_LEVELS: FlowerLevel[] = [
   {
     id: 12,
     name: '프리미엄부케',
-    radius: 97,
+    radius: 82,
     color: '#F4B8C8',
     emoji: '💐',
     score: 78,
