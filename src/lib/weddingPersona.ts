@@ -1,22 +1,23 @@
-// 페르소나 시트 v1(P1~P20) 매핑 — 사용자 wedding_settings 입력으로부터
-// 자동 분류되는 페르소나 enum과 UX 분기에 쓰이는 헬퍼를 제공한다.
+// 페르소나 시스템 — 단일 레지스트리 + 우선순위 룰테이블.
 //
-// DB 측 trigger(derive_wedding_persona)와 동기 — 두 곳의 우선순위 로직이
-// 동일해야 한다. DB 트리거는 영속화 정합성을, 클라이언트 헬퍼는 즉시 분기를
-// 책임진다. 둘 다 같은 입력을 받아 같은 결과를 내야 한다.
+// 사용자 wedding_settings 입력으로부터 20개 페르소나 중 하나로 **결정적으로** 분류한다.
+// 모든 모드의 정의(라벨/헤더/AI설명/분류조건)를 `PERSONA_REGISTRY` 한 곳에 모아,
+// 라벨·헤더·AI설명·derive 가 4곳에 흩어져 드리프트 나던 문제를 없앴다.
 //
-// persona_mode override 안전성 (Round 16 마이그레이션 적용 완료):
-// `user_wedding_settings.persona_mode_overridden_at` (TIMESTAMPTZ) 마커 컬럼이 추가됨.
-// trigger 가 이 컬럼을 보고:
-//   - marker NOT NULL → override 영구 보존 (자동 derive 스킵)
-//   - marker NULL → 기존 derive 로직 적용 (자동 분류)
-// override set/reset 규칙:
-//   - client 가 persona_mode 를 자동 derive 결과와 다른 값으로 set 하면 trigger 가
-//     persona_mode_overridden_at = NOW() 자동 마킹 (INSERT/UPDATE 양쪽).
-//   - client 가 persona_mode_overridden_at = NULL 로 set 하면 override 해제 +
-//     자동 derive 복귀 (같은 UPDATE 에서 즉시 v_auto 적용).
-// 따라서 view-as UI 는 persona_mode 만 patch 하면 충분 (marker 는 trigger 가 알아서).
-// reset 버튼은 `update({ persona_mode_overridden_at: null })` 호출.
+// 엣지케이스 방지 구조:
+//  - 레지스트리 **배열 순서 = 우선순위**. derive 는 위에서부터 첫 match 를 반환 →
+//    조합 충돌(임신+재혼+스몰 등)도 항상 같은 결과. 마지막 엔트리(standard_bride)는
+//    match=()=>true 라 입력공간을 전수 커버(fall-through 갭 없음).
+//  - 모든 모드는 `derivable`(자동분류) 또는 override-only(view-as) 로 명시.
+//  - DB 트리거(derive_wedding_persona)와 **같은 우선순위·조건**을 유지해야 한다.
+//    현재 기존 16모드는 트리거와 동일. 신규 4모드(remarriage_with_children /
+//    budget_analytic / designer_late / first_timer)는 신규 입력 신호(has_children /
+//    planning_style)로만 발화하며, 그 신호를 수집·저장하기 전까지는 클라/트리거 모두
+//    발생시키지 않는다(실데이터 parity 보존). 활성화 시 트리거도 같은 우선순위로 갱신할 것.
+//
+// persona_mode override(view-as)는 `user_wedding_settings.persona_mode_overridden_at`
+// 마커로 보존(트리거가 marker NOT NULL 이면 자동 derive 스킵). reset 은
+// `update({ persona_mode_overridden_at: null })`.
 
 import type { WeddingStyle } from "./weddingStyle";
 
@@ -29,6 +30,7 @@ export type WeddingPersonaMode =
   | "first_timer"
   | "regional"
   | "remarriage"
+  | "remarriage_with_children"
   | "remote_overseas"
   | "single_household"
   | "small_intimate"
@@ -55,206 +57,275 @@ export type CeremonyType =
   | "snap_only"
   | "dual_ceremony";
 
+/** 성향 페르소나(예식 유형과 직교)를 구분하는 신호. 미지정 시 'standard'. */
+export type PlanningStyle = "standard" | "budget_analytic" | "designer" | "beginner";
+
 export interface PersonaInputs {
   wedding_style: WeddingStyle | null;
   ceremony_type: CeremonyType | null;
   marital_history: "first" | "remarriage" | null;
   pregnant: boolean;
   role: UserRole | null;
-  country: string | null;            // ISO-3166-1 alpha-2, default 'KR'
-  wedding_country: string | null;    // 예식 국가, default 'KR'
-  wedding_region: string | null;     // 시도 풀네임 또는 라벨
+  country: string | null; // ISO-3166-1 alpha-2, default 'KR'
+  wedding_country: string | null; // 예식 국가, default 'KR'
+  wedding_region: string | null; // 시도 풀네임 또는 라벨
   has_parents_bride: boolean;
   has_parents_groom: boolean;
+  // 신규(선택) — 미제공 시 기존 동작과 동일(해당 모드는 발화 안 함).
+  has_children?: boolean; // 재혼 시 자녀 동반 여부 → remarriage_with_children
+  planning_style?: PlanningStyle | null; // 성향 페르소나(budget/designer/beginner)
 }
 
 const METRO_REGIONS = new Set([
   "서울특별시", "서울", "경기도", "경기", "인천광역시", "인천",
 ]);
 
-/** 입력 신호로부터 페르소나 모드를 분류. DB 트리거와 정확히 같은 로직을 유지한다.
- *
- * 우선순위 원칙 (Round 8 A 정정):
- * - "더 구체적·고유한 경험" 이 우선. 임신/재혼/국제/스몰계열/ceremony_type 특화 등.
- * - role(신랑/신부) 은 **수식자(modifier)** 로 마지막에 적용 — 다른 페르소나가 있으면
- *   그 페르소나가 이김. 신랑 voice 는 미션 layering + header 보조 자막으로 따로 더한다
- *   (`isGroomMode` 헬퍼 + getMissionsForStyle 의 role 옵션).
- * - 이전엔 role 이 hotel/regional/overseas 보다 위에 있어 호텔 신랑이 luxury_hotel
- *   큐레이션을 못 받고 standard_groom 으로 빠지는 회귀 있었음. role 은 가장 마지막에. */
-export function derivePersonaMode(s: PersonaInputs): WeddingPersonaMode {
-  const country = s.country ?? "KR";
-  const weddingCountry = s.wedding_country ?? "KR";
-  const isInternational = weddingCountry !== "KR" || country !== weddingCountry;
-  const isOverseas = country !== "KR";
-  const noParents = !s.has_parents_bride && !s.has_parents_groom;
-  const isRegional = !!s.wedding_region && !METRO_REGIONS.has(s.wedding_region);
-
-  // Round 11 self-review fix — pregnancy 를 international 위로. 임신은 의료·안전
-  // (드레스 fitting 동선, 항공 제약, 입덧 톤) 이 international voice (영문 자료) 보다
-  // 더 critical. 임신 + 국제결혼 사용자는 pregnancy 페르소나 받고 international 컨텐츠는
-  // 별도 surface (AI 프롬프트에서 wedding_country 조건으로 추가).
-  if (s.pregnant) return "pregnancy";
-  // Round 10 — ceremony_type='dual_ceremony' 도 international 로 매핑. wedding_country
-  // 를 KR 로 두고 ceremony_type 만 dual 로 고른 사용자(예: 식은 한국에서, 또는 한국식
-  // 시뮬레이션 + 추후 해외식) 도 영문 자료·이중 일정 가이드가 필요. 두 조건 OR.
-  if (isInternational || s.ceremony_type === "dual_ceremony") return "international";
-  if (s.marital_history === "remarriage") return "remarriage";
-
-  if (s.ceremony_type === "snap_only") return "snap_only";
-  if (s.ceremony_type === "none") return "no_wedding_travel";
-  if (s.ceremony_type === "self_only") return "self_no_ceremony";
-
-  // 스몰 계열 ceremony_type 은 wedding_style 과 무관하게 small_* 페르소나로 매핑.
-  // UI 가 "진짜 스몰 (40~80명)" / "야외" / "공공시설" / "레스토랑" 을 ceremony_type
-  // 선택만으로 노출하므로, wedding_style='general' 인 채로 골라도 그 의도를 살린다.
-  if (s.ceremony_type === "outdoor") return "small_outdoor";
-  if (s.ceremony_type === "public_facility") return "small_budget";
-  if (s.ceremony_type === "small_real" || s.ceremony_type === "restaurant") return "small_intimate";
-  if (s.wedding_style === "small") {
-    if (s.ceremony_type === "hotel") return "small_luxury";
-    return "small_intimate";
-  }
-
-  if (noParents) return "single_household";
-  if (isOverseas) return "remote_overseas";
-  if (isRegional) return "regional";
-  if (s.ceremony_type === "hotel") return "luxury_hotel";
-
-  // role 은 마지막에 — 다른 페르소나가 있으면 그쪽이 이기고, 없을 때만 standard_groom.
-  // 다른 페르소나 + role=groom 케이스는 missions/header 의 groom layering 으로 처리.
-  if (s.role === "groom") return "standard_groom";
-
-  return "standard_bride";
+/** derive 보조 — 입력에서 1회 계산하는 파생 신호. */
+interface DeriveCtx {
+  isInternational: boolean;
+  isOverseas: boolean;
+  noParents: boolean;
+  isRegional: boolean;
+  ps: PlanningStyle;
 }
 
-/** 페르소나별 홈 헤더 카피·도움말 — 첫 인상에서 "내가 아니다"를 줄이기 위한 분기. */
-export const PERSONA_HEADER: Record<WeddingPersonaMode, { title: string; subtitle: string }> = {
-  standard_bride: {
-    title: "오늘의 결혼 준비",
-    subtitle: "다음 한 발자국을 함께 정리해드려요",
+function buildCtx(s: PersonaInputs): DeriveCtx {
+  const country = s.country ?? "KR";
+  const weddingCountry = s.wedding_country ?? "KR";
+  return {
+    isInternational: weddingCountry !== "KR" || country !== weddingCountry,
+    isOverseas: country !== "KR",
+    noParents: !s.has_parents_bride && !s.has_parents_groom,
+    isRegional: !!s.wedding_region && !METRO_REGIONS.has(s.wedding_region),
+    ps: s.planning_style ?? "standard",
+  };
+}
+
+interface PersonaDef {
+  id: WeddingPersonaMode;
+  /** 모달·온보딩에서 보일 라벨. */
+  label: string;
+  /** 홈 헤더 카피. */
+  header: { title: string; subtitle: string };
+  /** AI 플래너 시스템 프롬프트에 주입되는 한 줄 요약. */
+  ai: string;
+  /** true=입력 신호로 자동분류 / false=수동 view-as 전용. */
+  derivable: boolean;
+  /** 분류 조건. 배열 순서대로 평가, 첫 true 가 이김. */
+  match: (s: PersonaInputs, c: DeriveCtx) => boolean;
+}
+
+// ─── 단일 소스: 20 페르소나, 배열 순서 = 우선순위(위가 높음) ──────────────────
+//
+// 우선순위 원칙: "더 구체적·고유한 경험"이 위. role(신랑) 은 마지막 modifier —
+// 다른 페르소나가 있으면 그쪽이 이기고, 신랑 voice 는 미션 layering 으로 더한다.
+// 성향 페르소나(budget/designer/first_timer) 는 구체 예식유형보다 아래(otherwise
+// standard 인 사용자만 색칠) — AI/큐레이션에서 layering.
+export const PERSONA_REGISTRY: readonly PersonaDef[] = [
+  {
+    id: "pregnancy",
+    label: "임신 중 결혼",
+    header: { title: "임신 중 결혼 준비", subtitle: "본식 시점 차수에 맞춰 일정·드레스·동선" },
+    ai: "임신 중 결혼 페르소나. 차수별 톤(초기:입덧·보수 / 중기:집중·안정 / 후기:항공제약·동선 최소화). 임산부 드레스·일정 압축 우선.",
+    derivable: true,
+    // 임신은 의료·안전이 international voice 보다 더 critical → 최상위.
+    match: (s) => s.pregnant,
   },
-  standard_groom: {
-    title: "오늘의 결혼 준비",
-    subtitle: "신랑이 챙길 일·예복·예물까지 통합 안내",
+  {
+    id: "international",
+    label: "국제결혼",
+    header: { title: "International Wedding", subtitle: "한국 + 해외 일정 조율·영문 자료 생성" },
+    ai: "국제결혼 페르소나. 한국 관습 + 외국 가족 영문 안내. 두 식 일정 조율. 출력 언어는 사용자 prefer 따름.",
+    derivable: true,
+    match: (s, c) => c.isInternational || s.ceremony_type === "dual_ceremony",
   },
-  luxury_hotel: {
-    title: "호텔 웨딩 큐레이션",
-    subtitle: "비교·견적·진짜 후기로 후회 없는 결정",
+  {
+    id: "remarriage_with_children",
+    label: "재혼·자녀 동반",
+    header: { title: "두 번째 시작, 함께", subtitle: "자녀와 함께하는 새 가족 — 식순·동반·정서 가이드" },
+    ai: "재혼+자녀 동반 페르소나. 자녀 동반 결혼식 식순·새 가족 형성·자녀 정서 배려·일정 템플릿. 일반 결혼 가이드는 무가치로 가정.",
+    derivable: true,
+    match: (s) => s.marital_history === "remarriage" && !!s.has_children,
   },
-  budget_analytic: {
-    title: "꼼꼼한 결혼 준비",
-    subtitle: "추가금·숨겨진 비용까지 데이터로 비교",
+  {
+    id: "remarriage",
+    label: "재혼",
+    header: { title: "두 번째 시작", subtitle: "작고 따뜻하게 — 양가 톤·자녀 동반까지 함께" },
+    ai: "재혼 페르소나. 양가 톤 다운, 자녀 동반 결혼식 사례, 작은 가족식 진행 가이드. 일반 결혼 가이드는 무가치하다고 가정.",
+    derivable: true,
+    match: (s) => s.marital_history === "remarriage",
   },
-  designer_late: {
-    title: "내 컨셉, 내 식",
-    subtitle: "비표준 옵션·하우스·컨셉추얼 큐레이션",
+  {
+    id: "snap_only",
+    label: "스냅·기념일",
+    header: { title: "기념일 스냅", subtitle: "콘셉트별 작가 매칭·라이프 스타일 패키지" },
+    ai: "결혼 외 스냅 페르소나. 결혼 정보 완전 숨김. 콘셉트별 작가·기념일 패키지·라이프스타일.",
+    derivable: true,
+    match: (s) => s.ceremony_type === "snap_only",
   },
-  first_timer: {
-    title: "결혼 준비 처음이세요?",
-    subtitle: "단계별로 천천히 안내해드릴게요",
+  {
+    id: "no_wedding_travel",
+    label: "노웨딩",
+    header: { title: "노웨딩 라이프 시작", subtitle: "신혼여행·신혼집·혼수 중심" },
+    ai: "노웨딩 페르소나. 식 정보 숨기고 신혼여행·신혼집·혼수 중심 큐레이션.",
+    derivable: true,
+    match: (s) => s.ceremony_type === "none",
   },
-  regional: {
-    title: "지역 결혼 준비",
-    subtitle: "권역 식장·지방 후기·지역 평균까지",
+  {
+    id: "self_no_ceremony",
+    label: "셀프웨딩",
+    header: { title: "셀프웨딩", subtitle: "촬영·양가 인사·혼인신고까지 한 흐름" },
+    ai: "셀프·노식 페르소나. 셀프 촬영 노하우·양가 인사 시나리오·혼인신고 체크리스트.",
+    derivable: true,
+    match: (s) => s.ceremony_type === "self_only",
   },
-  remarriage: {
-    title: "두 번째 시작",
-    subtitle: "작고 따뜻하게 — 양가 톤·자녀 동반까지 함께",
+  {
+    id: "small_outdoor",
+    label: "야외 가든 웨딩",
+    header: { title: "야외 가든 웨딩", subtitle: "우천·음향·계절 — 야외 디테일까지" },
+    ai: "야외 가든 페르소나. 우천 대비·음향·의자 배치·계절 가이드 필수.",
+    derivable: true,
+    match: (s) => s.ceremony_type === "outdoor",
   },
-  remote_overseas: {
-    title: "원격 결혼 준비",
-    subtitle: "한국 방문 일정 압축·부모 위임·시차 안내",
+  {
+    id: "small_budget",
+    label: "알뜰 스몰웨딩",
+    header: { title: "알뜰 스몰웨딩", subtitle: "공공시설·DIY·1천만원대 케이스" },
+    ai: "1천만원대 저예산 스몰 페르소나. 공공시설·DIY·양가 모두 여유 없음 변형.",
+    derivable: true,
+    match: (s) => s.ceremony_type === "public_facility",
   },
-  single_household: {
-    title: "내 식, 내 페이스로",
-    subtitle: "1인 진행 가이드와 비표준 진행 사례",
+  {
+    id: "small_luxury",
+    label: "프라이빗 호텔 스몰",
+    header: { title: "프라이빗 호텔 스몰", subtitle: "고급 패키지 비교·진짜 후기·컨시어지" },
+    ai: "호텔 스몰 고급 페르소나. 패키지 비교 매트릭스·진짜 후기 검증·프라이빗 옵션.",
+    derivable: true,
+    // small_intimate 보다 위 — small + hotel 은 intimate 가 아니라 luxury.
+    match: (s) => s.wedding_style === "small" && s.ceremony_type === "hotel",
   },
-  small_intimate: {
-    title: "가족만의 스몰웨딩",
-    subtitle: "40~80명 진짜 스몰·식순·답례품 큐레이션",
+  {
+    id: "small_intimate",
+    label: "가족 스몰웨딩",
+    header: { title: "가족만의 스몰웨딩", subtitle: "40~80명 진짜 스몰·식순·답례품 큐레이션" },
+    ai: "40~80명 진짜 스몰 페르소나. 호텔 스몰 패키지가 아니라 레스토랑·하우스·카페형 큐레이션.",
+    derivable: true,
+    match: (s) =>
+      s.ceremony_type === "small_real" ||
+      s.ceremony_type === "restaurant" ||
+      (s.wedding_style === "small" && s.ceremony_type !== "hotel"),
   },
-  small_outdoor: {
-    title: "야외 가든 웨딩",
-    subtitle: "우천·음향·계절 — 야외 디테일까지",
+  {
+    id: "single_household",
+    label: "1인 진행",
+    header: { title: "내 식, 내 페이스로", subtitle: "1인 진행 가이드와 비표준 진행 사례" },
+    ai: "부모 부재 1인 진행 페르소나. 양가 분담 시뮬레이션 대신 1인 변형. 친정 역할 부재 가이드·정서적 톤.",
+    derivable: true,
+    match: (_s, c) => c.noParents,
   },
-  small_luxury: {
-    title: "프라이빗 호텔 스몰",
-    subtitle: "고급 패키지 비교·진짜 후기·컨시어지",
+  {
+    id: "remote_overseas",
+    label: "해외 거주",
+    header: { title: "원격 결혼 준비", subtitle: "한국 방문 일정 압축·부모 위임·시차 안내" },
+    ai: "해외 거주 페르소나. 한국 방문 일정 압축·시차 고려·양가 부모 위임 가능 항목 분배.",
+    derivable: true,
+    match: (_s, c) => c.isOverseas,
   },
-  small_budget: {
-    title: "알뜰 스몰웨딩",
-    subtitle: "공공시설·DIY·1천만원대 케이스",
+  {
+    id: "regional",
+    label: "지방 결혼",
+    header: { title: "지역 결혼 준비", subtitle: "권역 식장·지방 후기·지역 평균까지" },
+    ai: "지방 사용자 페르소나. 지역 권역 식장·지방 평균·지방 후기를 우선 노출.",
+    derivable: true,
+    match: (_s, c) => c.isRegional,
   },
-  self_no_ceremony: {
-    title: "셀프웨딩",
-    subtitle: "촬영·양가 인사·혼인신고까지 한 흐름",
+  {
+    id: "luxury_hotel",
+    label: "호텔 웨딩",
+    header: { title: "호텔 웨딩 큐레이션", subtitle: "비교·견적·진짜 후기로 후회 없는 결정" },
+    ai: "호텔 웨딩 고스펙 페르소나. 가격보다 품질·효율. 5천~1억 패키지 비교, PDF 견적, 위임 가능 영역 명시.",
+    derivable: true,
+    match: (s) => s.ceremony_type === "hotel",
   },
-  no_wedding_travel: {
-    title: "노웨딩 라이프 시작",
-    subtitle: "신혼여행·신혼집·혼수 중심",
+  // ── 성향 페르소나(예식유형과 직교) — 구체 유형이 없을 때만 색칠, AI 가 layering ──
+  {
+    id: "designer_late",
+    label: "만혼·디자이너",
+    header: { title: "내 컨셉, 내 식", subtitle: "비표준 옵션·하우스·컨셉추얼 큐레이션" },
+    ai: "만혼/디자이너 페르소나. 표준 정보 무가치. 하우스·컨셉추얼·핀터레스트 톤 큐레이션, 복잡 가족 관계 가이드.",
+    derivable: true,
+    match: (_s, c) => c.ps === "designer",
   },
-  snap_only: {
-    title: "기념일 스냅",
-    subtitle: "콘셉트별 작가 매칭·라이프 스타일 패키지",
+  {
+    id: "budget_analytic",
+    label: "절약·분석형",
+    header: { title: "꼼꼼한 결혼 준비", subtitle: "추가금·숨겨진 비용까지 데이터로 비교" },
+    ai: "절약·데이터 분석 페르소나. 추가금 함정·진짜 후기·양가 분담 표준 비율을 데이터로 답한다.",
+    derivable: true,
+    match: (_s, c) => c.ps === "budget_analytic",
   },
-  pregnancy: {
-    title: "임신 중 결혼 준비",
-    subtitle: "본식 시점 차수에 맞춰 일정·드레스·동선",
+  {
+    id: "first_timer",
+    label: "결혼 준비 초보",
+    header: { title: "결혼 준비 처음이세요?", subtitle: "단계별로 천천히 안내해드릴게요" },
+    ai: "결혼 준비 초보 페르소나. 친근 톤·단계별 안내·또래 매칭 우선.",
+    derivable: true,
+    match: (_s, c) => c.ps === "beginner",
   },
-  international: {
-    title: "International Wedding",
-    subtitle: "한국 + 해외 일정 조율·영문 자료 생성",
+  {
+    id: "standard_groom",
+    label: "신랑 주도",
+    header: { title: "오늘의 결혼 준비", subtitle: "신랑이 챙길 일·예복·예물까지 통합 안내" },
+    ai: "신랑 주도형 페르소나. 호칭은 신랑님 또는 중립. 예복·예물·신랑 양가 가이드를 신부 정보보다 먼저.",
+    derivable: true,
+    // role 은 마지막 modifier — 다른 페르소나가 없을 때만.
+    match: (s) => s.role === "groom",
   },
-};
+  {
+    id: "standard_bride",
+    label: "표준 결혼식 신부",
+    header: { title: "오늘의 결혼 준비", subtitle: "다음 한 발자국을 함께 정리해드려요" },
+    ai: "표준 결혼식 신부 페르소나. 시간 효율·정보 정리·양가 일정 조율이 우선.",
+    derivable: true,
+    // catch-all — 입력공간 전수 커버.
+    match: () => true,
+  },
+] as const;
+
+// 레지스트리가 모든 모드를 정확히 1회씩 정의하는지 컴파일 타임 보강(테스트로도 검증).
+type _RegistryIds = (typeof PERSONA_REGISTRY)[number]["id"];
+type _AssertAllCovered = WeddingPersonaMode extends _RegistryIds ? true : never;
+export const _PERSONA_REGISTRY_COVERS_ALL: _AssertAllCovered = true;
+
+/** 입력 신호로부터 페르소나 모드를 분류. DB 트리거와 정확히 같은 우선순위를 유지한다. */
+export function derivePersonaMode(s: PersonaInputs): WeddingPersonaMode {
+  const ctx = buildCtx(s);
+  for (const def of PERSONA_REGISTRY) {
+    if (def.match(s, ctx)) return def.id;
+  }
+  return "standard_bride"; // 도달 불가(catch-all 존재) — 타입 안전용.
+}
+
+const byId = <T>(pick: (d: PersonaDef) => T): Record<WeddingPersonaMode, T> =>
+  Object.fromEntries(PERSONA_REGISTRY.map((d) => [d.id, pick(d)])) as Record<WeddingPersonaMode, T>;
+
+/** 페르소나별 홈 헤더 카피·도움말. (레지스트리 파생) */
+export const PERSONA_HEADER: Record<WeddingPersonaMode, { title: string; subtitle: string }> =
+  byId((d) => d.header);
+
+/** 모달·온보딩에서 사용자에게 보일 페르소나 라벨. (레지스트리 파생) */
+export const PERSONA_LABEL: Record<WeddingPersonaMode, string> = byId((d) => d.label);
 
 /** AI 플래너 시스템 프롬프트에 주입되는 페르소나 컨텍스트 한 줄 요약. */
 export function describePersonaForAI(mode: WeddingPersonaMode): string {
-  const map: Record<WeddingPersonaMode, string> = {
-    standard_bride: "표준 결혼식 신부 페르소나. 시간 효율·정보 정리·양가 일정 조율이 우선.",
-    standard_groom: "신랑 주도형 페르소나. 호칭은 신랑님 또는 중립. 예복·예물·신랑 양가 가이드를 신부 정보보다 먼저.",
-    luxury_hotel: "호텔 웨딩 고스펙 페르소나. 가격보다 품질·효율. 5천~1억 패키지 비교, PDF 견적, 위임 가능 영역 명시.",
-    budget_analytic: "절약·데이터 분석 페르소나. 추가금 함정·진짜 후기·양가 분담 표준 비율을 데이터로 답한다.",
-    designer_late: "만혼/디자이너 페르소나. 표준 정보 무가치. 하우스·컨셉추얼·핀터레스트 톤 큐레이션, 복잡 가족 관계 가이드.",
-    first_timer: "결혼 준비 초보 페르소나. 친근 톤·단계별 안내·또래 매칭 우선.",
-    regional: "지방 사용자 페르소나. 지역 권역 식장·지방 평균·지방 후기를 우선 노출.",
-    remarriage: "재혼 페르소나. 양가 톤 다운, 자녀 동반 결혼식 사례, 작은 가족식 진행 가이드. 일반 결혼 가이드는 무가치하다고 가정.",
-    remote_overseas: "해외 거주 페르소나. 한국 방문 일정 압축·시차 고려·양가 부모 위임 가능 항목 분배.",
-    single_household: "부모 부재 1인 진행 페르소나. 양가 분담 시뮬레이션 대신 1인 변형. 친정 역할 부재 가이드·정서적 톤.",
-    small_intimate: "40~80명 진짜 스몰 페르소나. 호텔 스몰 패키지가 아니라 레스토랑·하우스·카페형 큐레이션.",
-    small_outdoor: "야외 가든 페르소나. 우천 대비·음향·의자 배치·계절 가이드 필수.",
-    small_luxury: "호텔 스몰 고급 페르소나. 패키지 비교 매트릭스·진짜 후기 검증·프라이빗 옵션.",
-    small_budget: "1천만원대 저예산 스몰 페르소나. 공공시설·DIY·양가 모두 여유 없음 변형.",
-    self_no_ceremony: "셀프·노식 페르소나. 셀프 촬영 노하우·양가 인사 시나리오·혼인신고 체크리스트.",
-    no_wedding_travel: "노웨딩 페르소나. 식 정보 숨기고 신혼여행·신혼집·혼수 중심 큐레이션.",
-    snap_only: "결혼 외 스냅 페르소나. 결혼 정보 완전 숨김. 콘셉트별 작가·기념일 패키지·라이프스타일.",
-    pregnancy: "임신 중 결혼 페르소나. 차수별 톤(초기:입덧·보수 / 중기:집중·안정 / 후기:항공제약·동선 최소화). 임산부 드레스·일정 압축 우선.",
-    international: "국제결혼 페르소나. 한국 관습 + 외국 가족 영문 안내. 두 식 일정 조율. 출력 언어는 사용자 prefer 따름.",
-  };
-  return map[mode] ?? map.standard_bride;
+  const def = PERSONA_REGISTRY.find((d) => d.id === mode);
+  return (def ?? PERSONA_REGISTRY[PERSONA_REGISTRY.length - 1]).ai;
 }
 
-/** 모달·온보딩에서 사용자에게 보일 페르소나 라벨. */
-export const PERSONA_LABEL: Record<WeddingPersonaMode, string> = {
-  standard_bride: "표준 결혼식 신부",
-  standard_groom: "신랑 주도",
-  luxury_hotel: "호텔 웨딩",
-  budget_analytic: "절약·분석형",
-  designer_late: "만혼·디자이너",
-  first_timer: "결혼 준비 초보",
-  regional: "지방 결혼",
-  remarriage: "재혼",
-  remote_overseas: "해외 거주",
-  single_household: "1인 진행",
-  small_intimate: "가족 스몰웨딩",
-  small_outdoor: "야외 가든 웨딩",
-  small_luxury: "프라이빗 호텔 스몰",
-  small_budget: "알뜰 스몰웨딩",
-  self_no_ceremony: "셀프웨딩",
-  no_wedding_travel: "노웨딩",
-  snap_only: "스냅·기념일",
-  pregnancy: "임신 중 결혼",
-  international: "국제결혼",
-};
+/** 자동분류 가능한 모드 목록(나머지는 view-as 전용). */
+export const DERIVABLE_MODES: WeddingPersonaMode[] = PERSONA_REGISTRY.filter((d) => d.derivable).map(
+  (d) => d.id,
+);
 
 /** 노식·스냅·노웨딩 페르소나에서 일반 결혼 정보 카드를 숨겨야 하는지. */
 export function shouldHideWeddingCeremony(mode: WeddingPersonaMode): boolean {
@@ -271,7 +342,14 @@ export function isInternationalMode(mode: WeddingPersonaMode): boolean {
   return mode === "international";
 }
 
+/** 재혼 계열(자녀 동반 포함) 모드 — 톤 다운·가족식 분기. */
+export function isRemarriageMode(mode: WeddingPersonaMode): boolean {
+  return mode === "remarriage" || mode === "remarriage_with_children";
+}
+
 /** 양가 부모 협업·분담 시뮬레이터 활성화 여부. */
-export function familyCollaborationEnabled(s: Pick<PersonaInputs, "has_parents_bride" | "has_parents_groom">): boolean {
+export function familyCollaborationEnabled(
+  s: Pick<PersonaInputs, "has_parents_bride" | "has_parents_groom">,
+): boolean {
   return s.has_parents_bride || s.has_parents_groom;
 }
