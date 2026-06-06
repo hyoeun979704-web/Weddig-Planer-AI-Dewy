@@ -41,7 +41,9 @@ export default function MergeGame() {
 
   const handleDoublePoints = useCallback(async (finalScore: number) => {
     if (user) {
-      await saveScore(finalScore, true);
+      // 게임오버 시 이미 기본 1× 가 적립됨(handleGameOver). 광고 보상은 '추가 1×' 만
+      // 더해 총 2× 가 되도록 한다. (이전엔 여기서 2× 를 또 줘서 합계 3× 과지급)
+      await saveScore(finalScore, false);
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
       queryClient.invalidateQueries({ queryKey: ['game-ranking'] });
       queryClient.invalidateQueries({ queryKey: ['my-best-score'] });

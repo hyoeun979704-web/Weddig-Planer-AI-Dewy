@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
-import { showRewardedAd } from '@/lib/ads/adService';
+import { showRewardedAd, isRewardedAdAvailable } from '@/lib/ads/adService';
 import { useGameLogic } from './useGameLogic';
 import { useGameAudio } from './useGameAudio';
 import { GAME_WIDTH, GAME_HEIGHT, JAR_INNER_BOTTOM, DROP_START_Y, FLOWER_LEVEL_MAP } from './constants';
@@ -90,7 +90,6 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
   const [adLoading, setAdLoading] = useState(false);
-  const [rewardClaimed, setRewardClaimed] = useState(false);
 
   // 꽃 에셋 이미지 캐시. public/game-flowers/{id}.png 가 있으면 그걸 쓰고, 없으면
   // 기존 이모지+원 렌더로 폴백한다. 물리 충돌은 원(반지름 r)이지만 에셋이 항공샷
@@ -145,22 +144,21 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
   const gameStateRef = useRef<GameState>(gameState);
   gameStateRef.current = gameState;
 
-  // 포인트 2배 — 진짜 보상형 광고. 시청 완료 시 점수 2배 적립 후 새 게임.
+  // 포인트 2배 — 보상형 광고(네이티브) 시청 완료 시 보너스 1× 추가 적립 후 새 게임.
+  // adLoading 가 재진입 가드. (웹은 광고 없이 보너스 지급 — adService 폴백)
   const watchRewardedForDouble = useCallback(async () => {
-    if (adLoading || rewardClaimed) return;
+    if (adLoading) return;
     setAdLoading(true);
     try {
       const ok = await showRewardedAd();
       if (ok) {
-        setRewardClaimed(true);
         onDoublePoints?.(gameStateRef.current.score);
-        setRewardClaimed(false);
         startGame();
       }
     } finally {
       setAdLoading(false);
     }
-  }, [adLoading, rewardClaimed, onDoublePoints, startGame]);
+  }, [adLoading, onDoublePoints, startGame]);
 
   // ─── 꽃 원형 렌더링 ───────────────────────────────────────────────────
   function drawFlower(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, levelId: number, alpha = 1) {
@@ -447,7 +445,12 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         }
         ctx.fillStyle = '#7a5c00';
         ctx.font = "bold 13px 'Noto Sans KR', sans-serif";
-        ctx.fillText(`광고 보고 포인트 2배 (${earnedPoints * 2}P)`, GAME_WIDTH / 2, btn1Y + btn1H / 2);
+        // 광고가 실제로 재생되는 환경(네이티브 AdMob)에서만 '광고 보고' 표기.
+        // 웹 등 광고 미가용 시엔 오해 없도록 보너스 문구로.
+        const doubleLabel = isRewardedAdAvailable()
+          ? `광고 보고 포인트 2배 (${earnedPoints * 2}P)`
+          : `포인트 2배 받기 (${earnedPoints * 2}P)`;
+        ctx.fillText(doubleLabel, GAME_WIDTH / 2, btn1Y + btn1H / 2);
       } else {
         // 광고 로딩/시청 중 — 비활성
         ctx.fillStyle = '#999';

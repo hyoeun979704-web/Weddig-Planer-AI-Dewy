@@ -20,6 +20,11 @@ const ADMOB_REWARDED_ID = import.meta.env.VITE_ADMOB_REWARDED_ID as string | und
 
 export const isNativeAds = () => Capacitor.isNativePlatform();
 
+// 실제 보상형 광고가 재생 가능한 환경인지(네이티브 + 보상형 광고 ID 설정).
+// 웹/미설정 환경에선 showRewardedAd 가 광고 없이 true 폴백하므로, UI 는 이 값으로
+// '광고 보고' 문구를 분기한다(광고 안 나오는데 광고라고 표기하지 않도록).
+export const isRewardedAdAvailable = () => isNativeAds() && !!ADMOB_REWARDED_ID;
+
 // 동적 import 지정자를 명시적 string 타입 변수로 둬서, 플러그인 미설치 환경에서도
 // tsc("Cannot find module")·vite 번들 해석을 피한다(웹 빌드는 admob 불필요).
 const ADMOB_PKG: string = "@capacitor-community/admob";
@@ -61,13 +66,19 @@ export async function showRewardedAd(): Promise<boolean> {
     try {
       const mod = await import(/* @vite-ignore */ ADMOB_PKG);
       const Events = mod.RewardAdPluginEvents;
+      // 이전 호출에서 남은 리스너 제거(누수·중복 발화 방지) 후 새로 등록.
+      try { await admob.removeAllListeners(); } catch { /* noop */ }
       await admob.prepareRewardVideoAd({ adId: ADMOB_REWARDED_ID });
       return await new Promise<boolean>((resolve) => {
         let rewarded = false;
+        const done = (v: boolean) => {
+          try { admob.removeAllListeners(); } catch { /* noop */ }
+          resolve(v);
+        };
         admob.addListener(Events.Rewarded, () => { rewarded = true; });
-        admob.addListener(Events.Dismissed, () => resolve(rewarded));
-        admob.addListener(Events.FailedToShow, () => resolve(false));
-        admob.showRewardVideoAd().catch(() => resolve(false));
+        admob.addListener(Events.Dismissed, () => done(rewarded));
+        admob.addListener(Events.FailedToShow, () => done(false));
+        admob.showRewardVideoAd().catch(() => done(false));
       });
     } catch (e) {
       console.warn("[ads] 보상형 실패", e);
