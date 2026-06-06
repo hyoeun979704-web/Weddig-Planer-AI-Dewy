@@ -15,6 +15,7 @@
 //   · 참조 메이크업 이미지가 없음 (셀카 1장만)
 //   · 모델이 얼굴 분석 + 메이크업 디자인 + 적용을 한 번에 수행
 
+import { MODELS } from "../_shared/llm.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -116,7 +117,7 @@ serve(async (req) => {
       );
 
       const form = new FormData();
-      form.append("model", "gpt-image-2");
+      form.append("model", MODELS.image);
       form.append("prompt", body.prompt);
       form.append("size", "1024x1024");
       form.append("quality", "medium");

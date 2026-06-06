@@ -1,3 +1,4 @@
+import { MODELS } from "../_shared/llm.ts";
 // Memory extraction. After the main streaming response kicks off, we
 // fire-and-forget a tiny Gemini call against the user's most recent message.
 // The model returns an array of {fact_type, fact}, which we insert into
@@ -43,7 +44,7 @@ export async function extractAndStoreMemories(
 
   try {
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.geminiFlash}:generateContent?key=${geminiApiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

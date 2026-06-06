@@ -12,6 +12,7 @@
 //
 // OpenAI Images API: https://platform.openai.com/docs/api-reference/images/createEdit
 
+import { MODELS } from "../_shared/llm.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -145,7 +146,7 @@ serve(async (req) => {
 
         // 2) OpenAI gpt-image-2 호출 (images/edits)
         const form = new FormData();
-        form.append("model", "gpt-image-2");
+        form.append("model", MODELS.image);
         form.append("prompt", prompt);
         form.append("size", "1024x1024");
         form.append("quality", "medium");
