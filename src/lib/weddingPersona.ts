@@ -93,7 +93,11 @@ function buildCtx(s: PersonaInputs): DeriveCtx {
   const country = s.country ?? "KR";
   const weddingCountry = s.wedding_country ?? "KR";
   return {
-    isInternational: weddingCountry !== "KR" || country !== weddingCountry,
+    // international = 예식 자체가 해외(wedding_country≠KR) 또는 이중식(dual 은 match 에서 OR).
+    // 거주지만 해외(country≠KR)이고 예식은 한국(wedding_country=KR)인 케이스는
+    // international 이 아니라 remote_overseas(원격 준비 — 한국 방문 일정 압축·부모 위임).
+    // 그래서 예전의 `country !== weddingCountry` 조건은 빼서 remote_overseas 가 가려지지 않게 한다.
+    isInternational: weddingCountry !== "KR",
     isOverseas: country !== "KR",
     noParents: !s.has_parents_bride && !s.has_parents_groom,
     isRegional: !!s.wedding_region && !METRO_REGIONS.has(s.wedding_region),
