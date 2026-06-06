@@ -74,3 +74,11 @@ API→호출 경로 시뮬레이션). e2e 불가(sandbox 차단 등) 시 "검증
 
 좌표는 **그리드 수치 측정**(눈대중 금지) + 실제 Konva 렌더로 레퍼런스와 나란히 비교.
 종이 템플릿은 `page.print{wMm,hMm,bleedMm,safeMarginMm}` 필수(비율=캔버스 비율, 300dpi).
+
+## 튜토리얼(코치마크) 작업 (해당 작업만 — 상세 `docs/tutorial-system.md`)
+
+레슨 단일 소스는 `src/data/tutorialChapters.ts`. 새 레슨 추가 시 **반드시**: ① 대상 페이지에
+`data-tutorial` 앵커(스티키 헤더는 `PageHeader tutorialId` prop) ② 페이지가 오버레이 렌더
+(`usePageTutorial`+`TutorialOverlay` 또는 `<PageTutorial>`) ③ **`tutorial_tours` 허용목록에
+`feature_<레슨id>` INSERT 마이그레이션**(빠지면 에러 없이 무지급) ④ 건너뛰기는 미지급.
+상세·체크리스트·함정은 위 문서 참조.

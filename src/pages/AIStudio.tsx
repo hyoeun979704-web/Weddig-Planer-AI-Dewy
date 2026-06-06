@@ -111,6 +111,7 @@ const AIStudio = () => {
                 <button
                   key={card.id}
                   type="button"
+                  data-tutorial={card.id === "wedding-consulting" ? "studio-cards" : undefined}
                   onClick={() => navigate(card.href!)}
                   className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
                 >

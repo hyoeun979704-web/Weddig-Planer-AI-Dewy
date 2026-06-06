@@ -72,6 +72,10 @@ const NON_WEDDING_PERSONAS: WeddingPersonaMode[] = [
 // ─────────────────────────────────────────────────────────────────────────
 // Lessons
 // ─────────────────────────────────────────────────────────────────────────
+// ⚠️ 포인트 적립 연동: 레슨 완료 시 'feature_<레슨id>' 로 complete_tutorial 이 호출되어
+//    100P 가 지급된다. 서버는 public.tutorial_tours 허용목록에 있는 tour_id 만 지급하므로,
+//    레슨을 추가/이름변경하면 마이그레이션으로 tutorial_tours 에도 'feature_<id>' 를
+//    넣어야 한다(없으면 포인트가 지급되지 않음). 참고: 20260606195000_tutorial_tour_allowlist.
 
 const HOME_TOUR: TutorialLesson = {
   id: "home-tour",
@@ -172,8 +176,6 @@ const AI_PLANNER: TutorialLesson = {
   ],
 };
 
-// Placeholder: AI 스튜디오 페이지에 아직 data-tutorial 셀렉터가 없어 'main'
-// 풀스크린 cutout 만 떴음. 셀렉터 부착 전까지 placeholder 로 차단.
 const AI_STUDIO: TutorialLesson = {
   id: "ai-studio",
   title: "AI로 드레스 미리 입어보기",
@@ -183,14 +185,20 @@ const AI_STUDIO: TutorialLesson = {
   requiresStyles: ["general", "small", "self"],
   // 노식·스냅·노웨딩 페르소나는 드레스/메이크업 자체가 무의미 — 숨김.
   excludePersonas: [...NON_WEDDING_PERSONAS, "self_no_ceremony"],
-  placeholder: true,
   steps: [
     {
-      id: "studio-entry",
-      title: "AI 스튜디오 입구",
+      id: "studio-tabs",
+      title: "카테고리 전환",
+      description: "상단 탭으로 AI 플래너 · 꿀팁 · 이벤트 · 쇼핑으로 이동할 수 있어요.",
+      targetSelector: "[data-tutorial='category-tab']",
+      position: "bottom",
+    },
+    {
+      id: "studio-cards",
+      title: "AI 스튜디오 도구",
       description:
-        "드레스 피팅 · 메이크업 시뮬레이션이 여기서 시작돼요.",
-      targetSelector: "main",
+        "드레스 투어 · 메이크업 · 헤어 · 종이/모바일 청첩장을 이런 카드에서 바로 시작해요.",
+      targetSelector: "[data-tutorial='studio-cards']",
       position: "bottom",
     },
   ],
@@ -305,8 +313,7 @@ const COMMUNITY: TutorialLesson = {
   ],
 };
 
-// Placeholder: /couple-diary 페이지에 data-tutorial 셀렉터가 없어 main 풀스크린
-// cutout 만 떴음. 또한 1인 진행·노식·스냅 사용자에겐 무의미.
+// 1인 진행·노식·스냅 사용자에겐 무의미 — 제외.
 const COUPLE_FLOW: TutorialLesson = {
   id: "couple",
   title: "커플로 함께 쓰기",
@@ -318,13 +325,13 @@ const COUPLE_FLOW: TutorialLesson = {
     "single_household",
     "snap_only",
   ],
-  placeholder: true,
   steps: [
     {
       id: "couple-entry",
-      title: "커플 다이어리 입구",
-      description: "파트너와 함께 일기를 남기고, 투표로 안건을 정리해요.",
-      targetSelector: "main",
+      title: "우리의 일기",
+      description:
+        "파트너와 결혼 준비 과정을 함께 기록하고, 투표 · 일정도 공유해요. 연결 전이면 먼저 파트너와 연동해요.",
+      targetSelector: "[data-tutorial='couple-header']",
       position: "bottom",
     },
   ],

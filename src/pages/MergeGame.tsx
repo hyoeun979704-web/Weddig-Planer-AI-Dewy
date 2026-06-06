@@ -1,8 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Trophy, Coins, Medal } from 'lucide-react';
 import { Game } from '@/game/Game';
 import AdBanner from '@/components/ads/AdBanner';
+import RewardedAdModal from '@/components/ads/RewardedAdModal';
+import { setWebRewardedHandler, clearWebRewardedHandler, isNativeAds } from '@/lib/ads/adService';
 import { useGamePoints } from '@/hooks/useGamePoints';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -16,6 +18,32 @@ export default function MergeGame() {
     return Number(localStorage.getItem('mergeGame_best') ?? 0);
   });
   const [showRanking, setShowRanking] = useState(false);
+
+  // 웹 '2배 적립' 광고 모달 — adService 의 showRewardedAd 가 이 핸들러로 연결됨.
+  // 네이티브(AdMob)는 등록하지 않아 AdSense 가 앱 WebView 에 안 뜨게 한다(정책).
+  const [adModalOpen, setAdModalOpen] = useState(false);
+  const adResolveRef = useRef<((rewarded: boolean) => void) | null>(null);
+  useEffect(() => {
+    if (isNativeAds()) return;
+    const handler = () =>
+      new Promise<boolean>((resolve) => {
+        adResolveRef.current = resolve;
+        setAdModalOpen(true);
+      });
+    setWebRewardedHandler(handler);
+    return () => {
+      // 모달이 떠 있는 채 언마운트되면 대기 중인 promise 를 false 로 해소(누수·adLoading
+      // 멈춤 방지). 핸들러는 '내 것'일 때만 해제(다른 인스턴스 클로버 방지).
+      adResolveRef.current?.(false);
+      adResolveRef.current = null;
+      clearWebRewardedHandler(handler);
+    };
+  }, []);
+  const handleAdComplete = useCallback((rewarded: boolean) => {
+    setAdModalOpen(false);
+    adResolveRef.current?.(rewarded);
+    adResolveRef.current = null;
+  }, []);
 
   const effectiveBest = user ? Math.max(bestScore, myBestScore) : bestScore;
 
@@ -41,6 +69,8 @@ export default function MergeGame() {
 
   const handleDoublePoints = useCallback(async (finalScore: number) => {
     if (user) {
+      // 광고 보너스 — 서버(add_game_points doubled=true)가 '추가 1×'만 지급(총 2×).
+      // 3판/일 적립 한도 내 게임에만 적용됨.
       await saveScore(finalScore, true);
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
       queryClient.invalidateQueries({ queryKey: ['game-ranking'] });
@@ -136,8 +166,11 @@ export default function MergeGame() {
         />
       </div>
 
-      {/* 하단 광고 배너 (웹=AdSense / 네이티브=AdMob). 승인 전엔 회색 '광고' 자리표시. */}
+      {/* 하단 광고 배너 (웹=AdSense 슬롯 4600179427 / 네이티브=AdMob). */}
       <AdBanner className="flex-shrink-0 w-full" height={96} placeholder />
+
+      {/* 웹 '포인트 2배' 광고 모달 (슬롯 1646713028). */}
+      <RewardedAdModal open={adModalOpen} onComplete={handleAdComplete} />
     </div>
   );
 }

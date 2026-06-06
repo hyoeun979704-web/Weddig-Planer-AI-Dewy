@@ -14,11 +14,35 @@ import { Capacitor } from "@capacitor/core";
 
 // 퍼블리셔 ID 는 index.html <head> 에도 정적 포함됨(소유권 확인용). env 미설정 시 기본값 사용.
 export const ADSENSE_CLIENT = (import.meta.env.VITE_ADSENSE_CLIENT as string | undefined) || "ca-pub-8005269626005297";
-export const ADSENSE_BANNER_SLOT = import.meta.env.VITE_ADSENSE_BANNER_SLOT as string | undefined;
+// 게임 하단 배너 슬롯(웹). env 미설정 시 기본 슬롯 사용.
+export const ADSENSE_BANNER_SLOT = (import.meta.env.VITE_ADSENSE_BANNER_SLOT as string | undefined) || "4600179427";
+// 웹 '2배 적립' 광고 슬롯. AdSense 엔 보상형이 없어 디스플레이 광고를 모달로 노출한다.
+export const ADSENSE_REWARDED_SLOT = (import.meta.env.VITE_ADSENSE_REWARDED_SLOT as string | undefined) || "1646713028";
 const ADMOB_BANNER_ID = import.meta.env.VITE_ADMOB_BANNER_ID as string | undefined;
 const ADMOB_REWARDED_ID = import.meta.env.VITE_ADMOB_REWARDED_ID as string | undefined;
 
 export const isNativeAds = () => Capacitor.isNativePlatform();
+
+// 실제 보상형/보상성 광고를 띄울 수 있는 환경인지.
+//  - 네이티브: AdMob 보상형 ID 설정 시.
+//  - 웹: AdSense '2배 적립' 슬롯 설정 시(디스플레이 광고 모달로 대체).
+// UI 의 '광고 보고' 문구 분기에 사용.
+export const isRewardedAdAvailable = () =>
+  isNativeAds() ? !!ADMOB_REWARDED_ID : !!ADSENSE_REWARDED_SLOT;
+
+// 웹 보상형 브리지 — AdSense 엔 rewarded API 가 없어, React 쪽이 광고 모달을
+// 띄우고 완료(true)/취소(false)를 resolve 하는 핸들러를 등록한다. (adService 는
+// 비-React 이므로 모듈 레벨 브리지로 연결)
+type WebRewardedHandler = () => Promise<boolean>;
+let webRewardedHandler: WebRewardedHandler | null = null;
+export function setWebRewardedHandler(fn: WebRewardedHandler | null) {
+  webRewardedHandler = fn;
+}
+// 언마운트 정리용 — 현재 등록된 핸들러가 내 것일 때만 해제(다른 인스턴스가
+// 새로 등록한 핸들러를 덮어쓰지 않도록).
+export function clearWebRewardedHandler(fn: WebRewardedHandler) {
+  if (webRewardedHandler === fn) webRewardedHandler = null;
+}
 
 // 동적 import 지정자를 명시적 string 타입 변수로 둬서, 플러그인 미설치 환경에서도
 // tsc("Cannot find module")·vite 번들 해석을 피한다(웹 빌드는 admob 불필요).
@@ -61,20 +85,34 @@ export async function showRewardedAd(): Promise<boolean> {
     try {
       const mod = await import(/* @vite-ignore */ ADMOB_PKG);
       const Events = mod.RewardAdPluginEvents;
+      // 이전 호출에서 남은 리스너 제거(누수·중복 발화 방지) 후 새로 등록.
+      try { await admob.removeAllListeners(); } catch { /* noop */ }
       await admob.prepareRewardVideoAd({ adId: ADMOB_REWARDED_ID });
       return await new Promise<boolean>((resolve) => {
         let rewarded = false;
+        const done = (v: boolean) => {
+          try { admob.removeAllListeners(); } catch { /* noop */ }
+          resolve(v);
+        };
         admob.addListener(Events.Rewarded, () => { rewarded = true; });
-        admob.addListener(Events.Dismissed, () => resolve(rewarded));
-        admob.addListener(Events.FailedToShow, () => resolve(false));
-        admob.showRewardVideoAd().catch(() => resolve(false));
+        admob.addListener(Events.Dismissed, () => done(rewarded));
+        admob.addListener(Events.FailedToShow, () => done(false));
+        admob.showRewardVideoAd().catch(() => done(false));
       });
     } catch (e) {
       console.warn("[ads] 보상형 실패", e);
       return false;
     }
   }
-  // 웹 폴백 — 보상 지급
+  // 웹 — AdSense '2배 적립' 광고 모달(React 핸들러)을 띄우고 완료 시 보상.
+  if (webRewardedHandler) {
+    try {
+      return await webRewardedHandler();
+    } catch {
+      return false;
+    }
+  }
+  // 핸들러 미등록(모달 미탑재 화면) — graceful 폴백으로 보상 지급.
   return true;
 }
 
