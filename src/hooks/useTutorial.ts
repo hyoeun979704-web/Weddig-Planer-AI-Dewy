@@ -154,6 +154,9 @@ export const useTutorial = () => {
   const endTutorial = useCallback((completed: boolean = false) => {
     setIsActive(false);
     setCurrentStepIndex(0);
+    // 라우트 가드 ref 초기화 — 안 하면 다른 페이지에서 다음 튜토리얼을 시작할 때
+    // 옛 경로와 불일치로 즉시 닫히는 버그. (route-change effect 참고)
+    startedPathRef.current = null;
     localStorage.setItem(TUTORIAL_SEEN_KEY, "true");
     const finishedTourId = tourId;
     setTourId(null);

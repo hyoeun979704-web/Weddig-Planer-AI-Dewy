@@ -4,7 +4,7 @@ import { ChevronLeft, Trophy, Coins, Medal } from 'lucide-react';
 import { Game } from '@/game/Game';
 import AdBanner from '@/components/ads/AdBanner';
 import RewardedAdModal from '@/components/ads/RewardedAdModal';
-import { setWebRewardedHandler, isNativeAds } from '@/lib/ads/adService';
+import { setWebRewardedHandler, clearWebRewardedHandler, isNativeAds } from '@/lib/ads/adService';
 import { useGamePoints } from '@/hooks/useGamePoints';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,14 +25,19 @@ export default function MergeGame() {
   const adResolveRef = useRef<((rewarded: boolean) => void) | null>(null);
   useEffect(() => {
     if (isNativeAds()) return;
-    setWebRewardedHandler(
-      () =>
-        new Promise<boolean>((resolve) => {
-          adResolveRef.current = resolve;
-          setAdModalOpen(true);
-        }),
-    );
-    return () => setWebRewardedHandler(null);
+    const handler = () =>
+      new Promise<boolean>((resolve) => {
+        adResolveRef.current = resolve;
+        setAdModalOpen(true);
+      });
+    setWebRewardedHandler(handler);
+    return () => {
+      // 모달이 떠 있는 채 언마운트되면 대기 중인 promise 를 false 로 해소(누수·adLoading
+      // 멈춤 방지). 핸들러는 '내 것'일 때만 해제(다른 인스턴스 클로버 방지).
+      adResolveRef.current?.(false);
+      adResolveRef.current = null;
+      clearWebRewardedHandler(handler);
+    };
   }, []);
   const handleAdComplete = useCallback((rewarded: boolean) => {
     setAdModalOpen(false);

@@ -38,6 +38,11 @@ let webRewardedHandler: WebRewardedHandler | null = null;
 export function setWebRewardedHandler(fn: WebRewardedHandler | null) {
   webRewardedHandler = fn;
 }
+// 언마운트 정리용 — 현재 등록된 핸들러가 내 것일 때만 해제(다른 인스턴스가
+// 새로 등록한 핸들러를 덮어쓰지 않도록).
+export function clearWebRewardedHandler(fn: WebRewardedHandler) {
+  if (webRewardedHandler === fn) webRewardedHandler = null;
+}
 
 // 동적 import 지정자를 명시적 string 타입 변수로 둬서, 플러그인 미설치 환경에서도
 // tsc("Cannot find module")·vite 번들 해석을 피한다(웹 빌드는 admob 불필요).

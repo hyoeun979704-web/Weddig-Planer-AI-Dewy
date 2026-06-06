@@ -76,6 +76,9 @@ const TutorialOverlay = ({
     retryRef.current = 0;
     setTargetMissing(false);
     setTargetRect(null);
+    // 단계 전환 시 이전 타깃 참조를 비워, 재측정 폴링이 옛 요소를 잠깐 다시
+    // 강조(하이라이트 깜빡임)하지 않도록 한다.
+    targetElRef.current = null;
 
     let cancelled = false;
     const attempt = () => {

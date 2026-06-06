@@ -445,8 +445,9 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
         }
         ctx.fillStyle = '#7a5c00';
         ctx.font = "bold 13px 'Noto Sans KR', sans-serif";
-        // 광고가 실제로 재생되는 환경(네이티브 AdMob)에서만 '광고 보고' 표기.
-        // 웹 등 광고 미가용 시엔 오해 없도록 보너스 문구로.
+        // 광고가 실제 노출되는 환경에서만 '광고 보고' 표기:
+        // 네이티브 AdMob 보상형 또는 웹 AdSense 슬롯(RewardedAdModal). 둘 다 없으면
+        // 오해 없도록 보너스 문구로.
         const doubleLabel = isRewardedAdAvailable()
           ? `광고 보고 포인트 2배 (${earnedPoints * 2}P)`
           : `포인트 2배 받기 (${earnedPoints * 2}P)`;
