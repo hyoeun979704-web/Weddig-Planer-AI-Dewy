@@ -121,7 +121,14 @@ export const useVenues = (partnersOnly: boolean = false) => {
   const showPartnersOnly = partnersOnly && !hasFilters;
 
   return useInfiniteQuery({
-    queryKey: ["venues", filters, showPartnersOnly],
+    // queryKey 는 원시값으로 펼친다. filters 객체를 그대로 넣으면 매 렌더 새 참조가 되어
+    // 같은 필터에도 캐시미스·refetch 가 발생한다. 배열 필터는 join 으로 안정 직렬화.
+    queryKey: [
+      "venues",
+      region, sigungu, maxPrice, maxGuarantee, minGuarantee, minRating,
+      hallTypes.join(","), mealOptions.join(","), eventOptions.join(","),
+      showPartnersOnly,
+    ],
     queryFn: ({ pageParam }) => fetchVenues({ pageParam, filters, partnersOnly: showPartnersOnly }),
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 0,

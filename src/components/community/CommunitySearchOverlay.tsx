@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Search, X, Clock, TrendingUp, Heart, MessageSquare, Eye, Image as ImageIcon, SlidersHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -97,29 +97,38 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
     }
   }, [searchQuery]);
 
-  // 결과에 클라이언트 측 필터·정렬을 적용.
+  // 결과에 클라이언트 측 필터·정렬을 적용. 매 키스트로크 동기 재계산이 입력 jank 를
+  // 유발하므로 입력값(results·필터·정렬)이 바뀔 때만 재계산하도록 메모.
   // 스타일 NULL = "모든 부부 대상" 글이므로 어떤 스타일 필터에서도 함께 노출.
-  const filteredResults = results
-    .filter((r) =>
-      styleFilter === "all"
-        ? true
-        : r.wedding_style === styleFilter || r.wedding_style === null
-    )
-    .filter((r) => (categoryFilter === "전체" ? true : r.category === categoryFilter));
+  const filteredResults = useMemo(
+    () =>
+      results
+        .filter((r) =>
+          styleFilter === "all"
+            ? true
+            : r.wedding_style === styleFilter || r.wedding_style === null
+        )
+        .filter((r) => (categoryFilter === "전체" ? true : r.category === categoryFilter)),
+    [results, styleFilter, categoryFilter]
+  );
 
-  const sortedResults = [...filteredResults].sort((a, b) => {
-    if (sortBy === "latest") {
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    }
-    if (sortBy === "popular") {
-      return (b.likes_count + b.comments_count) - (a.likes_count + a.comments_count);
-    }
-    if (sortBy === "comments") {
-      return b.comments_count - a.comments_count;
-    }
-    // 정확도순: 서버에서 받은 순서 유지 (최신순 + ilike 매칭).
-    return 0;
-  });
+  const sortedResults = useMemo(
+    () =>
+      [...filteredResults].sort((a, b) => {
+        if (sortBy === "latest") {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+        if (sortBy === "popular") {
+          return (b.likes_count + b.comments_count) - (a.likes_count + a.comments_count);
+        }
+        if (sortBy === "comments") {
+          return b.comments_count - a.comments_count;
+        }
+        // 정확도순: 서버에서 받은 순서 유지 (최신순 + ilike 매칭).
+        return 0;
+      }),
+    [filteredResults, sortBy]
+  );
 
   const activeFilterCount =
     (styleFilter === "all" ? 0 : 1) +

@@ -60,6 +60,8 @@ export function useBudget(profileRegionKey?: string) {
       return data as BudgetSettings | null;
     },
     enabled: !!user,
+    // 개인 데이터 — 변경은 mutation 이 invalidate 하므로 탭 복귀마다 refetch 불필요.
+    staleTime: 60_000,
   });
 
   const itemsQuery = useQuery({
@@ -75,6 +77,8 @@ export function useBudget(profileRegionKey?: string) {
       return (data || []) as BudgetItem[];
     },
     enabled: !!user,
+    // 개인 데이터 — 변경은 mutation 이 invalidate 하므로 탭 복귀마다 refetch 불필요.
+    staleTime: 60_000,
   });
 
   const settings = settingsQuery.data;

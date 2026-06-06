@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useMemo, useRef, useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin } from "lucide-react";
 import VendorMediaCard from "@/components/home/VendorMediaCard";
@@ -92,7 +92,25 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
     }
   }, [isError, error, toast]);
 
-  const allVenues = data?.pages.flatMap((page) => page.venues) ?? [];
+  const allVenues = useMemo(
+    () => data?.pages.flatMap((page) => page.venues) ?? [],
+    [data]
+  );
+
+  // 카드 목록을 메모 — 토스트·observer 등 무관한 상태 변화로 부모가 리렌더돼도
+  // 목록(과 memo 된 VendorMediaCard)이 재생성되지 않도록. 데이터/콜백이 바뀔 때만 재계산.
+  const venueCards = useMemo(
+    () =>
+      allVenues.map((venue) => (
+        <VendorMediaCard
+          key={venue.id}
+          data={venueToCardData(venue)}
+          onClick={() => onVenueClick?.(venue)}
+          fluid
+        />
+      )),
+    [allVenues, onVenueClick]
+  );
 
   if (isLoading) {
     return (
@@ -154,14 +172,7 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
   return (
     <div className="pb-20">
       <div className="grid grid-cols-2 gap-5 px-5">
-        {allVenues.map((venue) => (
-          <VendorMediaCard
-            key={venue.id}
-            data={venueToCardData(venue)}
-            onClick={() => onVenueClick?.(venue)}
-            fluid
-          />
-        ))}
+        {venueCards}
       </div>
 
       <div ref={loadMoreRef} className="flex justify-center py-6">
