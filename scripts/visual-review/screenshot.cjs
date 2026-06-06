@@ -53,17 +53,23 @@ async function maybeLogin(page) {
   await page.waitForTimeout(4500);
 }
 
+// TLS 검증 무력화는 **명시적 opt-in** (INSECURE_TLS=1) 일 때만. 프록시가 self-signed
+// cert 로 가로채는 샌드박스 전용. 실네트워크에서 켜면 MITM 에 노출되므로 기본은 보안 유지.
+const INSECURE_TLS = process.env.INSECURE_TLS === "1";
+
 (async () => {
+  if (INSECURE_TLS) console.warn("⚠️  INSECURE_TLS=1 — 인증서 검증 끔(프록시 환경 전용, 실네트워크 금지)");
   const executablePath = resolveExecutable();
   const browser = await chromium.launch({
     ...(executablePath ? { executablePath } : {}),
     headless: true,
-    args: ["--no-sandbox", "--ignore-certificate-errors"],
+    // --no-sandbox: 컨테이너/root 실행 필수(크롬 자체 샌드박스). cert 무력화는 opt-in.
+    args: ["--no-sandbox", ...(INSECURE_TLS ? ["--ignore-certificate-errors"] : [])],
   });
   const ctx = await browser.newContext({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
-    ignoreHTTPSErrors: true,
+    ignoreHTTPSErrors: INSECURE_TLS,
   });
   const page = await ctx.newPage();
   const errors = [];

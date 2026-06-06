@@ -38,6 +38,11 @@ E2E_EMAIL=you@example.com E2E_PASSWORD=... \
 옵션: `--full`(전체 페이지), `BASE`(기본 `http://127.0.0.1:5199`), `SETTLE_MS`(렌더 대기).
 사전설치 브라우저만 있고 다운로드가 막힌 환경은 `/opt/pw-browsers/chromium-*` 를 자동 fallback.
 
+**보안**: 기본은 TLS 검증을 유지한다. 프록시가 self-signed cert 로 가로채는 샌드박스에서만
+`INSECURE_TLS=1` 로 인증서 검증을 끈다(`--ignore-certificate-errors`). **실네트워크에서는
+켜지 말 것**(MITM 노출). 로그인 시 **전용 throwaway 테스트 계정**만 쓰고(실유저/관리자 금지),
+자격증명은 셸 env 로만 전달(코드/저장소에 하드코딩 금지) — RLS 가 최종 방어선.
+
 ## 네이티브 Android(Play Store) 테스트는?
 
 웹 harness 로는 안 된다. 실기기/에뮬레이터가 필요:
