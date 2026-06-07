@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { useGameLogic } from './useGameLogic';
 import { useGameAudio } from './useGameAudio';
 import { GAME_WIDTH, GAME_HEIGHT, JAR_INNER_BOTTOM, DROP_START_Y, FLOWER_LEVEL_MAP } from './constants';
@@ -10,10 +10,8 @@ interface GameProps {
   bestScore: number;
 }
 
-/** 부모(MergeGame)가 쿼터/오버레이를 제어한 뒤 새 판을 시작시키는 명령 핸들. */
-export interface GameHandle {
-  start: () => void;
-}
+// 새 판은 부모(MergeGame)가 <Game key={playKey}/> 의 key 를 바꿔 '리마운트'로 시작시킨다.
+// (ref.start() 명령형 트리거는 마운트 타이밍에 캔버스가 안 그려지는 회귀가 있어 제거)
 
 
 // Custom cursor SVGs encoded as data URIs
@@ -89,10 +87,7 @@ function drawLabeledChip(
   return { x, w };
 }
 
-export const Game = forwardRef<GameHandle, GameProps>(function Game(
-  { onScoreChange, onGameOver, bestScore },
-  ref,
-) {
+export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
 
@@ -148,9 +143,6 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
 
   const gameStateRef = useRef<GameState>(gameState);
   gameStateRef.current = gameState;
-
-  // 시작 제어는 부모(MergeGame)가 쿼터/광고 처리 후 ref.start() 로 호출한다.
-  useImperativeHandle(ref, () => ({ start: startGame }), [startGame]);
 
   // ─── 꽃 원형 렌더링 ───────────────────────────────────────────────────
   function drawFlower(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, levelId: number, alpha = 1) {
@@ -413,7 +405,7 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
     };
   }, [draw, tick]);
 
-  // 마운트 시 자기 자신을 시작(캔버스/엔진 확실히 렌더). 부모는 재시작만 ref.start() 로.
+  // 마운트 시 한 판 시작(캔버스/엔진 렌더 보장). 부모는 key 를 바꿔 리마운트로 새 판 시작.
   useEffect(() => {
     startGame();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -500,4 +492,4 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
       </div>
     </div>
   );
-});
+}

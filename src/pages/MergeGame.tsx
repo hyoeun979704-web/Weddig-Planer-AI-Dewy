@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Trophy, Medal, Flower2, Clapperboard, Moon } from 'lucide-react';
-import { Game, type GameHandle } from '@/game/Game';
+import { Game } from '@/game/Game';
 import AdBanner from '@/components/ads/AdBanner';
 import RewardedAdModal from '@/components/ads/RewardedAdModal';
 import { setWebRewardedHandler, clearWebRewardedHandler, isNativeAds, showRewardedAd } from '@/lib/ads/adService';
@@ -26,12 +26,14 @@ export default function MergeGame() {
   const { saveScore, ranking, myBestScore } = useGamePoints();
   const quota = useGameQuota();
 
-  const gameRef = useRef<GameHandle>(null);
   const currentPlayIsAd = useRef(false);
 
   const [bestScore, setBestScore] = useState(() => Number(localStorage.getItem('mergeGame_best') ?? 0));
   const [showRanking, setShowRanking] = useState(false);
   const [playing, setPlaying] = useState(false);
+  // <Game key={playKey}/> 의 key. 새 판마다 +1 → 컴포넌트 리마운트(캔버스/엔진 새로 시작).
+  // ref.start() 명령형 트리거의 마운트 타이밍 회귀(빈 캔버스)를 피하는 핵심.
+  const [playKey, setPlayKey] = useState(0);
   const [lastScore, setLastScore] = useState<number | null>(null);
   const [lastEarned, setLastEarned] = useState(0);
   const [adBusy, setAdBusy] = useState(false);
@@ -69,14 +71,14 @@ export default function MergeGame() {
     }
   }, [queryClient]);
 
-  // 무료 판 시작
+  // 무료 판 시작 — 쿼터 1판 소비 후 Game 리마운트(key++)로 새 판 시작.
   const startFree = useCallback(() => {
     if (quota.freeLeft <= 0) return;
     quota.consumeFree();
     currentPlayIsAd.current = false;
     setLastScore(null);
+    setPlayKey((k) => k + 1);
     setPlaying(true);
-    gameRef.current?.start();
   }, [quota]);
 
   // 광고 보고 한 판 더 (보상형 시청 완료 시에만 시작)
@@ -89,28 +91,13 @@ export default function MergeGame() {
         quota.consumeAd();
         currentPlayIsAd.current = true;
         setLastScore(null);
+        setPlayKey((k) => k + 1);
         setPlaying(true);
-        gameRef.current?.start();
       }
     } finally {
       setAdBusy(false);
     }
   }, [quota, adBusy]);
-
-  // 진입 시: 무료 판이 남아있으면 첫 판 소비 + playing(Game 이 마운트에서 자동 시작하므로
-  // 여기서 ref.start() 를 부르지 않아 마운트 ref 타이밍 이슈를 피한다). 없으면 오버레이.
-  const startedRef = useRef(false);
-  useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-    if (quota.freeLeft > 0) {
-      quota.consumeFree();
-      currentPlayIsAd.current = false;
-      setPlaying(true);
-    }
-    // else: playing=false 라 오버레이가 잠금/광고를 보여줌(Game 의 자동 첫 판은 오버레이 뒤에서 유휴).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // 잠금 화면 카운트다운 틱(플레이 중엔 불필요).
   useEffect(() => {
@@ -227,7 +214,11 @@ export default function MergeGame() {
 
       {/* 게임 영역 */}
       <div className="flex-1 overflow-hidden relative" onClick={() => showRanking && setShowRanking(false)}>
-        <Game ref={gameRef} onScoreChange={handleScoreChange} onGameOver={handleGameOver} bestScore={effectiveBest} />
+        {/* 한 판마다 새로 mount(=key) → Game 이 마운트에서 스스로 startGame() 하므로
+            캔버스/엔진이 확실히 렌더된다(빈 화면 회귀 방지). 비플레이 시엔 unmount. */}
+        {playing && (
+          <Game key={playKey} onScoreChange={handleScoreChange} onGameOver={handleGameOver} bestScore={effectiveBest} />
+        )}
 
         {/* 게임오버/시작/잠금 오버레이 (플레이 중이 아닐 때) */}
         {!playing && (
