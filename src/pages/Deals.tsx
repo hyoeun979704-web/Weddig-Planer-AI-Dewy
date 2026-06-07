@@ -5,9 +5,6 @@ import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { usePartnerDeals } from "@/hooks/usePartnerDeals";
-import { usePromotionalEvents } from "@/hooks/usePromotionalEvents";
-import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
-import PromoEventCard from "@/components/events/PromoEventCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import DealFilterSheet, { DealFilters, defaultFilters } from "@/components/deals/DealFilterSheet";
@@ -36,12 +33,6 @@ const Deals = () => {
   }, [isLoaded]);
 
   const { deals, featured, isLoading } = usePartnerDeals(selectedCategory);
-  const { weddingSettings } = useWeddingSchedule();
-  const { featured: promoFeatured, list: promoList } = usePromotionalEvents(
-    weddingSettings.persona_mode,
-    weddingSettings.wedding_style,
-  );
-  const promoEvents = [promoFeatured, ...promoList].filter(Boolean) as NonNullable<typeof promoFeatured>[];
 
   const hasActiveFilters = !!(filters.category || filters.region || filters.maxPrice || filters.keyword);
 
@@ -100,20 +91,23 @@ const Deals = () => {
         </div>
       </div>
 
-      {/* ── 진행 중 이벤트 (promotional_events DB) — 카드는 Events.tsx 와 공통 컴포넌트 ── */}
-      {promoEvents.length > 0 && (
-        <div className="px-4 pt-4 pb-2">
-          <h2 className="font-bold text-foreground mb-3 flex items-center gap-2">
+      {/* ── 진행 중 이벤트는 전용 페이지(/events)로 분리(중복 제거). 여기선 진입 티저만 ── */}
+      <div className="px-4 pt-4 pb-2">
+        <button
+          onClick={() => navigate("/events")}
+          aria-label="진행 중인 이벤트 보러가기"
+          className="w-full flex items-center gap-3 p-3.5 rounded-2xl border border-border/60 bg-gradient-to-r from-[#FFF1F4] to-[#FAD0DA] text-left active:scale-[0.99] transition-transform"
+        >
+          <span className="w-9 h-9 rounded-full bg-white/70 flex items-center justify-center flex-shrink-0">
             <Sparkles className="w-4 h-4 text-primary" />
-            진행 중 이벤트
-          </h2>
-          <div className="space-y-2">
-            {promoEvents.map((e) => (
-              <PromoEventCard key={e.id} event={e} />
-            ))}
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-bold text-foreground">진행 중인 이벤트 보러가기</p>
+            <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1">가입·출석·미션·게임으로 받는 포인트·하트 혜택</p>
           </div>
-        </div>
-      )}
+          <ChevronRight className="w-5 h-5 text-primary flex-shrink-0" />
+        </button>
+      </div>
 
       {/* Featured Deals */}
       {featured.length > 0 && (
