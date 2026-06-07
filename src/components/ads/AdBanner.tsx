@@ -17,7 +17,8 @@ const AdBanner = ({
   className,
   height = 90,
   placeholder = false,
-}: { className?: string; height?: number; placeholder?: boolean }) => {
+  fill = false,
+}: { className?: string; height?: number; placeholder?: boolean; fill?: boolean }) => {
   const configured = isNativeAds() ? true : !!(ADSENSE_CLIENT && ADSENSE_BANNER_SLOT);
 
   useEffect(() => {
@@ -33,8 +34,11 @@ const AdBanner = ({
     } catch { /* 스크립트 로드 전이면 무시 */ }
   }, []);
 
+  // fill=true 면 부모(flex-1 등) 높이를 채운다(className 의 h-full 사용). 아니면 height px.
+  const sizeStyle = fill ? {} : { height };
+
   // 네이티브 배너는 시스템 오버레이라 자리만 비워둠(레이아웃 밀림 방지용 spacer).
-  if (isNativeAds()) return <div className={className} style={{ height }} aria-hidden />;
+  if (isNativeAds()) return <div className={className} style={sizeStyle} aria-hidden />;
 
   // 웹 미설정: placeholder 면 회색 '광고' 박스로 구간 예약, 아니면 아무것도 안 그림.
   if (!configured) {
@@ -43,7 +47,7 @@ const AdBanner = ({
       <div
         className={className}
         style={{
-          height,
+          ...sizeStyle,
           background: "#d9d9d9",
           color: "#8a8a8a",
           display: "flex",
@@ -59,10 +63,10 @@ const AdBanner = ({
   }
 
   return (
-    <div className={className} style={{ minHeight: height, overflow: "hidden" }}>
+    <div className={className} style={fill ? { overflow: "hidden" } : { minHeight: height, overflow: "hidden" }}>
       <ins
         className="adsbygoogle"
-        style={{ display: "block" }}
+        style={{ display: "block", width: "100%", height: fill ? "100%" : undefined }}
         data-ad-client={ADSENSE_CLIENT}
         data-ad-slot={ADSENSE_BANNER_SLOT}
         data-ad-format="auto"

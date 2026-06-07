@@ -43,6 +43,23 @@ export default function MergeGame() {
   const [adBusy, setAdBusy] = useState(false);
   const [, setNowTick] = useState(0); // 잠금 카운트다운 1초 재렌더용
 
+  // 페이지 높이를 '실제 보이는 뷰포트'에 고정 — 100dvh 는 인앱 웹뷰에서 실제 보이는
+  // 높이와 어긋나 스크롤/흰 여백을 만들었다. visualViewport(없으면 innerHeight)로 측정해
+  // 헤더+게임+배너가 스크롤 없이 한 화면에 들어가게 한다.
+  const [vh, setVh] = useState<number | null>(null);
+  useEffect(() => {
+    const set = () => setVh(Math.round(window.visualViewport?.height ?? window.innerHeight));
+    set();
+    window.addEventListener('resize', set);
+    window.addEventListener('orientationchange', set);
+    window.visualViewport?.addEventListener('resize', set);
+    return () => {
+      window.removeEventListener('resize', set);
+      window.removeEventListener('orientationchange', set);
+      window.visualViewport?.removeEventListener('resize', set);
+    };
+  }, []);
+
   const effectiveBest = user ? Math.max(bestScore, myBestScore) : bestScore;
 
   // 기본 적립 추정치(표시용) — 서버 add_game_points(doubled=false) 와 동일 공식 score/40.
@@ -192,8 +209,8 @@ export default function MergeGame() {
 
   return (
     <div
-      className="flex flex-col h-[100dvh] max-w-[430px] mx-auto overflow-hidden relative"
-      style={{ backgroundColor: '#fbe6ee' }}
+      className="flex flex-col max-w-[430px] mx-auto overflow-hidden relative"
+      style={{ backgroundColor: '#fbe6ee', height: vh ? `${vh}px` : '100dvh' }}
     >
       {/* 헤더 */}
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border flex-shrink-0">
@@ -270,10 +287,10 @@ export default function MergeGame() {
         </div>
       )}
 
-      {/* 게임 캔버스 영역 — 헤더~배너 사이를 Game(flex-1)이 차지하고, 캔버스는 그 안에서
-          contain-fit·상단 정렬(위 여백 X, 폰에선 가로폭=화면폭). 남는 아래쪽은 핑크 배경.
-          Game 은 항상 마운트, 비플레이 시 오버레이가 캔버스 위를 덮는다. 배너는 그 아래. */}
-      <div className="flex-1 min-h-0 overflow-hidden relative flex flex-col" onClick={() => showRanking && setShowRanking(false)}>
+      {/* 게임 캔버스 영역 — 캔버스는 가로폭=화면폭으로 헤더 바로 아래에 붙는다(높이는 비율,
+          위 여백 X). Game 은 항상 마운트, 비플레이 시 오버레이가 캔버스 위를 덮는다.
+          캔버스 아래 남는 공간 전부가 광고 배너 영역(아래 flex-1). */}
+      <div className="shrink-0 overflow-hidden relative" onClick={() => showRanking && setShowRanking(false)}>
         <Game ref={gameRef} onScoreChange={handleScoreChange} onGameOver={handleGameOver} bestScore={effectiveBest} />
 
         {/* 시작/게임오버/잠금 오버레이 (플레이 중이 아닐 때) */}
@@ -351,8 +368,11 @@ export default function MergeGame() {
         )}
       </div>
 
-      {/* 하단 광고 배너. 웹=AdSense 슬롯 4600179427 / 네이티브=AdMob. */}
-      <AdBanner className="flex-shrink-0 w-full" height={96} placeholder />
+      {/* 광고 배너 — 캔버스 아래 남는 공간 전부를 채운다(헤더+게임+배너 = 한 화면).
+          웹=AdSense 슬롯 4600179427 / 네이티브=AdMob. */}
+      <div className="flex-1 min-h-0 w-full overflow-hidden">
+        <AdBanner className="w-full h-full" fill placeholder />
+      </div>
 
       {/* 웹 보상형 대체 모달 — 한 판 더(5초)·포인트 2배(15초) 공용, adCfg 로 문구·카운트다운 전환. */}
       <RewardedAdModal
