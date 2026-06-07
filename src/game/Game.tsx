@@ -96,10 +96,9 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
 
-  // 캔버스 표시 크기 — CSS 컨테이너쿼리(cqh)는 일부 안드로이드 인앱 웹뷰에서 안 먹어
-  // 캔버스가 0 높이(흰 화면)가 되고, dvh-매직넘버는 헤더/광고/주소창을 추정으로 빼서
-  // 기기마다 잘리거나 넘침(세로 늘어남). → 부모 영역(헤더·광고 뺀 실제 남은 공간)을
-  // JS 로 직접 측정(ResizeObserver)해 비율 유지 박스를 px 로 계산한다(모든 웹뷰 안전·정확).
+  // 캔버스 표시 크기 — 배경 프레임 설계가 '가로폭 = 화면폭' 기준이라, 컨테이너 가로폭에
+  // 맞추고 높이는 비율로 따라간다(width-fit). 아래 남는 공간은 광고 배너 자리(의도된 여백).
+  // CSS cqh/aspectRatio 대신 JS 측정으로 구형 인앱 웹뷰까지 안전.
   const fitRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   useEffect(() => {
@@ -107,10 +106,8 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
     if (!el) return;
     const measure = () => {
       const cw = el.clientWidth;
-      const ch = el.clientHeight;
-      if (cw <= 0 || ch <= 0) return;
-      const scale = Math.min(cw / GAME_WIDTH, ch / GAME_HEIGHT);
-      setCanvasSize({ w: Math.round(GAME_WIDTH * scale), h: Math.round(GAME_HEIGHT * scale) });
+      if (cw <= 0) return;
+      setCanvasSize({ w: cw, h: Math.round((cw * GAME_HEIGHT) / GAME_WIDTH) });
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -475,7 +472,8 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
 
   return (
     <div
-      className="flex-1 min-h-0 flex flex-col items-center w-full select-none overflow-hidden"
+      ref={fitRef}
+      className="w-full select-none overflow-hidden"
       style={{
         backgroundColor: '#fbe6ee',
         backgroundImage: 'url(/game/bg.png)',
@@ -483,26 +481,20 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
         backgroundPosition: 'center',
       }}
     >
-      {/* 스코어/베스트/넥스트/음소거 HUD 는 캔버스 위 버블 칩으로 직접 그림(레퍼런스풍). */}
-
-      {/* 캔버스 — 남는 게임 영역(이 fit 컨테이너)을 JS 로 측정(ResizeObserver)해
-          비율 유지 박스를 px 로 적용. cqh(흰 화면)·dvh매직넘버(세로 넘침) 둘 다 회피. */}
-      <div ref={fitRef} className="flex-1 min-h-0 flex items-center justify-center w-full overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          width={GAME_WIDTH}
-          height={GAME_HEIGHT}
-          className="touch-none block"
-          style={{
-            width: canvasSize.w ? `${canvasSize.w}px` : undefined,
-            height: canvasSize.h ? `${canvasSize.h}px` : undefined,
-            cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
-            borderRadius: '0 0 8px 8px',
-          }}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-        />
-      </div>
+      {/* 캔버스 — 가로폭 = 컨테이너(화면) 폭, 높이는 비율(width-fit). HUD/음소거는 캔버스에 직접 그림. */}
+      <canvas
+        ref={canvasRef}
+        width={GAME_WIDTH}
+        height={GAME_HEIGHT}
+        className="touch-none block w-full"
+        style={{
+          width: canvasSize.w ? `${canvasSize.w}px` : '100%',
+          height: canvasSize.h ? `${canvasSize.h}px` : 'auto',
+          cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
+        }}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      />
     </div>
   );
 });

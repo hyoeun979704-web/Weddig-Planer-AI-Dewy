@@ -29,21 +29,29 @@ export default function MergeGame() {
   // Game 은 항상 마운트(in-flow)해 캔버스 높이·렌더를 유지하고, 시작/재시작만 ref.start() 로
   // 명령한다. 비플레이(시작 전·게임오버·잠금) 상태는 캔버스 위 React 오버레이가 덮는다.
   const gameRef = useRef<GameHandle>(null);
-  const currentPlayIsAd = useRef(false);
+  // 마지막 판 점수·적립 청구 여부(ref) — 적립은 '한 번만' 발생: 기본(doubled=false) 또는
+  // 광고로 2배(doubled=true). 게임오버 시 즉시 적립하지 않고, 사용자가 2배 광고를 보거나
+  // 다음 행동(다시하기/한판더/홈) 으로 넘어갈 때 청구한다(이중 적립 방지).
+  const lastScoreRef = useRef<number | null>(null);
+  const claimedRef = useRef(false);
 
   const [bestScore, setBestScore] = useState(() => Number(localStorage.getItem('mergeGame_best') ?? 0));
   const [showRanking, setShowRanking] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [lastScore, setLastScore] = useState<number | null>(null);
-  const [lastEarned, setLastEarned] = useState<number | null>(0); // null = 적립 계산 중
+  const [lastEarned, setLastEarned] = useState<number | null>(null); // null = 아직 미적립(청구 전)
   const [adBusy, setAdBusy] = useState(false);
   const [, setNowTick] = useState(0); // 잠금 카운트다운 1초 재렌더용
 
   const effectiveBest = user ? Math.max(bestScore, myBestScore) : bestScore;
 
-  // 웹 '광고 보고 한 판 더' — AdSense 디스플레이 광고 모달(adService 브리지). 네이티브는
-  // AdMob 보상형이라 등록 안 함(AdSense 가 앱 WebView 에 안 뜨게).
+  // 기본 적립 추정치(표시용) — 서버 add_game_points(doubled=false) 와 동일 공식 score/40.
+  const expectedBase = lastScore !== null ? Math.max(1, Math.floor(lastScore / 40)) : 0;
+
+  // 웹 보상형 대체 모달(AdSense). 한 판 더(5초)·포인트 2배(15초) 둘 다 이 모달을 재사용 —
+  // 용도별 문구/카운트다운만 adCfg 로 바꾼다. 네이티브는 AdMob 보상형이라 등록 안 함.
   const [adModalOpen, setAdModalOpen] = useState(false);
+  const [adCfg, setAdCfg] = useState({ title: '광고 보고 한 판 더', cta: '한 판 더 플레이', close: '닫기', sec: 5 });
   const adResolveRef = useRef<((rewarded: boolean) => void) | null>(null);
   useEffect(() => {
     if (isNativeAds()) return;
@@ -71,33 +79,73 @@ export default function MergeGame() {
     }
   }, [queryClient]);
 
-  // 무료 판 시작 — 쿼터 1판 소비 후 ref.start().
+  // 직전 판 기본 적립(아직 미청구일 때만). 다음 행동으로 넘어갈 때 호출.
+  const claimBase = useCallback(async () => {
+    if (claimedRef.current || lastScoreRef.current === null) return;
+    claimedRef.current = true;
+    if (!user) { setLastEarned(0); return; }
+    const awarded = await saveScore(lastScoreRef.current, false);
+    setLastEarned(awarded ?? 0);
+    invalidatePoints();
+  }, [user, saveScore, invalidatePoints]);
+
+  // 포인트 2배 — 15초 보상형 광고 시청 완료 시 doubled=true 로 적립(=기본의 2배 단가).
+  const claimDouble = useCallback(async () => {
+    if (claimedRef.current || lastScoreRef.current === null || !user || adBusy) return;
+    setAdBusy(true);
+    setAdCfg({ title: '광고 보고 포인트 2배', cta: '포인트 2배 받기', close: '닫기 (2배 없이)', sec: 15 });
+    try {
+      const ok = await showRewardedAd();
+      if (ok) {
+        claimedRef.current = true;
+        const awarded = await saveScore(lastScoreRef.current, true);
+        setLastEarned(awarded ?? 0);
+        invalidatePoints();
+      }
+    } finally {
+      setAdBusy(false);
+    }
+  }, [user, adBusy, saveScore, invalidatePoints]);
+
+  // 무료 판 시작 — 직전 판 기본 적립 후 쿼터 1판 소비, ref.start().
   const startFree = useCallback(() => {
     if (quota.freeLeft <= 0) return;
+    void claimBase();
     quota.consumeFree();
-    currentPlayIsAd.current = false;
+    lastScoreRef.current = null;
+    claimedRef.current = false;
     setLastScore(null);
+    setLastEarned(null);
     setPlaying(true);
     gameRef.current?.start();
-  }, [quota]);
+  }, [quota, claimBase]);
 
-  // 광고 보고 한 판 더 — 보상형 시청 완료 시에만 소비·시작.
+  // 광고 보고 한 판 더 — 5초 보상형 시청 완료 시에만 소비·시작.
   const startAd = useCallback(async () => {
     if (quota.adLeft <= 0 || adBusy) return;
+    void claimBase();
     setAdBusy(true);
+    setAdCfg({ title: '광고 보고 한 판 더', cta: '한 판 더 플레이', close: '닫기 (플레이 안 함)', sec: 5 });
     try {
       const ok = await showRewardedAd();
       if (ok) {
         quota.consumeAd();
-        currentPlayIsAd.current = true;
+        lastScoreRef.current = null;
+        claimedRef.current = false;
         setLastScore(null);
+        setLastEarned(null);
         setPlaying(true);
         gameRef.current?.start();
       }
     } finally {
       setAdBusy(false);
     }
-  }, [quota, adBusy]);
+  }, [quota, adBusy, claimBase]);
+
+  const goHome = useCallback(() => {
+    void claimBase();
+    navigate('/');
+  }, [claimBase, navigate]);
 
   // 진입 시: 무료 판이 남아있으면 첫 판 자동 시작, 없으면 오버레이(광고/잠금) 노출.
   // (child useImperativeHandle 은 parent effect 보다 먼저 커밋되므로 ref.start() 안전)
@@ -126,28 +174,27 @@ export default function MergeGame() {
     [bestScore],
   );
 
+  // 게임오버 — 적립은 보류(claimBase/claimDouble 가 처리). 점수·최고점만 갱신.
   const handleGameOver = useCallback(
     async (finalScore: number) => {
       setPlaying(false);
+      lastScoreRef.current = finalScore;
+      claimedRef.current = false;
       setLastScore(finalScore);
-      setLastEarned(null); // 계산 중 (서버 적립 응답 대기)
+      setLastEarned(null); // 미청구 → 오버레이가 '2배 받기/획득 예정' 노출
       if (finalScore > bestScore) {
         setBestScore(finalScore);
         localStorage.setItem('mergeGame_best', String(finalScore));
       }
-      if (user) {
-        const awarded = await saveScore(finalScore, currentPlayIsAd.current);
-        setLastEarned(awarded ?? 0);
-        invalidatePoints();
-      } else {
-        setLastEarned(0);
-      }
     },
-    [bestScore, user, saveScore, invalidatePoints],
+    [bestScore],
   );
 
   return (
-    <div className="flex flex-col h-[100dvh] max-w-[430px] mx-auto bg-background overflow-hidden relative">
+    <div
+      className="flex flex-col h-[100dvh] max-w-[430px] mx-auto overflow-hidden relative"
+      style={{ backgroundColor: '#fbe6ee' }}
+    >
       {/* 헤더 */}
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between px-4 h-11">
@@ -223,9 +270,10 @@ export default function MergeGame() {
         </div>
       )}
 
-      {/* 게임 영역 — Game 은 항상 마운트(flex-1 로 영역을 꽉 채움 → 비율 letterbox 는
-          핑크 배경, 흰 여백 없음). 비플레이 시 오버레이가 위를 덮는다. */}
-      <div className="flex-1 min-h-0 flex flex-col overflow-hidden relative" onClick={() => showRanking && setShowRanking(false)}>
+      {/* 게임 캔버스 영역 — 캔버스는 가로폭=화면폭으로 상단에 붙고, 아래 남는 공간은
+          광고 배너 자리(의도된 여백, 루트 핑크 배경이라 흰 여백 없음). Game 은 항상 마운트,
+          비플레이 시 오버레이가 캔버스 위를 덮는다. */}
+      <div className="flex-1 min-h-0 overflow-hidden relative" onClick={() => showRanking && setShowRanking(false)}>
         <Game ref={gameRef} onScoreChange={handleScoreChange} onGameOver={handleGameOver} bestScore={effectiveBest} />
 
         {/* 시작/게임오버/잠금 오버레이 (플레이 중이 아닐 때) */}
@@ -239,11 +287,23 @@ export default function MergeGame() {
                   {!user ? (
                     <p className="text-xs text-muted-foreground mt-1">로그인하면 포인트가 적립돼요</p>
                   ) : lastEarned === null ? (
-                    <p className="text-xs text-muted-foreground mt-1">적립 중…</p>
+                    <p className="text-sm text-muted-foreground mt-1">획득 예정 {expectedBase.toLocaleString()}P</p>
                   ) : lastEarned > 0 ? (
                     <p className="text-primary font-bold text-base mt-1"> +{lastEarned.toLocaleString()}P 적립</p>
                   ) : (
                     <p className="text-xs text-muted-foreground mt-1">오늘 적립 한도를 모두 채웠어요</p>
+                  )}
+
+                  {/* 포인트 2배 적립 — 15초 광고 시청. 아직 미청구(=2배/기본 미선택)일 때만 노출. */}
+                  {user && lastEarned === null && (
+                    <button
+                      onClick={claimDouble}
+                      disabled={adBusy}
+                      className="mt-3 w-full py-2.5 rounded-xl bg-amber-400 text-amber-950 font-bold active:scale-[0.98] transition-transform disabled:opacity-60 flex items-center justify-center gap-1.5"
+                    >
+                      <Clapperboard className="w-4 h-4" />
+                      {adBusy ? '광고 불러오는 중…' : `광고 보고 포인트 2배 (${(expectedBase * 2).toLocaleString()}P)`}
+                    </button>
                   )}
                 </>
               )}
@@ -282,7 +342,7 @@ export default function MergeGame() {
                     <p className="text-xl font-mono font-bold text-foreground mt-2 tabular-nums">{fmtHMS(quota.msUntilReset())}</p>
                   </div>
                 )}
-                <button onClick={() => navigate('/')} className="w-full py-2 rounded-xl text-sm text-muted-foreground hover:bg-muted transition-colors">
+                <button onClick={goHome} className="w-full py-2 rounded-xl text-sm text-muted-foreground hover:bg-muted transition-colors">
                   홈으로
                 </button>
               </div>
@@ -294,13 +354,14 @@ export default function MergeGame() {
       {/* 하단 광고 배너 (웹=AdSense 슬롯 4600179427 / 네이티브=AdMob). */}
       <AdBanner className="flex-shrink-0 w-full" height={96} placeholder />
 
-      {/* 웹 '광고 보고 한 판 더' 디스플레이 광고 모달 (슬롯 1646713028). */}
+      {/* 웹 보상형 대체 모달 — 한 판 더(5초)·포인트 2배(15초) 공용, adCfg 로 문구·카운트다운 전환. */}
       <RewardedAdModal
         open={adModalOpen}
         onComplete={handleAdComplete}
-        title="광고 보고 한 판 더"
-        ctaLabel="한 판 더 플레이"
-        closeLabel="닫기 (플레이 안 함)"
+        title={adCfg.title}
+        ctaLabel={adCfg.cta}
+        closeLabel={adCfg.close}
+        countdownSec={adCfg.sec}
       />
     </div>
   );
