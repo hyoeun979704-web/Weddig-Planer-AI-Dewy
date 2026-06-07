@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { useGameLogic } from './useGameLogic';
 import { useGameAudio } from './useGameAudio';
 import { GAME_WIDTH, GAME_HEIGHT, JAR_INNER_BOTTOM, DROP_START_Y, FLOWER_LEVEL_MAP } from './constants';
@@ -90,6 +90,27 @@ function drawLabeledChip(
 export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
+
+  // 캔버스 표시 크기 — CSS 컨테이너쿼리(cqh/containerType)는 일부 안드로이드 인앱
+  // 웹뷰(카톡 등)에서 캔버스를 0 높이로 무너뜨려 '흰 화면'을 유발했다. 그래서 JS 로
+  // 부모 영역을 직접 측정(ResizeObserver)해 비율 유지 박스를 px 로 계산한다(모든 웹뷰 안전).
+  const fitRef = useRef<HTMLDivElement>(null);
+  const [canvasSize, setCanvasSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = fitRef.current;
+    if (!el) return;
+    const measure = () => {
+      const cw = el.clientWidth;
+      const ch = el.clientHeight;
+      if (cw <= 0 || ch <= 0) return;
+      const scale = Math.min(cw / GAME_WIDTH, ch / GAME_HEIGHT);
+      setCanvasSize({ w: Math.round(GAME_WIDTH * scale), h: Math.round(GAME_HEIGHT * scale) });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // 꽃 에셋 이미지 캐시. public/game-flowers/{id}.png 가 있으면 그걸 쓰고, 없으면
   // 기존 이모지+원 렌더로 폴백한다. 물리 충돌은 원(반지름 r)이지만 에셋이 항공샷
@@ -467,23 +488,17 @@ export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
       {/* 스코어/베스트/넥스트/음소거 HUD 는 캔버스 위 버블 칩으로 직접 그림(레퍼런스풍). */}
 
       {/* 캔버스 — 기종 무관 자동 맞춤.
-          뷰포트 매직넘버 대신 '실제 게임 영역(이 컨테이너)' 크기에 맞춘다.
-          flex 가 헤더·광고·URL바를 빼고 남는 높이를 정확히 계산하므로(containerType:size),
-          캔버스는 컨테이너의 height/width 중 작은 쪽에 비율 맞춰 들어가 잘림·왜곡이 없다. */}
-      <div
-        className="flex-1 min-h-0 flex items-center justify-center w-full overflow-hidden"
-        style={{ containerType: 'size' }}
-      >
+          남는 게임 영역(이 fit 컨테이너)을 JS 로 측정해(ResizeObserver) 비율 유지 박스를
+          px 로 계산한다. CSS 컨테이너쿼리가 안 먹는 인앱 웹뷰에서도 안전(흰 화면 방지). */}
+      <div ref={fitRef} className="flex-1 min-h-0 flex items-center justify-center w-full overflow-hidden">
         <canvas
           ref={canvasRef}
           width={GAME_WIDTH}
           height={GAME_HEIGHT}
           className="touch-none block"
           style={{
-            // 컨테이너 높이와 (폭으로 환산한 높이) 중 작은 값 → 어느 쪽도 안 넘침.
-            height: `min(100cqh, calc(100cqw * ${GAME_HEIGHT} / ${GAME_WIDTH}))`,
-            width: 'auto',
-            aspectRatio: `${GAME_WIDTH} / ${GAME_HEIGHT}`,
+            width: canvasSize.w ? `${canvasSize.w}px` : undefined,
+            height: canvasSize.h ? `${canvasSize.h}px` : undefined,
             cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
           }}
           onPointerMove={handlePointerMove}
