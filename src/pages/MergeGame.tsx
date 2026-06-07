@@ -97,13 +97,18 @@ export default function MergeGame() {
     }
   }, [quota, adBusy]);
 
-  // 진입 시: 무료 판이 남아있으면 자동 시작, 없으면 오버레이(광고/잠금) 노출.
+  // 진입 시: 무료 판이 남아있으면 첫 판 소비 + playing(Game 이 마운트에서 자동 시작하므로
+  // 여기서 ref.start() 를 부르지 않아 마운트 ref 타이밍 이슈를 피한다). 없으면 오버레이.
   const startedRef = useRef(false);
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
-    if (quota.freeLeft > 0) startFree();
-    // else: playing=false 라 오버레이가 광고 옵션/잠금을 보여줌.
+    if (quota.freeLeft > 0) {
+      quota.consumeFree();
+      currentPlayIsAd.current = false;
+      setPlaying(true);
+    }
+    // else: playing=false 라 오버레이가 잠금/광고를 보여줌(Game 의 자동 첫 판은 오버레이 뒤에서 유휴).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

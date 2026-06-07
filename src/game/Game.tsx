@@ -413,7 +413,10 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
     };
   }, [draw, tick]);
 
-  // 시작은 부모(MergeGame)가 쿼터 확인 후 ref.start() 로 트리거 — 여기서 자동시작 안 함.
+  // 마운트 시 자기 자신을 시작(캔버스/엔진 확실히 렌더). 부모는 재시작만 ref.start() 로.
+  useEffect(() => {
+    startGame();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── 캔버스 클릭 (게임오버는 React 오버레이가 처리) ──────────────────────────
   const getCanvasCoords = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
