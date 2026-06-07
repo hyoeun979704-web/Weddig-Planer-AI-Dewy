@@ -32,7 +32,8 @@ import {
   SceneCode,
   buildFittingPrompt,
 } from "@/data/fittingScenes";
-import { describeDress } from "@/lib/dressDescription";
+import { describeDress, type DressMetadata } from "@/lib/dressDescription";
+import { CustomDressPicker, summarizeDressKo } from "@/components/fitting/CustomDressPicker";
 import { FittingProgress } from "@/components/fitting/FittingProgress";
 import { labelOf } from "@/data/dressFilters";
 import { addPendingJob } from "@/lib/pendingJobs";
@@ -86,6 +87,8 @@ const DressFitting = () => {
   const [dresses, setDresses] = useState<DressSample[]>([]);
   const [loadingDresses, setLoadingDresses] = useState(false);
   const [selectedDress, setSelectedDress] = useState<DressSample | null>(null);
+  const [dressMode, setDressMode] = useState<"catalog" | "custom">("catalog");
+  const [customDress, setCustomDress] = useState<DressMetadata>({});
   const [selectedSceneType, setSelectedSceneType] = useState<SceneType | null>(
     null,
   );
@@ -244,28 +247,43 @@ const DressFitting = () => {
   };
 
   const handleGenerate = async () => {
-    if (!photoPath || !selectedDress || !selectedSceneCode) return;
+    if (!photoPath || !selectedSceneCode) return;
+    if (dressMode === "catalog" && !selectedDress) return;
     setIsGenerating(true);
     try {
-      // 드레스 메타데이터 전체를 가져와 프롬프트에 주입 (목록에서는 일부만 SELECT 했음)
-      const { data: dressMeta } = await (supabase as any)
-        .from("dress_samples")
-        .select(
-          "name, silhouette, neckline, sleeve, length, fabric, details, back_design, color, waist, mood",
-        )
-        .eq("id", selectedDress.id)
-        .maybeSingle();
+      let prompt: string;
+      let requestBody: Record<string, unknown>;
 
-      const dressDescription = dressMeta ? describeDress(dressMeta) : "";
-      const prompt = buildFittingPrompt(selectedSceneCode, dressDescription);
-
-      const { data, error } = await supabase.functions.invoke("dewy-fitting", {
-        body: {
+      if (dressMode === "custom") {
+        // 맞춤: 사용자가 고른 속성을 SCHEMA 텍스트로 직렬화 → 레퍼런스 이미지 없이 생성.
+        prompt = buildFittingPrompt(selectedSceneCode, describeDress(customDress), { custom: true });
+        requestBody = {
           source_image_path: photoPath,
-          dress_sample_id: selectedDress.id,
           scene_code: selectedSceneCode,
           prompt,
-        },
+        };
+      } else {
+        // 카탈로그: 드레스 메타데이터 전체를 가져와 프롬프트에 주입(목록은 일부만 SELECT).
+        const { data: dressMeta } = await (supabase as any)
+          .from("dress_samples")
+          .select(
+            "name, silhouette, neckline, sleeve, length, fabric, details, back_design, color, waist, mood",
+          )
+          .eq("id", selectedDress!.id)
+          .maybeSingle();
+
+        const dressDescription = dressMeta ? describeDress(dressMeta) : "";
+        prompt = buildFittingPrompt(selectedSceneCode, dressDescription);
+        requestBody = {
+          source_image_path: photoPath,
+          dress_sample_id: selectedDress!.id,
+          scene_code: selectedSceneCode,
+          prompt,
+        };
+      }
+
+      const { data, error } = await supabase.functions.invoke("dewy-fitting", {
+        body: requestBody,
       });
       if (error) throw error;
       if ((data as any)?.error) {
@@ -373,14 +391,43 @@ const DressFitting = () => {
         )}
 
         {step === "dress" && (
-          <DressStep
-            dresses={dresses}
-            loading={loadingDresses}
-            onPick={handlePickDress}
-            isPregnant={isPregnant}
-            showAll={showAllDressesEvenIfPregnant}
-            onToggleShowAll={() => setShowAllDressesEvenIfPregnant((v) => !v)}
-          />
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setDressMode("catalog")}
+                className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${dressMode === "catalog" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+              >
+                카탈로그에서 선택
+              </button>
+              <button
+                type="button"
+                onClick={() => setDressMode("custom")}
+                className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${dressMode === "custom" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+              >
+                맞춤 생성
+              </button>
+            </div>
+            {dressMode === "catalog" ? (
+              <DressStep
+                dresses={dresses}
+                loading={loadingDresses}
+                onPick={handlePickDress}
+                isPregnant={isPregnant}
+                showAll={showAllDressesEvenIfPregnant}
+                onToggleShowAll={() => setShowAllDressesEvenIfPregnant((v) => !v)}
+              />
+            ) : (
+              <CustomDressPicker
+                value={customDress}
+                onChange={setCustomDress}
+                onConfirm={() => {
+                  setSelectedDress(null);
+                  setStep("scene");
+                }}
+              />
+            )}
+          </div>
         )}
 
         {step === "scene" && (
@@ -395,6 +442,7 @@ const DressFitting = () => {
           <ReviewSection
             photoUrl={photoUrl}
             dress={selectedDress}
+            customSummary={dressMode === "custom" ? summarizeDressKo(customDress) : null}
             sceneCode={selectedSceneCode}
             hearts={hearts}
             isGenerating={isGenerating}
@@ -790,6 +838,7 @@ const SceneToneStep = ({
 const ReviewSection = ({
   photoUrl,
   dress,
+  customSummary,
   sceneCode,
   hearts,
   isGenerating,
@@ -800,6 +849,7 @@ const ReviewSection = ({
 }: {
   photoUrl: string | null;
   dress: DressSample | null;
+  customSummary?: string | null;
   sceneCode: SceneCode | null;
   hearts: number | null;
   isGenerating: boolean;
@@ -829,7 +879,7 @@ const ReviewSection = ({
       <SummaryRow
         label="드레스"
         right={
-          dress && (
+          dress ? (
             <div className="flex items-center gap-2">
               <img
                 src={dress.image_url}
@@ -840,7 +890,11 @@ const ReviewSection = ({
                 {dress.name}
               </span>
             </div>
-          )
+          ) : customSummary ? (
+            <span className="text-[12px] text-foreground text-right max-w-[160px]">
+              맞춤 · {customSummary}
+            </span>
+          ) : null
         }
         onEdit={onEditDress}
       />
