@@ -91,6 +91,28 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
   const animFrameRef = useRef<number>(0);
   const [adLoading, setAdLoading] = useState(false);
 
+  // 캔버스 표시 크기 — CSS 컨테이너쿼리(cqh)는 일부 안드로이드 인앱 웹뷰에서 안 먹어
+  // 캔버스가 0 높이(흰 화면)가 되고, dvh-매직넘버는 헤더/광고/주소창을 추정으로 빼서
+  // 기기마다 잘리거나 넘침(세로 늘어남). → 부모 영역(헤더·광고 뺀 실제 남은 공간)을
+  // JS 로 직접 측정(ResizeObserver)해 비율 유지 박스를 px 로 계산한다(모든 웹뷰 안전·정확).
+  const fitRef = useRef<HTMLDivElement>(null);
+  const [canvasSize, setCanvasSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = fitRef.current;
+    if (!el) return;
+    const measure = () => {
+      const cw = el.clientWidth;
+      const ch = el.clientHeight;
+      if (cw <= 0 || ch <= 0) return;
+      const scale = Math.min(cw / GAME_WIDTH, ch / GAME_HEIGHT);
+      setCanvasSize({ w: Math.round(GAME_WIDTH * scale), h: Math.round(GAME_HEIGHT * scale) });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // 꽃 에셋 이미지 캐시. public/game-flowers/{id}.png 가 있으면 그걸 쓰고, 없으면
   // 기존 이모지+원 렌더로 폴백한다. 물리 충돌은 원(반지름 r)이지만 에셋이 항공샷
   // 둥근 부케라 실루엣이 거의 일치 — 이미지를 충돌 지름에 맞춰 그려 형태를 맞춘다.
@@ -591,20 +613,17 @@ export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: G
     >
       {/* 스코어/베스트/넥스트/음소거 HUD 는 캔버스 위 버블 칩으로 직접 그림(레퍼런스풍). */}
 
-      {/* 캔버스 — 최대한 넓게(비율 유지). 컨테이너쿼리(cqh/containerType)는 일부
-          안드로이드 인앱 웹뷰에서 캔버스를 0 높이로 무너뜨려(흰 화면) 되돌림 —
-          dvh 기반(검증된 방식)으로 높이를 잡는다. 남는 위/아래는 루트 bg 가 채움. */}
-      <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
+      {/* 캔버스 — 남는 게임 영역(이 fit 컨테이너)을 JS 로 측정(ResizeObserver)해
+          비율 유지 박스를 px 로 적용. cqh(흰 화면)·dvh매직넘버(세로 넘침) 둘 다 회피. */}
+      <div ref={fitRef} className="flex-1 min-h-0 flex items-center justify-center w-full overflow-hidden">
         <canvas
           ref={canvasRef}
           width={GAME_WIDTH}
           height={GAME_HEIGHT}
           className="touch-none block"
           style={{
-            // 컬럼 폭을 채우도록 키움(비율 유지 → 왜곡 없음). 남는 위/아래는 루트 bg.
-            height: 'min(calc(100dvh - 60px), 760px)',
-            width: 'auto',
-            maxWidth: '100%',
+            width: canvasSize.w ? `${canvasSize.w}px` : undefined,
+            height: canvasSize.h ? `${canvasSize.h}px` : undefined,
             cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
             borderRadius: '0 0 8px 8px',
           }}
