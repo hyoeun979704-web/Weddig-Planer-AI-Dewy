@@ -247,6 +247,16 @@ BRIDE — keep exactly from Image 1
   · Upper-body input → infer a plausible body from the visible
     torso and head; do not default to a generic slim model
 
+MAKEUP — soft natural bridal makeup
+- If the bride looks bare-faced or wears only minimal makeup, apply tasteful
+  soft bridal makeup so she reads as wedding-ready: smooth even base, subtly
+  groomed and filled brows, soft neutral eyeshadow with light definition,
+  natural curled lashes, a healthy blush, and a tinted MLBB/rose lip. Keep it
+  natural and elegant — wedding day, NOT heavy glam.
+- Enhance only. Do NOT change her identity, facial features, eye/lip shape,
+  bone structure, skin tone, or age — she must still clearly be the same person.
+- If she already wears makeup in the photo, keep her existing look.
+
 ${dressSectionHeader}
 - Silhouette, fit, length, train, neckline, sleeves, back design
 - Color, fabric texture, sheen
@@ -367,6 +377,13 @@ BRIDE — keep exactly from Image 1
     consistent with the stated "${bodyShapeLabel}" body type.
 - Never produce doll-like / chibi or stretched fashion-illustration
   proportions.
+
+MAKEUP — soft natural bridal makeup
+- If the bride looks bare-faced or wears only minimal makeup, apply tasteful
+  soft bridal makeup (smooth base, groomed brows, soft neutral eye, natural
+  lashes, healthy blush, tinted MLBB/rose lip) so she reads as wedding-ready —
+  natural and elegant, NOT heavy glam. Enhance only; keep her identity,
+  features, skin tone and age unchanged. If she already wears makeup, keep it.
 
 VENUE
 ${scene.promptBlock}
