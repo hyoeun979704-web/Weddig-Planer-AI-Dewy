@@ -23,7 +23,7 @@ const HEART_COST = 5;
 
 interface RequestBody {
   source_image_path: string; // dress-uploads/{userId}/xxx.jpg
-  dress_sample_id: string;
+  dress_sample_id?: string;   // 선택: 있으면 카탈로그, 없으면 맞춤 생성(텍스트 전용)
   scene_code: string;
   prompt: string;
 }
@@ -63,12 +63,8 @@ serve(async (req) => {
     // 2) 입력 검증
     // ─────────────────────────────────────────────
     const body = (await req.json()) as RequestBody;
-    if (
-      !body.source_image_path ||
-      !body.dress_sample_id ||
-      !body.scene_code ||
-      !body.prompt
-    ) {
+    // dress_sample_id 는 선택: 있으면 카탈로그(레퍼런스 합성), 없으면 맞춤(텍스트 전용).
+    if (!body.source_image_path || !body.scene_code || !body.prompt) {
       return json({ error: "Missing required fields" }, 400);
     }
 
@@ -77,14 +73,18 @@ serve(async (req) => {
       return json({ error: "invalid_source_image" }, 403);
     }
 
-    // 드레스 샘플 조회 (image_url 필요)
-    const { data: dress, error: dressError } = await supabaseAdmin
-      .from("dress_samples")
-      .select("id, image_url, is_active")
-      .eq("id", body.dress_sample_id)
-      .single();
-    if (dressError || !dress || !dress.is_active) {
-      return json({ error: "dress_not_found" }, 404);
+    // 카탈로그 모드만 드레스 샘플 조회(맞춤 모드는 레퍼런스 이미지 없음).
+    let dress: { id: string; image_url: string; is_active: boolean } | null = null;
+    if (body.dress_sample_id) {
+      const { data: d, error: dressError } = await supabaseAdmin
+        .from("dress_samples")
+        .select("id, image_url, is_active")
+        .eq("id", body.dress_sample_id)
+        .single();
+      if (dressError || !d || !d.is_active) {
+        return json({ error: "dress_not_found" }, 404);
+      }
+      dress = d as { id: string; image_url: string; is_active: boolean };
     }
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
@@ -124,7 +124,7 @@ serve(async (req) => {
       .insert({
         user_id: userId,
         source_image_path: body.source_image_path,
-        selected_sample_id: body.dress_sample_id,
+        selected_sample_id: body.dress_sample_id ?? null,
         prompt_params: {
           scene_code: body.scene_code,
         },
@@ -146,10 +146,9 @@ serve(async (req) => {
     // ─────────────────────────────────────────────
     const job = (async () => {
       try {
-        const [userImgBlob, dressImgBlob] = await Promise.all([
-          downloadFromStorage(supabaseAdmin, "dress-uploads", body.source_image_path),
-          downloadFromUrl(dress.image_url),
-        ]);
+        const userImgBlob = await downloadFromStorage(supabaseAdmin, "dress-uploads", body.source_image_path);
+        // 카탈로그 모드면 드레스 레퍼런스(Image 2)도 첨부. 맞춤 모드는 사용자 사진 1장 + 텍스트만.
+        const dressImgBlob = dress ? await downloadFromUrl(dress.image_url) : null;
 
         const form = new FormData();
         form.append("model", MODELS.image);
@@ -158,7 +157,7 @@ serve(async (req) => {
         form.append("quality", "medium");
         form.append("n", "1");
         form.append("image[]", userImgBlob, "user.png");
-        form.append("image[]", dressImgBlob, "dress.png");
+        if (dressImgBlob) form.append("image[]", dressImgBlob, "dress.png");
 
         const openaiRes = await fetch("https://api.openai.com/v1/images/edits", {
           method: "POST",
