@@ -10,11 +10,23 @@ interface Props {
   open: boolean;
   /** rewarded=true: 카운트다운 후 받기 / false: 닫기(보너스 없음). */
   onComplete: (rewarded: boolean) => void;
+  /** 상단 제목(용도별로 다름: '포인트 2배' / '한 판 더' 등). */
+  title?: string;
+  /** 카운트다운 완료 후 보상 버튼 라벨. */
+  ctaLabel?: string;
+  /** 닫기(보상 없음) 버튼 라벨. */
+  closeLabel?: string;
 }
 
 const COUNTDOWN_SEC = 5;
 
-const RewardedAdModal = ({ open, onComplete }: Props) => {
+const RewardedAdModal = ({
+  open,
+  onComplete,
+  title = "광고 보고 포인트 2배",
+  ctaLabel = "포인트 2배 받기",
+  closeLabel = "닫기 (보너스 없이)",
+}: Props) => {
   const [left, setLeft] = useState(COUNTDOWN_SEC);
   const pushedRef = useRef(false);
 
@@ -50,7 +62,7 @@ const RewardedAdModal = ({ open, onComplete }: Props) => {
     <div className="fixed inset-0 z-[10000] bg-black/70 flex items-center justify-center p-4">
       <div className="bg-card rounded-2xl w-full max-w-[360px] p-4 shadow-xl border border-border">
         <p className="text-sm font-bold text-foreground mb-2 text-center">
-          광고 보고 포인트 2배
+          {title}
         </p>
         <div style={{ minHeight: 250 }} className="overflow-hidden rounded-lg bg-muted/30">
           <ins
@@ -67,13 +79,13 @@ const RewardedAdModal = ({ open, onComplete }: Props) => {
           onClick={() => onComplete(true)}
           className="mt-3 w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-medium disabled:opacity-50"
         >
-          {left > 0 ? `${left}초 후 포인트 2배 받기` : "포인트 2배 받기"}
+          {left > 0 ? `${left}초 후 ${ctaLabel}` : ctaLabel}
         </button>
         <button
           onClick={() => onComplete(false)}
           className="mt-2 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground"
         >
-          닫기 (보너스 없이)
+          {closeLabel}
         </button>
       </div>
     </div>

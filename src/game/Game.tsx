@@ -475,7 +475,7 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
 
   return (
     <div
-      className="flex flex-col items-center w-full h-full select-none overflow-hidden"
+      className="flex-1 min-h-0 flex flex-col items-center w-full select-none overflow-hidden"
       style={{
         backgroundColor: '#fbe6ee',
         backgroundImage: 'url(/game/bg.png)',

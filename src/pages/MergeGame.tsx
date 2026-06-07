@@ -35,7 +35,7 @@ export default function MergeGame() {
   const [showRanking, setShowRanking] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [lastScore, setLastScore] = useState<number | null>(null);
-  const [lastEarned, setLastEarned] = useState(0);
+  const [lastEarned, setLastEarned] = useState<number | null>(0); // null = 적립 계산 중
   const [adBusy, setAdBusy] = useState(false);
   const [, setNowTick] = useState(0); // 잠금 카운트다운 1초 재렌더용
 
@@ -130,6 +130,7 @@ export default function MergeGame() {
     async (finalScore: number) => {
       setPlaying(false);
       setLastScore(finalScore);
+      setLastEarned(null); // 계산 중 (서버 적립 응답 대기)
       if (finalScore > bestScore) {
         setBestScore(finalScore);
         localStorage.setItem('mergeGame_best', String(finalScore));
@@ -222,8 +223,9 @@ export default function MergeGame() {
         </div>
       )}
 
-      {/* 게임 영역 — Game 은 항상 마운트, 비플레이 시 오버레이가 위를 덮는다. */}
-      <div className="flex-1 overflow-hidden relative" onClick={() => showRanking && setShowRanking(false)}>
+      {/* 게임 영역 — Game 은 항상 마운트(flex-1 로 영역을 꽉 채움 → 비율 letterbox 는
+          핑크 배경, 흰 여백 없음). 비플레이 시 오버레이가 위를 덮는다. */}
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden relative" onClick={() => showRanking && setShowRanking(false)}>
         <Game ref={gameRef} onScoreChange={handleScoreChange} onGameOver={handleGameOver} bestScore={effectiveBest} />
 
         {/* 시작/게임오버/잠금 오버레이 (플레이 중이 아닐 때) */}
@@ -234,8 +236,14 @@ export default function MergeGame() {
                 <>
                   <p className="text-lg font-extrabold text-foreground">게임 종료</p>
                   <p className="text-sm text-muted-foreground mt-1">점수 {lastScore.toLocaleString()}점</p>
-                  {user && lastEarned > 0 && (
+                  {!user ? (
+                    <p className="text-xs text-muted-foreground mt-1">로그인하면 포인트가 적립돼요</p>
+                  ) : lastEarned === null ? (
+                    <p className="text-xs text-muted-foreground mt-1">적립 중…</p>
+                  ) : lastEarned > 0 ? (
                     <p className="text-primary font-bold text-base mt-1"> +{lastEarned.toLocaleString()}P 적립</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">오늘 적립 한도를 모두 채웠어요</p>
                   )}
                 </>
               )}
@@ -274,7 +282,7 @@ export default function MergeGame() {
                     <p className="text-xl font-mono font-bold text-foreground mt-2 tabular-nums">{fmtHMS(quota.msUntilReset())}</p>
                   </div>
                 )}
-                <button onClick={() => navigate(-1)} className="w-full py-2 rounded-xl text-sm text-muted-foreground hover:bg-muted transition-colors">
+                <button onClick={() => navigate('/')} className="w-full py-2 rounded-xl text-sm text-muted-foreground hover:bg-muted transition-colors">
                   홈으로
                 </button>
               </div>
@@ -287,7 +295,13 @@ export default function MergeGame() {
       <AdBanner className="flex-shrink-0 w-full" height={96} placeholder />
 
       {/* 웹 '광고 보고 한 판 더' 디스플레이 광고 모달 (슬롯 1646713028). */}
-      <RewardedAdModal open={adModalOpen} onComplete={handleAdComplete} />
+      <RewardedAdModal
+        open={adModalOpen}
+        onComplete={handleAdComplete}
+        title="광고 보고 한 판 더"
+        ctaLabel="한 판 더 플레이"
+        closeLabel="닫기 (플레이 안 함)"
+      />
     </div>
   );
 }
