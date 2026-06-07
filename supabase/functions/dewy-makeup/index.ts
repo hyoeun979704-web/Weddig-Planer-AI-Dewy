@@ -126,9 +126,12 @@ serve(async (req) => {
     // 백그라운드 작업 — 페이지 이탈/창닫음에도 서버에서 계속 진행(즉시 202 반환).
     const job = (async () => {
       try {
-        const userImgBlob = await downloadFromStorage(supabaseAdmin, "makeup-uploads", body.source_image_path);
         // 카탈로그 모드면 메이크업 레퍼런스(Image 2)도 첨부. 맞춤 모드는 사용자 사진 1장 + 텍스트만.
-        const makeupImgBlob = makeup ? await downloadFromUrl(makeup.image_url) : null;
+        // 카탈로그는 기존처럼 병렬 다운로드(지연 무변화), 맞춤은 makeup 없으니 null.
+        const [userImgBlob, makeupImgBlob] = await Promise.all([
+          downloadFromStorage(supabaseAdmin, "makeup-uploads", body.source_image_path),
+          makeup ? downloadFromUrl(makeup.image_url) : Promise.resolve(null),
+        ]);
 
         // OpenAI images.edit — 메이크업은 정사각 클로즈업이 더 자연스러움
         const form = new FormData();

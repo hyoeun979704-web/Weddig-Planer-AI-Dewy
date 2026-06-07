@@ -146,9 +146,12 @@ serve(async (req) => {
     // ─────────────────────────────────────────────
     const job = (async () => {
       try {
-        const userImgBlob = await downloadFromStorage(supabaseAdmin, "dress-uploads", body.source_image_path);
         // 카탈로그 모드면 드레스 레퍼런스(Image 2)도 첨부. 맞춤 모드는 사용자 사진 1장 + 텍스트만.
-        const dressImgBlob = dress ? await downloadFromUrl(dress.image_url) : null;
+        // 카탈로그는 기존처럼 병렬 다운로드(지연 무변화), 맞춤은 dress 없으니 null.
+        const [userImgBlob, dressImgBlob] = await Promise.all([
+          downloadFromStorage(supabaseAdmin, "dress-uploads", body.source_image_path),
+          dress ? downloadFromUrl(dress.image_url) : Promise.resolve(null),
+        ]);
 
         const form = new FormData();
         form.append("model", MODELS.image);
