@@ -43,23 +43,6 @@ export default function MergeGame() {
   const [adBusy, setAdBusy] = useState(false);
   const [, setNowTick] = useState(0); // 잠금 카운트다운 1초 재렌더용
 
-  // 페이지 높이를 '실제 보이는 뷰포트'에 고정 — 100dvh 는 인앱 웹뷰에서 실제 보이는
-  // 높이와 어긋나 스크롤/흰 여백을 만들었다. visualViewport(없으면 innerHeight)로 측정해
-  // 헤더+게임+배너가 스크롤 없이 한 화면에 들어가게 한다.
-  const [vh, setVh] = useState<number | null>(null);
-  useEffect(() => {
-    const set = () => setVh(Math.round(window.visualViewport?.height ?? window.innerHeight));
-    set();
-    window.addEventListener('resize', set);
-    window.addEventListener('orientationchange', set);
-    window.visualViewport?.addEventListener('resize', set);
-    return () => {
-      window.removeEventListener('resize', set);
-      window.removeEventListener('orientationchange', set);
-      window.visualViewport?.removeEventListener('resize', set);
-    };
-  }, []);
-
   const effectiveBest = user ? Math.max(bestScore, myBestScore) : bestScore;
 
   // 기본 적립 추정치(표시용) — 서버 add_game_points(doubled=false) 와 동일 공식 score/40.
@@ -209,8 +192,8 @@ export default function MergeGame() {
 
   return (
     <div
-      className="flex flex-col max-w-[430px] mx-auto overflow-hidden relative"
-      style={{ backgroundColor: '#fbe6ee', height: vh ? `${vh}px` : '100dvh' }}
+      className="fixed top-0 bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] flex flex-col overflow-hidden"
+      style={{ backgroundColor: '#fbe6ee' }}
     >
       {/* 헤더 */}
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border flex-shrink-0">
