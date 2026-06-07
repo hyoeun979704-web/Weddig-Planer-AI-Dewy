@@ -34,6 +34,12 @@ const msUntilKstMidnight = (): number => {
 const load = (): QuotaState => {
   const today = kstTodayISO();
   try {
+    // 테스트용 리셋: URL 에 ?resetquota 가 있으면 오늘 사용량 초기화(기기 로컬만, 서버
+    // 적립 캡은 그대로). 정식 출시 전 제거 예정.
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("resetquota")) {
+      localStorage.removeItem(STORAGE_KEY);
+      return { date: today, free: 0, ad: 0 };
+    }
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const p = JSON.parse(raw) as QuotaState;
