@@ -20,7 +20,7 @@ export const categoryTabRoutes: Record<CategoryTab, string> = {
   "ai-planner": "/ai-planner",
   "ai-studio": "/ai-studio",
   tips: "/tips",
-  events: "/deals",
+  events: "/events",
   shopping: "/store",
 };
 

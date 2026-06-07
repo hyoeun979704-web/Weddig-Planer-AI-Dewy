@@ -16,16 +16,9 @@ interface Slide {
   fg: string;
 }
 
+// 혜택(/deals)은 현재 데이터·관리 UI가 없는 휴면 surface 라 빈 페이지로 보내지 않도록
+// 슬라이드에서 제외했다. 혜택 데이터/노출이 부활하면 다시 추가.
 const SLIDES: Slide[] = [
-  {
-    key: "deals",
-    icon: "",
-    title: "이달의 혜택",
-    subtitle: "최대 30% 할인 + 사은품",
-    path: "/deals",
-    bg: "bg-gradient-to-r from-[#FFD6DD] via-[#FFC7D3] to-[#FFE1B0]",
-    fg: "text-[hsl(353,75%,40%)]",
-  },
   {
     key: "events",
     icon: "",
@@ -95,21 +88,23 @@ const CompactBannerCarousel = () => {
           </div>
           <ChevronRight className={cn("w-4 h-4 flex-shrink-0", active.fg)} />
         </button>
-        <div className="flex items-center gap-1" role="tablist" aria-label="배너 인디케이터">
-          {SLIDES.map((s, i) => (
-            <button
-              key={s.key}
-              onClick={() => setIndex(i)}
-              aria-label={`${s.title} 슬라이드`}
-              aria-selected={i === index}
-              role="tab"
-              className={cn(
-                "h-1 rounded-full transition-all",
-                i === index ? "w-3.5 bg-primary" : "w-1 bg-border"
-              )}
-            />
-          ))}
-        </div>
+        {SLIDES.length > 1 && (
+          <div className="flex items-center gap-1" role="tablist" aria-label="배너 인디케이터">
+            {SLIDES.map((s, i) => (
+              <button
+                key={s.key}
+                onClick={() => setIndex(i)}
+                aria-label={`${s.title} 슬라이드`}
+                aria-selected={i === index}
+                role="tab"
+                className={cn(
+                  "h-1 rounded-full transition-all",
+                  i === index ? "w-3.5 bg-primary" : "w-1 bg-border"
+                )}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

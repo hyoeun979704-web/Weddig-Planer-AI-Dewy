@@ -1,59 +1,32 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Share2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import PageHeader from "@/components/PageHeader";
+import HomeHeader from "@/components/home/HomeHeader";
+import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import Seo from "@/components/Seo";
-import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { usePromotionalEvents } from "@/hooks/usePromotionalEvents";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import PromoEventCard from "@/components/events/PromoEventCard";
 import { EVENT_ASSETS } from "@/components/events/eventAssets";
 
+// "이벤트" 탭(CategoryTabBar events → /events)의 도착 페이지. 다른 탭(꿀팁·쇼핑 등)과
+// 동일하게 HomeHeader + CategoryTabBar 셸을 쓴다. 보상 이벤트(promotional_events)만
+// 노출 — 제휴 혜택(deals)은 별도 surface 라 여기엔 섞지 않는다("이벤트 탭엔 이벤트만").
 const Events = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const handleCategoryTabChange = useCategoryTabNavigation();
   const { weddingSettings } = useWeddingSchedule();
   const { featured: FEATURED, list: LIVE_EVENTS, isLoading } = usePromotionalEvents(
     weddingSettings.persona_mode,
     weddingSettings.wedding_style,
   );
 
-  const { toast } = useToast();
-
-  const handleShare = async () => {
-    const shareData = {
-      title: "Dewy 이벤트",
-      text: "Dewy에서 진행 중인 이벤트를 확인해보세요",
-      url: window.location.href,
-    };
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(shareData.url);
-        toast({ description: "링크를 복사했어요" });
-      }
-    } catch {
-      // user cancelled — no-op
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <Seo title="웨딩 이벤트·혜택 | Dewy" description="결혼 준비에 도움되는 이벤트와 혜택을 모았어요. 웨딩 박람회·할인·경품 등 예비부부를 위한 진행 중인 이벤트 확인." path="/events" />
-      <PageHeader
-        title="이벤트"
-        rightExtra={
-          <button
-            onClick={handleShare}
-            aria-label="공유"
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted/80 transition-colors"
-          >
-            <Share2 className="w-5 h-5 text-muted-foreground" />
-          </button>
-        }
-      />
+      <HomeHeader />
+      <CategoryTabBar activeTab="events" onTabChange={handleCategoryTabChange} />
 
       <main className="pb-24">
         {/* Hero */}
