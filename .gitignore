@@ -49,3 +49,7 @@ scripts/collect-places/.env.local
 
 # local render-harness scratch assets
 public/mob/
+
+# test artifacts (playwright/vitest)
+test-results/
+playwright-report/
