@@ -96,10 +96,13 @@ const SHARED =
   "fabricate her full body or full-length figure. Use her photo ONLY in face / hair / " +
   "neckline head-and-shoulders panels; render dresses as faceless croquis on a dress form, " +
   "and bouquets / jewelry / veils / fabrics as real photographic objects — not on her body.\n" +
-  "IDENTITY LOCK — in EVERY panel that shows the bride, keep her face, facial features " +
-  "(eyes, nose, lips, jawline), head shape, skin tone and identity EXACTLY the same as the " +
-  "provided photo. Maintain perfect facial consistency across all panels — no drift, no age, " +
-  "expression or makeup change, no stylization. Ultra-realistic, sharp focus.\n" +
+  "IDENTITY LOCK — in EVERY panel that shows the bride she must be UNMISTAKABLY the same person " +
+  "as the provided photo: reproduce her exact eyes (shape, size, slant, spacing, eyelid type: " +
+  "monolid/double, crease height), eyebrows, nose (bridge height & width, tip, nostrils), lips " +
+  "(shape, fullness, philtrum), jawline, chin, cheekbones, hairline, face length-to-width ratio, " +
+  "skin tone/undertone and any moles. Do NOT beautify, slim, enlarge eyes, or change age. Maintain " +
+  "perfect facial consistency across ALL panels — the identical face in every thumbnail, no drift, " +
+  "no stylization. Ultra-realistic, sharp focus.\n" +
   "Korean must be correct and legible. HEADER BAND y0–9% (serif title left, EN subtitle " +
   "under it, hairline at band bottom). FOOTER y93–98%: centered 'DEWY · 2026 WEDDING'. " +
   "Avoid: gibberish/broken letters, random Latin filler, watermarks, extra people, face " +

@@ -213,12 +213,17 @@ export const buildMakeupPrompt = (
 ${referencesBlock}
 
 TOP PRIORITY — IDENTITY MATCH
-The face in the output must clearly be the same person from Image 1.
-Eye shape and size, double-eyelid / monolid type, nose, lip shape,
-jawline, face shape, and overall likeness must match closely enough
-that someone who knows the person would immediately recognize her.
-(Her eyebrows are styled with makeup below — keep them on her own
-brow bone, but their grooming, fullness, shape and tone DO change.) ${identitySourceNote} This rule takes priority over all others.
+The face must be UNMISTAKABLY the same person from Image 1 — instantly
+recognizable. Reproduce her exact features; do NOT beautify, slim, enlarge
+eyes, or average toward a generic model:
+- Eyes: shape, size, slant / canthal tilt, spacing, eyelid type (monolid /
+  inner or outer double eyelid, crease height)
+- Nose: bridge height & width, tip shape, nostril width
+- Lips: shape, fullness, width, lip-to-philtrum proportion
+- Face: jawline, chin, cheekbone position, hairline, length-to-width ratio,
+  skin tone / undertone, and any moles or freckles
+(Her eyebrows are restyled with makeup below — keep them on her own brow bone,
+but their grooming, fullness, shape and tone DO change.) ${identitySourceNote} This rule takes priority over all others.
 
 TASK
 Produce a single close-up bridal beauty portrait — head and
@@ -226,9 +231,9 @@ shoulders, eye-level, sharp focus on the face. The bride wears ${taskMakeupSourc
 3:4 (or square), photorealistic, no text or watermark.
 
 BRIDE — keep exactly from Image 1
-- Face: SAME PERSON, recognizable at a glance. Match eye shape and
-  size, eyelid type, nose bridge and tip, lip shape, jawline, face
-  width
+- Face: the SAME PERSON — reproduce every feature exactly as detailed in
+  IDENTITY MATCH above (eyes, eyelid type, nose, lips, jawline, chin,
+  cheekbones, proportions); only makeup is added onto her existing features
 - Skin tone and undertone (do not lighten or change race)
 - Bone structure, age, freckles or moles if visible
 - Hair color, length and natural texture (see HAIR — restyle, keep identity)
@@ -302,10 +307,12 @@ REFERENCE
 - Image 1: the bride (user's selfie). This is the only reference.
 
 TOP PRIORITY — IDENTITY MATCH
-The face in the output must clearly be the same person from Image 1.
-Match her eye shape and size, eyelid type (monolid / double / hooded),
-nose, lip shape, jawline, face shape, skin tone, and overall likeness
-so closely that someone who knows her would recognize her immediately.
+The face must be UNMISTAKABLY the same person from Image 1 — instantly
+recognizable. Reproduce her exact features (do NOT beautify or enlarge eyes):
+eyes (shape, size, slant, spacing, eyelid type: monolid / inner or outer
+double / hooded, crease height), nose (bridge height & width, tip, nostrils),
+lips (shape, fullness, philtrum proportion), jawline, chin, cheekbones,
+hairline, face length-to-width ratio, skin tone / undertone, and any moles.
 DO NOT change her facial features. Apply makeup ONTO her existing
 features. (Her eyebrows ARE styled with makeup — keep them on her own
 brow bone, but their grooming, fullness, shape and tone do change.) This rule takes priority over

@@ -357,12 +357,18 @@ export const buildRecommendDressPrompt = (
 REFERENCE
 - Image 1: the bride (user's photo). This is the only reference.
 
-TOP PRIORITY — IDENTITY MATCH
-The face in the output must clearly be the same person from Image 1.
-Match her eye shape and size, nose, lips, jawline, face shape, and
-overall likeness so closely that someone who knows her would
-recognize her immediately. Do NOT drift toward a generic "AI bridal
-model" look. This rule takes priority over everything else.
+TOP PRIORITY — IDENTITY MATCH (most important rule)
+The face must be UNMISTAKABLY the same person from Image 1 — someone who
+knows her recognizes her instantly. Reproduce her exact features; do NOT
+beautify, slim, enlarge eyes, or drift toward a generic "AI bridal model":
+- Eyes: shape, size, slant / canthal tilt, spacing, eyelid type (monolid /
+  inner or outer double eyelid, crease height)
+- Eyebrows: shape, thickness, arch, position
+- Nose: bridge height & width, tip shape, nostril width
+- Lips: shape, fullness, width, lip-to-philtrum proportion
+- Face: jawline, chin, cheekbone position, hairline, length-to-width ratio
+- Exact skin tone / undertone, plus any moles or freckles
+This rule takes priority over everything else.
 
 TASK
 Act as a senior Korean bridal stylist. The bride's body type is
@@ -381,7 +387,8 @@ champagne / blush). The chosen dress must look intentional and
 fully designed, not a mix of conflicting elements.
 
 BRIDE — keep exactly from Image 1
-- Face: SAME PERSON, recognizable at a glance
+- Face: the SAME PERSON — reproduce every feature exactly as detailed in
+  IDENTITY MATCH above; recognizable at a glance, no beautification
 - Skin tone, complexion, age, hair color and natural texture
 - Body proportions:
   · Full-body input → COPY EVERYTHING from the photo (height, build,

@@ -19,17 +19,21 @@ type Kind = "single" | "style" | "color";
 const VALID: Kind[] = ["single", "style", "color"];
 
 const IDENTITY =
-  " The face, facial features, skin texture, head shape, expression and identity must " +
-  "remain EXACTLY the same as the provided photo. Do not modify facial structure, eyes, " +
-  "nose, lips, jawline, age or skin tone. Same camera angle, soft studio lighting and " +
+  " The face must remain UNMISTAKABLY the same person as the provided photo — reproduce her " +
+  "exact features: eyes (shape, size, slant, spacing, eyelid type: monolid/double, crease height), " +
+  "eyebrows, nose (bridge height & width, tip, nostrils), lips (shape, fullness, philtrum), jawline, " +
+  "chin, cheekbones, hairline, face length-to-width ratio, skin texture & tone, and any moles/freckles. " +
+  "Do NOT beautify, slim, enlarge eyes, change age, or average toward a generic face. Same camera angle, soft studio lighting and " +
   "framing, neutral natural expression, clean minimal background. Clean beauty portrait, " +
   "natural skin texture, no plastic skin, no over-smoothing, ultra-high realism, sharp " +
   "focus, professional beauty photography. Do not stylize or cartoonize. No text, no logos, no watermarks.";
 
 // 단일 3뷰용 — 카메라 각도 고정 문구는 빼고 얼굴 정체성만 고정.
 const FACE_LOCK =
-  " Keep the face, facial features (eyes, nose, lips, jawline), head shape, skin tone and " +
-  "identity EXACTLY the same as the provided photo in the views where the face is visible. " +
+  " Keep the face UNMISTAKABLY the same person as the provided photo in every view where the face " +
+  "is visible — reproduce her exact eyes (shape, size, slant, spacing, eyelid type), eyebrows, nose " +
+  "(bridge, tip, nostrils), lips (shape, fullness), jawline, chin, cheekbones, hairline, face proportions " +
+  "and skin tone; do NOT beautify, enlarge eyes, or change age. " +
   "Natural skin texture, no plastic skin, ultra-high realism, sharp focus, soft studio " +
   "lighting, clean minimal light-gray background. Do not stylize or cartoonize. No text, no logos, no watermarks.";
 
