@@ -1,4 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
+import { showRewardedAd, isRewardedAdAvailable } from '@/lib/ads/adService';
 import { useGameLogic } from './useGameLogic';
 import { useGameAudio } from './useGameAudio';
 import { GAME_WIDTH, GAME_HEIGHT, JAR_INNER_BOTTOM, DROP_START_Y, FLOWER_LEVEL_MAP } from './constants';
@@ -7,11 +8,9 @@ import type { GameState } from './types';
 interface GameProps {
   onScoreChange?: (score: number) => void;
   onGameOver?: (score: number) => void;
+  onDoublePoints?: (score: number) => void;
   bestScore: number;
 }
-
-// 새 판은 부모(MergeGame)가 <Game key={playKey}/> 의 key 를 바꿔 '리마운트'로 시작시킨다.
-// (ref.start() 명령형 트리거는 마운트 타이밍에 캔버스가 안 그려지는 회귀가 있어 제거)
 
 
 // Custom cursor SVGs encoded as data URIs
@@ -87,30 +86,10 @@ function drawLabeledChip(
   return { x, w };
 }
 
-export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
+export function Game({ onScoreChange, onGameOver, onDoublePoints, bestScore }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
-
-  // 캔버스 표시 크기 — CSS 컨테이너쿼리(cqh/containerType)는 일부 안드로이드 인앱
-  // 웹뷰(카톡 등)에서 캔버스를 0 높이로 무너뜨려 '흰 화면'을 유발했다. 그래서 JS 로
-  // 부모 영역을 직접 측정(ResizeObserver)해 비율 유지 박스를 px 로 계산한다(모든 웹뷰 안전).
-  const fitRef = useRef<HTMLDivElement>(null);
-  const [canvasSize, setCanvasSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
-  useEffect(() => {
-    const el = fitRef.current;
-    if (!el) return;
-    const measure = () => {
-      const cw = el.clientWidth;
-      const ch = el.clientHeight;
-      if (cw <= 0 || ch <= 0) return;
-      const scale = Math.min(cw / GAME_WIDTH, ch / GAME_HEIGHT);
-      setCanvasSize({ w: Math.round(GAME_WIDTH * scale), h: Math.round(GAME_HEIGHT * scale) });
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  const [adLoading, setAdLoading] = useState(false);
 
   // 꽃 에셋 이미지 캐시. public/game-flowers/{id}.png 가 있으면 그걸 쓰고, 없으면
   // 기존 이모지+원 렌더로 폴백한다. 물리 충돌은 원(반지름 r)이지만 에셋이 항공샷
@@ -164,6 +143,22 @@ export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
 
   const gameStateRef = useRef<GameState>(gameState);
   gameStateRef.current = gameState;
+
+  // 포인트 2배 — 보상형 광고(네이티브) 시청 완료 시 보너스 1× 추가 적립 후 새 게임.
+  // adLoading 가 재진입 가드. (웹은 광고 없이 보너스 지급 — adService 폴백)
+  const watchRewardedForDouble = useCallback(async () => {
+    if (adLoading) return;
+    setAdLoading(true);
+    try {
+      const ok = await showRewardedAd();
+      if (ok) {
+        onDoublePoints?.(gameStateRef.current.score);
+        startGame();
+      }
+    } finally {
+      setAdLoading(false);
+    }
+  }, [adLoading, onDoublePoints, startGame]);
 
   // ─── 꽃 원형 렌더링 ───────────────────────────────────────────────────
   function drawFlower(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, levelId: number, alpha = 1) {
@@ -394,11 +389,95 @@ export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
       ctx.restore();
     }
 
-    // 게임 오버 시 캔버스는 어둡게만 처리 — 점수/획득/버튼(다시하기·광고 한 판 더·
-    // 잠금 카운트다운)은 MergeGame 의 React 오버레이가 담당(접근성·애니메이션·정확한 카운트다운).
+    // 게임 오버 오버레이
     if (gs.phase === 'gameover') {
-      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+      // 팝업 카드
+      const popW = 260;
+      const popH = 210;
+      const popX = (GAME_WIDTH - popW) / 2;
+      const popY = (GAME_HEIGHT - popH) / 2 - 10;
+
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.roundRect(popX, popY, popW, popH, 16);
+      ctx.fill();
+
+      // 제목 — 프리미엄 부케 완성(클리어) vs 데드라인 초과(게임 오버)
+      const isWin = gs.endReason === 'premium';
+      ctx.fillStyle = isWin ? '#C9A96E' : '#e53e3e';
+      ctx.font = "bold 22px 'Noto Sans KR', sans-serif";
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(isWin ? '🎉 프리미엄 부케 완성!' : 'Game Over', GAME_WIDTH / 2, popY + 32);
+
+      // 최종 점수
+      ctx.fillStyle = '#333';
+      ctx.font = "14px 'Noto Sans KR', sans-serif";
+      ctx.fillText(`최종 점수: ${gs.score}점`, GAME_WIDTH / 2, popY + 62);
+
+      // 획득 포인트 (점수책정 절반: score/40, 서버 add_game_points 와 일치)
+      const earnedPoints = Math.max(1, Math.floor(gs.score / 40));
+      ctx.fillStyle = '#C9A96E';
+      ctx.font = "bold 15px 'Noto Sans KR', sans-serif";
+      ctx.fillText(` 획득 포인트: ${earnedPoints}P`, GAME_WIDTH / 2, popY + 88);
+
+      // 포인트 2배 버튼 (광고)
+      const btnW = 200;
+      const btn1Y = popY + 112;
+      const btn1H = 36;
+      const btnX = (GAME_WIDTH - btnW) / 2;
+
+      if (!adLoading) {
+        // 보상형 광고 시청 → 포인트 2배 버튼 (골드 에셋 or 폴백)
+        if (chromeReadyRef.current.has('btnGold')) {
+          draw9SliceBtn(ctx, chromeRef.current.btnGold, btnX, btn1Y, btnW, btn1H);
+        } else {
+          const goldGrad = ctx.createLinearGradient(btnX, btn1Y, btnX + btnW, btn1Y);
+          goldGrad.addColorStop(0, '#C9A96E');
+          goldGrad.addColorStop(1, '#E8D5A3');
+          ctx.fillStyle = goldGrad;
+          ctx.beginPath();
+          ctx.roundRect(btnX, btn1Y, btnW, btn1H, 10);
+          ctx.fill();
+        }
+        ctx.fillStyle = '#7a5c00';
+        ctx.font = "bold 13px 'Noto Sans KR', sans-serif";
+        // 광고가 실제 노출되는 환경에서만 '광고 보고' 표기:
+        // 네이티브 AdMob 보상형 또는 웹 AdSense 슬롯(RewardedAdModal). 둘 다 없으면
+        // 오해 없도록 보너스 문구로.
+        const doubleLabel = isRewardedAdAvailable()
+          ? `광고 보고 포인트 2배 (${earnedPoints * 2}P)`
+          : `포인트 2배 받기 (${earnedPoints * 2}P)`;
+        ctx.fillText(doubleLabel, GAME_WIDTH / 2, btn1Y + btn1H / 2);
+      } else {
+        // 광고 로딩/시청 중 — 비활성
+        ctx.fillStyle = '#999';
+        ctx.beginPath();
+        ctx.roundRect(btnX, btn1Y, btnW, btn1H, 10);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.font = "bold 13px 'Noto Sans KR', sans-serif";
+        ctx.fillText('광고 불러오는 중...', GAME_WIDTH / 2, btn1Y + btn1H / 2);
+      }
+
+      // 다시하기 버튼 (핑크 에셋 or 폴백)
+      const btn2Y = btn1Y + btn1H + 10;
+      const btn2H = 36;
+      if (chromeReadyRef.current.has('btnPink')) {
+        draw9SliceBtn(ctx, chromeRef.current.btnPink, btnX, btn2Y, btnW, btn2H);
+      } else {
+        ctx.fillStyle = '#F4A7B9';
+        ctx.beginPath();
+        ctx.roundRect(btnX, btn2Y, btnW, btn2H, 10);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#8a3a50';
+      ctx.font = "bold 13px 'Noto Sans KR', sans-serif";
+      ctx.fillText('다시하기', GAME_WIDTH / 2, btn2Y + btn2H / 2);
     }
 
     // 음소거 버튼 — 모든 단계에서 항상 그림(게임오버 오버레이 위에도). 음소거가
@@ -408,7 +487,7 @@ export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(mutedRef.current ? '🔇' : '🔊', MUTE_BTN.cx, MUTE_BTN.cy + 1);
-  }, [getBodies, dropXRef, mergeFlashesRef]);
+  }, [getBodies, dropXRef, mergeFlashesRef, adLoading]);
 
   // ─── RAF 루프 ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -426,12 +505,11 @@ export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
     };
   }, [draw, tick]);
 
-  // 마운트 시 한 판 시작(캔버스/엔진 렌더 보장). 부모는 key 를 바꿔 리마운트로 새 판 시작.
   useEffect(() => {
     startGame();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── 캔버스 클릭 (게임오버는 React 오버레이가 처리) ──────────────────────────
+  // ─── 캔버스 클릭 (게임오버 팝업 버튼 처리) ──────────────────────────
   const getCanvasCoords = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return null;
@@ -467,12 +545,38 @@ export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
         return;
       }
 
-      // 게임오버 화면은 React 오버레이(MergeGame)가 처리 — 캔버스 탭은 무시.
-      if (gameStateRef.current.phase === 'gameover') return;
+      if (gameStateRef.current.phase === 'gameover') {
+        // 팝업 내 버튼 히트 테스트
+        const coords = getCanvasCoords(e);
+        if (!coords) return;
+
+        const popW = 260;
+        const popH = 210;
+        const popY = (GAME_HEIGHT - popH) / 2 - 10;
+        const btnW = 200;
+        const btnX = (GAME_WIDTH - btnW) / 2;
+
+        // 포인트 2배 버튼 — 카운트다운 시작만
+        const btn1Y = popY + 112;
+        const btn1H = 36;
+        if (coords.x >= btnX && coords.x <= btnX + btnW && coords.y >= btn1Y && coords.y <= btn1Y + btn1H) {
+          void watchRewardedForDouble();
+          return;
+        }
+
+        // 다시하기 버튼
+        const btn2Y = btn1Y + btn1H + 10;
+        const btn2H = 36;
+        if (coords.x >= btnX && coords.x <= btnX + btnW && coords.y >= btn2Y && coords.y <= btn2Y + btn2H) {
+          startGame();
+          return;
+        }
+        return;
+      }
 
       dropFlower();
     },
-    [dropFlower, getCanvasCoords, audioUnlock, toggleMute]
+    [dropFlower, getCanvasCoords, startGame, watchRewardedForDouble, audioUnlock, toggleMute]
   );
 
   return (
@@ -487,19 +591,22 @@ export function Game({ onScoreChange, onGameOver, bestScore }: GameProps) {
     >
       {/* 스코어/베스트/넥스트/음소거 HUD 는 캔버스 위 버블 칩으로 직접 그림(레퍼런스풍). */}
 
-      {/* 캔버스 — 기종 무관 자동 맞춤.
-          남는 게임 영역(이 fit 컨테이너)을 JS 로 측정해(ResizeObserver) 비율 유지 박스를
-          px 로 계산한다. CSS 컨테이너쿼리가 안 먹는 인앱 웹뷰에서도 안전(흰 화면 방지). */}
-      <div ref={fitRef} className="flex-1 min-h-0 flex items-center justify-center w-full overflow-hidden">
+      {/* 캔버스 — 최대한 넓게(비율 유지). 컨테이너쿼리(cqh/containerType)는 일부
+          안드로이드 인앱 웹뷰에서 캔버스를 0 높이로 무너뜨려(흰 화면) 되돌림 —
+          dvh 기반(검증된 방식)으로 높이를 잡는다. 남는 위/아래는 루트 bg 가 채움. */}
+      <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
         <canvas
           ref={canvasRef}
           width={GAME_WIDTH}
           height={GAME_HEIGHT}
           className="touch-none block"
           style={{
-            width: canvasSize.w ? `${canvasSize.w}px` : undefined,
-            height: canvasSize.h ? `${canvasSize.h}px` : undefined,
+            // 컬럼 폭을 채우도록 키움(비율 유지 → 왜곡 없음). 남는 위/아래는 루트 bg.
+            height: 'min(calc(100dvh - 60px), 760px)',
+            width: 'auto',
+            maxWidth: '100%',
             cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
+            borderRadius: '0 0 8px 8px',
           }}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
