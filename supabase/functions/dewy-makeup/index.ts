@@ -150,7 +150,8 @@ serve(async (req) => {
           const errText = await openaiRes.text();
           console.error(`OpenAI error ${openaiRes.status}:`, errText);
           await markFailed(supabaseAdmin, fittingId, `openai_${openaiRes.status}`);
-          await refundHearts(supabaseAdmin, userId, HEART_COST, "openai_fail", fittingId);
+          // 환불 시 generic 사유로 덮어쓰지 않고 구체 상태코드를 보존(진단용).
+          await refundHearts(supabaseAdmin, userId, HEART_COST, `openai_${openaiRes.status}`, fittingId);
           return;
         }
 
