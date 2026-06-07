@@ -10,6 +10,7 @@ import { adminClient } from "../_shared/supabase.ts";
 import { MODELS } from "../_shared/llm.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
@@ -52,6 +53,113 @@ function singlePrompt(style: string) {
     "side by side left to right: (1) FRONT view, (2) 45-degree SIDE view, (3) BACK view — so " +
     "the hairstyle is shown fully. Restyle ONLY the hair to: " + s + ". The hair must be " +
     "identical and consistent across all three views; label nothing." + FACE_LOCK
+  );
+}
+
+// ── 추천: 업로드 사진 분석 → 어울리는 스타일/컬러 선택 (Gemini Flash 비전) ──
+// 고정 9개를 모두에게 똑같이 찍던 것을 "얼굴 분석 기반 추천"으로 전환.
+// label 은 영어 고정(이미지 프롬프트에 그대로 들어감), reason 은 한국어 설명.
+const HAIR_CANDIDATES = [
+  "loose natural waves", "soft beach curls", "sleek straight hair", "high ponytail",
+  "low ponytail", "messy bun", "high bun", "braided updo", "half-up half-down",
+  "side-swept waves", "voluminous blowout", "low chignon", "face-framing layers",
+  "slicked-back low bun", "romantic loose updo",
+];
+const COLOR_CANDIDATES = [
+  "natural black", "dark brown", "chocolate brown", "light brown", "soft caramel",
+  "warm honey blonde", "ash brown", "copper red", "platinum blonde", "rose brown",
+  "cool dark ash", "golden brown",
+];
+
+type Reco = { summary: string; items: { label: string; reason: string }[] };
+
+// 어울림 순 9개 선택. 실패/불완전(키 없음·응답오류·파싱실패)하면 null → 호출부가 고정목록 폴백.
+async function recommend(
+  imageBase64: string,
+  mimeType: string,
+  kind: "style" | "color",
+  geminiKey: string,
+): Promise<Reco | null> {
+  const isColor = kind === "color";
+  const candidates = isColor ? COLOR_CANDIDATES : HAIR_CANDIDATES;
+  const role = isColor
+    ? "너는 웨딩 헤어컬러 전문가다. 사진 속 인물의 피부 언더톤(웜/쿨/뉴트럴)·명도·퍼스널컬러를 분석해 가장 잘 어울리는 헤어 컬러를 고른다."
+    : "너는 웨딩 헤어 스타일리스트다. 사진 속 인물의 얼굴형·이목구비·현재 헤어 길이를 분석해 가장 잘 어울리는 헤어스타일을 고른다.";
+  const prompt =
+    `${role}\n아래 후보 목록에서만 9개를 어울리는 순서대로 골라라(label 은 목록의 영어 표현을 그대로 사용).\n` +
+    `후보: ${candidates.join(", ")}.\n` +
+    `summary 는 분석 요약(한국어 1~2문장). 각 item 의 reason 은 이 인물에게 어울리는 이유(한국어 한 문장).`;
+  try {
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.geminiFlash}:generateContent?key=${geminiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            role: "user",
+            parts: [
+              { text: prompt },
+              { inline_data: { mime_type: mimeType, data: imageBase64 } },
+            ],
+          }],
+          generationConfig: {
+            temperature: 0.2,
+            response_mime_type: "application/json",
+            response_schema: {
+              type: "object",
+              properties: {
+                summary: { type: "string" },
+                items: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: { label: { type: "string" }, reason: { type: "string" } },
+                    required: ["label", "reason"],
+                  },
+                },
+              },
+              required: ["summary", "items"],
+            },
+          },
+        }),
+      },
+    );
+    if (!resp.ok) { console.warn(`hair recommend ${kind} gemini`, resp.status); return null; }
+    const data = await resp.json();
+    const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) return null;
+    const parsed = JSON.parse(text) as Partial<Reco>;
+    const seen = new Set<string>();
+    const items: { label: string; reason: string }[] = [];
+    for (const it of parsed.items ?? []) {
+      // 후보 목록 안의 label 만 채택(렌더 불가능한 임의 문자열 차단) + 중복 제거.
+      if (!it || typeof it.label !== "string" || !candidates.includes(it.label) || seen.has(it.label)) continue;
+      seen.add(it.label);
+      items.push({ label: it.label, reason: typeof it.reason === "string" ? it.reason : "" });
+    }
+    if (items.length === 0) return null; // 유효 추천이 0개면 폴백
+    // 9칸 그리드 보장: 모자라면 남은 후보로 채움(어울림 순서는 유지).
+    for (const c of candidates) {
+      if (items.length >= 9) break;
+      if (!seen.has(c)) { seen.add(c); items.push({ label: c, reason: "" }); }
+    }
+    return { summary: typeof parsed.summary === "string" ? parsed.summary : "", items: items.slice(0, 9) };
+  } catch (e) {
+    console.warn(`hair recommend ${kind} fail`, e);
+    return null;
+  }
+}
+
+// 추천 결과(어울림 순)로 9그리드 프롬프트를 동적 생성.
+function gridPrompt(kind: "style" | "color", items: { label: string }[]): string {
+  const ordered = items.slice(0, 9).map((it, i) => `${i + 1}) ${it.label}`).join(", ");
+  const what = kind === "color" ? "hair color" : "hairstyle";
+  return (
+    "Generate a 3x3 grid (9 cells) of ultra-realistic portrait photos of the SAME person " +
+    `with different ${what}s, one per cell in this exact order (left-to-right, top-to-bottom): ` +
+    ordered + `. Only change the ${what} in each cell, keep perfect facial consistency across all nine.` +
+    IDENTITY
   );
 }
 
@@ -126,13 +234,30 @@ serve(async (req) => {
         const { data: blob } = await admin.storage.from("invitation-uploads").download(sourcePath);
         if (!blob) { await refund(finalCost); await finish({ status: "failed", error: "source_download_failed", charged: 0 }); return; }
 
-        const promptFor = (k: Kind) => k === "style" ? STYLE_GRID : k === "color" ? COLOR_GRID : singlePrompt(singleStyle);
-        const results: { kind: Kind; path: string }[] = [];
+        // 업로드 사진 분석에 쓸 base64(스타일/컬러 추천용). Gemini 키 없으면 추천 생략→고정목록.
+        const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+        const srcBase64 = base64Encode(await blob.arrayBuffer());
+        const srcMime = blob.type || "image/png";
+
+        const results: { kind: Kind; path: string; recommendation?: Reco }[] = [];
         const genOne = async (kind: Kind) => {
           try {
+            // single 은 사용자가 고른 단일 스타일. style/color 는 얼굴 분석 기반 추천(실패 시 고정목록).
+            let prompt: string;
+            let recommendation: Reco | null = null;
+            if (kind === "single") {
+              prompt = singlePrompt(singleStyle);
+            } else {
+              recommendation = GEMINI_API_KEY
+                ? await recommend(srcBase64, srcMime, kind, GEMINI_API_KEY)
+                : null;
+              prompt = recommendation
+                ? gridPrompt(kind, recommendation.items)
+                : (kind === "style" ? STYLE_GRID : COLOR_GRID);
+            }
             const form = new FormData();
             form.append("model", MODELS.image);
-            form.append("prompt", promptFor(kind));
+            form.append("prompt", prompt);
             form.append("size", kind === "single" ? "1536x1024" : "1024x1536");
             form.append("quality", "medium");
             form.append("n", "1");
@@ -148,7 +273,7 @@ serve(async (req) => {
             const outPath = `${userId}/hair/${kind}-${crypto.randomUUID()}.png`;
             const { error: upErr } = await admin.storage.from("invitation-uploads").upload(outPath, outBlob, { contentType: "image/png", upsert: false });
             if (upErr) return;
-            results.push({ kind, path: outPath });
+            results.push(recommendation ? { kind, path: outPath, recommendation } : { kind, path: outPath });
           } catch (e) { console.error(`hair ${kind} fail`, e); }
         };
         // 옵션 병렬(각 1장) → wall-clock ≈ 가장 느린 옵션
