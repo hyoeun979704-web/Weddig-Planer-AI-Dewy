@@ -221,13 +221,21 @@ export const buildFittingPrompt = (
 
 ${referencesBlock}
 
-TOP PRIORITY — IDENTITY MATCH
-The face in the output must clearly be the same person from Image 1.
-Eye shape and size, nose, lips, jawline, face shape, and overall
-likeness must match closely enough that someone who knows the person
-would immediately recognize her. Do not average the face toward a
-generic "AI bridal model" look. This takes priority over all other
-instructions.
+TOP PRIORITY — IDENTITY MATCH (most important rule)
+The face in the output must be UNMISTAKABLY the same person from Image 1 —
+someone who knows her must recognize her instantly. Reproduce her exact
+facial features; do NOT beautify, slim, enlarge eyes, or average toward a
+generic "AI bridal model":
+- Eyes: same shape, size, slant / canthal tilt, spacing, and eyelid type
+  (monolid / inner or outer double eyelid, and crease height)
+- Eyebrows: same shape, thickness, arch and position
+- Nose: same bridge height and width, tip shape, nostril width
+- Lips: same shape, fullness, width, and lip-to-philtrum proportion
+- Face: same jawline, chin shape, cheekbone position and height, hairline,
+  and overall face length-to-width ratio
+- Keep her exact skin tone and undertone, plus any moles, freckles, or other
+  distinctive marks
+This identity match takes priority over every other instruction below.
 
 TASK
 Produce a single full-body bridal photograph of the bride from
@@ -235,8 +243,9 @@ Image 1 wearing ${taskDressSource}, in the venue described
 below. Vertical 3:4, photorealistic.
 
 BRIDE — keep exactly from Image 1
-- Face: SAME PERSON, recognizable at a glance. Match eye shape and
-  size, nose bridge, lip shape, jawline, face proportions
+- Face: the SAME PERSON — reproduce EVERY feature exactly as detailed in
+  IDENTITY MATCH above (eyes, eyelid type, brows, nose, lips, jawline, chin,
+  cheekbones, proportions). Recognizable at a glance; no beautification.
 - Skin tone, complexion, age
 - Hair color and natural texture (bridal updos/waves okay, identity
   stays)
@@ -259,7 +268,11 @@ MAKEUP — soft natural bridal makeup
 
 ${dressSectionHeader}
 - Silhouette, fit, length, train, neckline, sleeves, back design
-- Color, fabric texture, sheen
+- Color: the exact shade and tone of the dress
+- Fabric / material — reproduce it PRECISELY, do NOT substitute a generic
+  satin: same fiber and weave, surface texture, sheen level (matte / soft
+  satin / high-gloss / metallic), opacity vs sheerness, stiffness vs fluid
+  drape, and the way it catches light and folds
 - All decorative work — embroidery, beading, lace, trim, feathers,
   ruffles, applique — at the same positions and scale
 - Drapes naturally; visible skin matches the dress's coverage
