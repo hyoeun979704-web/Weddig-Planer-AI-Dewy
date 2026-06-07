@@ -1,7 +1,7 @@
 {
   "name": "dewy",
   "private": true,
-  "version": "0.1.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +15,7 @@
     "shot": "node scripts/visual-review/screenshot.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "vite build && playwright test",
     "seed:invitation-templates": "tsx scripts/seedInvitationTemplates.ts",
     "seed:invitation-fonts": "tsx scripts/importInvitationFonts.ts",
     "collect": "tsx scripts/collect-places/index.ts",
@@ -37,8 +38,8 @@
     "android:open": "cap open android"
   },
   "dependencies": {
-    "@capacitor/android": "^6.2.1",
     "@capacitor-community/admob": "^6.1.0",
+    "@capacitor/android": "^6.2.1",
     "@capacitor/app": "^6.0.3",
     "@capacitor/browser": "^6.0.6",
     "@capacitor/core": "^6.2.1",
@@ -114,6 +115,7 @@
   "devDependencies": {
     "@capacitor/cli": "^6.2.1",
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
