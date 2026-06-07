@@ -145,7 +145,9 @@ function boardPrompt(section: Section, a: any): string {
       "HERO BAND2 y29–52% (와이드): ③ 추천 컷 — [DATA] cuts 의 6종을 어울림 순으로 가로 2×3 미니썸네일(신부 얼굴에 합성, 모두 동일 인물·이목구비 고정, 헤어만 다름). 각 썸네일에 [DATA] cuts 의 한국어 이름과 fit% 를 그대로 크게 표기(숫자 임의 생성 금지)." +
       "BAND3 y53–68% (2컬럼): [x4–46% ④ 앞머리 — [DATA] bangs 옵션을 어울림 순, 각 이름·fit% 를 [DATA] 그대로 표기] [x48–96% ⑤ 헤어 컬러 예시 4종 — 신부 머리를 각 염색 톤으로 실제로 보여주는 작은 미리보기 이미지(동일 인물, 헤어 컬러만 변경) + 이름·HEX([DATA] dye_shades)]. " +
       "BAND4 y69–82%: [x4–55% ⑥ 붙임머리·부분가발 커버 구간: 머리 실루엣에 정수리/길이/옆숱] [x58–96% 베일 페어링 + 피해야 할 스타일 1줄]. " +
-      "BAND5 y83–91% (와이드): ⑦ YOU IN DIFFERENT LOOKS — 신부 head-and-shoulders 4변형(추천 컷/길이/컬러), 모두 동일 인물(이목구비 고정)."
+      "BAND5 y83–91% (와이드): ⑦ YOU IN DIFFERENT LOOKS — 신부 head-and-shoulders 4변형(추천 컷/길이/컬러), 모두 동일 인물(이목구비 고정)." +
+      " ★FACE CONSISTENCY (절대 규칙): 이 보드의 모든 얼굴(①③④⑤⑦)은 제공된 사진과 100% 동일 인물이다 — 이목구비·골격·피부톤·나이가 썸네일들 사이에서 조금도 달라지면 안 되며, 같은 얼굴을 그대로 복제하듯 모든 칸에 동일하게 그린다. 칸마다 다른 사람처럼 보이는 것을 절대 금지." +
+      " ★HAIRSTYLE DIFFERENTIATION (절대 규칙): ③의 6개 썸네일은 각각 [DATA] cuts 의 이름이 뜻하는 대로 길이·볼륨·업/다운·가르마·질감이 '한눈에 봐도 확연히 다르게' 보여야 한다 — 같은 헤어를 두 칸 이상에 반복하는 것 절대 금지. ⑤는 칸마다 헤어 컬러가 또렷이 다르게, ⑦은 4개가 서로 명확히 구분되는 룩으로. 차이가 작은 썸네일 크기에서도 분명히 드러나야 한다."
     );
   }
   if (section === "makeup") {
@@ -199,7 +201,9 @@ async function generateBoard(
     form.append("model", MODELS.image);
     form.append("prompt", boardPrompt(section, analysis ?? {}));
     form.append("size", "1024x1536");
-    form.append("quality", "medium");
+    // 헤어 보드는 얼굴 썸네일이 18개+라 medium 에선 디테일이 뭉개져(얼굴 드리프트·헤어 미분화)
+    // high 로 렌더. 나머지 보드는 사용자 만족도·비용 위해 medium 유지.
+    form.append("quality", section === "hair" ? "high" : "medium");
     form.append("n", "1");
     form.append("image[]", blob, "bride.png");
     const res = await fetch("https://api.openai.com/v1/images/edits", {
