@@ -19,6 +19,7 @@ const REASON_LABELS: Record<string, string> = {
   signup_bonus: "가입 보너스",
   signup_bonus_backfill: "가입 보너스",
   merge_game: "꽃 머지 게임",
+  merge_game_ad: "꽃 머지 게임 (광고 추가판)",
   merge_game_doubled: "꽃 머지 게임 (광고 2배)",
   ad_view: "광고 시청",
   daily_attendance: "출석 체크",
