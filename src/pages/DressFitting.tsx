@@ -623,6 +623,10 @@ const PhotoStep = ({
 }) => (
   <section className="space-y-4">
     <h2 className="text-lg font-bold text-foreground">사진 업로드</h2>
+    <p className="text-[12px] text-muted-foreground leading-relaxed">
+      머리부터 발끝까지 <span className="font-semibold text-foreground">전신이 보이는 사진</span>일수록
+      드레스 핏·기장·비율이 자연스럽게 합성돼요. (얼굴·상반신만 있어도 가능하지만 전신을 권장해요.)
+    </p>
     {photoUrl ? (
       <div className="space-y-3">
         <img

@@ -221,13 +221,21 @@ export const buildFittingPrompt = (
 
 ${referencesBlock}
 
-TOP PRIORITY — IDENTITY MATCH
-The face in the output must clearly be the same person from Image 1.
-Eye shape and size, nose, lips, jawline, face shape, and overall
-likeness must match closely enough that someone who knows the person
-would immediately recognize her. Do not average the face toward a
-generic "AI bridal model" look. This takes priority over all other
-instructions.
+TOP PRIORITY — IDENTITY MATCH (most important rule)
+The face in the output must be UNMISTAKABLY the same person from Image 1 —
+someone who knows her must recognize her instantly. Reproduce her exact
+facial features; do NOT beautify, slim, enlarge eyes, or average toward a
+generic "AI bridal model":
+- Eyes: same shape, size, slant / canthal tilt, spacing, and eyelid type
+  (monolid / inner or outer double eyelid, and crease height)
+- Eyebrows: same shape, thickness, arch and position
+- Nose: same bridge height and width, tip shape, nostril width
+- Lips: same shape, fullness, width, and lip-to-philtrum proportion
+- Face: same jawline, chin shape, cheekbone position and height, hairline,
+  and overall face length-to-width ratio
+- Keep her exact skin tone and undertone, plus any moles, freckles, or other
+  distinctive marks
+This identity match takes priority over every other instruction below.
 
 TASK
 Produce a single full-body bridal photograph of the bride from
@@ -235,8 +243,9 @@ Image 1 wearing ${taskDressSource}, in the venue described
 below. Vertical 3:4, photorealistic.
 
 BRIDE — keep exactly from Image 1
-- Face: SAME PERSON, recognizable at a glance. Match eye shape and
-  size, nose bridge, lip shape, jawline, face proportions
+- Face: the SAME PERSON — reproduce EVERY feature exactly as detailed in
+  IDENTITY MATCH above (eyes, eyelid type, brows, nose, lips, jawline, chin,
+  cheekbones, proportions). Recognizable at a glance; no beautification.
 - Skin tone, complexion, age
 - Hair color and natural texture (bridal updos/waves okay, identity
   stays)
@@ -247,9 +256,23 @@ BRIDE — keep exactly from Image 1
   · Upper-body input → infer a plausible body from the visible
     torso and head; do not default to a generic slim model
 
+MAKEUP — soft natural bridal makeup
+- If the bride looks bare-faced or wears only minimal makeup, apply tasteful
+  soft bridal makeup so she reads as wedding-ready: smooth even base, subtly
+  groomed and filled brows, soft neutral eyeshadow with light definition,
+  natural curled lashes, a healthy blush, and a tinted MLBB/rose lip. Keep it
+  natural and elegant — wedding day, NOT heavy glam.
+- Enhance only. Do NOT change her identity, facial features, eye/lip shape,
+  bone structure, skin tone, or age — she must still clearly be the same person.
+- If she already wears makeup in the photo, keep her existing look.
+
 ${dressSectionHeader}
 - Silhouette, fit, length, train, neckline, sleeves, back design
-- Color, fabric texture, sheen
+- Color: the exact shade and tone of the dress
+- Fabric / material — reproduce it PRECISELY, do NOT substitute a generic
+  satin: same fiber and weave, surface texture, sheen level (matte / soft
+  satin / high-gloss / metallic), opacity vs sheerness, stiffness vs fluid
+  drape, and the way it catches light and folds
 - All decorative work — embroidery, beading, lace, trim, feathers,
   ruffles, applique — at the same positions and scale
 - Drapes naturally; visible skin matches the dress's coverage
@@ -334,12 +357,18 @@ export const buildRecommendDressPrompt = (
 REFERENCE
 - Image 1: the bride (user's photo). This is the only reference.
 
-TOP PRIORITY — IDENTITY MATCH
-The face in the output must clearly be the same person from Image 1.
-Match her eye shape and size, nose, lips, jawline, face shape, and
-overall likeness so closely that someone who knows her would
-recognize her immediately. Do NOT drift toward a generic "AI bridal
-model" look. This rule takes priority over everything else.
+TOP PRIORITY — IDENTITY MATCH (most important rule)
+The face must be UNMISTAKABLY the same person from Image 1 — someone who
+knows her recognizes her instantly. Reproduce her exact features; do NOT
+beautify, slim, enlarge eyes, or drift toward a generic "AI bridal model":
+- Eyes: shape, size, slant / canthal tilt, spacing, eyelid type (monolid /
+  inner or outer double eyelid, crease height)
+- Eyebrows: shape, thickness, arch, position
+- Nose: bridge height & width, tip shape, nostril width
+- Lips: shape, fullness, width, lip-to-philtrum proportion
+- Face: jawline, chin, cheekbone position, hairline, length-to-width ratio
+- Exact skin tone / undertone, plus any moles or freckles
+This rule takes priority over everything else.
 
 TASK
 Act as a senior Korean bridal stylist. The bride's body type is
@@ -358,7 +387,8 @@ champagne / blush). The chosen dress must look intentional and
 fully designed, not a mix of conflicting elements.
 
 BRIDE — keep exactly from Image 1
-- Face: SAME PERSON, recognizable at a glance
+- Face: the SAME PERSON — reproduce every feature exactly as detailed in
+  IDENTITY MATCH above; recognizable at a glance, no beautification
 - Skin tone, complexion, age, hair color and natural texture
 - Body proportions:
   · Full-body input → COPY EVERYTHING from the photo (height, build,
@@ -367,6 +397,13 @@ BRIDE — keep exactly from Image 1
     consistent with the stated "${bodyShapeLabel}" body type.
 - Never produce doll-like / chibi or stretched fashion-illustration
   proportions.
+
+MAKEUP — soft natural bridal makeup
+- If the bride looks bare-faced or wears only minimal makeup, apply tasteful
+  soft bridal makeup (smooth base, groomed brows, soft neutral eye, natural
+  lashes, healthy blush, tinted MLBB/rose lip) so she reads as wedding-ready —
+  natural and elegant, NOT heavy glam. Enhance only; keep her identity,
+  features, skin tone and age unchanged. If she already wears makeup, keep it.
 
 VENUE
 ${scene.promptBlock}
