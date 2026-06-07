@@ -43,6 +43,22 @@ export default defineConfig(({ mode }) => {
           },
           workbox: {
             globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+            // 오래된 precache 정리(배포 시 구 캐시 제거).
+            cleanupOutdatedCaches: true,
+            // 네비게이션(HTML)은 '네트워크 우선' → 배포 즉시 최신 index.html(=최신 JS 번들)을
+            // 받는다. precache 된 옛 index.html 이 서빙돼 '구버전이 번갈아 뜨던' 현상 제거.
+            // 오프라인은 NetworkFirst 의 캐시 폴백(+precache)으로 유지.
+            runtimeCaching: [
+              {
+                urlPattern: ({ request }: { request: Request }) => request.mode === "navigate",
+                handler: "NetworkFirst",
+                options: {
+                  cacheName: "html-network-first",
+                  networkTimeoutSeconds: 3,
+                  expiration: { maxEntries: 10 },
+                },
+              },
+            ],
           },
         }),
     ].filter(Boolean),
