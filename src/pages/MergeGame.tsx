@@ -270,10 +270,10 @@ export default function MergeGame() {
         </div>
       )}
 
-      {/* 게임 캔버스 영역 — 캔버스는 가로폭=화면폭으로 상단에 붙고, 아래 남는 공간은
-          광고 배너 자리(의도된 여백, 루트 핑크 배경이라 흰 여백 없음). Game 은 항상 마운트,
-          비플레이 시 오버레이가 캔버스 위를 덮는다. */}
-      <div className="flex-1 min-h-0 overflow-hidden relative" onClick={() => showRanking && setShowRanking(false)}>
+      {/* 게임 캔버스 영역 — 헤더~배너 사이를 Game(flex-1)이 꽉 채우고, 캔버스는 그 안에서
+          contain-fit(폰에선 보통 가로폭=화면폭). 남는 위/아래는 핑크 배경, 흰 여백 없음.
+          Game 은 항상 마운트, 비플레이 시 오버레이가 캔버스 위를 덮는다. 하단 배너는 그 아래. */}
+      <div className="flex-1 min-h-0 overflow-hidden relative flex flex-col" onClick={() => showRanking && setShowRanking(false)}>
         <Game ref={gameRef} onScoreChange={handleScoreChange} onGameOver={handleGameOver} bestScore={effectiveBest} />
 
         {/* 시작/게임오버/잠금 오버레이 (플레이 중이 아닐 때) */}
