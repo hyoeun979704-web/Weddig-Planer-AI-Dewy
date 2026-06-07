@@ -270,10 +270,10 @@ export default function MergeGame() {
         </div>
       )}
 
-      {/* 게임 캔버스 영역 — 헤더~배너 사이를 Game(flex-1)이 꽉 채우고, 캔버스는 그 안에서
-          contain-fit(폰에선 보통 가로폭=화면폭). 남는 위/아래는 핑크 배경, 흰 여백 없음.
-          Game 은 항상 마운트, 비플레이 시 오버레이가 캔버스 위를 덮는다. 하단 배너는 그 아래. */}
-      <div className="flex-1 min-h-0 overflow-hidden relative flex flex-col" onClick={() => showRanking && setShowRanking(false)}>
+      {/* 게임 캔버스 영역 — 캔버스는 가로폭=화면폭으로 헤더 바로 아래(상단)에 붙는다(위 여백 X).
+          높이는 비율(width-fit). Game 은 항상 마운트, 비플레이 시 오버레이가 캔버스 위를 덮는다.
+          캔버스 아래에 광고 배너, 그 아래 남는 공간은 핑크 spacer(흰 여백 X). */}
+      <div className="shrink-0 overflow-hidden relative" onClick={() => showRanking && setShowRanking(false)}>
         <Game ref={gameRef} onScoreChange={handleScoreChange} onGameOver={handleGameOver} bestScore={effectiveBest} />
 
         {/* 시작/게임오버/잠금 오버레이 (플레이 중이 아닐 때) */}
@@ -351,8 +351,11 @@ export default function MergeGame() {
         )}
       </div>
 
-      {/* 하단 광고 배너 (웹=AdSense 슬롯 4600179427 / 네이티브=AdMob). */}
+      {/* 하단 광고 배너 (캔버스 바로 아래). 웹=AdSense 슬롯 4600179427 / 네이티브=AdMob. */}
       <AdBanner className="flex-shrink-0 w-full" height={96} placeholder />
+
+      {/* 배너 아래 남는 공간 — 루트 핑크 배경으로 채워 흰 여백 방지. */}
+      <div className="flex-1 min-h-0" aria-hidden />
 
       {/* 웹 보상형 대체 모달 — 한 판 더(5초)·포인트 2배(15초) 공용, adCfg 로 문구·카운트다운 전환. */}
       <RewardedAdModal

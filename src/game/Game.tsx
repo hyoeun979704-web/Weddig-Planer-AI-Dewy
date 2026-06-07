@@ -96,9 +96,9 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
 
-  // 캔버스 표시 크기 — 헤더~배너 사이 게임 영역(이 fit 컨테이너)을 JS 로 측정해 비율 유지
-  // contain-fit(가로/세로 중 작은 배율). 영역을 꽉 채우고(폰에선 보통 가로폭=화면폭),
-  // 남는 위/아래는 핑크 배경 letterbox. cqh/dvh 매직넘버 대신 JS 라 구형 인앱 웹뷰도 안전.
+  // 캔버스 표시 크기 — 배경 프레임이 '가로폭 = 화면폭' 설계라 컨테이너 가로폭에 맞추고
+  // 높이는 비율로 따라간다(width-fit). 캔버스는 헤더 바로 아래(상단)에 붙고, 남는 공간은
+  // 아래쪽 광고 배너 자리. JS 측정이라 cqh/dvh 매직넘버 없이 구형 인앱 웹뷰도 안전.
   const fitRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   useEffect(() => {
@@ -106,10 +106,8 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
     if (!el) return;
     const measure = () => {
       const cw = el.clientWidth;
-      const ch = el.clientHeight;
-      if (cw <= 0 || ch <= 0) return;
-      const scale = Math.min(cw / GAME_WIDTH, ch / GAME_HEIGHT);
-      setCanvasSize({ w: Math.round(GAME_WIDTH * scale), h: Math.round(GAME_HEIGHT * scale) });
+      if (cw <= 0) return;
+      setCanvasSize({ w: cw, h: Math.round((cw * GAME_HEIGHT) / GAME_WIDTH) });
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -475,23 +473,18 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
   return (
     <div
       ref={fitRef}
-      className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden"
-      style={{
-        backgroundColor: '#fbe6ee',
-        backgroundImage: 'url(/game/bg.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
+      className="w-full select-none overflow-hidden"
+      style={{ backgroundColor: '#fbe6ee' }}
     >
-      {/* 캔버스 — 영역에 contain-fit(비율 유지). 남는 위/아래는 핑크 배경. HUD/음소거는 캔버스에 직접 그림. */}
+      {/* 캔버스 — 가로폭 = 컨테이너(화면) 폭, 높이는 비율(width-fit). 상단 고정. HUD/음소거는 캔버스에 직접 그림. */}
       <canvas
         ref={canvasRef}
         width={GAME_WIDTH}
         height={GAME_HEIGHT}
-        className="touch-none block"
+        className="touch-none block w-full"
         style={{
-          width: canvasSize.w ? `${canvasSize.w}px` : undefined,
-          height: canvasSize.h ? `${canvasSize.h}px` : undefined,
+          width: canvasSize.w ? `${canvasSize.w}px` : '100%',
+          height: canvasSize.h ? `${canvasSize.h}px` : 'auto',
           cursor: gameState.phase === 'gameover' ? POINTER_CURSOR : PLAY_CURSOR,
         }}
         onPointerMove={handlePointerMove}
