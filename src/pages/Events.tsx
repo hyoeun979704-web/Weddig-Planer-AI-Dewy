@@ -3,82 +3,16 @@ import { Share2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import Seo from "@/components/Seo";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { usePromotionalEvents, type PromotionalEvent } from "@/hooks/usePromotionalEvents";
+import { usePromotionalEvents } from "@/hooks/usePromotionalEvents";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
-import crownImg from "@/assets/events/crown.png";
-import coinImg from "@/assets/events/coin.png";
-import calendarImg from "@/assets/events/calendar.png";
-import bouquetImg from "@/assets/events/bouquet.png";
-import cameraImg from "@/assets/events/camera.png";
-import heartImg from "@/assets/events/heart.png";
-
-// slug → 일러스트 에셋. 기존 그래디언트 아이콘 박스를 대체. 매핑이 없는 slug 는
-// 기존 박스/이모지 폴백으로 표시(운영팀이 추가한 신규 카드 대비).
-const EVENT_ASSETS: Record<string, string> = {
-  welcome: crownImg,
-  referral: coinImg,
-  attendance: calendarImg,
-  mini_game: bouquetImg,
-  review: cameraImg,
-  partner_link: heartImg,
-};
-
-const EventListRow = ({ event }: { event: PromotionalEvent }) => {
-  const navigate = useNavigate();
-  const isEnded = event.status === "ended";
-  const asset = EVENT_ASSETS[event.slug];
-  return (
-    <button
-      onClick={() => navigate(event.ctaPath)}
-      className={cn(
-        "w-full flex items-center gap-3 p-3 rounded-2xl border text-left active:scale-[0.99] transition-transform",
-        isEnded ? "bg-muted/60 border-transparent" : "bg-card border-border/60"
-      )}
-    >
-      {asset ? (
-        <img
-          src={asset}
-          alt=""
-          aria-hidden
-          className={cn(
-            "w-14 h-14 object-contain flex-shrink-0",
-            isEnded && "opacity-50 grayscale"
-          )}
-        />
-      ) : (
-        <div
-          className={cn(
-            "w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br",
-            event.thumbBg ?? "from-muted to-muted"
-          )}
-        >
-          {event.icon && <span className="text-[28px]" aria-hidden>{event.icon}</span>}
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <p className={cn("text-[13px] font-bold truncate", isEnded ? "text-muted-foreground" : "text-foreground")}>
-          {event.title}
-        </p>
-        {event.subtitle && (
-          <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1">{event.subtitle}</p>
-        )}
-      </div>
-      {!isEnded && (
-        <span className="flex-shrink-0 px-3 py-1.5 rounded-full bg-[hsl(var(--pink-50))] text-primary text-[11px] font-bold">
-          {event.ctaLabel}
-        </span>
-      )}
-    </button>
-  );
-};
+import PromoEventCard from "@/components/events/PromoEventCard";
+import { EVENT_ASSETS } from "@/components/events/eventAssets";
 
 const Events = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
   const { featured: FEATURED, list: LIVE_EVENTS, isLoading } = usePromotionalEvents(
     weddingSettings.persona_mode,
@@ -131,7 +65,7 @@ const Events = () => {
           }}
         >
           <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/60 text-[11px] font-bold text-[#1B6BA8]">
-            진행중 이벤트 {LIVE_EVENTS.length + (FEATURED ? 1 : 0)}
+            진행중 이벤트 {LIVE_EVENTS.filter((e) => e.status !== "ended").length + (FEATURED ? 1 : 0)}
           </span>
           <h2 className="mt-3 text-[26px] font-extrabold text-foreground leading-tight">Dewy 이벤트</h2>
           <p className="mt-1 text-[13px] font-medium text-[#1B6BA8] leading-relaxed">
@@ -143,7 +77,7 @@ const Events = () => {
         {FEATURED && (
           <section className="px-4 pt-5">
             <button
-              onClick={() => navigate(user ? FEATURED.ctaPath : "/auth")}
+              onClick={() => navigate(FEATURED.ctaPath)}
               className="w-full rounded-2xl overflow-hidden border border-border/60 bg-card active:scale-[0.99] transition-transform text-left"
             >
               <div className={cn("px-4 pt-4 pb-5 bg-gradient-to-br flex items-center gap-3", FEATURED.thumbBg ?? "from-muted to-muted")}>
@@ -182,9 +116,7 @@ const Events = () => {
         {/* Live events list */}
         <section className="px-4 pt-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[14px] font-bold text-foreground">
-              진행중 이벤트 {isLoading ? "" : LIVE_EVENTS.length}
-            </h3>
+            <h3 className="text-[14px] font-bold text-foreground">진행중 이벤트</h3>
           </div>
           <div className="flex flex-col gap-2">
             {isLoading && LIVE_EVENTS.length === 0 ? (
@@ -193,7 +125,7 @@ const Events = () => {
                 <div className="h-16 rounded-2xl bg-muted/40 animate-pulse" />
               </>
             ) : (
-              LIVE_EVENTS.map((e) => <EventListRow key={e.id} event={e} />)
+              LIVE_EVENTS.map((e) => <PromoEventCard key={e.id} event={e} />)
             )}
           </div>
         </section>

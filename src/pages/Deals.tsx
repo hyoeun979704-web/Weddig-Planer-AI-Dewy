@@ -7,8 +7,7 @@ import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/Cate
 import { usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { usePromotionalEvents } from "@/hooks/usePromotionalEvents";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
-import { useAuth } from "@/contexts/AuthContext";
-import { cn } from "@/lib/utils";
+import PromoEventCard from "@/components/events/PromoEventCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import DealFilterSheet, { DealFilters, defaultFilters } from "@/components/deals/DealFilterSheet";
@@ -37,7 +36,6 @@ const Deals = () => {
   }, [isLoaded]);
 
   const { deals, featured, isLoading } = usePartnerDeals(selectedCategory);
-  const { user } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
   const { featured: promoFeatured, list: promoList } = usePromotionalEvents(
     weddingSettings.persona_mode,
@@ -102,7 +100,7 @@ const Deals = () => {
         </div>
       </div>
 
-      {/* ── 진행 중 이벤트 (promotional_events DB) ── */}
+      {/* ── 진행 중 이벤트 (promotional_events DB) — 카드는 Events.tsx 와 공통 컴포넌트 ── */}
       {promoEvents.length > 0 && (
         <div className="px-4 pt-4 pb-2">
           <h2 className="font-bold text-foreground mb-3 flex items-center gap-2">
@@ -111,22 +109,7 @@ const Deals = () => {
           </h2>
           <div className="space-y-2">
             {promoEvents.map((e) => (
-              <button
-                key={e.id}
-                onClick={() => navigate(user ? e.ctaPath : "/auth")}
-                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-border/60 bg-card text-left active:scale-[0.99] transition-transform"
-              >
-                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br", e.thumbBg ?? "from-muted to-muted")}>
-                  {e.icon && <span className="text-2xl" aria-hidden>{e.icon}</span>}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-foreground truncate">{e.title}</p>
-                  {e.subtitle && <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1">{e.subtitle}</p>}
-                </div>
-                <span className="flex-shrink-0 px-3 py-1.5 rounded-full bg-[hsl(var(--pink-50))] text-primary text-[11px] font-bold whitespace-nowrap">
-                  {e.ctaLabel}
-                </span>
-              </button>
+              <PromoEventCard key={e.id} event={e} />
             ))}
           </div>
         </div>
