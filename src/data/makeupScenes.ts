@@ -170,21 +170,47 @@ const buildHairBlock = (scene: MakeupScene): string =>
 export const buildMakeupPrompt = (
   sceneCode: MakeupSceneCode,
   makeupDescription: string = "",
+  opts: { custom?: boolean } = {},
 ): string => {
   const scene = makeupSceneByCode(sceneCode);
   if (!scene) throw new Error(`unknown makeup scene code: ${sceneCode}`);
 
+  // 맞춤(custom)=레퍼런스 메이크업 사진(Image 2) 없이 SCHEMA 텍스트만으로 지시.
+  const custom = !!opts.custom;
+
   const schemaBlock = makeupDescription
-    ? `\nMAKEUP SCHEMA — apply these attributes precisely\n${makeupDescription}\nIf the reference image in Image 2 disagrees with any attribute\nabove, the attribute list wins. Do not invent unspecified colors\nor finishes.\n`
+    ? custom
+      ? `\nMAKEUP SCHEMA — apply these attributes precisely\n${makeupDescription}\nApply exactly these colors and finishes. Do not invent unspecified\ncolors or finishes.\n`
+      : `\nMAKEUP SCHEMA — apply these attributes precisely\n${makeupDescription}\nIf the reference image in Image 2 disagrees with any attribute\nabove, the attribute list wins. Do not invent unspecified colors\nor finishes.\n`
     : "";
 
   const hairBlock = buildHairBlock(scene);
 
+  const referencesBlock = custom
+    ? `REFERENCES
+- Image 1: the bride (user's selfie / portrait). This is the only reference.`
+    : `REFERENCES
+- Image 1: the bride (user's selfie / portrait)
+- Image 2: a reference makeup look on a different model`;
+  const identitySourceNote = custom
+    ? "Apply only the makeup described in the MAKEUP SCHEMA below."
+    : "DO NOT borrow the face shape, eye shape,\nor facial proportions from Image 2. Image 2 is for makeup colors\nand placement only.";
+  const taskMakeupSource = custom
+    ? "the makeup look described in the MAKEUP SCHEMA below, applied to her own face"
+    : "the\nmakeup look from Image 2 reinterpreted on her own face";
+  const makeupSectionHeader = custom
+    ? "MAKEUP — apply the look from MAKEUP SCHEMA onto Image 1's face"
+    : "MAKEUP — copy from Image 2, applied to Image 1's face";
+  const doNotBorrow = custom
+    ? "- Borrow face shape, eye shape, nose, lips, or skin tone from any other face"
+    : "- Borrow face shape, eye shape, nose, lips, or skin tone from Image 2";
+  const doNotShowModel = custom
+    ? ""
+    : "\n- Show the reference model from Image 2 anywhere in the output";
+
   return `You're generating a photorealistic Korean bridal beauty portrait.
 
-REFERENCES
-- Image 1: the bride (user's selfie / portrait)
-- Image 2: a reference makeup look on a different model
+${referencesBlock}
 
 TOP PRIORITY — IDENTITY MATCH
 The face in the output must clearly be the same person from Image 1.
@@ -192,14 +218,11 @@ Eye shape and size, double-eyelid / monolid type, nose, lip shape,
 jawline, face shape, and overall likeness must match closely enough
 that someone who knows the person would immediately recognize her.
 (Her eyebrows are styled with makeup below — keep them on her own
-brow bone, but their grooming, fullness, shape and tone DO change.) DO NOT borrow the face shape, eye shape,
-or facial proportions from Image 2. Image 2 is for makeup colors
-and placement only. This rule takes priority over all others.
+brow bone, but their grooming, fullness, shape and tone DO change.) ${identitySourceNote} This rule takes priority over all others.
 
 TASK
 Produce a single close-up bridal beauty portrait — head and
-shoulders, eye-level, sharp focus on the face. The bride wears the
-makeup look from Image 2 reinterpreted on her own face. Vertical
+shoulders, eye-level, sharp focus on the face. The bride wears ${taskMakeupSource}. Vertical
 3:4 (or square), photorealistic, no text or watermark.
 
 BRIDE — keep exactly from Image 1
@@ -210,7 +233,7 @@ BRIDE — keep exactly from Image 1
 - Bone structure, age, freckles or moles if visible
 - Hair color, length and natural texture (see HAIR — restyle, keep identity)
 
-MAKEUP — copy from Image 2, applied to Image 1's face
+${makeupSectionHeader}
 - Base/skin finish — render EXACTLY the finish in the schema and make
   it clearly read that way: a matte look must look matte (shine-free),
   a dewy look must look wet/glowy, a satin look semi-matte. Do NOT
@@ -244,7 +267,7 @@ POSE & FRAMING
 - Vertical 3:4 framing
 
 DO NOT
-- Borrow face shape, eye shape, nose, lips, or skin tone from Image 2
+${doNotBorrow}
 - Lighten or change the bride's skin tone or undertone
 - Reshape any facial feature; only paint makeup ONTO her existing
   features (a subtle lip over-line is the only allowed exception, and
@@ -252,8 +275,7 @@ DO NOT
 - Add accessories, jewelry, or veil unless clearly suggested by
   Image 1
 - Add watermarks, text, logos, brand names
-- Stylize (cartoon, illustration, anime, painterly)
-- Show the reference model from Image 2 anywhere in the output
+- Stylize (cartoon, illustration, anime, painterly)${doNotShowModel}
 
 Output: one photorealistic vertical 3:4 close-up bridal portrait.`;
 };

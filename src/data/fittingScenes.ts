@@ -189,21 +189,37 @@ export const SCENE_TYPE_DESC: Record<SceneType, string> = {
 export const buildFittingPrompt = (
   sceneCode: SceneCode,
   dressDescription: string = "",
+  opts: { custom?: boolean } = {},
 ): string => {
   const scene = sceneByCode(sceneCode);
   if (!scene) throw new Error(`unknown scene code: ${sceneCode}`);
 
   const isCeremony = scene.scene === "CEREMONY";
+  // 맞춤(custom)=참조 드레스 사진(Image 2) 없이 SCHEMA 텍스트만으로 드레스를 지시.
+  const custom = !!opts.custom;
 
   const dressSchemaBlock = dressDescription
-    ? `\nDRESS SCHEMA — match these attributes exactly\n${dressDescription}\nIf the dress in Image 2 disagrees with any attribute above, the\nattribute list above wins. Do not invent a different silhouette,\nfabric, or detail set.\n`
+    ? custom
+      ? `\nDRESS SCHEMA — render this dress exactly\n${dressDescription}\nRender precisely these attributes. Do not invent a different\nsilhouette, fabric, neckline, or detail set.\n`
+      : `\nDRESS SCHEMA — match these attributes exactly\n${dressDescription}\nIf the dress in Image 2 disagrees with any attribute above, the\nattribute list above wins. Do not invent a different silhouette,\nfabric, or detail set.\n`
     : "";
+
+  const referencesBlock = custom
+    ? `REFERENCES
+- Image 1: the bride (user's photo). This is the only reference.`
+    : `REFERENCES
+- Image 1: the bride (user's photo)
+- Image 2: a wedding dress on a headless mannequin`;
+  const taskDressSource = custom
+    ? "the wedding dress described in DRESS SCHEMA below"
+    : "the exact dress from Image 2";
+  const dressSectionHeader = custom
+    ? "DRESS — render exactly as specified in DRESS SCHEMA"
+    : "DRESS — keep exactly from Image 2";
 
   return `You're generating a photorealistic Korean bridal portrait.
 
-REFERENCES
-- Image 1: the bride (user's photo)
-- Image 2: a wedding dress on a headless mannequin
+${referencesBlock}
 
 TOP PRIORITY — IDENTITY MATCH
 The face in the output must clearly be the same person from Image 1.
@@ -215,7 +231,7 @@ instructions.
 
 TASK
 Produce a single full-body bridal photograph of the bride from
-Image 1 wearing the exact dress from Image 2, in the venue described
+Image 1 wearing ${taskDressSource}, in the venue described
 below. Vertical 3:4, photorealistic.
 
 BRIDE — keep exactly from Image 1
@@ -231,7 +247,7 @@ BRIDE — keep exactly from Image 1
   · Upper-body input → infer a plausible body from the visible
     torso and head; do not default to a generic slim model
 
-DRESS — keep exactly from Image 2
+${dressSectionHeader}
 - Silhouette, fit, length, train, neckline, sleeves, back design
 - Color, fabric texture, sheen
 - All decorative work — embroidery, beading, lace, trim, feathers,
