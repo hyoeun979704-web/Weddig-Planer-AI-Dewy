@@ -23,7 +23,7 @@ const HEART_COST = 5;
 
 interface RequestBody {
   source_image_path: string;
-  makeup_sample_id: string;
+  makeup_sample_id?: string;  // 선택: 있으면 카탈로그, 없으면 맞춤 생성(텍스트 전용)
   scene_code: string;
   prompt: string;
 }
@@ -56,12 +56,8 @@ serve(async (req) => {
     const supabaseAdmin = adminClient();
 
     const body = (await req.json()) as RequestBody;
-    if (
-      !body.source_image_path ||
-      !body.makeup_sample_id ||
-      !body.scene_code ||
-      !body.prompt
-    ) {
+    // makeup_sample_id 는 선택: 있으면 카탈로그(레퍼런스 합성), 없으면 맞춤(텍스트 전용).
+    if (!body.source_image_path || !body.scene_code || !body.prompt) {
       return json({ error: "Missing required fields" }, 400);
     }
 
@@ -69,13 +65,18 @@ serve(async (req) => {
       return json({ error: "invalid_source_image" }, 403);
     }
 
-    const { data: makeup, error: makeupError } = await supabaseAdmin
-      .from("makeup_samples")
-      .select("id, image_url, is_active")
-      .eq("id", body.makeup_sample_id)
-      .single();
-    if (makeupError || !makeup || !makeup.is_active) {
-      return json({ error: "makeup_not_found" }, 404);
+    // 카탈로그 모드만 메이크업 샘플 조회(맞춤 모드는 레퍼런스 이미지 없음).
+    let makeup: { id: string; image_url: string; is_active: boolean } | null = null;
+    if (body.makeup_sample_id) {
+      const { data: m, error: makeupError } = await supabaseAdmin
+        .from("makeup_samples")
+        .select("id, image_url, is_active")
+        .eq("id", body.makeup_sample_id)
+        .single();
+      if (makeupError || !m || !m.is_active) {
+        return json({ error: "makeup_not_found" }, 404);
+      }
+      makeup = m as { id: string; image_url: string; is_active: boolean };
     }
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
@@ -109,7 +110,7 @@ serve(async (req) => {
       .insert({
         user_id: userId,
         source_image_path: body.source_image_path,
-        selected_sample_id: body.makeup_sample_id,
+        selected_sample_id: body.makeup_sample_id ?? null,
         prompt_params: { scene_code: body.scene_code },
         hearts_spent: HEART_COST,
         status: "pending",
@@ -125,9 +126,11 @@ serve(async (req) => {
     // 백그라운드 작업 — 페이지 이탈/창닫음에도 서버에서 계속 진행(즉시 202 반환).
     const job = (async () => {
       try {
+        // 카탈로그 모드면 메이크업 레퍼런스(Image 2)도 첨부. 맞춤 모드는 사용자 사진 1장 + 텍스트만.
+        // 카탈로그는 기존처럼 병렬 다운로드(지연 무변화), 맞춤은 makeup 없으니 null.
         const [userImgBlob, makeupImgBlob] = await Promise.all([
           downloadFromStorage(supabaseAdmin, "makeup-uploads", body.source_image_path),
-          downloadFromUrl(makeup.image_url),
+          makeup ? downloadFromUrl(makeup.image_url) : Promise.resolve(null),
         ]);
 
         // OpenAI images.edit — 메이크업은 정사각 클로즈업이 더 자연스러움
@@ -138,7 +141,7 @@ serve(async (req) => {
         form.append("quality", "medium");
         form.append("n", "1");
         form.append("image[]", userImgBlob, "user.png");
-        form.append("image[]", makeupImgBlob, "makeup.png");
+        if (makeupImgBlob) form.append("image[]", makeupImgBlob, "makeup.png");
 
         const openaiRes = await fetch("https://api.openai.com/v1/images/edits", {
           method: "POST",

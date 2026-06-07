@@ -30,7 +30,8 @@ import {
   MakeupSceneCode,
   buildMakeupPrompt,
 } from "@/data/makeupScenes";
-import { describeMakeup } from "@/lib/makeupDescription";
+import { describeMakeup, type MakeupMetadata } from "@/lib/makeupDescription";
+import { CustomMakeupPicker, summarizeMakeupKo } from "@/components/fitting/CustomMakeupPicker";
 import { FittingProgress } from "@/components/fitting/FittingProgress";
 import { labelOfMakeup } from "@/data/makeupFilters";
 import { addPendingJob } from "@/lib/pendingJobs";
@@ -80,6 +81,8 @@ const MakeupFitting = () => {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [makeups, setMakeups] = useState<MakeupSample[]>([]);
   const [loadingMakeups, setLoadingMakeups] = useState(false);
+  const [makeupMode, setMakeupMode] = useState<"catalog" | "custom">("catalog");
+  const [customMakeup, setCustomMakeup] = useState<MakeupMetadata>({});
   const [selectedMakeup, setSelectedMakeup] = useState<MakeupSample | null>(
     null,
   );
@@ -211,27 +214,42 @@ const MakeupFitting = () => {
   };
 
   const handleGenerate = async () => {
-    if (!photoPath || !selectedMakeup || !selectedSceneCode) return;
+    if (!photoPath || !selectedSceneCode) return;
+    if (makeupMode === "catalog" && !selectedMakeup) return;
     setIsGenerating(true);
     try {
-      const { data: meta } = await (supabase as any)
-        .from("makeup_samples")
-        .select(
-          "name, base_finish, lip_color, lip_finish, eye_style, eye_color, blush_color, blush_placement, brow_shape, contour_intensity, details, mood",
-        )
-        .eq("id", selectedMakeup.id)
-        .maybeSingle();
+      let prompt: string;
+      let requestBody: Record<string, unknown>;
 
-      const description = meta ? describeMakeup(meta) : "";
-      const prompt = buildMakeupPrompt(selectedSceneCode, description);
-
-      const { data, error } = await supabase.functions.invoke("dewy-makeup", {
-        body: {
+      if (makeupMode === "custom") {
+        // 맞춤: 고른 속성을 SCHEMA 텍스트로 직렬화 → 레퍼런스 이미지 없이 생성.
+        prompt = buildMakeupPrompt(selectedSceneCode, describeMakeup(customMakeup), { custom: true });
+        requestBody = {
           source_image_path: photoPath,
-          makeup_sample_id: selectedMakeup.id,
           scene_code: selectedSceneCode,
           prompt,
-        },
+        };
+      } else {
+        const { data: meta } = await (supabase as any)
+          .from("makeup_samples")
+          .select(
+            "name, base_finish, lip_color, lip_finish, eye_style, eye_color, blush_color, blush_placement, brow_shape, contour_intensity, details, mood",
+          )
+          .eq("id", selectedMakeup!.id)
+          .maybeSingle();
+
+        const description = meta ? describeMakeup(meta) : "";
+        prompt = buildMakeupPrompt(selectedSceneCode, description);
+        requestBody = {
+          source_image_path: photoPath,
+          makeup_sample_id: selectedMakeup!.id,
+          scene_code: selectedSceneCode,
+          prompt,
+        };
+      }
+
+      const { data, error } = await supabase.functions.invoke("dewy-makeup", {
+        body: requestBody,
       });
       if (error) throw error;
       if ((data as any)?.error) {
@@ -341,11 +359,40 @@ const MakeupFitting = () => {
         )}
 
         {step === "makeup" && (
-          <MakeupStep
-            makeups={makeups}
-            loading={loadingMakeups}
-            onPick={handlePickMakeup}
-          />
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMakeupMode("catalog")}
+                className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${makeupMode === "catalog" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+              >
+                카탈로그에서 선택
+              </button>
+              <button
+                type="button"
+                onClick={() => setMakeupMode("custom")}
+                className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${makeupMode === "custom" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+              >
+                맞춤 생성
+              </button>
+            </div>
+            {makeupMode === "catalog" ? (
+              <MakeupStep
+                makeups={makeups}
+                loading={loadingMakeups}
+                onPick={handlePickMakeup}
+              />
+            ) : (
+              <CustomMakeupPicker
+                value={customMakeup}
+                onChange={setCustomMakeup}
+                onConfirm={() => {
+                  setSelectedMakeup(null);
+                  setStep("scene");
+                }}
+              />
+            )}
+          </div>
         )}
 
         {step === "scene" && <SceneStep onPick={handlePickSceneType} />}
@@ -358,6 +405,7 @@ const MakeupFitting = () => {
           <ReviewSection
             photoUrl={photoUrl}
             makeup={selectedMakeup}
+            customSummary={makeupMode === "custom" ? summarizeMakeupKo(customMakeup) : null}
             sceneCode={selectedSceneCode}
             hearts={hearts}
             isGenerating={isGenerating}
@@ -677,6 +725,7 @@ const ToneStep = ({
 const ReviewSection = ({
   photoUrl,
   makeup,
+  customSummary,
   sceneCode,
   hearts,
   isGenerating,
@@ -687,6 +736,7 @@ const ReviewSection = ({
 }: {
   photoUrl: string | null;
   makeup: MakeupSample | null;
+  customSummary?: string | null;
   sceneCode: MakeupSceneCode | null;
   hearts: number | null;
   isGenerating: boolean;
@@ -716,7 +766,7 @@ const ReviewSection = ({
       <SummaryRow
         label="메이크업"
         right={
-          makeup && (
+          makeup ? (
             <div className="flex items-center gap-2">
               <img
                 src={makeup.image_url}
@@ -727,7 +777,11 @@ const ReviewSection = ({
                 {makeup.name}
               </span>
             </div>
-          )
+          ) : customSummary ? (
+            <span className="text-[12px] text-foreground text-right max-w-[160px]">
+              맞춤 · {customSummary}
+            </span>
+          ) : null
         }
         onEdit={onEditMakeup}
       />
