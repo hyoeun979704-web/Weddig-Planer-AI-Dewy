@@ -49,3 +49,8 @@ scripts/collect-places/.env.local
 
 # local render-harness scratch assets
 public/mob/
+
+# Playwright (e2e) — 출시 시 e2e 제거하면 함께 정리
+/test-results/
+/playwright-report/
+/playwright/.cache/
