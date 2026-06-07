@@ -195,6 +195,11 @@ const WeddingConsulting = () => {
 
         <section className="space-y-2">
           <h3 className="text-sm font-bold text-foreground">신부 사진</h3>
+          <p className="text-[12px] text-muted-foreground leading-relaxed">
+            얼굴이 잘 보이는 정면·자연광 사진을 올려주세요.{" "}
+            <span className="font-semibold text-foreground">전신이 함께 나오면</span>{" "}
+            체형·드레스 실루엣·넥라인 추천이 더 정확해져요.
+          </p>
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
