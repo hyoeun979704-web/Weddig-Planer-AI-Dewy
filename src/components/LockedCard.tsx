@@ -4,6 +4,8 @@ interface LockedCardProps {
   title: string;
   description?: string;
   badge?: string;
+  imageUrl?: string;
+  imageAlt?: string;
   onClick?: () => void;
 }
 
@@ -11,13 +13,24 @@ interface LockedCardProps {
  * AI Studio의 출시 전 서비스 카드.
  * 잠금 아이콘 + 출시 단계 뱃지를 표시하며, 클릭 시 사전알림 신청 모달을 열 수 있다.
  */
-const LockedCard = ({ title, description, badge, onClick }: LockedCardProps) => (
+const LockedCard = ({ title, description, badge, imageUrl, imageAlt = "", onClick }: LockedCardProps) => (
   <button
     type="button"
     onClick={onClick}
     className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform group"
   >
-    <div className="relative aspect-square bg-[#e5e5e5]">
+    <div className="relative aspect-square bg-[#e5e5e5] overflow-hidden">
+      {imageUrl && (
+        <img
+          src={imageUrl}
+          alt={imageAlt}
+          width={640}
+          height={640}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+        />
+      )}
       {/* 잠금 오버레이 */}
       <div className="absolute inset-0 flex items-center justify-center bg-black/30">
         <div className="flex flex-col items-center gap-1 text-white">
