@@ -14,6 +14,8 @@ interface StudioCard {
   description: string;
   status: "active" | "coming_soon" | "coming_v2" | "coming_v3";
   href?: string;
+  previewImage?: string;
+  previewPosition?: "center" | "top";
 }
 
 const cards: StudioCard[] = [
@@ -23,6 +25,8 @@ const cards: StudioCard[] = [
     description: "퍼스널컬러·헤어·메이크업·드레스 맞춤 A4 리포트 (첫 1회 50%↓)",
     status: "active",
     href: "/ai-studio/consulting",
+    previewImage: "/ai-studio-previews/consulting.webp",
+    previewPosition: "top",
   },
   {
     id: "dress-tour",
@@ -30,6 +34,8 @@ const cards: StudioCard[] = [
     description: "내 사진으로 드레스 핏을 미리 확인",
     status: "active",
     href: "/ai-studio/dress-tour",
+    previewImage: "/ai-studio-previews/dress.webp",
+    previewPosition: "top",
   },
   {
     id: "makeup-finder",
@@ -37,6 +43,7 @@ const cards: StudioCard[] = [
     description: "나에게 어울리는 신부 메이크업 시연",
     status: "active",
     href: "/ai-studio/makeup-room",
+    previewImage: "/ai-studio-previews/makeup.webp",
   },
   {
     id: "hair-room",
@@ -44,6 +51,8 @@ const cards: StudioCard[] = [
     description: "내 얼굴 그대로, 헤어스타일·컬러 9그리드 (옵션당 5하트)",
     status: "active",
     href: "/ai-studio/hair-room",
+    previewImage: "/ai-studio-previews/hair.webp",
+    previewPosition: "top",
   },
   {
     id: "paper-invitation",
@@ -51,13 +60,13 @@ const cards: StudioCard[] = [
     description: "인쇄용 PDF로 받는 종이 청첩장 — 무료 템플릿 시작",
     status: "active",
     href: "/invitation/new?format=paper",
+    previewImage: "/ai-studio-previews/paper-invitation.webp",
   },
   {
     id: "mobile-invitation",
     title: "간편 모바일 청첩장",
     description: "정보 입력 + 공유 링크 + QR 코드까지 한 번에",
-    status: "active",
-    href: "/invitation/new?format=mobile",
+    status: "coming_soon",
   },
   {
     id: "wedding-photo",
@@ -74,9 +83,34 @@ const cards: StudioCard[] = [
 ];
 
 const lockedBadge: Partial<Record<StudioCard["status"], string>> = {
+  coming_soon: "준비중",
   coming_v2: "준비중",
   coming_v3: "한정 외주",
 };
+
+const StudioCardImage = ({
+  card,
+  priority = false,
+}: {
+  card: StudioCard;
+  priority?: boolean;
+}) => (
+  <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-pink-50 to-pink-100">
+    {card.previewImage ? (
+      <img
+        src={card.previewImage}
+        alt={`${card.title} 미리보기`}
+        width={640}
+        height={640}
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
+        className={`h-full w-full object-cover ${
+          card.previewPosition === "top" ? "object-top" : "object-center"
+        }`}
+      />
+    ) : null}
+  </div>
+);
 
 const AIStudio = () => {
   const navigate = useNavigate();
@@ -104,7 +138,7 @@ const AIStudio = () => {
 
       <main className="safe-bottom-scroll">
         <div className="grid grid-cols-2 gap-3 px-4 py-5">
-          {cards.map((card) => {
+          {cards.map((card, index) => {
             // 활성 카드 (실제 동작)
             if (card.status === "active" && card.href) {
               return (
@@ -115,7 +149,7 @@ const AIStudio = () => {
                   onClick={() => navigate(card.href!)}
                   className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
                 >
-                  <div className="aspect-square bg-gradient-to-br from-pink-100 to-pink-200" />
+                  <StudioCardImage card={card} priority={index < 2} />
                   <div className="px-4 py-3">
                     <h3 className="text-[15px] font-bold text-foreground leading-tight">
                       {card.title}
@@ -130,32 +164,18 @@ const AIStudio = () => {
                 </button>
               );
             }
-            // 곧 출시 카드 (시각적으론 활성, 클릭 시 사전알림 시트)
+            // 준비중 카드 (잠금 상태, 클릭 시 사전알림 시트)
             if (card.status === "coming_soon") {
               return (
-                <button
+                <LockedCard
                   key={card.id}
-                  type="button"
+                  title={card.title}
+                  description={card.description}
+                  badge={lockedBadge[card.status]}
+                  imageUrl={card.previewImage}
+                  imageAlt={card.previewImage ? `${card.title} 미리보기` : ""}
                   onClick={() => handleLockedCardClick(card)}
-                  className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
-                >
-                  <div className="relative aspect-square bg-gradient-to-br from-pink-50 to-pink-100">
-                    <span className="absolute top-2 right-2 text-[10px] font-semibold bg-white/95 text-primary px-2 py-0.5 rounded-full shadow-sm">
-                      곧 출시
-                    </span>
-                  </div>
-                  <div className="px-4 py-3">
-                    <h3 className="text-[15px] font-bold text-foreground leading-tight">
-                      {card.title}
-                    </h3>
-                    <p className="mt-1 text-[12px] text-muted-foreground line-clamp-2">
-                      {card.description}
-                    </p>
-                    <p className="mt-1.5 text-[11px] text-muted-foreground font-medium">
-                      준비 중이에요
-                    </p>
-                  </div>
-                </button>
+                />
               );
             }
             // 잠금 카드 (시안·식전영상)
@@ -165,6 +185,8 @@ const AIStudio = () => {
                 title={card.title}
                 description={card.description}
                 badge={lockedBadge[card.status]}
+                imageUrl={card.previewImage}
+                imageAlt={card.previewImage ? `${card.title} 미리보기` : ""}
                 onClick={() => handleLockedCardClick(card)}
               />
             );
