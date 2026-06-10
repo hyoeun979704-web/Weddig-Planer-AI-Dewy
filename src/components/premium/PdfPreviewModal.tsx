@@ -40,8 +40,13 @@ export const PdfPreviewModal = ({ open, onClose, html, filename, title }: PdfPre
   // downloadPdf 와 동일하게 splitAndSanitize 로 <style> 을 보존한다. styles 는
   // 우리 상수 PDF_STYLES 뿐이고 body 만 사용자 입력(이미 esc)이라 raw 주입 안전.
   // iframe 은 allow-same-origin(no-scripts) 샌드박스라 추가 방어선도 있다.
+  // 단, raw 재조립은 pdfGenerator 가 금지한 `</style>` breakout 경로이므로
+  // (미래에 템플릿이 <style> 에 변수를 보간하면 즉시 구멍) 닫힘 시퀀스를
+  // CSS escape 로 중화해 불변식을 유지한다.
   const { body, styles } = splitAndSanitize(html);
-  const styleTags = styles.map((css) => `<style>${css}</style>`).join("");
+  const styleTags = styles
+    .map((css) => `<style>${css.replace(/<\//g, "<\\/")}</style>`)
+    .join("");
   const docHtml = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=${FRAME_BASE_WIDTH}"><base target="_blank">${styleTags}</head><body style="margin:0;background:#ffffff;">${body}</body></html>`;
 
   const measure = () => {
