@@ -192,8 +192,25 @@ const PDF_STYLES = `
 
   /* Two-column grid card area */
   .pdf-dash-row { display: grid; gap: 10px; margin-bottom: 12px; }
+  .pdf-dash-row-1 { grid-template-columns: 1fr; }
   .pdf-dash-row-2 { grid-template-columns: 1fr 1fr; }
   .pdf-dash-row-3 { grid-template-columns: 2fr 1fr; }
+
+  /* Payment timeline table (full-width) + status badges */
+  .pdf-tl-table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; }
+  .pdf-tl-table td { padding: 7px 6px; border-bottom: 1px solid #fafafa; vertical-align: top; }
+  .pdf-tl-table tr:last-child td { border-bottom: 0; }
+  .pdf-tl-date { color: #9ca3af; white-space: nowrap; font-family: 'Cormorant Garamond', serif; font-size: 11px; width: 52px; }
+  .pdf-tl-title { font-weight: 600; color: #1f2937; line-height: 1.3; }
+  .pdf-tl-meta { font-size: 8.5px; color: #9ca3af; margin-top: 2px; }
+  .pdf-tl-amount { text-align: right; font-weight: 700; color: #1f2937; white-space: nowrap; width: 72px; }
+  .pdf-tl-amount.pending { color: #be185d; }
+  .pdf-tl-status { text-align: right; width: 56px; }
+  .pdf-badge { display: inline-block; padding: 2px 7px; border-radius: 8px; font-size: 8.5px; font-weight: 700; white-space: nowrap; }
+  .pdf-badge-paid { background: #dcf5e8; color: #059669; }
+  .pdf-badge-imminent { background: #fff5dc; color: #b45309; }
+  .pdf-badge-waiting { background: #f3f4f6; color: #6b7280; }
+  .pdf-badge-cash { background: #fde8ee; color: #be185d; }
 
   .pdf-dash-card { background: #ffffff; border: 1px solid #f3f4f6; border-radius: 12px; padding: 14px 14px 12px; }
   .pdf-dash-card-title { font-family: 'Noto Sans KR', sans-serif; font-size: 12.5px; font-weight: 700; color: #1f2937; margin: 0 0 10px; padding-bottom: 7px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; gap: 7px; letter-spacing: -0.2px; }
@@ -413,8 +430,42 @@ export interface DashboardOptions {
 export const pdfDashCard = (title: string, body: string): string =>
   `<div class="pdf-dash-card"><div class="pdf-dash-card-title">${esc(title)}</div>${body}</div>`;
 
-export const pdfDashRow = (cards: string[], variant: 2 | 3 = 2): string =>
+export const pdfDashRow = (cards: string[], variant: 1 | 2 | 3 = 2): string =>
   `<div class="pdf-dash-row pdf-dash-row-${variant}">${cards.join("")}</div>`;
+
+/** 결제 타임라인 표 (전폭 카드 본문용). 상태 배지 + 단계/수단/주체 메타 한 줄. */
+export interface PdfTimelineRow {
+  date: string;        // 표시용 (예: "26.06.15" 또는 "미정")
+  title: string;       // 항목명 (사용자 입력 — 헬퍼가 esc 처리)
+  meta: string;        // "정계약 · 카드 · 신부측" 보조 라인
+  amount: string;      // 포맷된 금액 (예: "3,000만원")
+  status: "paid" | "imminent" | "waiting" | "cash";
+  isPending: boolean;
+}
+
+const TIMELINE_STATUS_LABEL: Record<PdfTimelineRow["status"], string> = {
+  paid: "완료",
+  imminent: "임박",
+  waiting: "대기",
+  cash: "현금필수",
+};
+
+export const pdfDashTimeline = (rows: PdfTimelineRow[]): string => {
+  if (rows.length === 0) {
+    return `<div style="font-size:10.5px;color:#9ca3af;text-align:center;padding:20px 0;">결제 내역이 없어요.</div>`;
+  }
+  const body = rows
+    .map(
+      (r) => `<tr>
+        <td class="pdf-tl-date">${esc(r.date)}</td>
+        <td><div class="pdf-tl-title">${esc(r.title)}</div>${r.meta ? `<div class="pdf-tl-meta">${esc(r.meta)}</div>` : ""}</td>
+        <td class="pdf-tl-amount${r.isPending ? " pending" : ""}">${esc(r.amount)}</td>
+        <td class="pdf-tl-status"><span class="pdf-badge pdf-badge-${r.status}">${esc(TIMELINE_STATUS_LABEL[r.status])}</span></td>
+      </tr>`,
+    )
+    .join("");
+  return `<table class="pdf-tl-table"><tbody>${body}</tbody></table>`;
+};
 
 /** 컴팩트 카테고리 비중 막대 (대시보드용) */
 export const pdfDashShareBars = (

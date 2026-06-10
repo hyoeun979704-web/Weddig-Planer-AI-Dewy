@@ -8,13 +8,18 @@ import {
   pdfDashShareBars,
   pdfDashMiniDonut,
   pdfDashBigNumber,
+  pdfDashTimeline,
+  type PdfTimelineRow,
   esc,
 } from "@/lib/pdfGenerator";
 import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { useBudget } from "@/hooks/useBudget";
-import { computeBudgetFinancials } from "@/lib/budgetReportModel";
+import { computeBudgetFinancials, buildPaymentTimeline } from "@/lib/budgetReportModel";
 import { fmt } from "@/lib/budgetFormat";
-import { categories, categoryKeys as ALL_CATEGORY_KEYS, regions, getRegionalAvgWithMeal, type BudgetCategory } from "@/data/budgetData";
+import {
+  categories, categoryKeys as ALL_CATEGORY_KEYS, regions, getRegionalAvgWithMeal,
+  paidByOptions, paymentStageOptions, paymentMethodOptions, type BudgetCategory,
+} from "@/data/budgetData";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { toast } from "sonner";
@@ -196,6 +201,24 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
         label: healthLabel,
       });
 
+      // ============ 결제 타임라인 (납부완료 + 미납 잔금 시계열) ============
+      // 도메인 모델이 raw 값을 돌려주면 여기(UI)서 한국어 라벨로 매핑한다.
+      const stageLabel = (v: string) => paymentStageOptions.find((o) => o.value === v)?.label || "";
+      const methodLabel = (v: string) => paymentMethodOptions.find((o) => o.value === v)?.label || "";
+      const payerLabel = (v: string) => paidByOptions.find((o) => o.value === v)?.label || v;
+      const fmtTlDate = (d: string | null) => (d ? d.slice(2).replace(/-/g, ".") : "미정");
+      const timelineRows: PdfTimelineRow[] = buildPaymentTimeline(items).map((e) => ({
+        date: fmtTlDate(e.date),
+        title: e.title,
+        // 완납(full)은 기본값이라 메타에서 생략 — 노이즈 축소.
+        meta: [e.stage === "full" ? "" : stageLabel(e.stage), methodLabel(e.method), payerLabel(e.payer)]
+          .filter(Boolean)
+          .join(" · "),
+        amount: `${fmt(e.amount)}만원`,
+        status: e.status,
+        isPending: e.isPending,
+      }));
+
       // ============ 진단 및 조언 ============
       const insights: string[] = [];
       const warningInsights: string[] = [];
@@ -232,7 +255,10 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
         + pdfDashRow([
             pdfDashCard("잔금 일정", balanceCardBody),
             pdfDashCard("양가 분담 현황", splitCardBody),
-          ], 2);
+          ], 2)
+        + pdfDashRow([
+            pdfDashCard("결제 타임라인", pdfDashTimeline(timelineRows)),
+          ], 1);
 
       const html = generatePdfDashboard({
         brandName: "Dewy Wedding Planner",

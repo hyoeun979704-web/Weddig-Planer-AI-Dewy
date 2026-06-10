@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { computeBudgetFinancials, type ReportLineItem } from "./budgetReportModel";
+import {
+  computeBudgetFinancials,
+  buildPaymentTimeline,
+  IMMINENT_DAYS,
+  type ReportLineItem,
+  type TimelineLineItem,
+} from "./budgetReportModel";
 
 const item = (over: Partial<ReportLineItem>): ReportLineItem => ({
   amount: 0,
@@ -75,5 +81,87 @@ describe("computeBudgetFinancials", () => {
   it("음수 amount 는 0 으로 방어한다", () => {
     const r = computeBudgetFinancials([item({ amount: -500 })]);
     expect(r.totalPaid).toBe(0);
+  });
+});
+
+const NOW = new Date(2026, 5, 10).getTime(); // 2026-06-10 (로컬)
+
+const tItem = (over: Partial<TimelineLineItem>): TimelineLineItem => ({
+  amount: 0,
+  paid_by: "shared",
+  has_balance: false,
+  balance_amount: null,
+  payment_method: "card",
+  title: "항목",
+  item_date: "2026-01-01",
+  balance_due_date: null,
+  payment_stage: "full",
+  ...over,
+});
+
+describe("buildPaymentTimeline", () => {
+  it("납부분과 미납분을 각각 한 줄로 펼친다", () => {
+    const t = buildPaymentTimeline(
+      [tItem({ amount: 1000, item_date: "2026-01-01", has_balance: true, balance_amount: 500, balance_due_date: "2026-07-01" })],
+      NOW,
+    );
+    expect(t).toHaveLength(2);
+    const paid = t.find((e) => !e.isPending)!;
+    const pending = t.find((e) => e.isPending)!;
+    expect(paid.amount).toBe(1000);
+    expect(paid.status).toBe("paid");
+    expect(pending.amount).toBe(500);
+    expect(pending.stage).toBe("balance");
+  });
+
+  it("날짜 오름차순 정렬, 날짜 없는 건은 맨 뒤", () => {
+    const t = buildPaymentTimeline(
+      [
+        tItem({ amount: 100, item_date: "2026-03-01" }),
+        tItem({ amount: 100, item_date: "2026-01-01" }),
+        tItem({ amount: 0, has_balance: true, balance_amount: 50, balance_due_date: null }),
+      ],
+      NOW,
+    );
+    expect(t.map((e) => e.date)).toEqual(["2026-01-01", "2026-03-01", null]);
+  });
+
+  it("현금 미납은 항상 현금필수", () => {
+    const t = buildPaymentTimeline(
+      [tItem({ amount: 0, has_balance: true, balance_amount: 50, balance_due_date: "2026-12-31", payment_method: "cash" })],
+      NOW,
+    );
+    expect(t[0].status).toBe("cash");
+  });
+
+  it("비현금 미납은 D-day 임계로 임박/대기를 가른다", () => {
+    const due = (days: number) => {
+      const d = new Date(NOW);
+      d.setDate(d.getDate() + days);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+    const imminent = buildPaymentTimeline(
+      [tItem({ has_balance: true, balance_amount: 50, balance_due_date: due(IMMINENT_DAYS), payment_method: "transfer" })],
+      NOW,
+    );
+    const waiting = buildPaymentTimeline(
+      [tItem({ has_balance: true, balance_amount: 50, balance_due_date: due(IMMINENT_DAYS + 1), payment_method: "transfer" })],
+      NOW,
+    );
+    expect(imminent[0].status).toBe("imminent");
+    expect(waiting[0].status).toBe("waiting");
+  });
+
+  it("amount=0 이고 미납만 있으면 한 줄만 나온다", () => {
+    const t = buildPaymentTimeline(
+      [tItem({ amount: 0, has_balance: true, balance_amount: 300, balance_due_date: "2026-08-01" })],
+      NOW,
+    );
+    expect(t).toHaveLength(1);
+    expect(t[0].isPending).toBe(true);
+  });
+
+  it("빈 입력은 빈 배열", () => {
+    expect(buildPaymentTimeline([], NOW)).toEqual([]);
   });
 });

@@ -83,3 +83,99 @@ export function computeBudgetFinancials(items: ReportLineItem[]): BudgetFinancia
 
   return { totalPaid, totalPending, grandTotal, cashNeeded, payers };
 }
+
+// ---------------------------------------------------------------------------
+// 결제 타임라인 (Phase 2) — 마스터 리포트의 chronological_billing_timeline 대응.
+// 납부완료분(item_date)과 미납 잔금(balance_due_date)을 한 시계열로 병합하고,
+// 미납 건은 D-day 로 상태를 판정한다.
+// ---------------------------------------------------------------------------
+
+/** 임박(urgent) 판정 임계 — 잔금 예정일이 오늘로부터 이 일수 이내면 "임박". */
+export const IMMINENT_DAYS = 7;
+
+/** 타임라인 한 줄의 상태. paid=완료, imminent=임박, waiting=대기, cash=현금필수. */
+export type PaymentStatus = "paid" | "imminent" | "waiting" | "cash";
+
+/** 타임라인 계산에 필요한 budget_items 형태 (financials 입력 + 표시 메타). */
+export interface TimelineLineItem extends ReportLineItem {
+  title: string;
+  item_date: string;                 // 납부일 (YYYY-MM-DD)
+  balance_due_date: string | null;   // 잔금 예정일 (YYYY-MM-DD) | null
+  payment_stage: string;             // "deposit" | "contract" | "midpayment" | "balance" | "full"
+}
+
+export interface TimelineEntry {
+  date: string | null;   // 정렬·표시 기준일 (납부일 또는 잔금 예정일)
+  title: string;
+  amount: number;        // 만원
+  payer: string;         // 원 paid_by 값 (라벨 매핑은 UI 담당)
+  stage: string;         // 원 payment_stage 값
+  method: string;        // 원 payment_method 값
+  status: PaymentStatus;
+  isPending: boolean;    // true=미납 잔금, false=납부완료
+}
+
+/** "YYYY-MM-DD" 를 로컬 자정 기준 days-from-today 로. 잘못된/빈 값은 null. */
+const daysFromToday = (dateStr: string | null | undefined, nowMs: number): number | null => {
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const target = new Date(y, m - 1, d).getTime();
+  const today = new Date(nowMs);
+  today.setHours(0, 0, 0, 0);
+  return Math.round((target - today.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+/** 미납 잔금의 상태 판정. 현금이면 항상 현금필수, 아니면 D-day 로 임박/대기. */
+const pendingStatus = (method: string, dueDate: string | null, nowMs: number): PaymentStatus => {
+  if (method === "cash") return "cash";
+  const dday = daysFromToday(dueDate, nowMs);
+  return dday !== null && dday <= IMMINENT_DAYS ? "imminent" : "waiting";
+};
+
+/**
+ * 항목 배열을 결제 시계열로 펼친다. 한 항목이 납부분(amount>0)과 미납분
+ * (balance>0)을 동시에 가지면 두 줄로 분리된다. 날짜 오름차순 정렬하되
+ * 날짜 없는 건(예정일 미정)은 맨 뒤로 보낸다.
+ */
+export function buildPaymentTimeline(
+  items: TimelineLineItem[],
+  nowMs: number = Date.now(),
+): TimelineEntry[] {
+  const entries: TimelineEntry[] = [];
+  for (const item of items) {
+    const paid = item.amount > 0 ? item.amount : 0;
+    const pending = pendingOf(item);
+    if (paid > 0) {
+      entries.push({
+        date: item.item_date || null,
+        title: item.title,
+        amount: paid,
+        payer: item.paid_by,
+        stage: item.payment_stage,
+        method: item.payment_method,
+        status: "paid",
+        isPending: false,
+      });
+    }
+    if (pending > 0) {
+      entries.push({
+        date: item.balance_due_date || null,
+        title: item.title,
+        amount: pending,
+        payer: item.paid_by,
+        stage: "balance",
+        method: item.payment_method,
+        status: pendingStatus(item.payment_method, item.balance_due_date, nowMs),
+        isPending: true,
+      });
+    }
+  }
+  // 날짜 오름차순, null(미정)은 맨 뒤. 안정 정렬로 입력 순서 보존.
+  return entries.sort((a, b) => {
+    if (a.date === b.date) return 0;
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return a.date < b.date ? -1 : 1;
+  });
+}
