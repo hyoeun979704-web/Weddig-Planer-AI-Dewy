@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
-import DOMPurify from "dompurify";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { downloadPdf } from "@/lib/pdfGenerator";
+import { downloadPdf, splitAndSanitize } from "@/lib/pdfGenerator";
 import { toast } from "sonner";
 
 interface PdfPreviewModalProps {
@@ -34,7 +33,16 @@ export const PdfPreviewModal = ({ open, onClose, html, filename, title }: PdfPre
     if (open) setIframeHeight(800);
   }, [open, html]);
 
-  const docHtml = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=${FRAME_BASE_WIDTH}"><base target="_blank"></head><body style="margin:0;background:#ffffff;">${DOMPurify.sanitize(html)}</body></html>`;
+  // CRITICAL: 이 프로젝트의 DOMPurify 는 `<style>` 태그를 제거한다(pdfGenerator
+  // 주석 참고). 과거 여기서 DOMPurify.sanitize(html) 를 직접 호출해 대시보드
+  // CSS(.pdf-dash-* grid/badge/bar)가 통째로 빠진 채 iframe 에 들어가
+  // 미리보기가 무스타일 세로 나열로 깨졌다("실제 다운로드와 동일" 약속 위반).
+  // downloadPdf 와 동일하게 splitAndSanitize 로 <style> 을 보존한다. styles 는
+  // 우리 상수 PDF_STYLES 뿐이고 body 만 사용자 입력(이미 esc)이라 raw 주입 안전.
+  // iframe 은 allow-same-origin(no-scripts) 샌드박스라 추가 방어선도 있다.
+  const { body, styles } = splitAndSanitize(html);
+  const styleTags = styles.map((css) => `<style>${css}</style>`).join("");
+  const docHtml = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=${FRAME_BASE_WIDTH}"><base target="_blank">${styleTags}</head><body style="margin:0;background:#ffffff;">${body}</body></html>`;
 
   const measure = () => {
     const iframe = iframeRef.current;
