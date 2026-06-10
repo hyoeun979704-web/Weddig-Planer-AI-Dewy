@@ -212,6 +212,32 @@ const PDF_STYLES = `
   .pdf-badge-waiting { background: #f3f4f6; color: #6b7280; }
   .pdf-badge-cash { background: #fde8ee; color: #be185d; }
 
+  /* Numbered section header (마스터 리포트 차용 — 문서 구조감) */
+  .pdf-dash-section { display: flex; align-items: center; gap: 8px; margin: 16px 0 9px; }
+  .pdf-dash-section-num { width: 19px; height: 19px; border-radius: 6px; background: #be185d; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'Cormorant Garamond', serif; }
+  .pdf-dash-section-title { font-family: 'Noto Serif KR', serif; font-size: 13.5px; font-weight: 700; color: #1f2937; letter-spacing: -0.3px; }
+  .pdf-dash-section-line { flex: 1; height: 1px; background: linear-gradient(90deg, #fce4ec, transparent); }
+
+  /* Payer badge (공동/신랑/신부 — 마스터 차용) */
+  .pdf-payer-badge { display: inline-block; padding: 2px 8px; border-radius: 7px; font-size: 9px; font-weight: 700; white-space: nowrap; }
+  .pdf-payer-shared { background: #fde8ee; color: #be185d; }
+  .pdf-payer-groom { background: #e0edff; color: #1d4ed8; }
+  .pdf-payer-bride { background: #ffe4e9; color: #e11d48; }
+
+  /* Dark header band (마스터 리포트 차용 — opt-in headerTone:"band") */
+  .pdf-dash-band { background: linear-gradient(135deg, #1f2937, #374151); padding: 20px 36px 18px; color: #ffffff; }
+  .pdf-dash-band-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 13px; }
+  .pdf-dash-band .pdf-dash-brand-name { color: #ffffff; }
+  .pdf-dash-band .pdf-dash-brand-tag { color: #cbd5e1; }
+  .pdf-dash-band-meta { display: flex; gap: 16px; font-size: 10px; color: #e2e8f0; }
+  .pdf-dash-band-meta .label { color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-size: 8.5px; margin-right: 5px; }
+  .pdf-dash-band-meta .value { color: #ffffff; font-weight: 600; }
+  .pdf-dash-band-eyebrow { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #f9a8c4; font-weight: 600; margin-bottom: 5px; }
+  .pdf-dash-band-title { font-family: 'Noto Serif KR', serif; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px; line-height: 1.2; margin: 0 0 6px; }
+  .pdf-dash-band-desc { font-size: 11px; color: #cbd5e1; line-height: 1.6; margin: 0; }
+  /* band 헤더 사용 시 main 상단 여백 축소(타이틀이 band 안에 있으므로) */
+  .pdf-dash-main-band { padding-top: 18px; }
+
   .pdf-dash-card { background: #ffffff; border: 1px solid #f3f4f6; border-radius: 12px; padding: 14px 14px 12px; }
   .pdf-dash-card-title { font-family: 'Noto Sans KR', sans-serif; font-size: 12.5px; font-weight: 700; color: #1f2937; margin: 0 0 10px; padding-bottom: 7px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; gap: 7px; letter-spacing: -0.2px; }
   .pdf-dash-card-title::before { content: ''; width: 3px; height: 12px; background: #F4A7B9; border-radius: 2px; }
@@ -421,6 +447,10 @@ export interface DashboardOptions {
   weddingDate?: string;          // 예식일 (YYYY.MM.DD)
   title: string;                 // "웨딩 예산 분석 리포트"
   description?: string;          // 한 줄 설명
+  /** 헤더 스타일. "band"=마스터 리포트풍 다크 헤더 띠(opt-in), 기본 "light". */
+  headerTone?: "light" | "band";
+  /** band 헤더 상단의 작은 대문자 태그라인 (예: "PREMIUM WEDDING INTELLIGENCE"). */
+  eyebrow?: string;
   pills?: { icon: string; label: string; value: string }[];     // 상단 정보 칩 (4개 권장)
   stats?: { tone: "pink" | "amber" | "mint"; icon: string; value: string; label: string }[];   // 큰 컬러 카드 (3개 권장)
   body: string;                  // 본문 카드들 (pdfDashRow + pdfDashCard로 구성)
@@ -432,6 +462,20 @@ export const pdfDashCard = (title: string, body: string): string =>
 
 export const pdfDashRow = (cards: string[], variant: 1 | 2 | 3 = 2): string =>
   `<div class="pdf-dash-row pdf-dash-row-${variant}">${cards.join("")}</div>`;
+
+/** 번호 섹션 헤더 (마스터 리포트 차용 — 카드 묶음 위 문서 구조감). */
+export const pdfDashSectionHead = (num: number | string, title: string): string =>
+  `<div class="pdf-dash-section"><span class="pdf-dash-section-num">${esc(num)}</span><span class="pdf-dash-section-title">${esc(title)}</span><span class="pdf-dash-section-line"></span></div>`;
+
+const PAYER_BADGE_CLASS: Record<string, string> = {
+  shared: "pdf-payer-shared",
+  groom: "pdf-payer-groom",
+  bride: "pdf-payer-bride",
+};
+
+/** 결제 주체 컬러 배지 (공동/신랑/신부). 미상 key 는 공동(shared) 색으로. */
+export const pdfPayerBadge = (label: string, key: string): string =>
+  `<span class="pdf-payer-badge ${PAYER_BADGE_CLASS[key] ?? "pdf-payer-shared"}">${esc(label)}</span>`;
 
 /** 결제 타임라인 표 (전폭 카드 본문용). 상태 배지 + 단계/수단/주체 메타 한 줄. */
 export interface PdfTimelineRow {
@@ -566,22 +610,38 @@ export function generatePdfDashboard(opts: DashboardOptions): string {
       </div>`
     : "";
 
-  return `
-    <style>${PDF_STYLES}</style>
-    <div class="pdf-dash">
-      <header class="pdf-dash-topbar">
+  const metaItems = `<div class="item"><span class="label">발행</span><span class="value">${esc(pubDate)}</span></div>${opts.weddingDate ? `<div class="item"><span class="label">예식</span><span class="value">${esc(opts.weddingDate)}</span></div>` : ""}`;
+
+  // 헤더: 기본(light)은 기존 topbar+main 타이틀, "band"는 마스터풍 다크 띠.
+  // band 일 때 타이틀/설명은 띠 안으로 옮기고 main 은 pills 부터 시작한다.
+  const isBand = opts.headerTone === "band";
+  const headerHtml = isBand
+    ? `<div class="pdf-dash-band">
+        <div class="pdf-dash-band-top">
+          <div class="pdf-dash-brand">
+            <div class="pdf-dash-brand-name">${esc(brandInline)}</div>
+            ${opts.brandTag ? `<div class="pdf-dash-brand-tag">${esc(opts.brandTag)}</div>` : ""}
+          </div>
+          <div class="pdf-dash-band-meta">${metaItems}</div>
+        </div>
+        ${opts.eyebrow ? `<div class="pdf-dash-band-eyebrow">${esc(opts.eyebrow)}</div>` : ""}
+        <h1 class="pdf-dash-band-title">${esc(opts.title)}</h1>
+        ${opts.description ? `<p class="pdf-dash-band-desc">${esc(opts.description)}</p>` : ""}
+      </div>`
+    : `<header class="pdf-dash-topbar">
         <div class="pdf-dash-brand">
           <div class="pdf-dash-brand-name">${esc(brandInline)}</div>
           ${opts.brandTag ? `<div class="pdf-dash-brand-tag">${esc(opts.brandTag)}</div>` : ""}
         </div>
-        <div class="pdf-dash-topbar-meta">
-          <div class="item"><span class="label">발행</span><span class="value">${esc(pubDate)}</span></div>
-          ${opts.weddingDate ? `<div class="item"><span class="label">예식</span><span class="value">${esc(opts.weddingDate)}</span></div>` : ""}
-        </div>
-      </header>
-      <main class="pdf-dash-main">
-        <h1 class="pdf-dash-title">${esc(opts.title)}</h1>
-        ${opts.description ? `<p class="pdf-dash-desc">${esc(opts.description)}</p>` : ""}
+        <div class="pdf-dash-topbar-meta">${metaItems}</div>
+      </header>`;
+
+  return `
+    <style>${PDF_STYLES}</style>
+    <div class="pdf-dash">
+      ${headerHtml}
+      <main class="pdf-dash-main${isBand ? " pdf-dash-main-band" : ""}">
+        ${isBand ? "" : `<h1 class="pdf-dash-title">${esc(opts.title)}</h1>${opts.description ? `<p class="pdf-dash-desc">${esc(opts.description)}</p>` : ""}`}
         ${pillsHtml}
         ${statsHtml}
         ${opts.body}

@@ -9,6 +9,8 @@ import {
   pdfDashMiniDonut,
   pdfDashBigNumber,
   pdfDashTimeline,
+  pdfDashSectionHead,
+  pdfPayerBadge,
   type PdfTimelineRow,
   esc,
 } from "@/lib/pdfGenerator";
@@ -167,7 +169,7 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
                 .map((r) => {
                   const p = fin.payers[r.key];
                   return `<tr>
-                    <td>${r.label}</td>
+                    <td>${pdfPayerBadge(r.label, r.key)}</td>
                     <td style="text-align:right;">${fmt(p.paid)}</td>
                     <td style="text-align:right;color:#be185d;">${fmt(p.pending)}</td>
                     <td style="text-align:right;font-weight:600;">${fmt(p.total)}</td>
@@ -294,23 +296,29 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
         .join("")}</ul>`;
 
       // ============ 대시보드 조립 ============
+      // 마스터 리포트 차용: 카드 묶음을 번호 섹션으로 구조화(문서 구조감).
       const body = ""
+        + pdfDashSectionHead(1, "정산 요약")
         + pdfDashRow([
             pdfDashCard("결제 진행 현황", paymentProgressBody),
             pdfDashCard("예산 건강도", healthBigNumber),
           ], 3)
+        + pdfDashSectionHead(2, "카테고리 분석")
         + pdfDashRow([
             pdfDashCard("카테고리별 지출 현황", catTable),
             pdfDashCard("카테고리별 지출 비중", shareBars),
           ], 3)
+        + pdfDashSectionHead(3, "분담 · 잔금 일정")
         + pdfDashRow([
             pdfDashCard("잔금 일정", balanceCardBody),
             pdfDashCard("양가 분담 현황", splitCardBody),
           ], 2)
+        + pdfDashSectionHead(4, "특화 지표 · 진단")
         + pdfDashRow([
             pdfDashCard("식대 방어율", defenseBody),
             pdfDashCard("AI 플래너 진단", insightListBody),
           ], 3)
+        + pdfDashSectionHead(5, "결제 타임라인")
         + pdfDashRow([
             pdfDashCard("결제 타임라인", pdfDashTimeline(timelineRows)),
           ], 1);
@@ -318,6 +326,8 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       const html = generatePdfDashboard({
         brandName: "Dewy Wedding Planner",
         brandTag: "Wedding Document",
+        headerTone: "band",
+        eyebrow: "PREMIUM WEDDING BUDGET INTELLIGENCE",
         weddingDate: profile.weddingDate ? profile.weddingDate.replace(/-/g, ".") : undefined,
         title: "웨딩 예산 분석 리포트",
         description: `${couple ? `${couple}  ·  ` : ""}${regionLabel} 평균 대비 두 분의 예산·지출을 분석한 맞춤 리포트입니다.`,
