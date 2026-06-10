@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   computeBudgetFinancials,
   buildPaymentTimeline,
+  computeMealDefenseRate,
   IMMINENT_DAYS,
   type ReportLineItem,
   type TimelineLineItem,
@@ -163,5 +164,27 @@ describe("buildPaymentTimeline", () => {
 
   it("빈 입력은 빈 배열", () => {
     expect(buildPaymentTimeline([], NOW)).toEqual([]);
+  });
+});
+
+describe("computeMealDefenseRate", () => {
+  it("마스터 리포트 예시(300명×8만원 ÷ 1600만원 = 150%)를 재현한다", () => {
+    const r = computeMealDefenseRate(300, 8, 1600);
+    expect(r.expectedGiftIncome).toBe(2400);
+    expect(r.defenseRatePercent).toBe(150);
+  });
+
+  it("홀 지출이 0 이면 방어율 0 (0 나눗셈 방어)", () => {
+    const r = computeMealDefenseRate(200, 8, 0);
+    expect(r.defenseRatePercent).toBe(0);
+    expect(r.expectedGiftIncome).toBe(1600);
+  });
+
+  it("음수/0 입력은 0 으로 방어한다", () => {
+    const r = computeMealDefenseRate(-10, -5, -100);
+    expect(r.expectedGuests).toBe(0);
+    expect(r.giftPerGuest).toBe(0);
+    expect(r.hallExpense).toBe(0);
+    expect(r.defenseRatePercent).toBe(0);
   });
 });

@@ -179,3 +179,42 @@ export function buildPaymentTimeline(
     return a.date < b.date ? -1 : 1;
   });
 }
+
+// ---------------------------------------------------------------------------
+// 식대 방어율 (Phase 3) — 마스터 리포트의 wedding_hall_defense_rate_analysis 대응.
+// "예상 축의금 수입이 홀+식대 지출을 얼마나 방어하는가" 를 % 로 본다(100%↑ = 흑자).
+// ---------------------------------------------------------------------------
+
+/** 인당 평균 축의금 기본 가정값(만원). 마스터 리포트 80,000원 기준. 추후 설정값화 여지. */
+export const DEFAULT_GIFT_PER_GUEST_MANWON = 8;
+
+export interface MealDefenseResult {
+  expectedGuests: number;
+  giftPerGuest: number;        // 만원
+  expectedGiftIncome: number;  // 만원 = guests × giftPerGuest
+  hallExpense: number;         // 만원 = 홀+식대 (납부+미납)
+  defenseRatePercent: number;  // gift/expense × 100. expense=0 이면 0.
+}
+
+/**
+ * 식대 방어율. 입력은 모두 호출부에서 집계해 넘긴다(홀 지출은 category 가
+ * 필요해 컴포넌트가 합산). 순수 산식만 여기서 책임져 테스트로 고정한다.
+ */
+export function computeMealDefenseRate(
+  guestCount: number,
+  giftPerGuest: number,
+  hallExpense: number,
+): MealDefenseResult {
+  const guests = guestCount > 0 ? guestCount : 0;
+  const perGuest = giftPerGuest > 0 ? giftPerGuest : 0;
+  const expectedGiftIncome = guests * perGuest;
+  const expense = hallExpense > 0 ? hallExpense : 0;
+  const defenseRatePercent = expense > 0 ? (expectedGiftIncome / expense) * 100 : 0;
+  return {
+    expectedGuests: guests,
+    giftPerGuest: perGuest,
+    expectedGiftIncome,
+    hallExpense: expense,
+    defenseRatePercent,
+  };
+}
