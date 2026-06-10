@@ -212,6 +212,18 @@ const PDF_STYLES = `
   .pdf-badge-waiting { background: #f3f4f6; color: #6b7280; }
   .pdf-badge-cash { background: #fde8ee; color: #be185d; }
 
+  /* Numbered section header (마스터 리포트 차용 — 문서 구조감) */
+  .pdf-dash-section { display: flex; align-items: center; gap: 8px; margin: 16px 0 9px; }
+  .pdf-dash-section-num { width: 19px; height: 19px; border-radius: 6px; background: #be185d; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'Cormorant Garamond', serif; }
+  .pdf-dash-section-title { font-family: 'Noto Serif KR', serif; font-size: 13.5px; font-weight: 700; color: #1f2937; letter-spacing: -0.3px; }
+  .pdf-dash-section-line { flex: 1; height: 1px; background: linear-gradient(90deg, #fce4ec, transparent); }
+
+  /* Payer badge (공동/신랑/신부 — 마스터 차용) */
+  .pdf-payer-badge { display: inline-block; padding: 2px 8px; border-radius: 7px; font-size: 9px; font-weight: 700; white-space: nowrap; }
+  .pdf-payer-shared { background: #fde8ee; color: #be185d; }
+  .pdf-payer-groom { background: #e0edff; color: #1d4ed8; }
+  .pdf-payer-bride { background: #ffe4e9; color: #e11d48; }
+
   .pdf-dash-card { background: #ffffff; border: 1px solid #f3f4f6; border-radius: 12px; padding: 14px 14px 12px; }
   .pdf-dash-card-title { font-family: 'Noto Sans KR', sans-serif; font-size: 12.5px; font-weight: 700; color: #1f2937; margin: 0 0 10px; padding-bottom: 7px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; gap: 7px; letter-spacing: -0.2px; }
   .pdf-dash-card-title::before { content: ''; width: 3px; height: 12px; background: #F4A7B9; border-radius: 2px; }
@@ -432,6 +444,20 @@ export const pdfDashCard = (title: string, body: string): string =>
 
 export const pdfDashRow = (cards: string[], variant: 1 | 2 | 3 = 2): string =>
   `<div class="pdf-dash-row pdf-dash-row-${variant}">${cards.join("")}</div>`;
+
+/** 번호 섹션 헤더 (마스터 리포트 차용 — 카드 묶음 위 문서 구조감). */
+export const pdfDashSectionHead = (num: number | string, title: string): string =>
+  `<div class="pdf-dash-section"><span class="pdf-dash-section-num">${esc(num)}</span><span class="pdf-dash-section-title">${esc(title)}</span><span class="pdf-dash-section-line"></span></div>`;
+
+const PAYER_BADGE_CLASS: Record<string, string> = {
+  shared: "pdf-payer-shared",
+  groom: "pdf-payer-groom",
+  bride: "pdf-payer-bride",
+};
+
+/** 결제 주체 컬러 배지 (공동/신랑/신부). 미상 key 는 공동(shared) 색으로. */
+export const pdfPayerBadge = (label: string, key: string): string =>
+  `<span class="pdf-payer-badge ${PAYER_BADGE_CLASS[key] ?? "pdf-payer-shared"}">${esc(label)}</span>`;
 
 /** 결제 타임라인 표 (전폭 카드 본문용). 상태 배지 + 단계/수단/주체 메타 한 줄. */
 export interface PdfTimelineRow {
