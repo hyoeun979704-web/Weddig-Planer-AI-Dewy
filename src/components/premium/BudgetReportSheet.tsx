@@ -326,6 +326,8 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       const html = generatePdfDashboard({
         brandName: "Dewy Wedding Planner",
         brandTag: "Wedding Document",
+        headerTone: "band",
+        eyebrow: "PREMIUM WEDDING BUDGET INTELLIGENCE",
         weddingDate: profile.weddingDate ? profile.weddingDate.replace(/-/g, ".") : undefined,
         title: "웨딩 예산 분석 리포트",
         description: `${couple ? `${couple}  ·  ` : ""}${regionLabel} 평균 대비 두 분의 예산·지출을 분석한 맞춤 리포트입니다.`,
