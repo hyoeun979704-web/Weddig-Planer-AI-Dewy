@@ -12,6 +12,8 @@ import {
 } from "@/lib/pdfGenerator";
 import PdfPreviewModal from "@/components/premium/PdfPreviewModal";
 import { useBudget } from "@/hooks/useBudget";
+import { computeBudgetFinancials } from "@/lib/budgetReportModel";
+import { fmt } from "@/lib/budgetFormat";
 import { categories, categoryKeys as ALL_CATEGORY_KEYS, regions, getRegionalAvgWithMeal, type BudgetCategory } from "@/data/budgetData";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
@@ -49,10 +51,11 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       }
 
       const usagePct = totalBudget > 0 ? Math.round((summary.totalSpent / totalBudget) * 100) : 0;
-      const remaining = totalBudget - summary.totalSpent;
-      const dailyBurn = daysLeft && daysLeft > 0 && summary.totalSpent > 0
-        ? Math.round(summary.totalSpent / Math.max(1, 180 - daysLeft))
-        : 0;
+
+      // 납부완료 vs 미납(잔금) 분리 정산 — 도메인 계층(budgetReportModel)에서 계산.
+      // summary.totalSpent 와 fin.totalPaid 는 동일(둘 다 amount 합)하지만, 미납·
+      // 당일현금·주체별 미납은 여기서만 나온다.
+      const fin = computeBudgetFinancials(items);
 
       // Health score: 100 - penalty for overspending categories - penalty for over-pace
       const overCats = categoryKeys.filter((k) => {
@@ -138,18 +141,49 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
         balanceCardBody = `<div style="font-size:10.5px;color:#9ca3af;text-align:center;padding:20px 0;">예정된 잔금이 없어요.</div>`;
       }
 
-      // ============ 양가 분담 도넛 ============
-      const paidShared = summary.paidByTotals["shared"] || 0;
-      const paidGroom = summary.paidByTotals["groom"] || 0;
-      const paidBride = summary.paidByTotals["bride"] || 0;
-      const splitTotal = paidShared + paidGroom + paidBride;
-      const splitCardBody = splitTotal > 0
-        ? pdfDashMiniDonut([
-            { label: "공동", value: paidShared, color: "#F4A7B9" },
-            { label: "신랑측", value: paidGroom, color: "#93c5fd" },
-            { label: "신부측", value: paidBride, color: "#fb7185" },
-          ])
+      // ============ 양가 분담 도넛 (납부+미납 = 총 배정 기준) ============
+      // 기존엔 납부분만 도넛에 넣어 "누가 얼마 부담하는가"가 미납을 누락한 채
+      // 왜곡됐다. 이제 총액(납부+미납)으로 분담 비중을 보이고, 납부/미납 진척을
+      // 표로 함께 노출한다(마스터 리포트 payer_breakdown 대응).
+      const payerRows: { key: "shared" | "groom" | "bride"; label: string; color: string }[] = [
+        { key: "shared", label: "공동", color: "#F4A7B9" },
+        { key: "groom", label: "신랑측", color: "#93c5fd" },
+        { key: "bride", label: "신부측", color: "#fb7185" },
+      ];
+      const splitCardBody = fin.grandTotal > 0
+        ? pdfDashMiniDonut(
+            payerRows.map((r) => ({ label: r.label, value: fin.payers[r.key].total, color: r.color })),
+          ) + `<table class="pdf-dash-table" style="margin-top:10px;"><thead><tr>
+                <th>주체</th><th style="text-align:right;">납부</th><th style="text-align:right;">미납</th><th style="text-align:right;">합계</th>
+              </tr></thead><tbody>${payerRows
+                .map((r) => {
+                  const p = fin.payers[r.key];
+                  return `<tr>
+                    <td>${r.label}</td>
+                    <td style="text-align:right;">${fmt(p.paid)}</td>
+                    <td style="text-align:right;color:#be185d;">${fmt(p.pending)}</td>
+                    <td style="text-align:right;font-weight:600;">${fmt(p.total)}</td>
+                  </tr>`;
+                })
+                .join("")}</tbody></table>`
         : `<div style="font-size:10.5px;color:#9ca3af;text-align:center;padding:20px 0;">분담 데이터가 없어요.</div>`;
+
+      // ============ 결제 진행 현황 (총액·납부·미납·당일현금) ============
+      const paymentProgressBody = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        ${[
+          { label: "총 정산액", value: fin.grandTotal, color: "#1f2937" },
+          { label: "납부 완료", value: fin.totalPaid, color: "#059669" },
+          { label: "미납 잔금", value: fin.totalPending, color: "#be185d" },
+          { label: "당일 현금", value: fin.cashNeeded, color: "#b45309" },
+        ]
+          .map(
+            (s) => `<div style="background:#fef8fa;border-radius:8px;padding:10px 12px;">
+              <div style="font-size:9px;color:#9ca3af;letter-spacing:0.3px;text-transform:uppercase;font-family:'Cormorant Garamond',serif;">${s.label}</div>
+              <div style="font-size:17px;font-weight:700;color:${s.color};font-family:'Cormorant Garamond',serif;">${fmt(s.value)}<span style="font-size:10px;color:#9ca3af;font-weight:500;">만원</span></div>
+            </div>`,
+          )
+          .join("")}
+      </div>`;
 
       // ============ 예산 건강도 큰 숫자 ============
       const healthIconBg = healthScore >= 70 ? "#d4f4e2" : healthScore >= 55 ? "#fff4d6" : "#fde2e9";
@@ -188,14 +222,15 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       // ============ 대시보드 조립 ============
       const body = ""
         + pdfDashRow([
+            pdfDashCard("결제 진행 현황", paymentProgressBody),
+            pdfDashCard("예산 건강도", healthBigNumber),
+          ], 3)
+        + pdfDashRow([
             pdfDashCard("카테고리별 지출 현황", catTable),
             pdfDashCard("카테고리별 지출 비중", shareBars),
           ], 3)
         + pdfDashRow([
             pdfDashCard("잔금 일정", balanceCardBody),
-            pdfDashCard("예산 건강도", healthBigNumber),
-          ], 3)
-        + pdfDashRow([
             pdfDashCard("양가 분담 현황", splitCardBody),
           ], 2);
 
