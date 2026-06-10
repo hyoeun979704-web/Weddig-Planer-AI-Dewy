@@ -17,12 +17,28 @@ import {
   Plus,
   ChevronUp,
   ChevronDown,
+  QrCode,
+  Copy,
+  Eye,
+  Link2,
+  MapPinned,
+  MessageCircle,
+  MousePointerClick,
+  Phone,
+  Smartphone,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -60,6 +76,8 @@ import {
   type InvitationFace,
   type InvitationLayout,
   type InvitationSlot,
+  type InvitationSlotAction,
+  type InvitationSlotActionType,
   type InvitationUserData,
   type BgFill,
 } from "@/lib/invitation/types";
@@ -97,6 +115,52 @@ type Step = "wizard" | "template" | "studio";
 
 const IDLE_MS = 8000;
 
+const DEFAULT_ACTION: InvitationSlotAction = { type: "none" };
+
+const SLOT_ACTION_OPTIONS: {
+  type: InvitationSlotActionType;
+  label: string;
+  description: string;
+}[] = [
+  { type: "none", label: "없음", description: "공개 화면에서 탭해도 동작하지 않아요." },
+  { type: "rsvp", label: "참석의사", description: "하객이 RSVP 입력 시트를 열 수 있어요." },
+  { type: "copy", label: "복사", description: "계좌번호나 문구를 클립보드에 복사해요." },
+  { type: "link", label: "링크 열기", description: "외부 URL이나 내부 페이지로 이동해요." },
+  { type: "phone", label: "전화", description: "전화 앱으로 연결해요." },
+  { type: "sms", label: "문자", description: "문자 작성 화면으로 연결해요." },
+  { type: "map", label: "지도 검색", description: "식장 주소를 지도 검색으로 열어요." },
+];
+
+const SLOT_ACTION_FIELD_OPTIONS = [
+  { value: "account_groom", label: "신랑 계좌" },
+  { value: "account_bride", label: "신부 계좌" },
+  { value: "contact_groom", label: "신랑 연락처" },
+  { value: "contact_bride", label: "신부 연락처" },
+  { value: "venue_name", label: "식장 이름" },
+  { value: "venue_address", label: "식장 주소" },
+];
+
+function actionLabel(type: InvitationSlotActionType) {
+  return SLOT_ACTION_OPTIONS.find((option) => option.type === type)?.label ?? "없음";
+}
+
+function resolveActionValue(
+  action: InvitationSlotAction | undefined,
+  userData: InvitationUserData,
+) {
+  if (!action) return "";
+  if (action.field && userData[action.field]) return userData[action.field] ?? "";
+  return action.value ?? "";
+}
+
+function mergeSlotAction(
+  slot: InvitationSlot,
+  actionOverrides: Record<string, InvitationSlotAction>,
+): InvitationSlot {
+  const action = actionOverrides[slot.id] ?? slot.action;
+  return action ? { ...slot, action } : slot;
+}
+
 /** 한 면(전면/후면)의 편집 상태 */
 interface FaceState {
   textOverrides: Record<string, string>;
@@ -108,6 +172,8 @@ interface FaceState {
   imagePaths: Record<string, string>; // DB 저장용 storage path
   imageUrls: Record<string, string>; // 화면 표시용 signed URL (저장 X)
   bgOverride?: BgFill; // 사용자가 바꾼 배경(단색/그라디언트). 없으면 템플릿 기본.
+  imageFitOverrides: Record<string, "cover" | "contain">;
+  actionOverrides: Record<string, InvitationSlotAction>;
 }
 const emptyFace = (): FaceState => ({
   textOverrides: {},
@@ -118,6 +184,8 @@ const emptyFace = (): FaceState => ({
   hiddenSlots: [],
   imagePaths: {},
   imageUrls: {},
+  imageFitOverrides: {},
+  actionOverrides: {},
 });
 
 const InvitationStudio = () => {
@@ -185,6 +253,9 @@ const InvitationStudio = () => {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
 
   const [aiSheetOpen, setAiSheetOpen] = useState(false);
+  const [targetMobileSlug, setTargetMobileSlug] = useState<string | null>(null);
+  const [mobileInvitations, setMobileInvitations] = useState<{ id: string; share_slug: string; invitation_templates: { name: string } | null }[]>([]);
+  const [loadingMobileInvitations, setLoadingMobileInvitations] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   // 자동저장 — 편집 변경 후 디바운스 저장 + 상태 표시(사용자가 동작을 확인 가능하도록)
@@ -193,6 +264,7 @@ const InvitationStudio = () => {
   const [autoSaveFailed, setAutoSaveFailed] = useState(false);
   const autosaveHydratedRef = useRef(false);
   const dismissedSlots = useRef<Set<string>>(new Set());
+  const selectionToastSlotRef = useRef<string | null>(null);
   const idleTimerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<InvitationCanvasHandle>(null);
@@ -210,9 +282,37 @@ const InvitationStudio = () => {
   const activeSlots: InvitationSlot[] = activeTemplate
     ? [...getInvitationSlots(activeTemplate.layout), ...activeFaceState.extraSlots]
     : [];
-  const selectedSlot: InvitationSlot | undefined = activeSlots.find(
+  const selectedSlotBase: InvitationSlot | undefined = activeSlots.find(
     (s) => s.id === selectedSlotId,
   );
+  const selectedSlot: InvitationSlot | undefined = selectedSlotBase
+    ? mergeSlotAction(selectedSlotBase, activeFaceState.actionOverrides)
+    : undefined;
+
+  // 로그인 유저의 발행 완료된 모바일 청첩장 조회 (종이 청첩장의 QR 연결용)
+  useEffect(() => {
+    if (!user || !template || template.format !== "paper") return;
+    (async () => {
+      setLoadingMobileInvitations(true);
+      try {
+        const { data, error } = await (supabase as any)
+          .from("invitations")
+          .select("id, share_slug, status, invitation_templates(name, format)")
+          .eq("user_id", user.id)
+          .eq("status", "published");
+        if (!error && data) {
+          const filtered = (data || []).filter(
+            (item: any) => item.invitation_templates?.format === "mobile"
+          );
+          setMobileInvitations(filtered);
+        }
+      } catch (err) {
+        console.error("Failed to load mobile invitations:", err);
+      } finally {
+        setLoadingMobileInvitations(false);
+      }
+    })();
+  }, [user, template]);
 
   // ────────────────────────────────────────
   // 저장된 청첩장 로드 (id 모드)
@@ -234,6 +334,7 @@ const InvitationStudio = () => {
       setUserData(data.user_data ?? {});
       const tpl = data.invitation_templates as Template;
       setTemplate(tpl);
+      setTargetMobileSlug((data.layout as any)?.target_mobile_slug ?? null);
 
       // storage path → 표시용 signed URL (24h) 복원
       const hydrate = async (
@@ -262,6 +363,8 @@ const InvitationStudio = () => {
         imagePaths: faces.front.imagePaths ?? {},
         imageUrls: await hydrate(faces.front.imagePaths),
         bgOverride: faces.front.bgOverride,
+        imageFitOverrides: faces.front.imageFitOverrides ?? {},
+        actionOverrides: faces.front.actionOverrides ?? {},
       });
 
       // 후면 템플릿 (FK 미사용 → 별도 조회)
@@ -283,6 +386,8 @@ const InvitationStudio = () => {
           imagePaths: faces.back.imagePaths ?? {},
           imageUrls: await hydrate(faces.back.imagePaths),
           bgOverride: faces.back.bgOverride,
+          imageFitOverrides: faces.back.imageFitOverrides ?? {},
+          actionOverrides: faces.back.actionOverrides ?? {},
         });
       }
 
@@ -292,8 +397,12 @@ const InvitationStudio = () => {
         setShareUrl(`${window.location.origin}/i/${data.share_slug}`);
       }
       setStep("studio");
-      // 로드로 인한 state 변경이 자동저장을 트리거하지 않도록, 복원 완료 후 hydrate 표시.
-      autosaveHydratedRef.current = true;
+      // 로드로 인한 state 변경이 자동저장을 트리거하지 않도록, 마지막 set* 배치의
+      // effect 가 flush 된 뒤에 hydrate 완료로 표시 (동기로 표시하면 같은 배치의
+      // effect 가 hydrated=true 로 실행되어 발행본이 열람만으로 draft 강등됨).
+      window.setTimeout(() => {
+        autosaveHydratedRef.current = true;
+      }, 0);
     })();
   }, [params.id, user, navigate]);
 
@@ -308,6 +417,14 @@ const InvitationStudio = () => {
   useEffect(() => {
     if (!autosaveHydratedRef.current) return;
     if (!user || !template) return;
+
+    // 이미 발행 완료된 청첩장을 편집하기 시작하면 즉시 임시저장(draft) 상태로 전환하여 UI에 반영.
+    // return 하지 않고 계속 진행해 강등을 유발한 편집 자체도 같은 사이클에 저장한다
+    // (loadedStatus 는 deps 가 아니므로 return 하면 다음 편집까지 저장이 누락됨).
+    if (loadedStatus === "published") {
+      setLoadedStatus("draft");
+      setShareUrl(null);
+    }
     if (isSaving || isPublishing || isAutoSaving) return;
     // 내용이 없으면(빈 새 청첩장) 빈 draft 를 만들지 않음.
     const hasContent =
@@ -321,7 +438,7 @@ const InvitationStudio = () => {
     const timer = window.setTimeout(async () => {
       setIsAutoSaving(true);
       try {
-        const layout = await buildLayout(loadedStatus === "published");
+        const layout = await buildLayout(false); // 수정한 경우 draft 상태이므로 forViewer=false
         if (invitationId) {
           const { error } = await (supabase as any)
             .from("invitations")
@@ -331,6 +448,7 @@ const InvitationStudio = () => {
               user_data: userData,
               layout,
               ai_generated_text: aiText,
+              status: "draft" as const, // 수정 후 저장 시 임시저장으로 강등
             })
             .eq("id", invitationId);
           if (error) throw error;
@@ -362,7 +480,7 @@ const InvitationStudio = () => {
     }, 2500);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userData, frontFace, backFace, aiText, backTemplateId]);
+  }, [userData, frontFace, backFace, aiText, backTemplateId, targetMobileSlug]);
 
   // ────────────────────────────────────────
   // 템플릿 로드 (template 단계 진입 시)
@@ -455,6 +573,31 @@ const InvitationStudio = () => {
     );
   };
 
+  const handleSelectSlot = (id: string | null) => {
+    setSelectedSlotId(id);
+    if (!id) return;
+    const slot = activeSlots.find((s) => s.id === id);
+    if (!slot) return;
+    const isMediaSlot = slot.type === "image" || slot.type === "map";
+    const hasImage = !!activeFaceState.imageUrls[id] || !!slot.image_url;
+    if (isMediaSlot && !hasImage && selectionToastSlotRef.current !== id) {
+      selectionToastSlotRef.current = id;
+      toast({
+        title: slot.type === "map" ? "약도 영역이 선택됐어요" : "사진 프레임이 선택됐어요",
+        description: "아래 편집 패널에서 이미지를 첨부하거나 맞춤 방식을 조정할 수 있어요.",
+      });
+    }
+  };
+
+  const handleSlotActionChange = (action: InvitationSlotAction) => {
+    if (!selectedSlot) return;
+    const id = selectedSlot.id;
+    setFace((p) => ({
+      ...p,
+      actionOverrides: { ...p.actionOverrides, [id]: action },
+    }));
+  };
+
   // 텍스트 요소 추가 (캔버스 중앙)
   const handleAddText = () => {
     if (!activeTemplate) return;
@@ -477,6 +620,31 @@ const InvitationStudio = () => {
       color: "#1A1A1A",
       editable_font: true,
       movable: true,
+    };
+    setFace((p) => ({ ...p, extraSlots: [...p.extraSlots, newSlot] }));
+    setSelectedSlotId(id);
+  };
+
+  // 사진 프레임 추가 (캔버스 중앙)
+  const handleAddImageFrame = () => {
+    if (!activeTemplate) return;
+    const canvas = getInvitationPages(activeTemplate.layout)[0].canvas;
+    const cw = canvas.w;
+    const ch = canvas.h;
+    const w = Math.min(640, cw - 80);
+    const h = Math.round(w * 0.75);
+    const id = `extra-${crypto.randomUUID().slice(0, 8)}`;
+    const newSlot: InvitationSlot = {
+      id,
+      type: "image",
+      x: Math.round((cw - w) / 2),
+      y: Math.round(ch / 2 - h / 2),
+      w,
+      h,
+      z: 50,
+      fit: "cover",
+      movable: true,
+      resizable: true,
     };
     setFace((p) => ({ ...p, extraSlots: [...p.extraSlots, newSlot] }));
     setSelectedSlotId(id);
@@ -541,6 +709,25 @@ const InvitationStudio = () => {
       },
       { coalesceKey: "size:" + id }, // 같은 슬롯 연속 −/+ 만 한 단계로
     );
+  };
+
+  // 이미지/약도 슬롯의 fit 설정 변경 (cover / contain)
+  const handleImageFitChange = (fit: "cover" | "contain") => {
+    if (!selectedSlot) return;
+    const id = selectedSlot.id;
+    setFace((p) => ({
+      ...p,
+      imageFitOverrides: { ...p.imageFitOverrides, [id]: fit },
+    }));
+  };
+
+  // 종이 청첩장 QR 연결용 모바일 청첩장 선택 변경
+  const handleTargetMobileSlugChange = (slug: string | null) => {
+    setTargetMobileSlug(slug);
+    if (loadedStatus === "published") {
+      setLoadedStatus("draft");
+      setShareUrl(null);
+    }
   };
 
   const handlePhotoUpload = async (file: File) => {
@@ -647,12 +834,29 @@ const InvitationStudio = () => {
     ) {
       return;
     }
+    const activeTpl = activeFace === "front" ? template : backTemplate;
+    if (!activeTpl) return;
+    const defaultBg =
+      activeTpl?.layout?.pages?.[0]?.canvas?.bg ??
+      activeTpl?.layout?.canvas?.bg ??
+      "#FFFFFF";
+    const bgColor = activeFaceState.bgOverride?.color ?? defaultBg;
+
     const applyFace = setFace;
     setIsStylizingMap(true);
     try {
       const { data, error } = await (supabase as any).functions.invoke(
         "invitation-illustration",
-        { body: { source_paths: [sourcePath], style: "map" } },
+        {
+          body: {
+            source_paths: [sourcePath],
+            style: "map",
+            template_tone: activeTpl.tone,
+            template_name: activeTpl.name,
+            text_prompt_hint: activeTpl.text_prompt_hint,
+            bg_color: bgColor,
+          },
+        },
       );
       if (error) {
         let code: string | undefined;
@@ -832,6 +1036,8 @@ const InvitationStudio = () => {
       extraSlots: f.extraSlots,
       hiddenSlots: f.hiddenSlots,
       bgOverride: f.bgOverride,
+      imageFitOverrides: f.imageFitOverrides,
+      actionOverrides: f.actionOverrides,
     };
     if (!forViewer) return base;
     const imageUrlsForViewer: Record<string, string> = {};
@@ -849,16 +1055,16 @@ const InvitationStudio = () => {
   const buildLayout = async (forViewer: boolean) => ({
     front: await buildFaceLayout(frontFace, forViewer),
     back: await buildFaceLayout(backFace, forViewer),
+    target_mobile_slug: targetMobileSlug,
   });
 
   const handleSave = async () => {
     if (!user || !template) return;
     setIsSaving(true);
     try {
-      const isPublished = loadedStatus === "published";
-      const layout = await buildLayout(isPublished);
+      const layout = await buildLayout(false); // 수정한 경우 draft 상태이므로 forViewer=false
       if (invitationId) {
-        // status 는 보존(미포함) — 발행본을 편집 저장해도 draft 로 강등되지 않음
+        // 수정 사항 저장 시 status = 'draft' 로 강등
         const { error } = await (supabase as any)
           .from("invitations")
           .update({
@@ -867,9 +1073,12 @@ const InvitationStudio = () => {
             user_data: userData,
             layout,
             ai_generated_text: aiText,
+            status: "draft" as const,
           })
           .eq("id", invitationId);
         if (error) throw error;
+        setLoadedStatus("draft");
+        setShareUrl(null);
       } else {
         const { data, error } = await (supabase as any)
           .from("invitations")
@@ -1111,7 +1320,7 @@ const InvitationStudio = () => {
           fontsReady={fontsReady}
           selectedSlot={selectedSlot ?? null}
           selectedSlotId={selectedSlotId}
-          onSelectSlot={setSelectedSlotId}
+          onSelectSlot={handleSelectSlot}
           onTextChange={handleTextChange}
           onFontChange={handleFontChange}
           onOpenAi={() => setAiSheetOpen(true)}
@@ -1121,9 +1330,11 @@ const InvitationStudio = () => {
           isStylizingMap={isStylizingMap}
           onMoveSlot={handleMoveSlot}
           onAddText={handleAddText}
+          onAddImageFrame={handleAddImageFrame}
           onAddMap={handleAddMap}
           onDeleteSlot={handleDeleteSlot}
           onRestoreHidden={handleRestoreHidden}
+          onSlotActionChange={handleSlotActionChange}
           onFontSizeChange={handleFontSizeChange}
           onPickPhoto={() => fileInputRef.current?.click()}
           onExportPdf={handleExportPdf}
@@ -1141,6 +1352,11 @@ const InvitationStudio = () => {
           onRedo={activeHist.redo}
           canUndo={activeHist.canUndo}
           canRedo={activeHist.canRedo}
+          onImageFitChange={handleImageFitChange}
+          targetMobileSlug={targetMobileSlug}
+          mobileInvitations={mobileInvitations}
+          loadingMobileInvitations={loadingMobileInvitations}
+          onTargetMobileSlugChange={handleTargetMobileSlugChange}
         />
       )}
 
@@ -1568,9 +1784,11 @@ const StudioView = ({
   isStylizingMap,
   onMoveSlot,
   onAddText,
+  onAddImageFrame,
   onAddMap,
   onDeleteSlot,
   onRestoreHidden,
+  onSlotActionChange,
   onFontSizeChange,
   onPickPhoto,
   onExportPdf,
@@ -1588,6 +1806,11 @@ const StudioView = ({
   onRedo,
   canUndo,
   canRedo,
+  onImageFitChange,
+  targetMobileSlug,
+  mobileInvitations,
+  loadingMobileInvitations,
+  onTargetMobileSlugChange,
 }: {
   canvasRef: React.MutableRefObject<InvitationCanvasHandle | null>;
   backCanvasRef: React.MutableRefObject<InvitationCanvasHandle | null>;
@@ -1614,9 +1837,11 @@ const StudioView = ({
   isStylizingMap: boolean;
   onMoveSlot: (id: string, x: number, y: number) => void;
   onAddText: () => void;
+  onAddImageFrame: () => void;
   onAddMap: () => void;
   onDeleteSlot: () => void;
   onRestoreHidden: () => void;
+  onSlotActionChange: (action: InvitationSlotAction) => void;
   onFontSizeChange: (delta: number) => void;
   onPickPhoto: () => void;
   onExportPdf: () => void;
@@ -1634,8 +1859,14 @@ const StudioView = ({
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onImageFitChange: (fit: "cover" | "contain") => void;
+  targetMobileSlug: string | null;
+  mobileInvitations: { id: string; share_slug: string; invitation_templates: { name: string } | null }[];
+  loadingMobileInvitations: boolean;
+  onTargetMobileSlugChange: (slug: string | null) => void;
 }) => {
   const [showBackPicker, setShowBackPicker] = useState(false);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
   const aFace = activeFace === "front" ? frontFace : backFace;
   // 모바일 청첩장은 단면 — 전면/후면 개념 없음
   const allowBack = template.format !== "mobile";
@@ -1708,8 +1939,10 @@ const StudioView = ({
               onSelectSlot={visible ? onSelectSlot : () => {}}
               editable={visible}
               onMoveSlot={onMoveSlot}
-              shareUrl={shareUrl ?? undefined}
+              shareUrl={targetMobileSlug ? `${window.location.origin}/i/${targetMobileSlug}` : (shareUrl ?? undefined)}
               displayWidth={340}
+              imageFitOverrides={fd.imageFitOverrides}
+              actionOverrides={fd.actionOverrides}
             />
           </div>
         ))}
@@ -1749,6 +1982,18 @@ const StudioView = ({
           );
         })}
       </div>
+      )}
+
+      {template.format === "mobile" && (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full h-11"
+          onClick={() => setShowMobilePreview(true)}
+        >
+          <Smartphone className="w-4 h-4 mr-2" />
+          모바일 미리보기
+        </Button>
       )}
 
       {/* 캔버스 (전면+후면 모두 마운트, 비활성은 숨김) */}
@@ -1843,10 +2088,14 @@ const StudioView = ({
 
       {/* 요소 추가 / 숨김 복원 */}
       {(activeFace === "front" || backTemplate) && (
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Button variant="outline" className="flex-1" onClick={onAddText}>
             <Type className="w-4 h-4 mr-1.5" />
             텍스트 추가
+          </Button>
+          <Button variant="outline" className="flex-1" onClick={onAddImageFrame}>
+            <ImageIcon className="w-4 h-4 mr-1.5" />
+            사진 프레임
           </Button>
           <Button variant="outline" className="flex-1" onClick={onAddMap}>
             <MapPin className="w-4 h-4 mr-1.5" />
@@ -2004,6 +2253,34 @@ const StudioView = ({
               </p>
             </div>
           )}
+
+          {/* 이미지 채우기 방식 조절 (fit) */}
+          <div className="space-y-1.5 pt-2 border-t border-border">
+            <label className="text-[12px] font-bold text-foreground block">
+              이미지 맞춤 방식
+            </label>
+            <div className="flex gap-2">
+              {(["cover", "contain"] as const).map((fitOption) => {
+                const isActive = (aFace.imageFitOverrides[selectedSlot.id] ?? selectedSlot.fit ?? "cover") === fitOption;
+                return (
+                  <Button
+                    key={fitOption}
+                    type="button"
+                    variant={isActive ? "default" : "outline"}
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={() => onImageFitChange(fitOption)}
+                  >
+                    {fitOption === "cover" ? "전체 채우기 (Cover)" : "비율 맞춤 (Contain)"}
+                  </Button>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Cover는 영역을 꽉 채우고, Contain은 비율을 유지하여 원본 이미지가 전체 표시되도록 맞춥니다.
+            </p>
+          </div>
+
           <Button onClick={onPickPhoto} variant="outline" className="w-full">
             <ImageIcon className="w-4 h-4 mr-2" />
             {aFace.imageUrls[selectedSlot.id]
@@ -2027,6 +2304,54 @@ const StudioView = ({
         </section>
       )}
 
+      {/* QR 슬롯 편집 */}
+      {selectedSlot?.type === "qr" && (
+        <section className="p-4 bg-card rounded-2xl border border-border space-y-3">
+          <div className="flex items-center gap-2">
+            <QrCode className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground">QR 코드 연결 설정</h3>
+          </div>
+          {template.format === "paper" ? (
+            <div className="space-y-2">
+              <label className="text-[12px] font-bold text-foreground block">
+                연결할 모바일 청첩장 선택
+              </label>
+              {loadingMobileInvitations ? (
+                <p className="text-[11px] text-muted-foreground">불러오는 중...</p>
+              ) : mobileInvitations.length === 0 ? (
+                <div className="text-[11px] text-muted-foreground p-3 bg-muted rounded-lg space-y-1">
+                  <p>발행 완료된 모바일 청첩장이 없습니다.</p>
+                  <p>모바일 청첩장을 먼저 발행하시면 여기에 표시됩니다.</p>
+                </div>
+              ) : (
+                <select
+                  value={targetMobileSlug ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    onTargetMobileSlugChange(val ? val : null);
+                  }}
+                  className="w-full text-xs h-9 px-3 rounded-lg border border-border bg-background"
+                >
+                  <option value="">(기본) 이 청첩장 자체 링크</option>
+                  {mobileInvitations.map((item) => (
+                    <option key={item.id} value={item.share_slug}>
+                      {item.invitation_templates?.name || "모바일 청첩장"} ({item.share_slug})
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                종이 청첩장의 QR 코드를 스캔했을 때, 선택한 모바일 청첩장(온라인 화면)으로 연결되도록 설정합니다.
+              </p>
+            </div>
+          ) : (
+            <p className="text-[12px] text-muted-foreground leading-relaxed">
+              모바일 청첩장 자체의 QR 코드는 본 페이지의 링크로 자동 지정됩니다.
+            </p>
+          )}
+        </section>
+      )}
+
       {/* 캘린더 슬롯 안내 */}
       {selectedSlot?.type === "calendar" && (
         <section className="p-4 bg-card rounded-2xl border border-border">
@@ -2035,6 +2360,14 @@ const StudioView = ({
             렌더링돼요. 날짜를 변경하려면 뒤로 가서 정보를 수정해주세요.
           </p>
         </section>
+      )}
+
+      {selectedSlot && (
+        <SlotActionEditor
+          slot={selectedSlot}
+          userData={userData}
+          onChange={onSlotActionChange}
+        />
       )}
 
       {/* 발행 & 공유 (QR·바코드) */}
@@ -2093,6 +2426,19 @@ const StudioView = ({
       </div>
     </main>
 
+    {template.format === "mobile" && (
+      <MobilePreviewDialog
+        open={showMobilePreview}
+        onOpenChange={setShowMobilePreview}
+        template={template}
+        userData={userData}
+        face={frontFace}
+        aiText={aiText}
+        fontsReady={fontsReady}
+        shareUrl={shareUrl ?? undefined}
+      />
+    )}
+
     {/* 하단 고정 편집툴바 — 편집 중엔 글로벌 메뉴 대신 이 툴바가 하단을 차지(실수 이탈 방지) */}
     <div
       className="fixed left-1/2 -translate-x-1/2 z-40 w-[calc(100%-1.5rem)] max-w-[406px]"
@@ -2119,6 +2465,17 @@ const StudioView = ({
           <Redo2 className="w-4 h-4" />
           <span className="text-[9px] leading-none">다시</span>
         </button>
+        {template.format === "mobile" && (
+          <button
+            type="button"
+            onClick={() => setShowMobilePreview(true)}
+            aria-label="모바일 미리보기"
+            className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg text-foreground active:bg-muted"
+          >
+            <Eye className="w-4 h-4" />
+            <span className="text-[9px] leading-none">미리보기</span>
+          </button>
+        )}
         {/* 편집 페이지(면) 전환 — 종이 청첩장 전면↔후면 */}
         {allowBack && (
           <>
@@ -2157,6 +2514,15 @@ const StudioView = ({
           <Plus className="w-4 h-4" />
           <span className="text-[9px] leading-none">텍스트</span>
         </button>
+        <button
+          type="button"
+          onClick={onAddImageFrame}
+          aria-label="사진 프레임 추가"
+          className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg text-foreground active:bg-muted"
+        >
+          <ImageIcon className="w-4 h-4" />
+          <span className="text-[9px] leading-none">사진</span>
+        </button>
         {selectedSlot ? (
           <>
             <button
@@ -2186,6 +2552,278 @@ const StudioView = ({
     </>
   );
 };
+
+// ════════════════════════════════════════════════════════════════
+// Slot Action Editor — Canva/MiriCanvas style tap actions
+// ════════════════════════════════════════════════════════════════
+const DIRECT_VALUE = "__direct__";
+
+function actionPlaceholder(type: InvitationSlotActionType) {
+  switch (type) {
+    case "copy":
+      return "복사할 문구 또는 계좌번호";
+    case "link":
+      return "https://dewy.app 또는 /i/share-code";
+    case "phone":
+      return "01012345678";
+    case "sms":
+      return "01012345678";
+    case "map":
+      return "서울 강남구 테헤란로 123";
+    default:
+      return "";
+  }
+}
+
+function SlotActionIcon({ type }: { type: InvitationSlotActionType }) {
+  const className = "w-4 h-4 text-primary";
+  switch (type) {
+    case "copy":
+      return <Copy className={className} />;
+    case "link":
+      return <Link2 className={className} />;
+    case "phone":
+      return <Phone className={className} />;
+    case "sms":
+      return <MessageCircle className={className} />;
+    case "map":
+      return <MapPinned className={className} />;
+    case "rsvp":
+      return <MousePointerClick className={className} />;
+    default:
+      return <MousePointerClick className={className} />;
+  }
+}
+
+function defaultActionForSlot(
+  slot: InvitationSlot,
+  type: InvitationSlotActionType,
+): InvitationSlotAction {
+  if (type === "none") return { type: "none" };
+  if (type === "rsvp") return { type: "rsvp", label: "참석의사" };
+  const lowerId = slot.id.toLowerCase();
+  if (type === "copy" && lowerId.includes("groom")) {
+    return { type, label: actionLabel(type), field: "account_groom" };
+  }
+  if (type === "copy" && lowerId.includes("bride")) {
+    return { type, label: actionLabel(type), field: "account_bride" };
+  }
+  if ((type === "phone" || type === "sms") && lowerId.includes("groom")) {
+    return { type, label: actionLabel(type), field: "contact_groom" };
+  }
+  if ((type === "phone" || type === "sms") && lowerId.includes("bride")) {
+    return { type, label: actionLabel(type), field: "contact_bride" };
+  }
+  if (type === "map") {
+    return { type, label: actionLabel(type), field: "venue_address" };
+  }
+  return { type, label: actionLabel(type), value: "" };
+}
+
+function SlotActionEditor({
+  slot,
+  userData,
+  onChange,
+}: {
+  slot: InvitationSlot;
+  userData: InvitationUserData;
+  onChange: (action: InvitationSlotAction) => void;
+}) {
+  const action = slot.action ?? DEFAULT_ACTION;
+  const type = action.type ?? "none";
+  const option = SLOT_ACTION_OPTIONS.find((item) => item.type === type);
+  const needsValue = !["none", "rsvp"].includes(type);
+  const previewValue = resolveActionValue(action, userData);
+
+  return (
+    <section className="p-4 bg-card rounded-2xl border border-border space-y-3">
+      <div className="flex items-start gap-2">
+        <SlotActionIcon type={type} />
+        <div className="min-w-0">
+          <h3 className="text-sm font-bold text-foreground">요소 액션</h3>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            공개된 모바일 청첩장에서 이 요소를 탭했을 때 실행될 동작을 정해요.
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-[12px] text-muted-foreground">동작</Label>
+        <Select
+          value={type}
+          onValueChange={(value) =>
+            onChange(defaultActionForSlot(slot, value as InvitationSlotActionType))
+          }
+        >
+          <SelectTrigger className="h-9 text-sm">
+            <SelectValue placeholder="액션 선택" />
+          </SelectTrigger>
+          <SelectContent>
+            {SLOT_ACTION_OPTIONS.map((item) => (
+              <SelectItem key={item.type} value={item.type}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {option && (
+          <p className="text-[10px] text-muted-foreground">{option.description}</p>
+        )}
+      </div>
+
+      {needsValue && (
+        <>
+          <div className="space-y-1.5">
+            <Label className="text-[12px] text-muted-foreground">값 가져오기</Label>
+            <Select
+              value={action.field ?? DIRECT_VALUE}
+              onValueChange={(value) => {
+                if (value === DIRECT_VALUE) {
+                  const { field: _field, ...rest } = action;
+                  onChange({ ...rest, value: rest.value ?? "" });
+                } else {
+                  const { value: _value, ...rest } = action;
+                  onChange({ ...rest, field: value });
+                }
+              }}
+            >
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="데이터 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={DIRECT_VALUE}>직접 입력</SelectItem>
+                {SLOT_ACTION_FIELD_OPTIONS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {!action.field && (
+            <div className="space-y-1.5">
+              <Label className="text-[12px] text-muted-foreground">직접 입력값</Label>
+              <Input
+                value={action.value ?? ""}
+                onChange={(e) => onChange({ ...action, value: e.target.value })}
+                placeholder={actionPlaceholder(type)}
+                className="h-9 text-sm"
+              />
+            </div>
+          )}
+
+          <div className="rounded-lg bg-muted/60 px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
+            미리보기 값: {previewValue || "아직 입력된 값이 없어요"}
+          </div>
+        </>
+      )}
+
+      {type === "rsvp" && (
+        <div className="rounded-lg bg-primary/10 px-3 py-2 text-[11px] text-primary leading-relaxed">
+          발행 후 하객이 이 요소를 탭하면 참석의사 입력 시트가 열립니다.
+        </div>
+      )}
+    </section>
+  );
+}
+
+function MobilePreviewDialog({
+  open,
+  onOpenChange,
+  template,
+  userData,
+  face,
+  aiText,
+  fontsReady,
+  shareUrl,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  template: Template;
+  userData: InvitationUserData;
+  face: FaceState;
+  aiText: Record<string, string>;
+  fontsReady: boolean;
+  shareUrl?: string;
+}) {
+  const pages = getInvitationPages(template.layout);
+  const seamless = isSeamlessRoll(template.layout);
+
+  const handlePreviewSlot = (slotId: string | null) => {
+    if (!slotId) return;
+    const baseSlot =
+      pages.flatMap((page) => page.slots).find((slot) => slot.id === slotId) ??
+      face.extraSlots.find((slot) => slot.id === slotId);
+    if (!baseSlot) return;
+    const slot = mergeSlotAction(baseSlot, face.actionOverrides);
+    const action = slot.action;
+    if (!action || action.type === "none") return;
+    const value = resolveActionValue(action, userData);
+    toast({
+      title: "미리보기 액션",
+      description:
+        action.type === "rsvp"
+          ? "발행 후 참석의사 입력 시트가 열립니다."
+          : `${actionLabel(action.type)}${value ? ` · ${value}` : ""}`,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[430px] h-[92vh] p-0 overflow-hidden border-zinc-800 bg-zinc-950 text-white">
+        <DialogHeader className="px-4 pt-4 pb-2 text-left">
+          <DialogTitle className="text-base text-white">모바일 청첩장 미리보기</DialogTitle>
+          <DialogDescription className="text-zinc-400">
+            현재 저장 전 편집 상태를 휴대폰 화면 비율로 확인해요.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="px-4 pb-4 overflow-hidden">
+          <div className="mx-auto max-w-[390px] rounded-[34px] border border-zinc-700 bg-zinc-900 p-2 shadow-2xl">
+            <div className="mx-auto mb-2 h-5 w-28 rounded-b-2xl bg-zinc-950" />
+            <div className="max-h-[calc(92vh-132px)] overflow-y-auto rounded-[26px] bg-background">
+              <div className={`flex flex-col items-center ${seamless ? "gap-0" : "gap-3 py-3"}`}>
+                {pages.map((page, index) => (
+                  <div
+                    key={page.id}
+                    className={`flex flex-col items-center ${seamless ? "gap-0" : "gap-2"}`}
+                  >
+                    {!seamless && pages.length > 1 && (
+                      <span className="text-[11px] font-bold text-muted-foreground">
+                        {page.label ?? `${index + 1}P`}
+                      </span>
+                    )}
+                    <InvitationCanvas
+                      layout={pageToLayout(page)}
+                      userData={userData}
+                      aiText={aiText}
+                      textOverrides={face.textOverrides}
+                      fontOverrides={face.fontOverrides}
+                      positionOverrides={face.positionOverrides}
+                      fontSizeOverrides={face.fontSizeOverrides}
+                      extraSlots={index === 0 ? face.extraSlots : []}
+                      hiddenSlots={face.hiddenSlots}
+                      fontsReady={fontsReady}
+                      imageUrls={face.imageUrls}
+                      bgOverride={face.bgOverride}
+                      selectedSlotId={null}
+                      onSelectSlot={handlePreviewSlot}
+                      displayWidth={360}
+                      shareUrl={shareUrl}
+                      imageFitOverrides={face.imageFitOverrides}
+                      actionOverrides={face.actionOverrides}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // ════════════════════════════════════════════════════════════════
 // Font Picker — 등록된 invitation_fonts 중 선택 (카테고리별 그룹)

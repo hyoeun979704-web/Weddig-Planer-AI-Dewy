@@ -654,7 +654,14 @@ const InvitationFlow = () => {
 
       const { data, error } = await supabase.functions.invoke(
         "invitation-illustration",
-        { body: { source_paths: sourcePaths } },
+        {
+          body: {
+            source_paths: sourcePaths,
+            template_tone: tpl.tone,
+            template_name: tpl.name,
+            text_prompt_hint: tpl.text_prompt_hint,
+          },
+        },
       );
       if (error) throw error;
       const result = data as {

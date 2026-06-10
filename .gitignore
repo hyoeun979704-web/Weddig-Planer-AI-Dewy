@@ -54,3 +54,8 @@ public/mob/
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# Supabase CLI temp
+supabase/.temp/
+# esbuild /dev/null artifact on Windows
+dev/

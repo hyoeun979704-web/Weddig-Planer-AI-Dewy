@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import InvitationCanvas from "@/components/invitation/InvitationCanvas";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
+import { Drawer } from "vaul";
 import {
   collectFontFamilies,
   getInvitationPages,
@@ -15,34 +16,26 @@ import {
 import {
   readFaceLayout,
   type InvitationLayout,
+  type InvitationSlot,
+  type InvitationSlotAction,
   type InvitationUserData,
 } from "@/lib/invitation/types";
 
 /**
  * 공개 청첩장 뷰어 — /i/:slug
- *
- * 익명 누구나 접근. 본인 청첩장이 아니라 published 상태의 invitation row 를
- * share_slug 로 조회. RLS 의 "Published invitations are publicly viewable
- * via slug" 정책이 익명 SELECT 를 허용.
- *
- * 사진 슬롯은 storage 의 private signed URL 이 필요하지만 익명 사용자는
- * createSignedUrl 호출 권한 없음 → 별도 처리:
- *   - 발행 시점에 모든 사진 path 들의 long-lived (1년) signed URL 을
- *     invitations.layout.imageUrls 에 함께 저장
- *   - 뷰어는 그 저장된 URL 을 그대로 사용
- *
- * (다른 뷰는 본인 인증 후 24h signed URL 재발급 모델 유지 — viewer 만 예외)
  */
 
 interface PublishedInvitation {
   id: string;
   user_data: InvitationUserData;
   layout: {
+    target_mobile_slug?: string | null;
     textOverrides?: Record<string, string>;
     fontOverrides?: Record<string, string>;
     imagePaths?: Record<string, string>;
-    /** viewer 용 long-lived URL — 발행 시점에 함께 저장 */
     imageUrlsForViewer?: Record<string, string>;
+    imageFitOverrides?: Record<string, "cover" | "contain">;
+    actionOverrides?: Record<string, InvitationSlotAction>;
   };
   ai_generated_text: Record<string, string> | null;
   share_slug: string;
@@ -56,6 +49,41 @@ interface PublishedInvitation {
   } | null;
 }
 
+type MealPreference = "undecided" | "yes" | "no";
+
+const RSVP_NAME_MAX_LENGTH = 80;
+const RSVP_MESSAGE_MAX_LENGTH = 500;
+const RSVP_COMPANION_MAX_COUNT = 20;
+
+function resolveSlotActionValue(
+  action: InvitationSlotAction | undefined,
+  userData: InvitationUserData,
+) {
+  if (!action) return "";
+  if (action.field && userData[action.field]) return userData[action.field] ?? "";
+  return action.value ?? "";
+}
+
+function normalizeExternalUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^(https?:|mailto:|tel:|sms:)/i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("/")) return trimmed;
+  return `https://${trimmed}`;
+}
+
+function normalizePhone(value: string) {
+  return value.replace(/[^\d+]/g, "");
+}
+
+function slotWithActionOverride(
+  slot: InvitationSlot,
+  overrides: Record<string, InvitationSlotAction> = {},
+) {
+  const action = overrides[slot.id] ?? slot.action;
+  return action ? { ...slot, action } : slot;
+}
+
 const InvitationViewer = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -63,7 +91,17 @@ const InvitationViewer = () => {
   const [backLayout, setBackLayout] = useState<InvitationLayout | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  // 이 청첩장이 실제 쓰는 폰트만 on-demand 로드 (활성 폰트 전체 X)
+
+  // RSVP Drawer 상태 관리
+  const [isRsvpOpen, setIsRsvpOpen] = useState(false);
+  const [rsvpName, setRsvpName] = useState("");
+  const [isAttending, setIsAttending] = useState(true);
+  const [mealPreference, setMealPreference] =
+    useState<MealPreference>("undecided");
+  const [companionCount, setCompanionCount] = useState(0);
+  const [rsvpMessage, setRsvpMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
   const usedFonts = useMemo(() => {
     const tpl = data?.invitation_templates;
     if (!tpl) return undefined;
@@ -100,7 +138,6 @@ const InvitationViewer = () => {
         return;
       }
       setData(row as PublishedInvitation);
-      // 후면 템플릿은 FK 미사용 → 별도 조회
       if (row.back_template_id) {
         const { data: bt } = await (supabase as any)
           .from("invitation_templates")
@@ -130,6 +167,178 @@ const InvitationViewer = () => {
     }
   };
 
+  // RSVP 제출 처리
+  const handleRsvpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!data) return;
+
+    const name = rsvpName.trim();
+    const message = rsvpMessage.trim();
+    const normalizedCompanionCount = Number.isFinite(companionCount)
+      ? Math.trunc(companionCount)
+      : 0;
+
+    if (!name) return;
+    if (name.length > RSVP_NAME_MAX_LENGTH) {
+      toast({ title: "성함은 80자 이내로 입력해주세요." });
+      return;
+    }
+    if (
+      normalizedCompanionCount < 0 ||
+      normalizedCompanionCount > RSVP_COMPANION_MAX_COUNT
+    ) {
+      toast({ title: "동행 인원은 0명에서 20명 사이로 입력해주세요." });
+      return;
+    }
+    if (message.length > RSVP_MESSAGE_MAX_LENGTH) {
+      toast({ title: "메시지는 500자 이내로 입력해주세요." });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("invitation_rsvp")
+        .insert({
+          invitation_id: data.id,
+          name,
+          is_attending: isAttending,
+          meal_preference: mealPreference,
+          companion_count: normalizedCompanionCount,
+          message: message || null,
+        });
+
+      if (error) throw error;
+
+      toast({ title: "참석 의사가 신랑 신부에게 전달되었습니다!" });
+      setIsRsvpOpen(false);
+      // 폼 리셋
+      setRsvpName("");
+      setIsAttending(true);
+      setMealPreference("undecided");
+      setCompanionCount(0);
+      setRsvpMessage("");
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "제출 실패",
+        description: "다시 시도해 주세요.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const findSlotAction = (slotId: string) => {
+    if (!data?.invitation_templates) return undefined;
+    const faces = readFaceLayout(data.layout);
+    const layouts = [
+      { layout: data.invitation_templates.layout, face: faces.front },
+      ...(backLayout ? [{ layout: backLayout, face: faces.back }] : []),
+    ];
+    for (const item of layouts) {
+      const slot =
+        getInvitationPages(item.layout)
+          .flatMap((page) => page.slots)
+          .find((candidate) => candidate.id === slotId) ??
+        item.face.extraSlots?.find((candidate) => candidate.id === slotId);
+      if (slot) {
+        return slotWithActionOverride(slot, item.face.actionOverrides).action;
+      }
+    }
+    return undefined;
+  };
+
+  // 슬롯 액션 라우팅
+  const handleSlotClick = async (slotId: string | null) => {
+    if (!slotId || !data) return;
+
+    const action = findSlotAction(slotId);
+    if (action && action.type !== "none") {
+      const value = resolveSlotActionValue(action, data.user_data ?? {});
+      switch (action.type) {
+        case "rsvp":
+          setIsRsvpOpen(true);
+          return;
+        case "copy":
+          if (!value) {
+            toast({ title: "복사할 값이 아직 입력되지 않았어요." });
+            return;
+          }
+          await navigator.clipboard.writeText(value);
+          toast({ title: action.label ? `${action.label} 복사 완료` : "복사 완료" });
+          return;
+        case "link": {
+          const url = normalizeExternalUrl(value);
+          if (!url) {
+            toast({ title: "연결할 링크가 아직 입력되지 않았어요." });
+            return;
+          }
+          window.open(url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        case "phone": {
+          const phone = normalizePhone(value);
+          if (!phone) {
+            toast({ title: "전화번호가 아직 입력되지 않았어요." });
+            return;
+          }
+          window.location.href = `tel:${phone}`;
+          return;
+        }
+        case "sms": {
+          const phone = normalizePhone(value);
+          if (!phone) {
+            toast({ title: "문자 받을 번호가 아직 입력되지 않았어요." });
+            return;
+          }
+          window.location.href = `sms:${phone}`;
+          return;
+        }
+        case "map": {
+          const query = value || data.user_data.venue_address || data.user_data.venue_name || "";
+          if (!query.trim()) {
+            toast({ title: "지도에서 찾을 장소가 아직 입력되지 않았어요." });
+            return;
+          }
+          window.open(
+            `https://map.kakao.com/link/search/${encodeURIComponent(query)}`,
+            "_blank",
+            "noopener,noreferrer",
+          );
+          return;
+        }
+        default:
+          break;
+      }
+    }
+
+    if (slotId === "rsvp_trigger") {
+      setIsRsvpOpen(true);
+    } else if (slotId === "groom_account_btn" || slotId === "bride_account_btn") {
+      // 미입력 시 가짜 계좌 폴백 금지 — 하객이 엉뚱한 계좌로 송금할 수 있다.
+      const isGroom = slotId === "groom_account_btn";
+      const account = isGroom
+        ? data.user_data.account_groom
+        : data.user_data.account_bride;
+      if (!account) {
+        toast({ title: "계좌번호가 아직 입력되지 않았어요." });
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(account);
+        toast({
+          title: isGroom
+            ? "신랑측 계좌번호가 복사되었습니다."
+            : "신부측 계좌번호가 복사되었습니다.",
+        });
+      } catch {
+        toast({ title: "복사 권한이 없어 복사하지 못했어요." });
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -155,6 +364,9 @@ const InvitationViewer = () => {
   const tpl = data.invitation_templates;
   const faces = readFaceLayout(data.layout);
   const seamlessRoll = isSeamlessRoll(tpl.layout);
+  const qrShareUrl = data.layout.target_mobile_slug
+    ? `${window.location.origin}/i/${data.layout.target_mobile_slug}`
+    : window.location.href;
   const renderPages = (
     layout: InvitationLayout,
     overrides: ReturnType<typeof readFaceLayout>["front"],
@@ -162,41 +374,42 @@ const InvitationViewer = () => {
     getInvitationPages(layout).map((page, index, pages) => {
       const seamless = isSeamlessRoll(layout);
       return (
-      <RevealSection
-        key={page.id}
-        enabled={seamless}
-        className={`flex flex-col items-center ${seamless ? "gap-0" : "gap-2"}`}
-      >
-        {!seamless && pages.length > 1 && (
-          <span className="text-[11px] font-bold text-muted-foreground">
-            {page.label ?? `${index + 1}P`}
-          </span>
-        )}
-        <InvitationCanvas
-          layout={pageToLayout(page)}
-          userData={data.user_data ?? {}}
-          aiText={data.ai_generated_text ?? {}}
-          textOverrides={overrides.textOverrides ?? {}}
-          fontOverrides={overrides.fontOverrides ?? {}}
-          positionOverrides={overrides.positionOverrides ?? {}}
-          fontSizeOverrides={overrides.fontSizeOverrides ?? {}}
-          extraSlots={index === 0 ? overrides.extraSlots ?? [] : []}
-          hiddenSlots={overrides.hiddenSlots ?? []}
-          fontsReady={fontsReady}
-          imageUrls={overrides.imageUrlsForViewer ?? {}}
-          bgOverride={overrides.bgOverride}
-          selectedSlotId={null}
-          onSelectSlot={() => {}}
-          displayWidth={360}
-          shareUrl={window.location.href}
-        />
-      </RevealSection>
+        <RevealSection
+          key={page.id}
+          enabled={seamless}
+          className={`flex flex-col items-center ${seamless ? "gap-0" : "gap-2"}`}
+        >
+          {!seamless && pages.length > 1 && (
+            <span className="text-[11px] font-bold text-muted-foreground">
+              {page.label ?? `${index + 1}P`}
+            </span>
+          )}
+          <InvitationCanvas
+            layout={pageToLayout(page)}
+            userData={data.user_data ?? {}}
+            aiText={data.ai_generated_text ?? {}}
+            textOverrides={overrides.textOverrides ?? {}}
+            fontOverrides={overrides.fontOverrides ?? {}}
+            positionOverrides={overrides.positionOverrides ?? {}}
+            fontSizeOverrides={overrides.fontSizeOverrides ?? {}}
+            extraSlots={index === 0 ? overrides.extraSlots ?? [] : []}
+            hiddenSlots={overrides.hiddenSlots ?? []}
+            fontsReady={fontsReady}
+            imageUrls={overrides.imageUrlsForViewer ?? {}}
+            bgOverride={overrides.bgOverride}
+            selectedSlotId={null}
+            onSelectSlot={handleSlotClick}
+            displayWidth={360}
+            shareUrl={qrShareUrl}
+            imageFitOverrides={overrides.imageFitOverrides}
+            actionOverrides={overrides.actionOverrides}
+          />
+        </RevealSection>
       );
     });
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
-      {/* 전면 */}
       <div
         className={`relative flex flex-col items-center bg-muted/20 ${
           seamlessRoll ? "py-0 gap-0" : "py-5 gap-5"
@@ -209,7 +422,6 @@ const InvitationViewer = () => {
           </>
         )}
         {renderPages(tpl.layout, faces.front)}
-        {/* 후면 (있을 때만) */}
         {backLayout && renderPages(backLayout, faces.back)}
       </div>
 
@@ -237,6 +449,130 @@ const InvitationViewer = () => {
           </Button>
         </div>
       </div>
+
+      {/* RSVP Bottom Sheet Drawer */}
+      <Drawer.Root open={isRsvpOpen} onOpenChange={setIsRsvpOpen}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
+          <Drawer.Content className="bg-background flex flex-col rounded-t-[10px] h-[85%] mt-24 fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto z-50 focus:outline-none">
+            <div className="p-4 bg-background rounded-t-[10px] flex-1 overflow-y-auto">
+              <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-6" />
+              <Drawer.Title className="text-xl font-bold text-center mb-6 text-foreground">
+                참석 의사 전달하기
+              </Drawer.Title>
+
+              <form onSubmit={handleRsvpSubmit} className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">성함</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={RSVP_NAME_MAX_LENGTH}
+                    value={rsvpName}
+                    onChange={(e) => setRsvpName(e.target.value)}
+                    placeholder="성함을 입력해주세요"
+                    className="w-full h-11 px-3 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">참석 여부</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAttending(true)}
+                      className={`h-11 rounded-md text-sm font-medium border transition-colors ${
+                        isAttending
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-foreground border-input hover:bg-accent"
+                      }`}
+                    >
+                      참석합니다
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsAttending(false)}
+                      className={`h-11 rounded-md text-sm font-medium border transition-colors ${
+                        !isAttending
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-foreground border-input hover:bg-accent"
+                      }`}
+                    >
+                      미참석
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">식사 여부</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { val: "yes", label: "식사함" },
+                      { val: "no", label: "식사안함" },
+                      { val: "undecided", label: "미정" }
+                    ].map((pref) => (
+                      <button
+                        key={pref.val}
+                        type="button"
+                        onClick={() =>
+                          setMealPreference(pref.val as MealPreference)
+                        }
+                        className={`h-11 rounded-md text-sm font-medium border transition-colors ${
+                          mealPreference === pref.val
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-foreground border-input hover:bg-accent"
+                        }`}
+                      >
+                        {pref.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">동행 인원 (본인 제외)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={RSVP_COMPANION_MAX_COUNT}
+                    step={1}
+                    value={companionCount}
+                    onChange={(e) => {
+                      const next = Number(e.target.value);
+                      if (!Number.isFinite(next)) {
+                        setCompanionCount(0);
+                        return;
+                      }
+                      setCompanionCount(
+                        Math.max(
+                          0,
+                          Math.min(RSVP_COMPANION_MAX_COUNT, Math.trunc(next)),
+                        ),
+                      );
+                    }}
+                    className="w-full h-11 px-3 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">축하의 메시지</label>
+                  <textarea
+                    value={rsvpMessage}
+                    maxLength={RSVP_MESSAGE_MAX_LENGTH}
+                    onChange={(e) => setRsvpMessage(e.target.value)}
+                    placeholder="신랑 신부에게 전할 축하의 한마디를 적어주세요"
+                    className="w-full h-24 p-3 rounded-md border border-input bg-background text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+
+                <Button type="submit" disabled={submitting} className="w-full h-12 mt-4">
+                  {submitting ? "제출 중..." : "참석 의사 전달하기"}
+                </Button>
+              </form>
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
     </div>
   );
 };

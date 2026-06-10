@@ -11,7 +11,8 @@ export type SlotType =
   | "asset"        // 장식 스티커 (invitation_assets 참조)
   | "calendar"     // wedding_date 의 그 달을 자동 렌더 + 결혼일 마커
   | "qr"           // 모바일 청첩장 발행 후 그 슬러그 URL의 QR
-  | "map";         // 식장 약도 — V1은 운영자 PNG, V2 는 카카오맵 자동
+  | "map"          // 식장 약도 — V1은 운영자 PNG, V2 는 카카오맵 자동
+  | "countdown";   // 결혼식까지 남은 시간 실시간 카운트다운
 
 export type SlotRole =
   | "intro"
@@ -26,6 +27,25 @@ export type SlotRole =
   | "rsvp"
   | "free";
 
+export type InvitationSlotActionType =
+  | "none"
+  | "rsvp"
+  | "copy"
+  | "link"
+  | "phone"
+  | "sms"
+  | "map";
+
+export interface InvitationSlotAction {
+  type: InvitationSlotActionType;
+  /** 편집/공개 화면에서 액션을 설명하는 선택 라벨. */
+  label?: string;
+  /** URL, 전화번호, 복사 문구, 주소 등 직접 입력한 액션 값. */
+  value?: string;
+  /** account_groom, venue_address 같은 user_data 필드 참조. */
+  field?: string;
+}
+
 export interface InvitationSlot {
   id: string;
   type: SlotType;
@@ -37,6 +57,9 @@ export interface InvitationSlot {
   h: number;
   rotation?: number;
   z?: number;  // z-index, 작을수록 뒤
+  /** 기본 스케일 (애니메이션 복귀 목표값). 미지정 시 1. */
+  scaleX?: number;
+  scaleY?: number;
 
   // 데이터 바인딩 — user_data[field] 또는 ai_generated_text[id]
   field?: string;
@@ -117,6 +140,9 @@ export interface InvitationSlot {
   calendar_accent_color?: string;
   /** 달력 상단 '09 SEPTEMBER' 헤더 숨김 (위에 별도 월/년 라벨 둘 때). */
   calendar_hide_header?: boolean;
+
+  /** 공개 뷰어에서 슬롯을 탭했을 때 실행할 액션. */
+  action?: InvitationSlotAction;
 }
 
 /** 그라디언트 색 정지점 (offset 0..1). */
@@ -237,6 +263,10 @@ export interface InvitationFaceData {
   imageUrlsForViewer?: Record<string, string>;
   /** 사용자가 바꾼 캔버스 배경(단색/그라디언트). 없으면 템플릿 기본. */
   bgOverride?: BgFill;
+  /** slot.id → 이미지 맞춤(fit) override */
+  imageFitOverrides?: Record<string, "cover" | "contain">;
+  /** slot.id → 공개 뷰어 액션 override */
+  actionOverrides?: Record<string, InvitationSlotAction>;
 }
 
 export type InvitationFace = "front" | "back";
@@ -253,10 +283,13 @@ export function readFaceLayout(layout: unknown): {
 } {
   const l = (layout ?? {}) as Record<string, unknown>;
   if (l.front || l.back) {
-    return {
-      front: (l.front as InvitationFaceData) ?? {},
-      back: (l.back as InvitationFaceData) ?? {},
-    };
+    const f = (l.front as InvitationFaceData) ?? {};
+    const b = (l.back as InvitationFaceData) ?? {};
+    if (!f.imageFitOverrides) f.imageFitOverrides = {};
+    if (!b.imageFitOverrides) b.imageFitOverrides = {};
+    if (!f.actionOverrides) f.actionOverrides = {};
+    if (!b.actionOverrides) b.actionOverrides = {};
+    return { front: f, back: b };
   }
   // 평면(단면) → 전면으로 승격
   return {
@@ -266,6 +299,8 @@ export function readFaceLayout(layout: unknown): {
       fontOverrides: (l.fontOverrides as Record<string, string>) ?? {},
       imageUrlsForViewer:
         (l.imageUrlsForViewer as Record<string, string>) ?? {},
+      imageFitOverrides: {},
+      actionOverrides: {},
     },
     back: {},
   };

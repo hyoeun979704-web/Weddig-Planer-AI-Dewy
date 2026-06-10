@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { Stage, Layer, Rect, Text, Image as KonvaImage, Group, Line } from "react-konva";
-import type Konva from "konva";
+import Konva from "konva";
 import useImage from "use-image";
 import QRCode from "qrcode";
 import {
@@ -81,6 +81,10 @@ interface Props {
   hiddenSlots?: string[];
   /** 템플릿 편집기 모드 — locked/mov:false 무시하고 모든 슬롯 드래그 허용. */
   unlockAll?: boolean;
+  /** slot.id → 이미지 맞춤(fit) override */
+  imageFitOverrides?: Record<string, "cover" | "contain">;
+  /** slot.id → 공개 뷰어 액션 override */
+  actionOverrides?: Record<string, InvitationSlot["action"]>;
 }
 
 /**
@@ -148,6 +152,8 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       extraSlots = [],
       hiddenSlots = [],
       unlockAll = false,
+      imageFitOverrides = {},
+      actionOverrides = {},
     },
     ref,
   ) => {
@@ -209,6 +215,11 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
             {/* 슬롯들 z 순서대로 (템플릿 슬롯 + 추가 요소, 숨긴 것 제외) */}
             {[...layout.slots, ...extraSlots]
               .filter((s) => !hiddenSlots.includes(s.id))
+              .map((slot) =>
+                actionOverrides[slot.id]
+                  ? { ...slot, action: actionOverrides[slot.id] }
+                  : slot,
+              )
               .sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
               .map((slot) => {
                 // 텍스트·캘린더 슬롯은 폰트가 바뀌거나(고름) 로드 완료되면 재마운트해
@@ -246,6 +257,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                     posY={pos?.y ?? slot.y}
                     draggable={draggable}
                     onMoveEnd={onMoveSlot}
+                    imageFitOverrides={imageFitOverrides}
                   />
                 );
               })}
@@ -304,6 +316,7 @@ interface SlotNodeProps {
   posY?: number;
   draggable?: boolean;
   onMoveEnd?: (id: string, x: number, y: number) => void;
+  imageFitOverrides?: Record<string, "cover" | "contain">;
 }
 
 // 영문 이름(캘리그래피) 필드 — 폰트 미지정 시 서명체 기본 적용 (디자인 시그니처)
@@ -463,9 +476,118 @@ function resolveWrap(slot: InvitationSlot, text: string): "word" | "char" | "non
 
 const SlotNode = (props: SlotNodeProps) => {
   const { slot, isSelected, posX, posY, draggable, onMoveEnd } = props;
+  const groupRef = useRef<any>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // 뷰포트 진입 감지 (IntersectionObserver)
+  useEffect(() => {
+    const node = groupRef.current;
+    if (!node || props.draggable || isSelected) {
+      setIsVisible(true);
+      return;
+    }
+
+    let observer: IntersectionObserver | null = null;
+    const checkTimer = setTimeout(() => {
+      const stage = node.getStage();
+      if (!stage) {
+        setIsVisible(true);
+        return;
+      }
+      const container = stage.container();
+      if (!container) {
+        setIsVisible(true);
+        return;
+      }
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setIsVisible(true);
+              observer?.disconnect();
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
+
+      observer.observe(container);
+    }, 50);
+
+    return () => {
+      clearTimeout(checkTimer);
+      observer?.disconnect();
+    };
+  }, [slot.id, props.draggable, isSelected]);
+
+  // 스프링 등장 및 하트 박동 애니메이션 효과 (공개 뷰어 모드 - editable=false 이자 draggable=false 일 때만 작동)
+  useEffect(() => {
+    const node = groupRef.current;
+    if (!node || !isVisible || props.draggable || isSelected) return;
+
+    // 1. 하트 스티커 에셋에 대한 Heartbeat (심장 박동) 루프 애니메이션
+    const isHeart = slot.id.includes("heart") || slot.id.includes("decor");
+    if (isHeart) {
+      const targetScaleX = slot.scaleX ?? 1;
+      const targetScaleY = slot.scaleY ?? 1;
+
+      const anim = new Konva.Animation((frame) => {
+        if (!frame) return;
+        const period = 1200; // 1.2초 주기
+        const time = frame.time % period;
+        let scaleFactor = 1;
+        if (time < 300) {
+          // 첫 번째 수축-이완 (쿵)
+          scaleFactor = 1 + 0.12 * Math.sin((time / 300) * Math.PI);
+        } else if (time >= 350 && time < 650) {
+          // 두 번째 수축-이완 (쾅)
+          scaleFactor = 1 + 0.08 * Math.sin(((time - 350) / 300) * Math.PI);
+        }
+        node.scale({ x: targetScaleX * scaleFactor, y: targetScaleY * scaleFactor });
+      }, node.getLayer());
+
+      anim.start();
+      return () => {
+        anim.stop();
+      };
+    }
+
+    // 2. 폴라로이드 사진, 프레임 및 일반 이미지/에셋 슬롯의 스프링 진입 애니메이션
+    const shouldAnimate =
+      slot.type === "image" ||
+      (slot.type === "asset" && (slot.id.includes("frame") || slot.id.includes("decor")));
+
+    if (shouldAnimate) {
+      const targetY = posY ?? slot.y;
+      node.scale({ x: 0.7, y: 0.7 });
+      node.y(targetY + 60);
+      node.opacity(0);
+
+      const tween = new Konva.Tween({
+        node: node,
+        duration: 0.95,
+        scaleX: 1,
+        scaleY: 1,
+        y: targetY,
+        opacity: 1,
+        easing: Konva.Easings.BackEaseOut,
+      });
+
+      const delayTimer = setTimeout(() => {
+        tween.play();
+      }, slot.id.includes("2") ? 220 : 60);
+
+      return () => {
+        clearTimeout(delayTimer);
+        tween.destroy();
+      };
+    }
+  }, [slot.id, slot.type, posX, posY, isSelected, isVisible, props.draggable]);
 
   return (
     <Group
+      ref={groupRef}
       x={posX ?? slot.x}
       y={posY ?? slot.y}
       rotation={slot.rotation ?? 0}
@@ -474,7 +596,7 @@ const SlotNode = (props: SlotNodeProps) => {
       onTap={props.onClick}
       onDragEnd={(e) => onMoveEnd?.(slot.id, e.target.x(), e.target.y())}
     >
-      {renderSlotBody(props)}
+      {renderSlotBody({ ...props, isVisible })}
       {isSelected && (
         <Rect
           x={0}
@@ -491,7 +613,7 @@ const SlotNode = (props: SlotNodeProps) => {
   );
 };
 
-function renderSlotBody(props: SlotNodeProps) {
+function renderSlotBody(props: SlotNodeProps & { isVisible?: boolean }) {
   const { slot } = props;
   switch (slot.type) {
     case "text":
@@ -506,6 +628,8 @@ function renderSlotBody(props: SlotNodeProps) {
       return <QrSlotBody {...props} />;
     case "map":
       return <ImageSlotBody {...props} />;
+    case "countdown":
+      return <CountdownSlotBody {...props} />;
     default:
       return <PlaceholderSlotBody label="알 수 없는 슬롯" {...props} />;
   }
@@ -596,14 +720,16 @@ function resolveText(
   return slot.placeholder ?? "";
 }
 
-const TextSlotBody = ({
-  slot,
-  userData,
-  aiText,
-  textOverrides,
-  fontOverrides,
-  fontSizeOverrides = {},
-}: SlotNodeProps) => {
+const TextSlotBody = (props: SlotNodeProps & { isVisible?: boolean }) => {
+  const {
+    slot,
+    userData,
+    aiText,
+    textOverrides,
+    fontOverrides,
+    fontSizeOverrides = {},
+    isVisible = true,
+  } = props;
   const rawText = resolveText(slot, userData, aiText, textOverrides);
   const text =
     slot.text_transform === "upper"
@@ -611,6 +737,40 @@ const TextSlotBody = ({
       : slot.text_transform === "lower"
         ? rawText.toLowerCase()
         : rawText;
+
+  // 타이핑 효과 지원 (love_story_intro 슬롯이고, 편집 모드가 아닐 때만 작동)
+  const [displayedText, setDisplayedText] = useState("");
+  const isTypingSlot = slot.id === "love_story_intro";
+  const editable = props.draggable || false;
+
+  useEffect(() => {
+    if (!isTypingSlot || editable) {
+      setDisplayedText(text);
+      return;
+    }
+
+    if (!isVisible) {
+      setDisplayedText("");
+      return;
+    }
+
+    let currentText = "";
+    let index = 0;
+    setDisplayedText("");
+
+    const timer = setInterval(() => {
+      if (index < text.length) {
+        currentText += text[index];
+        setDisplayedText(currentText);
+        index++;
+      } else {
+        clearInterval(timer);
+      }
+    }, 45); // 타이핑 속도 (글자당 45ms)
+
+    return () => clearInterval(timer);
+  }, [text, isTypingSlot, editable, isVisible]);
+
   // 빈 field 슬롯 hide — 사용자가 부모님·계좌 같은 선택 필드를 비워둘 때
   // 빈 줄로 그려져 디자인이 망가지는 걸 방지.
   // 단, ai_promptable 슬롯이나 placeholder 가 있는 슬롯은 그대로 둠 (편집/디자인 의도).
@@ -630,7 +790,7 @@ const TextSlotBody = ({
       y={0}
       width={slot.w}
       height={slot.h}
-      text={text}
+      text={isTypingSlot ? displayedText : text}
       fontFamily={resolveFont(slot, fontOverrides)}
       fontSize={fontSizeOverrides[slot.id] ?? slot.font_size ?? 18}
       fontStyle={resolveFontStyle(slot)}
@@ -656,7 +816,7 @@ const TextSlotBody = ({
 // ════════════════════════════════════════════════════════════════
 // 이미지 슬롯 (image / map)
 // ════════════════════════════════════════════════════════════════
-const ImageSlotBody = ({ slot, imageUrls }: SlotNodeProps) => {
+const ImageSlotBody = ({ slot, imageUrls, imageFitOverrides }: SlotNodeProps) => {
   const url = imageUrls[slot.id] ?? slot.image_url ?? "";
   const [img] = useImage(url, "anonymous");
 
@@ -698,20 +858,31 @@ const ImageSlotBody = ({ slot, imageUrls }: SlotNodeProps) => {
     );
   }
 
+  // 폴라로이드 사진 마스크 패딩 처리
+  const isPolaroid = slot.id.includes("photo_1") || slot.id.includes("photo_2") || slot.id.includes("polaroid");
+
+  const padL = isPolaroid ? 18 : 0;
+  const padR = isPolaroid ? 18 : 0;
+  const padT = isPolaroid ? 18 : 0;
+  const padB = isPolaroid ? 60 : 0;
+
+  const contentW = slot.w - (padL + padR);
+  const contentH = slot.h - (padT + padB);
+
   // cover/contain 계산
-  const fit = slot.fit ?? "cover";
+  const fit = imageFitOverrides?.[slot.id] ?? slot.fit ?? "cover";
   const scale =
     fit === "cover"
-      ? Math.max(slot.w / img.width, slot.h / img.height)
-      : Math.min(slot.w / img.width, slot.h / img.height);
+      ? Math.max(contentW / img.width, contentH / img.height)
+      : Math.min(contentW / img.width, contentH / img.height);
   const drawW = img.width * scale;
   const drawH = img.height * scale;
-  const offX = (slot.w - drawW) / 2;
-  const offY = (slot.h - drawH) / 2;
+  const offX = padL + (contentW - drawW) / 2;
+  const offY = padT + (contentH - drawH) / 2;
 
   return (
     <Group clipFunc={(ctx) => {
-      ctx.rect(0, 0, slot.w, slot.h);
+      ctx.rect(padL, padT, contentW, contentH);
     }}>
       <KonvaImage
         image={img}
@@ -1067,3 +1238,113 @@ const PlaceholderInner = ({
     />
   </Group>
 );
+
+// ════════════════════════════════════════════════════════════════
+// 카운트다운 타이머 슬롯
+// ════════════════════════════════════════════════════════════════
+const CountdownSlotBody = ({ slot, userData }: SlotNodeProps) => {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const dateStr = userData.wedding_date;
+  const timeStr = userData.wedding_time ?? "00:00";
+
+  useEffect(() => {
+    if (!dateStr) return;
+
+    const dateParts = dateStr.split("-");
+    const timeParts = timeStr.split(":");
+    const year = parseInt(dateParts[0], 10);
+    const month = parseInt(dateParts[1], 10) - 1;
+    const day = parseInt(dateParts[2], 10);
+    const hours = parseInt(timeParts[0] || "0", 10);
+    const minutes = parseInt(timeParts[1] || "0", 10);
+    const targetDate = new Date(year, month, day, hours, minutes, 0);
+
+    if (isNaN(targetDate.getTime())) {
+      console.warn("Invalid countdown target date:", dateStr, timeStr);
+      return;
+    }
+
+    const updateTimer = () => {
+      const now = new Date();
+      const diff = targetDate.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / 1000 / 60) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+
+      setTimeLeft({ days, hours, minutes, seconds });
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [dateStr, timeStr]);
+
+  if (!dateStr) {
+    return <PlaceholderInner slot={slot} label="⏳ 결혼 날짜 미입력" />;
+  }
+
+  const items = [
+    { num: String(timeLeft.days), label: "일" },
+    { num: String(timeLeft.hours).padStart(2, "0"), label: "시간" },
+    { num: String(timeLeft.minutes).padStart(2, "0"), label: "분" },
+    { num: String(timeLeft.seconds).padStart(2, "0"), label: "초" },
+  ];
+
+  const cellW = slot.w / 4;
+  const numberFontSize = slot.h * 0.45;
+  const labelFontSize = slot.h * 0.18;
+  const color = slot.color ?? "#8B3E42";
+
+  return (
+    <Group>
+      {items.map((item, i) => (
+        <Group key={i} x={cellW * i}>
+          {/* 구분선 (콜론) 표시 - 마지막 셀 제외 */}
+          {i < 3 && (
+            <Text
+              x={cellW - 8}
+              y={slot.h * 0.1}
+              text=":"
+              fontFamily="Tenor Sans, sans-serif"
+              fontSize={numberFontSize * 0.8}
+              fill={color}
+              align="center"
+            />
+          )}
+          {/* 시간 숫자 */}
+          <Text
+            x={0}
+            y={0}
+            width={cellW - 10}
+            height={slot.h * 0.6}
+            text={item.num}
+            fontFamily="Tenor Sans, sans-serif"
+            fontSize={numberFontSize}
+            fill={color}
+            align="center"
+            verticalAlign="middle"
+          />
+          {/* 시간 단위 라벨 */}
+          <Text
+            x={0}
+            y={slot.h * 0.62}
+            width={cellW - 10}
+            height={slot.h * 0.3}
+            text={item.label}
+            fontFamily="Pretendard, sans-serif"
+            fontSize={labelFontSize}
+            fill="#71717A"
+            align="center"
+          />
+        </Group>
+      ))}
+    </Group>
+  );
+};
