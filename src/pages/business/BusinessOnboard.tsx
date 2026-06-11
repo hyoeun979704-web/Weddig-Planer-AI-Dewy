@@ -37,6 +37,8 @@ const BusinessOnboard = () => {
   const [businessType, setBusinessType] = useState("");
   const [bizPhone, setBizPhone] = useState("");
   const [serviceCategory, setServiceCategory] = useState("");
+  // 제휴업체(프렌즈) 신청 — 신청 != 확정. 운영자 검토 + 개인면담 후 등급 부여.
+  const [applyPartner, setApplyPartner] = useState(false);
 
   const [result, setResult] = useState<{ is_verified: boolean; verification_failed?: boolean; message: string } | null>(null);
 
@@ -87,6 +89,27 @@ const BusinessOnboard = () => {
       if (!resp.ok) {
         toast.error(data.error || "등록에 실패했습니다");
         return;
+      }
+
+      // 제휴(프렌즈) 신청 함께 접수 — 프로필은 verify-business 가 서버에서 생성하므로
+      // 생성된 id 를 조회해 신청 행을 추가한다. 실패해도 가입 자체는 유효(대시보드에서 재신청 가능).
+      if (applyPartner) {
+        try {
+          const { data: bp } = await (supabase as any)
+            .from("business_profiles")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (bp?.id) {
+            await (supabase as any).from("partnership_applications").insert({
+              business_profile_id: bp.id,
+              user_id: user.id,
+              message: "가입 시 신청",
+            });
+          }
+        } catch {
+          /* 신청 실패는 가입 흐름을 막지 않음 — 대시보드 CTA 로 재신청 */
+        }
       }
 
       setResult(data);
@@ -197,6 +220,26 @@ const BusinessOnboard = () => {
                   </button>
                 ))}
               </div>
+
+              {/* 제휴업체(프렌즈) 신청 옵션 */}
+              <button
+                type="button"
+                onClick={() => setApplyPartner((v) => !v)}
+                className={`w-full p-4 rounded-2xl border-2 text-left transition-all ${applyPartner ? "border-primary bg-primary/5" : "border-border bg-card"}`}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-foreground">
+                    제휴업체(프렌즈) 함께 신청하기
+                  </p>
+                  <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center text-[12px] ${applyPartner ? "bg-primary border-primary text-primary-foreground" : "border-border"}`}>
+                    {applyPartner ? "✓" : ""}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  운영자 검토와 개인 면담 후 선정돼요. 신청한다고 모두 제휴되는 건
+                  아니지만, 기업회원 활동은 바로 할 수 있고 언제든 다시 신청할 수 있어요.
+                </p>
+              </button>
             </motion.div>
           )}
 

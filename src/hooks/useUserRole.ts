@@ -12,6 +12,8 @@ interface BusinessProfile {
   vendor_id: number | null;
   approval_status: string;
   review_note: string | null;
+  /** 기업회원 등급 — basic(일반) / friends(프렌즈·제휴) / bff(이달의 베프) */
+  partner_tier: "basic" | "friends" | "bff";
 }
 
 export const useUserRole = () => {
@@ -49,7 +51,7 @@ export const useUserRole = () => {
         if (userRoles.includes("business")) {
           const { data: bpData, error: bpError } = await (supabase as any)
             .from("business_profiles")
-            .select("id, business_name, business_number, representative_name, service_category, is_verified, vendor_id, approval_status, review_note")
+            .select("id, business_name, business_number, representative_name, service_category, is_verified, vendor_id, approval_status, review_note, partner_tier")
             .eq("user_id", user.id)
             .maybeSingle();
           if (bpError) throw bpError;

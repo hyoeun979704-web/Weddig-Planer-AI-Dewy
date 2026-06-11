@@ -48,13 +48,21 @@ const AdminBusinessReview = () => {
   const [rejectTarget, setRejectTarget] = useState<{ type: "listing" | "event" | "product"; id: string } | null>(null);
   const [sectionNote, setSectionNote] = useState("");
 
+  // 제휴(프렌즈) 신청 + 등급 지정 — 이달의 베프(bff)는 매달 교체
+  const [applications, setApplications] = useState<{ id: string; business_name: string; service_category: string; status: string; message: string | null; created_at: string }[]>([]);
+  const [tiers, setTiers] = useState<{ id: string; business_name: string; service_category: string; partner_tier: string }[]>([]);
+  const [processingApp, setProcessingApp] = useState<string | null>(null);
+  const [processingTier, setProcessingTier] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
-    const [biz, list, evt, prod] = await Promise.all([
+    const [biz, list, evt, prod, apps, tierList] = await Promise.all([
       (supabase as any).rpc("admin_list_pending_businesses"),
       (supabase as any).rpc("admin_list_pending_listings"),
       (supabase as any).rpc("admin_list_pending_events"),
       (supabase as any).rpc("admin_list_pending_products"),
+      (supabase as any).rpc("admin_list_partnership_applications"),
+      (supabase as any).rpc("admin_list_business_tiers"),
     ]);
     if (biz.error || list.error || evt.error || prod.error) {
       toast.error("일부 검토 목록을 불러오지 못했어요. 다시 시도해주세요");
@@ -63,8 +71,35 @@ const AdminBusinessReview = () => {
     setListings(list.error ? [] : ((list.data ?? []) as any[]).map((p) => ({ place_id: p.place_id, name: p.name, city: p.city, category: p.category })));
     setEvents(evt.error ? [] : ((evt.data ?? []) as any[]).map((e) => ({ id: e.id, title: e.title, description: e.description })));
     setProducts(prod.error ? [] : ((prod.data ?? []) as any[]).map((p) => ({ id: p.id, name: p.name, price: p.price })));
+    setApplications(apps.error ? [] : (apps.data ?? []));
+    setTiers(tierList.error ? [] : (tierList.data ?? []));
     setLoading(false);
   }, []);
+
+  // 제휴 신청 처리 — 면담 진행 / 승인(프렌즈 자동 부여) / 반려
+  const reviewPartnership = async (id: string, status: "interviewing" | "approved" | "rejected") => {
+    setProcessingApp(id);
+    const { data, error } = await (supabase as any).rpc("admin_review_partnership", { p_id: id, p_status: status, p_note: null });
+    setProcessingApp(null);
+    if (error || !(data as { ok?: boolean })?.ok) { toast.error("처리에 실패했어요"); return; }
+    toast.success(status === "approved" ? "프렌즈로 승격했어요" : status === "interviewing" ? "면담 진행으로 표시했어요" : "반려했어요");
+    if (status === "interviewing") {
+      setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
+    } else {
+      setApplications((prev) => prev.filter((a) => a.id !== id));
+    }
+    const refreshed = await (supabase as any).rpc("admin_list_business_tiers");
+    if (!refreshed.error) setTiers(refreshed.data ?? []);
+  };
+
+  const setTier = async (profileId: string, tier: string) => {
+    setProcessingTier(profileId);
+    const { data, error } = await (supabase as any).rpc("admin_set_business_tier", { p_profile_id: profileId, p_tier: tier });
+    setProcessingTier(null);
+    if (error || !(data as { ok?: boolean })?.ok) { toast.error("등급 변경 실패"); return; }
+    toast.success("등급을 변경했어요");
+    setTiers((prev) => prev.map((t) => (t.id === profileId ? { ...t, partner_tier: tier } : t)));
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -290,6 +325,79 @@ const AdminBusinessReview = () => {
                     </Button>
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">제휴(프렌즈) 신청 ({applications.length})</h2>
+          {applications.length === 0 ? (
+            <EmptyState icon={Building2} title="대기 중인 제휴 신청이 없어요" />
+          ) : (
+          <div className="space-y-3">
+            {applications.map((a) => (
+              <div key={a.id} className="bg-card rounded-2xl border border-border p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-bold text-foreground">{a.business_name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {CATEGORY_LABELS[a.service_category] ?? a.service_category}
+                      {a.message ? ` · ${a.message}` : ""}
+                    </p>
+                  </div>
+                  {a.status === "interviewing" && (
+                    <span className="text-[11px] px-2 py-1 rounded-full bg-blue-100 text-blue-700 shrink-0">면담 중</span>
+                  )}
+                </div>
+                <div className="flex gap-2 mt-3">
+                  {a.status !== "interviewing" && (
+                    <Button variant="outline" size="sm" className="flex-1" disabled={processingApp === a.id} onClick={() => reviewPartnership(a.id, "interviewing")}>
+                      면담 진행
+                    </Button>
+                  )}
+                  <Button size="sm" className="flex-1" disabled={processingApp === a.id} onClick={() => reviewPartnership(a.id, "approved")}>
+                    <Check className="w-4 h-4 mr-1" /> 프렌즈 승인
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1" disabled={processingApp === a.id} onClick={() => reviewPartnership(a.id, "rejected")}>
+                    <X className="w-4 h-4 mr-1" /> 반려
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">파트너 등급 지정 ({tiers.length})</h2>
+          {tiers.length === 0 ? (
+            <EmptyState icon={Building2} title="승인된 기업회원이 없어요" />
+          ) : (
+          <div className="space-y-3">
+            {tiers.map((t) => (
+              <div key={t.id} className="bg-card rounded-2xl border border-border p-4">
+                <p className="font-bold text-foreground">{t.business_name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{CATEGORY_LABELS[t.service_category] ?? t.service_category}</p>
+                <div className="flex gap-1.5 mt-3">
+                  {([
+                    { val: "basic", label: "일반" },
+                    { val: "friends", label: "프렌즈" },
+                    { val: "bff", label: "이달의 베프" },
+                  ] as const).map((opt) => (
+                    <Button
+                      key={opt.val}
+                      size="sm"
+                      variant={t.partner_tier === opt.val ? "default" : "outline"}
+                      className="flex-1 text-xs"
+                      disabled={processingTier === t.id || t.partner_tier === opt.val}
+                      onClick={() => setTier(t.id, opt.val)}
+                    >
+                      {opt.label}
+                    </Button>
+                  ))}
+                </div>
               </div>
             ))}
           </div>

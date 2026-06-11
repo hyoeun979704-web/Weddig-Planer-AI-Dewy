@@ -9,36 +9,60 @@ import {
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { openExternal } from "@/lib/native/openExternal";
 
 /**
  * 입점 안내 랜딩 (/business) — 비로그인 공개.
- * 제휴 영업 시 보낼 수 있는 단일 URL. CTA 는 기업 가입(/auth?type=business)으로.
+ * 제휴 영업 시 보낼 수 있는 단일 URL. 메인 CTA 는 초기 파트너 모집 폼(안내 URL),
+ * 보조 CTA 는 앱 내 기업 가입(/auth?type=business).
  */
+const PARTNER_FORM_URL = "https://forms.gle/AaLeqcwkjTLwy9986";
+
+// 초기 파트너 모집 혜택 — 모집 안내문과 문구를 일치시킨다 (약속 = 화면).
 const BENEFITS = [
   {
     icon: Building2,
-    title: "무료 입점",
-    desc: "등록·노출·관리 모두 무료예요. 입점비, 거래 수수료가 없어요.",
-  },
-  {
-    icon: BadgeCheck,
-    title: "국세청 사업자 인증",
-    desc: "사업자번호 진위 확인을 거친 업체만 노출돼 신뢰를 보장해요.",
+    title: "입점·매칭 수수료 평생 0원",
+    desc: "초기 파트너사는 등록·노출·매칭 모두 영구 무료예요.",
   },
   {
     icon: Megaphone,
-    title: "예비부부에게 직접 노출",
-    desc: "업체 탐색·이벤트·쿠폰 탭에서 결혼 준비 중인 고객을 만나요.",
+    title: "5대 채널 맞춤 홍보 1회 무상",
+    desc: "블로그·인스타·유튜브 등 채널 맞춤형 홍보를 1회 지원해요.",
+  },
+  {
+    icon: BarChart3,
+    title: "AIO(AI 검색 최적화) 세팅",
+    desc: "우수 업체 한정 — 상세페이지에 AI 검색 최적화 구조를 적용해요.",
+  },
+  {
+    icon: BadgeCheck,
+    title: "메인·추천 리스트 최우선 노출",
+    desc: "앱 런칭 시 파트너 배지와 함께 추천 영역에 우선 노출돼요.",
   },
   {
     icon: MessageSquare,
     title: "문의를 앱에서 바로",
     desc: "고객 문의를 업체 포털에서 받고 답변해 예약으로 연결해요.",
   },
+];
+
+// 기업회원 3등급 — 운영자가 검토·면담 후 지정
+const TIERS = [
   {
-    icon: BarChart3,
-    title: "성과 대시보드",
-    desc: "조회수·찜·쿠폰 다운로드를 한눈에 확인해요.",
+    name: "이달의 베프",
+    badge: "🏆",
+    desc: "매달 선정되는 최우수 파트너 — 최상단 노출·스페셜 홍보",
+  },
+  {
+    name: "프렌즈",
+    badge: "🤝",
+    desc: "제휴 파트너 — 추천 우선 노출·파트너 배지 (검토·개인면담 후 선정)",
+  },
+  {
+    name: "일반",
+    badge: "",
+    desc: "기업회원 — 업체 관리·문의 응대·쿠폰/이벤트 등록",
   },
 ];
 
@@ -105,6 +129,27 @@ const BusinessLanding = () => {
           ))}
         </section>
 
+        {/* 등급 */}
+        <section className="space-y-3">
+          <h2 className="text-sm font-bold text-foreground">파트너 등급</h2>
+          <div className="space-y-2">
+            {TIERS.map((t) => (
+              <div
+                key={t.name}
+                className="p-4 bg-card rounded-2xl border border-border"
+              >
+                <p className="text-sm font-bold text-foreground">
+                  {t.badge ? `${t.badge} ` : ""}
+                  {t.name}
+                </p>
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
+                  {t.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* 절차 */}
         <section className="space-y-3">
           <h2 className="text-sm font-bold text-foreground">입점 절차</h2>
@@ -154,10 +199,17 @@ const BusinessLanding = () => {
       >
         <Button
           className="w-full h-12 text-[15px] font-bold"
-          onClick={() => navigate("/auth?type=business")}
+          onClick={() => void openExternal(PARTNER_FORM_URL)}
         >
-          무료로 입점 시작하기
+          초기 파트너 신청하기 (안내 폼)
         </Button>
+        <button
+          type="button"
+          onClick={() => navigate("/auth?type=business")}
+          className="block w-full text-center text-[12px] text-muted-foreground underline underline-offset-2 mt-2"
+        >
+          앱에서 바로 기업회원 가입하기
+        </button>
       </div>
     </div>
   );

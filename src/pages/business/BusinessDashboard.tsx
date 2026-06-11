@@ -39,6 +39,7 @@ const BusinessDashboard = () => {
       const row = Array.isArray(data) ? data[0] : data;
       if (!row?.place_id) return;
       setPlaceId(row.place_id);
+      setListingRow(row);
       const [favRes, mediaRes, dlRes] = await Promise.all([
         supabase.from("favorites").select("id", { count: "exact", head: true }).eq("item_id", row.place_id),
         (supabase as any).from("place_media").select("id", { count: "exact", head: true }).eq("place_id", row.place_id),
@@ -52,6 +53,68 @@ const BusinessDashboard = () => {
       });
     })();
   }, [businessProfile]);
+
+  // 제휴(프렌즈) 신청 현황 — 대기/면담중이면 CTA 대신 상태 표시
+  const [partnerApp, setPartnerApp] = useState<{ status: string } | null>(null);
+  const [listingRow, setListingRow] = useState<Record<string, unknown> | null>(null);
+  const [applying, setApplying] = useState(false);
+  const loadPartnerApp = async () => {
+    if (!businessProfile) return;
+    const { data } = await (supabase as any)
+      .from("partnership_applications")
+      .select("status")
+      .eq("business_profile_id", businessProfile.id)
+      .in("status", ["pending", "interviewing"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setPartnerApp(data ?? null);
+  };
+  useEffect(() => {
+    if (!businessProfile || businessProfile.approval_status !== "approved") return;
+    void loadPartnerApp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessProfile]);
+
+  // 제휴업체는 스키마(업체 정보) 완성이 필수 — 필수 필드 체크리스트
+  const REQUIRED_FIELDS: { key: string; label: string }[] = [
+    { key: "name", label: "업체명" },
+    { key: "category", label: "카테고리" },
+    { key: "city", label: "지역(시)" },
+    { key: "district", label: "지역(구)" },
+    { key: "description", label: "업체 소개" },
+    { key: "main_image_url", label: "대표 사진" },
+  ];
+  const missingFields = listingRow
+    ? REQUIRED_FIELDS.filter((f) => {
+        const v = listingRow[f.key];
+        return v === null || v === undefined || String(v).trim() === "";
+      })
+    : REQUIRED_FIELDS;
+  const isSchemaComplete = !!listingRow && missingFields.length === 0;
+
+  const handleApplyPartner = async () => {
+    if (!user || !businessProfile) return;
+    setApplying(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("partnership_applications")
+        .insert({
+          business_profile_id: businessProfile.id,
+          user_id: user.id,
+          message: "대시보드에서 신청",
+        });
+      if (error) throw error;
+      toast.success("제휴업체 신청을 접수했어요", {
+        description: "검토 후 개인 면담 일정을 안내드릴게요.",
+      });
+      await loadPartnerApp();
+    } catch {
+      toast.error("신청에 실패했어요. 다시 시도해주세요.");
+    } finally {
+      setApplying(false);
+    }
+  };
 
   if (authLoading || roleLoading) {
     return (
@@ -149,11 +212,18 @@ const BusinessDashboard = () => {
     {
       icon: MessageSquare,
       label: "문의/예약 관리",
-      description: "고객 문의 및 예약 내역 확인",
+      description: "고객 문의 확인·답변",
       href: "/business/inquiries",
-      badge: "준비중",
+      badge: null,
     },
   ];
+
+  const TIER_LABEL: Record<string, string> = {
+    basic: "일반",
+    friends: "프렌즈",
+    bff: "이달의 베프",
+  };
+  const tier = businessProfile.partner_tier ?? "basic";
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto">
@@ -180,7 +250,11 @@ const BusinessDashboard = () => {
                 <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                승인 완료 · {businessProfile.service_category}
+                승인 완료 · {businessProfile.service_category} ·{" "}
+                <span className={tier === "basic" ? "" : "font-bold text-primary"}>
+                  {TIER_LABEL[tier]}
+                  {tier === "bff" ? " 🏆" : ""}
+                </span>
               </p>
               {/* 국세청 사업자 인증은 운영자 승인과 별개 지표로 분리 표기. */}
               {!businessProfile.is_verified && (
@@ -199,6 +273,57 @@ const BusinessDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* 제휴(프렌즈) 신청 — basic 등급에서만 노출, 등록 완료(프렌즈/베프)되면 사라짐 */}
+        {tier === "basic" && (
+          <div className="mx-4 mt-3 p-4 bg-card rounded-2xl border border-border space-y-2">
+            {partnerApp ? (
+              <>
+                <p className="text-sm font-bold text-foreground">
+                  제휴업체 신청 {partnerApp.status === "interviewing" ? "면담 진행 중" : "검토 중"}
+                </p>
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
+                  {partnerApp.status === "interviewing"
+                    ? "개인 면담이 진행 중이에요. 결과를 곧 알려드릴게요."
+                    : "운영자 검토 후 개인 면담 일정을 안내드려요."}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-bold text-foreground">
+                  프렌즈(제휴업체)가 되어보세요
+                </p>
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
+                  추천 우선 노출·파트너 배지 등 제휴 혜택을 받아요. 검토와 개인
+                  면담 후 선정되며, 언제든 신청할 수 있어요.
+                </p>
+                {isSchemaComplete ? (
+                  <Button
+                    className="w-full h-10 mt-1"
+                    disabled={applying}
+                    onClick={handleApplyPartner}
+                  >
+                    제휴업체 신청하기
+                  </Button>
+                ) : (
+                  <>
+                    <p className="text-[11px] text-amber-600">
+                      제휴업체는 업체 정보를 모두 채워야 신청할 수 있어요 — 미입력:{" "}
+                      {missingFields.map((f) => f.label).join(", ")}
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="w-full h-10 mt-1"
+                      onClick={() => navigate("/business/edit")}
+                    >
+                      업체 정보 채우러 가기 ({REQUIRED_FIELDS.length - missingFields.length}/{REQUIRED_FIELDS.length})
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Quick stats */}
         <div className="grid grid-cols-4 gap-2 mx-4 mt-4">

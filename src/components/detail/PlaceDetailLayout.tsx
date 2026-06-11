@@ -112,6 +112,37 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
       cancelled = true;
     };
   }, [place.id]);
+
+  // AIO(AI 검색 최적화) — 입점(클레임) 업체 한정 LocalBusiness 구조화 데이터 주입.
+  // 초기 파트너 약속(혜택 3). AI 검색·크롤러가 업체 정보를 구조적으로 읽게 한다.
+  useEffect(() => {
+    if (!isClaimed) return;
+    const p = place as unknown as Record<string, unknown>;
+    const jsonLd: Record<string, unknown> = {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      name: place.name,
+      url: window.location.href,
+    };
+    if (place.tel) jsonLd.telephone = place.tel;
+    if (typeof p.description === "string" && p.description) jsonLd.description = p.description;
+    if (typeof p.address === "string" && p.address) jsonLd.address = p.address;
+    if (typeof p.main_image_url === "string" && p.main_image_url) jsonLd.image = p.main_image_url;
+    if (place.rating && place.review_count) {
+      jsonLd.aggregateRating = {
+        "@type": "AggregateRating",
+        ratingValue: place.rating,
+        reviewCount: place.review_count,
+      };
+    }
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.text = JSON.stringify(jsonLd);
+    document.head.appendChild(script);
+    return () => {
+      script.remove();
+    };
+  }, [isClaimed, place]);
   // 탭 전환 시 새 탭 내용을 위에서부터 보도록 페이지 상단으로 스크롤.
   const selectTab = (t: TabKey) => {
     setTab(t);
