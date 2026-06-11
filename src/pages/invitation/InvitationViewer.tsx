@@ -262,8 +262,22 @@ const InvitationViewer = () => {
     return undefined;
   };
 
-  // 갤러리 라이트박스 — 탭한 갤러리 슬롯의 사진 url 목록
-  const [lightboxUrls, setLightboxUrls] = useState<string[] | null>(null);
+  // 갤러리 — 탭하면 인스타 피드형 전체 보기(그리드), 사진 탭하면 확대 스와이프
+  const [galleryView, setGalleryView] = useState<string[] | null>(null);
+  const [lightbox, setLightbox] = useState<{
+    urls: string[];
+    index: number;
+  } | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const lightboxScrollRef = useRef<HTMLDivElement>(null);
+
+  // 확대 보기가 열리면 탭한 사진 위치로 즉시 이동
+  useEffect(() => {
+    if (!lightbox) return;
+    setLightboxIndex(lightbox.index);
+    const el = lightboxScrollRef.current;
+    if (el) el.scrollLeft = lightbox.index * el.clientWidth;
+  }, [lightbox]);
 
   // 내비 선택 시트 — 지도 액션 탭 시 검색할 장소명/주소
   const [navQuery, setNavQuery] = useState<string | null>(null);
@@ -298,10 +312,10 @@ const InvitationViewer = () => {
   const handleSlotClick = async (slotId: string | null) => {
     if (!slotId || !data) return;
 
-    // 갤러리 탭 → 라이트박스
+    // 갤러리 탭 → 인스타 피드형 전체 보기
     const galleryUrls = galleryUrlsOf(slotId);
     if (galleryUrls && galleryUrls.length > 0) {
-      setLightboxUrls(galleryUrls);
+      setGalleryView(galleryUrls);
       return;
     }
 
@@ -580,25 +594,81 @@ const InvitationViewer = () => {
         </div>
       )}
 
-      {/* 갤러리 라이트박스 — 좌우 스와이프(scroll-snap) + 닫기 */}
-      {lightboxUrls && (
+      {/* 갤러리 전체 보기 — 인스타 피드형 3열 그리드 페이지 */}
+      {galleryView && (
+        <div
+          className="fixed inset-0 z-[58] bg-background flex flex-col max-w-[430px] mx-auto"
+          role="dialog"
+          aria-label="갤러리 전체 보기"
+        >
+          <div className="flex items-center justify-between px-4 h-12 border-b border-border bg-background/95 backdrop-blur sticky top-0">
+            <button
+              type="button"
+              onClick={() => setGalleryView(null)}
+              className="text-sm font-bold text-foreground px-1"
+              aria-label="뒤로"
+            >
+              ←
+            </button>
+            <p className="text-sm font-bold text-foreground">
+              갤러리 <span className="text-muted-foreground font-normal">{galleryView.length}</span>
+            </p>
+            <span className="w-6" />
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-3 gap-0.5">
+              {galleryView.map((u, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setLightbox({ urls: galleryView, index: i })}
+                  className="aspect-square overflow-hidden active:opacity-80"
+                  aria-label={`사진 ${i + 1} 크게 보기`}
+                >
+                  <img
+                    src={u}
+                    alt=""
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 갤러리 확대 보기 — 탭한 사진부터 좌우 스와이프(scroll-snap) */}
+      {lightbox && (
         <div
           className="fixed inset-0 z-[60] bg-black/95 flex flex-col"
           role="dialog"
           aria-label="갤러리 크게 보기"
         >
-          <div className="flex justify-end p-3">
+          <div className="flex items-center justify-between p-3">
+            <span className="text-white/80 text-[13px] font-medium px-2 tabular-nums">
+              {lightboxIndex + 1} / {lightbox.urls.length}
+            </span>
             <button
               type="button"
-              onClick={() => setLightboxUrls(null)}
+              onClick={() => setLightbox(null)}
               className="w-9 h-9 rounded-full bg-white/15 text-white text-lg leading-none"
               aria-label="닫기"
             >
               ×
             </button>
           </div>
-          <div className="flex-1 flex overflow-x-auto snap-x snap-mandatory">
-            {lightboxUrls.map((u, i) => (
+          <div
+            ref={lightboxScrollRef}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              setLightboxIndex(
+                Math.max(0, Math.round(el.scrollLeft / el.clientWidth)),
+              );
+            }}
+            className="flex-1 flex overflow-x-auto snap-x snap-mandatory"
+          >
+            {lightbox.urls.map((u, i) => (
               <div
                 key={i}
                 className="min-w-full snap-center flex items-center justify-center p-2"
@@ -612,7 +682,7 @@ const InvitationViewer = () => {
             ))}
           </div>
           <p className="text-center text-white/60 text-[11px] py-3">
-            좌우로 넘겨 보세요 ({lightboxUrls.length}장)
+            좌우로 넘겨 보세요
           </p>
         </div>
       )}
