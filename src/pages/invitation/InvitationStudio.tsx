@@ -207,6 +207,7 @@ interface FaceState {
   zOverrides: Record<string, number>;
   rotationOverrides: Record<string, number>;
   decorOverride?: "none" | "hearts" | "petals" | "confetti";
+  revealOverride?: "on" | "off";
   fontSizeOverrides: Record<string, number>;
   extraSlots: InvitationSlot[];
   hiddenSlots: string[];
@@ -407,6 +408,7 @@ const InvitationStudio = () => {
         zOverrides: faces.front.zOverrides ?? {},
         rotationOverrides: faces.front.rotationOverrides ?? {},
         decorOverride: faces.front.decorOverride,
+        revealOverride: faces.front.revealOverride,
         fontSizeOverrides: faces.front.fontSizeOverrides ?? {},
         extraSlots: faces.front.extraSlots ?? [],
         hiddenSlots: faces.front.hiddenSlots ?? [],
@@ -435,6 +437,7 @@ const InvitationStudio = () => {
           zOverrides: faces.back.zOverrides ?? {},
           rotationOverrides: faces.back.rotationOverrides ?? {},
           decorOverride: faces.back.decorOverride,
+          revealOverride: faces.back.revealOverride,
           fontSizeOverrides: faces.back.fontSizeOverrides ?? {},
           extraSlots: faces.back.extraSlots ?? [],
           hiddenSlots: faces.back.hiddenSlots ?? [],
@@ -687,6 +690,11 @@ const InvitationStudio = () => {
     decor: "none" | "hearts" | "petals" | "confetti" | undefined,
   ) => {
     setFace((p) => ({ ...p, decorOverride: decor }));
+  };
+
+  // 스크롤 등장(리빌) 효과 토글
+  const handleRevealChange = (reveal: "on" | "off" | undefined) => {
+    setFace((p) => ({ ...p, revealOverride: reveal }));
   };
 
   const handleSelectSlot = (id: string | null) => {
@@ -1253,6 +1261,7 @@ const InvitationStudio = () => {
       zOverrides: f.zOverrides,
       rotationOverrides: f.rotationOverrides,
       decorOverride: f.decorOverride,
+      revealOverride: f.revealOverride,
       fontSizeOverrides: f.fontSizeOverrides,
       extraSlots: f.extraSlots,
       hiddenSlots: f.hiddenSlots,
@@ -1559,6 +1568,7 @@ const InvitationStudio = () => {
           onLayerChange={handleLayerChange}
           onRotationChange={handleRotationChange}
           onDecorChange={handleDecorChange}
+          onRevealChange={handleRevealChange}
           onAddText={handleAddText}
           onAddImageFrame={handleAddImageFrame}
           onAddMap={handleAddMap}
@@ -2077,6 +2087,7 @@ const StudioView = ({
   onLayerChange,
   onRotationChange,
   onDecorChange,
+  onRevealChange,
   onAddSticker,
   onAddGallery,
   onGalleryRemove,
@@ -2142,6 +2153,7 @@ const StudioView = ({
   onDecorChange: (
     decor: "none" | "hearts" | "petals" | "confetti" | undefined,
   ) => void;
+  onRevealChange: (reveal: "on" | "off" | undefined) => void;
   onAddSticker: () => void;
   onAddGallery: () => void;
   onGalleryRemove: (key: string) => void;
@@ -2429,6 +2441,37 @@ const StudioView = ({
           </div>
           <p className="text-[10px] text-muted-foreground">
             하객에게 공유되는 화면 위로 떠다니는 효과예요. 발행 후 공유 링크에서 보여요.
+          </p>
+        </div>
+      )}
+
+      {/* 스크롤 등장 효과 — 스크롤하면 섹션이 아래에서 떠오르는 리빌 */}
+      {template.format === "mobile" && (
+        <div className="p-3 bg-card rounded-2xl border border-border space-y-2">
+          <p className="text-[12px] font-bold text-foreground">스크롤 등장 효과</p>
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                { val: undefined, label: "템플릿 기본" },
+                { val: "on", label: "켜기" },
+                { val: "off", label: "끄기" },
+              ] as const
+            ).map((opt) => (
+              <Button
+                key={opt.label}
+                type="button"
+                size="sm"
+                variant={aFace.revealOverride === opt.val ? "default" : "outline"}
+                className="text-xs h-8"
+                onClick={() => onRevealChange(opt.val)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            하객이 스크롤할 때 섹션이 부드럽게 떠오르는 효과예요. 발행 후 공유
+            링크에서 보여요.
           </p>
         </div>
       )}

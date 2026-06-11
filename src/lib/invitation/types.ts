@@ -266,6 +266,8 @@ export interface InvitationFaceData {
   rotationOverrides?: Record<string, number>;
   /** 떠다니는 장식 override. 'none' 은 템플릿 기본 장식 끄기. 없으면 템플릿 기본. */
   decorOverride?: "none" | "hearts" | "petals" | "confetti";
+  /** 스크롤 리빌(등장) override. on=페이지형도 켜기, off=끄기, 없으면 롤 템플릿 기본. */
+  revealOverride?: "on" | "off";
   /** slot.id → 폰트 크기 override (크기 조절) */
   fontSizeOverrides?: Record<string, number>;
   /** 사용자가 추가한 텍스트 요소 */

@@ -265,6 +265,9 @@ const InvitationViewer = () => {
   // 갤러리 라이트박스 — 탭한 갤러리 슬롯의 사진 url 목록
   const [lightboxUrls, setLightboxUrls] = useState<string[] | null>(null);
 
+  // 내비 선택 시트 — 지도 액션 탭 시 검색할 장소명/주소
+  const [navQuery, setNavQuery] = useState<string | null>(null);
+
   /** slotId 가 갤러리 슬롯이면 그 면의 발행 이미지 url 들을 index 순으로 반환. */
   const galleryUrlsOf = (slotId: string): string[] | null => {
     if (!data?.invitation_templates) return null;
@@ -350,11 +353,8 @@ const InvitationViewer = () => {
             toast({ title: "지도에서 찾을 장소가 아직 입력되지 않았어요." });
             return;
           }
-          window.open(
-            `https://map.kakao.com/link/search/${encodeURIComponent(query)}`,
-            "_blank",
-            "noopener,noreferrer",
-          );
+          // 바로 한 앱으로 보내지 않고 내비 선택 시트 — 하객마다 쓰는 지도 앱이 다르다.
+          setNavQuery(query.trim());
           return;
         }
         default:
@@ -421,10 +421,17 @@ const InvitationViewer = () => {
   ) =>
     getInvitationPages(layout).map((page, index, pages) => {
       const seamless = isSeamlessRoll(layout);
+      // 스크롤 리빌: 사용자 토글 우선 (on=페이지형도 적용, off=끄기), 기본은 롤 전용
+      const reveal =
+        overrides.revealOverride === "off"
+          ? false
+          : overrides.revealOverride === "on"
+            ? true
+            : seamless;
       return (
         <RevealSection
           key={page.id}
-          enabled={seamless}
+          enabled={reveal}
           className={`flex flex-col items-center ${seamless ? "gap-0" : "gap-2"}`}
         >
           {!seamless && pages.length > 1 && (
@@ -509,6 +516,68 @@ const InvitationViewer = () => {
           </Button>
         </div>
       </div>
+
+      {/* 내비 선택 시트 — 하객이 쓰는 지도 앱으로 길찾기 */}
+      {navQuery && (
+        <div
+          className="fixed inset-0 z-[55] bg-black/40 flex items-end"
+          onClick={() => setNavQuery(null)}
+          role="dialog"
+          aria-label="지도 앱 선택"
+        >
+          <div
+            className="w-full max-w-[430px] mx-auto bg-background rounded-t-2xl p-4 pb-8 space-y-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm font-bold text-foreground text-center mb-1">
+              어떤 지도로 찾아갈까요?
+            </p>
+            <p className="text-[11px] text-muted-foreground text-center mb-3 truncate">
+              {navQuery}
+            </p>
+            {(
+              [
+                {
+                  label: "카카오맵",
+                  href: `kakaomap://search?q=${encodeURIComponent(navQuery)}`,
+                },
+                {
+                  label: "네이버 지도",
+                  href: `nmap://search?query=${encodeURIComponent(navQuery)}`,
+                },
+                {
+                  label: "티맵",
+                  href: `tmap://search?name=${encodeURIComponent(navQuery)}`,
+                },
+                {
+                  label: "웹에서 보기 (카카오맵)",
+                  href: `https://map.kakao.com/link/search/${encodeURIComponent(navQuery)}`,
+                  web: true,
+                },
+              ] as const
+            ).map((opt) => (
+              <a
+                key={opt.label}
+                href={opt.href}
+                {...("web" in opt && opt.web
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
+                className="block w-full h-11 leading-[44px] text-center rounded-xl border border-border bg-card text-sm font-medium text-foreground active:scale-[0.99] transition-transform"
+                onClick={() => setNavQuery(null)}
+              >
+                {opt.label}
+              </a>
+            ))}
+            <button
+              type="button"
+              onClick={() => setNavQuery(null)}
+              className="block w-full h-11 text-center text-sm text-muted-foreground"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 갤러리 라이트박스 — 좌우 스와이프(scroll-snap) + 닫기 */}
       {lightboxUrls && (
