@@ -89,6 +89,8 @@ export const useVendors = (categoryType?: string) => {
         .select(selectClause)
         .eq("is_active", true)
         .is("deleted_at", null)
+        // 파트너 등급(베프>프렌즈>일반)은 카테고리 필터 안에서의 정렬일 뿐
+        .order("partner_rank", { ascending: false })
         .order("data_completeness", { ascending: false })
         .order("avg_rating", { ascending: false, nullsFirst: false });
 
@@ -185,19 +187,25 @@ export const useEvents = (_category?: string) => {
   });
 };
 
-// Top recommended vendors for home page (no category filter).
-export const useRecommendedVendors = (limit = 6) => {
+// 홈 추천 — 큐레이션(예식 지역) 안에서 파트너 등급 > 데이터 충실도 > 평점.
+// region 미설정이면 큐레이션 조건이 없으므로 전체에서 추천한다.
+export const useRecommendedVendors = (limit = 6, region?: string | null) => {
   return useQuery({
-    queryKey: ["recommended-vendors", limit],
+    queryKey: ["recommended-vendors", limit, region ?? null],
     queryFn: async (): Promise<Vendor[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("places")
         .select(VENDOR_WITH_CATEGORY_SELECT)
         .eq("is_active", true)
         .is("deleted_at", null)
+        .order("partner_rank", { ascending: false })
         .order("data_completeness", { ascending: false })
         .order("avg_rating", { ascending: false, nullsFirst: false })
         .limit(limit);
+      // 큐레이션 게이트: 예식 지역이 설정되면 그 지역 업체만 (등급으로 우회 불가).
+      // places.city 와 wedding_region 은 동일한 정식 명칭(DB 확인) — 정확 일치.
+      if (region) query = query.eq("city", region);
+      const { data, error } = await query;
       if (error) throw error;
       return ((data ?? []) as unknown as Parameters<typeof placeToVendor>[0][]).map(placeToVendor);
     },

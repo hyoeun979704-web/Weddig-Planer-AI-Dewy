@@ -22,15 +22,19 @@ const CardSkeleton = () => (
 const STYLE_HEADER: Record<string, { title: string; hint: string }> = {
   self: { title: "셀프웨딩 맞춤 추천", hint: "DIY 친화적인 한옥·하우스 베뉴 위주로 골랐어요" },
   small: { title: "스몰웨딩 맞춤 추천", hint: "50명 안팎 소규모 식 어울리는 곳" },
-  general: { title: "맞춤 추천", hint: "예식일·지역·예산에 맞춰 추천드려요" },
+  general: { title: "맞춤 추천", hint: "예식 지역을 설정하면 내 지역 업체로 좁혀드려요" },
 };
 
 const RecommendedSection = () => {
   const navigate = useNavigate();
-  const { data: vendors, isLoading } = useRecommendedVendors(8);
   const { weddingSettings } = useWeddingSchedule();
+  // 큐레이션: 예식 지역이 설정되면 그 지역 업체만 추천 (등급은 그 안의 정렬)
+  const region = weddingSettings.wedding_region;
+  const { data: vendors, isLoading } = useRecommendedVendors(8, region);
   const style = weddingSettings.wedding_style;
   const header = STYLE_HEADER[style ?? "general"] ?? STYLE_HEADER.general;
+  // 지역 큐레이션이 실제로 적용된 경우엔 카피도 그 사실을 말한다 (label=value)
+  const hint = region ? `${region} 업체 중에서 골랐어요` : header.hint;
   // Filter out vendors whose place category is in user's excluded list so the
   // self user doesn't see makeup shops they explicitly hid in settings.
   const excluded = new Set(weddingSettings.excluded_categories ?? []);
@@ -47,7 +51,7 @@ const RecommendedSection = () => {
             </span>
           )}
         </div>
-        <p className="text-[11px] text-black/55 mt-0.5">{header.hint}</p>
+        <p className="text-[11px] text-black/55 mt-0.5">{hint}</p>
       </div>
       <div className="flex gap-[8px] overflow-x-auto scrollbar-hide">
         {isLoading ? (
