@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { flushSync } from "react-dom";
 import { useNavigate, useLocation, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -1189,6 +1190,8 @@ const InvitationStudio = () => {
     if (!template) return;
     setIsExporting(true);
     try {
+      // 선택 점선 테두리·리사이즈 핸들이 캡처에 찍히지 않도록 동기 선택 해제
+      flushSync(() => setSelectedSlotId(null));
       const pages: PdfPage[] = [];
       const appendTemplatePages = (
         targetTemplate: Template,
@@ -2133,11 +2136,32 @@ const StudioView = ({
       {/* 슬롯 선택 안내 */}
       {!selectedSlot && (activeFace === "front" || backTemplate) && (
         <div className="p-4 bg-blue-50 rounded-lg text-[12px] text-blue-900 leading-relaxed">
-          편집할 영역(텍스트·사진)을 캔버스에서 탭하면 아래에 편집 패널이 열려요.
-          선택한 요소는 끌어서 위치를 옮길 수 있어요. 빈 텍스트 영역에서 8초간
-          입력이 없으면 AI 추천 문구 시트가 떠요.
+          편집할 영역(텍스트·사진)을 캔버스에서 탭하면 하단에 편집 시트가 열려요.
+          선택한 요소는 끌어서 옮기고, 우하단 핸들로 크기를 조절할 수 있어요.
+          빈 텍스트 영역에서 8초간 입력이 없으면 AI 추천 문구 시트가 떠요.
         </div>
       )}
+
+      {/* 슬롯 편집 시트 — 하단 고정(캔버스를 가리지 않음). 탭한 요소 종류별 패널. */}
+      {selectedSlot && (
+        <div
+          className="fixed inset-x-0 z-40 mx-auto max-w-[430px] px-3"
+          style={{ bottom: "calc(var(--safe-bottom) + 80px)" }}
+        >
+          <div className="bg-card border border-border rounded-2xl shadow-xl max-h-[42vh] overflow-y-auto overscroll-contain">
+            <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2 bg-card/95 backdrop-blur border-b border-border">
+              <span className="text-[12px] font-bold text-foreground">
+                요소 편집
+              </span>
+              <button
+                type="button"
+                onClick={() => onSelectSlot(null)}
+                className="text-[12px] font-bold text-primary px-2 py-1"
+              >
+                완료
+              </button>
+            </div>
+            <div className="p-3 space-y-3">
 
       {/* 텍스트 슬롯 편집 */}
       {selectedSlot?.type === "text" && (
@@ -2389,6 +2413,10 @@ const StudioView = ({
           userData={userData}
           onChange={onSlotActionChange}
         />
+      )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 발행 & 공유 (QR·바코드) */}
