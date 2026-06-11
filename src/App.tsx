@@ -98,6 +98,7 @@ const InvitationFlow = lazy(() => import("./pages/invitation/InvitationFlow"));
 const InvitationStudio = lazy(() => import("./pages/invitation/InvitationStudio"));
 const InvitationGallery = lazy(() => import("./pages/invitation/InvitationGallery"));
 const InvitationViewer = lazy(() => import("./pages/invitation/InvitationViewer"));
+const InvitationRsvpDashboard = lazy(() => import("./pages/invitation/InvitationRsvpDashboard"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
 const AdminContentReview = lazy(() => import("./pages/admin/AdminContentReview"));
@@ -299,6 +300,7 @@ const App = () => (
               <Route path="/invitation/my" element={<InvitationGallery />} />
               <Route path="/invitation/new" element={<InvitationFlow />} />
               <Route path="/invitation/:id/edit" element={<InvitationStudio />} />
+              <Route path="/invitation/:id/rsvp" element={<InvitationRsvpDashboard />} />
               <Route path="/i/:slug" element={<InvitationViewer />} />
               {/* 관리자 라우트는 가드를 라우트 레벨에 둔다 — 페이지가 마운트되기
                   전에 권한을 확인해, 비관리자가 데이터 fetch 를 트리거하거나 잠깐

@@ -90,9 +90,12 @@ const InvitationGallery = () => {
             {items.map((it) => {
               const groom = it.user_data?.groom_name ?? "";
               const bride = it.user_data?.bride_name ?? "";
+              const isMobilePublished =
+                it.status === "published" &&
+                it.invitation_templates?.format !== "paper";
               return (
+                <div key={it.id} className="flex flex-col gap-1.5">
                 <button
-                  key={it.id}
                   type="button"
                   onClick={() => navigate(`/invitation/${it.id}/edit`)}
                   className="bg-card rounded-xl overflow-hidden border border-border text-left active:scale-[0.98] transition-transform"
@@ -126,6 +129,16 @@ const InvitationGallery = () => {
                     </p>
                   </div>
                 </button>
+                {isMobilePublished && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/invitation/${it.id}/rsvp`)}
+                    className="text-[11px] h-8 rounded-lg border border-border bg-card text-foreground active:scale-[0.98] transition-transform"
+                  >
+                    참석 응답 관리
+                  </button>
+                )}
+                </div>
               );
             })}
           </div>

@@ -196,6 +196,34 @@ export interface MealDefenseResult {
   defenseRatePercent: number;  // gift/expense × 100. expense=0 이면 0.
 }
 
+export interface GuestCountSource {
+  count: number;
+  /** listed = 하객명단(RSVP 포함) 살아있는 집계, settings = 예산 설정의 수기값 */
+  source: "listed" | "settings";
+  /** 두 소스가 모두 존재하고 다를 때 차이 (listed - settings). 비교 불가면 null. */
+  diffFromSettings: number | null;
+}
+
+/**
+ * 리포트에 쓸 하객 수 결정 — 하객명단 집계(expectedHeads)가 있으면 우선,
+ * 없으면 설정값 폴백. 기존 settings.guest_count 동작은 폴백으로 보존된다.
+ */
+export function resolveGuestCount(
+  settingsCount: number,
+  listedHeads: number,
+): GuestCountSource {
+  const settings = settingsCount > 0 ? settingsCount : 0;
+  const listed = listedHeads > 0 ? listedHeads : 0;
+  if (listed > 0) {
+    return {
+      count: listed,
+      source: "listed",
+      diffFromSettings: settings > 0 ? listed - settings : null,
+    };
+  }
+  return { count: settings, source: "settings", diffFromSettings: null };
+}
+
 /**
  * 식대 방어율. 입력은 모두 호출부에서 집계해 넘긴다(홀 지출은 category 가
  * 필요해 컴포넌트가 합산). 순수 산식만 여기서 책임져 테스트로 고정한다.

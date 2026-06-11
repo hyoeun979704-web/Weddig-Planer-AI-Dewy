@@ -50,6 +50,7 @@ interface PublishedInvitation {
 }
 
 type MealPreference = "undecided" | "yes" | "no";
+type RsvpSide = "undecided" | "groom" | "bride";
 
 const RSVP_NAME_MAX_LENGTH = 80;
 const RSVP_MESSAGE_MAX_LENGTH = 500;
@@ -99,6 +100,8 @@ const InvitationViewer = () => {
   const [mealPreference, setMealPreference] =
     useState<MealPreference>("undecided");
   const [companionCount, setCompanionCount] = useState(0);
+  const [childCount, setChildCount] = useState(0);
+  const [rsvpSide, setRsvpSide] = useState<RsvpSide>("undecided");
   const [rsvpMessage, setRsvpMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -197,14 +200,21 @@ const InvitationViewer = () => {
 
     setSubmitting(true);
     try {
+      // 아동은 동행 안에 포함 — DB CHECK(child_count <= companion_count)와 동일 방어
+      const normalizedChildCount = Math.max(
+        0,
+        Math.min(Math.trunc(childCount) || 0, normalizedCompanionCount),
+      );
       const { error } = await (supabase as any)
         .from("invitation_rsvp")
         .insert({
           invitation_id: data.id,
           name,
           is_attending: isAttending,
+          side: rsvpSide,
           meal_preference: mealPreference,
           companion_count: normalizedCompanionCount,
+          child_count: normalizedChildCount,
           message: message || null,
         });
 
@@ -215,8 +225,10 @@ const InvitationViewer = () => {
       // 폼 리셋
       setRsvpName("");
       setIsAttending(true);
+      setRsvpSide("undecided");
       setMealPreference("undecided");
       setCompanionCount(0);
+      setChildCount(0);
       setRsvpMessage("");
     } catch (err: any) {
       console.error(err);
@@ -504,6 +516,33 @@ const InvitationViewer = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">어느 측 하객이신가요?</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { val: "groom", label: "신랑측" },
+                      { val: "bride", label: "신부측" },
+                    ].map((s) => (
+                      <button
+                        key={s.val}
+                        type="button"
+                        onClick={() =>
+                          setRsvpSide((prev) =>
+                            prev === s.val ? "undecided" : (s.val as RsvpSide),
+                          )
+                        }
+                        className={`h-11 rounded-md text-sm font-medium border transition-colors ${
+                          rsvpSide === s.val
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-foreground border-input hover:bg-accent"
+                        }`}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">식사 여부</label>
                   <div className="grid grid-cols-3 gap-2">
                     {[
@@ -553,6 +592,32 @@ const InvitationViewer = () => {
                     className="w-full h-11 px-3 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
                 </div>
+
+                {companionCount > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      동행 중 아동 수 <span className="text-muted-foreground font-normal">(식수 산정에 도움돼요)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={companionCount}
+                      step={1}
+                      value={childCount}
+                      onChange={(e) => {
+                        const next = Number(e.target.value);
+                        if (!Number.isFinite(next)) {
+                          setChildCount(0);
+                          return;
+                        }
+                        setChildCount(
+                          Math.max(0, Math.min(companionCount, Math.trunc(next))),
+                        );
+                      }}
+                      className="w-full h-11 px-3 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">축하의 메시지</label>

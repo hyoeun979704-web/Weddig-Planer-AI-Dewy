@@ -19,7 +19,9 @@ import { useBudget } from "@/hooks/useBudget";
 import {
   computeBudgetFinancials, buildPaymentTimeline,
   computeMealDefenseRate, DEFAULT_GIFT_PER_GUEST_MANWON,
+  resolveGuestCount,
 } from "@/lib/budgetReportModel";
+import { useGuestList } from "@/hooks/useGuestList";
 import { fmt } from "@/lib/budgetFormat";
 import {
   categories, categoryKeys as ALL_CATEGORY_KEYS, regions, getRegionalAvgWithMeal,
@@ -40,6 +42,7 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
   const { weddingSettings } = useWeddingSchedule();
   const { settings, items, summary } = useBudget();
   const profile = useWeddingProfile();
+  const { stats: guestStats } = useGuestList();
   const [generating, setGenerating] = useState(false);
   const [htmlResult, setHtmlResult] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -50,7 +53,12 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       const totalBudget = settings?.total_budget || 0;
       const regionKey = settings?.region || "seoul";
       const regionLabel = regions[regionKey]?.label || regionKey;
-      const guestCount = settings?.guest_count || 200;
+      // 하객 수: 하객명단(RSVP 가져오기 포함) 살아있는 집계 우선, 없으면 설정값.
+      const guestSource = resolveGuestCount(
+        settings?.guest_count || 0,
+        guestStats.expectedHeads.all,
+      );
+      const guestCount = guestSource.count || 200;
       const avg = getRegionalAvgWithMeal(regionKey, guestCount);
       const catBudgets = (settings?.category_budgets || {}) as Record<BudgetCategory, number>;
 
@@ -286,6 +294,15 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
             : `예상 축의금이 홀·식대의 ${Math.round(defense.defenseRatePercent)}% 수준이에요. 차액 ${fmt(Math.max(0, defense.hallExpense - defense.expectedGiftIncome))}만원의 자부담을 감안하세요.`,
         );
       }
+      // 보증인원(설정) vs 명단 집계 차이 경고 — 식대 과소/과다 계약 조기 감지.
+      if (guestSource.diffFromSettings !== null && guestSource.diffFromSettings !== 0) {
+        const diff = guestSource.diffFromSettings;
+        insights.push(
+          diff > 0
+            ? `하객명단 집계(${guestSource.count}명)가 설정 하객 수보다 ${diff}명 많아요. 홀 보증인원 상향을 검토하세요.`
+            : `하객명단 집계(${guestSource.count}명)가 설정 하객 수보다 ${Math.abs(diff)}명 적어요. 보증인원 식대가 과다 계약되지 않았는지 확인하세요.`,
+        );
+      }
       if (insights.length === 0 && warningInsights.length === 0) {
         insights.push("전체적으로 평균 범위 안에서 잘 관리되고 있어요.");
       }
@@ -334,7 +351,7 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
         pills: [
           { icon: "", label: "지역", value: regionLabel },
           { icon: "", label: "총 예산", value: `${totalBudget.toLocaleString()}만원` },
-          { icon: "", label: "하객 수", value: `${guestCount}명` },
+          { icon: "", label: "하객 수", value: `${guestCount}명${guestSource.source === "listed" ? " (명단)" : ""}` },
           { icon: "", label: "기록 수", value: `${items.length}건` },
         ],
         stats: [

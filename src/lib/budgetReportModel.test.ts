@@ -188,3 +188,25 @@ describe("computeMealDefenseRate", () => {
     expect(r.defenseRatePercent).toBe(0);
   });
 });
+
+// ── 하객 수 소스 결정 (명단 집계 vs 설정값) ─────────────────────
+import { resolveGuestCount } from "./budgetReportModel";
+
+describe("resolveGuestCount", () => {
+  it("명단 집계가 있으면 우선, 설정값과의 차이 계산", () => {
+    const r = resolveGuestCount(200, 180);
+    expect(r).toEqual({ count: 180, source: "listed", diffFromSettings: -20 });
+  });
+
+  it("명단이 비면 설정값 폴백", () => {
+    expect(resolveGuestCount(200, 0)).toEqual({ count: 200, source: "settings", diffFromSettings: null });
+  });
+
+  it("둘 다 없으면 0/settings", () => {
+    expect(resolveGuestCount(0, 0)).toEqual({ count: 0, source: "settings", diffFromSettings: null });
+  });
+
+  it("설정값 없이 명단만 있으면 diff null", () => {
+    expect(resolveGuestCount(0, 150)).toEqual({ count: 150, source: "listed", diffFromSettings: null });
+  });
+});
