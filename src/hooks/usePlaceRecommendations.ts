@@ -14,7 +14,7 @@ import { distanceKm } from "@/hooks/useWeddingVenue";
  */
 
 const COLS =
-  "place_id,name,city,district,category,lat,lng,main_image_url,avg_rating,review_count,is_partner,min_price,tags";
+  "place_id,name,city,district,category,lat,lng,main_image_url,avg_rating,review_count,is_partner,partner_rank,min_price,tags";
 
 export interface RecPlace {
   place_id: string;
@@ -28,6 +28,8 @@ export interface RecPlace {
   avg_rating: number | null;
   review_count: number | null;
   is_partner: boolean | null;
+  /** 이달의 베프 2 > 프렌즈 1 > 일반 0 */
+  partner_rank: number | null;
   min_price: number | null;
   tags: string[] | null;
   /** nearby 항목에만 채워짐 (km) */
@@ -58,13 +60,13 @@ async function fetchSimilar(a: RecAnchor): Promise<RecPlace[]> {
     .eq("is_active", true)
     .eq("category", a.category)
     .neq("place_id", a.id)
-    .order("is_partner", { ascending: false })
+    .order("partner_rank", { ascending: false })
     .order("avg_rating", { ascending: false, nullsFirst: false })
     .limit(SIMILAR_LIMIT);
   if (a.city) q = q.eq("city", a.city);
   const { data, error } = await q;
   if (error) throw error;
-  return (data ?? []) as RecPlace[];
+  return (data ?? []) as unknown as RecPlace[];
 }
 
 async function fetchNearby(a: RecAnchor): Promise<RecPlace[]> {
@@ -86,7 +88,7 @@ async function fetchNearby(a: RecAnchor): Promise<RecPlace[]> {
       .lte("lng", lng + BOX_DEG)
       .limit(NEARBY_POOL);
     if (error) throw error;
-    rows = ((data ?? []) as RecPlace[])
+    rows = ((data ?? []) as unknown as RecPlace[])
       .map((r) => ({ ...r, distance_km: distanceKm(lat, lng, r.lat, r.lng) }))
       .filter((r) => r.distance_km != null)
       .sort((x, y) => (x.distance_km as number) - (y.distance_km as number));
@@ -99,11 +101,11 @@ async function fetchNearby(a: RecAnchor): Promise<RecPlace[]> {
       .neq("category", a.category)
       .neq("place_id", a.id)
       .eq("city", a.city)
-      .order("is_partner", { ascending: false })
+      .order("partner_rank", { ascending: false })
       .order("avg_rating", { ascending: false, nullsFirst: false })
       .limit(NEARBY_POOL);
     if (error) throw error;
-    rows = (data ?? []) as RecPlace[];
+    rows = (data ?? []) as unknown as RecPlace[];
   }
 
   // 카테고리 중복 없이 — 카테고리당 1곳(가장 가까운/상위)만. 다양성 확보.

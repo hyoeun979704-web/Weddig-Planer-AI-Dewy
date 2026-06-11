@@ -357,8 +357,9 @@ async function fetchCategoryItems(
     query = query.gte("avg_rating", filters.minRating);
   }
 
-  // 신뢰도(채움도) 우선, 같으면 평점.
+  // 노출 순서: 파트너 등급(이달의 베프 > 프렌즈 > 일반) → 채움도 → 평점.
   const { data, error, count } = await query
+    .order("partner_rank", { ascending: false })
     .order("data_completeness", { ascending: false })
     .order("avg_rating", { ascending: false, nullsFirst: false })
     .range(from, to);

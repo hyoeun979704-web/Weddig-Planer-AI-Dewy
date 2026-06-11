@@ -84,8 +84,10 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
     query = query.overlaps("tags", filters.eventOptions);
   }
 
-  // 신뢰도(채움도) 우선, 같으면 평점 — null 데이터 적은 곳이 먼저 노출.
+  // 노출 순서: 파트너 등급(이달의 베프 2 > 프렌즈 1 > 일반 0) → 채움도(데이터
+  // 많은 순) → 평점. 필터(큐레이션) 결과 안에서의 정렬이라 조건 일치가 항상 우선.
   const { data, error, count } = await query
+    .order("partner_rank", { ascending: false })
     .order("data_completeness", { ascending: false })
     .order("avg_rating", { ascending: false, nullsFirst: false })
     .range(from, to);

@@ -92,12 +92,10 @@ const Row = ({
 export default function PlaceRecommendations({ place }: { place: RecAnchor }) {
   const navigate = useNavigate();
   const { data, isLoading } = usePlaceRecommendations(place);
-  // 파트너(프렌즈·이달의 베프) 최우선 노출 — 초기 파트너 약속(혜택 4).
-  // stable sort 라 파트너 내부/일반 내부의 기존 순서는 유지된다.
+  // 파트너 등급 최우선 노출(이달의 베프 2 > 프렌즈 1 > 일반 0) — 초기 파트너
+  // 약속(혜택 4). stable sort 라 같은 등급 내부의 기존 순서(거리/평점)는 유지된다.
   const partnerFirst = (arr: RecPlace[]) =>
-    [...arr].sort(
-      (a, b) => Number(b.is_partner ?? false) - Number(a.is_partner ?? false),
-    );
+    [...arr].sort((a, b) => (b.partner_rank ?? 0) - (a.partner_rank ?? 0));
   const similar = partnerFirst(data?.similar ?? []);
   const nearby = partnerFirst(data?.nearby ?? []);
 
