@@ -983,6 +983,60 @@ const InvitationStudio = () => {
     }));
   };
 
+  // 배경 지우기(누끼) — invitation-cutout edge function (remove.bg).
+  // 결과 path 로 교체하므로 다시 누르면 원본이 아닌 누끼본 기준 — 원복은 재업로드.
+  const [isCuttingOut, setIsCuttingOut] = useState(false);
+  const handleCutout = async () => {
+    if (!selectedSlot || selectedSlot.type !== "image") return;
+    const src = activeFaceState.imagePaths[selectedSlot.id];
+    if (!src) {
+      toast({ title: "먼저 사진을 업로드해주세요", variant: "destructive" });
+      return;
+    }
+    const id = selectedSlot.id;
+    setIsCuttingOut(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "invitation-cutout",
+        { body: { source_paths: [src] } },
+      );
+      if (error) throw error;
+      const result = data as {
+        cutout_paths?: Record<string, string>;
+        cutout_urls?: Record<string, string>;
+        error?: string;
+      };
+      if (result.error) throw new Error(result.error);
+      const newPath = result.cutout_paths?.[src];
+      if (!newPath) throw new Error("누끼 결과를 받지 못했어요");
+      const newUrl = result.cutout_urls?.[src];
+      setFace((p) => ({
+        ...p,
+        imagePaths: { ...p.imagePaths, [id]: newPath },
+        imageUrls: newUrl ? { ...p.imageUrls, [id]: newUrl } : p.imageUrls,
+      }));
+      toast({ title: "배경을 지웠어요" });
+    } catch (e) {
+      toast({
+        title: "배경 지우기 실패",
+        description: e instanceof Error ? e.message : "오류",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCuttingOut(false);
+    }
+  };
+
+  // 스티커(사용자 추가 asset 요소) 색상 변경 — extraSlots 의 tint_color 직접 갱신
+  const handleStickerTintChange = (id: string, color: string | undefined) => {
+    setFace((p) => ({
+      ...p,
+      extraSlots: p.extraSlots.map((s) =>
+        s.id === id ? { ...s, tint_color: color } : s,
+      ),
+    }));
+  };
+
   // 약도 자동 생성 (map 슬롯) — 식장 주소 → 네이버 지도 edge function
   const handleGenerateMap = async () => {
     if (!selectedSlot || selectedSlot.type !== "map") return;
@@ -1549,6 +1603,9 @@ const InvitationStudio = () => {
           onOpenAi={() => setAiSheetOpen(true)}
           onGenerateMap={handleGenerateMap}
           isGeneratingMap={isGeneratingMap}
+          onCutout={handleCutout}
+          isCuttingOut={isCuttingOut}
+          onStickerTintChange={handleStickerTintChange}
           onStylizeMap={handleStylizeMap}
           isStylizingMap={isStylizingMap}
           onMoveSlot={handleMoveSlot}
@@ -2067,6 +2124,9 @@ const StudioView = ({
   onOpenAi,
   onGenerateMap,
   isGeneratingMap,
+  onCutout,
+  isCuttingOut,
+  onStickerTintChange,
   onStylizeMap,
   isStylizingMap,
   onMoveSlot,
@@ -2130,6 +2190,9 @@ const StudioView = ({
   onOpenAi: () => void;
   onGenerateMap: () => void;
   isGeneratingMap: boolean;
+  onCutout: () => void;
+  isCuttingOut: boolean;
+  onStickerTintChange: (id: string, color: string | undefined) => void;
   onStylizeMap: () => void;
   isStylizingMap: boolean;
   onMoveSlot: (id: string, x: number, y: number) => void;
@@ -2650,6 +2713,23 @@ const StudioView = ({
             </div>
           )}
 
+          {/* 배경 지우기 (누끼) — 사진 슬롯 전용 */}
+          {selectedSlot.type === "image" && aFace.imageUrls[selectedSlot.id] && (
+            <Button
+              onClick={onCutout}
+              disabled={isCuttingOut}
+              variant="outline"
+              className="w-full"
+            >
+              {isCuttingOut ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-2" />
+              )}
+              배경 지우기 (누끼)
+            </Button>
+          )}
+
           {/* 이미지 채우기 방식 조절 (fit) */}
           <div className="space-y-1.5 pt-2 border-t border-border">
             <label className="text-[12px] font-bold text-foreground block">
@@ -2817,6 +2897,57 @@ const StudioView = ({
           </p>
         </section>
       )}
+
+      {/* 스티커 색상 — 사용자가 추가한 스티커(extra-)만. 단색 합성이라 멀티컬러
+          스티커는 실루엣 단색이 됨을 안내. */}
+      {selectedSlot?.type === "asset" &&
+        selectedSlot.id.startsWith("extra-") &&
+        selectedSlot.image_url && (
+          <section className="p-4 bg-card rounded-2xl border border-border space-y-2">
+            <div className="flex items-center gap-2">
+              <Sticker className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-bold text-foreground">스티커 색상</h3>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onStickerTintChange(selectedSlot.id, undefined)}
+                className={`h-8 px-2.5 rounded-lg border text-[11px] font-medium ${
+                  !selectedSlot.tint_color
+                    ? "border-primary text-primary"
+                    : "border-border text-muted-foreground"
+                }`}
+              >
+                원래 색
+              </button>
+              {[
+                "#1A1A1A",
+                "#FFFFFF",
+                "#FF66A8",
+                "#8B3E42",
+                "#D4AF37",
+                "#5B7F6B",
+                "#6A7BD0",
+              ].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => onStickerTintChange(selectedSlot.id, c)}
+                  aria-label={`색상 ${c}`}
+                  className={`w-8 h-8 rounded-full border-2 ${
+                    selectedSlot.tint_color === c
+                      ? "border-primary"
+                      : "border-border"
+                  }`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              스티커 전체가 선택한 한 가지 색으로 칠해져요.
+            </p>
+          </section>
+        )}
 
       {/* 배치 — 레이어 순서·회전 (잠긴 슬롯 제외) */}
       {selectedSlot && !selectedSlot.locked && (
