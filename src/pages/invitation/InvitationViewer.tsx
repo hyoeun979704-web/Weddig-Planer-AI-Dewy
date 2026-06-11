@@ -262,9 +262,45 @@ const InvitationViewer = () => {
     return undefined;
   };
 
+  // 갤러리 라이트박스 — 탭한 갤러리 슬롯의 사진 url 목록
+  const [lightboxUrls, setLightboxUrls] = useState<string[] | null>(null);
+
+  /** slotId 가 갤러리 슬롯이면 그 면의 발행 이미지 url 들을 index 순으로 반환. */
+  const galleryUrlsOf = (slotId: string): string[] | null => {
+    if (!data?.invitation_templates) return null;
+    const faces = readFaceLayout(data.layout);
+    const items = [
+      { layout: data.invitation_templates.layout, face: faces.front },
+      ...(backLayout ? [{ layout: backLayout, face: faces.back }] : []),
+    ];
+    for (const item of items) {
+      const slot =
+        getInvitationPages(item.layout)
+          .flatMap((page) => page.slots)
+          .find((c) => c.id === slotId) ??
+        item.face.extraSlots?.find((c) => c.id === slotId);
+      if (slot?.type === "gallery") {
+        const urls = item.face.imageUrlsForViewer ?? {};
+        return Object.keys(urls)
+          .filter((k) => k.startsWith(`${slotId}#`))
+          .sort((a, b) => Number(a.split("#")[1]) - Number(b.split("#")[1]))
+          .map((k) => urls[k]);
+      }
+      if (slot) return null;
+    }
+    return null;
+  };
+
   // 슬롯 액션 라우팅
   const handleSlotClick = async (slotId: string | null) => {
     if (!slotId || !data) return;
+
+    // 갤러리 탭 → 라이트박스
+    const galleryUrls = galleryUrlsOf(slotId);
+    if (galleryUrls && galleryUrls.length > 0) {
+      setLightboxUrls(galleryUrls);
+      return;
+    }
 
     const action = findSlotAction(slotId);
     if (action && action.type !== "none") {
@@ -473,6 +509,43 @@ const InvitationViewer = () => {
           </Button>
         </div>
       </div>
+
+      {/* 갤러리 라이트박스 — 좌우 스와이프(scroll-snap) + 닫기 */}
+      {lightboxUrls && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/95 flex flex-col"
+          role="dialog"
+          aria-label="갤러리 크게 보기"
+        >
+          <div className="flex justify-end p-3">
+            <button
+              type="button"
+              onClick={() => setLightboxUrls(null)}
+              className="w-9 h-9 rounded-full bg-white/15 text-white text-lg leading-none"
+              aria-label="닫기"
+            >
+              ×
+            </button>
+          </div>
+          <div className="flex-1 flex overflow-x-auto snap-x snap-mandatory">
+            {lightboxUrls.map((u, i) => (
+              <div
+                key={i}
+                className="min-w-full snap-center flex items-center justify-center p-2"
+              >
+                <img
+                  src={u}
+                  alt=""
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-white/60 text-[11px] py-3">
+            좌우로 넘겨 보세요 ({lightboxUrls.length}장)
+          </p>
+        </div>
+      )}
 
       {/* RSVP Bottom Sheet Drawer */}
       <Drawer.Root open={isRsvpOpen} onOpenChange={setIsRsvpOpen}>

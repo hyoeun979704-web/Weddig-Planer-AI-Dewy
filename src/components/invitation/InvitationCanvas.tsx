@@ -710,6 +710,8 @@ function renderSlotBody(props: SlotNodeProps & { isVisible?: boolean }) {
       return <ImageSlotBody {...props} />;
     case "asset":
       return <AssetSlotBody {...props} />;
+    case "gallery":
+      return <GallerySlotBody {...props} />;
     case "calendar":
       return <CalendarSlotBody {...props} />;
     case "qr":
@@ -998,6 +1000,109 @@ function tintSvgDataUri(url: string | undefined, color: string | undefined): str
     return url;
   }
 }
+
+// ════════════════════════════════════════════════════════════════
+// 갤러리 — `${slot.id}#index` 키의 이미지들을 2열 콜라주로 렌더.
+// 공개 뷰어에서 탭하면 라이트박스(뷰어 측 DOM)가 열린다.
+// ════════════════════════════════════════════════════════════════
+
+/** imageUrls 에서 갤러리 슬롯의 사진 키들을 index 순으로 수집. */
+export const galleryUrlKeys = (
+  slotId: string,
+  imageUrls: Record<string, string>,
+): string[] =>
+  Object.keys(imageUrls)
+    .filter((k) => k.startsWith(`${slotId}#`))
+    .sort((a, b) => Number(a.split("#")[1]) - Number(b.split("#")[1]));
+
+const GALLERY_GAP = 10;
+
+const GallerySlotBody = ({ slot, imageUrls }: SlotNodeProps) => {
+  const urls = galleryUrlKeys(slot.id, imageUrls).map((k) => imageUrls[k]);
+
+  if (urls.length === 0) {
+    return (
+      <Group>
+        <Rect
+          x={0}
+          y={0}
+          width={slot.w}
+          height={slot.h}
+          fill="#F4F4F5"
+          stroke="#D4D4D8"
+          strokeWidth={1}
+          dash={[6, 4]}
+        />
+        <Text
+          x={0}
+          y={slot.h / 2 - 8}
+          width={slot.w}
+          text="갤러리 — 사진을 추가하세요"
+          fontSize={14}
+          fill="#71717A"
+          align="center"
+        />
+      </Group>
+    );
+  }
+
+  const cols = urls.length === 1 ? 1 : 2;
+  const rows = Math.ceil(urls.length / cols);
+  const cellW = (slot.w - GALLERY_GAP * (cols - 1)) / cols;
+  const cellH = (slot.h - GALLERY_GAP * (rows - 1)) / rows;
+  return (
+    <Group>
+      {urls.map((u, i) => (
+        <GalleryCell
+          key={`${slot.id}#${i}`}
+          url={u}
+          x={(i % cols) * (cellW + GALLERY_GAP)}
+          y={Math.floor(i / cols) * (cellH + GALLERY_GAP)}
+          w={cellW}
+          h={cellH}
+        />
+      ))}
+    </Group>
+  );
+};
+
+const GalleryCell = ({
+  url,
+  x,
+  y,
+  w,
+  h,
+}: {
+  url: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}) => {
+  const [img] = useImage(url, "anonymous");
+  if (!img) {
+    return <Rect x={x} y={y} width={w} height={h} fill="#E4E4E7" />;
+  }
+  // cover 크롭
+  const scale = Math.max(w / img.width, h / img.height);
+  const drawW = img.width * scale;
+  const drawH = img.height * scale;
+  return (
+    <Group
+      clipFunc={(ctx) => {
+        ctx.rect(x, y, w, h);
+      }}
+    >
+      <KonvaImage
+        image={img}
+        x={x + (w - drawW) / 2}
+        y={y + (h - drawH) / 2}
+        width={drawW}
+        height={drawH}
+      />
+    </Group>
+  );
+};
 
 const AssetSlotBody = ({ slot, userData }: SlotNodeProps) => {
   const tintedUrl = useMemo(

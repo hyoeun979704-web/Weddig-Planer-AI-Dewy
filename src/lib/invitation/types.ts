@@ -12,7 +12,8 @@ export type SlotType =
   | "calendar"     // wedding_date 의 그 달을 자동 렌더 + 결혼일 마커
   | "qr"           // 모바일 청첩장 발행 후 그 슬러그 URL의 QR
   | "map"          // 식장 약도 — V1은 운영자 PNG, V2 는 카카오맵 자동
-  | "countdown";   // 결혼식까지 남은 시간 실시간 카운트다운
+  | "countdown"    // 결혼식까지 남은 시간 실시간 카운트다운
+  | "gallery";     // 포토 갤러리 — imagePaths 의 `${slot.id}#index` 키들을 콜라주 렌더
 
 export type SlotRole =
   | "intro"

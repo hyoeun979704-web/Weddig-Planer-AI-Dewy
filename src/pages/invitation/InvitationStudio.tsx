@@ -28,6 +28,7 @@ import {
   Phone,
   Smartphone,
   Sticker,
+  Images,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -835,6 +836,51 @@ const InvitationStudio = () => {
     setStickerSheetOpen(false);
   };
 
+  // 갤러리 요소 추가 (캔버스 중앙, 정사각) — 사진은 선택 후 패널에서 추가
+  const GALLERY_MAX_PHOTOS = 8;
+  const handleAddGallery = () => {
+    if (!activeTemplate) return;
+    const canvas = getInvitationPages(activeTemplate.layout)[0].canvas;
+    const cw = canvas.w;
+    const ch = canvas.h;
+    const w = Math.min(900, cw - 120);
+    const h = w;
+    const id = `extra-${crypto.randomUUID().slice(0, 8)}`;
+    const newSlot: InvitationSlot = {
+      id,
+      type: "gallery",
+      x: Math.round((cw - w) / 2),
+      y: Math.round(ch / 2 - h / 2),
+      w,
+      h,
+      z: 40,
+      movable: true,
+      resizable: true,
+    };
+    setFace((p) => ({ ...p, extraSlots: [...p.extraSlots, newSlot] }));
+    setSelectedSlotId(id);
+  };
+
+  /** 갤러리 슬롯의 다음 사진 인덱스 (기존 키의 max+1). */
+  const nextGalleryIndex = (slotId: string) => {
+    const indexes = Object.keys(activeFaceState.imagePaths)
+      .filter((k) => k.startsWith(`${slotId}#`))
+      .map((k) => Number(k.split("#")[1]))
+      .filter(Number.isFinite);
+    return indexes.length === 0 ? 0 : Math.max(...indexes) + 1;
+  };
+
+  // 갤러리 사진 삭제 — path/url 키 제거 (스토리지 원본은 cleanup 잡이 정리)
+  const handleGalleryRemove = (key: string) => {
+    setFace((p) => {
+      const paths = { ...p.imagePaths };
+      const urls = { ...p.imageUrls };
+      delete paths[key];
+      delete urls[key];
+      return { ...p, imagePaths: paths, imageUrls: urls };
+    });
+  };
+
   const handleDeleteSlot = () => {
     if (!selectedSlot) return;
     const id = selectedSlot.id;
@@ -898,7 +944,18 @@ const InvitationStudio = () => {
     // 인쇄(종이) 저해상도 경고 — 차단하지 않고 알림만(사용자가 가진 사진으로 진행 가능)
     const warn = lowResPrintWarning(await readImageSize(file), template?.format);
     if (warn) toast({ title: "사진 해상도 확인", description: warn });
-    const id = selectedSlot.id;
+    // 갤러리 슬롯은 `${slotId}#index` 키로 여러 장 누적
+    if (
+      selectedSlot.type === "gallery" &&
+      nextGalleryIndex(selectedSlot.id) >= GALLERY_MAX_PHOTOS
+    ) {
+      toast({ title: `갤러리는 최대 ${GALLERY_MAX_PHOTOS}장까지 담을 수 있어요` });
+      return;
+    }
+    const id =
+      selectedSlot.type === "gallery"
+        ? `${selectedSlot.id}#${nextGalleryIndex(selectedSlot.id)}`
+        : selectedSlot.id;
     const applyFace = setFace;
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const filename = `${crypto.randomUUID()}.${ext}`;
@@ -1506,6 +1563,8 @@ const InvitationStudio = () => {
           onAddImageFrame={handleAddImageFrame}
           onAddMap={handleAddMap}
           onAddSticker={() => setStickerSheetOpen(true)}
+          onAddGallery={handleAddGallery}
+          onGalleryRemove={handleGalleryRemove}
           onDeleteSlot={handleDeleteSlot}
           onRestoreHidden={handleRestoreHidden}
           onSlotActionChange={handleSlotActionChange}
@@ -2019,6 +2078,8 @@ const StudioView = ({
   onRotationChange,
   onDecorChange,
   onAddSticker,
+  onAddGallery,
+  onGalleryRemove,
   onAddText,
   onAddImageFrame,
   onAddMap,
@@ -2082,6 +2143,8 @@ const StudioView = ({
     decor: "none" | "hearts" | "petals" | "confetti" | undefined,
   ) => void;
   onAddSticker: () => void;
+  onAddGallery: () => void;
+  onGalleryRemove: (key: string) => void;
   onAddText: () => void;
   onAddImageFrame: () => void;
   onAddMap: () => void;
@@ -2405,6 +2468,14 @@ const StudioView = ({
             <MapPin className="w-4 h-4" />
             약도
           </Button>
+          <Button
+            variant="outline"
+            className="h-auto py-2.5 flex flex-col items-center gap-1 text-[11px]"
+            onClick={onAddGallery}
+          >
+            <Images className="w-4 h-4" />
+            갤러리
+          </Button>
           {aFace.hiddenSlots.length > 0 && (
             <Button variant="ghost" onClick={onRestoreHidden}>
               숨긴 {aFace.hiddenSlots.length}개 복원
@@ -2616,6 +2687,66 @@ const StudioView = ({
           </Button>
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-muted-foreground">JPG/PNG, 최대 20MB</p>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              onClick={onDeleteSlot}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              삭제
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {/* 갤러리 슬롯 편집 */}
+      {selectedSlot?.type === "gallery" && (
+        <section className="p-4 bg-card rounded-2xl border border-border space-y-3">
+          <div className="flex items-center gap-2">
+            <Images className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground">갤러리 사진</h3>
+          </div>
+          {(() => {
+            const keys = Object.keys(aFace.imageUrls)
+              .filter((k) => k.startsWith(`${selectedSlot.id}#`))
+              .sort(
+                (a, b) => Number(a.split("#")[1]) - Number(b.split("#")[1]),
+              );
+            return keys.length > 0 ? (
+              <div className="grid grid-cols-4 gap-2">
+                {keys.map((k) => (
+                  <div key={k} className="relative aspect-square">
+                    <img
+                      src={aFace.imageUrls[k]}
+                      alt=""
+                      className="w-full h-full object-cover rounded-lg bg-muted"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onGalleryRemove(k)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground text-background text-[11px] leading-none"
+                      aria-label="사진 제거"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[12px] text-muted-foreground">
+                아직 사진이 없어요. 아래 버튼으로 추가하세요.
+              </p>
+            );
+          })()}
+          <Button onClick={onPickPhoto} variant="outline" className="w-full">
+            <ImageIcon className="w-4 h-4 mr-2" />
+            사진 추가
+          </Button>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] text-muted-foreground">
+              최대 8장 · 하객 화면에서 탭하면 크게 볼 수 있어요
+            </p>
             <Button
               size="sm"
               variant="ghost"
