@@ -54,7 +54,8 @@ BEGIN
   WHILE v_new_slug IS NULL AND v_attempt < 10 LOOP
     v_attempt := v_attempt + 1;
     v_new_slug := lower(substr(md5(random()::text || clock_timestamp()::text), 1, 8));
-    IF EXISTS (SELECT 1 FROM public.invitations WHERE share_slug = v_new_slug) THEN
+    -- RETURNS TABLE 의 share_slug OUT 변수와 충돌(42702) — 반드시 별칭으로 한정
+    IF EXISTS (SELECT 1 FROM public.invitations inv WHERE inv.share_slug = v_new_slug) THEN
       v_new_slug := NULL;
     END IF;
   END LOOP;

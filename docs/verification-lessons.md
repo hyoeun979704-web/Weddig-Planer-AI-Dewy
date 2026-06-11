@@ -71,3 +71,18 @@ rename 후 `grep` 으로 남은 참조 0건 확인.
 2. **렌더 검증 불가 영역(캔버스 게임 등)에서 가설 커밋을 연달아 푸시 금지.** 한 번에
    하나씩, **사용자가 검증할 수 있는 형태**로 바꾸고 결과를 받기 전엔 "고쳤다" 톤 금지.
    막히면 추측 누적 대신 **검증된 베이스라인으로 되돌려** 변수부터 0으로 만든다.
+
+## 회귀 — PL/pgSQL RETURNS TABLE 변수가 컬럼을 가리는 ambiguous 에러 (260611)
+
+- 사용자 보고: "공유 기능이 애초에 안 됨" (청첩장 발행 전멸 — 모든 행 draft·slug NULL)
+- 진짜 원인: `publish_invitation` 의 `RETURNS TABLE(... share_slug ...)` OUT 변수가
+  본문 `EXISTS (SELECT 1 FROM invitations WHERE share_slug = v_new_slug)` 의 비한정
+  컬럼과 충돌 → 42702 ambiguous. **CREATE FUNCTION 은 통과**하고, 기존 slug 재사용
+  경로는 멀쩡해서 첫 발행(신규 slug 생성) 경로만 100% 런타임 실패.
+- 검증 실패: RPC "존재 확인"만 하고 정상 보고. 함수 존재 ≠ 함수 실행 가능.
+- 진짜 검증: `SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claims='{"sub":...}'`
+  롤백 트랜잭션으로 실제 호출 경로를 실행해 슬러그 발급까지 확인.
+
+**규칙**: ① RETURNS TABLE / OUT 파라미터 이름과 같은 컬럼을 본문에서 쓸 때는 항상
+테이블 별칭으로 한정. ② DB 함수는 정의 조회가 아니라 **실 역할(role+jwt claims)로
+호출**해 봐야 검증된 것. 분기(신규/재사용)별로 한 번씩.
