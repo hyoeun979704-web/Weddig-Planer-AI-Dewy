@@ -191,6 +191,14 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
     const scale = displayWidth / canvasW;
     const stageH = canvasH * scale;
 
+    // 드래그 중앙 스냅 가이드라인 (편집 모드)
+    const [guideV, setGuideV] = useState(false);
+    const [guideH, setGuideH] = useState(false);
+    const handleGuideChange = (v: boolean, h: boolean) => {
+      setGuideV(v);
+      setGuideH(h);
+    };
+
     return (
       <div
         style={{
@@ -293,9 +301,37 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                     onMoveEnd={onMoveSlot}
                     imageFitOverrides={imageFitOverrides}
                     animPreviewNonce={animPreviewNonce}
+                    canvasW={canvasW}
+                    canvasH={canvasH}
+                    onGuideChange={editable ? handleGuideChange : undefined}
+                    movableHint={
+                      editable &&
+                      selectedSlotId === null &&
+                      (unlockAll || (!slot.locked && slot.movable !== false))
+                    }
                   />
                 );
               })}
+
+            {/* 드래그 중앙 스냅 가이드라인 */}
+            {editable && guideV && (
+              <Line
+                points={[canvasW / 2, 0, canvasW / 2, canvasH]}
+                stroke="#FF66A8"
+                strokeWidth={1.5 / scale}
+                dash={[8 / scale, 6 / scale]}
+                listening={false}
+              />
+            )}
+            {editable && guideH && (
+              <Line
+                points={[0, canvasH / 2, canvasW, canvasH / 2]}
+                stroke="#FF66A8"
+                strokeWidth={1.5 / scale}
+                dash={[8 / scale, 6 / scale]}
+                listening={false}
+              />
+            )}
 
             {/* 선택 슬롯 리사이즈 핸들 (우하단 1점) — 회전 슬롯은 좌표계가 달라 제외 */}
             {editable &&
@@ -389,6 +425,13 @@ interface SlotNodeProps {
   imageFitOverrides?: Record<string, "cover" | "contain">;
   /** 증가 시 등장 애니메이션 재생 (스튜디오 ▶ 미리보기) */
   animPreviewNonce?: number;
+  /** 캔버스 크기 — 드래그 중앙 스냅 계산용 (편집 모드) */
+  canvasW?: number;
+  canvasH?: number;
+  /** 드래그 중 중앙 정렬 여부 통지 (가이드라인 표시용) */
+  onGuideChange?: (v: boolean, h: boolean) => void;
+  /** 아무것도 선택 안 된 편집 화면에서 '움직일 수 있어요' 힌트 점선 */
+  movableHint?: boolean;
 }
 
 // 영문 이름(캘리그래피) 필드 — 폰트 미지정 시 서명체 기본 적용 (디자인 시그니처)
@@ -682,9 +725,44 @@ const SlotNode = (props: SlotNodeProps) => {
       draggable={draggable}
       onClick={props.onClick}
       onTap={props.onClick}
-      onDragEnd={(e) => onMoveEnd?.(slot.id, e.target.x(), e.target.y())}
+      onDragMove={(e) => {
+        // 캔버스 가로/세로 중앙에 가까워지면 자석 스냅 + 가이드라인 통지
+        if (!props.onGuideChange || !props.canvasW || !props.canvasH) return;
+        const node = e.target;
+        const threshold = props.canvasW * 0.015;
+        let v = false;
+        let h = false;
+        const cx = node.x() + slot.w / 2;
+        if (Math.abs(cx - props.canvasW / 2) < threshold) {
+          node.x(props.canvasW / 2 - slot.w / 2);
+          v = true;
+        }
+        const cy = node.y() + slot.h / 2;
+        if (Math.abs(cy - props.canvasH / 2) < threshold) {
+          node.y(props.canvasH / 2 - slot.h / 2);
+          h = true;
+        }
+        props.onGuideChange(v, h);
+      }}
+      onDragEnd={(e) => {
+        props.onGuideChange?.(false, false);
+        onMoveEnd?.(slot.id, e.target.x(), e.target.y());
+      }}
     >
       {renderSlotBody({ ...props, isVisible })}
+      {props.movableHint && !isSelected && (
+        <Rect
+          x={0}
+          y={0}
+          width={slot.w}
+          height={slot.h}
+          stroke="#FF66A8"
+          strokeWidth={1}
+          dash={[4, 6]}
+          opacity={0.25}
+          listening={false}
+        />
+      )}
       {isSelected && (
         <Rect
           x={0}
