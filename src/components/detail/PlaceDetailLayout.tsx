@@ -97,16 +97,26 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
   // 입점(클레임) 여부 — 소유자가 있으면 '예약 문의'를 인앱 문의로 연결,
   // 없으면 사장님 클레임 배너를 노출한다.
   const [isClaimed, setIsClaimed] = useState(false);
+  // 업체가 직접 작성 + 운영자 검토 통과한 정보인지 — 신뢰 표시용
+  const [vendorAuthored, setVendorAuthored] = useState(false);
   const [inquiryOpen, setInquiryOpen] = useState(false);
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data } = await (supabase as any)
         .from("places")
-        .select("owner_user_id")
+        .select("owner_user_id, moderation_status, data_source")
         .eq("place_id", place.id)
         .maybeSingle();
-      if (!cancelled) setIsClaimed(!!data?.owner_user_id);
+      if (cancelled) return;
+      setIsClaimed(!!data?.owner_user_id);
+      // '직접 작성' = 업체 계정이 만든 정보(data_source=business)가 운영자 검토를
+      // 통과한 경우만. 수집 업체는 기본 approved 라 이 조건이 없으면 헛신호가 난다.
+      setVendorAuthored(
+        !!data?.owner_user_id &&
+          data?.moderation_status === "approved" &&
+          data?.data_source === "business",
+      );
     })();
     return () => {
       cancelled = true;
@@ -175,7 +185,11 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
 
       <main>
         {tab === "basic" && (
-          <BasicTab place={place} categoryLabel={categoryLabel} />
+          <BasicTab
+            place={place}
+            categoryLabel={categoryLabel}
+            vendorAuthored={vendorAuthored}
+          />
         )}
         {tab === "detail" && (
           <DetailTab place={place} extraSection={extraSection} />
@@ -287,7 +301,16 @@ function TabButton({
 // ─────────────────────────────────────────────────────────────────────────────
 //  Tab 1: 기본정보 + 갤러리
 // ─────────────────────────────────────────────────────────────────────────────
-function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel: string }) {
+function BasicTab({
+  place,
+  categoryLabel,
+  vendorAuthored = false,
+}: {
+  place: LegacyDetail;
+  categoryLabel: string;
+  /** 업체가 직접 작성하고 운영자 검토를 통과한 정보 — 신뢰 표시 */
+  vendorAuthored?: boolean;
+}) {
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [advIdx, setAdvIdx] = useState(0);
 
@@ -369,7 +392,14 @@ function BasicTab({ place, categoryLabel }: { place: LegacyDetail; categoryLabel
             <span className="text-xs text-muted-foreground">· {place.wedding_count.toLocaleString()}건 진행</span>
           )}
         </div>
-        <h2 className="text-xl font-bold text-foreground mb-1.5">{place.name}</h2>
+        <div className="flex items-end justify-between gap-2 mb-1.5">
+          <h2 className="text-xl font-bold text-foreground min-w-0">{place.name}</h2>
+          {vendorAuthored && (
+            <span className="text-[10px] text-primary font-medium shrink-0 pb-1">
+              {place.name}에서 직접 작성했어요!
+            </span>
+          )}
+        </div>
         {place.description && (
           <p className="text-sm text-muted-foreground leading-relaxed">{place.description}</p>
         )}
