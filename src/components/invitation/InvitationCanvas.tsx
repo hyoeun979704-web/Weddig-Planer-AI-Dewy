@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useMemo, forwardRef, useImperativeHandle } from "react";
-import { Stage, Layer, Rect, Text, Image as KonvaImage, Group, Line } from "react-konva";
+import { Stage, Layer, Rect, Text, Image as KonvaImage, Group, Line, Circle } from "react-konva";
 import Konva from "konva";
 import useImage from "use-image";
 import QRCode from "qrcode";
@@ -73,6 +73,10 @@ interface Props {
   positionOverrides?: Record<string, { x: number; y: number }>;
   /** 드래그 종료 시 호출 — 이동한 위치 저장용 */
   onMoveSlot?: (id: string, x: number, y: number) => void;
+  /** slot.id → 사용자가 조절한 크기(캔버스 좌표). 없으면 slot.w/h 사용. */
+  sizeOverrides?: Record<string, { w: number; h: number }>;
+  /** 리사이즈 핸들 드래그 종료 시 호출 — 크기 저장용 */
+  onResizeSlot?: (id: string, w: number, h: number) => void;
   /** slot.id → 폰트 크기 override */
   fontSizeOverrides?: Record<string, number>;
   /** 사용자가 추가한 텍스트 요소 */
@@ -148,6 +152,8 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       editable = false,
       positionOverrides = {},
       onMoveSlot,
+      sizeOverrides = {},
+      onResizeSlot,
       fontSizeOverrides = {},
       extraSlots = [],
       hiddenSlots = [],
@@ -220,6 +226,10 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                   ? { ...slot, action: actionOverrides[slot.id] }
                   : slot,
               )
+              .map((slot) => {
+                const size = sizeOverrides[slot.id];
+                return size ? { ...slot, w: size.w, h: size.h } : slot;
+              })
               .sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
               .map((slot) => {
                 // 텍스트·캘린더 슬롯은 폰트가 바뀌거나(고름) 로드 완료되면 재마운트해
@@ -261,6 +271,41 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                   />
                 );
               })}
+
+            {/* 선택 슬롯 리사이즈 핸들 (우하단 1점) — 회전 슬롯은 좌표계가 달라 제외 */}
+            {editable &&
+              onResizeSlot &&
+              (() => {
+                const sel = [...layout.slots, ...extraSlots].find(
+                  (s) => s.id === selectedSlotId,
+                );
+                if (!sel || sel.rotation) return null;
+                if (!unlockAll && (sel.locked || sel.resizable === false)) return null;
+                const w = sizeOverrides[sel.id]?.w ?? sel.w;
+                const h = sizeOverrides[sel.id]?.h ?? sel.h;
+                const x = positionOverrides[sel.id]?.x ?? sel.x;
+                const y = positionOverrides[sel.id]?.y ?? sel.y;
+                const MIN = 24; // 캔버스 좌표 최소 크기
+                const commit = (node: Konva.Node) => {
+                  const nw = Math.max(MIN, node.x() - x);
+                  const nh = Math.max(MIN, node.y() - y);
+                  node.position({ x: x + nw, y: y + nh });
+                  onResizeSlot(sel.id, Math.round(nw), Math.round(nh));
+                };
+                return (
+                  <Circle
+                    x={x + w}
+                    y={y + h}
+                    radius={12 / scale}
+                    fill="#6366f1"
+                    stroke="#ffffff"
+                    strokeWidth={2 / scale}
+                    draggable
+                    onDragMove={(e) => commit(e.target)}
+                    onDragEnd={(e) => commit(e.target)}
+                  />
+                );
+              })()}
           </Layer>
         </Stage>
       </div>

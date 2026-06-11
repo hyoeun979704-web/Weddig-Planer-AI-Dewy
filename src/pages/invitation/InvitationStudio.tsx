@@ -166,6 +166,7 @@ interface FaceState {
   textOverrides: Record<string, string>;
   fontOverrides: Record<string, string>;
   positionOverrides: Record<string, { x: number; y: number }>;
+  sizeOverrides: Record<string, { w: number; h: number }>;
   fontSizeOverrides: Record<string, number>;
   extraSlots: InvitationSlot[];
   hiddenSlots: string[];
@@ -179,6 +180,7 @@ const emptyFace = (): FaceState => ({
   textOverrides: {},
   fontOverrides: {},
   positionOverrides: {},
+  sizeOverrides: {},
   fontSizeOverrides: {},
   extraSlots: [],
   hiddenSlots: [],
@@ -357,6 +359,7 @@ const InvitationStudio = () => {
         textOverrides: faces.front.textOverrides ?? {},
         fontOverrides: faces.front.fontOverrides ?? {},
         positionOverrides: faces.front.positionOverrides ?? {},
+        sizeOverrides: faces.front.sizeOverrides ?? {},
         fontSizeOverrides: faces.front.fontSizeOverrides ?? {},
         extraSlots: faces.front.extraSlots ?? [],
         hiddenSlots: faces.front.hiddenSlots ?? [],
@@ -380,6 +383,7 @@ const InvitationStudio = () => {
           textOverrides: faces.back.textOverrides ?? {},
           fontOverrides: faces.back.fontOverrides ?? {},
           positionOverrides: faces.back.positionOverrides ?? {},
+          sizeOverrides: faces.back.sizeOverrides ?? {},
           fontSizeOverrides: faces.back.fontSizeOverrides ?? {},
           extraSlots: faces.back.extraSlots ?? [],
           hiddenSlots: faces.back.hiddenSlots ?? [],
@@ -570,6 +574,17 @@ const InvitationStudio = () => {
         positionOverrides: { ...p.positionOverrides, [id]: { x, y } },
       }),
       { coalesceKey: "move:" + id }, // 같은 슬롯 드래그 연속 이동만 한 단계로
+    );
+  };
+
+  // 리사이즈 핸들 드래그 → 활성 면의 크기 오버라이드 저장
+  const handleResizeSlot = (id: string, w: number, h: number) => {
+    setFace(
+      (p) => ({
+        ...p,
+        sizeOverrides: { ...p.sizeOverrides, [id]: { w, h } },
+      }),
+      { coalesceKey: "resize:" + id },
     );
   };
 
@@ -1032,6 +1047,7 @@ const InvitationStudio = () => {
       imagePaths: f.imagePaths,
       fontOverrides: f.fontOverrides,
       positionOverrides: f.positionOverrides,
+      sizeOverrides: f.sizeOverrides,
       fontSizeOverrides: f.fontSizeOverrides,
       extraSlots: f.extraSlots,
       hiddenSlots: f.hiddenSlots,
@@ -1329,6 +1345,7 @@ const InvitationStudio = () => {
           onStylizeMap={handleStylizeMap}
           isStylizingMap={isStylizingMap}
           onMoveSlot={handleMoveSlot}
+          onResizeSlot={handleResizeSlot}
           onAddText={handleAddText}
           onAddImageFrame={handleAddImageFrame}
           onAddMap={handleAddMap}
@@ -1783,6 +1800,7 @@ const StudioView = ({
   onStylizeMap,
   isStylizingMap,
   onMoveSlot,
+  onResizeSlot,
   onAddText,
   onAddImageFrame,
   onAddMap,
@@ -1836,6 +1854,7 @@ const StudioView = ({
   onStylizeMap: () => void;
   isStylizingMap: boolean;
   onMoveSlot: (id: string, x: number, y: number) => void;
+  onResizeSlot: (id: string, w: number, h: number) => void;
   onAddText: () => void;
   onAddImageFrame: () => void;
   onAddMap: () => void;
@@ -1929,6 +1948,7 @@ const StudioView = ({
               textOverrides={fd.textOverrides}
               fontOverrides={fd.fontOverrides}
               positionOverrides={fd.positionOverrides}
+              sizeOverrides={fd.sizeOverrides}
               fontSizeOverrides={fd.fontSizeOverrides}
               extraSlots={index === 0 ? fd.extraSlots : []}
               hiddenSlots={fd.hiddenSlots}
@@ -1939,6 +1959,7 @@ const StudioView = ({
               onSelectSlot={visible ? onSelectSlot : () => {}}
               editable={visible}
               onMoveSlot={onMoveSlot}
+              onResizeSlot={onResizeSlot}
               shareUrl={targetMobileSlug ? `${window.location.origin}/i/${targetMobileSlug}` : (shareUrl ?? undefined)}
               displayWidth={340}
               imageFitOverrides={fd.imageFitOverrides}
@@ -2801,6 +2822,7 @@ function MobilePreviewDialog({
                       textOverrides={face.textOverrides}
                       fontOverrides={face.fontOverrides}
                       positionOverrides={face.positionOverrides}
+                      sizeOverrides={face.sizeOverrides}
                       fontSizeOverrides={face.fontSizeOverrides}
                       extraSlots={index === 0 ? face.extraSlots : []}
                       hiddenSlots={face.hiddenSlots}

@@ -253,6 +253,8 @@ export interface InvitationFaceData {
   fontOverrides?: Record<string, string>;
   /** slot.id → 사용자가 드래그 이동한 위치(캔버스 좌표). 없으면 슬롯 기본 위치 */
   positionOverrides?: Record<string, { x: number; y: number }>;
+  /** slot.id → 사용자가 핸들로 조절한 크기(캔버스 좌표). 없으면 슬롯 기본 크기 */
+  sizeOverrides?: Record<string, { w: number; h: number }>;
   /** slot.id → 폰트 크기 override (크기 조절) */
   fontSizeOverrides?: Record<string, number>;
   /** 사용자가 추가한 텍스트 요소 */
