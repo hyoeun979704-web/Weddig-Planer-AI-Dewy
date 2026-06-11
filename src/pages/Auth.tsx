@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,10 @@ type AccountType = "individual" | "business";
 const Auth = () => {
   const navigate = useNavigate();
   const { user, isLoading, signUp, signIn, signInWithGoogle, signInWithKakao, signInWithApple } = useAuth();
-  const [isSignUp, setIsSignUp] = useState(false);
+  // 입점 랜딩(/business)에서 ?type=business 로 진입 — 기업 가입을 바로 시작
+  const [searchParams] = useSearchParams();
+  const startAsBusiness = searchParams.get("type") === "business";
+  const [isSignUp, setIsSignUp] = useState(startAsBusiness);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -36,7 +39,9 @@ const Auth = () => {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [accountType, setAccountType] = useState<AccountType>("individual");
+  const [accountType, setAccountType] = useState<AccountType>(
+    startAsBusiness ? "business" : "individual",
+  );
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;

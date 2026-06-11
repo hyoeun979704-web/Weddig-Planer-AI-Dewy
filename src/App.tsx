@@ -148,6 +148,7 @@ const SubscriptionPaymentSuccess = lazy(() => import("./pages/SubscriptionPaymen
 const SubscriptionPaymentFail = lazy(() => import("./pages/SubscriptionPaymentFail"));
 
 // 기업회원 플로우
+const BusinessLanding = lazy(() => import("./pages/business/BusinessLanding"));
 const BusinessOnboard = lazy(() => import("./pages/business/BusinessOnboard"));
 const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
 const BusinessVendorEdit = lazy(() => import("./pages/business/BusinessVendorEdit"));
@@ -271,6 +272,7 @@ const App = () => (
               <Route path="/merge-game" element={<MergeGame />} />
 
               {/* 기업회원 플로우 */}
+              <Route path="/business" element={<BusinessLanding />} />
               <Route path="/business/onboard" element={<BusinessOnboard />} />
               <Route path="/business/dashboard" element={<BusinessGuard><BusinessDashboard /></BusinessGuard>} />
               <Route path="/business/edit" element={<BusinessGuard><BusinessVendorEdit /></BusinessGuard>} />

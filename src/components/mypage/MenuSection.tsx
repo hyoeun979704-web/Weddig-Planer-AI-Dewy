@@ -108,6 +108,18 @@ const MenuSection = ({
         </div>
       )}
 
+      {/* 입점 안내 — 일반 회원에게 파트너 랜딩 노출 (B1 진입로) */}
+      {!isBusiness && (
+        <button
+          onClick={() => navigate("/business")}
+          className="w-full text-center py-1"
+        >
+          <span className="text-[12px] text-muted-foreground underline underline-offset-2">
+            웨딩 업체 사장님이신가요? 무료 입점 안내 →
+          </span>
+        </button>
+      )}
+
       {menuGroups.map((group) => (
         <div key={group.title}>
           <h3 className="text-xs font-medium text-muted-foreground mb-1.5 px-1">{group.title}</h3>

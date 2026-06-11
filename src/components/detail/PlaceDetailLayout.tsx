@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -29,6 +29,8 @@ import HiddenCostsCard from "@/components/detail/HiddenCostsCard";
 import SetAsWeddingVenueButton from "@/components/detail/SetAsWeddingVenueButton";
 import PlaceMap from "@/components/detail/PlaceMap";
 import PlaceRecommendations from "@/components/detail/PlaceRecommendations";
+import PlaceInquirySheet from "@/components/place/PlaceInquirySheet";
+import { supabase } from "@/integrations/supabase/client";
 
 const handleTagClick = (tag: string) => {
   // Tag-based filtering on the list pages isn't wired yet — the list hooks
@@ -92,6 +94,24 @@ function fmtPrice(
 const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }: Props) => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<TabKey>("basic");
+  // 입점(클레임) 여부 — 소유자가 있으면 '예약 문의'를 인앱 문의로 연결,
+  // 없으면 사장님 클레임 배너를 노출한다.
+  const [isClaimed, setIsClaimed] = useState(false);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("places")
+        .select("owner_user_id")
+        .eq("place_id", place.id)
+        .maybeSingle();
+      if (!cancelled) setIsClaimed(!!data?.owner_user_id);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [place.id]);
   // 탭 전환 시 새 탭 내용을 위에서부터 보도록 페이지 상단으로 스크롤.
   const selectTab = (t: TabKey) => {
     setTab(t);
@@ -146,6 +166,19 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
         }}
       />
 
+      {/* 미입점 업체 — 사장님 클레임 배너 */}
+      {!isClaimed && (
+        <button
+          type="button"
+          onClick={() => navigate("/business")}
+          className="block w-full px-4 pb-24 pt-2 text-center"
+        >
+          <span className="text-[12px] text-muted-foreground underline underline-offset-2">
+            이 업체의 사장님이신가요? 무료 입점하고 직접 관리하세요 →
+          </span>
+        </button>
+      )}
+
       {/* Fixed bottom CTA */}
       <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-background border-t border-border p-3 z-40">
         <div className="flex gap-2">
@@ -165,16 +198,28 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
           </Button>
           <Button
             className="flex-1 h-11"
-            onClick={() =>
-              toast.info("견적 요청 기능 준비 중이에요", {
-                description: "곧 업체에게 직접 견적 받을 수 있게 만들어드릴게요",
-              })
-            }
+            onClick={() => {
+              // 입점(클레임) 업체는 인앱 문의로, 미입점은 기존 안내 유지
+              if (isClaimed) {
+                setInquiryOpen(true);
+              } else {
+                toast.info("아직 앱 문의를 받지 않는 업체예요", {
+                  description: "전화 문의를 이용해주세요. 입점 업체는 앱에서 바로 답변을 받아요.",
+                });
+              }
+            }}
           >
             예약 문의
           </Button>
         </div>
       </div>
+
+      <PlaceInquirySheet
+        placeId={place.id}
+        placeName={place.name}
+        open={inquiryOpen}
+        onOpenChange={setInquiryOpen}
+      />
     </div>
   );
 };
