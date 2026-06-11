@@ -203,6 +203,9 @@ interface FaceState {
   positionOverrides: Record<string, { x: number; y: number }>;
   sizeOverrides: Record<string, { w: number; h: number }>;
   animOverrides: Record<string, SlotAnim>;
+  zOverrides: Record<string, number>;
+  rotationOverrides: Record<string, number>;
+  decorOverride?: "none" | "hearts" | "petals" | "confetti";
   fontSizeOverrides: Record<string, number>;
   extraSlots: InvitationSlot[];
   hiddenSlots: string[];
@@ -218,6 +221,8 @@ const emptyFace = (): FaceState => ({
   positionOverrides: {},
   sizeOverrides: {},
   animOverrides: {},
+  zOverrides: {},
+  rotationOverrides: {},
   fontSizeOverrides: {},
   extraSlots: [],
   hiddenSlots: [],
@@ -398,6 +403,9 @@ const InvitationStudio = () => {
         positionOverrides: faces.front.positionOverrides ?? {},
         sizeOverrides: faces.front.sizeOverrides ?? {},
         animOverrides: faces.front.animOverrides ?? {},
+        zOverrides: faces.front.zOverrides ?? {},
+        rotationOverrides: faces.front.rotationOverrides ?? {},
+        decorOverride: faces.front.decorOverride,
         fontSizeOverrides: faces.front.fontSizeOverrides ?? {},
         extraSlots: faces.front.extraSlots ?? [],
         hiddenSlots: faces.front.hiddenSlots ?? [],
@@ -423,6 +431,9 @@ const InvitationStudio = () => {
           positionOverrides: faces.back.positionOverrides ?? {},
           sizeOverrides: faces.back.sizeOverrides ?? {},
           animOverrides: faces.back.animOverrides ?? {},
+          zOverrides: faces.back.zOverrides ?? {},
+          rotationOverrides: faces.back.rotationOverrides ?? {},
+          decorOverride: faces.back.decorOverride,
           fontSizeOverrides: faces.back.fontSizeOverrides ?? {},
           extraSlots: faces.back.extraSlots ?? [],
           hiddenSlots: faces.back.hiddenSlots ?? [],
@@ -640,6 +651,41 @@ const InvitationStudio = () => {
   const handleReplayAnims = () => {
     setSelectedSlotId(null);
     setAnimPreviewNonce((n) => n + 1);
+  };
+
+  // 레이어 순서 — 활성 면의 모든 슬롯(템플릿+추가) 유효 z 기준 맨앞/맨뒤로
+  const handleLayerChange = (id: string, dir: "front" | "back") => {
+    if (!activeTemplate) return;
+    const slots = [
+      ...getInvitationSlots(activeTemplate.layout),
+      ...activeFaceState.extraSlots,
+    ];
+    const zs = slots.map(
+      (s) => activeFaceState.zOverrides[s.id] ?? s.z ?? 0,
+    );
+    const next = dir === "front" ? Math.max(...zs) + 1 : Math.min(...zs) - 1;
+    setFace((p) => ({
+      ...p,
+      zOverrides: { ...p.zOverrides, [id]: next },
+    }));
+  };
+
+  // 회전 — 슬라이더 연속 조작을 한 undo 단계로
+  const handleRotationChange = (id: string, deg: number) => {
+    setFace(
+      (p) => ({
+        ...p,
+        rotationOverrides: { ...p.rotationOverrides, [id]: deg },
+      }),
+      { coalesceKey: "rotate:" + id },
+    );
+  };
+
+  // 떠다니는 장식 (모바일 롤 템플릿 공개 화면)
+  const handleDecorChange = (
+    decor: "none" | "hearts" | "petals" | "confetti" | undefined,
+  ) => {
+    setFace((p) => ({ ...p, decorOverride: decor }));
   };
 
   const handleSelectSlot = (id: string | null) => {
@@ -1147,6 +1193,9 @@ const InvitationStudio = () => {
       positionOverrides: f.positionOverrides,
       sizeOverrides: f.sizeOverrides,
       animOverrides: f.animOverrides,
+      zOverrides: f.zOverrides,
+      rotationOverrides: f.rotationOverrides,
+      decorOverride: f.decorOverride,
       fontSizeOverrides: f.fontSizeOverrides,
       extraSlots: f.extraSlots,
       hiddenSlots: f.hiddenSlots,
@@ -1450,6 +1499,9 @@ const InvitationStudio = () => {
           onAnimChange={handleAnimChange}
           onReplayAnims={handleReplayAnims}
           animPreviewNonce={animPreviewNonce}
+          onLayerChange={handleLayerChange}
+          onRotationChange={handleRotationChange}
+          onDecorChange={handleDecorChange}
           onAddText={handleAddText}
           onAddImageFrame={handleAddImageFrame}
           onAddMap={handleAddMap}
@@ -1963,6 +2015,9 @@ const StudioView = ({
   onAnimChange,
   onReplayAnims,
   animPreviewNonce,
+  onLayerChange,
+  onRotationChange,
+  onDecorChange,
   onAddSticker,
   onAddText,
   onAddImageFrame,
@@ -2021,6 +2076,11 @@ const StudioView = ({
   onAnimChange: (id: string, anim: SlotAnim) => void;
   onReplayAnims: () => void;
   animPreviewNonce: number;
+  onLayerChange: (id: string, dir: "front" | "back") => void;
+  onRotationChange: (id: string, deg: number) => void;
+  onDecorChange: (
+    decor: "none" | "hearts" | "petals" | "confetti" | undefined,
+  ) => void;
   onAddSticker: () => void;
   onAddText: () => void;
   onAddImageFrame: () => void;
@@ -2129,6 +2189,8 @@ const StudioView = ({
               onResizeSlot={onResizeSlot}
               animOverrides={fd.animOverrides}
               animPreviewNonce={animPreviewNonce}
+              zOverrides={fd.zOverrides}
+              rotationOverrides={fd.rotationOverrides}
               shareUrl={targetMobileSlug ? `${window.location.origin}/i/${targetMobileSlug}` : (shareUrl ?? undefined)}
               displayWidth={340}
               imageFitOverrides={fd.imageFitOverrides}
@@ -2274,6 +2336,38 @@ const StudioView = ({
           defaultBg={defaultBg}
           onChange={onBgChange}
         />
+      )}
+
+      {/* 떠다니는 장식 — 모바일 롤 청첩장 공개 화면 위에 흐르는 데코 */}
+      {template.format === "mobile" && isSeamlessRoll(template.layout) && (
+        <div className="p-3 bg-card rounded-2xl border border-border space-y-2">
+          <p className="text-[12px] font-bold text-foreground">떠다니는 장식</p>
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                { val: undefined, label: "템플릿 기본" },
+                { val: "none", label: "없음" },
+                { val: "hearts", label: "하트" },
+                { val: "petals", label: "꽃잎" },
+                { val: "confetti", label: "컨페티" },
+              ] as const
+            ).map((opt) => (
+              <Button
+                key={opt.label}
+                type="button"
+                size="sm"
+                variant={aFace.decorOverride === opt.val ? "default" : "outline"}
+                className="text-xs h-8"
+                onClick={() => onDecorChange(opt.val)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            하객에게 공유되는 화면 위로 떠다니는 효과예요. 발행 후 공유 링크에서 보여요.
+          </p>
+        </div>
       )}
 
       {/* 요소 추가 / 숨김 복원 */}
@@ -2590,6 +2684,69 @@ const StudioView = ({
             캘린더는 위에서 입력한 <strong>결혼 날짜</strong>에 맞춰 자동으로
             렌더링돼요. 날짜를 변경하려면 뒤로 가서 정보를 수정해주세요.
           </p>
+        </section>
+      )}
+
+      {/* 배치 — 레이어 순서·회전 (잠긴 슬롯 제외) */}
+      {selectedSlot && !selectedSlot.locked && (
+        <section className="p-4 bg-card rounded-2xl border border-border space-y-2.5">
+          <div className="flex items-center gap-2">
+            <ChevronUp className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground">배치</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="text-xs h-9"
+              onClick={() => onLayerChange(selectedSlot.id, "front")}
+            >
+              <ChevronUp className="w-3.5 h-3.5 mr-1" />맨 앞으로
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="text-xs h-9"
+              onClick={() => onLayerChange(selectedSlot.id, "back")}
+            >
+              <ChevronDown className="w-3.5 h-3.5 mr-1" />맨 뒤로
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] text-muted-foreground shrink-0">회전</span>
+            <input
+              type="range"
+              min={-180}
+              max={180}
+              step={1}
+              value={
+                aFace.rotationOverrides[selectedSlot.id] ??
+                selectedSlot.rotation ??
+                0
+              }
+              onChange={(e) =>
+                onRotationChange(selectedSlot.id, Number(e.target.value))
+              }
+              className="flex-1 accent-primary"
+            />
+            <span className="text-[12px] text-foreground w-10 text-right tabular-nums">
+              {Math.round(
+                aFace.rotationOverrides[selectedSlot.id] ??
+                  selectedSlot.rotation ??
+                  0,
+              )}
+              °
+            </span>
+            <button
+              type="button"
+              className="text-[11px] text-primary font-bold px-1.5"
+              onClick={() => onRotationChange(selectedSlot.id, 0)}
+            >
+              초기화
+            </button>
+          </div>
         </section>
       )}
 
@@ -3078,6 +3235,8 @@ function MobilePreviewDialog({
                       positionOverrides={face.positionOverrides}
                       sizeOverrides={face.sizeOverrides}
                       animOverrides={face.animOverrides}
+                      zOverrides={face.zOverrides}
+                      rotationOverrides={face.rotationOverrides}
                       fontSizeOverrides={face.fontSizeOverrides}
                       extraSlots={index === 0 ? face.extraSlots : []}
                       hiddenSlots={face.hiddenSlots}

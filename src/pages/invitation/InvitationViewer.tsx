@@ -405,6 +405,8 @@ const InvitationViewer = () => {
             positionOverrides={overrides.positionOverrides ?? {}}
             sizeOverrides={overrides.sizeOverrides ?? {}}
             animOverrides={overrides.animOverrides ?? {}}
+            zOverrides={overrides.zOverrides ?? {}}
+            rotationOverrides={overrides.rotationOverrides ?? {}}
             fontSizeOverrides={overrides.fontSizeOverrides ?? {}}
             extraSlots={index === 0 ? overrides.extraSlots ?? [] : []}
             hiddenSlots={overrides.hiddenSlots ?? []}
@@ -429,12 +431,20 @@ const InvitationViewer = () => {
           seamlessRoll ? "py-0 gap-0" : "py-5 gap-5"
         }`}
       >
-        {seamlessRoll && tpl.layout.decor && (
-          <>
-            <style>{DECOR_KEYFRAMES}</style>
-            <FloatingDecor kind={tpl.layout.decor} />
-          </>
-        )}
+        {seamlessRoll &&
+          (() => {
+            // 사용자 장식 override 우선: 'none' 은 끄기, 미지정은 템플릿 기본.
+            const decor =
+              faces.front.decorOverride === "none"
+                ? undefined
+                : (faces.front.decorOverride ?? tpl.layout.decor);
+            return decor ? (
+              <>
+                <style>{DECOR_KEYFRAMES}</style>
+                <FloatingDecor kind={decor} />
+              </>
+            ) : null;
+          })()}
         {renderPages(tpl.layout, faces.front)}
         {backLayout && renderPages(backLayout, faces.back)}
       </div>

@@ -259,6 +259,12 @@ export interface InvitationFaceData {
   sizeOverrides?: Record<string, { w: number; h: number }>;
   /** slot.id → 사용자가 고른 등장/루프 효과 */
   animOverrides?: Record<string, "none" | "spring" | "heartbeat" | "fade" | "typing">;
+  /** slot.id → 레이어 순서(z) override */
+  zOverrides?: Record<string, number>;
+  /** slot.id → 회전(deg) override */
+  rotationOverrides?: Record<string, number>;
+  /** 떠다니는 장식 override. 'none' 은 템플릿 기본 장식 끄기. 없으면 템플릿 기본. */
+  decorOverride?: "none" | "hearts" | "petals" | "confetti";
   /** slot.id → 폰트 크기 override (크기 조절) */
   fontSizeOverrides?: Record<string, number>;
   /** 사용자가 추가한 텍스트 요소 */

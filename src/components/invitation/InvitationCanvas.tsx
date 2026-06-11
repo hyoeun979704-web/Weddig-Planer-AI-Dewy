@@ -82,6 +82,10 @@ interface Props {
   animOverrides?: Record<string, SlotAnim>;
   /** 증가할 때마다 등장 애니메이션을 처음부터 재생 (스튜디오 미리보기) */
   animPreviewNonce?: number;
+  /** slot.id → 레이어 순서(z) override */
+  zOverrides?: Record<string, number>;
+  /** slot.id → 회전(deg) override */
+  rotationOverrides?: Record<string, number>;
   /** slot.id → 폰트 크기 override */
   fontSizeOverrides?: Record<string, number>;
   /** 사용자가 추가한 텍스트 요소 */
@@ -161,6 +165,8 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       onResizeSlot,
       animOverrides = {},
       animPreviewNonce = 0,
+      zOverrides = {},
+      rotationOverrides = {},
       fontSizeOverrides = {},
       extraSlots = [],
       hiddenSlots = [],
@@ -236,11 +242,16 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
               .map((slot) => {
                 const size = sizeOverrides[slot.id];
                 const anim = animOverrides[slot.id];
-                if (!size && !anim) return slot;
+                const z = zOverrides[slot.id];
+                const rotation = rotationOverrides[slot.id];
+                if (!size && !anim && z === undefined && rotation === undefined)
+                  return slot;
                 return {
                   ...slot,
                   ...(size ? { w: size.w, h: size.h } : {}),
                   ...(anim ? { anim } : {}),
+                  ...(z !== undefined ? { z } : {}),
+                  ...(rotation !== undefined ? { rotation } : {}),
                 };
               })
               .sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
@@ -293,7 +304,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                 const sel = [...layout.slots, ...extraSlots].find(
                   (s) => s.id === selectedSlotId,
                 );
-                if (!sel || sel.rotation) return null;
+                if (!sel || (rotationOverrides[sel.id] ?? sel.rotation)) return null;
                 if (!unlockAll && (sel.locked || sel.resizable === false)) return null;
                 const w = sizeOverrides[sel.id]?.w ?? sel.w;
                 const h = sizeOverrides[sel.id]?.h ?? sel.h;
