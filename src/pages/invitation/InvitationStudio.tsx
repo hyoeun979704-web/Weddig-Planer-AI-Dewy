@@ -27,6 +27,7 @@ import {
   MousePointerClick,
   Phone,
   Smartphone,
+  Sticker,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -167,6 +168,33 @@ function mergeSlotAction(
   const action = actionOverrides[slot.id] ?? slot.action;
   return action ? { ...slot, action } : slot;
 }
+
+/** 스티커 피커가 쓰는 invitation_assets 행 (활성 에셋만 조회) */
+interface StickerAsset {
+  id: string;
+  name: string;
+  image_url: string;
+  thumbnail_url: string | null;
+  category: string | null;
+  natural_width: number | null;
+  natural_height: number | null;
+}
+
+/** invitation_assets.category 코드 → 사용자 표시 라벨 (미등록 코드는 원문 표시) */
+const STICKER_CATEGORY_LABEL: Record<string, string> = {
+  TEXT_STICKER: "텍스트 스티커",
+  STICKER: "스티커",
+  TAPE: "테이프",
+  LINE: "라인",
+  SHAPE: "도형",
+  OBJECT_3D: "오브제",
+  NATURE: "자연",
+  FLOWER: "꽃",
+  RIBBON: "리본",
+  FRAME: "프레임",
+  ICON: "아이콘",
+  PHOTO_FRAME: "사진 프레임",
+};
 
 /** 한 면(전면/후면)의 편집 상태 */
 interface FaceState {
@@ -717,6 +745,50 @@ const InvitationStudio = () => {
     setFace((p) => ({ ...p, extraSlots: [...p.extraSlots, newSlot] }));
     setSelectedSlotId(id);
   };
+  // ── 스티커(장식 에셋) 추가 — 관리자 에셋 라이브러리를 사용자에게 개방 ──
+  const [stickerSheetOpen, setStickerSheetOpen] = useState(false);
+  const [stickerAssets, setStickerAssets] = useState<StickerAsset[] | null>(null);
+  useEffect(() => {
+    if (!stickerSheetOpen || stickerAssets !== null) return;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("invitation_assets")
+        .select("id,name,image_url,thumbnail_url,category,natural_width,natural_height")
+        .eq("is_active", true)
+        .order("category")
+        .order("display_order");
+      setStickerAssets((data ?? []) as StickerAsset[]);
+    })();
+  }, [stickerSheetOpen, stickerAssets]);
+
+  const handleAddSticker = (a: StickerAsset) => {
+    if (!activeTemplate) return;
+    const canvas = getInvitationPages(activeTemplate.layout)[0].canvas;
+    const cw = canvas.w;
+    const ch = canvas.h;
+    // 원본 비율 유지, 캔버스 폭 1/3 이내로 배치
+    const nw = a.natural_width || 240;
+    const nh = a.natural_height || nw;
+    const w = Math.min(nw, Math.round(cw / 3));
+    const h = Math.max(24, Math.round(w * (nh / nw)));
+    const id = `extra-${crypto.randomUUID().slice(0, 8)}`;
+    const newSlot: InvitationSlot = {
+      id,
+      type: "asset",
+      image_url: a.image_url,
+      x: Math.round((cw - w) / 2),
+      y: Math.round(ch / 2 - h / 2),
+      w,
+      h,
+      z: 60,
+      movable: true,
+      resizable: true,
+    };
+    setFace((p) => ({ ...p, extraSlots: [...p.extraSlots, newSlot] }));
+    setSelectedSlotId(id);
+    setStickerSheetOpen(false);
+  };
+
   const handleDeleteSlot = () => {
     if (!selectedSlot) return;
     const id = selectedSlot.id;
@@ -1381,6 +1453,7 @@ const InvitationStudio = () => {
           onAddText={handleAddText}
           onAddImageFrame={handleAddImageFrame}
           onAddMap={handleAddMap}
+          onAddSticker={() => setStickerSheetOpen(true)}
           onDeleteSlot={handleDeleteSlot}
           onRestoreHidden={handleRestoreHidden}
           onSlotActionChange={handleSlotActionChange}
@@ -1408,6 +1481,60 @@ const InvitationStudio = () => {
           onTargetMobileSlugChange={handleTargetMobileSlugChange}
         />
       )}
+
+      {/* 스티커 피커 — 관리자 에셋 라이브러리(활성)에서 골라 캔버스에 추가 */}
+      <Dialog open={stickerSheetOpen} onOpenChange={setStickerSheetOpen}>
+        <DialogContent className="max-w-[430px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>스티커 추가</DialogTitle>
+            <DialogDescription>
+              탭하면 캔버스 중앙에 추가돼요. 끌어서 옮기고, 우하단 핸들로 크기를
+              조절하고, 등장 효과도 줄 수 있어요.
+            </DialogDescription>
+          </DialogHeader>
+          {stickerAssets === null ? (
+            <div className="py-10 flex justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : stickerAssets.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              등록된 스티커가 아직 없어요.
+            </p>
+          ) : (
+            Object.entries(
+              stickerAssets.reduce<Record<string, StickerAsset[]>>((acc, a) => {
+                const key = a.category ?? "기타";
+                (acc[key] ??= []).push(a);
+                return acc;
+              }, {}),
+            ).map(([cat, list]) => (
+              <div key={cat} className="space-y-2">
+                <p className="text-[11px] font-bold text-muted-foreground">
+                  {STICKER_CATEGORY_LABEL[cat] ?? cat}
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {list.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => handleAddSticker(a)}
+                      className="aspect-square rounded-lg border border-border bg-muted/40 p-1.5 active:scale-95 transition-transform"
+                      title={a.name}
+                    >
+                      <img
+                        src={a.thumbnail_url || a.image_url}
+                        alt={a.name}
+                        loading="lazy"
+                        className="w-full h-full object-contain"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </DialogContent>
+      </Dialog>
 
       <input
         ref={fileInputRef}
@@ -1836,6 +1963,7 @@ const StudioView = ({
   onAnimChange,
   onReplayAnims,
   animPreviewNonce,
+  onAddSticker,
   onAddText,
   onAddImageFrame,
   onAddMap,
@@ -1893,6 +2021,7 @@ const StudioView = ({
   onAnimChange: (id: string, anim: SlotAnim) => void;
   onReplayAnims: () => void;
   animPreviewNonce: number;
+  onAddSticker: () => void;
   onAddText: () => void;
   onAddImageFrame: () => void;
   onAddMap: () => void;
@@ -2149,18 +2278,38 @@ const StudioView = ({
 
       {/* 요소 추가 / 숨김 복원 */}
       {(activeFace === "front" || backTemplate) && (
-        <div className="grid grid-cols-3 gap-2">
-          <Button variant="outline" className="flex-1" onClick={onAddText}>
-            <Type className="w-4 h-4 mr-1.5" />
-            텍스트 추가
+        <div className="grid grid-cols-4 gap-2">
+          <Button
+            variant="outline"
+            className="h-auto py-2.5 flex flex-col items-center gap-1 text-[11px]"
+            onClick={onAddText}
+          >
+            <Type className="w-4 h-4" />
+            텍스트
           </Button>
-          <Button variant="outline" className="flex-1" onClick={onAddImageFrame}>
-            <ImageIcon className="w-4 h-4 mr-1.5" />
-            사진 프레임
+          <Button
+            variant="outline"
+            className="h-auto py-2.5 flex flex-col items-center gap-1 text-[11px]"
+            onClick={onAddImageFrame}
+          >
+            <ImageIcon className="w-4 h-4" />
+            사진
           </Button>
-          <Button variant="outline" className="flex-1" onClick={onAddMap}>
-            <MapPin className="w-4 h-4 mr-1.5" />
-            약도 추가
+          <Button
+            variant="outline"
+            className="h-auto py-2.5 flex flex-col items-center gap-1 text-[11px]"
+            onClick={onAddSticker}
+          >
+            <Sticker className="w-4 h-4" />
+            스티커
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto py-2.5 flex flex-col items-center gap-1 text-[11px]"
+            onClick={onAddMap}
+          >
+            <MapPin className="w-4 h-4" />
+            약도
           </Button>
           {aFace.hiddenSlots.length > 0 && (
             <Button variant="ghost" onClick={onRestoreHidden}>
