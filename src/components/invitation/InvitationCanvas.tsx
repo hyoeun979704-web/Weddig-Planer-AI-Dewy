@@ -1068,6 +1068,44 @@ const ImageSlotBody = ({ slot, imageUrls, imageFitOverrides }: SlotNodeProps) =>
 // 에셋 슬롯
 // ════════════════════════════════════════════════════════════════
 /** SVG data URI 에셋을 단색(tint_color)으로 치환. 라인/프레임 등 단색 에셋 색변경용. */
+/** PNG 스티커 단색 틴트 — 그룹을 캐시해 source-atop 합성이 스티커 실루엣에만 적용되게. */
+const TintedRasterAsset = ({
+  img,
+  w,
+  h,
+  color,
+}: {
+  img: HTMLImageElement;
+  w: number;
+  h: number;
+  color: string;
+}) => {
+  const groupRef = useRef<Konva.Group>(null);
+  useEffect(() => {
+    const node = groupRef.current;
+    if (!node) return;
+    node.cache();
+    node.getLayer()?.batchDraw();
+    return () => {
+      node.clearCache();
+    };
+  }, [img, w, h, color]);
+  return (
+    <Group ref={groupRef}>
+      <KonvaImage image={img} x={0} y={0} width={w} height={h} />
+      <Rect
+        x={0}
+        y={0}
+        width={w}
+        height={h}
+        fill={color}
+        globalCompositeOperation="source-atop"
+        listening={false}
+      />
+    </Group>
+  );
+};
+
 function tintSvgDataUri(url: string | undefined, color: string | undefined): string {
   if (!url || !color || !url.startsWith("data:image/svg+xml;base64,")) return url ?? "";
   try {
@@ -1188,11 +1226,22 @@ const AssetSlotBody = ({ slot, userData }: SlotNodeProps) => {
     [slot.image_url, slot.tint_color],
   );
   const [img] = useImage(tintedUrl, "anonymous");
+  const isSvg = !!slot.image_url?.startsWith("data:image/svg+xml;base64,");
   if (slot.image_url) {
-    // 등록 이미지가 있으면 그대로(로딩 중엔 아무것도 안 그림 — 점선 깜빡임 방지).
-    return img ? (
-      <KonvaImage image={img} x={0} y={0} width={slot.w} height={slot.h} />
-    ) : null;
+    if (!img) return null; // 로딩 중엔 아무것도 안 그림 — 점선 깜빡임 방지
+    // 래스터(PNG) 스티커의 색상 변경 — SVG 는 위 tintSvgDataUri 가 처리,
+    // PNG 는 실루엣 위에 단색을 source-atop 합성(그룹 캐시로 로컬 합성).
+    if (slot.tint_color && !isSvg) {
+      return (
+        <TintedRasterAsset
+          img={img}
+          w={slot.w}
+          h={slot.h}
+          color={slot.tint_color}
+        />
+      );
+    }
+    return <KonvaImage image={img} x={0} y={0} width={slot.w} height={slot.h} />;
   }
 
   // 이미지 미등록 장식 에셋 — 모양에 맞게 직접 그려 마감(점선 디버그 박스 제거).
