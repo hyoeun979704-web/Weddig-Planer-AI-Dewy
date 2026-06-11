@@ -28,6 +28,7 @@ import {
   Phone,
   Smartphone,
   Sticker,
+  Images,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -203,6 +204,9 @@ interface FaceState {
   positionOverrides: Record<string, { x: number; y: number }>;
   sizeOverrides: Record<string, { w: number; h: number }>;
   animOverrides: Record<string, SlotAnim>;
+  zOverrides: Record<string, number>;
+  rotationOverrides: Record<string, number>;
+  decorOverride?: "none" | "hearts" | "petals" | "confetti";
   fontSizeOverrides: Record<string, number>;
   extraSlots: InvitationSlot[];
   hiddenSlots: string[];
@@ -218,6 +222,8 @@ const emptyFace = (): FaceState => ({
   positionOverrides: {},
   sizeOverrides: {},
   animOverrides: {},
+  zOverrides: {},
+  rotationOverrides: {},
   fontSizeOverrides: {},
   extraSlots: [],
   hiddenSlots: [],
@@ -398,6 +404,9 @@ const InvitationStudio = () => {
         positionOverrides: faces.front.positionOverrides ?? {},
         sizeOverrides: faces.front.sizeOverrides ?? {},
         animOverrides: faces.front.animOverrides ?? {},
+        zOverrides: faces.front.zOverrides ?? {},
+        rotationOverrides: faces.front.rotationOverrides ?? {},
+        decorOverride: faces.front.decorOverride,
         fontSizeOverrides: faces.front.fontSizeOverrides ?? {},
         extraSlots: faces.front.extraSlots ?? [],
         hiddenSlots: faces.front.hiddenSlots ?? [],
@@ -423,6 +432,9 @@ const InvitationStudio = () => {
           positionOverrides: faces.back.positionOverrides ?? {},
           sizeOverrides: faces.back.sizeOverrides ?? {},
           animOverrides: faces.back.animOverrides ?? {},
+          zOverrides: faces.back.zOverrides ?? {},
+          rotationOverrides: faces.back.rotationOverrides ?? {},
+          decorOverride: faces.back.decorOverride,
           fontSizeOverrides: faces.back.fontSizeOverrides ?? {},
           extraSlots: faces.back.extraSlots ?? [],
           hiddenSlots: faces.back.hiddenSlots ?? [],
@@ -642,6 +654,41 @@ const InvitationStudio = () => {
     setAnimPreviewNonce((n) => n + 1);
   };
 
+  // 레이어 순서 — 활성 면의 모든 슬롯(템플릿+추가) 유효 z 기준 맨앞/맨뒤로
+  const handleLayerChange = (id: string, dir: "front" | "back") => {
+    if (!activeTemplate) return;
+    const slots = [
+      ...getInvitationSlots(activeTemplate.layout),
+      ...activeFaceState.extraSlots,
+    ];
+    const zs = slots.map(
+      (s) => activeFaceState.zOverrides[s.id] ?? s.z ?? 0,
+    );
+    const next = dir === "front" ? Math.max(...zs) + 1 : Math.min(...zs) - 1;
+    setFace((p) => ({
+      ...p,
+      zOverrides: { ...p.zOverrides, [id]: next },
+    }));
+  };
+
+  // 회전 — 슬라이더 연속 조작을 한 undo 단계로
+  const handleRotationChange = (id: string, deg: number) => {
+    setFace(
+      (p) => ({
+        ...p,
+        rotationOverrides: { ...p.rotationOverrides, [id]: deg },
+      }),
+      { coalesceKey: "rotate:" + id },
+    );
+  };
+
+  // 떠다니는 장식 (모바일 롤 템플릿 공개 화면)
+  const handleDecorChange = (
+    decor: "none" | "hearts" | "petals" | "confetti" | undefined,
+  ) => {
+    setFace((p) => ({ ...p, decorOverride: decor }));
+  };
+
   const handleSelectSlot = (id: string | null) => {
     setSelectedSlotId(id);
     if (!id) return;
@@ -789,6 +836,51 @@ const InvitationStudio = () => {
     setStickerSheetOpen(false);
   };
 
+  // 갤러리 요소 추가 (캔버스 중앙, 정사각) — 사진은 선택 후 패널에서 추가
+  const GALLERY_MAX_PHOTOS = 8;
+  const handleAddGallery = () => {
+    if (!activeTemplate) return;
+    const canvas = getInvitationPages(activeTemplate.layout)[0].canvas;
+    const cw = canvas.w;
+    const ch = canvas.h;
+    const w = Math.min(900, cw - 120);
+    const h = w;
+    const id = `extra-${crypto.randomUUID().slice(0, 8)}`;
+    const newSlot: InvitationSlot = {
+      id,
+      type: "gallery",
+      x: Math.round((cw - w) / 2),
+      y: Math.round(ch / 2 - h / 2),
+      w,
+      h,
+      z: 40,
+      movable: true,
+      resizable: true,
+    };
+    setFace((p) => ({ ...p, extraSlots: [...p.extraSlots, newSlot] }));
+    setSelectedSlotId(id);
+  };
+
+  /** 갤러리 슬롯의 다음 사진 인덱스 (기존 키의 max+1). */
+  const nextGalleryIndex = (slotId: string) => {
+    const indexes = Object.keys(activeFaceState.imagePaths)
+      .filter((k) => k.startsWith(`${slotId}#`))
+      .map((k) => Number(k.split("#")[1]))
+      .filter(Number.isFinite);
+    return indexes.length === 0 ? 0 : Math.max(...indexes) + 1;
+  };
+
+  // 갤러리 사진 삭제 — path/url 키 제거 (스토리지 원본은 cleanup 잡이 정리)
+  const handleGalleryRemove = (key: string) => {
+    setFace((p) => {
+      const paths = { ...p.imagePaths };
+      const urls = { ...p.imageUrls };
+      delete paths[key];
+      delete urls[key];
+      return { ...p, imagePaths: paths, imageUrls: urls };
+    });
+  };
+
   const handleDeleteSlot = () => {
     if (!selectedSlot) return;
     const id = selectedSlot.id;
@@ -852,7 +944,18 @@ const InvitationStudio = () => {
     // 인쇄(종이) 저해상도 경고 — 차단하지 않고 알림만(사용자가 가진 사진으로 진행 가능)
     const warn = lowResPrintWarning(await readImageSize(file), template?.format);
     if (warn) toast({ title: "사진 해상도 확인", description: warn });
-    const id = selectedSlot.id;
+    // 갤러리 슬롯은 `${slotId}#index` 키로 여러 장 누적
+    if (
+      selectedSlot.type === "gallery" &&
+      nextGalleryIndex(selectedSlot.id) >= GALLERY_MAX_PHOTOS
+    ) {
+      toast({ title: `갤러리는 최대 ${GALLERY_MAX_PHOTOS}장까지 담을 수 있어요` });
+      return;
+    }
+    const id =
+      selectedSlot.type === "gallery"
+        ? `${selectedSlot.id}#${nextGalleryIndex(selectedSlot.id)}`
+        : selectedSlot.id;
     const applyFace = setFace;
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const filename = `${crypto.randomUUID()}.${ext}`;
@@ -1147,6 +1250,9 @@ const InvitationStudio = () => {
       positionOverrides: f.positionOverrides,
       sizeOverrides: f.sizeOverrides,
       animOverrides: f.animOverrides,
+      zOverrides: f.zOverrides,
+      rotationOverrides: f.rotationOverrides,
+      decorOverride: f.decorOverride,
       fontSizeOverrides: f.fontSizeOverrides,
       extraSlots: f.extraSlots,
       hiddenSlots: f.hiddenSlots,
@@ -1450,10 +1556,15 @@ const InvitationStudio = () => {
           onAnimChange={handleAnimChange}
           onReplayAnims={handleReplayAnims}
           animPreviewNonce={animPreviewNonce}
+          onLayerChange={handleLayerChange}
+          onRotationChange={handleRotationChange}
+          onDecorChange={handleDecorChange}
           onAddText={handleAddText}
           onAddImageFrame={handleAddImageFrame}
           onAddMap={handleAddMap}
           onAddSticker={() => setStickerSheetOpen(true)}
+          onAddGallery={handleAddGallery}
+          onGalleryRemove={handleGalleryRemove}
           onDeleteSlot={handleDeleteSlot}
           onRestoreHidden={handleRestoreHidden}
           onSlotActionChange={handleSlotActionChange}
@@ -1963,7 +2074,12 @@ const StudioView = ({
   onAnimChange,
   onReplayAnims,
   animPreviewNonce,
+  onLayerChange,
+  onRotationChange,
+  onDecorChange,
   onAddSticker,
+  onAddGallery,
+  onGalleryRemove,
   onAddText,
   onAddImageFrame,
   onAddMap,
@@ -2021,7 +2137,14 @@ const StudioView = ({
   onAnimChange: (id: string, anim: SlotAnim) => void;
   onReplayAnims: () => void;
   animPreviewNonce: number;
+  onLayerChange: (id: string, dir: "front" | "back") => void;
+  onRotationChange: (id: string, deg: number) => void;
+  onDecorChange: (
+    decor: "none" | "hearts" | "petals" | "confetti" | undefined,
+  ) => void;
   onAddSticker: () => void;
+  onAddGallery: () => void;
+  onGalleryRemove: (key: string) => void;
   onAddText: () => void;
   onAddImageFrame: () => void;
   onAddMap: () => void;
@@ -2129,6 +2252,8 @@ const StudioView = ({
               onResizeSlot={onResizeSlot}
               animOverrides={fd.animOverrides}
               animPreviewNonce={animPreviewNonce}
+              zOverrides={fd.zOverrides}
+              rotationOverrides={fd.rotationOverrides}
               shareUrl={targetMobileSlug ? `${window.location.origin}/i/${targetMobileSlug}` : (shareUrl ?? undefined)}
               displayWidth={340}
               imageFitOverrides={fd.imageFitOverrides}
@@ -2276,6 +2401,38 @@ const StudioView = ({
         />
       )}
 
+      {/* 떠다니는 장식 — 모바일 롤 청첩장 공개 화면 위에 흐르는 데코 */}
+      {template.format === "mobile" && isSeamlessRoll(template.layout) && (
+        <div className="p-3 bg-card rounded-2xl border border-border space-y-2">
+          <p className="text-[12px] font-bold text-foreground">떠다니는 장식</p>
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                { val: undefined, label: "템플릿 기본" },
+                { val: "none", label: "없음" },
+                { val: "hearts", label: "하트" },
+                { val: "petals", label: "꽃잎" },
+                { val: "confetti", label: "컨페티" },
+              ] as const
+            ).map((opt) => (
+              <Button
+                key={opt.label}
+                type="button"
+                size="sm"
+                variant={aFace.decorOverride === opt.val ? "default" : "outline"}
+                className="text-xs h-8"
+                onClick={() => onDecorChange(opt.val)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            하객에게 공유되는 화면 위로 떠다니는 효과예요. 발행 후 공유 링크에서 보여요.
+          </p>
+        </div>
+      )}
+
       {/* 요소 추가 / 숨김 복원 */}
       {(activeFace === "front" || backTemplate) && (
         <div className="grid grid-cols-4 gap-2">
@@ -2310,6 +2467,14 @@ const StudioView = ({
           >
             <MapPin className="w-4 h-4" />
             약도
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto py-2.5 flex flex-col items-center gap-1 text-[11px]"
+            onClick={onAddGallery}
+          >
+            <Images className="w-4 h-4" />
+            갤러리
           </Button>
           {aFace.hiddenSlots.length > 0 && (
             <Button variant="ghost" onClick={onRestoreHidden}>
@@ -2535,6 +2700,66 @@ const StudioView = ({
         </section>
       )}
 
+      {/* 갤러리 슬롯 편집 */}
+      {selectedSlot?.type === "gallery" && (
+        <section className="p-4 bg-card rounded-2xl border border-border space-y-3">
+          <div className="flex items-center gap-2">
+            <Images className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground">갤러리 사진</h3>
+          </div>
+          {(() => {
+            const keys = Object.keys(aFace.imageUrls)
+              .filter((k) => k.startsWith(`${selectedSlot.id}#`))
+              .sort(
+                (a, b) => Number(a.split("#")[1]) - Number(b.split("#")[1]),
+              );
+            return keys.length > 0 ? (
+              <div className="grid grid-cols-4 gap-2">
+                {keys.map((k) => (
+                  <div key={k} className="relative aspect-square">
+                    <img
+                      src={aFace.imageUrls[k]}
+                      alt=""
+                      className="w-full h-full object-cover rounded-lg bg-muted"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onGalleryRemove(k)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground text-background text-[11px] leading-none"
+                      aria-label="사진 제거"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[12px] text-muted-foreground">
+                아직 사진이 없어요. 아래 버튼으로 추가하세요.
+              </p>
+            );
+          })()}
+          <Button onClick={onPickPhoto} variant="outline" className="w-full">
+            <ImageIcon className="w-4 h-4 mr-2" />
+            사진 추가
+          </Button>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] text-muted-foreground">
+              최대 8장 · 하객 화면에서 탭하면 크게 볼 수 있어요
+            </p>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              onClick={onDeleteSlot}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              삭제
+            </Button>
+          </div>
+        </section>
+      )}
+
       {/* QR 슬롯 편집 */}
       {selectedSlot?.type === "qr" && (
         <section className="p-4 bg-card rounded-2xl border border-border space-y-3">
@@ -2590,6 +2815,69 @@ const StudioView = ({
             캘린더는 위에서 입력한 <strong>결혼 날짜</strong>에 맞춰 자동으로
             렌더링돼요. 날짜를 변경하려면 뒤로 가서 정보를 수정해주세요.
           </p>
+        </section>
+      )}
+
+      {/* 배치 — 레이어 순서·회전 (잠긴 슬롯 제외) */}
+      {selectedSlot && !selectedSlot.locked && (
+        <section className="p-4 bg-card rounded-2xl border border-border space-y-2.5">
+          <div className="flex items-center gap-2">
+            <ChevronUp className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground">배치</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="text-xs h-9"
+              onClick={() => onLayerChange(selectedSlot.id, "front")}
+            >
+              <ChevronUp className="w-3.5 h-3.5 mr-1" />맨 앞으로
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="text-xs h-9"
+              onClick={() => onLayerChange(selectedSlot.id, "back")}
+            >
+              <ChevronDown className="w-3.5 h-3.5 mr-1" />맨 뒤로
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] text-muted-foreground shrink-0">회전</span>
+            <input
+              type="range"
+              min={-180}
+              max={180}
+              step={1}
+              value={
+                aFace.rotationOverrides[selectedSlot.id] ??
+                selectedSlot.rotation ??
+                0
+              }
+              onChange={(e) =>
+                onRotationChange(selectedSlot.id, Number(e.target.value))
+              }
+              className="flex-1 accent-primary"
+            />
+            <span className="text-[12px] text-foreground w-10 text-right tabular-nums">
+              {Math.round(
+                aFace.rotationOverrides[selectedSlot.id] ??
+                  selectedSlot.rotation ??
+                  0,
+              )}
+              °
+            </span>
+            <button
+              type="button"
+              className="text-[11px] text-primary font-bold px-1.5"
+              onClick={() => onRotationChange(selectedSlot.id, 0)}
+            >
+              초기화
+            </button>
+          </div>
         </section>
       )}
 
@@ -3078,6 +3366,8 @@ function MobilePreviewDialog({
                       positionOverrides={face.positionOverrides}
                       sizeOverrides={face.sizeOverrides}
                       animOverrides={face.animOverrides}
+                      zOverrides={face.zOverrides}
+                      rotationOverrides={face.rotationOverrides}
                       fontSizeOverrides={face.fontSizeOverrides}
                       extraSlots={index === 0 ? face.extraSlots : []}
                       hiddenSlots={face.hiddenSlots}
