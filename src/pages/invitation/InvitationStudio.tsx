@@ -83,6 +83,12 @@ import {
   type BgFill,
 } from "@/lib/invitation/types";
 import { readImageSize, lowResPrintWarning } from "@/lib/invitation/imageQuality";
+import {
+  animOptionsFor,
+  SLOT_ANIM_LABEL,
+  resolveSlotAnim,
+  type SlotAnim,
+} from "@/lib/invitation/slotAnim";
 
 /**
  * 청첩장 스튜디오 — wizard → template 선택 → studio 편집.
@@ -168,6 +174,7 @@ interface FaceState {
   fontOverrides: Record<string, string>;
   positionOverrides: Record<string, { x: number; y: number }>;
   sizeOverrides: Record<string, { w: number; h: number }>;
+  animOverrides: Record<string, SlotAnim>;
   fontSizeOverrides: Record<string, number>;
   extraSlots: InvitationSlot[];
   hiddenSlots: string[];
@@ -182,6 +189,7 @@ const emptyFace = (): FaceState => ({
   fontOverrides: {},
   positionOverrides: {},
   sizeOverrides: {},
+  animOverrides: {},
   fontSizeOverrides: {},
   extraSlots: [],
   hiddenSlots: [],
@@ -361,6 +369,7 @@ const InvitationStudio = () => {
         fontOverrides: faces.front.fontOverrides ?? {},
         positionOverrides: faces.front.positionOverrides ?? {},
         sizeOverrides: faces.front.sizeOverrides ?? {},
+        animOverrides: faces.front.animOverrides ?? {},
         fontSizeOverrides: faces.front.fontSizeOverrides ?? {},
         extraSlots: faces.front.extraSlots ?? [],
         hiddenSlots: faces.front.hiddenSlots ?? [],
@@ -385,6 +394,7 @@ const InvitationStudio = () => {
           fontOverrides: faces.back.fontOverrides ?? {},
           positionOverrides: faces.back.positionOverrides ?? {},
           sizeOverrides: faces.back.sizeOverrides ?? {},
+          animOverrides: faces.back.animOverrides ?? {},
           fontSizeOverrides: faces.back.fontSizeOverrides ?? {},
           extraSlots: faces.back.extraSlots ?? [],
           hiddenSlots: faces.back.hiddenSlots ?? [],
@@ -587,6 +597,21 @@ const InvitationStudio = () => {
       }),
       { coalesceKey: "resize:" + id },
     );
+  };
+
+  // 등장 효과 선택 → 애니메이션 오버라이드 저장 + 즉시 재생으로 확인
+  const [animPreviewNonce, setAnimPreviewNonce] = useState(0);
+  const handleAnimChange = (id: string, anim: SlotAnim) => {
+    setFace((p) => ({
+      ...p,
+      animOverrides: { ...p.animOverrides, [id]: anim },
+    }));
+    setAnimPreviewNonce((n) => n + 1);
+  };
+  // ▶ 전체 재생 — 선택을 풀어야 해당 슬롯도 애니메이션이 돈다 (선택 중엔 편집 보호로 정지)
+  const handleReplayAnims = () => {
+    setSelectedSlotId(null);
+    setAnimPreviewNonce((n) => n + 1);
   };
 
   const handleSelectSlot = (id: string | null) => {
@@ -1049,6 +1074,7 @@ const InvitationStudio = () => {
       fontOverrides: f.fontOverrides,
       positionOverrides: f.positionOverrides,
       sizeOverrides: f.sizeOverrides,
+      animOverrides: f.animOverrides,
       fontSizeOverrides: f.fontSizeOverrides,
       extraSlots: f.extraSlots,
       hiddenSlots: f.hiddenSlots,
@@ -1349,6 +1375,9 @@ const InvitationStudio = () => {
           isStylizingMap={isStylizingMap}
           onMoveSlot={handleMoveSlot}
           onResizeSlot={handleResizeSlot}
+          onAnimChange={handleAnimChange}
+          onReplayAnims={handleReplayAnims}
+          animPreviewNonce={animPreviewNonce}
           onAddText={handleAddText}
           onAddImageFrame={handleAddImageFrame}
           onAddMap={handleAddMap}
@@ -1804,6 +1833,9 @@ const StudioView = ({
   isStylizingMap,
   onMoveSlot,
   onResizeSlot,
+  onAnimChange,
+  onReplayAnims,
+  animPreviewNonce,
   onAddText,
   onAddImageFrame,
   onAddMap,
@@ -1858,6 +1890,9 @@ const StudioView = ({
   isStylizingMap: boolean;
   onMoveSlot: (id: string, x: number, y: number) => void;
   onResizeSlot: (id: string, w: number, h: number) => void;
+  onAnimChange: (id: string, anim: SlotAnim) => void;
+  onReplayAnims: () => void;
+  animPreviewNonce: number;
   onAddText: () => void;
   onAddImageFrame: () => void;
   onAddMap: () => void;
@@ -1963,6 +1998,8 @@ const StudioView = ({
               editable={visible}
               onMoveSlot={onMoveSlot}
               onResizeSlot={onResizeSlot}
+              animOverrides={fd.animOverrides}
+              animPreviewNonce={animPreviewNonce}
               shareUrl={targetMobileSlug ? `${window.location.origin}/i/${targetMobileSlug}` : (shareUrl ?? undefined)}
               displayWidth={340}
               imageFitOverrides={fd.imageFitOverrides}
@@ -2403,6 +2440,46 @@ const StudioView = ({
           <p className="text-[12px] text-muted-foreground leading-relaxed">
             캘린더는 위에서 입력한 <strong>결혼 날짜</strong>에 맞춰 자동으로
             렌더링돼요. 날짜를 변경하려면 뒤로 가서 정보를 수정해주세요.
+          </p>
+        </section>
+      )}
+
+      {/* 등장 효과 — 모바일 청첩장 공개 화면에서 재생되는 인터랙션 */}
+      {selectedSlot && template.format === "mobile" && (
+        <section className="p-4 bg-card rounded-2xl border border-border space-y-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground">등장 효과</h3>
+            <button
+              type="button"
+              onClick={onReplayAnims}
+              className="ml-auto text-[11px] font-bold text-primary px-2 py-1 rounded-md border border-primary/30"
+            >
+              ▶ 전체 재생
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {animOptionsFor(selectedSlot).map((opt) => {
+              const current =
+                aFace.animOverrides[selectedSlot.id] ??
+                resolveSlotAnim(selectedSlot);
+              return (
+                <Button
+                  key={opt}
+                  type="button"
+                  size="sm"
+                  variant={current === opt ? "default" : "outline"}
+                  className="text-xs h-8"
+                  onClick={() => onAnimChange(selectedSlot.id, opt)}
+                >
+                  {SLOT_ANIM_LABEL[opt]}
+                </Button>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            하객이 청첩장을 열 때 이 요소가 나타나는 방식이에요. ▶ 전체 재생으로
+            바로 확인할 수 있어요.
           </p>
         </section>
       )}
@@ -2851,6 +2928,7 @@ function MobilePreviewDialog({
                       fontOverrides={face.fontOverrides}
                       positionOverrides={face.positionOverrides}
                       sizeOverrides={face.sizeOverrides}
+                      animOverrides={face.animOverrides}
                       fontSizeOverrides={face.fontSizeOverrides}
                       extraSlots={index === 0 ? face.extraSlots : []}
                       hiddenSlots={face.hiddenSlots}

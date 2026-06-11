@@ -20,6 +20,7 @@ import {
   romanizeKoreanText,
   koreanGivenName,
 } from "@/lib/invitation/romanize";
+import { resolveSlotAnim, type SlotAnim } from "@/lib/invitation/slotAnim";
 
 /**
  * 청첩장 캔버스 — Konva 기반 슬롯 렌더링.
@@ -77,6 +78,10 @@ interface Props {
   sizeOverrides?: Record<string, { w: number; h: number }>;
   /** 리사이즈 핸들 드래그 종료 시 호출 — 크기 저장용 */
   onResizeSlot?: (id: string, w: number, h: number) => void;
+  /** slot.id → 사용자가 고른 등장/루프 효과 (slot.anim 보다 우선) */
+  animOverrides?: Record<string, SlotAnim>;
+  /** 증가할 때마다 등장 애니메이션을 처음부터 재생 (스튜디오 미리보기) */
+  animPreviewNonce?: number;
   /** slot.id → 폰트 크기 override */
   fontSizeOverrides?: Record<string, number>;
   /** 사용자가 추가한 텍스트 요소 */
@@ -154,6 +159,8 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       onMoveSlot,
       sizeOverrides = {},
       onResizeSlot,
+      animOverrides = {},
+      animPreviewNonce = 0,
       fontSizeOverrides = {},
       extraSlots = [],
       hiddenSlots = [],
@@ -228,7 +235,13 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
               )
               .map((slot) => {
                 const size = sizeOverrides[slot.id];
-                return size ? { ...slot, w: size.w, h: size.h } : slot;
+                const anim = animOverrides[slot.id];
+                if (!size && !anim) return slot;
+                return {
+                  ...slot,
+                  ...(size ? { w: size.w, h: size.h } : {}),
+                  ...(anim ? { anim } : {}),
+                };
               })
               .sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
               .map((slot) => {
@@ -268,6 +281,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                     draggable={draggable}
                     onMoveEnd={onMoveSlot}
                     imageFitOverrides={imageFitOverrides}
+                    animPreviewNonce={animPreviewNonce}
                   />
                 );
               })}
@@ -362,6 +376,8 @@ interface SlotNodeProps {
   draggable?: boolean;
   onMoveEnd?: (id: string, x: number, y: number) => void;
   imageFitOverrides?: Record<string, "cover" | "contain">;
+  /** 증가 시 등장 애니메이션 재생 (스튜디오 ▶ 미리보기) */
+  animPreviewNonce?: number;
 }
 
 // 영문 이름(캘리그래피) 필드 — 폰트 미지정 시 서명체 기본 적용 (디자인 시그니처)
@@ -566,14 +582,15 @@ const SlotNode = (props: SlotNodeProps) => {
     };
   }, [slot.id, props.draggable, isSelected]);
 
-  // 스프링 등장 및 하트 박동 애니메이션 효과 (공개 뷰어 모드 - editable=false 이자 draggable=false 일 때만 작동)
+  // 등장/루프 애니메이션 — 효과는 resolveSlotAnim(사용자 override > slot.anim >
+  // 레거시 휴리스틱)으로 결정. 드래그 중·선택 중 슬롯은 제외(편집 방해 방지).
+  // animPreviewNonce 가 바뀌면 처음부터 재생 (스튜디오 ▶ 미리보기).
+  const effectiveAnim = resolveSlotAnim(slot);
   useEffect(() => {
     const node = groupRef.current;
     if (!node || !isVisible || props.draggable || isSelected) return;
 
-    // 1. 하트 스티커 에셋에 대한 Heartbeat (심장 박동) 루프 애니메이션
-    const isHeart = slot.id.includes("heart") || slot.id.includes("decor");
-    if (isHeart) {
+    if (effectiveAnim === "heartbeat") {
       const targetScaleX = slot.scaleX ?? 1;
       const targetScaleY = slot.scaleY ?? 1;
 
@@ -595,15 +612,11 @@ const SlotNode = (props: SlotNodeProps) => {
       anim.start();
       return () => {
         anim.stop();
+        node.scale({ x: slot.scaleX ?? 1, y: slot.scaleY ?? 1 });
       };
     }
 
-    // 2. 폴라로이드 사진, 프레임 및 일반 이미지/에셋 슬롯의 스프링 진입 애니메이션
-    const shouldAnimate =
-      slot.type === "image" ||
-      (slot.type === "asset" && (slot.id.includes("frame") || slot.id.includes("decor")));
-
-    if (shouldAnimate) {
+    if (effectiveAnim === "spring") {
       const targetY = posY ?? slot.y;
       node.scale({ x: 0.7, y: 0.7 });
       node.y(targetY + 60);
@@ -626,9 +639,28 @@ const SlotNode = (props: SlotNodeProps) => {
       return () => {
         clearTimeout(delayTimer);
         tween.destroy();
+        node.scale({ x: 1, y: 1 });
+        node.y(targetY);
+        node.opacity(1);
       };
     }
-  }, [slot.id, slot.type, posX, posY, isSelected, isVisible, props.draggable]);
+
+    if (effectiveAnim === "fade") {
+      node.opacity(0);
+      const tween = new Konva.Tween({
+        node,
+        duration: 0.9,
+        opacity: 1,
+        easing: Konva.Easings.EaseInOut,
+      });
+      const delayTimer = setTimeout(() => tween.play(), 60);
+      return () => {
+        clearTimeout(delayTimer);
+        tween.destroy();
+        node.opacity(1);
+      };
+    }
+  }, [slot.id, slot.type, effectiveAnim, posX, posY, isSelected, isVisible, props.draggable, props.animPreviewNonce, slot.scaleX, slot.scaleY]);
 
   return (
     <Group
@@ -783,9 +815,10 @@ const TextSlotBody = (props: SlotNodeProps & { isVisible?: boolean }) => {
         ? rawText.toLowerCase()
         : rawText;
 
-  // 타이핑 효과 지원 (love_story_intro 슬롯이고, 편집 모드가 아닐 때만 작동)
+  // 타이핑 효과 — anim==="typing" 슬롯 (resolveSlotAnim: 사용자 선택 > 템플릿 >
+  // love_story_intro 레거시). 드래그(편집) 중에는 전체 텍스트 표시.
   const [displayedText, setDisplayedText] = useState("");
-  const isTypingSlot = slot.id === "love_story_intro";
+  const isTypingSlot = resolveSlotAnim(slot) === "typing";
   const editable = props.draggable || false;
 
   useEffect(() => {
@@ -814,7 +847,7 @@ const TextSlotBody = (props: SlotNodeProps & { isVisible?: boolean }) => {
     }, 45); // 타이핑 속도 (글자당 45ms)
 
     return () => clearInterval(timer);
-  }, [text, isTypingSlot, editable, isVisible]);
+  }, [text, isTypingSlot, editable, isVisible, props.animPreviewNonce]);
 
   // 빈 field 슬롯 hide — 사용자가 부모님·계좌 같은 선택 필드를 비워둘 때
   // 빈 줄로 그려져 디자인이 망가지는 걸 방지.

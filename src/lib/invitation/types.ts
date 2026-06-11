@@ -60,6 +60,8 @@ export interface InvitationSlot {
   /** 기본 스케일 (애니메이션 복귀 목표값). 미지정 시 1. */
   scaleX?: number;
   scaleY?: number;
+  /** 등장/루프 효과. 미지정 시 레거시 휴리스틱(slotAnim.ts) 적용. */
+  anim?: "none" | "spring" | "heartbeat" | "fade" | "typing";
 
   // 데이터 바인딩 — user_data[field] 또는 ai_generated_text[id]
   field?: string;
@@ -255,6 +257,8 @@ export interface InvitationFaceData {
   positionOverrides?: Record<string, { x: number; y: number }>;
   /** slot.id → 사용자가 핸들로 조절한 크기(캔버스 좌표). 없으면 슬롯 기본 크기 */
   sizeOverrides?: Record<string, { w: number; h: number }>;
+  /** slot.id → 사용자가 고른 등장/루프 효과 */
+  animOverrides?: Record<string, "none" | "spring" | "heartbeat" | "fade" | "typing">;
   /** slot.id → 폰트 크기 override (크기 조절) */
   fontSizeOverrides?: Record<string, number>;
   /** 사용자가 추가한 텍스트 요소 */

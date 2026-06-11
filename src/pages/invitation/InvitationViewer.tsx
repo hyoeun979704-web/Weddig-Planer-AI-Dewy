@@ -404,6 +404,7 @@ const InvitationViewer = () => {
             fontOverrides={overrides.fontOverrides ?? {}}
             positionOverrides={overrides.positionOverrides ?? {}}
             sizeOverrides={overrides.sizeOverrides ?? {}}
+            animOverrides={overrides.animOverrides ?? {}}
             fontSizeOverrides={overrides.fontSizeOverrides ?? {}}
             extraSlots={index === 0 ? overrides.extraSlots ?? [] : []}
             hiddenSlots={overrides.hiddenSlots ?? []}
