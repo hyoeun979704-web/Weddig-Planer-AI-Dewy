@@ -943,7 +943,11 @@ const InvitationStudio = () => {
     }
   };
 
-  const handlePhotoUpload = async (file: File) => {
+  /**
+   * 사진 업로드. overrideKey 가 있으면 그 키로 저장 (갤러리 일괄 업로드 —
+   * 루프 중 state 가 갱신되기 전이라 인덱스를 호출부가 미리 배정해야 중복이 없다).
+   */
+  const handlePhotoUpload = async (file: File, overrideKey?: string) => {
     if (!selectedSlot || !user) return;
     if (file.size > 20 * 1024 * 1024) {
       toast({ title: "파일이 너무 커요 (최대 20MB)", variant: "destructive" });
@@ -954,6 +958,7 @@ const InvitationStudio = () => {
     if (warn) toast({ title: "사진 해상도 확인", description: warn });
     // 갤러리 슬롯은 `${slotId}#index` 키로 여러 장 누적
     if (
+      !overrideKey &&
       selectedSlot.type === "gallery" &&
       nextGalleryIndex(selectedSlot.id) >= GALLERY_MAX_PHOTOS
     ) {
@@ -961,9 +966,10 @@ const InvitationStudio = () => {
       return;
     }
     const id =
-      selectedSlot.type === "gallery"
+      overrideKey ??
+      (selectedSlot.type === "gallery"
         ? `${selectedSlot.id}#${nextGalleryIndex(selectedSlot.id)}`
-        : selectedSlot.id;
+        : selectedSlot.id);
     const applyFace = setFace;
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const filename = `${crypto.randomUUID()}.${ext}`;
@@ -989,6 +995,33 @@ const InvitationStudio = () => {
         ? { ...p.imageUrls, [id]: signed.signedUrl }
         : p.imageUrls,
     }));
+  };
+
+  // 파일 선택 처리 — 갤러리 슬롯은 여러 장 한 번에 (최대 8장까지 잘라서)
+  const handlePhotoFiles = async (files: File[]) => {
+    if (!selectedSlot || files.length === 0) return;
+    if (selectedSlot.type !== "gallery") {
+      await handlePhotoUpload(files[0]);
+      return;
+    }
+    const count = Object.keys(activeFaceState.imagePaths).filter((k) =>
+      k.startsWith(`${selectedSlot.id}#`),
+    ).length;
+    const capacity = GALLERY_MAX_PHOTOS - count;
+    if (capacity <= 0) {
+      toast({ title: `갤러리는 최대 ${GALLERY_MAX_PHOTOS}장까지 담을 수 있어요` });
+      return;
+    }
+    const targets = files.slice(0, capacity);
+    if (files.length > capacity) {
+      toast({
+        title: `최대 ${GALLERY_MAX_PHOTOS}장 — 앞의 ${targets.length}장만 추가해요`,
+      });
+    }
+    const startIndex = nextGalleryIndex(selectedSlot.id);
+    for (let i = 0; i < targets.length; i++) {
+      await handlePhotoUpload(targets[i], `${selectedSlot.id}#${startIndex + i}`);
+    }
   };
 
   // 배경 지우기(누끼) — invitation-cutout edge function (remove.bg).
@@ -1504,6 +1537,46 @@ const InvitationStudio = () => {
     }
   };
 
+  // 이미지(PNG) 다운로드 — 종이 청첩장 페이지별 고해상도 PNG (인쇄소/SNS 공유용)
+  const handleExportImages = async () => {
+    if (!template) return;
+    setIsExporting(true);
+    try {
+      flushSync(() => setSelectedSlotId(null));
+      let saved = 0;
+      const savePages = (targetTemplate: Template, scope: "front" | "back", fallbackRef: React.RefObject<InvitationCanvasHandle>) => {
+        getInvitationPages(targetTemplate.layout).forEach((page, index) => {
+          const pageRef =
+            pageCanvasRefs.current[`${scope}:${page.id}`] ??
+            (index === 0 ? fallbackRef.current : null);
+          const dataUrl = pageRef?.toDataUrl(
+            pixelRatioForPrint(340, page.print?.wMm),
+          );
+          if (!dataUrl) return;
+          const a = document.createElement("a");
+          a.href = dataUrl;
+          a.download = `dewy-invitation-${scope}-${page.label ?? index + 1}.png`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          saved += 1;
+        });
+      };
+      savePages(template, "front", canvasRef);
+      if (backTemplate) savePages(backTemplate, "back", backCanvasRef);
+      if (saved === 0) throw new Error("캔버스 추출 실패");
+      toast({ title: `이미지 ${saved}장 다운로드 시작` });
+    } catch (err) {
+      toast({
+        title: "이미지 저장 실패",
+        description: err instanceof Error ? err.message : "오류",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // ────────────────────────────────────────
   // 렌더링
   // ────────────────────────────────────────
@@ -1638,6 +1711,7 @@ const InvitationStudio = () => {
           onFontSizeChange={handleFontSizeChange}
           onPickPhoto={() => fileInputRef.current?.click()}
           onExportPdf={handleExportPdf}
+          onExportImages={handleExportImages}
           isExporting={isExporting}
           backTemplates={backTemplates}
           onLoadBackTemplates={loadBackTemplates}
@@ -1718,11 +1792,12 @@ const InvitationStudio = () => {
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        multiple={selectedSlot?.type === "gallery"}
         className="hidden"
         onChange={(e) => {
-          const f = e.target.files?.[0];
+          const files = Array.from(e.target.files ?? []);
           e.target.value = "";
-          if (f) handlePhotoUpload(f);
+          if (files.length > 0) handlePhotoFiles(files);
         }}
       />
 
@@ -2160,6 +2235,7 @@ const StudioView = ({
   onFontSizeChange,
   onPickPhoto,
   onExportPdf,
+  onExportImages,
   isExporting,
   backTemplates,
   onLoadBackTemplates,
@@ -2229,6 +2305,7 @@ const StudioView = ({
   onFontSizeChange: (delta: number) => void;
   onPickPhoto: () => void;
   onExportPdf: () => void;
+  onExportImages: () => void;
   isExporting: boolean;
   backTemplates: Template[];
   onLoadBackTemplates: () => void;
@@ -2322,11 +2399,12 @@ const StudioView = ({
               bgOverride={fd.bgOverride}
               selectedSlotId={visible ? selectedSlotId : null}
               onSelectSlot={visible ? onSelectSlot : () => {}}
-              editable={visible}
+              editable={visible && !isExporting}
               onMoveSlot={onMoveSlot}
               onResizeSlot={onResizeSlot}
               animOverrides={fd.animOverrides}
               animPreviewNonce={animPreviewNonce}
+              animationsEnabled={template.format === "mobile"}
               zOverrides={fd.zOverrides}
               rotationOverrides={fd.rotationOverrides}
               shareUrl={targetMobileSlug ? `${window.location.origin}/i/${targetMobileSlug}` : (shareUrl ?? undefined)}
@@ -2864,11 +2942,11 @@ const StudioView = ({
           })()}
           <Button onClick={onPickPhoto} variant="outline" className="w-full">
             <ImageIcon className="w-4 h-4 mr-2" />
-            사진 추가
+            사진 추가 (여러 장 선택 가능)
           </Button>
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-muted-foreground">
-              최대 8장 · 하객 화면에서 탭하면 크게 볼 수 있어요
+              한 번에 최대 8장 · 하객 화면에서 탭하면 크게 볼 수 있어요
             </p>
             <Button
               size="sm"
@@ -3060,7 +3138,7 @@ const StudioView = ({
         <section className="p-4 bg-card rounded-2xl border border-border space-y-2">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground">등장 효과</h3>
+            <h3 className="text-sm font-bold text-foreground">인터랙션 · 등장 효과</h3>
             <button
               type="button"
               onClick={onReplayAnims}
@@ -3095,7 +3173,8 @@ const StudioView = ({
         </section>
       )}
 
-      {selectedSlot && (
+      {/* 탭 기능 — 화면에서만 동작하므로 모바일 청첩장 전용 (종이는 인쇄물) */}
+      {selectedSlot && template.format === "mobile" && (
         <SlotActionEditor
           slot={selectedSlot}
           userData={userData}
@@ -3132,24 +3211,36 @@ const StudioView = ({
         )}
       </section>
 
-      {/* PDF 다운로드 */}
-      <Button
-        onClick={onExportPdf}
-        disabled={isExporting}
-        className="w-full h-12 text-[15px] font-bold"
-      >
-        {isExporting ? (
-          <>
-            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            PDF 생성 중...
-          </>
-        ) : (
-          <>
-            <Download className="w-5 h-5 mr-2" />
-            PDF 다운로드
-          </>
-        )}
-      </Button>
+      {/* 다운로드 — 종이 청첩장 전용 (모바일은 공유 링크가 결과물) */}
+      {template.format === "paper" && (
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            onClick={onExportPdf}
+            disabled={isExporting}
+            className="h-12 text-[14px] font-bold"
+          >
+            {isExporting ? (
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-5 h-5 mr-2" />
+            )}
+            인쇄용 PDF
+          </Button>
+          <Button
+            onClick={onExportImages}
+            disabled={isExporting}
+            variant="outline"
+            className="h-12 text-[14px] font-bold"
+          >
+            {isExporting ? (
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            ) : (
+              <ImageIcon className="w-5 h-5 mr-2" />
+            )}
+            이미지 저장
+          </Button>
+        </div>
+      )}
 
       {/* 무료 안내 */}
       <div className="p-3 bg-emerald-50 rounded-lg flex items-center justify-between">
@@ -3377,9 +3468,11 @@ function SlotActionEditor({
       <div className="flex items-start gap-2">
         <SlotActionIcon type={type} />
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-foreground">요소 액션</h3>
+          <h3 className="text-sm font-bold text-foreground">탭 기능</h3>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            공개된 모바일 청첩장에서 이 요소를 탭했을 때 실행될 동작을 정해요.
+            하객이 공개 화면에서 이 요소를 탭하면 실행되는 기능이에요 (전화·
+            복사·지도·참석 의사 등). 나타나는 모양은 위의 인터랙션(등장 효과)
+            에서 정해요.
           </p>
         </div>
       </div>

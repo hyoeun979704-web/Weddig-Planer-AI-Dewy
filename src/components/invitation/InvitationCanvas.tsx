@@ -98,6 +98,11 @@ interface Props {
   imageFitOverrides?: Record<string, "cover" | "contain">;
   /** slot.id → 공개 뷰어 액션 override */
   actionOverrides?: Record<string, InvitationSlot["action"]>;
+  /**
+   * 등장/루프 애니메이션 허용 여부. 종이(인쇄) 청첩장은 화면 인터랙션이
+   * 의미 없으므로 false 로 꺼서 정적 렌더(다운로드 이미지와 일치)한다.
+   */
+  animationsEnabled?: boolean;
 }
 
 /**
@@ -173,6 +178,7 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
       unlockAll = false,
       imageFitOverrides = {},
       actionOverrides = {},
+      animationsEnabled = true,
     },
     ref,
   ) => {
@@ -303,6 +309,8 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                     animPreviewNonce={animPreviewNonce}
                     canvasW={canvasW}
                     canvasH={canvasH}
+                    animationsEnabled={animationsEnabled}
+                    canvasEditable={editable}
                     onGuideChange={editable ? handleGuideChange : undefined}
                     movableHint={
                       editable &&
@@ -432,6 +440,10 @@ interface SlotNodeProps {
   onGuideChange?: (v: boolean, h: boolean) => void;
   /** 아무것도 선택 안 된 편집 화면에서 '움직일 수 있어요' 힌트 점선 */
   movableHint?: boolean;
+  /** false 면 등장/루프/타이핑 애니메이션 정지 (종이 청첩장) */
+  animationsEnabled?: boolean;
+  /** 편집 캔버스 여부 — 빈 사진/갤러리 플레이스홀더는 편집 화면에서만 표시 */
+  canvasEditable?: boolean;
 }
 
 // 영문 이름(캘리그래피) 필드 — 폰트 미지정 시 서명체 기본 적용 (디자인 시그니처)
@@ -639,7 +651,8 @@ const SlotNode = (props: SlotNodeProps) => {
   // 등장/루프 애니메이션 — 효과는 resolveSlotAnim(사용자 override > slot.anim >
   // 레거시 휴리스틱)으로 결정. 드래그 중·선택 중 슬롯은 제외(편집 방해 방지).
   // animPreviewNonce 가 바뀌면 처음부터 재생 (스튜디오 ▶ 미리보기).
-  const effectiveAnim = resolveSlotAnim(slot);
+  const effectiveAnim =
+    props.animationsEnabled === false ? "none" : resolveSlotAnim(slot);
   useEffect(() => {
     const node = groupRef.current;
     if (!node || !isVisible || props.draggable || isSelected) return;
@@ -909,7 +922,8 @@ const TextSlotBody = (props: SlotNodeProps & { isVisible?: boolean }) => {
   // 타이핑 효과 — anim==="typing" 슬롯 (resolveSlotAnim: 사용자 선택 > 템플릿 >
   // love_story_intro 레거시). 드래그(편집) 중에는 전체 텍스트 표시.
   const [displayedText, setDisplayedText] = useState("");
-  const isTypingSlot = resolveSlotAnim(slot) === "typing";
+  const isTypingSlot =
+    props.animationsEnabled !== false && resolveSlotAnim(slot) === "typing";
   const editable = props.draggable || false;
 
   useEffect(() => {
@@ -985,11 +999,14 @@ const TextSlotBody = (props: SlotNodeProps & { isVisible?: boolean }) => {
 // ════════════════════════════════════════════════════════════════
 // 이미지 슬롯 (image / map)
 // ════════════════════════════════════════════════════════════════
-const ImageSlotBody = ({ slot, imageUrls, imageFitOverrides }: SlotNodeProps) => {
+const ImageSlotBody = (props: SlotNodeProps) => {
+  const { slot, imageUrls, imageFitOverrides } = props;
   const url = imageUrls[slot.id] ?? slot.image_url ?? "";
   const [img] = useImage(url, "anonymous");
 
   if (!url) {
+    // 공개 뷰어에선 빈 자리 점선을 노출하지 않음 (사진 미등록 발행 시 하객에게 보임)
+    if (!props.canvasEditable) return null;
     return (
       <Group>
         <Rect
@@ -1133,10 +1150,13 @@ export const galleryUrlKeys = (
 
 const GALLERY_GAP = 10;
 
-const GallerySlotBody = ({ slot, imageUrls }: SlotNodeProps) => {
+const GallerySlotBody = (props: SlotNodeProps) => {
+  const { slot, imageUrls } = props;
   const urls = galleryUrlKeys(slot.id, imageUrls).map((k) => imageUrls[k]);
 
   if (urls.length === 0) {
+    // 공개 뷰어에선 빈 갤러리 점선을 숨김
+    if (!props.canvasEditable) return null;
     return (
       <Group>
         <Rect
@@ -1479,10 +1499,9 @@ const QrSlotBody = ({
       return;
     }
     let cancelled = false;
-    // barcode 는 가로로 길어 정사각 QR 슬롯에 안 맞으므로 basic 으로 폴백.
-    // heart 는 공유 카드와 동일 렌더(shareCodeToDataUrl)로 스타일 통일.
-    if (qrStyle === "heart") {
-      shareCodeToDataUrl(shareUrl, "heart").then((url) => {
+    // heart/barcode 는 공유 카드와 동일 렌더(shareCodeToDataUrl)로 스타일 통일.
+    if (qrStyle === "heart" || qrStyle === "barcode") {
+      shareCodeToDataUrl(shareUrl, qrStyle).then((url) => {
         if (!cancelled) setQrDataUrl(url);
       });
     } else {
@@ -1519,7 +1538,31 @@ const QrSlotBody = ({
       />
     );
   }
-  return <KonvaImage image={img} x={0} y={0} width={slot.w} height={slot.h} />;
+  // 비율 강제 — 슬롯이 어떤 모양이든 QR 은 1:1 정사각, 바코드는 3:1 로
+  // 슬롯 안에 맞춰 중앙 배치 (스캔 가능성 보장: 늘어나면 인식 실패).
+  if (qrStyle === "barcode" && !attachedQr) {
+    const bw = Math.min(slot.w, slot.h * 3);
+    const bh = bw / 3;
+    return (
+      <KonvaImage
+        image={img}
+        x={(slot.w - bw) / 2}
+        y={(slot.h - bh) / 2}
+        width={bw}
+        height={bh}
+      />
+    );
+  }
+  const side = Math.min(slot.w, slot.h);
+  return (
+    <KonvaImage
+      image={img}
+      x={(slot.w - side) / 2}
+      y={(slot.h - side) / 2}
+      width={side}
+      height={side}
+    />
+  );
 };
 
 // ════════════════════════════════════════════════════════════════

@@ -448,6 +448,7 @@ const InvitationViewer = () => {
             positionOverrides={overrides.positionOverrides ?? {}}
             sizeOverrides={overrides.sizeOverrides ?? {}}
             animOverrides={overrides.animOverrides ?? {}}
+            animationsEnabled={data.invitation_templates?.format !== "paper"}
             zOverrides={overrides.zOverrides ?? {}}
             rotationOverrides={overrides.rotationOverrides ?? {}}
             fontSizeOverrides={overrides.fontSizeOverrides ?? {}}
