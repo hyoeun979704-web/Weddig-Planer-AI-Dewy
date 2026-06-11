@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BadgeCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 const MAX_DEALS = 10;
 
@@ -23,6 +24,10 @@ interface PartnerDeal {
 const PartnerDealsSection = () => {
   const navigate = useNavigate();
   const [deals, setDeals] = useState<PartnerDeal[]>([]);
+  // 큐레이션 게이트 — 예식 지역이 설정된 사용자에겐 그 지역 업체 혜택만.
+  // (places.city 와 wedding_region 은 동일한 정식 명칭을 쓴다 — DB 확인됨)
+  const { weddingSettings } = useWeddingSchedule();
+  const userRegion = weddingSettings.wedding_region;
 
   useEffect(() => {
     let mounted = true;
@@ -38,40 +43,49 @@ const PartnerDealsSection = () => {
       if (error || !data || !mounted) return;
 
       const now = Date.now();
-      const rows = (data as any[])
-        .map((r) => ({
-          id: r.id as string,
-          place_id: r.place_id as string,
-          title: r.title as string,
-          description: (r.description ?? null) as string | null,
-          ends_at: (r.ends_at ?? null) as string | null,
-          featured: !!r.featured_until && new Date(r.featured_until).getTime() > now,
-          placeName: null as string | null,
-        }))
+      const candidates = (data as any[]).map((r) => ({
+        id: r.id as string,
+        place_id: r.place_id as string,
+        title: r.title as string,
+        description: (r.description ?? null) as string | null,
+        ends_at: (r.ends_at ?? null) as string | null,
+        featured: !!r.featured_until && new Date(r.featured_until).getTime() > now,
+        placeName: null as string | null,
+      }));
+      if (candidates.length === 0) return;
+
+      // 업체명·지역 일괄 조회 (N+1 방지)
+      const placeIds = Array.from(new Set(candidates.map((r) => r.place_id)));
+      const { data: places } = await (supabase as any)
+        .from("places")
+        .select("place_id, name, city")
+        .in("place_id", placeIds);
+      const placeOf = new Map<string, { name: string; city: string | null }>(
+        ((places ?? []) as { place_id: string; name: string; city: string | null }[]).map(
+          (p) => [p.place_id, { name: p.name, city: p.city }],
+        ),
+      );
+      if (!mounted) return;
+
+      // 큐레이션 게이트: 예식 지역 설정 사용자에겐 그 지역 업체만.
+      // 등급(featured)은 큐레이션을 통과한 결과 '안에서의' 정렬일 뿐, 우회 불가.
+      const rows = candidates
+        .filter((r) => {
+          if (!userRegion) return true;
+          const city = placeOf.get(r.place_id)?.city;
+          return !!city && city === userRegion;
+        })
         // 유료 고정 우선, 그 안에선 최신순(이미 created_at desc 정렬됨)
         .sort((a, b) => Number(b.featured) - Number(a.featured))
         .slice(0, MAX_DEALS);
-      if (rows.length === 0) return;
-
-      // 업체명 일괄 조회 (N+1 방지)
-      const placeIds = Array.from(new Set(rows.map((r) => r.place_id)));
-      const { data: places } = await (supabase as any)
-        .from("places")
-        .select("place_id, name")
-        .in("place_id", placeIds);
-      const nameOf = new Map<string, string>(
-        ((places ?? []) as { place_id: string; name: string }[]).map((p) => [
-          p.place_id,
-          p.name,
-        ]),
+      setDeals(
+        rows.map((r) => ({ ...r, placeName: placeOf.get(r.place_id)?.name ?? null })),
       );
-      if (!mounted) return;
-      setDeals(rows.map((r) => ({ ...r, placeName: nameOf.get(r.place_id) ?? null })));
     })();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [userRegion]);
 
   if (deals.length === 0) return null;
 
@@ -80,7 +94,9 @@ const PartnerDealsSection = () => {
       <div className="flex items-center gap-1.5 mb-3">
         <BadgeCheck className="w-4 h-4 text-primary" />
         <h2 className="text-[15px] font-bold text-foreground">파트너 혜택</h2>
-        <span className="text-[10px] text-muted-foreground">인증 입점 업체</span>
+        <span className="text-[10px] text-muted-foreground">
+          {userRegion ? `${userRegion} 인증 입점 업체` : "인증 입점 업체"}
+        </span>
       </div>
       <div className="space-y-2">
         {deals.map((d) => (
