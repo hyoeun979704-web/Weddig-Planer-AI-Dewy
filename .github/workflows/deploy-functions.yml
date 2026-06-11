@@ -18,9 +18,9 @@ jobs:
       - run: supabase secrets set GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      - run: supabase functions deploy ask-gemini
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      - run: supabase functions deploy ai-planner
+      # 인자 없는 deploy = supabase/functions/* 전체 배포.
+      # (과거에 ask-gemini·ai-planner 두 개만 배포해, 나머지 함수 수정이
+      #  main 에 머지돼도 프로덕션에 반영되지 않는 사고가 있었다 — 260612)
+      - run: supabase functions deploy
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
