@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { usePromotionalEvents } from "@/hooks/usePromotionalEvents";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import PromoEventCard from "@/components/events/PromoEventCard";
+import PartnerDealsSection from "@/components/events/PartnerDealsSection";
 import { EVENT_ASSETS } from "@/components/events/eventAssets";
 
 const Events = () => {
@@ -129,6 +130,9 @@ const Events = () => {
             )}
           </div>
         </section>
+
+        {/* 파트너(입점 업체) 혜택 — 행이 없으면 렌더되지 않음 */}
+        <PartnerDealsSection />
       </main>
 
       <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />
