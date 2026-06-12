@@ -1,8 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { supabase } from "@/integrations/supabase/client";
+import { deleteMemoryRow, fetchMemoriesSince, type AIMemory } from "@/lib/aiMemory";
+import { AI_MEMORIES_QUERY_KEY } from "@/hooks/useAIMemories";
 import { matchIntent } from "@/lib/chatbot/intentRouter";
 import { runDbHandler } from "@/lib/chatbot/dbHandlers";
 import { runGuideHandler } from "@/lib/chatbot/handlers/staticGuideHandlers";
@@ -36,11 +39,22 @@ export type Message = {
 
 const CHAT_URL = `${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/ai-planner`;
 
+// L5 확인 칩 — 서버 메모리 추출(fire-and-forget)이 끝나길 기다리는 지연과,
+// 클라/DB 시계 오차(skew)를 흡수하는 조회 버퍼.
+const MEMORY_CHIP_FETCH_DELAY_MS = 1_500;
+const MEMORY_CLOCK_SKEW_MS = 15_000;
+
 export const useAIPlanner = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
+  // L5 메모리 검증 — 방금 응답에서 자동 추출된 사실을 "이렇게 기억할게요" 칩으로
+  // 보여주고 사용자가 즉시 정정(삭제)할 수 있게 한다(환각 누적 차단).
+  const [recentMemories, setRecentMemories] = useState<AIMemory[]>([]);
+  // skew 버퍼 때문에 직전 턴의 사실이 다시 잡힐 수 있어, 이미 보여준 id 는 제외.
+  const shownMemoryIdsRef = useRef<Set<string>>(new Set());
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
@@ -52,6 +66,7 @@ export const useAIPlanner = () => {
     const userMsg: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
+    setRecentMemories([]);
 
     // ── 1. 클라이언트 사이드 인텐트 게이트 ──────────────────
     // LLM 호출 전에 키워드 매칭으로 즉답 가능한지 먼저 확인.
@@ -158,6 +173,10 @@ export const useAIPlanner = () => {
         ...messages.filter(m => m.intent !== "error"),
         userMsg,
       ];
+
+      // 확인 칩 조회 기준 시각 — 서버 추출 행의 created_at(DB 시계)과 비교하므로
+      // skew 버퍼를 빼서 놓침을 줄인다(직전 턴 중복은 shownMemoryIdsRef 가 거름).
+      const memorySince = new Date(Date.now() - MEMORY_CLOCK_SKEW_MS).toISOString();
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -288,6 +307,23 @@ export const useAIPlanner = () => {
           } catch { /* ignore partial leftovers */ }
         }
       }
+
+      // L5 확인 칩 — 추출은 서버에서 fire-and-forget 으로 돌고 있으므로 잠깐
+      // 기다렸다가 이번 턴에 새로 저장된 사실을 가져온다(best-effort, 실패 무시).
+      if (assistantSoFar && user) {
+        const uid = user.id;
+        window.setTimeout(() => {
+          fetchMemoriesSince(uid, memorySince)
+            .then((rows) => {
+              const fresh = rows.filter((m) => !shownMemoryIdsRef.current.has(m.id));
+              if (fresh.length === 0) return;
+              for (const m of fresh) shownMemoryIdsRef.current.add(m.id);
+              setRecentMemories(fresh);
+              void queryClient.invalidateQueries({ queryKey: AI_MEMORIES_QUERY_KEY });
+            })
+            .catch(() => { /* 칩은 부가 기능 — 조회 실패가 대화를 방해하면 안 됨 */ });
+        }, MEMORY_CHIP_FETCH_DELAY_MS);
+      }
     } catch (error) {
       console.error("AI Planner error:", error);
       toast({
@@ -308,11 +344,33 @@ export const useAIPlanner = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, toast, user, weddingSettings.wedding_style, weddingSettings.excluded_categories]);
+  }, [messages, toast, user, queryClient, weddingSettings.wedding_style, weddingSettings.excluded_categories]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
+    setRecentMemories([]);
   }, []);
+
+  /** 확인 칩 "맞아요" — 칩만 닫는다(이미 저장돼 있으므로 추가 동작 없음). */
+  const confirmRecentMemory = useCallback((id: string) => {
+    setRecentMemories(prev => prev.filter(m => m.id !== id));
+  }, []);
+
+  /** 확인 칩 "아니에요" — 잘못 추출된 기억을 즉시 삭제(다음 대화 오염 차단). */
+  const rejectRecentMemory = useCallback(async (id: string) => {
+    if (!user) return;
+    try {
+      await deleteMemoryRow(user.id, id);
+      setRecentMemories(prev => prev.filter(m => m.id !== id));
+      void queryClient.invalidateQueries({ queryKey: AI_MEMORIES_QUERY_KEY });
+    } catch {
+      toast({
+        title: "기억을 지우지 못했어요",
+        description: "잠시 후 다시 시도해 주세요.",
+        variant: "destructive",
+      });
+    }
+  }, [user, queryClient, toast]);
 
   /**
    * 구조화된 입력 (모달 데이터)을 받아 LLM 호출 없이 즉답 처리.
@@ -325,6 +383,7 @@ export const useAIPlanner = () => {
     const userMsg: Message = { role: "user", content: userMessageText };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
+    setRecentMemories([]);
 
     try {
       let reply: string;
@@ -374,5 +433,8 @@ export const useAIPlanner = () => {
     showUpgradeModal,
     setShowUpgradeModal,
     dailyRemaining,
+    recentMemories,
+    confirmRecentMemory,
+    rejectRecentMemory,
   };
 };

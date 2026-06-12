@@ -4,7 +4,7 @@ import DewyLogo from "@/components/home/DewyLogo";
 import Seo from "@/components/Seo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Send, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
+import { Send, RotateCcw, Sparkles, ChevronDown, Brain, Check, X } from "lucide-react";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
@@ -14,6 +14,7 @@ import WeddingInfoSetupModal from "@/components/wedding-planner/WeddingInfoSetup
 import DataCollectionConsentModal from "@/components/consent/DataCollectionConsentModal";
 import { useDataCollectionConsent } from "@/hooks/useDataCollectionConsent";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
+import MemoryManagerSheet from "@/components/wedding-planner/MemoryManagerSheet";
 import TypingIndicator from "@/components/wedding-planner/TypingIndicator";
 import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
 import SdmeSurvey from "@/components/wedding-planner/SdmeSurvey";
@@ -260,7 +261,9 @@ const AIPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { messages, isLoading, sendMessage: rawSendMessage, sendStructured: rawSendStructured, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining } = useAIPlanner();
+  const { messages, isLoading, sendMessage: rawSendMessage, sendStructured: rawSendStructured, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining, recentMemories, confirmRecentMemory, rejectRecentMemory } = useAIPlanner();
+  // L5 메모리 검증 — 듀이가 기억 중인 정보를 보고 지울 수 있는 시트.
+  const [memorySheetOpen, setMemorySheetOpen] = useState(false);
 
   // ── AI 데이터 동의 게이트 (App Store 5.1.2 / PIPA) ──────────────────────────
   // 채팅 입력은 제3자 AI(OpenAI·Gemini)로 전송되므로, 첫 전송 전 데이터 수집·
@@ -504,13 +507,23 @@ const AIPlanner = () => {
       <HomeHeader />
       <CategoryTabBar activeTab="ai-planner" onTabChange={handleCategoryTabChange} />
 
-      {/* 챗 컨트롤 — 일일 잔여 + 대화 초기화 */}
-      {(dailyRemaining !== null || hasConversation) && (
+      {/* 챗 컨트롤 — 일일 잔여 + 기억 관리 + 대화 초기화 */}
+      {(!!user || dailyRemaining !== null || hasConversation) && (
         <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-border bg-card/60">
           {dailyRemaining !== null && (
             <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
               {dailyRemaining}회 남음
             </span>
+          )}
+          {!!user && (
+            <button
+              onClick={() => setMemorySheetOpen(true)}
+              className="p-1.5 text-muted-foreground hover:text-foreground active:scale-95 transition-all rounded-lg hover:bg-muted"
+              title="듀이가 기억하는 정보"
+              aria-label="듀이가 기억하는 정보"
+            >
+              <Brain className="w-4 h-4" />
+            </button>
           )}
           {hasConversation && (
             <button
@@ -604,6 +617,41 @@ const AIPlanner = () => {
           ))}
           {isLoading && <TypingIndicator />}
 
+          {/* L5 메모리 확인 칩 — 방금 추출된 기억을 사용자가 즉시 검증(✓ 유지 / ✕ 삭제) */}
+          {recentMemories.length > 0 && lastMessageIsAssistant && !isLoading && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-1.5 pl-11"
+            >
+              {recentMemories.map((m) => (
+                <div
+                  key={m.id}
+                  className="inline-flex items-center gap-1.5 max-w-full px-3 py-1.5 rounded-full border border-border bg-muted/60 text-xs text-muted-foreground"
+                >
+                  <Brain className="w-3 h-3 shrink-0 text-primary" />
+                  <span className="truncate">이렇게 기억할게요: “{m.fact_text}”</span>
+                  <button
+                    onClick={() => confirmRecentMemory(m.id)}
+                    className="shrink-0 p-0.5 rounded-full hover:bg-primary/10 text-primary active:scale-90 transition-all"
+                    title="맞아요"
+                    aria-label={`기억 유지: ${m.fact_text}`}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => rejectRecentMemory(m.id)}
+                    className="shrink-0 p-0.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive active:scale-90 transition-all"
+                    title="아니에요 (지우기)"
+                    aria-label={`기억 삭제: ${m.fact_text}`}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </motion.div>
+          )}
+
           {/* Follow-up chips */}
           {showFollowUps && (
             <motion.div
@@ -695,6 +743,8 @@ const AIPlanner = () => {
       <SdmeSurvey isOpen={activeModal === "sdme"} onClose={() => setActiveModal(null)} onSubmit={handleSdmeSubmit} />
       <TimelineSurvey isOpen={activeModal === "timeline"} onClose={() => setActiveModal(null)} onSubmit={handleTimelineSubmit} />
       <BudgetSurvey isOpen={activeModal === "budget"} onClose={() => setActiveModal(null)} onSubmit={handleBudgetSubmit} />
+
+      <MemoryManagerSheet open={memorySheetOpen} onOpenChange={setMemorySheetOpen} />
 
       <UpgradeModal
         isOpen={showUpgradeModal}
