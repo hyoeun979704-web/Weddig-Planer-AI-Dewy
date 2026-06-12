@@ -1,5 +1,5 @@
 // 범용 CSV 내보내기 — 의존성 없이 Blob 다운로드.
-// 엑셀(한국어 Windows)이 UTF-8 을 올바로 열도록 BOM(﻿) 을 붙인다.
+// 엑셀(한국어 Windows)이 UTF-8 을 올바로 열도록 BOM(U+FEFF) 을 붙인다.
 
 export interface CsvColumn<T> {
   header: string;

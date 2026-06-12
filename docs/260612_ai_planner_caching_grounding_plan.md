@@ -3,7 +3,9 @@
 ## 구현 상태 (260612)
 
 - ✅ **PR1 적용·배포 완료(v14)**: 본경로 OpenAI **gpt-4o 단일** 스트리밍 전환(클라 무변경, SSE 호환 확인) + **캐시 분리**(정적/동적 system 2메시지) + **L3 불확실성 계약**(prompt.ts) + 메모리추출 OpenAI 전환 + **CI 배포 근본원인 수정**(빈 GEMINI 시크릿 가드). 프로덕션 E2E 200/SSE 검증.
-- ⏳ 남음: L2 근거주입 RAG(가격=budgetData / 업체=places) · L4 출력 후처리 · L5 메모리 검증 UI · L1 라우터 커버리지 확대.
+- ✅ **L2 가격 근거주입 + 사용한도/분당 rate-limit + DB즉답 디테일화** (d2c8e4c, 배포 완료).
+- ✅ **PR2 구현(이 브랜치)**: **L2 업체 근거주입**(places 실데이터 주입, 목록 밖 실명 생성 금지 — grounding.ts `buildVendorGrounding`) + **L4 출력 후처리**(SSE 패스스루로 전문 점검 — 비근거 금액엔 면책 델타 주입, 업체 환각 위험 경고 로깅 — postprocess.ts) + **L5 메모리 검증 UI**(응답 직후 "이렇게 기억할게요" 확인 칩 ✓/✕ + 기억 관리 시트 조회/삭제 — `useAIMemories`/`MemoryManagerSheet`/`lib/aiMemory`). user_ai_memory RLS(본인 read/delete)는 DB 적용 확인됨. **검증 한계**: vitest(19종)+esbuild+build 통과 — edge function 은 main 머지 후 배포되므로 프로덕션 SSE e2e 는 배포 후 확인 필요.
+- ⏳ 남음: L1 라우터 커버리지 추가 확대(상시 과제) · L4 업체명 패턴 차단(현재는 모니터링만).
 - ℹ️ 2-tier 는 사용자 선택(4o 단일)으로 보류 — 비용이 문제되면 mini 기본+4o 승격으로 재도입.
 
 ## Context

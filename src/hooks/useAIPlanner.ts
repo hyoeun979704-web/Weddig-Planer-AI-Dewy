@@ -1,8 +1,23 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { supabase } from "@/integrations/supabase/client";
+import { deleteMemoryRow, fetchMemoriesSince, type AIMemory } from "@/lib/aiMemory";
+import { AI_MEMORIES_QUERY_KEY } from "@/hooks/useAIMemories";
+import { useChatSessions } from "@/hooks/useChatSessions";
+import {
+  deleteChatMessage,
+  deriveSessionTitle,
+  fetchSessionMessages,
+  fetchSessions,
+  insertChatMessage,
+  isSessionLimitError,
+  createSession as createSessionRow,
+  setMessageFeedback,
+  windowForLLM,
+} from "@/lib/aiChat";
 import { matchIntent } from "@/lib/chatbot/intentRouter";
 import { runDbHandler } from "@/lib/chatbot/dbHandlers";
 import { runGuideHandler } from "@/lib/chatbot/handlers/staticGuideHandlers";
@@ -32,18 +47,161 @@ export type Message = {
   role: "user" | "assistant";
   content: string;
   intent?: string | null;
+  /** 영속화된 메시지의 DB 행 id — 만족도(👍/👎) 기록에 필요. 미영속이면 없음. */
+  id?: string | null;
+  /** 응답 만족도 — assistant 메시지에만 의미 */
+  feedback?: "up" | "down" | null;
 };
 
 const CHAT_URL = `${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/ai-planner`;
+
+// L5 확인 칩 — 서버 메모리 추출(fire-and-forget)이 끝나길 기다리는 지연과,
+// 클라/DB 시계 오차(skew)를 흡수하는 조회 버퍼.
+const MEMORY_CHIP_FETCH_DELAY_MS = 1_500;
+const MEMORY_CLOCK_SKEW_MS = 15_000;
 
 export const useAIPlanner = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
+  // L5 메모리 검증 — 방금 응답에서 자동 추출된 사실을 "이렇게 기억할게요" 칩으로
+  // 보여주고 사용자가 즉시 정정(삭제)할 수 있게 한다(환각 누적 차단).
+  const [recentMemories, setRecentMemories] = useState<AIMemory[]>([]);
+  // skew 버퍼 때문에 직전 턴의 사실이 다시 잡힐 수 있어, 이미 보여준 id 는 제외.
+  const shownMemoryIdsRef = useRef<Set<string>>(new Set());
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
+  // 채팅 영속화 — 세션(채팅창) 목록 + 활성 세션. 개수 한도(무료 1/프리미엄 5)는
+  // DB 트리거가 강제하고, 세션은 첫 메시지 전송 시 게으르게 생성한다(빈 세션 방지).
+  const chatSessions = useChatSessions();
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const activeSessionIdRef = useRef<string | null>(null);
+  activeSessionIdRef.current = activeSessionId;
+
+  /** 메시지 영속화 — 실패해도 대화는 계속(베스트에포트, 행 id 반환). */
+  const persistMessage = useCallback(async (
+    sessionId: string,
+    role: "user" | "assistant",
+    content: string,
+    intent?: string | null,
+  ): Promise<string | null> => {
+    if (!user) return null;
+    try {
+      return await insertChatMessage(user.id, sessionId, role, content, intent);
+    } catch (e) {
+      console.warn("chat persist failed:", e);
+      return null;
+    }
+  }, [user]);
+
+  /**
+   * 활성 세션 보장 — 없으면 첫 메시지로 제목을 지어 생성. 한도 초과(다른 기기에서
+   * 이미 꽉 채운 경우 등)면 가장 최근 세션에 이어 쓴다(대화는 끊지 않음).
+   */
+  const ensureSession = useCallback(async (firstMessageText: string): Promise<string | null> => {
+    if (activeSessionIdRef.current) return activeSessionIdRef.current;
+    if (!user) return null;
+    try {
+      const s = await createSessionRow(user.id, deriveSessionTitle(firstMessageText));
+      setActiveSessionId(s.id);
+      void chatSessions.refetch();
+      return s.id;
+    } catch (e) {
+      if (isSessionLimitError(e)) {
+        try {
+          const list = await fetchSessions(user.id);
+          if (list.length > 0) {
+            setActiveSessionId(list[0].id);
+            void chatSessions.refetch();
+            return list[0].id;
+          }
+        } catch { /* 아래 공통 처리 */ }
+      }
+      console.warn("chat session ensure failed:", e);
+      return null; // 영속화 없이 대화 진행
+    }
+  }, [user, chatSessions]);
+
+  /** 이전 채팅 열기 — 저장된 메시지를 불러와 이어서 대화. */
+  const switchSession = useCallback(async (sessionId: string) => {
+    if (!user) return;
+    try {
+      const rows = await fetchSessionMessages(user.id, sessionId);
+      setMessages(rows.map((r) => ({
+        role: r.role,
+        content: r.content,
+        intent: r.intent,
+        id: r.id,
+        feedback: r.feedback,
+      })));
+      setActiveSessionId(sessionId);
+      setRecentMemories([]);
+    } catch (e) {
+      console.warn("chat session load failed:", e);
+      toast({
+        title: "채팅을 불러오지 못했어요",
+        description: "잠시 후 다시 시도해 주세요.",
+        variant: "destructive",
+      });
+    }
+  }, [user, toast]);
+
+  /** 새 채팅 시작 — 화면만 비우고 세션은 첫 전송 때 생성. */
+  const startNewChat = useCallback(() => {
+    setMessages([]);
+    setActiveSessionId(null);
+    setRecentMemories([]);
+  }, []);
+
+  /** 채팅(세션) 삭제 — 활성 채팅이면 빈 화면으로. */
+  const deleteChat = useCallback(async (sessionId: string) => {
+    try {
+      await chatSessions.remove(sessionId);
+      if (activeSessionIdRef.current === sessionId) startNewChat();
+    } catch {
+      toast({
+        title: "채팅을 삭제하지 못했어요",
+        description: "잠시 후 다시 시도해 주세요.",
+        variant: "destructive",
+      });
+    }
+  }, [chatSessions, startNewChat, toast]);
+
+  // 첫 진입 시 가장 최근 채팅을 자동으로 이어서 연다(기록 연속성).
+  // 이후 startNewChat 선택을 덮어쓰지 않도록 마운트당 1회만.
+  const didAutoLoadRef = useRef(false);
+  useEffect(() => {
+    if (didAutoLoadRef.current || !user || chatSessions.isLoading) return;
+    didAutoLoadRef.current = true;
+    const latest = chatSessions.sessions[0];
+    if (latest) void switchSession(latest.id);
+  }, [user, chatSessions.isLoading, chatSessions.sessions, switchSession]);
+
+  /** 응답 만족도(👍/👎) — 같은 평가 다시 누르면 철회. 낙관적 갱신 + 실패 롤백. */
+  const rateMessage = useCallback(async (messageId: string, rating: "up" | "down") => {
+    if (!user) return;
+    let previous: "up" | "down" | null = null;
+    let next: "up" | "down" | null = rating;
+    setMessages(prev => prev.map((m) => {
+      if (m.id !== messageId) return m;
+      previous = m.feedback ?? null;
+      next = previous === rating ? null : rating;
+      return { ...m, feedback: next };
+    }));
+    try {
+      await setMessageFeedback(user.id, messageId, next);
+    } catch {
+      setMessages(prev => prev.map((m) => (m.id === messageId ? { ...m, feedback: previous } : m)));
+      toast({
+        title: "평가를 저장하지 못했어요",
+        description: "잠시 후 다시 시도해 주세요.",
+        variant: "destructive",
+      });
+    }
+  }, [user, toast]);
   // 사용자 컨텍스트는 ai-planner edge function의 user-data.ts에서 직접
   // fetch하여 시스템 프롬프트에 주입한다 (결혼일·예산·진척률·관심 업체·
   // 장기 메모리). 클라이언트에서 다시 보내면 중복.
@@ -52,6 +210,32 @@ export const useAIPlanner = () => {
     const userMsg: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
+    setRecentMemories([]);
+
+    // ── 0. 채팅 영속화 — 세션 보장(첫 메시지면 생성) + 사용자 메시지 기록.
+    // 실패해도 대화는 계속(베스트에포트). 즉답·LLM 양 경로 모두 기록된다.
+    const sessionId = user ? await ensureSession(input) : null;
+    const userPersist: Promise<string | null> = sessionId
+      ? persistMessage(sessionId, "user", input)
+      : Promise.resolve(null);
+
+    // 즉답(비 LLM) 응답도 기록 후 행 id 와 함께 표시 — 만족도 평가 가능하게.
+    const appendInstantReply = async (content: string, intentKey: string | null) => {
+      let rowId: string | null = null;
+      if (sessionId) {
+        await userPersist; // user → assistant 순서 보존
+        rowId = await persistMessage(sessionId, "assistant", content, intentKey);
+        void chatSessions.refetch();
+      }
+      setMessages(prev => [...prev, { role: "assistant", content, intent: intentKey, id: rowId, feedback: null }]);
+    };
+
+    // 한도(429) 등으로 전송이 취소되면 방금 기록한 사용자 메시지를 정리(고아 방지).
+    const rollbackUserPersist = () => {
+      void userPersist.then((id) => {
+        if (id && user) deleteChatMessage(user.id, id).catch(() => { /* best-effort */ });
+      });
+    };
 
     // ── 1. 클라이언트 사이드 인텐트 게이트 ──────────────────
     // LLM 호출 전에 키워드 매칭으로 즉답 가능한지 먼저 확인.
@@ -65,7 +249,7 @@ export const useAIPlanner = () => {
       if (intent) {
         // (a) 정적 응답 — 인사·도움말·가격 안내 등
         if (intent.staticReply) {
-          setMessages(prev => [...prev, { role: "assistant", content: intent.staticReply!, intent: intent.intent }]);
+          await appendInstantReply(intent.staticReply, intent.intent ?? null);
           setIsLoading(false);
           return;
         }
@@ -74,7 +258,7 @@ export const useAIPlanner = () => {
         // 일부는 places 통계로 동적 산출하므로 async
         if (intent.guideKey) {
           const reply = await runGuideHandler(intent.guideKey);
-          setMessages(prev => [...prev, { role: "assistant", content: reply, intent: intent.intent }]);
+          await appendInstantReply(reply, intent.intent ?? null);
           setIsLoading(false);
           return;
         }
@@ -98,7 +282,7 @@ export const useAIPlanner = () => {
             // LLM 호출 흐름으로 fallthrough
           } else if (result.reply) {
             // 즉답만 — 거기서 종료
-            setMessages(prev => [...prev, { role: "assistant", content: result.reply!, intent: intent.intent }]);
+            await appendInstantReply(result.reply, intent.intent ?? null);
             setIsLoading(false);
             return;
           }
@@ -147,6 +331,9 @@ export const useAIPlanner = () => {
       // 사용자 컨텍스트는 ai-planner edge function이 user-data.ts로 직접
       // fetch해 시스템 프롬프트에 주입한다. 게이트가 핸들러에서 추출한
       // 추가 컨텍스트(B+C 하이브리드)만 LLM 호출 시 함께 보낸다.
+      // 인라인 에러 버블 제외(맥락 오염 방지) + 최근 N턴 윈도우(영속 이력이 길어도
+      // 토큰 비용이 매 턴 폭증하지 않게). DB 행 id 등 부가 필드는 전송에서 제거.
+      const history = windowForLLM(messages.filter(m => m.intent !== "error"));
       const messagesToSend: Message[] = [
         ...(llmContextInjection
           ? [{
@@ -154,10 +341,13 @@ export const useAIPlanner = () => {
               content: `[참고 컨텍스트 - 사용자 데이터에서 추출됨, 이 정보를 자연스럽게 활용해 답변해주세요]\n${llmContextInjection}`,
             }]
           : []),
-        // 인라인 에러 안내 버블은 LLM 컨텍스트에서 제외 (대화 맥락 오염 방지).
-        ...messages.filter(m => m.intent !== "error"),
+        ...history,
         userMsg,
-      ];
+      ].map((m) => ({ role: m.role, content: m.content }));
+
+      // 확인 칩 조회 기준 시각 — 서버 추출 행의 created_at(DB 시계)과 비교하므로
+      // skew 버퍼를 빼서 놓침을 줄인다(직전 턴 중복은 shownMemoryIdsRef 가 거름).
+      const memorySince = new Date(Date.now() - MEMORY_CLOCK_SKEW_MS).toISOString();
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -169,6 +359,8 @@ export const useAIPlanner = () => {
       });
 
       if (resp.status === 429) {
+        // 전송 취소 — 화면과 함께 영속 행도 정리(고아 사용자 메시지 방지).
+        rollbackUserPersist();
         // Check if it's daily limit
         try {
           const body = await resp.json();
@@ -288,6 +480,41 @@ export const useAIPlanner = () => {
           } catch { /* ignore partial leftovers */ }
         }
       }
+
+      // 영속화 — 완주한 응답만 저장(중간 끊김 부분답변은 미저장, catch 경로로 감).
+      // 행 id 를 마지막 assistant 메시지에 붙여 만족도 평가를 가능하게 한다.
+      if (assistantSoFar && sessionId) {
+        await userPersist;
+        const rowId = await persistMessage(sessionId, "assistant", assistantSoFar, "llm");
+        if (rowId) {
+          setMessages(prev => {
+            const lastIdx = prev.length - 1;
+            const last = prev[lastIdx];
+            if (last?.role === "assistant" && last.content === assistantSoFar) {
+              return prev.map((m, i) => (i === lastIdx ? { ...m, id: rowId, feedback: null } : m));
+            }
+            return prev;
+          });
+        }
+        void chatSessions.refetch(); // updated_at 정렬 갱신
+      }
+
+      // L5 확인 칩 — 추출은 서버에서 fire-and-forget 으로 돌고 있으므로 잠깐
+      // 기다렸다가 이번 턴에 새로 저장된 사실을 가져온다(best-effort, 실패 무시).
+      if (assistantSoFar && user) {
+        const uid = user.id;
+        window.setTimeout(() => {
+          fetchMemoriesSince(uid, memorySince)
+            .then((rows) => {
+              const fresh = rows.filter((m) => !shownMemoryIdsRef.current.has(m.id));
+              if (fresh.length === 0) return;
+              for (const m of fresh) shownMemoryIdsRef.current.add(m.id);
+              setRecentMemories(fresh);
+              void queryClient.invalidateQueries({ queryKey: AI_MEMORIES_QUERY_KEY });
+            })
+            .catch(() => { /* 칩은 부가 기능 — 조회 실패가 대화를 방해하면 안 됨 */ });
+        }, MEMORY_CHIP_FETCH_DELAY_MS);
+      }
     } catch (error) {
       console.error("AI Planner error:", error);
       toast({
@@ -308,11 +535,33 @@ export const useAIPlanner = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, toast, user, weddingSettings.wedding_style, weddingSettings.excluded_categories]);
+  }, [messages, toast, user, queryClient, ensureSession, persistMessage, chatSessions, weddingSettings.wedding_style, weddingSettings.excluded_categories]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
+    setRecentMemories([]);
   }, []);
+
+  /** 확인 칩 "맞아요" — 칩만 닫는다(이미 저장돼 있으므로 추가 동작 없음). */
+  const confirmRecentMemory = useCallback((id: string) => {
+    setRecentMemories(prev => prev.filter(m => m.id !== id));
+  }, []);
+
+  /** 확인 칩 "아니에요" — 잘못 추출된 기억을 즉시 삭제(다음 대화 오염 차단). */
+  const rejectRecentMemory = useCallback(async (id: string) => {
+    if (!user) return;
+    try {
+      await deleteMemoryRow(user.id, id);
+      setRecentMemories(prev => prev.filter(m => m.id !== id));
+      void queryClient.invalidateQueries({ queryKey: AI_MEMORIES_QUERY_KEY });
+    } catch {
+      toast({
+        title: "기억을 지우지 못했어요",
+        description: "잠시 후 다시 시도해 주세요.",
+        variant: "destructive",
+      });
+    }
+  }, [user, queryClient, toast]);
 
   /**
    * 구조화된 입력 (모달 데이터)을 받아 LLM 호출 없이 즉답 처리.
@@ -325,6 +574,13 @@ export const useAIPlanner = () => {
     const userMsg: Message = { role: "user", content: userMessageText };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
+    setRecentMemories([]);
+
+    // 구조화 입력도 채팅 기록에 영속(베스트에포트).
+    const sessionId = user ? await ensureSession(userMessageText) : null;
+    const userPersist: Promise<string | null> = sessionId
+      ? persistMessage(sessionId, "user", userMessageText)
+      : Promise.resolve(null);
 
     try {
       let reply: string;
@@ -347,7 +603,13 @@ export const useAIPlanner = () => {
           intent = "budget_planning";
           break;
       }
-      setMessages(prev => [...prev, { role: "assistant", content: reply, intent }]);
+      let rowId: string | null = null;
+      if (sessionId) {
+        await userPersist;
+        rowId = await persistMessage(sessionId, "assistant", reply, intent);
+        void chatSessions.refetch();
+      }
+      setMessages(prev => [...prev, { role: "assistant", content: reply, intent, id: rowId, feedback: null }]);
     } catch (e) {
       console.error("Structured handler error:", e);
       toast({
@@ -363,7 +625,7 @@ export const useAIPlanner = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, user, ensureSession, persistMessage, chatSessions]);
 
   return {
     messages,
@@ -374,5 +636,16 @@ export const useAIPlanner = () => {
     showUpgradeModal,
     setShowUpgradeModal,
     dailyRemaining,
+    recentMemories,
+    confirmRecentMemory,
+    rejectRecentMemory,
+    // 채팅 영속화 — 세션 목록/전환/삭제 + 만족도
+    sessions: chatSessions.sessions,
+    sessionsLoading: chatSessions.isLoading,
+    activeSessionId,
+    switchSession,
+    startNewChat,
+    deleteChat,
+    rateMessage,
   };
 };

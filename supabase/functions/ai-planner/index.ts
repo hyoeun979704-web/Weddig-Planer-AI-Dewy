@@ -6,7 +6,8 @@ import { BASE_SYSTEM_PROMPT } from "./prompt.ts";
 import { fetchUserData, buildUserContext } from "./user-data.ts";
 import { extractAndStoreMemories } from "./memory.ts";
 import { ALWAYS_ON_CAPSULES, buildConditionalCapsules } from "./domain-capsules.ts";
-import { buildPriceGrounding } from "./grounding.ts";
+import { buildPriceGrounding, buildVendorGrounding, isVendorQuery, type VendorGrounding } from "./grounding.ts";
+import { createSseAuditTransform } from "./postprocess.ts";
 
 
 // 사용 한도: 무료 일 10회 / 프리미엄 분당 10회 + 일 200회(남용 방지선).
@@ -191,16 +192,23 @@ serve(async (req) => {
     let userContext = "";
     let conditionalCapsules = "";
     let priceGrounding = "";
+    let vendorGrounding: VendorGrounding = { block: "", names: [] };
     const lastUserContent = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
     if (!evalMode?.raw_system) try {
       const userData = await fetchUserData(supabase, user.id);
       userContext = buildUserContext(userData);
       conditionalCapsules = buildConditionalCapsules(userData.weddingSettings);
-      // L2 근거주입(RAG): 가격 질문이면 지역 평균 시세를 근거로 주입(환각 차단).
+      // L2 근거주입(RAG): 가격 질문이면 지역 평균 시세를, 업체 추천 질문이면
+      // places 실데이터를 근거로 주입(환각 차단).
       priceGrounding = buildPriceGrounding(
         lastUserContent,
         userData.budgetSettings?.region ?? userData.weddingSettings?.wedding_region,
         userData.budgetSettings?.guest_count,
+      );
+      vendorGrounding = await buildVendorGrounding(
+        supabase,
+        lastUserContent,
+        userData.weddingSettings?.wedding_region,
       );
       console.log(
         "User context loaded for:", user.id,
@@ -226,7 +234,7 @@ serve(async (req) => {
     // 접두를 캐시(입력비↓). 동적(페르소나 캡슐+사용자 컨텍스트)은 별도 메시지로
     // 뒤에 붙여 정적 접두의 캐시 적중을 깨지 않게 한다.
     const staticPrompt = BASE_SYSTEM_PROMPT + ALWAYS_ON_CAPSULES;
-    const dynamicContext = conditionalCapsules + userContext + priceGrounding;
+    const dynamicContext = conditionalCapsules + userContext + priceGrounding + vendorGrounding.block;
     const systemPrompt = evalMode?.raw_system ?? staticPrompt + dynamicContext;
 
     // ───── 평가 모드 생성: 모델 교체 + 비스트리밍 + 지연/토큰 측정 ─────
@@ -351,7 +359,13 @@ serve(async (req) => {
       );
     }
 
-    return new Response(streamResponse.body, {
+    // L4 출력 후처리: 패스스루로 전문을 모아 [DONE] 직전에 점검(면책 보강·환각 모니터링).
+    const auditedBody = streamResponse.body!.pipeThrough(createSseAuditTransform({
+      hasPriceGrounding: priceGrounding !== "",
+      groundedVendorNames: vendorGrounding.names,
+      isVendorQuery: isVendorQuery(lastUserContent),
+    }));
+    return new Response(auditedBody, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Daily-Remaining": String(dailyRemaining) },
     });
   } catch (error) {
