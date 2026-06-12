@@ -258,3 +258,35 @@ describe("matchIntent — 매칭 없음(LLM으로 폴백)", () => {
     expect(matchIntent("   ")).toBeNull();
   });
 });
+
+// 평가 시나리오(scripts/eval-chatbot)의 자연어 입력이 의도대로 흐르는지 고정.
+// ⑤c 오라우팅 회귀 방지: 복합조건·문제해결형은 LLM(매칭 없음)으로 가야 하고,
+// 강한 DB 의도(체크리스트·일정)는 즉답 핸들러로 가야 한다.
+describe("matchIntent — 평가 시나리오 라우팅 회귀", () => {
+  it("복합조건·상담형 질문은 LLM 폴백(rigid 핸들러로 새지 않음)", () => {
+    for (const input of [
+      "10월 토요일 오후, 강남 쪽, 하객 200명, 식대 7만원대로 가능한 웨딩홀 조건이면 어때?",
+      "양가 어머니들이 한복 때문에 신경전이 있어요",
+      "예식 3주 전인데 메이크업 샵이 갑자기 폐업했대요. 어떡하죠?",
+      "부모님이 축의금 때문에 하객 400명을 부르자고 하셔요. 설득 방법 없을까요?",
+      "뭔가 너무 막막해요",
+    ]) {
+      const m = matchIntent(input);
+      // DB 즉답/정적 응답으로 가로채면 안 됨 — LLM 으로 흘려보내거나(null),
+      // 가더라도 staticReply 같은 고정 응답이 아니어야 한다.
+      expect(m?.staticReply, `input="${input}"`).toBeFalsy();
+    }
+  });
+
+  it("명시적 DB 의도(키워드형)는 핸들러로 즉답", () => {
+    expect(matchIntent("체크리스트 알려줘")?.intent).toMatch(/checklist/);
+    expect(matchIntent("디데이 며칠 남았어?")?.intent).toBe("dday");
+  });
+
+  // ⚠️ 현황 고정(갭): 자연어로 풀어 쓴 체크리스트 질문은 키워드 라우터에 안 잡혀
+  // LLM 으로 흐른다. 즉 실데이터 인용 없이 LLM 이 체크리스트를 지어낼 위험(③b/⑤a).
+  // 개선(P1 복합조건 파싱) 시 이 기대를 'checklist 라우팅'으로 바꾸면 회귀가 드러난다.
+  it("자연어 체크리스트 질문은 현재 LLM 폴백 (개선 대상)", () => {
+    expect(matchIntent("내 체크리스트에서 안 끝난 것 중 제일 중요한 게 뭐야?")).toBeNull();
+  });
+});
