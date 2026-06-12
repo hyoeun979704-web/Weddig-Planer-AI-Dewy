@@ -58,7 +58,21 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json() as { messages: Message[] };
+    const { messages, eval_options } = await req.json() as {
+      messages: Message[];
+      /**
+       * 모델 비교 평가 전용(운영자만). 일반 사용자가 보내면 무시된다.
+       * - list_models: 프로바이더 모델 목록 반환 (생성 안 함)
+       * - provider/model: 이 호출만 해당 모델로 생성 (비스트리밍 JSON 응답)
+       * - raw_system: judge 용 — 시스템 프롬프트를 통째로 대체(컨텍스트 미주입)
+       */
+      eval_options?: {
+        list_models?: boolean;
+        provider?: "gemini" | "openai";
+        model?: string;
+        raw_system?: string;
+      };
+    };
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -94,8 +108,42 @@ serve(async (req) => {
       });
     }
 
+    // ───── 모델 비교 평가 모드 (운영자 전용) ─────
+    // 비관리자가 eval_options 를 보내면 조용히 무시하고 일반 경로로 진행한다.
+    let evalMode: typeof eval_options | undefined;
+    if (eval_options) {
+      const { data: roleRows } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const isAdmin = (roleRows ?? []).some((r: { role: string }) => r.role === "admin");
+      if (isAdmin) evalMode = eval_options;
+    }
+
+    if (evalMode?.list_models) {
+      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+      const [g, o] = await Promise.all([
+        fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}&pageSize=100`)
+          .then((r) => r.json()).catch(() => null),
+        OPENAI_API_KEY
+          ? fetch("https://api.openai.com/v1/models", { headers: { Authorization: `Bearer ${OPENAI_API_KEY}` } })
+              .then((r) => r.json()).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      return new Response(
+        JSON.stringify({
+          gemini: (g?.models ?? []).map((m: { name: string }) => m.name),
+          openai: (o?.data ?? []).map((m: { id: string }) => m.id),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // 일일 사용량 체크는 entitlement 게이트 — 실패하면 fail-closed.
-    const usageResult = await checkAndIncrementUsage(supabase, user.id);
+    // (평가 모드는 내부 측정이라 게이트·메모리 추출을 모두 건너뛴다)
+    const usageResult = evalMode
+      ? { allowed: true, remaining: -1, isPremium: true }
+      : await checkAndIncrementUsage(supabase, user.id);
     const dailyRemaining = usageResult.remaining;
 
     if (!usageResult.allowed) {
@@ -111,9 +159,10 @@ serve(async (req) => {
     }
 
     // 사용자 컨텍스트 로드는 best-effort — 실패해도 빈 컨텍스트로 답변은 이어간다.
+    // (judge 호출(raw_system)은 컨텍스트 자체가 오염원이라 로드하지 않음)
     let userContext = "";
     let conditionalCapsules = "";
-    try {
+    if (!evalMode?.raw_system) try {
       const userData = await fetchUserData(supabase, user.id);
       userContext = buildUserContext(userData);
       conditionalCapsules = buildConditionalCapsules(userData.weddingSettings);
@@ -129,14 +178,99 @@ serve(async (req) => {
     }
 
     // Fire-and-forget memory extraction on the user's most recent message.
+    // 평가 모드는 시나리오 입력이 사용자 기억을 오염시키므로 제외.
     const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
-    if (lastUserMsg?.content) {
+    if (lastUserMsg?.content && !evalMode) {
       extractAndStoreMemories(supabase, user.id, lastUserMsg.content, GEMINI_API_KEY).catch(
         (e) => console.warn("memory extraction (bg) failed:", e),
       );
     }
 
-    const systemPrompt = BASE_SYSTEM_PROMPT + ALWAYS_ON_CAPSULES + conditionalCapsules + userContext;
+    const systemPrompt =
+      evalMode?.raw_system ??
+      BASE_SYSTEM_PROMPT + ALWAYS_ON_CAPSULES + conditionalCapsules + userContext;
+
+    // ───── 평가 모드 생성: 모델 교체 + 비스트리밍 + 지연/토큰 측정 ─────
+    if (evalMode) {
+      const provider = evalMode.provider ?? "gemini";
+      const started = Date.now();
+      let text = "";
+      let usage: unknown = null;
+      let modelUsed = "";
+
+      if (provider === "openai") {
+        const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+        if (!OPENAI_API_KEY) {
+          return new Response(JSON.stringify({ error: "openai_not_configured" }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        modelUsed = evalMode.model ?? "gpt-4o-mini";
+        const oaMessages = [
+          { role: "system", content: systemPrompt },
+          ...messages.map((m) => ({ role: m.role, content: m.content })),
+        ];
+        // 모델 세대에 따라 max_tokens / max_completion_tokens 가 갈려 폴백 재시도.
+        const call = (tokParam: string) =>
+          fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_API_KEY}` },
+            body: JSON.stringify({ model: modelUsed, messages: oaMessages, [tokParam]: 2048 }),
+          });
+        let resp = await call("max_completion_tokens");
+        if (!resp.ok) {
+          const errText = await resp.text();
+          if (errText.includes("max_completion_tokens")) resp = await call("max_tokens");
+          else {
+            return new Response(JSON.stringify({ error: "provider_error", detail: errText.slice(0, 300) }), {
+              status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
+        if (!resp.ok) {
+          const errText = await resp.text();
+          return new Response(JSON.stringify({ error: "provider_error", detail: errText.slice(0, 300) }), {
+            status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const json = await resp.json();
+        text = json.choices?.[0]?.message?.content ?? "";
+        usage = json.usage ?? null;
+      } else {
+        modelUsed = evalMode.model ?? MODELS.geminiFlash;
+        const resp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelUsed}:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: systemPrompt }] },
+              contents: messages.map((m) => ({
+                role: m.role === "assistant" ? "model" : "user",
+                parts: [{ text: m.content }],
+              })),
+              generationConfig: { temperature: 0.8, maxOutputTokens: 2048 },
+            }),
+          },
+        );
+        if (!resp.ok) {
+          const errText = await resp.text();
+          return new Response(JSON.stringify({ error: "provider_error", detail: errText.slice(0, 300) }), {
+            status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const json = await resp.json();
+        text = (json.candidates?.[0]?.content?.parts ?? [])
+          .map((p: { text?: string }) => p.text ?? "")
+          .join("");
+        usage = json.usageMetadata ?? null;
+      }
+
+      return new Response(
+        JSON.stringify({ text, model: modelUsed, provider, latency_ms: Date.now() - started, usage }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
     console.log("Dewy AI Planner request received, messages count:", messages.length, "has user context:", !!userContext);
 
     let streamResponse: Response | null = null;
