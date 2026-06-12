@@ -28,6 +28,7 @@ const PLACE_CATEGORY_LABEL: Record<string, string> = {
   honeymoon: "신혼여행",
   jewelry: "예물·반지",
   appliance: "가전·혼수",
+  etc: "기타",
 };
 
 // Map place category slug → the `excluded_categories` key used in
@@ -89,6 +90,18 @@ const PLACE_CATEGORY_KEYWORDS: Record<string, string> = {
   쥬얼리: "jewelry",
   가전: "appliance",
   혼수: "appliance",
+  // 기타 — 본식DVD·스냅류·네일·관리·축가·부케 등 (places.category = "etc")
+  스냅: "etc",
+  DVD: "etc",
+  dvd: "etc",
+  네일: "etc",
+  피부관리: "etc",
+  체형관리: "etc",
+  축가: "etc",
+  축의대: "etc",
+  부케: "etc",
+  브라이덜샤워: "etc",
+  장소대여: "etc",
 };
 
 // Round 15 P0 fix — 약자(충남/충북/전남/전북/경남/경북)가 DB 풀네임("충청남도" 등)에

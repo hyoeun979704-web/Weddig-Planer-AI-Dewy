@@ -185,6 +185,10 @@ describe("matchIntent — DB 핸들러 라우팅", () => {
 
   it("자유 검색·시세·인기 업체", () => {
     expect(matchIntent("강남 웨딩홀 추천")?.dbHandler).toBe("free_search");
+    // 기타 카테고리(스냅·네일·축가 등)도 free_search 즉답으로 라우팅
+    expect(matchIntent("본식스냅 업체 추천해줘")?.dbHandler).toBe("free_search");
+    expect(matchIntent("네일아트 추천해줘")?.dbHandler).toBe("free_search");
+    expect(matchIntent("축가 섭외할 만한 곳 찾아줘")?.dbHandler).toBe("free_search");
     expect(matchIntent("웨딩홀 시세 어때")?.dbHandler).toBe("average_price");
     expect(matchIntent("인기 스튜디오")?.dbHandler).toBe("popular_places");
   });

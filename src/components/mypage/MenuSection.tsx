@@ -59,6 +59,16 @@ const MenuSection = ({
       title: "계정",
       items: [
         { icon: User, title: "내 정보", description: "프로필 및 계정 관리", href: "/profile" },
+        // 일반 회원 → 기업회원(업체) 전환 진입로. 전환 자체는 기존 워크플로
+        // (/business 랜딩 → /business/onboard 등록 → 운영자 승인 → business 역할).
+        ...(user && !isBusiness
+          ? [{
+              icon: Building2,
+              title: "기업회원 전환",
+              description: "웨딩 업체 등록하고 입점·업체 관리 시작",
+              href: "/business",
+            } as MenuItem]
+          : []),
         { icon: Bell, title: "알림 설정", description: "푸시 알림 관리", href: "/notifications" },
         { icon: Settings, title: "설정", description: "다크 모드, 언어 등", href: "/settings" },
         ...(onViewDataConsent
@@ -108,8 +118,9 @@ const MenuSection = ({
         </div>
       )}
 
-      {/* 입점 안내 — 일반 회원에게 파트너 랜딩 노출 (B1 진입로) */}
-      {!isBusiness && (
+      {/* 입점 안내 — 비로그인 방문자용 (로그인 일반 회원은 계정 메뉴의
+          "기업회원 전환" 항목이 같은 랜딩으로 안내 → 중복 노출 방지) */}
+      {!isBusiness && !user && (
         <button
           onClick={() => navigate("/business")}
           className="w-full text-center py-1"
