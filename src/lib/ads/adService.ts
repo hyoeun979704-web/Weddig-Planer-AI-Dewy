@@ -18,6 +18,8 @@ export const ADSENSE_CLIENT = (import.meta.env.VITE_ADSENSE_CLIENT as string | u
 export const ADSENSE_BANNER_SLOT = (import.meta.env.VITE_ADSENSE_BANNER_SLOT as string | undefined) || "4600179427";
 // 웹 '2배 적립' 광고 슬롯. AdSense 엔 보상형이 없어 디스플레이 광고를 모달로 노출한다.
 export const ADSENSE_REWARDED_SLOT = (import.meta.env.VITE_ADSENSE_REWARDED_SLOT as string | undefined) || "1646713028";
+// 웹 '기회 1회 제공(한 판 더)' 광고 슬롯 — 2배 적립과 별개 단위. env 미설정 시 기본값.
+export const ADSENSE_RETRY_SLOT = (import.meta.env.VITE_ADSENSE_RETRY_SLOT as string | undefined) || "8890825958";
 const ADMOB_BANNER_ID = import.meta.env.VITE_ADMOB_BANNER_ID as string | undefined;
 const ADMOB_REWARDED_ID = import.meta.env.VITE_ADMOB_REWARDED_ID as string | undefined;
 

@@ -18,6 +18,8 @@ interface Props {
   closeLabel?: string;
   /** 받기 활성화까지 강제 시청 카운트다운(초). 2배=15, 한 판 더=5 등. */
   countdownSec?: number;
+  /** 노출할 AdSense 광고 슬롯(용도별 단위 분리: 2배=ADSENSE_REWARDED_SLOT, 한 판 더=ADSENSE_RETRY_SLOT). */
+  slot?: string;
 }
 
 const RewardedAdModal = ({
@@ -27,6 +29,7 @@ const RewardedAdModal = ({
   ctaLabel = "포인트 2배 받기",
   closeLabel = "닫기 (보너스 없이)",
   countdownSec = 5,
+  slot = ADSENSE_REWARDED_SLOT,
 }: Props) => {
   const [left, setLeft] = useState(countdownSec);
   const pushedRef = useRef(false);
@@ -70,7 +73,7 @@ const RewardedAdModal = ({
             className="adsbygoogle"
             style={{ display: "block" }}
             data-ad-client={ADSENSE_CLIENT}
-            data-ad-slot={ADSENSE_REWARDED_SLOT}
+            data-ad-slot={slot}
             data-ad-format="auto"
             data-full-width-responsive="true"
           />

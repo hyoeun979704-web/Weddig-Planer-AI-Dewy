@@ -4,7 +4,7 @@ import { ChevronLeft, Trophy, Medal, Flower2, Clapperboard, Moon } from 'lucide-
 import { Game, type GameHandle } from '@/game/Game';
 import AdBanner from '@/components/ads/AdBanner';
 import RewardedAdModal from '@/components/ads/RewardedAdModal';
-import { setWebRewardedHandler, clearWebRewardedHandler, isNativeAds, showRewardedAd } from '@/lib/ads/adService';
+import { setWebRewardedHandler, clearWebRewardedHandler, isNativeAds, showRewardedAd, ADSENSE_REWARDED_SLOT, ADSENSE_RETRY_SLOT } from '@/lib/ads/adService';
 import { useGamePoints } from '@/hooks/useGamePoints';
 import { useGameQuota } from '@/game/useGameQuota';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,7 +51,7 @@ export default function MergeGame() {
   // 웹 보상형 대체 모달(AdSense). 한 판 더(5초)·포인트 2배(15초) 둘 다 이 모달을 재사용 —
   // 용도별 문구/카운트다운만 adCfg 로 바꾼다. 네이티브는 AdMob 보상형이라 등록 안 함.
   const [adModalOpen, setAdModalOpen] = useState(false);
-  const [adCfg, setAdCfg] = useState({ title: '광고 보고 한 판 더', cta: '한 판 더 플레이', close: '닫기', sec: 5 });
+  const [adCfg, setAdCfg] = useState({ title: '광고 보고 한 판 더', cta: '한 판 더 플레이', close: '닫기', sec: 5, slot: ADSENSE_RETRY_SLOT });
   const adResolveRef = useRef<((rewarded: boolean) => void) | null>(null);
   useEffect(() => {
     if (isNativeAds()) return;
@@ -93,7 +93,7 @@ export default function MergeGame() {
   const claimDouble = useCallback(async () => {
     if (claimedRef.current || lastScoreRef.current === null || !user || adBusy) return;
     setAdBusy(true);
-    setAdCfg({ title: '광고 보고 포인트 2배', cta: '포인트 2배 받기', close: '닫기 (2배 없이)', sec: 15 });
+    setAdCfg({ title: '광고 보고 포인트 2배', cta: '포인트 2배 받기', close: '닫기 (2배 없이)', sec: 15, slot: ADSENSE_REWARDED_SLOT });
     try {
       const ok = await showRewardedAd();
       if (ok) {
@@ -125,7 +125,7 @@ export default function MergeGame() {
     if (quota.adLeft <= 0 || adBusy) return;
     void claimBase();
     setAdBusy(true);
-    setAdCfg({ title: '광고 보고 한 판 더', cta: '한 판 더 플레이', close: '닫기 (플레이 안 함)', sec: 5 });
+    setAdCfg({ title: '광고 보고 한 판 더', cta: '한 판 더 플레이', close: '닫기 (플레이 안 함)', sec: 5, slot: ADSENSE_RETRY_SLOT });
     try {
       const ok = await showRewardedAd();
       if (ok) {
@@ -365,6 +365,7 @@ export default function MergeGame() {
         ctaLabel={adCfg.cta}
         closeLabel={adCfg.close}
         countdownSec={adCfg.sec}
+        slot={adCfg.slot}
       />
     </div>
   );
