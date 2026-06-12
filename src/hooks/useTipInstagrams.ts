@@ -35,6 +35,7 @@ export function useTipInstagrams(opts: UseTipInstagramsOptions = {}) {
         // 토큰 연결 후 수집되면 썸네일이 채워져 자동으로 다시 노출.
         .not("thumbnail_url", "is", null)
         .neq("thumbnail_url", "")
+        .ilike("url", "%/reel/%")
         .order("collected_at", { ascending: false })
         .limit(limit);
       if (category) q = q.contains("categories", [category]);

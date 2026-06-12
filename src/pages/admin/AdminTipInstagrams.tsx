@@ -89,6 +89,16 @@ const emptyForm: FormState = {
   category: "general",
 };
 
+const isInstagramReelUrl = (rawUrl: string) => {
+  try {
+    const url = new URL(rawUrl.trim());
+    const host = url.hostname.replace(/^www\./, "");
+    return host === "instagram.com" && /^\/reel\//.test(url.pathname);
+  } catch {
+    return false;
+  }
+};
+
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   pending: { label: "검토 대기", color: "bg-amber-100 text-amber-700" },
   approved: { label: "노출중", color: "bg-green-100 text-green-700" },
@@ -232,8 +242,12 @@ const AdminTipInstagrams = () => {
   useEffect(() => { load(); }, [load]);
 
   const handleAdd = async () => {
-    if (!form.url.trim() || !form.url.includes("instagram.com")) {
+    if (!isInstagramReelUrl(form.url)) {
       toast({ title: "Instagram URL 을 입력해주세요", variant: "destructive" });
+      return;
+    }
+    if (!form.thumbnail_url.trim()) {
+      toast({ title: "썸네일 URL을 입력해주세요", variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -489,7 +503,7 @@ const AdminTipInstagrams = () => {
                 <Input
                   value={form.url}
                   onChange={(e) => setForm({ ...form, url: e.target.value })}
-                  placeholder="https://www.instagram.com/p/XXX/"
+                  placeholder="https://www.instagram.com/reel/XXX/"
                 />
               </div>
               <div className="space-y-1.5">

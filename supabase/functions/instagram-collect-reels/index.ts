@@ -136,13 +136,14 @@ serve(async (req) => {
       }
 
       const media: IgMedia[] = body?.business_discovery?.media?.data ?? [];
-      const reels = media.filter((m) => (m.media_product_type === "REELS" || m.media_type === "VIDEO") && m.permalink && !seen.has(m.permalink!));
+      const reels = media.filter((m) => m.media_product_type === "REELS" && m.permalink && !seen.has(m.permalink!));
 
       const rows: Record<string, unknown>[] = [];
       for (const m of reels) {
         const permalink = m.permalink!;
         let thumb: string | null = null;
         if (m.thumbnail_url) thumb = await rehost(admin, m.thumbnail_url, await sha1Hex(permalink));
+        if (!thumb) continue;
         const caption = (m.caption ?? "").trim();
         const title = caption ? caption.split("\n")[0].slice(0, 80) : null;
         rows.push({
