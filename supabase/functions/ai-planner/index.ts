@@ -77,9 +77,8 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured");
-    }
+    // GEMINI 키 누락 검사는 일반(스트리밍) 경로에서만 — 평가 모드는 OpenAI
+    // 단독으로도 돌 수 있어야 하므로 아래 분기 직전에 확인한다.
 
     // 서버 환경변수 누락 — 클라이언트가 디버깅하기 쉽도록 500 (config 오류)으로 응답.
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -123,8 +122,10 @@ serve(async (req) => {
     if (evalMode?.list_models) {
       const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
       const [g, o] = await Promise.all([
-        fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}&pageSize=100`)
-          .then((r) => r.json()).catch(() => null),
+        GEMINI_API_KEY
+          ? fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}&pageSize=100`)
+              .then((r) => r.json()).catch(() => null)
+          : Promise.resolve(null),
         OPENAI_API_KEY
           ? fetch("https://api.openai.com/v1/models", { headers: { Authorization: `Bearer ${OPENAI_API_KEY}` } })
               .then((r) => r.json()).catch(() => null)
@@ -132,11 +133,18 @@ serve(async (req) => {
       ]);
       return new Response(
         JSON.stringify({
+          gemini_key: !!GEMINI_API_KEY,
+          openai_key: !!OPENAI_API_KEY,
           gemini: (g?.models ?? []).map((m: { name: string }) => m.name),
           openai: (o?.data ?? []).map((m: { id: string }) => m.id),
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // 일반 경로(또는 gemini provider 평가)는 GEMINI 키가 필수.
+    if (!evalMode && !GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     // 일일 사용량 체크는 entitlement 게이트 — 실패하면 fail-closed.
@@ -180,7 +188,7 @@ serve(async (req) => {
     // Fire-and-forget memory extraction on the user's most recent message.
     // 평가 모드는 시나리오 입력이 사용자 기억을 오염시키므로 제외.
     const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
-    if (lastUserMsg?.content && !evalMode) {
+    if (lastUserMsg?.content && !evalMode && GEMINI_API_KEY) {
       extractAndStoreMemories(supabase, user.id, lastUserMsg.content, GEMINI_API_KEY).catch(
         (e) => console.warn("memory extraction (bg) failed:", e),
       );
@@ -237,6 +245,11 @@ serve(async (req) => {
         text = json.choices?.[0]?.message?.content ?? "";
         usage = json.usage ?? null;
       } else {
+        if (!GEMINI_API_KEY) {
+          return new Response(JSON.stringify({ error: "gemini_not_configured" }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         modelUsed = evalMode.model ?? MODELS.geminiFlash;
         const resp = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${modelUsed}:generateContent?key=${GEMINI_API_KEY}`,

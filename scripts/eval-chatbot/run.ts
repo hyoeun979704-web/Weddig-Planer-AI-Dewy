@@ -10,7 +10,12 @@ const URL_BASE = process.env.EVAL_SUPABASE_URL!;
 const ANON = process.env.EVAL_SUPABASE_ANON_KEY!;
 const EMAIL = process.env.EVAL_EMAIL!;
 const PASSWORD = process.env.EVAL_PASSWORD!;
-const JUDGE = { provider: "gemini", model: "gemini-2.5-pro" };
+// judge 는 응시 모델과 분리. GEMINI 가용성이 불확실해 OpenAI 강모델로 채점.
+// (env JUDGE_PROVIDER/JUDGE_MODEL 로 덮어쓸 수 있음)
+const JUDGE = {
+  provider: (process.env.JUDGE_PROVIDER ?? "openai") as "gemini" | "openai",
+  model: process.env.JUDGE_MODEL ?? "gpt-4o",
+};
 
 async function signIn(): Promise<string> {
   const r = await fetch(`${URL_BASE}/auth/v1/token?grant_type=password`, {
