@@ -239,7 +239,9 @@ export function buildUserContext(userData: UserData): string {
   const bs = userData.budgetSettings;
   if (bs) {
     const bits: string[] = [];
-    if (bs.total_budget) bits.push(`총 예산 ${(bs.total_budget / 10000).toFixed(0)}만원`);
+    // budget_settings.total_budget 은 **만원 단위** 저장(예: 1500 = 1,500만원).
+    // 과거 /10000 으로 "총 예산 0만원"이 주입되던 회귀 — 그대로 만원 표기한다.
+    if (bs.total_budget) bits.push(`총 예산 ${Math.round(bs.total_budget).toLocaleString()}만원`);
     if (bs.guest_count) bits.push(`예상 하객 ${bs.guest_count}명`);
     if (bs.region && bs.region !== ws?.wedding_region) bits.push(`예산 기준 지역 ${bs.region}`);
     if (bits.length > 0) parts.push(`예산 정보: ${bits.join(", ")}`);

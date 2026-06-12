@@ -67,6 +67,17 @@ interface EnsuredSession {
 const MEMORY_CHIP_FETCH_DELAY_MS = 1_500;
 const MEMORY_CLOCK_SKEW_MS = 15_000;
 
+// 즉답(비 LLM) 연출 — LLM 응답처럼 "생각" 지연 + 점진 출력. 라우터 즉답이
+// 0.1초 만에 통째로 떠서 기계적으로 보이는 것을 막는다(제품 결정 260612).
+const FAKE_THINK_MIN_MS = 600;
+const FAKE_THINK_JITTER_MS = 700;
+const FAKE_STREAM_MIN_MS = 700;
+const FAKE_STREAM_MAX_MS = 2_300;
+const FAKE_STREAM_MS_PER_CHAR = 7;
+const FAKE_STREAM_CHUNK_CHARS = 9;
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
 export const useAIPlanner = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -134,25 +145,50 @@ export const useAIPlanner = () => {
   }, [user, chatSessions]);
 
   /**
-   * 응답을 **즉시 렌더**하고 영속화(세션 체인 → 행 id 부착)는 백그라운드로.
-   * 즉답 경로(50~200ms)가 DB 왕복을 기다리지 않게 하는 단일 헬퍼 —
+   * 즉답(비 LLM)을 LLM 응답처럼 연출해서 내보내는 단일 헬퍼 —
    * sendMessage 즉답·sendStructured 가 공유한다(중복 차단).
+   *  - "생각하는" 지연(타이핑 인디케이터 노출) 후 점진 출력(fake streaming):
+   *    즉답이 키워드 라우팅임을 사용자가 눈치채지 않게 하는 연출. 이 지연이
+   *    DB 영속화(세션 체인 → 행 id 부착) 시간도 자연스럽게 가려준다.
+   *  - 영속화는 연출과 병렬(베스트에포트) — 완료되면 행 id 를 붙여 만족도
+   *    (👍/👎) 버튼이 나타난다.
    */
-  const appendAndPersistReply = useCallback((
+  const appendAndPersistReply = useCallback(async (
     sessionEnsure: Promise<EnsuredSession>,
     userPersist: Promise<string | null>,
     content: string,
     intentKey: string | null,
-  ) => {
-    setMessages(prev => [...prev, { role: "assistant", content, intent: intentKey, id: null, feedback: null }]);
-    void (async () => {
+  ): Promise<void> => {
+    // 영속화는 연출과 동시에 시작(렌더와 무관하게 진행).
+    const persistPromise: Promise<string | null> = (async () => {
       const { id: sid } = await sessionEnsure;
-      if (!sid) return;
+      if (!sid) return null;
       await userPersist; // user → assistant 기록 순서 보존
-      const rowId = await persistMessage(sid, "assistant", content, intentKey);
+      return persistMessage(sid, "assistant", content, intentKey);
+    })();
+
+    // ① "생각" 지연 — 호출부가 isLoading 을 유지하는 동안 TypingIndicator 가 보인다.
+    await sleep(FAKE_THINK_MIN_MS + Math.random() * FAKE_THINK_JITTER_MS);
+
+    // ② 점진 출력 — 길이에 비례하되 상한으로 답답함 방지.
+    setMessages(prev => [...prev, { role: "assistant", content: "", intent: intentKey, id: null, feedback: null }]);
+    const totalMs = Math.min(FAKE_STREAM_MAX_MS, Math.max(FAKE_STREAM_MIN_MS, content.length * FAKE_STREAM_MS_PER_CHAR));
+    const steps = Math.max(1, Math.ceil(content.length / FAKE_STREAM_CHUNK_CHARS));
+    const stepMs = totalMs / steps;
+    for (let i = 1; i <= steps; i++) {
+      const partial = content.slice(0, Math.min(content.length, i * FAKE_STREAM_CHUNK_CHARS));
+      setMessages(prev => {
+        const lastIdx = prev.length - 1;
+        const last = prev[lastIdx];
+        if (last?.role !== "assistant" || last.id) return prev;
+        return prev.map((m, j) => (j === lastIdx ? { ...m, content: partial } : m));
+      });
+      if (i < steps) await sleep(stepMs);
+    }
+
+    // ③ 영속 행 id 부착 — 출력 완료 후 전체 내용으로 매칭(부분 내용 매칭 미스 방지).
+    void persistPromise.then((rowId) => {
       if (!rowId) return;
-      // 뒤에서부터 같은 내용의 미부착(assistant·id 없음) 메시지를 찾아 id 부착 —
-      // 부착되면 만족도(👍/👎) 버튼이 나타난다.
       setMessages(prev => {
         for (let i = prev.length - 1; i >= 0; i--) {
           const m = prev[i];
@@ -162,7 +198,7 @@ export const useAIPlanner = () => {
         }
         return prev;
       });
-    })();
+    });
   }, [persistMessage]);
 
   /** 이전 채팅 열기 — 저장된 메시지를 불러와 이어서 대화. */
@@ -262,7 +298,7 @@ export const useAIPlanner = () => {
       id ? persistMessage(id, "user", input) : null,
     );
 
-    // 즉답(비 LLM) 응답 — 즉시 렌더 + 백그라운드 기록(공용 헬퍼).
+    // 즉답(비 LLM) 응답 — LLM 연출(생각 지연+점진 출력) + 백그라운드 기록(공용 헬퍼).
     const appendInstantReply = (content: string, intentKey: string | null) =>
       appendAndPersistReply(sessionEnsure, userPersist, content, intentKey);
 
@@ -649,8 +685,8 @@ export const useAIPlanner = () => {
           intent = "budget_planning";
           break;
       }
-      // 즉시 렌더 + 백그라운드 기록(sendMessage 즉답과 동일 헬퍼).
-      appendAndPersistReply(sessionEnsure, userPersist, reply, intent);
+      // LLM 연출 + 백그라운드 기록(sendMessage 즉답과 동일 헬퍼).
+      await appendAndPersistReply(sessionEnsure, userPersist, reply, intent);
     } catch (e) {
       console.error("Structured handler error:", e);
       toast({

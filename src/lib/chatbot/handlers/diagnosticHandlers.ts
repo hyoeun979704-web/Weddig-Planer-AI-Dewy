@@ -6,6 +6,8 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { categories as budgetCategories } from "@/data/budgetData";
+import { formatBudgetAmount } from "@/lib/budgetFormat";
 import { CHECKLIST_TEMPLATE } from "@/data/checklistTemplate";
 
 // ════════════════════════════════════════════════════════════
@@ -20,14 +22,10 @@ const RECOMMENDED_RATIOS: Record<string, number> = {
   etc: 0.05,
 };
 
-const CATEGORY_LABEL: Record<string, string> = {
-  venue: "베뉴 (식장)",
-  sdm: "스드메",
-  ring: "예물·반지",
-  honeymoon: "신혼여행",
-  house: "신혼집·가전",
-  etc: "기타",
-};
+// 라벨 단일 소스: 예산 페이지와 동일(src/data/budgetData.ts categories).
+const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
+  Object.entries(budgetCategories).map(([k, v]) => [k, v.label]),
+);
 
 export const handleBudgetDiagnosis = async (userId: string): Promise<string> => {
   const [settingsRes, itemsRes] = await Promise.all([
@@ -49,7 +47,7 @@ export const handleBudgetDiagnosis = async (userId: string): Promise<string> => 
     return "총 예산이 설정되지 않아 진단할 수 없어요 \n[예산 페이지](/budget)에서 총 예산을 먼저 설정해주세요.";
   }
   if (items.length === 0) {
-    return `총 예산은 ${totalBudget.toLocaleString()}원이에요. 아직 지출 항목이 없어 진단이 어려워요. [예산 페이지](/budget)에서 항목을 추가해주세요.`;
+    return `총 예산은 ${formatBudgetAmount(totalBudget)}이에요. 아직 지출 항목이 없어 진단이 어려워요. [예산 페이지](/budget)에서 항목을 추가해주세요.`;
   }
 
   // 카테고리별 합계
@@ -79,14 +77,14 @@ export const handleBudgetDiagnosis = async (userId: string): Promise<string> => 
       status = " 여유 (~30%)";
     }
     lines.push(
-      `• **${label}**: ${actual.toLocaleString()}원 / 권장 ${recommendedAmount.toLocaleString()}원 ${status}`,
+      `• **${label}**: ${formatBudgetAmount(actual)} / 권장 ${formatBudgetAmount(recommendedAmount)} ${status}`,
     );
   }
 
   const totalSpent = items.reduce((s, i) => s + (i.amount ?? 0), 0);
   const totalRatio = Math.round((totalSpent / totalBudget) * 100);
 
-  let summary = `총 ${totalRatio}% 사용 중 (${totalSpent.toLocaleString()} / ${totalBudget.toLocaleString()}원)`;
+  let summary = `총 ${totalRatio}% 사용 중 (${formatBudgetAmount(totalSpent)} / ${formatBudgetAmount(totalBudget)})`;
   if (totalRatio >= 95) summary += "  예산 거의 소진";
   else if (totalRatio >= 80) summary += "  마지막 체크 필요";
   else if (totalRatio < 30 && items.length < 3) summary += "  초기 단계";
@@ -200,7 +198,7 @@ export const handleContractProgress = async (userId: string): Promise<string> =>
     if (!data || data.count === 0) {
       return `${c.label}:  시작 전`;
     }
-    return `${c.label}:  진행 중 (${data.count}건 · ${data.total.toLocaleString()}원)`;
+    return `${c.label}:  진행 중 (${data.count}건 · ${formatBudgetAmount(data.total)})`;
   }).join("\n");
 
   const startedCount = CATEGORY_FOR_CONTRACT.filter(

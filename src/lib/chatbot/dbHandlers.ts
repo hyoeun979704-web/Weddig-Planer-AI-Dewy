@@ -16,6 +16,8 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { categories as budgetCategories } from "@/data/budgetData";
+import { formatBudgetAmount } from "@/lib/budgetFormat";
 import { CHECKLIST_TEMPLATE } from "@/data/checklistTemplate";
 import {
   handleFavoritesByType,
@@ -146,13 +148,15 @@ export const handleBudget = async (ctx: DbHandlerContext): Promise<string> => {
       .eq("user_id", ctx.userId),
   ]);
 
+  // 주의: budget_settings/budget_items 금액은 **만원 단위** 저장 — 표기는
+  // formatBudgetAmount 단일 소스로 (과거 "1,500원" 오표기 회귀).
   const totalBudget: number | null = settingsRes.data?.total_budget ?? null;
   const items = (itemsRes.data ?? []) as Array<{ category: string; amount: number }>;
 
   if (items.length === 0) {
     return totalBudget
-      ? `총 예산은 **${totalBudget.toLocaleString()}원**으로 설정되어 있어요 \n\n아직 등록된 지출 항목이 없네요. [예산 페이지](/budget)에서 항목을 추가하시면 자세한 분석을 보여드릴 수 있어요.`
-      : "예산 정보가 아직 없어요 \n[예산 페이지](/budget)에서 총 예산과 항목을 등록해주시면 분석해드릴게요!";
+      ? `총 예산은 **${formatBudgetAmount(totalBudget)}**으로 잡혀 있어요. 아직 등록된 지출이 없네요.\n\n[예산 페이지](/budget)에서 계약금·지출을 기록하시면 카테고리별 분석과 페이스 진단을 해드릴게요 💡`
+      : "아직 예산 정보가 없어요.\n[예산 페이지](/budget)에서 총 예산을 설정하고 지출을 기록하면, 제가 사용률·카테고리 분석으로 도와드릴 수 있어요!";
   }
 
   const totalSpent = items.reduce((sum, i) => sum + (i.amount ?? 0), 0);
@@ -160,34 +164,42 @@ export const handleBudget = async (ctx: DbHandlerContext): Promise<string> => {
     acc[i.category] = (acc[i.category] ?? 0) + (i.amount ?? 0);
     return acc;
   }, {});
-  const categoryLines = Object.entries(byCategory)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 6)
-    .map(([cat, amt]) => `- ${budgetCategoryLabel(cat)}: ${amt.toLocaleString()}원`)
+  const sorted = Object.entries(byCategory).sort(([, a], [, b]) => b - a);
+  const top = sorted.slice(0, 6);
+  const categoryLines = top
+    .map(([cat, amt]) => {
+      const share = totalSpent > 0 ? Math.round((amt / totalSpent) * 100) : 0;
+      return `- ${budgetCategoryLabel(cat)}: **${formatBudgetAmount(amt)}** (${share}%)`;
+    })
     .join("\n");
 
-  let header = `현재 등록된 지출 합계는 **${totalSpent.toLocaleString()}원**이에요 `;
-  if (totalBudget) {
+  let header = `지금까지 **${formatBudgetAmount(totalSpent)}** 지출하셨어요.`;
+  if (totalBudget && totalBudget > 0) {
     const ratio = Math.round((totalSpent / totalBudget) * 100);
-    header += `\n총 예산 ${totalBudget.toLocaleString()}원 대비 **${ratio}%** 사용 중`;
-    if (ratio >= 90) header += " ";
-    else if (ratio >= 70) header += " ";
+    const remaining = totalBudget - totalSpent;
+    if (remaining >= 0) {
+      header += `\n총 예산 ${formatBudgetAmount(totalBudget)} 중 **${ratio}%** 사용 — 남은 예산은 **${formatBudgetAmount(remaining)}**이에요.`;
+      if (ratio >= 90) header += " 예산이 거의 소진됐어요. 남은 항목의 잔금부터 확인해보세요 🚨";
+      else if (ratio >= 70) header += " 슬슬 큰 지출은 마무리 단계예요. 잔여 항목을 점검해두면 좋아요 ⚠️";
+      else if (ratio <= 30) header += " 아직 여유가 있어요 🙂";
+    } else {
+      // 예산 초과 — 가장 흔히 놓치는 엣지케이스. 정직하게 초과액을 보여준다.
+      header += `\n총 예산 ${formatBudgetAmount(totalBudget)}을 **${formatBudgetAmount(-remaining)} 초과**했어요 (${ratio}%) 🚨\n예산을 현실에 맞게 올리거나, 남은 항목에서 줄일 곳을 찾아보면 좋아요.`;
+    }
+  } else {
+    header += "\n총 예산이 아직 설정되지 않아 사용률은 계산하지 못했어요. [예산 페이지](/budget)에서 총 예산을 입력해주세요.";
   }
 
-  return `${header}\n\n**카테고리별 지출 (상위 6)**\n${categoryLines}\n\n자세한 항목과 추이는 [예산 페이지](/budget)에서 확인하실 수 있어요.`;
+  const topLabel = top.length > 0 ? budgetCategoryLabel(top[0][0]) : null;
+  const topNote = topLabel ? `\n\n가장 큰 지출은 **${topLabel}**이에요. ` : "\n\n";
+
+  return `${header}\n\n**카테고리별 지출 TOP ${top.length}**\n${categoryLines}${topNote}자세한 항목과 추이는 [예산 페이지](/budget)에서 확인하실 수 있어요.`;
 };
 
-const budgetCategoryLabel = (cat: string): string => {
-  const labels: Record<string, string> = {
-    venue: "베뉴 (식장)",
-    sdm: "스드메",
-    ring: "예물·반지",
-    house: "신혼집·가전",
-    honeymoon: "신혼여행",
-    etc: "기타",
-  };
-  return labels[cat] ?? cat;
-};
+// 라벨은 예산 페이지와 동일한 단일 소스(src/data/budgetData.ts categories)를 쓴다.
+// (과거 일부만 한글 매핑된 자체 사본이 있어 suit/meal/hanbok 이 영문 그대로 노출)
+const budgetCategoryLabel = (cat: string): string =>
+  (budgetCategories as Record<string, { label: string }>)[cat]?.label ?? cat;
 
 // ════════════════════════════════════════════════════════════
 // 일정 (오늘 / 다가오는)
