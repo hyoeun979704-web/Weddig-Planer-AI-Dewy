@@ -9,6 +9,7 @@ import { AI_MEMORIES_QUERY_KEY } from "@/hooks/useAIMemories";
 import { useChatSessions } from "@/hooks/useChatSessions";
 import {
   deleteChatMessage,
+  deleteSession as deleteSessionRow,
   deriveSessionTitle,
   fetchSessionMessages,
   fetchSessions,
@@ -55,6 +56,12 @@ export type Message = {
 
 const CHAT_URL = `${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/ai-planner`;
 
+/** ensureSession 결과 — created 는 이 전송에서 새로 만든 세션인지(전송 취소 시 정리용). */
+interface EnsuredSession {
+  id: string | null;
+  created: boolean;
+}
+
 // L5 확인 칩 — 서버 메모리 추출(fire-and-forget)이 끝나길 기다리는 지연과,
 // 클라/DB 시계 오차(skew)를 흡수하는 조회 버퍼.
 const MEMORY_CHIP_FETCH_DELAY_MS = 1_500;
@@ -100,15 +107,16 @@ export const useAIPlanner = () => {
   /**
    * 활성 세션 보장 — 없으면 첫 메시지로 제목을 지어 생성. 한도 초과(다른 기기에서
    * 이미 꽉 채운 경우 등)면 가장 최근 세션에 이어 쓴다(대화는 끊지 않음).
+   * `created` 는 이 전송에서 새로 만든 세션인지 — 전송 취소(429) 시 빈 세션 정리에 쓴다.
    */
-  const ensureSession = useCallback(async (firstMessageText: string): Promise<string | null> => {
-    if (activeSessionIdRef.current) return activeSessionIdRef.current;
-    if (!user) return null;
+  const ensureSession = useCallback(async (firstMessageText: string): Promise<EnsuredSession> => {
+    if (activeSessionIdRef.current) return { id: activeSessionIdRef.current, created: false };
+    if (!user) return { id: null, created: false };
     try {
       const s = await createSessionRow(user.id, deriveSessionTitle(firstMessageText));
       setActiveSessionId(s.id);
       void chatSessions.refetch();
-      return s.id;
+      return { id: s.id, created: true };
     } catch (e) {
       if (isSessionLimitError(e)) {
         try {
@@ -116,14 +124,46 @@ export const useAIPlanner = () => {
           if (list.length > 0) {
             setActiveSessionId(list[0].id);
             void chatSessions.refetch();
-            return list[0].id;
+            return { id: list[0].id, created: false };
           }
         } catch { /* 아래 공통 처리 */ }
       }
       console.warn("chat session ensure failed:", e);
-      return null; // 영속화 없이 대화 진행
+      return { id: null, created: false }; // 영속화 없이 대화 진행
     }
   }, [user, chatSessions]);
+
+  /**
+   * 응답을 **즉시 렌더**하고 영속화(세션 체인 → 행 id 부착)는 백그라운드로.
+   * 즉답 경로(50~200ms)가 DB 왕복을 기다리지 않게 하는 단일 헬퍼 —
+   * sendMessage 즉답·sendStructured 가 공유한다(중복 차단).
+   */
+  const appendAndPersistReply = useCallback((
+    sessionEnsure: Promise<EnsuredSession>,
+    userPersist: Promise<string | null>,
+    content: string,
+    intentKey: string | null,
+  ) => {
+    setMessages(prev => [...prev, { role: "assistant", content, intent: intentKey, id: null, feedback: null }]);
+    void (async () => {
+      const { id: sid } = await sessionEnsure;
+      if (!sid) return;
+      await userPersist; // user → assistant 기록 순서 보존
+      const rowId = await persistMessage(sid, "assistant", content, intentKey);
+      if (!rowId) return;
+      // 뒤에서부터 같은 내용의 미부착(assistant·id 없음) 메시지를 찾아 id 부착 —
+      // 부착되면 만족도(👍/👎) 버튼이 나타난다.
+      setMessages(prev => {
+        for (let i = prev.length - 1; i >= 0; i--) {
+          const m = prev[i];
+          if (m.role === "assistant" && !m.id && m.content === content) {
+            return prev.map((x, j) => (j === i ? { ...x, id: rowId } : x));
+          }
+        }
+        return prev;
+      });
+    })();
+  }, [persistMessage]);
 
   /** 이전 채팅 열기 — 저장된 메시지를 불러와 이어서 대화. */
   const switchSession = useCallback(async (sessionId: string) => {
@@ -213,28 +253,34 @@ export const useAIPlanner = () => {
     setRecentMemories([]);
 
     // ── 0. 채팅 영속화 — 세션 보장(첫 메시지면 생성) + 사용자 메시지 기록.
-    // 실패해도 대화는 계속(베스트에포트). 즉답·LLM 양 경로 모두 기록된다.
-    const sessionId = user ? await ensureSession(input) : null;
-    const userPersist: Promise<string | null> = sessionId
-      ? persistMessage(sessionId, "user", input)
-      : Promise.resolve(null);
+    // 전부 백그라운드 프로미스 체인(베스트에포트): 즉답 경로(50~200ms)가
+    // DB 왕복을 기다리지 않는다. 기록 순서는 체인이 보장(세션 → user → assistant).
+    const sessionEnsure: Promise<EnsuredSession> = user
+      ? ensureSession(input)
+      : Promise.resolve({ id: null, created: false });
+    const userPersist: Promise<string | null> = sessionEnsure.then(({ id }) =>
+      id ? persistMessage(id, "user", input) : null,
+    );
 
-    // 즉답(비 LLM) 응답도 기록 후 행 id 와 함께 표시 — 만족도 평가 가능하게.
-    const appendInstantReply = async (content: string, intentKey: string | null) => {
-      let rowId: string | null = null;
-      if (sessionId) {
-        await userPersist; // user → assistant 순서 보존
-        rowId = await persistMessage(sessionId, "assistant", content, intentKey);
-        void chatSessions.refetch();
-      }
-      setMessages(prev => [...prev, { role: "assistant", content, intent: intentKey, id: rowId, feedback: null }]);
-    };
+    // 즉답(비 LLM) 응답 — 즉시 렌더 + 백그라운드 기록(공용 헬퍼).
+    const appendInstantReply = (content: string, intentKey: string | null) =>
+      appendAndPersistReply(sessionEnsure, userPersist, content, intentKey);
 
-    // 한도(429) 등으로 전송이 취소되면 방금 기록한 사용자 메시지를 정리(고아 방지).
+    // 한도(429) 등으로 전송이 취소되면 방금 기록한 사용자 메시지와, 이 전송에서
+    // 막 만들어진 빈 세션까지 정리(무료 1슬롯이 답 없는 빈 채팅에 점유되는 것 방지).
     const rollbackUserPersist = () => {
-      void userPersist.then((id) => {
-        if (id && user) deleteChatMessage(user.id, id).catch(() => { /* best-effort */ });
-      });
+      void (async () => {
+        try {
+          const id = await userPersist;
+          if (id && user) await deleteChatMessage(user.id, id);
+          const { id: sid, created } = await sessionEnsure;
+          if (created && sid && user) {
+            await deleteSessionRow(user.id, sid);
+            setActiveSessionId(null);
+            void chatSessions.refetch();
+          }
+        } catch { /* best-effort */ }
+      })();
     };
 
     // ── 1. 클라이언트 사이드 인텐트 게이트 ──────────────────
@@ -483,20 +529,23 @@ export const useAIPlanner = () => {
 
       // 영속화 — 완주한 응답만 저장(중간 끊김 부분답변은 미저장, catch 경로로 감).
       // 행 id 를 마지막 assistant 메시지에 붙여 만족도 평가를 가능하게 한다.
-      if (assistantSoFar && sessionId) {
-        await userPersist;
-        const rowId = await persistMessage(sessionId, "assistant", assistantSoFar, "llm");
-        if (rowId) {
-          setMessages(prev => {
-            const lastIdx = prev.length - 1;
-            const last = prev[lastIdx];
-            if (last?.role === "assistant" && last.content === assistantSoFar) {
-              return prev.map((m, i) => (i === lastIdx ? { ...m, id: rowId, feedback: null } : m));
-            }
-            return prev;
-          });
+      // (세션 목록 refetch 는 안 함 — 목록은 시트를 열 때 staleTime 기준으로 갱신)
+      if (assistantSoFar) {
+        const { id: sid } = await sessionEnsure;
+        if (sid) {
+          await userPersist;
+          const rowId = await persistMessage(sid, "assistant", assistantSoFar, "llm");
+          if (rowId) {
+            setMessages(prev => {
+              const lastIdx = prev.length - 1;
+              const last = prev[lastIdx];
+              if (last?.role === "assistant" && last.content === assistantSoFar) {
+                return prev.map((m, i) => (i === lastIdx ? { ...m, id: rowId, feedback: null } : m));
+              }
+              return prev;
+            });
+          }
         }
-        void chatSessions.refetch(); // updated_at 정렬 갱신
       }
 
       // L5 확인 칩 — 추출은 서버에서 fire-and-forget 으로 돌고 있으므로 잠깐
@@ -535,12 +584,7 @@ export const useAIPlanner = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, toast, user, queryClient, ensureSession, persistMessage, chatSessions, weddingSettings.wedding_style, weddingSettings.excluded_categories]);
-
-  const clearMessages = useCallback(() => {
-    setMessages([]);
-    setRecentMemories([]);
-  }, []);
+  }, [messages, toast, user, queryClient, ensureSession, persistMessage, appendAndPersistReply, chatSessions, weddingSettings.wedding_style, weddingSettings.excluded_categories]);
 
   /** 확인 칩 "맞아요" — 칩만 닫는다(이미 저장돼 있으므로 추가 동작 없음). */
   const confirmRecentMemory = useCallback((id: string) => {
@@ -576,11 +620,13 @@ export const useAIPlanner = () => {
     setIsLoading(true);
     setRecentMemories([]);
 
-    // 구조화 입력도 채팅 기록에 영속(베스트에포트).
-    const sessionId = user ? await ensureSession(userMessageText) : null;
-    const userPersist: Promise<string | null> = sessionId
-      ? persistMessage(sessionId, "user", userMessageText)
-      : Promise.resolve(null);
+    // 구조화 입력도 채팅 기록에 영속 — 백그라운드 체인(베스트에포트), 렌더 비차단.
+    const sessionEnsure: Promise<EnsuredSession> = user
+      ? ensureSession(userMessageText)
+      : Promise.resolve({ id: null, created: false });
+    const userPersist: Promise<string | null> = sessionEnsure.then(({ id }) =>
+      id ? persistMessage(id, "user", userMessageText) : null,
+    );
 
     try {
       let reply: string;
@@ -603,13 +649,8 @@ export const useAIPlanner = () => {
           intent = "budget_planning";
           break;
       }
-      let rowId: string | null = null;
-      if (sessionId) {
-        await userPersist;
-        rowId = await persistMessage(sessionId, "assistant", reply, intent);
-        void chatSessions.refetch();
-      }
-      setMessages(prev => [...prev, { role: "assistant", content: reply, intent, id: rowId, feedback: null }]);
+      // 즉시 렌더 + 백그라운드 기록(sendMessage 즉답과 동일 헬퍼).
+      appendAndPersistReply(sessionEnsure, userPersist, reply, intent);
     } catch (e) {
       console.error("Structured handler error:", e);
       toast({
@@ -625,14 +666,13 @@ export const useAIPlanner = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [toast, user, ensureSession, persistMessage, chatSessions]);
+  }, [toast, user, ensureSession, persistMessage, appendAndPersistReply]);
 
   return {
     messages,
     isLoading,
     sendMessage,
     sendStructured,
-    clearMessages,
     showUpgradeModal,
     setShowUpgradeModal,
     dailyRemaining,
