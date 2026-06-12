@@ -351,10 +351,13 @@ export default function MergeGame() {
         )}
       </div>
 
-      {/* 광고 배너 — 캔버스 아래 남는 공간 전부를 채운다(헤더+게임+배너 = 한 화면).
+      {/* 광고 배너 — 게임 보드를 밀지 않도록 하단 고정 높이 슬롯에 노출한다.
           웹=AdSense 슬롯 4600179427 / 네이티브=AdMob. */}
-      <div className="flex-1 min-h-0 w-full overflow-hidden">
-        <AdBanner className="w-full h-full" fill placeholder />
+      <div className="mt-auto shrink-0 relative w-full overflow-hidden">
+        <div aria-hidden style={{ height: 'calc(116px + var(--safe-bottom))' }} />
+        <div className="absolute inset-x-0 top-0 h-full overflow-hidden px-3 pt-2 pb-[calc(var(--safe-bottom)+8px)]">
+          <AdBanner className="mx-auto w-full max-w-[360px] rounded-lg" height={100} placeholder />
+        </div>
       </div>
 
       {/* 웹 보상형 대체 모달 — 한 판 더(5초)·포인트 2배(15초) 공용, adCfg 로 문구·카운트다운 전환. */}

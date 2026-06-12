@@ -63,14 +63,14 @@ const AdBanner = ({
   }
 
   return (
-    <div className={className} style={fill ? { overflow: "hidden" } : { minHeight: height, overflow: "hidden" }}>
+    <div className={className} style={fill ? { overflow: "hidden" } : { height, overflow: "hidden" }}>
       <ins
         className="adsbygoogle"
-        style={{ display: "block", width: "100%", height: fill ? "100%" : undefined }}
+        style={{ display: "block", width: "100%", height: fill ? "100%" : `${height}px` }}
         data-ad-client={ADSENSE_CLIENT}
         data-ad-slot={ADSENSE_BANNER_SLOT}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
+        data-ad-format="horizontal"
+        data-full-width-responsive="false"
       />
     </div>
   );
