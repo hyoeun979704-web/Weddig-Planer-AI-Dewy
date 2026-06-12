@@ -270,10 +270,9 @@ export default function MergeGame() {
         </div>
       )}
 
-      {/* 게임 캔버스 영역 — 캔버스는 가로폭=화면폭으로 헤더 바로 아래에 붙는다(높이는 비율,
-          위 여백 X). Game 은 항상 마운트, 비플레이 시 오버레이가 캔버스 위를 덮는다.
-          캔버스 아래 남는 공간 전부가 광고 배너 영역(아래 flex-1). */}
-      <div className="shrink-0 overflow-hidden relative" onClick={() => showRanking && setShowRanking(false)}>
+      {/* 게임 캔버스 영역 — 헤더와 광고 사이 남는 높이를 채운다.
+          Game 은 항상 마운트, 비플레이 시 오버레이가 캔버스 위를 덮는다. */}
+      <div className="flex-1 min-h-0 overflow-hidden relative" onClick={() => showRanking && setShowRanking(false)}>
         <Game ref={gameRef} onScoreChange={handleScoreChange} onGameOver={handleGameOver} bestScore={effectiveBest} />
 
         {/* 시작/게임오버/잠금 오버레이 (플레이 중이 아닐 때) */}
@@ -354,9 +353,9 @@ export default function MergeGame() {
       {/* 광고 배너 — 게임 보드를 밀지 않도록 하단 고정 높이 슬롯에 노출한다.
           웹=AdSense 슬롯 4600179427 / 네이티브=AdMob. */}
       <div className="mt-auto shrink-0 relative w-full overflow-hidden">
-        <div aria-hidden style={{ height: 'calc(116px + var(--safe-bottom))' }} />
-        <div className="absolute inset-x-0 top-0 h-full overflow-hidden px-3 pt-2 pb-[calc(var(--safe-bottom)+8px)]">
-          <AdBanner className="mx-auto w-full max-w-[360px] rounded-lg" height={100} placeholder />
+        <div aria-hidden style={{ height: 'calc(100px + var(--safe-bottom))' }} />
+        <div className="absolute inset-x-0 top-0 h-full overflow-hidden pb-[var(--safe-bottom)]">
+          <AdBanner className="w-full" height={100} placeholder />
         </div>
       </div>
 

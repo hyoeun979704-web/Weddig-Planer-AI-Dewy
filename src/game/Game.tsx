@@ -107,7 +107,11 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
     const measure = () => {
       const cw = el.clientWidth;
       if (cw <= 0) return;
-      setCanvasSize({ w: cw, h: Math.round((cw * GAME_HEIGHT) / GAME_WIDTH) });
+      const ch = el.clientHeight;
+      setCanvasSize({
+        w: cw,
+        h: ch > 0 ? ch : Math.round((cw * GAME_HEIGHT) / GAME_WIDTH),
+      });
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -473,7 +477,7 @@ export const Game = forwardRef<GameHandle, GameProps>(function Game(
   return (
     <div
       ref={fitRef}
-      className="w-full select-none overflow-hidden"
+      className="w-full h-full select-none overflow-hidden"
       style={{ backgroundColor: '#fbe6ee' }}
     >
       {/* 캔버스 — 가로폭 = 컨테이너(화면) 폭, 높이는 비율(width-fit). HUD/음소거는 캔버스에 직접 그림. */}

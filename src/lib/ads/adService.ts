@@ -124,7 +124,7 @@ export async function showBanner(): Promise<void> {
     const mod = await import(/* @vite-ignore */ ADMOB_PKG);
     await admob.showBanner({
       adId: ADMOB_BANNER_ID,
-      adSize: mod.BannerAdSize.ADAPTIVE_BANNER ?? mod.BannerAdSize.BANNER,
+      adSize: mod.BannerAdSize.LARGE_BANNER ?? mod.BannerAdSize.BANNER,
       position: mod.BannerAdPosition.BOTTOM_CENTER,
       margin: 0,
     });
