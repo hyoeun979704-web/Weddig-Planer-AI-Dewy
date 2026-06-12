@@ -283,10 +283,16 @@ describe("matchIntent — 평가 시나리오 라우팅 회귀", () => {
     expect(matchIntent("디데이 며칠 남았어?")?.intent).toBe("dday");
   });
 
-  // ⚠️ 현황 고정(갭): 자연어로 풀어 쓴 체크리스트 질문은 키워드 라우터에 안 잡혀
-  // LLM 으로 흐른다. 즉 실데이터 인용 없이 LLM 이 체크리스트를 지어낼 위험(③b/⑤a).
-  // 개선(P1 복합조건 파싱) 시 이 기대를 'checklist 라우팅'으로 바꾸면 회귀가 드러난다.
-  it("자연어 체크리스트 질문은 현재 LLM 폴백 (개선 대상)", () => {
-    expect(matchIntent("내 체크리스트에서 안 끝난 것 중 제일 중요한 게 뭐야?")).toBeNull();
+  // DB 즉답 디테일화: 자연어 체크리스트·예산 질문도 이제 실데이터 핸들러로 라우팅
+  // (LLM 환각 차단). 개선 전엔 LLM 폴백(null)이던 갭을 메움.
+  it("자연어 체크리스트 질문이 DB 핸들러로", () => {
+    expect(matchIntent("내 체크리스트에서 안 끝난 것 중 제일 중요한 게 뭐야?")?.dbHandler).toBe("checklist_progress");
+    expect(matchIntent("남은 체크리스트 뭐야?")?.dbHandler).toBe("checklist_progress");
+    expect(matchIntent("할 일 몇 개 남았어?")?.dbHandler).toBe("checklist_progress");
+  });
+
+  it("자연어 예산 질문이 DB 핸들러로", () => {
+    expect(matchIntent("예산 얼마나 남았어?")?.dbHandler).toBe("budget");
+    expect(matchIntent("남은 예산 보여줘")?.dbHandler).toBe("budget");
   });
 });

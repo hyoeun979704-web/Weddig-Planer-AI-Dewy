@@ -6,11 +6,15 @@ import { BASE_SYSTEM_PROMPT } from "./prompt.ts";
 import { fetchUserData, buildUserContext } from "./user-data.ts";
 import { extractAndStoreMemories } from "./memory.ts";
 import { ALWAYS_ON_CAPSULES, buildConditionalCapsules } from "./domain-capsules.ts";
+import { buildPriceGrounding } from "./grounding.ts";
 
 
-const FREE_DAILY_LIMIT = 5;
+// 사용 한도: 무료 일 10회 / 프리미엄 분당 10회 + 일 200회(남용 방지선).
+const FREE_DAILY_LIMIT = 10;
+const PREMIUM_PER_MINUTE = 10;
+const PREMIUM_DAILY_LIMIT = 200;
 // 본경로 채팅 모델 — OpenAI 단일(gpt-4o). 환각 약점은 프롬프트 불확실성 계약(L3)+
-// 추후 근거주입(RAG)으로 보강. eval 모드는 model_override 로 다른 모델 비교 가능.
+// 근거주입(L2 RAG)으로 보강. eval 모드는 model_override 로 다른 모델 비교 가능.
 const CHAT_MODEL = "gpt-4o";
 
 interface Message {
@@ -19,7 +23,7 @@ interface Message {
 }
 
 // deno-lint-ignore no-explicit-any
-async function checkAndIncrementUsage(supabase: any, userId: string): Promise<{ allowed: boolean; remaining: number; isPremium: boolean }> {
+async function checkAndIncrementUsage(supabase: any, userId: string): Promise<{ allowed: boolean; remaining: number; isPremium: boolean; blockedBy: string | null }> {
   const today = new Date().toISOString().split("T")[0];
 
   const { data: sub } = await supabase
@@ -35,23 +39,25 @@ async function checkAndIncrementUsage(supabase: any, userId: string): Promise<{ 
     ((sub.trial_ends_at && new Date(sub.trial_ends_at) > now) ||
      (sub.expires_at && new Date(sub.expires_at) > now));
 
-  // 원자적 check-and-increment — 한도 미만일 때만 +1 하고 새 카운트 반환, 한도 도달이면
-  // NULL. 이전엔 SELECT 후 별도 RPC 로 +1 하는 비원자 구조라 동시 요청이 같은 카운트를
-  // 읽고 둘 다 통과(한도 초과)할 수 있었다. premium 은 사실상 무제한(큰 limit)으로 추적.
-  const limit = isPremium ? 2_147_483_647 : FREE_DAILY_LIMIT;
-  const { data: newCount, error: gateError } = await supabase.rpc("increment_ai_usage_if_allowed", {
+  // 일/분 동시 원자 게이트 — 무료는 일 10회(분당 동일=추가 제약 없음),
+  // 프리미엄은 분당 10회 + 일 200회(남용 방지선). 한도 도달이면 allowed=false.
+  const minuteLimit = isPremium ? PREMIUM_PER_MINUTE : FREE_DAILY_LIMIT;
+  const dailyLimit = isPremium ? PREMIUM_DAILY_LIMIT : FREE_DAILY_LIMIT;
+  const { data: gate, error: gateError } = await supabase.rpc("increment_ai_usage_gated", {
     p_user_id: userId,
     p_date: today,
-    p_limit: limit,
+    p_minute_limit: minuteLimit,
+    p_daily_limit: dailyLimit,
   });
-  // 게이트 실패(에러) 또는 한도 도달(null) → fail-closed 거부(강한 정합성, 비용 차단).
-  if (gateError || newCount == null) {
-    return { allowed: false, remaining: 0, isPremium };
+  // 게이트 실패(에러)도 fail-closed 거부(강한 정합성, 비용 차단).
+  if (gateError || !gate?.allowed) {
+    return { allowed: false, remaining: 0, isPremium, blockedBy: gate?.blocked_by ?? "daily" };
   }
   return {
     allowed: true,
-    remaining: isPremium ? -1 : Math.max(0, FREE_DAILY_LIMIT - (newCount as number)),
+    remaining: isPremium ? -1 : Math.max(0, FREE_DAILY_LIMIT - (gate.daily_count as number)),
     isPremium,
+    blockedBy: null,
   };
 }
 
@@ -158,17 +164,23 @@ serve(async (req) => {
     // 일일 사용량 체크는 entitlement 게이트 — 실패하면 fail-closed.
     // (평가 모드는 내부 측정이라 게이트·메모리 추출을 모두 건너뛴다)
     const usageResult = evalMode
-      ? { allowed: true, remaining: -1, isPremium: true }
+      ? { allowed: true, remaining: -1, isPremium: true, blockedBy: null }
       : await checkAndIncrementUsage(supabase, user.id);
     const dailyRemaining = usageResult.remaining;
 
     if (!usageResult.allowed) {
+      // 분당 rate-limit(주로 프리미엄 폭주) vs 일일 한도 구분 — UX·클라 분기.
+      const isMinute = usageResult.blockedBy === "minute";
       return new Response(
         JSON.stringify({
-          error: "daily_limit",
-          message: "오늘의 무료 질문 5회를 모두 사용했어요",
+          error: isMinute ? "rate_limit" : "daily_limit",
+          message: isMinute
+            ? "잠시만요! 요청이 너무 빨라요. 잠시 후 다시 시도해 주세요."
+            : usageResult.isPremium
+              ? "오늘 사용량이 많아 잠시 제한됐어요. 잠시 후 다시 이용해 주세요."
+              : `오늘의 무료 질문 ${FREE_DAILY_LIMIT}회를 모두 사용했어요`,
           remaining: 0,
-          upgrade_url: "/premium",
+          upgrade_url: usageResult.isPremium ? undefined : "/premium",
         }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "X-Daily-Remaining": "0" } },
       );
@@ -178,10 +190,18 @@ serve(async (req) => {
     // (judge 호출(raw_system)은 컨텍스트 자체가 오염원이라 로드하지 않음)
     let userContext = "";
     let conditionalCapsules = "";
+    let priceGrounding = "";
+    const lastUserContent = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
     if (!evalMode?.raw_system) try {
       const userData = await fetchUserData(supabase, user.id);
       userContext = buildUserContext(userData);
       conditionalCapsules = buildConditionalCapsules(userData.weddingSettings);
+      // L2 근거주입(RAG): 가격 질문이면 지역 평균 시세를 근거로 주입(환각 차단).
+      priceGrounding = buildPriceGrounding(
+        lastUserContent,
+        userData.budgetSettings?.region ?? userData.weddingSettings?.wedding_region,
+        userData.budgetSettings?.guest_count,
+      );
       console.log(
         "User context loaded for:", user.id,
         "premium:", usageResult.isPremium,
@@ -206,7 +226,7 @@ serve(async (req) => {
     // 접두를 캐시(입력비↓). 동적(페르소나 캡슐+사용자 컨텍스트)은 별도 메시지로
     // 뒤에 붙여 정적 접두의 캐시 적중을 깨지 않게 한다.
     const staticPrompt = BASE_SYSTEM_PROMPT + ALWAYS_ON_CAPSULES;
-    const dynamicContext = conditionalCapsules + userContext;
+    const dynamicContext = conditionalCapsules + userContext + priceGrounding;
     const systemPrompt = evalMode?.raw_system ?? staticPrompt + dynamicContext;
 
     // ───── 평가 모드 생성: 모델 교체 + 비스트리밍 + 지연/토큰 측정 ─────
