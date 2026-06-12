@@ -14,6 +14,7 @@ import {
   Home,
   LogOut,
   Instagram,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +45,7 @@ const navItems: NavItem[] = [
   { label: "인스타 카드뉴스", href: "/admin/instagram-posts", icon: Instagram, badge: "1단계" },
   { label: "사전알림 신청", href: "/admin/service-waitlist", icon: Bell },
   { label: "사용자 관리", href: "/admin/users", icon: Users },
+  { label: "1:1 문의·불편접수", href: "/admin/inquiries", icon: MessageSquare },
 ];
 
 const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutProps) => {

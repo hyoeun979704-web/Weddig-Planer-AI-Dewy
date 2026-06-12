@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Send, MessageSquare, Mail } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Send, Mail, Headset } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
@@ -12,14 +12,20 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContactConfig } from "@/hooks/useAppConfig";
+import { INQUIRY_CATEGORIES } from "@/lib/inquiryCategories";
 
 const Contact = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const contact = useContactConfig();
-  const [category, setCategory] = useState("");
+  // 오류 화면·CX 챗봇에서 ?category=&context= 로 진입하면 미리 채워준다.
+  const [searchParams] = useSearchParams();
+  const [category, setCategory] = useState(searchParams.get("category") ?? "");
   const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState(() => {
+    const ctx = searchParams.get("context");
+    return ctx ? `[발생 위치] ${ctx}\n\n` : "";
+  });
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,6 +74,15 @@ const Contact = () => {
           <p className="text-xs text-muted-foreground text-center mt-3">
             운영시간: 평일 10:00 - 18:00 (주말/공휴일 휴무)
           </p>
+          {/* CX 챗봇 우선 안내 — 즉시 해결 가능한 문제는 챗봇이 빠르다 */}
+          <button
+            type="button"
+            onClick={() => navigate("/support")}
+            className="w-full mt-3 flex items-center justify-center gap-2 py-3 bg-primary/10 rounded-xl border border-primary/20 active:scale-[0.98] transition-all"
+          >
+            <Headset className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium text-primary">고객센터 챗봇으로 바로 해결해 보기</span>
+          </button>
         </div>
 
         {/* Form */}
@@ -79,12 +94,9 @@ const Contact = () => {
                 <SelectValue placeholder="문의 유형을 선택하세요" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="reservation">예약 문의</SelectItem>
-                <SelectItem value="payment">결제 문의</SelectItem>
-                <SelectItem value="cancel">취소/환불 문의</SelectItem>
-                <SelectItem value="service">서비스 이용 문의</SelectItem>
-                <SelectItem value="partnership">제휴/입점 문의</SelectItem>
-                <SelectItem value="other">기타 문의</SelectItem>
+                {INQUIRY_CATEGORIES.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

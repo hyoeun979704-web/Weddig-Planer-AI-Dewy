@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { MessageSquare, Calendar, Loader2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MessageSquare, Calendar, Loader2, ThumbsUp, ThumbsDown } from "lucide-react";
+import { toast } from "sonner";
+import { inquiryCategoryLabel } from "@/lib/inquiryCategories";
 import PageHeader from "@/components/PageHeader";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +15,7 @@ interface Inquiry {
   content: string;
   status: string;
   answer: string | null;
+  feedback: "up" | "down" | null;
   created_at: string;
 }
 
@@ -21,18 +24,25 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: "대기중", color: "bg-amber-100 text-amber-700" },
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  reservation: "예약 문의",
-  payment: "결제 문의",
-  cancel: "취소/환불 문의",
-  service: "서비스 이용 문의",
-  partnership: "제휴/입점 문의",
-  other: "기타 문의",
-};
-
 const MyInquiries = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // 답변 만족도(CSAT) — 같은 평가 재탭 시 철회. RLS+트리거가 feedback 외 수정 차단.
+  const feedbackMutation = useMutation({
+    mutationFn: async ({ id, feedback }: { id: string; feedback: "up" | "down" | null }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from("inquiries")
+        .update({ feedback })
+        .eq("id", id)
+        .eq("user_id", user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["my-inquiries"] }),
+    onError: () => toast.error("평가를 저장하지 못했어요. 잠시 후 다시 시도해 주세요."),
+  });
 
   const { data: inquiries = [], isLoading } = useQuery({
     queryKey: ["my-inquiries", user?.id],
@@ -40,7 +50,7 @@ const MyInquiries = () => {
       if (!user) return [];
       const { data, error } = await (supabase as any)
         .from("inquiries")
-        .select("id, category, title, content, status, answer, created_at")
+        .select("id, category, title, content, status, answer, feedback, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -92,7 +102,7 @@ const MyInquiries = () => {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <span className="text-xs text-muted-foreground">
-                        {CATEGORY_LABELS[item.category] ?? item.category}
+                        {inquiryCategoryLabel(item.category)}
                       </span>
                       <h3 className="font-medium text-foreground">{item.title}</h3>
                     </div>
@@ -111,6 +121,32 @@ const MyInquiries = () => {
                       <p className="text-sm text-muted-foreground whitespace-pre-line">
                         {item.answer}
                       </p>
+                      {/* 답변 만족도 — CX 품질 루프(운영자 화면에 표시됨) */}
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/60">
+                        <span className="text-[11px] text-muted-foreground">답변이 도움이 됐나요?</span>
+                        <button
+                          onClick={() => feedbackMutation.mutate({ id: item.id, feedback: item.feedback === "up" ? null : "up" })}
+                          disabled={feedbackMutation.isPending}
+                          className={`p-1 rounded-md active:scale-90 transition-all ${
+                            item.feedback === "up" ? "text-primary bg-primary/10" : "text-muted-foreground/60 hover:text-foreground"
+                          }`}
+                          aria-label="도움이 됐어요"
+                          aria-pressed={item.feedback === "up"}
+                        >
+                          <ThumbsUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => feedbackMutation.mutate({ id: item.id, feedback: item.feedback === "down" ? null : "down" })}
+                          disabled={feedbackMutation.isPending}
+                          className={`p-1 rounded-md active:scale-90 transition-all ${
+                            item.feedback === "down" ? "text-destructive bg-destructive/10" : "text-muted-foreground/60 hover:text-foreground"
+                          }`}
+                          aria-label="아쉬워요"
+                          aria-pressed={item.feedback === "down"}
+                        >
+                          <ThumbsDown className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   )}
 

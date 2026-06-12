@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Calendar, User, Bell, FileText, MessageSquare,
   HelpCircle, Settings, ChevronRight, LogOut, Building2, Heart,
-  Mail, Shirt, Sparkles, Shield, Palette, Scissors
+  Mail, Shirt, Sparkles, Shield, Palette, Scissors, Headset
 } from "lucide-react";
 import { User as SupaUser } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -84,6 +84,7 @@ const MenuSection = ({
     {
       title: "고객 지원",
       items: [
+        { icon: Headset, title: "고객센터 챗봇", description: "불편한 점 바로 해결 · 안 풀리면 담당자 연결", href: "/support" },
         { icon: MessageSquare, title: "1:1 문의", description: "고객센터 문의하기", href: "/contact" },
         { icon: HelpCircle, title: "자주 묻는 질문", description: "FAQ", href: "/faq" },
       ],

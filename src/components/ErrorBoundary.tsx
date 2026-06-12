@@ -87,6 +87,17 @@ export class ErrorBoundary extends Component<Props, State> {
         >
           새로고침
         </button>
+        {/* 새로고침으로도 안 풀리는 불편 → CX 챗봇으로 접수(라우터 밖이라 a 태그). */}
+        {!chunk && (
+          <a
+            href={`/support?context=${encodeURIComponent(
+              `${window.location.pathname} 화면 오류: ${this.state.error?.message ?? "unknown"}`.slice(0, 300),
+            )}`}
+            className="text-xs text-muted-foreground underline underline-offset-2"
+          >
+            계속 안 되면 고객센터에 알려주세요 →
+          </a>
+        )}
       </div>
     );
   }
