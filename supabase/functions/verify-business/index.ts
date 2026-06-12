@@ -57,63 +57,87 @@ serve(async (req) => {
 
     const cleanBizNum = business_number.replace(/-/g, "");
 
-    // Verify business number via 국세청 API
-    let isVerified = false;
-    let verificationMessage = "";
-    // NTS 가 명시적으로 "불일치"를 반환한 경우(API 미연결/오류와 구분).
-    let verificationFailed = false;
-
-    if (NTS_API_KEY) {
-      try {
-        const verifyResp = await fetch(
-          `https://api.odcloud.kr/api/nts-businessman/v1/validate?serviceKey=${encodeURIComponent(NTS_API_KEY)}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              businesses: [
-                {
-                  b_no: cleanBizNum,
-                  start_dt: open_date?.replace(/-/g, "") || "",
-                  p_nm: representative_name,
-                  p_nm2: "",
-                  b_nm: business_name,
-                  corp_no: "",
-                  b_sector: "",
-                  b_type: "",
-                },
-              ],
-            }),
-          }
-        );
-
-        if (verifyResp.ok) {
-          const verifyData = await verifyResp.json();
-          const result = verifyData.data?.[0];
-          console.log("NTS verification result:", JSON.stringify(result));
-
-          if (result?.valid === "01") {
-            isVerified = true;
-            verificationMessage = "사업자 인증이 완료되었습니다!";
-          } else {
-            verificationFailed = true;
-            verificationMessage =
-              result?.valid_msg || "사업자 정보가 일치하지 않습니다. 입력 정보를 확인해주세요.";
-          }
-        } else {
-          console.warn("NTS API response not ok:", verifyResp.status);
-          verificationMessage = "인증 서버 연결에 실패했습니다. 관리자 확인 후 인증됩니다.";
-        }
-      } catch (e) {
-        console.warn("NTS API call error:", e);
-        verificationMessage = "인증 서버 연결에 실패했습니다. 관리자 확인 후 인증됩니다.";
-      }
-    } else {
-      verificationMessage = "사업자 인증 API가 설정되지 않았습니다. 관리자 확인 후 인증됩니다.";
+    // ── 사업자 인증 강제 게이트 ──────────────────────────────
+    // 국세청(NTS) 인증에 성공한 경우에만 가입(신청)을 받는다.
+    // 정책 변경(260612): 과거에는 인증 실패도 미인증(pending)으로 접수했지만,
+    // 사업자등록이 확인되지 않으면 기업회원 신청 자체를 차단한다.
+    //  - 불일치(명시적 invalid) → 400 거절 (프로필·역할 미생성)
+    //  - API 미설정/장애 → 503 "잠시 후 재시도" (정상 사업자 오인 차단 방지 —
+    //    무인증 통과는 정책상 불가하므로 복구까지 신청이 일시 중단된다)
+    if (!NTS_API_KEY) {
+      console.error("verify-business: NTS_API_KEY not configured — registrations are blocked");
+      return new Response(
+        JSON.stringify({ error: "사업자 인증 서비스 점검 중이에요. 잠시 후 다시 시도해 주세요." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // If API says invalid, still allow registration but mark as unverified
-    // (admin can verify later)
+    let isVerified = false;
+    let invalidMessage = "";
+    try {
+      // 공공데이터포털 키는 Encoding(이미 %로 URL 인코딩됨)/Decoding(원문) 두 형식이
+      // 있고, 개편된 포털은 한 가지만 보여준다. 어느 쪽을 등록해도 동작하도록
+      // %-시퀀스가 보이면 그대로, 아니면 우리가 인코딩한다(이중 인코딩 방지).
+      const serviceKey = /%[0-9A-Fa-f]{2}/.test(NTS_API_KEY)
+        ? NTS_API_KEY
+        : encodeURIComponent(NTS_API_KEY);
+      const verifyResp = await fetch(
+        `https://api.odcloud.kr/api/nts-businessman/v1/validate?serviceKey=${serviceKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            businesses: [
+              {
+                b_no: cleanBizNum,
+                start_dt: open_date?.replace(/-/g, "") || "",
+                p_nm: representative_name,
+                p_nm2: "",
+                b_nm: business_name,
+                corp_no: "",
+                b_sector: "",
+                b_type: "",
+              },
+            ],
+          }),
+        }
+      );
+
+      if (!verifyResp.ok) {
+        console.warn("NTS API response not ok:", verifyResp.status);
+        return new Response(
+          JSON.stringify({ error: "사업자 인증 서버 연결에 실패했어요. 잠시 후 다시 시도해 주세요." }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const verifyData = await verifyResp.json();
+      const result = verifyData.data?.[0];
+      console.log("NTS verification result:", JSON.stringify(result));
+      if (result?.valid === "01") {
+        isVerified = true;
+      } else {
+        invalidMessage =
+          result?.valid_msg || "사업자 정보가 일치하지 않습니다. 입력 정보를 확인해주세요.";
+      }
+    } catch (e) {
+      console.warn("NTS API call error:", e);
+      return new Response(
+        JSON.stringify({ error: "사업자 인증 서버 연결에 실패했어요. 잠시 후 다시 시도해 주세요." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!isVerified) {
+      // 사업자등록 미확인 → 신청 자체를 거절 (프로필·역할 미생성).
+      return new Response(
+        JSON.stringify({
+          error: `사업자 인증에 실패했어요. ${invalidMessage} 사업자등록번호·상호명·대표자명·개업일자를 확인해 주세요.`,
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const verificationMessage = "사업자 인증이 완료되었습니다!";
+    const verificationFailed = false;
 
     // 사업자번호가 다른 사용자에게 이미 귀속돼 있으면 차단.
     const { data: bizOwner } = await supabase

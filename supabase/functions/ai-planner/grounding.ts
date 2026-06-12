@@ -114,11 +114,15 @@ const VENDOR_CATEGORY_KEYWORDS: Record<string, string> = {
   허니문: "honeymoon", 신혼여행: "honeymoon",
   예물: "jewelry", 반지: "jewelry", 쥬얼리: "jewelry",
   가전: "appliance", 혼수: "appliance",
+  // 기타 — 본식DVD·스냅류·네일·관리·축가·부케 등 (클라 미러)
+  스냅: "etc", DVD: "etc", dvd: "etc", 네일: "etc", 피부관리: "etc", 체형관리: "etc",
+  축가: "etc", 축의대: "etc", 부케: "etc", 브라이덜샤워: "etc", 장소대여: "etc",
 };
 
 const VENDOR_CATEGORY_LABEL: Record<string, string> = {
   wedding_hall: "웨딩홀", studio: "스튜디오", dress_shop: "드레스샵", makeup_shop: "메이크업샵",
   hanbok: "한복", suit: "예복", honeymoon: "신혼여행", jewelry: "예물·반지", appliance: "가전·혼수",
+  etc: "기타",
 };
 
 // 추천·탐색 의도 어휘. "촬영 일정" 같은 비추천 문장 오탐을 줄이려고

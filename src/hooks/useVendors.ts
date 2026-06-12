@@ -34,6 +34,7 @@ export const VENDOR_CATEGORIES = [
   "혼수",
   "청첩장",
   "웨딩플래너",
+  "기타",
 ] as const;
 
 export type VendorCategoryType = typeof VENDOR_CATEGORIES[number];
@@ -51,6 +52,8 @@ export const categoryRouteMap: Record<string, { listPath: string; detailPath: st
   "혼수": { listPath: "/vendors/혼수", detailPath: "/appliances", label: "혼수·가전", emoji: "" },
   "청첩장": { listPath: "/vendors/청첩장", detailPath: "/invitation-venues", label: "청첩장", emoji: "" },
   "웨딩플래너": { listPath: "/vendors/웨딩플래너", detailPath: "/vendor", label: "웨딩플래너", emoji: "" },
+  // 기타 — 본식DVD·스냅류·네일·관리·축가·부케 등(전용 detail 테이블 없음 → /vendor 공용).
+  "기타": { listPath: "/vendors/기타", detailPath: "/vendor", label: "기타", emoji: "" },
 };
 
 // Joined select used by both useVendors and useRecommendedVendors so cards
@@ -82,7 +85,12 @@ export const useVendors = (categoryType?: string) => {
         ? KOREAN_TO_PLACE_CATEGORY[categoryType] || categoryType
         : undefined;
       const cardTable = placeCat ? CATEGORY_CARD_TABLE[placeCat] : undefined;
-      const selectClause = cardTable ? `*, ${cardTable}(*)` : VENDOR_WITH_CATEGORY_SELECT;
+      // detail 테이블이 없는 카테고리(기타 등)는 join 없이 places 만 — 9-join over-fetch 방지.
+      const selectClause = cardTable
+        ? `*, ${cardTable}(*)`
+        : placeCat
+          ? "*"
+          : VENDOR_WITH_CATEGORY_SELECT;
 
       let query = supabase
         .from("places")

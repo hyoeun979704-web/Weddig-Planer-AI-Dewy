@@ -1,5 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronDown } from "lucide-react";
+import AllCategoriesSheet from "@/components/home/AllCategoriesSheet";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import weddingHallImg from "@/assets/categories/wedding-hall.png";
 import studioImg from "@/assets/categories/studio.png";
@@ -12,9 +14,10 @@ import invitationImg from "@/assets/categories/invitation.png";
 
 type ImageSrc = string | { src: string; width: number; height: number };
 
-interface CategoryItem {
+export interface CategoryItem {
   label: string;
-  image: ImageSrc;
+  /** 없으면 emoji 로 렌더 (이미지 에셋이 아직 없는 카테고리) */
+  image?: ImageSrc;
   path: string;
   emoji: string;
   // When set, the tile is hidden if this skippable category is in
@@ -32,6 +35,9 @@ const baseTiles: CategoryItem[] = [
   { label: "가전·혼수", image: applianceImg, path: "/appliances", emoji: "", excludeKey: "appliance" },
   { label: "예물·예단", image: jewelryImg, path: "/jewelry", emoji: "" },
   { label: "허니문", image: honeymoonImg, path: "/honeymoon", emoji: "", excludeKey: "honeymoon" },
+  // 기타 — 본식DVD·스냅류·네일아트·피부/체형관리·축가·축의대·부케·브라이덜샤워·
+  // 장소대여 등 잔여 웨딩 업체(추후 업체가 늘면 단일 카테고리로 분리).
+  { label: "기타", path: "/vendors/기타", emoji: "🎀" },
 ];
 
 // Style-specific replacement tiles surfaced in slots freed up by excluded
@@ -59,14 +65,17 @@ const TILE_PRIORITY: Record<"self" | "small", string[]> = {
   small: ["스드메", "한복", "예복", "청첩장 모임", "웨딩홀", "허니문", "예물·예단", "가전·혼수"],
 };
 
-const Tile = ({ item, onClick }: { item: CategoryItem; onClick: () => void }) => {
-  const src = typeof item.image === "string" ? item.image : item.image.src;
+export const Tile = ({ item, onClick }: { item: CategoryItem; onClick: () => void }) => {
+  const src = item.image ? (typeof item.image === "string" ? item.image : item.image.src) : null;
   return (
     <button
       onClick={onClick}
       className="flex flex-col items-center gap-1.5 group active:scale-95 transition-transform"
     >
       <div className="w-[68.25px] h-[68.25px] rounded-[20px] overflow-hidden bg-white flex items-center justify-center">
+        {src === null ? (
+          <span className="text-2xl flex items-center justify-center w-full h-full">{item.emoji}</span>
+        ) : (
         <img
           src={src}
           alt={item.label}
@@ -80,6 +89,7 @@ const Tile = ({ item, onClick }: { item: CategoryItem; onClick: () => void }) =>
             e.currentTarget.parentElement!.innerHTML = `<span class="text-2xl flex items-center justify-center w-full h-full">${item.emoji}</span>`;
           }}
         />
+        )}
       </div>
       <span className="text-[12px] leading-[15px] text-black text-center">
         {item.label}
@@ -91,18 +101,21 @@ const Tile = ({ item, onClick }: { item: CategoryItem; onClick: () => void }) =>
 const HomeCategoryGrid = () => {
   const navigate = useNavigate();
   const { weddingSettings } = useWeddingSchedule();
+  // 쇼핑앱식 "전체 카테고리" 시트 — 큐레이션이 8개를 넘으면 더보기로 연다.
+  const [allOpen, setAllOpen] = useState(false);
 
   // Derive the tile list once per (style, exclusions) change.
   // 1) Hide excluded categories.
   // 2) For self/small, prepend persona-specific extras so DIY/스몰 베뉴
   //    같은 카테고리가 1행에 노출됩니다 (페르소나 인터뷰 결과).
   // 3) Reorder remaining base tiles per TILE_PRIORITY when style is set.
-  const tiles = useMemo<CategoryItem[]>(() => {
+  // 전체 큐레이션 목록(잘라내지 않음) — 홈에는 8개까지, 넘치면 더보기로 시트.
+  const allTiles = useMemo<CategoryItem[]>(() => {
     const excluded = new Set(weddingSettings.excluded_categories ?? []);
     const visible = baseTiles.filter(t => !t.excludeKey || !excluded.has(t.excludeKey));
     const style = weddingSettings.wedding_style;
 
-    if (style !== "self" && style !== "small") return visible.slice(0, 8);
+    if (style !== "self" && style !== "small") return visible;
 
     // Per-style ordering of base tiles
     const priority = TILE_PRIORITY[style];
@@ -114,10 +127,11 @@ const HomeCategoryGrid = () => {
 
     // Persona extras lead so they hit the first row (positions 0~3).
     const extras = style === "self" ? SELF_EXTRA_TILES : SMALL_EXTRA_TILES;
-    const merged = [...extras.slice(0, 2), ...ordered];
-    return merged.slice(0, 8);
+    return [...extras.slice(0, 2), ...ordered];
   }, [weddingSettings.excluded_categories, weddingSettings.wedding_style]);
 
+  const tiles = allTiles.slice(0, 8);
+  const hasMore = allTiles.length > 8;
   const row1 = tiles.slice(0, 4);
   const row2 = tiles.slice(4, 8);
 
@@ -131,7 +145,7 @@ const HomeCategoryGrid = () => {
         </div>
       </section>
       {row2.length > 0 && (
-        <section className="bg-[hsl(var(--pink-50))] px-[30px] pt-[10px] pb-[30px]">
+        <section className={`bg-[hsl(var(--pink-50))] px-[30px] pt-[10px] ${hasMore ? "pb-[8px]" : "pb-[30px]"}`}>
           <div className="grid grid-cols-4 gap-x-5 gap-y-[5px]">
             {row2.map((cat) => (
               <Tile key={cat.label} item={cat} onClick={() => navigate(cat.path)} />
@@ -139,6 +153,27 @@ const HomeCategoryGrid = () => {
           </div>
         </section>
       )}
+      {hasMore && (
+        <section className="bg-[hsl(var(--pink-50))] pb-[14px]">
+          <button
+            onClick={() => setAllOpen(true)}
+            className="w-full flex items-center justify-center gap-0.5 text-[11px] text-muted-foreground active:scale-95 transition-transform py-1"
+            aria-label="전체 카테고리 보기"
+          >
+            더보기 <ChevronDown className="w-3 h-3" />
+          </button>
+        </section>
+      )}
+
+      <AllCategoriesSheet
+        open={allOpen}
+        onOpenChange={setAllOpen}
+        tiles={allTiles}
+        onSelect={(path) => {
+          setAllOpen(false);
+          navigate(path);
+        }}
+      />
     </>
   );
 };

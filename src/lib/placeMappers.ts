@@ -28,6 +28,7 @@ export const PLACE_CATEGORY_TO_ITEM_TYPE: Record<string, ItemType> = {
   appliance: "appliance",
   jewelry: "jewelry",
   invitation_venue: "invitation_venues",
+  etc: "etc",
 };
 
 // Korean UI category label ↔ places.category snake_case (9 vendor categories)
@@ -42,6 +43,10 @@ export const KOREAN_TO_PLACE_CATEGORY: Record<string, string> = {
   "허니문": "honeymoon",
   "혼수": "appliance",
   "청첩장": "invitation_venue",
+  // 기타 — 본식DVD·스냅(본식/서브/야외/웨딩/아이폰)·네일아트·피부/체형관리·축가·
+  // 축의대·부케·브라이덜샤워·장소대여 등 잔여 웨딩 업체. 세부 유형은 places.tags 로
+  // 구분하고, 업체가 충분히 모이면 단일 카테고리로 분리한다(분리 시 이 매핑만 추가).
+  "기타": "etc",
   // Backward-compat aliases
   "스드메": "studio",
 };
@@ -56,6 +61,7 @@ export const PLACE_TO_KOREAN_CATEGORY: Record<string, string> = {
   honeymoon: "허니문",
   appliance: "혼수",
   invitation_venue: "청첩장",
+  etc: "기타",
   // Video-only categories (no places attached). Used by TipVideoCard for
   // the category badge — see koreanCategoryLabel().
   family_meeting: "상견례",
