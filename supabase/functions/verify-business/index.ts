@@ -75,8 +75,14 @@ serve(async (req) => {
     let isVerified = false;
     let invalidMessage = "";
     try {
+      // 공공데이터포털 키는 Encoding(이미 %로 URL 인코딩됨)/Decoding(원문) 두 형식이
+      // 있고, 개편된 포털은 한 가지만 보여준다. 어느 쪽을 등록해도 동작하도록
+      // %-시퀀스가 보이면 그대로, 아니면 우리가 인코딩한다(이중 인코딩 방지).
+      const serviceKey = /%[0-9A-Fa-f]{2}/.test(NTS_API_KEY)
+        ? NTS_API_KEY
+        : encodeURIComponent(NTS_API_KEY);
       const verifyResp = await fetch(
-        `https://api.odcloud.kr/api/nts-businessman/v1/validate?serviceKey=${encodeURIComponent(NTS_API_KEY)}`,
+        `https://api.odcloud.kr/api/nts-businessman/v1/validate?serviceKey=${serviceKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
