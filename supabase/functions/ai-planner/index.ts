@@ -9,6 +9,9 @@ import { ALWAYS_ON_CAPSULES, buildConditionalCapsules } from "./domain-capsules.
 
 
 const FREE_DAILY_LIMIT = 5;
+// 본경로 채팅 모델 — OpenAI 단일(gpt-4o). 환각 약점은 프롬프트 불확실성 계약(L3)+
+// 추후 근거주입(RAG)으로 보강. eval 모드는 model_override 로 다른 모델 비교 가능.
+const CHAT_MODEL = "gpt-4o";
 
 interface Message {
   role: "user" | "assistant";
@@ -142,9 +145,14 @@ serve(async (req) => {
       );
     }
 
-    // 일반 경로(또는 gemini provider 평가)는 GEMINI 키가 필수.
-    if (!evalMode && !GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured");
+    // 일반 경로는 OpenAI(gpt-4o) 가 본모델 — OPENAI 키 필수.
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!evalMode && !OPENAI_API_KEY) {
+      console.error("ai-planner: OPENAI_API_KEY not configured");
+      return new Response(
+        JSON.stringify({ error: "AI service is temporarily unavailable" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // 일일 사용량 체크는 entitlement 게이트 — 실패하면 fail-closed.
@@ -185,18 +193,21 @@ serve(async (req) => {
       console.warn("Could not load user context, proceeding without it:", e);
     }
 
-    // Fire-and-forget memory extraction on the user's most recent message.
-    // 평가 모드는 시나리오 입력이 사용자 기억을 오염시키므로 제외.
+    // Fire-and-forget memory extraction (OpenAI) — 평가 모드는 시나리오 입력이
+    // 사용자 기억을 오염시키므로 제외.
     const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
-    if (lastUserMsg?.content && !evalMode && GEMINI_API_KEY) {
-      extractAndStoreMemories(supabase, user.id, lastUserMsg.content, GEMINI_API_KEY).catch(
+    if (lastUserMsg?.content && !evalMode && OPENAI_API_KEY) {
+      extractAndStoreMemories(supabase, user.id, lastUserMsg.content, OPENAI_API_KEY).catch(
         (e) => console.warn("memory extraction (bg) failed:", e),
       );
     }
 
-    const systemPrompt =
-      evalMode?.raw_system ??
-      BASE_SYSTEM_PROMPT + ALWAYS_ON_CAPSULES + conditionalCapsules + userContext;
+    // 캐싱 분리: 정적 프롬프트(BASE+상시캡슐)는 모든 요청 공통 → OpenAI 가
+    // 접두를 캐시(입력비↓). 동적(페르소나 캡슐+사용자 컨텍스트)은 별도 메시지로
+    // 뒤에 붙여 정적 접두의 캐시 적중을 깨지 않게 한다.
+    const staticPrompt = BASE_SYSTEM_PROMPT + ALWAYS_ON_CAPSULES;
+    const dynamicContext = conditionalCapsules + userContext;
+    const systemPrompt = evalMode?.raw_system ?? staticPrompt + dynamicContext;
 
     // ───── 평가 모드 생성: 모델 교체 + 비스트리밍 + 지연/토큰 측정 ─────
     if (evalMode) {
@@ -284,37 +295,33 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    console.log("Dewy AI Planner request received, messages count:", messages.length, "has user context:", !!userContext);
+    console.log("Dewy AI Planner request received, messages:", messages.length, "ctx:", !!userContext);
+
+    // OpenAI gpt-4o 스트리밍. 캐시 적중을 위해 정적 system → 동적 system 순서로
+    // 메시지 접두를 구성. SSE(choices[].delta.content)는 클라가 그대로 파싱한다.
+    const chatMessages = [
+      { role: "system", content: staticPrompt },
+      ...(dynamicContext ? [{ role: "system", content: dynamicContext }] : []),
+      ...messages.map((m: Message) => ({ role: m.role, content: m.content })),
+    ];
 
     let streamResponse: Response | null = null;
-    const geminiContents = messages.map((m: Message) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
-
     try {
-      const geminiResp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.geminiFlash}:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: systemPrompt }] },
-            contents: geminiContents,
-            generationConfig: { temperature: 0.8, maxOutputTokens: 2048 },
-          }),
-        },
-      );
-
-      if (geminiResp.ok) {
-        streamResponse = geminiResp;
-        console.log("Streaming response from Gemini API");
-      } else {
-        const errText = await geminiResp.text();
-        console.warn("Gemini API failed:", geminiResp.status, errText.slice(0, 200));
-      }
+      const oaResp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_API_KEY}` },
+        body: JSON.stringify({
+          model: CHAT_MODEL,
+          stream: true,
+          messages: chatMessages,
+          max_tokens: 2048,
+          temperature: 0.8,
+        }),
+      });
+      if (oaResp.ok) streamResponse = oaResp;
+      else console.warn("OpenAI API failed:", oaResp.status, (await oaResp.text()).slice(0, 200));
     } catch (e) {
-      console.warn("Gemini API call error:", e);
+      console.warn("OpenAI API call error:", e);
     }
 
     if (!streamResponse) {

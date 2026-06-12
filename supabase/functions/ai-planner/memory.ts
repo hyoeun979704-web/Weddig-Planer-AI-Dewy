@@ -1,9 +1,9 @@
-import { MODELS } from "../_shared/llm.ts";
 // Memory extraction. After the main streaming response kicks off, we
-// fire-and-forget a tiny Gemini call against the user's most recent message.
+// fire-and-forget a tiny OpenAI call against the user's most recent message.
 // The model returns an array of {fact_type, fact}, which we insert into
 // user_ai_memory. Cheap (~200 in / ~80 out tokens per message) and async,
 // so it doesn't block the user's chat. Idempotent unique index dedups.
+const MEMORY_MODEL = "gpt-4o-mini";
 
 const MEMORY_EXTRACTION_PROMPT = `당신은 결혼 플래닝 챗봇의 메모리 추출기입니다. 사용자가 방금 보낸 메시지에서, *향후 결혼 준비 상담에 도움이 될* 사실(facts)을 추출하세요.
 
@@ -38,49 +38,37 @@ export async function extractAndStoreMemories(
   supabase: any,
   userId: string,
   userMessage: string,
-  geminiApiKey: string,
+  openaiApiKey: string,
 ): Promise<void> {
   if (userMessage.trim().length < 10) return;
 
   try {
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.geminiFlash}:generateContent?key=${geminiApiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: MEMORY_EXTRACTION_PROMPT }] },
-          contents: [{ role: "user", parts: [{ text: userMessage }] }],
-          generationConfig: {
-            temperature: 0.0,
-            response_mime_type: "application/json",
-            response_schema: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  type: { type: "string" },
-                  fact: { type: "string" },
-                },
-                required: ["type", "fact"],
-              },
-            },
-          },
-        }),
-      },
-    );
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiApiKey}` },
+      body: JSON.stringify({
+        model: MEMORY_MODEL,
+        temperature: 0.0,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: MEMORY_EXTRACTION_PROMPT + '\n\n반드시 {"facts":[...]} 형태의 JSON 객체로만 응답.' },
+          { role: "user", content: userMessage },
+        ],
+      }),
+    });
 
     if (!resp.ok) {
       console.warn("Memory extraction failed:", resp.status);
       return;
     }
     const data = await resp.json();
-    const text: string | undefined = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text: string | undefined = data.choices?.[0]?.message?.content;
     if (!text) return;
 
     let facts: ExtractedFact[];
     try {
-      facts = JSON.parse(text);
+      const parsed = JSON.parse(text);
+      facts = Array.isArray(parsed) ? parsed : (parsed.facts ?? []);
     } catch {
       return;
     }
