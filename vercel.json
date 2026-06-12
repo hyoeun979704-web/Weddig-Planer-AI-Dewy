@@ -24,6 +24,6 @@
     { "source": "/모바일청첩장앱", "destination": "/api/guide?slug=모바일청첩장앱" },
     { "source": "/플래너없이결혼준비", "destination": "/api/guide?slug=플래너없이결혼준비" },
 
-    { "source": "/((?!api|assets|sw.js|workbox-.*).*)", "destination": "/index.html" }
+    { "source": "/((?!api|assets|sw.js|workbox-.*|ads.txt|robots.txt|sitemap.xml|manifest.webmanifest|favicon.ico|dewy-logo.png|placeholder.svg).*)", "destination": "/index.html" }
   ]
 }
