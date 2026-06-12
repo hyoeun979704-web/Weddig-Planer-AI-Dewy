@@ -4,7 +4,7 @@ import DewyLogo from "@/components/home/DewyLogo";
 import Seo from "@/components/Seo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Send, RotateCcw, Sparkles, ChevronDown, Brain, Check, X } from "lucide-react";
+import { Send, RotateCcw, Sparkles, ChevronDown, Brain, Check, X, MessagesSquare } from "lucide-react";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { useAIPlanner } from "@/hooks/useAIPlanner";
@@ -15,6 +15,8 @@ import DataCollectionConsentModal from "@/components/consent/DataCollectionConse
 import { useDataCollectionConsent } from "@/hooks/useDataCollectionConsent";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
 import MemoryManagerSheet from "@/components/wedding-planner/MemoryManagerSheet";
+import ChatSessionsSheet from "@/components/wedding-planner/ChatSessionsSheet";
+import { useSubscription } from "@/hooks/useSubscription";
 import TypingIndicator from "@/components/wedding-planner/TypingIndicator";
 import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
 import SdmeSurvey from "@/components/wedding-planner/SdmeSurvey";
@@ -261,9 +263,17 @@ const AIPlanner = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { messages, isLoading, sendMessage: rawSendMessage, sendStructured: rawSendStructured, clearMessages, showUpgradeModal, setShowUpgradeModal, dailyRemaining, recentMemories, confirmRecentMemory, rejectRecentMemory } = useAIPlanner();
+  const {
+    messages, isLoading, sendMessage: rawSendMessage, sendStructured: rawSendStructured,
+    showUpgradeModal, setShowUpgradeModal, dailyRemaining,
+    recentMemories, confirmRecentMemory, rejectRecentMemory,
+    sessions, activeSessionId, switchSession, startNewChat, deleteChat, rateMessage,
+  } = useAIPlanner();
   // L5 메모리 검증 — 듀이가 기억 중인 정보를 보고 지울 수 있는 시트.
   const [memorySheetOpen, setMemorySheetOpen] = useState(false);
+  // 채팅 기록(세션) 시트 — 이전 채팅 보기/이어하기/새 채팅. 한도 표기는 구독 상태 기준.
+  const [sessionsSheetOpen, setSessionsSheetOpen] = useState(false);
+  const { isPremium } = useSubscription();
 
   // ── AI 데이터 동의 게이트 (App Store 5.1.2 / PIPA) ──────────────────────────
   // 채팅 입력은 제3자 AI(OpenAI·Gemini)로 전송되므로, 첫 전송 전 데이터 수집·
@@ -507,13 +517,23 @@ const AIPlanner = () => {
       <HomeHeader />
       <CategoryTabBar activeTab="ai-planner" onTabChange={handleCategoryTabChange} />
 
-      {/* 챗 컨트롤 — 일일 잔여 + 기억 관리 + 대화 초기화 */}
+      {/* 챗 컨트롤 — 일일 잔여 + 채팅 기록 + 기억 관리 + 채팅 삭제 */}
       {(!!user || dailyRemaining !== null || hasConversation) && (
         <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-border bg-card/60">
           {dailyRemaining !== null && (
             <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
               {dailyRemaining}회 남음
             </span>
+          )}
+          {!!user && (
+            <button
+              onClick={() => setSessionsSheetOpen(true)}
+              className="p-1.5 text-muted-foreground hover:text-foreground active:scale-95 transition-all rounded-lg hover:bg-muted"
+              title="채팅 기록"
+              aria-label="채팅 기록"
+            >
+              <MessagesSquare className="w-4 h-4" />
+            </button>
           )}
           {!!user && (
             <button
@@ -528,18 +548,21 @@ const AIPlanner = () => {
           {hasConversation && (
             <button
               onClick={() => {
-                // 대화는 영속 저장되지 않아 초기화 시 복구 불가 → 실수 방지 확인.
+                // 응답 수신 중 삭제하면 도착 중인 답변이 빈 화면에 붙는다 — 응답 중엔 무시.
+                if (isLoading) return;
+                // 영속화된 채팅이면 세션째 삭제(기록 포함), 미저장 대화면 화면만 초기화.
                 if (
                   window.confirm(
-                    "대화를 모두 지울까요? 지난 대화는 복구할 수 없어요.",
+                    "이 채팅을 삭제할까요? 메시지 기록까지 복구할 수 없어요.",
                   )
                 ) {
-                  clearMessages();
+                  if (activeSessionId) void deleteChat(activeSessionId);
+                  else startNewChat();
                 }
               }}
               className="p-1.5 text-muted-foreground hover:text-foreground active:scale-95 transition-all rounded-lg hover:bg-muted"
-              title="대화 초기화"
-              aria-label="대화 초기화"
+              title="채팅 삭제"
+              aria-label="채팅 삭제"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -613,7 +636,7 @@ const AIPlanner = () => {
 
           {/* Messages */}
           {messages.map((msg, i) => (
-            <ChatBubble key={i} msg={msg} />
+            <ChatBubble key={i} msg={msg} onFeedback={rateMessage} />
           ))}
           {isLoading && <TypingIndicator />}
 
@@ -745,6 +768,18 @@ const AIPlanner = () => {
       <BudgetSurvey isOpen={activeModal === "budget"} onClose={() => setActiveModal(null)} onSubmit={handleBudgetSubmit} />
 
       <MemoryManagerSheet open={memorySheetOpen} onOpenChange={setMemorySheetOpen} />
+
+      <ChatSessionsSheet
+        open={sessionsSheetOpen}
+        onOpenChange={setSessionsSheetOpen}
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        isPremium={isPremium}
+        // 스트리밍 중 전환/삭제하면 도착 중인 답변이 다른 채팅 화면에 붙는다 — 응답 중엔 무시.
+        onSelect={(id) => { if (!isLoading) void switchSession(id); }}
+        onNewChat={() => { if (!isLoading) startNewChat(); }}
+        onDelete={(id) => { if (!isLoading) void deleteChat(id); }}
+      />
 
       <UpgradeModal
         isOpen={showUpgradeModal}
