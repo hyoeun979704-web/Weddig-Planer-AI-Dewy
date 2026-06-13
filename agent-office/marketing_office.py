@@ -81,7 +81,7 @@ def build_crew(brief: str):
         role="총괄 관리자",
         goal="들어온 요청이 마케팅 작업인지 판단하고 적합한 담당에게 위임",
         backstory="듀이 1인 운영을 보조하는 라우터. 가볍고 빠르게 판단한다.",
-        llm=config.ROUTER_MODEL,   # 라우팅=최저가
+        llm=config.CREW_ROUTER_MODEL,   # 라우팅=최저가 (LiteLLM 프리픽스)
         allow_delegation=True,
         verbose=True,
     )
@@ -90,7 +90,7 @@ def build_crew(brief: str):
         role="마케팅 카피라이터",
         goal="웨딩 버티컬 톤에 맞는 블로그/숏폼 '초안' 작성(발행은 사람이 결정)",
         backstory=config.BRAND_VOICE,
-        llm=config.MARKETER_MODEL,  # 품질/비용 균형
+        llm=config.CREW_MARKETER_MODEL,  # 품질/비용 균형 (LiteLLM 프리픽스)
         allow_delegation=False,
         verbose=True,
     )
@@ -122,8 +122,21 @@ def main() -> int:
     brief = " ".join(sys.argv[1:]).strip() or "예비부부를 위한 웨딩 준비 꿀팁"
     print(f"[에이전트 오피스] brief: {brief}")
 
-    crew = build_crew(brief)
-    result = crew.kickoff(inputs={"brief": brief})
+    # 런타임 가드레일 — 비용 캡·서킷브레이커 점검(GUARDRAILS.md 강제).
+    import guardrails
+    ok, why = guardrails.can_run()
+    if not ok:
+        print(f"⛔ 실행 차단: {why}", file=sys.stderr)
+        return 2
+
+    try:
+        crew = build_crew(brief)
+        result = crew.kickoff(inputs={"brief": brief})
+        guardrails.record(success=True)
+    except Exception as e:  # noqa: BLE001 - 실패도 서킷브레이커에 기록
+        guardrails.record(success=False)
+        print(f"크루 실행 실패: {e}", file=sys.stderr)
+        return 1
 
     # 가드레일 — 절대 자동 발행하지 않는다.
     assert config.AUTO_PUBLISH is False, "자동 발행은 금지되어 있습니다."

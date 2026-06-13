@@ -4,10 +4,14 @@
 라우팅은 최저가 모델, 고품질이 필요한 작업만 상위 모델.
 """
 
-# ⚠️ CrewAI/LiteLLM 의 정확한 모델 문자열 규약(프로바이더 프리픽스 등)은 확인 필요.
-#    아래는 Claude 모델 ID. 사용 중인 CrewAI 버전에 맞춰 문자열만 조정하면 된다.
+# Claude 모델 ID(직접 Anthropic SDK 용 — quality.judge 등).
 ROUTER_MODEL = "claude-haiku-4-5"     # 총괄 라우팅/디스패치 — 경량·최저가
 MARKETER_MODEL = "claude-sonnet-4-6"  # 마케팅 카피 — 품질/비용 균형
+
+# CrewAI·browser-use 는 LiteLLM 경유라 provider 프리픽스가 필요하다(anthropic/...).
+# Anthropic SDK 직접 호출과 형식이 달라 분리한다(첫 실행 모델-문자열 오류 방지).
+CREW_ROUTER_MODEL = f"anthropic/{ROUTER_MODEL}"
+CREW_MARKETER_MODEL = f"anthropic/{MARKETER_MODEL}"
 
 # 가드레일 (1인 운영 안전장치)
 AUTO_PUBLISH = False   # 절대 자동 발행 금지. 산출물은 항상 초안 → 사람 검수 후 게시.

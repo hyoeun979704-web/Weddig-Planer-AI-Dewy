@@ -48,7 +48,7 @@ def research(query: str, dry_run: bool = False) -> dict:
         # ⚠️ browser-use 의 정확한 API 는 버전별로 다름 — 설치 후 문서에 맞춰 조정.
         from browser_use import Agent  # type: ignore
         import config
-        agent = Agent(task=_task(query), llm=config.MARKETER_MODEL)
+        agent = Agent(task=_task(query), llm=config.CREW_MARKETER_MODEL)
         result = agent.run_sync() if hasattr(agent, "run_sync") else None
         summary = str(result)[:4000]
         try:
