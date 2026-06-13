@@ -379,7 +379,7 @@ const Favorites = () => {
   const totalCount = viewFiltered.length;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       {/* Header */}
       <header className="sticky safe-sticky-header z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">

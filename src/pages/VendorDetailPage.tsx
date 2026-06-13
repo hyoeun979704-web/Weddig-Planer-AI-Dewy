@@ -52,7 +52,7 @@ const VendorDetailPage = () => {
   if (isLoading) return <DetailSkeleton />;
   if (error || !place) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center p-4">
         <AlertCircle className="w-12 h-12 text-muted-foreground mb-4" />
         <p className="text-muted-foreground text-center mb-4">업체를 찾을 수 없어요.</p>
         <Button onClick={() => navigate(-1)}>뒤로</Button>
@@ -1036,7 +1036,7 @@ function InvitationVenueExtras({ place }: { place: LegacyDetail }) {
 }
 
 const DetailSkeleton = () => (
-  <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+  <div className="min-h-screen bg-background app-col mx-auto">
     <div className="h-14 border-b border-border flex items-center px-4">
       <Skeleton className="w-6 h-6 rounded" />
     </div>

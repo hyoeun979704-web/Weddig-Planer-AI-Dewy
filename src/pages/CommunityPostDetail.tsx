@@ -385,7 +385,7 @@ const CommunityPostDetail = () => {
 
   if (postLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+      <div className="min-h-screen bg-background app-col mx-auto">
         <header className="sticky safe-sticky-header z-40 bg-card/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center gap-3 px-4 h-14">
             <button onClick={() => navigate(-1)} className="p-2 -ml-2">
@@ -405,7 +405,7 @@ const CommunityPostDetail = () => {
 
   if (!post) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center">
         <p className="text-muted-foreground mb-4">게시글을 찾을 수 없습니다.</p>
         <Button onClick={() => navigate("/community")}>커뮤니티로 돌아가기</Button>
       </div>
@@ -413,7 +413,7 @@ const CommunityPostDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
+    <div className="min-h-screen bg-background app-col mx-auto pb-24">
       {/* Header */}
       <header className="sticky safe-sticky-header z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
@@ -648,7 +648,7 @@ const CommunityPostDetail = () => {
       </section>
 
       {/* Comment Input - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 max-w-[430px] mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 app-col mx-auto">
         <div className="flex gap-2">
           <Textarea
             value={newComment}

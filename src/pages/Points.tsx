@@ -38,7 +38,7 @@ const Points = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title="포인트·하트 적립 | Dewy" description="출석·미션·체크리스트 완료로 하트 적립. AI 드레스·메이크업 시뮬레이션에 사용 가능." path="/points" />
       <PageHeader title="포인트" />
 

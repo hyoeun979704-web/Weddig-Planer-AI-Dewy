@@ -17,14 +17,14 @@ const Cart = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title="장바구니 | Dewy" description="선택한 상품을 확인하고 결제하세요." path="/cart" noIndex />
       <PageHeader title={`장바구니 (${items.length})`} />
 
@@ -95,7 +95,7 @@ const Cart = () => {
 
       {/* Fixed Bottom */}
       {items.length > 0 && (
-        <div className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto p-4 bg-background border-t border-border">
+        <div className="fixed bottom-16 left-0 right-0 app-col mx-auto p-4 bg-background border-t border-border">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-muted-foreground">총 결제 금액</span>
             <span className="text-xl font-bold text-primary">{formatPrice(totalAmount)}</span>

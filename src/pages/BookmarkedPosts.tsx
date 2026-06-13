@@ -88,7 +88,7 @@ const BookmarkedPosts = () => {
   // If not logged in, show login prompt
   if (!user) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <div className="min-h-screen bg-background app-col mx-auto relative">
         <PageHeader title="북마크한 게시글" />
 
         <main className="pb-20 px-4">
@@ -116,7 +116,7 @@ const BookmarkedPosts = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader
         title="북마크한 게시글"
         rightExtra={

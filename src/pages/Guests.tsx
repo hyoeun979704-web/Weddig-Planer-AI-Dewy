@@ -95,7 +95,7 @@ const Guests = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <div className="min-h-screen bg-background app-col mx-auto relative">
         <PageHeader title="하객 리스트" />
         <div className="flex flex-col items-center justify-center py-20 px-4">
           <Users className="w-16 h-16 text-muted-foreground mb-4" />
@@ -110,7 +110,7 @@ const Guests = () => {
   const isSubmitting = addGuest.isPending || updateGuest.isPending;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader title="하객 리스트" />
 
       <main className="pb-24">

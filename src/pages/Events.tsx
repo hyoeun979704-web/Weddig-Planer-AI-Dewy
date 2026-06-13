@@ -41,7 +41,7 @@ const Events = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title="웨딩 이벤트·혜택 | Dewy" description="결혼 준비에 도움되는 이벤트와 혜택을 모았어요. 웨딩 박람회·할인·경품 등 예비부부를 위한 진행 중인 이벤트 확인." path="/events" />
       <PageHeader
         title="이벤트"

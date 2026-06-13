@@ -333,7 +333,7 @@ const Budget = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title="결혼 예산 관리·지역별 평균 비교 | Dewy" description="결혼 예산 항목별 분석, 양가 분담, 한국소비자원 지역별 평균과 비교. 잔금 일정 알림까지 한 곳에서." path="/budget" />
       {showLoginOverlay && <LoginRequiredOverlay message="지역별 평균 비교, 양가 분담 현황까지 체계적으로 관리하세요" features={["지역별 평균 비교", "양가 분담 관리", "잔금 알림"]} />}
       {/* Header */}
@@ -842,7 +842,7 @@ const Budget = () => {
       </div>
 
       {/* Fixed bottom button */}
-      <div data-tutorial="budget-add" className="fixed bottom-20 left-0 right-0 max-w-[430px] mx-auto px-4 z-30">
+      <div data-tutorial="budget-add" className="fixed bottom-20 left-0 right-0 app-col mx-auto px-4 z-30">
         <button onClick={() => { setEditItem(null); setAddOpen(true); }}
           className="w-full bg-primary text-primary-foreground py-3.5 rounded-2xl font-bold text-sm shadow-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform">
           <Plus className="w-4 h-4" /> 지출 기록하기

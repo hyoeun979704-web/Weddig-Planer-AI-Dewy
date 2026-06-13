@@ -136,7 +136,7 @@ const MySchedule = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <div className="min-h-screen bg-background app-col mx-auto relative">
         <header className="sticky safe-sticky-header z-40 bg-card/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center h-14 px-4">
             <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
@@ -160,14 +160,14 @@ const MySchedule = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto relative flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <header className="sticky safe-sticky-header z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">

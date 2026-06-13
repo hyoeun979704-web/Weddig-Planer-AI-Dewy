@@ -486,7 +486,7 @@ const InvitationViewer = () => {
     });
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
+    <div className="min-h-screen bg-background app-col mx-auto pb-24">
       <div
         className={`relative flex flex-col items-center bg-muted/20 ${
           seamlessRoll ? "py-0 gap-0" : "py-5 gap-5"
@@ -544,7 +544,7 @@ const InvitationViewer = () => {
           aria-label="지도 앱 선택"
         >
           <div
-            className="w-full max-w-[430px] mx-auto bg-background rounded-t-2xl p-4 pb-8 space-y-2"
+            className="w-full app-col mx-auto bg-background rounded-t-2xl p-4 pb-8 space-y-2"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-sm font-bold text-foreground text-center mb-1">
@@ -600,7 +600,7 @@ const InvitationViewer = () => {
       {/* 갤러리 전체 보기 — 인스타 피드형 3열 그리드 페이지 */}
       {galleryView && (
         <div
-          className="fixed inset-0 z-[58] bg-background flex flex-col max-w-[430px] mx-auto"
+          className="fixed inset-0 z-[58] bg-background flex flex-col app-col mx-auto"
           role="dialog"
           aria-label="갤러리 전체 보기"
         >
@@ -694,7 +694,7 @@ const InvitationViewer = () => {
       <Drawer.Root open={isRsvpOpen} onOpenChange={setIsRsvpOpen}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-          <Drawer.Content className="bg-background flex flex-col rounded-t-[10px] h-[85%] mt-24 fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto z-50 focus:outline-none">
+          <Drawer.Content className="bg-background flex flex-col rounded-t-[10px] h-[85%] mt-24 fixed bottom-0 left-0 right-0 app-col mx-auto z-50 focus:outline-none">
             <div className="p-4 bg-background rounded-t-[10px] flex-1 overflow-y-auto">
               <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-6" />
               <Drawer.Title className="text-xl font-bold text-center mb-6 text-foreground">

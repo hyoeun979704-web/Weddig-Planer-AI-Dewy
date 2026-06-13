@@ -33,6 +33,12 @@
     --app-bottom-nav-height: 64px;
     --app-bottom-nav-total-height: calc(var(--app-bottom-nav-height) + var(--safe-bottom));
 
+    /* 데스크톱(≥lg) 반응형 셸 토큰. 모바일/네이티브에서는 사이드바 0·칼럼 430px 라
+       기존 레이아웃과 완전히 동일하고, 실제 값 변경은 아래 @media(min-width:1024px)
+       에서만 일어난다 → 모바일 회귀 위험 0. */
+    --app-sidebar-width: 0px;
+    --app-col-max: 430px;
+
     --background: 340 100% 99%;   /* #FFF9FA */
     --foreground: 0 0% 15%;
 
@@ -222,6 +228,12 @@
   .safe-ai-scroll {
     padding-bottom: calc(var(--app-bottom-nav-total-height) + 80px);
   }
+  /* 앱 메인 콘텐츠 칼럼 폭. 기존 max-w-[430px] 의 단일 소스 토큰화 —
+     모바일 430px(동일), 데스크톱(아래 @media)에서만 확장. mx-auto 는 호출부 유지. */
+  .app-col {
+    max-width: var(--app-col-max);
+  }
+
   .scrollbar-hide,
   .no-scrollbar {
     -ms-overflow-style: none;
@@ -239,5 +251,19 @@
   .no-spinner {
     -moz-appearance: textfield;
     appearance: textfield;
+  }
+}
+/* ─────────────────────────────────────────────────────────────────────────
+   데스크톱(≥1024px) 반응형 셸 — 모바일/네이티브에는 절대 영향 없음(전부 이 미디어쿼리 안).
+   ① 사이드바 폭/콘텐츠 칼럼 폭 토큰을 데스크톱 값으로 승격.
+   ② #root 에 좌측 패딩(사이드바 자리) → BottomNav 가 좌측 고정 사이드바로 바뀌어도 콘텐츠 안 가림.
+   레이어 밖이라 @layer base 의 토큰 기본값을 확실히 덮어쓴다. ───────────────────────── */
+@media (min-width: 1024px) {
+  :root {
+    --app-sidebar-width: 240px;
+    --app-col-max: 720px;
+  }
+  #root {
+    padding-left: var(--app-sidebar-width);
   }
 }

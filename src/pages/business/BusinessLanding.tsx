@@ -94,7 +94,7 @@ const BusinessLanding = () => {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-28">
+    <div className="min-h-screen bg-background app-col mx-auto pb-28">
       <PageHeader title="입점 안내" />
 
       <main className="px-4 py-6 space-y-8">
@@ -196,7 +196,7 @@ const BusinessLanding = () => {
 
       {/* 고정 CTA */}
       <div
-        className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-background/95 backdrop-blur border-t border-border p-3"
+        className="fixed bottom-0 left-0 right-0 app-col mx-auto bg-background/95 backdrop-blur border-t border-border p-3"
         style={{ paddingBottom: "calc(var(--safe-bottom) + 12px)" }}
       >
         {/* 로그인한 일반회원의 "기업회원 전환"은 앱 내 등록 폼으로 직접 —

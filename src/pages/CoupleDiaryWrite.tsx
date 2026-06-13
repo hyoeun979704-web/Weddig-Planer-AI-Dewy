@@ -64,7 +64,7 @@ const CoupleDiaryWrite = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader
         title="일기 쓰기"
         rightExtra={

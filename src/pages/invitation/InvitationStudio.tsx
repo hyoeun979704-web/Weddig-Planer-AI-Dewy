@@ -1585,7 +1585,7 @@ const InvitationStudio = () => {
   // ────────────────────────────────────────
   return (
     <div
-      className="min-h-screen bg-background max-w-[430px] mx-auto"
+      className="min-h-screen bg-background app-col mx-auto"
       style={{
         // 편집 중엔 글로벌 메뉴를 숨기고 편집 툴바만 하단에 → 툴바 높이만큼만 여백
         paddingBottom:
@@ -1739,7 +1739,7 @@ const InvitationStudio = () => {
 
       {/* 스티커 피커 — 관리자 에셋 라이브러리(활성)에서 골라 캔버스에 추가 */}
       <Dialog open={stickerSheetOpen} onOpenChange={setStickerSheetOpen}>
-        <DialogContent className="max-w-[430px] max-h-[80vh] overflow-y-auto">
+        <DialogContent className="app-col max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>스티커 추가</DialogTitle>
             <DialogDescription>
@@ -2683,7 +2683,7 @@ const StudioView = ({
       {/* 슬롯 편집 시트 — 하단 고정(캔버스를 가리지 않음). 탭한 요소 종류별 패널. */}
       {selectedSlot && (
         <div
-          className="fixed inset-x-0 z-40 mx-auto max-w-[430px] px-3"
+          className="fixed inset-x-0 z-40 mx-auto app-col px-3"
           style={{ bottom: "calc(var(--safe-bottom) + 80px)" }}
         >
           <div className="bg-card border border-border rounded-2xl shadow-xl max-h-[42vh] overflow-y-auto overscroll-contain">
@@ -3604,7 +3604,7 @@ function MobilePreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[430px] h-[92vh] p-0 overflow-hidden border-zinc-800 bg-zinc-950 text-white">
+      <DialogContent className="app-col h-[92vh] p-0 overflow-hidden border-zinc-800 bg-zinc-950 text-white">
         <DialogHeader className="px-4 pt-4 pb-2 text-left">
           <DialogTitle className="text-base text-white">모바일 청첩장 미리보기</DialogTitle>
           <DialogDescription className="text-zinc-400">

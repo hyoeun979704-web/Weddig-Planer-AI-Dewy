@@ -105,7 +105,7 @@ const HeartCharge = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader title="하트 충전" />
 
       <main className="pb-40 px-4 py-4 space-y-4">
@@ -208,7 +208,7 @@ const HeartCharge = () => {
       </main>
 
       {selected && (
-        <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto p-4 bg-background border-t border-border">
+        <div className="fixed bottom-0 left-0 right-0 app-col mx-auto p-4 bg-background border-t border-border">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-muted-foreground">최종 결제 금액</p>
             <p className="text-lg font-bold text-foreground">

@@ -100,12 +100,12 @@ const BusinessCoupons = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+    return <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   }
 
   if (!placeId) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+      <div className="min-h-screen bg-background app-col mx-auto">
         <PageHeader title="쿠폰 관리" />
         <div className="px-5 py-20 text-center">
           <p className="text-muted-foreground">먼저 업체 기본 정보를 저장해주세요.</p>
@@ -116,7 +116,7 @@ const BusinessCoupons = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-background app-col mx-auto">
       <PageHeader title="쿠폰 관리" />
       <main className="p-4 pb-24 space-y-5">
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800">

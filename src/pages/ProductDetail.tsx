@@ -91,7 +91,7 @@ const ProductDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -99,7 +99,7 @@ const ProductDetail = () => {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center">
         <p className="text-muted-foreground">상품을 찾을 수 없습니다</p>
       </div>
     );
@@ -119,7 +119,7 @@ const ProductDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       {/* Header */}
       <header className="sticky safe-sticky-header z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
@@ -234,7 +234,7 @@ const ProductDetail = () => {
       </main>
 
       {/* Fixed Bottom CTA */}
-      <div className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto p-4 bg-background border-t border-border">
+      <div className="fixed bottom-16 left-0 right-0 app-col mx-auto p-4 bg-background border-t border-border">
         {isExternal ? (
           <Button onClick={handleGoExternal} className="w-full h-12 font-semibold">
             <ExternalLink className="w-5 h-5 mr-1" />

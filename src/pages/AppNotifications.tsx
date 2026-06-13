@@ -23,7 +23,7 @@ const AppNotifications = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader
         title="알림"
         rightExtra={

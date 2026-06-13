@@ -65,7 +65,7 @@ const PremiumContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
+    <div className="min-h-screen bg-background app-col mx-auto relative flex flex-col">
       <Seo title="프리미엄 콘텐츠·PDF 라이브러리 | Dewy" description="본식 타임라인, 가방순이 안내서, 예산 분석 리포트 등 결혼 준비 PDF 9종을 즉시 다운로드." path="/premium/content" />
       <header data-tutorial="premium-header" className="sticky safe-sticky-header z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">

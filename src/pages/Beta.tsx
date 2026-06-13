@@ -27,7 +27,7 @@ const Beta = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo
         title="Dewy 베타 신청 — AI 웨딩플래너 먼저 써보세요"
         description="Dewy는 결혼 준비 체크리스트, D-Day 일정, 예산 관리, 양가 분담, 웨딩홀·스드메 추천을 한곳에서 정리해주는 AI 웨딩플래너 앱입니다. 베타로 먼저 사용해보세요."

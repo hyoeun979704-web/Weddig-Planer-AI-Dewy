@@ -8,7 +8,7 @@ const Terms = () => {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader title="이용약관" />
 
       <main className="px-5 py-6 pb-24 text-[13px] leading-7 text-foreground">
