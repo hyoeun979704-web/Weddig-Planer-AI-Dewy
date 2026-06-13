@@ -1,7 +1,10 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, LogIn, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User as SupaUser } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { memberTierLabel, memberTierBadgeClass } from "@/lib/memberTier";
 
 interface UserProfileSectionProps {
   user: SupaUser | null;
@@ -10,6 +13,22 @@ interface UserProfileSectionProps {
 
 const UserProfileSection = ({ user, isLoading }: UserProfileSectionProps) => {
   const navigate = useNavigate();
+
+  // 본인 회원 등급 배지 — 본인 profile row read 는 RLS 허용. 'basic'(일반)은 미표시.
+  const [tier, setTier] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user) { setTier(null); return; }
+    let alive = true;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("member_tier")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (alive) setTier(data?.member_tier ?? null);
+    })();
+    return () => { alive = false; };
+  }, [user]);
 
   const getUserDisplayName = () => {
     if (user?.user_metadata?.full_name) return user.user_metadata.full_name;
@@ -64,7 +83,14 @@ const UserProfileSection = ({ user, isLoading }: UserProfileSectionProps) => {
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 text-left min-w-0">
-        <p className="text-base font-bold text-foreground truncate">{getUserDisplayName()}</p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-base font-bold text-foreground truncate">{getUserDisplayName()}</p>
+          {tier && tier !== "basic" && (
+            <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${memberTierBadgeClass(tier)}`}>
+              {memberTierLabel(tier)}
+            </span>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
       </div>
       <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />

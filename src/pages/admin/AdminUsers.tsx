@@ -6,12 +6,14 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { MEMBER_TIERS, memberTierLabel, type MemberTier } from "@/lib/memberTier";
 
 interface UserProfile {
   user_id: string;
   email: string | null;
   nickname: string | null;
   created_at: string;
+  member_tier: MemberTier;
   // 조인된 데이터
   roles: string[];
   hearts_balance: number;
@@ -29,7 +31,7 @@ const AdminUsers = () => {
     // profiles 기준으로 조회 (auth.users는 직접 조회 어려움)
     const { data: profiles, error } = await (supabase as any)
       .from("profiles")
-      .select("user_id, email, display_name, created_at")
+      .select("user_id, email, display_name, created_at, member_tier")
       .order("created_at", { ascending: false })
       .limit(200);
 
@@ -78,6 +80,7 @@ const AdminUsers = () => {
       email: p.email,
       nickname: p.display_name,
       created_at: p.created_at,
+      member_tier: (MEMBER_TIERS as string[]).includes(p.member_tier) ? p.member_tier : "basic",
       roles: rolesByUser[p.user_id] ?? [],
       hearts_balance: heartsByUser[p.user_id]?.balance ?? 0,
       hearts_spent: heartsByUser[p.user_id]?.spent ?? 0,
@@ -91,6 +94,28 @@ const AdminUsers = () => {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  // 회원 등급 변경 — 운영자 전용 RPC. 낙관적 갱신 + 실패 롤백.
+  const changeTier = useCallback(async (userId: string, tier: MemberTier) => {
+    let prev: MemberTier = "basic";
+    setUsers((list) =>
+      list.map((u) => {
+        if (u.user_id !== userId) return u;
+        prev = u.member_tier;
+        return { ...u, member_tier: tier };
+      }),
+    );
+    const { error } = await (supabase as any).rpc("admin_set_member_tier", {
+      p_user_id: userId,
+      p_tier: tier,
+    });
+    if (error) {
+      setUsers((list) => list.map((u) => (u.user_id === userId ? { ...u, member_tier: prev } : u)));
+      toast({ title: "등급 변경 실패", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "등급을 변경했어요", description: `${memberTierLabel(tier)} 등급으로 설정` });
+    }
+  }, []);
 
   const filtered = search
     ? users.filter(
@@ -128,6 +153,7 @@ const AdminUsers = () => {
                   <tr>
                     <th className="text-left px-4 py-2 font-semibold">사용자</th>
                     <th className="text-left px-4 py-2 font-semibold">역할</th>
+                    <th className="text-left px-4 py-2 font-semibold">회원 등급</th>
                     <th className="text-right px-4 py-2 font-semibold">하트 잔액</th>
                     <th className="text-right px-4 py-2 font-semibold">사용 하트</th>
                     <th className="text-right px-4 py-2 font-semibold">피팅</th>
@@ -152,6 +178,18 @@ const AdminUsers = () => {
                             <RoleBadge key={r} role={r} />
                           ))}
                         </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={u.member_tier}
+                          onChange={(e) => changeTier(u.user_id, e.target.value as MemberTier)}
+                          className="text-xs border border-border rounded-md px-2 py-1 bg-background text-foreground"
+                          aria-label={`${u.nickname || u.email || "회원"} 등급 변경`}
+                        >
+                          {MEMBER_TIERS.map((t) => (
+                            <option key={t} value={t}>{memberTierLabel(t)}</option>
+                          ))}
+                        </select>
                       </td>
                       <td className="px-4 py-3 text-right">
                         <span className="inline-flex items-center gap-1 text-foreground">
