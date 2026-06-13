@@ -62,7 +62,7 @@ const PlaceReviewWriteSheet = ({ open, onOpenChange, placeId, onSubmitted }: Pro
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl">
+      <SheetContent side="bottom" className="app-col mx-auto rounded-t-2xl">
         <SheetHeader>
           <SheetTitle>후기 작성</SheetTitle>
         </SheetHeader>

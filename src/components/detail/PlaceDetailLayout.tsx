@@ -164,7 +164,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24 relative">
+    <div className="min-h-screen bg-background app-col mx-auto pb-24 relative">
       {/* Slim top header — back / category chip / favorite */}
       <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between h-[var(--app-header-height)] px-4">
@@ -229,7 +229,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
       )}
 
       {/* Fixed bottom CTA */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-background border-t border-border p-3 z-40">
+      <div className="fixed bottom-0 left-0 right-0 app-col mx-auto bg-background border-t border-border p-3 z-40">
         <div className="flex gap-2">
           <Button
             variant="outline"

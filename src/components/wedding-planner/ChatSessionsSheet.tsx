@@ -58,7 +58,7 @@ const ChatSessionsSheet = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[80vh] overflow-y-auto">
+      <SheetContent side="bottom" className="app-col mx-auto rounded-t-2xl max-h-[80vh] overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">

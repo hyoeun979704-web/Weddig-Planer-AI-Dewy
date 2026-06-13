@@ -38,7 +38,7 @@ export default function PayBalanceSheet({ item, onOpenChange, onConfirm }: PayBa
 
   return (
     <Sheet open={!!item} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[85dvh] overflow-y-auto pb-8">
+      <SheetContent side="bottom" className="app-col mx-auto rounded-t-2xl max-h-[85dvh] overflow-y-auto pb-8">
         <SheetHeader className="mb-4">
           <SheetTitle className="text-base">잔금 결제</SheetTitle>
         </SheetHeader>
