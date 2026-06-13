@@ -280,12 +280,12 @@ const App = () => (
               <Route path="/business" element={<BusinessLanding />} />
               <Route path="/business/onboard" element={<BusinessOnboard />} />
               <Route path="/business/dashboard" element={<BusinessGuard><BusinessDashboard /></BusinessGuard>} />
-              <Route path="/business/edit" element={<BusinessGuard><BusinessVendorEdit /></BusinessGuard>} />
-              <Route path="/business/gallery" element={<BusinessGuard><BusinessGallery /></BusinessGuard>} />
-              <Route path="/business/coupons" element={<BusinessGuard><BusinessCoupons /></BusinessGuard>} />
-              <Route path="/business/events" element={<BusinessGuard><BusinessEvents /></BusinessGuard>} />
-              <Route path="/business/products" element={<BusinessGuard><BusinessProducts /></BusinessGuard>} />
-              <Route path="/business/inquiries" element={<BusinessGuard><BusinessInquiries /></BusinessGuard>} />
+              <Route path="/business/edit" element={<BusinessGuard requireApproved><BusinessVendorEdit /></BusinessGuard>} />
+              <Route path="/business/gallery" element={<BusinessGuard requireApproved><BusinessGallery /></BusinessGuard>} />
+              <Route path="/business/coupons" element={<BusinessGuard requireApproved><BusinessCoupons /></BusinessGuard>} />
+              <Route path="/business/events" element={<BusinessGuard requireApproved><BusinessEvents /></BusinessGuard>} />
+              <Route path="/business/products" element={<BusinessGuard requireApproved><BusinessProducts /></BusinessGuard>} />
+              <Route path="/business/inquiries" element={<BusinessGuard requireApproved><BusinessInquiries /></BusinessGuard>} />
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />

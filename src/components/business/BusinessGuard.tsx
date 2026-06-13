@@ -7,6 +7,13 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 interface BusinessGuardProps {
   children: ReactNode;
+  /**
+   * 승인(approval_status='approved')된 업체만 허용. 쿠폰·이벤트·상품·갤러리·
+   * 정보수정 등 *콘텐츠 관리* 페이지에 적용 — 승인 전 업체가 URL 직접 진입해
+   * 노출 안 되는 초안을 만드는 갭 차단. 미승인이면 대시보드(상태 화면)로 보낸다.
+   * 대시보드 자체는 pending/rejected 상태를 보여줘야 하므로 이 옵션을 쓰지 않는다.
+   */
+  requireApproved?: boolean;
 }
 
 /**
@@ -15,21 +22,29 @@ interface BusinessGuardProps {
  * - 역할 조회 실패 → "권한 없음"과 구분해 재시도 안내 (승인된 사업자가 일시
  *   오류로 튕기지 않도록)
  * - 일반 사용자 → 안내 + 홈
+ * - requireApproved 인데 미승인 → 대시보드로 (상태 확인)
  * - 사업자 → children
  *
  * 온보딩(/business/onboard)은 가입 전 진입이 정상이라 가드를 적용하지 않는다.
  */
-const BusinessGuard = ({ children }: BusinessGuardProps) => {
+const BusinessGuard = ({ children, requireApproved = false }: BusinessGuardProps) => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
-  const { isBusiness, isError, isLoading: roleLoading } = useUserRole();
+  const { isBusiness, isError, isLoading: roleLoading, businessProfile } = useUserRole();
 
   const isLoading = authLoading || roleLoading;
+  const needsApproval =
+    requireApproved && isBusiness && businessProfile?.approval_status !== "approved";
 
   useEffect(() => {
     if (isLoading) return;
-    if (!user) navigate("/auth", { replace: true });
-  }, [isLoading, user, navigate]);
+    if (!user) {
+      navigate("/auth", { replace: true });
+      return;
+    }
+    // 미승인 업체가 관리 페이지 URL 직접 진입 → 대시보드(상태 화면)로.
+    if (needsApproval) navigate("/business/dashboard", { replace: true });
+  }, [isLoading, user, needsApproval, navigate]);
 
   if (isLoading) {
     return (
@@ -40,6 +55,15 @@ const BusinessGuard = ({ children }: BusinessGuardProps) => {
   }
 
   if (!user) return null;
+
+  // 미승인 → useEffect 가 대시보드로 보내는 동안 스피너(콘텐츠 깜빡임 방지).
+  if (needsApproval) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (isError) {
     return (
