@@ -1591,7 +1591,7 @@ const InvitationStudio = () => {
             : "calc(var(--app-bottom-nav-total-height) + 80px)",
       }}
     >
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border">
+      <header className="sticky safe-sticky-header z-40 bg-card/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <button
             onClick={() => {

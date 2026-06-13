@@ -136,7 +136,7 @@ const BusinessOnboard = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto">
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
+      <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => (step > 0 && step < 2 ? setStep(step - 1) : navigate(-1))} className="w-10 h-10 flex items-center justify-center -ml-2">
             <ArrowLeft className="w-5 h-5" />

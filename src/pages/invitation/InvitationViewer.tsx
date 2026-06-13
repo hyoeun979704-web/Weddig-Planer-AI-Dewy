@@ -604,7 +604,7 @@ const InvitationViewer = () => {
           role="dialog"
           aria-label="갤러리 전체 보기"
         >
-          <div className="flex items-center justify-between px-4 h-12 border-b border-border bg-background/95 backdrop-blur sticky top-0">
+          <div className="flex items-center justify-between px-4 h-12 border-b border-border bg-background/95 backdrop-blur sticky safe-sticky-header">
             <button
               type="button"
               onClick={() => setGalleryView(null)}

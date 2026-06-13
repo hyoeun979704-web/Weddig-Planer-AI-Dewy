@@ -35,7 +35,7 @@ const GuestMyPage = () => {
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <Seo title="마이페이지 | Dewy" description="내 결혼 준비 진행 상황·예산·일정을 한눈에 관리하세요." path="/mypage" noIndex />
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
+      <header className="sticky safe-sticky-header z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
           <div className="w-5" />
@@ -180,7 +180,7 @@ const MyPage = () => {
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
       <Seo title="마이페이지 | Dewy" description="내 결혼 준비 진행 상황·예산·일정을 한눈에 관리하세요." path="/mypage" noIndex />
-      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border">
+      <header className="sticky safe-sticky-header z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
           <button onClick={() => navigate("/settings")} className="p-2 active:scale-90 transition-transform">
