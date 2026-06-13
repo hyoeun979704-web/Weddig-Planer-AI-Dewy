@@ -95,7 +95,7 @@ export default function MergeGame() {
     setAdBusy(true);
     setAdCfg({ title: '광고 보고 포인트 2배', cta: '포인트 2배 받기', close: '닫기 (2배 없이)', sec: 15 });
     try {
-      const ok = await showRewardedAd();
+      const ok = await showRewardedAd('double');
       if (ok) {
         claimedRef.current = true;
         const awarded = await saveScore(lastScoreRef.current, true);
@@ -127,7 +127,7 @@ export default function MergeGame() {
     setAdBusy(true);
     setAdCfg({ title: '광고 보고 한 판 더', cta: '한 판 더 플레이', close: '닫기 (플레이 안 함)', sec: 5 });
     try {
-      const ok = await showRewardedAd();
+      const ok = await showRewardedAd('extra');
       if (ok) {
         quota.consumeAd();
         lastScoreRef.current = null;

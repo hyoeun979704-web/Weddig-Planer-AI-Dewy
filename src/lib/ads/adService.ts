@@ -1,10 +1,11 @@
 // 통합 광고 서비스 — 네이티브(Capacitor)는 AdMob, 웹은 AdSense 로 분기.
 //
-// 환경변수(.env):
-//   VITE_ADSENSE_CLIENT        ca-pub-XXXXXXXXXXXXXXXX  (웹 배너)
-//   VITE_ADSENSE_BANNER_SLOT   1234567890               (웹 배너 슬롯)
-//   VITE_ADMOB_BANNER_ID       ca-app-pub-…/…           (네이티브 배너)
-//   VITE_ADMOB_REWARDED_ID     ca-app-pub-…/…           (네이티브 보상형)
+// 환경변수(.env) — 미설정 시 아래 Dewy 광고단위 기본값 사용:
+//   VITE_ADSENSE_CLIENT            ca-pub-…              (웹 배너)
+//   VITE_ADSENSE_BANNER_SLOT       1234567890            (웹 배너 슬롯)
+//   VITE_ADMOB_BANNER_ID           ca-app-pub-…/…        (네이티브 배너)
+//   VITE_ADMOB_REWARDED_ID         ca-app-pub-…/…        (네이티브 보상형 — 포인트 2배)
+//   VITE_ADMOB_REWARDED_EXTRA_ID   ca-app-pub-…/…        (네이티브 보상형 — 게임기회 1회 추가)
 //
 // 네이티브 사용 전 1회: `npm i @capacitor-community/admob` + `npx cap sync` +
 //   AndroidManifest 에 AdMob App ID 메타데이터 추가(플러그인 문서 참고).
@@ -18,8 +19,15 @@ export const ADSENSE_CLIENT = (import.meta.env.VITE_ADSENSE_CLIENT as string | u
 export const ADSENSE_BANNER_SLOT = (import.meta.env.VITE_ADSENSE_BANNER_SLOT as string | undefined) || "4600179427";
 // 웹 '2배 적립' 광고 슬롯. AdSense 엔 보상형이 없어 디스플레이 광고를 모달로 노출한다.
 export const ADSENSE_REWARDED_SLOT = (import.meta.env.VITE_ADSENSE_REWARDED_SLOT as string | undefined) || "1646713028";
-const ADMOB_BANNER_ID = import.meta.env.VITE_ADMOB_BANNER_ID as string | undefined;
-const ADMOB_REWARDED_ID = import.meta.env.VITE_ADMOB_REWARDED_ID as string | undefined;
+// AdMob 광고단위 ID 는 배포 APK 에 박혀 공개되는 값(시크릿 아님)이라 기본값으로 둬도 안전 —
+// env 미설정인 네이티브 빌드에서도 동작하도록 Dewy 실제 단위를 기본값으로(AdSense 와 동일 패턴).
+const ADMOB_BANNER_ID =
+  (import.meta.env.VITE_ADMOB_BANNER_ID as string | undefined) || "ca-app-pub-3558095447353368/8611781514";
+// 보상형은 게재위치별 단위가 다르다 — 포인트 2배 / 게임기회 1회 추가.
+const ADMOB_REWARDED_DOUBLE_ID =
+  (import.meta.env.VITE_ADMOB_REWARDED_ID as string | undefined) || "ca-app-pub-3558095447353368/8758376311";
+const ADMOB_REWARDED_EXTRA_ID =
+  (import.meta.env.VITE_ADMOB_REWARDED_EXTRA_ID as string | undefined) || "ca-app-pub-3558095447353368/6397660020";
 
 export const isNativeAds = () => Capacitor.isNativePlatform();
 
@@ -28,7 +36,7 @@ export const isNativeAds = () => Capacitor.isNativePlatform();
 //  - 웹: AdSense '2배 적립' 슬롯 설정 시(디스플레이 광고 모달로 대체).
 // UI 의 '광고 보고' 문구 분기에 사용.
 export const isRewardedAdAvailable = () =>
-  isNativeAds() ? !!ADMOB_REWARDED_ID : !!ADSENSE_REWARDED_SLOT;
+  isNativeAds() ? !!ADMOB_REWARDED_DOUBLE_ID : !!ADSENSE_REWARDED_SLOT;
 
 // 웹 보상형 브리지 — AdSense 엔 rewarded API 가 없어, React 쪽이 광고 모달을
 // 띄우고 완료(true)/취소(false)를 resolve 하는 핸들러를 등록한다. (adService 는
@@ -73,21 +81,25 @@ export async function initAds(): Promise<void> {
   }
 }
 
+// 보상형 게재위치 — 'double': 포인트 2배 / 'extra': 게임기회 1회 추가. 네이티브에서 단위 ID 선택.
+export type RewardedPlacement = "double" | "extra";
+
 /**
  * 보상형 광고를 띄우고, 시청 완료(보상 획득) 시 true.
- * - 네이티브: AdMob 보상형.
+ * - 네이티브: AdMob 보상형(게재위치별 광고단위).
  * - 웹: 표준 보상형이 없어(H5 Ad Placement 승인 별도) 일단 true 로 보상 지급하는
  *   graceful 폴백. 추후 웹 보상형 도입 시 이 분기만 교체.
  */
-export async function showRewardedAd(): Promise<boolean> {
+export async function showRewardedAd(placement: RewardedPlacement = "double"): Promise<boolean> {
   await initAds();
-  if (isNativeAds() && admob && ADMOB_REWARDED_ID) {
+  const adId = placement === "extra" ? ADMOB_REWARDED_EXTRA_ID : ADMOB_REWARDED_DOUBLE_ID;
+  if (isNativeAds() && admob && adId) {
     try {
       const mod = await import(/* @vite-ignore */ ADMOB_PKG);
       const Events = mod.RewardAdPluginEvents;
       // 이전 호출에서 남은 리스너 제거(누수·중복 발화 방지) 후 새로 등록.
       try { await admob.removeAllListeners(); } catch { /* noop */ }
-      await admob.prepareRewardVideoAd({ adId: ADMOB_REWARDED_ID });
+      await admob.prepareRewardVideoAd({ adId });
       return await new Promise<boolean>((resolve) => {
         let rewarded = false;
         const done = (v: boolean) => {

@@ -20,19 +20,21 @@ VITE_ADMOB_REWARDED_ID=ca-app-pub-XXXX/XXXX    # 보상형 광고 단위 ID
 - ⚠️ 웹 **보상형**은 표준 API 가 없습니다(H5 Ad Placement API 별도 승인). 지금은 폴백으로
   바로 2배 지급. 웹에서도 진짜 보상형이 필요하면 `adService.showRewardedAd()` 웹 분기만 교체.
 
-## 3) 네이티브 (AdMob, 안드로이드)
+## 3) 네이티브 (AdMob, 안드로이드) — Dewy 실제 단위 적용 완료
 ```
 npm i @capacitor-community/admob   # package.json 에 이미 추가됨
-npx cap sync
+npx cap sync                        # 네이티브 빌드 전 1회
 ```
-- `android/app/src/main/AndroidManifest.xml` 의 `<application>` 안에 AdMob **App ID** 메타데이터 추가:
-  ```xml
-  <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID"
-             android:value="ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"/>
-  ```
-- 위 `VITE_ADMOB_*` 에 **배너/보상형 광고 단위 ID** 입력.
+- **App ID**: `AndroidManifest.xml` 에 실제 값 적용됨 — `ca-app-pub-3558095447353368~7146431266`.
+- **광고단위 ID**: `adService.ts` 기본값으로 박혀 있어 env 없이도 동작(env 로 오버라이드 가능):
+  | 게재위치 | 광고단위 ID | env |
+  |---|---|---|
+  | 게임 하단 배너 | `…/8611781514` | `VITE_ADMOB_BANNER_ID` |
+  | 보상형 · 포인트 2배 | `…/8758376311` | `VITE_ADMOB_REWARDED_ID` |
+  | 보상형 · 게임기회 1회 추가 | `…/6397660020` | `VITE_ADMOB_REWARDED_EXTRA_ID` |
 - 배너는 시스템 하단 오버레이로 뜨고(게임 화면에서 자동 show/hide), 보상형은 게임오버의
-  "광고 보고 포인트 2배" 버튼에서 호출됩니다.
+  "광고 보고 포인트 2배"(double) · "광고 보고 한 판 더"(extra) 버튼에서 각각 호출됩니다.
+- ⚠️ ad unit ID 는 배포 APK 에 박혀 노출되는 **공개값**이라 코드 기본값으로 둬도 안전합니다.
 
 ## 코드 위치
 - `src/lib/ads/adService.ts` — 분기·초기화·`showRewardedAd()`·배너 show/hide
