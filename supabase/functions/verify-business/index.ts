@@ -75,43 +75,62 @@ serve(async (req) => {
     let isVerified = false;
     let invalidMessage = "";
     try {
-      // 공공데이터포털 키는 Encoding(이미 %로 URL 인코딩됨)/Decoding(원문) 두 형식이
-      // 있고, 개편된 포털은 한 가지만 보여준다. 어느 쪽을 등록해도 동작하도록
-      // %-시퀀스가 보이면 그대로, 아니면 우리가 인코딩한다(이중 인코딩 방지).
-      const serviceKey = /%[0-9A-Fa-f]{2}/.test(NTS_API_KEY)
-        ? NTS_API_KEY
-        : encodeURIComponent(NTS_API_KEY);
-      const verifyResp = await fetch(
-        `https://api.odcloud.kr/api/nts-businessman/v1/validate?serviceKey=${serviceKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            businesses: [
-              {
-                b_no: cleanBizNum,
-                start_dt: open_date?.replace(/-/g, "") || "",
-                p_nm: representative_name,
-                p_nm2: "",
-                b_nm: business_name,
-                corp_no: "",
-                b_sector: "",
-                b_type: "",
-              },
-            ],
-          }),
-        }
-      );
+      // 공공데이터포털 키는 Encoding(이미 %로 URL 인코딩됨)/Decoding(원문) 두 형식이 있고,
+      // 개편된 포털은 한 가지만 보여준다. 어느 쪽을 등록했는지 추정이 틀리면 NTS 가 키 오류로
+      // 응답해 503 이 났다(흔한 원인). → 두 형식을 모두 시도해 자동 보정한다.
+      const hasPct = /%[0-9A-Fa-f]{2}/.test(NTS_API_KEY);
+      const encoded = encodeURIComponent(NTS_API_KEY);
+      // 추정이 맞을 가능성이 높은 형식을 먼저, 실패 시 반대도 시도.
+      const candidates = hasPct ? [NTS_API_KEY, encoded] : [encoded, NTS_API_KEY];
+      const payload = JSON.stringify({
+        businesses: [
+          {
+            b_no: cleanBizNum,
+            start_dt: open_date?.replace(/-/g, "") || "",
+            p_nm: representative_name,
+            p_nm2: "",
+            b_nm: business_name,
+            corp_no: "",
+            b_sector: "",
+            b_type: "",
+          },
+        ],
+      });
 
-      if (!verifyResp.ok) {
-        console.warn("NTS API response not ok:", verifyResp.status);
+      let result: { valid?: string; valid_msg?: string } | undefined;
+      let lastDiag = "";
+      const tried = new Set<string>();
+      for (const key of candidates) {
+        if (tried.has(key)) continue;
+        tried.add(key);
+        let resp: Response;
+        try {
+          resp = await fetch(
+            `https://api.odcloud.kr/api/nts-businessman/v1/validate?serviceKey=${key}`,
+            { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }
+          );
+        } catch (e) {
+          lastDiag = `fetch error: ${e}`;
+          continue;
+        }
+        if (!resp.ok) {
+          // 실제 NTS 응답을 로그로 남겨 원인(키 미등록/미승인/형식 등)을 진단 가능하게.
+          lastDiag = `NTS ${resp.status}: ${(await resp.text().catch(() => "")).slice(0, 300)}`;
+          console.warn("verify-business NTS non-ok:", lastDiag);
+          continue;
+        }
+        const verifyData = await resp.json();
+        result = verifyData.data?.[0];
+        break;
+      }
+
+      if (result === undefined) {
+        console.error("verify-business: NTS 호출 실패(모든 키 형식 시도):", lastDiag);
         return new Response(
           JSON.stringify({ error: "사업자 인증 서버 연결에 실패했어요. 잠시 후 다시 시도해 주세요." }),
           { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const verifyData = await verifyResp.json();
-      const result = verifyData.data?.[0];
       console.log("NTS verification result:", JSON.stringify(result));
       if (result?.valid === "01") {
         isVerified = true;
