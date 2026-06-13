@@ -197,6 +197,8 @@ export async function buildVendorGrounding(
 ): Promise<VendorGrounding> {
   if (!isVendorQuery(text)) return EMPTY_VENDOR_GROUNDING;
   const category = inferVendorCategory(text)!;
+  // user-facing slug → DB places.category 변환 ('suit' ↔ 'tailor_shop'). 라벨은 category 유지.
+  const dbCategory = category === "suit" ? "tailor_shop" : category;
   // 질문 속 지역 우선, 없으면 사용자 예식 지역. 값은 위 allowlist 의
   // 고정 substring 만 — 원문 사용자 입력을 ILIKE/or() 에 넣지 않는다(인젝션 방어).
   const region = inferRegionIlike(text) ??
@@ -207,7 +209,7 @@ export async function buildVendorGrounding(
       .from("places")
       .select("name, category, city, district, avg_rating, min_price, is_partner")
       .eq("is_active", true)
-      .eq("category", category)
+      .eq("category", dbCategory)
       .order("is_partner", { ascending: false })
       .order("avg_rating", { ascending: false, nullsFirst: false })
       .limit(5);

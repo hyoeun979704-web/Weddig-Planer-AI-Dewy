@@ -20,12 +20,12 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
     const fetchCounts = async () => {
       const [favRes, pointsRes, heartsRes, orderRes] = await Promise.all([
         supabase.from("favorites").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("user_points").select("total_points").eq("user_id", user.id).maybeSingle(),
+        supabase.from("user_points").select("balance").eq("user_id", user.id).maybeSingle(),
         (supabase as any).from("user_hearts").select("balance").eq("user_id", user.id).maybeSingle(),
         supabase.from("orders").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       ]);
       setFavCount(favRes.count ?? 0);
-      setPoints(pointsRes.data?.total_points ?? 0);
+      setPoints(pointsRes.data?.balance ?? 0);
       setHearts(heartsRes.data?.balance ?? 0);
       setOrderCount(orderRes.count ?? 0);
     };
