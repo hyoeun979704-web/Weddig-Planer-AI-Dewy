@@ -1,0 +1,3 @@
+# 리서처(researcher.py) 전용 — browser-use(로컬). 코어와 분리(무겁고 브라우저 필요).
+# ⚠️ 정확한 핀 버전·playwright 설치는 설치 시점 문서 참고. Python 3.11+ 권장.
+browser-use>=0.1
