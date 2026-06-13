@@ -42,6 +42,13 @@ const RULES = [
     level: "error",
   },
   {
+    id: "dropped-legacy-table",
+    pattern: /from\(\s*["'`](venues|studios|suits|hanbok|honeymoon|honeymoon_gifts|appliances)["'`]/,
+    message:
+      "드롭된 레거시 테이블 참조. 현 구조는 places + place_* 서브타입입니다(예: 웨딩홀=places category=wedding_hall).",
+    level: "error",
+  },
+  {
     id: "window-confirm",
     pattern: /window\.confirm\s*\(/,
     message:

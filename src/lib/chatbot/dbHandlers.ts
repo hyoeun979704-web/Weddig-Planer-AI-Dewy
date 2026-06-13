@@ -16,6 +16,8 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeRegion } from "@/lib/regions";
+import { escapeLikePattern, quoteForOr } from "@/lib/postgrestEscape";
 import { categories as budgetCategories } from "@/data/budgetData";
 import { formatBudgetAmount } from "@/lib/budgetFormat";
 import { CHECKLIST_TEMPLATE } from "@/data/checklistTemplate";
@@ -393,11 +395,17 @@ export const handleRegion = async (ctx: DbHandlerContext): Promise<string> => {
     return "결혼 예정 지역이 미정으로 설정되어 있어요 \n지역이 정해지시면 마이페이지에서 업데이트해주세요. 그러면 그 지역 평균 시세·식장·스튜디오를 맞춤 추천해드릴게요.";
   }
 
-  // 같은 지역의 식장·스튜디오 수 조회 (있다면)
+  // 같은 지역의 웨딩홀 수 조회. 레거시 venues 테이블은 places 로 이행되며 제거됐다 →
+  // places(category=wedding_hall) 로 조회. 지역은 약자/풀네임 어떤 형태든 ILIKE-safe
+  // substring 으로 정규화(예: "충남"→"충청남")해야 0건 회귀를 피한다.
+  const regionKey = normalizeRegion(data.wedding_region) ?? data.wedding_region;
+  const safeRegion = quoteForOr(`%${escapeLikePattern(regionKey)}%`);
   const venueCount = await (supabase as any)
-    .from("venues")
-    .select("id", { count: "exact", head: true })
-    .ilike("address", `%${data.wedding_region}%`);
+    .from("places")
+    .select("place_id", { count: "exact", head: true })
+    .eq("category", "wedding_hall")
+    .eq("is_active", true)
+    .or(`city.ilike.${safeRegion},district.ilike.${safeRegion}`);
 
   const venueLine = (venueCount.count ?? 0) > 0
     ? `\n\n${data.wedding_region} 지역에 등록된 웨딩홀이 **${venueCount.count}곳** 있어요. [웨딩홀 페이지](/venues)에서 확인해보세요!`
