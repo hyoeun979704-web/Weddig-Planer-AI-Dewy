@@ -15,8 +15,12 @@
   :root {
     --android-safe-area-top: 0px;
     --android-safe-area-bottom: 0px;
-    --safe-top: max(env(safe-area-inset-top), var(--android-safe-area-top));
-    --safe-bottom: max(env(safe-area-inset-bottom), var(--android-safe-area-bottom));
+    /* 상태바/제스처바 안전영역 인셋. 일부 안드로이드(edge-to-edge + 카메라 컷아웃)에서
+       env(safe-area-inset-*) 가 상태바 높이보다 과도하게 큰 값을 보고해 헤더 위 흰
+       여백이 비정상적으로 커지는 사례가 있다. 휴대폰 상태바/네비바 최대치(54px)로
+       상한을 둬, 헤더가 상태바에 가려지지 않으면서 과여백을 방지한다. */
+    --safe-top: min(max(env(safe-area-inset-top), var(--android-safe-area-top)), 54px);
+    --safe-bottom: min(max(env(safe-area-inset-bottom), var(--android-safe-area-bottom)), 54px);
     --app-header-height: 56px;
     --app-header-total-height: calc(var(--app-header-height) + var(--safe-top));
     --app-tab-height: 56px;
