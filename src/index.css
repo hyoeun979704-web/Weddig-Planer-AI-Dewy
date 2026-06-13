@@ -15,13 +15,17 @@
   :root {
     --android-safe-area-top: 0px;
     --android-safe-area-bottom: 0px;
-    /* 이 앱은 edge-to-edge 가 아니라 시스템이 콘텐츠를 상태바/네비바 "아래"로 inset 한다
-       (상태바·네비바 색은 네이티브 테마 statusBarColor/navigationBarColor 로 지정).
-       그런데 viewport-fit=cover 때문에 env(safe-area-inset-*) 가 유령 인셋(~상태바 높이)을
-       반환해 헤더 위/아래에 빈 여백이 생겼었다. 시스템이 이미 inset 하므로 0 으로 둔다.
-       (향후 진짜 edge-to-edge 로 전환하면 env() 기반으로 되돌릴 것.) */
-    --safe-top: 0px;
-    --safe-bottom: 0px;
+    /* 이 앱은 안드로이드에서 edge-to-edge 다(Android 15/targetSdk 35 강제 +
+       StatusBar setOverlaysWebView({overlay:true})). 따라서 콘텐츠가 상태바/네비바
+       "뒤"까지 그려지므로 헤더·하단탭은 그 높이만큼 안쪽으로 들어가야 한다.
+       값의 출처는 MainActivity 가 안드로이드 공식 WindowInsets API
+       (systemBars()|displayCutout()) 로 측정해 주입하는 --android-safe-area-*.
+       WebView env(safe-area-inset-*) 는 viewport-fit=cover 와 결합 시 기기별로
+       유령 인셋을 내므로 신뢰하지 않고, 네이티브 측정값을 정식 소스로 쓴다.
+       웹/브라우저에서는 주입이 없어 0px → 영향 0.
+       (회귀 #287: 이 값을 0 으로 하드코딩해 헤더가 상태바에 가려졌던 것을 되돌림.) */
+    --safe-top: var(--android-safe-area-top);
+    --safe-bottom: var(--android-safe-area-bottom);
     --app-header-height: 56px;
     --app-header-total-height: calc(var(--app-header-height) + var(--safe-top));
     --app-tab-height: 56px;
