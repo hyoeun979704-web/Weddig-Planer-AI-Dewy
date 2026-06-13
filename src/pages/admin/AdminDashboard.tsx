@@ -16,6 +16,7 @@ import {
   Flag,
   Building2,
   Megaphone,
+  MessageSquare,
   MapPin,
   Instagram,
   ShoppingBag,
@@ -389,6 +390,8 @@ const AdminDashboard = () => {
             <QuickActionCard to="/admin/reports" label="신고 처리" icon={Flag} />
             <QuickActionCard to="/admin/product-curation" label="상품 큐레이션" icon={ShoppingBag} />
             <QuickActionCard to="/admin/featured-products" label="추천 상품 관리" icon={Star} />
+            <QuickActionCard to="/admin/inquiries" label="1:1 문의·불편접수" icon={MessageSquare} />
+            <QuickActionCard to="/admin/announcements" label="커뮤니티 공지" icon={Megaphone} />
             <QuickActionCard to="/" label="앱으로 돌아가기" icon={Sparkles} />
           </div>
         </section>

@@ -6,27 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import PostListCard, { PostListItem } from "./PostListCard";
 import { useCommunityAuthors } from "@/hooks/useCommunityAuthors";
 
-const PLACEHOLDERS: PostListItem[] = [
-  {
-    id: "placeholder-1",
-    title: "제목",
-    content: "내용",
-    views: 1246,
-    like_count: 165,
-    category_tag: "수다",
-    keyword_tags: ["일상", "공유"],
-  },
-  {
-    id: "placeholder-2",
-    title: "제목",
-    content: "내용",
-    views: 1246,
-    like_count: 165,
-    category_tag: "수다",
-    keyword_tags: ["일상", "공유"],
-  },
-];
-
 const SkeletonCard = () => (
   <Skeleton className="flex-1 min-w-0 h-[150px] rounded-[10px]" />
 );
@@ -76,7 +55,11 @@ const CommunityChatterSection = () => {
     author: authors.get(p.user_id).nickname,
   }));
 
-  const items: PostListItem[] = posts.length >= 2 ? posts.slice(0, 2) : PLACEHOLDERS;
+  const items: PostListItem[] = posts.slice(0, 2);
+
+  // 실제 글이 없으면 섹션을 숨긴다 — 과거엔 가짜 "제목/내용" 카드를 띄웠지만
+  // 가짜 콘텐츠 노출 금지(260613). 로딩 중에는 스켈레톤만 보여준다.
+  if (!isLoading && items.length === 0) return null;
 
   return (
     <section className="pt-[10px] pb-[20px] px-[20px] bg-[hsl(var(--pink-50))]">
@@ -101,11 +84,7 @@ const CommunityChatterSection = () => {
             <PostListCard
               key={post.id}
               post={post}
-              onClick={() =>
-                post.id.startsWith("placeholder")
-                  ? navigate("/community")
-                  : navigate(`/community/${post.id}`)
-              }
+              onClick={() => navigate(`/community/${post.id}`)}
             />
           ))
         )}

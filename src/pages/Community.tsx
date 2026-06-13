@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserBlocks } from "@/hooks/useCommunityModeration";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
+import CommunityAnnouncements from "@/components/community/CommunityAnnouncements";
 import AuthorChip from "@/components/community/AuthorChip";
 import { useCommunityAuthors } from "@/hooks/useCommunityAuthors";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -463,6 +464,9 @@ const Community = () => {
             글이 쌓이면 자동으로 필터링해드릴게요.
           </div>
         )}
+
+        {/* 운영자 전용 공지 — 활성 공지를 상단 고정 노출(운영자만 작성/관리). */}
+        <CommunityAnnouncements />
 
         <section className="bg-[hsl(var(--pink-100))] px-4 pt-5 pb-6">
           <div className="flex items-baseline justify-between mb-4">
