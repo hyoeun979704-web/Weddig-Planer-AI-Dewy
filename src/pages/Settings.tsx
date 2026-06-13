@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { confirm } from "@/components/ui/confirm-dialog";
 import { useTheme } from "next-themes";
 import { useDataUsageConsent } from "@/hooks/useDataUsageConsent";
 
@@ -50,9 +51,12 @@ const Settings = () => {
 
   const handleDeleteAccount = async () => {
     if (deleting) return;
-    const ok = window.confirm(
-      "정말 계정을 삭제할까요?\n\n계정과 모든 데이터(예산·일정·찜·작성글·결제내역 등)가 영구 삭제되며 복구할 수 없어요.",
-    );
+    const ok = await confirm({
+      title: "정말 계정을 삭제할까요?",
+      description: "계정과 모든 데이터(예산·일정·찜·작성글·결제내역 등)가 영구 삭제되며 복구할 수 없어요.",
+      confirmText: "삭제",
+      destructive: true,
+    });
     if (!ok) return;
     setDeleting(true);
     try {

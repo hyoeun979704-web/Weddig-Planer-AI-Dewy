@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import { confirm } from "@/components/ui/confirm-dialog";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
 import {
@@ -261,8 +262,8 @@ const Tutorial = () => {
         {overall.done > 0 && (
           <section className="px-4 pt-6">
             <button
-              onClick={() => {
-                if (confirm("튜토리얼 진행률을 초기화할까요? 다음 방문 시 다시 안내가 시작돼요.")) {
+              onClick={async () => {
+                if (await confirm({ title: "튜토리얼 진행률을 초기화할까요?", description: "다음 방문 시 다시 안내가 시작돼요." })) {
                   progress.reset();
                 }
               }}

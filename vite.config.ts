@@ -84,6 +84,14 @@ export default defineConfig(({ mode }) => {
             if (id.includes("@supabase")) return "vendor-supabase";
             if (id.includes("jspdf")) return "vendor-pdf";
             if (id.includes("html2canvas")) return "vendor-canvas";
+            // 무거운 기능 라이브러리를 분리해 메인(index) 청크 축소 → 초기 로딩 단축.
+            // ("konva" 는 react-konva 까지 포함. 청첩장 에디터에서만 쓰여 분리 효과 큼)
+            if (id.includes("konva")) return "vendor-konva";
+            if (id.includes("recharts")) return "vendor-charts";
+            if (id.includes("framer-motion")) return "vendor-motion";
+            if (id.includes("@tanstack")) return "vendor-query";
+            if (id.includes("react-router")) return "vendor-router";
+            if (id.includes("lucide-react")) return "vendor-icons";
             return undefined;
           },
         },

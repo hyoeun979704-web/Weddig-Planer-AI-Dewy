@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { confirm } from "@/components/ui/confirm-dialog";
 import { addPendingJob } from "@/lib/pendingJobs";
 
 // 2026 웨딩컨설팅 — 신부 사진 분석 → 매거진급 A4 보드(gpt-image-2 생성) 4종.
@@ -109,9 +110,11 @@ const WeddingConsulting = () => {
     if (selected.length === 0)
       return toast({ title: "섹션을 1개 이상 선택해주세요" });
     if (
-      !window.confirm(
-        `${selected.length === 4 ? "종합(4장)" : `${selected.length}개 섹션`} 컨설팅에 ${finalCost}하트가 차감돼요${discounted ? " (첫 1회 50% 할인)" : ""}. 진행할까요?\n(AI 생성이라 1~2분 걸릴 수 있어요.)`,
-      )
+      !(await confirm({
+        title: `${selected.length === 4 ? "종합(4장)" : `${selected.length}개 섹션`} 컨설팅에 ${finalCost}하트가 차감돼요${discounted ? " (첫 1회 50% 할인)" : ""}`,
+        description: "진행할까요? (AI 생성이라 1~2분 걸릴 수 있어요.)",
+        confirmText: "진행",
+      }))
     )
       return;
     setProcessing(true);

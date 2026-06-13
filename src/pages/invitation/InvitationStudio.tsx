@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { confirm } from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInvitationFonts, type InvitationFont } from "@/hooks/useInvitationFonts";
 import { useUndoable } from "@/hooks/useUndoable";
@@ -1139,9 +1140,11 @@ const InvitationStudio = () => {
     }
     // 비용 사전 확인 — 3하트는 환불이 어려우니 진행 전 한 번 더 묻는다.
     if (
-      !window.confirm(
-        "템플릿풍 약도 변환에 3하트가 차감됩니다. 진행할까요?",
-      )
+      !(await confirm({
+        title: "템플릿풍 약도 변환에 3하트가 차감됩니다",
+        description: "진행할까요?",
+        confirmText: "진행",
+      }))
     ) {
       return;
     }
