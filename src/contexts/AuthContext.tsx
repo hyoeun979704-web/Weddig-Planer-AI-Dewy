@@ -51,7 +51,8 @@ const backfillMarketingConsent = async (user: User) => {
               pendingTs = typeof parsed.ts === "number" ? parsed.ts : null;
             }
           } catch {
-            // malformed — 그대로 무시 후 정리.
+            // malformed — 무한 재시도되지 않도록 즉시 정리.
+            try { localStorage.removeItem(PENDING_MARKETING_KEY); } catch { /* noop */ }
           }
         }
         const STALE_MS = 24 * 60 * 60 * 1000;

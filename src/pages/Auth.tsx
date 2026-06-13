@@ -11,7 +11,9 @@ import { ArrowLeft, Mail, Lock, Eye, EyeOff, User, Building2, Calendar } from "l
 import DewyLogo from "@/components/home/DewyLogo";
 
 const emailSchema = z.string().email("올바른 이메일 형식을 입력해주세요");
-const passwordSchema = z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다");
+// 최소 8자 — 6자는 사전공격에 취약(NIST/정보통신망법 권장 미달). 복합 문자
+// 클래스 강제는 가입 전환율을 떨어뜨려 길이 기준만 상향(권장 균형).
+const passwordSchema = z.string().min(8, "비밀번호는 최소 8자 이상이어야 합니다");
 
 const MIN_AGE = 14;
 
@@ -135,10 +137,13 @@ const Auth = () => {
         if (accountType === "business") metadata.account_type = "business";
         const { error, needsEmailConfirm } = await signUp(email, password, metadata);
         if (error) {
+          // 원문(영문 raw) Supabase 에러는 내부 구현 노출 위험 → 알려진 케이스만
+          // 친화 문구, 그 외엔 제네릭. (상세는 콘솔에만)
           if (error.message.includes("already registered")) {
             toast.error("이미 가입된 이메일입니다");
           } else {
-            toast.error(error.message);
+            console.warn("signUp error:", error.message);
+            toast.error("가입 처리 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
           }
         } else if (needsEmailConfirm) {
           // 이메일 확인이 필요한 설정 — 아직 로그인 상태가 아니므로 홈으로
@@ -160,8 +165,11 @@ const Auth = () => {
         if (error) {
           if (error.message.includes("Invalid login")) {
             toast.error("이메일 또는 비밀번호가 올바르지 않습니다");
+          } else if (error.message.toLowerCase().includes("email not confirmed")) {
+            toast.error("이메일 인증이 아직 안 됐어요. 메일의 링크를 눌러 인증해주세요.");
           } else {
-            toast.error(error.message);
+            console.warn("signIn error:", error.message);
+            toast.error("로그인 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
           }
         } else {
           toast.success("로그인되었습니다!");
