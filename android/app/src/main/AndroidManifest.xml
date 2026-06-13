@@ -43,12 +43,11 @@
         </provider>
 
         <!-- AdMob App ID (필수). 없거나 틀리면 AdMob SDK 초기화 시 앱이 즉시 죽음.
-             ⚠️ 아래는 Google '테스트' App ID — 실제 배포 전 AdMob 콘솔의 실제
-             App ID(ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX)로 반드시 교체.
-             (보상형/배너 '광고단위' ID 는 .env 의 VITE_ADMOB_* 로 별도 주입) -->
+             Dewy AdMob 앱(pub-3558095447353368)의 실제 App ID.
+             (보상형/배너 '광고단위' ID 는 adService 의 VITE_ADMOB_*(또는 기본값)로 별도 주입) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-3558095447353368~7146431266" />
     </application>
 
     <!-- Permissions -->
