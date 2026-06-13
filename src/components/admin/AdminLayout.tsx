@@ -16,6 +16,9 @@ import {
   Instagram,
   MessageSquare,
   Megaphone,
+  MapPin,
+  Building2,
+  Flag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,6 +42,12 @@ const navItems: NavItem[] = [
   { label: "대시보드", href: "/admin", icon: LayoutDashboard },
   { label: "드레스 카탈로그", href: "/admin/dress-samples", icon: Shirt },
   { label: "메이크업 카탈로그", href: "/admin/makeup-samples", icon: Sparkles },
+  { label: "헤어 카탈로그", href: "/admin/hair-samples", icon: Sparkles },
+  { label: "업체 정보 관리", href: "/admin/places", icon: MapPin },
+  { label: "콘텐츠 검토", href: "/admin/content-review", icon: Megaphone },
+  { label: "기업회원 검토", href: "/admin/business-review", icon: Building2 },
+  { label: "신고 처리", href: "/admin/reports", icon: Flag },
+  { label: "AI 생성 현황", href: "/admin/ai-jobs", icon: Sparkles },
   { label: "청첩장 템플릿", href: "/admin/invitation-templates", icon: FileText },
   { label: "청첩장 에셋", href: "/admin/invitation-assets", icon: FileText },
   { label: "청첩장 폰트", href: "/admin/invitation-fonts", icon: FileText },
