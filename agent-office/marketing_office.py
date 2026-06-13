@@ -43,23 +43,24 @@ def save_draft(brief: str, content: str) -> Path:
     draft_dir.mkdir(exist_ok=True)
     ts = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     path = draft_dir / f"{ts}-{_slugify(brief)}.md"
-    # 자동 품질 검수(deslop) — 사람 가기 전 점수·이슈 산출.
+    # 자동 품질 검수(quality: deslop 룰 + LLM-judge) — 사람 가기 전 점수·통과여부 산출.
     try:
-        import deslop
-        rev = deslop.review(content)
+        import quality
+        rev = quality.evaluate(content, brief)
     except Exception:
-        rev = {"score": None, "issues": []}
+        rev = {"score": None, "passed": None, "issues": []}
     score = rev.get("score")
+    gate = "통과" if rev.get("passed") else "주의"
     issue_line = (" · 이슈: " + "; ".join(rev["issues"])) if rev.get("issues") else ""
     header = (f"<!-- 초안(자동 생성) · brief: {brief} · {ts} · 검수 후 게시"
-              f" · deslop {score}/10{issue_line} -->\n\n")
+              f" · 품질 {score}/10({gate}){issue_line} -->\n\n")
     path.write_text(header + content, encoding="utf-8")
     try:
         import runlog
         # 섀도 모드: 생성물은 pending 으로 큐에 — 사람 승인 전 미발행.
-        runlog.set_status(path.name, "pending", f"deslop {score}/10")
+        runlog.set_status(path.name, "pending", f"품질 {score}/10 {gate}")
         runlog.record_run("marketing", "마케팅 카피", "done", str(path.name),
-                          f"초안: {brief[:24]} (deslop {score}/10)")
+                          f"초안: {brief[:24]} (품질 {score}/10 {gate})")
     except Exception:
         pass
     # 앱 어드민 승인 큐로 업로드(env 있을 때만 — 폰에서 승인 가능). 실패해도 로컬 큐는 유지.
