@@ -1,0 +1,21 @@
+<!-- Supabase: Invite user · 제목: [Dewy] 초대장이 도착했어요 -->
+<div style="max-width:480px;margin:0 auto;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#FDF8F6;padding:32px 24px;border-radius:16px;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <div style="font-size:28px;">💌</div>
+    <h1 style="font-size:20px;color:#3a2e33;margin:8px 0 4px;">Dewy 초대장</h1>
+    <p style="font-size:13px;color:#9b8e93;margin:0;">둘이니까, 쉬워지니까</p>
+  </div>
+  <div style="background:#fff;border:1px solid #f0e2e7;border-radius:14px;padding:24px;">
+    <p style="font-size:15px;color:#3a2e33;line-height:1.7;margin:0 0 20px;">
+      Dewy에 초대되었어요! 아래 버튼을 눌러 가입을 완료하고<br/>함께 결혼 준비를 시작해 보세요.
+    </p>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#F4A7B9;color:#5a2233;text-decoration:none;font-weight:700;font-size:15px;padding:14px 32px;border-radius:999px;">초대 수락하기</a>
+    </div>
+    <p style="font-size:12px;color:#9b8e93;line-height:1.6;margin:16px 0 0;">
+      버튼이 안 되면 아래 주소를 복사해 브라우저에 붙여넣어 주세요.<br/>
+      <span style="color:#b98ea0;word-break:break-all;">{{ .ConfirmationURL }}</span>
+    </p>
+  </div>
+  <p style="font-size:11px;color:#b9adb2;text-align:center;margin-top:20px;">© 2026 Dewy · dewy-wedding.com</p>
+</div>
