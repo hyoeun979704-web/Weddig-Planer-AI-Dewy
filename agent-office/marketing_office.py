@@ -62,6 +62,13 @@ def save_draft(brief: str, content: str) -> Path:
                           f"초안: {brief[:24]} (deslop {score}/10)")
     except Exception:
         pass
+    # 앱 어드민 승인 큐로 업로드(env 있을 때만 — 폰에서 승인 가능). 실패해도 로컬 큐는 유지.
+    try:
+        import supabase_bridge
+        supabase_bridge.push_output("draft", brief, source="marketing", body=content,
+                                    deslop_score=score, issues="; ".join(rev.get("issues") or []) or None)
+    except Exception:
+        pass
     return path
 
 
