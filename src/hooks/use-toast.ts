@@ -1,6 +1,7 @@
-// 토스트 시스템 단일화 — shadcn toast() 호출은 모두 sonner로 어댑트.
-// 기존 use-toast 큐 시스템을 sonner toast 함수로 감싸 시그니처(title·description·variant) 유지.
-// 호출처(13개 파일)는 코드 수정 없이 sonner 출력으로 통일.
+// 토스트 시스템 단일화 — 앱의 유일한 렌더러는 sonner(App.tsx 의 <Sonner/>) 하나다.
+// 이 파일은 레거시 shadcn `toast({ title, description, variant })` 시그니처를 sonner 로
+// 어댑트하는 호환 shim(단일 소스). 신규 코드는 `import { toast } from "sonner"` 직접 사용,
+// 기존 호출처는 이 shim 으로 동일하게 sonner 출력. (구 shadcn Toaster/toast 프리미티브는 제거됨.)
 
 import * as React from "react";
 import { toast as sonnerToast } from "sonner";
