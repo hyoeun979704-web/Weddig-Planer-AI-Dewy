@@ -27,6 +27,10 @@ function calculateAge(birth: Date, today: Date = new Date()): number {
 
 type AccountType = "individual" | "business";
 
+// 생년월일 기본값 — 현 시점 기준 22년 전(주 사용층 연령대)으로 달력이 열리게 한다.
+// (값을 비워두면 달력이 올해로 열려 수십 년을 거슬러 올라가야 함)
+const defaultBirthDate = () => `${new Date().getFullYear() - 22}-01-01`;
+
 const Auth = () => {
   const navigate = useNavigate();
   const { user, isLoading, signUp, signIn, signInWithGoogle, signInWithKakao, signInWithApple } = useAuth();
@@ -37,7 +41,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [birthDate, setBirthDate] = useState("");
+  const [birthDate, setBirthDate] = useState(defaultBirthDate());
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -556,7 +560,7 @@ const Auth = () => {
                 // 기업 가입 링크(?type=business)로 온 사용자는 토글을 오가도
                 // 기업 의도를 유지한다(전환 깔때기 이탈 방지).
                 setAccountType(startAsBusiness ? "business" : "individual");
-                setBirthDate("");
+                setBirthDate(defaultBirthDate());
                 setAgeConfirmed(false);
               }}
               className="text-primary font-medium"
