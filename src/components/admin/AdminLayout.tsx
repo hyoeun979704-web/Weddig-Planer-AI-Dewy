@@ -20,6 +20,7 @@ import {
   Building2,
   Flag,
   AlertTriangle,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,6 +60,7 @@ const navItems: NavItem[] = [
   { label: "1:1 문의·불편접수", href: "/admin/inquiries", icon: MessageSquare },
   { label: "커뮤니티 공지", href: "/admin/announcements", icon: Megaphone },
   { label: "오류 모니터링", href: "/admin/error-logs", icon: AlertTriangle },
+  { label: "에이전트 산출물", href: "/admin/agent-outputs", icon: Bot },
 ];
 
 const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutProps) => {
