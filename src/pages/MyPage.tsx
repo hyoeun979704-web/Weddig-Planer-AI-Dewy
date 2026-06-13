@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Seo from "@/components/Seo";
-import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Users, ArrowRight, Crown } from "lucide-react";
+import { Settings, LogIn, UserPlus, Heart, Gift, Sparkles, Calendar, Wallet, ChevronRight, Users, ArrowRight, Crown, Bell } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import DewyLogo from "@/components/home/DewyLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAppNotifications } from "@/hooks/useAppNotifications";
 import { toast } from "sonner";
 import UserProfileSection from "@/components/mypage/UserProfileSection";
 import DdayCard from "@/components/mypage/DdayCard";
@@ -139,6 +140,7 @@ const MyPage = () => {
   const { user, isLoading, signOut } = useAuth();
   const { weddingSettings } = useWeddingSchedule();
   const { isAdmin } = useUserRole();
+  const { unreadCount } = useAppNotifications();
   const weddingInfoPrompt = useWeddingInfoPrompt();
   const consent = useDataCollectionConsent();
   const [consentReviewOpen, setConsentReviewOpen] = useState(false);
@@ -183,9 +185,23 @@ const MyPage = () => {
       <header className="sticky safe-sticky-header z-40 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-lg font-bold text-foreground">마이페이지</h1>
-          <button onClick={() => navigate("/settings")} className="p-2 active:scale-90 transition-transform">
-            <Settings className="w-5 h-5 text-muted-foreground" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate("/notifications/inbox")}
+              aria-label={unreadCount > 0 ? `알림 ${unreadCount}개` : "알림"}
+              className="relative p-2 active:scale-90 transition-transform"
+            >
+              <Bell className="w-5 h-5 text-muted-foreground" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-card">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </button>
+            <button onClick={() => navigate("/settings")} aria-label="설정" className="p-2 active:scale-90 transition-transform">
+              <Settings className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </div>
         </div>
       </header>
 
