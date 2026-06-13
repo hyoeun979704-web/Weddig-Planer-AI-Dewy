@@ -121,6 +121,23 @@ python retro.py --write    # learnings.md 에 회고 append
 ```
 가드레일: `GUARDRAILS.md`(자동발행 금지·인젝션 방어·비용캡·service_role 로컬전용 등) — 에이전트가 항상 로드.
 
+### 런타임 가드레일 (비용 캡 · 서킷브레이커)
+`guardrails.py` — LLM 작업 전 `can_run()` 점검, 후 `record()`. 일일 호출 캡 초과/연속 실패 시 차단.
+크루(`marketing_office`)에 강제 연결됨. 한도: `AGENT_DAILY_CALL_CAP`(기본 50)·`AGENT_FAIL_STREAK_TRIP`(기본 3).
+```
+python guardrails.py            # 현재 사용량/상태
+python guardrails.py --reset    # 서킷브레이커 해제(원인 확인 후)
+```
+
+### 테스트
+```
+python -m unittest discover -s tests   # deslop·quality·큐·가드레일 회귀(추가 설치 없음)
+```
+
+### 모델 문자열 (중요)
+CrewAI·browser-use 는 LiteLLM 경유라 `anthropic/claude-...`(config.CREW_*), Anthropic SDK 직접
+호출(quality.judge)은 `claude-...`(config.ROUTER/MARKETER_MODEL) — 형식이 달라 분리돼 있다.
+
 ## 시각 자산 (Higgsfield)
 
 이미지/숏폼 생성은 Higgsfield CLI 로 처리한다. 두 가지 사용 경로:
