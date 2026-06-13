@@ -181,7 +181,10 @@ const InvitationViewer = () => {
       ? Math.trunc(companionCount)
       : 0;
 
-    if (!name) return;
+    if (!name) {
+      toast({ title: "성함을 입력해주세요." });
+      return;
+    }
     if (name.length > RSVP_NAME_MAX_LENGTH) {
       toast({ title: "성함은 80자 이내로 입력해주세요." });
       return;

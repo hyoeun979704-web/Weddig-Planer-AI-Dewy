@@ -545,7 +545,9 @@ const Auth = () => {
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setErrors({});
-                setAccountType("individual");
+                // 기업 가입 링크(?type=business)로 온 사용자는 토글을 오가도
+                // 기업 의도를 유지한다(전환 깔때기 이탈 방지).
+                setAccountType(startAsBusiness ? "business" : "individual");
                 setBirthDate("");
                 setAgeConfirmed(false);
               }}
