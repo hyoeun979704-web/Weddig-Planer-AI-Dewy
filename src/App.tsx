@@ -121,6 +121,7 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminInquiries = lazy(() => import("./pages/admin/AdminInquiries"));
 const AdminCommunityAnnouncements = lazy(() => import("./pages/admin/AdminCommunityAnnouncements"));
+const AdminErrorLogs = lazy(() => import("./pages/admin/AdminErrorLogs"));
 const SupportChat = lazy(() => import("./pages/SupportChat"));
 const AdminBusinessReview = lazy(() => import("./pages/admin/AdminBusinessReview"));
 const AdminProductCuration = lazy(() => import("./pages/admin/AdminProductCuration"));
@@ -334,6 +335,7 @@ const App = () => (
               <Route path="/admin/reports" element={<AdminGuard><AdminReports /></AdminGuard>} />
               <Route path="/admin/inquiries" element={<AdminGuard><AdminInquiries /></AdminGuard>} />
               <Route path="/admin/announcements" element={<AdminGuard><AdminCommunityAnnouncements /></AdminGuard>} />
+              <Route path="/admin/error-logs" element={<AdminGuard><AdminErrorLogs /></AdminGuard>} />
               <Route path="/admin/business-review" element={<AdminGuard><AdminBusinessReview /></AdminGuard>} />
               <Route path="/admin/product-curation" element={<AdminGuard><AdminProductCuration /></AdminGuard>} />
               <Route path="/admin/featured-products" element={<AdminGuard><AdminFeaturedProducts /></AdminGuard>} />
