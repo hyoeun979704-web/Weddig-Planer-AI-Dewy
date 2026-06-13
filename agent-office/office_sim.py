@@ -22,6 +22,11 @@ import threading
 import time
 
 # ── ANSI ────────────────────────────────────────────────────────────────────
+# Windows(PowerShell/conhost)에서 ANSI 이스케이프 처리 활성화 — 없으면 색/커서 코드가
+# 그대로 글자로 보인다. os.system("") 는 Windows 10+ 콘솔의 VT 처리를 켜는 표준 트릭.
+if os.name == "nt":
+    os.system("")
+
 CSI = "\x1b["
 RESET = CSI + "0m"
 DIM = CSI + "2m"
