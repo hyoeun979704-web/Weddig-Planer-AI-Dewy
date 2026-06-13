@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { confirm } from "@/components/ui/confirm-dialog";
 import { addPendingJob } from "@/lib/pendingJobs";
 
 // 사진 체형 보정 — 1회 최대 8장 일괄. 화질 개선 기본 + 슬림/비율 보정.
@@ -130,9 +131,11 @@ const PhotoFix = () => {
     const selected = OPTIONS.filter((o) => opts.has(o.key)).map((o) => o.label);
     const summary = [...selected, ...(customText.trim() ? ["요청사항"] : [])].join("·") || "기본 보정";
     if (
-      !window.confirm(
-        `사진 ${picks.length}장 보정(${summary})에 ${finalCost}하트가 차감돼요${discounted ? " (첫 1회 50% 할인 적용)" : ""}. 진행할까요?`,
-      )
+      !(await confirm({
+        title: `사진 ${picks.length}장 보정에 ${finalCost}하트가 차감돼요${discounted ? " (첫 1회 50% 할인)" : ""}`,
+        description: `보정 항목: ${summary}. 진행할까요?`,
+        confirmText: "진행",
+      }))
     )
       return;
 
