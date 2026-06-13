@@ -6,6 +6,7 @@ import PageHeader from "@/components/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatWon as formatPrice } from "@/lib/priceFormat";
 
 interface OrderItem {
   id: string;
@@ -33,7 +34,6 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; col
   cancelled: { label: "취소됨", icon: XCircle, color: "text-destructive" },
 };
 
-const formatPrice = (price: number) => price.toLocaleString() + "원";
 const formatDate = (dateStr: string) => {
   const d = new Date(dateStr);
   return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;

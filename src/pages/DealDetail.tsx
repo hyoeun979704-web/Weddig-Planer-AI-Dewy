@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { usePartnerDealDetail, usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { useAuth } from "@/contexts/AuthContext";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { formatWon as formatPrice } from "@/lib/priceFormat";
 
 const dealTypeLabels: Record<string, { label: string; color: string }> = {
   discount: { label: "할인", color: "bg-red-100 text-red-600" },
@@ -16,9 +17,6 @@ const dealTypeLabels: Record<string, { label: string; color: string }> = {
   coupon: { label: "쿠폰", color: "bg-amber-100 text-amber-600" },
 };
 
-const formatPrice = (price: number): string => {
-  return price.toLocaleString() + "원";
-};
 
 const formatDate = (dateStr: string | null): string => {
   if (!dateStr) return "";

@@ -153,6 +153,12 @@ const inferCategory = (text: string): string | null => {
   return null;
 };
 
+// inferCategory 출력은 user-facing slug. DB places.category 와 일부 다름
+// ('suit' ↔ 'tailor_shop'). 쿼리(.eq("category", ...)) 전 반드시 변환한다.
+// 라벨(PLACE_CATEGORY_LABEL)·라우트는 user-facing slug 를 그대로 쓰고, 쿼리만 toDbCategory.
+const INFER_TO_DB_CATEGORY: Record<string, string> = { suit: "tailor_shop" };
+const toDbCategory = (cat: string): string => INFER_TO_DB_CATEGORY[cat] ?? cat;
+
 const inferRegion = (text: string): string | null => {
   for (const r of REGION_KEYWORDS) {
     if (text.includes(r)) {
@@ -194,7 +200,7 @@ export const handleFreeTextSearch = async (
     .eq("is_active", true)
     .limit(15);
 
-  if (category) query = query.eq("category", category);
+  if (category) query = query.eq("category", toDbCategory(category));
   if (region) {
     // Round 15 P1 — ILIKE wildcards + .or() commas/parens 둘 다 escape. inferRegion 이
     // 현재 allowlist 라 안전하지만 향후 raw 입력 확장 시 injection 방어.
@@ -308,7 +314,7 @@ export const handleAveragePrice = async (
   let query = (supabase as any)
     .from("places")
     .select("min_price, district, updated_at")
-    .eq("category", category)
+    .eq("category", toDbCategory(category))
     .eq("is_active", true)
     .not("min_price", "is", null);
 
@@ -402,7 +408,7 @@ export const handlePopularPlaces = async (
     .gte("review_count", 5)
     .order("avg_rating", { ascending: false });
 
-  if (category) query = query.eq("category", category);
+  if (category) query = query.eq("category", toDbCategory(category));
   if (region) {
     // Round 15 P1 — ILIKE wildcards + .or() commas/parens 둘 다 escape. inferRegion 이
     // 현재 allowlist 라 안전하지만 향후 raw 입력 확장 시 injection 방어.
@@ -488,12 +494,8 @@ export const handleVenueCompare = async (
   const category = inferCategory(userMessage) ?? "wedding_hall";
   const region = inferRegion(userMessage);
 
-  // F#3 — inferCategory 출력은 user-facing 카테고리 slug. DB 컬럼 places.category
-  // 와는 일부 다름 ('suit' ↔ 'tailor_shop'). 쿼리 전 변환.
-  const inferToDbCategory: Record<string, string> = {
-    suit: "tailor_shop",
-  };
-  const dbCategory = inferToDbCategory[category] ?? category;
+  // inferCategory 출력(user-facing slug)을 DB places.category 로 변환(모듈 공용 헬퍼).
+  const dbCategory = toDbCategory(category);
 
   // 비교는 5곳을 기본. 메시지에 숫자가 있으면 그 값(3~10) 으로.
   const numMatch = userMessage.match(/(\d+)\s*곳/);

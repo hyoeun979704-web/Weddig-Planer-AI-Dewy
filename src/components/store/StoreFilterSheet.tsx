@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { STORE_CATEGORIES } from "@/lib/storeCategories";
+import { formatManwon as formatPrice } from "@/lib/priceFormat";
 
 export interface StoreFilters {
   category: string | null;
@@ -31,7 +32,6 @@ interface StoreFilterSheetProps {
   onApply: (filters: StoreFilters) => void;
 }
 
-const formatPrice = (v: number) => (v >= 10000 ? `${(v / 10000).toFixed(0)}만원` : `${v.toLocaleString()}원`);
 
 const StoreFilterSheet = ({ open, onOpenChange, filters, onApply }: StoreFilterSheetProps) => {
   const [local, setLocal] = useState<StoreFilters>(filters);

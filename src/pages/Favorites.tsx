@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { formatWon as formatPrice } from "@/lib/priceFormat";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Heart,
@@ -114,7 +115,6 @@ interface FavItem {
   myFavRowId: string | null;
 }
 
-const formatPrice = (price: number) => price.toLocaleString() + "원";
 
 const emptyStateCTA = (
   weddingStyle: string | null,

@@ -31,12 +31,14 @@ export function useGamePoints() {
     queryKey: ['user-points', user?.id],
     queryFn: async () => {
       if (!user) return 0;
+      // balance = 실제 사용 가능한 잔액(earn 시 증가, spend 시 감소). 레거시 total_points 는
+      // spend 시 차감되지 않아 사용량과 어긋나므로 balance 를 단일 진실로 읽는다.
       const { data } = await supabase
         .from('user_points')
-        .select('total_points')
+        .select('balance')
         .eq('user_id', user.id)
         .maybeSingle();
-      return data?.total_points ?? 0;
+      return data?.balance ?? 0;
     },
     enabled: !!user,
     staleTime: 60_000,
