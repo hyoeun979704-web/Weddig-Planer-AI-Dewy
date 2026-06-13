@@ -136,6 +136,24 @@
       BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
+  /* 상태바를 브랜드 프라이머리(#F6909B)로.
+     Android 15(targetSdk 35)는 edge-to-edge 강제 + 네이티브 statusBarColor 무시라,
+     상태바 영역(콘텐츠가 그 뒤까지 그려짐)을 web 레이어에서 직접 칠한다.
+     높이는 MainActivity 가 기기별로 실측해 주입하는 --safe-top → 노치/펀치홀 무관 반응형.
+     아이콘 가독성은 네이티브 테마 windowLightStatusBar=true(어두운 아이콘)가 담당.
+     웹/브라우저는 --safe-top=0 → 높이 0 → 비표시(영향 0). 상태바 아이콘 위라 pointer-events:none. */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--safe-top);
+    background: hsl(var(--primary));
+    z-index: 2147483647;
+    pointer-events: none;
+  }
+
   .font-logo {
     /* Figma 'Geom' substitute — rounded geometric sans */
     font-family: "Poppins", "SUITE Variable", sans-serif;
