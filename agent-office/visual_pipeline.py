@@ -18,16 +18,20 @@ import re
 from pathlib import Path
 
 import config
+import lighting as lighting_lib
 from providers import AssetSpec, DryRunProvider, HiggsfieldCLIProvider
 
 
-def to_visual_prompt(brief: str) -> str:
+def to_visual_prompt(brief: str, lighting: str = "") -> str:
     """기획안(brief) → 이미지 생성용 프롬프트. LLM 없이 동작하도록 규칙 기반 래핑.
-    더 정교하게 하려면 marketing_office 의 카피라이터를 거쳐 프롬프트를 다듬을 수 있다(후속)."""
-    return (
-        f"{brief}. 한국 웨딩 감성, 따뜻하고 자연스러운 조명, 고급스러운 색감, "
-        f"인물 중심, 광고용 고해상도. 텍스트/워터마크 없음."
+    lighting 키가 주어지면 해당 포트레이트 조명 묘사를 덧붙인다(인물/커플 사진)."""
+    base = (
+        f"{brief}. 한국 웨딩 감성, 고급스러운 색감, 인물 중심, 광고용 고해상도. 텍스트/워터마크 없음."
     )
+    light = lighting_lib.lighting_prompt(lighting) if lighting else ""
+    if not light:
+        base += " 따뜻하고 자연스러운 조명."
+    return base + light
 
 
 def _slug(text: str) -> str:
@@ -36,13 +40,13 @@ def _slug(text: str) -> str:
     return (s[:40] or "asset").strip("-")
 
 
-def run(brief: str, aspect: str, dry_run: bool) -> int:
+def run(brief: str, aspect: str, dry_run: bool, lighting: str = "") -> int:
     asset_dir = Path(__file__).parent / config.ASSET_DIR
     asset_dir.mkdir(exist_ok=True)
     ts = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     out_path = str(asset_dir / f"{ts}-{_slug(brief)}.png")
 
-    spec = AssetSpec(prompt=to_visual_prompt(brief), aspect_ratio=aspect, out_path=out_path)
+    spec = AssetSpec(prompt=to_visual_prompt(brief, lighting), aspect_ratio=aspect, out_path=out_path)
 
     if dry_run:
         provider = DryRunProvider()
@@ -74,11 +78,18 @@ def run(brief: str, aspect: str, dry_run: bool) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Dewy 마케팅 시각 자산 파이프라인")
-    ap.add_argument("brief", nargs="+", help="시각 자산 기획안(텍스트)")
+    ap.add_argument("brief", nargs="*", help="시각 자산 기획안(텍스트)")
     ap.add_argument("--aspect", default="9:16", help="화면비(기본 9:16 릴스/쇼츠)")
+    ap.add_argument("--lighting", default="", help="포트레이트 조명 프리셋 키(--list-lighting 으로 확인)")
+    ap.add_argument("--list-lighting", action="store_true", help="사용 가능한 조명 프리셋 목록")
     ap.add_argument("--dry-run", action="store_true", help="CLI 호출 없이 흐름만 확인")
     args = ap.parse_args()
-    return run(" ".join(args.brief).strip(), args.aspect, args.dry_run)
+    if args.list_lighting:
+        print("조명 프리셋:", lighting_lib.list_keys())
+        return 0
+    if not args.brief:
+        ap.error("기획안(brief)을 입력하세요. 예: visual_pipeline.py \"성수동 야외 웨딩\" --lighting rembrandt")
+    return run(" ".join(args.brief).strip(), args.aspect, args.dry_run, args.lighting)
 
 
 if __name__ == "__main__":
