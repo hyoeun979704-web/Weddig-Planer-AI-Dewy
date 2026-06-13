@@ -25,7 +25,7 @@ const SurveyModal = ({ isOpen, onClose, title, children }: SurveyModalProps) => 
             onClick={onClose}
           />
           <motion.div
-            className={`fixed z-50 bg-white overflow-hidden flex flex-col ${
+            className={`fixed z-50 bg-card overflow-hidden flex flex-col ${
               isMobile
                 ? "inset-x-0 bottom-0 rounded-t-2xl"
                 : "left-1/2 top-1/2 rounded-2xl w-full max-w-[520px]"

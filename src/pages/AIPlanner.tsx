@@ -653,7 +653,7 @@ const AIPlanner = () => {
                   className="inline-flex items-center gap-1.5 max-w-full px-3 py-1.5 rounded-full border border-border bg-muted/60 text-xs text-muted-foreground"
                 >
                   <Brain className="w-3 h-3 shrink-0 text-primary" />
-                  <span className="truncate">이렇게 기억할게요: “{m.fact_text}”</span>
+                  <span className="truncate min-w-0">이렇게 기억할게요: “{m.fact_text}”</span>
                   <button
                     onClick={() => confirmRecentMemory(m.id)}
                     className="shrink-0 p-0.5 rounded-full hover:bg-primary/10 text-primary active:scale-90 transition-all"

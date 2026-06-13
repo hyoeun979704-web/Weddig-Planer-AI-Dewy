@@ -17,7 +17,7 @@ const LockedCard = ({ title, description, badge, imageUrl, imageAlt = "", onClic
   <button
     type="button"
     onClick={onClick}
-    className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform group"
+    className="bg-card rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform group"
   >
     <div className="relative aspect-square bg-[#e5e5e5] overflow-hidden">
       {imageUrl && (

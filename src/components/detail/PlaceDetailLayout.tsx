@@ -164,7 +164,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
       {/* Slim top header — back / category chip / favorite */}
       <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between h-[var(--app-header-height)] px-4">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center -ml-2" aria-label="뒤로 가기">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="font-semibold text-base line-clamp-1 flex-1 text-center px-2">{place.name}</h1>

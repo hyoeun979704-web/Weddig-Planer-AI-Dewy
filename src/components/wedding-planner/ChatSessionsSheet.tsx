@@ -75,7 +75,9 @@ const ChatSessionsSheet = ({
           </button>
           {atLimit && (
             <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
-              채팅창 한도에 도달했어요. 기존 채팅을 삭제하면 새로 시작할 수 있어요.
+              {isPremium
+                ? "채팅창을 모두 사용하고 있어요. 오래된 채팅을 삭제하면 새로 시작할 수 있어요."
+                : "채팅창 한도에 도달했어요. 기존 채팅을 삭제하면 새로 시작할 수 있어요."}
               {!isPremium && (
                 <>
                   {" "}

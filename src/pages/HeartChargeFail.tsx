@@ -28,6 +28,12 @@ const HeartChargeFail = () => {
         >
           포인트 페이지로
         </button>
+        <button
+          onClick={() => navigate(-1)}
+          className="px-5 py-3 text-sm text-muted-foreground underline underline-offset-2"
+        >
+          뒤로 가기
+        </button>
       </div>
     </div>
   );
