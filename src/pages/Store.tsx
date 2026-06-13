@@ -10,6 +10,7 @@ import SortToggle, { SortMode } from "@/components/SortToggle";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import Seo from "@/components/Seo";
 import { STORE_CATEGORIES, StoreCategoryValue, getSourceLabel } from "@/lib/storeCategories";
+import { formatWon as formatPrice } from "@/lib/priceFormat";
 import { ProductThumb } from "@/components/store/ProductThumb";
 
 interface Product {
@@ -37,7 +38,6 @@ const tabs: { id: TabId; label: string }[] = [
   ...STORE_CATEGORIES.map((c) => ({ id: c.value as TabId, label: c.label })),
 ];
 
-const formatPrice = (price: number) => price.toLocaleString() + "원";
 
 const Store = () => {
   const navigate = useNavigate();

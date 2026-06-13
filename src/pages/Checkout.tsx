@@ -8,8 +8,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
+import { formatWon as formatPrice } from "@/lib/priceFormat";
 
-const formatPrice = (price: number) => price.toLocaleString() + "원";
 // 결제 복귀 시 승인에 쓸 주문 정보(tid)를 보존.
 export const ORDER_SESSION_KEY = "dewy:order:pending";
 

@@ -441,7 +441,7 @@ export const handleHearts = async (ctx: DbHandlerContext): Promise<string> => {
 export const handlePoints = async (ctx: DbHandlerContext): Promise<string> => {
   const { data, error } = await (supabase as any)
     .from("user_points")
-    .select("total_points")
+    .select("balance")
     .eq("user_id", ctx.userId)
     .maybeSingle();
 
@@ -449,7 +449,8 @@ export const handlePoints = async (ctx: DbHandlerContext): Promise<string> => {
     return "포인트 정보가 아직 없어요 \n앱을 사용하시면서 자동으로 적립되는 포인트는 [포인트 페이지](/points)에서 확인하실 수 있어요.";
   }
 
-  const points = data.total_points ?? 0;
+  // balance = 사용 가능 잔액(레거시 total_points 는 spend 미반영이라 사용 안 함).
+  const points = data.balance ?? 0;
   if (points === 0) {
     return "현재 적립된 포인트가 0점이에요 \n앱을 사용하시거나 결제하시면 포인트가 적립돼요. [포인트 페이지](/points)에서 자세히 확인하실 수 있어요.";
   }

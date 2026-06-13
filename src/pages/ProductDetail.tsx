@@ -8,6 +8,7 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { getSourceLabel } from "@/lib/storeCategories";
+import { formatWon as formatPrice } from "@/lib/priceFormat";
 
 interface Product {
   id: string;
@@ -28,7 +29,6 @@ interface Product {
   source_mall: string | null;
 }
 
-const formatPrice = (price: number) => price.toLocaleString() + "원";
 
 const ProductDetail = () => {
   const navigate = useNavigate();

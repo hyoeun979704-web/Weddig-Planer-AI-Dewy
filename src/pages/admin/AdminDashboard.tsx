@@ -66,15 +66,20 @@ interface FreshnessRow {
   staleCount: number; // 60일+ 안 된 항목
 }
 
+// key 는 반드시 실제 places.category 값과 일치해야 한다(불일치 시 신선도 0건으로 표시).
+// 회귀: "suit" 로 조회했으나 DB 값은 "tailor_shop" → 예복(최다 701건)이 0으로 보였고,
+// invitation_venue(최다 727건)·appliance 는 목록에 없어 아예 누락됐었다.
 const PLACE_CATEGORIES = [
+  { key: "invitation_venue", label: "상견례·예식장" },
   { key: "wedding_hall", label: "웨딩홀" },
   { key: "studio", label: "스튜디오" },
   { key: "dress_shop", label: "드레스샵" },
   { key: "makeup_shop", label: "메이크업샵" },
-  { key: "honeymoon", label: "허니문" },
+  { key: "tailor_shop", label: "예복" },
   { key: "hanbok", label: "한복" },
-  { key: "suit", label: "예복" },
   { key: "jewelry", label: "예물·반지" },
+  { key: "appliance", label: "혼수가전" },
+  { key: "honeymoon", label: "허니문" },
 ];
 
 const startOfToday = () => {

@@ -17,3 +17,10 @@ export const formatManwon = (won: number): string => {
 
 /** 범위 표기용 — 뒤에 "~"를 붙인 버전(`formatManwon(x) + "~"`). */
 export const formatManwonRange = (won: number): string => `${formatManwon(won)}~`;
+
+/**
+ * 원 단위 전체 금액 표기 — `12,000원`. 스토어/장바구니/주문 등 정확한 결제 금액에 사용한다.
+ * 이전엔 `price.toLocaleString() + "원"` 가 9곳에 복붙돼 있어 이 함수로 단일화한다.
+ * (개략 표기인 `formatManwon` 과 용도가 다름: 이쪽은 절삭 없이 원 단위 그대로.)
+ */
+export const formatWon = (won: number): string => `${(won ?? 0).toLocaleString()}원`;

@@ -6,7 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { useCart } from "@/hooks/useCart";
 
-const formatPrice = (price: number) => price.toLocaleString() + "원";
+import { formatWon as formatPrice } from "@/lib/priceFormat";
 
 const Cart = () => {
   const navigate = useNavigate();

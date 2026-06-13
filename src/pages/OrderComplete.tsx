@@ -4,7 +4,7 @@ import { CheckCircle, Package, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
-const formatPrice = (price: number) => price.toLocaleString() + "원";
+import { formatWon as formatPrice } from "@/lib/priceFormat";
 
 interface Order {
   id: string;
