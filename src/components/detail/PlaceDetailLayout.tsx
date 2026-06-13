@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Star,
@@ -27,6 +28,9 @@ import PlaceImagePlaceholder from "@/components/place/PlaceImagePlaceholder";
 import { usePlaceReviews, REVIEW_SOURCE_META, type PlaceReview } from "@/hooks/usePlaceReviews";
 import HiddenCostsCard from "@/components/detail/HiddenCostsCard";
 import SetAsWeddingVenueButton from "@/components/detail/SetAsWeddingVenueButton";
+import PlaceReviewWriteSheet from "@/components/detail/PlaceReviewWriteSheet";
+import { useAuth } from "@/contexts/AuthContext";
+import { checkReferralMilestones } from "@/lib/referralEvent";
 import PlaceMap from "@/components/detail/PlaceMap";
 import PlaceRecommendations from "@/components/detail/PlaceRecommendations";
 import PlaceInquirySheet from "@/components/place/PlaceInquirySheet";
@@ -733,6 +737,22 @@ function ReviewTab({
   reviewCount: number;
 }) {
   const { data: reviews = [], isLoading } = usePlaceReviews(placeId);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [writeOpen, setWriteOpen] = useState(false);
+
+  const handleWriteClick = () => {
+    if (!user) { navigate("/auth"); return; }
+    setWriteOpen(true);
+  };
+
+  const handleSubmitted = () => {
+    // 평점/리뷰수는 트리거가 갱신 → 관련 캐시 무효화. 추천 이벤트 미션 체크도 트리거.
+    void queryClient.invalidateQueries({ queryKey: ["place-reviews", placeId] });
+    void queryClient.invalidateQueries({ queryKey: ["place-detail"] });
+    void checkReferralMilestones();
+  };
 
   if (isLoading) {
     return (
@@ -768,6 +788,9 @@ function ReviewTab({
             {reviewCount.toLocaleString()}개 리뷰
           </span>
         </div>
+        <Button variant="outline" size="sm" className="w-full mt-3" onClick={handleWriteClick}>
+          후기 작성
+        </Button>
       </section>
 
       {/* Review list or empty state */}
@@ -775,7 +798,7 @@ function ReviewTab({
         <div className="flex flex-col items-center justify-center px-6 py-16 text-center text-muted-foreground">
           <Star className="w-8 h-8 mb-3 opacity-30" />
           <p className="text-sm">아직 등록된 리뷰가 없어요.</p>
-          <p className="text-xs mt-1">결혼식을 마치셨다면 첫 리뷰를 남겨주세요.</p>
+          <p className="text-xs mt-1">방문·계약 경험이 있다면 첫 후기를 남겨주세요.</p>
         </div>
       ) : (
         <div className="px-4 py-3 space-y-3">
@@ -784,6 +807,13 @@ function ReviewTab({
           ))}
         </div>
       )}
+
+      <PlaceReviewWriteSheet
+        open={writeOpen}
+        onOpenChange={setWriteOpen}
+        placeId={placeId}
+        onSubmitted={handleSubmitted}
+      />
     </>
   );
 }

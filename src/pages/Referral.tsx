@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Copy, Check, Gift, Users, Loader2 } from "lucide-react";
+import { Copy, Check, Gift, Users, Loader2, Heart } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useReferral } from "@/hooks/useReferral";
+import { checkReferralMilestones, type ReferralProgress } from "@/lib/referralEvent";
 import { toast } from "sonner";
 
 const Referral = () => {
@@ -12,10 +13,18 @@ const Referral = () => {
   const ref = useReferral();
   const [inputCode, setInputCode] = useState("");
   const [copied, setCopied] = useState(false);
+  // 친구추천 하트 이벤트 진행도(초대로 가입한 사용자만). 진입 시 1회 조회 —
+  // RPC 가 미션 완료 시 양쪽 하트를 자동 지급하므로 보상 누락도 여기서 복구된다.
+  const [progress, setProgress] = useState<ReferralProgress | null>(null);
 
   useEffect(() => {
     if (!user) navigate("/auth");
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    void checkReferralMilestones().then(setProgress);
+  }, [user]);
 
   const ensureCode = async () => {
     if (ref.myCode) return ref.myCode;
@@ -109,6 +118,57 @@ const Referral = () => {
             <li>• 초대 인원은 무제한이에요</li>
           </ul>
         </div>
+
+        {/* 하트 100개 이벤트 안내 */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-rose-100 to-rose-50 border border-rose-200">
+          <div className="flex items-center gap-2 mb-2">
+            <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />
+            <p className="font-bold text-foreground">하트 100개 추가 이벤트</p>
+          </div>
+          <p className="text-sm text-foreground leading-relaxed">
+            초대로 가입한 친구가 <b>① 결혼정보 입력 · ② 커뮤니티 글 1개 · ③ 업체 후기 1개</b>를
+            모두 완료하면 <span className="font-bold text-rose-600">초대한 분과 친구 모두에게 하트 100개</span>를 드려요.
+          </p>
+        </div>
+
+        {/* 초대로 가입한 사용자 — 내 미션 진행도 */}
+        {progress?.has_referral && (
+          <div className="p-5 rounded-2xl border border-rose-200 bg-card">
+            <p className="text-sm font-semibold text-foreground mb-3">
+              내 미션 진행 {progress.rewarded && "· 완료 🎉"}
+            </p>
+            <ul className="space-y-2">
+              {([
+                ["결혼 정보 입력", progress.wedding_info_done, "/mypage"],
+                ["커뮤니티 글 1개 작성", progress.community_done, "/community/write"],
+                ["업체 후기 1개 작성", progress.review_done, "/venues"],
+              ] as const).map(([label, done, to]) => (
+                <li key={label} className="flex items-center justify-between gap-2">
+                  <span className={`flex items-center gap-2 text-sm ${done ? "text-foreground" : "text-muted-foreground"}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] ${done ? "bg-rose-500 text-white" : "bg-muted text-muted-foreground"}`}>
+                      {done ? "✓" : "·"}
+                    </span>
+                    {label}
+                  </span>
+                  {!done && (
+                    <button onClick={() => navigate(to)} className="text-[12px] font-semibold text-primary">
+                      하러 가기 →
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {progress.rewarded ? (
+              <p className="text-[12px] text-rose-600 font-semibold mt-3">
+                미션 완료! 하트 100개가 지급됐어요 💛
+              </p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground mt-3">
+                3가지를 모두 완료하면 초대한 분과 함께 하트 100개씩 받아요.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* 내 코드 카드 */}
         <div className="p-5 rounded-2xl border border-border bg-card">

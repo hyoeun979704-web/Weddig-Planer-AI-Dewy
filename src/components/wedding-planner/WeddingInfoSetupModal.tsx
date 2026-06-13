@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { checkReferralMilestones } from "@/lib/referralEvent";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
@@ -226,6 +227,8 @@ const WeddingInfoSetupModal = ({ isOpen, onClose, onSaved }: Props) => {
         existingMarital === "remarriage",
       );
       const seeded = await generateScheduleFromTemplate(items);
+      // 친구추천 이벤트 미션(결혼정보 입력) 체크 — 초대 가입자면 완료 시 양쪽 하트 지급.
+      void checkReferralMilestones();
       onSaved?.();
       onClose();
 

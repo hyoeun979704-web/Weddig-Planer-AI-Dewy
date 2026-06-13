@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { checkReferralMilestones } from "@/lib/referralEvent";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
@@ -197,6 +198,8 @@ const CommunityWrite = () => {
       }
 
       localStorage.removeItem(DRAFT_KEY);
+      // 친구추천 이벤트 미션(커뮤니티 글) 체크 — 초대 가입자면 완료 시 양쪽 하트 지급.
+      void checkReferralMilestones();
       toast.success("게시글이 작성되었습니다.");
       navigate(`/community/${data.id}`);
     } catch (error) {
