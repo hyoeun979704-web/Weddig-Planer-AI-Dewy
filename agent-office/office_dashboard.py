@@ -67,8 +67,8 @@ class Dashboard:
         # KPI
         self.kpis = {}
         krow = tk.Frame(root, bg=BG); krow.pack(fill="x", padx=14)
-        for key, label in [("today", "오늘 작업"), ("total", "총 작업"),
-                           ("drafts", "초안"), ("assets", "시각자산"), ("fail", "실패")]:
+        for key, label in [("today", "오늘 작업"), ("pending", "승인 대기"),
+                           ("approved", "승인됨"), ("drafts", "초안"), ("assets", "시각자산")]:
             c = tk.Frame(krow, bg=CARD, highlightbackground=LINE, highlightthickness=1)
             c.pack(side="left", expand=True, fill="x", padx=4, pady=6)
             v = tk.Label(c, text="0", font=("Segoe UI", 20, "bold"), bg=CARD, fg=INK)
@@ -112,6 +112,11 @@ class Dashboard:
         for txt, cmd in [("📋 복사", self.copy_selected), ("⬇ 다운로드", self.download_selected), ("↗ 열기", self.open_selected)]:
             tk.Button(btns, text=txt, command=cmd, bg=CARD, fg=INK, relief="flat",
                       font=("Segoe UI", 9, "bold"), highlightbackground=LINE).pack(side="left", padx=(0, 6))
+        # 승인 큐 — 1클릭 승인/반려(섀도 모드 해제)
+        tk.Button(btns, text="✅ 승인", command=lambda: self._set_status("approved"),
+                  bg="#E4F6EE", fg="#1B7a4f", relief="flat", font=("Segoe UI", 9, "bold")).pack(side="left", padx=(0, 6))
+        tk.Button(btns, text="✖ 반려", command=lambda: self._set_status("rejected"),
+                  bg="#FBE7EC", fg="#C03457", relief="flat", font=("Segoe UI", 9, "bold")).pack(side="left")
 
         self.preview = tk.Text(right, height=8, bg=CARD, fg=INK, relief="flat", wrap="word",
                                font=("Consolas", 9), highlightthickness=1, highlightbackground=LINE)
@@ -146,9 +151,10 @@ class Dashboard:
         # 산출물 목록
         self.outputs = runlog.list_outputs()
         self.outlist.delete(0, "end")
+        badge = {"pending": "⏳", "approved": "✅", "rejected": "✖"}
         for o in self.outputs:
             icon = "📄" if o["kind"] == "draft" else "🖼"
-            self.outlist.insert("end", f"{icon} {o['name']}")
+            self.outlist.insert("end", f"{badge.get(o.get('status','pending'),'⏳')} {icon} {o['name']}")
         if not self.outputs:
             self.outlist.insert("end", "(산출물 없음 — 파이프라인 실행 시 생성)")
 
@@ -216,6 +222,14 @@ class Dashboard:
     def open_selected(self):
         if self.selected:
             open_in_os(self.selected["path"])
+
+    def _set_status(self, status: str):
+        if not self.selected:
+            messagebox.showinfo("선택 필요", "산출물을 먼저 선택하세요")
+            return
+        runlog.set_status(self.selected["name"], status)
+        messagebox.showinfo("처리됨", f"{self.selected['name']} → {status}")
+        self.refresh()
 
     def _schedule(self):
         self.refresh()

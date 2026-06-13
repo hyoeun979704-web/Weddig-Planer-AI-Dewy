@@ -14,8 +14,40 @@ from pathlib import Path
 
 BASE = Path(__file__).parent
 RUNS = BASE / "runs.jsonl"
+QUEUE = BASE / "queue.json"
 
 IMG_EXT = {".png", ".jpg", ".jpeg", ".webp", ".mp4", ".mov", ".gif"}
+
+# ── 승인 큐(섀도 모드) ─────────────────────────────────────────────────────────
+# 산출물 기본 상태는 pending — 사람이 승인하기 전엔 아무 데도 안 나간다(섀도 모드).
+VALID_STATUS = {"pending", "approved", "rejected"}
+
+
+def _load_queue() -> dict:
+    if not QUEUE.exists():
+        return {}
+    try:
+        return json.loads(QUEUE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def set_status(ref: str, status: str, note: str = "") -> dict:
+    """산출물(ref=파일명) 승인 상태 설정."""
+    if status not in VALID_STATUS:
+        raise ValueError(f"invalid status: {status}")
+    q = _load_queue()
+    q[ref] = {"status": status, "ts": _dt.datetime.now().isoformat(timespec="seconds"), "note": note}
+    try:
+        QUEUE.write_text(json.dumps(q, ensure_ascii=False, indent=0), encoding="utf-8")
+    except Exception:
+        pass
+    return q[ref]
+
+
+def get_status(ref: str) -> str:
+    """ref 상태(없으면 pending — 섀도 모드 기본)."""
+    return _load_queue().get(ref, {}).get("status", "pending")
 
 
 def record_run(kind: str, agent: str, status: str = "done", output: str = "", note: str = "") -> dict:
@@ -76,6 +108,8 @@ def stats() -> dict:
         "drafts": _count_files("drafts", {".md"}),
         "assets": _count_files("assets", IMG_EXT),
         "recent": list(reversed(runs[-15:])),
+        "pending": sum(1 for o in list_outputs() if o["status"] == "pending"),
+        "approved": sum(1 for o in list_outputs() if o["status"] == "approved"),
     }
 
 
@@ -88,7 +122,8 @@ def list_outputs(limit: int = 100) -> list[dict]:
             continue
         for p in d.iterdir():
             if p.is_file() and p.suffix.lower() in exts and p.name != ".gitkeep":
-                items.append({"kind": kind, "name": p.name, "path": str(p), "mtime": p.stat().st_mtime})
+                items.append({"kind": kind, "name": p.name, "path": str(p),
+                              "mtime": p.stat().st_mtime, "status": get_status(p.name)})
     items.sort(key=lambda x: x["mtime"], reverse=True)
     return items[:limit]
 

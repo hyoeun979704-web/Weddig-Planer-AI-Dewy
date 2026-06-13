@@ -21,7 +21,11 @@ import sys
 import datetime as _dt
 from pathlib import Path
 
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+except ImportError:  # dotenv 는 LLM 실행 때만 필요 — save_draft/검수 경로는 없이도 동작
+    def load_dotenv(*_a, **_k):
+        return False
 
 import config
 
@@ -39,11 +43,23 @@ def save_draft(brief: str, content: str) -> Path:
     draft_dir.mkdir(exist_ok=True)
     ts = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     path = draft_dir / f"{ts}-{_slugify(brief)}.md"
-    header = f"<!-- 초안(자동 생성) · brief: {brief} · {ts} · 검수 후 게시 -->\n\n"
+    # 자동 품질 검수(deslop) — 사람 가기 전 점수·이슈 산출.
+    try:
+        import deslop
+        rev = deslop.review(content)
+    except Exception:
+        rev = {"score": None, "issues": []}
+    score = rev.get("score")
+    issue_line = (" · 이슈: " + "; ".join(rev["issues"])) if rev.get("issues") else ""
+    header = (f"<!-- 초안(자동 생성) · brief: {brief} · {ts} · 검수 후 게시"
+              f" · deslop {score}/10{issue_line} -->\n\n")
     path.write_text(header + content, encoding="utf-8")
     try:
         import runlog
-        runlog.record_run("marketing", "마케팅 카피", "done", str(path.name), f"초안: {brief[:30]}")
+        # 섀도 모드: 생성물은 pending 으로 큐에 — 사람 승인 전 미발행.
+        runlog.set_status(path.name, "pending", f"deslop {score}/10")
+        runlog.record_run("marketing", "마케팅 카피", "done", str(path.name),
+                          f"초안: {brief[:24]} (deslop {score}/10)")
     except Exception:
         pass
     return path

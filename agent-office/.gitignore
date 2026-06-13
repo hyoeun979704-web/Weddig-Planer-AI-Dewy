@@ -6,3 +6,4 @@ drafts/*.md
 assets/*
 !assets/.gitkeep
 runs.jsonl
+queue.json
