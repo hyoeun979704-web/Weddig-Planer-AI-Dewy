@@ -46,6 +46,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # FE↔BE 값 정합성 가드 — 한 번 고친 회귀(레거시 컬럼 total_points, 인라인 원
+      # 포맷, places.category="suit" 등)가 다시 들어오면 머지 전에 빨갛게 만든다.
+      - name: Integrity check (FE/BE value drift)
+        run: npm run check:integrity
+
       # collect-places 는 tsx 로 실행돼 타입체크가 안 된다(예: CategorySlug 에
       # 카테고리를 추가했는데 CATEGORY_TABLE 에 안 넣으면 런타임에 조용히 누락).
       # 엔트리(index.ts)+import 만 스코프해서 머지 전에 타입에러를 잡는다.
