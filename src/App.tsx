@@ -67,6 +67,7 @@ const Orders = lazy(() => import("./pages/Orders"));
 const MySchedule = lazy(() => import("./pages/MySchedule"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Notifications = lazy(() => import("./pages/Notifications"));
+const AppNotifications = lazy(() => import("./pages/AppNotifications"));
 const MyInquiries = lazy(() => import("./pages/MyInquiries"));
 const Contact = lazy(() => import("./pages/Contact"));
 const FAQ = lazy(() => import("./pages/FAQ"));
@@ -232,6 +233,7 @@ const App = () => (
               <Route path="/my-schedule" element={<MySchedule />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/notifications/inbox" element={<AppNotifications />} />
               <Route path="/my-inquiries" element={<MyInquiries />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/support" element={<SupportChat />} />
