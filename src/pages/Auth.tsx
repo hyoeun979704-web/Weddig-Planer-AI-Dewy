@@ -59,11 +59,16 @@ const Auth = () => {
       // Check if user needs business onboarding
       if (user.user_metadata?.account_type === "business") {
         navigate("/business/onboard");
+      } else if (startAsBusiness) {
+        // 이미 로그인된 일반회원이 기업 가입 링크(?type=business)로 들어온 경우 =
+        // "기업회원 전환" 의도 — 홈으로 돌려보내면 전환이 불가능하다(버그 260613).
+        // 가입 메타데이터와 무관하게 등록 폼으로 바로 보낸다.
+        navigate("/business/onboard");
       } else {
         navigate("/");
       }
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, startAsBusiness, navigate]);
 
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
