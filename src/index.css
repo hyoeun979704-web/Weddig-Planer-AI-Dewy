@@ -210,3 +210,28 @@
     appearance: textfield;
   }
 }
+
+/* 시스템 바(상태바/하단 네비게이션 바)를 브랜드 프라이머리 컬러로.
+   targetSdk 35(Android 15)는 edge-to-edge 강제 + 시스템바 색상 API 무시이므로,
+   시스템바 뒤에 깔리는 web 영역(safe-area 인셋 높이)을 프라이머리로 칠한다.
+   - 높이는 --safe-top/--safe-bottom(상한 54px clamp 적용)이라 과한 색 띠 방지.
+   - 웹(브라우저)에선 인셋이 0이라 보이지 않음(영향 0).
+   - pointer-events:none 으로 탭/스크롤 방해 없음. 상태바 아이콘은 OS가 위에 렌더. */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  background: hsl(var(--primary));
+  z-index: 9999;
+  pointer-events: none;
+}
+body::before {
+  top: 0;
+  height: var(--safe-top);
+}
+body::after {
+  bottom: 0;
+  height: var(--safe-bottom);
+}
