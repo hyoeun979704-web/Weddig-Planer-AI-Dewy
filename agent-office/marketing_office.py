@@ -41,6 +41,11 @@ def save_draft(brief: str, content: str) -> Path:
     path = draft_dir / f"{ts}-{_slugify(brief)}.md"
     header = f"<!-- 초안(자동 생성) · brief: {brief} · {ts} · 검수 후 게시 -->\n\n"
     path.write_text(header + content, encoding="utf-8")
+    try:
+        import runlog
+        runlog.record_run("marketing", "마케팅 카피", "done", str(path.name), f"초안: {brief[:30]}")
+    except Exception:
+        pass
     return path
 
 

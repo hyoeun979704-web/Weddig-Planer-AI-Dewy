@@ -78,6 +78,19 @@ python office_game.py --selftest # 잠깐 띄웠다 종료(점검)
 - 더 아케이드 같은 그래픽(스프라이트/사운드)을 원하면 pygame 버전(`pip install pygame-ce`)도
   제공 가능 — 요청 시 `office_pygame.py`.
 
+### 운영 대시보드 (현황판)
+플로우 재생이 아니라 **현황판**. 실행 이력(`runs.jsonl`)을 읽어 KPI·에이전트 상태·최근 작업을
+표로 보여주고 자동 새로고침한다. 마케팅/시각 파이프라인이 작업할 때마다 이력이 쌓인다.
+```
+python office_dashboard.py        # 네이티브 대시보드 창(자동 새로고침)
+python runlog.py --seed           # (선택) 데모 데이터 채우고 보기 — 창의 버튼으로도 가능
+agent-office/office_dashboard.html  # 브라우저 미리보기(데모 데이터)
+```
+- KPI: 오늘/총 작업 · 초안(drafts) · 시각자산(assets) · 실패.
+- 에이전트 현황: 처리 건수 + 마지막 작업 시각/내용. 가동석 3 + 로드맵석(CS/보안) 2.
+- 실행 이력은 `runlog.record_run()` 으로 기록(런타임 데이터라 git 제외).
+- **산출물 패널**: drafts/·assets/ 결과물을 목록에서 선택해 **미리보기 + 복사 + 다운로드(다른 이름 저장) + 열기**(OS 기본 앱). 이미지는 썸네일 시도.
+
 ## 시각 자산 (Higgsfield)
 
 이미지/숏폼 생성은 Higgsfield CLI 로 처리한다. 두 가지 사용 경로:

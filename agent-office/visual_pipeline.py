@@ -57,6 +57,13 @@ def run(brief: str, aspect: str, dry_run: bool) -> int:
     print(f"[시각 파이프라인] brief='{brief}' aspect={aspect} model={config.HIGGSFIELD_MODEL} dry_run={dry_run}")
     result = provider.generate(spec)
 
+    try:
+        import runlog
+        runlog.record_run("visual", "시각 디자이너", "done" if result.ok else "fail",
+                          str(result.path or result.url or ""), f"이미지: {brief[:30]}")
+    except Exception:
+        pass
+
     if result.ok:
         where = result.path or result.url
         print(f"✅ 생성 완료: {where}\n   사람이 검수 후 사용하세요(자동 게시 없음).")
