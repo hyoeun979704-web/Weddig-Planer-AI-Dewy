@@ -1,4 +1,5 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { confirm } from "@/components/ui/confirm-dialog";
 import { MessagesSquare, Plus, Trash2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { relativeTime } from "@/lib/relativeTime";
@@ -43,9 +44,14 @@ const ChatSessionsSheet = ({
     onOpenChange(false);
   };
 
-  const handleDelete = (s: ChatSession) => {
+  const handleDelete = async (s: ChatSession) => {
     // 삭제는 메시지까지 영구 삭제(cascade) — 실수 방지 확인.
-    if (window.confirm(`"${s.title}" 채팅을 삭제할까요? 메시지 기록까지 복구할 수 없어요.`)) {
+    if (await confirm({
+      title: "채팅을 삭제할까요?",
+      description: `"${s.title}" 채팅을 삭제하면 메시지 기록까지 복구할 수 없어요.`,
+      confirmText: "삭제",
+      destructive: true,
+    })) {
       onDelete(s.id);
     }
   };

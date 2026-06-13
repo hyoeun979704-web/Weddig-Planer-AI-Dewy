@@ -3,6 +3,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import SessionTracker from "@/components/SessionTracker";
 import GenerationNotifier from "@/components/GenerationNotifier";
+import { ConfirmDialogHost } from "@/components/ui/confirm-dialog";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import AdminGuard from "@/components/admin/AdminGuard";
@@ -355,6 +356,8 @@ const App = () => (
           <TutorialWelcomeSheet />
           {/* 생성 기능 백그라운드 잡 완료 알림(컨설팅/드레스/메이크업/사진보정). */}
           <GenerationNotifier />
+          {/* 명령형 확인 다이얼로그 호스트 — window.confirm 대체(앱 톤 일관). */}
+          <ConfirmDialogHost />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

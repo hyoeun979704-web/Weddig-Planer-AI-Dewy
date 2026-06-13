@@ -17,6 +17,7 @@ import {
 import { useWeddingVenue } from "@/hooks/useWeddingVenue";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { confirm } from "@/components/ui/confirm-dialog";
 
 export interface SetAsWeddingVenueButtonProps {
   placeId: string;
@@ -59,9 +60,11 @@ export default function SetAsWeddingVenueButton({
     if (isCurrent) return;
     // 다른 식장 등록돼 있으면 한 번 확인 — 큐레이션 anchor 가 바뀌는 큰 변경.
     if (hasOther) {
-      const ok = window.confirm(
-        `결혼식장 anchor 를\n"${venue.name ?? "이전 식장"}" → "${placeName}"\n으로 바꾸시겠어요?\n\n다른 카테고리(스튜디오·드레스·메이크업) 추천이 새 식장 기준으로 다시 정렬돼요.`
-      );
+      const ok = await confirm({
+        title: "결혼식장 변경",
+        description: `"${venue.name ?? "이전 식장"}" → "${placeName}" 으로 바꾸시겠어요?\n\n다른 카테고리(스튜디오·드레스·메이크업) 추천이 새 식장 기준으로 다시 정렬돼요.`,
+        confirmText: "변경",
+      });
       if (!ok) return;
     }
     setSaving(true);

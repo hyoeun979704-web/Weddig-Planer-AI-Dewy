@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { confirm } from "@/components/ui/confirm-dialog";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Upload, Sparkles, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
@@ -127,8 +128,11 @@ const HairPreview = () => {
     if (!user) return navigate("/auth");
     if (!pick) return toast({ title: "셀카(정면) 사진을 올려주세요" });
     if (selected.length === 0) return toast({ title: "옵션을 1개 이상 선택해주세요" });
-    if (!window.confirm(`헤어 미리보기 ${selected.length}종에 ${finalCost}하트가 차감돼요${discounted ? " (첫 1회 50% 할인)" : ""}. 진행할까요?`))
-      return;
+    if (!(await confirm({
+      title: "헤어 미리보기 생성",
+      description: `${selected.length}종에 ${finalCost}하트가 차감돼요${discounted ? " (첫 1회 50% 할인)" : ""}. 진행할까요?`,
+      confirmText: "진행",
+    }))) return;
 
     setProcessing(true);
     try {
