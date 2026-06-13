@@ -4,6 +4,7 @@ import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/hooks/useCart";
+import { ORDER_SESSION_KEY } from "./Checkout";
 import { toast } from "sonner";
 
 const PaymentSuccess = () => {
@@ -13,22 +14,35 @@ const PaymentSuccess = () => {
   const { clearCart } = useCart();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
+  const [paidAmount, setPaidAmount] = useState(0);
 
   useEffect(() => {
     const confirmPayment = async () => {
-      const paymentKey = searchParams.get("paymentKey");
-      const orderId = searchParams.get("orderId");
-      const amount = searchParams.get("amount");
+      const pgToken = searchParams.get("pg_token");
+      const orderParam = searchParams.get("order");
+      const sessionRaw = sessionStorage.getItem(ORDER_SESSION_KEY);
 
-      if (!paymentKey || !orderId || !amount || !user) {
+      if (!pgToken || !sessionRaw || !user) {
         setStatus("error");
         setErrorMessage("결제 정보가 올바르지 않습니다");
         return;
       }
+      const session = JSON.parse(sessionRaw);
+      if (orderParam && session.partnerOrderId !== orderParam) {
+        setStatus("error");
+        setErrorMessage("주문 정보가 일치하지 않습니다");
+        return;
+      }
 
       try {
-        const { data, error } = await supabase.functions.invoke("confirm-payment", {
-          body: { paymentKey, orderId, amount: Number(amount) },
+        const { data, error } = await supabase.functions.invoke("kakao-pay-order-approve", {
+          body: {
+            tid: session.tid,
+            partnerOrderId: session.partnerOrderId,
+            partnerUserId: session.partnerUserId,
+            pgToken,
+          },
         });
 
         if (error || !data?.success) {
@@ -36,8 +50,11 @@ const PaymentSuccess = () => {
         }
 
         await clearCart();
+        sessionStorage.removeItem(ORDER_SESSION_KEY);
+        setOrderNumber(data.order_number ?? session.partnerOrderId);
+        setPaidAmount(data.amount ?? 0);
         setStatus("success");
-        toast.success("결제가 완료되었습니다! ");
+        toast.success("결제가 완료되었습니다!");
       } catch (err: any) {
         console.error("Payment confirmation failed:", err);
         setStatus("error");
@@ -81,11 +98,9 @@ const PaymentSuccess = () => {
         <CheckCircle className="w-9 h-9 text-primary" />
       </div>
       <h2 className="text-lg font-bold text-foreground mb-2">결제가 완료되었습니다!</h2>
-      <p className="text-sm text-muted-foreground mb-1">
-        주문번호: {searchParams.get("orderId")}
-      </p>
+      <p className="text-sm text-muted-foreground mb-1">주문번호: {orderNumber}</p>
       <p className="text-sm text-muted-foreground mb-6">
-        결제 금액: {Number(searchParams.get("amount") || 0).toLocaleString()}원
+        결제 금액: {paidAmount.toLocaleString()}원
       </p>
       <div className="flex gap-3">
         <button

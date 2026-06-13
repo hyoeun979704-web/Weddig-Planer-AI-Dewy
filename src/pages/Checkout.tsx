@@ -1,87 +1,47 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Seo from "@/components/Seo";
 import { Loader2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
-import { loadPaymentWidget, PaymentWidgetInstance } from "@tosspayments/payment-widget-sdk";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
 
-const CLIENT_KEY = ((import.meta as any).env?.VITE_TOSS_CLIENT_KEY ?? "") as string;
 const formatPrice = (price: number) => price.toLocaleString() + "원";
-
-const generateOrderNumber = () => {
-  const now = new Date();
-  const date = now.toISOString().slice(2, 10).replace(/-/g, "");
-  const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
-  return `DW${date}${rand}`;
-};
+// 결제 복귀 시 승인에 쓸 주문 정보(tid)를 보존.
+export const ORDER_SESSION_KEY = "dewy:order:pending";
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { items, totalAmount } = useCart();
-  const paymentWidgetRef = useRef<PaymentWidgetInstance | null>(null);
-  const paymentMethodRef = useRef<ReturnType<PaymentWidgetInstance["renderPaymentMethods"]> | null>(null);
-  const [isReady, setIsReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!user || items.length === 0) return;
-
-    if (!CLIENT_KEY) {
-      console.error("VITE_TOSS_CLIENT_KEY is not configured");
-      toast.error("결제가 일시적으로 불가능해요. 잠시 후 다시 시도해주세요");
-      return;
-    }
-
-    (async () => {
-      try {
-        const widget = await loadPaymentWidget(CLIENT_KEY, user.id);
-        paymentWidgetRef.current = widget;
-
-        const methods = widget.renderPaymentMethods(
-          "#payment-widget",
-          { value: totalAmount },
-          { variantKey: "DEFAULT" }
-        );
-        paymentMethodRef.current = methods;
-
-        widget.renderAgreement("#agreement-widget", { variantKey: "AGREEMENT" });
-
-        setIsReady(true);
-      } catch (error) {
-        console.error("Failed to load payment widget:", error);
-        toast.error("결제 위젯을 불러오지 못했습니다");
-      }
-    })();
-  }, [user, items.length, totalAmount]);
-
   const handlePayment = async () => {
-    if (!paymentWidgetRef.current || isSubmitting) return;
+    if (isSubmitting || !user || items.length === 0) return;
     setIsSubmitting(true);
-
-    const orderNumber = generateOrderNumber();
-    const orderName =
-      items.length === 1
-        ? items[0].product.name
-        : `${items[0].product.name} 외 ${items.length - 1}건`;
-
     try {
-      await paymentWidgetRef.current.requestPayment({
-        orderId: orderNumber,
-        orderName,
-        successUrl: `${window.location.origin}/payment/success`,
-        failUrl: `${window.location.origin}/payment/fail`,
-        customerEmail: user?.email || undefined,
+      const { data, error } = await supabase.functions.invoke("kakao-pay-order-ready", {
+        body: {
+          items: items.map((it) => ({ product_id: it.product.id, quantity: it.quantity })),
+          origin: window.location.origin,
+        },
       });
-    } catch (error: any) {
-      if (error.code === "USER_CANCEL") {
-        toast.info("결제가 취소되었습니다");
-      } else {
-        toast.error(error.message || "결제 요청에 실패했습니다");
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || "결제 준비에 실패했습니다");
       }
+      sessionStorage.setItem(
+        ORDER_SESSION_KEY,
+        JSON.stringify({ tid: data.tid, partnerOrderId: data.partner_order_id, partnerUserId: data.partner_user_id }),
+      );
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      const redirectUrl = isMobile ? data.next_redirect_mobile_url : data.next_redirect_pc_url;
+      await openExternal(redirectUrl, { target: "_self" });
+    } catch (err: any) {
+      console.error("order ready failed:", err);
+      toast.error(err.message || "결제 요청에 실패했습니다");
       setIsSubmitting(false);
     }
   };
@@ -95,9 +55,7 @@ const Checkout = () => {
     return (
       <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4">
         <p className="text-muted-foreground mb-4">장바구니가 비어있습니다</p>
-        <button onClick={() => navigate("/store")} className="text-primary font-medium">
-          스토어로 이동
-        </button>
+        <button onClick={() => navigate("/store")} className="text-primary font-medium">스토어로 이동</button>
       </div>
     );
   }
@@ -108,7 +66,6 @@ const Checkout = () => {
       <PageHeader title="주문/결제" />
 
       <main className="pb-32 px-4 py-4 space-y-4">
-        {/* Order Summary */}
         <div>
           <h3 className="font-bold text-foreground mb-3">주문 상품</h3>
           <div className="space-y-2">
@@ -127,12 +84,16 @@ const Checkout = () => {
           </div>
         </div>
 
-        {/* TossPayments Widget */}
-        <div id="payment-widget" className="min-h-[300px]" />
-        <div id="agreement-widget" />
+        <div className="p-4 rounded-xl border border-border bg-card">
+          <p className="text-sm font-semibold text-foreground mb-2">결제 수단</p>
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-[#FEE500]/20 border border-[#FEE500]">
+            <span className="text-sm font-bold text-foreground">카카오페이</span>
+            <span className="text-xs text-muted-foreground">카카오톡으로 간편결제</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">결제 진행 시 카카오페이 결제창으로 이동합니다.</p>
+        </div>
       </main>
 
-      {/* Fixed Bottom */}
       <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto p-4 bg-background border-t border-border">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm text-muted-foreground">총 결제 금액</span>
@@ -140,11 +101,11 @@ const Checkout = () => {
         </div>
         <button
           onClick={handlePayment}
-          disabled={!isReady || isSubmitting}
+          disabled={isSubmitting}
           className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
-          {formatPrice(totalAmount)} 결제하기
+          카카오페이로 {formatPrice(totalAmount)} 결제
         </button>
       </div>
     </div>

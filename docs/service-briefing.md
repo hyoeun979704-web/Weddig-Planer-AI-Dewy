@@ -81,7 +81,7 @@
 - B2B 사업자 검수
 
 ### 💎 수익 모델
-- **하트 충전** (인앱결제, Toss Payments)
+- **하트 충전** (인앱결제, 카카오페이)
   - 첫 구매(스타터): 1,900원 = 10 하트 (단가 190원)
   - 추가 패키지: 4,900원 / 9,900원 / 19,900원 / 49,900원 등 (`src/lib/heartPackages.ts` 참조)
 - **Premium 구독** (Kakao Pay)
@@ -101,7 +101,7 @@
 - **백엔드**: Supabase (PostgreSQL + Auth + Storage + Edge Functions)
 - **AI (챗봇)**: Google Gemini 2.5 Flash
 - **AI (이미지 편집)**: OpenAI gpt-image-2
-- **결제**: Toss Payments (하트 충전), Kakao Pay (구독)
+- **결제**: 카카오페이 (하트 충전·구독·주문)
 - **호스팅**: Vercel (웹), Google Play (Android 앱)
 - **인증**: Google OAuth, Kakao OAuth (네이티브 PKCE flow)
 - **푸시 인프라**: FCM 연동 Edge Function 작성 완료, 1차 출시에선 미활성화
@@ -133,7 +133,7 @@
 - AI 업로드 사진은 **처리 후 30일 자동 삭제** — `cleanup-ai-uploads` Edge Function 이
   pg_cron 으로 매일 1회 실행되어 `dress-uploads`·`dress-results` 버킷에서
   30일 초과 파일을 Storage API 로 안전하게 제거 (`docs/ai-uploads-retention.md`)
-- 결제 정보는 앱에 보관하지 않음 (Toss / Kakao Pay 직접 처리)
+- 결제 정보는 앱에 보관하지 않음 (카카오페이 직접 처리)
 - 회원 탈퇴 시 즉시 데이터 파기 (법정 보관 정보 제외)
 - 14세 미만 가입 차단 (정책상 — 가입 폼 검증 구현은 출시 전 확인 항목)
 
