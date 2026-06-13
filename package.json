@@ -36,7 +36,8 @@
     "cap:sync": "cap sync",
     "cap:build": "vite build --mode capacitor && cap sync",
     "android:dev": "npm run cap:build && cap run android",
-    "android:open": "cap open android"
+    "android:open": "cap open android",
+    "ios:open": "cap open ios"
   },
   "dependencies": {
     "@capacitor-community/admob": "^6.1.0",
@@ -44,7 +45,9 @@
     "@capacitor/app": "^6.0.3",
     "@capacitor/browser": "^6.0.6",
     "@capacitor/core": "^6.2.1",
+    "@capacitor/ios": "^6.2.1",
     "@capacitor/preferences": "^6.0.4",
+    "@capacitor/status-bar": "^6.0.2",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
