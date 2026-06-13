@@ -7,3 +7,4 @@ assets/*
 !assets/.gitkeep
 runs.jsonl
 queue.json
+learnings.md

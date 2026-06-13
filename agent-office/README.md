@@ -99,6 +99,28 @@ agent-office/office_dashboard.html  # 브라우저 미리보기(데모 데이터
   점수(0–10)·이슈를 헤더·실행 이력에 기록 → 낮은 점수를 사람이 바로 식별. `python deslop.py` 로 데모.
 - KPI에 **승인 대기 / 승인됨** 추가.
 
+### 자기검토 eval (P2)
+`quality.py` — 사람 가기 전 품질 자동 채점: deslop 룰 + (키 있을 때) LLM-as-judge + 골든셋 회귀.
+마케팅 초안에 품질 점수(0–10)·통과/주의가 자동으로 매겨짐. `python quality.py` 로 골든 회귀.
+
+### 리서처 (P3, browser-use, 로컬)
+`researcher.py` — 국내 웨딩 커뮤니티(네이버카페·디시 등) 최근 후기/트렌드 수집(API 없는 영역).
+허용 도메인 화이트리스트 + **스크랩=데이터로만(인젝션 방어)** + 읽기 전용. 결과는 승인 큐로.
+```
+pip install -r requirements-browser.txt   # browser-use(별도)
+python researcher.py "성수동 웨딩홀 후기"          # 실제(키·브라우저 필요)
+python researcher.py "..." --dry-run               # 설치/키 없이 계획만
+```
+
+### 회고/학습 (P4, Reflexion)
+`retro.py` — runlog/품질/승인 이력을 분석해 요약·개선 제안 → `learnings.md`(영속 성찰)에 누적.
+다음 생성 시 컨텍스트로 참조해 같은 실수 반복 차단.
+```
+python retro.py            # 요약·제안
+python retro.py --write    # learnings.md 에 회고 append
+```
+가드레일: `GUARDRAILS.md`(자동발행 금지·인젝션 방어·비용캡·service_role 로컬전용 등) — 에이전트가 항상 로드.
+
 ## 시각 자산 (Higgsfield)
 
 이미지/숏폼 생성은 Higgsfield CLI 로 처리한다. 두 가지 사용 경로:
