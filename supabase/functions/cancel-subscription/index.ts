@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       .select("payment_method")
       .eq("user_id", claimsData.claims.sub)
       .maybeSingle();
-    const recurringMethods = new Set(["kakaopay_recurring", "toss_billing"]);
+    const recurringMethods = new Set(["kakaopay_recurring"]);
     if (currentSub?.payment_method && recurringMethods.has(currentSub.payment_method)) {
       console.error("recurring cancel not implemented for:", currentSub.payment_method);
       return new Response(

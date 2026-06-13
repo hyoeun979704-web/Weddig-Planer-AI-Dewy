@@ -1,13 +1,7 @@
 project_id = "qabeywyzjsgyqpjqsvkd"
 
-[functions.confirm-payment]
-verify_jwt = false
-
 # 관리자 좌표 백필 — 자체 x-admin-token(GEOCODE_ADMIN_TOKEN) 인증, JWT 미사용
 [functions.place-geocode-backfill]
-verify_jwt = false
-
-[functions.confirm-subscription-payment]
 verify_jwt = false
 
 [functions.cancel-subscription]
