@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dewy 에이전트 오피스</title>
+<style>
+  :root{
+    --pink:#F4A7B9; --pink-dark:#E0809A; --bg:#FDF8F6; --card:#fff;
+    --ink:#3a2e33; --muted:#9b8e93; --line:#f0e2e7;
+    --amber:#f59e0b; --cyan:#2bb3c0; --green:#22a06b; --grey:#b9adb2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Pretendard','Segoe UI',system-ui,sans-serif;background:
+       radial-gradient(1200px 500px at 50% -10%,#fff1f5,transparent),var(--bg);
+       color:var(--ink);min-height:100vh;padding:24px}
+  .wrap{max-width:960px;margin:0 auto}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--pink),var(--pink-dark));
+        display:grid;place-items:center;font-size:22px;box-shadow:0 6px 16px rgba(224,128,154,.35)}
+  h1{font-size:18px;font-weight:800}
+  .sub{font-size:12px;color:var(--muted)}
+  .controls{display:flex;gap:8px}
+  button{font:inherit;font-weight:700;font-size:13px;border:0;border-radius:999px;padding:9px 16px;cursor:pointer;
+          background:var(--pink);color:#5a2233;box-shadow:0 4px 12px rgba(224,128,154,.35);transition:transform .08s}
+  button:active{transform:scale(.96)}
+  button.ghost{background:#fff;color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+  .brief{font-size:13px;color:var(--muted);margin:2px 0 16px}
+  .brief b{color:var(--pink-dark)}
+  .grid{display:grid;grid-template-columns:1.3fr .9fr;gap:16px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .floor{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .desk{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;position:relative;
+        transition:box-shadow .3s,transform .3s,opacity .3s}
+  .desk.active{box-shadow:0 10px 26px rgba(244,167,185,.45);transform:translateY(-2px)}
+  .desk.off{opacity:.5;border-style:dashed;background:#faf6f7}
+  .desk .top{display:flex;align-items:center;gap:10px}
+  .ava{width:42px;height:42px;border-radius:12px;background:#fff3f6;display:grid;place-items:center;font-size:22px;flex:0 0 auto}
+  .desk.active .ava{animation:bob 1s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-3px)}}
+  .nm{font-weight:800;font-size:14px}
+  .ml{font-size:11px;color:var(--muted)}
+  .badge{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:12px;font-weight:700;
+         padding:5px 10px;border-radius:999px;background:#f3eef0;color:var(--muted)}
+  .badge.think{background:#fef3e2;color:var(--amber)}
+  .badge.work{background:#e3f7fa;color:var(--cyan)}
+  .badge.done{background:#e4f6ee;color:var(--green)}
+  .task{font-size:12px;color:var(--muted);margin-top:8px;min-height:16px}
+  .dots:after{content:'';animation:dots 1.2s steps(4,end) infinite}
+  @keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+  .log{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column}
+  .log h2{font-size:13px;color:var(--muted);font-weight:800;margin-bottom:10px}
+  .log .feed{display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:360px}
+  .row{display:flex;gap:8px;font-size:13px;align-items:flex-start;animation:in .3s ease}
+  @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+  .row .e{flex:0 0 auto}
+  .row .who{color:var(--muted);font-weight:700}
+  .done-banner{margin-top:14px;font-size:13px;font-weight:800;color:var(--green);opacity:0;transition:opacity .4s}
+  .done-banner.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">💞</div>
+      <div>
+        <h1>Dewy 에이전트 오피스</h1>
+        <div class="sub">둘이니까, 쉬워지니까 · 1인 운영 관측 콘솔</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="ghost" id="speed">속도 1x</button>
+      <button id="replay">▶ 다시 재생</button>
+    </div>
+  </header>
+
+  <div class="brief">현재 작업: <b id="briefText">성수동 웨딩홀 추천 글</b></div>
+
+  <div class="grid">
+    <div class="floor" id="floor"></div>
+    <div class="log">
+      <h2>활동 로그</h2>
+      <div class="feed" id="feed"></div>
+      <div class="done-banner" id="doneBanner">전체 완료 ✅ 사람 검수 대기 (자동 발행 없음)</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const AGENTS = [
+  {key:'router',  emoji:'🧭', name:'총괄 관리자',   model:'Haiku',      off:false},
+  {key:'marketer',emoji:'✍️', name:'마케팅 카피',   model:'Sonnet',     off:false},
+  {key:'visual',  emoji:'🎨', name:'시각 디자이너', model:'Higgsfield', off:false},
+  {key:'cs',      emoji:'🛟', name:'CS 상담',       model:'(로드맵)',   off:true},
+  {key:'sec',     emoji:'🔒', name:'보안 검토',     model:'(로드맵)',   off:true},
+];
+const STATE = {idle:['💤 대기',''],think:['💭 생각','think'],work:['⌨️ 작업','work'],done:['✅ 완료','done'],off:['🚫 미가동','']};
+
+// 시나리오 타임라인 (office_sim.py 데모와 동일 흐름)
+const TIMELINE = [
+  ['router','think','새 작업 접수',"새 작업 접수: '성수동 웨딩홀 추천 글'",1200],
+  ['router','work','작업 성격 분류','마케팅 작업으로 분류 → 마케팅팀에 위임',1200],
+  ['router','done','위임 완료',null,400],
+  ['marketer','think','브랜드 톤 로딩','브랜드 보이스 로딩(존댓말·과장금지)',1000],
+  ['marketer','work','블로그 초안 작성','블로그 초안 작성 중',1800],
+  ['marketer','done','초안 완료','초안 완료 → drafts/ 저장',600],
+  ['visual','think','비주얼 프롬프트','비주얼 프롬프트 구성(9:16)',1000],
+  ['visual','work','이미지 생성(--wait)','Higgsfield 이미지 생성 중',1800],
+  ['visual','done','이미지 완료','assets/ 저장',600],
+  ['router','done','작업 마감','전체 완료 ✅ 사람 검수 대기',800],
+];
+
+let speed = 1;
+const floor = document.getElementById('floor');
+const feed = document.getElementById('feed');
+const banner = document.getElementById('doneBanner');
+
+function buildDesks(){
+  floor.innerHTML='';
+  for(const a of AGENTS){
+    const d=document.createElement('div');
+    d.className='desk'+(a.off?' off':'');
+    d.id='desk-'+a.key;
+    const [label,cls]=a.off?STATE.off:STATE.idle;
+    d.innerHTML=`<div class="top"><div class="ava">${a.emoji}</div>
+      <div><div class="nm">${a.name}</div><div class="ml">${a.model}</div></div></div>
+      <div class="badge ${cls}" data-badge>${label}</div>
+      <div class="task" data-task></div>`;
+    floor.appendChild(d);
+  }
+}
+function setState(key,state,task){
+  const d=document.getElementById('desk-'+key); if(!d)return;
+  const [label,cls]=STATE[state];
+  const b=d.querySelector('[data-badge]');
+  b.className='badge '+cls; b.textContent=label;
+  d.classList.toggle('active', state==='think'||state==='work');
+  const t=d.querySelector('[data-task]');
+  if(task!=null){ t.innerHTML = state==='work' ? `<span class="dots">${task}</span>` : task; }
+}
+function log(key,note){
+  const a=AGENTS.find(x=>x.key===key);
+  const r=document.createElement('div'); r.className='row';
+  r.innerHTML=`<span class="e">${a.emoji}</span><span><span class="who">${a.name}:</span> ${note}</span>`;
+  feed.appendChild(r); feed.scrollTop=feed.scrollHeight;
+}
+const wait=ms=>new Promise(r=>setTimeout(r,ms/speed));
+
+let running=false;
+async function play(){
+  if(running)return; running=true;
+  buildDesks(); feed.innerHTML=''; banner.classList.remove('show');
+  for(const [key,state,task,note,dur] of TIMELINE){
+    setState(key,state,task);
+    if(note) log(key,note);
+    await wait(dur);
+  }
+  banner.classList.add('show');
+  running=false;
+}
+
+document.getElementById('replay').onclick=play;
+document.getElementById('speed').onclick=(e)=>{
+  speed = speed===1?2:speed===2?4:1;
+  e.target.textContent='속도 '+speed+'x';
+};
+play();
+</script>
+</body>
+</html>
