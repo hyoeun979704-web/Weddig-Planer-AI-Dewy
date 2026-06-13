@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Heart } from "lucide-react";
 
 export interface PostListItem {
@@ -24,8 +23,6 @@ interface PostListCardProps {
 }
 
 const PostListCard = ({ post, onClick }: PostListCardProps) => {
-  const [liked, setLiked] = useState(false);
-  const likeCount = (post.like_count ?? 0) + (liked ? 1 : 0);
 
   return (
     <button
@@ -58,25 +55,11 @@ const PostListCard = ({ post, onClick }: PostListCardProps) => {
 
       <div className="flex items-center justify-between mt-1 text-[10px] text-black/55">
         <span>조회수 {formatCount(post.views)}</span>
-        <span
-          role="button"
-          aria-label={liked ? "찜 해제" : "찜하기"}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setLiked((v) => !v);
-          }}
-          className="inline-flex items-center gap-1"
-        >
-          {formatCount(likeCount)}
-          <Heart
-            className={
-              liked
-                ? "h-3 w-3 fill-[#f29aa3] text-[#f29aa3]"
-                : "h-3 w-3 fill-[#f29aa3]/40 text-[#f29aa3]"
-            }
-            strokeWidth={1.5}
-          />
+        {/* 표시 전용 — 홈 프리뷰 카드의 좋아요는 서버 미저장 토글이라 새로고침 시
+            원복돼 사용자를 오인시켰다(260613). 실제 좋아요는 글 상세에서 누른다. */}
+        <span className="inline-flex items-center gap-1">
+          {formatCount(post.like_count)}
+          <Heart className="h-3 w-3 fill-[#f29aa3] text-[#f29aa3]" strokeWidth={1.5} />
         </span>
       </div>
     </button>
