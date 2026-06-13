@@ -23,8 +23,12 @@
     <meta name="theme-color" content="#F4A7B9" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Dewy" />
-    <link rel="apple-touch-icon" href="/dewy-logo.png" />
-    <link rel="icon" type="image/png" href="/dewy-logo.png" />
+    <!-- 파비콘/앱아이콘 — 브랜드 로고를 표준 크기로 명시(브라우저 탭·PWA·iOS 홈).
+         sized PNG 링크가 레거시 favicon.ico 보다 우선 적용된다. ?v=4 캐시 무효화. -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=4" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=4" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=4" />
+    <link rel="manifest" href="/site.webmanifest" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />

@@ -232,7 +232,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
   return (
     <div className="fixed inset-0 z-[100] bg-background">
       {/* Header */}
-      <div className="sticky top-0 bg-card border-b border-border">
+      <div className="sticky safe-sticky-header bg-card border-b border-border">
         <div className="flex items-center px-4 h-14 gap-2">
           <form onSubmit={handleSearchSubmit} className="flex-1 flex items-center gap-2">
             <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />

@@ -196,7 +196,7 @@ export default function MergeGame() {
       style={{ backgroundColor: '#fbe6ee' }}
     >
       {/* 헤더 */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border flex-shrink-0">
+      <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-md border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between px-4 h-11">
           <div className="flex items-center">
             <button

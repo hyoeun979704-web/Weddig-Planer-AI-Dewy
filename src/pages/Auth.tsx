@@ -258,7 +258,7 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
+      <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button
             onClick={() => navigate(-1)}

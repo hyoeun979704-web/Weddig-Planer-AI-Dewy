@@ -157,7 +157,7 @@ const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutP
 
       {/* 메인 컨텐츠 */}
       <div className="flex-1 min-w-0">
-        <header className="h-14 bg-background border-b border-border sticky top-0 z-30 flex items-center justify-between px-4">
+        <header className="h-14 bg-background border-b border-border sticky safe-sticky-header z-30 flex items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
