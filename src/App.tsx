@@ -160,6 +160,8 @@ const BusinessLanding = lazy(() => import("./pages/business/BusinessLanding"));
 const BusinessOnboard = lazy(() => import("./pages/business/BusinessOnboard"));
 const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
 const BusinessVendorEdit = lazy(() => import("./pages/business/BusinessVendorEdit"));
+const BusinessClaim = lazy(() => import("./pages/business/BusinessClaim"));
+const AdminPlaceClaims = lazy(() => import("./pages/admin/AdminPlaceClaims"));
 const BusinessGallery = lazy(() => import("./pages/business/BusinessGallery"));
 const BusinessCoupons = lazy(() => import("./pages/business/BusinessCoupons"));
 const BusinessEvents = lazy(() => import("./pages/business/BusinessEvents"));
@@ -286,6 +288,7 @@ const App = () => (
               <Route path="/business/onboard" element={<BusinessOnboard />} />
               <Route path="/business/dashboard" element={<BusinessGuard><BusinessDashboard /></BusinessGuard>} />
               <Route path="/business/edit" element={<BusinessGuard requireApproved><BusinessVendorEdit /></BusinessGuard>} />
+              <Route path="/business/claim" element={<BusinessGuard requireApproved><BusinessClaim /></BusinessGuard>} />
               <Route path="/business/gallery" element={<BusinessGuard requireApproved><BusinessGallery /></BusinessGuard>} />
               <Route path="/business/coupons" element={<BusinessGuard requireApproved><BusinessCoupons /></BusinessGuard>} />
               <Route path="/business/events" element={<BusinessGuard requireApproved><BusinessEvents /></BusinessGuard>} />
@@ -340,6 +343,7 @@ const App = () => (
               <Route path="/admin/announcements" element={<AdminGuard><AdminCommunityAnnouncements /></AdminGuard>} />
               <Route path="/admin/error-logs" element={<AdminGuard><AdminErrorLogs /></AdminGuard>} />
               <Route path="/admin/agent-outputs" element={<AdminGuard><AdminAgentOutputs /></AdminGuard>} />
+              <Route path="/admin/place-claims" element={<AdminGuard><AdminPlaceClaims /></AdminGuard>} />
               <Route path="/admin/business-review" element={<AdminGuard><AdminBusinessReview /></AdminGuard>} />
               <Route path="/admin/product-curation" element={<AdminGuard><AdminProductCuration /></AdminGuard>} />
               <Route path="/admin/featured-products" element={<AdminGuard><AdminFeaturedProducts /></AdminGuard>} />

@@ -171,11 +171,17 @@ const BusinessOnboard = () => {
                 <p className="text-sm text-muted-foreground mt-1">국세청 API로 자동 검증됩니다</p>
               </div>
 
-              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
                 <p className="text-[13px] font-semibold text-amber-800">⚠️ 사업자등록증과 똑같이 입력해 주세요</p>
                 <p className="text-[12px] text-amber-700 mt-1 leading-relaxed">
                   상호명·대표자명·개업일자가 <b>사업자등록증에 등록된 정보와 정확히 일치</b>해야 국세청 인증이 완료됩니다.
                   (띄어쓰기, (주)·㈜ 표기, 개업연월일까지 동일해야 해요)
+                </p>
+              </div>
+              <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-3">
+                <p className="text-[12px] text-blue-800 leading-relaxed">
+                  💡 이미 듀이에 <b>등록되어 있는 업체</b>인가요? 새로 만들지 말고, 가입·승인 후
+                  <b> 기업 대시보드 → ‘기존 업체 관리권한 요청’</b>으로 기존 페이지를 그대로 인수할 수 있어요.
                 </p>
               </div>
 

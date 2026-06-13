@@ -48,6 +48,7 @@ const navItems: NavItem[] = [
   { label: "업체 정보 관리", href: "/admin/places", icon: MapPin },
   { label: "콘텐츠 검토", href: "/admin/content-review", icon: Megaphone },
   { label: "기업회원 검토", href: "/admin/business-review", icon: Building2 },
+  { label: "업체 권한 요청", href: "/admin/place-claims", icon: Building2 },
   { label: "신고 처리", href: "/admin/reports", icon: Flag },
   { label: "AI 생성 현황", href: "/admin/ai-jobs", icon: Sparkles },
   { label: "청첩장 템플릿", href: "/admin/invitation-templates", icon: FileText },
