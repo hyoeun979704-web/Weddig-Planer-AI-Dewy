@@ -89,6 +89,7 @@ agent-office/office_dashboard.html  # 브라우저 미리보기(데모 데이터
 - KPI: 오늘/총 작업 · 초안(drafts) · 시각자산(assets) · 실패.
 - 에이전트 현황: 처리 건수 + 마지막 작업 시각/내용. 가동석 3 + 로드맵석(CS/보안) 2.
 - 실행 이력은 `runlog.record_run()` 으로 기록(런타임 데이터라 git 제외).
+- **산출물 패널**: drafts/·assets/ 결과물을 목록에서 선택해 **미리보기 + 복사 + 다운로드(다른 이름 저장) + 열기**(OS 기본 앱). 이미지는 썸네일 시도.
 
 ## 시각 자산 (Higgsfield)
 

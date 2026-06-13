@@ -79,6 +79,20 @@ def stats() -> dict:
     }
 
 
+def list_outputs(limit: int = 100) -> list[dict]:
+    """drafts/·assets/ 의 실제 산출물 파일 목록(최신순)."""
+    items: list[dict] = []
+    for dirname, kind, exts in [("drafts", "draft", {".md"}), ("assets", "asset", IMG_EXT)]:
+        d = BASE / dirname
+        if not d.exists():
+            continue
+        for p in d.iterdir():
+            if p.is_file() and p.suffix.lower() in exts and p.name != ".gitkeep":
+                items.append({"kind": kind, "name": p.name, "path": str(p), "mtime": p.stat().st_mtime})
+    items.sort(key=lambda x: x["mtime"], reverse=True)
+    return items[:limit]
+
+
 def seed_demo() -> int:
     """대시보드를 바로 채우기 위한 샘플 이력(과거 시각 분산)."""
     now = _dt.datetime.now()

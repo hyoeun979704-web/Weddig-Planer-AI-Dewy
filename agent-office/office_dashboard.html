@@ -55,6 +55,19 @@
     <table><thead><tr><th>시각</th><th>종류</th><th>에이전트</th><th>상태</th><th>내용</th></tr></thead>
     <tbody id="rows"></tbody></table>
   </div>
+  <h2>산출물 — 미리보기 · 복사 · 다운로드</h2>
+  <div class="card" style="display:grid;grid-template-columns:240px 1fr;gap:0;overflow:hidden">
+    <div id="outlist" style="border-right:1px solid var(--line);max-height:260px;overflow:auto"></div>
+    <div style="padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0">
+      <div style="display:flex;gap:8px">
+        <button onclick="copyOut()" style="background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)">📋 복사</button>
+        <button onclick="downloadOut()" style="background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)">⬇ 다운로드</button>
+      </div>
+      <pre id="outprev" style="white-space:pre-wrap;font:12px/1.5 Consolas,monospace;color:var(--ink);
+           background:var(--bg);border-radius:10px;padding:10px;max-height:200px;overflow:auto;margin:0">왼쪽에서 산출물을 선택하세요.</pre>
+    </div>
+  </div>
+
   <div class="updated" id="updated"></div>
 </div>
 
@@ -96,6 +109,27 @@ document.getElementById('rows').innerHTML=[...RUNS].reverse().map(r=>
   `<tr><td>${hhmm(r.ts)}</td><td>${KIND[r.kind]||r.kind}</td><td>${r.agent}</td>
    <td><span class="pill">완료</span></td><td>${r.note}</td></tr>`).join('');
 document.getElementById('updated').textContent='업데이트: '+new Date().toLocaleString('ko-KR');
+
+// ── 산출물(미리보기·복사·다운로드) — 데모 샘플 ──
+const OUTPUTS=[
+  {icon:"📄",name:"0613-성수웨딩.md",text:"# 성수동 웨딩홀, 둘이서 고르기 좋은 5곳\n\n예비부부라면 한 번쯤 고민하는 성수동 웨딩홀. 인더스트리얼 감성부터 채광 좋은 홀까지, 발품 줄이도록 핵심만 정리했어요.\n\n## 1. ...\n(자동 생성 초안 · 검수 후 게시)"},
+  {icon:"📄",name:"0613-스드메.md",text:"# 스드메 처음이라면? 예산·순서 가이드\n\n스튜디오·드레스·메이크업, 줄여서 스드메. 계약 순서와 평균 예산을 한눈에.\n\n## 예산 잡기\n..."},
+  {icon:"🖼",name:"0613-성수웨딩.png",text:"(이미지) assets/0613-성수웨딩.png — 실제 버전에서는 '열기'로 기본 뷰어에서 확인합니다."},
+];
+let curOut=null;
+const ol=document.getElementById('outlist'), op=document.getElementById('outprev');
+ol.innerHTML=OUTPUTS.map((o,i)=>`<div data-i="${i}" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--line);font-size:13px">${o.icon} ${o.name}</div>`).join('');
+ol.querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>{
+  curOut=OUTPUTS[+el.dataset.i]; op.textContent=curOut.text;
+  ol.querySelectorAll('[data-i]').forEach(x=>x.style.background='');
+  el.style.background='#fff1f5';
+});
+function copyOut(){ if(!curOut)return alert('산출물을 선택하세요');
+  navigator.clipboard.writeText(curOut.text).then(()=>alert('복사됨')).catch(()=>alert('복사 실패(브라우저 권한)')); }
+function downloadOut(){ if(!curOut)return alert('산출물을 선택하세요');
+  const blob=new Blob([curOut.text],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=curOut.name; a.click();
+  URL.revokeObjectURL(a.href); }
 </script>
 </body>
 </html>
