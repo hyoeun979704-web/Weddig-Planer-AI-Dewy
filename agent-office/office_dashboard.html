@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dewy 에이전트 오피스 · 대시보드</title>
+<style>
+  :root{--pink:#F4A7B9;--pink-d:#E0809A;--bg:#FDF8F6;--card:#fff;--ink:#3a2e33;--muted:#9b8e93;
+        --line:#f0e2e7;--green:#22a06b;--red:#e0567a;--grey:#b9adb2}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Pretendard','Segoe UI',system-ui,sans-serif;color:var(--ink);
+       background:radial-gradient(1200px 500px at 50% -10%,#fff1f5,transparent),var(--bg);min-height:100vh;padding:22px}
+  .wrap{max-width:1040px;margin:0 auto}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  h1{font-size:18px;font-weight:800;display:flex;align-items:center;gap:10px}
+  .sub{font-size:12px;color:var(--muted)}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+  @media(max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+  .kpi .n{font-size:26px;font-weight:800}
+  .kpi .l{font-size:11px;color:var(--muted);margin-top:2px}
+  .kpi .n.red{color:var(--red)}
+  h2{font-size:13px;font-weight:800;color:var(--muted);margin:6px 2px 8px}
+  .agents{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+  @media(max-width:720px){.agents{grid-template-columns:repeat(2,1fr)}}
+  .agent .nm{font-weight:800;font-size:13px}
+  .agent .ml{font-size:10px;color:var(--muted)}
+  .agent .cnt{font-size:18px;font-weight:800;margin-top:6px}
+  .agent .st{font-size:11px;margin-top:2px}
+  .agent.off{opacity:.5;border-style:dashed}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+  th{font-size:11px;color:var(--muted);font-weight:700}
+  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:#e4f6ee;color:var(--green)}
+  .updated{font-size:11px;color:var(--muted);text-align:right;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>📊 Dewy 에이전트 오피스 — 대시보드</h1>
+      <div class="sub">둘이니까, 쉬워지니까 · 1인 운영 현황판 (미리보기 · 데모 데이터)</div>
+    </div>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+
+  <h2>에이전트 현황</h2>
+  <div class="agents" id="agents"></div>
+
+  <h2>최근 작업</h2>
+  <div class="card" style="padding:4px 0">
+    <table><thead><tr><th>시각</th><th>종류</th><th>에이전트</th><th>상태</th><th>내용</th></tr></thead>
+    <tbody id="rows"></tbody></table>
+  </div>
+  <div class="updated" id="updated"></div>
+</div>
+
+<script>
+// 데모 데이터(실제 버전은 runs.jsonl 을 읽는 office_dashboard.py)
+const AGENTS=[["🧭","총괄 관리자","Haiku",false],["✍️","마케팅 카피","Sonnet",false],
+  ["🎨","시각 디자이너","Higgsfield",false],["🛟","CS 상담","(로드맵)",true],["🔒","보안 검토","(로드맵)",true]];
+const KIND={routing:"라우팅",marketing:"마케팅",visual:"시각"};
+const now=Date.now(), m=x=>new Date(now-x*60000);
+const RUNS=[
+  [180,"routing","총괄 관리자","VOC 아님 → 마케팅 분류"],
+  [175,"marketing","마케팅 카피","여름 웨딩 블로그 초안"],
+  [120,"visual","시각 디자이너","릴스 9:16 이미지"],
+  [90,"routing","총괄 관리자","마케팅 분류·위임"],
+  [85,"marketing","마케팅 카피","성수동 웨딩홀 추천"],
+  [30,"visual","시각 디자이너","썸네일 이미지"],
+  [12,"marketing","마케팅 카피","스드메 가이드 초안"],
+  [3,"routing","총괄 관리자","신규 작업 접수"],
+].map(([min,kind,agent,note])=>({ts:m(min),kind,agent,note,status:"done"}));
+
+const byAgent={}, lastBy={};
+for(const r of RUNS){byAgent[r.agent]=(byAgent[r.agent]||0)+1; lastBy[r.agent]=r;}
+const today=RUNS.length; // 데모: 전부 오늘
+const KPI=[["오늘 작업",today,false],["총 작업",RUNS.length,false],["초안(drafts)",3,false],
+           ["시각자산(assets)",2,false],["실패",0,false]];
+
+const hhmm=d=>d.toTimeString().slice(0,5);
+document.getElementById('kpis').innerHTML=KPI.map(([l,n,red])=>
+  `<div class="card kpi"><div class="n ${red?'red':''}">${n}</div><div class="l">${l}</div></div>`).join('');
+document.getElementById('agents').innerHTML=AGENTS.map(([e,nm,ml,off])=>{
+  const c=byAgent[nm]||0, last=lastBy[nm];
+  const st=off?`<span class="dot" style="background:var(--grey)"></span>미가동`
+    :(last?`<span class="dot" style="background:var(--green)"></span>${hhmm(last.ts)} ${last.note.slice(0,12)}`
+          :`<span class="dot" style="background:var(--grey)"></span>대기`);
+  return `<div class="card agent ${off?'off':''}"><div class="nm">${e} ${nm}</div><div class="ml">${ml}</div>
+    <div class="cnt">${c}건</div><div class="st">${st}</div></div>`;
+}).join('');
+document.getElementById('rows').innerHTML=[...RUNS].reverse().map(r=>
+  `<tr><td>${hhmm(r.ts)}</td><td>${KIND[r.kind]||r.kind}</td><td>${r.agent}</td>
+   <td><span class="pill">완료</span></td><td>${r.note}</td></tr>`).join('');
+document.getElementById('updated').textContent='업데이트: '+new Date().toLocaleString('ko-KR');
+</script>
+</body>
+</html>
