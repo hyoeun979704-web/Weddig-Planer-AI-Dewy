@@ -10,6 +10,7 @@ import {
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { openExternal } from "@/lib/native/openExternal";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * 입점 안내 랜딩 (/business) — 비로그인 공개.
@@ -90,6 +91,7 @@ const FAQS = [
 
 const BusinessLanding = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-28">
@@ -197,18 +199,21 @@ const BusinessLanding = () => {
         className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-background/95 backdrop-blur border-t border-border p-3"
         style={{ paddingBottom: "calc(var(--safe-bottom) + 12px)" }}
       >
+        {/* 로그인한 일반회원의 "기업회원 전환"은 앱 내 등록 폼으로 직접 —
+            /auth 로 보내면 이미 로그인된 사용자는 홈으로 리다이렉트되어
+            전환이 불가능했다(버그 260613). 비로그인만 가입 페이지로. */}
         <Button
           className="w-full h-12 text-[15px] font-bold"
-          onClick={() => void openExternal(PARTNER_FORM_URL)}
+          onClick={() => navigate(user ? "/business/onboard" : "/auth?type=business")}
         >
-          초기 파트너 신청하기 (안내 폼)
+          {user ? "기업회원 전환 신청하기" : "기업회원 가입하고 입점하기"}
         </Button>
         <button
           type="button"
-          onClick={() => navigate("/auth?type=business")}
+          onClick={() => void openExternal(PARTNER_FORM_URL)}
           className="block w-full text-center text-[12px] text-muted-foreground underline underline-offset-2 mt-2"
         >
-          앱에서 바로 기업회원 가입하기
+          초기 파트너 안내 폼으로 문의하기 →
         </button>
       </div>
     </div>

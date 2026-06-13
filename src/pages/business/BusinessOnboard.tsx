@@ -18,6 +18,8 @@ const SERVICE_CATEGORIES = [
   { value: "appliance", label: "혼수가전" },
   { value: "jewelry", label: "예물/예단" },
   { value: "invitation_venue", label: "청첩장 모임" },
+  // 기타 — 본식DVD·스냅·네일·축가·부케 등(260612 신설 카테고리와 동일 slug)
+  { value: "etc", label: "기타 (스냅·DVD·네일·축가 등)" },
 ];
 
 // 흐름: 사업자정보 → 카테고리 → (사업자 인증 + 운영자 검토 대기). 업체 상세정보
