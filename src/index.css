@@ -15,17 +15,18 @@
   :root {
     --android-safe-area-top: 0px;
     --android-safe-area-bottom: 0px;
-    /* 이 앱은 안드로이드에서 edge-to-edge 다(Android 15/targetSdk 35 강제 +
-       StatusBar setOverlaysWebView({overlay:true})). 따라서 콘텐츠가 상태바/네비바
-       "뒤"까지 그려지므로 헤더·하단탭은 그 높이만큼 안쪽으로 들어가야 한다.
-       값의 출처는 MainActivity 가 안드로이드 공식 WindowInsets API
-       (systemBars()|displayCutout()) 로 측정해 주입하는 --android-safe-area-*.
-       WebView env(safe-area-inset-*) 는 viewport-fit=cover 와 결합 시 기기별로
-       유령 인셋을 내므로 신뢰하지 않고, 네이티브 측정값을 정식 소스로 쓴다.
-       웹/브라우저에서는 주입이 없어 0px → 영향 0.
-       (회귀 #287: 이 값을 0 으로 하드코딩해 헤더가 상태바에 가려졌던 것을 되돌림.) */
-    --safe-top: var(--android-safe-area-top);
-    --safe-bottom: var(--android-safe-area-bottom);
+    /* 안전영역(상태바/노치/홈인디케이터) 소스는 플랫폼마다 신뢰 가능한 값이 다르다.
+       콘텐츠는 네이티브에서 edge-to-edge 로 시스템바 "뒤"까지 그려지므로, 헤더·하단탭은
+       그 높이만큼 안쪽으로 들어가야 한다.
+       - 기본(iOS/웹): WebView 의 env(safe-area-inset-*). iOS 는 Capacitor 가 기본
+         edge-to-edge + viewport-fit=cover 라 env() 가 노치/다이나믹아일랜드를 정확히
+         반영한다(반응형). 일반 웹 브라우저는 0 → 영향 없음.
+       - 안드로이드(아래 .platform-android 오버라이드): env() 가 viewport-fit=cover 와
+         결합 시 기기별 유령 인셋을 내므로(#286 과여백), MainActivity 가 공식 WindowInsets
+         API(systemBars()|displayCutout())로 실측 주입하는 --android-safe-area-* 를 쓴다.
+       (회귀 #287: --safe-top 을 0 으로 하드코딩해 헤더가 상태바에 가려졌던 것을 되돌림.) */
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
     --app-header-height: 56px;
     --app-header-total-height: calc(var(--app-header-height) + var(--safe-top));
     --app-tab-height: 56px;
@@ -81,6 +82,13 @@
     --sidebar-accent-foreground: 346 60% 45%;
     --sidebar-border: 20 12% 91%;
     --sidebar-ring: 346 78% 81%;
+  }
+
+  /* 안드로이드 전용 안전영역 소스: env() 대신 MainActivity 실측값 사용(위 :root 주석 참조).
+     클래스는 main.tsx 가 부팅 시 getPlatform() 으로 <html> 에 부여 → 첫 페인트부터 적용. */
+  html.platform-android {
+    --safe-top: var(--android-safe-area-top);
+    --safe-bottom: var(--android-safe-area-bottom);
   }
 
   .dark {
