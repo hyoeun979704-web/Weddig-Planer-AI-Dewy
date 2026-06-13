@@ -49,6 +49,19 @@ python marketing_office.py "성수동 웨딩홀 추천 글"   # 인자 = 기획 
 # → drafts/<timestamp>-<slug>.md 에 초안 저장. 사람이 검토 후 게시.
 ```
 
+## 오피스 시각화 (게임처럼) 🎮
+
+터미널에서 에이전트들이 일하는 모습을 책상·상태·활동 로그로 본다(표준 라이브러리만, 의존성 0).
+
+```bash
+python office_sim.py                 # 데모 재생(키 불필요) — 흐름 감상
+python office_sim.py --fast          # 빠른 미리보기
+python office_sim.py --brief "성수동 웨딩홀 추천 글"   # 실제 크루를 돌리며 시각화
+                                                      # (키 없으면 데모로 자동 전환)
+```
+- 가동석: 🧭 총괄(Haiku) · ✍️ 마케팅(Sonnet) · 🎨 시각(Higgsfield).
+- 🛟 CS · 🔒 보안 책상은 **로드맵 표시용(미가동)** — 현 단계 오버엔지니어링이라 비워둠.
+
 ## 시각 자산 (Higgsfield)
 
 이미지/숏폼 생성은 Higgsfield CLI 로 처리한다. 두 가지 사용 경로:
