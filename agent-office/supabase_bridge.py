@@ -27,10 +27,13 @@ def push_output(kind: str, title: str, source: str = "", body=None,
     url, key = _cfg()
     if not (url and key):
         return None
+    # DB CHECK 한도에 맞춰 절단(초과 시 PostgREST 400 으로 조용히 실패하던 것 방지).
     payload = json.dumps({
         "kind": kind, "title": title[:300], "source": (source or None),
-        "body": body, "media_url": media_url,
-        "deslop_score": deslop_score, "issues": issues,
+        "body": (body[:20000] if isinstance(body, str) else body),
+        "media_url": (media_url[:500] if isinstance(media_url, str) else media_url),
+        "deslop_score": deslop_score,
+        "issues": (issues[:2000] if isinstance(issues, str) else issues),
         "status": "pending",
     }).encode("utf-8")
     req = urllib.request.Request(
