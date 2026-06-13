@@ -18,3 +18,17 @@ BRAND_VOICE = (
     "듀이는 예비부부를 돕는 웨딩 버티컬 서비스. 슬로건 '둘이니까, 쉬워지니까.' "
     "따뜻하고 친근한 반말 X 존댓말, 과장·허위 정보 금지, 실용적 정보 우선."
 )
+
+# ── Higgsfield 시각 자산 생성 CLI (npm i -g @higgsfield/cli) ──────────────────
+# 실제 CLI 규약(설치 후 `higgsfield generate create --help` 로 확인):
+#   higgsfield generate create <model> --prompt "..." --wait
+#   → --wait 가 업로드/폴링까지 처리하고 결과 URL 을 stdout 에 출력. (별칭: higgs, hf)
+HIGGSFIELD_CLI = "higgsfield"
+# 이미지 모델. 예시값. ⚠️ `higgsfield model list` 로 사용 가능 모델 확인 후 변경.
+HIGGSFIELD_MODEL = "nano_banana_2"
+# generate 인자 템플릿. {model}/{prompt} 치환. --wait 가 폴링까지 동기 처리.
+HIGGSFIELD_GENERATE_ARGS = [
+    "generate", "create", "{model}", "--prompt", "{prompt}", "--wait",
+]
+HIGGSFIELD_WAIT_TIMEOUT = "15m"  # 비디오 등 오래 걸리면 늘릴 것.
+ASSET_DIR = "assets"  # 결과 다운로드 위치(로컬). 사람이 검수 후 사용.
