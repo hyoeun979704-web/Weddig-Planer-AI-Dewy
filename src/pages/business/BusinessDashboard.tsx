@@ -180,6 +180,13 @@ const BusinessDashboard = () => {
       badge: null,
     },
     {
+      icon: Building2,
+      label: "기존 업체 관리권한 요청",
+      description: "이미 듀이에 등록된 우리 업체 페이지를 인수 (운영자 승인)",
+      href: "/business/claim",
+      badge: null,
+    },
+    {
       icon: Image,
       label: isMenuCategory ? "메뉴 관리" : "사진 관리",
       description: isMenuCategory
