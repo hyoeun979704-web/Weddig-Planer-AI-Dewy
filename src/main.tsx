@@ -2,6 +2,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { isNativeApp } from "./lib/platform";
+import { installGlobalErrorLogging } from "./lib/errorLog";
+
+// 전역 미처리 오류/리젝션을 운영자 어드민(client_error_logs)으로 수집 — 프로덕션 관측.
+installGlobalErrorLogging();
 
 // Capacitor 네이티브 컨테이너에서만 딥링크/resume 훅을 동적 로드한다.
 // 동적 import 로 묶어두면 웹 번들에는 @capacitor/app 코드가 들어가지 않는다.

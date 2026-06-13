@@ -19,6 +19,7 @@ import {
   MapPin,
   Building2,
   Flag,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +58,7 @@ const navItems: NavItem[] = [
   { label: "사용자 관리", href: "/admin/users", icon: Users },
   { label: "1:1 문의·불편접수", href: "/admin/inquiries", icon: MessageSquare },
   { label: "커뮤니티 공지", href: "/admin/announcements", icon: Megaphone },
+  { label: "오류 모니터링", href: "/admin/error-logs", icon: AlertTriangle },
 ];
 
 const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutProps) => {

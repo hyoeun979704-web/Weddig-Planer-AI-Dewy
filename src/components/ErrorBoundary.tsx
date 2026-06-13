@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { logClientError } from "@/lib/errorLog";
 
 type Props = {
   children: ReactNode;
@@ -41,6 +42,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[ErrorBoundary]", error, info.componentStack);
+
+    // 렌더 크래시를 운영자 어드민으로 수집(청크 로드 실패는 노이즈 필터로 제외됨).
+    void logClientError({
+      message: error.message,
+      stack: error.stack ?? info.componentStack ?? undefined,
+      source: "errorboundary",
+    });
 
     // 청크 로드 실패는 한 번만 자동 새로고침(루프 방지).
     if (isChunkLoadError(error)) {
