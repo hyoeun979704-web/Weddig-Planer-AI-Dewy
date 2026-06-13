@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, ShieldOff } from "lucide-react";
+import { Loader2, ShieldOff, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -22,7 +22,7 @@ interface AdminGuardProps {
 const AdminGuard = ({ children }: AdminGuardProps) => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
-  const { isAdmin, isLoading: roleLoading } = useUserRole();
+  const { isAdmin, isLoading: roleLoading, isError } = useUserRole();
 
   const isLoading = authLoading || roleLoading;
 
@@ -42,6 +42,29 @@ const AdminGuard = ({ children }: AdminGuardProps) => {
   }
 
   if (!user) return null;
+
+  // 역할 조회가 일시 오류로 실패하면 admin 도 false 가 되어 "권한 없음"으로
+  // 오인 거부된다 → "권한 없음"과 분리해 재시도를 안내(BusinessGuard 와 동일 패턴).
+  if (isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="text-center max-w-sm">
+          <AlertCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+          <h1 className="text-lg font-bold text-foreground mb-2">권한을 확인하지 못했어요</h1>
+          <p className="text-sm text-muted-foreground mb-6">
+            일시적인 오류로 권한을 확인하지 못했어요. 새로고침 후 다시 시도해 주세요.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm"
+          >
+            새로고침
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (
