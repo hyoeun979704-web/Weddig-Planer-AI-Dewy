@@ -17,6 +17,7 @@ import ChatBubble from "@/components/wedding-planner/ChatBubble";
 import MemoryManagerSheet from "@/components/wedding-planner/MemoryManagerSheet";
 import ChatSessionsSheet from "@/components/wedding-planner/ChatSessionsSheet";
 import { useSubscription } from "@/hooks/useSubscription";
+import { confirm } from "@/components/ui/confirm-dialog";
 import TypingIndicator from "@/components/wedding-planner/TypingIndicator";
 import VenueSurvey from "@/components/wedding-planner/VenueSurvey";
 import SdmeSurvey from "@/components/wedding-planner/SdmeSurvey";
@@ -547,14 +548,17 @@ const AIPlanner = () => {
           )}
           {hasConversation && (
             <button
-              onClick={() => {
+              onClick={async () => {
                 // 응답 수신 중 삭제하면 도착 중인 답변이 빈 화면에 붙는다 — 응답 중엔 무시.
                 if (isLoading) return;
                 // 영속화된 채팅이면 세션째 삭제(기록 포함), 미저장 대화면 화면만 초기화.
                 if (
-                  window.confirm(
-                    "이 채팅을 삭제할까요? 메시지 기록까지 복구할 수 없어요.",
-                  )
+                  await confirm({
+                    title: "이 채팅을 삭제할까요?",
+                    description: "메시지 기록까지 복구할 수 없어요.",
+                    confirmText: "삭제",
+                    destructive: true,
+                  })
                 ) {
                   if (activeSessionId) void deleteChat(activeSessionId);
                   else startNewChat();

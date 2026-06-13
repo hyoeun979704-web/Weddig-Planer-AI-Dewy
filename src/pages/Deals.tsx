@@ -17,20 +17,42 @@ const mainCategories = [
   { key: "honeymoon", label: "허니문" },
 ];
 
+// 이벤트 탭을 떠났다 돌아와도 필터·정렬이 유지되게 세션에 보존(앱 종료 시 초기화).
+const DEALS_VIEW_KEY = "dewy:deals:view";
+interface PersistedView { selectedCategory: string; sortMode: SortMode; filters: DealFilters }
+const loadPersistedView = (): PersistedView | null => {
+  try {
+    const raw = sessionStorage.getItem(DEALS_VIEW_KEY);
+    return raw ? (JSON.parse(raw) as PersistedView) : null;
+  } catch { return null; }
+};
+
 const Deals = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [sortMode, setSortMode] = useState<SortMode>("popular");
+  const persisted = loadPersistedView();
+  const [selectedCategory, setSelectedCategory] = useState(persisted?.selectedCategory ?? "all");
+  const [sortMode, setSortMode] = useState<SortMode>(persisted?.sortMode ?? "popular");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [filters, setFilters] = useState<DealFilters>(defaultFilters);
+  const [filters, setFilters] = useState<DealFilters>(persisted?.filters ?? defaultFilters);
   const { defaultRegion, isLoaded } = useDefaultRegion();
 
+  // 예식 지역 기본 필터는 *최초 진입(보존된 뷰 없음)* 에만 적용 — 사용자가 지운
+  // 지역을 자동으로 되살리지 않도록 보존 뷰가 있으면 건너뛴다.
   useEffect(() => {
+    if (persisted) return;
     if (isLoaded && defaultRegion) {
       setFilters(prev => ({ ...prev, region: defaultRegion }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded]);
+
+  // 필터·정렬·카테고리 변경 시 세션에 저장.
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(DEALS_VIEW_KEY, JSON.stringify({ selectedCategory, sortMode, filters }));
+    } catch { /* 저장 실패 무시 */ }
+  }, [selectedCategory, sortMode, filters]);
 
   const { deals, featured, isLoading } = usePartnerDeals(selectedCategory);
 

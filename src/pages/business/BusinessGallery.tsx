@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { confirm } from "@/components/ui/confirm-dialog";
 
 interface MediaItem {
   id: string;
@@ -80,7 +81,7 @@ const BusinessGallery = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(isMenu ? "이 메뉴를 삭제할까요?" : "이 사진을 삭제할까요?")) return;
+    if (!(await confirm({ title: isMenu ? "이 메뉴를 삭제할까요?" : "이 사진을 삭제할까요?", confirmText: "삭제", destructive: true }))) return;
     const { error } = await (supabase as any).from("place_media").delete().eq("id", id);
     if (error) { toast.error("삭제에 실패했어요"); return; }
     setItems((prev) => prev.filter((i) => i.id !== id));

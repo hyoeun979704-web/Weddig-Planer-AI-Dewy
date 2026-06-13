@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { confirm } from "@/components/ui/confirm-dialog";
 
 interface Coupon {
   id: string;
@@ -91,7 +92,7 @@ const BusinessCoupons = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("이 쿠폰을 삭제할까요?")) return;
+    if (!(await confirm({ title: "이 쿠폰을 삭제할까요?", confirmText: "삭제", destructive: true }))) return;
     const { error } = await (supabase as any).from("business_coupons").delete().eq("id", id);
     if (error) { toast.error("삭제에 실패했어요"); return; }
     setItems((prev) => prev.filter((c) => c.id !== id));

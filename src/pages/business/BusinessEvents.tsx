@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { confirm } from "@/components/ui/confirm-dialog";
 
 interface EventItem {
   id: string;
@@ -87,7 +88,7 @@ const BusinessEvents = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("이 이벤트를 삭제할까요?")) return;
+    if (!(await confirm({ title: "이 이벤트를 삭제할까요?", confirmText: "삭제", destructive: true }))) return;
     const { error } = await (supabase as any).from("business_events").delete().eq("id", id);
     if (error) { toast.error("삭제에 실패했어요"); return; }
     setItems((prev) => prev.filter((e) => e.id !== id));
