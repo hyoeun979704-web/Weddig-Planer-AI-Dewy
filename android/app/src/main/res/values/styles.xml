@@ -13,10 +13,19 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- 상태바·네비게이션 바를 브랜드 프라이머리로. 밝은 핑크라 아이콘은 어둡게(가독성). -->
+        <item name="android:statusBarColor">@color/dewyPrimary</item>
+        <item name="android:navigationBarColor">@color/dewyPrimary</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <item name="android:statusBarColor">@color/dewyPrimary</item>
+        <item name="android:navigationBarColor">@color/dewyPrimary</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 </resources>
