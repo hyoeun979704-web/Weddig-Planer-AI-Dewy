@@ -15,12 +15,13 @@
   :root {
     --android-safe-area-top: 0px;
     --android-safe-area-bottom: 0px;
-    /* 상태바/제스처바 안전영역 인셋. 일부 안드로이드(edge-to-edge + 카메라 컷아웃)에서
-       env(safe-area-inset-*) 가 상태바 높이보다 과도하게 큰 값을 보고해 헤더 위 흰
-       여백이 비정상적으로 커지는 사례가 있다. 휴대폰 상태바/네비바 최대치(54px)로
-       상한을 둬, 헤더가 상태바에 가려지지 않으면서 과여백을 방지한다. */
-    --safe-top: min(max(env(safe-area-inset-top), var(--android-safe-area-top)), 54px);
-    --safe-bottom: min(max(env(safe-area-inset-bottom), var(--android-safe-area-bottom)), 54px);
+    /* 이 앱은 edge-to-edge 가 아니라 시스템이 콘텐츠를 상태바/네비바 "아래"로 inset 한다
+       (상태바·네비바 색은 네이티브 테마 statusBarColor/navigationBarColor 로 지정).
+       그런데 viewport-fit=cover 때문에 env(safe-area-inset-*) 가 유령 인셋(~상태바 높이)을
+       반환해 헤더 위/아래에 빈 여백이 생겼었다. 시스템이 이미 inset 하므로 0 으로 둔다.
+       (향후 진짜 edge-to-edge 로 전환하면 env() 기반으로 되돌릴 것.) */
+    --safe-top: 0px;
+    --safe-bottom: 0px;
     --app-header-height: 56px;
     --app-header-total-height: calc(var(--app-header-height) + var(--safe-top));
     --app-tab-height: 56px;
@@ -209,29 +210,4 @@
     -moz-appearance: textfield;
     appearance: textfield;
   }
-}
-
-/* 시스템 바(상태바/하단 네비게이션 바)를 브랜드 프라이머리 컬러로.
-   targetSdk 35(Android 15)는 edge-to-edge 강제 + 시스템바 색상 API 무시이므로,
-   시스템바 뒤에 깔리는 web 영역(safe-area 인셋 높이)을 프라이머리로 칠한다.
-   - 높이는 --safe-top/--safe-bottom(상한 54px clamp 적용)이라 과한 색 띠 방지.
-   - 웹(브라우저)에선 인셋이 0이라 보이지 않음(영향 0).
-   - pointer-events:none 으로 탭/스크롤 방해 없음. 상태바 아이콘은 OS가 위에 렌더. */
-body::before,
-body::after {
-  content: "";
-  position: fixed;
-  left: 0;
-  right: 0;
-  background: hsl(var(--primary));
-  z-index: 9999;
-  pointer-events: none;
-}
-body::before {
-  top: 0;
-  height: var(--safe-top);
-}
-body::after {
-  bottom: 0;
-  height: var(--safe-bottom);
 }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dewy 브랜드 프라이머리(#F6909B) — 시스템 상태바/네비게이션 바 색에 사용 -->
+    <color name="dewyPrimary">#F6909B</color>
+</resources>
