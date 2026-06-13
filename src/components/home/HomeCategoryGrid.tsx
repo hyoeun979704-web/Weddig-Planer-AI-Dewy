@@ -11,6 +11,7 @@ import honeymoonImg from "@/assets/categories/honeymoon.png";
 import jewelryImg from "@/assets/categories/jewelry.png";
 import applianceImg from "@/assets/categories/appliance.png";
 import invitationImg from "@/assets/categories/invitation.png";
+import etcImg from "@/assets/categories/etc.png";
 
 type ImageSrc = string | { src: string; width: number; height: number };
 
@@ -37,7 +38,7 @@ const baseTiles: CategoryItem[] = [
   { label: "허니문", image: honeymoonImg, path: "/honeymoon", emoji: "", excludeKey: "honeymoon" },
   // 기타 — 본식DVD·스냅류·네일아트·피부/체형관리·축가·축의대·부케·브라이덜샤워·
   // 장소대여 등 잔여 웨딩 업체(추후 업체가 늘면 단일 카테고리로 분리).
-  { label: "기타", path: "/vendors/기타", emoji: "🎀" },
+  { label: "기타", image: etcImg, path: "/vendors/기타", emoji: "🎀" },
 ];
 
 // Style-specific replacement tiles surfaced in slots freed up by excluded
