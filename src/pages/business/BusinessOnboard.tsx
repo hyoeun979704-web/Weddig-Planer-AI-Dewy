@@ -171,6 +171,14 @@ const BusinessOnboard = () => {
                 <p className="text-sm text-muted-foreground mt-1">국세청 API로 자동 검증됩니다</p>
               </div>
 
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                <p className="text-[13px] font-semibold text-amber-800">⚠️ 사업자등록증과 똑같이 입력해 주세요</p>
+                <p className="text-[12px] text-amber-700 mt-1 leading-relaxed">
+                  상호명·대표자명·개업일자가 <b>사업자등록증에 등록된 정보와 정확히 일치</b>해야 국세청 인증이 완료됩니다.
+                  (띄어쓰기, (주)·㈜ 표기, 개업연월일까지 동일해야 해요)
+                </p>
+              </div>
+
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium">사업자등록번호 *</Label>
