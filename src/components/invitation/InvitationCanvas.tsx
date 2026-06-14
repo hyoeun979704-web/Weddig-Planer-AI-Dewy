@@ -365,7 +365,9 @@ const InvitationCanvas = forwardRef<InvitationCanvasHandle, Props>(
                   <Circle
                     x={x + w}
                     y={y + h}
-                    radius={12 / scale}
+                    radius={14 / scale}
+                    // 손가락으로 잡기 쉽도록 시각 크기보다 큰 터치 히트영역(경쟁사 공통 불만 대응).
+                    hitStrokeWidth={28 / scale}
                     fill="#6366f1"
                     stroke="#ffffff"
                     strokeWidth={2 / scale}
