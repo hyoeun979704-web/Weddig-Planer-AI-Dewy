@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Star, MessageSquareText, Store } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
@@ -15,6 +15,8 @@ interface ReviewRow {
   review_date: string | null;
   created_at: string | null;
   source_name: string | null;
+  owner_response: string | null;
+  owner_response_at: string | null;
 }
 
 /**
@@ -29,34 +31,70 @@ const BusinessReviews = () => {
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [rows, setRows] = useState<ReviewRow[]>([]);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const { data: listing, error: listingError } = await (supabase as any).rpc("get_my_listing");
-        if (listingError) throw listingError;
-        const row = Array.isArray(listing) ? listing[0] : listing;
-        if (!row?.place_id) {
-          setPlaceId(null);
-          return;
-        }
-        setPlaceId(row.place_id);
-        const { data, error } = await (supabase as any)
-          .from("place_reviews")
-          .select("review_id, title, content, author, rating, review_date, created_at, source_name")
-          .eq("place_id", row.place_id)
-          .order("review_date", { ascending: false, nullsFirst: false })
-          .order("created_at", { ascending: false, nullsFirst: false })
-          .limit(200);
-        if (error) throw error;
-        setRows((data ?? []) as ReviewRow[]);
-      } catch {
-        toast.error("후기를 불러오지 못했어요");
-      } finally {
-        setLoading(false);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: listing, error: listingError } = await (supabase as any).rpc("get_my_listing");
+      if (listingError) throw listingError;
+      const row = Array.isArray(listing) ? listing[0] : listing;
+      if (!row?.place_id) {
+        setPlaceId(null);
+        return;
       }
-    })();
+      setPlaceId(row.place_id);
+      const { data, error } = await (supabase as any)
+        .from("place_reviews")
+        .select("review_id, title, content, author, rating, review_date, created_at, source_name, owner_response, owner_response_at")
+        .eq("place_id", row.place_id)
+        .order("review_date", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false, nullsFirst: false })
+        .limit(200);
+      if (error) throw error;
+      setRows((data ?? []) as ReviewRow[]);
+    } catch {
+      toast.error("후기를 불러오지 못했어요");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // 답글 작성 상태
+  const REPLY_MAX = 1000;
+  const [replyId, setReplyId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const openReply = (r: ReviewRow) => {
+    setReplyId(r.review_id);
+    setDraft(r.owner_response ?? "");
+  };
+
+  const saveReply = async (reviewId: string) => {
+    const text = draft.trim();
+    if (!text) return;
+    setSaving(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("place_reviews")
+        .update({ owner_response: text.slice(0, REPLY_MAX), owner_response_at: new Date().toISOString() })
+        .eq("review_id", reviewId);
+      if (error) throw error;
+      toast.success("답글을 등록했어요");
+      setReplyId(null);
+      setDraft("");
+      await load();
+    } catch (err) {
+      toast.error("답글 저장 실패", {
+        description: err instanceof Error ? err.message : "다시 시도해주세요.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // 평점 요약 — rating 이 있는 후기만으로 평균·분포 계산(표시값과 데이터 일치).
   const summary = useMemo(() => {
@@ -187,6 +225,64 @@ const BusinessReviews = () => {
                   <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line leading-relaxed">
                     {r.content}
                   </p>
+                )}
+
+                {/* 사장님 답글 — 표시 / 작성 / 수정 */}
+                {r.owner_response && replyId !== r.review_id && (
+                  <div className="mt-3 rounded-xl bg-primary/5 border border-primary/15 p-3">
+                    <p className="text-[11px] font-semibold text-primary flex items-center gap-1">
+                      <Store className="w-3 h-3" /> 사장님 답글
+                    </p>
+                    <p className="text-sm text-foreground mt-1 whitespace-pre-line leading-relaxed">
+                      {r.owner_response}
+                    </p>
+                    <button
+                      onClick={() => openReply(r)}
+                      className="text-[11px] text-muted-foreground mt-1.5 hover:text-foreground"
+                    >
+                      답글 수정
+                    </button>
+                  </div>
+                )}
+
+                {replyId === r.review_id ? (
+                  <div className="mt-3 space-y-2">
+                    <textarea
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      maxLength={REPLY_MAX}
+                      rows={3}
+                      placeholder="고객 후기에 정중하게 답글을 남겨보세요"
+                      className="w-full rounded-xl border border-border bg-background p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-muted-foreground">{draft.length}/{REPLY_MAX}</span>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setReplyId(null);
+                            setDraft("");
+                          }}
+                        >
+                          취소
+                        </Button>
+                        <Button size="sm" disabled={saving || !draft.trim()} onClick={() => saveReply(r.review_id)}>
+                          {saving ? "저장 중..." : "답글 등록"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  !r.owner_response && (
+                    <button
+                      onClick={() => openReply(r)}
+                      className="mt-2.5 text-xs font-medium text-primary flex items-center gap-1 hover:opacity-80"
+                    >
+                      <MessageSquareText className="w-3.5 h-3.5" /> 답글 달기
+                    </button>
+                  )
                 )}
               </article>
             ))}
