@@ -261,7 +261,7 @@
 @media (min-width: 1024px) {
   :root {
     --app-sidebar-width: 240px;
-    --app-col-max: 720px;
+    --app-col-max: 960px;
   }
   #root {
     padding-left: var(--app-sidebar-width);
