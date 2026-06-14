@@ -456,10 +456,15 @@ const PATTERNS: IntentPattern[] = [
     dbHandler: "checklist_progress",
   },
 
-  // ── 명시 웹 검색 (사용자가 "웹에서 찾아줘") ────────────
+  // ── 명시 웹 검색 + Dewy 카테고리 밖 외부 업체 질문 ────────────
   // free_search·popular_places보다 먼저 매칭되어야 함 — "웹에서 강남
   // 웨딩홀 찾아줘"가 free_search 패턴에 먼저 잡히는 회귀 방지.
   // "더 찾아줘" 단독은 너무 광범위 → 컨텍스트(웹/실시간/최신) 동반 필요.
+  //
+  // 또한 Dewy가 자체 데이터를 갖지 않는 외부 서비스(예: 청첩장 인쇄소)를 물으면,
+  // 일반 LLM 으로 보내면 없는 상호를 지어낸다(환각). 이런 질문은 Google Search
+  // 그라운딩(vendor-web-search)으로 보내 실제 검색 결과로 답하게 한다.
+  // 가이드(invitation_design)보다 앞에 둬서 먼저 매칭되게 한다.
   {
     intent: "web_search" as ChatIntent,
     patterns: [
@@ -468,6 +473,10 @@ const PATTERNS: IntentPattern[] = [
       /최신.*(검색|찾|정보).*(업체|식장|스튜디오|드레스)/,
       /구글에서.*(검색|찾)/,
       /직접.*(웹|구글|인터넷).*(검색|찾)/,
+      // 외부 인쇄소 — Dewy 카테고리에 없어 그라운딩이 안 되던 환각 다발 구간.
+      /인쇄(소|\s*할\s*곳|\s*업체|\s*맡)/,
+      /인쇄.*(어디|어느|추천)/,
+      /(어디|어느).*인쇄/,
     ],
     dbHandler: "web_search",
   },
