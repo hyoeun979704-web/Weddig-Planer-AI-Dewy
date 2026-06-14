@@ -87,6 +87,7 @@ const BudgetSplitSimulator = lazy(() => import("./pages/BudgetSplitSimulator"));
 const Tutorial = lazy(() => import("./pages/Tutorial"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const OssLicenses = lazy(() => import("./pages/OssLicenses"));
 const AccountDeletion = lazy(() => import("./pages/AccountDeletion"));
 const LocationTerms = lazy(() => import("./pages/LocationTerms"));
 const DressFitting = lazy(() => import("./pages/DressFitting"));
@@ -300,6 +301,7 @@ const App = () => (
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/oss-licenses" element={<OssLicenses />} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/consulting" element={<WeddingConsulting />} />
