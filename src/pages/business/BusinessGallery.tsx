@@ -5,6 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import ImageUploader from "@/components/admin/ImageUploader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -32,6 +33,8 @@ const BusinessGallery = () => {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [adding, setAdding] = useState(false);
+  // 업로드 성공 후 ImageUploader 미리보기를 비우기 위한 강제 리마운트 키.
+  const [uploaderKey, setUploaderKey] = useState(0);
 
   const isMenu = category === "invitation_venue";
 
@@ -76,6 +79,7 @@ const BusinessGallery = () => {
     setAdding(false);
     if (error) { toast.error("추가에 실패했어요"); return; }
     setImageUrl(""); setTitle(""); setPrice("");
+    setUploaderKey((k) => k + 1);
     toast.success(isMenu ? "메뉴를 추가했어요" : "사진을 추가했어요");
     await loadMedia(placeId);
   };
@@ -135,8 +139,22 @@ const BusinessGallery = () => {
             </div>
           )}
           <div className="space-y-1.5">
-            <Label className="text-xs">{isMenu ? "메뉴 사진 URL" : "사진 URL"}</Label>
-            <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
+            <Label className="text-xs">{isMenu ? "메뉴 사진" : "사진"}</Label>
+            {user && (
+              <ImageUploader
+                key={uploaderKey}
+                bucket="vendor-images"
+                pathPrefix={`${user.id}/`}
+                initialUrl={imageUrl || undefined}
+                onUploaded={(_, url) => setImageUrl(url)}
+              />
+            )}
+            <Input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="또는 외부 이미지 URL (https://...)"
+              className="mt-2"
+            />
           </div>
           <Button onClick={handleAdd} disabled={adding} className="w-full">
             {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> {isMenu ? "메뉴 추가" : "사진 추가"}</>}

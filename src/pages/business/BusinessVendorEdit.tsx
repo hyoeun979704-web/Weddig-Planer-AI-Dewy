@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/contexts/AuthContext";
+import ImageUploader from "@/components/admin/ImageUploader";
 import BusinessListingDetailForm from "@/components/business/BusinessListingDetailForm";
 
 // 승인된 기업회원이 공개 상세페이지(places) 공통 정보를 입력/수정. 저장하면
@@ -17,6 +19,7 @@ import BusinessListingDetailForm from "@/components/business/BusinessListingDeta
 const BusinessVendorEdit = () => {
   const navigate = useNavigate();
   const { businessProfile, isLoading: roleLoading } = useUserRole();
+  const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -143,7 +146,23 @@ const BusinessVendorEdit = () => {
           <Field label="시/도" value={city} onChange={setCity} placeholder="서울특별시" />
           <Field label="구/군" value={district} onChange={setDistrict} placeholder="강남구" />
         </div>
-        <Field label="대표 이미지 URL" value={imageUrl} onChange={setImageUrl} placeholder="https://..." />
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">대표 이미지</Label>
+          {user && (
+            <ImageUploader
+              bucket="vendor-images"
+              pathPrefix={`${user.id}/`}
+              initialUrl={imageUrl || undefined}
+              onUploaded={(_, url) => setImageUrl(url)}
+            />
+          )}
+          <Input
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="또는 외부 이미지 URL (https://...)"
+            className="mt-2"
+          />
+        </div>
         <Field label="최소 가격(원)" value={minPrice} onChange={setMinPrice} placeholder="500000" type="number" />
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">키워드 (쉼표로 구분)</Label>
