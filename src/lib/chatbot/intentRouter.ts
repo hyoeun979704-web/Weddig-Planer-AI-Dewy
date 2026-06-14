@@ -127,6 +127,12 @@ interface IntentPattern {
   dbHandler?: IntentMatch["dbHandler"];
   /** 정적 가이드 핸들러 키 */
   guideKey?: IntentMatch["guideKey"];
+  /**
+   * 제외 신호 — 이 패턴 중 하나라도 매칭되면 이 의도는 건너뛴다(→ LLM 폴백).
+   * 캔드(정적) 가이드가 답할 수 없는 구체 질문(예: "청첩장 어디서 인쇄?")을
+   * 일반 가이드가 가로채 엉뚱한 답을 내보내는 것을 막는다.
+   */
+  excludePatterns?: RegExp[];
 }
 
 const PATTERNS: IntentPattern[] = [
@@ -612,6 +618,14 @@ const PATTERNS: IntentPattern[] = [
       /(종이|모바일).*청첩장/,
       /청첩장.*(만들|제작)/,
     ],
+    // "어디서 인쇄·인쇄소 추천·셀프 디자인 인쇄" 같은 '인쇄처/업체' 질문은 디자인
+    // 트렌드 캔드 가이드가 못 답한다 → LLM(업체 추천·검색)으로 넘긴다.
+    excludePatterns: [
+      /인쇄(소|\s*할\s*곳|\s*업체|\s*맡)/,
+      /인쇄.*(어디|어느)/,
+      /(어디|어느\s*곳).*인쇄/,
+      /(셀프|직접).*인쇄/,
+    ],
     guideKey: "invitation_design",
   },
 
@@ -653,6 +667,8 @@ export const matchIntent = (message: string): IntentMatch | null => {
 
   // 1) 정적 패턴 매칭
   for (const pattern of PATTERNS) {
+    // 제외 신호가 있으면 이 의도는 건너뛴다(구체 질문을 LLM 으로).
+    if (pattern.excludePatterns?.some((re) => re.test(trimmed))) continue;
     for (const p of pattern.patterns) {
       const matched =
         typeof p === "string"
