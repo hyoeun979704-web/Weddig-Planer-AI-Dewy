@@ -92,19 +92,14 @@ const Settings = () => {
               </div>
               <Switch checked={theme === "dark"} onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} />
             </div>
-            <button
-              onClick={() => toast.info("현재 한국어만 지원해요")}
-              className="w-full flex items-center justify-between p-4"
-            >
+            {/* 단일 언어 — 동작이 없으므로 클릭 어포던스(chevron) 없이 정보만 표시 */}
+            <div className="w-full flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <Globe className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium">언어</span>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="text-sm">한국어</span>
-                <ChevronRight className="w-4 h-4" />
-              </div>
-            </button>
+              <span className="text-sm text-muted-foreground">한국어</span>
+            </div>
           </div>
         </div>
 
@@ -159,7 +154,7 @@ const Settings = () => {
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
             <button
-              onClick={() => toast.info("오픈소스 라이선스는 준비 중이에요")}
+              onClick={() => navigate("/oss-licenses")}
               className="w-full flex items-center justify-between p-4"
             >
               <div className="flex items-center gap-3">

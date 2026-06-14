@@ -26,7 +26,7 @@ interface ItemWithUrl extends Row {
   url: string | null;
 }
 
-const DressFittingGallery = () => {
+const DressFittingGallery = ({ embedded = false }: { embedded?: boolean } = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -67,8 +67,8 @@ const DressFittingGallery = () => {
   }, [user]);
 
   return (
-    <div className="min-h-screen bg-background app-col mx-auto pb-24">
-      <PageHeader title="내 드레스 갤러리" />
+    <div className={embedded ? "" : "min-h-screen bg-background app-col mx-auto pb-24"}>
+      {!embedded && <PageHeader title="내 드레스 갤러리" />}
 
       <main className="px-4 py-5">
         {loading ? (
@@ -125,10 +125,12 @@ const DressFittingGallery = () => {
         )}
       </main>
 
-      <BottomNav
-        activeTab={location.pathname}
-        onTabChange={(href) => navigate(href)}
-      />
+      {!embedded && (
+        <BottomNav
+          activeTab={location.pathname}
+          onTabChange={(href) => navigate(href)}
+        />
+      )}
     </div>
   );
 };

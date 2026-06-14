@@ -4,11 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 const todayKstISO = (): string => {
-  // KST 기준 오늘 날짜 (YYYY-MM-DD)
-  const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset() * 60_000;
-  const kst = new Date(utc + 9 * 60 * 60_000);
-  return kst.toISOString().slice(0, 10);
+  // KST 기준 오늘 (YYYY-MM-DD). Date.now() 는 항상 UTC epoch 이므로 +9h 후 UTC 로 읽으면
+  // 브라우저 타임존과 무관하게 KST 벽시계 날짜가 된다.
+  // (버그: 기존엔 getTimezoneOffset 을 더한 뒤 toISOString 으로 또 UTC 로 읽어, KST
+  //  브라우저에서 'UTC 날짜'가 나왔다. RPC 는 KST 날짜를 저장하므로 00~09시 KST 구간에
+  //  날짜가 하루 어긋나 → claim 후에도 '오늘 출석 완료'가 안 떴음.)
+  return new Date(Date.now() + 9 * 60 * 60_000).toISOString().slice(0, 10);
 };
 
 interface AttendanceState {

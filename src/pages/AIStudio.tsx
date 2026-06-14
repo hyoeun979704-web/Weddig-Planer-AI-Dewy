@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { CategoryTab, useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
@@ -137,6 +138,20 @@ const AIStudio = () => {
       <CategoryTabBar activeTab={activeTab} onTabChange={handleCategoryTabChange} />
 
       <main className="safe-bottom-scroll">
+        {/* 내 결과물 모아보기 — 헤어·드레스·메이크업·사진보정·컨설팅을 한 곳에서 탭으로 */}
+        <button
+          type="button"
+          onClick={() => navigate("/ai-studio/my-results")}
+          className="mx-4 mt-4 w-[calc(100%-2rem)] flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 text-left active:scale-[0.99] transition-transform"
+        >
+          <span>
+            <span className="block text-sm font-bold text-foreground">내 결과물 모아보기</span>
+            <span className="block text-[12px] text-muted-foreground mt-0.5">
+              헤어·드레스·메이크업·사진보정·컨설팅을 한 곳에서
+            </span>
+          </span>
+          <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+        </button>
         <div className="grid grid-cols-2 gap-3 px-4 py-5">
           {cards.map((card, index) => {
             // 활성 카드 (실제 동작)

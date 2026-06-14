@@ -47,6 +47,7 @@ const AIStudio = lazy(() => import("./pages/AIStudio"));
 const WeddingConsulting = lazy(() => import("./pages/WeddingConsulting"));
 const ConsultingResult = lazy(() => import("./pages/ConsultingResult"));
 const ConsultingGallery = lazy(() => import("./pages/ConsultingGallery"));
+const MyResults = lazy(() => import("./pages/MyResults"));
 const HairPreview = lazy(() => import("./pages/HairPreview"));
 const HairPreviewResult = lazy(() => import("./pages/HairPreviewResult"));
 const HairPreviewGallery = lazy(() => import("./pages/HairPreviewGallery"));
@@ -87,6 +88,7 @@ const BudgetSplitSimulator = lazy(() => import("./pages/BudgetSplitSimulator"));
 const Tutorial = lazy(() => import("./pages/Tutorial"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const OssLicenses = lazy(() => import("./pages/OssLicenses"));
 const AccountDeletion = lazy(() => import("./pages/AccountDeletion"));
 const LocationTerms = lazy(() => import("./pages/LocationTerms"));
 const DressFitting = lazy(() => import("./pages/DressFitting"));
@@ -300,11 +302,13 @@ const App = () => (
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/oss-licenses" element={<OssLicenses />} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/consulting" element={<WeddingConsulting />} />
               <Route path="/ai-studio/consulting/result/:id" element={<ConsultingResult />} />
               <Route path="/ai-studio/consulting/gallery" element={<ConsultingGallery />} />
+              <Route path="/ai-studio/my-results" element={<MyResults />} />
               <Route path="/ai-studio/hair-room" element={<HairPreview />} />
               <Route path="/ai-studio/hair-room/result/:id" element={<HairPreviewResult />} />
               <Route path="/ai-studio/hair-room/gallery" element={<HairPreviewGallery />} />
