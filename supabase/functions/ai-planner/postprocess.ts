@@ -22,6 +22,16 @@ const HEDGE_RE = /(업체|시즌|지역|시기)\s*(별|마다)|견적|상이|다
 export const PRICE_DISCLAIMER =
   "\n\n_위 금액은 일반적인 시세 추정이라 업체·시즌별로 달라질 수 있어요. 정확한 비용은 견적으로 확인해 주세요._";
 
+export const VENDOR_DISCLAIMER =
+  "\n\n_⚠️ 위에 특정 업체·사이트명이 있다면 정확하지 않을 수 있어요(AI가 없는 곳을 잘못 떠올릴 수 있어요). 실제 이용 전에 네이버·구글 검색이나 Dewy 업체 탐색으로 꼭 확인해 주세요._";
+
+// 외부 업체를 실명으로 추천하는 환각 신호(스트리밍이라 이미 나간 텍스트는 못 지우므로
+// 경고 면책을 덧붙인다). 근거주입(grounding) 없이 나타나면 위험:
+//  - URL 이 아닌데 "웹사이트: ○○" 처럼 상호를 링크처럼 단 경우(거의 확실한 환각)
+const FABRICATED_LINK_RE = /웹\s*사이트\s*[:：]\s*(?!https?:\/\/|www\.)\S/;
+//  - "브랜드:/업체:/상호:" 항목 나열(없는 업체 카탈로그를 지어낸 패턴) — 2개 이상이면 위험
+const VENDOR_CATALOG_RE = /(^|\n)\s*(브랜드|업체|상호)\s*[:：]/g;
+
 export interface AuditResult {
   /** 응답 끝에 덧붙일 텍스트(없으면 "") */
   appendix: string;
@@ -38,13 +48,22 @@ export function auditFullText(text: string, ctx: AuditContext): AuditResult {
     warnings.push("L4 audit: ungrounded amount without hedge — disclaimer appended");
   }
 
-  if (ctx.isVendorQuery) {
-    if (ctx.groundedVendorNames.length === 0) {
-      warnings.push("L4 audit: vendor-intent reply without grounding rows (hallucination risk)");
-    } else {
-      const used = ctx.groundedVendorNames.filter((n) => text.includes(n)).length;
-      warnings.push(`L4 audit: vendor grounding used ${used}/${ctx.groundedVendorNames.length}`);
-    }
+  // 업체 추천 환각 방어 — 입력 기반(isVendorQuery)뿐 아니라 출력 기반 신호도 본다.
+  // 인쇄소 등 Dewy 카테고리 밖 질문은 isVendorQuery=false 라 입력만으로는 못 잡으므로,
+  // 출력에 가짜 링크/지어낸 업체 카탈로그가 보이면 면책을 덧붙인다.
+  const hasGrounding = ctx.groundedVendorNames.length > 0;
+  const fabricatedLink = FABRICATED_LINK_RE.test(text);
+  const catalogCount = (text.match(VENDOR_CATALOG_RE) ?? []).length;
+  const ungroundedVendorIntent = ctx.isVendorQuery && !hasGrounding;
+
+  if (!hasGrounding && (fabricatedLink || catalogCount >= 2 || ungroundedVendorIntent)) {
+    appendix += VENDOR_DISCLAIMER;
+    warnings.push(
+      `L4 audit: external-vendor hallucination risk (link=${fabricatedLink}, catalog=${catalogCount}, ungroundedIntent=${ungroundedVendorIntent}) — disclaimer appended`,
+    );
+  } else if (ctx.isVendorQuery && hasGrounding) {
+    const used = ctx.groundedVendorNames.filter((n) => text.includes(n)).length;
+    warnings.push(`L4 audit: vendor grounding used ${used}/${ctx.groundedVendorNames.length}`);
   }
 
   return { appendix, warnings };
