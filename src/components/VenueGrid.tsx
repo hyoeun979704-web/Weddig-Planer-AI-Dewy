@@ -114,7 +114,7 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-5 px-5 pb-20">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 px-5 pb-20">
         {Array.from({ length: 6 }).map((_, i) => (
           <CardSkeleton key={i} />
         ))}
@@ -171,13 +171,13 @@ const VenueGrid = ({ onVenueClick, partnersOnly = false }: VenueGridProps) => {
 
   return (
     <div className="pb-20">
-      <div className="grid grid-cols-2 gap-5 px-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 px-5">
         {venueCards}
       </div>
 
       <div ref={loadMoreRef} className="flex justify-center py-6">
         {isFetchingNextPage && (
-          <div className="grid grid-cols-2 gap-5 px-5 w-full">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 px-5 w-full">
             <CardSkeleton />
             <CardSkeleton />
           </div>

@@ -26,6 +26,9 @@
     { "source": "/예비부부일정공유앱", "destination": "/api/guide?slug=예비부부일정공유앱" },
     { "source": "/모바일청첩장앱", "destination": "/api/guide?slug=모바일청첩장앱" },
     { "source": "/플래너없이결혼준비", "destination": "/api/guide?slug=플래너없이결혼준비" },
+    { "source": "/결혼준비비용", "destination": "/api/guide?slug=결혼준비비용" },
+    { "source": "/결혼준비순서", "destination": "/api/guide?slug=결혼준비순서" },
+    { "source": "/웨딩홀계약주의사항", "destination": "/api/guide?slug=웨딩홀계약주의사항" },
 
     { "source": "/((?!api|assets|sw.js|workbox-.*).*)", "destination": "/index.html" }
   ]
