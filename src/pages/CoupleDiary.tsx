@@ -45,14 +45,14 @@ const CoupleDiary = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader
         title="우리의 일기"
         tutorialId="couple-header"

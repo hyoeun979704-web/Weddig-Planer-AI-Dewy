@@ -6,11 +6,7 @@
 
 export const config = { runtime: "edge" };
 
-import { SITE, esc, headTags, inject, bareDoc, getTemplate, type Rendered } from "./_lib/ssr";
-
-const SUPABASE_URL = "https://qabeywyzjsgyqpjqsvkd.supabase.co";
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhYmV5d3l6anNneXFwanFzdmtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NTg4MzUsImV4cCI6MjA5MTEzNDgzNX0.ae0GIokaeczwm0-FaVSoCnkNqBgagsdD1-1I_BP90Jo";
+import { SITE, SUPABASE_URL, SUPABASE_ANON_KEY, esc, headTags, inject, bareDoc, getTemplate, type Rendered } from "./_lib/ssr";
 
 const CATEGORY_LABEL: Record<string, string> = {
   wedding_hall: "웨딩홀",
@@ -89,6 +85,9 @@ function renderPlace(p: Record<string, unknown>, reviews: Record<string, unknown
   const address = [p.city, p.district].filter(Boolean).join(" ");
   const rating = Number(p.avg_rating ?? 0);
   const reviewCount = Number(p.review_count ?? 0);
+  const lat = Number(p.lat);
+  const lng = Number(p.lng);
+  const minPrice = Number(p.min_price ?? 0);
   const d = (p.place_details ?? null) as Record<string, unknown> | null;
   const card = (p[CARD_KEY[category]] ?? null) as Record<string, unknown> | null;
   const image = (p.main_image_url as string) || `${SITE}/android-launchericon-512-512.png`;
@@ -124,6 +123,12 @@ function renderPlace(p: Record<string, unknown>, reviews: Record<string, unknown
     description: metaDesc,
     url: canonical,
     ...(address ? { address: { "@type": "PostalAddress", addressLocality: address } } : {}),
+    // 지역+카테고리 질의("부산 웨딩홀") 매칭에 좌표가 도움. 0,0(미수집)은 제외.
+    ...(Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)
+      ? { geo: { "@type": "GeoCoordinates", latitude: lat, longitude: lng } }
+      : {}),
+    // priceRange 는 freeform text — 최저가가 있으면 "시작가~"로 honest 표기.
+    ...(minPrice > 0 ? { priceRange: `${minPrice.toLocaleString("ko-KR")}원~` } : {}),
     ...(reviewCount > 0 && rating > 0
       ? { aggregateRating: { "@type": "AggregateRating", ratingValue: rating, reviewCount } }
       : {}),
@@ -158,6 +163,8 @@ function renderProduct(p: Record<string, unknown>): Rendered {
   const id = String(p.id ?? "");
   const name = String(p.name ?? "상품");
   const price = Number(p.sale_price ?? p.price ?? 0);
+  const ratingVal = Number(p.rating ?? 0);
+  const reviewCount = Number(p.review_count ?? 0);
   const image = (p.thumbnail_url as string) || `${SITE}/android-launchericon-512-512.png`;
   const desc = (p.description as string) || `${name} - Dewy 웨딩 쇼핑몰에서 만나보세요.`;
   const canonical = `${SITE}/store/${id}`;
@@ -172,6 +179,9 @@ function renderProduct(p: Record<string, unknown>): Rendered {
     url: canonical,
     ...(price > 0
       ? { offers: { "@type": "Offer", price, priceCurrency: "KRW", availability: "https://schema.org/InStock" } }
+      : {}),
+    ...(ratingVal > 0 && reviewCount > 0
+      ? { aggregateRating: { "@type": "AggregateRating", ratingValue: ratingVal, reviewCount } }
       : {}),
   };
 

@@ -25,7 +25,7 @@ const Studios = () => {
   const handleItemClick = (item: CategoryItem) => { navigate(`/studio/${item.id}`); };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title="스드메 추천·비교 (스튜디오·드레스·메이크업) | Dewy" description="예비부부가 가장 많이 선택한 스드메 패키지를 비교하세요. 촬영 스타일·드레스·메이크업 옵션별 추천과 후기까지 한 곳에서." path="/studios" />
       <PageHeader title="스드메" />
       <main className="pb-20">

@@ -36,16 +36,6 @@ import PlaceRecommendations from "@/components/detail/PlaceRecommendations";
 import PlaceInquirySheet from "@/components/place/PlaceInquirySheet";
 import { supabase } from "@/integrations/supabase/client";
 
-const handleTagClick = (tag: string) => {
-  // Tag-based filtering on the list pages isn't wired yet — the list hooks
-  // (useVenues, useCategoryData) don't read ?tag= from the query string.
-  // Until that lands, surface an honest "coming soon" rather than navigating
-  // to a list that visibly hasn't filtered.
-  toast.info(`#${tag}`, {
-    description: "태그로 비슷한 업체 찾기 기능은 곧 출시될 예정이에요",
-  });
-};
-
 interface Props {
   place: LegacyDetail;
   /** Korean category label, e.g. "웨딩홀" — for the category chip */
@@ -104,16 +94,27 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
   // 업체가 직접 작성 + 운영자 검토 통과한 정보인지 — 신뢰 표시용
   const [vendorAuthored, setVendorAuthored] = useState(false);
   const [inquiryOpen, setInquiryOpen] = useState(false);
+  // 입점 업체가 고른 문의 채널 — 'chat'(인앱) | 'url' | 'phone'. 사장님이 설정.
+  const [inquiry, setInquiry] = useState<{ channel: string; url: string | null; phone: string | null }>({
+    channel: "chat",
+    url: null,
+    phone: null,
+  });
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data } = await (supabase as any)
         .from("places")
-        .select("owner_user_id, moderation_status, data_source")
+        .select("owner_user_id, moderation_status, data_source, inquiry_channel, inquiry_url, inquiry_phone")
         .eq("place_id", place.id)
         .maybeSingle();
       if (cancelled) return;
       setIsClaimed(!!data?.owner_user_id);
+      setInquiry({
+        channel: (data?.inquiry_channel as string) ?? "chat",
+        url: (data?.inquiry_url as string) ?? null,
+        phone: (data?.inquiry_phone as string) ?? null,
+      });
       // '직접 작성' = 업체 계정이 만든 정보(data_source=business)가 운영자 검토를
       // 통과한 경우만. 수집 업체는 기본 approved 라 이 조건이 없으면 헛신호가 난다.
       setVendorAuthored(
@@ -164,7 +165,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24 relative">
+    <div className="min-h-screen bg-background app-col mx-auto pb-24 relative">
       {/* Slim top header — back / category chip / favorite */}
       <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between h-[var(--app-header-height)] px-4">
@@ -229,7 +230,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
       )}
 
       {/* Fixed bottom CTA */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-background border-t border-border p-3 z-40">
+      <div className="fixed bottom-0 left-0 right-0 app-col mx-auto bg-background border-t border-border p-3 z-40">
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -248,17 +249,39 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
           <Button
             className="flex-1 h-11"
             onClick={() => {
-              // 입점(클레임) 업체는 인앱 문의로, 미입점은 기존 안내 유지
+              // 입점(클레임) 업체는 사장님이 고른 채널로 문의를 받는다.
+              //   url   → 사장님이 적은 외부 링크(카톡 오픈채팅·네이버 예약 등)
+              //   phone → 사장님이 적은 전화번호
+              //   chat(기본) → 인앱 문의 시트(사장님이 앱에서 직접 답변)
               if (isClaimed) {
-                setInquiryOpen(true);
+                if (inquiry.channel === "url" && inquiry.url) {
+                  void openExternal(inquiry.url);
+                } else if (inquiry.channel === "phone" && inquiry.phone) {
+                  void openExternal(`tel:${inquiry.phone}`);
+                } else {
+                  setInquiryOpen(true);
+                }
+                return;
+              }
+              // 미입점 업체 — 죽은 토스트 대신 실제 연락처로 연결.
+              // 옆 '전화 문의' 버튼이 전화를 담당하므로, 여기선 온라인 문의 채널
+              // (카톡 채널·네이버·홈페이지·인스타·유튜브)을 우선 열고, 없으면 전화,
+              // 그것도 없으면 안내. (사장님께는 입점을 권유.)
+              const online =
+                place.kakao_channel_url || place.naver_place_url || place.website_url ||
+                place.instagram_url || place.youtube_url;
+              if (online) {
+                void openExternal(online);
+              } else if (place.tel) {
+                void openExternal(`tel:${place.tel}`);
               } else {
-                toast.info("아직 앱 문의를 받지 않는 업체예요", {
-                  description: "전화 문의를 이용해주세요. 입점 업체는 앱에서 바로 답변을 받아요.",
+                toast.info("아직 등록된 문의 채널이 없어요", {
+                  description: "이 업체의 연락처 정보가 없어요. 사장님이라면 무료 입점 후 문의를 직접 받을 수 있어요.",
                 });
               }
             }}
           >
-            예약 문의
+            {isClaimed ? "예약 문의" : "문의하기"}
           </Button>
         </div>
       </div>
@@ -424,14 +447,15 @@ function BasicTab({
         )}
         {place.tags && place.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">
+            {/* 태그는 정보 표시용 — 태그 기반 검색이 아직 list 훅에 연결되지 않아
+                클릭 어포던스(버튼) 대신 비대화형 칩으로 둔다(죽은 버튼 방지). */}
             {place.tags.slice(0, 8).map((t, i) => (
-              <button
+              <span
                 key={i}
-                onClick={() => handleTagClick(t)}
-                className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-full transition-colors"
+                className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground rounded-full"
               >
                 #{t}
-              </button>
+              </span>
             ))}
           </div>
         )}

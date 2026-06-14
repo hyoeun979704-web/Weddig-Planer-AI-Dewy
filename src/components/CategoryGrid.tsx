@@ -88,7 +88,7 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-5 px-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 px-5">
         {[...Array(6)].map((_, i) => (
           <CardSkeleton key={i} />
         ))}
@@ -157,7 +157,7 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
 
   return (
     <div ref={ref}>
-      <div className="grid grid-cols-2 gap-5 px-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 px-5">
         {allItems.map((item) => {
           const itemId = item.id || String((item as { number?: string | number }).number);
           const cardData = categoryItemToCardData(item, category);
@@ -178,7 +178,7 @@ const CategoryGrid = forwardRef<HTMLDivElement, CategoryGridProps>(function Cate
 
       <div ref={loadMoreRef} className="py-4">
         {isFetchingNextPage && (
-          <div className="grid grid-cols-2 gap-5 px-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 px-5">
             <CardSkeleton />
             <CardSkeleton />
           </div>

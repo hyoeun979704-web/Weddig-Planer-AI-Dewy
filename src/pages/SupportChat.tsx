@@ -131,7 +131,7 @@ const SupportChat = () => {
   const hasUserMessage = messages.some((m) => m.role === "user") || !!context;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
+    <div className="min-h-screen bg-background app-col mx-auto relative flex flex-col">
       <PageHeader title="고객센터" />
 
       <main className="flex-1 overflow-y-auto px-4 pb-36">
@@ -180,7 +180,7 @@ const SupportChat = () => {
       </main>
 
       {/* 입력창 */}
-      <div className="fixed bottom-[calc(var(--app-bottom-nav-total-height,64px))] left-0 right-0 max-w-[430px] mx-auto z-40 bg-card/95 backdrop-blur-md border-t border-border p-3">
+      <div className="fixed bottom-[calc(var(--app-bottom-nav-total-height,64px))] left-0 right-0 app-col mx-auto z-40 bg-card/95 backdrop-blur-md border-t border-border p-3">
         <div className="flex items-end gap-2">
           <textarea
             value={input}

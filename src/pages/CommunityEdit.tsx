@@ -176,7 +176,7 @@ const CommunityEdit = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+      <div className="min-h-screen bg-background app-col mx-auto">
         <PageHeader title="글 수정" />
         <div className="p-4 space-y-6">
           <Skeleton className="h-10 w-full" />
@@ -189,7 +189,7 @@ const CommunityEdit = () => {
 
   if (!post) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center">
         <p className="text-muted-foreground mb-4">게시글을 찾을 수 없습니다.</p>
         <Button onClick={() => navigate("/community")}>커뮤니티로 돌아가기</Button>
       </div>
@@ -199,7 +199,7 @@ const CommunityEdit = () => {
   const totalImages = existingImages.length + newImages.length;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-background app-col mx-auto">
       <PageHeader
         title="글 수정"
         rightExtra={

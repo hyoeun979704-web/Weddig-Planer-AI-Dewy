@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,10 @@ const PaymentSuccess = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
   const [paidAmount, setPaidAmount] = useState(0);
+  // 결제 승인 중복발사 방지 — user 가 null→값으로 늦게 채워지며 effect 가 재실행되고
+  // (StrictMode 이중마운트 포함) sessionStorage 는 승인 await 이후에야 지워지므로,
+  // 가드 없이는 같은 tid 로 승인이 2번 호출될 수 있다. 검증 통과 후에만 가드를 소비.
+  const approvedRef = useRef(false);
 
   useEffect(() => {
     const confirmPayment = async () => {
@@ -34,6 +38,8 @@ const PaymentSuccess = () => {
         setErrorMessage("주문 정보가 일치하지 않습니다");
         return;
       }
+      if (approvedRef.current) return;
+      approvedRef.current = true;
 
       try {
         const { data, error } = await supabase.functions.invoke("kakao-pay-order-approve", {
@@ -67,7 +73,7 @@ const PaymentSuccess = () => {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center px-4">
         <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
         <p className="text-foreground font-medium">결제를 확인하고 있습니다...</p>
       </div>
@@ -76,7 +82,7 @@ const PaymentSuccess = () => {
 
   if (status === "error") {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4 text-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center px-4 text-center">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
           <XCircle className="w-9 h-9 text-destructive" />
         </div>
@@ -93,7 +99,7 @@ const PaymentSuccess = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4 text-center">
+    <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center px-4 text-center">
       <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
         <CheckCircle className="w-9 h-9 text-primary" />
       </div>

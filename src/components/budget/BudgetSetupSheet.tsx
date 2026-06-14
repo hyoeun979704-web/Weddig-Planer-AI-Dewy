@@ -235,7 +235,7 @@ export default function BudgetSetupSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[90dvh] p-0 flex flex-col">
+      <SheetContent side="bottom" className="app-col mx-auto rounded-t-2xl max-h-[90dvh] p-0 flex flex-col">
         <SheetHeader className="px-6 pt-6 pb-3 shrink-0">
           <SheetTitle className="text-base flex items-center gap-2">
             예산 설정

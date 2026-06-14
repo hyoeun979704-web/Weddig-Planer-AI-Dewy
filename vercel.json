@@ -13,6 +13,9 @@
     { "source": "/invitation-venues/:id", "destination": "/api/ssr?type=place&prefix=invitation-venues&id=:id" },
     { "source": "/store/:id", "destination": "/api/ssr?type=product&prefix=store&id=:id" },
 
+    { "source": "/sitemap-places.xml", "destination": "/api/sitemap?type=places" },
+    { "source": "/sitemap-products.xml", "destination": "/api/sitemap?type=products" },
+
     { "source": "/결혼어플추천", "destination": "/api/guide?slug=결혼어플추천" },
     { "source": "/결혼준비앱추천", "destination": "/api/guide?slug=결혼준비앱추천" },
     { "source": "/ai웨딩플래너앱", "destination": "/api/guide?slug=ai웨딩플래너앱" },
@@ -23,6 +26,9 @@
     { "source": "/예비부부일정공유앱", "destination": "/api/guide?slug=예비부부일정공유앱" },
     { "source": "/모바일청첩장앱", "destination": "/api/guide?slug=모바일청첩장앱" },
     { "source": "/플래너없이결혼준비", "destination": "/api/guide?slug=플래너없이결혼준비" },
+    { "source": "/결혼준비비용", "destination": "/api/guide?slug=결혼준비비용" },
+    { "source": "/결혼준비순서", "destination": "/api/guide?slug=결혼준비순서" },
+    { "source": "/웨딩홀계약주의사항", "destination": "/api/guide?slug=웨딩홀계약주의사항" },
 
     { "source": "/((?!api|assets|sw.js|workbox-.*).*)", "destination": "/index.html" }
   ]

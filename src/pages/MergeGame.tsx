@@ -192,7 +192,7 @@ export default function MergeGame() {
 
   return (
     <div
-      className="fixed top-0 bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] flex flex-col overflow-hidden"
+      className="fixed top-0 bottom-0 left-1/2 -translate-x-1/2 w-full app-col flex flex-col overflow-hidden"
       style={{ backgroundColor: '#fbe6ee' }}
     >
       {/* 헤더 */}

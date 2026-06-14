@@ -127,6 +127,12 @@ interface IntentPattern {
   dbHandler?: IntentMatch["dbHandler"];
   /** 정적 가이드 핸들러 키 */
   guideKey?: IntentMatch["guideKey"];
+  /**
+   * 제외 신호 — 이 패턴 중 하나라도 매칭되면 이 의도는 건너뛴다(→ LLM 폴백).
+   * 캔드(정적) 가이드가 답할 수 없는 구체 질문(예: "청첩장 어디서 인쇄?")을
+   * 일반 가이드가 가로채 엉뚱한 답을 내보내는 것을 막는다.
+   */
+  excludePatterns?: RegExp[];
 }
 
 const PATTERNS: IntentPattern[] = [
@@ -295,7 +301,7 @@ const PATTERNS: IntentPattern[] = [
     intent: "service_intro",
     patterns: [/듀이|dewy/i, /이 (앱|서비스).*뭐|이 (앱|서비스).*소개/, /무료/],
     staticReply:
-      "듀이(Dewy)는 한국 결혼 문화에 특화된 통합 웨딩 플랫폼이에요.\n\n AI 플래너 (저예요!) — 일 5회 무료, Premium 무제한\n AI 드레스 피팅 — 사진으로 어울리는 스타일 미리보기\n 모바일·종이 청첩장 — 곧 출시\n 웨딩촬영 시안 — 곧 출시\n 식전영상 외주 — 곧 출시\n\n자세한 내용은 마이페이지나 [Premium](/premium) 페이지에서 확인하실 수 있어요.",
+      "듀이(Dewy)는 한국 결혼 문화에 특화된 통합 웨딩 플랫폼이에요.\n\n AI 플래너 (저예요!) — 일 5회 무료, Premium 무제한\n AI 드레스 피팅 — 사진으로 어울리는 스타일 미리보기\n 모바일 청첩장 — 지금 만들기 (/invitation/new)\n 웨딩촬영 시안 — 곧 출시\n 식전영상 외주 — 곧 출시\n\n자세한 내용은 마이페이지나 [Premium](/premium) 페이지에서 확인하실 수 있어요.",
   },
 
   // ── 가격 문의 ──────────────────────────────────
@@ -450,10 +456,15 @@ const PATTERNS: IntentPattern[] = [
     dbHandler: "checklist_progress",
   },
 
-  // ── 명시 웹 검색 (사용자가 "웹에서 찾아줘") ────────────
+  // ── 명시 웹 검색 + Dewy 카테고리 밖 외부 업체 질문 ────────────
   // free_search·popular_places보다 먼저 매칭되어야 함 — "웹에서 강남
   // 웨딩홀 찾아줘"가 free_search 패턴에 먼저 잡히는 회귀 방지.
   // "더 찾아줘" 단독은 너무 광범위 → 컨텍스트(웹/실시간/최신) 동반 필요.
+  //
+  // 또한 Dewy가 자체 데이터를 갖지 않는 외부 서비스(예: 청첩장 인쇄소)를 물으면,
+  // 일반 LLM 으로 보내면 없는 상호를 지어낸다(환각). 이런 질문은 Google Search
+  // 그라운딩(vendor-web-search)으로 보내 실제 검색 결과로 답하게 한다.
+  // 가이드(invitation_design)보다 앞에 둬서 먼저 매칭되게 한다.
   {
     intent: "web_search" as ChatIntent,
     patterns: [
@@ -462,6 +473,10 @@ const PATTERNS: IntentPattern[] = [
       /최신.*(검색|찾|정보).*(업체|식장|스튜디오|드레스)/,
       /구글에서.*(검색|찾)/,
       /직접.*(웹|구글|인터넷).*(검색|찾)/,
+      // 외부 인쇄소 — Dewy 카테고리에 없어 그라운딩이 안 되던 환각 다발 구간.
+      /인쇄(소|\s*할\s*곳|\s*업체|\s*맡)/,
+      /인쇄.*(어디|어느|추천)/,
+      /(어디|어느).*인쇄/,
     ],
     dbHandler: "web_search",
   },
@@ -612,6 +627,14 @@ const PATTERNS: IntentPattern[] = [
       /(종이|모바일).*청첩장/,
       /청첩장.*(만들|제작)/,
     ],
+    // "어디서 인쇄·인쇄소 추천·셀프 디자인 인쇄" 같은 '인쇄처/업체' 질문은 디자인
+    // 트렌드 캔드 가이드가 못 답한다 → LLM(업체 추천·검색)으로 넘긴다.
+    excludePatterns: [
+      /인쇄(소|\s*할\s*곳|\s*업체|\s*맡)/,
+      /인쇄.*(어디|어느)/,
+      /(어디|어느\s*곳).*인쇄/,
+      /(셀프|직접).*인쇄/,
+    ],
     guideKey: "invitation_design",
   },
 
@@ -653,6 +676,8 @@ export const matchIntent = (message: string): IntentMatch | null => {
 
   // 1) 정적 패턴 매칭
   for (const pattern of PATTERNS) {
+    // 제외 신호가 있으면 이 의도는 건너뛴다(구체 질문을 LLM 으로).
+    if (pattern.excludePatterns?.some((re) => re.test(trimmed))) continue;
     for (const p of pattern.patterns) {
       const matched =
         typeof p === "string"

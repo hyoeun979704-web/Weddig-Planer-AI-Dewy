@@ -211,7 +211,7 @@ const CommunityWrite = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-background app-col mx-auto">
       <PageHeader
         title="글쓰기"
         rightExtra={

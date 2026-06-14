@@ -577,10 +577,16 @@ export const handleExplicitWebSearch = async (userMessage: string): Promise<stri
   const category = inferCategory(userMessage);
   const region = inferRegion(userMessage);
 
-  const web = await callWebSearch("search", userMessage, {
-    category: category ?? undefined,
-    region: region ?? undefined,
-  });
+  // DB 우선 → 없으면 웹검색. Dewy 카테고리/지역이 잡히면 먼저 앱 내 업체를 보고,
+  // 매칭 0건일 때만 웹 검색으로 폴백한다(handleFreeTextSearch 가 이 캐스케이드를 구현 —
+  // DB 결과 우선, 0건이면 "듀이 DB에 매칭 없어 웹 결과" 안내 후 웹검색).
+  // 인쇄소처럼 Dewy 카테고리에 없는 외부 질문은(category·region 모두 null) 대응 데이터가
+  // 없으므로 곧장 웹 검색한다.
+  if (category || region) {
+    return handleFreeTextSearch(userMessage);
+  }
+
+  const web = await callWebSearch("search", userMessage, {});
 
   if (web.limitMessage) {
     return `**웹 검색** \n\n${web.limitMessage}`;
@@ -589,13 +595,5 @@ export const handleExplicitWebSearch = async (userMessage: string): Promise<stri
     return `**웹 검색** \n\n검색 중 일시적 문제가 발생했어요. 잠시 후 다시 시도해주세요.`;
   }
 
-  const filters = [
-    region && ` ${region}`,
-    category && ` ${PLACE_CATEGORY_LABEL[category]}`,
-  ].filter(Boolean).join(" · ");
-  const header = filters
-    ? `**웹 검색 결과** \n${filters}\n\n`
-    : `**웹 검색 결과** \n\n`;
-
-  return header + formatWebSearchReply(web);
+  return `**웹 검색 결과** \n\n` + formatWebSearchReply(web);
 };

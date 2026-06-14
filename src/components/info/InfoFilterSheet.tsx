@@ -60,7 +60,7 @@ const InfoFilterSheet = ({ open, onOpenChange, filters, onApply }: InfoFilterShe
 
   return (
     <Sheet open={open} onOpenChange={handleOpen}>
-      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-2xl max-h-[85vh] overflow-y-auto">
+      <SheetContent side="bottom" className="app-col mx-auto rounded-t-2xl max-h-[85vh] overflow-y-auto">
         <SheetHeader className="flex flex-row items-center justify-between pb-4 border-b border-border">
           <SheetTitle className="text-lg font-bold">상세 필터</SheetTitle>
           <button onClick={reset} className="flex items-center gap-1 text-sm text-muted-foreground">

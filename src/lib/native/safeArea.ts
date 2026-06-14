@@ -1,32 +1,36 @@
 import { getPlatform } from "../platform";
 
-// 안드로이드 네이티브에서 상태바 안전영역을 제대로 잡는다.
+// 네이티브(안드로이드·iOS) 상태바 안전영역 + 스타일을 잡는다.
 //
-// 배경: index.css 는 헤더를 `.safe-sticky-header { padding-top: var(--safe-top) }`,
-//   `--safe-top: max(env(safe-area-inset-top), var(--android-safe-area-top))` 로 잡아
-//   상태바 아래에 고정되도록 설계돼 있다(= edge-to-edge 전제). 그런데 안드로이드
-//   WebView 는 기본적으로 콘텐츠가 상태바 아래로 들어가지 않아 env(safe-area-inset-top)
-//   이 0 이 되는 경우가 있고, 그러면 헤더가 상태바에 가려질 수 있다.
+// 안전영역(헤더가 상태바 아래로 들어가는 패딩)의 실제 값 주입은 플랫폼별로 다르다:
+//   - 안드로이드: MainActivity 가 WindowInsets 를 측정해 --android-safe-area-* 로 주입
+//     (index.css 의 html.platform-android 가 --safe-top/bottom 에 연결).
+//   - iOS: Capacitor 가 기본 edge-to-edge + viewport-fit=cover 라 env(safe-area-inset-*)
+//     이 노치/다이나믹아일랜드를 정확히 반영(index.css :root 기본값).
 //
-// 해결: StatusBar 를 overlay(콘텐츠를 상태바 뒤까지 그림) 모드로 전환하면 WebView 가
-//   edge-to-edge 가 되어 env(safe-area-inset-*) 인셋이 실제 상태바/네비바 높이를
-//   반영한다. 그 즉시 기존 --safe-top / --safe-bottom 계산이 동작해 헤더·하단탭이
-//   안전영역 안으로 정확히 들어간다.
+// 여기서 하는 일은 두 가지(양 플랫폼 공통):
+//   1) StatusBar overlay(edge-to-edge) 보장 → 콘텐츠가 상태바 뒤까지 그려져 인셋이 유효.
+//   2) 상태바 콘텐츠(시계·배터리 아이콘) 스타일을 밝은 배경용으로 → 어두운 아이콘(가독성).
+//      상태바 배경은 web 스크림(body::before, 프라이머리 #F6909B)이 칠한다.
 //
-// - iOS 는 Capacitor 가 기본 edge-to-edge 라 env() 가 이미 동작 → 건드리지 않음.
-// - 웹에서는 호출되지 않음(main.tsx 의 isNativeApp 가드) — 웹 동작에 영향 0.
-// - @capacitor/status-bar 미설치(웹 빌드 등)에서도 깨지지 않도록 동적 import +
-//   vite-ignore. 지정자를 string 타입 변수로 둬 번들 정적 분석을 피한다.
+// - 웹에서는 호출되지 않음(main.tsx 의 isNativeApp 가드) — 웹 동작 영향 0.
+// - @capacitor/status-bar 미설치(웹 빌드 등)에서도 깨지지 않도록 동적 import + vite-ignore.
+//   지정자를 string 타입 변수로 둬 번들 정적 분석을 피한다.
 
 const STATUS_BAR_PKG: string = "@capacitor/status-bar";
 
-export async function initAndroidSafeArea(): Promise<void> {
-  if (getPlatform() !== "android") return;
+export async function initNativeSafeArea(): Promise<void> {
+  if (getPlatform() === "web") return;
   try {
     const mod = await import(/* @vite-ignore */ STATUS_BAR_PKG);
-    // 콘텐츠를 상태바 뒤까지 그려 edge-to-edge → env(safe-area-inset-*) 유효화.
-    await mod.StatusBar.setOverlaysWebView({ overlay: true });
+    const { StatusBar, Style } = mod;
+    // 콘텐츠를 상태바 뒤까지 그려 edge-to-edge → env/네이티브 인셋이 실제 높이를 반영.
+    // iOS 는 기본 edge-to-edge 라 사실상 no-op 이지만 명시적으로 맞춰 둔다.
+    await StatusBar.setOverlaysWebView({ overlay: true });
+    // 상태바 배경(프라이머리, 밝은 핑크)에 맞춰 아이콘은 어둡게.
+    // @capacitor/status-bar 의 Style.Light = "밝은 배경용"(= 어두운 콘텐츠).
+    await StatusBar.setStyle({ style: Style.Light });
   } catch (e) {
-    console.warn("[safeArea] StatusBar overlay 설정 실패(@capacitor/status-bar 미설치?)", e);
+    console.warn("[safeArea] StatusBar 설정 실패(@capacitor/status-bar 미설치?)", e);
   }
 }

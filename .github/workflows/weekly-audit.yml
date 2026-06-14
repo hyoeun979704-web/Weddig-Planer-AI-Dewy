@@ -1,0 +1,72 @@
+name: Weekly Full Audit
+
+# 매주 1회, 개발 에이전트(Claude)가 저장소 전체를 감사한다.
+#   - AGENTS.md "전체 코드리뷰" 규칙(보안·P0버그·dead-end UI/placeholder CTA·공통화·
+#     정확성·아키텍처) + docs/verification-lessons.md 교훈을 기준으로.
+#   - 결과를 docs/YYMMDD_codereview.md 로 남기고 draft PR 을 연다.
+#
+# ⚙️ 사전 준비(1회): 저장소 Settings → Secrets and variables → Actions 에
+#    ANTHROPIC_API_KEY (또는 Claude Code OAuth 토큰)를 등록해야 동작한다.
+#    키가 없으면 잡은 조용히 skip 되어 빨간 알림을 만들지 않는다.
+
+on:
+  schedule:
+    # 매주 월요일 18:00 UTC (= 화 03:00 KST)
+    - cron: "0 18 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: weekly-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: full audit (claude)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    steps:
+      - name: Checkout
+        if: env.HAS_KEY == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        if: env.HAS_KEY == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        if: env.HAS_KEY == 'true'
+        run: npm ci
+
+      - name: Run Claude full audit
+        if: env.HAS_KEY == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # 감사 지시 — AGENTS.md 의 전체 코드리뷰 양식을 그대로 따르게 한다.
+          prompt: |
+            이 저장소의 AGENTS.md "코드 작성·리뷰 규칙" 과 "전체 코드리뷰 기록" 절차대로
+            전체 감사를 수행해줘. 6차원(정확성·보안·성능·테스트·유지보수성·아키텍처)에 더해
+            **dead-end UI/placeholder CTA 차원**(toast/안내만 띄우는 CTA, no-op onClick,
+            "준비 중" 영구 잔존)을 반드시 별도로 점검해. 병렬 서브에이전트로 보안·정확성·
+            dead-end 를 fan-out 분석하고, 직접 build/lint 로 검증해.
+            결과를 docs/<오늘YYMMDD>_codereview.md 로 작성(AGENTS 양식: TL;DR→영역별→
+            마이그레이션표→deferred, 각 항목 커밋해시·파일명)하고, 저위험·표적 수정만
+            적용한 뒤 새 브랜치에 커밋해 **draft PR** 을 열어줘. 광범위 리팩터는 금지.
+          claude_args: "--max-turns 80"
+
+      - name: Note when skipped
+        if: env.HAS_KEY != 'true'
+        run: |
+          echo "::notice title=Weekly audit skipped::ANTHROPIC_API_KEY 시크릿이 없어 감사를 건너뛰었어요. Settings → Secrets 에 등록하면 매주 자동 실행됩니다."

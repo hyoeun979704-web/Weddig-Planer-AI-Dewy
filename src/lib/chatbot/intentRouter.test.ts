@@ -204,6 +204,21 @@ describe("matchIntent — 정적 가이드 (guideKey)", () => {
     expect(matchIntent("청첩장 언제 보내")?.guideKey).toBe("invitation_timing");
   });
 
+  it("청첩장 디자인 — 일반 질문은 캔드 가이드, '인쇄처' 질문은 LLM 폴백", () => {
+    // 일반 디자인/종류 질문은 그대로 캔드 가이드.
+    expect(matchIntent("청첩장 디자인 종류 알려줘")?.guideKey).toBe("invitation_design");
+    expect(matchIntent("모바일 청첩장 어때")?.guideKey).toBe("invitation_design");
+    // 회귀: 셀프 디자인한 청첩장을 '어디서 인쇄'할지 물었는데 디자인 캔드 가이드가
+    // 가로채 엉뚱하게 답하던 버그. 인쇄처/업체 질문은 가이드가 아니라(guideKey 없음)
+    // Google Search 그라운딩(web_search)으로 라우팅돼 실제 검색 결과로 답해야 함.
+    const printA = matchIntent("청첩장 디자인은 직접 했고 인쇄 어디서 하면 돼?");
+    expect(printA?.guideKey).toBeUndefined();
+    expect(printA?.intent).toBe("web_search");
+    const printB = matchIntent("셀프로 디자인한 청첩장 인쇄소 어디가 좋아");
+    expect(printB?.guideKey).toBeUndefined();
+    expect(printB?.intent).toBe("web_search");
+  });
+
   it("메이크업 시연·신혼여행·계약·예단/예물·답례품·신혼집·식순", () => {
     expect(matchIntent("메이크업 시연 언제")?.guideKey).toBe("makeup_trial");
     expect(matchIntent("신혼여행 언제 예약")?.guideKey).toBe("honeymoon_timing");

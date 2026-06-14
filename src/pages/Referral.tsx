@@ -98,7 +98,7 @@ const Referral = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative pb-20">
+    <div className="min-h-screen bg-background app-col mx-auto relative pb-20">
       <PageHeader title="친구 초대" />
 
       <main className="px-4 py-4 space-y-4">

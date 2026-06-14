@@ -122,6 +122,7 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminInquiries = lazy(() => import("./pages/admin/AdminInquiries"));
 const AdminCommunityAnnouncements = lazy(() => import("./pages/admin/AdminCommunityAnnouncements"));
+const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
 const AdminErrorLogs = lazy(() => import("./pages/admin/AdminErrorLogs"));
 const AdminAgentOutputs = lazy(() => import("./pages/admin/AdminAgentOutputs"));
 const SupportChat = lazy(() => import("./pages/SupportChat"));
@@ -167,6 +168,7 @@ const BusinessCoupons = lazy(() => import("./pages/business/BusinessCoupons"));
 const BusinessEvents = lazy(() => import("./pages/business/BusinessEvents"));
 const BusinessProducts = lazy(() => import("./pages/business/BusinessProducts"));
 const BusinessInquiries = lazy(() => import("./pages/business/BusinessInquiries"));
+const BusinessReviews = lazy(() => import("./pages/business/BusinessReviews"));
 
 const queryClient = new QueryClient();
 
@@ -294,6 +296,7 @@ const App = () => (
               <Route path="/business/events" element={<BusinessGuard requireApproved><BusinessEvents /></BusinessGuard>} />
               <Route path="/business/products" element={<BusinessGuard requireApproved><BusinessProducts /></BusinessGuard>} />
               <Route path="/business/inquiries" element={<BusinessGuard requireApproved><BusinessInquiries /></BusinessGuard>} />
+              <Route path="/business/reviews" element={<BusinessGuard requireApproved><BusinessReviews /></BusinessGuard>} />
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
@@ -341,6 +344,7 @@ const App = () => (
               <Route path="/admin/reports" element={<AdminGuard><AdminReports /></AdminGuard>} />
               <Route path="/admin/inquiries" element={<AdminGuard><AdminInquiries /></AdminGuard>} />
               <Route path="/admin/announcements" element={<AdminGuard><AdminCommunityAnnouncements /></AdminGuard>} />
+              <Route path="/admin/promotions" element={<AdminGuard><AdminPromotions /></AdminGuard>} />
               <Route path="/admin/error-logs" element={<AdminGuard><AdminErrorLogs /></AdminGuard>} />
               <Route path="/admin/agent-outputs" element={<AdminGuard><AdminAgentOutputs /></AdminGuard>} />
               <Route path="/admin/place-claims" element={<AdminGuard><AdminPlaceClaims /></AdminGuard>} />

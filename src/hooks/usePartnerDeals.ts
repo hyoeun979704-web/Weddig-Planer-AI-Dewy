@@ -165,7 +165,7 @@ export const usePartnerDealDetail = (id: string | undefined) => {
           .from("partner_deals" as any)
           .update({ view_count: ((data as any).view_count || 0) + 1 } as any)
           .eq("id", id)
-          .then(() => {});
+          .then(() => {}, () => {}); // fire-and-forget: 실패해도 무시하되 unhandled rejection 방지
       } catch (error) {
         console.error("Error fetching deal detail:", error);
       } finally {

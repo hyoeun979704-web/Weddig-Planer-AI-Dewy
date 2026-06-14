@@ -512,7 +512,7 @@ const AIPlanner = () => {
   const handleCategoryTabChange = useCategoryTabNavigation();
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex flex-col">
+    <div className="min-h-screen bg-background app-col mx-auto relative flex flex-col">
       <Seo title="AI 웨딩플래너 - 맞춤 결혼 준비 상담 | Dewy" description="AI가 예산·일정·취향에 맞춰 나만의 웨딩 플랜을 설계해드려요. 맞춤 웨딩홀 추천부터 예산 플래너, 준비 타임라인까지." path="/ai-planner" />
       {!user && <LoginRequiredOverlay message="AI가 나만의 맞춤 웨딩 플랜을 설계해드려요" features={["맞춤 웨딩홀 추천", "예산 플래너", "준비 타임라인"]} />}
       <HomeHeader />
@@ -721,7 +721,7 @@ const AIPlanner = () => {
       {/* Input area */}
       <div
         data-tutorial="ai-input"
-        className="fixed safe-ai-input-offset left-0 right-0 max-w-[430px] mx-auto z-40"
+        className="fixed safe-ai-input-offset left-0 right-0 app-col mx-auto z-40"
       >
         {/* 추천 질문 패널 (입력창 위) */}
         <div className="px-3 pb-2">

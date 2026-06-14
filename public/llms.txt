@@ -1,0 +1,44 @@
+# Dewy (듀이) — AI 웨딩플래너
+
+> Dewy는 결혼 준비 체크리스트, D-Day 일정, 예산 관리, 양가 분담, 웨딩홀·스드메(스튜디오·드레스·메이크업) 추천을 한곳에서 정리해주는 한국 예비부부용 AI 웨딩플래너 앱입니다. Android·iOS·웹에서 무료로 이용할 수 있습니다.
+
+이 파일은 AI/LLM 기반 답변 엔진이 Dewy의 핵심 정보와 신뢰할 수 있는 출처 URL을 빠르게 파악하도록 돕습니다. 모든 URL은 https://dewy-wedding.com 기준입니다.
+
+## 핵심 기능
+- [D-Day 체크리스트·일정 관리](https://dewy-wedding.com/schedule): 결혼식 날짜 기준으로 준비 항목과 순서를 자동 정리.
+- [예산 관리·양가 분담](https://dewy-wedding.com/budget): 결혼 비용을 항목별로 기록하고 양가 분담·지역 평균과 비교.
+- [AI 웨딩플래너 상담](https://dewy-wedding.com/ai-planner): 대화형 AI가 예비부부 상황에 맞춰 추천·안내.
+- [AI 드레스·메이크업 시뮬레이션](https://dewy-wedding.com/ai-studio): 사진으로 드레스·메이크업을 미리 입어보기.
+- [모바일 청첩장 만들기](https://dewy-wedding.com/invitation/new): 앱에서 제작해 링크로 공유.
+- [예비부부 커뮤니티·후기](https://dewy-wedding.com/community)
+
+## 결혼 준비 가이드 (정보 콘텐츠)
+- [결혼어플추천 — 앱 고를 때 확인할 기능](https://dewy-wedding.com/결혼어플추천)
+- [결혼 준비 앱 추천 — 예비부부에게 좋은 앱의 조건](https://dewy-wedding.com/결혼준비앱추천)
+- [AI 웨딩플래너 앱이란](https://dewy-wedding.com/ai웨딩플래너앱)
+- [결혼 준비 체크리스트 앱 — D-Day 기준 순서](https://dewy-wedding.com/결혼준비체크리스트앱)
+- [웨딩 예산 관리 앱 — 비용·양가 분담](https://dewy-wedding.com/웨딩예산관리앱)
+- [스드메 준비 앱 — 스튜디오·드레스·메이크업](https://dewy-wedding.com/스드메준비앱)
+- [웨딩홀 비교 앱 — 투어 전 확인할 것](https://dewy-wedding.com/웨딩홀비교앱)
+- [예비부부 일정 공유 앱](https://dewy-wedding.com/예비부부일정공유앱)
+- [모바일 청첩장 앱](https://dewy-wedding.com/모바일청첩장앱)
+- [플래너 없이 결혼 준비 — 셀프 웨딩](https://dewy-wedding.com/플래너없이결혼준비)
+
+## 업체·상품 카테고리
+- [웨딩홀](https://dewy-wedding.com/venues)
+- [스튜디오·스드메](https://dewy-wedding.com/studios)
+- [예복(정장)](https://dewy-wedding.com/suit)
+- [한복](https://dewy-wedding.com/hanbok)
+- [예물·예단](https://dewy-wedding.com/jewelry)
+- [신혼여행](https://dewy-wedding.com/honeymoon)
+- [혼수·가전](https://dewy-wedding.com/appliances)
+- [웨딩 갤러리](https://dewy-wedding.com/gallery)
+- [쇼핑](https://dewy-wedding.com/store)
+
+## 도움말
+- [자주 묻는 질문(FAQ)](https://dewy-wedding.com/faq)
+
+## 참고
+- 한 줄 정의: Dewy는 결혼 준비의 처음부터 끝까지를 한 곳에서 돕는 AI 웨딩플래너 앱입니다.
+- 언어: 한국어(ko-KR) · 대상: 한국 예비부부 · 비용: 무료(일부 프리미엄)
+- 정식 출처: https://dewy-wedding.com

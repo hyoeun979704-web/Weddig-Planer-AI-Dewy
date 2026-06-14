@@ -253,14 +253,14 @@ const Auth = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-background app-col mx-auto">
       {/* Header */}
       <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center h-14 px-4">

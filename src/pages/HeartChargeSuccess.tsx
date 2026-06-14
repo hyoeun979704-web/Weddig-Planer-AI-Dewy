@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,8 @@ const HeartChargeSuccess = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [hearts, setHearts] = useState(0);
   const [pointsSpent, setPointsSpent] = useState(0);
+  // 하트 충전 승인 중복발사 방지 (user 지연 + StrictMode → 이중 하트 적립 위험).
+  const approvedRef = useRef(false);
 
   useEffect(() => {
     const run = async () => {
@@ -33,6 +35,8 @@ const HeartChargeSuccess = () => {
         setErrorMessage("주문 정보가 일치하지 않습니다");
         return;
       }
+      if (approvedRef.current) return;
+      approvedRef.current = true;
 
       try {
         const { data, error } = await supabase.functions.invoke(
@@ -70,7 +74,7 @@ const HeartChargeSuccess = () => {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center px-4">
         <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
         <p className="text-foreground font-medium">결제를 확인하고 있습니다...</p>
       </div>
@@ -79,7 +83,7 @@ const HeartChargeSuccess = () => {
 
   if (status === "error") {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4 text-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center px-4 text-center">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
           <XCircle className="w-9 h-9 text-destructive" />
         </div>
@@ -93,7 +97,7 @@ const HeartChargeSuccess = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4 text-center">
+    <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center px-4 text-center">
       <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
         <CheckCircle className="w-9 h-9 text-primary" />
       </div>

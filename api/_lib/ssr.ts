@@ -4,6 +4,12 @@
 
 export const SITE = "https://dewy-wedding.com";
 
+// Supabase 공개 접속 상수(anon 키 = 설계상 공개값). api/ssr.ts·api/sitemap.ts 공용 단일 소스
+// — 같은 값을 여러 edge 함수에 복붙하면 프로젝트 전환 시 드리프트가 생기므로 여기로 모은다.
+export const SUPABASE_URL = "https://qabeywyzjsgyqpjqsvkd.supabase.co";
+export const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhYmV5d3l6anNneXFwanFzdmtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NTg4MzUsImV4cCI6MjA5MTEzNDgzNX0.ae0GIokaeczwm0-FaVSoCnkNqBgagsdD1-1I_BP90Jo";
+
 const DEFAULT_OG_IMAGE = `${SITE}/dewy-logo.png?v=3`;
 
 export type Rendered = {
@@ -31,6 +37,8 @@ export function headTags(
 ): string {
   return [
     `<meta name="description" content="${esc(desc)}" />`,
+    // 검색·AI 엔진이 전체 길이 스니펫과 큰 이미지 프리뷰를 쓰도록 허용(AEO 노출 강화).
+    `<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />`,
     `<link rel="canonical" href="${esc(canonical)}" />`,
     `<meta property="og:title" content="${esc(title)}" />`,
     `<meta property="og:description" content="${esc(desc)}" />`,

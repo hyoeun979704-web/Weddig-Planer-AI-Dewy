@@ -21,7 +21,7 @@ const Guide = ({ slug }: { slug: string }) => {
   if (!guide) return <NotFound />;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title={guide.title} description={guide.metaDescription} path={`/${guide.slug}`} />
       <PageHeader title={guide.breadcrumbName} />
 

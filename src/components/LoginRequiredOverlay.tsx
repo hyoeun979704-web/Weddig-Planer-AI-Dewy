@@ -19,11 +19,15 @@ const LoginRequiredOverlay = ({ variant = "login", message, features }: LoginReq
 
   return (
     <>
-      {/* Blur overlay excluding header (56px) and bottom nav (64px) */}
-      <div className="fixed left-0 right-0 z-[100] bg-background/25 backdrop-blur-sm" style={{ top: 56, bottom: 64 }} />
+      {/* 헤더·하단탭(+안전영역)을 제외한 영역만 블러. 데스크톱은 좌측 사이드바 폭만큼 비킴.
+          top/bottom 을 안전영역 포함 토큰으로 → 네이티브 상태바/홈인디케이터 높이까지 정확히 추종. */}
+      <div
+        className="fixed left-0 right-0 z-[100] bg-background/25 backdrop-blur-sm lg:left-[var(--app-sidebar-width)]"
+        style={{ top: "var(--app-header-total-height)", bottom: "var(--app-bottom-nav-total-height)" }}
+      />
 
       {/* Centered CTA card */}
-      <div className="fixed inset-0 z-[101] flex items-center justify-center pointer-events-none px-4">
+      <div className="fixed inset-0 z-[101] flex items-center justify-center pointer-events-none px-4 lg:left-[var(--app-sidebar-width)]">
         <div className="pointer-events-auto w-full max-w-[380px] rounded-2xl bg-card border border-primary/20 shadow-xl overflow-hidden">
           <div className="p-5">
             {features && features.length > 0 && (

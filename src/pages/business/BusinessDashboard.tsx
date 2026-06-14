@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package } from "lucide-react";
+import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -12,7 +12,7 @@ const BusinessDashboard = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { isBusiness, isError, businessProfile, isLoading: roleLoading } = useUserRole();
   const [placeId, setPlaceId] = useState<string | null>(null);
-  const [stats, setStats] = useState({ media: 0, favorites: 0, views: 0, couponDownloads: 0 });
+  const [stats, setStats] = useState({ media: 0, favorites: 0, views: 0, couponDownloads: 0, reviews: 0 });
 
   useEffect(() => {
     if (authLoading || roleLoading) return;
@@ -40,16 +40,18 @@ const BusinessDashboard = () => {
       if (!row?.place_id) return;
       setPlaceId(row.place_id);
       setListingRow(row);
-      const [favRes, mediaRes, dlRes] = await Promise.all([
+      const [favRes, mediaRes, dlRes, reviewRes] = await Promise.all([
         supabase.from("favorites").select("id", { count: "exact", head: true }).eq("item_id", row.place_id),
         (supabase as any).from("place_media").select("id", { count: "exact", head: true }).eq("place_id", row.place_id),
         (supabase as any).rpc("get_my_coupon_download_count"),
+        (supabase as any).from("place_reviews").select("review_id", { count: "exact", head: true }).eq("place_id", row.place_id),
       ]);
       setStats({
         favorites: favRes.count ?? 0,
         media: mediaRes.count ?? 0,
         views: row.view_count ?? 0,
         couponDownloads: typeof dlRes.data === "number" ? dlRes.data : 0,
+        reviews: reviewRes.count ?? 0,
       });
     })();
   }, [businessProfile]);
@@ -118,7 +120,7 @@ const BusinessDashboard = () => {
 
   if (authLoading || roleLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
@@ -130,7 +132,7 @@ const BusinessDashboard = () => {
   if (businessProfile.approval_status !== "approved") {
     const rejected = businessProfile.approval_status === "rejected";
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+      <div className="min-h-screen bg-background app-col mx-auto">
         <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-sm border-b border-border">
           <div className="flex items-center h-14 px-4">
             <button onClick={() => navigate("/mypage")} className="w-10 h-10 flex items-center justify-center -ml-2">
@@ -223,6 +225,13 @@ const BusinessDashboard = () => {
       href: "/business/inquiries",
       badge: null,
     },
+    {
+      icon: Star,
+      label: "고객 후기",
+      description: `등록된 후기 ${stats.reviews}개 · 평점 확인`,
+      href: "/business/reviews",
+      badge: null,
+    },
   ];
 
   const TIER_LABEL: Record<string, string> = {
@@ -233,7 +242,7 @@ const BusinessDashboard = () => {
   const tier = businessProfile.partner_tier ?? "basic";
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-background app-col mx-auto">
       <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate("/mypage")} className="w-10 h-10 flex items-center justify-center -ml-2">

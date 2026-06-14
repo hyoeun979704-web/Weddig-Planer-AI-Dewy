@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { escapeLikePattern, quoteForOr } from "@/lib/postgrestEscape";
 import {
   Select,
   SelectContent,
@@ -99,8 +100,10 @@ const AdminPlaces = () => {
     if (inactiveOnly) q = q.eq("is_active", false);
     else q = q.eq("is_active", true);
     if (debounced) {
-      // name 또는 city ILIKE 검색
-      q = q.or(`name.ilike.%${debounced}%,city.ilike.%${debounced}%`);
+      // name 또는 city ILIKE 검색 — 검색어를 LIKE 와일드카드/.or() 파서 양쪽에서 살균
+      // (raw 보간 시 `,`·`)`·`%` 가 필터 인젝션/오작동을 일으킴). 공통 헬퍼 재사용.
+      const term = quoteForOr(`%${escapeLikePattern(debounced)}%`);
+      q = q.or(`name.ilike.${term},city.ilike.${term}`);
     }
     q = q.order("updated_at", { ascending: false, nullsFirst: false }).range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
     const { data, error, count } = await q;

@@ -397,6 +397,7 @@ const AdminDashboard = () => {
             <QuickActionCard to="/admin/featured-products" label="추천 상품 관리" icon={Star} />
             <QuickActionCard to="/admin/inquiries" label="1:1 문의·불편접수" icon={MessageSquare} />
             <QuickActionCard to="/admin/announcements" label="커뮤니티 공지" icon={Megaphone} />
+            <QuickActionCard to="/admin/promotions" label="이벤트·진입 팝업" icon={Star} />
             <QuickActionCard to="/" label="앱으로 돌아가기" icon={Sparkles} />
           </div>
         </section>

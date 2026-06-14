@@ -145,7 +145,7 @@ const CoupleVoteDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -153,7 +153,7 @@ const CoupleVoteDetail = () => {
 
   if (!vote) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+      <div className="min-h-screen bg-background app-col mx-auto">
         <PageHeader title="의견 조율" />
         <p className="text-center text-muted-foreground py-20">투표를 찾을 수 없어요</p>
       </div>
@@ -164,7 +164,7 @@ const CoupleVoteDetail = () => {
   const partnerCurrentPick = isCreator ? vote.partner_pick : vote.my_pick;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader title={vote.topic} />
 
       <main className="px-4 py-6 pb-24 space-y-4">

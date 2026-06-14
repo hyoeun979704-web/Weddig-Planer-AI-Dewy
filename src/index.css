@@ -15,18 +15,29 @@
   :root {
     --android-safe-area-top: 0px;
     --android-safe-area-bottom: 0px;
-    /* 이 앱은 edge-to-edge 가 아니라 시스템이 콘텐츠를 상태바/네비바 "아래"로 inset 한다
-       (상태바·네비바 색은 네이티브 테마 statusBarColor/navigationBarColor 로 지정).
-       그런데 viewport-fit=cover 때문에 env(safe-area-inset-*) 가 유령 인셋(~상태바 높이)을
-       반환해 헤더 위/아래에 빈 여백이 생겼었다. 시스템이 이미 inset 하므로 0 으로 둔다.
-       (향후 진짜 edge-to-edge 로 전환하면 env() 기반으로 되돌릴 것.) */
-    --safe-top: 0px;
-    --safe-bottom: 0px;
+    /* 안전영역(상태바/노치/홈인디케이터) 소스는 플랫폼마다 신뢰 가능한 값이 다르다.
+       콘텐츠는 네이티브에서 edge-to-edge 로 시스템바 "뒤"까지 그려지므로, 헤더·하단탭은
+       그 높이만큼 안쪽으로 들어가야 한다.
+       - 기본(iOS/웹): WebView 의 env(safe-area-inset-*). iOS 는 Capacitor 가 기본
+         edge-to-edge + viewport-fit=cover 라 env() 가 노치/다이나믹아일랜드를 정확히
+         반영한다(반응형). 일반 웹 브라우저는 0 → 영향 없음.
+       - 안드로이드(아래 .platform-android 오버라이드): env() 가 viewport-fit=cover 와
+         결합 시 기기별 유령 인셋을 내므로(#286 과여백), MainActivity 가 공식 WindowInsets
+         API(systemBars()|displayCutout())로 실측 주입하는 --android-safe-area-* 를 쓴다.
+       (회귀 #287: --safe-top 을 0 으로 하드코딩해 헤더가 상태바에 가려졌던 것을 되돌림.) */
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
     --app-header-height: 56px;
     --app-header-total-height: calc(var(--app-header-height) + var(--safe-top));
     --app-tab-height: 56px;
     --app-bottom-nav-height: 64px;
     --app-bottom-nav-total-height: calc(var(--app-bottom-nav-height) + var(--safe-bottom));
+
+    /* 데스크톱(≥lg) 반응형 셸 토큰. 모바일/네이티브에서는 사이드바 0·칼럼 430px 라
+       기존 레이아웃과 완전히 동일하고, 실제 값 변경은 아래 @media(min-width:1024px)
+       에서만 일어난다 → 모바일 회귀 위험 0. */
+    --app-sidebar-width: 0px;
+    --app-col-max: 430px;
 
     --background: 340 100% 99%;   /* #FFF9FA */
     --foreground: 0 0% 15%;
@@ -77,6 +88,13 @@
     --sidebar-accent-foreground: 346 60% 45%;
     --sidebar-border: 20 12% 91%;
     --sidebar-ring: 346 78% 81%;
+  }
+
+  /* 안드로이드 전용 안전영역 소스: env() 대신 MainActivity 실측값 사용(위 :root 주석 참조).
+     클래스는 main.tsx 가 부팅 시 getPlatform() 으로 <html> 에 부여 → 첫 페인트부터 적용. */
+  html.platform-android {
+    --safe-top: var(--android-safe-area-top);
+    --safe-bottom: var(--android-safe-area-bottom);
   }
 
   .dark {
@@ -130,6 +148,24 @@
     @apply bg-background text-foreground;
     font-family: "SUITE Variable", "Noto Sans KR", "Inter", -apple-system,
       BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  /* 상태바를 브랜드 프라이머리(#F6909B)로.
+     Android 15(targetSdk 35)는 edge-to-edge 강제 + 네이티브 statusBarColor 무시라,
+     상태바 영역(콘텐츠가 그 뒤까지 그려짐)을 web 레이어에서 직접 칠한다.
+     높이는 MainActivity 가 기기별로 실측해 주입하는 --safe-top → 노치/펀치홀 무관 반응형.
+     아이콘 가독성은 네이티브 테마 windowLightStatusBar=true(어두운 아이콘)가 담당.
+     웹/브라우저는 --safe-top=0 → 높이 0 → 비표시(영향 0). 상태바 아이콘 위라 pointer-events:none. */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--safe-top);
+    background: hsl(var(--primary));
+    z-index: 2147483647;
+    pointer-events: none;
   }
 
   .font-logo {
@@ -192,6 +228,12 @@
   .safe-ai-scroll {
     padding-bottom: calc(var(--app-bottom-nav-total-height) + 80px);
   }
+  /* 앱 메인 콘텐츠 칼럼 폭. 기존 max-w-[430px] 의 단일 소스 토큰화 —
+     모바일 430px(동일), 데스크톱(아래 @media)에서만 확장. mx-auto 는 호출부 유지. */
+  .app-col {
+    max-width: var(--app-col-max);
+  }
+
   .scrollbar-hide,
   .no-scrollbar {
     -ms-overflow-style: none;
@@ -209,5 +251,26 @@
   .no-spinner {
     -moz-appearance: textfield;
     appearance: textfield;
+  }
+}
+/* ─────────────────────────────────────────────────────────────────────────
+   데스크톱(≥1024px) 반응형 셸 — 모바일/네이티브에는 절대 영향 없음(전부 이 미디어쿼리 안).
+   ① 사이드바 폭/콘텐츠 칼럼 폭 토큰을 데스크톱 값으로 승격.
+   ② #root 에 좌측 패딩(사이드바 자리) → BottomNav 가 좌측 고정 사이드바로 바뀌어도 콘텐츠 안 가림.
+   레이어 밖이라 @layer base 의 토큰 기본값을 확실히 덮어쓴다. ───────────────────────── */
+@media (min-width: 1024px) {
+  :root {
+    --app-sidebar-width: 240px;
+    --app-col-max: 960px;
+  }
+  #root {
+    padding-left: var(--app-sidebar-width);
+  }
+  /* fixed 하단/상단 바(=.fixed 와 .app-col 을 함께 단 요소: 결제·구매·AI입력 바 등)는
+     position:fixed 라 viewport 기준이라 #root 의 좌측 패딩을 못 받는다 → 사이드바와 어긋남.
+     좌측 시작을 사이드바 폭만큼 밀면, 같은 .app-col mx-auto 센터링이 콘텐츠 칼럼과 정확히 정렬된다.
+     (.fixed.app-col 두 클래스 동시 선택이라 일반 인플로우 페이지 래퍼(.app-col 단독)는 불영향) */
+  .fixed.app-col {
+    left: var(--app-sidebar-width);
   }
 }

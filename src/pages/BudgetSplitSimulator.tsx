@@ -68,7 +68,7 @@ const BudgetSplitSimulator = () => {
 
   if (!familyMode) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <div className="min-h-screen bg-background app-col mx-auto relative">
         <PageHeader title="양가 분담 시뮬레이터" />
         <main className="px-4 py-4 pb-20 space-y-4">
           <section className="p-5 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl text-center space-y-2">
@@ -136,7 +136,7 @@ const BudgetSplitSimulator = () => {
   const bridePct = 100 - groomPct;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader title="양가 분담 시뮬레이터" />
 
       <main className="px-4 py-4 pb-20 space-y-4">

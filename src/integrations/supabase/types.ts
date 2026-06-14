@@ -4313,6 +4313,9 @@ export type Database = {
           min_price: number | null
           moderation_status: string
           name: string
+          inquiry_channel: string
+          inquiry_phone: string | null
+          inquiry_url: string | null
           owner_user_id: string | null
           partner_rank: number
           place_id: string
@@ -4343,6 +4346,9 @@ export type Database = {
           min_price?: number | null
           moderation_status?: string
           name: string
+          inquiry_channel?: string
+          inquiry_phone?: string | null
+          inquiry_url?: string | null
           owner_user_id?: string | null
           partner_rank?: number
           place_id?: string
@@ -4373,6 +4379,9 @@ export type Database = {
           min_price?: number | null
           moderation_status?: string
           name?: string
+          inquiry_channel?: string
+          inquiry_phone?: string | null
+          inquiry_url?: string | null
           owner_user_id?: string | null
           partner_rank?: number
           place_id?: string
@@ -4655,6 +4664,7 @@ export type Database = {
       }
       promotional_events: {
         Row: {
+          audience: string
           badge_color: string | null
           badge_label: string | null
           created_at: string
@@ -4664,7 +4674,9 @@ export type Database = {
           ends_label: string | null
           icon: string | null
           id: string
+          image_url: string | null
           position: number
+          show_as_popup: boolean
           slug: string
           starts_at: string | null
           status: string
@@ -4676,9 +4688,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          audience?: string
           badge_color?: string | null
           badge_label?: string | null
           created_at?: string
+          image_url?: string | null
+          show_as_popup?: boolean
           cta_label: string
           cta_path: string
           ends_at?: string | null
@@ -4697,9 +4712,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          audience?: string
           badge_color?: string | null
           badge_label?: string | null
           created_at?: string
+          image_url?: string | null
+          show_as_popup?: boolean
           cta_label?: string
           cta_path?: string
           ends_at?: string | null

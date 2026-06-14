@@ -42,7 +42,7 @@ const UpgradeModal = ({ isOpen, onClose, trigger = "manual" }: UpgradeModalProps
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-3xl pb-8">
+      <SheetContent side="bottom" className="app-col mx-auto rounded-t-3xl pb-8">
         <SheetHeader className="text-center pb-2">
           <div className="flex justify-center mb-2">
             <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">

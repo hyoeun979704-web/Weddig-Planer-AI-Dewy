@@ -80,7 +80,7 @@ const AISuggestSheet = ({
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 max-w-[430px] mx-auto bg-card rounded-t-3xl border-t border-border shadow-2xl">
+    <div className="fixed inset-x-0 bottom-0 z-50 app-col mx-auto bg-card rounded-t-3xl border-t border-border shadow-2xl">
       <div className="flex items-center justify-between px-5 pt-4 pb-2">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-primary" />

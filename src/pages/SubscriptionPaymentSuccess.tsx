@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,9 @@ const SubscriptionPaymentSuccess = () => {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [heartsGranted, setHeartsGranted] = useState(0);
+  // 구독 승인 중복발사 방지 — deps 의 user·refetch 가 늦게/재생성되며 effect 재실행
+  // (StrictMode 포함). 검증 통과 후에만 가드 소비.
+  const approvedRef = useRef(false);
 
   useEffect(() => {
     const confirmAndActivate = async () => {
@@ -80,7 +83,7 @@ const SubscriptionPaymentSuccess = () => {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center px-4">
         <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
         <p className="text-foreground font-medium">결제를 확인하고 있습니다...</p>
       </div>
@@ -89,7 +92,7 @@ const SubscriptionPaymentSuccess = () => {
 
   if (status === "error") {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4 text-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center px-4 text-center">
         <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
           <XCircle className="w-9 h-9 text-destructive" />
         </div>
@@ -105,7 +108,7 @@ const SubscriptionPaymentSuccess = () => {
   const type = searchParams.get("type") || "trial";
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4 text-center">
+    <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center px-4 text-center">
       <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
         <CheckCircle className="w-9 h-9 text-primary" />
       </div>

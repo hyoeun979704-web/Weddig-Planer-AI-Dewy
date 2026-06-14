@@ -83,7 +83,7 @@ export const PdfPreviewModal = ({ open, onClose, html, filename, title }: PdfPre
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
         side="bottom"
-        className="max-w-[430px] mx-auto rounded-t-3xl h-[92vh] p-0 flex flex-col gap-0"
+        className="app-col mx-auto rounded-t-3xl h-[92vh] p-0 flex flex-col gap-0"
       >
         <SheetHeader className="px-4 py-3 border-b border-border shrink-0">
           <SheetTitle className="text-sm">{title || "PDF 미리보기"}</SheetTitle>
