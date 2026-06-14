@@ -266,4 +266,11 @@
   #root {
     padding-left: var(--app-sidebar-width);
   }
+  /* fixed 하단/상단 바(=.fixed 와 .app-col 을 함께 단 요소: 결제·구매·AI입력 바 등)는
+     position:fixed 라 viewport 기준이라 #root 의 좌측 패딩을 못 받는다 → 사이드바와 어긋남.
+     좌측 시작을 사이드바 폭만큼 밀면, 같은 .app-col mx-auto 센터링이 콘텐츠 칼럼과 정확히 정렬된다.
+     (.fixed.app-col 두 클래스 동시 선택이라 일반 인플로우 페이지 래퍼(.app-col 단독)는 불영향) */
+  .fixed.app-col {
+    left: var(--app-sidebar-width);
+  }
 }

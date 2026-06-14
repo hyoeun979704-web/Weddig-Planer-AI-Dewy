@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { getSourceLabel } from "@/lib/storeCategories";
 import { formatWon as formatPrice } from "@/lib/priceFormat";
+import { safeUrl } from "@/lib/safeUrl";
 
 interface Product {
   id: string;
@@ -113,8 +114,9 @@ const ProductDetail = () => {
   const sourceLabel = isExternal ? getSourceLabel(product.source) : null;
 
   const handleGoExternal = () => {
-    if (product.source_url) {
-      window.open(product.source_url, "_blank", "noopener,noreferrer");
+    const url = safeUrl(product.source_url);
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   };
 

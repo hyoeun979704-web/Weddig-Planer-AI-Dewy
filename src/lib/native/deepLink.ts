@@ -30,7 +30,7 @@ export function registerDeepLinks(): void {
 
   void App.addListener('appUrlOpen', async (event: URLOpenListenerEvent) => {
     const url = event.url;
-    console.log('[deepLink] received URL:', url);
+    // 콜백 URL·인증 code 는 민감정보라 로깅하지 않는다(프로덕션 콘솔/크래시리포터 캡처 방지).
     if (!url || !url.startsWith('app.dewy://')) return;
 
     try {
@@ -38,9 +38,7 @@ export function registerDeepLinks(): void {
       // exchangeCodeForSession 은 전체 URL 또는 code 문자열 모두 받는다.
       const parsed = new URL(url);
       const code = parsed.searchParams.get('code');
-      console.log('[deepLink] extracted code:', code?.slice(0, 12) + '...');
-      const { error, data } = await supabase.auth.exchangeCodeForSession(code ?? url);
-      console.log('[deepLink] exchange result:', { hasSession: !!data?.session, error: error?.message });
+      const { error } = await supabase.auth.exchangeCodeForSession(code ?? url);
       if (error) {
         console.error('[deepLink] exchangeCodeForSession error:', error);
         toast.error('로그인 처리에 실패했어요. 다시 시도해주세요');

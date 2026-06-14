@@ -120,7 +120,7 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
       className={cn(
         "fixed z-50 bg-card border-border",
         "bottom-0 left-0 right-0 border-t safe-bottom-nav",
-        "lg:top-0 lg:bottom-0 lg:right-auto lg:w-[var(--app-sidebar-width)] lg:border-t-0 lg:border-r lg:pb-0",
+        "lg:top-0 lg:bottom-0 lg:right-auto lg:w-[var(--app-sidebar-width)] lg:border-t-0 lg:border-r lg:pb-0 lg:flex lg:flex-col",
       )}
     >
       {/* 데스크톱 사이드바 상단 브랜드 워드마크(모바일 미표시) */}
@@ -130,7 +130,7 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
       <div
         className={cn(
           "max-w-[430px] mx-auto flex justify-around items-center h-[var(--app-bottom-nav-height)] px-2",
-          "lg:flex-col lg:justify-start lg:items-stretch lg:h-auto lg:max-w-none lg:mx-0 lg:gap-1 lg:px-3 lg:pt-2",
+          "lg:flex-col lg:justify-start lg:items-stretch lg:h-auto lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:max-w-none lg:mx-0 lg:gap-1 lg:px-3 lg:pt-2 lg:pb-4",
         )}
       >
         {navItems.map(({ Icon, ...item }) => {

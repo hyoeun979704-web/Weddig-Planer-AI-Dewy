@@ -3,6 +3,7 @@ import { Search, X, Clock, TrendingUp, Heart, MessageSquare, Eye, Image as Image
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { escapeLikePattern, quoteForOr } from "@/lib/postgrestEscape";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -160,7 +161,9 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
     }
 
     setIsLoading(true);
-    const searchTerm = `%${searchQuery}%`;
+    // PostgREST .or() 문자열은 자동 이스케이프되지 않는다 — 사용자 입력의 LIKE 와일드카드(%,_,\)와
+    // .or() 구분자(,()") 를 모두 살균해야 필터 인젝션을 막는다(공용 헬퍼 사용).
+    const searchTerm = quoteForOr(`%${escapeLikePattern(searchQuery)}%`);
 
     const fetchResults = async () => {
       try {

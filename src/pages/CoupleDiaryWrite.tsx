@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useCoupleDiary } from "@/hooks/useCoupleDiary";
+import { toast } from "sonner";
 
 const moods = [
   { value: "happy", emoji: "", label: "행복" },
@@ -30,7 +31,7 @@ const CoupleDiaryWrite = () => {
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (photos.length + files.length > 5) {
-      alert("사진은 최대 5장까지 첨부할 수 있어요");
+      toast.info("사진은 최대 5장까지 첨부할 수 있어요");
       return;
     }
 
