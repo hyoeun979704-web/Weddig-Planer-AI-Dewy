@@ -340,6 +340,7 @@ function BasicTab({
 }) {
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [advIdx, setAdvIdx] = useState(0);
+  const navigate = useNavigate();
 
   const hasContact =
     place.tel || place.website_url || place.instagram_url || place.naver_place_url ||
@@ -447,15 +448,16 @@ function BasicTab({
         )}
         {place.tags && place.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">
-            {/* 태그는 정보 표시용 — 태그 기반 검색이 아직 list 훅에 연결되지 않아
-                클릭 어포던스(버튼) 대신 비대화형 칩으로 둔다(죽은 버튼 방지). */}
+            {/* 같은 태그가 달린 업체 모아보기로 이동(/search/tag/:tag). */}
             {place.tags.slice(0, 8).map((t, i) => (
-              <span
+              <button
                 key={i}
-                className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground rounded-full"
+                type="button"
+                onClick={() => navigate(`/search/tag/${encodeURIComponent(t)}`)}
+                className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-full transition-colors"
               >
                 #{t}
-              </span>
+              </button>
             ))}
           </div>
         )}
