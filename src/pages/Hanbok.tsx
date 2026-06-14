@@ -25,7 +25,7 @@ const Hanbok = () => {
   const handleItemClick = (item: CategoryItem) => { navigate(`/hanbok/${item.id}`); };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title="결혼 한복·예복 한복 | Dewy" description="신부·신랑 한복 추천, 대여·맞춤 비교. 본식 한복부터 폐백 의상까지 스타일별 가이드." path="/hanbok" />
       <PageHeader title="한복" />
       <main className="pb-20">

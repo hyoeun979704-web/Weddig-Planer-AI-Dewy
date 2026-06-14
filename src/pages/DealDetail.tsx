@@ -60,7 +60,7 @@ const DealDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -68,7 +68,7 @@ const DealDetail = () => {
 
   if (!deal) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center">
         <p className="text-muted-foreground">혜택을 찾을 수 없습니다</p>
       </div>
     );
@@ -80,7 +80,7 @@ const DealDetail = () => {
       : null;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader
         title="혜택 상세"
         rightExtra={<FavoriteButton itemId={deal.id} itemType="deal" />}
@@ -179,7 +179,7 @@ const DealDetail = () => {
       </main>
 
       {/* Fixed Bottom CTA */}
-      <div className="fixed bottom-16 left-0 right-0 max-w-[430px] mx-auto p-4 bg-background border-t border-border">
+      <div className="fixed bottom-16 left-0 right-0 app-col mx-auto p-4 bg-background border-t border-border">
         <div className="flex gap-2">
           {deal.external_url && (
             <a href={deal.external_url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">

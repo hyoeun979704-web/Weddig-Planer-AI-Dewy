@@ -38,7 +38,7 @@ const Coupons = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader title="쿠폰" />
       <main className="pb-20">
         {!user ? (

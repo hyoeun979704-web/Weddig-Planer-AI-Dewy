@@ -131,7 +131,7 @@ const AIStudio = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--pink-50))] max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-[hsl(var(--pink-50))] app-col mx-auto relative">
       <Seo title="AI 스튜디오 - 드레스·메이크업 시뮬레이션 | Dewy" description="AI로 웨딩드레스와 메이크업을 미리 입어보세요. 내 사진으로 다양한 스타일을 시뮬레이션하는 Dewy AI 스튜디오." path="/ai-studio" />
       <HomeHeader />
       <CategoryTabBar activeTab={activeTab} onTabChange={handleCategoryTabChange} />

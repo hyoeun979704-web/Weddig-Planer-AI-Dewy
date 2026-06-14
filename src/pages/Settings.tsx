@@ -76,7 +76,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title="설정 | Dewy" description="알림·테마·계정 설정을 관리하세요." path="/settings" noIndex />
       <PageHeader title="설정" />
 

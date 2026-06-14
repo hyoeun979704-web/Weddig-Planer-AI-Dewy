@@ -65,7 +65,7 @@ const Tutorial = () => {
   const progressDeg = (overall.percent / 100) * 360;
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader title="가이드 & 튜토리얼" />
 
       <main className="pb-24">

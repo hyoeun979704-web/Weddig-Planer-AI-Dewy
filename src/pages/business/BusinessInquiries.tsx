@@ -90,7 +90,7 @@ const BusinessInquiries = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-10">
+    <div className="min-h-screen bg-background app-col mx-auto pb-10">
       <PageHeader title="문의 관리" />
 
       <main className="px-4 py-5 space-y-3">

@@ -114,8 +114,25 @@ interface BottomNavProps {
 
 const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-bottom-nav">
-      <div className="max-w-[430px] mx-auto flex justify-around items-center h-[var(--app-bottom-nav-height)] px-2">
+    // 모바일: 화면 하단 가로 탭바. 데스크톱(lg≥1024px): 좌측 세로 사이드바.
+    // 데스크톱 전환은 전부 lg: 프리픽스 → 모바일/네이티브 레이아웃은 불변.
+    <nav
+      className={cn(
+        "fixed z-50 bg-card border-border",
+        "bottom-0 left-0 right-0 border-t safe-bottom-nav",
+        "lg:top-0 lg:bottom-0 lg:right-auto lg:w-[var(--app-sidebar-width)] lg:border-t-0 lg:border-r lg:pb-0 lg:flex lg:flex-col",
+      )}
+    >
+      {/* 데스크톱 사이드바 상단 브랜드 워드마크(모바일 미표시) */}
+      <div className="hidden lg:flex items-center h-[var(--app-header-height)] px-5 font-logo text-2xl font-bold text-primary">
+        Dewy
+      </div>
+      <div
+        className={cn(
+          "max-w-[430px] mx-auto flex justify-around items-center h-[var(--app-bottom-nav-height)] px-2",
+          "lg:flex-col lg:justify-start lg:items-stretch lg:h-auto lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:max-w-none lg:mx-0 lg:gap-1 lg:px-3 lg:pt-2 lg:pb-4",
+        )}
+      >
         {navItems.map(({ Icon, ...item }) => {
           const isActive = activeTab === item.href;
           return (
@@ -125,16 +142,19 @@ const BottomNav = ({ activeTab = "/", onTabChange }: BottomNavProps) => {
               onClick={() => onTabChange?.(item.href)}
               className={cn(
                 "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors duration-200",
-                isActive ? "text-primary font-bold" : "text-[hsl(var(--inactive))]"
+                "lg:flex-row lg:flex-none lg:justify-start lg:gap-3 lg:w-full lg:px-4 lg:py-3 lg:rounded-xl",
+                isActive
+                  ? "text-primary font-bold lg:bg-primary/10"
+                  : "text-[hsl(var(--inactive))] lg:hover:bg-muted lg:hover:text-foreground",
               )}
             >
               <Icon
                 className={cn(
-                  "w-6 h-6 transition-transform duration-200",
-                  isActive && "scale-110"
+                  "w-6 h-6 transition-transform duration-200 lg:w-5 lg:h-5",
+                  isActive && "scale-110 lg:scale-100",
                 )}
               />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className="text-[10px] font-medium lg:text-sm">{item.label}</span>
             </button>
           );
         })}

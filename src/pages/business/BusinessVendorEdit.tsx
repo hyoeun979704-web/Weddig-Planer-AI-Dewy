@@ -89,7 +89,7 @@ const BusinessVendorEdit = () => {
 
   if (roleLoading || loading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
@@ -98,7 +98,7 @@ const BusinessVendorEdit = () => {
   // 승인 전에는 입력 불가
   if (!businessProfile || businessProfile.approval_status !== "approved") {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+      <div className="min-h-screen bg-background app-col mx-auto">
         <PageHeader title="업체 정보" />
         <div className="px-5 py-20 text-center">
           <p className="text-muted-foreground">운영자 승인 후 업체 정보를 입력할 수 있어요.</p>
@@ -109,7 +109,7 @@ const BusinessVendorEdit = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-background app-col mx-auto">
       <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate("/business/dashboard")} className="w-10 h-10 flex items-center justify-center -ml-2">

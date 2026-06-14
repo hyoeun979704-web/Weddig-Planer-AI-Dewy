@@ -172,7 +172,7 @@ const WeddingConsulting = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-28">
+    <div className="min-h-screen bg-background app-col mx-auto pb-28">
       <PageHeader title="2026 웨딩컨설팅" />
       <main className="px-4 py-5 space-y-5">
         <section className="rounded-2xl bg-pink-50 p-4">
@@ -305,7 +305,7 @@ const WeddingConsulting = () => {
         )}
       </main>
 
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pb-[calc(var(--safe-bottom)+12px)] pt-3 bg-background/95 backdrop-blur border-t border-border">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full app-col px-4 pb-[calc(var(--safe-bottom)+12px)] pt-3 bg-background/95 backdrop-blur border-t border-border">
         <Button
           className="w-full h-12"
           disabled={!pick || processing || selected.length === 0}

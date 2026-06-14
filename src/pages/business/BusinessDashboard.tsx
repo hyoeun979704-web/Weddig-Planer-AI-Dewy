@@ -118,7 +118,7 @@ const BusinessDashboard = () => {
 
   if (authLoading || roleLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
@@ -130,7 +130,7 @@ const BusinessDashboard = () => {
   if (businessProfile.approval_status !== "approved") {
     const rejected = businessProfile.approval_status === "rejected";
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+      <div className="min-h-screen bg-background app-col mx-auto">
         <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-sm border-b border-border">
           <div className="flex items-center h-14 px-4">
             <button onClick={() => navigate("/mypage")} className="w-10 h-10 flex items-center justify-center -ml-2">
@@ -233,7 +233,7 @@ const BusinessDashboard = () => {
   const tier = businessProfile.partner_tier ?? "basic";
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-background app-col mx-auto">
       <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center h-14 px-4">
           <button onClick={() => navigate("/mypage")} className="w-10 h-10 flex items-center justify-center -ml-2">

@@ -25,7 +25,7 @@ const CommunityNotifications = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+      <div className="min-h-screen bg-background app-col mx-auto">
         <PageHeader title="알림" />
         <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
           <Bell className="w-12 h-12 text-muted-foreground mb-4" />
@@ -50,7 +50,7 @@ const CommunityNotifications = () => {
     );
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-background app-col mx-auto">
       <PageHeader title="알림" />
       <main className="pb-20">
         {notifications.length === 0 ? (

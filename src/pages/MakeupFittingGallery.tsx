@@ -61,7 +61,7 @@ const MakeupFittingGallery = () => {
   }, [user]);
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto pb-24">
+    <div className="min-h-screen bg-background app-col mx-auto pb-24">
       <PageHeader title="내 메이크업 갤러리" />
 
       <main className="px-4 py-5">

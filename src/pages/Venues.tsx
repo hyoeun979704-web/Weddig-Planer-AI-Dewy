@@ -34,7 +34,7 @@ const Venues = () => {
   const handleVenueClick = (venue: Venue) => { navigate(`/venue/${venue.id}`); };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title="웨딩홀 추천·비교 | Dewy" description="지역별 인기 웨딩홀을 한눈에 비교하세요. 호텔·하우스·채플·컨벤션 등 스타일별 웨딩홀 추천과 보증 인원·식대 정보까지." path="/venues" />
       <PageHeader title="웨딩홀" />
       <main className="pb-20">

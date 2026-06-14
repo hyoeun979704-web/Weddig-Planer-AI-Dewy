@@ -25,7 +25,7 @@ const VendorList = () => {
   const { data: vendors = [], isLoading } = useVendors(decodedCategory || undefined);
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader title={config?.label || decodedCategory || "업체 목록"} />
 
       <main className="pb-20">

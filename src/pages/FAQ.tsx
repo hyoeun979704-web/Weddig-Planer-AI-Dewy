@@ -44,7 +44,7 @@ const FAQ = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo
         title="자주 묻는 질문 | Dewy AI 웨딩플래너"
         description="Dewy 사용법부터 비용·AI 시뮬레이션·데이터까지, 예비부부가 가장 궁금해하는 질문과 답변을 모았습니다."

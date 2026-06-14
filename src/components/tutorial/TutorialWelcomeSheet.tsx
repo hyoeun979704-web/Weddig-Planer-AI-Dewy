@@ -118,7 +118,7 @@ const TutorialWelcomeSheet = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[9998] flex items-end justify-center max-w-[430px] mx-auto pointer-events-none">
+    <div className="fixed inset-0 z-[9998] flex items-end justify-center app-col mx-auto pointer-events-none">
       {/* Backdrop */}
       <button
         onClick={handleLater}

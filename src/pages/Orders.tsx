@@ -66,7 +66,7 @@ const Orders = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <div className="min-h-screen bg-background app-col mx-auto relative">
         <PageHeader title="주문내역" />
         <main className="px-4 py-4 space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -78,7 +78,7 @@ const Orders = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader title="주문내역" />
 
       <main className="pb-20">

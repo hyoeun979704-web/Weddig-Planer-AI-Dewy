@@ -397,7 +397,7 @@ const TimelineSheet = ({ open, onClose }: TimelineSheetProps) => {
   return (
     <>
     <Sheet open={!!open} onOpenChange={(o) => !o && handleClose()}>
-      <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-3xl max-h-[85vh] overflow-y-auto pb-8">
+      <SheetContent side="bottom" className="app-col mx-auto rounded-t-3xl max-h-[85vh] overflow-y-auto pb-8">
         <SheetHeader>
           <SheetTitle>{meta.title}</SheetTitle>
         </SheetHeader>

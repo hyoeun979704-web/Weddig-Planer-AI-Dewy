@@ -73,7 +73,7 @@ const BusinessClaim = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader title="기존 업체 관리권한 요청" />
       <main className="p-4 pb-20 space-y-4">
         <p className="text-sm text-muted-foreground leading-relaxed">

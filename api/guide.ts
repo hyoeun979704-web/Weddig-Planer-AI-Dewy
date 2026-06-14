@@ -31,6 +31,23 @@ function jsonLdGraph(g: AeoGuide, canonical: string): Record<string, unknown> {
         })),
       },
       {
+        // Article — 신선도(dateModified)·작성주체(author/publisher)·E-E-A-T 신호.
+        // AI 답변엔진·검색이 최신성과 출처 권위를 평가하는 데 쓴다.
+        "@type": "Article",
+        headline: g.h1,
+        description: g.metaDescription,
+        inLanguage: "ko-KR",
+        datePublished: g.updated,
+        dateModified: g.updated,
+        author: { "@type": "Organization", name: "Dewy", url: `${SITE}/` },
+        publisher: {
+          "@type": "Organization",
+          name: "Dewy",
+          logo: { "@type": "ImageObject", url: `${SITE}/dewy-logo.png` },
+        },
+        mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
+      },
+      {
         "@type": "MobileApplication",
         name: "Dewy",
         alternateName: ["듀이 웨딩", "Dewy Wedding", "AI 웨딩플래너 Dewy"],

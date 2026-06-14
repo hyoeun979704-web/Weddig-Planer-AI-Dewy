@@ -32,7 +32,7 @@ const Jewelry = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title="결혼 예물·반지 추천 | Dewy" description="결혼반지·예단·예물 디자인과 가격대 비교. 지역별 예물 업체 큐레이션과 양가 합의 가이드." path="/jewelry" />
       <PageHeader title="예물·예단" />
       <main className="pb-20">

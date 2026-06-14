@@ -94,7 +94,7 @@ const BudgetCategoryDetail = () => {
   })();
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader
         title={
           <>
@@ -216,7 +216,7 @@ const BudgetCategoryDetail = () => {
       </div>
 
       {/* Add button */}
-      <div className="fixed bottom-6 left-0 right-0 max-w-[430px] mx-auto px-4 z-30">
+      <div className="fixed bottom-6 left-0 right-0 app-col mx-auto px-4 z-30">
         <button onClick={() => { setEditItem(null); setAddOpen(true); }}
           className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold text-sm shadow-lg">
           + {catInfo.label} 지출 기록하기

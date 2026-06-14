@@ -169,14 +169,14 @@ const Schedule = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto relative flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--pink-50))] max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-[hsl(var(--pink-50))] app-col mx-auto relative">
       <Seo title="결혼 준비 스케줄·D-Day 관리 | Dewy" description="결혼식 D-Day, 시기별 추천 일정, 다가오는 일정과 카테고리별 진행률까지 한눈에. AI 웨딩플래너 Dewy." path="/schedule" />
       {!user && <LoginRequiredOverlay message="D-Day 카운트다운, 체크리스트까지 한눈에 관리하세요" features={["D-Day 카운트다운", "준비 체크리스트", "커플 일정 공유"]} />}
 

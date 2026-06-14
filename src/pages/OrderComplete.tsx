@@ -37,14 +37,14 @@ const OrderComplete = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-background app-col mx-auto flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-6">
+    <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center px-6">
       <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-6">
         <CheckCircle className="w-10 h-10 text-green-500" />
       </div>

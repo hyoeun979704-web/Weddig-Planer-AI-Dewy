@@ -157,7 +157,7 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <div className="min-h-screen bg-background app-col mx-auto relative">
         <PageHeader title="내 정보" />
         <main className="flex flex-col items-center justify-center py-20">
           <User className="w-16 h-16 text-muted-foreground/50 mb-4" />
@@ -170,7 +170,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title="내 정보 | Dewy" description="프로필 정보를 관리하세요." path="/profile" noIndex />
       <PageHeader title="내 정보" />
 

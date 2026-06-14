@@ -34,7 +34,7 @@ const Appliances = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title="혼수·신혼 가전 추천 | Dewy" description="냉장고·세탁기·TV 등 신혼 가전 필수 항목과 추천. 혼수 체크리스트와 예산 가이드까지." path="/appliances" />
       <PageHeader title="혼수" />
       <main className="pb-20">

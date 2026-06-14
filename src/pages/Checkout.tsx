@@ -53,7 +53,7 @@ const Checkout = () => {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen bg-background app-col mx-auto flex flex-col items-center justify-center px-4">
         <p className="text-muted-foreground mb-4">장바구니가 비어있습니다</p>
         <button onClick={() => navigate("/store")} className="text-primary font-medium">스토어로 이동</button>
       </div>
@@ -61,7 +61,7 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <Seo title="주문·결제 | Dewy" description="주문 정보를 확인하고 결제를 진행하세요." path="/checkout" noIndex />
       <PageHeader title="주문/결제" />
 
@@ -94,7 +94,7 @@ const Checkout = () => {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto p-4 bg-background border-t border-border">
+      <div className="fixed bottom-0 left-0 right-0 app-col mx-auto p-4 bg-background border-t border-border">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm text-muted-foreground">총 결제 금액</span>
           <span className="text-xl font-bold text-primary">{formatPrice(totalAmount)}</span>

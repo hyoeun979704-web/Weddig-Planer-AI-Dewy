@@ -89,7 +89,7 @@ const CoupleVote = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+      <div className="min-h-screen bg-background app-col mx-auto relative">
         <PageHeader title="의견 조율 보드" />
         <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
           <p className="text-muted-foreground text-sm mb-4">로그인 후 이용할 수 있어요</p>
@@ -112,7 +112,7 @@ const CoupleVote = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-[430px] mx-auto relative">
+    <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader title="의견 조율 보드" />
 
       <main className="pb-24 px-4 py-4">
@@ -152,7 +152,7 @@ const CoupleVote = () => {
       {/* FAB */}
       <button
         onClick={() => setCreateOpen(true)}
-        className="fixed bottom-24 right-4 max-w-[430px] w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center z-30"
+        className="fixed bottom-24 right-4 app-col w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center z-30"
         style={{ right: "max(1rem, calc((100vw - 430px)/2 + 1rem))" }}
       >
         <Plus className="w-6 h-6" />
@@ -160,7 +160,7 @@ const CoupleVote = () => {
 
       {/* Create Sheet */}
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-        <SheetContent side="bottom" className="max-w-[430px] mx-auto rounded-t-3xl pb-8">
+        <SheetContent side="bottom" className="app-col mx-auto rounded-t-3xl pb-8">
           <SheetHeader>
             <SheetTitle>새 주제 만들기</SheetTitle>
           </SheetHeader>
