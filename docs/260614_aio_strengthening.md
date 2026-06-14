@@ -41,15 +41,17 @@ dress_shop·makeup_shop은 전용 라우트 없어 제외(스튜디오 상세에
 > `LocalBusiness`(name·address·aggregateRating·review), 상품에 `Product`(offers) JSON-LD를 이미 emit.
 > 추가 보강 여지: LocalBusiness `priceRange`·`geo`·`telephone`, Product `brand`·`aggregateRating`.
 
+## 3차 적용 (스키마 보강·신규 가이드 — 완료)
+
+| 항목 | 파일 | 내용 |
+|---|---|---|
+| **상세 스키마 보강** | `api/ssr.ts` | LocalBusiness에 `geo`(lat/lng)·`priceRange`(min_price), Product에 `aggregateRating`. 활성 4,126곳 중 **geo 3,692곳·priceRange 451곳**에 즉시 emit(Supabase로 확인 — latent 아님). `telephone`·Product `brand`는 정식 컬럼 없어 보류. |
+| **고의도 신규 가이드 3종** | `aeoGuides.ts`·`vercel.json`·`sitemap.xml` | `결혼준비비용`·`결혼준비순서`·`웨딩홀계약주의사항`(가이드 10→13). 기존 가이드 3곳에서 역링크해 토픽 클러스터 강화. 가격 수치는 편차 커서 단정 대신 "실제 견적 비교" 동선으로 honest 작성. |
+
+> **남음**: Organization `sameAs`(소셜)·스토어 링크 — 공식 인스타/유튜브/Play·App Store **실제 URL 필요**(추측 금지로 보류, B4).
+
 ## 권장 다음 단계 (미적용 — 우선순위순)
 
-1. **상세 스키마 보강** — `api/ssr.ts` LocalBusiness에 `geo`(lat/lng)·`priceRange`·`telephone`,
-   Product에 `brand`·`aggregateRating` 추가(데이터 컬럼 존재: lat·lng·min_price 등).
-2. **Organization `sameAs` + 스토어 링크** — 공식 인스타그램·유튜브·블로그 URL과 Play/App Store 링크를
-   홈 JSON-LD `sameAs` + noscript/llms.txt에 추가(엔티티 지식그래프 고정). **실제 URL 필요**(추측 금지로 보류).
-3. **고의도 신규 가이드** — 현재 10개는 "앱" 중심. 정보 질의 확장 여지: "결혼 준비 순서/비용",
-   "스드메 가격대", "지방(지역)별 결혼 준비", "상견례/예단 예절" 등. `aeoGuides.ts`에 추가하면
-   SSR·sitemap·llms 파이프라인이 자동 커버.
-4. **llms.txt 자동 생성** — 지금은 정적(가이드 변경 시 수동 동기화). `aeoGuides.ts` 기반 빌드 생성 스크립트로
+1. **llms.txt 자동 생성** — 지금은 정적(가이드 변경 시 수동 동기화). `aeoGuides.ts` 기반 빌드 생성 스크립트로
    드리프트 차단(DRY). + `/llms-full.txt`(가이드 본문 전체 포함) 추가 검토.
 5. **HowTo 스키마** — 체크리스트·순서형 가이드에 HowTo(step) 추가 시 리치결과·AI 단계인용에 유리.

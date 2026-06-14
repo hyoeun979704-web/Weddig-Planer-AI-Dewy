@@ -167,6 +167,7 @@ const BusinessCoupons = lazy(() => import("./pages/business/BusinessCoupons"));
 const BusinessEvents = lazy(() => import("./pages/business/BusinessEvents"));
 const BusinessProducts = lazy(() => import("./pages/business/BusinessProducts"));
 const BusinessInquiries = lazy(() => import("./pages/business/BusinessInquiries"));
+const BusinessReviews = lazy(() => import("./pages/business/BusinessReviews"));
 
 const queryClient = new QueryClient();
 
@@ -294,6 +295,7 @@ const App = () => (
               <Route path="/business/events" element={<BusinessGuard requireApproved><BusinessEvents /></BusinessGuard>} />
               <Route path="/business/products" element={<BusinessGuard requireApproved><BusinessProducts /></BusinessGuard>} />
               <Route path="/business/inquiries" element={<BusinessGuard requireApproved><BusinessInquiries /></BusinessGuard>} />
+              <Route path="/business/reviews" element={<BusinessGuard requireApproved><BusinessReviews /></BusinessGuard>} />
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
