@@ -4313,6 +4313,9 @@ export type Database = {
           min_price: number | null
           moderation_status: string
           name: string
+          inquiry_channel: string
+          inquiry_phone: string | null
+          inquiry_url: string | null
           owner_user_id: string | null
           partner_rank: number
           place_id: string
@@ -4343,6 +4346,9 @@ export type Database = {
           min_price?: number | null
           moderation_status?: string
           name: string
+          inquiry_channel?: string
+          inquiry_phone?: string | null
+          inquiry_url?: string | null
           owner_user_id?: string | null
           partner_rank?: number
           place_id?: string
@@ -4373,6 +4379,9 @@ export type Database = {
           min_price?: number | null
           moderation_status?: string
           name?: string
+          inquiry_channel?: string
+          inquiry_phone?: string | null
+          inquiry_url?: string | null
           owner_user_id?: string | null
           partner_rank?: number
           place_id?: string

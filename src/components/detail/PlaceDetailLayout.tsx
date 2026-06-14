@@ -104,16 +104,27 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
   // 업체가 직접 작성 + 운영자 검토 통과한 정보인지 — 신뢰 표시용
   const [vendorAuthored, setVendorAuthored] = useState(false);
   const [inquiryOpen, setInquiryOpen] = useState(false);
+  // 입점 업체가 고른 문의 채널 — 'chat'(인앱) | 'url' | 'phone'. 사장님이 설정.
+  const [inquiry, setInquiry] = useState<{ channel: string; url: string | null; phone: string | null }>({
+    channel: "chat",
+    url: null,
+    phone: null,
+  });
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data } = await (supabase as any)
         .from("places")
-        .select("owner_user_id, moderation_status, data_source")
+        .select("owner_user_id, moderation_status, data_source, inquiry_channel, inquiry_url, inquiry_phone")
         .eq("place_id", place.id)
         .maybeSingle();
       if (cancelled) return;
       setIsClaimed(!!data?.owner_user_id);
+      setInquiry({
+        channel: (data?.inquiry_channel as string) ?? "chat",
+        url: (data?.inquiry_url as string) ?? null,
+        phone: (data?.inquiry_phone as string) ?? null,
+      });
       // '직접 작성' = 업체 계정이 만든 정보(data_source=business)가 운영자 검토를
       // 통과한 경우만. 수집 업체는 기본 approved 라 이 조건이 없으면 헛신호가 난다.
       setVendorAuthored(
@@ -248,9 +259,18 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
           <Button
             className="flex-1 h-11"
             onClick={() => {
-              // 입점(클레임) 업체는 인앱 문의 시트로 — 사장님이 앱에서 직접 답변.
+              // 입점(클레임) 업체는 사장님이 고른 채널로 문의를 받는다.
+              //   url   → 사장님이 적은 외부 링크(카톡 오픈채팅·네이버 예약 등)
+              //   phone → 사장님이 적은 전화번호
+              //   chat(기본) → 인앱 문의 시트(사장님이 앱에서 직접 답변)
               if (isClaimed) {
-                setInquiryOpen(true);
+                if (inquiry.channel === "url" && inquiry.url) {
+                  void openExternal(inquiry.url);
+                } else if (inquiry.channel === "phone" && inquiry.phone) {
+                  void openExternal(`tel:${inquiry.phone}`);
+                } else {
+                  setInquiryOpen(true);
+                }
                 return;
               }
               // 미입점 업체 — 죽은 토스트 대신 실제 연락처로 연결.
