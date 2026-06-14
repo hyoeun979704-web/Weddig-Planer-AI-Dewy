@@ -122,6 +122,7 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminInquiries = lazy(() => import("./pages/admin/AdminInquiries"));
 const AdminCommunityAnnouncements = lazy(() => import("./pages/admin/AdminCommunityAnnouncements"));
+const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
 const AdminErrorLogs = lazy(() => import("./pages/admin/AdminErrorLogs"));
 const AdminAgentOutputs = lazy(() => import("./pages/admin/AdminAgentOutputs"));
 const SupportChat = lazy(() => import("./pages/SupportChat"));
@@ -343,6 +344,7 @@ const App = () => (
               <Route path="/admin/reports" element={<AdminGuard><AdminReports /></AdminGuard>} />
               <Route path="/admin/inquiries" element={<AdminGuard><AdminInquiries /></AdminGuard>} />
               <Route path="/admin/announcements" element={<AdminGuard><AdminCommunityAnnouncements /></AdminGuard>} />
+              <Route path="/admin/promotions" element={<AdminGuard><AdminPromotions /></AdminGuard>} />
               <Route path="/admin/error-logs" element={<AdminGuard><AdminErrorLogs /></AdminGuard>} />
               <Route path="/admin/agent-outputs" element={<AdminGuard><AdminAgentOutputs /></AdminGuard>} />
               <Route path="/admin/place-claims" element={<AdminGuard><AdminPlaceClaims /></AdminGuard>} />

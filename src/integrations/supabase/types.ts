@@ -4664,6 +4664,7 @@ export type Database = {
       }
       promotional_events: {
         Row: {
+          audience: string
           badge_color: string | null
           badge_label: string | null
           created_at: string
@@ -4673,7 +4674,9 @@ export type Database = {
           ends_label: string | null
           icon: string | null
           id: string
+          image_url: string | null
           position: number
+          show_as_popup: boolean
           slug: string
           starts_at: string | null
           status: string
@@ -4685,9 +4688,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          audience?: string
           badge_color?: string | null
           badge_label?: string | null
           created_at?: string
+          image_url?: string | null
+          show_as_popup?: boolean
           cta_label: string
           cta_path: string
           ends_at?: string | null
@@ -4706,9 +4712,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          audience?: string
           badge_color?: string | null
           badge_label?: string | null
           created_at?: string
+          image_url?: string | null
+          show_as_popup?: boolean
           cta_label?: string
           cta_path?: string
           ends_at?: string | null
