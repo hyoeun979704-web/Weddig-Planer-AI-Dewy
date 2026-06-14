@@ -31,6 +31,8 @@ export function headTags(
 ): string {
   return [
     `<meta name="description" content="${esc(desc)}" />`,
+    // 검색·AI 엔진이 전체 길이 스니펫과 큰 이미지 프리뷰를 쓰도록 허용(AEO 노출 강화).
+    `<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />`,
     `<link rel="canonical" href="${esc(canonical)}" />`,
     `<meta property="og:title" content="${esc(title)}" />`,
     `<meta property="og:description" content="${esc(desc)}" />`,
