@@ -13,6 +13,9 @@
     { "source": "/invitation-venues/:id", "destination": "/api/ssr?type=place&prefix=invitation-venues&id=:id" },
     { "source": "/store/:id", "destination": "/api/ssr?type=product&prefix=store&id=:id" },
 
+    { "source": "/sitemap-places.xml", "destination": "/api/sitemap?type=places" },
+    { "source": "/sitemap-products.xml", "destination": "/api/sitemap?type=products" },
+
     { "source": "/결혼어플추천", "destination": "/api/guide?slug=결혼어플추천" },
     { "source": "/결혼준비앱추천", "destination": "/api/guide?slug=결혼준비앱추천" },
     { "source": "/ai웨딩플래너앱", "destination": "/api/guide?slug=ai웨딩플래너앱" },

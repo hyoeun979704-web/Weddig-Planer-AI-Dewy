@@ -46,4 +46,5 @@ Disallow: /referral
 Disallow: /premium/subscribe
 Disallow: /premium/payment
 
-Sitemap: https://dewy-wedding.com/sitemap.xml
+# sitemap index — 마케팅/가이드(sitemap.xml) + 업체(sitemap-places.xml) + 상품(sitemap-products.xml)
+Sitemap: https://dewy-wedding.com/sitemap_index.xml

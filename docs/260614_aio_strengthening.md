@@ -25,13 +25,26 @@
 검증: `esbuild api/guide.ts` 번들 OK · `npm run build` 후 `dist/llms.txt`·`dist/sitemap.xml`·
 robots 메타 반영 확인. (실제 크롤러 노출은 배포 후 Search Console / 각 봇 확인 필요 — 정적 레벨까지 확인.)
 
+## 2차 적용 (동적 sitemap — 완료)
+
+| 항목 | 파일 | 내용 |
+|---|---|---|
+| **상세페이지 동적 sitemap** | `api/sitemap.ts`(신규) · `public/sitemap_index.xml`(신규) · `vercel.json` · `robots.txt` | DB에서 활성·라우트 카테고리 업체 **3,252곳** + 활성 상품 개별 URL을 `/sitemap-places.xml`·`/sitemap-products.xml`로 생성, `sitemap_index.xml`이 마케팅 sitemap과 묶음. robots는 인덱스를 가리킴. 색인 표면 32 → 3,300여 URL. |
+| **Supabase 상수 단일화** | `api/_lib/ssr.ts` · `api/ssr.ts` | anon URL/키를 `_lib/ssr`로 모아 ssr·sitemap 공용(키 3중복→1, 드리프트 차단). |
+
+검증: `esbuild` sitemap.ts/ssr.ts 번들 OK · `lint` 0 · Supabase MCP로 카테고리별 건수 확인
+(invitation 732·예복 691·예물 585·스튜디오 387·웨딩홀 291·한복 242·가전 186·허니문 138).
+dress_shop·makeup_shop은 전용 라우트 없어 제외(스튜디오 상세에 흡수). 동적 함수는 PostgREST Range
+페이지네이션으로 1000행 한도를 넘겨 전부 수집. (실제 배포 후 `/sitemap-places.xml` 응답은 Vercel 환경에서 확인 권장.)
+
+> **참고 — Product/LocalBusiness 스키마는 이미 구현돼 있었다**: `api/ssr.ts`가 업체에
+> `LocalBusiness`(name·address·aggregateRating·review), 상품에 `Product`(offers) JSON-LD를 이미 emit.
+> 추가 보강 여지: LocalBusiness `priceRange`·`geo`·`telephone`, Product `brand`·`aggregateRating`.
+
 ## 권장 다음 단계 (미적용 — 우선순위순)
 
-1. **상세페이지 동적 sitemap** — 현재 sitemap은 카테고리 인덱스만. 실제 업체 4,225곳·상품·가이드의
-   **개별 URL이 sitemap에 없어 AI/검색이 발견 못 함**. `api/sitemap.ts`(edge)로 DB에서 생성하는
-   sitemap index(카테고리별 분할, 50k/파일 한도) 도입 시 색인 가능 표면이 수천 배 확대 — **최대 레버리지**.
-2. **상세페이지 Product/LocalBusiness 스키마** — `api/ssr.ts`가 업체에 `LocalBusiness`(주소·지역·가격대),
-   상품에 `Product`(offers·brand)를 emit하면 "지역+카테고리" 질의(예: "부산 웨딩홀")에서 인용 가능성↑.
+1. **상세 스키마 보강** — `api/ssr.ts` LocalBusiness에 `geo`(lat/lng)·`priceRange`·`telephone`,
+   Product에 `brand`·`aggregateRating` 추가(데이터 컬럼 존재: lat·lng·min_price 등).
 2. **Organization `sameAs` + 스토어 링크** — 공식 인스타그램·유튜브·블로그 URL과 Play/App Store 링크를
    홈 JSON-LD `sameAs` + noscript/llms.txt에 추가(엔티티 지식그래프 고정). **실제 URL 필요**(추측 금지로 보류).
 3. **고의도 신규 가이드** — 현재 10개는 "앱" 중심. 정보 질의 확장 여지: "결혼 준비 순서/비용",

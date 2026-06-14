@@ -6,11 +6,7 @@
 
 export const config = { runtime: "edge" };
 
-import { SITE, esc, headTags, inject, bareDoc, getTemplate, type Rendered } from "./_lib/ssr";
-
-const SUPABASE_URL = "https://qabeywyzjsgyqpjqsvkd.supabase.co";
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhYmV5d3l6anNneXFwanFzdmtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NTg4MzUsImV4cCI6MjA5MTEzNDgzNX0.ae0GIokaeczwm0-FaVSoCnkNqBgagsdD1-1I_BP90Jo";
+import { SITE, SUPABASE_URL, SUPABASE_ANON_KEY, esc, headTags, inject, bareDoc, getTemplate, type Rendered } from "./_lib/ssr";
 
 const CATEGORY_LABEL: Record<string, string> = {
   wedding_hall: "웨딩홀",
