@@ -1,0 +1,84 @@
+name: Monthly E2E Simulation
+
+# 매월 1회, 핵심 사용자 여정을 실제 브라우저로 시뮬레이션하고(개발 에이전트가 주도),
+# 결과를 시뮬레이션 노트로 남긴다.
+#   1) Playwright e2e 스위트 실행(리포트 아티팩트 업로드)
+#   2) Claude 가 docs/feature-simulation.md 의 시나리오 + 경쟁사 분석
+#      (docs/260614_invitation_editor_competitor_analysis.md)을 기준으로
+#      페르소나별 end-to-end 워크스루를 수행하고 마찰(friction)을 발굴 → 발견사항을
+#      docs/YYMMDD_e2e_simulation.md 로 기록, 저위험 개선은 draft PR.
+#
+# ⚙️ Claude 단계는 ANTHROPIC_API_KEY 시크릿이 있어야 동작(없으면 e2e 만 돌고 skip).
+
+on:
+  schedule:
+    # 매월 1일 19:00 UTC (= 2일 04:00 KST)
+    - cron: "0 19 1 * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: monthly-e2e
+  cancel-in-progress: false
+
+jobs:
+  e2e-sim:
+    name: e2e simulation (playwright + claude)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+
+      # e2e 실패해도 시뮬레이션 분석은 계속 진행(리포트로 원인 확인).
+      - name: Run e2e suite
+        id: e2e
+        continue-on-error: true
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Run Claude e2e simulation review
+        if: env.HAS_KEY == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            이 저장소의 docs/feature-simulation.md(시뮬레이션 방법론)와
+            docs/260614_invitation_editor_competitor_analysis.md(경쟁사 분석)을 기준으로
+            **월간 e2e 전체 시뮬레이션**을 수행해줘. 핵심 사용자 여정(가입·온보딩·홈 진입
+            팝업·청첩장 편집/발행·예약 문의·결제)을 페르소나별로 현재 코드 기준 워크스루하고
+            마찰(✅/⚠️/❌)을 발굴해. **특히 청첩장 편집 UI** 는 경쟁사 분석의 체크포인트와
+            권고를 대조해 평가해. 위 Playwright 리포트(아티팩트)도 참고.
+            발견사항을 docs/<오늘YYMMDD>_e2e_simulation.md 로 기록하고, 명백하고 저위험인
+            개선만 적용해 새 브랜치에 커밋 → **draft PR**. 광범위 리팩터는 금지.
+          claude_args: "--max-turns 80"
+
+      - name: Note when Claude skipped
+        if: env.HAS_KEY != 'true'
+        run: |
+          echo "::notice title=Claude e2e review skipped::ANTHROPIC_API_KEY 가 없어 분석 단계를 건너뛰었어요(Playwright e2e 는 실행됨)."
