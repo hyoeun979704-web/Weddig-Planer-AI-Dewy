@@ -4,6 +4,8 @@ import {
   ArrowLeft,
   Loader2,
   Sparkles,
+  LayoutTemplate,
+  ChevronRight,
   Download,
   Share2,
   Save,
@@ -84,7 +86,12 @@ interface Template {
   default_back_template_id?: string | null;
 }
 
-type Step = "template" | "wizard" | "result";
+// 진입 시 만드는 방식을 먼저 고른다:
+//   ai       — AI 자동생성(문구를 AI가 채움)
+//   template — 템플릿 선택(폼에 직접 입력)
+//   free     — 자유(템플릿 위에 캔버스로 직접 편집 = Studio)
+type CreateMode = "ai" | "template" | "free";
+type Step = "mode" | "template" | "wizard" | "result";
 
 const InvitationFlow = () => {
   const navigate = useNavigate();
@@ -96,7 +103,8 @@ const InvitationFlow = () => {
     | "paper"
     | "mobile";
 
-  const [step, setStep] = useState<Step>("template");
+  const [step, setStep] = useState<Step>("mode");
+  const [mode, setMode] = useState<CreateMode | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [template, setTemplate] = useState<Template | null>(null);
@@ -167,6 +175,22 @@ const InvitationFlow = () => {
     }
   };
 
+  // 만드는 방식 선택 → 템플릿 고르기로 진행. AI 모드는 문구 자동생성을 켠다.
+  const chooseMode = (m: CreateMode) => {
+    setMode(m);
+    setAiAuto(m === "ai");
+    setStep("template");
+  };
+
+  // 자유 모드 — 생성이 끝나(result, invitationId 확보) 캔버스 편집(Studio)으로 한 번만 이동.
+  const freeRedirectRef = useRef(false);
+  useEffect(() => {
+    if (mode === "free" && step === "result" && invitationId && !freeRedirectRef.current) {
+      freeRedirectRef.current = true;
+      navigate(`/invitation/${invitationId}/edit`);
+    }
+  }, [mode, step, invitationId, navigate]);
+
   // ─────────────────────────────────────────────
   // 하트 잔액
   // ─────────────────────────────────────────────
@@ -218,7 +242,9 @@ const InvitationFlow = () => {
   useEffect(() => {
     if (flowKeyRef.current === location.key) return; // 최초 마운트는 그대로
     flowKeyRef.current = location.key;
-    setStep("template");
+    setStep("mode"); // 새 진입은 만드는 방식부터 다시 고른다
+    setMode(null);
+    freeRedirectRef.current = false;
     setTemplate(null);
     setBackTemplate(null);
     setBackTemplateId(null);
@@ -1149,7 +1175,8 @@ const InvitationFlow = () => {
         <div className="flex items-center gap-3 px-4 h-14">
           <button
             onClick={() => {
-              if (step === "template") navigate(-1);
+              if (step === "mode") navigate(-1);
+              else if (step === "template") setStep("mode");
               else if (step === "wizard") setStep("template");
               else setStep("wizard");
             }}
@@ -1159,6 +1186,7 @@ const InvitationFlow = () => {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <h1 className="text-base font-bold text-foreground flex-1">
+            {step === "mode" && "청첩장 만들기"}
             {step === "template" && "템플릿 선택"}
             {step === "wizard" && "정보 입력"}
             {step === "result" && "완성됐어요"}
@@ -1197,6 +1225,8 @@ const InvitationFlow = () => {
           )}
         </div>
       </header>
+
+      {step === "mode" && <ModeChooser onChoose={chooseMode} />}
 
       {step === "template" && (
         <TemplatePicker
@@ -1291,6 +1321,73 @@ const InvitationFlow = () => {
     </div>
   );
 };
+
+// ════════════════════════════════════════════════════════════════
+// 0) Mode Chooser — 만드는 방식 3종 (AI 자동생성 / 템플릿 선택 / 자유)
+// ════════════════════════════════════════════════════════════════
+const MODE_CARDS: {
+  mode: CreateMode;
+  icon: typeof Sparkles;
+  title: string;
+  desc: string;
+  badge?: string;
+}[] = [
+  {
+    mode: "ai",
+    icon: Sparkles,
+    title: "AI 자동생성",
+    desc: "이름·날짜만 넣으면 인사말 문구까지 AI가 알아서 채워줘요. 가장 빠른 길.",
+    badge: "추천",
+  },
+  {
+    mode: "template",
+    icon: LayoutTemplate,
+    title: "템플릿 선택",
+    desc: "마음에 드는 디자인을 고르고 내용을 직접 입력해 완성해요.",
+  },
+  {
+    mode: "free",
+    icon: Pencil,
+    title: "자유 편집",
+    desc: "템플릿 위에서 글자·사진을 캔버스로 자유롭게 옮기고 꾸며요(스튜디오).",
+  },
+];
+
+const ModeChooser = ({ onChoose }: { onChoose: (m: CreateMode) => void }) => (
+  <div className="px-4 py-6">
+    <p className="text-[13px] text-muted-foreground mb-4">
+      어떻게 만들까요? 방식을 고르면 다음 단계로 넘어가요.
+    </p>
+    <div className="space-y-3">
+      {MODE_CARDS.map(({ mode, icon: Icon, title, desc, badge }) => (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => onChoose(mode)}
+          className="w-full flex items-center gap-3.5 rounded-2xl border border-border bg-card p-4 text-left active:scale-[0.99] transition-transform hover:border-primary/50"
+        >
+          <span className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Icon className="w-6 h-6 text-primary" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5">
+              <span className="font-bold text-foreground">{title}</span>
+              {badge && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">
+                  {badge}
+                </span>
+              )}
+            </span>
+            <span className="block mt-0.5 text-[12px] text-muted-foreground leading-relaxed">
+              {desc}
+            </span>
+          </span>
+          <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+        </button>
+      ))}
+    </div>
+  </div>
+);
 
 // ════════════════════════════════════════════════════════════════
 // 1) Template Picker
