@@ -248,17 +248,30 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
           <Button
             className="flex-1 h-11"
             onClick={() => {
-              // 입점(클레임) 업체는 인앱 문의로, 미입점은 기존 안내 유지
+              // 입점(클레임) 업체는 인앱 문의 시트로 — 사장님이 앱에서 직접 답변.
               if (isClaimed) {
                 setInquiryOpen(true);
+                return;
+              }
+              // 미입점 업체 — 죽은 토스트 대신 실제 연락처로 연결.
+              // 옆 '전화 문의' 버튼이 전화를 담당하므로, 여기선 온라인 문의 채널
+              // (카톡 채널·네이버·홈페이지·인스타·유튜브)을 우선 열고, 없으면 전화,
+              // 그것도 없으면 안내. (사장님께는 입점을 권유.)
+              const online =
+                place.kakao_channel_url || place.naver_place_url || place.website_url ||
+                place.instagram_url || place.youtube_url;
+              if (online) {
+                void openExternal(online);
+              } else if (place.tel) {
+                void openExternal(`tel:${place.tel}`);
               } else {
-                toast.info("아직 앱 문의를 받지 않는 업체예요", {
-                  description: "전화 문의를 이용해주세요. 입점 업체는 앱에서 바로 답변을 받아요.",
+                toast.info("아직 등록된 문의 채널이 없어요", {
+                  description: "이 업체의 연락처 정보가 없어요. 사장님이라면 무료 입점 후 문의를 직접 받을 수 있어요.",
                 });
               }
             }}
           >
-            예약 문의
+            {isClaimed ? "예약 문의" : "문의하기"}
           </Button>
         </div>
       </div>
