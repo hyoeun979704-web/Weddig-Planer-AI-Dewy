@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,8 @@ const HeartChargeSuccess = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [hearts, setHearts] = useState(0);
   const [pointsSpent, setPointsSpent] = useState(0);
+  // 하트 충전 승인 중복발사 방지 (user 지연 + StrictMode → 이중 하트 적립 위험).
+  const approvedRef = useRef(false);
 
   useEffect(() => {
     const run = async () => {
@@ -33,6 +35,8 @@ const HeartChargeSuccess = () => {
         setErrorMessage("주문 정보가 일치하지 않습니다");
         return;
       }
+      if (approvedRef.current) return;
+      approvedRef.current = true;
 
       try {
         const { data, error } = await supabase.functions.invoke(

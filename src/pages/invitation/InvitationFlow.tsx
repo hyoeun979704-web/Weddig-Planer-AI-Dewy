@@ -1087,7 +1087,9 @@ const InvitationFlow = () => {
       };
 
       // 2) invitations layout 에 면별 imageUrlsForViewer 추가 저장 (기존 필드 보존)
-      await (supabase as any)
+      //    이 저장이 실패하면 뷰어가 서명 URL 없이 발행돼 이미지가 깨진다 →
+      //    에러를 삼키지 말고 발행을 중단(아래 publish 로 진행 금지).
+      const { error: layoutError } = await (supabase as any)
         .from("invitations")
         .update({
           layout: {
@@ -1096,6 +1098,7 @@ const InvitationFlow = () => {
           },
         })
         .eq("id", invitationId);
+      if (layoutError) throw layoutError;
 
       // 3) publish_invitation RPC 호출 (slug 자동 발급)
       const { data, error } = await (supabase as any).rpc(

@@ -14,9 +14,12 @@ const AnnouncementBanner = () => {
     </div>
   );
 
-  if (ann.link) {
+  // 링크는 http(s) 만 허용 — 관리자 설정값이라도 javascript:/data: 스킴이면 클릭 시
+  // 실행될 수 있어 스킴을 검증한다(XSS 방지).
+  const safeLink = ann.link && /^https?:\/\//i.test(ann.link) ? ann.link : null;
+  if (safeLink) {
     return (
-      <a href={ann.link} target="_blank" rel="noopener noreferrer" className="block">
+      <a href={safeLink} target="_blank" rel="noopener noreferrer" className="block">
         {content}
       </a>
     );

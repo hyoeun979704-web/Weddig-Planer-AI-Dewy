@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,9 @@ const SubscriptionPaymentSuccess = () => {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [heartsGranted, setHeartsGranted] = useState(0);
+  // 구독 승인 중복발사 방지 — deps 의 user·refetch 가 늦게/재생성되며 effect 재실행
+  // (StrictMode 포함). 검증 통과 후에만 가드 소비.
+  const approvedRef = useRef(false);
 
   useEffect(() => {
     const confirmAndActivate = async () => {

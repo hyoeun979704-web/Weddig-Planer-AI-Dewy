@@ -165,6 +165,8 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
     // .or() 구분자(,()") 를 모두 살균해야 필터 인젝션을 막는다(공용 헬퍼 사용).
     const searchTerm = quoteForOr(`%${escapeLikePattern(searchQuery)}%`);
 
+    // 느린 이전 요청이 새 요청보다 늦게 도착해 결과를 덮어쓰는 경쟁상태 방지.
+    let cancelled = false;
     const fetchResults = async () => {
       try {
         // Search posts by title or content
@@ -184,16 +186,19 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
           comments_count: post.comment_count ?? 0,
         }));
 
-        setResults(resultsWithCounts as SearchResult[]);
+        if (!cancelled) setResults(resultsWithCounts as SearchResult[]);
       } catch (error) {
         console.error("Search error:", error);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     const debounce = setTimeout(fetchResults, 300);
-    return () => clearTimeout(debounce);
+    return () => {
+      cancelled = true;
+      clearTimeout(debounce);
+    };
   }, [searchQuery]);
 
   const handleResultClick = (postId: string) => {

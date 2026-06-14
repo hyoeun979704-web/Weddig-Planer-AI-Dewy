@@ -227,7 +227,9 @@ export const useCoupleDiary = () => {
         await supabase.storage.from("couple-diary-photos").remove(paths);
       }
 
-      await (supabase.from("couple_diary" as any) as any).delete().eq("id", id).eq("author_id", user.id);
+      // DB 삭제 실패를 삼키면 UI 에서만 사라지고 DB 엔 남는 drift 가 생긴다 → error 확인 후 throw.
+      const { error: delError } = await (supabase.from("couple_diary" as any) as any).delete().eq("id", id).eq("author_id", user.id);
+      if (delError) throw delError;
 
       setEntries((prev) => prev.filter((e) => e.id !== id));
       toast.success("일기가 삭제되었습니다");
@@ -243,7 +245,8 @@ export const useCoupleDiary = () => {
   const deletePhoto = async (photoId: string, storagePath: string): Promise<boolean> => {
     try {
       await supabase.storage.from("couple-diary-photos").remove([storagePath]);
-      await (supabase.from("couple_diary_photos" as any) as any).delete().eq("id", photoId);
+      const { error: delError } = await (supabase.from("couple_diary_photos" as any) as any).delete().eq("id", photoId);
+      if (delError) throw delError;
 
       setEntries((prev) =>
         prev.map((e) => ({
