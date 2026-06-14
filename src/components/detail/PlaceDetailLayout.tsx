@@ -36,16 +36,6 @@ import PlaceRecommendations from "@/components/detail/PlaceRecommendations";
 import PlaceInquirySheet from "@/components/place/PlaceInquirySheet";
 import { supabase } from "@/integrations/supabase/client";
 
-const handleTagClick = (tag: string) => {
-  // Tag-based filtering on the list pages isn't wired yet — the list hooks
-  // (useVenues, useCategoryData) don't read ?tag= from the query string.
-  // Until that lands, surface an honest "coming soon" rather than navigating
-  // to a list that visibly hasn't filtered.
-  toast.info(`#${tag}`, {
-    description: "태그로 비슷한 업체 찾기 기능은 곧 출시될 예정이에요",
-  });
-};
-
 interface Props {
   place: LegacyDetail;
   /** Korean category label, e.g. "웨딩홀" — for the category chip */
@@ -457,14 +447,15 @@ function BasicTab({
         )}
         {place.tags && place.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">
+            {/* 태그는 정보 표시용 — 태그 기반 검색이 아직 list 훅에 연결되지 않아
+                클릭 어포던스(버튼) 대신 비대화형 칩으로 둔다(죽은 버튼 방지). */}
             {place.tags.slice(0, 8).map((t, i) => (
-              <button
+              <span
                 key={i}
-                onClick={() => handleTagClick(t)}
-                className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary rounded-full transition-colors"
+                className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground rounded-full"
               >
                 #{t}
-              </button>
+              </span>
             ))}
           </div>
         )}
