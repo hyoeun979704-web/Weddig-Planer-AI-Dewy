@@ -46,8 +46,19 @@ const QuoteDetail = () => {
       });
       budgeted = !error;
     }
+    // 일정(체크리스트)에도 '예약 완료' 항목 추가 — user_schedule_items.category 는 place 카테고리와 동일.
+    if (user) {
+      await supabase.from("user_schedule_items").insert({
+        user_id: user.id,
+        category: request?.category ?? "general",
+        title: `${r.place_name ?? "업체"} 예약 완료`,
+        completed: true,
+        source: "quote",
+        scheduled_date: request?.wedding_date ?? new Date().toISOString().slice(0, 10),
+      });
+    }
     setAccepting(null);
-    toast.success(budgeted ? "예약 확정 · 예산에 반영했어요! 🎉" : "예약을 확정했어요! 🎉");
+    toast.success(budgeted ? "예약 확정 · 예산·일정에 반영했어요! 🎉" : "예약을 확정했어요! 🎉");
     reload();
   };
 
