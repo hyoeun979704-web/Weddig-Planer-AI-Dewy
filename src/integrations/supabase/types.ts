@@ -4749,6 +4749,44 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          place_id: string
+          read_at: string | null
+          request_id: string
+          sender_user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          place_id: string
+          read_at?: string | null
+          request_id: string
+          sender_user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          place_id?: string
+          read_at?: string | null
+          request_id?: string
+          sender_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_messages_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quote_request_targets: {
         Row: {
           created_at: string
@@ -6302,6 +6340,10 @@ export type Database = {
         Returns: Json
       }
       resync_couple_settings: { Args: never; Returns: Json }
+      send_quote_message: {
+        Args: { p_body: string; p_place_id: string; p_request_id: string }
+        Returns: Json
+      }
       set_sensitive_preference: {
         Args: {
           p_consent_version?: number

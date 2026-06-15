@@ -29,6 +29,10 @@ export interface QuoteResponse {
   created_at: string;
   place_name?: string | null;
   place_image?: string | null;
+  place_rating?: number | null;
+  place_reviews?: number | null;
+  place_partner?: boolean;
+  place_region?: string | null;
 }
 
 export interface NewQuoteInput {
@@ -116,7 +120,7 @@ export function useQuoteResponses(requestId: string | undefined) {
       supabase.from("quote_requests").select("*").eq("id", requestId).maybeSingle(),
       supabase
         .from("quote_responses")
-        .select("*, places(name, main_image_url)")
+        .select("*, places(name, main_image_url, avg_rating, review_count, is_partner, city, district)")
         .eq("request_id", requestId)
         .order("created_at", { ascending: false }),
     ]);
@@ -126,6 +130,10 @@ export function useQuoteResponses(requestId: string | undefined) {
         ...r,
         place_name: r.places?.name ?? null,
         place_image: r.places?.main_image_url ?? null,
+        place_rating: r.places?.avg_rating ?? null,
+        place_reviews: r.places?.review_count ?? null,
+        place_partner: r.places?.is_partner ?? false,
+        place_region: [r.places?.city, r.places?.district].filter(Boolean).join(" ") || null,
       })),
     );
     setLoading(false);
@@ -147,6 +155,51 @@ export async function getQuoteLeadContact(requestId: string): Promise<{ name: st
   const res = data as { ok?: boolean; name?: string | null; phone?: string | null } | null;
   if (!res?.ok) return null;
   return { name: res.name ?? null, phone: res.phone ?? null };
+}
+
+export interface QuoteMessage {
+  id: string;
+  request_id: string;
+  place_id: string;
+  sender_user_id: string;
+  body: string;
+  created_at: string;
+}
+
+export async function sendQuoteMessage(requestId: string, placeId: string, body: string) {
+  const { data, error } = await supabase.rpc("send_quote_message", {
+    p_request_id: requestId,
+    p_place_id: placeId,
+    p_body: body,
+  });
+  const res = data as { ok?: boolean; error?: string } | null;
+  return { ok: !!res?.ok && !error, error: res?.error };
+}
+
+// 견적 스레드(요청-업체) 메시지 로드. 가벼운 폴링으로 새 메시지 반영.
+export function useQuoteThread(requestId: string | undefined, placeId: string | undefined) {
+  const [messages, setMessages] = useState<QuoteMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    if (!requestId || !placeId) { setLoading(false); return; }
+    const { data } = await supabase
+      .from("quote_messages")
+      .select("id, request_id, place_id, sender_user_id, body, created_at")
+      .eq("request_id", requestId)
+      .eq("place_id", placeId)
+      .order("created_at", { ascending: true });
+    setMessages(((data ?? []) as QuoteMessage[]));
+    setLoading(false);
+  }, [requestId, placeId]);
+
+  useEffect(() => {
+    void load();
+    const t = setInterval(() => { void load(); }, 8000); // 가벼운 폴링(실시간 채널 미사용)
+    return () => clearInterval(t);
+  }, [load]);
+
+  return { messages, loading, reload: load };
 }
 
 // 업체: 나에게 매칭된 견적 요청(리드) + 내 응답 상태.
