@@ -77,7 +77,10 @@ const QuoteDetail = () => {
           <EmptyState
             icon={Inbox}
             title="아직 도착한 견적이 없어요"
-            description="업체가 답하면 알림으로 알려드려요. 조건에 맞는 업체가 늘면 더 많이 받을 수 있어요."
+            description="업체가 답하면 알림으로 알려드려요. 조건을 넓혀 다시 요청하면 더 많이 받을 수 있어요."
+            action={
+              <Button variant="outline" onClick={() => navigate("/quote/new")}>다른 조건으로 요청하기</Button>
+            }
           />
         ) : (
           <>
