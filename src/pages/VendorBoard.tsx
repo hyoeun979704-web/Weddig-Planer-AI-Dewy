@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ChevronDown, Send, Store, FileText, Check, Plus, Trash2, Scale } from "lucide-react";
 import { toast } from "sonner";
 import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
+import { confirm } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,6 +40,13 @@ const SlotCard = ({
   const [name, setName] = useState(item?.vendor_name ?? "");
   const [memo, setMemo] = useState(item?.memo ?? "");
   const [saving, setSaving] = useState(false);
+
+  // 외부에서 슬롯이 바뀌면(예: 견적 제출로 업체명·상태 자동 반영) 입력칸을 재동기화.
+  // deps 는 실제 값 — 입력 중 무관한 리렌더가 사용자가 타이핑한 내용을 덮어쓰지 않는다.
+  useEffect(() => {
+    setName(item?.vendor_name ?? "");
+    setMemo(item?.memo ?? "");
+  }, [item?.vendor_name, item?.memo]);
 
   const status = item?.status ?? "undecided";
   const meta = VENDOR_STATUS_META[status];
@@ -165,7 +173,18 @@ const SlotCard = ({
           {onDelete && (
             <button
               type="button"
-              onClick={async () => { const r = await onDelete(); if (!r.ok) toast.error("삭제에 실패했어요. 잠시 후 다시 시도해 주세요"); }}
+              onClick={async () => {
+                // 메모·선택 업체가 함께 사라지는 파괴적 동작 — 오터치 손실 방지 확인.
+                const yes = await confirm({
+                  title: `'${slot.label}' 항목을 삭제할까요?`,
+                  description: "기록한 업체·메모도 함께 사라지며 되돌릴 수 없어요.",
+                  confirmText: "삭제",
+                  destructive: true,
+                });
+                if (!yes) return;
+                const r = await onDelete();
+                if (!r.ok) toast.error("삭제에 실패했어요. 잠시 후 다시 시도해 주세요");
+              }}
               className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-destructive transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" /> 이 항목 삭제
@@ -185,7 +204,11 @@ const VendorBoard = () => {
   const [newLabel, setNewLabel] = useState("");
   const [savingNew, setSavingNew] = useState(false);
 
-  const decidedPct = summary.total > 0 ? Math.round((summary.booked / summary.total) * 100) : 0;
+  // 진척은 "정리 중인 슬롯(engaged)" 기준 — 전체 19+슬롯 분모는 늘 낮아 보여 의욕을 꺾는다.
+  // items 는 사용자가 채운 슬롯만 행으로 존재(빈 슬롯은 행 없음) → engaged 가 실제 관여 수.
+  const engaged = Object.keys(items).length;
+  const decidedPct = engaged > 0 ? Math.round((summary.booked / engaged) * 100) : 0;
+  const undecidedCount = Math.max(engaged - summary.booked - summary.quoting, 0);
 
   const addSlot = async () => {
     const label = newLabel.trim();
@@ -211,20 +234,33 @@ const VendorBoard = () => {
       )}
 
       <main className="px-4 py-5">
-        {/* 진행 요약 헤더 */}
-        <div className="rounded-2xl bg-[hsl(var(--pink-100))] p-4 mb-5">
-          <p className="text-[13px] text-muted-foreground">예약 확정한 업체</p>
-          <p className="text-[28px] font-extrabold text-primary leading-tight">
-            {summary.booked}
-            <span className="text-[16px] text-muted-foreground font-bold"> / {summary.total}</span>
-          </p>
-          <div className="mt-2 h-2 bg-white/70 rounded-full overflow-hidden">
-            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${decidedPct}%` }} />
-          </div>
-          <p className="mt-2 text-[12px] text-muted-foreground">
-            견적 받는 중 {summary.quoting}곳 · 한 슬롯을 눌러 상태와 업체를 채워보세요.
-          </p>
-        </div>
+        {/* 진행 요약 헤더 — 첫 방문(engaged 0)은 온보딩 안내, 이후엔 진척 표현 */}
+        {!loading && (
+          engaged === 0 ? (
+            <div className="rounded-2xl bg-[hsl(var(--pink-100))] p-4 mb-5">
+              <p className="text-[15px] font-bold text-foreground">결혼 준비 업체, 여기서 한눈에 정리해요</p>
+              <p className="mt-1.5 text-[13px] text-muted-foreground leading-relaxed">
+                베뉴·스튜디오·드레스·스냅·청첩장까지 — 아래 카테고리를 눌러
+                <b className="text-foreground"> 미정 · 견적중 · 예약완료</b> 상태와 선택한 업체를 채워보세요.
+                받은 견적은 자동으로 반영돼요.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-[hsl(var(--pink-100))] p-4 mb-5">
+              <p className="text-[13px] text-muted-foreground">정리 중인 업체</p>
+              <p className="text-[28px] font-extrabold text-primary leading-tight">
+                {summary.booked}
+                <span className="text-[16px] text-muted-foreground font-bold"> / {engaged} 예약 확정</span>
+              </p>
+              <div className="mt-2 h-2 bg-white/70 rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${decidedPct}%` }} />
+              </div>
+              <p className="mt-2 text-[12px] text-muted-foreground">
+                예약 {summary.booked} · 견적중 {summary.quoting} · 미정 {undecidedCount}
+              </p>
+            </div>
+          )
+        )}
 
         {loading ? (
           <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
