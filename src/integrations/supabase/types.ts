@@ -6184,6 +6184,7 @@ export type Database = {
       get_my_listing_detail: { Args: never; Returns: Json }
       get_or_create_referral_code: { Args: never; Returns: string }
       get_place_inquiry_stats: { Args: { p_place_id: string }; Returns: Json }
+      get_quote_lead_contact: { Args: { p_request_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
