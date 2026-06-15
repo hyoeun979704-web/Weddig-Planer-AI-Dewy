@@ -127,23 +127,26 @@ export function useMyQuoteRequests() {
   return { rows, loading, reload: load };
 }
 
-// 소비자: 한 요청의 응답들(업체 이름·이미지 포함).
+// 소비자: 한 요청의 응답들(업체 이름·이미지 포함) + 매칭된 업체 수.
 export function useQuoteResponses(requestId: string | undefined) {
   const [request, setRequest] = useState<QuoteRequest | null>(null);
   const [responses, setResponses] = useState<QuoteResponse[]>([]);
+  const [matchedCount, setMatchedCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!requestId) { setLoading(false); return; }
     setLoading(true);
-    const [{ data: req }, { data: resp }] = await Promise.all([
+    const [{ data: req }, { data: resp }, { count: matched }] = await Promise.all([
       supabase.from("quote_requests").select("*").eq("id", requestId).maybeSingle(),
       supabase
         .from("quote_responses")
         .select("*, places(name, main_image_url, avg_rating, review_count, is_partner, city, district)")
         .eq("request_id", requestId)
         .order("created_at", { ascending: false }),
+      supabase.from("quote_request_targets").select("place_id", { count: "exact", head: true }).eq("request_id", requestId),
     ]);
+    setMatchedCount(matched ?? 0);
     setRequest((req as QuoteRequest) ?? null);
     setResponses(
       ((resp ?? []) as any[]).map((r) => ({
@@ -160,7 +163,7 @@ export function useQuoteResponses(requestId: string | undefined) {
   }, [requestId]);
 
   useEffect(() => { void load(); }, [load]);
-  return { request, responses, loading, reload: load };
+  return { request, responses, matchedCount, loading, reload: load };
 }
 
 export interface BusinessLead extends QuoteRequest {
