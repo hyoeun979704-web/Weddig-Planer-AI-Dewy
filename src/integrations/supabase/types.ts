@@ -4316,6 +4316,7 @@ export type Database = {
           inquiry_channel: string
           inquiry_phone: string | null
           inquiry_url: string | null
+          moderation_note: string | null
           owner_user_id: string | null
           partner_rank: number
           place_id: string
@@ -4349,6 +4350,7 @@ export type Database = {
           inquiry_channel?: string
           inquiry_phone?: string | null
           inquiry_url?: string | null
+          moderation_note?: string | null
           owner_user_id?: string | null
           partner_rank?: number
           place_id?: string
@@ -4382,6 +4384,7 @@ export type Database = {
           inquiry_channel?: string
           inquiry_phone?: string | null
           inquiry_url?: string | null
+          moderation_note?: string | null
           owner_user_id?: string | null
           partner_rank?: number
           place_id?: string
@@ -5841,7 +5844,7 @@ export type Database = {
         Returns: Json
       }
       admin_review_listing: {
-        Args: { p_approved: boolean; p_place_id: string }
+        Args: { p_approved: boolean; p_note?: string; p_place_id: string }
         Returns: Json
       }
       admin_review_partnership: {
