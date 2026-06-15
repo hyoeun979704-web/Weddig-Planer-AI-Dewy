@@ -43,15 +43,15 @@ export interface NewQuoteInput {
 }
 
 export async function createQuoteRequest(input: NewQuoteInput): Promise<{ ok: boolean; error?: string; requestId?: string; matched?: number }> {
-  const { data, error } = await (supabase as any).rpc("create_quote_request", {
+  const { data, error } = await supabase.rpc("create_quote_request", {
     p_category: input.category,
-    p_city: input.city ?? null,
-    p_district: input.district ?? null,
-    p_budget_min: input.budgetMin ?? null,
-    p_budget_max: input.budgetMax ?? null,
-    p_wedding_date: input.weddingDate || null,
-    p_style: input.style ?? null,
-    p_note: input.note ?? null,
+    p_city: input.city ?? undefined,
+    p_district: input.district ?? undefined,
+    p_budget_min: input.budgetMin ?? undefined,
+    p_budget_max: input.budgetMax ?? undefined,
+    p_wedding_date: input.weddingDate || undefined,
+    p_style: input.style ?? undefined,
+    p_note: input.note ?? undefined,
   });
   const res = data as { ok?: boolean; error?: string; request_id?: string; matched?: number } | null;
   if (error || !res?.ok) return { ok: false, error: res?.error ?? "failed" };
@@ -60,17 +60,17 @@ export async function createQuoteRequest(input: NewQuoteInput): Promise<{ ok: bo
 
 // 소비자가 받은 견적 중 하나를 수락 → 업체에 알림(연결 완료).
 export async function acceptQuoteResponse(responseId: string) {
-  const { data, error } = await (supabase as any).rpc("accept_quote_response", { p_response_id: responseId });
+  const { data, error } = await supabase.rpc("accept_quote_response", { p_response_id: responseId });
   const res = data as { ok?: boolean; error?: string } | null;
   return { ok: !!res?.ok && !error, error: res?.error };
 }
 
 export async function submitQuoteResponse(requestId: string, message: string, priceMin: number | null, priceMax: number | null) {
-  const { data, error } = await (supabase as any).rpc("submit_quote_response", {
+  const { data, error } = await supabase.rpc("submit_quote_response", {
     p_request_id: requestId,
     p_message: message,
-    p_price_min: priceMin,
-    p_price_max: priceMax,
+    p_price_min: priceMin ?? undefined,
+    p_price_max: priceMax ?? undefined,
   });
   const res = data as { ok?: boolean; error?: string } | null;
   return { ok: !!res?.ok && !error, error: res?.error };
@@ -85,7 +85,7 @@ export function useMyQuoteRequests() {
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from("quote_requests")
       .select("*, quote_responses(count)")
       .eq("user_id", user.id)
@@ -113,8 +113,8 @@ export function useQuoteResponses(requestId: string | undefined) {
     if (!requestId) { setLoading(false); return; }
     setLoading(true);
     const [{ data: req }, { data: resp }] = await Promise.all([
-      (supabase as any).from("quote_requests").select("*").eq("id", requestId).maybeSingle(),
-      (supabase as any)
+      supabase.from("quote_requests").select("*").eq("id", requestId).maybeSingle(),
+      supabase
         .from("quote_responses")
         .select("*, places(name, main_image_url)")
         .eq("request_id", requestId)
@@ -150,7 +150,7 @@ export function useBusinessLeads() {
     if (!user) { setLoading(false); return; }
     setLoading(true);
     // 내가 타겟된 요청들 + 요청 상세(RLS 로 조인 허용) + 내 응답 여부.
-    const { data: targets } = await (supabase as any)
+    const { data: targets } = await supabase
       .from("quote_request_targets")
       .select("request_id, place_id, quote_requests(*)")
       .eq("owner_user_id", user.id)
@@ -158,7 +158,7 @@ export function useBusinessLeads() {
     const reqIds = ((targets ?? []) as any[]).map((t) => t.request_id);
     let respondedIds = new Set<string>();
     if (reqIds.length > 0) {
-      const { data: myResp } = await (supabase as any)
+      const { data: myResp } = await supabase
         .from("quote_responses")
         .select("request_id")
         .eq("owner_user_id", user.id)
