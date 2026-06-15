@@ -3,6 +3,7 @@ import CompactBannerCarousel from "./CompactBannerCarousel";
 import TabHeroContent from "./TabHeroContent";
 import HomeCategoryGrid from "./HomeCategoryGrid";
 import PersonaDashboard from "./PersonaDashboard";
+import HomeQuickLinks from "./HomeQuickLinks";
 import HomeOnboardingCard from "./HomeOnboardingCard";
 import BudgetVsAverageCard from "./BudgetVsAverageCard";
 import RecommendedSection from "./RecommendedSection";
@@ -35,6 +36,8 @@ const TabContent = ({ activeTab }: TabContentProps) => {
             체크리스트 진척, 일별 미션 등)를 보여주고, 미로그인/온보딩 전엔
             null 반환해 캐러셀이 자리를 채웁니다. */}
         <PersonaDashboard />
+        {/* 현황(PersonaDashboard) 바로 뒤 행동 단축 — 보드·견적·비교(혼합형 홈 순서). */}
+        <HomeQuickLinks />
         <HomeOnboardingCard />
         <BudgetVsAverageCard />
         <CompactBannerCarousel />

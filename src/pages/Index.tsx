@@ -4,7 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import TabContent from "@/components/home/TabContent";
-import HomeQuickLinks from "@/components/home/HomeQuickLinks";
+import HomeAIAsk from "@/components/home/HomeAIAsk";
 import HomeEntryPopup from "@/components/home/HomeEntryPopup";
 import Footer from "@/components/home/Footer";
 import TutorialOverlay from "@/components/TutorialOverlay";
@@ -67,8 +67,10 @@ const Index = () => {
       <CategoryTabBar activeTab={null} onTabChange={handleCategoryTabChange} />
       <AnnouncementBanner />
 
+      {/* 혼합형 홈: AI 한 줄 입력(상단) → 현황(PersonaDashboard) → 행동(QuickLinks) →
+          맞춤 추천 → 발견. QuickLinks 는 현황 바로 뒤로 옮겨 TabContent 안에서 렌더한다. */}
       <main className="safe-bottom-scroll" data-tutorial="home-categories">
-        <HomeQuickLinks />
+        <HomeAIAsk />
         <TabContent activeTab="ai-planner" />
         <Footer />
       </main>
