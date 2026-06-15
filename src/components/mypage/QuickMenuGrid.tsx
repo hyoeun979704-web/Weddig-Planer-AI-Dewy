@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Heart, Coins, Ticket, ShoppingBag } from "lucide-react";
+import { Heart, Coins, Ticket, ShoppingBag, FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -73,6 +73,13 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
       value: user ? String(orderCount) : "-",
       href: "/orders",
       iconClass: "text-orange-500",
+    },
+    {
+      icon: FileText,
+      label: "내 견적",
+      value: "-",
+      href: "/quote",
+      iconClass: "text-primary",
     },
   ];
 

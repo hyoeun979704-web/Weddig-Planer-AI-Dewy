@@ -58,6 +58,13 @@ export async function createQuoteRequest(input: NewQuoteInput): Promise<{ ok: bo
   return { ok: true, requestId: res.request_id, matched: res.matched };
 }
 
+// 소비자가 받은 견적 중 하나를 수락 → 업체에 알림(연결 완료).
+export async function acceptQuoteResponse(responseId: string) {
+  const { data, error } = await (supabase as any).rpc("accept_quote_response", { p_response_id: responseId });
+  const res = data as { ok?: boolean; error?: string } | null;
+  return { ok: !!res?.ok && !error, error: res?.error };
+}
+
 export async function submitQuoteResponse(requestId: string, message: string, priceMin: number | null, priceMax: number | null) {
   const { data, error } = await (supabase as any).rpc("submit_quote_response", {
     p_request_id: requestId,
