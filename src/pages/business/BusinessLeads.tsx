@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import EmptyState from "@/components/ui/empty-state";
 import { relativeTime } from "@/lib/relativeTime";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
-import { useBusinessLeads, submitQuoteResponse, getQuoteLeadContact, getBusinessQuoteFunnel, type BusinessLead, type BusinessFunnel } from "@/hooks/useQuotes";
+import { useBusinessLeads, submitQuoteResponse, getQuoteLeadContact, getBusinessQuoteFunnel, quoteImageUrl, type BusinessLead, type BusinessFunnel } from "@/hooks/useQuotes";
 
 const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () => void }) => {
   const navigate = useNavigate();
@@ -77,6 +77,15 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
         {lead.wedding_date ? `예식 ${lead.wedding_date} · ` : ""}{relativeTime(lead.created_at)}
       </p>
       {lead.note && <p className="mt-2 text-[13px] text-foreground/80 whitespace-pre-line">{lead.note}</p>}
+      {lead.image_paths && lead.image_paths.length > 0 && (
+        <div className="mt-2 flex gap-1.5">
+          {lead.image_paths.map((p) => (
+            <a key={p} href={quoteImageUrl(p)} target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-lg overflow-hidden border border-border">
+              <img src={quoteImageUrl(p)} alt="참고 사진" className="w-full h-full object-cover" />
+            </a>
+          ))}
+        </div>
+      )}
 
       {/* 수락/예약 시 고객 연락처 공개 → 업체가 직접 연락 */}
       {connected && (

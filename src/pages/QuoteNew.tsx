@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
-import { createQuoteRequest } from "@/hooks/useQuotes";
+import { createQuoteRequest, quoteImageUrl } from "@/hooks/useQuotes";
 
 const STYLES: { v: string; label: string }[] = [
   { v: "general", label: "일반 예식" },
@@ -31,7 +32,22 @@ const QuoteNew = () => {
   const [weddingDate, setWeddingDate] = useState("");
   const [style, setStyle] = useState("");
   const [note, setNote] = useState("");
+  const [imagePaths, setImagePaths] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const onPickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    if (imagePaths.length >= 3) { toast.error("사진은 최대 3장까지 올릴 수 있어요."); return; }
+    setUploading(true);
+    const path = `${user.id}/${crypto.randomUUID()}.${(file.name.split(".").pop() || "jpg").toLowerCase()}`;
+    const { error } = await supabase.storage.from("quote-uploads").upload(path, file, { contentType: file.type, upsert: false });
+    setUploading(false);
+    if (error) { toast.error("사진 업로드에 실패했어요."); return; }
+    setImagePaths((p) => [...p, path]);
+  };
 
   const submit = async () => {
     if (!user) { navigate("/auth"); return; }
@@ -46,6 +62,7 @@ const QuoteNew = () => {
       weddingDate: weddingDate || null,
       style: style || null,
       note: note.trim() || null,
+      imagePaths,
     });
     setSubmitting(false);
     if (!res.ok) {
@@ -136,6 +153,32 @@ const QuoteNew = () => {
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">요청 메모</Label>
           <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="원하는 조건·일정·궁금한 점을 적어주세요." />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">참고 사진 (선택, 최대 3장)</Label>
+          <p className="text-[12px] text-muted-foreground">원하는 분위기·드레스·홀 사진을 올리면 더 정확한 견적을 받을 수 있어요.</p>
+          <div className="flex flex-wrap gap-2">
+            {imagePaths.map((p) => (
+              <div key={p} className="relative w-20 h-20 rounded-xl overflow-hidden border border-border">
+                <img src={quoteImageUrl(p)} alt="" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setImagePaths((arr) => arr.filter((x) => x !== p))}
+                  className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center"
+                  aria-label="삭제"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            {imagePaths.length < 3 && (
+              <label className="w-20 h-20 rounded-xl border border-dashed border-border flex items-center justify-center cursor-pointer text-muted-foreground">
+                {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
+                <input type="file" accept="image/*" className="hidden" onChange={onPickPhoto} disabled={uploading} />
+              </label>
+            )}
+          </div>
         </div>
       </main>
 

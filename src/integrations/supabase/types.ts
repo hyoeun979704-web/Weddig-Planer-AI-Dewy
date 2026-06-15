@@ -4792,18 +4792,21 @@ export type Database = {
           created_at: string
           owner_user_id: string
           place_id: string
+          reminded_at: string | null
           request_id: string
         }
         Insert: {
           created_at?: string
           owner_user_id: string
           place_id: string
+          reminded_at?: string | null
           request_id: string
         }
         Update: {
           created_at?: string
           owner_user_id?: string
           place_id?: string
+          reminded_at?: string | null
           request_id?: string
         }
         Relationships: [
@@ -4824,6 +4827,7 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          image_paths: string[]
           note: string | null
           region_city: string | null
           region_district: string | null
@@ -4839,6 +4843,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          image_paths?: string[]
           note?: string | null
           region_city?: string | null
           region_district?: string | null
@@ -4854,6 +4859,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          image_paths?: string[]
           note?: string | null
           region_city?: string | null
           region_district?: string | null
@@ -6133,19 +6139,34 @@ export type Database = {
         }
         Returns: Json
       }
-      create_quote_request: {
-        Args: {
-          p_budget_max?: number
-          p_budget_min?: number
-          p_category: string
-          p_city?: string
-          p_district?: string
-          p_note?: string
-          p_style?: string
-          p_wedding_date?: string
-        }
-        Returns: Json
-      }
+      create_quote_request:
+        | {
+            Args: {
+              p_budget_max?: number
+              p_budget_min?: number
+              p_category: string
+              p_city?: string
+              p_district?: string
+              p_note?: string
+              p_style?: string
+              p_wedding_date?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_budget_max?: number
+              p_budget_min?: number
+              p_category: string
+              p_city?: string
+              p_district?: string
+              p_image_paths?: string[]
+              p_note?: string
+              p_style?: string
+              p_wedding_date?: string
+            }
+            Returns: Json
+          }
       derive_wedding_persona: {
         Args: {
           s: Database["public"]["Tables"]["user_wedding_settings"]["Row"]
@@ -6329,6 +6350,7 @@ export type Database = {
           referrer_amount: number
         }[]
       }
+      remind_pending_quote_leads: { Args: never; Returns: number }
       replace_place_halls: {
         Args: { p_place_id: string; p_rows: Json }
         Returns: number

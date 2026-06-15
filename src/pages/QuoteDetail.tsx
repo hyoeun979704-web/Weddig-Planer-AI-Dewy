@@ -8,7 +8,7 @@ import EmptyState from "@/components/ui/empty-state";
 import { PLACE_CATEGORY_LABEL, PLACE_TO_BUDGET_CATEGORY } from "@/lib/categoryLabels";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuoteResponses, acceptQuoteResponse, markQuoteBooked, type QuoteResponse } from "@/hooks/useQuotes";
+import { useQuoteResponses, acceptQuoteResponse, markQuoteBooked, quoteImageUrl, type QuoteResponse } from "@/hooks/useQuotes";
 
 const won = (n: number) => `${n.toLocaleString()}만원`;
 
@@ -46,8 +46,19 @@ const QuoteDetail = () => {
       });
       budgeted = !error;
     }
+    // 일정(체크리스트)에도 '예약 완료' 항목 추가 — user_schedule_items.category 는 place 카테고리와 동일.
+    if (user) {
+      await supabase.from("user_schedule_items").insert({
+        user_id: user.id,
+        category: request?.category ?? "general",
+        title: `${r.place_name ?? "업체"} 예약 완료`,
+        completed: true,
+        source: "quote",
+        scheduled_date: request?.wedding_date ?? new Date().toISOString().slice(0, 10),
+      });
+    }
     setAccepting(null);
-    toast.success(budgeted ? "예약 확정 · 예산에 반영했어요! 🎉" : "예약을 확정했어요! 🎉");
+    toast.success(budgeted ? "예약 확정 · 예산·일정에 반영했어요! 🎉" : "예약을 확정했어요! 🎉");
     reload();
   };
 
@@ -68,6 +79,15 @@ const QuoteDetail = () => {
               {request.wedding_date ? `예식 ${request.wedding_date}` : "일정 미정"}
             </p>
             {request.note && <p className="mt-2 text-[13px] text-foreground/80 whitespace-pre-line">{request.note}</p>}
+            {request.image_paths && request.image_paths.length > 0 && (
+              <div className="mt-2 flex gap-1.5">
+                {request.image_paths.map((p) => (
+                  <a key={p} href={quoteImageUrl(p)} target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-lg overflow-hidden border border-border">
+                    <img src={quoteImageUrl(p)} alt="참고 사진" className="w-full h-full object-cover" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

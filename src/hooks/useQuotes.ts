@@ -16,6 +16,12 @@ export interface QuoteRequest {
   note: string | null;
   status: string;
   created_at: string;
+  image_paths?: string[] | null;
+}
+
+// 견적 첨부 사진 공개 URL(quote-uploads 는 public 버킷).
+export function quoteImageUrl(path: string): string {
+  return supabase.storage.from("quote-uploads").getPublicUrl(path).data.publicUrl;
 }
 
 export interface QuoteResponse {
@@ -44,6 +50,7 @@ export interface NewQuoteInput {
   weddingDate?: string | null;
   style?: string | null;
   note?: string | null;
+  imagePaths?: string[];
 }
 
 export async function createQuoteRequest(input: NewQuoteInput): Promise<{ ok: boolean; error?: string; requestId?: string; matched?: number }> {
@@ -56,6 +63,7 @@ export async function createQuoteRequest(input: NewQuoteInput): Promise<{ ok: bo
     p_wedding_date: input.weddingDate || undefined,
     p_style: input.style ?? undefined,
     p_note: input.note ?? undefined,
+    p_image_paths: input.imagePaths && input.imagePaths.length > 0 ? input.imagePaths : undefined,
   });
   const res = data as { ok?: boolean; error?: string; request_id?: string; matched?: number } | null;
   if (error || !res?.ok) return { ok: false, error: res?.error ?? "failed" };
@@ -199,7 +207,7 @@ export async function sendQuoteMessage(requestId: string, placeId: string, body:
   return { ok: !!res?.ok && !error, error: res?.error };
 }
 
-// 견적 스레드(요청-업체) 메시지 로드. 가벼운 폴링으로 새 메시지 반영.
+// 견적 스레드(요청-업체) 메시지 로드 + Supabase realtime 구독으로 즉시 반영.
 export function useQuoteThread(requestId: string | undefined, placeId: string | undefined) {
   const [messages, setMessages] = useState<QuoteMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,10 +225,19 @@ export function useQuoteThread(requestId: string | undefined, placeId: string | 
   }, [requestId, placeId]);
 
   useEffect(() => {
+    if (!requestId || !placeId) return;
     void load();
-    const t = setInterval(() => { void load(); }, 8000); // 가벼운 폴링(실시간 채널 미사용)
-    return () => clearInterval(t);
-  }, [load]);
+    // 실시간 — 이 요청의 메시지 INSERT 시 즉시 재조회(RLS 가 참여자에게만 전달).
+    const channel = supabase
+      .channel(`quote-thread-${requestId}-${placeId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "quote_messages", filter: `request_id=eq.${requestId}` },
+        () => { void load(); },
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [requestId, placeId, load]);
 
   return { messages, loading, reload: load };
 }
