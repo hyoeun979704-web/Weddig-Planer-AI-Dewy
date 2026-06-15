@@ -18,9 +18,9 @@ title: "Dewy — DB-Grounded RAG for the AI Wedding Planner"
 
 # TL;DR — 우리가 쓰는 RAG의 정확한 정체
 
-- ✅ **Retrieval-Augmented Generation 맞음** — LLM이 답하기 전 **앱 내 실데이터를 프롬프트 근거로 주입**하고, 그 밖의 수치·업체명 생성을 **금지**한다.
-- ❌ **벡터/임베딩 RAG 아님** — `pgvector`·embedding 컬럼·코사인 유사도·`<=>` 연산자·HNSW/IVFFlat **없음**(마이그레이션 grep 0건).
-- 🎯 **정확한 라벨**: *Structured/keyword retrieval → prompt augmentation → guarded generation → output audit*.
+- **[O] Retrieval-Augmented Generation 맞음** — LLM이 답하기 전 **앱 내 실데이터를 프롬프트 근거로 주입**하고, 그 밖의 수치·업체명 생성을 **금지**한다.
+- **[X] 벡터/임베딩 RAG 아님** — `pgvector`·embedding 컬럼·코사인 유사도·`<=>` 연산자·HNSW/IVFFlat **없음**(마이그레이션 grep 0건).
+- **정확한 라벨**: *Structured/keyword retrieval → prompt augmentation → guarded generation → output audit*.
 - 도메인 특성상 이 선택이 합리적: 업체 카탈로그는 **정형 데이터**(지역·카테고리·가격·평점)라 **정확 필터**가 의미 검색보다 정밀하고, 환각 1순위 위험(없는 업체·가격 날조)을 **하드 제약**으로 막는 게 핵심.
 
 > 팀 문서가 이 레이어를 명시적으로 **"L2. 근거 주입 (RAG)"** 라 부른다.
@@ -197,6 +197,26 @@ if (!hasGrounding && (fabricatedLink || catalogCount >= 2 || ungroundedVendorInt
 - 생성된 **전체 응답을 다시 스캔**: 근거 없는 금액·날조 링크·업체 나열 탐지.
 - 발견 시 사용자에게 보내기 **전에** 면책 문구를 자동으로 덧붙임.
 - SSE 스트림에도 적용(`createSseAuditTransform`).
+
+---
+
+# End-to-End 예시 — "강남 웨딩홀 추천해줘"
+
+```
+질문: "강남 웨딩홀 추천해줘, 식대도 궁금"
+ │
+ ├ L1 intentRouter → 업체검색+가격 의도 (단, 자유서술이라 LLM 경로)
+ ├ L2 buildVendorGrounding("wedding_hall","강남")
+ │     → places 5곳(파트너·평점순) → "근거(업체)" 블록
+ │   buildPriceGrounding → 강남 웨딩홀 시세표 → "근거(가격)" 블록
+ ├ 증강: systemPrompt = static + (업체블록 + 가격블록)
+ ├ L3 계약: "이 목록 밖 업체명 금지, 가격은 범위로"
+ ├ 생성(gpt-4o): 5곳 실제 업체 + 범위가격 답변
+ └ L4 감사: 근거 있음 → 면책 불필요(근거 없었으면 면책 첨부)
+```
+
+- 핵심: **답변의 업체·가격은 전부 L2에서 검색된 실데이터**. 모델은 문장만 짓는다.
+- DB에 강남 웨딩홀이 0건이면 → 웹검색 폴백 → 그래도 없으면 "데이터 없음".
 
 ---
 
