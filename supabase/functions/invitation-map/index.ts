@@ -109,7 +109,8 @@ serve(async (req) => {
     lng = first.x;
     lat = first.y;
   } catch (e) {
-    return json({ error: `지오코딩 오류: ${(e as Error).message}` }, 502);
+    console.error("invitation-map geocode error", e);
+    return json({ error: "위치를 불러오지 못했어요. 잠시 후 다시 시도해 주세요." }, 502);
   }
 
   // 3) 정적 지도 이미지
@@ -125,7 +126,8 @@ serve(async (req) => {
     }
     bytes = new Uint8Array(await mapRes.arrayBuffer());
   } catch (e) {
-    return json({ error: `지도 생성 오류: ${(e as Error).message}` }, 502);
+    console.error("invitation-map staticmap error", e);
+    return json({ error: "지도를 생성하지 못했어요. 잠시 후 다시 시도해 주세요." }, 502);
   }
 
   // 4) Storage 업로드 (service_role 로 사용자 폴더에)
@@ -135,7 +137,8 @@ serve(async (req) => {
     .from("invitation-uploads")
     .upload(path, bytes, { contentType: "image/png", upsert: false });
   if (upErr) {
-    return json({ error: `업로드 실패: ${upErr.message}` }, 500);
+    console.error("invitation-map upload error", upErr);
+    return json({ error: "지도 저장에 실패했어요. 잠시 후 다시 시도해 주세요." }, 500);
   }
 
   return json({ path, lat, lng });

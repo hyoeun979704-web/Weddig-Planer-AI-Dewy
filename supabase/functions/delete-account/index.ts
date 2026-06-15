@@ -38,7 +38,7 @@ serve(async (req) => {
     return json({ ok: true });
   } catch (e) {
     console.error("delete-account exception:", e);
-    return json({ error: e instanceof Error ? e.message : "알 수 없는 오류" }, 500);
+    return json({ error: "계정 삭제에 실패했어요. 잠시 후 다시 시도해 주세요." }, 500);
   }
 
   function json(body: unknown, status = 200) {

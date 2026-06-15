@@ -235,11 +235,14 @@ const InvitationViewer = () => {
       setRsvpMessage("");
     } catch (err: any) {
       console.error(err);
-      toast({
-        title: "제출 실패",
-        description: "다시 시도해 주세요.",
-        variant: "destructive",
-      });
+      // DB 가드(총 한도/연속 과다)는 사용자 친화 문구로 안내. 그 외는 제네릭.
+      const msg = String(err?.message ?? "");
+      const description = msg.includes("rsvp_limit_reached")
+        ? "참석 등록이 마감되었어요."
+        : msg.includes("rsvp_rate_limited")
+          ? "잠시 후 다시 시도해 주세요."
+          : "다시 시도해 주세요.";
+      toast({ title: "제출 실패", description, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }

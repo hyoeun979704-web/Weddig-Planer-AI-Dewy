@@ -66,6 +66,10 @@ API→호출 경로 시뮬레이션). e2e 불가(sandbox 차단 등) 시 "검증
 - **DB 스키마 정합성**: 코드가 참조하는 컬럼/RPC/view 가 **실제 DB 에 있는지** `list_tables`/
   `information_schema` 로 먼저 확인. 마이그레이션 파일 존재 ≠ DB 적용. (회귀: 없는 컬럼 15개
   SELECT → PostgREST 422 → 전체 쿼리 실패) `schema_migrations` 적용 history ≠ repo 파일 수면 경고.
+- **RPC 인자 ↔ 함수 시그니처 교차 확인**: `.rpc("name", {…})` 호출 인자 집합이 DB 함수 파라미터와
+  **정확히** 일치해야 한다. PostgREST 는 named-arg 매칭이라 빠진/남는 인자 하나면 함수 미발견
+  (PGRST202)으로 **호출 전량 실패**한다. `(supabase as any).rpc` 캐스트가 이 불일치를 숨기므로
+  빌드·린트가 통과해도 런타임 100% 실패. (회귀: 승인 RPC 2인자에 클라가 p_note 3인자 → 승인 불능.)
 - **정적 통과 ≠ 런타임 안전**: 빌드·린트·esbuild 통과는 타입/문법 검증일 뿐. 결제·인증 등
   호출 경로를 직접 안 밟는 코드는 "정적 통과"만으로 완료 보고 금지. import 심볼을 동명 지역
   변수로 재선언 금지(섀도잉=TDZ). (회귀: `const adminClient = adminClient()` → 결제승인 100% 불능)
