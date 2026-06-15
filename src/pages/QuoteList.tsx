@@ -45,14 +45,16 @@ const QuoteList = () => {
                     </p>
                     <p className="mt-1 text-[12px] text-muted-foreground">
                       {relativeTime(r.created_at)} · 받은 견적 {r.response_count}건
-                      {r.status !== "open" ? " · 마감" : ""}
+                      {r.booked ? " · 예약 완료" : r.status !== "open" ? " · 마감" : ""}
                     </p>
                   </div>
-                  {r.response_count > 0 && (
+                  {r.booked ? (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">예약</span>
+                  ) : r.response_count > 0 ? (
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">
                       {r.response_count}
                     </span>
-                  )}
+                  ) : null}
                   <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
                 </button>
               </li>

@@ -5,8 +5,10 @@ import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/empty-state";
-import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
-import { useQuoteResponses, acceptQuoteResponse, markQuoteBooked } from "@/hooks/useQuotes";
+import { PLACE_CATEGORY_LABEL, PLACE_TO_BUDGET_CATEGORY } from "@/lib/categoryLabels";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuoteResponses, acceptQuoteResponse, markQuoteBooked, type QuoteResponse } from "@/hooks/useQuotes";
 
 const won = (n: number) => `${n.toLocaleString()}만원`;
 
@@ -14,6 +16,7 @@ const won = (n: number) => `${n.toLocaleString()}만원`;
 const QuoteDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const { request, responses, loading, reload } = useQuoteResponses(id);
   const [accepting, setAccepting] = useState<string | null>(null);
 
@@ -26,12 +29,25 @@ const QuoteDetail = () => {
     reload();
   };
 
-  const handleBook = async (responseId: string) => {
-    setAccepting(responseId);
-    const res = await markQuoteBooked(responseId);
+  const handleBook = async (r: QuoteResponse) => {
+    setAccepting(r.id);
+    const res = await markQuoteBooked(r.id);
+    if (!res.ok) { setAccepting(null); toast.error("처리에 실패했어요. 다시 시도해주세요."); return; }
+    // 예약 → 내 예산에 자동 반영(만원 단위 동일). best-effort — 실패해도 예약은 확정.
+    const amount = r.price_max ?? r.price_min ?? request?.budget_max ?? 0;
+    let budgeted = false;
+    if (user && amount > 0) {
+      const { error } = await supabase.from("budget_items").insert({
+        user_id: user.id,
+        category: PLACE_TO_BUDGET_CATEGORY[request?.category ?? ""] ?? "etc",
+        title: r.place_name ?? "예약 업체",
+        amount,
+        memo: "견적 매칭으로 예약",
+      });
+      budgeted = !error;
+    }
     setAccepting(null);
-    if (!res.ok) { toast.error("처리에 실패했어요. 다시 시도해주세요."); return; }
-    toast.success("예약을 확정했어요! 🎉");
+    toast.success(budgeted ? "예약 확정 · 예산에 반영했어요! 🎉" : "예약을 확정했어요! 🎉");
     reload();
   };
 
@@ -61,7 +77,10 @@ const QuoteDetail = () => {
           <EmptyState
             icon={Inbox}
             title="아직 도착한 견적이 없어요"
-            description="업체가 답하면 알림으로 알려드려요. 조건에 맞는 업체가 늘면 더 많이 받을 수 있어요."
+            description="업체가 답하면 알림으로 알려드려요. 조건을 넓혀 다시 요청하면 더 많이 받을 수 있어요."
+            action={
+              <Button variant="outline" onClick={() => navigate("/quote/new")}>다른 조건으로 요청하기</Button>
+            }
           />
         ) : (
           <>
@@ -121,7 +140,7 @@ const QuoteDetail = () => {
                         <Button
                           size="sm"
                           className="flex-1"
-                          onClick={() => handleBook(r.id)}
+                          onClick={() => handleBook(r)}
                           disabled={accepting === r.id}
                         >
                           {accepting === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "예약 완료로 표시"}

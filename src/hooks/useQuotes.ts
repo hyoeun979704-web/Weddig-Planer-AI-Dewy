@@ -96,10 +96,10 @@ export async function submitQuoteResponse(requestId: string, message: string, pr
   return { ok: !!res?.ok && !error, error: res?.error };
 }
 
-// 소비자: 내 견적 요청 목록 + 각 요청의 응답 수.
+// 소비자: 내 견적 요청 목록 + 각 요청의 응답 수 + 예약 여부.
 export function useMyQuoteRequests() {
   const { user } = useAuth();
-  const [rows, setRows] = useState<(QuoteRequest & { response_count: number })[]>([]);
+  const [rows, setRows] = useState<(QuoteRequest & { response_count: number; booked: boolean })[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -107,14 +107,18 @@ export function useMyQuoteRequests() {
     setLoading(true);
     const { data } = await supabase
       .from("quote_requests")
-      .select("*, quote_responses(count)")
+      .select("*, quote_responses(status)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     setRows(
-      ((data ?? []) as any[]).map((r) => ({
-        ...r,
-        response_count: Array.isArray(r.quote_responses) ? (r.quote_responses[0]?.count ?? 0) : 0,
-      })),
+      ((data ?? []) as any[]).map((r) => {
+        const resp = Array.isArray(r.quote_responses) ? r.quote_responses : [];
+        return {
+          ...r,
+          response_count: resp.length,
+          booked: resp.some((x: any) => x.status === "booked"),
+        };
+      }),
     );
     setLoading(false);
   }, [user]);

@@ -22,6 +22,22 @@ export const PLACE_CATEGORY_LABEL: Record<string, string> = {
   invitation_venue: "청첩장",
 };
 
+// 장소 카테고리(enum) → 예산 카테고리(BudgetCategoryKey). weddingStyle.BUDGET_CATEGORY_COMPOSERS
+// 의 역방향(어느 장소가 어느 예산 항목을 구성하나)을 단일 소스로. 예약→예산 자동반영에 사용.
+export const PLACE_TO_BUDGET_CATEGORY: Record<string, string> = {
+  wedding_hall: "venue",
+  studio: "sdm",
+  dress_shop: "sdm",
+  makeup_shop: "sdm",
+  tailor_shop: "suit",
+  hanbok: "hanbok",
+  appliance: "house",
+  honeymoon: "honeymoon",
+  jewelry: "ring",
+  invitation_venue: "etc",
+  etc: "etc",
+};
+
 export const APPLIANCE_PRODUCT_TYPE_LABEL: Record<string, string> = {
   store: "매장",
   package: "신혼 패키지",
