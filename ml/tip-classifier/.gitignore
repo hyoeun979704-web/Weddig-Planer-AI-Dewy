@@ -1,0 +1,7 @@
+# 학습 데이터/모델 산출물은 커밋하지 않는다(영상 메타·용량).
+data/
+model/
+ckpt/
+*.csv
+*.jsonl
+__pycache__/
