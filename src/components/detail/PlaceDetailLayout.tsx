@@ -48,6 +48,13 @@ interface Props {
 
 type TabKey = "basic" | "detail" | "review";
 
+interface InquiryStats {
+  total: number;
+  answered: number;
+  recent_30d: number;
+  avg_response_hours: number | null;
+}
+
 const DAYS = [
   { key: "mon", label: "월" },
   { key: "tue", label: "화" },
@@ -100,21 +107,31 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
     url: null,
     phone: null,
   });
+  // ② 신뢰 신호(입점 업체 응답 통계) · ③ 입점 유도(조회수 수요 신호)
+  const [inquiryStats, setInquiryStats] = useState<InquiryStats | null>(null);
+  const [viewCount, setViewCount] = useState<number>(0);
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data } = await (supabase as any)
         .from("places")
-        .select("owner_user_id, moderation_status, data_source, inquiry_channel, inquiry_url, inquiry_phone")
+        .select("owner_user_id, moderation_status, data_source, inquiry_channel, inquiry_url, inquiry_phone, view_count")
         .eq("place_id", place.id)
         .maybeSingle();
       if (cancelled) return;
-      setIsClaimed(!!data?.owner_user_id);
+      const claimed = !!data?.owner_user_id;
+      setIsClaimed(claimed);
+      setViewCount((data?.view_count as number) ?? 0);
       setInquiry({
         channel: (data?.inquiry_channel as string) ?? "chat",
         url: (data?.inquiry_url as string) ?? null,
         phone: (data?.inquiry_phone as string) ?? null,
       });
+      // ② 신뢰 신호 — 입점 업체의 응답 통계(집계만).
+      if (claimed) {
+        const { data: s } = await (supabase as any).rpc("get_place_inquiry_stats", { p_place_id: place.id });
+        if (!cancelled && s) setInquiryStats(s as InquiryStats);
+      }
       // '직접 작성' = 업체 계정이 만든 정보(data_source=business)가 운영자 검토를
       // 통과한 경우만. 수집 업체는 기본 approved 라 이 조건이 없으면 헛신호가 난다.
       setVendorAuthored(
@@ -216,21 +233,40 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
         }}
       />
 
-      {/* 미입점 업체 — 사장님 클레임 배너 */}
+      {/* 미입점 업체 — 사장님 클레임 배너 (③ 수요 가시화로 입점 유도) */}
       {!isClaimed && (
         <button
           type="button"
           onClick={() => navigate("/business")}
           className="block w-full px-4 pb-24 pt-2 text-center"
         >
-          <span className="text-[12px] text-muted-foreground underline underline-offset-2">
-            이 업체의 사장님이신가요? 무료 입점하고 직접 관리하세요 →
-          </span>
+          {viewCount >= 10 ? (
+            <span className="text-[12px] text-muted-foreground">
+              지금까지 <b className="text-foreground">{viewCount.toLocaleString()}명</b>이 이 업체를 봤어요 ·{" "}
+              <span className="text-primary underline underline-offset-2">사장님이라면 무료 입점하고 문의를 직접 받으세요 →</span>
+            </span>
+          ) : (
+            <span className="text-[12px] text-muted-foreground underline underline-offset-2">
+              이 업체의 사장님이신가요? 무료 입점하고 직접 관리하세요 →
+            </span>
+          )}
         </button>
       )}
 
       {/* Fixed bottom CTA */}
       <div className="fixed bottom-0 left-0 right-0 app-col mx-auto bg-background border-t border-border p-3 z-40">
+        {/* ② 신뢰 신호 — 입점 업체 응답 통계(문의 시작률 ↑) */}
+        {isClaimed && inquiryStats && inquiryStats.total >= 1 && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 pb-2 text-[11px] text-muted-foreground">
+            {inquiryStats.avg_response_hours != null && inquiryStats.avg_response_hours <= 24 && inquiryStats.total >= 3 && (
+              <span className="inline-flex items-center gap-0.5 font-bold text-primary">⚡ 빠른 응답</span>
+            )}
+            {inquiryStats.total >= 3 && (
+              <span>응답률 {Math.round((inquiryStats.answered / inquiryStats.total) * 100)}%</span>
+            )}
+            {inquiryStats.recent_30d > 0 && <span>· 최근 30일 문의 {inquiryStats.recent_30d}건</span>}
+          </div>
+        )}
         <div className="flex gap-2">
           <Button
             variant="outline"
