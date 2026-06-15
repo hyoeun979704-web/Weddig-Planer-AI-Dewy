@@ -7,6 +7,17 @@ verify_jwt = false
 [functions.cancel-subscription]
 verify_jwt = true
 
+# Google 캘린더 연동. start/sync 는 사용자 인증 필요, callback 은 Google 브라우저
+# 리다이렉트(JWT 없음)라 false — state(calendar_oauth_states)로 사용자를 결속한다.
+[functions.gcal-oauth-start]
+verify_jwt = true
+
+[functions.gcal-oauth-callback]
+verify_jwt = false
+
+[functions.gcal-sync]
+verify_jwt = true
+
 [functions.migrate-data]
 verify_jwt = false
 
