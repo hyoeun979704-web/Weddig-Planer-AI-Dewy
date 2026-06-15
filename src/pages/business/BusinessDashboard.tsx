@@ -31,7 +31,7 @@ const BusinessDashboard = () => {
   useEffect(() => {
     if (!businessProfile || businessProfile.approval_status !== "approved") return;
     (async () => {
-      const { data, error } = await (supabase as any).rpc("get_my_listing");
+      const { data, error } = await supabase.rpc("get_my_listing");
       if (error) {
         toast.error("통계를 불러오지 못했어요");
         return;
@@ -42,9 +42,9 @@ const BusinessDashboard = () => {
       setListingRow(row);
       const [favRes, mediaRes, dlRes, reviewRes] = await Promise.all([
         supabase.from("favorites").select("id", { count: "exact", head: true }).eq("item_id", row.place_id),
-        (supabase as any).from("place_media").select("id", { count: "exact", head: true }).eq("place_id", row.place_id),
-        (supabase as any).rpc("get_my_coupon_download_count"),
-        (supabase as any).from("place_reviews").select("review_id", { count: "exact", head: true }).eq("place_id", row.place_id),
+        supabase.from("place_media").select("id", { count: "exact", head: true }).eq("place_id", row.place_id),
+        supabase.rpc("get_my_coupon_download_count"),
+        supabase.from("place_reviews").select("review_id", { count: "exact", head: true }).eq("place_id", row.place_id),
       ]);
       setStats({
         favorites: favRes.count ?? 0,
@@ -62,7 +62,7 @@ const BusinessDashboard = () => {
   const [applying, setApplying] = useState(false);
   const loadPartnerApp = async () => {
     if (!businessProfile) return;
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from("partnership_applications")
       .select("status")
       .eq("business_profile_id", businessProfile.id)
@@ -99,7 +99,7 @@ const BusinessDashboard = () => {
     if (!user || !businessProfile) return;
     setApplying(true);
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("partnership_applications")
         .insert({
           business_profile_id: businessProfile.id,

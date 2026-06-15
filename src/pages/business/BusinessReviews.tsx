@@ -34,7 +34,7 @@ const BusinessReviews = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: listing, error: listingError } = await (supabase as any).rpc("get_my_listing");
+      const { data: listing, error: listingError } = await supabase.rpc("get_my_listing");
       if (listingError) throw listingError;
       const row = Array.isArray(listing) ? listing[0] : listing;
       if (!row?.place_id) {
@@ -42,7 +42,7 @@ const BusinessReviews = () => {
         return;
       }
       setPlaceId(row.place_id);
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("place_reviews")
         .select("review_id, title, content, author, rating, review_date, created_at, source_name, owner_response, owner_response_at")
         .eq("place_id", row.place_id)
@@ -78,7 +78,7 @@ const BusinessReviews = () => {
     if (!text) return;
     setSaving(true);
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("place_reviews")
         .update({ owner_response: text.slice(0, REPLY_MAX), owner_response_at: new Date().toISOString() })
         .eq("review_id", reviewId);

@@ -104,13 +104,13 @@ const BusinessOnboard = () => {
       // 생성된 id 를 조회해 신청 행을 추가한다. 실패해도 가입 자체는 유효(대시보드에서 재신청 가능).
       if (applyPartner) {
         try {
-          const { data: bp } = await (supabase as any)
+          const { data: bp } = await supabase
             .from("business_profiles")
             .select("id")
             .eq("user_id", user.id)
             .maybeSingle();
           if (bp?.id) {
-            await (supabase as any).from("partnership_applications").insert({
+            await supabase.from("partnership_applications").insert({
               business_profile_id: bp.id,
               user_id: user.id,
               message: "가입 시 신청",

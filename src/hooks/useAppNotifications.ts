@@ -22,7 +22,7 @@ export function useAppNotifications() {
     queryKey: ["app-notifications", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("app_notifications")
         .select("*")
         .eq("recipient_id", user!.id)
@@ -39,7 +39,7 @@ export function useAppNotifications() {
     refetchInterval: 60_000,
     refetchOnWindowFocus: true,
     queryFn: async () => {
-      const { count, error } = await (supabase as any)
+      const { count, error } = await supabase
         .from("app_notifications")
         .select("*", { count: "exact", head: true })
         .eq("recipient_id", user!.id)
@@ -56,7 +56,7 @@ export function useAppNotifications() {
 
   const markAllRead = useMutation({
     mutationFn: async () => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("app_notifications")
         .update({ read_at: new Date().toISOString() })
         .eq("recipient_id", user!.id)
@@ -68,7 +68,7 @@ export function useAppNotifications() {
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("app_notifications")
         .update({ read_at: new Date().toISOString() })
         .eq("id", id)

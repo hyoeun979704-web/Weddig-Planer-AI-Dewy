@@ -52,7 +52,7 @@ const BusinessCoupons = () => {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await (supabase as any).rpc("get_my_listing");
+      const { data, error } = await supabase.rpc("get_my_listing");
       if (error) { toast.error("정보를 불러오지 못했어요"); setLoading(false); return; }
       const row = Array.isArray(data) ? data[0] : data;
       if (row?.place_id) {
@@ -76,7 +76,7 @@ const BusinessCoupons = () => {
       return;
     }
     setAdding(true);
-    const { error } = await (supabase as any).from("business_coupons").insert({
+    const { error } = await supabase.from("business_coupons").insert({
       place_id: placeId,
       owner_user_id: user.id,
       title: title.trim(),
@@ -93,7 +93,7 @@ const BusinessCoupons = () => {
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ title: "이 쿠폰을 삭제할까요?", confirmText: "삭제", destructive: true }))) return;
-    const { error } = await (supabase as any).from("business_coupons").delete().eq("id", id);
+    const { error } = await supabase.from("business_coupons").delete().eq("id", id);
     if (error) { toast.error("삭제에 실패했어요"); return; }
     setItems((prev) => prev.filter((c) => c.id !== id));
     toast.success("삭제했어요");

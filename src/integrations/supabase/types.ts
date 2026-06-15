@@ -6414,13 +6414,16 @@ export type Database = {
       upsert_my_listing:
         | {
             Args: {
-              p_city: string
-              p_description: string
-              p_district: string
-              p_main_image_url: string
-              p_min_price: number
+              p_city?: string
+              p_description?: string
+              p_district?: string
+              p_inquiry_channel?: string
+              p_inquiry_phone?: string
+              p_inquiry_url?: string
+              p_main_image_url?: string
+              p_min_price?: number
               p_name: string
-              p_tags: string[]
+              p_tags?: string[]
             }
             Returns: Json
           }
@@ -6429,9 +6432,6 @@ export type Database = {
               p_city: string
               p_description: string
               p_district: string
-              p_inquiry_channel?: string
-              p_inquiry_phone?: string
-              p_inquiry_url?: string
               p_main_image_url: string
               p_min_price: number
               p_name: string
