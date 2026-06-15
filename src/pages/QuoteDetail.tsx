@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, Inbox, ChevronRight, MessageCircle, Star, PartyPopper, Scale } from "lucide-react";
+import { Loader2, Inbox, ChevronRight, MessageCircle, Star, PartyPopper, Scale, Sparkles, Wallet, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,24 @@ import { useQuoteResponses, acceptQuoteResponse, markQuoteBooked, quoteImageUrl,
 import { markBoardSlotBookedByQuoteCategory } from "@/hooks/useVendorBoard";
 
 const won = (n: number) => `${n.toLocaleString()}만원`;
+
+// 요청 조건 적합도 칩(예산·지역). 큐레이션 정렬을 소비자가 눈으로 확인할 수 있게 노출.
+const FitChips = ({ r }: { r: QuoteResponse }) => {
+  const chips: { label: string; Icon: typeof Wallet }[] = [];
+  if (r.regionMatch) chips.push({ label: "지역 일치", Icon: MapPin });
+  if (r.budgetFit === "within") chips.push({ label: "예산 내", Icon: Wallet });
+  else if (r.budgetFit === "near") chips.push({ label: "예산 근접", Icon: Wallet });
+  if (chips.length === 0) return null;
+  return (
+    <div className="mt-1 flex flex-wrap gap-1">
+      {chips.map(({ label, Icon }) => (
+        <span key={label} className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+          <Icon className="w-2.5 h-2.5" /> {label}
+        </span>
+      ))}
+    </div>
+  );
+};
 
 // 소비자: 한 견적 요청에 들어온 업체 응답들을 비교한다.
 const QuoteDetail = () => {
@@ -141,7 +159,10 @@ const QuoteDetail = () => {
         ) : (
           <>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[12px] text-muted-foreground">견적 {responses.length}건 도착</p>
+              <p className="text-[12px] text-muted-foreground">
+                견적 {responses.length}건
+                {responses.length >= 2 ? " · 내 조건에 맞는 순" : " 도착"}
+              </p>
               {responses.length >= 2 && (
                 <button
                   type="button"
@@ -153,8 +174,16 @@ const QuoteDetail = () => {
               )}
             </div>
             <ul className="space-y-2">
-              {responses.map((r) => (
-                <li key={r.id} className="rounded-2xl border border-border bg-card overflow-hidden">
+              {responses.map((r, idx) => {
+                // 정렬상 최상위가 실제 조건에 맞을 때만 '맞춤 추천' 강조(2건 이상에서).
+                const recommended = idx === 0 && responses.length >= 2 && (r.regionMatch || r.budgetFit === "within");
+                return (
+                <li key={r.id} className={`rounded-2xl border bg-card overflow-hidden ${recommended ? "border-primary ring-1 ring-primary/30" : "border-border"}`}>
+                  {recommended && (
+                    <div className="flex items-center gap-1 px-4 pt-2.5 text-[11px] font-bold text-primary">
+                      <Sparkles className="w-3 h-3" /> 내 조건에 맞춤 추천
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => navigate(`/vendor/${r.place_id}`)}
@@ -179,6 +208,7 @@ const QuoteDetail = () => {
                         ) : null}
                         {r.place_region && <span className="truncate">· {r.place_region}</span>}
                       </p>
+                      <FitChips r={r} />
                       {(r.price_min || r.price_max) && (
                         <p className="text-[13px] text-primary font-semibold mt-0.5">
                           {r.price_min && r.price_max ? `${won(r.price_min)}~${won(r.price_max)}`
@@ -225,7 +255,8 @@ const QuoteDetail = () => {
                     </div>
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </>
         )}
