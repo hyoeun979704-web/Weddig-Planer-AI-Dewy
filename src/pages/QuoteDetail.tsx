@@ -17,7 +17,7 @@ const QuoteDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { request, responses, loading, reload } = useQuoteResponses(id);
+  const { request, responses, matchedCount, loading, reload } = useQuoteResponses(id);
   const [accepting, setAccepting] = useState<string | null>(null);
 
   const handleAccept = async (responseId: string) => {
@@ -70,6 +70,37 @@ const QuoteDetail = () => {
             {request.note && <p className="mt-2 text-[13px] text-foreground/80 whitespace-pre-line">{request.note}</p>}
           </div>
         )}
+
+        {/* 진행 상태 트래커 — 소비자가 어디까지 왔는지 한눈에 */}
+        {request && (() => {
+          const accepted = responses.some((r) => r.status === "accepted" || r.status === "booked");
+          const booked = responses.some((r) => r.status === "booked");
+          const steps = [
+            { label: "요청", done: true, sub: "" },
+            { label: "매칭", done: matchedCount > 0, sub: matchedCount > 0 ? `${matchedCount}곳` : "" },
+            { label: "응답", done: responses.length > 0, sub: responses.length > 0 ? `${responses.length}건` : "" },
+            { label: "수락", done: accepted, sub: "" },
+            { label: "예약", done: booked, sub: "" },
+          ];
+          return (
+            <div className="flex items-center mb-4 px-1">
+              {steps.map((s, i) => (
+                <div key={s.label} className="flex items-center flex-1 last:flex-none">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                      s.done ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    }`}>{i + 1}</div>
+                    <span className={`mt-1 text-[10px] ${s.done ? "text-foreground font-medium" : "text-muted-foreground"}`}>{s.label}</span>
+                    {s.sub && <span className="text-[9px] text-primary">{s.sub}</span>}
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div className={`h-0.5 flex-1 mx-1 -mt-4 ${steps[i + 1].done ? "bg-primary" : "bg-muted"}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {loading ? (
           <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
