@@ -62,7 +62,9 @@ export function useVendorBoard() {
     const isEmpty = next.status === "undecided" && !next.place_id && !next.vendor_name && !next.memo && !next.custom_label;
     if (isEmpty) {
       if (prev) {
-        await supabase.from("vendor_board_items").delete().eq("user_id", user.id).eq("slot_key", slotKey);
+        // 삭제 실패 시 로컬 상태를 비우면 DB와 어긋난다 — 성공했을 때만 반영.
+        const { error } = await supabase.from("vendor_board_items").delete().eq("user_id", user.id).eq("slot_key", slotKey);
+        if (error) { console.error("vendor_board delete failed", error); return { ok: false }; }
         setItems((m) => { const c = { ...m }; delete c[slotKey]; return c; });
       }
       return { ok: true };
@@ -70,15 +72,17 @@ export function useVendorBoard() {
     const { error } = await supabase
       .from("vendor_board_items")
       .upsert({ user_id: user.id, ...next }, { onConflict: "user_id,slot_key" });
-    if (error) return { ok: false };
+    if (error) { console.error("vendor_board upsert failed", error); return { ok: false }; }
     setItems((m) => ({ ...m, [slotKey]: next }));
     return { ok: true };
   }, [user, items]);
 
   const removeSlot = useCallback(async (slotKey: string) => {
-    if (!user) return;
-    await supabase.from("vendor_board_items").delete().eq("user_id", user.id).eq("slot_key", slotKey);
+    if (!user) return { ok: false };
+    const { error } = await supabase.from("vendor_board_items").delete().eq("user_id", user.id).eq("slot_key", slotKey);
+    if (error) { console.error("vendor_board remove failed", error); return { ok: false }; }
     setItems((m) => { const c = { ...m }; delete c[slotKey]; return c; });
+    return { ok: true };
   }, [user]);
 
   // 사용자 커스텀 슬롯 추가 — 라벨만 받아 새 행을 만든다(코드 택소노미에 없는 항목).
@@ -88,7 +92,7 @@ export function useVendorBoard() {
     const slotKey = `${CUSTOM_SLOT_PREFIX}${crypto.randomUUID()}`;
     const row: VendorBoardItem = { slot_key: slotKey, status: "undecided", place_id: null, vendor_name: null, memo: null, custom_label: name };
     const { error } = await supabase.from("vendor_board_items").insert({ user_id: user.id, ...row });
-    if (error) return { ok: false };
+    if (error) { console.error("vendor_board addCustom failed", error); return { ok: false }; }
     setItems((m) => ({ ...m, [slotKey]: row }));
     return { ok: true };
   }, [user]);
@@ -117,24 +121,29 @@ export async function markBoardSlotQuoting(userId: string, slotKey: string): Pro
     .eq("slot_key", slotKey)
     .maybeSingle();
   if ((data as { status?: string } | null)?.status === "booked") return;
-  await supabase
+  const { error } = await supabase
     .from("vendor_board_items")
     .upsert({ user_id: userId, slot_key: slotKey, status: "quoting" }, { onConflict: "user_id,slot_key" });
+  if (error) console.warn("markBoardSlotQuoting failed (best-effort)", error);
 }
 
 // 견적 예약 성사 → 해당 place 카테고리의 대표 슬롯을 '예약완료'로 표시 + 선택 업체 기록.
+// 반환 { ok } — 명시적 '이 업체로 결정' UI 는 성공 여부를 사용자에게 알려야 하고,
+// 견적 성사 동기화(void 호출)는 결과를 무시한다(best-effort). 둘 다 호환.
 export async function markBoardSlotBookedByQuoteCategory(
   userId: string,
   quoteCategory: string | null | undefined,
   placeId: string | null,
   vendorName: string | null,
-): Promise<void> {
+): Promise<{ ok: boolean }> {
   const slot = primarySlotForQuoteCategory(quoteCategory);
-  if (!slot) return;
-  await supabase
+  if (!slot) return { ok: false };
+  const { error } = await supabase
     .from("vendor_board_items")
     .upsert(
       { user_id: userId, slot_key: slot.key, status: "booked", place_id: placeId, vendor_name: vendorName },
       { onConflict: "user_id,slot_key" },
     );
+  if (error) { console.warn("markBoardSlotBookedByQuoteCategory failed", error); return { ok: false }; }
+  return { ok: true };
 }

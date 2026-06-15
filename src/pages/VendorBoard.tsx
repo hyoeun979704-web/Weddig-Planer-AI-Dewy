@@ -31,8 +31,8 @@ const SlotCard = ({
 }: {
   slot: BoardSlot;
   item: VendorBoardItem | undefined;
-  onSave: (patch: VendorBoardSlotPatch) => Promise<void>;
-  onDelete?: () => Promise<void>;
+  onSave: (patch: VendorBoardSlotPatch) => Promise<{ ok: boolean }>;
+  onDelete?: () => Promise<{ ok: boolean }>;
 }) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -46,15 +46,16 @@ const SlotCard = ({
 
   const setStatus = async (s: VendorSlotStatus) => {
     setSaving(true);
-    await onSave({ status: s });
+    const res = await onSave({ status: s });
     setSaving(false);
+    if (!res.ok) toast.error("상태 변경에 실패했어요. 잠시 후 다시 시도해 주세요");
   };
 
   const saveDetails = async () => {
     setSaving(true);
-    await onSave({ vendorName: name.trim() || null, memo: memo.trim() || null });
+    const res = await onSave({ vendorName: name.trim() || null, memo: memo.trim() || null });
     setSaving(false);
-    toast.success("저장했어요");
+    toast[res.ok ? "success" : "error"](res.ok ? "저장했어요" : "저장에 실패했어요. 잠시 후 다시 시도해 주세요");
   };
 
   return (
@@ -164,7 +165,7 @@ const SlotCard = ({
           {onDelete && (
             <button
               type="button"
-              onClick={() => void onDelete()}
+              onClick={async () => { const r = await onDelete(); if (!r.ok) toast.error("삭제에 실패했어요. 잠시 후 다시 시도해 주세요"); }}
               className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-destructive transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" /> 이 항목 삭제
@@ -241,7 +242,7 @@ const VendorBoard = () => {
                         key={slot.key}
                         slot={slot}
                         item={items[slot.key]}
-                        onSave={(patch) => saveSlot(slot.key, patch).then(() => undefined)}
+                        onSave={(patch) => saveSlot(slot.key, patch)}
                       />
                     ))}
                   </ul>
@@ -258,7 +259,7 @@ const VendorBoard = () => {
                     key={slot.key}
                     slot={slot}
                     item={items[slot.key]}
-                    onSave={(patch) => saveSlot(slot.key, patch).then(() => undefined)}
+                    onSave={(patch) => saveSlot(slot.key, patch)}
                     onDelete={() => removeSlot(slot.key)}
                   />
                 ))}

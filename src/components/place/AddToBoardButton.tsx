@@ -35,8 +35,9 @@ const AddToBoardButton = ({ placeId, placeName, category }: { placeId: string; p
   const record = async () => {
     if (!user) { navigate("/auth"); return; }
     setSaving(true);
-    await markBoardSlotBookedByQuoteCategory(user.id, category, placeId, placeName);
+    const res = await markBoardSlotBookedByQuoteCategory(user.id, category, placeId, placeName);
     setSaving(false);
+    if (!res.ok) { toast.error("기록에 실패했어요. 잠시 후 다시 시도해 주세요"); return; }
     setChosen(true);
     toast.success(`내 보드 '${slot.label}'에 이 업체로 기록했어요`, {
       action: { label: "보드 보기", onClick: () => navigate("/board") },
