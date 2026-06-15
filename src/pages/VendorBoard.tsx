@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, ChevronDown, Send, Store, FileText, Check, Plus, Trash2 } from "lucide-react";
+import { Loader2, ChevronDown, Send, Store, FileText, Check, Plus, Trash2, Scale } from "lucide-react";
 import { toast } from "sonner";
 import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
@@ -144,6 +144,17 @@ const SlotCard = ({
                   onClick={() => navigate(`/vendors/${encodeURIComponent(slot.browseLabel as string)}`)}
                 >
                   <Store className="w-3.5 h-3.5 mr-1" /> 둘러보기
+                </Button>
+              )}
+              {/* 찜한 후보 여러 곳을 나란히 비교 → 결정 */}
+              {slot.quoteCategory && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 min-w-[120px]"
+                  onClick={() => navigate(`/compare?category=${slot.quoteCategory}`)}
+                >
+                  <Scale className="w-3.5 h-3.5 mr-1" /> 후보 비교
                 </Button>
               )}
             </div>

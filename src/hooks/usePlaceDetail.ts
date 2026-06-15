@@ -364,6 +364,9 @@ const SELECT = [
   "place_studio_products(*)",
 ].join(",");
 
+// 비교(useCompareItems) 등에서 동일 조인 페이로드를 재사용하기 위한 단일 소스.
+export const PLACE_DETAIL_SELECT = SELECT;
+
 const fmtPrice = (min: number | null): string =>
   min != null ? formatManwonRange(min) : "가격 문의";
 
@@ -421,8 +424,15 @@ export const usePlaceDetail = (placeId: string | undefined) => {
         .eq("place_id", placeId)
         .maybeSingle();
       if (error) throw error;
-      if (!data) return null;
+      return data ? mapPlaceDetailRow(data) : null;
+    },
+    enabled: !!placeId,
+  });
+};
 
+// place row(+조인된 place_details/place_<category>) → 평탄화 LegacyDetail.
+// 단건(usePlaceDetail)과 다건 비교(useCompareItems)가 동일 매핑을 공유 — 드리프트 차단(DRY).
+export function mapPlaceDetailRow(data: unknown): LegacyDetail {
       const p = data as any;
       const d = (p.place_details ?? null) as Record<string, unknown> | null;
       const cardKey = CARD_KEY[p.category];
@@ -769,7 +779,4 @@ export const usePlaceDetail = (placeId: string | undefined) => {
             : "",
         brand: (card?.agency_name as string) ?? asStringArray(card?.brand_options).join(", "),
       };
-    },
-    enabled: !!placeId,
-  });
-};
+}

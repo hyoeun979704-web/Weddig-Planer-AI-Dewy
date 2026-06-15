@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, Inbox, ChevronRight, MessageCircle, Star, PartyPopper } from "lucide-react";
+import { Loader2, Inbox, ChevronRight, MessageCircle, Star, PartyPopper, Scale } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -140,7 +140,18 @@ const QuoteDetail = () => {
           />
         ) : (
           <>
-            <p className="text-[12px] text-muted-foreground mb-3">견적 {responses.length}건 도착</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[12px] text-muted-foreground">견적 {responses.length}건 도착</p>
+              {responses.length >= 2 && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/compare?quote=${id}`)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[12px] font-semibold active:scale-95"
+                >
+                  <Scale className="w-3.5 h-3.5" /> 견적 비교
+                </button>
+              )}
+            </div>
             <ul className="space-y-2">
               {responses.map((r) => (
                 <li key={r.id} className="rounded-2xl border border-border bg-card overflow-hidden">
