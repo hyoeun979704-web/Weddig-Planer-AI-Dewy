@@ -38,6 +38,19 @@ const VendorList = () => {
           </p>
         </div>
 
+        {/* 한 번에 여러 업체 견적 받기 — 능동적 연결(견적 매칭) 진입점 */}
+        <button
+          type="button"
+          onClick={() => navigate("/quote/new")}
+          className="mx-4 mt-3 w-[calc(100%-2rem)] flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-left active:scale-[0.99] transition-transform"
+        >
+          <span>
+            <span className="block text-sm font-bold text-primary">한 번에 여러 곳 견적 받기</span>
+            <span className="block text-[12px] text-muted-foreground mt-0.5">조건만 남기면 맞는 업체들이 견적을 보내줘요</span>
+          </span>
+          <span className="text-primary text-lg">›</span>
+        </button>
+
         <div className="px-[20px] py-4">
           {isLoading ? (
             <div className="grid grid-cols-2 gap-2 justify-items-center">
