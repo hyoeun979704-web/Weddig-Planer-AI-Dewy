@@ -3904,6 +3904,8 @@ export type Database = {
           hall_name: string | null
           helpful_count: number | null
           is_verified: boolean | null
+          owner_response: string | null
+          owner_response_at: string | null
           place_id: string
           rating: number | null
           review_date: string | null
@@ -3924,6 +3926,8 @@ export type Database = {
           hall_name?: string | null
           helpful_count?: number | null
           is_verified?: boolean | null
+          owner_response?: string | null
+          owner_response_at?: string | null
           place_id: string
           rating?: number | null
           review_date?: string | null
@@ -3944,6 +3948,8 @@ export type Database = {
           hall_name?: string | null
           helpful_count?: number | null
           is_verified?: boolean | null
+          owner_response?: string | null
+          owner_response_at?: string | null
           place_id?: string
           rating?: number | null
           review_date?: string | null
@@ -4304,20 +4310,20 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           district: string
+          inquiry_channel: string
+          inquiry_phone: string | null
+          inquiry_url: string | null
           is_active: boolean | null
           is_partner: boolean | null
+          last_collected_at: string | null
           last_source_date: string | null
           lat: number | null
           lng: number | null
           main_image_url: string | null
           min_price: number | null
+          moderation_note: string | null
           moderation_status: string
           name: string
-          inquiry_channel: string
-          inquiry_phone: string | null
-          inquiry_url: string | null
-          last_collected_at: string | null
-          moderation_note: string | null
           owner_user_id: string | null
           partner_rank: number
           place_id: string
@@ -4339,20 +4345,20 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           district?: string
+          inquiry_channel?: string
+          inquiry_phone?: string | null
+          inquiry_url?: string | null
           is_active?: boolean | null
           is_partner?: boolean | null
+          last_collected_at?: string | null
           last_source_date?: string | null
           lat?: number | null
           lng?: number | null
           main_image_url?: string | null
           min_price?: number | null
+          moderation_note?: string | null
           moderation_status?: string
           name: string
-          inquiry_channel?: string
-          inquiry_phone?: string | null
-          inquiry_url?: string | null
-          last_collected_at?: string | null
-          moderation_note?: string | null
           owner_user_id?: string | null
           partner_rank?: number
           place_id?: string
@@ -4374,20 +4380,20 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           district?: string
+          inquiry_channel?: string
+          inquiry_phone?: string | null
+          inquiry_url?: string | null
           is_active?: boolean | null
           is_partner?: boolean | null
+          last_collected_at?: string | null
           last_source_date?: string | null
           lat?: number | null
           lng?: number | null
           main_image_url?: string | null
           min_price?: number | null
+          moderation_note?: string | null
           moderation_status?: string
           name?: string
-          inquiry_channel?: string
-          inquiry_phone?: string | null
-          inquiry_url?: string | null
-          last_collected_at?: string | null
-          moderation_note?: string | null
           owner_user_id?: string | null
           partner_rank?: number
           place_id?: string
@@ -4698,15 +4704,15 @@ export type Database = {
           badge_color?: string | null
           badge_label?: string | null
           created_at?: string
-          image_url?: string | null
-          show_as_popup?: boolean
           cta_label: string
           cta_path: string
           ends_at?: string | null
           ends_label?: string | null
           icon?: string | null
           id?: string
+          image_url?: string | null
           position?: number
+          show_as_popup?: boolean
           slug: string
           starts_at?: string | null
           status?: string
@@ -4722,15 +4728,15 @@ export type Database = {
           badge_color?: string | null
           badge_label?: string | null
           created_at?: string
-          image_url?: string | null
-          show_as_popup?: boolean
           cta_label?: string
           cta_path?: string
           ends_at?: string | null
           ends_label?: string | null
           icon?: string | null
           id?: string
+          image_url?: string | null
           position?: number
+          show_as_popup?: boolean
           slug?: string
           starts_at?: string | null
           status?: string
@@ -4742,6 +4748,130 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      quote_request_targets: {
+        Row: {
+          created_at: string
+          owner_user_id: string
+          place_id: string
+          request_id: string
+        }
+        Insert: {
+          created_at?: string
+          owner_user_id: string
+          place_id: string
+          request_id: string
+        }
+        Update: {
+          created_at?: string
+          owner_user_id?: string
+          place_id?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_request_targets_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_requests: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          category: string
+          created_at: string
+          expires_at: string
+          id: string
+          note: string | null
+          region_city: string | null
+          region_district: string | null
+          status: string
+          style: string | null
+          user_id: string
+          wedding_date: string | null
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          category: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          note?: string | null
+          region_city?: string | null
+          region_district?: string | null
+          status?: string
+          style?: string | null
+          user_id: string
+          wedding_date?: string | null
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          category?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          note?: string | null
+          region_city?: string | null
+          region_district?: string | null
+          status?: string
+          style?: string | null
+          user_id?: string
+          wedding_date?: string | null
+        }
+        Relationships: []
+      }
+      quote_responses: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          owner_user_id: string
+          place_id: string
+          price_max: number | null
+          price_min: number | null
+          read_at: string | null
+          request_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          owner_user_id: string
+          place_id: string
+          price_max?: number | null
+          price_min?: number | null
+          read_at?: string | null
+          request_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          owner_user_id?: string
+          place_id?: string
+          price_max?: number | null
+          price_min?: number | null
+          read_at?: string | null
+          request_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_responses_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       referral_codes: {
         Row: {
@@ -5519,6 +5649,27 @@ export type Database = {
           },
         ]
       }
+      view_events: {
+        Row: {
+          day: string
+          target_id: string
+          target_kind: string
+          user_id: string
+        }
+        Insert: {
+          day?: string
+          target_id: string
+          target_kind: string
+          user_id: string
+        }
+        Update: {
+          day?: string
+          target_id?: string
+          target_kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wedding_consulting_reports: {
         Row: {
           analysis: Json
@@ -5685,6 +5836,7 @@ export type Database = {
     Functions: {
       _biz_category_to_place: { Args: { p_cat: string }; Returns: string }
       _jsonb_to_text_arr: { Args: { p: Json }; Returns: string[] }
+      accept_quote_response: { Args: { p_response_id: string }; Returns: Json }
       add_game_points: {
         Args: { p_doubled?: boolean; p_score: number; p_user_id: string }
         Returns: number
@@ -5779,13 +5931,18 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           district: string
+          inquiry_channel: string
+          inquiry_phone: string | null
+          inquiry_url: string | null
           is_active: boolean | null
           is_partner: boolean | null
+          last_collected_at: string | null
           last_source_date: string | null
           lat: number | null
           lng: number | null
           main_image_url: string | null
           min_price: number | null
+          moderation_note: string | null
           moderation_status: string
           name: string
           owner_user_id: string | null
@@ -5938,6 +6095,19 @@ export type Database = {
         }
         Returns: Json
       }
+      create_quote_request: {
+        Args: {
+          p_budget_max?: number
+          p_budget_min?: number
+          p_category: string
+          p_city?: string
+          p_district?: string
+          p_note?: string
+          p_style?: string
+          p_wedding_date?: string
+        }
+        Returns: Json
+      }
       derive_wedding_persona: {
         Args: {
           s: Database["public"]["Tables"]["user_wedding_settings"]["Row"]
@@ -5981,13 +6151,18 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           district: string
+          inquiry_channel: string
+          inquiry_phone: string | null
+          inquiry_url: string | null
           is_active: boolean | null
           is_partner: boolean | null
+          last_collected_at: string | null
           last_source_date: string | null
           lat: number | null
           lng: number | null
           main_image_url: string | null
           min_price: number | null
+          moderation_note: string | null
           moderation_status: string
           name: string
           owner_user_id: string | null
@@ -6008,6 +6183,7 @@ export type Database = {
       }
       get_my_listing_detail: { Args: never; Returns: Json }
       get_or_create_referral_code: { Args: never; Returns: string }
+      get_place_inquiry_stats: { Args: { p_place_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -6173,6 +6349,15 @@ export type Database = {
           review_id: string
         }[]
       }
+      submit_quote_response: {
+        Args: {
+          p_message: string
+          p_price_max?: number
+          p_price_min?: number
+          p_request_id: string
+        }
+        Returns: Json
+      }
       subscriptions_due_for_renewal_notification: {
         Args: { days_ahead?: number }
         Returns: {
@@ -6183,18 +6368,34 @@ export type Database = {
           user_id: string
         }[]
       }
-      upsert_my_listing: {
-        Args: {
-          p_city: string
-          p_description: string
-          p_district: string
-          p_main_image_url: string
-          p_min_price: number
-          p_name: string
-          p_tags: string[]
-        }
-        Returns: Json
-      }
+      upsert_my_listing:
+        | {
+            Args: {
+              p_city: string
+              p_description: string
+              p_district: string
+              p_main_image_url: string
+              p_min_price: number
+              p_name: string
+              p_tags: string[]
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_city: string
+              p_description: string
+              p_district: string
+              p_inquiry_channel?: string
+              p_inquiry_phone?: string
+              p_inquiry_url?: string
+              p_main_image_url: string
+              p_min_price: number
+              p_name: string
+              p_tags: string[]
+            }
+            Returns: Json
+          }
       upsert_my_listing_detail: { Args: { p_detail: Json }; Returns: Json }
     }
     Enums: {
