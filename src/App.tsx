@@ -52,6 +52,8 @@ const QuoteNew = lazy(() => import("./pages/QuoteNew"));
 const QuoteList = lazy(() => import("./pages/QuoteList"));
 const QuoteDetail = lazy(() => import("./pages/QuoteDetail"));
 const QuoteThread = lazy(() => import("./pages/QuoteThread"));
+const VendorBoard = lazy(() => import("./pages/VendorBoard"));
+const VendorCompare = lazy(() => import("./pages/VendorCompare"));
 const BusinessLeads = lazy(() => import("./pages/business/BusinessLeads"));
 const HairPreview = lazy(() => import("./pages/HairPreview"));
 const HairPreviewResult = lazy(() => import("./pages/HairPreviewResult"));
@@ -310,6 +312,8 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/oss-licenses" element={<OssLicenses />} />
               <Route path="/search/tag/:tag" element={<TagResults />} />
+              <Route path="/board" element={<VendorBoard />} />
+              <Route path="/compare" element={<VendorCompare />} />
               <Route path="/quote" element={<QuoteList />} />
               <Route path="/quote/new" element={<QuoteNew />} />
               <Route path="/quote/:id" element={<QuoteDetail />} />

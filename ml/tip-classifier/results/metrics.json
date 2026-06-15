@@ -1,0 +1,39 @@
+{
+  "baseline_majority": {
+    "micro_f1": 0.2601,
+    "macro_f1": 0.0354,
+    "micro_precision": 0.3957,
+    "micro_recall": 0.1937
+  },
+  "tfidf_logreg": {
+    "micro_f1": 0.7145,
+    "macro_f1": 0.6492,
+    "micro_precision": 0.9481,
+    "micro_recall": 0.5733
+  },
+  "pytorch_mlp": {
+    "micro_f1": 0.7598,
+    "macro_f1": 0.7011,
+    "micro_precision": 0.8557,
+    "micro_recall": 0.6832,
+    "best_threshold": 0.55,
+    "epochs_trained": 47
+  },
+  "meta": {
+    "n": 1242,
+    "features": 26767,
+    "n_disagree_test": 85,
+    "test_size": 187
+  },
+  "before_after": {
+    "rule_avg_tags": 2.04,
+    "model_avg_tags": 1.63,
+    "tags_removed_total": 121,
+    "tags_added_total": 44,
+    "videos_model_narrowed": 49,
+    "videos_model_broadened": 25,
+    "videos_identical": 102,
+    "videos_other": 11,
+    "test_size": 187
+  }
+}

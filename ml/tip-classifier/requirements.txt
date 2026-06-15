@@ -1,0 +1,10 @@
+# export 스크립트(로컬)용 최소 의존성.
+requests>=2.31
+pandas>=2.0
+
+# 학습은 Colab(GPU) 권장 — 아래는 로컬 GPU 학습 시.
+# transformers>=4.40
+# datasets>=2.19
+# torch>=2.2
+# scikit-learn>=1.4
+# accelerate>=0.30

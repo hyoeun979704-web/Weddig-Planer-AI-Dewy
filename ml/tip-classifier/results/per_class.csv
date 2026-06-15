@@ -1,0 +1,17 @@
+topic,test_support,mlp_f1
+family_meeting,18,0.615
+newlywed_home,18,0.765
+wedding_gifts,23,0.606
+legal_paperwork,9,0.875
+bridal_care,26,0.667
+ceremony,74,0.846
+wedding_hall,29,0.786
+studio,34,0.746
+dress_shop,40,0.806
+makeup_shop,22,0.773
+hanbok,17,0.786
+tailor_shop,16,0.769
+honeymoon,23,0.757
+appliance,13,0.64
+invitation_venue,14,0.783
+general,6,0.0

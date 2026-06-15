@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Loader2, FileText, Plus, ChevronRight } from "lucide-react";
+import { Loader2, FileText, Plus, ChevronRight, LayoutGrid } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/empty-state";
@@ -20,6 +20,18 @@ const QuoteList = () => {
         </button>
       } />
       <main className="px-4 py-5">
+        {/* 업체 보드 — 카테고리별 진행 현황을 한눈에 정리하는 상위 뷰로 연결 */}
+        <button
+          onClick={() => navigate("/board")}
+          className="w-full mb-4 px-4 py-3 rounded-2xl border border-primary/30 bg-primary/5 flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
+        >
+          <LayoutGrid className="w-5 h-5 text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-bold text-primary">내 업체 보드</p>
+            <p className="text-[12px] text-muted-foreground">필요한 모든 업체를 미정/견적중/예약완료로 정리</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+        </button>
         {loading ? (
           <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : rows.length === 0 ? (

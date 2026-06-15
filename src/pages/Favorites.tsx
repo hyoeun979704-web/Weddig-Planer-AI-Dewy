@@ -12,7 +12,9 @@ import {
   Search,
   X,
   Users,
+  Scale,
 } from "lucide-react";
+import { categoryForItemType } from "@/lib/vendorCompare";
 import BottomNav from "@/components/BottomNav";
 import { useFavorites, ItemType } from "@/hooks/useFavorites";
 import { useCoupleFavorites, type MergedFavorite, type Ownership } from "@/hooks/useCoupleFavorites";
@@ -585,6 +587,18 @@ const Favorites = () => {
                 {displayedItems.length}개 표시
               </p>
               <div className="flex items-center gap-1">
+                {activeTab === "vendor" && (
+                  <button
+                    onClick={() => {
+                      const cat = vendorSubFilter !== "all" ? categoryForItemType(vendorSubFilter) : null;
+                      navigate(cat ? `/compare?category=${cat}` : "/compare");
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary hover:text-primary/80"
+                    aria-label="찜한 업체 비교"
+                  >
+                    <Scale className="w-3.5 h-3.5" /> 비교
+                  </button>
+                )}
                 {!searchOpen && (
                   <button
                     onClick={() => setSearchOpen(true)}

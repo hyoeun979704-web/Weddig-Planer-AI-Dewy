@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
 import { createQuoteRequest, quoteImageUrl } from "@/hooks/useQuotes";
+import { markBoardSlotQuoting } from "@/hooks/useVendorBoard";
 
 const STYLES: { v: string; label: string }[] = [
   { v: "general", label: "일반 예식" },
@@ -25,6 +26,7 @@ const QuoteNew = () => {
   const { user } = useAuth();
   const [params] = useSearchParams();
   const [category, setCategory] = useState(params.get("category") ?? "");
+  const boardSlot = params.get("slot"); // 업체 보드 슬롯에서 진입 시 — 성공하면 그 슬롯을 '견적중'으로
   const [city, setCity] = useState("");
   const [district, setDistrict] = useState("");
   const [budgetMin, setBudgetMin] = useState("");
@@ -71,6 +73,8 @@ const QuoteNew = () => {
       );
       return;
     }
+    // 업체 보드에서 진입했다면 해당 슬롯을 '견적중'으로 반영(best-effort).
+    if (boardSlot) void markBoardSlotQuoting(user.id, boardSlot);
     toast.success(
       res.matched && res.matched > 0
         ? `${res.matched}곳에 견적 요청을 보냈어요!`
