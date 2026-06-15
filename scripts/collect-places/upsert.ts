@@ -102,6 +102,9 @@ function placeRow(p: CollectedPlace) {
     data_source: p.data_source,
     confidence: p.confidence,
     last_source_date: p.last_source_date,
+    // 수집 시각 — 신선도 지표는 '소스 발행일(last_source_date)'이 아니라 '우리가 마지막으로
+    // 수집/검증한 시각'으로 재야 한다(updated_at 은 트리거·마이그레이션에 오염). 매 upsert 갱신.
+    last_collected_at: new Date().toISOString(),
     source_refs: p.source_refs,
     min_price: pricePerPerson(p),
     is_active: true,

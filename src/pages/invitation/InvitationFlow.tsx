@@ -794,9 +794,10 @@ const InvitationFlow = () => {
       }
       setTextOverrides(directOverrides);
 
-      // 1) 사진 자동 분배
-      let paths = distributePhotos(template, photos).paths;
-      let urls = distributePhotos(template, photos).urls;
+      // 1) 사진 자동 분배 (한 번만 계산)
+      const distributed = distributePhotos(template, photos);
+      let paths = distributed.paths;
+      let urls = distributed.urls;
 
       // 2) 누끼 처리 (auto_cutout 슬롯이 있고 매핑된 사진이 있으면)
       const hasCutoutSlot = getInvitationSlots(template.layout).some((s) => s.auto_cutout);

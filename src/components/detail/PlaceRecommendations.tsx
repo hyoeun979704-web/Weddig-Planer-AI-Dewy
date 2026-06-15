@@ -5,6 +5,7 @@ import VendorMediaCard, {
   type VendorMediaCardData,
 } from "@/components/home/VendorMediaCard";
 import { PLACE_CATEGORY_TO_ITEM_TYPE, joinRegion } from "@/lib/placeMappers";
+import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceKm } from "@/hooks/useWeddingVenue";
 import {
@@ -13,21 +14,8 @@ import {
   type RecPlace,
 } from "@/hooks/usePlaceRecommendations";
 
-// DB category(단수) → 한글 라벨. weddingStyle.CATEGORY_LABELS 가 jewelry 를
-// 안 갖고 있어 추천 표시용으로 전 카테고리를 덮는 로컬 맵을 둔다.
-const CATEGORY_LABEL: Record<string, string> = {
-  wedding_hall: "웨딩홀",
-  studio: "스튜디오",
-  dress_shop: "드레스",
-  makeup_shop: "메이크업",
-  hanbok: "한복",
-  tailor_shop: "예복",
-  honeymoon: "허니문",
-  appliance: "혼수가전",
-  jewelry: "주얼리",
-  invitation_venue: "청첩장",
-};
-const labelOf = (c: string) => CATEGORY_LABEL[c] ?? c;
+// DB category(단수) → 한글 라벨. 추천·태그 검색 공용 단일 소스(categoryLabels).
+const labelOf = (c: string) => PLACE_CATEGORY_LABEL[c] ?? c;
 
 function toCard(
   r: RecPlace,
