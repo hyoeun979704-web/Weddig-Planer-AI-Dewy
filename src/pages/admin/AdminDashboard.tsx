@@ -62,8 +62,9 @@ interface FreshnessRow {
   category: string;
   label: string;
   total: number;
-  daysSinceMedian: number;
-  staleCount: number; // 60일+ 안 된 항목
+  daysSinceMedian: number; // last_source_date(수집일) 기준 중앙값. 미상은 제외하고 계산.
+  staleCount: number; // 수집일 60일+ 항목
+  unknownCount: number; // last_source_date 가 NULL — 수집일을 모르는 항목
 }
 
 // key 는 반드시 실제 places.category 값과 일치해야 한다(불일치 시 신선도 0건으로 표시).
@@ -236,17 +237,20 @@ const AdminDashboard = () => {
       // 데이터 신선도 (places 카테고리별)
       const freshRows = await Promise.all(
         PLACE_CATEGORIES.map(async (c) => {
+          // 신선도는 '수집일(last_source_date)' 기준이어야 한다. updated_at 은 정규화 트리거·
+          // 모더레이션·마이그레이션 등 무엇이든 손대면 갱신돼 항상 '신선'으로 보이는 거짓신호다.
           const { data } = await (supabase as any)
             .from("places")
-            .select("updated_at")
+            .select("last_source_date")
             .eq("category", c.key)
             .eq("is_active", true);
           if (!data || data.length === 0) {
-            return { category: c.key, label: c.label, total: 0, daysSinceMedian: 0, staleCount: 0 };
+            return { category: c.key, label: c.label, total: 0, daysSinceMedian: 0, staleCount: 0, unknownCount: 0 };
           }
+          const unknown = data.filter((d: any) => !d.last_source_date).length;
           const days = data
-            .filter((d: any) => d.updated_at)
-            .map((d: any) => Math.floor((Date.now() - new Date(d.updated_at).getTime()) / 86400000))
+            .filter((d: any) => d.last_source_date)
+            .map((d: any) => Math.floor((Date.now() - new Date(d.last_source_date).getTime()) / 86400000))
             .sort((a: number, b: number) => a - b);
           const med = days.length > 0 ? days[Math.floor(days.length / 2)] : 0;
           const stale = days.filter((d: number) => d > 60).length;
@@ -256,6 +260,7 @@ const AdminDashboard = () => {
             total: data.length,
             daysSinceMedian: med,
             staleCount: stale,
+            unknownCount: unknown,
           };
         }),
       );
@@ -414,15 +419,19 @@ const AdminDashboard = () => {
                 <tr>
                   <th className="text-left px-4 py-2 font-semibold">카테고리</th>
                   <th className="text-right px-4 py-2 font-semibold">등록</th>
-                  <th className="text-right px-4 py-2 font-semibold">중앙값 갱신</th>
+                  <th className="text-right px-4 py-2 font-semibold">중앙값 수집</th>
                   <th className="text-right px-4 py-2 font-semibold">상태</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {freshness.map((row) => {
+                  const known = row.total - row.unknownCount; // 수집일이 있는 항목 수
                   let status: { icon: string; label: string; color: string };
                   if (row.total === 0) {
                     status = { icon: "", label: "미등록", color: "text-muted-foreground" };
+                  } else if (known === 0) {
+                    // 수집일(last_source_date)이 전무 → 신선도를 판단할 수 없음.
+                    status = { icon: "", label: "미확인", color: "text-muted-foreground" };
                   } else if (row.daysSinceMedian <= 14) {
                     status = { icon: "", label: "신선", color: "text-emerald-600" };
                   } else if (row.daysSinceMedian <= 30) {
@@ -437,16 +446,18 @@ const AdminDashboard = () => {
                       <td className="px-4 py-3 text-foreground">{row.label}</td>
                       <td className="px-4 py-3 text-right text-muted-foreground">{row.total}곳</td>
                       <td className="px-4 py-3 text-right text-muted-foreground">
-                        {row.total === 0 ? "-" :
-                         row.daysSinceMedian <= 7 ? `${row.daysSinceMedian}일 전` :
+                        {row.total === 0 || known === 0 ? "-" :
                          row.daysSinceMedian <= 30 ? `${row.daysSinceMedian}일 전` :
                          `${Math.round(row.daysSinceMedian / 30)}달 전`}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <span className={`text-xs font-medium ${status.color}`}>
                           {status.icon} {status.label}
-                          {row.staleCount > 0 && row.total > 0 && (
+                          {row.staleCount > 0 && (
                             <span className="ml-1 text-muted-foreground">({row.staleCount}곳 60일+)</span>
+                          )}
+                          {row.unknownCount > 0 && (
+                            <span className="ml-1 text-muted-foreground">(수집일 미상 {row.unknownCount}곳)</span>
                           )}
                         </span>
                       </td>
@@ -457,7 +468,8 @@ const AdminDashboard = () => {
             </table>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            챗봇이 시세 답변 시 이 데이터를 사용해요. 1주~1달 주기로 갱신 시 챗봇 답변 품질도 자동으로 향상돼요.
+            신선도는 수집일(last_source_date) 기준이에요. ‘수집일 미상’은 수집 파이프라인이 수집일을
+            기록하지 않은 항목으로, 재수집 대상입니다. 챗봇 시세 답변 품질과 직결돼요.
           </p>
         </section>
 
