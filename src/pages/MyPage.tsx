@@ -22,6 +22,7 @@ import PageTutorial from "@/components/tutorial/PageTutorial";
 import { useWeddingInfoPrompt } from "@/hooks/useWeddingInfoPrompt";
 import { useDataCollectionConsent } from "@/hooks/useDataCollectionConsent";
 import { Button } from "@/components/ui/button";
+import { APP_VERSION } from "@/lib/appVersion";
 
 const GuestMyPage = () => {
   const navigate = useNavigate();
@@ -125,7 +126,7 @@ const GuestMyPage = () => {
 
         <div className="px-4 py-6">
           <div className="text-center text-[11px] text-muted-foreground">
-            <p>앱 버전 1.0.0</p>
+            <p>앱 버전 {APP_VERSION}</p>
             <p className="mt-0.5">© 2026 Dewy</p>
           </div>
         </div>
@@ -256,7 +257,7 @@ const MyPage = () => {
 
         <div className="px-4 py-6">
           <div className="text-center text-[11px] text-muted-foreground">
-            <p>앱 버전 1.0.0</p>
+            <p>앱 버전 {APP_VERSION}</p>
             <p className="mt-0.5">© 2026 Dewy</p>
           </div>
         </div>
