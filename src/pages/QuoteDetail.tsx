@@ -5,11 +5,10 @@ import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/empty-state";
-import { PLACE_CATEGORY_LABEL, PLACE_TO_BUDGET_CATEGORY } from "@/lib/categoryLabels";
-import { supabase } from "@/integrations/supabase/client";
+import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuoteResponses, acceptQuoteResponse, markQuoteBooked, quoteImageUrl, type QuoteResponse } from "@/hooks/useQuotes";
-import { markBoardSlotBookedByQuoteCategory } from "@/hooks/useVendorBoard";
+import { recordVendorDecision } from "@/lib/vendorDecision";
 
 const won = (n: number) => `${n.toLocaleString()}만원`;
 
@@ -52,33 +51,21 @@ const QuoteDetail = () => {
     setAccepting(r.id);
     const res = await markQuoteBooked(r.id);
     if (!res.ok) { setAccepting(null); toast.error("처리에 실패했어요. 다시 시도해주세요."); return; }
-    // 예약 → 내 예산에 자동 반영(만원 단위 동일). best-effort — 실패해도 예약은 확정.
-    const amount = r.price_max ?? r.price_min ?? request?.budget_max ?? 0;
+    // 예약 성사 → 보드·일정·예산에 일괄 연동(다른 결정 진입점과 동일 헬퍼 — 드리프트 방지).
+    // 견적가는 만원 단위(budget_items 와 동일)라 그대로 금액으로 사용.
     let budgeted = false;
-    if (user && amount > 0) {
-      const { error } = await supabase.from("budget_items").insert({
-        user_id: user.id,
-        category: PLACE_TO_BUDGET_CATEGORY[request?.category ?? ""] ?? "etc",
-        title: r.place_name ?? "예약 업체",
-        amount,
-        memo: "견적 매칭으로 예약",
-      });
-      budgeted = !error;
-    }
-    // 일정(체크리스트)에도 '예약 완료' 항목 추가 — user_schedule_items.category 는 place 카테고리와 동일.
     if (user) {
-      await supabase.from("user_schedule_items").insert({
-        user_id: user.id,
-        category: request?.category ?? "general",
-        title: `${r.place_name ?? "업체"} 예약 완료`,
-        completed: true,
-        source: "quote",
-        scheduled_date: request?.wedding_date ?? new Date().toISOString().slice(0, 10),
+      const dec = await recordVendorDecision({
+        userId: user.id,
+        placeCategory: request?.category,
+        placeId: r.place_id,
+        vendorName: r.place_name ?? "예약 업체",
+        amountManwon: r.price_max ?? r.price_min ?? request?.budget_max ?? null,
+        scheduledDate: request?.wedding_date,
+        scheduleSource: "quote",
+        budgetMemo: "견적 매칭으로 예약",
       });
-    }
-    // 업체 보드의 해당 카테고리 대표 슬롯도 '예약완료'로 자동 반영(best-effort).
-    if (user) {
-      void markBoardSlotBookedByQuoteCategory(user.id, request?.category, r.place_id, r.place_name ?? null);
+      budgeted = dec.budget;
     }
     setAccepting(null);
     toast.success(budgeted ? "예약 확정 · 예산·일정에 반영했어요! 🎉" : "예약을 확정했어요! 🎉");

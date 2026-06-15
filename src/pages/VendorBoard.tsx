@@ -9,6 +9,8 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { promptAmount } from "@/components/ui/amount-prompt";
+import { recordVendorDecision } from "@/lib/vendorDecision";
 import { useVendorBoard, type VendorBoardItem, type VendorBoardSlotPatch } from "@/hooks/useVendorBoard";
 import {
   VENDOR_SLOTS,
@@ -36,6 +38,7 @@ const SlotCard = ({
   onDelete?: () => Promise<{ ok: boolean }>;
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(item?.vendor_name ?? "");
   const [memo, setMemo] = useState(item?.memo ?? "");
@@ -56,7 +59,25 @@ const SlotCard = ({
     setSaving(true);
     const res = await onSave({ status: s });
     setSaving(false);
-    if (!res.ok) toast.error("상태 변경에 실패했어요. 잠시 후 다시 시도해 주세요");
+    if (!res.ok) { toast.error("상태 변경에 실패했어요. 잠시 후 다시 시도해 주세요"); return; }
+    // 보드에서 '예약완료'로 직접 결정해도 다른 진입점과 동일하게 일정·예산까지 연동.
+    // 공급/추적 대상(quoteCategory) 슬롯만 — 그 외(사회자·커스텀 등)는 메모로 자유 기록.
+    if (s === "booked" && status !== "booked" && slot.quoteCategory && user) {
+      const amount = await promptAmount({
+        title: `${slot.label} 계약 금액`,
+        description: "계약 금액을 입력하면 내 예산·일정에 자동 반영돼요. 아직 모르면 건너뛰어도 괜찮아요.",
+        label: "계약 금액(만원)",
+        confirmText: "예산에 기록",
+      });
+      const dec = await recordVendorDecision({
+        userId: user.id,
+        placeCategory: slot.quoteCategory,
+        placeId: item?.place_id ?? null,
+        vendorName: name.trim() || item?.vendor_name || null,
+        amountManwon: amount,
+      });
+      if (dec.budget) toast.success("예산·일정에도 반영했어요");
+    }
   };
 
   const saveDetails = async () => {

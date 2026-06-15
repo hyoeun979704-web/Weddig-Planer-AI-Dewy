@@ -15,8 +15,7 @@ import {
   useInvalidateWeddingSettings,
 } from "@/hooks/useWeddingSchedule";
 import { useWeddingVenue } from "@/hooks/useWeddingVenue";
-import { markBoardSlotBookedByQuoteCategory } from "@/hooks/useVendorBoard";
-import { recordVendorBudget } from "@/lib/vendorBudget";
+import { recordVendorDecision } from "@/lib/vendorDecision";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
@@ -95,12 +94,8 @@ export default function SetAsWeddingVenueButton({
           { onConflict: "user_id" }
         );
       if (error) throw error;
-      // 식장을 '정했다'는 건 보드의 베뉴 슬롯도 결정된 것 — 보드(vendor_board_items)에도
-      // 예약완료로 반영해 "선택했는데 보드에 안 떠요" 연동 공백을 없앤다. best-effort
-      // (보드 반영이 실패해도 anchor 등록 자체는 성공 — 핵심 동작 보호).
-      void markBoardSlotBookedByQuoteCategory(user.id, "wedding_hall", placeId, placeName);
       toast.success(`식장 등록 완료 — ${placeName}`, {
-        description: "내 업체 보드 '베뉴'에도 반영했어요. 다른 카테고리도 같은 시군구를 우선 추천해드려요.",
+        description: "내 업체 보드·일정에도 반영했어요. 다른 카테고리도 같은 시군구를 우선 추천해드려요.",
         duration: 4500,
       });
       // window.location.reload 제거 (마이그레이션) — wedding_settings 캐시 invalidate
@@ -113,7 +108,8 @@ export default function SetAsWeddingVenueButton({
     } finally {
       setSaving(false);
     }
-    // 앱 밖에서 계약한 금액은 자동값이 없으니 직접 입력받아 예산에 기록(모르면 건너뜀).
+    // 식장을 '정했다' = 베뉴 슬롯 결정. 앱 밖 계약 금액은 직접 입력(모르면 건너뜀) 후
+    // 보드+일정(+예산)에 일괄 연동 — 어느 진입점에서 결정하든 같은 데이터가 따라가도록.
     if (ok) {
       const amount = await promptAmount({
         title: `${placeName} 계약 금액`,
@@ -121,14 +117,16 @@ export default function SetAsWeddingVenueButton({
         label: "계약 금액(만원)",
         confirmText: "예산에 기록",
       });
+      const res = await recordVendorDecision({
+        userId: user.id,
+        placeCategory: "wedding_hall",
+        placeId,
+        vendorName: placeName,
+        amountManwon: amount,
+        scheduledDate: weddingSettings.wedding_date,
+      });
       if (amount != null) {
-        const r = await recordVendorBudget({
-          userId: user.id,
-          placeCategory: "wedding_hall",
-          vendorName: placeName,
-          amountManwon: amount,
-        });
-        toast[r.ok ? "success" : "error"](r.ok ? "내 예산에도 금액을 기록했어요" : "예산 기록에 실패했어요");
+        toast[res.budget ? "success" : "error"](res.budget ? "내 예산에도 금액을 기록했어요" : "예산 기록에 실패했어요");
       }
     }
   };

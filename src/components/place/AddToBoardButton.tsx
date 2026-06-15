@@ -5,8 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { primarySlotForQuoteCategory } from "@/lib/vendorBoard";
-import { markBoardSlotBookedByQuoteCategory } from "@/hooks/useVendorBoard";
-import { recordVendorBudget } from "@/lib/vendorBudget";
+import { recordVendorDecision } from "@/lib/vendorDecision";
 import { promptAmount } from "@/components/ui/amount-prompt";
 
 // 업체 상세에서 '이 업체로 결정' → 내 업체 보드의 해당 카테고리 대표 슬롯에 기록한다.
@@ -36,30 +35,27 @@ const AddToBoardButton = ({ placeId, placeName, category }: { placeId: string; p
 
   const record = async () => {
     if (!user) { navigate("/auth"); return; }
-    setSaving(true);
-    const res = await markBoardSlotBookedByQuoteCategory(user.id, category, placeId, placeName);
-    setSaving(false);
-    if (!res.ok) { toast.error("기록에 실패했어요. 잠시 후 다시 시도해 주세요"); return; }
-    setChosen(true);
-    toast.success(`내 보드 '${slot.label}'에 이 업체로 기록했어요`, {
-      action: { label: "보드 보기", onClick: () => navigate("/board") },
-    });
-    // 앱 밖 계약 금액은 직접 입력받아 예산에도 반영(모르면 건너뜀).
+    // 앱 밖 계약 금액은 직접 입력(모르면 건너뜀) → 보드+일정(+예산)에 일괄 연동.
     const amount = await promptAmount({
       title: `${placeName} 계약 금액`,
       description: "계약·견적 금액을 입력하면 내 예산에 자동 기록돼요. 아직 모르면 건너뛰어도 괜찮아요.",
       label: "계약 금액(만원)",
       confirmText: "예산에 기록",
     });
-    if (amount != null) {
-      const r = await recordVendorBudget({
-        userId: user.id,
-        placeCategory: category,
-        vendorName: placeName,
-        amountManwon: amount,
-      });
-      toast[r.ok ? "success" : "error"](r.ok ? "내 예산에도 금액을 기록했어요" : "예산 기록에 실패했어요");
-    }
+    setSaving(true);
+    const res = await recordVendorDecision({
+      userId: user.id,
+      placeCategory: category,
+      placeId,
+      vendorName: placeName,
+      amountManwon: amount,
+    });
+    setSaving(false);
+    if (!res.board) { toast.error("기록에 실패했어요. 잠시 후 다시 시도해 주세요"); return; }
+    setChosen(true);
+    toast.success(`내 보드 '${slot.label}'에 기록했어요${res.budget ? " · 예산에도 반영" : ""}`, {
+      action: { label: "보드 보기", onClick: () => navigate("/board") },
+    });
   };
 
   return (
