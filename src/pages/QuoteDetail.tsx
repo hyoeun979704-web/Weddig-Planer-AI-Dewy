@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, Inbox, ChevronRight } from "lucide-react";
+import { Loader2, Inbox, ChevronRight, Check } from "lucide-react";
+import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/empty-state";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
-import { useQuoteResponses } from "@/hooks/useQuotes";
+import { useQuoteResponses, acceptQuoteResponse } from "@/hooks/useQuotes";
 
 const won = (n: number) => `${n.toLocaleString()}만원`;
 
@@ -11,7 +14,17 @@ const won = (n: number) => `${n.toLocaleString()}만원`;
 const QuoteDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { request, responses, loading } = useQuoteResponses(id);
+  const { request, responses, loading, reload } = useQuoteResponses(id);
+  const [accepting, setAccepting] = useState<string | null>(null);
+
+  const handleAccept = async (responseId: string) => {
+    setAccepting(responseId);
+    const res = await acceptQuoteResponse(responseId);
+    setAccepting(null);
+    if (!res.ok) { toast.error("처리에 실패했어요. 다시 시도해주세요."); return; }
+    toast.success("업체에 수락을 전달했어요. 곧 연락드릴 거예요!");
+    reload();
+  };
 
   return (
     <div className="min-h-screen bg-background app-col mx-auto pb-24">
@@ -46,11 +59,11 @@ const QuoteDetail = () => {
             <p className="text-[12px] text-muted-foreground mb-3">견적 {responses.length}건 도착</p>
             <ul className="space-y-2">
               {responses.map((r) => (
-                <li key={r.id}>
+                <li key={r.id} className="rounded-2xl border border-border bg-card overflow-hidden">
                   <button
                     type="button"
                     onClick={() => navigate(`/vendor/${r.place_id}`)}
-                    className="w-full flex items-start gap-3 rounded-2xl border border-border bg-card p-4 text-left active:scale-[0.99] transition-transform"
+                    className="w-full flex items-start gap-3 p-4 text-left active:bg-muted/40 transition-colors"
                   >
                     <div className="w-14 h-14 rounded-xl bg-muted overflow-hidden shrink-0">
                       {r.place_image && <img src={r.place_image} alt="" className="w-full h-full object-cover" />}
@@ -67,6 +80,23 @@ const QuoteDetail = () => {
                     </div>
                     <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
                   </button>
+                  <div className="px-4 pb-3 -mt-1">
+                    {r.status === "accepted" ? (
+                      <span className="inline-flex items-center gap-1 text-[12px] font-bold text-emerald-600">
+                        <Check className="w-4 h-4" /> 수락함 · 업체가 연락드릴 거예요
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => handleAccept(r.id)}
+                        disabled={accepting === r.id}
+                      >
+                        {accepting === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "이 견적 수락하기"}
+                      </Button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
