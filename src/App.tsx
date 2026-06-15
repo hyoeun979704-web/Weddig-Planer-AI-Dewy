@@ -51,6 +51,7 @@ const MyResults = lazy(() => import("./pages/MyResults"));
 const QuoteNew = lazy(() => import("./pages/QuoteNew"));
 const QuoteList = lazy(() => import("./pages/QuoteList"));
 const QuoteDetail = lazy(() => import("./pages/QuoteDetail"));
+const QuoteThread = lazy(() => import("./pages/QuoteThread"));
 const BusinessLeads = lazy(() => import("./pages/business/BusinessLeads"));
 const HairPreview = lazy(() => import("./pages/HairPreview"));
 const HairPreviewResult = lazy(() => import("./pages/HairPreviewResult"));
@@ -312,6 +313,7 @@ const App = () => (
               <Route path="/quote" element={<QuoteList />} />
               <Route path="/quote/new" element={<QuoteNew />} />
               <Route path="/quote/:id" element={<QuoteDetail />} />
+              <Route path="/quote/:requestId/thread/:placeId" element={<QuoteThread />} />
               <Route path="/business/leads" element={<BusinessLeads />} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />

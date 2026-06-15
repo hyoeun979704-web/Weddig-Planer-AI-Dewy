@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Inbox, Check, Phone, PartyPopper } from "lucide-react";
+import { ArrowLeft, Loader2, Inbox, Check, Phone, PartyPopper, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
 import { useBusinessLeads, submitQuoteResponse, getQuoteLeadContact, type BusinessLead } from "@/hooks/useQuotes";
 
 const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () => void }) => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [priceMin, setPriceMin] = useState("");
@@ -92,6 +93,12 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
         </div>
       )}
 
+      {lead.responseStatus !== "none" && (
+        <Button size="sm" variant="outline" className="mt-3 w-full"
+          onClick={() => navigate(`/quote/${lead.id}/thread/${lead.place_id}`)}>
+          <MessageCircle className="w-4 h-4 mr-1" /> 고객과 메시지
+        </Button>
+      )}
       {lead.responseStatus === "none" && !open && (
         <Button size="sm" className="mt-3" onClick={() => setOpen(true)}>견적 답변하기</Button>
       )}

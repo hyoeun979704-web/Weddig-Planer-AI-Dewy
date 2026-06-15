@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, Inbox, ChevronRight, Check } from "lucide-react";
+import { Loader2, Inbox, ChevronRight, Check, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -80,27 +80,31 @@ const QuoteDetail = () => {
                     </div>
                     <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
                   </button>
-                  <div className="px-4 pb-3 -mt-1">
-                    {r.status === "accepted" ? (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="inline-flex items-center gap-1 text-[12px] font-bold text-emerald-600">
-                          <Check className="w-4 h-4" /> 수락함
-                        </span>
-                        <Button size="sm" variant="outline" onClick={() => navigate(`/vendor/${r.place_id}`)}>
-                          업체에 연락하기
-                        </Button>
-                      </div>
-                    ) : (
+                  <div className="px-4 pb-3 -mt-1 space-y-2">
+                    <div className="flex items-center gap-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="w-full"
-                        onClick={() => handleAccept(r.id)}
-                        disabled={accepting === r.id}
+                        className="flex-1"
+                        onClick={() => navigate(`/quote/${id}/thread/${r.place_id}`)}
                       >
-                        {accepting === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "이 견적 수락하기"}
+                        <MessageCircle className="w-4 h-4 mr-1" /> 메시지
                       </Button>
-                    )}
+                      {r.status === "accepted" ? (
+                        <span className="inline-flex items-center gap-1 text-[12px] font-bold text-emerald-600 shrink-0 px-2">
+                          <Check className="w-4 h-4" /> 수락함
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleAccept(r.id)}
+                          disabled={accepting === r.id}
+                        >
+                          {accepting === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "이 견적 수락"}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </li>
               ))}
