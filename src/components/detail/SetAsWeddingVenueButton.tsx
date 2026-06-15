@@ -15,6 +15,7 @@ import {
   useInvalidateWeddingSettings,
 } from "@/hooks/useWeddingSchedule";
 import { useWeddingVenue } from "@/hooks/useWeddingVenue";
+import { markBoardSlotBookedByQuoteCategory } from "@/hooks/useVendorBoard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
@@ -91,8 +92,12 @@ export default function SetAsWeddingVenueButton({
           { onConflict: "user_id" }
         );
       if (error) throw error;
+      // 식장을 '정했다'는 건 보드의 베뉴 슬롯도 결정된 것 — 보드(vendor_board_items)에도
+      // 예약완료로 반영해 "선택했는데 보드에 안 떠요" 연동 공백을 없앤다. best-effort
+      // (보드 반영이 실패해도 anchor 등록 자체는 성공 — 핵심 동작 보호).
+      void markBoardSlotBookedByQuoteCategory(user.id, "wedding_hall", placeId, placeName);
       toast.success(`식장 등록 완료 — ${placeName}`, {
-        description: "다른 카테고리(스튜디오·드레스 등)에서 같은 시군구 업체를 우선 추천해드려요.",
+        description: "내 업체 보드 '베뉴'에도 반영했어요. 다른 카테고리도 같은 시군구를 우선 추천해드려요.",
         duration: 4500,
       });
       // window.location.reload 제거 (마이그레이션) — wedding_settings 캐시 invalidate

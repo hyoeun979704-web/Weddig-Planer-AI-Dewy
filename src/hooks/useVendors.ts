@@ -71,10 +71,15 @@ const VENDOR_WITH_CATEGORY_SELECT = `
   place_honeymoons(*)
 `;
 
-// Fetch vendors by category (Korean label)
-export const useVendors = (categoryType?: string) => {
+// Fetch vendors by category (Korean label).
+// region(예식 지역, places.city 와 동일한 정식 명칭)이 주어지면 그 지역 업체를 목록
+// 상단으로 끌어올린다(소프트 큐레이션). 홈 추천(useRecommendedVendors)은 region 으로
+// 하드 게이트하지만, 브라우즈 목록은 지역에 공급이 적을 때 전부 숨으면 안 되므로
+// '지역 우선 정렬'로 큐레이션하되 다른 지역도 그 아래 그대로 보여준다. region 미지정이면
+// 기존 동작과 100% 동일(파트너>충실도>평점) — 호출부 회귀 없음.
+export const useVendors = (categoryType?: string, region?: string | null) => {
   return useQuery({
-    queryKey: ["vendors", categoryType],
+    queryKey: ["vendors", categoryType, region ?? null],
     queryFn: async (): Promise<Vendor[]> => {
       // 카테고리가 지정되면 그 카테고리의 detail 테이블 하나만 join (9→1).
       // 카드 렌더(buildVendorInfoLines/collectStyleTags)는 place.category 에
@@ -108,7 +113,21 @@ export const useVendors = (categoryType?: string) => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return ((data ?? []) as unknown as Parameters<typeof placeToVendor>[0][]).map(placeToVendor);
+      let rows = (data ?? []) as unknown as Parameters<typeof placeToVendor>[0][];
+      // 지역 우선 큐레이션 — city 정확 일치(부분문자열 매칭 금지: '충남' vs '충청남도'
+      // 회귀 방지)를 앞으로 stable 정렬. SQL 이 이미 매긴 파트너>충실도>평점 순서는
+      // 각 지역 그룹 안에서 보존된다.
+      if (region) {
+        rows = rows
+          .map((r, i) => ({ r, i }))
+          .sort((a, b) => {
+            const am = a.r.city === region ? 0 : 1;
+            const bm = b.r.city === region ? 0 : 1;
+            return am - bm || a.i - b.i;
+          })
+          .map(({ r }) => r);
+      }
+      return rows.map(placeToVendor);
     },
   });
 };
