@@ -6,6 +6,22 @@
 //   예물 online  "온라인"(목록) vs "온라인 판매"(상세)
 // 더 서술적인 상세 페이지 표현을 정식으로 채택해 단일화한다.
 
+// 장소 카테고리(enum) → 짧은 한국어 라벨. 추천(PlaceRecommendations)·태그 검색(TagResults)
+// 카드의 카테고리 배지 등 '짧은 표시'용 단일 소스. (placeMappers.PLACE_TO_KOREAN_CATEGORY 는
+// 드레스샵/메이크업샵/혼수 등 더 긴 표기 + jewelry 누락이라 표시 목적이 달라 분리.)
+export const PLACE_CATEGORY_LABEL: Record<string, string> = {
+  wedding_hall: "웨딩홀",
+  studio: "스튜디오",
+  dress_shop: "드레스",
+  makeup_shop: "메이크업",
+  hanbok: "한복",
+  tailor_shop: "예복",
+  honeymoon: "허니문",
+  appliance: "혼수가전",
+  jewelry: "주얼리",
+  invitation_venue: "청첩장",
+};
+
 export const APPLIANCE_PRODUCT_TYPE_LABEL: Record<string, string> = {
   store: "매장",
   package: "신혼 패키지",

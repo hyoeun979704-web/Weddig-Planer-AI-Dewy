@@ -237,8 +237,9 @@ serve(async (req) => {
   try {
     items = source === "naver" ? await searchNaver(query) : await searchCoupang(query);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonResp({ error: "upstream_error", message }, 502);
+    // 내부 에러 상세는 로그로만(클라엔 제네릭) — 스키마/키 누출 방지.
+    console.error("product-search upstream error", err);
+    return jsonResp({ error: "upstream_error", message: "상품 검색에 실패했어요. 잠시 후 다시 시도해 주세요." }, 502);
   }
 
   // 5) 캐시 저장 (실패해도 응답엔 영향 없음).

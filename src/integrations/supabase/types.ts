@@ -4316,6 +4316,7 @@ export type Database = {
           inquiry_channel: string
           inquiry_phone: string | null
           inquiry_url: string | null
+          last_collected_at: string | null
           moderation_note: string | null
           owner_user_id: string | null
           partner_rank: number
@@ -4350,6 +4351,7 @@ export type Database = {
           inquiry_channel?: string
           inquiry_phone?: string | null
           inquiry_url?: string | null
+          last_collected_at?: string | null
           moderation_note?: string | null
           owner_user_id?: string | null
           partner_rank?: number
@@ -4384,6 +4386,7 @@ export type Database = {
           inquiry_channel?: string
           inquiry_phone?: string | null
           inquiry_url?: string | null
+          last_collected_at?: string | null
           moderation_note?: string | null
           owner_user_id?: string | null
           partner_rank?: number

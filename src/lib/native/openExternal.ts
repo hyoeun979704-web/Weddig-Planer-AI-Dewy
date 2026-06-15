@@ -26,6 +26,13 @@ export async function openExternal(
   if (typeof window === 'undefined') return;
   if (!isHttp) {
     // tel:, mailto:, intent:, market:, app://... — OS 가 라우팅.
+    // 단, javascript:/data:/vbscript:/file: 같은 위험 스킴은 차단(XSS·유출 방지).
+    // DB write 경로는 이미 http(s) 만 허용하지만, location.href 진입점을 한 번 더 가드한다.
+    const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(url)?.[1]?.toLowerCase();
+    if (!scheme || ['javascript', 'data', 'vbscript', 'file'].includes(scheme)) {
+      console.warn('openExternal: blocked unsafe/unknown scheme', scheme);
+      return;
+    }
     window.location.href = url;
     return;
   }

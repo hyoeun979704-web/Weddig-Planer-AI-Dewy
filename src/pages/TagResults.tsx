@@ -6,22 +6,11 @@ import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/ui/empty-state";
 import VendorMediaCard, { type VendorMediaCardData } from "@/components/home/VendorMediaCard";
 import { PLACE_CATEGORY_TO_ITEM_TYPE, joinRegion } from "@/lib/placeMappers";
+import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
 import { supabase } from "@/integrations/supabase/client";
 
 // 같은 태그가 달린 업체를 카테고리 구분 없이 모아 보여준다(상세 #태그 칩에서 진입).
 // places.tags(text[]) 를 contains 로 필터. 파트너 우선 → 조회수 순.
-const CATEGORY_LABEL: Record<string, string> = {
-  wedding_hall: "웨딩홀",
-  studio: "스튜디오",
-  dress_shop: "드레스",
-  makeup_shop: "메이크업",
-  hanbok: "한복",
-  tailor_shop: "예복",
-  honeymoon: "허니문",
-  appliance: "혼수가전",
-  jewelry: "주얼리",
-  invitation_venue: "청첩장",
-};
 
 interface PlaceRow {
   place_id: string;
@@ -38,7 +27,7 @@ const toCard = (r: PlaceRow): VendorMediaCardData => ({
   thumbnail_url: r.main_image_url,
   region: joinRegion(r.city, r.district),
   name: r.name,
-  category: CATEGORY_LABEL[r.category] ?? null,
+  category: PLACE_CATEGORY_LABEL[r.category] ?? null,
   distanceLabel: null,
   is_partner: r.is_partner ?? false,
   info_lines: [],

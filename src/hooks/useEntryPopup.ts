@@ -64,7 +64,8 @@ export function useEntryPopup() {
           )
           .eq("show_as_popup", true)
           .eq("status", "live")
-          .order("position", { ascending: true });
+          .order("position", { ascending: true })
+          .limit(20);
         if (error) throw error;
         if (!mounted) return;
         const now = new Date();

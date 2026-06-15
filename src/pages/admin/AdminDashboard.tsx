@@ -237,20 +237,21 @@ const AdminDashboard = () => {
       // 데이터 신선도 (places 카테고리별)
       const freshRows = await Promise.all(
         PLACE_CATEGORIES.map(async (c) => {
-          // 신선도는 '수집일(last_source_date)' 기준이어야 한다. updated_at 은 정규화 트리거·
-          // 모더레이션·마이그레이션 등 무엇이든 손대면 갱신돼 항상 '신선'으로 보이는 거짓신호다.
+          // 신선도는 '수집 시각(last_collected_at)' 기준 — 우리가 마지막으로 수집/검증한 때.
+          // updated_at 은 트리거·모더레이션·마이그레이션에 오염되고, last_source_date 는 소스
+          // 발행일(scoring 용)이라 둘 다 부적합. 수집기마다 last_collected_at 을 갱신한다.
           const { data } = await (supabase as any)
             .from("places")
-            .select("last_source_date")
+            .select("last_collected_at")
             .eq("category", c.key)
             .eq("is_active", true);
           if (!data || data.length === 0) {
             return { category: c.key, label: c.label, total: 0, daysSinceMedian: 0, staleCount: 0, unknownCount: 0 };
           }
-          const unknown = data.filter((d: any) => !d.last_source_date).length;
+          const unknown = data.filter((d: any) => !d.last_collected_at).length;
           const days = data
-            .filter((d: any) => d.last_source_date)
-            .map((d: any) => Math.floor((Date.now() - new Date(d.last_source_date).getTime()) / 86400000))
+            .filter((d: any) => d.last_collected_at)
+            .map((d: any) => Math.floor((Date.now() - new Date(d.last_collected_at).getTime()) / 86400000))
             .sort((a: number, b: number) => a - b);
           const med = days.length > 0 ? days[Math.floor(days.length / 2)] : 0;
           const stale = days.filter((d: number) => d > 60).length;
@@ -430,7 +431,7 @@ const AdminDashboard = () => {
                   if (row.total === 0) {
                     status = { icon: "", label: "미등록", color: "text-muted-foreground" };
                   } else if (known === 0) {
-                    // 수집일(last_source_date)이 전무 → 신선도를 판단할 수 없음.
+                    // 수집 시각(last_collected_at)이 전무 → 신선도를 판단할 수 없음.
                     status = { icon: "", label: "미확인", color: "text-muted-foreground" };
                   } else if (row.daysSinceMedian <= 14) {
                     status = { icon: "", label: "신선", color: "text-emerald-600" };
@@ -468,8 +469,8 @@ const AdminDashboard = () => {
             </table>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            신선도는 수집일(last_source_date) 기준이에요. ‘수집일 미상’은 수집 파이프라인이 수집일을
-            기록하지 않은 항목으로, 재수집 대상입니다. 챗봇 시세 답변 품질과 직결돼요.
+            신선도는 우리가 마지막으로 수집·검증한 시각(last_collected_at) 기준이에요. ‘수집일 미상’은
+            아직 수집 시각이 기록되지 않은 항목으로, 재수집 대상입니다. 챗봇 시세 답변 품질과 직결돼요.
           </p>
         </section>
 
