@@ -6174,6 +6174,7 @@ export type Database = {
           balance_after: number
         }[]
       }
+      get_business_quote_funnel: { Args: never; Returns: Json }
       get_my_coupon_download_count: { Args: never; Returns: number }
       get_my_listing: {
         Args: never
@@ -6281,6 +6282,7 @@ export type Database = {
           photo_paths: string[]
         }[]
       }
+      mark_quote_booked: { Args: { p_response_id: string }; Returns: Json }
       pay_balance: {
         Args: {
           p_item_id: string

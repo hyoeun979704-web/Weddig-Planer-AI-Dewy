@@ -62,6 +62,22 @@ export async function createQuoteRequest(input: NewQuoteInput): Promise<{ ok: bo
   return { ok: true, requestId: res.request_id, matched: res.matched };
 }
 
+// 소비자가 수락한 견적을 '예약 완료'로 전환(성사) → 업체 알림 + 요청 마감.
+export async function markQuoteBooked(responseId: string) {
+  const { data, error } = await supabase.rpc("mark_quote_booked", { p_response_id: responseId });
+  const res = data as { ok?: boolean; error?: string } | null;
+  return { ok: !!res?.ok && !error, error: res?.error };
+}
+
+export interface BusinessFunnel { leads: number; responded: number; accepted: number; booked: number; }
+
+export async function getBusinessQuoteFunnel(): Promise<BusinessFunnel | null> {
+  const { data } = await supabase.rpc("get_business_quote_funnel");
+  const f = data as any;
+  if (!f) return null;
+  return { leads: f.leads ?? 0, responded: f.responded ?? 0, accepted: f.accepted ?? 0, booked: f.booked ?? 0 };
+}
+
 // 소비자가 받은 견적 중 하나를 수락 → 업체에 알림(연결 완료).
 export async function acceptQuoteResponse(responseId: string) {
   const { data, error } = await supabase.rpc("accept_quote_response", { p_response_id: responseId });
@@ -145,8 +161,8 @@ export function useQuoteResponses(requestId: string | undefined) {
 
 export interface BusinessLead extends QuoteRequest {
   place_id: string;
-  /** 내 응답 상태: 미응답('none') / 응답함('sent') / 고객이 수락함('accepted') */
-  responseStatus: "none" | "sent" | "accepted";
+  /** 내 응답 상태: 미응답 / 응답함 / 고객 수락 / 예약 확정 */
+  responseStatus: "none" | "sent" | "accepted" | "booked";
 }
 
 // 수락된 견적의 고객 연락처(이름·전화)를 조회 — 그 업체에만, accepted 일 때만 공개.
@@ -218,7 +234,7 @@ export function useBusinessLeads() {
       .eq("owner_user_id", user.id)
       .order("created_at", { ascending: false });
     const reqIds = ((targets ?? []) as any[]).map((t) => t.request_id);
-    const statusByReq = new Map<string, "sent" | "accepted">();
+    const statusByReq = new Map<string, "sent" | "accepted" | "booked">();
     if (reqIds.length > 0) {
       const { data: myResp } = await supabase
         .from("quote_responses")
@@ -226,7 +242,7 @@ export function useBusinessLeads() {
         .eq("owner_user_id", user.id)
         .in("request_id", reqIds);
       for (const r of ((myResp ?? []) as any[])) {
-        statusByReq.set(r.request_id, r.status === "accepted" ? "accepted" : "sent");
+        statusByReq.set(r.request_id, r.status === "booked" ? "booked" : r.status === "accepted" ? "accepted" : "sent");
       }
     }
     setLeads(

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import EmptyState from "@/components/ui/empty-state";
 import { relativeTime } from "@/lib/relativeTime";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
-import { useBusinessLeads, submitQuoteResponse, getQuoteLeadContact, type BusinessLead } from "@/hooks/useQuotes";
+import { useBusinessLeads, submitQuoteResponse, getQuoteLeadContact, getBusinessQuoteFunnel, type BusinessLead, type BusinessFunnel } from "@/hooks/useQuotes";
 
 const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () => void }) => {
   const navigate = useNavigate();
@@ -19,13 +19,15 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
   const [sending, setSending] = useState(false);
   const [contact, setContact] = useState<{ name: string | null; phone: string | null } | null>(null);
 
-  // 고객이 수락하면 연락처를 공개(이 업체에만). 수락 리드일 때만 조회.
+  const connected = lead.responseStatus === "accepted" || lead.responseStatus === "booked";
+
+  // 고객이 수락/예약하면 연락처를 공개(이 업체에만).
   useEffect(() => {
-    if (lead.responseStatus !== "accepted") return;
+    if (!connected) return;
     let alive = true;
     void getQuoteLeadContact(lead.id).then((c) => { if (alive) setContact(c); });
     return () => { alive = false; };
-  }, [lead.responseStatus, lead.id]);
+  }, [connected, lead.id]);
 
   const send = async () => {
     if (!message.trim()) { toast.error("답변 메시지를 입력해주세요."); return; }
@@ -45,10 +47,10 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
     onResponded();
   };
 
-  const accepted = lead.responseStatus === "accepted";
+  const booked = lead.responseStatus === "booked";
   return (
     <li className={`rounded-2xl border p-4 ${
-      accepted ? "border-emerald-300 bg-emerald-50/60"
+      connected ? "border-emerald-300 bg-emerald-50/60"
         : lead.responseStatus === "sent" ? "border-dashed border-border bg-muted/40" : "border-border bg-card"
     }`}>
       <div className="flex items-center justify-between gap-2">
@@ -56,7 +58,11 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
           {PLACE_CATEGORY_LABEL[lead.category] ?? lead.category}
           {lead.region_city ? ` · ${lead.region_city}` : ""}
         </p>
-        {accepted ? (
+        {booked ? (
+          <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-emerald-700 shrink-0">
+            <PartyPopper className="w-3.5 h-3.5" /> 예약 확정
+          </span>
+        ) : lead.responseStatus === "accepted" ? (
           <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-emerald-600 shrink-0">
             <PartyPopper className="w-3.5 h-3.5" /> 수락됨
           </span>
@@ -72,10 +78,12 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
       </p>
       {lead.note && <p className="mt-2 text-[13px] text-foreground/80 whitespace-pre-line">{lead.note}</p>}
 
-      {/* 수락 시 고객 연락처 공개 → 업체가 직접 연락 */}
-      {accepted && (
+      {/* 수락/예약 시 고객 연락처 공개 → 업체가 직접 연락 */}
+      {connected && (
         <div className="mt-3 rounded-xl border border-emerald-200 bg-white p-3">
-          <p className="text-[12px] font-bold text-emerald-700">고객이 회원님 견적을 선택했어요! 지금 연락해보세요.</p>
+          <p className="text-[12px] font-bold text-emerald-700">
+            {booked ? "예약이 확정됐어요! 일정을 안내해주세요." : "고객이 회원님 견적을 선택했어요! 지금 연락해보세요."}
+          </p>
           {contact && (contact.name || contact.phone) ? (
             <div className="mt-1.5 flex items-center justify-between gap-2">
               <span className="text-[13px] text-foreground">
@@ -125,6 +133,18 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
 const BusinessLeads = () => {
   const navigate = useNavigate();
   const { leads, loading, reload } = useBusinessLeads();
+  const [funnel, setFunnel] = useState<BusinessFunnel | null>(null);
+
+  useEffect(() => {
+    void getBusinessQuoteFunnel().then(setFunnel);
+  }, [leads.length]);
+
+  const FUNNEL: { key: keyof BusinessFunnel; label: string }[] = [
+    { key: "leads", label: "받은 리드" },
+    { key: "responded", label: "응답" },
+    { key: "accepted", label: "수락" },
+    { key: "booked", label: "예약" },
+  ];
 
   return (
     <div className="min-h-screen bg-background app-col mx-auto pb-24">
@@ -137,6 +157,17 @@ const BusinessLeads = () => {
         </div>
       </header>
       <main className="px-4 py-5">
+        {/* ROI 퍼널 — 받은 리드 → 응답 → 수락 → 예약 */}
+        {funnel && funnel.leads > 0 && (
+          <div className="mb-4 grid grid-cols-4 gap-2">
+            {FUNNEL.map((f) => (
+              <div key={f.key} className="rounded-xl border border-border bg-card py-2.5 text-center">
+                <p className="text-lg font-extrabold text-foreground">{funnel[f.key]}</p>
+                <p className="text-[11px] text-muted-foreground">{f.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
         {loading ? (
           <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : leads.length === 0 ? (
