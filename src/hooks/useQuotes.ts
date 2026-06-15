@@ -29,6 +29,10 @@ export interface QuoteResponse {
   created_at: string;
   place_name?: string | null;
   place_image?: string | null;
+  place_rating?: number | null;
+  place_reviews?: number | null;
+  place_partner?: boolean;
+  place_region?: string | null;
 }
 
 export interface NewQuoteInput {
@@ -116,7 +120,7 @@ export function useQuoteResponses(requestId: string | undefined) {
       supabase.from("quote_requests").select("*").eq("id", requestId).maybeSingle(),
       supabase
         .from("quote_responses")
-        .select("*, places(name, main_image_url)")
+        .select("*, places(name, main_image_url, avg_rating, review_count, is_partner, city, district)")
         .eq("request_id", requestId)
         .order("created_at", { ascending: false }),
     ]);
@@ -126,6 +130,10 @@ export function useQuoteResponses(requestId: string | undefined) {
         ...r,
         place_name: r.places?.name ?? null,
         place_image: r.places?.main_image_url ?? null,
+        place_rating: r.places?.avg_rating ?? null,
+        place_reviews: r.places?.review_count ?? null,
+        place_partner: r.places?.is_partner ?? false,
+        place_region: [r.places?.city, r.places?.district].filter(Boolean).join(" ") || null,
       })),
     );
     setLoading(false);

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, Inbox, ChevronRight, Check, MessageCircle } from "lucide-react";
+import { Loader2, Inbox, ChevronRight, Check, MessageCircle, Star } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -69,7 +69,21 @@ const QuoteDetail = () => {
                       {r.place_image && <img src={r.place_image} alt="" className="w-full h-full object-cover" />}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-bold text-foreground truncate">{r.place_name ?? "업체"}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-bold text-foreground truncate">{r.place_name ?? "업체"}</p>
+                        {r.place_partner && (
+                          <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-primary/15 text-primary shrink-0">파트너</span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                        {r.place_rating ? (
+                          <span className="inline-flex items-center gap-0.5">
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            {r.place_rating.toFixed(1)}{r.place_reviews ? `(${r.place_reviews})` : ""}
+                          </span>
+                        ) : null}
+                        {r.place_region && <span className="truncate">· {r.place_region}</span>}
+                      </p>
                       {(r.price_min || r.price_max) && (
                         <p className="text-[13px] text-primary font-semibold mt-0.5">
                           {r.price_min && r.price_max ? `${won(r.price_min)}~${won(r.price_max)}`
