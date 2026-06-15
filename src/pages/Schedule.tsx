@@ -9,6 +9,7 @@ import { Heart, Loader2, Plus, Check, BookOpen, Settings } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import TimelineDetailSheet from "@/components/schedule/TimelineDetailSheet";
+import ScheduleCalendar from "@/components/schedule/ScheduleCalendar";
 import FamilyAvailabilityOverlap from "@/components/schedule/FamilyAvailabilityOverlap";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
@@ -207,6 +208,17 @@ const Schedule = () => {
 
       {/* Main Content */}
       <main className="pb-20">
+        {/* ── 최상단 캘린더 — 등록 일정을 월 달력에 표시 + Google/.ics 연동 ── */}
+        {user && (
+          <section className="px-4 pt-4">
+            <ScheduleCalendar
+              items={visibleItems}
+              weddingDate={weddingSettings.wedding_date}
+              onToggleItem={toggleItemCompletion}
+            />
+          </section>
+        )}
+
         {/* ── Hero: D-Day Card ── */}
         <div
           data-tutorial="schedule-dday"
