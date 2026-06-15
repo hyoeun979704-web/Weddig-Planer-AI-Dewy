@@ -4,6 +4,7 @@ import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import SessionTracker from "@/components/SessionTracker";
 import GenerationNotifier from "@/components/GenerationNotifier";
 import { ConfirmDialogHost } from "@/components/ui/confirm-dialog";
+import { AmountPromptHost } from "@/components/ui/amount-prompt";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import AdminGuard from "@/components/admin/AdminGuard";
@@ -392,6 +393,8 @@ const App = () => (
           <GenerationNotifier />
           {/* 명령형 확인 다이얼로그 호스트 — window.confirm 대체(앱 톤 일관). */}
           <ConfirmDialogHost />
+          {/* 명령형 금액 입력 호스트 — 업체 '직접 결정' 시 계약 금액을 예산에 기록. */}
+          <AmountPromptHost />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

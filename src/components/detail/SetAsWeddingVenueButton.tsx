@@ -16,9 +16,11 @@ import {
 } from "@/hooks/useWeddingSchedule";
 import { useWeddingVenue } from "@/hooks/useWeddingVenue";
 import { markBoardSlotBookedByQuoteCategory } from "@/hooks/useVendorBoard";
+import { recordVendorBudget } from "@/lib/vendorBudget";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
+import { promptAmount } from "@/components/ui/amount-prompt";
 
 export interface SetAsWeddingVenueButtonProps {
   placeId: string;
@@ -69,6 +71,7 @@ export default function SetAsWeddingVenueButton({
       if (!ok) return;
     }
     setSaving(true);
+    let ok = false;
     try {
       const { error } = await (supabase as any)
         .from("user_wedding_settings")
@@ -103,11 +106,30 @@ export default function SetAsWeddingVenueButton({
       // window.location.reload 제거 (마이그레이션) — wedding_settings 캐시 invalidate
       // 한 번이면 useWeddingSchedule / useWeddingVenue 양쪽 호출자가 자동 refetch.
       void invalidateWeddingSettings();
+      ok = true;
     } catch (e) {
       console.error("set wedding venue failed", e);
       toast.error("식장 등록에 실패했어요. 잠시 후 다시 시도해주세요.");
     } finally {
       setSaving(false);
+    }
+    // 앱 밖에서 계약한 금액은 자동값이 없으니 직접 입력받아 예산에 기록(모르면 건너뜀).
+    if (ok) {
+      const amount = await promptAmount({
+        title: `${placeName} 계약 금액`,
+        description: "앱 밖에서 계약한 금액을 입력하면 내 예산에 자동 기록돼요. 아직 모르면 건너뛰어도 괜찮아요.",
+        label: "계약 금액(만원)",
+        confirmText: "예산에 기록",
+      });
+      if (amount != null) {
+        const r = await recordVendorBudget({
+          userId: user.id,
+          placeCategory: "wedding_hall",
+          vendorName: placeName,
+          amountManwon: amount,
+        });
+        toast[r.ok ? "success" : "error"](r.ok ? "내 예산에도 금액을 기록했어요" : "예산 기록에 실패했어요");
+      }
     }
   };
 
