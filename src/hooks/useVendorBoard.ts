@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCouplePartnerId } from "@/hooks/useCouplePartnerId";
 import { VENDOR_SLOTS, primarySlotForQuoteCategory, type VendorSlotStatus } from "@/lib/vendorBoard";
+
+// 슬롯 병합 우선순위 — 진행도가 높은 상태가 이긴다(예약완료 > 견적중 > 미정).
+const STATUS_RANK: Record<VendorSlotStatus, number> = { booked: 2, quoting: 1, undecided: 0 };
 
 export interface VendorBoardItem {
   slot_key: string;
@@ -28,21 +32,39 @@ export const isCustomSlotKey = (key: string) => key.startsWith(CUSTOM_SLOT_PREFI
 // 슬롯별 저장값 맵 + 진행 요약을 제공. 저장이 없는 슬롯은 '미정'으로 본다.
 export function useVendorBoard() {
   const { user } = useAuth();
+  // 커플 연동 시 보드도 공유(RLS: 20260616000000). 양쪽 행을 읽어 슬롯별로 병합한다.
+  const { partnerId } = useCouplePartnerId();
   const [items, setItems] = useState<Record<string, VendorBoardItem>>({});
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!user) { setItems({}); setLoading(false); return; }
     setLoading(true);
+    const coupleIds = partnerId ? [user.id, partnerId] : [user.id];
     const { data } = await supabase
       .from("vendor_board_items")
-      .select("slot_key, status, place_id, vendor_name, memo, custom_label")
-      .eq("user_id", user.id);
+      .select("slot_key, status, place_id, vendor_name, memo, custom_label, user_id")
+      .in("user_id", coupleIds);
+    // 슬롯별 대표행 선택: 진행도 높은 상태 우선, 동률이면 '내 행'을 대표로(편집이 내
+    // 행을 향하도록). 커스텀 슬롯은 키에 UUID 가 있어 파트너 것과 자연히 분리된다.
     const map: Record<string, VendorBoardItem> = {};
-    for (const r of (data ?? []) as VendorBoardItem[]) map[r.slot_key] = r;
+    const mineByKey: Record<string, boolean> = {};
+    for (const raw of (data ?? []) as (VendorBoardItem & { user_id: string })[]) {
+      const { user_id, ...row } = raw;
+      const mine = user_id === user.id;
+      const prev = map[row.slot_key];
+      if (
+        !prev ||
+        STATUS_RANK[row.status] > STATUS_RANK[prev.status] ||
+        (STATUS_RANK[row.status] === STATUS_RANK[prev.status] && mine && !mineByKey[row.slot_key])
+      ) {
+        map[row.slot_key] = row;
+        mineByKey[row.slot_key] = mine;
+      }
+    }
     setItems(map);
     setLoading(false);
-  }, [user]);
+  }, [user, partnerId]);
 
   useEffect(() => { void load(); }, [load]);
 
