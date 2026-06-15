@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import SearchOverlay from "./SearchOverlay";
 import DewyLogo from "./DewyLogo";
 import { useCart } from "@/hooks/useCart";
+import { useAppNotifications } from "@/hooks/useAppNotifications";
 import searchIcon from "@/assets/icons/search.svg";
 import bellIcon from "@/assets/icons/bell.svg";
 import heartIcon from "@/assets/icons/heart.svg";
@@ -13,6 +14,7 @@ const HomeHeader = () => {
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { itemCount } = useCart();
+  const { unreadCount } = useAppNotifications();
 
   return (
     <>
@@ -48,11 +50,16 @@ const HomeHeader = () => {
               <img src={searchIcon} alt="" className="w-[18px] h-[18px]" />
             </button>
             <button
-              onClick={() => navigate("/notifications")}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
-              aria-label="알림"
+              onClick={() => navigate("/notifications/inbox")}
+              className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label={unreadCount > 0 ? `알림 ${unreadCount}개` : "알림"}
             >
               <img src={bellIcon} alt="" className="w-[19px] h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => navigate("/favorites")}

@@ -199,7 +199,7 @@ export async function sendQuoteMessage(requestId: string, placeId: string, body:
   return { ok: !!res?.ok && !error, error: res?.error };
 }
 
-// 견적 스레드(요청-업체) 메시지 로드. 가벼운 폴링으로 새 메시지 반영.
+// 견적 스레드(요청-업체) 메시지 로드 + Supabase realtime 구독으로 즉시 반영.
 export function useQuoteThread(requestId: string | undefined, placeId: string | undefined) {
   const [messages, setMessages] = useState<QuoteMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,10 +217,19 @@ export function useQuoteThread(requestId: string | undefined, placeId: string | 
   }, [requestId, placeId]);
 
   useEffect(() => {
+    if (!requestId || !placeId) return;
     void load();
-    const t = setInterval(() => { void load(); }, 8000); // 가벼운 폴링(실시간 채널 미사용)
-    return () => clearInterval(t);
-  }, [load]);
+    // 실시간 — 이 요청의 메시지 INSERT 시 즉시 재조회(RLS 가 참여자에게만 전달).
+    const channel = supabase
+      .channel(`quote-thread-${requestId}-${placeId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "quote_messages", filter: `request_id=eq.${requestId}` },
+        () => { void load(); },
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [requestId, placeId, load]);
 
   return { messages, loading, reload: load };
 }
