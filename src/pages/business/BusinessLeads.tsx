@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Inbox, Check } from "lucide-react";
+import { ArrowLeft, Loader2, Inbox, Check, Phone, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import EmptyState from "@/components/ui/empty-state";
 import { relativeTime } from "@/lib/relativeTime";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
-import { useBusinessLeads, submitQuoteResponse, type BusinessLead } from "@/hooks/useQuotes";
+import { useBusinessLeads, submitQuoteResponse, getQuoteLeadContact, type BusinessLead } from "@/hooks/useQuotes";
 
 const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () => void }) => {
   const [open, setOpen] = useState(false);
@@ -16,6 +16,15 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [sending, setSending] = useState(false);
+  const [contact, setContact] = useState<{ name: string | null; phone: string | null } | null>(null);
+
+  // 고객이 수락하면 연락처를 공개(이 업체에만). 수락 리드일 때만 조회.
+  useEffect(() => {
+    if (lead.responseStatus !== "accepted") return;
+    let alive = true;
+    void getQuoteLeadContact(lead.id).then((c) => { if (alive) setContact(c); });
+    return () => { alive = false; };
+  }, [lead.responseStatus, lead.id]);
 
   const send = async () => {
     if (!message.trim()) { toast.error("답변 메시지를 입력해주세요."); return; }
@@ -35,18 +44,26 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
     onResponded();
   };
 
+  const accepted = lead.responseStatus === "accepted";
   return (
-    <li className={`rounded-2xl border p-4 ${lead.responded ? "border-dashed border-border bg-muted/40" : "border-border bg-card"}`}>
+    <li className={`rounded-2xl border p-4 ${
+      accepted ? "border-emerald-300 bg-emerald-50/60"
+        : lead.responseStatus === "sent" ? "border-dashed border-border bg-muted/40" : "border-border bg-card"
+    }`}>
       <div className="flex items-center justify-between gap-2">
         <p className="font-bold text-foreground">
           {PLACE_CATEGORY_LABEL[lead.category] ?? lead.category}
           {lead.region_city ? ` · ${lead.region_city}` : ""}
         </p>
-        {lead.responded && (
+        {accepted ? (
           <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-emerald-600 shrink-0">
+            <PartyPopper className="w-3.5 h-3.5" /> 수락됨
+          </span>
+        ) : lead.responseStatus === "sent" ? (
+          <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-muted-foreground shrink-0">
             <Check className="w-3.5 h-3.5" /> 응답함
           </span>
-        )}
+        ) : null}
       </div>
       <p className="mt-1 text-[12px] text-muted-foreground">
         {lead.budget_min || lead.budget_max ? `예산 ${lead.budget_min ?? "?"}~${lead.budget_max ?? "?"}만원 · ` : ""}
@@ -54,7 +71,28 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
       </p>
       {lead.note && <p className="mt-2 text-[13px] text-foreground/80 whitespace-pre-line">{lead.note}</p>}
 
-      {!lead.responded && !open && (
+      {/* 수락 시 고객 연락처 공개 → 업체가 직접 연락 */}
+      {accepted && (
+        <div className="mt-3 rounded-xl border border-emerald-200 bg-white p-3">
+          <p className="text-[12px] font-bold text-emerald-700">고객이 회원님 견적을 선택했어요! 지금 연락해보세요.</p>
+          {contact && (contact.name || contact.phone) ? (
+            <div className="mt-1.5 flex items-center justify-between gap-2">
+              <span className="text-[13px] text-foreground">
+                {contact.name ?? "고객"}{contact.phone ? ` · ${contact.phone}` : ""}
+              </span>
+              {contact.phone && (
+                <a href={`tel:${contact.phone}`} className="inline-flex items-center gap-1 text-[13px] font-bold text-primary">
+                  <Phone className="w-4 h-4" /> 전화
+                </a>
+              )}
+            </div>
+          ) : (
+            <p className="mt-1 text-[12px] text-muted-foreground">고객이 연락처를 등록하지 않았어요. 앱 알림으로 안내됩니다.</p>
+          )}
+        </div>
+      )}
+
+      {lead.responseStatus === "none" && !open && (
         <Button size="sm" className="mt-3" onClick={() => setOpen(true)}>견적 답변하기</Button>
       )}
       {open && (

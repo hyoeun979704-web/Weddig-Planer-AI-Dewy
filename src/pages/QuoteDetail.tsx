@@ -82,9 +82,14 @@ const QuoteDetail = () => {
                   </button>
                   <div className="px-4 pb-3 -mt-1">
                     {r.status === "accepted" ? (
-                      <span className="inline-flex items-center gap-1 text-[12px] font-bold text-emerald-600">
-                        <Check className="w-4 h-4" /> 수락함 · 업체가 연락드릴 거예요
-                      </span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1 text-[12px] font-bold text-emerald-600">
+                          <Check className="w-4 h-4" /> 수락함
+                        </span>
+                        <Button size="sm" variant="outline" onClick={() => navigate(`/vendor/${r.place_id}`)}>
+                          업체에 연락하기
+                        </Button>
+                      </div>
                     ) : (
                       <Button
                         size="sm"

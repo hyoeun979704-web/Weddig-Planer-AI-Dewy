@@ -137,10 +137,19 @@ export function useQuoteResponses(requestId: string | undefined) {
 
 export interface BusinessLead extends QuoteRequest {
   place_id: string;
-  responded: boolean;
+  /** 내 응답 상태: 미응답('none') / 응답함('sent') / 고객이 수락함('accepted') */
+  responseStatus: "none" | "sent" | "accepted";
 }
 
-// 업체: 나에게 매칭된 견적 요청(리드) + 내 응답 여부.
+// 수락된 견적의 고객 연락처(이름·전화)를 조회 — 그 업체에만, accepted 일 때만 공개.
+export async function getQuoteLeadContact(requestId: string): Promise<{ name: string | null; phone: string | null } | null> {
+  const { data } = await supabase.rpc("get_quote_lead_contact", { p_request_id: requestId });
+  const res = data as { ok?: boolean; name?: string | null; phone?: string | null } | null;
+  if (!res?.ok) return null;
+  return { name: res.name ?? null, phone: res.phone ?? null };
+}
+
+// 업체: 나에게 매칭된 견적 요청(리드) + 내 응답 상태.
 export function useBusinessLeads() {
   const { user } = useAuth();
   const [leads, setLeads] = useState<BusinessLead[]>([]);
@@ -149,26 +158,32 @@ export function useBusinessLeads() {
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
-    // 내가 타겟된 요청들 + 요청 상세(RLS 로 조인 허용) + 내 응답 여부.
+    // 내가 타겟된 요청들 + 요청 상세(RLS 로 조인 허용) + 내 응답 상태.
     const { data: targets } = await supabase
       .from("quote_request_targets")
       .select("request_id, place_id, quote_requests(*)")
       .eq("owner_user_id", user.id)
       .order("created_at", { ascending: false });
     const reqIds = ((targets ?? []) as any[]).map((t) => t.request_id);
-    let respondedIds = new Set<string>();
+    const statusByReq = new Map<string, "sent" | "accepted">();
     if (reqIds.length > 0) {
       const { data: myResp } = await supabase
         .from("quote_responses")
-        .select("request_id")
+        .select("request_id, status")
         .eq("owner_user_id", user.id)
         .in("request_id", reqIds);
-      respondedIds = new Set(((myResp ?? []) as any[]).map((r) => r.request_id));
+      for (const r of ((myResp ?? []) as any[])) {
+        statusByReq.set(r.request_id, r.status === "accepted" ? "accepted" : "sent");
+      }
     }
     setLeads(
       ((targets ?? []) as any[])
         .filter((t) => t.quote_requests)
-        .map((t) => ({ ...(t.quote_requests as QuoteRequest), place_id: t.place_id, responded: respondedIds.has(t.request_id) })),
+        .map((t) => ({
+          ...(t.quote_requests as QuoteRequest),
+          place_id: t.place_id,
+          responseStatus: statusByReq.get(t.request_id) ?? "none",
+        })),
     );
     setLoading(false);
   }, [user]);
