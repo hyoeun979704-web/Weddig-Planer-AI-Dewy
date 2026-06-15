@@ -34,6 +34,7 @@ import { checkReferralMilestones } from "@/lib/referralEvent";
 import PlaceMap from "@/components/detail/PlaceMap";
 import PlaceRecommendations from "@/components/detail/PlaceRecommendations";
 import PlaceInquirySheet from "@/components/place/PlaceInquirySheet";
+import AddToBoardButton from "@/components/place/AddToBoardButton";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
@@ -206,6 +207,8 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
       </nav>
 
       <main>
+        {/* '이 업체로 결정' → 내 업체 보드에 기록(보드 슬롯이 있는 카테고리만 노출) */}
+        <AddToBoardButton placeId={place.id} placeName={place.name} category={place.category} />
         {tab === "basic" && (
           <BasicTab
             place={place}

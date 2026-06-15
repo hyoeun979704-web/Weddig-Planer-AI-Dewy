@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, ChevronDown, Send, Store, FileText, Check } from "lucide-react";
+import { Loader2, ChevronDown, Send, Store, FileText, Check, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
@@ -8,7 +8,7 @@ import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { useVendorBoard, type VendorBoardItem } from "@/hooks/useVendorBoard";
+import { useVendorBoard, type VendorBoardItem, type VendorBoardSlotPatch } from "@/hooks/useVendorBoard";
 import {
   VENDOR_SLOTS,
   VENDOR_SLOT_GROUPS,
@@ -19,19 +19,25 @@ import {
 
 const STATUS_ORDER: VendorSlotStatus[] = ["undecided", "quoting", "booked"];
 
-// 한 슬롯 카드 — 접힌 상태는 라벨+상태칩+선택업체, 펼치면 상태/업체명/CTA 편집.
+// 보드에 렌더할 슬롯의 최소 형태(코드 택소노미 슬롯 + 사용자 커스텀 슬롯 공용).
+type BoardSlot = Pick<VendorSlot, "key" | "label" | "quoteCategory" | "browseLabel" | "internalLink">;
+
+// 한 슬롯 카드 — 접힌 상태는 라벨+상태칩+선택업체, 펼치면 상태/업체명/메모/CTA 편집.
 const SlotCard = ({
   slot,
   item,
   onSave,
+  onDelete,
 }: {
-  slot: VendorSlot;
+  slot: BoardSlot;
   item: VendorBoardItem | undefined;
-  onSave: (patch: { status?: VendorSlotStatus; vendorName?: string | null }) => Promise<void>;
+  onSave: (patch: VendorBoardSlotPatch) => Promise<void>;
+  onDelete?: () => Promise<void>;
 }) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(item?.vendor_name ?? "");
+  const [memo, setMemo] = useState(item?.memo ?? "");
   const [saving, setSaving] = useState(false);
 
   const status = item?.status ?? "undecided";
@@ -44,9 +50,9 @@ const SlotCard = ({
     setSaving(false);
   };
 
-  const saveName = async () => {
+  const saveDetails = async () => {
     setSaving(true);
-    await onSave({ vendorName: name.trim() || null });
+    await onSave({ vendorName: name.trim() || null, memo: memo.trim() || null });
     setSaving(false);
     toast.success("저장했어요");
   };
@@ -92,49 +98,67 @@ const SlotCard = ({
           </div>
 
           {/* 업체명 직접 기록 — 외부(미입점) 업체도 보드에서 관리 */}
-          <div className="flex gap-2">
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="선택한 업체명 (직접 입력)"
-              className="h-9 text-[13px]"
-            />
-            <Button size="sm" variant="outline" className="shrink-0" onClick={saveName} disabled={saving}>
-              저장
-            </Button>
-          </div>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="선택한 업체명 (직접 입력)"
+            className="h-9 text-[13px]"
+          />
+          {/* 메모 — 가격·상담 메모 등 직접 기록 */}
+          <Input
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
+            placeholder="메모 (가격·상담 일정 등)"
+            className="h-9 text-[13px]"
+          />
+          <Button size="sm" variant="outline" className="w-full" onClick={saveDetails} disabled={saving}>
+            저장
+          </Button>
 
           {/* 연결 CTA — 견적/둘러보기/내부기능. 공급 없는 슬롯엔 죽은 버튼을 두지 않는다. */}
-          <div className="flex flex-wrap gap-2">
-            {slot.quoteCategory && (
-              <Button
-                size="sm"
-                className="flex-1 min-w-[120px]"
-                onClick={() => navigate(`/quote/new?category=${slot.quoteCategory}&slot=${slot.key}`)}
-              >
-                <Send className="w-3.5 h-3.5 mr-1" /> 견적 받기
-              </Button>
-            )}
-            {slot.internalLink && (
-              <Button
-                size="sm"
-                className="flex-1 min-w-[120px]"
-                onClick={() => navigate(slot.internalLink as string)}
-              >
-                <FileText className="w-3.5 h-3.5 mr-1" /> 만들러 가기
-              </Button>
-            )}
-            {slot.browseLabel && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1 min-w-[120px]"
-                onClick={() => navigate(`/vendors/${encodeURIComponent(slot.browseLabel as string)}`)}
-              >
-                <Store className="w-3.5 h-3.5 mr-1" /> 둘러보기
-              </Button>
-            )}
-          </div>
+          {(slot.quoteCategory || slot.internalLink || slot.browseLabel) && (
+            <div className="flex flex-wrap gap-2">
+              {slot.quoteCategory && (
+                <Button
+                  size="sm"
+                  className="flex-1 min-w-[120px]"
+                  onClick={() => navigate(`/quote/new?category=${slot.quoteCategory}&slot=${slot.key}`)}
+                >
+                  <Send className="w-3.5 h-3.5 mr-1" /> 견적 받기
+                </Button>
+              )}
+              {slot.internalLink && (
+                <Button
+                  size="sm"
+                  className="flex-1 min-w-[120px]"
+                  onClick={() => navigate(slot.internalLink as string)}
+                >
+                  <FileText className="w-3.5 h-3.5 mr-1" /> 만들러 가기
+                </Button>
+              )}
+              {slot.browseLabel && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 min-w-[120px]"
+                  onClick={() => navigate(`/vendors/${encodeURIComponent(slot.browseLabel as string)}`)}
+                >
+                  <Store className="w-3.5 h-3.5 mr-1" /> 둘러보기
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* 커스텀 슬롯은 사용자가 추가한 것이라 삭제 가능 */}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => void onDelete()}
+              className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> 이 항목 삭제
+            </button>
+          )}
         </div>
       )}
     </li>
@@ -144,9 +168,24 @@ const SlotCard = ({
 // 소비자: 결혼 준비에 필요한 모든 업체 카테고리를 한 보드에서 정리(쓰레드 체크리스트 패턴).
 const VendorBoard = () => {
   const { user } = useAuth();
-  const { items, loading, saveSlot, summary } = useVendorBoard();
+  const { items, customSlots, loading, saveSlot, removeSlot, addCustomSlot, summary } = useVendorBoard();
+  const [adding, setAdding] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [savingNew, setSavingNew] = useState(false);
 
   const decidedPct = summary.total > 0 ? Math.round((summary.booked / summary.total) * 100) : 0;
+
+  const addSlot = async () => {
+    const label = newLabel.trim();
+    if (!label) return;
+    setSavingNew(true);
+    const res = await addCustomSlot(label);
+    setSavingNew(false);
+    if (!res.ok) { toast.error("추가에 실패했어요."); return; }
+    setNewLabel("");
+    setAdding(false);
+    toast.success(`'${label}' 항목을 추가했어요`);
+  };
 
   return (
     <div className="min-h-screen bg-background app-col mx-auto pb-24">
@@ -198,6 +237,49 @@ const VendorBoard = () => {
                 </section>
               );
             })}
+
+            {/* 직접 추가한 항목 — 사람마다 다른 니치 카테고리를 사용자가 직접 관리 */}
+            <section>
+              <h2 className="text-[13px] font-bold text-muted-foreground mb-2 px-1">직접 추가</h2>
+              <ul className="space-y-2">
+                {customSlots.map((slot) => (
+                  <SlotCard
+                    key={slot.key}
+                    slot={slot}
+                    item={items[slot.key]}
+                    onSave={(patch) => saveSlot(slot.key, patch).then(() => undefined)}
+                    onDelete={() => removeSlot(slot.key)}
+                  />
+                ))}
+              </ul>
+
+              {adding ? (
+                <div className="mt-2 flex gap-2">
+                  <Input
+                    autoFocus
+                    value={newLabel}
+                    onChange={(e) => setNewLabel(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") void addSlot(); }}
+                    placeholder="예: 헤어·네일, 축가, 폐백 등"
+                    className="h-10 text-[13px]"
+                  />
+                  <Button size="sm" className="shrink-0" onClick={addSlot} disabled={savingNew}>
+                    {savingNew ? <Loader2 className="w-4 h-4 animate-spin" /> : "추가"}
+                  </Button>
+                  <Button size="sm" variant="outline" className="shrink-0" onClick={() => { setAdding(false); setNewLabel(""); }}>
+                    취소
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setAdding(true)}
+                  className="mt-2 w-full h-11 rounded-2xl border border-dashed border-border flex items-center justify-center gap-1.5 text-[13px] font-medium text-muted-foreground active:bg-muted/40 transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> 항목 직접 추가
+                </button>
+              )}
+            </section>
           </div>
         )}
       </main>

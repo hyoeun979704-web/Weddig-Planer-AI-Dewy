@@ -5696,6 +5696,7 @@ export type Database = {
       vendor_board_items: {
         Row: {
           created_at: string
+          custom_label: string | null
           id: string
           memo: string | null
           place_id: string | null
@@ -5707,6 +5708,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_label?: string | null
           id?: string
           memo?: string | null
           place_id?: string | null
@@ -5718,6 +5720,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_label?: string | null
           id?: string
           memo?: string | null
           place_id?: string | null

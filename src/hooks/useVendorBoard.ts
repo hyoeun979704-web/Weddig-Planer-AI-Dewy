@@ -11,6 +11,7 @@ export interface VendorBoardItem {
   place_id: string | null;
   vendor_name: string | null;
   memo: string | null;
+  custom_label: string | null;
 }
 
 export interface VendorBoardSlotPatch {
@@ -19,6 +20,10 @@ export interface VendorBoardSlotPatch {
   vendorName?: string | null;
   memo?: string | null;
 }
+
+// 커스텀(사용자 추가) 슬롯 키 접두사 — 코드 택소노미 슬롯과 구분.
+export const CUSTOM_SLOT_PREFIX = "custom:";
+export const isCustomSlotKey = (key: string) => key.startsWith(CUSTOM_SLOT_PREFIX);
 
 // 슬롯별 저장값 맵 + 진행 요약을 제공. 저장이 없는 슬롯은 '미정'으로 본다.
 export function useVendorBoard() {
@@ -31,7 +36,7 @@ export function useVendorBoard() {
     setLoading(true);
     const { data } = await supabase
       .from("vendor_board_items")
-      .select("slot_key, status, place_id, vendor_name, memo")
+      .select("slot_key, status, place_id, vendor_name, memo, custom_label")
       .eq("user_id", user.id);
     const map: Record<string, VendorBoardItem> = {};
     for (const r of (data ?? []) as VendorBoardItem[]) map[r.slot_key] = r;
@@ -51,9 +56,10 @@ export function useVendorBoard() {
       place_id: patch.placeId !== undefined ? patch.placeId : prev?.place_id ?? null,
       vendor_name: patch.vendorName !== undefined ? patch.vendorName : prev?.vendor_name ?? null,
       memo: patch.memo !== undefined ? patch.memo : prev?.memo ?? null,
+      custom_label: prev?.custom_label ?? null,
     };
-    // 아무것도 안 채운 빈 슬롯이면 행 제거(존재할 때만).
-    const isEmpty = next.status === "undecided" && !next.place_id && !next.vendor_name && !next.memo;
+    // 아무것도 안 채운 빈 슬롯이면 행 제거. 단 커스텀 슬롯은 라벨 자체가 내용이라 보존.
+    const isEmpty = next.status === "undecided" && !next.place_id && !next.vendor_name && !next.memo && !next.custom_label;
     if (isEmpty) {
       if (prev) {
         await supabase.from("vendor_board_items").delete().eq("user_id", user.id).eq("slot_key", slotKey);
@@ -75,12 +81,30 @@ export function useVendorBoard() {
     setItems((m) => { const c = { ...m }; delete c[slotKey]; return c; });
   }, [user]);
 
-  // 진행 요약: 전체 슬롯 대비 예약완료 / 견적중 수.
-  const total = VENDOR_SLOTS.length;
+  // 사용자 커스텀 슬롯 추가 — 라벨만 받아 새 행을 만든다(코드 택소노미에 없는 항목).
+  const addCustomSlot = useCallback(async (label: string) => {
+    const name = label.trim();
+    if (!user || !name) return { ok: false };
+    const slotKey = `${CUSTOM_SLOT_PREFIX}${crypto.randomUUID()}`;
+    const row: VendorBoardItem = { slot_key: slotKey, status: "undecided", place_id: null, vendor_name: null, memo: null, custom_label: name };
+    const { error } = await supabase.from("vendor_board_items").insert({ user_id: user.id, ...row });
+    if (error) return { ok: false };
+    setItems((m) => ({ ...m, [slotKey]: row }));
+    return { ok: true };
+  }, [user]);
+
+  // 커스텀 슬롯(직접 추가) 목록 — 추가한 순서가 없으니 라벨 정렬로 안정화.
+  const customSlots = Object.values(items)
+    .filter((i) => isCustomSlotKey(i.slot_key) && i.custom_label)
+    .map((i) => ({ key: i.slot_key, label: i.custom_label as string }))
+    .sort((a, b) => a.label.localeCompare(b.label, "ko"));
+
+  // 진행 요약: 전체 슬롯(코드+커스텀) 대비 예약완료 / 견적중 수.
+  const total = VENDOR_SLOTS.length + customSlots.length;
   const booked = Object.values(items).filter((i) => i.status === "booked").length;
   const quoting = Object.values(items).filter((i) => i.status === "quoting").length;
 
-  return { items, loading, saveSlot, removeSlot, reload: load, summary: { total, booked, quoting } };
+  return { items, customSlots, loading, saveSlot, removeSlot, addCustomSlot, reload: load, summary: { total, booked, quoting } };
 }
 
 // 견적/예약 흐름에서 보드 상태를 best-effort 로 동기화하는 정적 헬퍼(보드 페이지 밖에서 호출).
