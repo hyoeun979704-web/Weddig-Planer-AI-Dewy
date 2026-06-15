@@ -4,6 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import TabContent from "@/components/home/TabContent";
+import HomeQuickLinks from "@/components/home/HomeQuickLinks";
 import HomeEntryPopup from "@/components/home/HomeEntryPopup";
 import Footer from "@/components/home/Footer";
 import TutorialOverlay from "@/components/TutorialOverlay";
@@ -67,6 +68,7 @@ const Index = () => {
       <AnnouncementBanner />
 
       <main className="safe-bottom-scroll" data-tutorial="home-categories">
+        <HomeQuickLinks />
         <TabContent activeTab="ai-planner" />
         <Footer />
       </main>

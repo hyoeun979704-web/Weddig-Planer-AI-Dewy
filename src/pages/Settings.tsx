@@ -17,6 +17,7 @@ import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
+import { APP_VERSION } from "@/lib/appVersion";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { useTheme } from "next-themes";
@@ -193,7 +194,7 @@ const Settings = () => {
         {/* App Info */}
         <div className="p-4">
           <div className="text-center text-xs text-muted-foreground">
-            <p>앱 버전 1.0.0</p>
+            <p>앱 버전 {APP_VERSION}</p>
             <p className="mt-1">© 2026 Dewy</p>
           </div>
         </div>
