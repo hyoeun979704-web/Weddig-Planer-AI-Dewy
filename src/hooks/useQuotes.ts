@@ -16,6 +16,12 @@ export interface QuoteRequest {
   note: string | null;
   status: string;
   created_at: string;
+  image_paths?: string[] | null;
+}
+
+// 견적 첨부 사진 공개 URL(quote-uploads 는 public 버킷).
+export function quoteImageUrl(path: string): string {
+  return supabase.storage.from("quote-uploads").getPublicUrl(path).data.publicUrl;
 }
 
 export interface QuoteResponse {
@@ -44,6 +50,7 @@ export interface NewQuoteInput {
   weddingDate?: string | null;
   style?: string | null;
   note?: string | null;
+  imagePaths?: string[];
 }
 
 export async function createQuoteRequest(input: NewQuoteInput): Promise<{ ok: boolean; error?: string; requestId?: string; matched?: number }> {
@@ -56,6 +63,7 @@ export async function createQuoteRequest(input: NewQuoteInput): Promise<{ ok: bo
     p_wedding_date: input.weddingDate || undefined,
     p_style: input.style ?? undefined,
     p_note: input.note ?? undefined,
+    p_image_paths: input.imagePaths && input.imagePaths.length > 0 ? input.imagePaths : undefined,
   });
   const res = data as { ok?: boolean; error?: string; request_id?: string; matched?: number } | null;
   if (error || !res?.ok) return { ok: false, error: res?.error ?? "failed" };

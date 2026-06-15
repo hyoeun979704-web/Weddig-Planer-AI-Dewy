@@ -8,7 +8,7 @@ import EmptyState from "@/components/ui/empty-state";
 import { PLACE_CATEGORY_LABEL, PLACE_TO_BUDGET_CATEGORY } from "@/lib/categoryLabels";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuoteResponses, acceptQuoteResponse, markQuoteBooked, type QuoteResponse } from "@/hooks/useQuotes";
+import { useQuoteResponses, acceptQuoteResponse, markQuoteBooked, quoteImageUrl, type QuoteResponse } from "@/hooks/useQuotes";
 
 const won = (n: number) => `${n.toLocaleString()}만원`;
 
@@ -68,6 +68,15 @@ const QuoteDetail = () => {
               {request.wedding_date ? `예식 ${request.wedding_date}` : "일정 미정"}
             </p>
             {request.note && <p className="mt-2 text-[13px] text-foreground/80 whitespace-pre-line">{request.note}</p>}
+            {request.image_paths && request.image_paths.length > 0 && (
+              <div className="mt-2 flex gap-1.5">
+                {request.image_paths.map((p) => (
+                  <a key={p} href={quoteImageUrl(p)} target="_blank" rel="noopener noreferrer" className="w-16 h-16 rounded-lg overflow-hidden border border-border">
+                    <img src={quoteImageUrl(p)} alt="참고 사진" className="w-full h-full object-cover" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
