@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, Inbox, ChevronRight, Check, MessageCircle, Star } from "lucide-react";
+import { Loader2, Inbox, ChevronRight, MessageCircle, Star, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/empty-state";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
-import { useQuoteResponses, acceptQuoteResponse } from "@/hooks/useQuotes";
+import { useQuoteResponses, acceptQuoteResponse, markQuoteBooked } from "@/hooks/useQuotes";
 
 const won = (n: number) => `${n.toLocaleString()}만원`;
 
@@ -23,6 +23,15 @@ const QuoteDetail = () => {
     setAccepting(null);
     if (!res.ok) { toast.error("처리에 실패했어요. 다시 시도해주세요."); return; }
     toast.success("업체에 수락을 전달했어요. 곧 연락드릴 거예요!");
+    reload();
+  };
+
+  const handleBook = async (responseId: string) => {
+    setAccepting(responseId);
+    const res = await markQuoteBooked(responseId);
+    setAccepting(null);
+    if (!res.ok) { toast.error("처리에 실패했어요. 다시 시도해주세요."); return; }
+    toast.success("예약을 확정했어요! 🎉");
     reload();
   };
 
@@ -104,10 +113,19 @@ const QuoteDetail = () => {
                       >
                         <MessageCircle className="w-4 h-4 mr-1" /> 메시지
                       </Button>
-                      {r.status === "accepted" ? (
+                      {r.status === "booked" ? (
                         <span className="inline-flex items-center gap-1 text-[12px] font-bold text-emerald-600 shrink-0 px-2">
-                          <Check className="w-4 h-4" /> 수락함
+                          <PartyPopper className="w-4 h-4" /> 예약 확정
                         </span>
+                      ) : r.status === "accepted" ? (
+                        <Button
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleBook(r.id)}
+                          disabled={accepting === r.id}
+                        >
+                          {accepting === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "예약 완료로 표시"}
+                        </Button>
                       ) : (
                         <Button
                           size="sm"
