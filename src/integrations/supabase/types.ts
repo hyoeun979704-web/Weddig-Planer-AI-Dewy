@@ -5693,6 +5693,50 @@ export type Database = {
           },
         ]
       }
+      vendor_board_items: {
+        Row: {
+          created_at: string
+          id: string
+          memo: string | null
+          place_id: string | null
+          slot_key: string
+          status: string
+          updated_at: string
+          user_id: string
+          vendor_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          memo?: string | null
+          place_id?: string | null
+          slot_key: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          vendor_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          memo?: string | null
+          place_id?: string | null
+          slot_key?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_board_items_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+        ]
+      }
       view_events: {
         Row: {
           day: string

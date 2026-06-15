@@ -246,6 +246,19 @@ const Schedule = () => {
           </div>
         </div>
 
+        {/* ── 내 업체 보드 진입 — 카테고리별 업체를 한눈에 정리(미정/견적중/예약완료) ── */}
+        <button
+          onClick={() => navigate("/board")}
+          className="mx-4 mb-3 w-[calc(100%-2rem)] px-4 py-3.5 bg-white rounded-2xl border border-border flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
+        >
+          <img src={clipboardIcon} alt="" className="w-[17px] h-5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[15px] font-bold text-foreground">내 업체 보드</p>
+            <p className="text-xs text-muted-foreground">베뉴·스튜디오·드레스·스냅·청첩장까지 한 보드에서 정리</p>
+          </div>
+          <img src={chevronRightIcon} alt="" className="w-1.5 h-[9px] shrink-0" />
+        </button>
+
         {/* ── Tidy Tip ── */}
         {showTidyTip && (
           <div className="mx-4 mb-3 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl">

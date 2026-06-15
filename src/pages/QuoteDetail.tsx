@@ -9,6 +9,7 @@ import { PLACE_CATEGORY_LABEL, PLACE_TO_BUDGET_CATEGORY } from "@/lib/categoryLa
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuoteResponses, acceptQuoteResponse, markQuoteBooked, quoteImageUrl, type QuoteResponse } from "@/hooks/useQuotes";
+import { markBoardSlotBookedByQuoteCategory } from "@/hooks/useVendorBoard";
 
 const won = (n: number) => `${n.toLocaleString()}만원`;
 
@@ -56,6 +57,10 @@ const QuoteDetail = () => {
         source: "quote",
         scheduled_date: request?.wedding_date ?? new Date().toISOString().slice(0, 10),
       });
+    }
+    // 업체 보드의 해당 카테고리 대표 슬롯도 '예약완료'로 자동 반영(best-effort).
+    if (user) {
+      void markBoardSlotBookedByQuoteCategory(user.id, request?.category, r.place_id, r.place_name ?? null);
     }
     setAccepting(null);
     toast.success(budgeted ? "예약 확정 · 예산·일정에 반영했어요! 🎉" : "예약을 확정했어요! 🎉");
