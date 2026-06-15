@@ -32,7 +32,7 @@ const BusinessClaim = () => {
     }
     setLoading(true);
     // 공개 read 가능. 아직 주인 없는(owner_user_id null) 업체만 신청 대상.
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("places")
       .select("place_id,name,city,category,owner_user_id")
       .ilike("name", `%${term}%`)
@@ -58,7 +58,7 @@ const BusinessClaim = () => {
       confirmText: "요청",
     });
     if (!ok) return;
-    const { data, error } = await (supabase as any).rpc("request_place_claim", { p_place_id: place.place_id });
+    const { data, error } = await supabase.rpc("request_place_claim", { p_place_id: place.place_id });
     const res = data as { ok?: boolean; error?: string } | null;
     if (error || !res?.ok) {
       const msg =

@@ -50,7 +50,7 @@ const BusinessGallery = () => {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await (supabase as any).rpc("get_my_listing");
+      const { data, error } = await supabase.rpc("get_my_listing");
       if (error) { toast.error("정보를 불러오지 못했어요"); setLoading(false); return; }
       const row = Array.isArray(data) ? data[0] : data;
       if (row?.place_id) {
@@ -67,7 +67,7 @@ const BusinessGallery = () => {
     if (!imageUrl.trim()) { toast.error("이미지 URL을 입력해주세요"); return; }
     if (isMenu && !title.trim()) { toast.error("메뉴명을 입력해주세요"); return; }
     setAdding(true);
-    const { error } = await (supabase as any).from("place_media").insert({
+    const { error } = await supabase.from("place_media").insert({
       place_id: placeId,
       owner_user_id: user.id,
       kind: isMenu ? "menu" : "photo",
@@ -86,7 +86,7 @@ const BusinessGallery = () => {
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ title: isMenu ? "이 메뉴를 삭제할까요?" : "이 사진을 삭제할까요?", confirmText: "삭제", destructive: true }))) return;
-    const { error } = await (supabase as any).from("place_media").delete().eq("id", id);
+    const { error } = await supabase.from("place_media").delete().eq("id", id);
     if (error) { toast.error("삭제에 실패했어요"); return; }
     setItems((prev) => prev.filter((i) => i.id !== id));
     toast.success("삭제했어요");

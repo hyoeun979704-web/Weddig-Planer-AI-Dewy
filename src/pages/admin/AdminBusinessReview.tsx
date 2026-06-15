@@ -57,12 +57,12 @@ const AdminBusinessReview = () => {
   const load = useCallback(async () => {
     setLoading(true);
     const [biz, list, evt, prod, apps, tierList] = await Promise.all([
-      (supabase as any).rpc("admin_list_pending_businesses"),
-      (supabase as any).rpc("admin_list_pending_listings"),
-      (supabase as any).rpc("admin_list_pending_events"),
-      (supabase as any).rpc("admin_list_pending_products"),
-      (supabase as any).rpc("admin_list_partnership_applications"),
-      (supabase as any).rpc("admin_list_business_tiers"),
+      supabase.rpc("admin_list_pending_businesses"),
+      supabase.rpc("admin_list_pending_listings"),
+      supabase.rpc("admin_list_pending_events"),
+      supabase.rpc("admin_list_pending_products"),
+      supabase.rpc("admin_list_partnership_applications"),
+      supabase.rpc("admin_list_business_tiers"),
     ]);
     if (biz.error || list.error || evt.error || prod.error) {
       toast.error("일부 검토 목록을 불러오지 못했어요. 다시 시도해주세요");
@@ -79,7 +79,7 @@ const AdminBusinessReview = () => {
   // 제휴 신청 처리 — 면담 진행 / 승인(프렌즈 자동 부여) / 반려
   const reviewPartnership = async (id: string, status: "interviewing" | "approved" | "rejected") => {
     setProcessingApp(id);
-    const { data, error } = await (supabase as any).rpc("admin_review_partnership", { p_id: id, p_status: status, p_note: null });
+    const { data, error } = await supabase.rpc("admin_review_partnership", { p_id: id, p_status: status, p_note: undefined });
     setProcessingApp(null);
     if (error || !(data as { ok?: boolean })?.ok) { toast.error("처리에 실패했어요"); return; }
     toast.success(status === "approved" ? "프렌즈로 승격했어요" : status === "interviewing" ? "면담 진행으로 표시했어요" : "반려했어요");
@@ -88,13 +88,13 @@ const AdminBusinessReview = () => {
     } else {
       setApplications((prev) => prev.filter((a) => a.id !== id));
     }
-    const refreshed = await (supabase as any).rpc("admin_list_business_tiers");
+    const refreshed = await supabase.rpc("admin_list_business_tiers");
     if (!refreshed.error) setTiers(refreshed.data ?? []);
   };
 
   const setTier = async (profileId: string, tier: string) => {
     setProcessingTier(profileId);
-    const { data, error } = await (supabase as any).rpc("admin_set_business_tier", { p_profile_id: profileId, p_tier: tier });
+    const { data, error } = await supabase.rpc("admin_set_business_tier", { p_profile_id: profileId, p_tier: tier });
     setProcessingTier(null);
     if (error || !(data as { ok?: boolean })?.ok) { toast.error("등급 변경 실패"); return; }
     toast.success("등급을 변경했어요");
@@ -107,7 +107,7 @@ const AdminBusinessReview = () => {
 
   const reviewProduct = async (id: string, approved: boolean, reviewNote?: string) => {
     setProcessingProduct(id);
-    const { data, error } = await (supabase as any).rpc("admin_review_product", { p_id: id, p_approved: approved, p_note: reviewNote ?? null });
+    const { data, error } = await supabase.rpc("admin_review_product", { p_id: id, p_approved: approved, p_note: reviewNote ?? null });
     setProcessingProduct(null);
     const res = data as { ok?: boolean } | null;
     if (error || !res?.ok) { toast.error("처리에 실패했어요"); return; }
@@ -118,7 +118,7 @@ const AdminBusinessReview = () => {
 
   const reviewEvent = async (id: string, approved: boolean, reviewNote?: string) => {
     setProcessingEvent(id);
-    const { data, error } = await (supabase as any).rpc("admin_review_event", { p_id: id, p_approved: approved, p_note: reviewNote ?? null });
+    const { data, error } = await supabase.rpc("admin_review_event", { p_id: id, p_approved: approved, p_note: reviewNote ?? null });
     setProcessingEvent(null);
     const res = data as { ok?: boolean } | null;
     if (error || !res?.ok) { toast.error("처리에 실패했어요"); return; }
@@ -129,10 +129,10 @@ const AdminBusinessReview = () => {
 
   const reviewListing = async (placeId: string, approved: boolean, reviewNote?: string) => {
     setProcessingListing(placeId);
-    const { data, error } = await (supabase as any).rpc("admin_review_listing", {
+    const { data, error } = await supabase.rpc("admin_review_listing", {
       p_place_id: placeId,
       p_approved: approved,
-      p_note: reviewNote ?? null,
+      p_note: reviewNote ?? undefined,
     });
     setProcessingListing(null);
     const res = data as { ok?: boolean } | null;
@@ -144,10 +144,10 @@ const AdminBusinessReview = () => {
 
   const review = async (id: string, approved: boolean, reviewNote?: string) => {
     setProcessing(id);
-    const { data, error } = await (supabase as any).rpc("admin_review_business", {
+    const { data, error } = await supabase.rpc("admin_review_business", {
       p_profile_id: id,
       p_approved: approved,
-      p_note: reviewNote ?? null,
+      p_note: reviewNote ?? undefined,
     });
     setProcessing(null);
     const res = data as { ok?: boolean; error?: string } | null;

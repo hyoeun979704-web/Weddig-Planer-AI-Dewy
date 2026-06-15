@@ -41,7 +41,7 @@ const BusinessVendorEdit = () => {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await (supabase as any).rpc("get_my_listing");
+      const { data, error } = await supabase.rpc("get_my_listing");
       if (error) {
         toast.error("정보를 불러오지 못했어요. 다시 시도해주세요");
         setLoading(false);
@@ -84,17 +84,17 @@ const BusinessVendorEdit = () => {
       return;
     }
     setSaving(true);
-    const { data, error } = await (supabase as any).rpc("upsert_my_listing", {
+    const { data, error } = await supabase.rpc("upsert_my_listing", {
       p_name: name.trim(),
-      p_description: description.trim() || null,
-      p_city: city.trim() || null,
-      p_district: district.trim() || null,
-      p_main_image_url: imageUrl.trim() || null,
-      p_min_price: minPrice ? parseInt(minPrice, 10) : null,
+      p_description: description.trim() || undefined,
+      p_city: city.trim() || undefined,
+      p_district: district.trim() || undefined,
+      p_main_image_url: imageUrl.trim() || undefined,
+      p_min_price: minPrice ? parseInt(minPrice, 10) : undefined,
       p_tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
       p_inquiry_channel: inquiryChannel,
-      p_inquiry_url: inquiryChannel === "url" ? inquiryUrl.trim() : null,
-      p_inquiry_phone: inquiryChannel === "phone" ? inquiryPhone.trim() : null,
+      p_inquiry_url: inquiryChannel === "url" ? inquiryUrl.trim() : undefined,
+      p_inquiry_phone: inquiryChannel === "phone" ? inquiryPhone.trim() : undefined,
     });
     setSaving(false);
     const res = data as { ok?: boolean; error?: string; place_id?: string } | null;

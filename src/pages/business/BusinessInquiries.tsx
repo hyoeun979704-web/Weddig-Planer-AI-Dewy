@@ -33,7 +33,7 @@ const BusinessInquiries = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const { data: listing, error: listingError } = await (supabase as any).rpc(
+      const { data: listing, error: listingError } = await supabase.rpc(
         "get_my_listing",
       );
       if (listingError) throw listingError;
@@ -43,7 +43,7 @@ const BusinessInquiries = () => {
         return;
       }
       setPlaceId(row.place_id);
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("place_inquiries")
         .select("id, title, content, contact, status, answer, answered_at, created_at")
         .eq("place_id", row.place_id)
@@ -67,7 +67,7 @@ const BusinessInquiries = () => {
     if (!answer) return;
     setSaving(true);
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("place_inquiries")
         .update({
           answer: answer.slice(0, ANSWER_MAX),

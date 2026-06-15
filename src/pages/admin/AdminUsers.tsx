@@ -29,7 +29,7 @@ const AdminUsers = () => {
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     // profiles 기준으로 조회 (auth.users는 직접 조회 어려움)
-    const { data: profiles, error } = await (supabase as any)
+    const { data: profiles, error } = await supabase
       .from("profiles")
       .select("user_id, email, display_name, created_at, member_tier")
       .order("created_at", { ascending: false })
@@ -50,12 +50,12 @@ const AdminUsers = () => {
 
     // 역할·하트·피팅 데이터 병렬 조회
     const [rolesRes, heartsRes, fittingsRes] = await Promise.all([
-      (supabase as any).from("user_roles").select("user_id, role").in("user_id", userIds),
-      (supabase as any)
+      supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
+      supabase
         .from("user_hearts")
         .select("user_id, balance, total_spent")
         .in("user_id", userIds),
-      (supabase as any)
+      supabase
         .from("dress_fittings")
         .select("user_id")
         .in("user_id", userIds),
@@ -105,7 +105,7 @@ const AdminUsers = () => {
         return { ...u, member_tier: tier };
       }),
     );
-    const { error } = await (supabase as any).rpc("admin_set_member_tier", {
+    const { error } = await supabase.rpc("admin_set_member_tier", {
       p_user_id: userId,
       p_tier: tier,
     });
