@@ -48,6 +48,10 @@ const WeddingConsulting = lazy(() => import("./pages/WeddingConsulting"));
 const ConsultingResult = lazy(() => import("./pages/ConsultingResult"));
 const ConsultingGallery = lazy(() => import("./pages/ConsultingGallery"));
 const MyResults = lazy(() => import("./pages/MyResults"));
+const QuoteNew = lazy(() => import("./pages/QuoteNew"));
+const QuoteList = lazy(() => import("./pages/QuoteList"));
+const QuoteDetail = lazy(() => import("./pages/QuoteDetail"));
+const BusinessLeads = lazy(() => import("./pages/business/BusinessLeads"));
 const HairPreview = lazy(() => import("./pages/HairPreview"));
 const HairPreviewResult = lazy(() => import("./pages/HairPreviewResult"));
 const HairPreviewGallery = lazy(() => import("./pages/HairPreviewGallery"));
@@ -305,6 +309,10 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/oss-licenses" element={<OssLicenses />} />
               <Route path="/search/tag/:tag" element={<TagResults />} />
+              <Route path="/quote" element={<QuoteList />} />
+              <Route path="/quote/new" element={<QuoteNew />} />
+              <Route path="/quote/:id" element={<QuoteDetail />} />
+              <Route path="/business/leads" element={<BusinessLeads />} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/consulting" element={<WeddingConsulting />} />

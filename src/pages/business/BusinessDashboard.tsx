@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star } from "lucide-react";
+import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -223,6 +223,13 @@ const BusinessDashboard = () => {
       label: "문의/예약 관리",
       description: "고객 문의 확인·답변",
       href: "/business/inquiries",
+      badge: null,
+    },
+    {
+      icon: Inbox,
+      label: "받은 견적 요청",
+      description: "고객 견적 요청에 빠르게 답변하고 리드를 잡으세요",
+      href: "/business/leads",
       badge: null,
     },
     {
