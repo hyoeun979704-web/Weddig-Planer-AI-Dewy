@@ -1,17 +1,34 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, Inbox, ChevronRight, MessageCircle, Star, PartyPopper, Scale } from "lucide-react";
+import { Loader2, Inbox, ChevronRight, MessageCircle, Star, PartyPopper, Scale, Sparkles, Wallet, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/empty-state";
-import { PLACE_CATEGORY_LABEL, PLACE_TO_BUDGET_CATEGORY } from "@/lib/categoryLabels";
-import { supabase } from "@/integrations/supabase/client";
+import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuoteResponses, acceptQuoteResponse, markQuoteBooked, quoteImageUrl, type QuoteResponse } from "@/hooks/useQuotes";
-import { markBoardSlotBookedByQuoteCategory } from "@/hooks/useVendorBoard";
+import { recordVendorDecision } from "@/lib/vendorDecision";
 
 const won = (n: number) => `${n.toLocaleString()}만원`;
+
+// 요청 조건 적합도 칩(예산·지역). 큐레이션 정렬을 소비자가 눈으로 확인할 수 있게 노출.
+const FitChips = ({ r }: { r: QuoteResponse }) => {
+  const chips: { label: string; Icon: typeof Wallet }[] = [];
+  if (r.regionMatch) chips.push({ label: "지역 일치", Icon: MapPin });
+  if (r.budgetFit === "within") chips.push({ label: "예산 내", Icon: Wallet });
+  else if (r.budgetFit === "near") chips.push({ label: "예산 근접", Icon: Wallet });
+  if (chips.length === 0) return null;
+  return (
+    <div className="mt-1 flex flex-wrap gap-1">
+      {chips.map(({ label, Icon }) => (
+        <span key={label} className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+          <Icon className="w-2.5 h-2.5" /> {label}
+        </span>
+      ))}
+    </div>
+  );
+};
 
 // 소비자: 한 견적 요청에 들어온 업체 응답들을 비교한다.
 const QuoteDetail = () => {
@@ -34,33 +51,21 @@ const QuoteDetail = () => {
     setAccepting(r.id);
     const res = await markQuoteBooked(r.id);
     if (!res.ok) { setAccepting(null); toast.error("처리에 실패했어요. 다시 시도해주세요."); return; }
-    // 예약 → 내 예산에 자동 반영(만원 단위 동일). best-effort — 실패해도 예약은 확정.
-    const amount = r.price_max ?? r.price_min ?? request?.budget_max ?? 0;
+    // 예약 성사 → 보드·일정·예산에 일괄 연동(다른 결정 진입점과 동일 헬퍼 — 드리프트 방지).
+    // 견적가는 만원 단위(budget_items 와 동일)라 그대로 금액으로 사용.
     let budgeted = false;
-    if (user && amount > 0) {
-      const { error } = await supabase.from("budget_items").insert({
-        user_id: user.id,
-        category: PLACE_TO_BUDGET_CATEGORY[request?.category ?? ""] ?? "etc",
-        title: r.place_name ?? "예약 업체",
-        amount,
-        memo: "견적 매칭으로 예약",
-      });
-      budgeted = !error;
-    }
-    // 일정(체크리스트)에도 '예약 완료' 항목 추가 — user_schedule_items.category 는 place 카테고리와 동일.
     if (user) {
-      await supabase.from("user_schedule_items").insert({
-        user_id: user.id,
-        category: request?.category ?? "general",
-        title: `${r.place_name ?? "업체"} 예약 완료`,
-        completed: true,
-        source: "quote",
-        scheduled_date: request?.wedding_date ?? new Date().toISOString().slice(0, 10),
+      const dec = await recordVendorDecision({
+        userId: user.id,
+        placeCategory: request?.category,
+        placeId: r.place_id,
+        vendorName: r.place_name ?? "예약 업체",
+        amountManwon: r.price_max ?? r.price_min ?? request?.budget_max ?? null,
+        scheduledDate: request?.wedding_date,
+        scheduleSource: "quote",
+        budgetMemo: "견적 매칭으로 예약",
       });
-    }
-    // 업체 보드의 해당 카테고리 대표 슬롯도 '예약완료'로 자동 반영(best-effort).
-    if (user) {
-      void markBoardSlotBookedByQuoteCategory(user.id, request?.category, r.place_id, r.place_name ?? null);
+      budgeted = dec.budget;
     }
     setAccepting(null);
     toast.success(budgeted ? "예약 확정 · 예산·일정에 반영했어요! 🎉" : "예약을 확정했어요! 🎉");
@@ -141,7 +146,10 @@ const QuoteDetail = () => {
         ) : (
           <>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[12px] text-muted-foreground">견적 {responses.length}건 도착</p>
+              <p className="text-[12px] text-muted-foreground">
+                견적 {responses.length}건
+                {responses.length >= 2 ? " · 내 조건에 맞는 순" : " 도착"}
+              </p>
               {responses.length >= 2 && (
                 <button
                   type="button"
@@ -153,8 +161,16 @@ const QuoteDetail = () => {
               )}
             </div>
             <ul className="space-y-2">
-              {responses.map((r) => (
-                <li key={r.id} className="rounded-2xl border border-border bg-card overflow-hidden">
+              {responses.map((r, idx) => {
+                // 정렬상 최상위가 실제 조건에 맞을 때만 '맞춤 추천' 강조(2건 이상에서).
+                const recommended = idx === 0 && responses.length >= 2 && (r.regionMatch || r.budgetFit === "within");
+                return (
+                <li key={r.id} className={`rounded-2xl border bg-card overflow-hidden ${recommended ? "border-primary ring-1 ring-primary/30" : "border-border"}`}>
+                  {recommended && (
+                    <div className="flex items-center gap-1 px-4 pt-2.5 text-[11px] font-bold text-primary">
+                      <Sparkles className="w-3 h-3" /> 내 조건에 맞춤 추천
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => navigate(`/vendor/${r.place_id}`)}
@@ -179,6 +195,7 @@ const QuoteDetail = () => {
                         ) : null}
                         {r.place_region && <span className="truncate">· {r.place_region}</span>}
                       </p>
+                      <FitChips r={r} />
                       {(r.price_min || r.price_max) && (
                         <p className="text-[13px] text-primary font-semibold mt-0.5">
                           {r.price_min && r.price_max ? `${won(r.price_min)}~${won(r.price_max)}`
@@ -225,7 +242,8 @@ const QuoteDetail = () => {
                     </div>
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </>
         )}

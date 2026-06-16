@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { rankQuoteResponses } from "@/lib/quoteMatch";
 
 export interface QuoteRequest {
   id: string;
@@ -39,6 +40,12 @@ export interface QuoteResponse {
   place_reviews?: number | null;
   place_partner?: boolean;
   place_region?: string | null;
+  place_city?: string | null;
+  place_district?: string | null;
+  // 요청 조건 적합도(useQuoteResponses 가 채움). 도착순이 아닌 큐레이션 순위 + 시각 표시용.
+  matchScore?: number;
+  budgetFit?: import("@/lib/quoteMatch").BudgetFit;
+  regionMatch?: boolean;
 }
 
 export interface NewQuoteInput {
@@ -154,19 +161,22 @@ export function useQuoteResponses(requestId: string | undefined) {
         .order("created_at", { ascending: false }),
       supabase.from("quote_request_targets").select("place_id", { count: "exact", head: true }).eq("request_id", requestId),
     ]);
+    const reqRow = (req as QuoteRequest) ?? null;
     setMatchedCount(matched ?? 0);
-    setRequest((req as QuoteRequest) ?? null);
-    setResponses(
-      ((resp ?? []) as any[]).map((r) => ({
-        ...r,
-        place_name: r.places?.name ?? null,
-        place_image: r.places?.main_image_url ?? null,
-        place_rating: r.places?.avg_rating ?? null,
-        place_reviews: r.places?.review_count ?? null,
-        place_partner: r.places?.is_partner ?? false,
-        place_region: [r.places?.city, r.places?.district].filter(Boolean).join(" ") || null,
-      })),
-    );
+    setRequest(reqRow);
+    const mapped: QuoteResponse[] = ((resp ?? []) as any[]).map((r) => ({
+      ...r,
+      place_name: r.places?.name ?? null,
+      place_image: r.places?.main_image_url ?? null,
+      place_rating: r.places?.avg_rating ?? null,
+      place_reviews: r.places?.review_count ?? null,
+      place_partner: r.places?.is_partner ?? false,
+      place_city: r.places?.city ?? null,
+      place_district: r.places?.district ?? null,
+      place_region: [r.places?.city, r.places?.district].filter(Boolean).join(" ") || null,
+    }));
+    // 도착순이 아니라 '요청 조건(지역·예산) 적합도'로 큐레이션 정렬(QuoteDetail·비교 공용).
+    setResponses(rankQuoteResponses(reqRow, mapped));
     setLoading(false);
   }, [requestId]);
 

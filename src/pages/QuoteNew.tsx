@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Send, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
 import { createQuoteRequest, quoteImageUrl } from "@/hooks/useQuotes";
 import { markBoardSlotQuoting } from "@/hooks/useVendorBoard";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 const STYLES: { v: string; label: string }[] = [
   { v: "general", label: "일반 예식" },
@@ -25,10 +26,25 @@ const QuoteNew = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [params] = useSearchParams();
+  const { weddingSettings } = useWeddingSchedule();
   const [category, setCategory] = useState(params.get("category") ?? "");
   const boardSlot = params.get("slot"); // 업체 보드 슬롯에서 진입 시 — 성공하면 그 슬롯을 '견적중'으로
   const [city, setCity] = useState("");
   const [district, setDistrict] = useState("");
+  // 지역 자동 채움 — 사용자가 이미 등록한 결혼식장/지역을 견적 요청에 기본값으로 넣어
+  // 매칭이 '내 지역' 기준으로 큐레이션되게 한다(보드에서 진입 시 매번 지역을 다시 적던
+  // 마찰 + 지역 누락으로 매칭이 전국구가 되던 큐레이션 공백 해소). 사용자가 입력 중이면
+  // 덮지 않도록 1회만 시드(ref 가드).
+  const prefilledRegion = useRef(false);
+  useEffect(() => {
+    if (prefilledRegion.current) return;
+    const seedCity = weddingSettings.wedding_venue_city || weddingSettings.wedding_region;
+    const seedDistrict = weddingSettings.wedding_venue_district;
+    if (!seedCity && !seedDistrict) return;
+    prefilledRegion.current = true;
+    setCity((cur) => (cur ? cur : seedCity ?? ""));
+    setDistrict((cur) => (cur ? cur : seedDistrict ?? ""));
+  }, [weddingSettings.wedding_venue_city, weddingSettings.wedding_venue_district, weddingSettings.wedding_region]);
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [weddingDate, setWeddingDate] = useState("");
@@ -109,15 +125,20 @@ const QuoteNew = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">지역(시/도)</Label>
-            <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="서울특별시" />
+        <div className="space-y-1.5">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">지역(시/도)</Label>
+              <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="서울특별시" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">구/군</Label>
+              <Input value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="강남구" />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">구/군</Label>
-            <Input value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="강남구" />
-          </div>
+          {(weddingSettings.wedding_venue_city || weddingSettings.wedding_region) && city && (
+            <p className="text-[12px] text-primary">내 식장 지역으로 채웠어요 · 이 지역 업체에게 우선 전달돼요</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3">

@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { useTheme } from "next-themes";
 import { useDataUsageConsent } from "@/hooks/useDataUsageConsent";
+import CalendarSyncCard from "@/components/settings/CalendarSyncCard";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -103,6 +104,17 @@ const Settings = () => {
             </div>
           </div>
         </div>
+
+        {/* 캘린더 연동 (로그인 사용자) — Google·Kakao 각각 양방향 */}
+        {user && (
+          <div className="p-4">
+            <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">캘린더 연동</h2>
+            <div className="space-y-2">
+              <CalendarSyncCard provider="google" />
+              <CalendarSyncCard provider="kakao" />
+            </div>
+          </div>
+        )}
 
         {/* 동의 설정 (선택) */}
         {user && (

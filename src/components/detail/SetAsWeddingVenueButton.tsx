@@ -15,9 +15,11 @@ import {
   useInvalidateWeddingSettings,
 } from "@/hooks/useWeddingSchedule";
 import { useWeddingVenue } from "@/hooks/useWeddingVenue";
+import { recordVendorDecision } from "@/lib/vendorDecision";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
+import { promptAmount } from "@/components/ui/amount-prompt";
 
 export interface SetAsWeddingVenueButtonProps {
   placeId: string;
@@ -68,6 +70,7 @@ export default function SetAsWeddingVenueButton({
       if (!ok) return;
     }
     setSaving(true);
+    let ok = false;
     try {
       const { error } = await (supabase as any)
         .from("user_wedding_settings")
@@ -92,17 +95,39 @@ export default function SetAsWeddingVenueButton({
         );
       if (error) throw error;
       toast.success(`식장 등록 완료 — ${placeName}`, {
-        description: "다른 카테고리(스튜디오·드레스 등)에서 같은 시군구 업체를 우선 추천해드려요.",
+        description: "내 업체 보드·일정에도 반영했어요. 다른 카테고리도 같은 시군구를 우선 추천해드려요.",
         duration: 4500,
       });
       // window.location.reload 제거 (마이그레이션) — wedding_settings 캐시 invalidate
       // 한 번이면 useWeddingSchedule / useWeddingVenue 양쪽 호출자가 자동 refetch.
       void invalidateWeddingSettings();
+      ok = true;
     } catch (e) {
       console.error("set wedding venue failed", e);
       toast.error("식장 등록에 실패했어요. 잠시 후 다시 시도해주세요.");
     } finally {
       setSaving(false);
+    }
+    // 식장을 '정했다' = 베뉴 슬롯 결정. 앱 밖 계약 금액은 직접 입력(모르면 건너뜀) 후
+    // 보드+일정(+예산)에 일괄 연동 — 어느 진입점에서 결정하든 같은 데이터가 따라가도록.
+    if (ok) {
+      const amount = await promptAmount({
+        title: `${placeName} 계약 금액`,
+        description: "앱 밖에서 계약한 금액을 입력하면 내 예산에 자동 기록돼요. 아직 모르면 건너뛰어도 괜찮아요.",
+        label: "계약 금액(만원)",
+        confirmText: "예산에 기록",
+      });
+      const res = await recordVendorDecision({
+        userId: user.id,
+        placeCategory: "wedding_hall",
+        placeId,
+        vendorName: placeName,
+        amountManwon: amount,
+        scheduledDate: weddingSettings.wedding_date,
+      });
+      if (amount != null) {
+        toast[res.budget ? "success" : "error"](res.budget ? "내 예산에도 금액을 기록했어요" : "예산 기록에 실패했어요");
+      }
     }
   };
 
