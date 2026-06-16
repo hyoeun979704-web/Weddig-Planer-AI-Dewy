@@ -94,7 +94,12 @@ const BusinessLanding = () => {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background app-col mx-auto pb-28">
+    <div
+      className="min-h-screen bg-background app-col mx-auto"
+      // 고정 CTA 바(버튼+보조링크+safe-area) 높이를 넘어서는 하단 여백 — 마지막 내용이
+      // 가려지지 않게 safe-bottom 까지 계산(pb-28 고정값은 노치 기기에서 부족했음).
+      style={{ paddingBottom: "calc(var(--safe-bottom) + 9.5rem)" }}
+    >
       <PageHeader title="입점 안내" />
 
       <main className="px-4 py-6 space-y-8">
