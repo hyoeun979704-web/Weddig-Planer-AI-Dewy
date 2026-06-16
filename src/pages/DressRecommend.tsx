@@ -30,6 +30,9 @@ import {
 } from "@/data/fittingScenes";
 import { BODY_SHAPES, BODY_SHAPE_BY_VALUE, BodyShape } from "@/data/bodyShapes";
 import { FittingProgress } from "@/components/fitting/FittingProgress";
+import { PersonalizationChips } from "@/components/PersonalizationChips";
+import { useWeddingContext } from "@/hooks/useWeddingContext";
+import { buildDressPromptAddendum } from "@/lib/weddingContext";
 
 /**
  * 드레스 AI 추천 — 사진 + 체형 → gpt-image-2 가 직접 어울리는 드레스
@@ -45,6 +48,7 @@ const DressRecommend = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { context: personalization } = useWeddingContext();
 
   const [step, setStep] = useState<Step>("intro");
   const [hearts, setHearts] = useState<number | null>(null);
@@ -137,11 +141,9 @@ const DressRecommend = () => {
     const shape = BODY_SHAPE_BY_VALUE[bodyShape];
     setIsGenerating(true);
     try {
-      const prompt = buildRecommendDressPrompt(
-        sceneCode,
-        shape.label,
-        shape.englishGuide,
-      );
+      const prompt =
+        buildRecommendDressPrompt(sceneCode, shape.label, shape.englishGuide) +
+        buildDressPromptAddendum(personalization);
 
       const { data, error } = await supabase.functions.invoke(
         "dewy-dress-recommend",
@@ -236,7 +238,10 @@ const DressRecommend = () => {
 
       <main className="px-5 py-6">
         {step === "intro" && (
-          <IntroSection hearts={hearts} onStart={handleStart} />
+          <>
+            <PersonalizationChips chips={personalization.summaryChips} />
+            <IntroSection hearts={hearts} onStart={handleStart} />
+          </>
         )}
         {step === "photo" && (
           <PhotoStep

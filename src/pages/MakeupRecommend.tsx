@@ -29,6 +29,9 @@ import {
   buildRecommendMakeupPrompt,
 } from "@/data/makeupScenes";
 import { FittingProgress } from "@/components/fitting/FittingProgress";
+import { PersonalizationChips } from "@/components/PersonalizationChips";
+import { useWeddingContext } from "@/hooks/useWeddingContext";
+import { buildMakeupPromptAddendum } from "@/lib/weddingContext";
 
 /**
  * 메이크업 AI 추천 — 셀카만 입력. gpt-image-2 가 얼굴을 보고 어울리는
@@ -44,6 +47,7 @@ const MakeupRecommend = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { context: personalization } = useWeddingContext();
 
   const [step, setStep] = useState<Step>("intro");
   const [hearts, setHearts] = useState<number | null>(null);
@@ -134,7 +138,9 @@ const MakeupRecommend = () => {
     if (!photoPath || !sceneCode) return;
     setIsGenerating(true);
     try {
-      const prompt = buildRecommendMakeupPrompt(sceneCode);
+      const prompt =
+        buildRecommendMakeupPrompt(sceneCode) +
+        buildMakeupPromptAddendum(personalization);
 
       const { data, error } = await supabase.functions.invoke(
         "dewy-makeup-recommend",
@@ -226,7 +232,10 @@ const MakeupRecommend = () => {
 
       <main className="px-5 py-6">
         {step === "intro" && (
-          <IntroSection hearts={hearts} onStart={handleStart} />
+          <>
+            <PersonalizationChips chips={personalization.summaryChips} />
+            <IntroSection hearts={hearts} onStart={handleStart} />
+          </>
         )}
         {step === "photo" && (
           <PhotoStep
