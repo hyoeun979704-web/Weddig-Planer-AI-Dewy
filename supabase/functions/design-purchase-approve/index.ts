@@ -85,9 +85,18 @@ Deno.serve(async (req) => {
       if (spErr) console.error("spend_points failed (design)", spErr);
     }
 
-    // 라이선스 grant(멱등 — unique(user_id, design_id)).
+    // 라이선스 grant(멱등 — unique(user_id, design_id)). 적용 수수료(초기 0% → 이후 제휴 3%) 기록.
+    let commissionBps = 0;
+    const { data: dz } = await admin.from("designer_designs").select("designer_user_id").eq("id", intent.design_id).maybeSingle();
+    if (dz?.designer_user_id) {
+      const { data: bp } = await admin.from("business_profiles").select("commission_rate_bps").eq("user_id", dz.designer_user_id).maybeSingle();
+      commissionBps = (bp?.commission_rate_bps as number) ?? 0;
+    }
+    const commissionAmount = Math.floor((paidAmount * commissionBps) / 10000);
+
     const { error: grantErr } = await admin.from("design_purchases").insert({
       user_id: userId, design_id: intent.design_id, amount: paidAmount, points_used: intent.points_used, order_ref: tid,
+      commission_bps: commissionBps, commission_amount: commissionAmount,
     });
     if (grantErr) console.error("design_purchases grant failed", grantErr);
 
