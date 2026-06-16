@@ -248,15 +248,15 @@ const BusinessDashboard = () => {
       icon: Image,
       label: isMenuCategory ? "메뉴 관리" : "사진 관리",
       description: isMenuCategory
-        ? `등록된 메뉴 ${stats.media}개`
-        : `등록된 사진 ${stats.media}장`,
+        ? `등록된 메뉴 ${stats.media}개 · 즉시 노출`
+        : `등록된 사진 ${stats.media}장 · 즉시 노출`,
       href: "/business/gallery",
       badge: null,
     },
     {
       icon: Ticket,
       label: "쿠폰 관리",
-      description: "할인 쿠폰 발행 (검토 없이 즉시 노출)",
+      description: "할인 쿠폰 발행 (검토 후 노출)",
       href: "/business/coupons",
       badge: null,
     },
