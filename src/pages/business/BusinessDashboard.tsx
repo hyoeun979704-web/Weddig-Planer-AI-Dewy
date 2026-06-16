@@ -131,6 +131,14 @@ const BusinessDashboard = () => {
   // 운영자 승인 전에는 대시보드 기능 대신 상태 화면을 보여준다.
   if (businessProfile.approval_status !== "approved") {
     const rejected = businessProfile.approval_status === "rejected";
+    // 입점은 승인이 2단계(가입 승인 → 정보 검토 후 노출)라 "가입했는데 왜 안
+    // 보이지?" 혼란이 잦다. 진행 단계를 시각화해 지금 어디까지 왔는지 보여준다.
+    const steps = [
+      { label: "기업회원 가입 승인", desc: "운영자가 사업자 정보를 확인해요" },
+      { label: "업체 정보 등록", desc: "상세페이지에 들어갈 정보를 입력해요" },
+      { label: "검토 후 노출", desc: "고객에게 우리 업체가 보여요" },
+    ];
+    const currentStep = 0; // 검토 중 = 1단계(가입 승인) 진행 중
     return (
       <div className="min-h-screen bg-background app-col mx-auto">
         <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-sm border-b border-border">
@@ -141,30 +149,78 @@ const BusinessDashboard = () => {
             <h1 className="flex-1 text-center font-semibold text-lg pr-10">기업회원</h1>
           </div>
         </header>
-        <main className="px-5 py-16 text-center space-y-5">
-          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto ${rejected ? "bg-destructive/10" : "bg-amber-100"}`}>
-            {rejected ? <AlertCircle className="w-10 h-10 text-destructive" /> : <Clock className="w-10 h-10 text-amber-600" />}
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-foreground">
-              {rejected ? "등록이 반려되었어요" : "등록 검토 중이에요"}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-              {rejected
-                ? businessProfile.review_note
-                  ? "아래 사유를 확인하고 다시 신청해주세요."
-                  : "정보를 다시 확인하고 재신청해주세요. 문의는 고객센터로 연락 주세요."
-                : "운영자 검토 후 결과를 알려드릴게요. 승인되면 업체 상세정보를 입력할 수 있어요."}
-            </p>
-            {rejected && businessProfile.review_note && (
-              <p className="text-sm text-foreground mt-3 bg-muted rounded-lg p-3 text-left whitespace-pre-line">
-                {businessProfile.review_note}
+        <main className="px-5 py-12 space-y-6">
+          <div className="text-center space-y-4">
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto ${rejected ? "bg-destructive/10" : "bg-amber-100"}`}>
+              {rejected ? <AlertCircle className="w-10 h-10 text-destructive" /> : <Clock className="w-10 h-10 text-amber-600" />}
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-foreground">
+                {rejected ? "등록이 반려되었어요" : "등록을 검토하고 있어요"}
+              </h2>
+              {!rejected && businessProfile.business_name && (
+                <p className="text-sm font-semibold text-foreground mt-1">
+                  ‘{businessProfile.business_name}’
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                {rejected
+                  ? businessProfile.review_note
+                    ? "아래 사유를 확인하고 다시 신청해주세요."
+                    : "정보를 다시 확인하고 재신청해주세요. 문의는 고객센터로 연락 주세요."
+                  : "보통 1~2영업일 이내에 검토가 끝나요. 승인되면 알림으로 알려드리고, 바로 업체 정보를 입력할 수 있어요."}
               </p>
-            )}
+            </div>
           </div>
-          {rejected && (
+
+          {rejected && businessProfile.review_note && (
+            <p className="text-sm text-foreground bg-muted rounded-lg p-3 text-left whitespace-pre-line">
+              {businessProfile.review_note}
+            </p>
+          )}
+
+          {/* 진행 단계 — 검토 중일 때만(2단계 승인 흐름을 한눈에) */}
+          {!rejected && (
+            <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">진행 단계</p>
+              {steps.map((s, i) => {
+                const done = i < currentStep;
+                const active = i === currentStep;
+                return (
+                  <div key={s.label} className="flex items-start gap-3">
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
+                        done
+                          ? "bg-primary text-primary-foreground"
+                          : active
+                            ? "bg-amber-100 text-amber-700 ring-2 ring-amber-300"
+                            : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {done ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${active || done ? "text-foreground" : "text-muted-foreground"}`}>
+                        {s.label}
+                        {active && (
+                          <span className="ml-1.5 text-[11px] text-amber-600 font-normal">· 진행 중</span>
+                        )}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{s.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {rejected ? (
             <Button onClick={() => navigate("/business/onboard")} className="w-full h-12">
               다시 신청하기
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => navigate("/mypage")} className="w-full h-12">
+              마이페이지로
             </Button>
           )}
         </main>

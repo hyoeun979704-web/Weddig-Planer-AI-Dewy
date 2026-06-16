@@ -35,6 +35,14 @@ export const useUserRole = () => {
     }
 
     const fetchData = async () => {
+      // 재조회 동안 로딩을 true 로 유지한다. 이게 없으면 직접 진입/새로고침 시
+      // 첫 마운트의 `!user` 분기가 setIsLoading(false) 로 둔 상태에서 user 가
+      // 뒤늦게 들어와 fetch 가 도는 동안 로딩이 false 로 남는다. 그러면
+      // setRoles → (await) → setBusinessProfile 사이 갭에서 isBusiness=true 인데
+      // businessProfile=null 인 중간 렌더가 커밋되고, requireApproved 가드가
+      // 이를 "미승인"으로 오판해 승인된 업체를 대시보드로 튕긴다(딥링크/새로고침
+      // 한정 버그). 로딩을 켜두면 roles·profile 이 모두 도착한 뒤에만 판정된다.
+      setIsLoading(true);
       setIsError(false);
       try {
         // Fetch roles
