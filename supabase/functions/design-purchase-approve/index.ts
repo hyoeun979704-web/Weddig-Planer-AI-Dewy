@@ -93,10 +93,15 @@ Deno.serve(async (req) => {
       commissionBps = (bp?.commission_rate_bps as number) ?? 0;
     }
     const commissionAmount = Math.floor((paidAmount * commissionBps) / 10000);
+    // PG 수수료는 업체(작가) 부담 — 정산금에서 공제(소비자 추가청구 아님). PG 계약 요율 = env.
+    const pgFeeBps = Number(Deno.env.get("PG_FEE_BPS") ?? "0") || 0;
+    const pgFee = Math.floor((paidAmount * pgFeeBps) / 10000);
+    const netToSeller = Math.max(0, paidAmount - commissionAmount - pgFee);
 
     const { error: grantErr } = await admin.from("design_purchases").insert({
       user_id: userId, design_id: intent.design_id, amount: paidAmount, points_used: intent.points_used, order_ref: tid,
       commission_bps: commissionBps, commission_amount: commissionAmount,
+      pg_fee: pgFee, net_to_seller: netToSeller,
     });
     if (grantErr) console.error("design_purchases grant failed", grantErr);
 
