@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { markProviderConnected } from "@/lib/calendarAutoSync";
 
 export type CalendarProvider = "google" | "kakao";
 
@@ -16,7 +17,9 @@ export function useCalendarSync(provider: CalendarProvider) {
     if (!user) { setConnected(false); setLoading(false); return; }
     setLoading(true);
     const { data } = await supabase.functions.invoke("cal-sync", { body: { provider, action: "status" } });
-    setConnected(!!(data as { connected?: boolean } | null)?.connected);
+    const isConnected = !!(data as { connected?: boolean } | null)?.connected;
+    setConnected(isConnected);
+    markProviderConnected(provider, isConnected); // 자동 동기화 게이트 갱신
     setLoading(false);
   }, [user, provider]);
 
@@ -45,7 +48,7 @@ export function useCalendarSync(provider: CalendarProvider) {
   const disconnect = useCallback(async (): Promise<boolean> => {
     const { data, error } = await supabase.functions.invoke("cal-sync", { body: { provider, action: "disconnect" } });
     const ok = !!(data as { ok?: boolean } | null)?.ok && !error;
-    if (ok) setConnected(false);
+    if (ok) { setConnected(false); markProviderConnected(provider, false); }
     return ok;
   }, [provider]);
 
