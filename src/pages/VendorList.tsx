@@ -8,6 +8,7 @@ import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useWeddingVenue } from "@/hooks/useWeddingVenue";
 import { usePortfolioVenueMatch } from "@/hooks/usePortfolioVenueMatch";
 import { rankByVenueMatch } from "@/lib/venueMatch";
+import { loadTasteTags } from "@/lib/tasteQuiz";
 import { Skeleton } from "@/components/ui/skeleton";
 import VendorMediaCard, {
   CARD_W,
@@ -47,17 +48,26 @@ const VendorList = () => {
   const venue = useWeddingVenue();
   const placeIds = useMemo(() => vendors.map((v) => v.vendor_id), [vendors]);
   const { data: pfMap } = usePortfolioVenueMatch(venue.isSet ? placeIds : []);
+  // 취향 진단(미니퀴즈) 결과 태그 — 있으면 업체 스타일 태그와 겹치는 만큼 소프트 가산.
+  const tasteTags = useMemo(() => loadTasteTags() as string[], []);
   const ranked = useMemo(() => {
-    if (!venue.isSet || !pfMap || pfMap.size === 0) {
-      return vendors.map((v) => ({ ...v, venueMatch: { score: 0, sameVenue: false, byName: false } }));
-    }
-    return rankByVenueMatch(
-      { placeId: venue.placeId, name: venue.name },
-      vendors,
-      (v) => pfMap.get(v.vendor_id) ?? [],
-    );
-  }, [vendors, pfMap, venue.isSet, venue.placeId, venue.name]);
+    const withVenue =
+      venue.isSet && pfMap && pfMap.size > 0
+        ? rankByVenueMatch({ placeId: venue.placeId, name: venue.name }, vendors, (v) => pfMap.get(v.vendor_id) ?? [])
+        : vendors.map((v) => ({ ...v, venueMatch: { score: 0, sameVenue: false, byName: false } }));
+    if (tasteTags.length === 0) return withVenue;
+    // 같은-식장(1순위) → 취향 겹침 수(2순위) → 기존 순서. 취향이 결과 정렬에 실제 반영되게
+    // 해 미니퀴즈가 "동작하는 척"하지 않도록(거짓 약속 방지).
+    return withVenue
+      .map((v, i) => ({ v, i, t: (v.style_tags ?? []).filter((s) => tasteTags.includes(s)).length }))
+      .sort((a, b) => b.v.venueMatch.score - a.v.venueMatch.score || b.t - a.t || a.i - b.i)
+      .map(({ v }) => v);
+  }, [vendors, pfMap, venue.isSet, venue.placeId, venue.name, tasteTags]);
   const venueMatchCount = ranked.filter((v) => v.venueMatch.score > 0).length;
+  const tasteMatchCount =
+    tasteTags.length > 0
+      ? ranked.filter((v) => (v.style_tags ?? []).some((s) => tasteTags.includes(s))).length
+      : 0;
 
   return (
     <div className="min-h-screen bg-background app-col mx-auto relative">
@@ -81,6 +91,12 @@ const VendorList = () => {
             <p className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-semibold text-primary">
               <Camera className="w-3.5 h-3.5" />
               {venue.shortLabel ? `${venue.shortLabel}에서` : "내 식장에서"} 촬영한 포폴 {venueMatchCount}곳을 먼저 보여드려요
+            </p>
+          )}
+          {tasteMatchCount > 0 && (
+            <p className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-semibold text-primary">
+              <Sparkles className="w-3.5 h-3.5" />
+              취향({tasteTags.slice(0, 2).join("·")}) 맞춤 {tasteMatchCount}곳을 먼저 보여드려요
             </p>
           )}
         </div>
