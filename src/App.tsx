@@ -53,6 +53,10 @@ const QuoteNew = lazy(() => import("./pages/QuoteNew"));
 const QuoteList = lazy(() => import("./pages/QuoteList"));
 const QuoteDetail = lazy(() => import("./pages/QuoteDetail"));
 const QuoteThread = lazy(() => import("./pages/QuoteThread"));
+const MyDeliveries = lazy(() => import("./pages/MyDeliveries"));
+const TasteQuiz = lazy(() => import("./pages/TasteQuiz"));
+const MailInbox = lazy(() => import("./pages/MailInbox"));
+const InvitationMarket = lazy(() => import("./pages/invitation/InvitationMarket"));
 const VendorBoard = lazy(() => import("./pages/VendorBoard"));
 const VendorCompare = lazy(() => import("./pages/VendorCompare"));
 const BusinessLeads = lazy(() => import("./pages/business/BusinessLeads"));
@@ -179,6 +183,8 @@ const BusinessCoupons = lazy(() => import("./pages/business/BusinessCoupons"));
 const BusinessEvents = lazy(() => import("./pages/business/BusinessEvents"));
 const BusinessProducts = lazy(() => import("./pages/business/BusinessProducts"));
 const BusinessInquiries = lazy(() => import("./pages/business/BusinessInquiries"));
+const BusinessDeliveries = lazy(() => import("./pages/business/BusinessDeliveries"));
+const BusinessDesigns = lazy(() => import("./pages/business/BusinessDesigns"));
 const BusinessReviews = lazy(() => import("./pages/business/BusinessReviews"));
 
 const queryClient = new QueryClient();
@@ -307,6 +313,8 @@ const App = () => (
               <Route path="/business/events" element={<BusinessGuard requireApproved><BusinessEvents /></BusinessGuard>} />
               <Route path="/business/products" element={<BusinessGuard requireApproved><BusinessProducts /></BusinessGuard>} />
               <Route path="/business/inquiries" element={<BusinessGuard requireApproved><BusinessInquiries /></BusinessGuard>} />
+              <Route path="/business/deliveries" element={<BusinessGuard requireApproved><BusinessDeliveries /></BusinessGuard>} />
+              <Route path="/business/designs" element={<BusinessGuard requireApproved><BusinessDesigns /></BusinessGuard>} />
               <Route path="/business/reviews" element={<BusinessGuard requireApproved><BusinessReviews /></BusinessGuard>} />
 
               <Route path="/terms" element={<Terms />} />
@@ -319,6 +327,10 @@ const App = () => (
               <Route path="/quote/new" element={<QuoteNew />} />
               <Route path="/quote/:id" element={<QuoteDetail />} />
               <Route path="/quote/:requestId/thread/:placeId" element={<QuoteThread />} />
+              <Route path="/my-deliveries" element={<MyDeliveries />} />
+              <Route path="/taste" element={<TasteQuiz />} />
+              <Route path="/mail" element={<MailInbox />} />
+              <Route path="/invitation/market" element={<InvitationMarket />} />
               <Route path="/business/leads" element={<BusinessLeads />} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />

@@ -40,3 +40,23 @@ verify_jwt = false
 # 외부 이미지 → 공개 Storage 미러링 (tip_instagrams 썸네일 등). 로그인 사용자만.
 [functions.mirror-image]
 verify_jwt = true
+
+# 인앱 이메일(Gmail/Drive). 시작은 JWT, 콜백은 Google 리다이렉트라 JWT 없음.
+[functions.mail-oauth-start]
+verify_jwt = true
+
+[functions.mail-oauth-callback]
+verify_jwt = false
+
+[functions.gmail-list]
+verify_jwt = true
+
+[functions.gmail-send]
+verify_jwt = true
+
+# 디자인 마켓 구매 결제(카카오페이 + 포인트 할인). 둘 다 인증 필요.
+[functions.design-purchase-ready]
+verify_jwt = true
+
+[functions.design-purchase-approve]
+verify_jwt = true

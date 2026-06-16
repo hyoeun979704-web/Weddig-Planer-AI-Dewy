@@ -12,7 +12,7 @@ interface InquiryRow {
   title: string;
   content: string;
   contact: string | null;
-  status: "open" | "answered" | "closed";
+  status: "open" | "answered" | "closed" | "booked";
   answer: string | null;
   answered_at: string | null;
   created_at: string;
@@ -89,6 +89,22 @@ const BusinessInquiries = () => {
     }
   };
 
+  const handleBooked = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("place_inquiries")
+        .update({ status: "booked" })
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("예약 확정으로 표시했어요");
+      await load();
+    } catch (err) {
+      toast.error("처리 실패", {
+        description: err instanceof Error ? err.message : "다시 시도해주세요.",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background app-col mx-auto pb-10">
       <PageHeader title="문의 관리" />
@@ -124,12 +140,14 @@ const BusinessInquiries = () => {
                     </p>
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${
-                        q.status === "answered"
-                          ? "bg-primary/10 text-primary"
-                          : "bg-amber-100 text-amber-700"
+                        q.status === "booked"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : q.status === "answered"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-amber-100 text-amber-700"
                       }`}
                     >
-                      {q.status === "answered" ? "답변 완료" : "새 문의"}
+                      {q.status === "booked" ? "예약 확정" : q.status === "answered" ? "답변 완료" : "새 문의"}
                     </span>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -164,6 +182,15 @@ const BusinessInquiries = () => {
                       ) : null}
                       {q.answer ? "답변 수정" : "답변 등록"}
                     </Button>
+                    {q.status !== "booked" && (
+                      <Button
+                        variant="outline"
+                        className="w-full h-10"
+                        onClick={() => handleBooked(q.id)}
+                      >
+                        예약 확정으로 표시
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star, Inbox } from "lucide-react";
+import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star, Inbox, Palette } from "lucide-react";
+import { DESIGN_MARKET_ENABLED } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -281,6 +282,23 @@ const BusinessDashboard = () => {
       href: "/business/inquiries",
       badge: null,
     },
+    {
+      icon: Package,
+      label: "결과물 보내기",
+      description: "보정본 등 결과물을 고객에게 전달",
+      href: "/business/deliveries",
+      badge: null,
+    },
+    // 디자인 마켓: 세무 확정 전까지 진입점 숨김(피처 플래그). 라우트/백엔드는 유지.
+    ...(DESIGN_MARKET_ENABLED
+      ? [{
+          icon: Palette,
+          label: "디자인 등록",
+          description: "청첩장 디자인을 마켓에 등록·판매",
+          href: "/business/designs",
+          badge: null,
+        }]
+      : []),
     {
       icon: Inbox,
       label: "받은 견적 요청",

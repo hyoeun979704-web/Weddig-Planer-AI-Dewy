@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { Heart, Coins, Ticket, ShoppingBag, FileText, ClipboardList } from "lucide-react";
+import { Heart, Coins, Ticket, ShoppingBag, FileText, ClipboardList, Package, Mail, Palette } from "lucide-react";
+import { DESIGN_MARKET_ENABLED } from "@/lib/featureFlags";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -88,6 +89,30 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
       href: "/board",
       iconClass: "text-primary",
     },
+    {
+      icon: Package,
+      label: "받은 결과물",
+      value: "-",
+      href: "/my-deliveries",
+      iconClass: "text-primary",
+    },
+    {
+      icon: Mail,
+      label: "메일",
+      value: "-",
+      href: "/mail",
+      iconClass: "text-primary",
+    },
+    // 디자인 마켓: 세무 확정 전까지 진입점 숨김(피처 플래그). 라우트/백엔드는 유지.
+    ...(DESIGN_MARKET_ENABLED
+      ? [{
+          icon: Palette,
+          label: "청첩장 마켓",
+          value: "-",
+          href: "/invitation/market",
+          iconClass: "text-primary",
+        }]
+      : []),
   ];
 
   return (
