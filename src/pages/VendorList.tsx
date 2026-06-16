@@ -1,9 +1,13 @@
+import { useMemo } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { MapPin } from "lucide-react";
+import { MapPin, Camera, Sparkles } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { useVendors, categoryRouteMap } from "@/hooks/useVendors";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useWeddingVenue } from "@/hooks/useWeddingVenue";
+import { usePortfolioVenueMatch } from "@/hooks/usePortfolioVenueMatch";
+import { rankByVenueMatch } from "@/lib/venueMatch";
 import { Skeleton } from "@/components/ui/skeleton";
 import VendorMediaCard, {
   CARD_W,
@@ -39,6 +43,22 @@ const VendorList = () => {
       ).length
     : 0;
 
+  // 같은 식장 포폴 우선 — 확정 식장이 있으면, 업체 포폴의 진행 장소와 매칭해 우선 정렬.
+  const venue = useWeddingVenue();
+  const placeIds = useMemo(() => vendors.map((v) => v.vendor_id), [vendors]);
+  const { data: pfMap } = usePortfolioVenueMatch(venue.isSet ? placeIds : []);
+  const ranked = useMemo(() => {
+    if (!venue.isSet || !pfMap || pfMap.size === 0) {
+      return vendors.map((v) => ({ ...v, venueMatch: { score: 0, sameVenue: false, byName: false } }));
+    }
+    return rankByVenueMatch(
+      { placeId: venue.placeId, name: venue.name },
+      vendors,
+      (v) => pfMap.get(v.vendor_id) ?? [],
+    );
+  }, [vendors, pfMap, venue.isSet, venue.placeId, venue.name]);
+  const venueMatchCount = ranked.filter((v) => v.venueMatch.score > 0).length;
+
   return (
     <div className="min-h-screen bg-background app-col mx-auto relative">
       <PageHeader title={config?.label || decodedCategory || "업체 목록"} />
@@ -57,7 +77,26 @@ const VendorList = () => {
               내 지역 {curationRegion} {regionMatchCount}곳을 먼저 보여드려요
             </p>
           )}
+          {venueMatchCount > 0 && (
+            <p className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-semibold text-primary">
+              <Camera className="w-3.5 h-3.5" />
+              {venue.shortLabel ? `${venue.shortLabel}에서` : "내 식장에서"} 촬영한 포폴 {venueMatchCount}곳을 먼저 보여드려요
+            </p>
+          )}
         </div>
+
+        {/* 취향 모르겠는 초보 — 미니퀴즈 진단 진입(§4.1) */}
+        <button
+          type="button"
+          onClick={() => navigate("/taste")}
+          className="mx-4 mt-3 w-[calc(100%-2rem)] flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 text-left active:scale-[0.99] transition-transform"
+        >
+          <span className="inline-flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">취향이 아직 모르겠어요</span>
+          </span>
+          <span className="text-[12px] text-muted-foreground">30초 진단 ›</span>
+        </button>
 
         {/* 한 번에 여러 업체 견적 받기 — 능동적 연결(견적 매칭) 진입점 */}
         <button
@@ -79,16 +118,22 @@ const VendorList = () => {
                 <CardSkeleton key={i} />
               ))}
             </div>
-          ) : vendors.length > 0 ? (
+          ) : ranked.length > 0 ? (
             <div className="grid grid-cols-2 gap-2 justify-items-center">
-              {vendors.map((vendor) => {
+              {ranked.map((vendor) => {
                 const detail = config?.detailPath ?? "/vendor";
                 return (
-                  <VendorMediaCard
-                    key={vendor.vendor_id}
-                    data={vendorToCardData(vendor)}
-                    onClick={() => navigate(`${detail}/${vendor.vendor_id}`)}
-                  />
+                  <div key={vendor.vendor_id} className="relative">
+                    {vendor.venueMatch.score > 0 && (
+                      <span className="absolute top-1.5 left-1.5 z-10 inline-flex items-center gap-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground shadow">
+                        <Camera className="w-2.5 h-2.5" /> 내 식장 포폴
+                      </span>
+                    )}
+                    <VendorMediaCard
+                      data={vendorToCardData(vendor)}
+                      onClick={() => navigate(`${detail}/${vendor.vendor_id}`)}
+                    />
+                  </div>
                 );
               })}
             </div>

@@ -17,6 +17,7 @@ interface MediaItem {
   image_url: string | null;
   title: string | null;
   price: number | null;
+  venue_name: string | null;
 }
 
 // 업체 사진/메뉴 관리. 모임장소(invitation_venue)는 "메뉴 등록"(메뉴명·가격·사진),
@@ -32,6 +33,11 @@ const BusinessGallery = () => {
   const [imageUrl, setImageUrl] = useState("");
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
+  // 포트폴리오 메타(사진 갤러리용) — 진행 장소(식장)·스타일 태그·설명.
+  // 진행 장소를 적으면 사용자의 확정 식장과 매칭돼 우선 노출된다(venueMatch).
+  const [venueName, setVenueName] = useState("");
+  const [styleTags, setStyleTags] = useState("");
+  const [description, setDescription] = useState("");
   const [adding, setAdding] = useState(false);
   // 업로드 성공 후 ImageUploader 미리보기를 비우기 위한 강제 리마운트 키.
   const [uploaderKey, setUploaderKey] = useState(0);
@@ -41,7 +47,7 @@ const BusinessGallery = () => {
   const loadMedia = useCallback(async (pid: string) => {
     const { data } = await supabase
       .from("place_media" as any)
-      .select("id, kind, image_url, title, price")
+      .select("id, kind, image_url, title, price, venue_name")
       .eq("place_id", pid)
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true });
@@ -67,6 +73,7 @@ const BusinessGallery = () => {
     if (!imageUrl.trim()) { toast.error("이미지 URL을 입력해주세요"); return; }
     if (isMenu && !title.trim()) { toast.error("메뉴명을 입력해주세요"); return; }
     setAdding(true);
+    const tags = styleTags.split(",").map((t) => t.trim()).filter(Boolean);
     const { error } = await supabase.from("place_media").insert({
       place_id: placeId,
       owner_user_id: user.id,
@@ -75,10 +82,14 @@ const BusinessGallery = () => {
       title: isMenu ? title.trim() : null,
       price: isMenu && price ? parseInt(price, 10) : null,
       display_order: items.length,
-    });
+      // 포폴 메타(사진만) — 진행 장소·태그·설명.
+      venue_name: !isMenu && venueName.trim() ? venueName.trim() : null,
+      style_tags: !isMenu ? tags : [],
+      description: !isMenu && description.trim() ? description.trim() : null,
+    } as any);
     setAdding(false);
     if (error) { toast.error("추가에 실패했어요"); return; }
-    setImageUrl(""); setTitle(""); setPrice("");
+    setImageUrl(""); setTitle(""); setPrice(""); setVenueName(""); setStyleTags(""); setDescription("");
     setUploaderKey((k) => k + 1);
     toast.success(isMenu ? "메뉴를 추가했어요" : "사진을 추가했어요");
     await loadMedia(placeId);
@@ -156,6 +167,25 @@ const BusinessGallery = () => {
               className="mt-2"
             />
           </div>
+          {!isMenu && (
+            <div className="space-y-3 border-t border-border pt-3">
+              <p className="text-[11px] text-muted-foreground">
+                진행 장소를 적으면 그 식장을 예약한 고객에게 <b>우선 노출</b>돼요(선택).
+              </p>
+              <div className="space-y-1.5">
+                <Label className="text-xs">진행 장소(식장명)</Label>
+                <Input value={venueName} onChange={(e) => setVenueName(e.target.value)} placeholder="예: 그랜드웨딩홀 강남" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">스타일 태그 (쉼표로 구분)</Label>
+                <Input value={styleTags} onChange={(e) => setStyleTags(e.target.value)} placeholder="예: 필름, 내추럴, 야외" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">설명</Label>
+                <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="이 작업에 대한 짧은 설명(선택)" />
+              </div>
+            </div>
+          )}
           <Button onClick={handleAdd} disabled={adding} className="w-full">
             {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> {isMenu ? "메뉴 추가" : "사진 추가"}</>}
           </Button>
@@ -174,11 +204,15 @@ const BusinessGallery = () => {
                   {m.image_url && <img src={m.image_url} alt={m.title ?? ""} className="w-full h-full object-cover" />}
                 </div>
                 <div className="p-2.5">
-                  {isMenu && (
+                  {isMenu ? (
                     <>
                       <p className="text-[13px] font-semibold text-foreground truncate">{m.title}</p>
                       {m.price != null && <p className="text-[12px] text-muted-foreground">{m.price.toLocaleString()}원</p>}
                     </>
+                  ) : (
+                    m.venue_name && (
+                      <p className="text-[11px] text-primary truncate">📍 {m.venue_name}</p>
+                    )
                   )}
                   <button onClick={() => handleDelete(m.id)} className="mt-1 text-[11px] text-destructive inline-flex items-center gap-1">
                     <Trash2 className="w-3 h-3" /> 삭제
