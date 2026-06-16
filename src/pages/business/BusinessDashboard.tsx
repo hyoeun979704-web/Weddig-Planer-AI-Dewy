@@ -282,6 +282,13 @@ const BusinessDashboard = () => {
       badge: null,
     },
     {
+      icon: Package,
+      label: "결과물 보내기",
+      description: "보정본 등 결과물을 고객에게 전달",
+      href: "/business/deliveries",
+      badge: null,
+    },
+    {
       icon: Inbox,
       label: "받은 견적 요청",
       description: "고객 견적 요청에 빠르게 답변하고 리드를 잡으세요",
