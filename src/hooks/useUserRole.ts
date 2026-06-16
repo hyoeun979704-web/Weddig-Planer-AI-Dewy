@@ -65,6 +65,10 @@ export const useUserRole = () => {
           if (bpError) throw bpError;
 
           setBusinessProfile(bpData || null);
+        } else {
+          // business 역할이 없으면 이전 세션의 stale businessProfile 을 비운다
+          // (역할 변경/재조회 시 옛 프로필이 남아 가드가 오판하는 것 방지).
+          setBusinessProfile(null);
         }
       } catch (e) {
         console.error("Error fetching user role:", e);

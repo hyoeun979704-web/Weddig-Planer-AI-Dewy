@@ -28,8 +28,15 @@ const VendorList = () => {
   const { weddingSettings } = useWeddingSchedule();
   const curationRegion = weddingSettings.wedding_venue_city || weddingSettings.wedding_region;
   const { data: vendors = [], isLoading } = useVendors(decodedCategory || undefined, curationRegion);
+  // useVendors 의 큐레이션 정렬과 동일 기준(city 정확 일치)으로 카운트해야
+  // 배지 숫자와 실제 상단 정렬된 업체 수가 일치한다. region 은 "city district"
+  // 조합이므로 city===curationRegion 은 region===curationRegion(구 없음) 또는
+  // region 이 "curationRegion " 로 시작(구 있음)인 경우와 동치다.
+  // (단순 startsWith 는 "서울"→"서울특별시 강남구"까지 잡아 정렬과 어긋남.)
   const regionMatchCount = curationRegion
-    ? vendors.filter((v) => (v.region ?? "").startsWith(curationRegion)).length
+    ? vendors.filter(
+        (v) => v.region === curationRegion || (v.region ?? "").startsWith(curationRegion + " "),
+      ).length
     : 0;
 
   return (
