@@ -2,10 +2,11 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { ArrowRight, BookOpen, Check, Flame, Sparkles, Timer, Gift } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Flame, Sparkles, Timer, Gift, Lightbulb } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { usePersonaInsights } from "@/hooks/usePersonaInsights";
+import { useSmartSuggestions } from "@/hooks/useSmartSuggestions";
 import { useDailyStreak } from "@/hooks/useDailyStreak";
 import { useSessionTimer } from "@/hooks/useSessionTimer";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
@@ -50,6 +51,8 @@ const PersonaDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const insights = usePersonaInsights();
+  // 유기성 배선 D2 — 기능 간 빈틈을 감지해 각 기능으로 딥링크하는 크로스-피처 제안.
+  const smartSuggestions = useSmartSuggestions(3);
   const { weddingSettings } = useWeddingSchedule();
   const streak = useDailyStreak();
   const session = useSessionTimer();
@@ -391,6 +394,36 @@ const PersonaDashboard = () => {
                   <span className="text-[10px] text-muted-foreground shrink-0">
                     {format(new Date(item.scheduled_date), "M/d", { locale: ko })}
                   </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Row 3.2: 스마트 제안 — 기능 간 빈틈(예산·컨설팅·체크리스트)을 각 기능으로
+            딥링크. 일정 "다음 액션"과 달리 surface 를 넘나든다(유기성 D2). 빈틈 없으면 미렌더. */}
+        {smartSuggestions.length > 0 && (
+          <div className="relative mt-3 bg-card/70 rounded-2xl p-2.5">
+            <div className="flex items-center gap-1 mb-1.5 px-1">
+              <Lightbulb className="w-3 h-3 text-amber-500" />
+              <p className="text-[11px] font-bold text-foreground">스마트 제안</p>
+            </div>
+            <div className="space-y-1">
+              {smartSuggestions.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => navigate(s.href)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-muted/60 active:scale-[0.98] transition-all text-left"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold text-foreground truncate">
+                      {s.label}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {s.reason}
+                    </p>
+                  </div>
+                  <ArrowRight className="w-3 h-3 text-primary shrink-0" />
                 </button>
               ))}
             </div>

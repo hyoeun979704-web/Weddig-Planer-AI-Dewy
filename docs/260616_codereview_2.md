@@ -94,3 +94,48 @@
 - **D그룹(능동화)**: 컨텍스트 종합 → "다음 액션 N개", 실납부 익명 집계 → 가격 벤치마크.
 - **추가 검토**: 컨설팅 결과를 `user_ai_memory(preference)` 로도 승격하면 본 합성이 보드 미생성
   사용자(메모리만 있는 케이스)까지 더 촘촘히 커버.
+
+---
+
+## 2차 증분 — D2(크로스-피처 다음 액션) + C1(하객→식대 추정)
+
+> 같은 PR 후속. 홈 "다음 액션"이 **일정 항목만** 보여주고 전부 `/my-schedule` 로만 보내던
+> 한계(섬 안 순환)를, 기능 간 빈틈을 감지해 **각 기능으로 딥링크**하는 "스마트 제안"으로 확장.
+
+### 무엇을 만들었나 (2차)
+
+| 파일 | 역할 |
+|---|---|
+| `src/lib/smartSuggestions.ts` (신규) | 순수 제안 엔진. `deriveSmartSuggestions`(빈틈→우선순위 랭킹), `estimateCateringCost`(C1 하객×1인식대), `formatManwon` |
+| `src/lib/smartSuggestions.test.ts` (신규) | 10 테스트(우선순위·딥링크·임박조건·limit·빈틈 없음) |
+| `src/hooks/useSmartSuggestions.ts` (신규) | `usePersonaInsights`+`useWeddingContext`+`useBudget` 조합(읽기 전용) |
+| `src/components/home/PersonaDashboard.tsx` (편집) | "스마트 제안" 블록 — 빈틈 있을 때만 렌더, 각 제안 딥링크 |
+
+### 감지하는 빈틈(딥링크)
+- 예산 **초과**(지출>총예산) → `/budget` (priority 95, 식대 초과액 표시)
+- D-90 이내 + 진척 70% 미만 → `/my-schedule` 체크리스트 (85)
+- 예산 **미설정** → `/budget` (80, "하객 N명 기준 식대 약 N만원" C1 동기부여)
+- 퍼스널컬러 컨설팅 **미실시** → `/wedding-consulting` (55, Wave 0 추천 시너지로 연결)
+
+### 6차원 (2차 델타)
+- **정확성**: 빈틈 0이면 빈 배열 → 카드 미렌더(잡음 없음). `d>=0 && d<=90` 등 경계값 테스트로 고정.
+  early-return 전 훅 호출(React 규칙 준수).
+- **dead-end UI**: 모든 제안이 **실제 기능 라우트로 딥링크**(toast/no-op 아님). 일정 "다음 액션"과
+  **중복 아님** — 그쪽은 일정 항목, 이쪽은 surface 간 빈틈(역할 분리).
+- **DRY/아키텍처**: `useWeddingContext`(Wave 0) 재사용, 순수 랭킹은 lib, I/O 는 훅. 계층 유지.
+- **성능**: `useBudget`는 react-query 캐시 공유(중복 쿼리 없음), `useMemo` 메모이즈.
+
+### 검증 (2차)
+- 신규 유닛 **10/10 pass**(누적 26/26) · `npm run build` 0 error · 신규 파일 lint 0 error
+  (PersonaDashboard 의 기존 `supabase as any` 경고 1건은 미변경 라인) · 전체 `vitest`
+  **476 pass / 1 사전 실패**(동일·무관).
+- **한계**: 실데이터(예산 설정 유무·컨설팅 행)에 따른 실제 노출은 라이브 확인 권장(로직은
+  유닛으로 고정). 홈 클릭 e2e 는 sandbox 미확인.
+
+## 남은 작업 (갱신 — deferred 사유 명시)
+
+- **A그룹(행동→자동 DB 기록)**: 의도적으로 보류. ① 추천 플로우는 *프리뷰 생성*이지 "이 드레스로
+  확정" 결정점이 없어 예산 자동 항목의 트리거가 부재 ② 청첩장/결제→예산은 KakaoPay edge
+  경로라 **중복발급·부분쓰기 방지(멱등성)** 가 라이브 e2e 없이는 위험. 결정점 UX 설계 후 별도 PR.
+- **C그룹 잔여**: RSVP 실집계→예식장 수용인원 필터, 일정 완료율→readiness 정식 스코어.
+- **D그룹 잔여**: 실납부 익명 집계→가격 벤치마크(오라클), 자율 에이전트 실행(승인/거부 루프).
