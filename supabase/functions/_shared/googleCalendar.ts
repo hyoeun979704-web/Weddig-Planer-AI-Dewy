@@ -151,3 +151,29 @@ export function eventStartYmd(e: GCalEvent): string | null {
   if (e.start?.dateTime) return e.start.dateTime.slice(0, 10);
   return null;
 }
+
+// ── provider 공용 어댑터/OAuth (calendarSync.ts 인터페이스 구현) ──
+import type { CalendarAdapter, CalendarOAuth, CalListResult } from "./calendarSync.ts";
+
+export const googleOAuth: CalendarOAuth = {
+  provider: "google",
+  authUrl: (redirectUri, state) => googleAuthUrl(redirectUri, state),
+  exchangeCode: (code, redirectUri) => exchangeCode(code, redirectUri),
+};
+
+export const googleAdapter: CalendarAdapter = {
+  provider: "google",
+  pullHandlesDeletions: true, // showDeleted=true → 취소 이벤트로 삭제 전파
+  refresh: (rt) => refreshAccessToken(rt),
+  createEvent: (token, calId, title, ymd) => createEvent(token, calId, title, ymd),
+  updateEvent: (token, calId, id, title, ymd) => updateEvent(token, calId, id, title, ymd),
+  deleteEvent: (token, calId, id) => deleteEvent(token, calId, id),
+  listEvents: async (token, calId, syncToken): Promise<CalListResult> => {
+    const r = await listEvents(token, calId, syncToken);
+    return {
+      items: r.items.map((e) => ({ id: e.id, status: e.status, title: e.summary ?? "", ymd: eventStartYmd(e) })),
+      nextSyncToken: r.nextSyncToken,
+    };
+  },
+};
+
