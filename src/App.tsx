@@ -55,6 +55,7 @@ const QuoteDetail = lazy(() => import("./pages/QuoteDetail"));
 const QuoteThread = lazy(() => import("./pages/QuoteThread"));
 const MyDeliveries = lazy(() => import("./pages/MyDeliveries"));
 const TasteQuiz = lazy(() => import("./pages/TasteQuiz"));
+const MailInbox = lazy(() => import("./pages/MailInbox"));
 const VendorBoard = lazy(() => import("./pages/VendorBoard"));
 const VendorCompare = lazy(() => import("./pages/VendorCompare"));
 const BusinessLeads = lazy(() => import("./pages/business/BusinessLeads"));
@@ -325,6 +326,7 @@ const App = () => (
               <Route path="/quote/:requestId/thread/:placeId" element={<QuoteThread />} />
               <Route path="/my-deliveries" element={<MyDeliveries />} />
               <Route path="/taste" element={<TasteQuiz />} />
+              <Route path="/mail" element={<MailInbox />} />
               <Route path="/business/leads" element={<BusinessLeads />} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />
