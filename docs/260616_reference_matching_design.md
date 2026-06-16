@@ -87,9 +87,64 @@ hanbok·tailor_shop·honeymoon·appliance·jewelry·invitation_venue·planner·*
 가 1건이라도 있으면 **최상위 가산**(스타일 태그·지역 점수보다 큰 가중). `venue_place_id` 없고
 `venue_name` 이 확정 식장명과 정확/부분 일치하면 그다음 가산(label vs value 주의 — §7).
 
-## 4. 사용자 선택 UX (레퍼런스 ↔ 필터)
+## 3.6 카테고리별 상세 필터 택소노미 (업계 자료 + 패션앱 분석 반영)
 
-업체 둘러보기/견적 진입 시 상단에 **세그먼트 토글**:
+요청: 예복·한복 등도 적용하고 **엄청 상세한 필터**가 있으면 좋겠다. → 업계 자료 + 한국 패션앱
+(무신사·29CM·지그재그·에이블리) 필터 체계를 조사·분석해 카테고리별 **패싯(facet) 필터**를 설계.
+
+**패션앱에서 가져온 원칙**
+- **패싯 다중선택 + 결과 수 표기**(무신사식): 각 필터값 옆 "N개". 빈 결과 조합은 비활성/안내(dead-end 금지).
+- **공통 패싯**(전 카테고리): 가격대·지역·제휴여부·**서비스형태(기성/맞춤/대여)**·브랜드/제작처·색상.
+- **실측 필터**(무신사 고유): 사이즈를 라벨(S/M/L) 대신 **숫자 실측**(총장·어깨·가슴단면·소매)으로 →
+  예복/드레스/한복 사이즈 매칭에 차용(택일 가능).
+- **무드/스타일 패싯** = 레퍼런스 이미지 매칭의 태그와 **동일 어휘**(§핵심: DRY).
+
+**★ 핵심 설계 — 단일 어휘 3중 사용(DRY)**: 아래 통제 어휘 한 벌이
+① 속성 필터값 ② 이미지→스타일 태그 분류 결과(§6) ③ 업체 포폴 태그(§3.5) 에 **모두 동일하게** 쓰임.
+어휘는 `src/lib/categoryFacets.ts`(신규) 단일 소스 — 기존 `categoryLabels`·`vendorInfoLines` 패턴.
+스키마는 기존 `place_*_shops` 의 단일 `*_styles text[]` 를 **패싯별 컬럼**으로 확장(`*_styles` 는 무드 유지).
+
+### 예복 (`tailor_shop` · `place_tailor_shops`)
+| 패싯 | 값(통제 어휘) |
+|---|---|
+| 서비스형태 | 기성복 · 맞춤(국내원단) · 맞춤(수입원단) · 대여 · 셋업/리폼 |
+| 종류 | 턱시도 · 정장(슈트) · 모닝코트 · 세미턱시도 |
+| 핏 | 슬림 · 레귤러 · 클래식(여유) |
+| 라펠 | 피크드 · 노치드 · 숄 |
+| 구성 | 2피스 · 3피스(베스트) · 커머밴드 포함 |
+| 원단 | 울 · 울혼방 · 수입원단(제냐 등) · 벨벳 · 린넨 |
+| 색상 | 블랙 · 네이비 · 차콜 · 그레이 · 베이지 · 화이트 |
+| 부가 | 보타이/넥타이 · 슈즈 대여 · 출장 피팅 |
+| 가격대 | ~50 / 50~80 / 80~110 / 110만+ (조사 기준) |
+
+### 한복 (`hanbok` · `place_hanboks`)
+| 패싯 | 값 |
+|---|---|
+| 서비스형태 | 대여(20~30만) · 맞춤(50~60만) |
+| 종류 | 전통한복 · 퓨전(생활)한복 · 드레스한복 |
+| 대상 | 신랑 · 신부 · 혼주(모) · 혼주(부) · 폐백 |
+| 색상 | 신랑/혼주부=청·남계열, 신부/혼주모=홍·핑크계열 (음양오행) · 파스텔 · 자수컬러 |
+| 원단 | 명주(실크) · 갑사 · 노방 · 자카드 · 양단 |
+| 디테일 | 금박/자수 · 깃·고름 디자인 · 배자/두루마기 포함 |
+| 대여조건 | 대여기간 · 픽업/반납 · 출장 |
+| 가격대 | ~20 / 20~40 / 40~60 / 60만+ |
+
+### 드레스 (`dress_shop` · `place_dress_shops`, 레퍼런스 매칭 1순위 카테고리)
+| 패싯 | 값 |
+|---|---|
+| 서비스형태 | 대여(`rental_only` 기존) · 맞춤 · 구매 |
+| 실루엣 | A라인 · 머메이드 · 벨라인(볼가운) · 트럼펫 · 엠파이어 · 슬립/미니멀 |
+| 넥라인 | 스위트하트 · V넥 · 스퀘어 · 오프숄더 · 홀터 · 하이넥 · 스트랩리스 |
+| 원단 | 새틴(미카도) · 레이스 · 튤 · 시폰 · 오간자 · 태피터 |
+| 디테일 | 비즈/스팽글 · 자수 · 볼레로/베일 · 슬릿 · 롱트레인 |
+| 무드 | 클래식 · 모던 · 로맨틱 · 볼드 · 빈티지 (=이미지 매칭 태그) |
+| 가격대 | 대여/맞춤 구간별 |
+
+> 스냅·메이크업·헤어·네일·부케 등 etc 상세업체도 동일 구조로 패싯 정의(스냅: 톤[필름/디지털]·
+> 분위기[내추럴/감성/모던]·장소[실내/야외/스튜디오]; 네일: 길이·아트[심플/글리터/프렌치]; 등).
+> 비시각 카테고리(축가·사회자)는 §3 표대로 필터 전용 패싯(장르·성별·악기·경력·샘플 음원).
+
+## 4. 사용자 선택 UX (레퍼런스 ↔ 필터)업체 둘러보기/견적 진입 시 상단에 **세그먼트 토글**:
 - `🖼 레퍼런스로 찾기` — 사진 1~3장 업로드 → "이 분위기와 비슷한 제휴업체"
 - `⚙️ 조건으로 찾기` — 기존 필터(지역·예산) + 카테고리별 속성 필터(축가: 장르/성별/악기 등)
 
@@ -158,7 +213,13 @@ hanbok·tailor_shop·honeymoon·appliance·jewelry·invitation_venue·planner·*
 - **`place_media` 확장**(§3.5): `venue_place_id uuid references places(place_id)`(FK 필수)·
   `venue_name text`·`style_tags text[]`·`description text`(+`kind='portfolio'` 또는 photo 부가).
   소유자 쓰기 RLS·공개 읽기는 기존 정책 유지.
-- `place_style_tags` 활용/신설: etc 상세업체용 세분 스타일 어휘(카테고리별 enum 단일 소스 — `categoryLabels`/`vendorInfoLines` 패턴 따름).
+- **카테고리별 패싯 컬럼 확장**(§3.6): 기존 `place_tailor_shops`·`place_hanboks`·`place_dress_shops`
+  등의 단일 `*_styles text[]` 를 패싯별 `text[]` 컬럼으로 확장(예복: `service_type`·`suit_kind`·`fit`·
+  `lapel`·`fabric`·`color`·`price_min/max`; 한복: `service_type`·`hanbok_kind`·`target`·`color`·`fabric`;
+  드레스: `silhouette`·`neckline`·`fabric`·`detail`·`mood`). 기존 `*_styles` 는 무드 태그로 유지(회귀 0).
+- **단일 어휘 소스 `src/lib/categoryFacets.ts`**(신규): 패싯 값 = 필터 + 이미지 태그 분류 + 포폴 태그
+  **3중 공용**(DRY). `categoryLabels`/`vendorInfoLines` 와 같은 단일 소스 패턴.
+- `place_style_tags` 활용/신설: etc 상세업체(스냅·네일·헤어·부케·축가)용 패싯 어휘.
 - `user_taste_profiles`(신규): `user_id, category, source_image_paths[], style_tags[], (Phase2) embedding vector, created_at`. RLS `user_id=auth.uid()`.
 - `places`/`place_media`에 (Phase2) `style_embedding` 컬럼 + 사전계산 트리거/잡.
 - 카테고리 메타 `matchMode` — 코드 상수(`src/lib/categoryMatchMode.ts`)로 단일 소스(DB 불필요).
@@ -168,7 +229,8 @@ hanbok·tailor_shop·honeymoon·appliance·jewelry·invitation_venue·planner·*
 
 0. **(권장 1순위) `place_media` 장소·태그·설명 확장 + `BusinessGallery` 등록 UI + "같은 장소
    우선" 가산** — 임베딩/비전 없이 즉시 가능, 효과가 가장 크고 설명 명확(스냅·DVD·보정 ↔ 확정 식장).
-1. 카테고리 `matchMode` 상수 + UX 토글(레퍼런스/필터) — 시각 카테고리 1개(드레스)로 파일럿.
+1. 카테고리 `matchMode` 상수 + `categoryFacets.ts` 단일 어휘 + UX 토글/패싯 필터 UI(무신사식
+   다중선택·결과수) — 시각 카테고리 1개(드레스)로 파일럿. 예복·한복은 패싯 필터부터(이미지 없이도 즉시 가치).
 2. etc 상세업체 스타일 어휘 + 업체 등록 폼 태그 입력 + 사용자 레퍼런스 업로드→`analyze-reference`.
 3. `quoteMatch` 에 `venueMatchScore`+`styleMatchScore` 가산 + 근거 칩 + 폴백.
 4. 축가/사회자 **속성 필터**(장르·성별·악기·가격·샘플 음원/영상) — 필터 전용 UI.
