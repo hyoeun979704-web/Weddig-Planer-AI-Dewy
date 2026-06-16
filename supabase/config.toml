@@ -53,3 +53,10 @@ verify_jwt = true
 
 [functions.gmail-send]
 verify_jwt = true
+
+# 디자인 마켓 구매 결제(카카오페이 + 포인트 할인). 둘 다 인증 필요.
+[functions.design-purchase-ready]
+verify_jwt = true
+
+[functions.design-purchase-approve]
+verify_jwt = true

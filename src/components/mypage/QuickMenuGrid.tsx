@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Heart, Coins, Ticket, ShoppingBag, FileText, ClipboardList, Package, Mail } from "lucide-react";
+import { Heart, Coins, Ticket, ShoppingBag, FileText, ClipboardList, Package, Mail, Palette } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -100,6 +100,13 @@ const QuickMenuGrid = ({ user }: QuickMenuGridProps) => {
       label: "메일",
       value: "-",
       href: "/mail",
+      iconClass: "text-primary",
+    },
+    {
+      icon: Palette,
+      label: "청첩장 마켓",
+      value: "-",
+      href: "/invitation/market",
       iconClass: "text-primary",
     },
   ];

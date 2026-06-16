@@ -41,21 +41,27 @@ const PaymentSuccess = () => {
       if (approvedRef.current) return;
       approvedRef.current = true;
 
+      // 디자인 마켓 구매는 별도 승인 함수(포인트 차감·라이선스 grant). 세션 type/URL 로 분기.
+      const isDesign = session.type === "design" || searchParams.get("type") === "design";
+
       try {
-        const { data, error } = await supabase.functions.invoke("kakao-pay-order-approve", {
-          body: {
-            tid: session.tid,
-            partnerOrderId: session.partnerOrderId,
-            partnerUserId: session.partnerUserId,
-            pgToken,
+        const { data, error } = await supabase.functions.invoke(
+          isDesign ? "design-purchase-approve" : "kakao-pay-order-approve",
+          {
+            body: {
+              tid: session.tid,
+              partnerOrderId: session.partnerOrderId,
+              partnerUserId: session.partnerUserId,
+              pgToken,
+            },
           },
-        });
+        );
 
         if (error || !data?.success) {
           throw new Error(data?.error || error?.message || "결제 승인 실패");
         }
 
-        await clearCart();
+        if (!isDesign) await clearCart(); // 디자인은 장바구니 무관
         sessionStorage.removeItem(ORDER_SESSION_KEY);
         setOrderNumber(data.order_number ?? session.partnerOrderId);
         setPaidAmount(data.amount ?? 0);
