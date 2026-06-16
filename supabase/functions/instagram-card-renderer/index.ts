@@ -6,11 +6,12 @@
 // 출력:  card_image_urls 에 public URL 배열 UPDATE.
 //
 // 의존:  Supabase Storage 버킷 "instagram-cards" (public). 미생성 시 명시적 에러.
-// 디자인: content/instagram/10_안전영역_디자인토큰.md 그대로 (안전여백·spacing·typography).
+// 디자인: Figma "카드뉴스" 템플릿 (node 227:2) — 흰색→핑크(#F6909B) 세로 그라데이션
+//        위에 큰 헤드라인(TITLE/DESCRIPTION), 마지막 장은 ❤️DEWY 워드마크 + 안내 카피.
 //
-// 폰트:  Pretendard (한글), Cormorant (세리프 워드마크).
-//        Edge Function 콜드 스타트 시 jsdelivr/Google Fonts 에서 한 번 fetch.
-//        매 호출마다 fetch 는 비효율 — Deno 모듈 캐시에 의존.
+// 폰트:  SUITE Variable(디자인 기준: ExtraBold/SemiBold/Regular). CDN 실패 시
+//        검증된 Pretendard 로 graceful fallback — 폰트 때문에 렌더가 깨지지 않게.
+//        Edge Function 콜드 스타트 시 jsdelivr 에서 한 번 fetch → Deno 모듈 캐시 의존.
 
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -23,13 +24,14 @@ const STORAGE_BUCKET = "instagram-cards";
 const CARD_WIDTH = 1080;
 const CARD_HEIGHT = 1350;
 
-// 10_안전영역_디자인토큰.md 색상
-const COLOR_BG_CREAM = "#FFF9F6";
-const COLOR_BG_SOFT_PINK = "#FDF1F3";
-const COLOR_TEXT_DEEP = "#3E3438";
-const COLOR_TEXT_MUTED = "#8C8085";
-const COLOR_POINT_PINK = "#F4A7B9";
-const COLOR_ACCENT_GOLD = "#C9A86A";
+// Figma "카드뉴스" 템플릿 색상 (node 227:2)
+const COLOR_BG_WHITE = "#FFFFFF";
+const COLOR_POINT_PINK = "#F6909B"; // 그라데이션 하단 + 하트
+const COLOR_TEXT_BLACK = "#000000"; // TITLE/DESCRIPTION/카피
+// 흰색 상단 → 핑크 하단 세로 그라데이션 (Figma: from 50.481%)
+const CARD_GRADIENT = "linear-gradient(to bottom, rgba(255,255,255,0) 50.481%, #F6909B 100%)";
+// CTA 카드 기본 안내 문구 (text 미지정 시) — Figma 카피 그대로
+const CTA_DEFAULT_FOOTER = "나에게 딱 맞는 결혼정보가 궁금하다면?\nAI 웨딩플래너 DEWY에게 물어봐!";
 
 interface CardText {
   title?: string;
@@ -38,10 +40,24 @@ interface CardText {
 }
 
 // 폰트 캐시 (Edge Function 인스턴스 lifecycle 동안 재사용)
-let pretendardBoldCache: ArrayBuffer | null = null;
-let pretendardRegularCache: ArrayBuffer | null = null;
-let cormorantCache: ArrayBuffer | null = null;
+// 디자인 기준은 SUITE Variable. CDN 실패 시 항상 로드되는 Pretendard 로 fallback.
+interface SatoriFont {
+  name: string;
+  data: ArrayBuffer;
+  weight: number;
+  style: "normal";
+}
+interface LoadedFonts {
+  fonts: SatoriFont[];
+  family: string; // satori fontFamily (예: "SUITE, Pretendard")
+}
+let fontsCache: LoadedFonts | null = null;
 let resvgInitialized = false;
+
+const PRETENDARD_BASE =
+  "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2";
+const SUITE_BASE =
+  "https://cdn.jsdelivr.net/gh/sun-typeface/SUITE@2.0.0/fonts/static/woff2";
 
 async function fetchFont(url: string): Promise<ArrayBuffer> {
   const res = await fetch(url);
@@ -49,27 +65,45 @@ async function fetchFont(url: string): Promise<ArrayBuffer> {
   return await res.arrayBuffer();
 }
 
-async function loadFonts() {
-  if (!pretendardBoldCache) {
-    pretendardBoldCache = await fetchFont(
-      "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2/Pretendard-Bold.woff2",
+async function loadFonts(): Promise<LoadedFonts> {
+  if (fontsCache) return fontsCache;
+
+  // Pretendard 세 굵기(800/600/400) — 검증된 CDN, 항상 로드해 폴백 보장.
+  const [pExtraBold, pSemiBold, pRegular] = await Promise.all([
+    fetchFont(`${PRETENDARD_BASE}/Pretendard-ExtraBold.woff2`),
+    fetchFont(`${PRETENDARD_BASE}/Pretendard-SemiBold.woff2`),
+    fetchFont(`${PRETENDARD_BASE}/Pretendard-Regular.woff2`),
+  ]);
+
+  const fonts: SatoriFont[] = [
+    { name: "Pretendard", data: pExtraBold, weight: 800, style: "normal" },
+    { name: "Pretendard", data: pSemiBold, weight: 600, style: "normal" },
+    { name: "Pretendard", data: pRegular, weight: 400, style: "normal" },
+  ];
+  let family = "Pretendard";
+
+  // SUITE(디자인 기준) 시도 — 실패해도 Pretendard 로 진행(렌더가 깨지지 않게).
+  try {
+    const [sExtraBold, sSemiBold, sRegular] = await Promise.all([
+      fetchFont(`${SUITE_BASE}/SUITE-ExtraBold.woff2`),
+      fetchFont(`${SUITE_BASE}/SUITE-SemiBold.woff2`),
+      fetchFont(`${SUITE_BASE}/SUITE-Regular.woff2`),
+    ]);
+    fonts.push(
+      { name: "SUITE", data: sExtraBold, weight: 800, style: "normal" },
+      { name: "SUITE", data: sSemiBold, weight: 600, style: "normal" },
+      { name: "SUITE", data: sRegular, weight: 400, style: "normal" },
+    );
+    family = "SUITE, Pretendard";
+  } catch (e) {
+    console.warn(
+      "SUITE 폰트 로드 실패 — Pretendard 로 대체:",
+      e instanceof Error ? e.message : e,
     );
   }
-  if (!pretendardRegularCache) {
-    pretendardRegularCache = await fetchFont(
-      "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2",
-    );
-  }
-  if (!cormorantCache) {
-    cormorantCache = await fetchFont(
-      "https://fonts.gstatic.com/s/cormorant/v22/H4cgBXSKkCjxRTbPa6kK.woff2",
-    );
-  }
-  return {
-    bold: pretendardBoldCache,
-    regular: pretendardRegularCache,
-    serif: cormorantCache,
-  };
+
+  fontsCache = { fonts, family };
+  return fontsCache;
 }
 
 // ============================================================================
@@ -79,14 +113,146 @@ async function loadFonts() {
 
 interface CardJSXProps {
   type: "cover" | "body" | "cta";
-  index: number;
-  total: number;
   text: CardText;
+  fontFamily: string;
 }
 
-function buildCardJSX({ type, index, total, text }: CardJSXProps): unknown {
-  const isCover = type === "cover";
-  const bg = isCover ? COLOR_BG_SOFT_PINK : COLOR_BG_CREAM;
+// 흰색→핑크 그라데이션 배경 레이어 (모든 카드 공통, 콘텐츠 뒤에 깔림)
+function gradientLayer(): unknown {
+  return {
+    type: "div",
+    props: {
+      style: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT,
+        backgroundImage: CARD_GRADIENT,
+      },
+    },
+  };
+}
+
+// Figma 카드뉴스 템플릿(1080×1350):
+//  - 표지/본문: 하단 정렬 TITLE(ExtraBold 115) + DESCRIPTION(SemiBold 65)
+//  - CTA: 상단 ❤️DEWY 워드마크 + 중앙 정렬 안내 카피(Regular 50)
+// 이미지 슬롯은 후속 단계(텍스트/타이포 우선) — 지금은 그라데이션+카피만 렌더.
+function buildCardJSX({ type, text, fontFamily }: CardJSXProps): unknown {
+  if (type === "cta") {
+    const footer = text.body || text.footer || CTA_DEFAULT_FOOTER;
+    return {
+      type: "div",
+      props: {
+        style: {
+          width: CARD_WIDTH,
+          height: CARD_HEIGHT,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "space-between",
+          backgroundColor: COLOR_BG_WHITE,
+          padding: "80px 60px",
+          position: "relative",
+          fontFamily,
+        },
+        children: [
+          gradientLayer(),
+          // 상단 ❤️ DEWY 워드마크
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", alignItems: "center", gap: 16 },
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: { fontSize: 70, color: COLOR_POINT_PINK },
+                    children: "♥",
+                  },
+                },
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      fontSize: 70,
+                      fontWeight: 800,
+                      color: COLOR_TEXT_BLACK,
+                      letterSpacing: 2,
+                    },
+                    children: "DEWY",
+                  },
+                },
+              ],
+            },
+          },
+          // 하단 안내 카피
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: 960,
+              },
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      fontSize: 50,
+                      fontWeight: 400,
+                      color: COLOR_TEXT_BLACK,
+                      textAlign: "center",
+                      lineHeight: 1.4,
+                      whiteSpace: "pre-wrap",
+                    },
+                    children: footer,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    };
+  }
+
+  // cover / body: 하단 정렬 헤드라인 (TITLE + DESCRIPTION)
+  const textBlock: unknown[] = [];
+  if (text.title) {
+    textBlock.push({
+      type: "div",
+      props: {
+        style: {
+          fontSize: 115,
+          fontWeight: 800,
+          color: COLOR_TEXT_BLACK,
+          lineHeight: 1.1,
+          wordBreak: "keep-all",
+        },
+        children: text.title,
+      },
+    });
+  }
+  if (text.body) {
+    textBlock.push({
+      type: "div",
+      props: {
+        style: {
+          fontSize: 65,
+          fontWeight: 600,
+          color: COLOR_TEXT_BLACK,
+          lineHeight: 1.3,
+          marginTop: 16,
+          whiteSpace: "pre-wrap",
+          wordBreak: "keep-all",
+        },
+        children: text.body,
+      },
+    });
+  }
 
   return {
     type: "div",
@@ -96,97 +262,19 @@ function buildCardJSX({ type, index, total, text }: CardJSXProps): unknown {
         height: CARD_HEIGHT,
         display: "flex",
         flexDirection: "column",
-        backgroundColor: bg,
-        padding: "120px 100px",
+        justifyContent: "flex-end",
+        backgroundColor: COLOR_BG_WHITE,
+        padding: "80px 60px",
         position: "relative",
-        fontFamily: "Pretendard",
+        fontFamily,
       },
       children: [
-        // 본문 영역
+        gradientLayer(),
         {
           type: "div",
           props: {
-            style: {
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: isCover ? "center" : "flex-start",
-              gap: 24,
-            },
-            children: [
-              text.title && {
-                type: "div",
-                props: {
-                  style: {
-                    fontSize: isCover ? 84 : 56,
-                    fontWeight: 700,
-                    color: COLOR_TEXT_DEEP,
-                    lineHeight: 1.2,
-                  },
-                  children: text.title,
-                },
-              },
-              text.body && {
-                type: "div",
-                props: {
-                  style: {
-                    fontSize: isCover ? 32 : 28,
-                    fontWeight: 400,
-                    color: isCover ? COLOR_TEXT_MUTED : COLOR_TEXT_DEEP,
-                    lineHeight: 1.6,
-                  },
-                  children: text.body,
-                },
-              },
-              text.footer && {
-                type: "div",
-                props: {
-                  style: {
-                    marginTop: 24,
-                    fontSize: 22,
-                    color: COLOR_TEXT_MUTED,
-                  },
-                  children: text.footer,
-                },
-              },
-            ].filter(Boolean),
-          },
-        },
-        // 푸터: 좌 워드마크 + 우 페이지번호
-        {
-          type: "div",
-          props: {
-            style: {
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginTop: 40,
-            },
-            children: [
-              {
-                type: "div",
-                props: {
-                  style: {
-                    fontFamily: "Cormorant",
-                    fontSize: 24,
-                    fontWeight: 500,
-                    color: COLOR_TEXT_DEEP,
-                  },
-                  children: "Dewy",
-                },
-              },
-              {
-                type: "div",
-                props: {
-                  style: {
-                    fontSize: 22,
-                    fontWeight: 500,
-                    color: COLOR_TEXT_MUTED,
-                  },
-                  children: `${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`,
-                },
-              },
-            ],
+            style: { display: "flex", flexDirection: "column", width: 960 },
+            children: textBlock,
           },
         },
       ],
@@ -194,15 +282,11 @@ function buildCardJSX({ type, index, total, text }: CardJSXProps): unknown {
   };
 }
 
-async function renderCardToPng(jsx: unknown, fonts: { bold: ArrayBuffer; regular: ArrayBuffer; serif: ArrayBuffer }): Promise<Uint8Array> {
+async function renderCardToPng(jsx: unknown, fonts: SatoriFont[]): Promise<Uint8Array> {
   const svg = await satori(jsx as never, {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    fonts: [
-      { name: "Pretendard", data: fonts.bold, weight: 700, style: "normal" },
-      { name: "Pretendard", data: fonts.regular, weight: 400, style: "normal" },
-      { name: "Cormorant", data: fonts.serif, weight: 500, style: "normal" },
-    ],
+    fonts: fonts as never,
   });
 
   if (!resvgInitialized) {
@@ -299,13 +383,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    const fonts = await loadFonts();
+    const { fonts, family } = await loadFonts();
     const cardUrls: string[] = [];
 
     for (let i = 0; i < cardTexts.length; i++) {
       const isLast = i === cardTexts.length - 1;
       const type: "cover" | "body" | "cta" = i === 0 ? "cover" : isLast ? "cta" : "body";
-      const jsx = buildCardJSX({ type, index: i, total: cardTexts.length, text: cardTexts[i] });
+      const jsx = buildCardJSX({ type, text: cardTexts[i], fontFamily: family });
       const png = await renderCardToPng(jsx, fonts);
 
       const path = `drafts/${draftId}/card-${i + 1}.png`;
