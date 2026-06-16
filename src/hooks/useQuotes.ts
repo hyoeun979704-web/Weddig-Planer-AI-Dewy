@@ -152,7 +152,7 @@ export function useQuoteResponses(requestId: string | undefined) {
   const load = useCallback(async () => {
     if (!requestId) { setLoading(false); return; }
     setLoading(true);
-    const [{ data: req }, { data: resp }, { count: matched }] = await Promise.all([
+    const [{ data: req, error: reqErr }, { data: resp, error: respErr }, { count: matched, error: cntErr }] = await Promise.all([
       supabase.from("quote_requests").select("*").eq("id", requestId).maybeSingle(),
       supabase
         .from("quote_responses")
@@ -161,6 +161,11 @@ export function useQuoteResponses(requestId: string | undefined) {
         .order("created_at", { ascending: false }),
       supabase.from("quote_request_targets").select("place_id", { count: "exact", head: true }).eq("request_id", requestId),
     ]);
+    // 에러를 삼키면 빈 화면을 "응답 0건"으로 오인하게 된다(특히 places embed 관계 누락 시
+    // PGRST200). 최소한 콘솔로 관측 가능하게 남긴다.
+    if (reqErr || respErr || cntErr) {
+      console.error("useQuoteResponses load failed", { reqErr, respErr, cntErr });
+    }
     const reqRow = (req as QuoteRequest) ?? null;
     setMatchedCount(matched ?? 0);
     setRequest(reqRow);

@@ -67,7 +67,8 @@ async function seedWeddingVenueIfEmpty(userId: string, placeId: string): Promise
 
   const { data: p } = await (supabase as any)
     .from("places")
-    .select("name, city, district, latitude, longitude")
+    // places 테이블의 좌표 컬럼명은 lat / lng (latitude/longitude 아님 — 오타 시 항상 null).
+    .select("name, city, district, lat, lng")
     .eq("place_id", placeId)
     .maybeSingle();
   if (!p) return;
@@ -81,8 +82,8 @@ async function seedWeddingVenueIfEmpty(userId: string, placeId: string): Promise
         wedding_venue_name: p.name,
         wedding_venue_city: p.city ?? null,
         wedding_venue_district: p.district ?? null,
-        wedding_venue_lat: p.latitude ?? null,
-        wedding_venue_lng: p.longitude ?? null,
+        wedding_venue_lat: p.lat ?? null,
+        wedding_venue_lng: p.lng ?? null,
         // wedding_region 미설정이면 식장 city 로 시드(SetAsWeddingVenueButton 과 동일 규칙).
         ...(s?.wedding_region == null && p.city ? { wedding_region: p.city } : {}),
       },
