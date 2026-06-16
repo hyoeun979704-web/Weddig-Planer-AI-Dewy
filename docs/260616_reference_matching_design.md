@@ -51,6 +51,42 @@ hanbok·tailor_shop·honeymoon·appliance·jewelry·invitation_venue·planner·*
 **핵심 설계 결정**: 매칭 방식은 카테고리 속성(`matchMode: "visual" | "filter" | "both"`)으로
 **메타데이터화**한다. 새 상세업체 추가 시 이 한 줄만 지정하면 UI/엔진이 자동 분기(드리프트 방지).
 
+## 3.5 업체 포트폴리오 — 장소·태그·설명 + "같은 장소 우선" (★ 핵심 신호)
+
+업체가 포트폴리오(사진/영상 썸네일)를 등록할 때 **그 작업을 진행한 장소(식장) 정보 + 스타일
+태그 + 설명**을 함께 입력하게 한다. 그러면 **사용자가 확정한 식장과 같은 장소에서 진행한
+포트폴리오를 가진 업체를 우선 추천/노출**할 수 있다.
+
+> 예: 사용자가 **T웨딩홀**을 식장으로 확정 → T웨딩홀에서 촬영/진행한 포트폴리오가 있는
+> **스냅·본식DVD·보정** 업체가 상단에 "T웨딩홀에서 촬영한 포트폴리오 있어요" 배지와 함께 노출.
+
+**왜 강력한가**: 스타일 태그 유사도(자카드)는 근사치지만, **같은 장소 매칭은 정확·결정적·설명
+가능**한 신호다. 사용자 입장에선 "내 식장을 잘 아는 업체"라 신뢰가 즉시 선다(동선·조명·구도
+파악). 비주얼 임베딩 없이도 Phase 1 에서 바로 가능하고, 효과가 가장 클 차원이다.
+
+**데이터 연결(이미 있음)**:
+- 사용자 확정 식장: `user_wedding_settings.wedding_venue_place_id`(+`wedding_venue_name`) —
+  `recordVendorDecision`/`SetAsWeddingVenueButton` 가 이미 세팅(이번 감사에서 좌표 시드도 수정).
+- 업체 포폴: `place_media`(소유자 쓰기·공개 읽기·검토 면제, `20260521070000`) 를 **확장** —
+  현재 `kind(photo/menu)·image_url·title·price·display_order` 에 아래 컬럼 추가.
+
+**place_media 확장(안)** — 별도 테이블 신설 대신 기존 갤러리 확장(DRY):
+| 컬럼 | 용도 |
+|---|---|
+| `venue_place_id uuid references places(place_id)` | 작업 진행 장소(식장)가 Dewy 에 등록돼 있으면 FK. **embed/관계용 FK 필수**(이번 감사 quote_responses embed 교훈) |
+| `venue_name text` | 식장이 미등록이면 자유 입력 폴백(표시·부분매칭용) |
+| `style_tags text[]` | 카테고리별 통제어휘 스타일 태그(§6 어휘) |
+| `description text` | 포트폴리오 설명(검색 보조·노출 문구) |
+| `kind` 확장 | `'photo' | 'menu' | 'portfolio'` 또는 photo 에 위 필드 부가 |
+
+**등록 UI**: `BusinessGallery.tsx`(현 갤러리 관리)에 포폴 항목별 **장소 선택(식장 검색 → place_id,
+없으면 직접 입력)·스타일 태그·설명** 필드 추가. 운영 검토는 현행처럼 면제하되, 장소 클레임
+악용(유명 식장 사칭) 방지를 위해 배지 문구는 "**업체가 등록한** 포트폴리오" 로 정직하게(§7).
+
+**매칭 규칙(요지)**: 후보 업체 중 `place_media.venue_place_id == user.wedding_venue_place_id`
+가 1건이라도 있으면 **최상위 가산**(스타일 태그·지역 점수보다 큰 가중). `venue_place_id` 없고
+`venue_name` 이 확정 식장명과 정확/부분 일치하면 그다음 가산(label vs value 주의 — §7).
+
 ## 4. 사용자 선택 UX (레퍼런스 ↔ 필터)
 
 업체 둘러보기/견적 진입 시 상단에 **세그먼트 토글**:
@@ -78,11 +114,14 @@ hanbok·tailor_shop·honeymoon·appliance·jewelry·invitation_venue·planner·*
         ▼
 [매칭 엔진: quoteMatch 확장]
   후보 = 제휴업체(is_partner) ∩ 카테고리/지역
+  venueMatchScore = place_media.venue_place_id == user.wedding_venue_place_id  (★ 최강·결정적)
+                    > venue_name 정확/부분 일치  (그다음)
   styleMatchScore = 사용자태그 ∩ 업체 스타일태그 자카드 (+Phase2 코사인)
-  최종점수 = 기존(region·budget·partner·rating) + styleMatchScore
+  최종점수 = 기존(region·budget·partner·rating) + venueMatchScore + styleMatchScore
         │
         ▼
-[결과] 제휴업체 우선 + "이 사진과 비슷한 분위기" 근거 칩
+[결과] 제휴업체 우선 + 근거 칩
+  "T웨딩홀에서 촬영한 포트폴리오 있어요" (venue) / "필름·내추럴 분위기가 비슷해요" (style)
   (제휴 풀 부족 시 폴백 → §7)
 ```
 
@@ -116,6 +155,9 @@ hanbok·tailor_shop·honeymoon·appliance·jewelry·invitation_venue·planner·*
 
 ## 8. 스키마 변경(안)
 
+- **`place_media` 확장**(§3.5): `venue_place_id uuid references places(place_id)`(FK 필수)·
+  `venue_name text`·`style_tags text[]`·`description text`(+`kind='portfolio'` 또는 photo 부가).
+  소유자 쓰기 RLS·공개 읽기는 기존 정책 유지.
 - `place_style_tags` 활용/신설: etc 상세업체용 세분 스타일 어휘(카테고리별 enum 단일 소스 — `categoryLabels`/`vendorInfoLines` 패턴 따름).
 - `user_taste_profiles`(신규): `user_id, category, source_image_paths[], style_tags[], (Phase2) embedding vector, created_at`. RLS `user_id=auth.uid()`.
 - `places`/`place_media`에 (Phase2) `style_embedding` 컬럼 + 사전계산 트리거/잡.
@@ -124,9 +166,11 @@ hanbok·tailor_shop·honeymoon·appliance·jewelry·invitation_venue·planner·*
 
 ## 9. 단계별 롤아웃
 
+0. **(권장 1순위) `place_media` 장소·태그·설명 확장 + `BusinessGallery` 등록 UI + "같은 장소
+   우선" 가산** — 임베딩/비전 없이 즉시 가능, 효과가 가장 크고 설명 명확(스냅·DVD·보정 ↔ 확정 식장).
 1. 카테고리 `matchMode` 상수 + UX 토글(레퍼런스/필터) — 시각 카테고리 1개(드레스)로 파일럿.
 2. etc 상세업체 스타일 어휘 + 업체 등록 폼 태그 입력 + 사용자 레퍼런스 업로드→`analyze-reference`.
-3. `quoteMatch` 에 `styleMatchScore` 가산 + 근거 칩 + 폴백.
+3. `quoteMatch` 에 `venueMatchScore`+`styleMatchScore` 가산 + 근거 칩 + 폴백.
 4. 축가/사회자 **속성 필터**(장르·성별·악기·가격·샘플 음원/영상) — 필터 전용 UI.
 5. 효과 측정(추천 클릭률·견적 전환) 후 Phase2(임베딩) 여부 결정.
 
@@ -137,3 +181,6 @@ hanbok·tailor_shop·honeymoon·appliance·jewelry·invitation_venue·planner·*
 - 제휴 풀이 작은 카테고리(네일 등)의 최소 추천 수 정책(폴백 임계).
 - 축가/사회자 **샘플 미디어**(음원/영상) 업로드·재생 인프라(현재 place_media는 photo/menu만) — 확장 범위.
 - 레퍼런스 사진 보관 기간/삭제 정책.
+- **포폴 장소 클레임 신뢰**: 업체가 `venue_place_id` 를 사칭(유명 식장)할 여지 — 검토 면제 정책
+  유지 시 배지를 "업체 등록 정보"로 정직 표기할지, 식장측 검증/신고 플로우를 둘지.
+- "같은 장소" 가산 가중치(venue > style > region 순서)와 폴백 임계(같은 장소 0건일 때).
