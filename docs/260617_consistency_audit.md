@@ -87,3 +87,49 @@ select version from supabase_migrations.schema_migrations order by version desc 
   은 대시보드로 적용됨(schema_migrations 미기록이나 객체는 존재).
 - **순 결과**: repo ↔ 라이브 **기능적 정합 확보**. 잔여는 버전번호 bookkeeping(선택적 `migration repair`).
 - **재발 방지(권장)**: 정합 상태에서 CI `supabase db push` 도입 시 드리프트 영구 차단(멱등이라 안전).
+
+## 2차 재검토 (260617 — PR #330~332 이후)
+
+> 계기: 1차 검토 후 #330(앨범)·#332(이벤트 배너)로 마이그레이션 2건 추가. 재대조.
+
+### RPC 계약 — 전수 재대조(드리프트 없음 ✅)
+- 프론트 호출 RPC **45개** vs repo CREATE 정의 **43개** → **누락 2건만**:
+  `admin_ai_job_stats`·`claim_mission_bonus`. **1차와 동일**(신규 드리프트 0). 라이브엔 존재
+  (기능 동작) → repo 캡처는 여전히 deferred(introspection #3 로 추출).
+- #330~332 는 **`.rpc()` 미사용**(전부 `from().select/insert` + RLS) → 신규 RPC 의존 0.
+
+### 미적용 마이그레이션 — 2건(요적용)
+| 버전 | 내용 | 적용 안전성 |
+|---|---|---|
+| `20260617070000` | place_media_albums(+place_media.album_id) | ✅ place_id=**uuid** FK → 라이브 places(uuid)와 타입 일치, 멱등 |
+| `20260617080000` | business_events.banner_image_url·detail_images | ✅ 컬럼 ALTER(IF NOT EXISTS)만, 멱등 |
+
+- 프론트는 둘 다 **방어적**: 앨범 미적용 시 빈 배열 폴백(평면 렌더), 이벤트는 `select("*")`로
+  422 회피(읽기 안전). insert 만 컬럼 필요 → 미적용 시 등록 실패 toast(graceful).
+
+### 기존 P2(미회귀, 추적)
+- `business_events.place_id` = **TEXT**(repo) vs `places.place_id` = **uuid**(라이브). 1차 지적 그대로.
+  신규 앨범 테이블은 올바르게 uuid → 악화 아님. text-FK 단일화는 별도 PR(신중).
+
+### 라이브 확정용 introspection SQL (대시보드 실행 → 결과로 정합 확정)
+```sql
+-- (A) 신규 객체가 라이브에 존재하는지
+select table_name, column_name, data_type
+from information_schema.columns
+where table_schema='public' and (
+  (table_name='place_media_albums' and column_name in ('id','place_id','product_id','venue_place_id','style_tags')) or
+  (table_name='place_media' and column_name='album_id') or
+  (table_name='business_events' and column_name in ('banner_image_url','detail_images','place_id'))
+)
+order by table_name, column_name;
+
+-- (B) repo 누락 2함수 라이브 정의 추출(있으면 repo 캡처)
+select pg_get_functiondef(p.oid)
+from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+where n.nspname='public' and p.proname in ('admin_ai_job_stats','claim_mission_bonus');
+```
+> (A)가 빈 결과/일부 누락이면 미적용 → `/tmp/apply_330_332_migrations.sql`(통합·멱등) 실행.
+
+### 2차 결론
+- **신규 드리프트 0**(RPC·타입). 잔여는 **마이그레이션 2건 라이브 적용**(앨범·배너) + 기존
+  deferred(함수 2개 캡처·place_id 단일화). 프론트는 미적용에도 읽기 안전(폴백/`select("*")`).

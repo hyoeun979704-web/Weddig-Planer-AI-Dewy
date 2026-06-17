@@ -326,6 +326,9 @@ serve(async (req) => {
     const orchestrate = (async () => {
       // Step A — Vision 분석(1회). 실패해도 빈 분석으로 진행(보드는 생성됨).
       let analysis: any = {};
+      // 실패 사유를 어드민이 추적할 수 있도록 실제 원인(OpenAI status/예외)을 기록한다.
+      // (이전엔 console.error 로만 남아 어드민에서 "왜 실패했는지" 확인 불가였음.)
+      let failReason = "";
       try {
         const effort = Deno.env.get("OPENAI_CONSULT_EFFORT") ?? "low";
         const aiRes = await fetch("https://api.openai.com/v1/responses", {
@@ -352,8 +355,13 @@ serve(async (req) => {
           }),
         });
         if (aiRes.ok) analysis = JSON.parse(extractOutputText(await aiRes.json()) || "{}");
-        else console.error("analysis fail", aiRes.status, (await aiRes.text()).slice(0, 300));
+        else {
+          const body = (await aiRes.text()).slice(0, 300);
+          failReason = `openai_${aiRes.status}: ${body}`;
+          console.error("analysis fail", aiRes.status, body);
+        }
       } catch (e) {
+        failReason = `exception: ${String((e as Error)?.message ?? e)}`;
         console.error("analysis error", e);
       }
       await admin.from("wedding_consulting_reports")
@@ -365,8 +373,10 @@ serve(async (req) => {
           (Array.isArray(analysis.best_colors) && analysis.best_colors.length > 0));
       if (!analysisOk) {
         await refund(finalCost);
+        // 실제 원인(있으면) + 분석 비었음 표시. 어드민 실패 목록(admin_list_ai_failures)에서 확인.
+        const errDetail = (failReason || "analysis_empty: 모델 응답이 비었거나 파싱 실패").slice(0, 500);
         await admin.from("wedding_consulting_reports")
-          .update({ status: "failed", error: "analysis_failed", charged: 0, updated_at: new Date().toISOString() })
+          .update({ status: "failed", error: errDetail, charged: 0, updated_at: new Date().toISOString() })
           .eq("id", reportId);
         return;
       }

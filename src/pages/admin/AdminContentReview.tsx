@@ -35,6 +35,8 @@ interface BusinessEvent {
   description: string | null;
   starts_at: string | null;
   ends_at: string | null;
+  banner_image_url: string | null;
+  detail_images: string[] | null;
   moderation_status: string;
   moderation_note: string | null;
   created_at: string;
@@ -83,7 +85,8 @@ const AdminContentReview = () => {
     setLoading(true);
     const eventsQ = supabase
       .from("business_events" as any)
-      .select("id, place_id, owner_user_id, title, description, starts_at, ends_at, moderation_status, moderation_note, created_at")
+      // select("*") — banner_image_url/detail_images 미적용 라이브에서도 422 방어(드리프트 idiom).
+      .select("*")
       .order("created_at", { ascending: false });
     if (filter === "pending") eventsQ.eq("moderation_status", "pending");
 
@@ -224,6 +227,11 @@ const AdminContentReview = () => {
             ) : (
               events.map((e) => (
                 <div key={e.id} className="bg-card rounded-2xl border border-border p-4">
+                  {e.banner_image_url && (
+                    <div className="aspect-[2/1] rounded-xl overflow-hidden bg-muted mb-3">
+                      <img src={e.banner_image_url} alt={e.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -241,6 +249,13 @@ const AdminContentReview = () => {
                           {fmtDate(e.starts_at)}
                           {e.ends_at ? ` ~ ${fmtDate(e.ends_at)}` : ""}
                         </p>
+                      )}
+                      {(e.detail_images ?? []).length > 0 && (
+                        <div className="flex gap-1.5 mt-2 flex-wrap">
+                          {(e.detail_images ?? []).map((url) => (
+                            <img key={url} src={url} alt="" className="w-16 h-16 rounded-lg object-cover border border-border" />
+                          ))}
+                        </div>
                       )}
                       <p className="text-[11px] text-muted-foreground mt-1">
                         place_id: <code className="text-[10px]">{e.place_id.slice(0, 8)}…</code>
