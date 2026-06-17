@@ -53,6 +53,24 @@ const SOURCE_LABELS: Record<string, string> = {
   unknown: "기타",
 };
 
+// 개발자 영문 에러 메시지를 운영자가 이해할 평이한 한글 설명 + 조치로 변환.
+// (원문은 접이식으로 그대로 보존 — 이건 '추정 원인' 보조 라인.)
+const ERROR_EXPLAIN: { re: RegExp; ko: string; action: string }[] = [
+  { re: /load failed|failed to fetch|networkerror|err_network|fetch.*aborted/i, ko: "네트워크/서버 연결이 끊겼어요", action: "일시적일 수 있어요. 반복되면 서버·API 상태 확인" },
+  { re: /chunkloaderror|loading chunk|failed to fetch dynamically imported|importing a module script failed/i, ko: "새 배포 후 옛 캐시와 안 맞아요", action: "사용자에게 새로고침 안내(보통 자동 해결)" },
+  { re: /cannot read propert|undefined is not an object|null is not an object|reading '|is not a function/i, ko: "특정 화면에서 비어있는 데이터를 읽었어요", action: "발생 위치 화면의 데이터/쿼리 누락 확인" },
+  { re: /pgrst|supabase|jwt|row-level security|permission denied|42501/i, ko: "DB 권한/쿼리(서버) 오류예요", action: "RLS 정책·RPC 인자·컬럼 존재 확인" },
+  { re: /quota|exceeded|storage.*full|localstorage/i, ko: "저장공간 한도/접근 오류(주로 iOS 프라이빗)", action: "safeLocalStorage 경로 확인 — 보통 사용자 환경 문제" },
+  { re: /timeout|timed out|deadline/i, ko: "응답이 너무 늦어 시간 초과됐어요", action: "느린 네트워크/무거운 쿼리 — 반복 시 성능 점검" },
+  { re: /script error|cross-origin|cors/i, ko: "외부 스크립트/도메인 차단(CORS)", action: "외부 위젯·도메인 허용 설정 확인" },
+  { re: /out of memory|maximum call stack|too much recursion/i, ko: "메모리/무한루프로 화면이 멈췄어요", action: "해당 화면 렌더 루프·큰 목록 확인" },
+  { re: /payment|kakao|toss|결제/i, ko: "결제 흐름에서 오류가 났어요", action: "결제 리다이렉트/PG 연동 상태 확인" },
+  { re: /aborterror|the operation was aborted|canceled/i, ko: "사용자 이탈/취소로 중단됐어요", action: "대개 무해(화면 전환 중 취소)" },
+];
+function explainError(message: string): { ko: string; action: string } | null {
+  return ERROR_EXPLAIN.find((e) => e.re.test(message || "")) ?? null;
+}
+
 const groupLogs = (logs: ErrorLog[]): ErrorGroup[] => {
   const map = new Map<string, ErrorGroup & { _users: Set<string> }>();
   for (const log of logs) {
@@ -228,6 +246,15 @@ const AdminErrorLogs = () => {
                     <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground break-words line-clamp-2">{g.message}</p>
+                      {(() => {
+                        const ex = explainError(g.message);
+                        return ex ? (
+                          <p className="text-[12px] text-foreground mt-1">
+                            <span className="font-semibold text-primary">추정: {ex.ko}</span>
+                            <span className="text-muted-foreground"> · {ex.action}</span>
+                          </p>
+                        ) : null;
+                      })()}
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground">
                         <span className="font-semibold text-destructive">{g.count}회</span>
                         {g.affectedUsers > 0 && <span>사용자 {g.affectedUsers}명</span>}
