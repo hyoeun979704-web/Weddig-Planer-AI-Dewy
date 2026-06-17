@@ -36,9 +36,13 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [changingPw, setChangingPw] = useState(false);
+  // 비밀번호 변경 본인확인(이메일 OTP) — Supabase Secure password change(reauthentication) 사용.
+  // updateUser({password}) 는 reauthenticate() 로 받은 nonce(이메일 코드)를 요구한다.
+  const [reauthSent, setReauthSent] = useState(false);
+  const [reauthCode, setReauthCode] = useState("");
+  const [sendingCode, setSendingCode] = useState(false);
   // 이메일 가입자만 비밀번호 변경 노출(OAuth/소셜은 제공자 관리).
   const isEmailUser = user?.app_metadata?.provider === "email" || (user?.identities ?? []).some((i: any) => i.provider === "email");
 
@@ -118,25 +122,40 @@ const Profile = () => {
     }
   };
 
-  // 비밀번호 변경 — 현재 비밀번호로 재인증(보안) 후 새 비밀번호 적용. 이메일 가입자만.
+  // 비밀번호 변경 1단계 — 본인확인 코드 발송(이메일 OTP). Supabase reauthenticate() 가
+  // reauthentication.html 템플릿으로 6자리 코드를 메일 발송한다. 새 비번 유효성 먼저 검증.
+  const handleSendReauthCode = async () => {
+    if (newPassword.length < 8) { toast.error("새 비밀번호는 8자 이상이어야 해요"); return; }
+    setSendingCode(true);
+    try {
+      const { error } = await supabase.auth.reauthenticate();
+      if (error) { toast.error("인증 코드 발송 실패", { description: error.message }); return; }
+      setReauthSent(true);
+      toast.success("가입 이메일로 인증 코드를 보냈어요");
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  // 비밀번호 변경 2단계 — 이메일 코드(nonce)로 새 비밀번호 적용. 이메일 가입자만.
   const handlePasswordChange = async () => {
     if (!user?.email) return;
-    if (!currentPassword) { toast.error("현재 비밀번호를 입력해주세요"); return; }
     if (newPassword.length < 8) { toast.error("새 비밀번호는 8자 이상이어야 해요"); return; }
-    if (newPassword === currentPassword) { toast.error("새 비밀번호가 기존과 같아요"); return; }
+    if (!reauthCode.trim()) { toast.error("이메일로 받은 인증 코드를 입력해주세요"); return; }
     setChangingPw(true);
     try {
-      // 1) 현재 비밀번호 검증(재인증) — 틀리면 변경 차단.
-      const { error: reauthErr } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword,
-      });
-      if (reauthErr) { toast.error("현재 비밀번호가 올바르지 않아요"); return; }
-      // 2) 새 비밀번호 적용.
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) { toast.error("비밀번호 변경 실패", { description: error.message }); return; }
-      setCurrentPassword("");
+      // 이메일 코드(nonce) 로 재인증 + 새 비밀번호 적용.
+      const { error } = await supabase.auth.updateUser({ password: newPassword, nonce: reauthCode.trim() });
+      if (error) {
+        const msg = /nonce|reauth|token|expired|invalid/i.test(error.message)
+          ? "인증 코드가 올바르지 않거나 만료됐어요. 코드를 다시 받아주세요."
+          : error.message;
+        toast.error("비밀번호 변경 실패", { description: msg });
+        return;
+      }
       setNewPassword("");
+      setReauthCode("");
+      setReauthSent(false);
       toast.success("비밀번호를 변경했어요");
     } finally {
       setChangingPw(false);
@@ -376,21 +395,14 @@ const Profile = () => {
             저장하기
           </Button>
 
-          {/* 비밀번호 변경 — 이메일 가입자만(소셜 로그인은 제공자에서 관리) */}
+          {/* 비밀번호 변경 — 이메일 가입자만(소셜 로그인은 제공자에서 관리).
+              보안상 가입 이메일로 받은 인증 코드(본인확인)로 변경한다. */}
           {isEmailUser && (
             <div className="mt-8 pt-6 border-t border-border space-y-2">
               <Label className="flex items-center gap-2">
                 <Lock className="w-4 h-4" />
                 비밀번호 변경
               </Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="현재 비밀번호"
-                autoComplete="current-password"
-              />
               <Input
                 id="newPassword"
                 type="password"
@@ -399,15 +411,49 @@ const Profile = () => {
                 placeholder="새 비밀번호 (8자 이상)"
                 autoComplete="new-password"
               />
-              <Button
-                onClick={handlePasswordChange}
-                variant="outline"
-                className="w-full"
-                disabled={changingPw || !currentPassword || newPassword.length < 8}
-              >
-                {changingPw ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                비밀번호 변경
-              </Button>
+              {!reauthSent ? (
+                <Button
+                  onClick={handleSendReauthCode}
+                  variant="outline"
+                  className="w-full"
+                  disabled={sendingCode || newPassword.length < 8}
+                >
+                  {sendingCode ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  본인 확인 코드 받기
+                </Button>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    {user?.email} 로 보낸 인증 코드를 입력해주세요.
+                  </p>
+                  <Input
+                    id="reauthCode"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={reauthCode}
+                    onChange={(e) => setReauthCode(e.target.value)}
+                    placeholder="인증 코드 6자리"
+                  />
+                  <Button
+                    onClick={handlePasswordChange}
+                    variant="outline"
+                    className="w-full"
+                    disabled={changingPw || !reauthCode.trim() || newPassword.length < 8}
+                  >
+                    {changingPw ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    비밀번호 변경
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={handleSendReauthCode}
+                    disabled={sendingCode}
+                    className="w-full text-xs text-muted-foreground underline disabled:opacity-50"
+                  >
+                    코드 다시 받기
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>

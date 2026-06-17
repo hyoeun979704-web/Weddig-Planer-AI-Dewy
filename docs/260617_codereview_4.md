@@ -25,6 +25,19 @@
 
 ## ❌ P0 — 실제로 깨진 것 (직접 검증 완료)
 
+### P0-0. 비밀번호 변경 100% 불능 — Secure password change 메커니즘 오인 ✅수정완료
+- **증상**: 사용자가 변경 시도 → 서버 에러 "Current password required when setting new password".
+- **근본원인**: Supabase **"Secure password change"(reauthentication) = ON**(repo `supabase/templates/reauthentication.html`
+  의 `{{ .Token }}` OTP 템플릿이 증거). 이 모드에서 `updateUser({password})` 는 `reauthenticate()` 로
+  받은 **이메일 OTP nonce** 를 요구한다. 직전 수정(#348)은 `signInWithPassword`(현재 비번 재로그인)로
+  처리했으나 **Supabase 가 이를 무시** → nonce 누락으로 영구 실패.
+- **수정**: `src/pages/Profile.tsx` — 흐름을 이메일 OTP 재인증으로 교체. ① 새 비번 입력 → "본인 확인 코드 받기"
+  (`reauthenticate()`) → ② 메일 코드 입력 → `updateUser({password, nonce})`. nonce 에러는 "코드가 올바르지
+  않거나 만료" 로 매핑. e2e `e2e/password-change.spec.ts` 신규 4단계(렌더·발송·틀린코드·성공) **통과**.
+- **교훈(verification-lessons)**: #348 "테스트했다"는 **목업 e2e(signInWithPassword 목킹)** 였을 뿐 실제
+  서버 nonce 요구를 못 잡음 = "작동한다 ≠ 검증됨" 정확한 회귀. 외부 인증 메커니즘은 목업이 아니라
+  실제 에러 메시지로 확정해야 함.
+
 ### P0-1. MergeGame iOS 사파리 프라이빗 모드 크래시 ✅직접확인
 - **`src/pages/MergeGame.tsx:38`** — `useState(() => Number(localStorage.getItem('mergeGame_best') ?? 0))`.
   iOS 사파리 프라이빗/추적방지 모드는 localStorage 접근 시 **throw** → useState 초기화에서 터지면
