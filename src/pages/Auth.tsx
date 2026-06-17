@@ -149,11 +149,13 @@ const Auth = () => {
           // 알려진 케이스는 친화 문구. 미상은 진단을 위해 원문을 토스트 설명 + 서버 로깅으로
           // 남긴다(iOS 등 재현 불가 환경 디버깅 — auth 메시지는 내부 스키마/PII 아님).
           const mapped = mapAuthError(error.message);
+          // 모든 가입 실패를 서버 로깅(원인 확정용). 알려진 케이스도 남겨야 iOS 'Load failed'
+          // 같은 매핑된 에러까지 /admin/error-logs 에서 user_agent 와 함께 확인된다.
+          console.warn("signUp error:", error.message);
+          void logClientError({ message: `signup: ${error.message}`, source: "manual" });
           if (mapped.known) {
             toast.error(mapped.message);
           } else {
-            console.warn("signUp error:", error.message);
-            void logClientError({ message: `signup: ${error.message}`, source: "manual" });
             toast.error(mapped.message, { description: error.message?.slice(0, 140) });
           }
         } else if (needsEmailConfirm) {
@@ -175,11 +177,11 @@ const Auth = () => {
         const { error } = await signIn(email, password);
         if (error) {
           const mapped = mapAuthError(error.message);
+          console.warn("signIn error:", error.message);
+          void logClientError({ message: `signin: ${error.message}`, source: "manual" });
           if (mapped.known) {
             toast.error(mapped.message);
           } else {
-            console.warn("signIn error:", error.message);
-            void logClientError({ message: `signin: ${error.message}`, source: "manual" });
             toast.error(mapped.message, { description: error.message?.slice(0, 140) });
           }
         } else {
