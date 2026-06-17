@@ -173,3 +173,40 @@
   silent 리다이렉트되는지 **실동작 확인 후** 게이트/프리뷰 설계(추측 금지 — verification-lessons).
 - **기업회원 업체 상세정보 관리 부재 → 큐레이션 저하**: 사업자가 자기 업체 상세를 못 채워
   추천/비교 품질 하락. business 페이지·vendor 스키마 도메인 조사 후 별도 트랙(아래 보고 참조).
+
+---
+
+## 4차 증분 — 게스트 전환: 로그인 후 복귀(return-to)
+
+> 조사로 가정 정정(추측 금지): `/board`·`/compare`·`/quote` 는 **공개 + 비파괴 LoginRequiredOverlay**,
+> AI 기능도 게스트 맛보기 허용 → ④게스트프리뷰는 사실상 이미 됨. **진짜 누수**는 오버레이가
+> `/auth` 로 보낼 때 **목적지를 안 넘겨** 로그인 후 홈으로만 떨어지던 것(return-to 부재).
+
+| 파일 | 역할 |
+|---|---|
+| `src/lib/redirect.ts` (신규) | `safeInternalPath`(오픈 리다이렉트 방지) + `authLinkWithRedirect` |
+| `src/lib/redirect.test.ts` (신규) | 5 테스트(외부URL·//host·scheme·상대경로 거부, 인코딩) |
+| `src/components/LoginRequiredOverlay.tsx` (편집) | 현재 경로를 `/auth?redirect=` 로 전달 |
+| `src/pages/Auth.tsx` (편집) | redirect 파라미터 sanitize 후 로그인 성공 시 복귀 |
+
+### 6차원 (4차 델타)
+- **보안**: 오픈 리다이렉트 차단 — 내부 경로(단일 `/` 시작)만 허용, `//host`·`/\`·`scheme://`
+  전부 fallback. 테스트로 고정.
+- **정확성**: business/onboard 플로우는 보존, 개인회원만 redirectTo. effect+명시 navigate 둘 다
+  redirectTo 로 통일(홈 플래시 제거).
+- 검증: 신규 유닛 **5/5**(누적 34) · build 0 error · 신규 파일 lint **0 issue** · 전체 **484 pass / 1 사전 실패**.
+- **한계**: 실제 로그인→복귀 클릭은 sandbox e2e 미확인(로직·sanitize 는 유닛 고정).
+
+## 기업회원 업체 상세관리 → 큐레이션 (조사 결과 + 계획, 미구현)
+
+조사(`BusinessVendorEdit`·`upsert_my_listing` RPC·`places` 스키마):
+- 사업자 편집 가능: name·description·city·district·main_image·min_price·tags·문의채널.
+- **큐레이션이 필요로 하나 사업자가 못 채우는 필드**(품질 병목):
+  1. **포트폴리오 위치 태깅**(`place_media.venue_place_id/name`) — `venueMatch` 최강 신호인데
+     사업자는 사진만 올리고 어느 식장인지 태깅 불가(admin 전용) → "같은 식장 추천" 무력.
+  2. **lat/lng** — admin 전용 → 사업자 업체 지도·거리필터 미노출.
+  3. **카테고리별 상세(`BusinessListingDetailForm`)** — Phase 2b 스켈톤만, 미구현.
+- **별도 트랙 필요(이 PR 범위 밖)**: 전부 RPC/소유권·admin 권한 모델 변경 + **라이브 DB 검증**
+  동반 → sandbox e2e 불가라 무리 구현 금지. 우선순위: ①포트폴리오 위치 태깅(큐레이션 영향 최대,
+  upsert RPC 에 owner 가 자기 media 의 venue 태그를 셀프 식장에 한해 set 허용) → ②지오코딩
+  자동화(주소→lat/lng, 기존 `place-geocode-backfill` 함수 재사용) → ③상세폼.

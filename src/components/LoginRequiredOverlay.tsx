@@ -1,6 +1,7 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { LogIn, UserPlus, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { authLinkWithRedirect } from "@/lib/redirect";
 
 interface LoginRequiredOverlayProps {
   /** "login" for login prompt, "signup" for signup-focused */
@@ -12,6 +13,9 @@ interface LoginRequiredOverlayProps {
 
 const LoginRequiredOverlay = ({ variant = "login", message, features }: LoginRequiredOverlayProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  // 로그인 후 원래 가려던 화면으로 복귀(전환 누수 차단). 현재 경로+쿼리를 redirect 로 전달.
+  const authHref = authLinkWithRedirect(location.pathname + location.search);
 
   const defaultMessage = variant === "signup"
     ? "회원가입하고 나만의 웨딩 준비를 시작하세요"
@@ -45,7 +49,7 @@ const LoginRequiredOverlay = ({ variant = "login", message, features }: LoginReq
             <p className="text-xs text-muted-foreground mb-3">{message || defaultMessage}</p>
             <div className="flex gap-2">
               <Button
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate(authHref)}
                 size="sm"
                 className="flex-1 gap-1.5 rounded-xl text-sm h-10"
               >
@@ -55,7 +59,7 @@ const LoginRequiredOverlay = ({ variant = "login", message, features }: LoginReq
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate(authHref)}
                 className="gap-1 rounded-xl text-sm h-10 text-muted-foreground"
               >
                 로그인
