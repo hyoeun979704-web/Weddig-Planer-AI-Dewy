@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { safeInternalPath } from "@/lib/redirect";
+import { mapAuthError } from "@/lib/authErrors";
+import { logClientError } from "@/lib/errorLog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -144,13 +146,17 @@ const Auth = () => {
         if (accountType === "business") metadata.account_type = "business";
         const { error, needsEmailConfirm } = await signUp(email, password, metadata);
         if (error) {
-          // 원문(영문 raw) Supabase 에러는 내부 구현 노출 위험 → 알려진 케이스만
-          // 친화 문구, 그 외엔 제네릭. (상세는 콘솔에만)
-          if (error.message.includes("already registered")) {
-            toast.error("이미 가입된 이메일입니다");
+          // 알려진 케이스는 친화 문구. 미상은 진단을 위해 원문을 토스트 설명 + 서버 로깅으로
+          // 남긴다(iOS 등 재현 불가 환경 디버깅 — auth 메시지는 내부 스키마/PII 아님).
+          const mapped = mapAuthError(error.message);
+          // 모든 가입 실패를 서버 로깅(원인 확정용). 알려진 케이스도 남겨야 iOS 'Load failed'
+          // 같은 매핑된 에러까지 /admin/error-logs 에서 user_agent 와 함께 확인된다.
+          console.warn("signUp error:", error.message);
+          void logClientError({ message: `signup: ${error.message}`, source: "manual" });
+          if (mapped.known) {
+            toast.error(mapped.message);
           } else {
-            console.warn("signUp error:", error.message);
-            toast.error("가입 처리 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
+            toast.error(mapped.message, { description: error.message?.slice(0, 140) });
           }
         } else if (needsEmailConfirm) {
           // 이메일 확인이 필요한 설정 — 아직 로그인 상태가 아니므로 홈으로
@@ -170,13 +176,13 @@ const Auth = () => {
       } else {
         const { error } = await signIn(email, password);
         if (error) {
-          if (error.message.includes("Invalid login")) {
-            toast.error("이메일 또는 비밀번호가 올바르지 않습니다");
-          } else if (error.message.toLowerCase().includes("email not confirmed")) {
-            toast.error("이메일 인증이 아직 안 됐어요. 메일의 링크를 눌러 인증해주세요.");
+          const mapped = mapAuthError(error.message);
+          console.warn("signIn error:", error.message);
+          void logClientError({ message: `signin: ${error.message}`, source: "manual" });
+          if (mapped.known) {
+            toast.error(mapped.message);
           } else {
-            console.warn("signIn error:", error.message);
-            toast.error("로그인 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
+            toast.error(mapped.message, { description: error.message?.slice(0, 140) });
           }
         } else {
           toast.success("로그인되었습니다!");

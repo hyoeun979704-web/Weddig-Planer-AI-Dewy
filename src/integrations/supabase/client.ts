@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { isNativeApp } from '@/lib/platform';
 import { preferencesStorage } from './preferencesStorage';
+import { createSafeStorage } from './safeLocalStorage';
 
 // Supabase project URL + anon publishable key.
 // These are SAFE to embed in the client bundle — anon key is designed to be public,
@@ -40,13 +41,15 @@ const isBrowser = typeof window !== 'undefined';
 
 // 세션 저장소 결정 규칙:
 //   - 네이티브 앱(Capacitor): Preferences 어댑터 (SharedPreferences/UserDefaults)
-//   - 웹 브라우저 / PWA:     기본 localStorage
+//   - 웹 브라우저 / PWA:     안전 localStorage 어댑터(예외 안 던짐 — iOS Safari
+//                            프라이빗/추적방지에서 raw localStorage 가 throw 해 가입이
+//                            실패하던 버그 차단. 실패 시 인메모리 폴백.)
 //   - SSR / Node:            undefined (Supabase 가 기본값 사용)
 // 분기는 platform.ts 한 곳에서만 이뤄진다.
 const authStorage = isNativeApp()
   ? preferencesStorage
   : isBrowser
-    ? localStorage
+    ? createSafeStorage(window.localStorage)
     : undefined;
 
 // Import the supabase client like this:
