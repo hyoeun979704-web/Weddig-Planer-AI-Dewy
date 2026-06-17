@@ -37,6 +37,12 @@
    매직넘버 상수화, "왜"를 주석으로.
 6. **아키텍처**: 계층(hooks/lib/components) 준수·도메인↔UI 분리, API 시그니처 일관성,
    breaking change 시 버저닝/피처플래그.
+7. **iOS/사파리(웹) — 모바일 웹이 주 사용처라 항상 본다**(상세 `docs/code-review-rules.md`):
+   ① **localStorage throw**(프라이빗·추적방지·용량초과) → raw 접근 금지, 안전 어댑터/try-catch
+   (회귀: iOS 가입 실패 — `safeLocalStorage`). ② **탭 폐기→상태 유실** → 긴 입력폼은 draft
+   자동저장(`useTextDraft`/`formDraft`). ③ **네트워크 에러 문구 다름**("Load failed" vs
+   "Failed to fetch") → 에러 매핑·로깅. ④ `<input type=date>`/HEIC 업로드/safe-area
+   (`safe-sticky-header`) 확인. ⑤ 실기기 e2e 불가 시 `client_error_logs`(user_agent)로 관측.
 
 변경은 **최소·표적화**(요구 범위 밖 전체 재작성·호출부 시그니처 변경 금지). 짠 뒤
 **적대적 시점으로 자기 재검증**.
@@ -44,8 +50,8 @@
 **전체 코드리뷰 기록**: "전체 코드리뷰"(코드 전체 리뷰/보안 감사 등 광범위) 요청을 받으면
 결과를 **반드시** `docs/YYMMDD_codereview.md` 로 남긴다(예: `docs/260606_codereview.md`).
 양식은 그 파일을 템플릿으로 따른다: TL;DR(핵심 성과) → 영역별 섹션(보안·P0버그·**dead-end
-UI/placeholder CTA**·공통화·도메인 변경·규칙/문서·검증 인프라) → 적용 마이그레이션 표 →
-남은 작업(deferred). 각 항목에 **커밋 해시·파일명**을 달아 추적 가능하게. 같은 날 여러 건이면
+UI/placeholder CTA**·**iOS/사파리(웹) 차원**·공통화·도메인 변경·규칙/문서·검증 인프라) → 적용
+마이그레이션 표 → 남은 작업(deferred). 각 항목에 **커밋 해시·파일명**을 달아 추적 가능하게. 같은 날 여러 건이면
 `_2` 등 suffix. **dead-end UI 섹션은 필수**: 보안·버그만 보면 "동작하는 척하는" placeholder
 (toast/안내만 띄우는 CTA, no-op onClick, "준비 중" 영구 잔존)를 매번 놓친다(검증 섹션 참조).
 
