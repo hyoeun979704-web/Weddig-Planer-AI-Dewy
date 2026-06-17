@@ -1,8 +1,17 @@
 import { useEffect, useState, useCallback } from "react";
-import { Megaphone, Package, Image as ImageIcon, UtensilsCrossed, Calendar } from "lucide-react";
+import { Megaphone, Package, Image as ImageIcon, UtensilsCrossed, Calendar, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-interface EventRow { id: string; title: string; description: string | null; starts_at: string | null; ends_at: string | null; }
+interface EventRow {
+  id: string;
+  title: string;
+  description: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  banner_image_url: string | null;
+  detail_images: string[] | null;
+}
 interface ProductRow { id: string; name: string; price: number | null; description: string | null; image_url: string | null; }
 interface MediaRow {
   id: string;
@@ -32,11 +41,12 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [media, setMedia] = useState<MediaRow[]>([]);
   const [albums, setAlbums] = useState<AlbumRow[]>([]);
+  const [activeEvent, setActiveEvent] = useState<EventRow | null>(null);
   const isMenu = category === "invitation_venue";
 
   const load = useCallback(async () => {
     const [ev, pr, md, alb] = await Promise.all([
-      supabase.from("business_events" as any).select("id, title, description, starts_at, ends_at").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
+      supabase.from("business_events" as any).select("id, title, description, starts_at, ends_at, banner_image_url, detail_images").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
       supabase.from("business_products" as any).select("id, name, price, description, image_url").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
       supabase.from("place_media" as any).select("*").eq("place_id", placeId).order("display_order", { ascending: true }),
       // 앨범 테이블이 라이브에 아직 없으면 error → 빈 배열로 폴백(평면 렌더).
@@ -152,23 +162,73 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
         </div>
       )}
 
-      {/* 이벤트 */}
+      {/* 이벤트 — 배너 카드 → 탭 시 상세 모달 */}
       {events.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-bold text-sm flex items-center gap-1.5"><Megaphone className="w-4 h-4 text-primary" /> 진행중 이벤트</h3>
           {events.map((e) => (
-            <div key={e.id} className="rounded-xl border border-border bg-card p-3">
-              <p className="text-sm font-semibold text-foreground">{e.title}</p>
-              {e.description && <p className="text-[13px] text-muted-foreground mt-0.5 whitespace-pre-line">{e.description}</p>}
-              {(e.starts_at || e.ends_at) && (
-                <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />{e.starts_at ?? ""}{e.ends_at ? ` ~ ${e.ends_at}` : ""}
-                </p>
+            <button
+              key={e.id}
+              type="button"
+              onClick={() => setActiveEvent(e)}
+              className="w-full text-left rounded-xl border border-border bg-card overflow-hidden active:opacity-90"
+            >
+              {e.banner_image_url && (
+                <div className="aspect-[2/1] bg-muted">
+                  <img src={e.banner_image_url} alt={e.title} className="w-full h-full object-cover" />
+                </div>
               )}
-            </div>
+              <div className="p-3 flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">{e.title}</p>
+                  {e.description && <p className="text-[13px] text-muted-foreground mt-0.5 line-clamp-1 whitespace-pre-line">{e.description}</p>}
+                  {(e.starts_at || e.ends_at) && (
+                    <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />{e.starts_at ?? ""}{e.ends_at ? ` ~ ${e.ends_at}` : ""}
+                    </p>
+                  )}
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+              </div>
+            </button>
           ))}
         </div>
       )}
+
+      {/* 이벤트 상세 모달 */}
+      <Dialog open={!!activeEvent} onOpenChange={(o) => !o && setActiveEvent(null)}>
+        <DialogContent className="max-w-md p-0 overflow-hidden max-h-[85vh] overflow-y-auto">
+          {activeEvent && (
+            <>
+              {activeEvent.banner_image_url && (
+                <div className="aspect-[2/1] bg-muted">
+                  <img src={activeEvent.banner_image_url} alt={activeEvent.title} className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div className="p-5 space-y-3">
+                <DialogHeader>
+                  <DialogTitle className="text-left">{activeEvent.title}</DialogTitle>
+                </DialogHeader>
+                {(activeEvent.starts_at || activeEvent.ends_at) && (
+                  <p className="text-[12px] text-muted-foreground flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" />{activeEvent.starts_at ?? ""}{activeEvent.ends_at ? ` ~ ${activeEvent.ends_at}` : ""}
+                  </p>
+                )}
+                {activeEvent.description && (
+                  <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{activeEvent.description}</p>
+                )}
+                {(activeEvent.detail_images ?? []).length > 0 && (
+                  <div className="space-y-2">
+                    {(activeEvent.detail_images ?? []).map((url) => (
+                      <img key={url} src={url} alt="" className="w-full rounded-lg" />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

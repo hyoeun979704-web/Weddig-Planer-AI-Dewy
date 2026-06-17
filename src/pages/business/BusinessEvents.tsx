@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, Megaphone, Loader2, Calendar } from "lucide-react";
+import { Plus, Trash2, Megaphone, Loader2, Calendar, X } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import ImageUploader from "@/components/admin/ImageUploader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -17,6 +18,8 @@ interface EventItem {
   description: string | null;
   starts_at: string | null;
   ends_at: string | null;
+  banner_image_url: string | null;
+  detail_images: string[] | null;
   moderation_status: string;
   moderation_note: string | null;
 }
@@ -44,12 +47,15 @@ const BusinessEvents = () => {
   const [description, setDescription] = useState("");
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
+  const [bannerUrl, setBannerUrl] = useState("");
+  const [detailImages, setDetailImages] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
+  const [uploaderKey, setUploaderKey] = useState(0);
 
   const loadEvents = useCallback(async (pid: string) => {
     const { data } = await supabase
       .from("business_events" as any)
-      .select("id, title, description, starts_at, ends_at, moderation_status, moderation_note")
+      .select("id, title, description, starts_at, ends_at, banner_image_url, detail_images, moderation_status, moderation_note")
       .eq("place_id", pid)
       .order("created_at", { ascending: false });
     setItems((data ?? []) as unknown as EventItem[]);
@@ -71,6 +77,7 @@ const BusinessEvents = () => {
   const handleAdd = async () => {
     if (!user || !placeId) return;
     if (!title.trim()) { toast.error("이벤트명을 입력해주세요"); return; }
+    if (!bannerUrl.trim()) { toast.error("배너 이미지를 올려주세요"); return; }
     setAdding(true);
     const { error } = await supabase.from("business_events").insert({
       place_id: placeId,
@@ -79,10 +86,13 @@ const BusinessEvents = () => {
       description: description.trim() || null,
       starts_at: startsAt || null,
       ends_at: endsAt || null,
-    });
+      banner_image_url: bannerUrl.trim(),
+      detail_images: detailImages,
+    } as any);
     setAdding(false);
     if (error) { toast.error("등록에 실패했어요"); return; }
     setTitle(""); setDescription(""); setStartsAt(""); setEndsAt("");
+    setBannerUrl(""); setDetailImages([]); setUploaderKey((k) => k + 1);
     toast.success("이벤트를 등록했어요. 운영자 검토 후 노출됩니다");
     await loadEvents(placeId);
   };
@@ -138,6 +148,47 @@ const BusinessEvents = () => {
               <Input type="date" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
             </div>
           </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">배너 이미지 *</Label>
+            {user && (
+              <ImageUploader
+                key={`banner-${uploaderKey}`}
+                bucket="vendor-images"
+                pathPrefix={`${user.id}/`}
+                initialUrl={bannerUrl || undefined}
+                onUploaded={(_, url) => setBannerUrl(url)}
+              />
+            )}
+            <p className="text-[11px] text-muted-foreground">목록·카드에 노출되는 대표 이미지예요(필수).</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">상세 이미지 (선택)</Label>
+            {detailImages.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {detailImages.map((url, i) => (
+                  <div key={url} className="relative aspect-square rounded-lg overflow-hidden border border-border bg-muted">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setDetailImages((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {user && (
+              <ImageUploader
+                key={`detail-${uploaderKey}-${detailImages.length}`}
+                bucket="vendor-images"
+                pathPrefix={`${user.id}/`}
+                onUploaded={(_, url) => setDetailImages((prev) => [...prev, url])}
+              />
+            )}
+            <p className="text-[11px] text-muted-foreground">이벤트 상세에 더 보여줄 이미지를 추가로 올릴 수 있어요.</p>
+          </div>
           <Button onClick={handleAdd} disabled={adding} className="w-full">
             {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> 이벤트 등록</>}
           </Button>
@@ -151,6 +202,11 @@ const BusinessEvents = () => {
               const st = STATUS[e.moderation_status] ?? STATUS.pending;
               return (
                 <div key={e.id} className="bg-card rounded-2xl border border-border p-4">
+                  {e.banner_image_url && (
+                    <div className="aspect-[2/1] rounded-xl overflow-hidden bg-muted mb-3">
+                      <img src={e.banner_image_url} alt={e.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-bold text-foreground">{e.title}</p>
