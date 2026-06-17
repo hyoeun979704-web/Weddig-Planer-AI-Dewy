@@ -139,3 +139,37 @@
   경로라 **중복발급·부분쓰기 방지(멱등성)** 가 라이브 e2e 없이는 위험. 결정점 UX 설계 후 별도 PR.
 - **C그룹 잔여**: RSVP 실집계→예식장 수용인원 필터, 일정 완료율→readiness 정식 스코어.
 - **D그룹 잔여**: 실납부 익명 집계→가격 벤치마크(오라클), 자율 에이전트 실행(승인/거부 루프).
+
+---
+
+## 3차 증분 — 홈→서비스 전환율 (퍼널 계측 + 단일 다음 한 걸음)
+
+> 홈 전환율 개선. 진단: 홈에 서비스 진입 CTA 15개+가 동등 무게(선택 과부하)인데 **전환
+> 측정이 0**(GA/PostHog 없음). 단, `user_events` 테이블 + `trackEvent` 헬퍼는 **이미 존재**
+> (페르소나 v2) — 홈 내비게이션에 안 불릴 뿐. → 새 테이블 만들지 않고 **재사용**.
+
+| 파일 | 역할 |
+|---|---|
+| `src/lib/track.ts` (편집) | `trackHomeNav(source,target,extra)` + 순수 `buildHomeNavProps` 추가 (기존 trackEvent/user_events 재사용, 새 테이블·마이그레이션 없음) |
+| `src/lib/track.test.ts` (신규) | `buildHomeNavProps` 3 테스트 |
+| `src/components/home/HomeQuickLinks.tsx` (편집) | 클릭 시 `trackHomeNav("quick_links", href)` |
+| `src/components/home/PersonaDashboard.tsx` (편집) | 스마트 제안을 **단일 primary CTA + 보조 칩**으로 재구성(선택 과부하 해소), 모든 클릭 trackHomeNav |
+
+### 6차원 (3차 델타)
+- **DRY/재사용**: 새 `nav_events` 테이블을 만들 뻔했으나 grep 으로 기존 `user_events`+`track.ts`
+  발견 → 재사용(중복·마이그레이션 회피). event_name `home_nav_click`, snake_case 컨벤션 준수.
+- **dead-end UI**: primary CTA·보조 칩 모두 실제 라우트 딥링크. 측정은 fire-and-forget(UX 무영향,
+  실패는 콘솔만, 미인증 시 RLS 로 조용히 패스).
+- **정확성**: 빈틈 0이면 블록 미렌더. `buildHomeNavProps` 순수·테스트.
+
+### 검증 (3차)
+- 신규 유닛 **3/3 pass**(누적 29) · `npm run build` 0 error · 신규 파일 lint 0 error(기존 `any`
+  경고는 미변경 라인) · 전체 `vitest` **479 pass / 1 사전 실패**(동일·무관).
+- **한계**: 측정 데이터는 라이브 사용자 트래픽이 쌓여야 의미 — 본 PR 은 "계측을 깐다"까지.
+  실제 퍼널 수치·이탈 지점은 운영 후 `user_events` 집계로 확인(admin service_role).
+
+### 남은 전환율 레버 (deferred — 라이브 확인/도메인 조사 필요)
+- **미로그인 마찰 / 게스트 프리뷰**: HomeQuickLinks·카테고리 타일이 게스트에게 protected route 로
+  silent 리다이렉트되는지 **실동작 확인 후** 게이트/프리뷰 설계(추측 금지 — verification-lessons).
+- **기업회원 업체 상세정보 관리 부재 → 큐레이션 저하**: 사업자가 자기 업체 상세를 못 채워
+  추천/비교 품질 하락. business 페이지·vendor 스키마 도메인 조사 후 별도 트랙(아래 보고 참조).

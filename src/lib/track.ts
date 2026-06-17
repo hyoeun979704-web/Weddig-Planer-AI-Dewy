@@ -43,3 +43,23 @@ export const trackEvent = (
     }
   }, 0);
 };
+
+/** 홈→서비스 전환 퍼널 이벤트의 properties 형태(순수 — 테스트용). */
+export const buildHomeNavProps = (
+  source: string,
+  target: string,
+  extra?: Record<string, unknown>,
+): Record<string, unknown> => ({ source, target, ...(extra ?? {}) });
+
+/**
+ * 홈 화면의 서비스 진입 CTA 클릭 측정. source=홈 섹션 식별자, target=이동 라우트.
+ * 기존 trackEvent/user_events 인프라 재사용(새 테이블 없음) — navigate 직전에 호출.
+ * 이게 깔려야 "홈의 어느 진입점이 전환되고 어디서 이탈하나"를 데이터로 본다.
+ */
+export const trackHomeNav = (
+  source: string,
+  target: string,
+  extra?: Record<string, unknown>,
+): void => {
+  trackEvent("home_nav_click", buildHomeNavProps(source, target, extra));
+};
