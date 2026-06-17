@@ -92,7 +92,27 @@
 | 승인 시 business 역할 부여 + 백필 | `supabase/migrations/20260617010000_admin_review_business_grants_role.sql` | PR #320 (라이브 적용 필요) |
 | `/business/leads` 게이트 추가 | `src/App.tsx:334` | 본 커밋 |
 
+## P0 (추가) — 포트폴리오가 사용자 상세페이지에 노출 안 됨
+
+증상: BusinessGallery 로 등록한 포트폴리오가 `/vendor/:id` 에 안 보임.
+원인 3겹(분리):
+1. **프론트 미반영**: `PlaceBusinessSections` 가 포트폴리오 필드(`venue_name`·`style_tags`·
+   `description`)를 select/렌더 안 함 → 메타 없이 사진만, 라벨도 "사진". → 수정: `select("*")`
+   + "포트폴리오" 섹션으로 식장태그(📍)·스타일칩·설명 렌더(src/components/place/PlaceBusinessSections.tsx).
+2. **라우트 커버리지**: `PlaceBusinessSections` 는 `VendorDetailPage`(/vendor/:id)에서만 렌더.
+   카테고리 상세(/studio/:id·/venue/:id·/suit·/hanbok·/jewelry·/appliance·/honeymoon·
+   /invitation-venues)는 **미포함** → 그 경로로 보면 포트폴리오·상품·이벤트 전부 안 보임. (deferred —
+   해당 페이지가 소유 업체를 대표하는지 확인 후 섹션 추가 필요.)
+3. **★ 라이브 DB 미적용(umbrella)**: BusinessGallery INSERT 가 `venue_name`/`style_tags` 를
+   항상 포함(L86-87). 마이그레이션 `20260616050000_place_media_portfolio.sql` 가 **라이브에
+   미적용이면 INSERT 자체가 실패** → 포트폴리오 저장 안 됨 → "노출 안됨"의 진짜 원인일 가능성 큼.
+   동일 맥락: `20260617010000`(admin 역할부여)·기타 최근 마이그레이션의 라이브 적용 여부를
+   `information_schema`/Supabase 대시보드로 **반드시 확인**(파일 존재 ≠ 적용 — verification-lessons).
+
 ## 남은 작업 (deferred)
+- **마이그레이션 라이브 적용 점검(최우선)**: place_media 포트폴리오 컬럼·admin_review_business
+  역할부여 등. 오늘 다수 버그("직접전환 미반영"·"포트폴리오 미노출")의 공통 뿌리일 수 있음.
+- **카테고리 상세페이지에 PlaceBusinessSections 추가**(소유 업체 노출 경로 일원화).
 
 - **직접 전환 전용 admin UI**: 운영자가 회사 NTS 정보 입력 → profile 생성 + 승인 + 역할을
   **한 트랜잭션**으로(원자적). 현재는 수동 DB + 승인 RPC 조합이라 드리프트 여지. `business_number`
