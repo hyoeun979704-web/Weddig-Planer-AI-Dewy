@@ -239,3 +239,32 @@
 - 검증: 신규 유닛 **10/10**(누적 44) · build 0 error · 신규 파일 lint 0 error · 전체 **494 pass / 1 사전 실패**.
 - **한계**: 실제 iOS Safari 탭 폐기→복귀 복원은 sandbox e2e 불가 — 로직은 유닛 고정, **실기기
   확인 권장**(사업자에게 재현 요청). localStorage 복원은 동일 브라우저 내 한정(cross-device 아님).
+
+---
+
+## 6차 증분 — 입력 유실 전수 점검: 위험 폼 4종에 draft 확대
+
+> "저장 문제를 끝까지" — 같은 미저장 유실 패턴을 전 폼 조사 후 위험 4종에 적용. 재사용
+> 훅 `useTextDraft` 로 추출(formDraft 위에 hydrate/autosave/clear 캡슐화), 폼별 변경 최소화.
+
+| 파일 | 적용 |
+|---|---|
+| `src/hooks/useTextDraft.ts` (신규) | 공통 draft 라이프사이클 훅(hydrate 가드·hasContent·ref 최신화) |
+| `src/pages/QuoteNew.tsx` (편집) | 견적 요청(장문+이미지 path). 프리필(카테고리·지역) 제외한 hasContent |
+| `src/pages/CoupleDiaryWrite.tsx` (편집) | 부부일기(텍스트만, 사진 File 제외) |
+| `src/pages/Contact.tsx` (편집) | 1:1 문의 |
+| `src/components/place/PlaceInquirySheet.tsx` (편집) | 업체 문의(시트, placeId 별 격리) |
+
+### 안전 판정(작업 불필요, 조사 근거)
+- `CommunityWrite`: 이미 draft 구현됨. `InvitationFlow/Studio`: 저장→invitationId 서버 영속(편집 모드 복귀).
+  `BudgetSetupSheet/AddSheet`·`WeddingInfoSetupModal`: props prefill 로 재오픈 복구. `*Survey`: 빠른 제출 사이클.
+
+### 6차원 (6차 델타)
+- **DRY/아키텍처**: 6개 폼이 단일 `formDraft`+`useTextDraft` 재사용(복붙 0). 계층(lib→hook→page) 유지.
+- **정확성**: hasContent 로 프리필만의 빈 draft·오인 토스트 차단. File 객체 제외(직렬화 불가).
+  hydrate 가드로 초기값 보존. enabled(미인증/시트닫힘) no-op.
+- **보안**: user별 키 격리(공유기기 누출 방지). best-effort try/catch(iOS 프라이빗 모드).
+- 검증: build 0 error · 변경 파일 lint 0 error(기존 `any` 경고만) · 전체 `vitest` **494 pass / 1 사전 실패**.
+- **한계**: 실기기 iOS e2e 미확인(로직·formDraft 유닛 44개로 고정). cross-device 아님.
+
+이로써 **입력 유실(저장) 문제는 위험 폼 전반에 해소**. 기획·고도화는 후속 새 PR 에서 진행.

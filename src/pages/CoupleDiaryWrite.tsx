@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useCoupleDiary } from "@/hooks/useCoupleDiary";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTextDraft } from "@/hooks/useTextDraft";
 import { toast } from "sonner";
 
 const moods = [
@@ -19,6 +21,7 @@ const moods = [
 const CoupleDiaryWrite = () => {
   const navigate = useNavigate();
   const { createEntry } = useCoupleDiary();
+  const { user } = useAuth();
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -27,6 +30,21 @@ const CoupleDiaryWrite = () => {
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreview, setPhotoPreview] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  // 미저장 입력 유실 방지(iOS 웹 등). 사진(File)은 직렬화 불가라 텍스트만 임시저장.
+  const draft = useTextDraft({
+    scope: "couple-diary-write",
+    userId: user?.id,
+    enabled: !!user,
+    values: { title, content, diaryDate, mood },
+    apply: (d) => {
+      if (d.title != null) setTitle(d.title);
+      if (d.content != null) setContent(d.content);
+      if (d.diaryDate) setDiaryDate(d.diaryDate);
+      if (d.mood != null) setMood(d.mood);
+    },
+    hasContent: (v) => !!(v.title?.trim() || v.content?.trim()),
+  });
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -60,6 +78,7 @@ const CoupleDiaryWrite = () => {
     setIsSaving(false);
 
     if (success) {
+      draft.clear();
       navigate("/couple-diary");
     }
   };
