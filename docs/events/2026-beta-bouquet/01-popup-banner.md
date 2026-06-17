@@ -13,7 +13,7 @@
 
 ### 카드 B — 부케 할인권 (position 15)
 - **제목:** `꽃 머지 깨고 부케 20만원 할인권 💐`
-- **부제:** `최종 단계 도달 + SNS 인증 · 선착순 100명(가안)`
+- **부제:** `최종 단계 도달 + SNS 인증 · 선착순 100명`
 - **CTA 라벨:** `게임 시작` → `/merge-game`
 - **뱃지:** `선착순`
 
@@ -41,4 +41,4 @@ No text, no letters, no numbers, no watermark. Soft cinematic light, high detail
 ## 4. 체크
 - [ ] 제목/부제 §2와 일치 · CTA 라우트 정확(`/merge-game`, `/auth`)
 - [ ] 이미지 텍스트 없음 → 한글 오버레이 · 브랜드 컬러
-- [ ] 부케 "선착순 100명"이 가안/확정 어느 쪽인지 표기 일치
+- [ ] 부케 선착순 100명(확정) 표기 일치 · 인증 태그 @dewy_ai_weddig_planer

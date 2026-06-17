@@ -31,5 +31,5 @@ watermark. High detail, soft cinematic, scroll-stopping. --ar 9:16
 
 ## 5. 체크
 - [ ] 첫 자막 1초 내 · 9:16 풀프레임
-- [ ] 9~10초 부케 수치 §2와 일치(가안/확정 표기)
+- [ ] 9~10초 부케 수치 §2와 일치(선착순 100명 확정) · 인증 태그 @dewy_ai_weddig_planer
 - [ ] 이미지 텍스트 없음 → 한글 오버레이
