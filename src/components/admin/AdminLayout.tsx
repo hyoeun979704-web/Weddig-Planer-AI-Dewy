@@ -1,27 +1,8 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Shirt,
-  Sparkles,
-  FileText,
-  Camera,
-  Bell,
-  Users,
-  Menu,
-  X,
-  Home,
-  LogOut,
-  Instagram,
-  MessageSquare,
-  Megaphone,
-  MapPin,
-  Building2,
-  Flag,
-  AlertTriangle,
-  Bot,
-} from "lucide-react";
+import { Menu, X, Home, LogOut } from "lucide-react";
+import { ADMIN_NAV } from "./adminNav";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,36 +14,6 @@ interface AdminLayoutProps {
   rightAction?: ReactNode;
 }
 
-interface NavItem {
-  label: string;
-  href: string;
-  icon: typeof LayoutDashboard;
-  badge?: string;
-}
-
-const navItems: NavItem[] = [
-  { label: "대시보드", href: "/admin", icon: LayoutDashboard },
-  { label: "드레스 카탈로그", href: "/admin/dress-samples", icon: Shirt },
-  { label: "메이크업 카탈로그", href: "/admin/makeup-samples", icon: Sparkles },
-  { label: "헤어 카탈로그", href: "/admin/hair-samples", icon: Sparkles },
-  { label: "업체 정보 관리", href: "/admin/places", icon: MapPin },
-  { label: "콘텐츠 검토", href: "/admin/content-review", icon: Megaphone },
-  { label: "기업회원 검토", href: "/admin/business-review", icon: Building2 },
-  { label: "업체 권한 요청", href: "/admin/place-claims", icon: Building2 },
-  { label: "신고 처리", href: "/admin/reports", icon: Flag },
-  { label: "AI 생성 현황", href: "/admin/ai-jobs", icon: Sparkles },
-  { label: "청첩장 템플릿", href: "/admin/invitation-templates", icon: FileText },
-  { label: "청첩장 에셋", href: "/admin/invitation-assets", icon: FileText },
-  { label: "청첩장 폰트", href: "/admin/invitation-fonts", icon: FileText },
-  { label: "촬영 시안", href: "/admin/wedding-photo-refs", icon: Camera, badge: "준비중" },
-  { label: "인스타 카드뉴스", href: "/admin/instagram-posts", icon: Instagram, badge: "1단계" },
-  { label: "사전알림 신청", href: "/admin/service-waitlist", icon: Bell },
-  { label: "사용자 관리", href: "/admin/users", icon: Users },
-  { label: "1:1 문의·불편접수", href: "/admin/inquiries", icon: MessageSquare },
-  { label: "커뮤니티 공지", href: "/admin/announcements", icon: Megaphone },
-  { label: "오류 모니터링", href: "/admin/error-logs", icon: AlertTriangle },
-  { label: "에이전트 산출물", href: "/admin/agent-outputs", icon: Bot },
-];
 
 const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutProps) => {
   const location = useLocation();
@@ -107,7 +58,7 @@ const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutP
         </div>
 
         <nav className="p-3 space-y-1">
-          {navItems.map((item) => {
+          {ADMIN_NAV.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
             return (
