@@ -17,15 +17,36 @@ interface Stat {
   today: number;
 }
 
+interface Failure {
+  report_id: string;
+  user_id: string;
+  status: string;
+  error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+const fmtTime = (s: string | null) => {
+  if (!s) return "";
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? s : d.toLocaleString("ko-KR");
+};
+
 const AdminAIJobs = () => {
   const [stats, setStats] = useState<Stat[]>([]);
+  const [failures, setFailures] = useState<Failure[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any).rpc("admin_ai_job_stats");
-    if (error) toast({ title: "불러오기 실패", description: error.message, variant: "destructive" });
-    else setStats((data ?? []) as Stat[]);
+    const [statsRes, failRes] = await Promise.all([
+      (supabase as any).rpc("admin_ai_job_stats"),
+      // 실패 상세(사유 포함) — 미적용 라이브에서도 화면이 안 깨지게 에러는 무시.
+      (supabase as any).rpc("admin_list_ai_failures", { p_limit: 50 }),
+    ]);
+    if (statsRes.error) toast({ title: "불러오기 실패", description: statsRes.error.message, variant: "destructive" });
+    else setStats((statsRes.data ?? []) as Stat[]);
+    setFailures(failRes.error ? [] : ((failRes.data ?? []) as Failure[]));
     setLoading(false);
   }, []);
 
@@ -101,6 +122,35 @@ const AdminAIJobs = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* 최근 실패 상세 — 왜 실패했는지(사유)를 직접 확인. 하트 차감→환불(예: wedding_consulting_refund) 추적용. */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-foreground">최근 실패 상세 ({failures.length})</h3>
+              {failures.length === 0 ? (
+                <p className="text-[13px] text-muted-foreground">표시할 실패 내역이 없어요. (마이그레이션 미적용 시 비어 있을 수 있어요)</p>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-border">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-muted-foreground">
+                      <tr>
+                        {["시각", "사용자", "사유"].map((h) => (
+                          <th key={h} className="px-4 py-2.5 text-left font-medium whitespace-nowrap">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {failures.map((f) => (
+                        <tr key={f.report_id} className="bg-background align-top">
+                          <td className="px-4 py-2.5 whitespace-nowrap text-muted-foreground">{fmtTime(f.updated_at || f.created_at)}</td>
+                          <td className="px-4 py-2.5 whitespace-nowrap"><code className="text-[11px]">{f.user_id.slice(0, 8)}…</code></td>
+                          <td className="px-4 py-2.5 text-destructive whitespace-pre-wrap break-all max-w-[480px]">{f.error || "(사유 미기록)"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
