@@ -49,8 +49,15 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void applySafeAreaCssVariables(WebView webView) {
-        final int top = safeAreaTopPx;
-        final int bottom = safeAreaBottomPx;
+        // WindowInsets 는 물리 픽셀(px)이지만, CSS 의 px 는 논리 픽셀(dp = 물리px / density)이다
+        // (viewport: width=device-width, initial-scale=1). 변환 없이 물리px 를 CSS px 로 주입하면
+        // 고밀도 기기에서 안전영역이 density 배(예: 2.75x)로 부풀어, 하단탭 padding-bottom 이 과도해져
+        // 탭이 화면 하단에서 떠 보이고 콘텐츠 영역이 깨진다. → density 로 나눠 CSS px(dp)로 변환.
+        final float density = getResources().getDisplayMetrics().density;
+        final float topDp = density > 0 ? safeAreaTopPx / density : safeAreaTopPx;
+        final float bottomDp = density > 0 ? safeAreaBottomPx / density : safeAreaBottomPx;
+        final String top = String.format(java.util.Locale.US, "%.2f", topDp);
+        final String bottom = String.format(java.util.Locale.US, "%.2f", bottomDp);
 
         webView.post(() -> webView.evaluateJavascript(
             "(() => {" +
