@@ -25,7 +25,8 @@
 
 ### 데이터 모델 (권장안 A — DRY)
 - 신규 `place_media_albums`: `id, place_id, owner_user_id, title('260402_경복궁'), shoot_date,
-  venue_place_id(FK·nullable), venue_name(폴백), style_tags text[], description, cover_media_id, created_at`.
+  venue_place_id(FK·nullable), venue_name(폴백), style_tags text[], description, cover_media_id,
+  product_id(FK business_products·nullable, on delete set null — 이 앨범의 상품/패키지), created_at`.
 - `place_media.album_id uuid null references place_media_albums(id) on delete set null` 추가.
   - 공통 메타(장소·태그)는 **앨범에 1회** → 사진은 상속(중복 입력 제거). 기존 사진은 album_id=null(단독, 호환).
 - RLS: 앨범 public read / owner write(place_media와 동일 패턴).
@@ -40,9 +41,20 @@
 - 포트폴리오를 **앨범 카드**(커버+제목+매수+📍식장+스타일칩)로 그룹 표시 → 탭 시 앨범 사진 뷰.
 - 앨범 없는 단독 사진(legacy)은 "기타" 묶음.
 
+### 포트폴리오 필터에 상품(패키지) 태그 연동 — 포폴→상품 전환 동선
+- 앨범에 **`product_id uuid null references business_products(id) on delete set null`** 추가
+  (이 앨범이 어떤 상품/패키지로 작업한 결과인지). 스타일·식장 태그와 함께 필터 축이 됨.
+- **필터 바**: [전체] · 스타일 · 식장 · **상품/패키지**. "이 패키지로 찍은 포폴"로 좁히기.
+- **앨범 → 상품 CTA**: 앨범 상세에 "이 패키지 보기 →"(해당 상품으로). **역방향**: 상품 상세에
+  "이 패키지로 작업한 포트폴리오" 앨범 노출 → **포폴(증거) ↔ 상품(구매) 양방향 연결 = 전환 강화.**
+- 가드: **검토(approved) 상품만** 필터/CTA 노출, 상품 삭제 시 set null. product_id 미지정 앨범은
+  상품 필터에서 제외(스타일·식장 필터엔 정상 포함).
+- 근거: 실작업 갤러리가 구매 결정의 핵심 증거(레퍼런스 조사) → 그 갤러리에서 바로 패키지로
+  연결하면 "마음에 든 결과물 = 살 수 있는 상품" 경로가 끊김 없이 이어짐.
+
 ### 단계
-- P1: 앨범 테이블+album_id, 업로드(앨범 생성+다중) , 상세 앨범 그룹 렌더.
-- P2: 같은-식장 필터/우선노출을 album.venue 기반으로 일원화, 순서/커버 편집.
+- P1: 앨범 테이블(+album_id), 업로드(앨범 생성+다중), 상세 앨범 그룹 렌더.
+- P2: 필터 바(스타일·식장·**상품/패키지**), 앨범↔상품 양방향 CTA, 같은-식장 우선노출 일원화, 커버/순서 편집.
 
 ---
 
