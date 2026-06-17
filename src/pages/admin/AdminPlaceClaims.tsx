@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Loader2, Check, X, MapPin } from "lucide-react";
 import AdminGuard from "@/components/admin/AdminGuard";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -72,20 +73,12 @@ const AdminPlaceClaims = () => {
                     <p className="text-[11px] text-muted-foreground mt-1">{new Date(c.created_at).toLocaleString("ko-KR")}</p>
                   </div>
                   <div className="flex gap-2 shrink-0">
-                    <button
-                      onClick={() => review(c, true)}
-                      disabled={busy === c.id}
-                      className="px-3 h-9 rounded-lg bg-emerald-500 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1"
-                    >
+                    <Button size="sm" onClick={() => review(c, true)} disabled={busy === c.id} className="gap-1">
                       <Check className="w-4 h-4" /> 승인
-                    </button>
-                    <button
-                      onClick={() => review(c, false)}
-                      disabled={busy === c.id}
-                      className="px-3 h-9 rounded-lg bg-rose-500 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1"
-                    >
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => review(c, false)} disabled={busy === c.id} className="gap-1">
                       <X className="w-4 h-4" /> 반려
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

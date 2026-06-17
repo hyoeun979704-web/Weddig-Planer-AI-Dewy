@@ -464,7 +464,7 @@ const BusinessDashboard = () => {
         )}
 
         {/* Quick stats */}
-        <div className="grid grid-cols-4 gap-2 mx-4 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mx-4 mt-4">
           {[
             { icon: Eye, label: "조회수", value: stats.views, color: "text-primary" },
             { icon: Heart, label: "찜", value: stats.favorites, color: "text-primary" },
