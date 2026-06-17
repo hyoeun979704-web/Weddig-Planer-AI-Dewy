@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useBranches } from "@/hooks/useBranches";
 import { toast } from "sonner";
 
 interface ReviewRow {
@@ -27,25 +28,20 @@ interface ReviewRow {
  */
 const BusinessReviews = () => {
   const navigate = useNavigate();
+  const { selectedId, loading: branchesLoading } = useBranches();
   const [loading, setLoading] = useState(true);
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [rows, setRows] = useState<ReviewRow[]>([]);
 
   const load = useCallback(async () => {
+    if (!selectedId) { setPlaceId(null); setLoading(false); return; }
     setLoading(true);
+    setPlaceId(selectedId);
     try {
-      const { data: listing, error: listingError } = await supabase.rpc("get_my_listing");
-      if (listingError) throw listingError;
-      const row = Array.isArray(listing) ? listing[0] : listing;
-      if (!row?.place_id) {
-        setPlaceId(null);
-        return;
-      }
-      setPlaceId(row.place_id);
       const { data, error } = await supabase
         .from("place_reviews")
         .select("review_id, title, content, author, rating, review_date, created_at, source_name, owner_response, owner_response_at")
-        .eq("place_id", row.place_id)
+        .eq("place_id", selectedId)
         .order("review_date", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false, nullsFirst: false })
         .limit(200);
@@ -56,11 +52,12 @@ const BusinessReviews = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedId]);
 
   useEffect(() => {
+    if (branchesLoading) return;
     void load();
-  }, [load]);
+  }, [branchesLoading, load]);
 
   // 답글 작성 상태
   const REPLY_MAX = 1000;

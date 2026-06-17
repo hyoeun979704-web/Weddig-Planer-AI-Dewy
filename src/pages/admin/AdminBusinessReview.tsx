@@ -96,7 +96,7 @@ const AdminBusinessReview = () => {
   // 제휴 신청 처리 — 면담 진행 / 승인(프렌즈 자동 부여) / 반려
   const reviewPartnership = async (id: string, status: "interviewing" | "approved" | "rejected") => {
     setProcessingApp(id);
-    const { data, error } = await supabase.rpc("admin_review_partnership", { p_id: id, p_status: status, p_note: undefined });
+    const { data, error } = await supabase.rpc("admin_review_partnership", { p_id: id, p_status: status, p_note: null });
     setProcessingApp(null);
     if (error || !(data as { ok?: boolean })?.ok) { toast.error("처리에 실패했어요"); return; }
     toast.success(status === "approved" ? "프렌즈로 승격했어요" : status === "interviewing" ? "면담 진행으로 표시했어요" : "반려했어요");

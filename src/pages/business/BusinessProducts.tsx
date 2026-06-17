@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import ImageUploader from "@/components/admin/ImageUploader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranches } from "@/hooks/useBranches";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
 
@@ -32,6 +33,7 @@ const STATUS: Record<string, { label: string; color: string }> = {
 const BusinessProducts = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { selectedId, loading: branchesLoading } = useBranches();
   const [loading, setLoading] = useState(true);
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [items, setItems] = useState<ProductItem[]>([]);
@@ -52,17 +54,11 @@ const BusinessProducts = () => {
   }, []);
 
   useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase.rpc("get_my_listing");
-      if (error) { toast.error("정보를 불러오지 못했어요"); setLoading(false); return; }
-      const row = Array.isArray(data) ? data[0] : data;
-      if (row?.place_id) {
-        setPlaceId(row.place_id);
-        await loadProducts(row.place_id);
-      }
-      setLoading(false);
-    })();
-  }, [loadProducts]);
+    if (branchesLoading) return;
+    if (!selectedId) { setLoading(false); return; }
+    setPlaceId(selectedId);
+    (async () => { await loadProducts(selectedId); setLoading(false); })();
+  }, [branchesLoading, selectedId, loadProducts]);
 
   const handleAdd = async () => {
     if (!user || !placeId) return;
