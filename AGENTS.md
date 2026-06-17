@@ -14,6 +14,11 @@
 - **브랜치**: `origin/main` 이 정식(로컬 `main` 은 뒤처질 수 있음 — 팀이 main 앞서 개발). PR base = `main`.
 - **재사용 먼저 검색**(중복 금지): `src/lib`(포맷/매핑/escape: priceFormat·relativeTime·placeMappers·postgrestEscape·categoryLabels),
   `supabase/functions/_shared`(cors·jwt·llm·supabase), `api/_lib`(ssr). 새로 짜기 전 grep.
+- **분석 선행 — 기획·구현 전 필수**: 새 기능/비단순 변경은 ① 관련 **기존 코드·스키마·RPC 분석**
+  (Explore 서브에이전트로 데이터 흐름·게이트·재사용 지점 파악) ② 해당되면 **레퍼런스/타 서비스
+  패턴 조사**(경쟁사 분석 선행 — `docs/feature-simulation.md §5`; 외부 fetch 는 네트워크 정책
+  허용 시, 라이선스 유의·복사 금지·패턴만) 를 **먼저** 한 뒤 기획·구현한다. "바로 코딩" 금지 —
+  추측 구현이 회귀의 주원인(verification-lessons). 큰 기획은 `docs/`에 문서로 남긴다.
 - **병렬 작업**: fan-out 탐색은 저토큰 서브에이전트(결론만), 깊은 다단계 작업만 일반 에이전트.
   같은 파일 동시 편집 금지(작업 분할). (Claude 한정) 안전 검증·읽기 명령은 `.claude/settings.json` 에 사전 허용됨.
 
