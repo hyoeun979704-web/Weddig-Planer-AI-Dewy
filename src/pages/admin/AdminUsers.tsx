@@ -22,6 +22,7 @@ interface UserProfile {
   user_id: string;
   email: string | null;
   nickname: string | null;
+  community_nickname: string | null;
   created_at: string;
   member_tier: MemberTier;
   // 조인된 데이터
@@ -50,7 +51,7 @@ const AdminUsers = () => {
     // profiles 기준으로 조회 (auth.users는 직접 조회 어려움)
     const { data: profiles, error } = await supabase
       .from("profiles")
-      .select("user_id, email, display_name, created_at, member_tier")
+      .select("user_id, email, display_name, community_nickname, created_at, member_tier")
       .order("created_at", { ascending: false })
       .limit(200);
 
@@ -104,6 +105,7 @@ const AdminUsers = () => {
       user_id: p.user_id,
       email: p.email,
       nickname: p.display_name,
+      community_nickname: p.community_nickname ?? null,
       created_at: p.created_at,
       member_tier: (MEMBER_TIERS as string[]).includes(p.member_tier) ? p.member_tier : "basic",
       roles: rolesByUser[p.user_id] ?? [],
@@ -187,7 +189,7 @@ const AdminUsers = () => {
     if (roleFilter === "admin" && !u.roles.includes("admin")) return false;
     if (!search) return true;
     const q = search.toLowerCase();
-    return u.email?.toLowerCase().includes(q) || u.nickname?.toLowerCase().includes(q);
+    return u.email?.toLowerCase().includes(q) || u.nickname?.toLowerCase().includes(q) || u.community_nickname?.toLowerCase().includes(q);
   });
 
   return (
@@ -248,7 +250,7 @@ const AdminUsers = () => {
               <table className="w-full text-sm min-w-[700px]">
                 <thead className="bg-muted text-xs text-muted-foreground">
                   <tr>
-                    <th className="text-left px-4 py-2 font-semibold">사용자</th>
+                    <th className="text-left px-4 py-2 font-semibold">이름 · 커뮤니티 닉네임 · 계정</th>
                     <th className="text-left px-4 py-2 font-semibold">역할</th>
                     <th className="text-left px-4 py-2 font-semibold">회원 등급</th>
                     <th className="text-right px-4 py-2 font-semibold">하트 잔액</th>
@@ -261,7 +263,11 @@ const AdminUsers = () => {
                   {filtered.map((u) => (
                     <tr key={u.user_id} className="hover:bg-muted/50">
                       <td className="px-4 py-3">
-                        <div className="text-foreground">{u.nickname || "(닉네임 없음)"}</div>
+                        {/* 이름(display_name) + 커뮤니티 닉네임(community_nickname) 분리 — 같은 값 오인 방지 */}
+                        <div className="text-foreground">{u.nickname || "(이름 없음)"}</div>
+                        {u.community_nickname && (
+                          <div className="text-[11px] text-primary truncate max-w-xs">커뮤니티: {u.community_nickname}</div>
+                        )}
                         <div className="text-[11px] text-muted-foreground truncate max-w-xs">
                           {u.email || u.user_id}
                         </div>
