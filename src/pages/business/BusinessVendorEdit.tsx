@@ -410,7 +410,10 @@ const BusinessVendorEdit = () => {
             className="mt-2"
           />
         </div>
-        <Field label="최소 가격(원)" value={minPrice} onChange={setMinPrice} placeholder="500000" type="number" />
+        <div className="space-y-1">
+          <Field label="최소가 · 시작가(원)" value={minPrice} onChange={setMinPrice} placeholder="500000" type="number" />
+          <p className="text-[11px] text-muted-foreground">상세페이지 “최저가~” 표기용. 상품별 가격은 ‘상품 관리’에서 따로 등록해요.</p>
+        </div>
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">키워드 (쉼표로 구분)</Label>
           <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="강남웨딩홀, 가성비, 소규모" />
