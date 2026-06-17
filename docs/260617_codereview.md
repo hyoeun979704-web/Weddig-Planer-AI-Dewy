@@ -99,20 +99,33 @@
 1. **프론트 미반영**: `PlaceBusinessSections` 가 포트폴리오 필드(`venue_name`·`style_tags`·
    `description`)를 select/렌더 안 함 → 메타 없이 사진만, 라벨도 "사진". → 수정: `select("*")`
    + "포트폴리오" 섹션으로 식장태그(📍)·스타일칩·설명 렌더(src/components/place/PlaceBusinessSections.tsx).
-2. **라우트 커버리지**: `PlaceBusinessSections` 는 `VendorDetailPage`(/vendor/:id)에서만 렌더.
-   카테고리 상세(/studio/:id·/venue/:id·/suit·/hanbok·/jewelry·/appliance·/honeymoon·
-   /invitation-venues)는 **미포함** → 그 경로로 보면 포트폴리오·상품·이벤트 전부 안 보임. (deferred —
-   해당 페이지가 소유 업체를 대표하는지 확인 후 섹션 추가 필요.)
+2. **라우트 커버리지 (시뮬레이션 결과: 문제 없음 ✅)**: 카테고리 상세(StudioDetail·VenueDetail·
+   SuitDetail·HanbokDetail·JewelryDetail·HoneymoonDetail·ApplianceDetail·InvitationVenueDetail)는
+   **전부 `VendorDetailPage` 의 thin re-export** → 모든 상세 경로가 `PlaceBusinessSections` 를
+   렌더한다. 추가 작업 불필요. `usePlaceDetail` 은 `id: p.place_id` 로 매핑(L524)이라 placeId 정확.
 3. **★ 라이브 DB 미적용(umbrella)**: BusinessGallery INSERT 가 `venue_name`/`style_tags` 를
    항상 포함(L86-87). 마이그레이션 `20260616050000_place_media_portfolio.sql` 가 **라이브에
    미적용이면 INSERT 자체가 실패** → 포트폴리오 저장 안 됨 → "노출 안됨"의 진짜 원인일 가능성 큼.
    동일 맥락: `20260617010000`(admin 역할부여)·기타 최근 마이그레이션의 라이브 적용 여부를
    `information_schema`/Supabase 대시보드로 **반드시 확인**(파일 존재 ≠ 적용 — verification-lessons).
 
-## 남은 작업 (deferred)
-- **마이그레이션 라이브 적용 점검(최우선)**: place_media 포트폴리오 컬럼·admin_review_business
-  역할부여 등. 오늘 다수 버그("직접전환 미반영"·"포트폴리오 미노출")의 공통 뿌리일 수 있음.
-- **카테고리 상세페이지에 PlaceBusinessSections 추가**(소유 업체 노출 경로 일원화).
+## 시뮬레이션 결과 (코드 레벨 e2e 워크스루)
+
+- **포트폴리오 노출**: 모든 상세 경로 → VendorDetailPage → `PlaceBusinessSections(place.id)` →
+  `place_media select("*")` → 식장/스타일/설명 렌더. **코드 경로 정상** ✅. (전제: place_media 행
+  존재 = 라이브 마이그레이션 적용.)
+- **직접 전환**: admin 승인 → `user_roles('business')` 부여 → `useUserRole` 인식 → 대시보드·업체
+  정보 접근. **로직 정상** ✅. (전제: 마이그레이션 적용 + 당사자 세션 새로고침.)
+- **/business/leads**: `BusinessGuard requireApproved` 래핑 → 미승인 차단 ✅.
+- **iOS/사파리**: 안전 storage(#319)·폼 draft(#316) 머지로 가입 실패·입력 유실 차단 ✅.
+- 검증: `npm run build` 0 error · 변경 파일 lint 0 error · 전체 `vitest` 통과(사전 실패 1 무관).
+- **한계**: ① 라이브 DB 마이그레이션 적용 여부 ② iOS 실기기 ③ 라이브 RLS 는 sandbox 미확인 —
+  코드/로직은 확인, 실환경은 적용 후 관측(client_error_logs) 필요.
+
+## 남은 작업 (deferred — 코드 아님/운영)
+- **🔴 마이그레이션 라이브 적용 점검(최우선)**: place_media 포트폴리오 컬럼·admin_review_business
+  역할부여. 오늘 다수 버그("직접전환 미반영"·"포트폴리오 미노출")의 공통 뿌리 가능성.
+- 직접 전환 전용 admin 원자적 폼/RPC, 세션 캐시 즉시 반영, 상시 대시보드 바로가기(접속성).
 
 - **직접 전환 전용 admin UI**: 운영자가 회사 NTS 정보 입력 → profile 생성 + 승인 + 역할을
   **한 트랜잭션**으로(원자적). 현재는 수동 DB + 승인 RPC 조합이라 드리프트 여지. `business_number`
