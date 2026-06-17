@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import AdminGuard from "@/components/admin/AdminGuard";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { ADMIN_NAV_FEATURED } from "@/components/admin/adminNav";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { relativeTime } from "@/lib/relativeTime";
@@ -377,42 +378,22 @@ const AdminDashboard = () => {
         {/* 빠른 액션 */}
         <section className="mb-6">
           <h2 className="text-sm font-bold text-foreground mb-3">빠른 액션</h2>
+          {/* 사이드바와 동일한 단일 소스(ADMIN_NAV)의 featured 항목에서 파생 — 라벨/경로 드리프트 방지(④). */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <QuickActionCard
-              to="/admin/ai-jobs"
-              label="AI 생성 현황"
-              icon={Sparkles}
-              accent="primary"
-            />
-            <QuickActionCard
-              to="/admin/dress-samples"
-              label="새 드레스 추가"
-              icon={Plus}
-            />
-            <QuickActionCard to="/admin/makeup-samples" label="메이크업 샘플 관리" icon={Plus} />
-            <QuickActionCard to="/admin/hair-samples" label="헤어 샘플 관리" icon={Plus} />
-            <QuickActionCard
-              to="/admin/service-waitlist"
-              label="사전알림 확인"
-              icon={Bell}
-              badge={stats?.pendingWaitlist}
-            />
-            <QuickActionCard to="/admin/places" label="업체 정보 관리" icon={MapPin} />
-            <QuickActionCard to="/admin/tip-instagrams" label="Instagram 큐레이션" icon={Instagram} />
-            <QuickActionCard to="/admin/business-review" label="기업회원 검토" icon={Building2} />
-            <QuickActionCard
-              to="/admin/content-review"
-              label="콘텐츠 검토"
-              icon={Megaphone}
-              badge={stats?.pendingContentReview}
-            />
-            <QuickActionCard to="/admin/users" label="사용자 관리" icon={Users} />
-            <QuickActionCard to="/admin/reports" label="신고 처리" icon={Flag} />
-            <QuickActionCard to="/admin/product-curation" label="상품 큐레이션" icon={ShoppingBag} />
-            <QuickActionCard to="/admin/featured-products" label="추천 상품 관리" icon={Star} />
-            <QuickActionCard to="/admin/inquiries" label="1:1 문의·불편접수" icon={MessageSquare} />
-            <QuickActionCard to="/admin/announcements" label="커뮤니티 공지" icon={Megaphone} />
-            <QuickActionCard to="/admin/promotions" label="이벤트·진입 팝업" icon={Star} />
+            {ADMIN_NAV_FEATURED.map((item) => (
+              <QuickActionCard
+                key={item.href}
+                to={item.href}
+                label={item.label}
+                icon={item.icon}
+                accent={item.href === "/admin/ai-jobs" ? "primary" : undefined}
+                badge={
+                  item.href === "/admin/service-waitlist" ? stats?.pendingWaitlist
+                  : item.href === "/admin/content-review" ? stats?.pendingContentReview
+                  : undefined
+                }
+              />
+            ))}
             <QuickActionCard to="/" label="앱으로 돌아가기" icon={Sparkles} />
           </div>
         </section>
