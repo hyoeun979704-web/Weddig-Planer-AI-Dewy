@@ -74,3 +74,16 @@ select version from supabase_migrations.schema_migrations order by version desc 
 ## 다음
 사용자가 (1)(2)(3) 결과를 공유 → repo 기준과 1:1 대조해 **남은 미적용/불일치 목록 확정** →
 일괄 교정 SQL + repo 캡처 마이그레이션 제공.
+
+## 검토 결론 (260617 — 라이브 introspection 후 확정)
+- **라이브 적용 이력이 `20260615061514`에서 멈춤** → repo 의 6/15 정오~6/17 마이그레이션 **13개 미적용**
+  (업체보드·캘린더동기화·결과물전송·인앱메일·디자인마켓·견적FK·문의상태·푸시 등). → **일괄 적용 완료**
+  (대시보드 SQL, 전부 `IF NOT EXISTS`/`CREATE OR REPLACE` 멱등).
+- **역드리프트 없음**: 라이브 전용 3건(`20260615043205`·`045531`·`061514`)은 모두 repo 에 **다른
+  버전번호로 동일 기능 존재**(`043300_quote_lead_sla_reminder`·`120000_vendor_board_items`(스키마
+  완전 일치)·`123000_vendor_board_custom_label`). 캡처 불필요 — 버전번호 표기 차이일 뿐 기능 일치.
+- **수동 적용분(미추적)**: place_media_portfolio·admin_review_business_grants_role·
+  admin_member_affiliation·notify_on_inquiry_answered·review_notes(3-arg)·admin_review_listing(uuid캐스트)
+  은 대시보드로 적용됨(schema_migrations 미기록이나 객체는 존재).
+- **순 결과**: repo ↔ 라이브 **기능적 정합 확보**. 잔여는 버전번호 bookkeeping(선택적 `migration repair`).
+- **재발 방지(권장)**: 정합 상태에서 CI `supabase db push` 도입 시 드리프트 영구 차단(멱등이라 안전).

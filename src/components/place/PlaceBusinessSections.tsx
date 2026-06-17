@@ -10,83 +10,125 @@ interface MediaRow {
   image_url: string | null;
   title: string | null;
   price: number | null;
-  // 포트폴리오 확장 필드(260616). 라이브 DB 미적용 가능성 대비 select("*") + 옵셔널.
+  album_id?: string | null;
+  // 앨범 미사용(단독) 사진 호환용 — 앨범 도입 전 행은 행 자체에 메타 보유.
   venue_name?: string | null;
   style_tags?: string[] | null;
   description?: string | null;
 }
+interface AlbumRow {
+  id: string;
+  title: string;
+  venue_name: string | null;
+  style_tags: string[] | null;
+  description: string | null;
+  product_id: string | null;
+}
 
-// 업체 상세페이지의 기업회원 등록 콘텐츠(이벤트·상품·사진/메뉴) 노출.
+// 업체 상세페이지의 기업회원 등록 콘텐츠(포트폴리오 앨범·상품·이벤트·메뉴) 노출.
 // 승인된 것만 RLS 로 내려오며, 데이터 없는 섹션은 렌더하지 않는다.
 const PlaceBusinessSections = ({ placeId, category }: { placeId: string; category: string }) => {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [media, setMedia] = useState<MediaRow[]>([]);
+  const [albums, setAlbums] = useState<AlbumRow[]>([]);
   const isMenu = category === "invitation_venue";
 
   const load = useCallback(async () => {
-    const [ev, pr, md] = await Promise.all([
+    const [ev, pr, md, alb] = await Promise.all([
       supabase.from("business_events" as any).select("id, title, description, starts_at, ends_at").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
       supabase.from("business_products" as any).select("id, name, price, description, image_url").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
-      // select("*") — 포트폴리오 컬럼(venue_name/style_tags/description)이 라이브 DB 에
-      // 아직 없어도 422 안 나게(있으면 함께 내려옴).
       supabase.from("place_media" as any).select("*").eq("place_id", placeId).order("display_order", { ascending: true }),
+      // 앨범 테이블이 라이브에 아직 없으면 error → 빈 배열로 폴백(평면 렌더).
+      supabase.from("place_media_albums" as any).select("id, title, venue_name, style_tags, description, product_id").eq("place_id", placeId).order("created_at", { ascending: false }),
     ]);
     setEvents((ev.data ?? []) as unknown as EventRow[]);
     setProducts((pr.data ?? []) as unknown as ProductRow[]);
     setMedia((md.data ?? []) as unknown as MediaRow[]);
+    setAlbums((alb.data ?? []) as unknown as AlbumRow[]);
   }, [placeId]);
 
   useEffect(() => { load(); }, [load]);
 
   if (events.length === 0 && products.length === 0 && media.length === 0) return null;
 
+  const productName = new Map(products.map((p) => [p.id, p.name]));
+  const albumById = new Map(albums.map((a) => [a.id, a]));
+
+  // 포트폴리오 그룹핑: 앨범 있는 사진은 앨범별로, 없으면 "기타". 앨범 등록 순서 유지.
+  const photosByAlbum = new Map<string | null, MediaRow[]>();
+  for (const m of media) {
+    const key = m.album_id ?? null;
+    if (!photosByAlbum.has(key)) photosByAlbum.set(key, []);
+    photosByAlbum.get(key)!.push(m);
+  }
+  const orderedAlbumKeys: (string | null)[] = [
+    ...albums.filter((a) => photosByAlbum.has(a.id)).map((a) => a.id as string | null),
+    ...(photosByAlbum.has(null) ? [null] : []),
+  ];
+
   return (
     <div className="space-y-5">
-      {/* 포트폴리오(사진) / 메뉴 */}
+      {/* 포트폴리오(사진, 앨범 그룹) / 메뉴 */}
       {media.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <h3 className="font-bold text-sm flex items-center gap-1.5">
             {isMenu ? <UtensilsCrossed className="w-4 h-4 text-primary" /> : <ImageIcon className="w-4 h-4 text-primary" />}
             {isMenu ? "메뉴" : "포트폴리오"}
           </h3>
-          <div className="grid grid-cols-2 gap-2">
-            {media.map((m) => {
-              const tags = Array.isArray(m.style_tags) ? m.style_tags : [];
-              const hasMeta = !!(m.venue_name || m.description || tags.length);
-              return (
+
+          {isMenu ? (
+            <div className="grid grid-cols-2 gap-2">
+              {media.map((m) => (
                 <div key={m.id} className="rounded-xl border border-border overflow-hidden bg-card">
                   <div className="aspect-square bg-muted">
-                    {m.image_url && <img src={m.image_url} alt={m.title ?? m.venue_name ?? ""} className="w-full h-full object-cover" />}
+                    {m.image_url && <img src={m.image_url} alt={m.title ?? ""} className="w-full h-full object-cover" />}
                   </div>
-                  {isMenu ? (
-                    <div className="p-2">
-                      <p className="text-[12px] font-semibold text-foreground truncate">{m.title}</p>
-                      {m.price != null && <p className="text-[11px] text-muted-foreground">{m.price.toLocaleString()}원</p>}
-                    </div>
-                  ) : (
-                    hasMeta && (
-                      <div className="p-2 space-y-1">
-                        {m.venue_name && (
-                          <p className="text-[11px] text-primary truncate">📍 {m.venue_name}</p>
-                        )}
-                        {m.description && (
-                          <p className="text-[11px] text-muted-foreground line-clamp-2">{m.description}</p>
-                        )}
-                        {tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {tags.slice(0, 3).map((t) => (
-                              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">#{t}</span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  )}
+                  <div className="p-2">
+                    <p className="text-[12px] font-semibold text-foreground truncate">{m.title}</p>
+                    {m.price != null && <p className="text-[11px] text-muted-foreground">{m.price.toLocaleString()}원</p>}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {orderedAlbumKeys.map((albId) => {
+                const alb = albId ? albumById.get(albId) : null;
+                const photos = photosByAlbum.get(albId) ?? [];
+                const tags = alb ? (alb.style_tags ?? []) : [];
+                // 앨범 없는 단독 사진은 행 자체 메타(레거시) 사용.
+                const looseVenue = !alb && photos[0]?.venue_name;
+                const pkg = alb?.product_id ? productName.get(alb.product_id) : undefined;
+                return (
+                  <div key={albId ?? "loose"} className="space-y-1.5">
+                    {(alb || looseVenue) && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {alb && <span className="text-[13px] font-semibold text-foreground">{alb.title}</span>}
+                        {(alb?.venue_name || looseVenue) && (
+                          <span className="text-[11px] text-primary">📍 {alb?.venue_name ?? looseVenue}</span>
+                        )}
+                        {pkg && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">패키지 · {pkg}</span>
+                        )}
+                        {tags.slice(0, 3).map((t) => (
+                          <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">#{t}</span>
+                        ))}
+                      </div>
+                    )}
+                    {alb?.description && <p className="text-[11px] text-muted-foreground">{alb.description}</p>}
+                    <div className="grid grid-cols-2 gap-2">
+                      {photos.map((m) => (
+                        <div key={m.id} className="rounded-xl border border-border overflow-hidden bg-card aspect-square">
+                          {m.image_url && <img src={m.image_url} alt={m.title ?? alb?.title ?? ""} className="w-full h-full object-cover" />}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
