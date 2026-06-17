@@ -277,19 +277,28 @@ const AdminDashboard = () => {
   return (
     <AdminGuard>
       <AdminLayout title="운영자 대시보드" description="듀이 서비스 통계 및 빠른 진입">
-        {/* 알림 배너 */}
+        {/* 알림 배너 — 각 줄을 눌러 바로 해결 화면으로 이동(딥링크). */}
         {stats && (stats.pendingWaitlist > 0 || stats.pendingFittings > 0 || stats.pendingContentReview > 0) && (
           <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 rounded-lg flex gap-2 items-start">
             <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-amber-900 dark:text-amber-200">
+            <div className="flex-1 text-sm text-amber-900 dark:text-amber-200 space-y-1">
               {stats.pendingContentReview > 0 && (
-                <div>검토 대기 중인 기업 콘텐츠 {stats.pendingContentReview}건</div>
+                <Link to="/admin/content-review" className="flex items-center gap-1 hover:underline">
+                  <span className="flex-1">검토 대기 중인 기업 콘텐츠 {stats.pendingContentReview}건</span>
+                  <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                </Link>
               )}
               {stats.pendingFittings > 0 && (
-                <div>처리 대기 중인 드레스 피팅 {stats.pendingFittings}건</div>
+                <Link to="/admin/ai-jobs" className="flex items-center gap-1 hover:underline">
+                  <span className="flex-1">처리 대기 중인 드레스 피팅 {stats.pendingFittings}건</span>
+                  <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                </Link>
               )}
               {stats.pendingWaitlist > 0 && (
-                <div>신규 사전알림 신청 {stats.pendingWaitlist}건</div>
+                <Link to="/admin/service-waitlist" className="flex items-center gap-1 hover:underline">
+                  <span className="flex-1">신규 사전알림 신청 {stats.pendingWaitlist}건</span>
+                  <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                </Link>
               )}
             </div>
           </div>
