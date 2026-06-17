@@ -32,6 +32,8 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [media, setMedia] = useState<MediaRow[]>([]);
   const [albums, setAlbums] = useState<AlbumRow[]>([]);
+  // 포트폴리오 필터(스타일·식장·패키지). null = 전체.
+  const [filter, setFilter] = useState<{ kind: "style" | "venue" | "product"; value: string } | null>(null);
   const isMenu = category === "invitation_venue";
 
   const load = useCallback(async () => {
@@ -67,6 +69,25 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
     ...(photosByAlbum.has(null) ? [null] : []),
   ];
 
+  // 필터 옵션 — 사진이 있는 앨범 기준(스타일·식장·패키지).
+  const shownAlbums = albums.filter((a) => photosByAlbum.has(a.id));
+  const styleOpts = Array.from(new Set(shownAlbums.flatMap((a) => a.style_tags ?? []))).slice(0, 12);
+  const venueOpts = Array.from(new Set(shownAlbums.map((a) => a.venue_name).filter(Boolean) as string[])).slice(0, 12);
+  const productOpts = Array.from(
+    new Map(shownAlbums.filter((a) => a.product_id).map((a) => [a.product_id as string, productName.get(a.product_id as string) ?? ""])).entries(),
+  ).filter(([, n]) => n) as [string, string][];
+  const hasFilters = shownAlbums.length > 1 && styleOpts.length + venueOpts.length + productOpts.length > 0;
+
+  const matchAlbum = (a: AlbumRow | null): boolean => {
+    if (!filter) return true;
+    if (!a) return false; // 필터 적용 시 '기타' 묶음 제외
+    if (filter.kind === "style") return (a.style_tags ?? []).includes(filter.value);
+    if (filter.kind === "venue") return a.venue_name === filter.value;
+    if (filter.kind === "product") return a.product_id === filter.value;
+    return true;
+  };
+  const visibleAlbumKeys = orderedAlbumKeys.filter((k) => matchAlbum(k ? albumById.get(k) ?? null : null));
+
   return (
     <div className="space-y-5">
       {/* 포트폴리오(사진, 앨범 그룹) / 메뉴 */}
@@ -92,8 +113,22 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
               ))}
             </div>
           ) : (
-            <div className="space-y-4">
-              {orderedAlbumKeys.map((albId) => {
+            <div className="space-y-3">
+              {hasFilters && (
+                <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5">
+                  <FilterChip label="전체" active={!filter} onClick={() => setFilter(null)} />
+                  {productOpts.map(([id, name]) => (
+                    <FilterChip key={`p-${id}`} label={`패키지 · ${name}`} active={filter?.kind === "product" && filter.value === id} onClick={() => setFilter({ kind: "product", value: id })} />
+                  ))}
+                  {venueOpts.map((v) => (
+                    <FilterChip key={`v-${v}`} label={`📍 ${v}`} active={filter?.kind === "venue" && filter.value === v} onClick={() => setFilter({ kind: "venue", value: v })} />
+                  ))}
+                  {styleOpts.map((t) => (
+                    <FilterChip key={`s-${t}`} label={`#${t}`} active={filter?.kind === "style" && filter.value === t} onClick={() => setFilter({ kind: "style", value: t })} />
+                  ))}
+                </div>
+              )}
+              {visibleAlbumKeys.map((albId) => {
                 const alb = albId ? albumById.get(albId) : null;
                 const photos = photosByAlbum.get(albId) ?? [];
                 const tags = alb ? (alb.style_tags ?? []) : [];
@@ -172,5 +207,17 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
     </div>
   );
 };
+
+const FilterChip = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${
+      active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"
+    }`}
+  >
+    {label}
+  </button>
+);
 
 export default PlaceBusinessSections;
