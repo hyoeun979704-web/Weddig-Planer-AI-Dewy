@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import ImageUploader from "@/components/admin/ImageUploader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -39,6 +40,7 @@ const BusinessProducts = () => {
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [adding, setAdding] = useState(false);
+  const [uploaderKey, setUploaderKey] = useState(0);
 
   const loadProducts = useCallback(async (pid: string) => {
     const { data } = await supabase
@@ -77,6 +79,7 @@ const BusinessProducts = () => {
     setAdding(false);
     if (error) { toast.error("등록에 실패했어요"); return; }
     setName(""); setPrice(""); setDescription(""); setImageUrl("");
+    setUploaderKey((k) => k + 1);
     toast.success("상품을 등록했어요. 운영자 검토 후 노출됩니다");
     await loadProducts(placeId);
   };
@@ -129,8 +132,22 @@ const BusinessProducts = () => {
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="상품 설명" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">상품 사진 URL</Label>
-            <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
+            <Label className="text-xs">상품 사진</Label>
+            {user && (
+              <ImageUploader
+                key={uploaderKey}
+                bucket="vendor-images"
+                pathPrefix={`${user.id}/`}
+                initialUrl={imageUrl || undefined}
+                onUploaded={(_, url) => setImageUrl(url)}
+              />
+            )}
+            <Input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="또는 외부 이미지 URL (https://...)"
+              className="mt-2"
+            />
           </div>
           <Button onClick={handleAdd} disabled={adding} className="w-full">
             {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> 상품 등록</>}
