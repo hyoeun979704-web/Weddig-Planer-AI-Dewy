@@ -70,45 +70,42 @@ const VendorDetailPage = () => {
       favoriteType={favoriteType}
       extraSection={
         <>
-          {/* 운영자 진입점 — isAdmin 일 때만 노출. 깨진 이미지·잘못된 정보를
-              사용자 화면에서 발견 즉시 편집할 수 있도록. */}
+          {/* 운영자 진입점 — isAdmin 전용 유틸리티. 사용자 콘텐츠와 경쟁하지 않게
+              눈에 띄지 않는 muted 스트립으로(주 액션은 보드/문의). */}
           {isAdmin && (
             <div className="px-4 pt-3">
               <Link
                 to={`/admin/places/${place.id}`}
-                className="flex items-center justify-between gap-2 rounded-xl border border-dashed border-primary/50 bg-primary/5 p-3 active:scale-[0.99] transition-transform"
+                className="flex items-center justify-between rounded-lg bg-muted/60 px-3 py-2 text-muted-foreground active:bg-muted transition-colors"
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-                    <Pencil className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-foreground">운영자 도구 — 이 업체 정보 수정</p>
-                    <p className="text-[11px] text-muted-foreground">대표 이미지·설명·좌표 등</p>
-                  </div>
-                </div>
-                <span className="text-[11px] text-primary font-semibold">편집 →</span>
+                <span className="inline-flex items-center gap-1.5 text-[12px] font-medium">
+                  <Pencil className="w-3.5 h-3.5" /> 운영자 · 업체 정보 수정
+                </span>
+                <span className="text-[11px] font-medium">편집 →</span>
               </Link>
             </div>
           )}
-          {/* 미입점(수집) 업체를 보는 기업회원에게 "내 업체 인수" 유도 — 좀비 업체 전환 경로. */}
+          {/* 미입점(수집) 업체를 보는 기업회원에게 "내 업체 인수" 유도 — 좀비 업체 전환 경로.
+              보드 카드(primary)와 구분되도록 중립 카드 + 아웃라인 버튼으로 위계 차별화. */}
           {isBusiness && !place.owner_user_id && (
             <div className="px-4 pt-3">
-              <button
-                onClick={() => navigate(`/business/claim?q=${encodeURIComponent(place.name)}`)}
-                className="w-full flex items-center justify-between gap-2 rounded-xl border border-primary/40 bg-primary/5 p-3 active:scale-[0.99] transition-transform"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-                    <Building2 className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-[13px] font-semibold text-foreground">이 업체가 내 업체인가요?</p>
-                    <p className="text-[11px] text-muted-foreground">인수 신청하고 직접 관리하세요</p>
-                  </div>
+              <div className="flex items-center gap-2.5 rounded-xl border border-border bg-card p-3">
+                <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                  <Building2 className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <span className="text-[11px] text-primary font-semibold">인수 신청 →</span>
-              </button>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold text-foreground">이 업체가 내 업체인가요?</p>
+                  <p className="text-[11px] text-muted-foreground">인수 신청하고 직접 관리하세요</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={() => navigate(`/business/claim?q=${encodeURIComponent(place.name)}`)}
+                >
+                  인수 신청
+                </Button>
+              </div>
             </div>
           )}
           <PlaceCoupons placeId={place.id} />
