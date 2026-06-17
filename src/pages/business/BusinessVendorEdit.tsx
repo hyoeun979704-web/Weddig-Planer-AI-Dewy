@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Eye } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
@@ -12,10 +12,39 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import ImageUploader from "@/components/admin/ImageUploader";
 import BusinessListingDetailForm from "@/components/business/BusinessListingDetailForm";
+import { draftKey, loadDraft, saveDraft, clearDraft, shallowEqual } from "@/lib/formDraft";
+
+type InquiryChannel = "chat" | "url" | "phone";
+
+/** 폼 전체 값(자동 임시저장 단위). 전부 문자열 — localStorage 직렬화·비교 단순화. */
+interface ListingDraft {
+  name: string;
+  description: string;
+  city: string;
+  district: string;
+  imageUrl: string;
+  minPrice: string;
+  tags: string;
+  inquiryChannel: InquiryChannel;
+  inquiryUrl: string;
+  inquiryPhone: string;
+}
+
+const EMPTY_LISTING: ListingDraft = {
+  name: "", description: "", city: "", district: "", imageUrl: "",
+  minPrice: "", tags: "", inquiryChannel: "chat", inquiryUrl: "", inquiryPhone: "",
+};
+
+const normalizeChannel = (c: unknown): InquiryChannel =>
+  c === "url" || c === "phone" ? c : "chat";
 
 // 승인된 기업회원이 공개 상세페이지(places) 공통 정보를 입력/수정. 저장하면
 // 운영자 검토 대기(미노출)로 전환되고, 승인 시 공개된다. 카테고리별 상세 항목은
 // 후속(Phase 2b)에서 추가.
+//
+// 입력 자동 임시저장(draft): iOS 웹에서 앱 전환/탭 폐기로 SPA 가 재로드돼도 미저장
+// 입력이 사라지지 않게, 변경 때마다 localStorage 에 draft 저장 → 복귀 시 복원 →
+// 저장 성공 시 제거. (사업자 피드백 버그 수정)
 const BusinessVendorEdit = () => {
   const navigate = useNavigate();
   const { businessProfile, isLoading: roleLoading } = useUserRole();
@@ -39,35 +68,91 @@ const BusinessVendorEdit = () => {
   const [inquiryUrl, setInquiryUrl] = useState("");
   const [inquiryPhone, setInquiryPhone] = useState("");
 
+  // draft 키는 사용자별 격리. 서버 스냅샷(마지막 저장/로드값)·hydrate 가드 ref.
+  const draftKeyStr = useMemo(() => draftKey("biz-listing", user?.id), [user?.id]);
+  const hydratedRef = useRef(false);
+  const serverSnapshotRef = useRef<ListingDraft | null>(null);
+
+  const applyValues = useCallback((v: ListingDraft) => {
+    setName(v.name);
+    setDescription(v.description);
+    setCity(v.city);
+    setDistrict(v.district);
+    setImageUrl(v.imageUrl);
+    setMinPrice(v.minPrice);
+    setTags(v.tags);
+    setInquiryChannel(v.inquiryChannel);
+    setInquiryUrl(v.inquiryUrl);
+    setInquiryPhone(v.inquiryPhone);
+  }, []);
+
   useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
     (async () => {
       const { data, error } = await supabase.rpc("get_my_listing");
+      if (cancelled) return;
       if (error) {
         toast.error("정보를 불러오지 못했어요. 다시 시도해주세요");
         setLoading(false);
         return;
       }
       const row = Array.isArray(data) ? data[0] : data;
+      let server = EMPTY_LISTING;
       if (row && row.place_id) {
         setPlaceId(row.place_id);
         setModeration(row.moderation_status);
         setModerationNote(row.moderation_note ?? null);
-        setName(row.name ?? "");
-        setDescription(row.description ?? "");
-        setCity(row.city ?? "");
-        setDistrict(row.district ?? "");
-        setImageUrl(row.main_image_url ?? "");
-        setMinPrice(row.min_price != null ? String(row.min_price) : "");
-        setTags(Array.isArray(row.tags) ? row.tags.join(", ") : "");
-        setInquiryChannel(
-          row.inquiry_channel === "url" || row.inquiry_channel === "phone" ? row.inquiry_channel : "chat",
-        );
-        setInquiryUrl(row.inquiry_url ?? "");
-        setInquiryPhone(row.inquiry_phone ?? "");
+        server = {
+          name: row.name ?? "",
+          description: row.description ?? "",
+          city: row.city ?? "",
+          district: row.district ?? "",
+          imageUrl: row.main_image_url ?? "",
+          minPrice: row.min_price != null ? String(row.min_price) : "",
+          tags: Array.isArray(row.tags) ? row.tags.join(", ") : "",
+          inquiryChannel: normalizeChannel(row.inquiry_channel),
+          inquiryUrl: row.inquiry_url ?? "",
+          inquiryPhone: row.inquiry_phone ?? "",
+        };
       }
+      serverSnapshotRef.current = server;
+      // 미저장 draft 가 서버와 다르면 = 작성하다 이탈한 내용 → 복원.
+      const draft = loadDraft<Partial<ListingDraft>>(draftKeyStr);
+      const restored: ListingDraft | null = draft
+        ? { ...server, ...draft, inquiryChannel: normalizeChannel(draft.inquiryChannel) }
+        : null;
+      if (restored && !shallowEqual(restored, server)) {
+        applyValues(restored);
+        toast("이전에 작성하던 내용을 불러왔어요");
+      } else {
+        applyValues(server);
+      }
+      hydratedRef.current = true;
       setLoading(false);
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [user, draftKeyStr, applyValues]);
+
+  // 변경 때마다 draft 자동 저장(서버값과 같으면 제거). hydrate 전엔 no-op 로 초기
+  // 로드값이 draft 로 덮어써지는 것 방지. 매 키 입력 후 동기 저장이라 iOS 탭 폐기에도 안전.
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    const current: ListingDraft = {
+      name, description, city, district, imageUrl, minPrice, tags,
+      inquiryChannel, inquiryUrl, inquiryPhone,
+    };
+    if (serverSnapshotRef.current && shallowEqual(current, serverSnapshotRef.current)) {
+      clearDraft(draftKeyStr);
+    } else {
+      saveDraft(draftKeyStr, current);
+    }
+  }, [
+    name, description, city, district, imageUrl, minPrice, tags,
+    inquiryChannel, inquiryUrl, inquiryPhone, draftKeyStr,
+  ]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -108,6 +193,12 @@ const BusinessVendorEdit = () => {
     }
     setPlaceId(res.place_id ?? placeId);
     setModeration("pending");
+    // 저장 성공 → 현재 값이 정식(서버) 상태. 스냅샷 갱신 + draft 제거(미저장 표시 해제).
+    serverSnapshotRef.current = {
+      name, description, city, district, imageUrl, minPrice, tags,
+      inquiryChannel, inquiryUrl, inquiryPhone,
+    };
+    clearDraft(draftKeyStr);
     toast.success("저장됐어요. 운영자 검토 후 상세페이지에 노출됩니다");
   };
 

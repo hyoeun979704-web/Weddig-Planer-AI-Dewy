@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ClipboardList, Scale, FileText } from "lucide-react";
+import { trackHomeNav } from "@/lib/track";
 
 // 홈에서 주요 도구로 바로 가는 단축 줄. 홈이 AI 플래너 중심이라 보드·견적·비교 같은
 // 신규 핵심 기능 발견성이 낮던 문제를 해소(가로 스크롤, 상단 노출).
@@ -19,7 +20,10 @@ const HomeQuickLinks = () => {
           <button
             key={href}
             type="button"
-            onClick={() => navigate(href)}
+            onClick={() => {
+              trackHomeNav("quick_links", href);
+              navigate(href);
+            }}
             className="flex flex-col items-center gap-1.5 shrink-0 w-[58px] active:scale-95 transition-transform"
           >
             <span className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">

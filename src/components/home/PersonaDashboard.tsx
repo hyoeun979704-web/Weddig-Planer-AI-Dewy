@@ -2,10 +2,11 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { ArrowRight, BookOpen, Check, Flame, Sparkles, Timer, Gift } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Flame, Sparkles, Timer, Gift, Lightbulb } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { usePersonaInsights } from "@/hooks/usePersonaInsights";
+import { useSmartSuggestions } from "@/hooks/useSmartSuggestions";
 import { useDailyStreak } from "@/hooks/useDailyStreak";
 import { useSessionTimer } from "@/hooks/useSessionTimer";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
@@ -19,6 +20,7 @@ import {
   type PersonaMission,
 } from "@/data/personaMissions";
 import { shouldHideWeddingCeremony } from "@/lib/weddingPersona";
+import { trackHomeNav } from "@/lib/track";
 import { shouldPromptConfirm, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import PregnancyConfirmFlow from "@/components/persona/PregnancyConfirmFlow";
 import RemarriageConfirmFlow from "@/components/persona/RemarriageConfirmFlow";
@@ -50,6 +52,8 @@ const PersonaDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const insights = usePersonaInsights();
+  // 유기성 배선 D2 — 기능 간 빈틈을 감지해 각 기능으로 딥링크하는 크로스-피처 제안.
+  const smartSuggestions = useSmartSuggestions(3);
   const { weddingSettings } = useWeddingSchedule();
   const streak = useDailyStreak();
   const session = useSessionTimer();
@@ -394,6 +398,53 @@ const PersonaDashboard = () => {
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Row 3.2: 스마트 제안 — "다음 한 걸음" 단일 강조(선택 과부하 해소). 최우선 1개를
+            큰 primary CTA 로, 나머지는 작은 보조 링크로. 기능 간 빈틈을 각 기능으로 딥링크
+            (유기성 D2). 모든 클릭은 전환 퍼널 측정(trackHomeNav). 빈틈 없으면 미렌더. */}
+        {smartSuggestions.length > 0 && (
+          <div className="relative mt-3">
+            <div className="flex items-center gap-1 mb-1.5 px-1">
+              <Lightbulb className="w-3 h-3 text-amber-500" />
+              <p className="text-[11px] font-bold text-foreground">지금 한 걸음</p>
+            </div>
+            {/* 최우선 1개 — 큰 primary CTA */}
+            <button
+              onClick={() => {
+                trackHomeNav("smart_primary", smartSuggestions[0].href, { id: smartSuggestions[0].id });
+                navigate(smartSuggestions[0].href);
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/30 active:scale-[0.99] transition-all text-left"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-bold text-foreground truncate">
+                  {smartSuggestions[0].label}
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                  {smartSuggestions[0].reason}
+                </p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-primary shrink-0" />
+            </button>
+            {/* 나머지 — 작은 보조 링크 */}
+            {smartSuggestions.length > 1 && (
+              <div className="mt-1.5 flex flex-wrap gap-1.5 px-1">
+                {smartSuggestions.slice(1).map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      trackHomeNav("smart_secondary", s.href, { id: s.id });
+                      navigate(s.href);
+                    }}
+                    className="px-2.5 py-1 rounded-full bg-card/80 border border-border text-[11px] text-foreground/80 active:scale-95 transition-transform"
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

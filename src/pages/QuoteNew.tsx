@@ -13,6 +13,7 @@ import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
 import { createQuoteRequest, quoteImageUrl } from "@/hooks/useQuotes";
 import { markBoardSlotQuoting } from "@/hooks/useVendorBoard";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useTextDraft } from "@/hooks/useTextDraft";
 
 const STYLES: { v: string; label: string }[] = [
   { v: "general", label: "일반 예식" },
@@ -54,6 +55,29 @@ const QuoteNew = () => {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // 미저장 입력 유실 방지(iOS 웹 등). 이미지는 업로드된 path(문자열)라 직렬화 가능.
+  // hasContent 는 프리필(카테고리·지역)만으로 빈 draft 가 생기지 않게 '작성한' 필드만 본다.
+  const draft = useTextDraft({
+    scope: "quote-new",
+    userId: user?.id,
+    enabled: !!user,
+    values: { category, city, district, budgetMin, budgetMax, weddingDate, style, note, imagePaths },
+    apply: (d) => {
+      if (d.category != null) setCategory(d.category);
+      if (d.city != null) setCity(d.city);
+      if (d.district != null) setDistrict(d.district);
+      if (d.budgetMin != null) setBudgetMin(d.budgetMin);
+      if (d.budgetMax != null) setBudgetMax(d.budgetMax);
+      if (d.weddingDate != null) setWeddingDate(d.weddingDate);
+      if (d.style != null) setStyle(d.style);
+      if (d.note != null) setNote(d.note);
+      if (Array.isArray(d.imagePaths)) setImagePaths(d.imagePaths);
+    },
+    hasContent: (v) =>
+      !!(v.note?.trim() || v.budgetMin || v.budgetMax || v.weddingDate || v.style) ||
+      (Array.isArray(v.imagePaths) && v.imagePaths.length > 0),
+  });
+
   const onPickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -89,6 +113,7 @@ const QuoteNew = () => {
       );
       return;
     }
+    draft.clear();
     // 업체 보드에서 진입했다면 해당 슬롯을 '견적중'으로 반영(best-effort).
     if (boardSlot) void markBoardSlotQuoting(user.id, boardSlot);
     toast.success(

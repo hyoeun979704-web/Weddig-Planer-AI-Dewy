@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { draftKey, loadDraft, saveDraft, clearDraft, jsonEqual } from "@/lib/formDraft";
 
 // 카테고리(업체 종류)마다 detail 테이블·컬럼이 달라, 종류별 필드 스키마를 정의해
 // 폼을 동적으로 렌더한다. key 는 detail 테이블 컬럼명과 일치(RPC가 그대로 upsert).
@@ -76,20 +78,51 @@ const DETAIL_SCHEMA: Record<string, FieldDef[]> = {
 };
 
 const BusinessListingDetailForm = ({ onSaved }: { onSaved?: () => void }) => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [category, setCategory] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, unknown>>({});
 
+  // 입력 자동 임시저장(draft) — iOS 웹 탭 폐기/이탈 후 복귀 시 미저장 상세 입력 복원.
+  const draftKeyStr = useMemo(() => draftKey("biz-listing-detail", user?.id), [user?.id]);
+  const hydratedRef = useRef(false);
+  const serverSnapshotRef = useRef<Record<string, unknown>>({});
+
   useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
     (async () => {
       const { data } = await (supabase as any).rpc("get_my_listing_detail");
+      if (cancelled) return;
       const res = data as { category?: string; detail?: Record<string, unknown> } | null;
+      const server = res?.detail ?? {};
       setCategory(res?.category ?? null);
-      setValues(res?.detail ?? {});
+      serverSnapshotRef.current = server;
+      const draft = loadDraft<Record<string, unknown>>(draftKeyStr);
+      if (draft && !jsonEqual(draft, server)) {
+        setValues(draft);
+        toast("이전에 작성하던 상세 내용을 불러왔어요");
+      } else {
+        setValues(server);
+      }
+      hydratedRef.current = true;
       setLoading(false);
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [user, draftKeyStr]);
+
+  // 변경 때마다 draft 저장(서버값과 같으면 제거). hydrate 전엔 no-op.
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    if (jsonEqual(values, serverSnapshotRef.current)) {
+      clearDraft(draftKeyStr);
+    } else {
+      saveDraft(draftKeyStr, values);
+    }
+  }, [values, draftKeyStr]);
 
   const schema = category ? DETAIL_SCHEMA[category] : undefined;
 
@@ -109,6 +142,8 @@ const BusinessListingDetailForm = ({ onSaved }: { onSaved?: () => void }) => {
       toast.error(res?.error === "no_listing" ? "기본 정보를 먼저 저장해주세요" : "저장에 실패했어요");
       return;
     }
+    serverSnapshotRef.current = values;
+    clearDraft(draftKeyStr);
     toast.success("상세 정보를 저장했어요. 검토 후 반영됩니다");
     onSaved?.();
   };

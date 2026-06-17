@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContactConfig } from "@/hooks/useAppConfig";
+import { useTextDraft } from "@/hooks/useTextDraft";
 import { INQUIRY_CATEGORIES } from "@/lib/inquiryCategories";
 
 const Contact = () => {
@@ -27,6 +28,20 @@ const Contact = () => {
     return ctx ? `[발생 위치] ${ctx}\n\n` : "";
   });
   const [submitting, setSubmitting] = useState(false);
+
+  // 미저장 입력 유실 방지(iOS 웹 등). 제출 성공 시 clear.
+  const draft = useTextDraft({
+    scope: "contact",
+    userId: user?.id,
+    enabled: !!user,
+    values: { category, title, content },
+    apply: (d) => {
+      if (d.category != null) setCategory(d.category);
+      if (d.title != null) setTitle(d.title);
+      if (d.content != null) setContent(d.content);
+    },
+    hasContent: (v) => !!(v.title?.trim() || v.content?.trim()),
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +67,7 @@ const Contact = () => {
       return;
     }
     toast.success("문의가 접수되었습니다. 빠른 시일 내에 답변드리겠습니다.");
+    draft.clear();
     setCategory("");
     setTitle("");
     setContent("");

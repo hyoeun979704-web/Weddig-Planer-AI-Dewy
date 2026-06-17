@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTextDraft } from "@/hooks/useTextDraft";
 import { toast } from "sonner";
 
 const TITLE_MAX = 100;
@@ -41,6 +42,20 @@ const PlaceInquirySheet = ({ placeId, placeName, open, onOpenChange }: Props) =>
   const [submitting, setSubmitting] = useState(false);
   const [mine, setMine] = useState<InquiryRow[] | null>(null);
 
+  // 미저장 입력 유실 방지 — 시트를 닫거나 페이지 이탈해도 작성하던 문의 복원(업체별 격리).
+  const draft = useTextDraft({
+    scope: `place-inquiry:${placeId}`,
+    userId: user?.id,
+    enabled: open && !!user,
+    values: { title, content, contact },
+    apply: (d) => {
+      if (d.title != null) setTitle(d.title);
+      if (d.content != null) setContent(d.content);
+      if (d.contact != null) setContact(d.contact);
+    },
+    hasContent: (v) => !!(v.title?.trim() || v.content?.trim()),
+  });
+
   // 열릴 때 이 업체에 보낸 내 문의 + 답변 로드
   useEffect(() => {
     if (!open || !user) return;
@@ -74,6 +89,7 @@ const PlaceInquirySheet = ({ placeId, placeName, open, onOpenChange }: Props) =>
       toast.success("문의를 보냈어요", {
         description: "업체가 답변하면 여기에서 확인할 수 있어요.",
       });
+      draft.clear();
       setTitle("");
       setContent("");
       setContact("");

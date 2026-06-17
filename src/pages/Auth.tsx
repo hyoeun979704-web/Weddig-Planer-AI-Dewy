@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
+import { safeInternalPath } from "@/lib/redirect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +38,8 @@ const Auth = () => {
   // 입점 랜딩(/business)에서 ?type=business 로 진입 — 기업 가입을 바로 시작
   const [searchParams] = useSearchParams();
   const startAsBusiness = searchParams.get("type") === "business";
+  // 로그인 성공 후 복귀할 내부 경로(오픈 리다이렉트 방지). 없으면 홈.
+  const redirectTo = safeInternalPath(searchParams.get("redirect"));
   const [isSignUp, setIsSignUp] = useState(startAsBusiness);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,10 +74,10 @@ const Auth = () => {
         // 가입 메타데이터와 무관하게 등록 폼으로 바로 보낸다.
         navigate("/business/onboard");
       } else {
-        navigate("/");
+        navigate(redirectTo);
       }
     }
-  }, [user, isLoading, startAsBusiness, navigate]);
+  }, [user, isLoading, startAsBusiness, navigate, redirectTo]);
 
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
@@ -161,7 +164,7 @@ const Auth = () => {
           if (accountType === "business") {
             navigate("/business/onboard");
           } else {
-            navigate("/");
+            navigate(redirectTo);
           }
         }
       } else {
@@ -177,7 +180,7 @@ const Auth = () => {
           }
         } else {
           toast.success("로그인되었습니다!");
-          navigate("/");
+          navigate(redirectTo);
         }
       }
     } finally {
