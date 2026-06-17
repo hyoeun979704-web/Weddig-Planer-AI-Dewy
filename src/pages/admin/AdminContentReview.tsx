@@ -236,7 +236,7 @@ const AdminContentReview = () => {
                 <div key={e.id} className="bg-card rounded-2xl border border-border p-4">
                   {e.banner_image_url && (
                     <div className="aspect-[2/1] rounded-xl overflow-hidden bg-muted mb-3">
-                      <img src={e.banner_image_url} alt={e.title} className="w-full h-full object-cover" onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                      <img src={e.banner_image_url} alt={e.title} className="w-full h-full object-cover" />
                     </div>
                   )}
                   <div className="flex items-start justify-between gap-3 mb-2">

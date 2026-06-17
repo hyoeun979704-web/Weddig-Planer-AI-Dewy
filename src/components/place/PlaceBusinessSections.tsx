@@ -41,13 +41,13 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [media, setMedia] = useState<MediaRow[]>([]);
   const [albums, setAlbums] = useState<AlbumRow[]>([]);
-  // 포트폴리오 필터(스타일·식장·패키지). null = 전체.
-  const [filter, setFilter] = useState<{ kind: "style" | "venue" | "product"; value: string } | null>(null);
+  const [activeEvent, setActiveEvent] = useState<EventRow | null>(null);
   const isMenu = category === "invitation_venue";
 
   const load = useCallback(async () => {
     const [ev, pr, md, alb] = await Promise.all([
-      supabase.from("business_events" as any).select("id, title, description, starts_at, ends_at").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
+      // select("*") — banner_image_url/detail_images 가 라이브 DB 에 아직 없어도 422 안 나게(드리프트 방어, place_media 와 동일 idiom). 있으면 함께 내려옴.
+      supabase.from("business_events" as any).select("*").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
       supabase.from("business_products" as any).select("id, name, price, description, image_url").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
       supabase.from("place_media" as any).select("*").eq("place_id", placeId).order("display_order", { ascending: true }),
       // 앨범 테이블이 라이브에 아직 없으면 error → 빈 배열로 폴백(평면 렌더).
