@@ -2,7 +2,7 @@ import { type ReactNode, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Pencil, Building2 } from "lucide-react";
+import { AlertCircle, Pencil, Building2, MoreHorizontal, ChevronDown } from "lucide-react";
 import { usePlaceDetail, type LegacyDetail } from "@/hooks/usePlaceDetail";
 import { formatManwon } from "@/lib/priceFormat";
 import { APPLIANCE_PRODUCT_TYPE_LABEL, JEWELRY_STORE_TYPE_LABEL } from "@/lib/categoryLabels";
@@ -48,6 +48,7 @@ const VendorDetailPage = () => {
   const navigate = useNavigate();
   const { data: place, isLoading, error } = usePlaceDetail(id);
   const { isAdmin, isBusiness } = useUserRole();
+  const [showTools, setShowTools] = useState(false);
 
   if (isLoading) return <DetailSkeleton />;
   if (error || !place) {
@@ -70,42 +71,48 @@ const VendorDetailPage = () => {
       favoriteType={favoriteType}
       extraSection={
         <>
-          {/* 운영자 진입점 — isAdmin 전용 유틸리티. 사용자 콘텐츠와 경쟁하지 않게
-              눈에 띄지 않는 muted 스트립으로(주 액션은 보드/문의). */}
-          {isAdmin && (
+          {/* 관리 도구(운영자 수정·업체 인수) — 소비자 화면을 깔끔히 유지하기 위해 기본 접힘.
+              주 액션(보드 추가/문의)은 위에 그대로 노출, 역할 전용 도구만 '⋯'로 숨긴다. */}
+          {(isAdmin || (isBusiness && !place.owner_user_id)) && (
             <div className="px-4 pt-3">
-              <Link
-                to={`/admin/places/${place.id}`}
-                className="flex items-center justify-between rounded-lg bg-muted/60 px-3 py-2 text-muted-foreground active:bg-muted transition-colors"
+              <button
+                type="button"
+                onClick={() => setShowTools((v) => !v)}
+                className="w-full flex items-center justify-between text-[12px] text-muted-foreground py-1"
               >
-                <span className="inline-flex items-center gap-1.5 text-[12px] font-medium">
-                  <Pencil className="w-3.5 h-3.5" /> 운영자 · 업체 정보 수정
-                </span>
-                <span className="text-[11px] font-medium">편집 →</span>
-              </Link>
-            </div>
-          )}
-          {/* 미입점(수집) 업체를 보는 기업회원에게 "내 업체 인수" 유도 — 좀비 업체 전환 경로.
-              보드 카드(primary)와 구분되도록 중립 카드 + 아웃라인 버튼으로 위계 차별화. */}
-          {isBusiness && !place.owner_user_id && (
-            <div className="px-4 pt-3">
-              <div className="flex items-center gap-2.5 rounded-xl border border-border bg-card p-3">
-                <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                  <Building2 className="w-4 h-4 text-muted-foreground" />
+                <span className="inline-flex items-center gap-1"><MoreHorizontal className="w-4 h-4" /> 관리 도구</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showTools ? "rotate-180" : ""}`} />
+              </button>
+              {showTools && (
+                <div className="space-y-2 pt-1">
+                  {isAdmin && (
+                    <Link
+                      to={`/admin/places/${place.id}`}
+                      className="flex items-center justify-between rounded-lg bg-muted/60 px-3 py-2 text-muted-foreground active:bg-muted transition-colors"
+                    >
+                      <span className="inline-flex items-center gap-1.5 text-[12px] font-medium">
+                        <Pencil className="w-3.5 h-3.5" /> 운영자 · 업체 정보 수정
+                      </span>
+                      <span className="text-[11px] font-medium">편집 →</span>
+                    </Link>
+                  )}
+                  {isBusiness && !place.owner_user_id && (
+                    <div className="flex items-center gap-2.5 rounded-xl border border-border bg-card p-3">
+                      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <Building2 className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-semibold text-foreground">이 업체가 내 업체인가요?</p>
+                        <p className="text-[11px] text-muted-foreground">인수 신청하고 직접 관리하세요</p>
+                      </div>
+                      <Button size="sm" variant="outline" className="shrink-0"
+                        onClick={() => navigate(`/business/claim?q=${encodeURIComponent(place.name)}`)}>
+                        인수 신청
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-semibold text-foreground">이 업체가 내 업체인가요?</p>
-                  <p className="text-[11px] text-muted-foreground">인수 신청하고 직접 관리하세요</p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="shrink-0"
-                  onClick={() => navigate(`/business/claim?q=${encodeURIComponent(place.name)}`)}
-                >
-                  인수 신청
-                </Button>
-              </div>
+              )}
             </div>
           )}
           <PlaceCoupons placeId={place.id} />

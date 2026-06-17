@@ -189,7 +189,7 @@ const AdminUsers = () => {
     if (roleFilter === "admin" && !u.roles.includes("admin")) return false;
     if (!search) return true;
     const q = search.toLowerCase();
-    return u.email?.toLowerCase().includes(q) || u.nickname?.toLowerCase().includes(q);
+    return u.email?.toLowerCase().includes(q) || u.nickname?.toLowerCase().includes(q) || u.community_nickname?.toLowerCase().includes(q);
   });
 
   return (
