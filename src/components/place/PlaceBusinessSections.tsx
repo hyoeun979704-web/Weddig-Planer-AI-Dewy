@@ -42,6 +42,8 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
   const [media, setMedia] = useState<MediaRow[]>([]);
   const [albums, setAlbums] = useState<AlbumRow[]>([]);
   const [activeEvent, setActiveEvent] = useState<EventRow | null>(null);
+  // 포트폴리오 필터(스타일·식장·패키지) — 칩 선택 상태. 미선택 시 전체 노출.
+  const [filter, setFilter] = useState<{ kind: "style" | "venue" | "product"; value: string } | null>(null);
   const isMenu = category === "invitation_venue";
 
   const load = useCallback(async () => {
