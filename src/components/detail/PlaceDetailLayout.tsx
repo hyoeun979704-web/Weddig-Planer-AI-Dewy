@@ -16,6 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  X,
+  Expand,
 } from "lucide-react";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { openExternal } from "@/lib/native/openExternal";
@@ -405,6 +407,7 @@ function BasicTab({
 }) {
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [advIdx, setAdvIdx] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
   const navigate = useNavigate();
 
   const hasContact =
@@ -421,29 +424,43 @@ function BasicTab({
       <div className="relative aspect-[4/3] bg-muted overflow-hidden">
         {gallery.length > 0 ? (
           <>
-            <img
-              src={gallery[galleryIdx]}
-              alt={place.name}
-              className="w-full h-full object-cover"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
-            />
+            {/* 사진 탭 → 풀스크린 뷰어(레퍼런스 공통: "사진 모두 보기"). */}
+            <button
+              type="button"
+              onClick={() => setFullscreen(true)}
+              className="absolute inset-0 w-full h-full"
+              aria-label="사진 전체 보기"
+            >
+              <img
+                src={gallery[galleryIdx]}
+                alt={place.name}
+                className="w-full h-full object-cover"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
+              />
+            </button>
             {gallery.length > 1 && (
               <>
                 <button
                   onClick={() => setGalleryIdx((i) => (i - 1 + gallery.length) % gallery.length)}
                   className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur rounded-full flex items-center justify-center"
+                  aria-label="이전 사진"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setGalleryIdx((i) => (i + 1) % gallery.length)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur rounded-full flex items-center justify-center"
+                  aria-label="다음 사진"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
-                <div className="absolute bottom-3 right-3 px-2 py-0.5 bg-black/60 text-white text-xs rounded-full backdrop-blur">
-                  {galleryIdx + 1} / {gallery.length}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setFullscreen(true)}
+                  className="absolute bottom-3 right-3 inline-flex items-center gap-1 px-2.5 py-1 bg-black/60 text-white text-xs rounded-full backdrop-blur active:scale-95"
+                >
+                  <Expand className="w-3 h-3" /> 전체 {gallery.length}장
+                </button>
               </>
             )}
           </>
@@ -469,6 +486,34 @@ function BasicTab({
           </span>
         )}
       </div>
+
+      {/* 풀스크린 갤러리 — 사진 탭/전체보기 시 큰 화면 스와이프(웨딩은 사진이 핵심 구매요인). */}
+      {fullscreen && gallery.length > 0 && (
+        <div className="fixed inset-0 z-[70] bg-black flex flex-col" role="dialog" aria-modal="true">
+          <div className="flex items-center justify-between px-4 py-3 text-white" style={{ paddingTop: "calc(0.75rem + var(--safe-top))" }}>
+            <span className="text-sm">{galleryIdx + 1} / {gallery.length}</span>
+            <button type="button" onClick={() => setFullscreen(false)} aria-label="닫기" className="w-9 h-9 flex items-center justify-center">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center relative overflow-hidden">
+            <img src={gallery[galleryIdx]} alt={place.name} className="max-w-full max-h-full object-contain"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }} />
+            {gallery.length > 1 && (
+              <>
+                <button onClick={() => setGalleryIdx((i) => (i - 1 + gallery.length) % gallery.length)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/15 rounded-full flex items-center justify-center text-white" aria-label="이전 사진">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button onClick={() => setGalleryIdx((i) => (i + 1) % gallery.length)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/15 rounded-full flex items-center justify-center text-white" aria-label="다음 사진">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Title block — 레퍼런스 공통 위계: 이름 → 평점·카테고리·지역 → 가격 → 설명.
           첫 화면 3줄 안에 의사결정 정보(무엇·평판·어디·얼마)를 압축한다. */}
