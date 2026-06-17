@@ -314,7 +314,8 @@ const AdminPlaceEdit = () => {
 
           {/* 가격 */}
           <div className="space-y-1.5">
-            <Label className="text-sm">최소 가격 (원)</Label>
+            <Label className="text-sm">최소가 · 시작가 (원)</Label>
+            <p className="text-[11px] text-muted-foreground">상세페이지 “최저가~” 표기용. 개별 상품 가격은 업체의 ‘상품’ 탭에서 따로 관리돼요.</p>
             <Input
               type="number"
               value={form.min_price ?? ""}
