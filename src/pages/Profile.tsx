@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Seo from "@/components/Seo";
-import { Camera, User, Mail, Phone, Calendar, Save, Loader2, MapPin, CakeSlice, MessageCircle } from "lucide-react";
+import { Camera, User, Mail, Phone, Calendar, Save, Loader2, MapPin, CakeSlice, MessageCircle, Lock } from "lucide-react";
 import { genNickname } from "@/lib/communityIdentity";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
@@ -33,6 +33,13 @@ const Profile = () => {
   const [weddingDate, setWeddingDate] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [changingPw, setChangingPw] = useState(false);
+  // 이메일 가입자만 비밀번호 변경 노출(OAuth/소셜은 제공자 관리).
+  const isEmailUser = user?.app_metadata?.provider === "email" || (user?.identities ?? []).some((i: any) => i.provider === "email");
 
   // Load profile data
   useEffect(() => {
@@ -59,6 +66,7 @@ const Profile = () => {
 
         if (profile) {
           setDisplayName(profile.display_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "");
+          setAvatarUrl((profile as any).avatar_url ?? null);
           setBirthYear(profile.birth_year ? String(profile.birth_year) : "1997");
           setPhone((profile as any).phone || "");
           setCommunityNickname((profile as any).community_nickname || "");
@@ -81,7 +89,43 @@ const Profile = () => {
   }, [user]);
 
   const getUserAvatar = () => {
-    return user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+    return avatarUrl || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+  };
+
+  // 프로필 사진 업로드 — vendor-images(public) 의 본인 폴더에 저장 후 profiles.avatar_url 갱신.
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) { toast.error("이미지 파일만 올릴 수 있어요"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("5MB 이하 이미지를 올려주세요"); return; }
+    setUploadingAvatar(true);
+    try {
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("vendor-images").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const url = supabase.storage.from("vendor-images").getPublicUrl(path).data.publicUrl;
+      const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: url } as any).eq("user_id", user.id);
+      if (dbErr) throw dbErr;
+      setAvatarUrl(url);
+      toast.success("프로필 사진을 변경했어요");
+    } catch (err) {
+      toast.error("사진 변경에 실패했어요", { description: err instanceof Error ? err.message : undefined });
+    } finally {
+      setUploadingAvatar(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  // 비밀번호 변경 — Supabase auth(현재 세션). 이메일 가입자만.
+  const handlePasswordChange = async () => {
+    if (newPassword.length < 8) { toast.error("비밀번호는 8자 이상이어야 해요"); return; }
+    setChangingPw(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setChangingPw(false);
+    if (error) { toast.error("비밀번호 변경 실패", { description: error.message }); return; }
+    setNewPassword("");
+    toast.success("비밀번호를 변경했어요");
   };
 
   const getUserInitial = () => {
@@ -184,9 +228,16 @@ const Profile = () => {
                 {getUserInitial()}
               </AvatarFallback>
             </Avatar>
-            <button className="absolute bottom-0 right-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg">
-              <Camera className="w-4 h-4" />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploadingAvatar}
+              aria-label="프로필 사진 변경"
+              className="absolute bottom-0 right-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg disabled:opacity-60"
+            >
+              {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
             </button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">{user.email}</p>
         </div>
@@ -309,6 +360,33 @@ const Profile = () => {
             )}
             저장하기
           </Button>
+
+          {/* 비밀번호 변경 — 이메일 가입자만(소셜 로그인은 제공자에서 관리) */}
+          {isEmailUser && (
+            <div className="mt-8 pt-6 border-t border-border space-y-2">
+              <Label htmlFor="newPassword" className="flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                비밀번호 변경
+              </Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="새 비밀번호 (8자 이상)"
+                autoComplete="new-password"
+              />
+              <Button
+                onClick={handlePasswordChange}
+                variant="outline"
+                className="w-full"
+                disabled={changingPw || newPassword.length < 8}
+              >
+                {changingPw ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                비밀번호 변경
+              </Button>
+            </div>
+          )}
         </div>
       </main>
 
