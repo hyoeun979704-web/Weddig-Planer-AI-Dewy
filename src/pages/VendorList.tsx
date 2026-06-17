@@ -154,8 +154,22 @@ const VendorList = () => {
               })}
             </div>
           ) : (
-            <div className="flex items-center justify-center py-16">
-              <p className="text-sm text-muted-foreground">등록된 업체가 없습니다</p>
+            <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-3">
+              <p className="text-sm text-muted-foreground">이 조건에 맞는 업체가 아직 없어요.</p>
+              <div className="flex flex-col gap-2 w-full max-w-[260px]">
+                <button
+                  onClick={() => navigate("/quote/new")}
+                  className="h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
+                >
+                  견적 요청하고 매칭받기
+                </button>
+                <button
+                  onClick={() => navigate("/")}
+                  className="h-11 rounded-xl border border-border text-sm font-medium text-foreground"
+                >
+                  다른 카테고리 둘러보기
+                </button>
+              </div>
             </div>
           )}
         </div>
