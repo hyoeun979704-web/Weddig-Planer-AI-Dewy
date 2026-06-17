@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Loader2, Upload, PackageCheck, X } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useBranches } from "@/hooks/useBranches";
 import { toast } from "sonner";
 import {
   useSentDeliveries,
@@ -25,6 +26,7 @@ const MAX_FILES = 10;
  * 그 고객(inquiry.user_id)에게 파일을 인앱 전달한다. 프라이빗 버킷 + RLS.
  */
 const BusinessDeliveries = () => {
+  const { selectedId, loading: branchesLoading } = useBranches();
   const [loading, setLoading] = useState(true);
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
@@ -36,18 +38,15 @@ const BusinessDeliveries = () => {
   const [sending, setSending] = useState(false);
   const { items: sent, loading: sentLoading, reload: reloadSent } = useSentDeliveries(placeId ?? undefined);
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    if (!selectedId) { setPlaceId(null); setLoading(false); return; }
     setLoading(true);
+    setPlaceId(selectedId);
     try {
-      const { data: listing, error: lerr } = await supabase.rpc("get_my_listing");
-      if (lerr) throw lerr;
-      const row = Array.isArray(listing) ? listing[0] : listing;
-      if (!row?.place_id) { setPlaceId(null); return; }
-      setPlaceId(row.place_id);
       const { data, error } = await supabase
         .from("place_inquiries")
         .select("id, title, user_id, status, created_at")
-        .eq("place_id", row.place_id)
+        .eq("place_id", selectedId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       setInquiries((data ?? []) as InquiryRow[]);
@@ -56,9 +55,12 @@ const BusinessDeliveries = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedId]);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    if (branchesLoading) return;
+    void load();
+  }, [branchesLoading, load]);
 
   const resetForm = () => { setTitle(""); setMessage(""); setPaths([]); setOpenId(null); };
 

@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Loader2, MessageSquare } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useBranches } from "@/hooks/useBranches";
 import { toast } from "sonner";
 
 const ANSWER_MAX = 2000;
@@ -23,6 +24,7 @@ interface InquiryRow {
  * 답변 저장은 answer/status/answered_at 만 갱신 (문의 본문은 트리거가 불변 강제).
  */
 const BusinessInquiries = () => {
+  const { selectedId, loading: branchesLoading } = useBranches();
   const [loading, setLoading] = useState(true);
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [rows, setRows] = useState<InquiryRow[]>([]);
@@ -30,23 +32,15 @@ const BusinessInquiries = () => {
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    if (!selectedId) { setPlaceId(null); setLoading(false); return; }
     setLoading(true);
+    setPlaceId(selectedId);
     try {
-      const { data: listing, error: listingError } = await supabase.rpc(
-        "get_my_listing",
-      );
-      if (listingError) throw listingError;
-      const row = Array.isArray(listing) ? listing[0] : listing;
-      if (!row?.place_id) {
-        setPlaceId(null);
-        return;
-      }
-      setPlaceId(row.place_id);
       const { data, error } = await supabase
         .from("place_inquiries")
         .select("id, title, content, contact, status, answer, answered_at, created_at")
-        .eq("place_id", row.place_id)
+        .eq("place_id", selectedId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       setRows((data ?? []) as InquiryRow[]);
@@ -55,12 +49,12 @@ const BusinessInquiries = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedId]);
 
   useEffect(() => {
+    if (branchesLoading) return;
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [branchesLoading, load]);
 
   const handleAnswer = async (id: string) => {
     const answer = draft.trim();

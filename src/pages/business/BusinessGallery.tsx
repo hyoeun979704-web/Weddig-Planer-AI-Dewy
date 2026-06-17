@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import ImageUploader from "@/components/admin/ImageUploader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranches } from "@/hooks/useBranches";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
 
@@ -36,6 +37,7 @@ const NEW_ALBUM = "__new__";
 const BusinessGallery = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { selectedId, selected, loading: branchesLoading } = useBranches();
 
   const [loading, setLoading] = useState(true);
   const [placeId, setPlaceId] = useState<string | null>(null);
@@ -75,18 +77,12 @@ const BusinessGallery = () => {
   }, []);
 
   useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase.rpc("get_my_listing");
-      if (error) { toast.error("정보를 불러오지 못했어요"); setLoading(false); return; }
-      const row = Array.isArray(data) ? data[0] : data;
-      if (row?.place_id) {
-        setPlaceId(row.place_id);
-        setCategory(row.category);
-        await loadAll(row.place_id);
-      }
-      setLoading(false);
-    })();
-  }, [loadAll]);
+    if (branchesLoading) return;
+    if (!selectedId) { setLoading(false); return; }
+    setPlaceId(selectedId);
+    setCategory((selected?.category as string) ?? null);
+    (async () => { await loadAll(selectedId); setLoading(false); })();
+  }, [branchesLoading, selectedId, selected, loadAll]);
 
   const resetForm = () => {
     setImageUrl(""); setTitle(""); setPrice("");

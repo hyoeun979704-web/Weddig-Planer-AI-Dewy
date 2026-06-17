@@ -9,6 +9,7 @@ import ImageUploader from "@/components/admin/ImageUploader";
 import DesignListingConsentDialog from "@/components/consent/DesignListingConsentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranches } from "@/hooks/useBranches";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
 
@@ -30,6 +31,7 @@ const STATUS_LABEL: Record<string, string> = { pending: "검토 중", approved: 
  */
 const BusinessDesigns = () => {
   const { user } = useAuth();
+  const { selectedId, loading: branchesLoading } = useBranches();
   const [loading, setLoading] = useState(true);
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [items, setItems] = useState<DesignRow[]>([]);
@@ -45,20 +47,24 @@ const BusinessDesigns = () => {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
+    if (!selectedId) { setPlaceId(null); setItems([]); setLoading(false); return; }
     setLoading(true);
-    const { data: listing } = await supabase.rpc("get_my_listing");
-    const row = Array.isArray(listing) ? listing[0] : listing;
-    setPlaceId(row?.place_id ?? null);
+    setPlaceId(selectedId);
+    // 선택 지점(place_id) 의 디자인만 — 기존엔 필터가 없어 다른 지점/디자이너 것까지 섞였음.
     const { data, error } = await (supabase as any)
       .from("designer_designs")
       .select("id, title, price, preview_urls, sellable, status, review_note")
+      .eq("place_id", selectedId)
       .order("created_at", { ascending: false });
-    if (error) console.error("designs load failed", error);
+    if (error) { console.error("designs load failed", error); toast.error("디자인을 불러오지 못했어요"); }
     setItems((data as DesignRow[]) ?? []);
     setLoading(false);
-  }, []);
+  }, [selectedId]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    if (branchesLoading) return;
+    void load();
+  }, [branchesLoading, load]);
 
   // 폼 유효성 — 등록 버튼 활성 조건.
   const priceNum = parseInt(price, 10);
