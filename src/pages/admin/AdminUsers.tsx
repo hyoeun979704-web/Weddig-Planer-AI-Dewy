@@ -36,6 +36,9 @@ const AdminUsers = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  // 소속/역할 필터 — 긴 목록에서 기업·제휴·운영자만 빠르게 추리기(클라 필터, 로드된 200명 대상).
+  const [affFilter, setAffFilter] = useState<Affiliation | "all">("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | "admin">("all");
   // 회원 유형(일반/기업/제휴) 전환 다이얼로그.
   const [convTarget, setConvTarget] = useState<UserProfile | null>(null);
   const [convAff, setConvAff] = useState<Affiliation>("business");
@@ -179,13 +182,13 @@ const AdminUsers = () => {
     setConvTarget(u);
   }, []);
 
-  const filtered = search
-    ? users.filter(
-        (u) =>
-          u.email?.toLowerCase().includes(search.toLowerCase()) ||
-          u.nickname?.toLowerCase().includes(search.toLowerCase()),
-      )
-    : users;
+  const filtered = users.filter((u) => {
+    if (affFilter !== "all" && u.affiliation !== affFilter) return false;
+    if (roleFilter === "admin" && !u.roles.includes("admin")) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return u.email?.toLowerCase().includes(q) || u.nickname?.toLowerCase().includes(q);
+  });
 
   return (
     <AdminGuard>
@@ -199,6 +202,38 @@ const AdminUsers = () => {
             placeholder="이메일·닉네임 검색"
             className="pl-9"
           />
+        </div>
+
+        {/* 소속/역할 필터 — 로드된 목록(최대 200명) 대상 빠른 추리기 */}
+        <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-0.5">
+          {([
+            { v: "all", label: "전체" },
+            { v: "individual", label: "일반회원" },
+            { v: "business", label: "기업회원" },
+            { v: "partner", label: "제휴업체" },
+          ] as const).map((o) => (
+            <button
+              key={o.v}
+              onClick={() => setAffFilter(o.v as Affiliation | "all")}
+              className={cn(
+                "shrink-0 px-2.5 py-1 rounded-full text-[12px] font-medium border transition-colors",
+                affFilter === o.v ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground",
+              )}
+            >
+              {o.label}
+            </button>
+          ))}
+          <span className="mx-1 w-px h-4 bg-border shrink-0" />
+          <button
+            onClick={() => setRoleFilter(roleFilter === "admin" ? "all" : "admin")}
+            className={cn(
+              "shrink-0 px-2.5 py-1 rounded-full text-[12px] font-medium border transition-colors",
+              roleFilter === "admin" ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground",
+            )}
+          >
+            운영자만
+          </button>
+          <span className="shrink-0 ml-auto text-[11px] text-muted-foreground pl-2">{filtered.length}명</span>
         </div>
 
         {isLoading ? (
