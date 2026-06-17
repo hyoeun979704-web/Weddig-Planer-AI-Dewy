@@ -17,7 +17,6 @@ import {
   ChevronRight,
   AlertCircle,
 } from "lucide-react";
-import { toast } from "sonner";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { openExternal } from "@/lib/native/openExternal";
 import { Button } from "@/components/ui/button";
@@ -270,59 +269,60 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
             {inquiryStats.recent_30d > 0 && <span>· 최근 30일 문의 {inquiryStats.recent_30d}건</span>}
           </div>
         )}
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1 gap-2 h-11"
-            onClick={() => {
-              if (place.tel) {
-                void openExternal(`tel:${place.tel}`);
-              } else {
-                toast.info("전화번호 정보가 아직 없어요.");
-              }
-            }}
-          >
-            <Phone className="w-4 h-4" />
-            전화 문의
-          </Button>
-          <Button
-            className="flex-1 h-11"
-            onClick={() => {
-              // 입점(클레임) 업체는 사장님이 고른 채널로 문의를 받는다.
-              //   url   → 사장님이 적은 외부 링크(카톡 오픈채팅·네이버 예약 등)
-              //   phone → 사장님이 적은 전화번호
-              //   chat(기본) → 인앱 문의 시트(사장님이 앱에서 직접 답변)
-              if (isClaimed) {
-                if (inquiry.channel === "url" && inquiry.url) {
-                  void openExternal(inquiry.url);
-                } else if (inquiry.channel === "phone" && inquiry.phone) {
-                  void openExternal(`tel:${inquiry.phone}`);
-                } else {
-                  setInquiryOpen(true);
-                }
-                return;
-              }
-              // 미입점 업체 — 죽은 토스트 대신 실제 연락처로 연결.
-              // 옆 '전화 문의' 버튼이 전화를 담당하므로, 여기선 온라인 문의 채널
-              // (카톡 채널·네이버·홈페이지·인스타·유튜브)을 우선 열고, 없으면 전화,
-              // 그것도 없으면 안내. (사장님께는 입점을 권유.)
-              const online =
-                place.kakao_channel_url || place.naver_place_url || place.website_url ||
-                place.instagram_url || place.youtube_url;
-              if (online) {
-                void openExternal(online);
-              } else if (place.tel) {
-                void openExternal(`tel:${place.tel}`);
-              } else {
-                toast.info("아직 등록된 문의 채널이 없어요", {
-                  description: "이 업체의 연락처 정보가 없어요. 사장님이라면 무료 입점 후 문의를 직접 받을 수 있어요.",
-                });
-              }
-            }}
-          >
-            {isClaimed ? "예약 문의" : "문의하기"}
-          </Button>
-        </div>
+        {(() => {
+          // dead-end 제거: 연락처 유무를 미리 계산해 '될 때만' 버튼을 살린다.
+          //   - 전화 버튼: 번호 있을 때만 렌더(없으면 toast 죽은 버튼 X).
+          //   - 메인 버튼: 입점=인앱 채팅 폴백으로 항상 동작 / 미입점=온라인·전화 있을 때만,
+          //     둘 다 없으면 비활성 + 아래 안내(죽은 토스트 X).
+          const online =
+            place.kakao_channel_url || place.naver_place_url || place.website_url ||
+            place.instagram_url || place.youtube_url || null;
+          const unclaimedHasContact = !!online || !!place.tel;
+          const noContact = !isClaimed && !unclaimedHasContact;
+          return (
+            <>
+              <div className="flex gap-2">
+                {place.tel && (
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2 h-11"
+                    onClick={() => void openExternal(`tel:${place.tel}`)}
+                  >
+                    <Phone className="w-4 h-4" />
+                    전화 문의
+                  </Button>
+                )}
+                {isClaimed ? (
+                  <Button
+                    className="flex-1 h-11"
+                    onClick={() => {
+                      // 사장님이 고른 채널(url/phone), 기본은 인앱 문의 시트(항상 동작).
+                      if (inquiry.channel === "url" && inquiry.url) void openExternal(inquiry.url);
+                      else if (inquiry.channel === "phone" && inquiry.phone) void openExternal(`tel:${inquiry.phone}`);
+                      else setInquiryOpen(true);
+                    }}
+                  >
+                    예약 문의
+                  </Button>
+                ) : unclaimedHasContact ? (
+                  <Button
+                    className="flex-1 h-11"
+                    onClick={() => void openExternal((online ?? `tel:${place.tel}`) as string)}
+                  >
+                    문의하기
+                  </Button>
+                ) : (
+                  <Button disabled className="flex-1 h-11">연락처 미등록</Button>
+                )}
+              </div>
+              {noContact && (
+                <p className="text-[11px] text-muted-foreground text-center pt-2">
+                  아직 등록된 연락처가 없어요. 사장님이라면 무료 입점 후 문의를 직접 받을 수 있어요.
+                </p>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       <PlaceInquirySheet

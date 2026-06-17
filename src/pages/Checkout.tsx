@@ -38,6 +38,8 @@ const Checkout = () => {
       );
       const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
       const redirectUrl = isMobile ? data.next_redirect_mobile_url : data.next_redirect_pc_url;
+      // 리다이렉트 URL 누락 시 무한 스피너 방지 — 명시적 에러로.
+      if (!redirectUrl) throw new Error("결제 페이지 주소를 받지 못했어요. 잠시 후 다시 시도해주세요");
       await openExternal(redirectUrl, { target: "_self" });
     } catch (err: any) {
       console.error("order ready failed:", err);

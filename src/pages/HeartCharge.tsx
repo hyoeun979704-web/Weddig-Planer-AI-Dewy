@@ -93,6 +93,8 @@ const HeartCharge = () => {
       const redirectUrl = isMobile
         ? data.next_redirect_mobile_url
         : data.next_redirect_pc_url;
+      // 리다이렉트 URL 누락 시 스피너가 무한 대기하는 dead-end 방지 — 명시적 에러로 전환.
+      if (!redirectUrl) throw new Error("결제 페이지 주소를 받지 못했어요. 잠시 후 다시 시도해주세요");
       // 네이티브: Custom Tabs 로 결제 흐름 위임, 웹: 동일 탭 이동.
       await openExternal(redirectUrl, { target: '_self' });
     } catch (err: any) {
