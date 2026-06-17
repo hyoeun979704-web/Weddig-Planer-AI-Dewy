@@ -36,6 +36,7 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [changingPw, setChangingPw] = useState(false);
   // 이메일 가입자만 비밀번호 변경 노출(OAuth/소셜은 제공자 관리).
@@ -117,15 +118,29 @@ const Profile = () => {
     }
   };
 
-  // 비밀번호 변경 — Supabase auth(현재 세션). 이메일 가입자만.
+  // 비밀번호 변경 — 현재 비밀번호로 재인증(보안) 후 새 비밀번호 적용. 이메일 가입자만.
   const handlePasswordChange = async () => {
-    if (newPassword.length < 8) { toast.error("비밀번호는 8자 이상이어야 해요"); return; }
+    if (!user?.email) return;
+    if (!currentPassword) { toast.error("현재 비밀번호를 입력해주세요"); return; }
+    if (newPassword.length < 8) { toast.error("새 비밀번호는 8자 이상이어야 해요"); return; }
+    if (newPassword === currentPassword) { toast.error("새 비밀번호가 기존과 같아요"); return; }
     setChangingPw(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setChangingPw(false);
-    if (error) { toast.error("비밀번호 변경 실패", { description: error.message }); return; }
-    setNewPassword("");
-    toast.success("비밀번호를 변경했어요");
+    try {
+      // 1) 현재 비밀번호 검증(재인증) — 틀리면 변경 차단.
+      const { error: reauthErr } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+      if (reauthErr) { toast.error("현재 비밀번호가 올바르지 않아요"); return; }
+      // 2) 새 비밀번호 적용.
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) { toast.error("비밀번호 변경 실패", { description: error.message }); return; }
+      setCurrentPassword("");
+      setNewPassword("");
+      toast.success("비밀번호를 변경했어요");
+    } finally {
+      setChangingPw(false);
+    }
   };
 
   const getUserInitial = () => {
@@ -364,10 +379,18 @@ const Profile = () => {
           {/* 비밀번호 변경 — 이메일 가입자만(소셜 로그인은 제공자에서 관리) */}
           {isEmailUser && (
             <div className="mt-8 pt-6 border-t border-border space-y-2">
-              <Label htmlFor="newPassword" className="flex items-center gap-2">
+              <Label className="flex items-center gap-2">
                 <Lock className="w-4 h-4" />
                 비밀번호 변경
               </Label>
+              <Input
+                id="currentPassword"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="현재 비밀번호"
+                autoComplete="current-password"
+              />
               <Input
                 id="newPassword"
                 type="password"
@@ -380,7 +403,7 @@ const Profile = () => {
                 onClick={handlePasswordChange}
                 variant="outline"
                 className="w-full"
-                disabled={changingPw || newPassword.length < 8}
+                disabled={changingPw || !currentPassword || newPassword.length < 8}
               >
                 {changingPw ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                 비밀번호 변경
