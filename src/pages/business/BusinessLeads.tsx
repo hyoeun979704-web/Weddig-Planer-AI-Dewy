@@ -141,7 +141,7 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
 // 업체: 나에게 매칭된 견적 요청(리드)을 보고 응답한다.
 const BusinessLeads = () => {
   const navigate = useNavigate();
-  const { leads, loading, reload } = useBusinessLeads();
+  const { leads, loading, error, reload } = useBusinessLeads();
   const [funnel, setFunnel] = useState<BusinessFunnel | null>(null);
 
   useEffect(() => {
@@ -179,6 +179,12 @@ const BusinessLeads = () => {
         )}
         {loading ? (
           <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+        ) : error ? (
+          // 쿼리 실패를 "리드 없음"으로 위장하지 않고 재시도 경로 제공.
+          <div className="py-16 flex flex-col items-center text-center gap-3">
+            <p className="text-sm text-muted-foreground">리드를 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>
+            <button onClick={() => void reload()} className="text-sm text-primary font-semibold">다시 시도</button>
+          </div>
         ) : leads.length === 0 ? (
           <EmptyState
             icon={Inbox}

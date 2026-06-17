@@ -262,24 +262,32 @@ export function useBusinessLeads() {
   const { user } = useAuth();
   const [leads, setLeads] = useState<BusinessLead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
+    setError(false);
     // 내가 타겟된 요청들 + 요청 상세(RLS 로 조인 허용) + 내 응답 상태.
-    const { data: targets } = await supabase
+    const { data: targets, error: targetsErr } = await supabase
       .from("quote_request_targets")
       .select("request_id, place_id, quote_requests(*)")
       .eq("owner_user_id", user.id)
       .order("created_at", { ascending: false });
+    // 쿼리 실패를 "리드 없음"으로 삼키지 않는다 — 에러 상태로 노출해 재시도 유도.
+    if (targetsErr) {
+      console.error("useBusinessLeads targets failed", targetsErr);
+      setError(true); setLeads([]); setLoading(false); return;
+    }
     const reqIds = ((targets ?? []) as any[]).map((t) => t.request_id);
     const statusByReq = new Map<string, "sent" | "accepted" | "booked">();
     if (reqIds.length > 0) {
-      const { data: myResp } = await supabase
+      const { data: myResp, error: respErr } = await supabase
         .from("quote_responses")
         .select("request_id, status")
         .eq("owner_user_id", user.id)
         .in("request_id", reqIds);
+      if (respErr) console.error("useBusinessLeads responses failed", respErr);
       for (const r of ((myResp ?? []) as any[])) {
         statusByReq.set(r.request_id, r.status === "booked" ? "booked" : r.status === "accepted" ? "accepted" : "sent");
       }
@@ -297,5 +305,5 @@ export function useBusinessLeads() {
   }, [user]);
 
   useEffect(() => { void load(); }, [load]);
-  return { leads, loading, reload: load };
+  return { leads, loading, error, reload: load };
 }
