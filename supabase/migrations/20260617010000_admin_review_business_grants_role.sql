@@ -66,4 +66,6 @@ insert into public.user_roles (user_id, role)
 select bp.user_id, 'business'::public.app_role
 from public.business_profiles bp
 where bp.approval_status = 'approved'
+  -- 삭제된 사용자의 잔존(orphaned) 프로필 제외 — user_roles FK(auth.users) 위반 방지.
+  and exists (select 1 from auth.users au where au.id = bp.user_id)
 on conflict (user_id, role) do nothing;
