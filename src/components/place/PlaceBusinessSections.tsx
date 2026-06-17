@@ -4,7 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface EventRow { id: string; title: string; description: string | null; starts_at: string | null; ends_at: string | null; }
 interface ProductRow { id: string; name: string; price: number | null; description: string | null; image_url: string | null; }
-interface MediaRow { id: string; kind: string; image_url: string | null; title: string | null; price: number | null; }
+interface MediaRow {
+  id: string;
+  kind: string;
+  image_url: string | null;
+  title: string | null;
+  price: number | null;
+  // 포트폴리오 확장 필드(260616). 라이브 DB 미적용 가능성 대비 select("*") + 옵셔널.
+  venue_name?: string | null;
+  style_tags?: string[] | null;
+  description?: string | null;
+}
 
 // 업체 상세페이지의 기업회원 등록 콘텐츠(이벤트·상품·사진/메뉴) 노출.
 // 승인된 것만 RLS 로 내려오며, 데이터 없는 섹션은 렌더하지 않는다.
@@ -18,7 +28,9 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
     const [ev, pr, md] = await Promise.all([
       supabase.from("business_events" as any).select("id, title, description, starts_at, ends_at").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
       supabase.from("business_products" as any).select("id, name, price, description, image_url").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
-      supabase.from("place_media" as any).select("id, kind, image_url, title, price").eq("place_id", placeId).order("display_order", { ascending: true }),
+      // select("*") — 포트폴리오 컬럼(venue_name/style_tags/description)이 라이브 DB 에
+      // 아직 없어도 422 안 나게(있으면 함께 내려옴).
+      supabase.from("place_media" as any).select("*").eq("place_id", placeId).order("display_order", { ascending: true }),
     ]);
     setEvents((ev.data ?? []) as unknown as EventRow[]);
     setProducts((pr.data ?? []) as unknown as ProductRow[]);
@@ -31,27 +43,49 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
 
   return (
     <div className="space-y-5">
-      {/* 사진 / 메뉴 */}
+      {/* 포트폴리오(사진) / 메뉴 */}
       {media.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-bold text-sm flex items-center gap-1.5">
             {isMenu ? <UtensilsCrossed className="w-4 h-4 text-primary" /> : <ImageIcon className="w-4 h-4 text-primary" />}
-            {isMenu ? "메뉴" : "사진"}
+            {isMenu ? "메뉴" : "포트폴리오"}
           </h3>
           <div className="grid grid-cols-2 gap-2">
-            {media.map((m) => (
-              <div key={m.id} className="rounded-xl border border-border overflow-hidden bg-card">
-                <div className="aspect-square bg-muted">
-                  {m.image_url && <img src={m.image_url} alt={m.title ?? ""} className="w-full h-full object-cover" />}
-                </div>
-                {isMenu && (
-                  <div className="p-2">
-                    <p className="text-[12px] font-semibold text-foreground truncate">{m.title}</p>
-                    {m.price != null && <p className="text-[11px] text-muted-foreground">{m.price.toLocaleString()}원</p>}
+            {media.map((m) => {
+              const tags = Array.isArray(m.style_tags) ? m.style_tags : [];
+              const hasMeta = !!(m.venue_name || m.description || tags.length);
+              return (
+                <div key={m.id} className="rounded-xl border border-border overflow-hidden bg-card">
+                  <div className="aspect-square bg-muted">
+                    {m.image_url && <img src={m.image_url} alt={m.title ?? m.venue_name ?? ""} className="w-full h-full object-cover" />}
                   </div>
-                )}
-              </div>
-            ))}
+                  {isMenu ? (
+                    <div className="p-2">
+                      <p className="text-[12px] font-semibold text-foreground truncate">{m.title}</p>
+                      {m.price != null && <p className="text-[11px] text-muted-foreground">{m.price.toLocaleString()}원</p>}
+                    </div>
+                  ) : (
+                    hasMeta && (
+                      <div className="p-2 space-y-1">
+                        {m.venue_name && (
+                          <p className="text-[11px] text-primary truncate">📍 {m.venue_name}</p>
+                        )}
+                        {m.description && (
+                          <p className="text-[11px] text-muted-foreground line-clamp-2">{m.description}</p>
+                        )}
+                        {tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {tags.slice(0, 3).map((t) => (
+                              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">#{t}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

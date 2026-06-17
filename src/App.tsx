@@ -331,7 +331,7 @@ const App = () => (
               <Route path="/taste" element={<TasteQuiz />} />
               <Route path="/mail" element={<MailInbox />} />
               <Route path="/invitation/market" element={<InvitationMarket />} />
-              <Route path="/business/leads" element={<BusinessLeads />} />
+              <Route path="/business/leads" element={<BusinessGuard requireApproved><BusinessLeads /></BusinessGuard>} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/consulting" element={<WeddingConsulting />} />
