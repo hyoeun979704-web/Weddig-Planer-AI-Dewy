@@ -5,7 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logClientError } from "@/lib/errorLog";
 import EmptyState from "@/components/ui/empty-state";
+
+// 검토 RPC 실패 시 실제 원인(res.error / DB error)을 토스트 설명 + 서버 로깅으로 노출.
+// (기존엔 "처리에 실패했어요"만 띄워 PGRST/권한/스키마 원인이 가려졌다 — 진단 안티패턴.)
+const reportReviewFailure = (
+  what: string,
+  res: { error?: string } | null,
+  error: { message?: string } | null,
+) => {
+  const detail = res?.error || error?.message || "unknown";
+  if (detail === "forbidden") {
+    toast.error("권한이 없어요(관리자 전용)");
+  } else {
+    toast.error("처리에 실패했어요", { description: detail.slice(0, 160) });
+  }
+  void logClientError({ message: `${what}: ${detail}`, source: "manual" });
+};
 
 interface PendingBusiness {
   id: string;
@@ -109,8 +126,8 @@ const AdminBusinessReview = () => {
     setProcessingProduct(id);
     const { data, error } = await supabase.rpc("admin_review_product", { p_id: id, p_approved: approved, p_note: reviewNote ?? null });
     setProcessingProduct(null);
-    const res = data as { ok?: boolean } | null;
-    if (error || !res?.ok) { toast.error("처리에 실패했어요"); return; }
+    const res = data as { ok?: boolean; error?: string } | null;
+    if (error || !res?.ok) { reportReviewFailure("admin_review_product", res, error); return; }
     toast.success(approved ? "상품을 승인했어요" : "상품을 반려했어요");
     clearReject();
     setProducts((prev) => prev.filter((p) => p.id !== id));
@@ -120,8 +137,8 @@ const AdminBusinessReview = () => {
     setProcessingEvent(id);
     const { data, error } = await supabase.rpc("admin_review_event", { p_id: id, p_approved: approved, p_note: reviewNote ?? null });
     setProcessingEvent(null);
-    const res = data as { ok?: boolean } | null;
-    if (error || !res?.ok) { toast.error("처리에 실패했어요"); return; }
+    const res = data as { ok?: boolean; error?: string } | null;
+    if (error || !res?.ok) { reportReviewFailure("admin_review_event", res, error); return; }
     toast.success(approved ? "이벤트를 승인했어요" : "이벤트를 반려했어요");
     clearReject();
     setEvents((prev) => prev.filter((e) => e.id !== id));
@@ -135,8 +152,8 @@ const AdminBusinessReview = () => {
       p_note: reviewNote ?? undefined,
     });
     setProcessingListing(null);
-    const res = data as { ok?: boolean } | null;
-    if (error || !res?.ok) { toast.error("처리에 실패했어요"); return; }
+    const res = data as { ok?: boolean; error?: string } | null;
+    if (error || !res?.ok) { reportReviewFailure("admin_review_listing", res, error); return; }
     toast.success(approved ? "리스팅을 승인했어요" : "리스팅을 반려했어요");
     clearReject();
     setListings((prev) => prev.filter((l) => l.place_id !== placeId));
@@ -151,10 +168,7 @@ const AdminBusinessReview = () => {
     });
     setProcessing(null);
     const res = data as { ok?: boolean; error?: string } | null;
-    if (error || !res?.ok) {
-      toast.error(res?.error === "forbidden" ? "권한이 없어요" : "처리에 실패했어요");
-      return;
-    }
+    if (error || !res?.ok) { reportReviewFailure("admin_review_business", res, error); return; }
     toast.success(approved ? "승인했어요" : "반려했어요");
     setRejectingId(null);
     setNote("");
