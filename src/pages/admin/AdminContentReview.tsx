@@ -72,7 +72,14 @@ const STATUS_LABEL: Record<string, string> = {
 
 const AdminContentReview = () => {
   const [tab, setTab] = useState<ContentType>("events");
-  const [filter, setFilter] = useState<"pending" | "all">("pending");
+  // 필터 선택을 기억(새로고침 시 매번 'pending'으로 초기화되던 마찰 제거).
+  const [filter, setFilter] = useState<"pending" | "all">(() => {
+    try { return (localStorage.getItem("admin.contentReview.filter") as "pending" | "all") || "pending"; }
+    catch { return "pending"; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("admin.contentReview.filter", filter); } catch { /* private mode */ }
+  }, [filter]);
   const [events, setEvents] = useState<BusinessEvent[]>([]);
   const [coupons, setCoupons] = useState<BusinessCoupon[]>([]);
   const [loading, setLoading] = useState(false);
@@ -229,7 +236,7 @@ const AdminContentReview = () => {
                 <div key={e.id} className="bg-card rounded-2xl border border-border p-4">
                   {e.banner_image_url && (
                     <div className="aspect-[2/1] rounded-xl overflow-hidden bg-muted mb-3">
-                      <img src={e.banner_image_url} alt={e.title} className="w-full h-full object-cover" />
+                      <img src={e.banner_image_url} alt={e.title} className="w-full h-full object-cover" onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} />
                     </div>
                   )}
                   <div className="flex items-start justify-between gap-3 mb-2">
