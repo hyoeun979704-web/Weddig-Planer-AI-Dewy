@@ -134,12 +134,13 @@ interface DiaryCardProps {
 
 const DiaryCard = ({ entry, onDelete, isDeleting, formatDate }: DiaryCardProps) => {
   const navigate = useNavigate();
-  const [showActions, setShowActions] = useState(false);
+  // 카드 탭 → 전체 내용 펼치기(상세 보기). 기존엔 클릭 액션이 없어 '확인'이 안 됐음.
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div
-      className="bg-card rounded-2xl border border-border overflow-hidden"
-      onClick={() => setShowActions(false)}
+      className="bg-card rounded-2xl border border-border overflow-hidden cursor-pointer"
+      onClick={() => setExpanded((v) => !v)}
     >
       {/* Photos */}
       {entry.photos.length > 0 && (
@@ -176,8 +177,11 @@ const DiaryCard = ({ entry, onDelete, isDeleting, formatDate }: DiaryCardProps) 
         {/* Title */}
         <h3 className="font-semibold text-foreground mb-1">{entry.title}</h3>
 
-        {/* Content preview */}
-        <p className="text-sm text-muted-foreground line-clamp-3">{entry.content}</p>
+        {/* Content — 탭하면 전체 펼침(접힘 시 3줄 미리보기). */}
+        <p className={`text-sm text-muted-foreground whitespace-pre-wrap ${expanded ? "" : "line-clamp-3"}`}>{entry.content}</p>
+        {!expanded && entry.content.length > 80 && (
+          <span className="mt-1 inline-block text-xs text-primary font-medium">더보기</span>
+        )}
 
         {/* Actions (only for own entries) */}
         {entry.is_mine && (
