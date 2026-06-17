@@ -7,6 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { MEMBER_TIERS, memberTierLabel, type MemberTier } from "@/lib/memberTier";
+import { SERVICE_CATEGORIES } from "@/lib/businessCategories";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+type Affiliation = "individual" | "business" | "partner";
+const AFFILIATION_LABEL: Record<Affiliation, string> = {
+  individual: "일반회원",
+  business: "기업회원",
+  partner: "제휴업체",
+};
 
 interface UserProfile {
   user_id: string;
@@ -16,6 +26,7 @@ interface UserProfile {
   member_tier: MemberTier;
   // 조인된 데이터
   roles: string[];
+  affiliation: Affiliation;
   hearts_balance: number;
   hearts_spent: number;
   fittings_count: number;
@@ -25,6 +36,11 @@ const AdminUsers = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  // 회원 유형(일반/기업/제휴) 전환 다이얼로그.
+  const [convTarget, setConvTarget] = useState<UserProfile | null>(null);
+  const [convAff, setConvAff] = useState<Affiliation>("business");
+  const [convCat, setConvCat] = useState<string>(SERVICE_CATEGORIES[0].value);
+  const [converting, setConverting] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -48,8 +64,8 @@ const AdminUsers = () => {
       return;
     }
 
-    // 역할·하트·피팅 데이터 병렬 조회
-    const [rolesRes, heartsRes, fittingsRes] = await Promise.all([
+    // 역할·하트·피팅·소속 데이터 병렬 조회
+    const [rolesRes, heartsRes, fittingsRes, affRes] = await Promise.all([
       supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
       supabase
         .from("user_hearts")
@@ -59,7 +75,13 @@ const AdminUsers = () => {
         .from("dress_fittings")
         .select("user_id")
         .in("user_id", userIds),
+      // business_profiles 는 owner-only RLS → admin RPC 로 소속(일반/기업/제휴) 조회.
+      (supabase as any).rpc("admin_get_member_affiliations", { p_user_ids: userIds }),
     ]);
+    const affByUser: Record<string, Affiliation> = {};
+    ((affRes as any)?.data ?? []).forEach((a: any) => {
+      affByUser[a.user_id] = a.affiliation as Affiliation;
+    });
 
     // 매핑 작성
     const rolesByUser: Record<string, string[]> = {};
@@ -82,6 +104,7 @@ const AdminUsers = () => {
       created_at: p.created_at,
       member_tier: (MEMBER_TIERS as string[]).includes(p.member_tier) ? p.member_tier : "basic",
       roles: rolesByUser[p.user_id] ?? [],
+      affiliation: affByUser[p.user_id] ?? "individual",
       hearts_balance: heartsByUser[p.user_id]?.balance ?? 0,
       hearts_spent: heartsByUser[p.user_id]?.spent ?? 0,
       fittings_count: fittingCountByUser[p.user_id] ?? 0,
@@ -115,6 +138,45 @@ const AdminUsers = () => {
     } else {
       toast({ title: "등급을 변경했어요", description: `${memberTierLabel(tier)} 등급으로 설정` });
     }
+  }, []);
+
+  // 회원 유형 원자적 전환 — RPC 가 역할·프로필·승인·제휴등급을 한 번에 세팅.
+  const submitAffiliation = useCallback(async () => {
+    if (!convTarget) return;
+    setConverting(true);
+    const { data, error } = await (supabase as any).rpc("admin_set_member_affiliation", {
+      p_user_id: convTarget.user_id,
+      p_affiliation: convAff,
+      p_service_category: convAff === "individual" ? null : convCat,
+    });
+    setConverting(false);
+    const res = data as { ok?: boolean; error?: string } | null;
+    if (error || !res?.ok) {
+      toast({ title: "변경 실패", description: res?.error ?? error?.message ?? "오류", variant: "destructive" });
+      return;
+    }
+    setUsers((list) =>
+      list.map((u) =>
+        u.user_id === convTarget.user_id
+          ? {
+              ...u,
+              affiliation: convAff,
+              roles:
+                convAff === "individual"
+                  ? u.roles.filter((r) => r !== "business")
+                  : Array.from(new Set([...u.roles, "business"])),
+            }
+          : u,
+      ),
+    );
+    toast({ title: "회원 유형을 변경했어요", description: `${convTarget.nickname || convTarget.email || "회원"} → ${AFFILIATION_LABEL[convAff]}` });
+    setConvTarget(null);
+  }, [convTarget, convAff, convCat]);
+
+  const openConvert = useCallback((u: UserProfile) => {
+    setConvAff(u.affiliation === "individual" ? "business" : u.affiliation);
+    setConvCat(SERVICE_CATEGORIES[0].value);
+    setConvTarget(u);
   }, []);
 
   const filtered = search
@@ -170,14 +232,23 @@ const AdminUsers = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap items-center gap-1">
                           {u.roles.length === 0 && (
                             <RoleBadge role="individual" />
                           )}
                           {u.roles.map((r) => (
                             <RoleBadge key={r} role={r} />
                           ))}
+                          {u.affiliation === "partner" && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">제휴</span>
+                          )}
                         </div>
+                        <button
+                          onClick={() => openConvert(u)}
+                          className="mt-1 text-[11px] text-primary underline underline-offset-2"
+                        >
+                          유형 변경
+                        </button>
                       </td>
                       <td className="px-4 py-3">
                         <select
@@ -216,6 +287,70 @@ const AdminUsers = () => {
             </div>
           </div>
         )}
+
+        <Dialog open={!!convTarget} onOpenChange={(o) => !o && setConvTarget(null)}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-base">회원 유형 변경</DialogTitle>
+            </DialogHeader>
+            {convTarget && (
+              <div className="space-y-4">
+                <p className="text-[13px] text-muted-foreground">
+                  {convTarget.nickname || convTarget.email || "회원"} 의 유형을 변경합니다.
+                  역할·승인·제휴등급이 한 번에 적용돼요.
+                </p>
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-foreground">유형</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["individual", "business", "partner"] as Affiliation[]).map((a) => (
+                      <button
+                        key={a}
+                        type="button"
+                        onClick={() => setConvAff(a)}
+                        className={cn(
+                          "h-9 rounded-lg border text-[12px] font-medium transition-colors",
+                          convAff === a
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-background text-muted-foreground",
+                        )}
+                      >
+                        {AFFILIATION_LABEL[a]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {convAff !== "individual" && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-foreground">업종</p>
+                    <select
+                      value={convCat}
+                      onChange={(e) => setConvCat(e.target.value)}
+                      className="w-full text-sm border border-border rounded-md px-2 py-2 bg-background text-foreground"
+                    >
+                      {SERVICE_CATEGORIES.map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-muted-foreground">
+                      사업자번호·상호 등은 자동 임시값으로 생성되고, 업체가 추후 업체정보에서 보완해요.
+                    </p>
+                  </div>
+                )}
+                {convAff === "individual" && (
+                  <p className="text-[12px] text-amber-700 bg-amber-50 rounded-lg p-2">
+                    기업/제휴 권한이 회수되고 업체 정보는 비공개(검토)로 전환돼요.
+                  </p>
+                )}
+                <div className="flex gap-2 justify-end pt-1">
+                  <Button variant="ghost" onClick={() => setConvTarget(null)} disabled={converting}>취소</Button>
+                  <Button onClick={submitAffiliation} disabled={converting}>
+                    {converting ? <Loader2 className="w-4 h-4 animate-spin" /> : "변경"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </AdminLayout>
     </AdminGuard>
   );
