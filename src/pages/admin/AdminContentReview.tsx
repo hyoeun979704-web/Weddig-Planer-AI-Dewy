@@ -85,7 +85,8 @@ const AdminContentReview = () => {
     setLoading(true);
     const eventsQ = supabase
       .from("business_events" as any)
-      .select("id, place_id, owner_user_id, title, description, starts_at, ends_at, banner_image_url, detail_images, moderation_status, moderation_note, created_at")
+      // select("*") — banner_image_url/detail_images 미적용 라이브에서도 422 방어(드리프트 idiom).
+      .select("*")
       .order("created_at", { ascending: false });
     if (filter === "pending") eventsQ.eq("moderation_status", "pending");
 

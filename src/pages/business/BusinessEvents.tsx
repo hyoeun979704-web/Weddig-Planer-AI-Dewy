@@ -55,7 +55,8 @@ const BusinessEvents = () => {
   const loadEvents = useCallback(async (pid: string) => {
     const { data } = await supabase
       .from("business_events" as any)
-      .select("id, title, description, starts_at, ends_at, banner_image_url, detail_images, moderation_status, moderation_note")
+      // select("*") — banner_image_url/detail_images 미적용 라이브에서도 422 방어(드리프트 idiom).
+      .select("*")
       .eq("place_id", pid)
       .order("created_at", { ascending: false });
     setItems((data ?? []) as unknown as EventItem[]);

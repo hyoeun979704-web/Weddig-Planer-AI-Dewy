@@ -46,7 +46,8 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
 
   const load = useCallback(async () => {
     const [ev, pr, md, alb] = await Promise.all([
-      supabase.from("business_events" as any).select("id, title, description, starts_at, ends_at, banner_image_url, detail_images").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
+      // select("*") — banner_image_url/detail_images 가 라이브 DB 에 아직 없어도 422 안 나게(드리프트 방어, place_media 와 동일 idiom). 있으면 함께 내려옴.
+      supabase.from("business_events" as any).select("*").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
       supabase.from("business_products" as any).select("id, name, price, description, image_url").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
       supabase.from("place_media" as any).select("*").eq("place_id", placeId).order("display_order", { ascending: true }),
       // 앨범 테이블이 라이브에 아직 없으면 error → 빈 배열로 폴백(평면 렌더).
