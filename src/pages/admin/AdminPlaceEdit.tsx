@@ -84,6 +84,8 @@ const AdminPlaceEdit = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<PlaceRow | null>(null);
   const [tagsInput, setTagsInput] = useState("");
+  // 이 업체의 등록 콘텐츠 요약(읽기전용 검수용) — 상품·이벤트·사진. (편집은 기업 계정이)
+  const [summary, setSummary] = useState<{ products: { name: string; price: number | null }[]; events: number; media: number } | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -105,6 +107,26 @@ const AdminPlaceEdit = () => {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // 등록 콘텐츠 요약(읽기전용) — 상품 목록 + 이벤트/사진 수. 실패해도 화면 영향 없음(null 유지).
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      const [pr, ev, md] = await Promise.all([
+        (supabase as any).from("business_products").select("name, price").eq("place_id", id).order("created_at", { ascending: false }),
+        (supabase as any).from("business_events").select("id", { count: "exact", head: true }).eq("place_id", id),
+        (supabase as any).from("place_media").select("id", { count: "exact", head: true }).eq("place_id", id),
+      ]);
+      if (cancelled) return;
+      setSummary({
+        products: ((pr.data ?? []) as { name: string; price: number | null }[]),
+        events: ev.count ?? 0,
+        media: md.count ?? 0,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
 
   const setField = <K extends keyof PlaceRow>(key: K, value: PlaceRow[K]) => {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
@@ -221,6 +243,29 @@ const AdminPlaceEdit = () => {
               {form.updated_at ? new Date(form.updated_at).toLocaleString("ko-KR") : "—"}
             </div>
           </div>
+
+          {/* 등록 콘텐츠 요약(읽기전용 검수) — 상품·이벤트·사진. 편집은 기업 계정의 전용 화면에서. */}
+          {summary && (summary.products.length > 0 || summary.events > 0 || summary.media > 0) && (
+            <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+              <div className="flex items-center gap-3 text-[12px] text-muted-foreground">
+                <span><strong className="text-foreground">{summary.products.length}</strong> 상품</span>
+                <span><strong className="text-foreground">{summary.events}</strong> 이벤트</span>
+                <span><strong className="text-foreground">{summary.media}</strong> 사진</span>
+                <span className="ml-auto text-[11px]">검수용 · 편집은 업체 계정</span>
+              </div>
+              {summary.products.length > 0 && (
+                <ul className="text-[12px] text-foreground divide-y divide-border">
+                  {summary.products.slice(0, 8).map((p, i) => (
+                    <li key={i} className="flex items-center justify-between py-1">
+                      <span className="truncate">{p.name}</span>
+                      <span className="text-muted-foreground shrink-0">{p.price != null ? `${p.price.toLocaleString()}원` : "—"}</span>
+                    </li>
+                  ))}
+                  {summary.products.length > 8 && <li className="py-1 text-[11px] text-muted-foreground">외 {summary.products.length - 8}개</li>}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* 노출 토글 */}
           <div className="flex items-center justify-between rounded-lg border border-border p-3 bg-card">
