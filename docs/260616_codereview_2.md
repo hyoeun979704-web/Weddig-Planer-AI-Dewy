@@ -210,3 +210,32 @@
   동반 → sandbox e2e 불가라 무리 구현 금지. 우선순위: ①포트폴리오 위치 태깅(큐레이션 영향 최대,
   upsert RPC 에 owner 가 자기 media 의 venue 태그를 셀프 식장에 한해 set 허용) → ②지오코딩
   자동화(주소→lat/lng, 기존 `place-geocode-backfill` 함수 재사용) → ③상세폼.
+
+---
+
+## 5차 증분 — 버그수정: 사업자 정보 입력 유실(iOS 웹)
+
+> 실사용 사업자 피드백: "페이지를 나갔다 들어오면 기재해둔 내역이 계속 사라져요 / 캐시저장이
+> 안 되는 것 같아요 / iOS 웹". **근본 원인**: `BusinessVendorEdit`·`BusinessListingDetailForm`
+> 이 입력을 React state 에만 보관 → iOS Safari 가 앱 전환·메모리 압박 시 백그라운드 페이지를
+> 폐기 → 복귀 시 SPA 전체 리로드 → state 가 ""로 초기화, 서버엔 '저장' 눌러야만 남으므로 복원 불가.
+
+| 파일 | 역할 |
+|---|---|
+| `src/lib/formDraft.ts` (신규) | 재사용 draft 유틸: `draftKey`(user 격리)·load/save/clear(try/catch)·`shallowEqual`·`jsonEqual` (+10 테스트) |
+| `src/pages/business/BusinessVendorEdit.tsx` (편집) | 변경마다 draft 자동저장 → 복귀 시 복원 → 저장 성공 시 제거 |
+| `src/components/business/BusinessListingDetailForm.tsx` (편집) | 동일(중첩 값은 jsonEqual) |
+
+### 설계 핵심(회귀 방지)
+- **hydrate 가드**: 초기 로드값이 draft 로 덮어써지지 않게 `hydratedRef` 전엔 autosave no-op.
+- **서버 스냅샷 비교**: draft 가 서버값과 같으면 저장 안 함/제거 → "미저장 변경 있을 때만" draft 존재.
+- **매 입력 동기 저장**: debounce 없이 매 변경 즉시 localStorage → iOS 탭 폐기 타이밍에도 최신 보존.
+- **저장 성공 시 제거**: snapshot 갱신 + clearDraft → 다음 진입에 stale 복원 안 함.
+- **best-effort**: 프라이빗 모드/용량초과 setItem throw 를 try/catch(앱 흐름 무영향).
+
+### 6차원 (5차 델타)
+- **정확성**: 빈/손상 JSON·없음 모두 우아 처리(테스트). user 격리 키(공유기기 누출 방지).
+- **DRY**: 두 폼이 동일 유틸 재사용. **dead-end 없음**: 실제 입력 복원(토스트만 아님).
+- 검증: 신규 유닛 **10/10**(누적 44) · build 0 error · 신규 파일 lint 0 error · 전체 **494 pass / 1 사전 실패**.
+- **한계**: 실제 iOS Safari 탭 폐기→복귀 복원은 sandbox e2e 불가 — 로직은 유닛 고정, **실기기
+  확인 권장**(사업자에게 재현 요청). localStorage 복원은 동일 브라우저 내 한정(cross-device 아님).
