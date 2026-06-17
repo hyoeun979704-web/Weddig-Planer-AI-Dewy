@@ -257,7 +257,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
       )}
 
       {/* Fixed bottom CTA */}
-      <div className="fixed bottom-0 left-0 right-0 app-col mx-auto bg-background border-t border-border p-3 z-40">
+      <div className="fixed bottom-0 left-0 right-0 app-col mx-auto bg-background border-t border-border px-3 pt-3 pb-[calc(0.75rem+var(--safe-bottom))] z-40">
         {/* ② 신뢰 신호 — 입점 업체 응답 통계(문의 시작률 ↑) */}
         {isClaimed && inquiryStats && inquiryStats.total >= 1 && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 pb-2 text-[11px] text-muted-foreground">

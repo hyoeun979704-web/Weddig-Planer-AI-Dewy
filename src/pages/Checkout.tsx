@@ -94,7 +94,7 @@ const Checkout = () => {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 app-col mx-auto p-4 bg-background border-t border-border">
+      <div className="fixed bottom-0 left-0 right-0 app-col mx-auto px-4 pt-4 pb-[calc(1rem+var(--safe-bottom))] bg-background border-t border-border">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm text-muted-foreground">총 결제 금액</span>
           <span className="text-xl font-bold text-primary">{formatPrice(totalAmount)}</span>

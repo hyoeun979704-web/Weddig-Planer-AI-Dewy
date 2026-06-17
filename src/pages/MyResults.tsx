@@ -37,7 +37,7 @@ const MyResults = () => {
       <PageHeader title="내 결과물" />
 
       {/* 결과물 카테고리 탭 — 가로 스크롤 */}
-      <div className="sticky top-0 z-20 bg-background border-b border-border">
+      <div className="sticky safe-sticky-header z-20 bg-background border-b border-border">
         <div className="flex gap-1 px-3 overflow-x-auto no-scrollbar">
           {TABS.map((t) => (
             <button

@@ -123,7 +123,7 @@ const PlaceInquirySheet = ({ placeId, placeName, open, onOpenChange }: Props) =>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
         <Drawer.Content className="bg-background flex flex-col rounded-t-[10px] h-[85%] mt-24 fixed bottom-0 left-0 right-0 app-col mx-auto z-50 focus:outline-none">
-          <div className="p-4 bg-background rounded-t-[10px] flex-1 overflow-y-auto">
+          <div className="px-4 pt-4 pb-[calc(1rem+var(--safe-bottom))] bg-background rounded-t-[10px] flex-1 overflow-y-auto">
             <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-5" />
             <Drawer.Title className="text-lg font-bold text-center mb-1 text-foreground">
               업체에 문의하기

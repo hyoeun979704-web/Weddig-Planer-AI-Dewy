@@ -236,7 +236,7 @@ const ProductDetail = () => {
       </main>
 
       {/* Fixed Bottom CTA */}
-      <div className="fixed bottom-16 left-0 right-0 app-col mx-auto p-4 bg-background border-t border-border">
+      <div className="fixed bottom-[var(--app-bottom-nav-total-height)] left-0 right-0 app-col mx-auto p-4 bg-background border-t border-border">
         {isExternal ? (
           <Button onClick={handleGoExternal} className="w-full h-12 font-semibold">
             <ExternalLink className="w-5 h-5 mr-1" />
