@@ -842,7 +842,7 @@ const Budget = () => {
       </div>
 
       {/* Fixed bottom button */}
-      <div data-tutorial="budget-add" className="fixed bottom-20 left-0 right-0 app-col mx-auto px-4 z-30">
+      <div data-tutorial="budget-add" className="fixed bottom-[calc(var(--app-bottom-nav-total-height)+16px)] left-0 right-0 app-col mx-auto px-4 z-30">
         <button onClick={() => { setEditItem(null); setAddOpen(true); }}
           className="w-full bg-primary text-primary-foreground py-3.5 rounded-2xl font-bold text-sm shadow-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform">
           <Plus className="w-4 h-4" /> 지출 기록하기

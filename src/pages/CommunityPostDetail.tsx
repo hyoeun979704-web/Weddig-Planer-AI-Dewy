@@ -648,7 +648,7 @@ const CommunityPostDetail = () => {
       </section>
 
       {/* Comment Input - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 app-col mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 pt-4 pb-[calc(1rem+var(--safe-bottom))] app-col mx-auto">
         <div className="flex gap-2">
           <Textarea
             value={newComment}

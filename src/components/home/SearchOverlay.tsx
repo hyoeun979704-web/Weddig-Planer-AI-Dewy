@@ -255,7 +255,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
       </div>
 
       {/* Content */}
-      <div className="overflow-y-auto max-h-[calc(100vh-56px)]">
+      <div className="overflow-y-auto max-h-[calc(100vh-var(--app-header-total-height))] pb-[var(--safe-bottom)]">
         {searchQuery.trim() ? (
           // Search Results
           <div className="p-4">

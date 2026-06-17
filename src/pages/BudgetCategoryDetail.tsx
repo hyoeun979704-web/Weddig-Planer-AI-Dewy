@@ -216,7 +216,7 @@ const BudgetCategoryDetail = () => {
       </div>
 
       {/* Add button */}
-      <div className="fixed bottom-6 left-0 right-0 app-col mx-auto px-4 z-30">
+      <div className="fixed bottom-[calc(1.5rem+var(--safe-bottom))] left-0 right-0 app-col mx-auto px-4 z-30">
         <button onClick={() => { setEditItem(null); setAddOpen(true); }}
           className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold text-sm shadow-lg">
           + {catInfo.label} 지출 기록하기

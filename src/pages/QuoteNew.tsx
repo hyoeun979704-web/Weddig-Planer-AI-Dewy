@@ -232,7 +232,7 @@ const QuoteNew = () => {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 app-col mx-auto bg-background border-t border-border p-3 z-40">
+      <div className="fixed bottom-0 left-0 right-0 app-col mx-auto bg-background border-t border-border px-3 pt-3 pb-[calc(0.75rem+var(--safe-bottom))] z-40">
         <Button onClick={submit} disabled={submitting} className="w-full h-12 gap-2">
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           견적 요청 보내기

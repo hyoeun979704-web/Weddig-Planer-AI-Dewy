@@ -179,7 +179,7 @@ const DealDetail = () => {
       </main>
 
       {/* Fixed Bottom CTA */}
-      <div className="fixed bottom-16 left-0 right-0 app-col mx-auto p-4 bg-background border-t border-border">
+      <div className="fixed bottom-[var(--app-bottom-nav-total-height)] left-0 right-0 app-col mx-auto p-4 bg-background border-t border-border">
         <div className="flex gap-2">
           {deal.external_url && (
             <a href={deal.external_url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">

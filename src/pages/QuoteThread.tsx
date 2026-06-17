@@ -82,7 +82,7 @@ const QuoteThread = () => {
         <div ref={endRef} />
       </main>
 
-      <div className="sticky bottom-0 bg-background border-t border-border p-3 flex items-center gap-2">
+      <div className="sticky bottom-0 bg-background border-t border-border px-3 pt-3 pb-[calc(0.75rem+var(--safe-bottom))] flex items-center gap-2">
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}
