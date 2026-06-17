@@ -122,8 +122,29 @@ Red Flags:
 - [ ] 5. **Maintainability**: 컨벤션 준수, DRY(중복 로직 단일화), 매직넘버 상수화, "왜" 주석.
 - [ ] 6. **Architecture**: 계층 준수, API 일관성, breaking change 시 이관 전략.
 - [ ] 7. **실제 반영 검증**(CLAUDE.md): end-to-end 동작/DB 스키마 정합성을 실제로 확인. 못 하면 한계를 솔직히 명시.
+- [ ] 8. **iOS/사파리(웹)**: 아래 별도 섹션 점검(모바일 웹이 주 사용처).
 
 검증 환경 한계로 e2e 확인 불가 시 "검증함"이라 보고하지 말고 한계를 명시한다.
+
+### iOS / 사파리(웹) 차원 — 매 리뷰 확인
+
+데스크톱 크롬에선 멀쩡한데 **iOS 사파리에서만 조용히 깨지는** 결함이 반복됐다(가입 실패·입력
+유실 등). 실기기 e2e 가 sandbox 에서 불가하므로, 의심되면 `client_error_logs`(user_agent 포함)로
+관측하고 한계를 명시한다.
+
+- [ ] **저장소 throw**: iOS 사파리는 프라이빗·추적방지·용량초과 시 `localStorage` 접근이 **예외**.
+  raw 접근 금지 → try/catch + 인메모리 폴백(`safeLocalStorage.ts`·`formDraft.ts`). (회귀: auth
+  storage raw localStorage → 가입 전량 실패.)
+- [ ] **탭 폐기→상태 유실**: 백그라운드 탭 폐기 시 SPA 전체 리로드로 React state 초기화. 긴 입력
+  폼은 변경 즉시 draft 자동저장(`useTextDraft`)으로 복원. (회귀: 업체정보 입력 이탈 후 사라짐.)
+- [ ] **네트워크 에러 문구 차이**: 사파리 "Load failed" vs 크롬 "Failed to fetch" — 한쪽만 분기하면
+  누락(`authErrors.ts`). 미상 에러는 서버 로깅.
+- [ ] **입력 컨트롤**: `<input type=date>` 파싱, `type=tel`, 자동확대(font ≥16px), HEIC/대용량 업로드.
+- [ ] **safe-area/100vh**: sticky 헤더·하단탭은 `safe-sticky-header`/safe-area 토큰(노치·홈인디케이터).
+- [ ] **이메일 인증 리다이렉트**: `emailRedirectTo` origin 복귀 가능성 + Supabase redirect 허용목록.
+
+> 감사 문서(`docs/YYMMDD_codereview.md`)에는 **iOS/사파리 차원** 섹션을 별도로 둔다(확인한 것 ·
+> 실기기 미확인인 것 구분).
 
 ---
 

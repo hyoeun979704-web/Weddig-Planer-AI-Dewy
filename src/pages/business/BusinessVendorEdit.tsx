@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import ImageUploader from "@/components/admin/ImageUploader";
 import BusinessListingDetailForm from "@/components/business/BusinessListingDetailForm";
 import { draftKey, loadDraft, saveDraft, clearDraft, shallowEqual } from "@/lib/formDraft";
+import { computeListingCompleteness } from "@/lib/businessListingCompleteness";
 
 type InquiryChannel = "chat" | "url" | "phone";
 
@@ -154,6 +155,15 @@ const BusinessVendorEdit = () => {
     inquiryChannel, inquiryUrl, inquiryPhone, draftKeyStr,
   ]);
 
+  // 등록 완성도 — 채울수록 추천 노출↑ 유도(#318 Phase 1). 현재 폼 값 기준 실시간 계산.
+  const completeness = useMemo(
+    () => computeListingCompleteness({
+      name, description, city, district, imageUrl, minPrice, tags,
+      inquiryChannel, inquiryUrl, inquiryPhone,
+    }),
+    [name, description, city, district, imageUrl, minPrice, tags, inquiryChannel, inquiryUrl, inquiryPhone],
+  );
+
   const handleSave = async () => {
     if (!name.trim()) {
       toast.error("업체명을 입력해주세요");
@@ -248,6 +258,25 @@ const BusinessVendorEdit = () => {
             )}
           </div>
         )}
+
+        {/* 등록 완성도 — 채울수록 추천 노출이 올라간다는 동기 부여(#318 Phase 1 D). */}
+        <div className="bg-card border border-border rounded-xl p-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[13px] font-semibold text-foreground">프로필 완성도</p>
+            <p className="text-[13px] font-bold text-primary">{completeness.percent}%</p>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-primary transition-all" style={{ width: `${completeness.percent}%` }} />
+          </div>
+          {completeness.missing.length > 0 ? (
+            <p className="text-[11px] text-muted-foreground mt-2">
+              <span className="text-foreground font-medium">채우면 노출↑:</span>{" "}
+              {completeness.missing.map((m) => m.label).join(" · ")}
+            </p>
+          ) : (
+            <p className="text-[11px] text-emerald-600 mt-2">기본 정보를 모두 채웠어요! 포트폴리오까지 등록하면 더 좋아요.</p>
+          )}
+        </div>
 
         <Field label="업체명 *" value={name} onChange={setName} placeholder="상세페이지에 표시될 이름" />
         <div className="space-y-1.5">
