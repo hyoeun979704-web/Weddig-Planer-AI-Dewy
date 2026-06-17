@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Pencil } from "lucide-react";
+import { AlertCircle, Pencil, Building2 } from "lucide-react";
 import { usePlaceDetail, type LegacyDetail } from "@/hooks/usePlaceDetail";
 import { formatManwon } from "@/lib/priceFormat";
 import { APPLIANCE_PRODUCT_TYPE_LABEL, JEWELRY_STORE_TYPE_LABEL } from "@/lib/categoryLabels";
@@ -47,7 +47,7 @@ const VendorDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: place, isLoading, error } = usePlaceDetail(id);
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isBusiness } = useUserRole();
 
   if (isLoading) return <DetailSkeleton />;
   if (error || !place) {
@@ -89,6 +89,26 @@ const VendorDetailPage = () => {
                 </div>
                 <span className="text-[11px] text-primary font-semibold">편집 →</span>
               </Link>
+            </div>
+          )}
+          {/* 미입점(수집) 업체를 보는 기업회원에게 "내 업체 인수" 유도 — 좀비 업체 전환 경로. */}
+          {isBusiness && !place.owner_user_id && (
+            <div className="px-4 pt-3">
+              <button
+                onClick={() => navigate(`/business/claim?q=${encodeURIComponent(place.name)}`)}
+                className="w-full flex items-center justify-between gap-2 rounded-xl border border-primary/40 bg-primary/5 p-3 active:scale-[0.99] transition-transform"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-[13px] font-semibold text-foreground">이 업체가 내 업체인가요?</p>
+                    <p className="text-[11px] text-muted-foreground">인수 신청하고 직접 관리하세요</p>
+                  </div>
+                </div>
+                <span className="text-[11px] text-primary font-semibold">인수 신청 →</span>
+              </button>
             </div>
           )}
           <PlaceCoupons placeId={place.id} />

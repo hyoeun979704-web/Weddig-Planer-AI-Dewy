@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, MapPin, Check } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,14 +18,16 @@ interface PlaceRow {
 const BusinessClaim = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [q, setQ] = useState("");
+  const [searchParams] = useSearchParams();
+  // 업체 상세페이지 "내 업체 인수" CTA 에서 ?q=업체명 으로 진입 → 자동 검색.
+  const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [results, setResults] = useState<PlaceRow[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [requested, setRequested] = useState<Set<string>>(new Set());
 
-  const search = async () => {
-    const term = q.trim();
+  const search = async (termArg?: string) => {
+    const term = (termArg ?? q).trim();
     if (term.length < 2) {
       toast({ title: "두 글자 이상 입력해주세요" });
       return;
@@ -46,6 +48,18 @@ const BusinessClaim = () => {
     }
     setResults((data ?? []) as PlaceRow[]);
   };
+
+  // 진입 시 prefill(q) 있으면 1회 자동 검색.
+  const autoSearchedRef = useRef(false);
+  useEffect(() => {
+    if (autoSearchedRef.current) return;
+    const initial = (searchParams.get("q") ?? "").trim();
+    if (initial.length >= 2) {
+      autoSearchedRef.current = true;
+      void search(initial);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const requestClaim = async (place: PlaceRow) => {
     if (!user) {
