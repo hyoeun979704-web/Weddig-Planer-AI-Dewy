@@ -102,6 +102,8 @@ export interface LegacyDetail {
   rating: number;
   review_count: number;
   is_partner: boolean;
+  /** 입점 소유자(기업회원) user_id. null = 미입점(수집) 업체 → "내 업체 인수" 유도 대상. */
+  owner_user_id: string | null;
   description: string | null;
   tags: string[];
   price_per_person: number | null;
@@ -535,6 +537,7 @@ export function mapPlaceDetailRow(data: unknown): LegacyDetail {
         rating: p.avg_rating ?? 0,
         review_count: p.review_count ?? 0,
         is_partner: p.is_partner ?? false,
+        owner_user_id: (p.owner_user_id as string | null) ?? null,
         description: p.description ?? null,
         tags: asStringArray(p.tags),
         price_per_person: price,
