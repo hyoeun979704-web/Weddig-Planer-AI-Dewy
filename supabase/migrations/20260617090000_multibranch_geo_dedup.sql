@@ -93,7 +93,10 @@ create or replace function public.create_my_branch(
   p_has_offline_store boolean default true,
   p_road_address text default null,
   p_lat double precision default null,
-  p_lng double precision default null
+  p_lng double precision default null,
+  p_inquiry_channel text default null,
+  p_inquiry_url text default null,
+  p_inquiry_phone text default null
 )
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -138,10 +141,12 @@ begin
   insert into public.places (
     place_id, category, owner_user_id, name, description, city, district,
     main_image_url, min_price, tags, has_offline_store, road_address, lat, lng,
+    inquiry_channel, inquiry_url, inquiry_phone,
     is_active, moderation_status, is_partner, data_source
   ) values (
     v_place_id, v_category, v_uid, p_name, p_description, p_city, p_district,
     p_main_image_url, p_min_price, p_tags, p_has_offline_store, p_road_address, p_lat, p_lng,
+    p_inquiry_channel, p_inquiry_url, p_inquiry_phone,
     false, 'pending', true, 'business'
   );
   return jsonb_build_object('ok', true, 'place_id', v_place_id);
@@ -161,7 +166,10 @@ create or replace function public.update_my_branch(
   p_has_offline_store boolean default true,
   p_road_address text default null,
   p_lat double precision default null,
-  p_lng double precision default null
+  p_lng double precision default null,
+  p_inquiry_channel text default null,
+  p_inquiry_url text default null,
+  p_inquiry_phone text default null
 )
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -200,6 +208,8 @@ begin
     main_image_url = p_main_image_url, min_price = p_min_price, tags = p_tags,
     has_offline_store = p_has_offline_store, road_address = p_road_address,
     lat = coalesce(p_lat, lat), lng = coalesce(p_lng, lng),
+    inquiry_channel = coalesce(p_inquiry_channel, inquiry_channel),
+    inquiry_url = p_inquiry_url, inquiry_phone = p_inquiry_phone,
     is_active = false, moderation_status = 'pending', updated_at = now()
   where place_id = p_place_id and owner_user_id = v_uid;
 
@@ -210,12 +220,12 @@ $$;
 -- ── 7) 권한 ─────────────────────────────────────────────────────────
 revoke all on function public.find_duplicate_place(text,text,text,text,boolean,double precision,double precision,uuid) from public;
 revoke all on function public.get_my_listings() from public;
-revoke all on function public.create_my_branch(text,text,text,text,text,int,text[],boolean,text,double precision,double precision) from public;
-revoke all on function public.update_my_branch(uuid,text,text,text,text,text,int,text[],boolean,text,double precision,double precision) from public;
+revoke all on function public.create_my_branch(text,text,text,text,text,int,text[],boolean,text,double precision,double precision,text,text,text) from public;
+revoke all on function public.update_my_branch(uuid,text,text,text,text,text,int,text[],boolean,text,double precision,double precision,text,text,text) from public;
 grant execute on function public.find_duplicate_place(text,text,text,text,boolean,double precision,double precision,uuid) to authenticated;
 grant execute on function public.get_my_listings() to authenticated;
-grant execute on function public.create_my_branch(text,text,text,text,text,int,text[],boolean,text,double precision,double precision) to authenticated;
-grant execute on function public.update_my_branch(uuid,text,text,text,text,text,int,text[],boolean,text,double precision,double precision) to authenticated;
+grant execute on function public.create_my_branch(text,text,text,text,text,int,text[],boolean,text,double precision,double precision,text,text,text) to authenticated;
+grant execute on function public.update_my_branch(uuid,text,text,text,text,text,int,text[],boolean,text,double precision,double precision,text,text,text) to authenticated;
 
 comment on function public.find_duplicate_place is '중복 업체 탐색 — 매장有=좌표50m, 매장無=이름+지역. owner_user_id 로 claim/차단 분기.';
 comment on function public.create_my_branch is '새 지점 등록(중복 가드 내장). 반환 reason: claimable/duplicate_own/duplicate_other.';

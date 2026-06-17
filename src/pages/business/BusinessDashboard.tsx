@@ -5,6 +5,7 @@ import { DESIGN_MARKET_ENABLED } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useBranches } from "@/hooks/useBranches";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -12,6 +13,8 @@ const BusinessDashboard = () => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
   const { isBusiness, isError, businessProfile, isLoading: roleLoading } = useUserRole();
+  // 멀티지점: 선택된 지점 기준으로 통계·관리. 단일 지점이면 그 지점이 자동 선택.
+  const { branches, selected, selectedId, select } = useBranches();
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [stats, setStats] = useState({ media: 0, favorites: 0, views: 0, couponDownloads: 0, reviews: 0 });
 
@@ -31,31 +34,27 @@ const BusinessDashboard = () => {
 
   useEffect(() => {
     if (!businessProfile || businessProfile.approval_status !== "approved") return;
+    const row = selected as Record<string, unknown> | null;
+    if (!row?.place_id) return;
+    const pid = row.place_id as string;
+    setPlaceId(pid);
+    setListingRow(row);
     (async () => {
-      const { data, error } = await supabase.rpc("get_my_listing");
-      if (error) {
-        toast.error("통계를 불러오지 못했어요");
-        return;
-      }
-      const row = Array.isArray(data) ? data[0] : data;
-      if (!row?.place_id) return;
-      setPlaceId(row.place_id);
-      setListingRow(row);
       const [favRes, mediaRes, dlRes, reviewRes] = await Promise.all([
-        supabase.from("favorites").select("id", { count: "exact", head: true }).eq("item_id", row.place_id),
-        supabase.from("place_media").select("id", { count: "exact", head: true }).eq("place_id", row.place_id),
+        supabase.from("favorites").select("id", { count: "exact", head: true }).eq("item_id", pid),
+        supabase.from("place_media").select("id", { count: "exact", head: true }).eq("place_id", pid),
         supabase.rpc("get_my_coupon_download_count"),
-        supabase.from("place_reviews").select("review_id", { count: "exact", head: true }).eq("place_id", row.place_id),
+        supabase.from("place_reviews").select("review_id", { count: "exact", head: true }).eq("place_id", pid),
       ]);
       setStats({
         favorites: favRes.count ?? 0,
         media: mediaRes.count ?? 0,
-        views: row.view_count ?? 0,
+        views: (row.view_count as number) ?? 0,
         couponDownloads: typeof dlRes.data === "number" ? dlRes.data : 0,
         reviews: reviewRes.count ?? 0,
       });
     })();
-  }, [businessProfile]);
+  }, [businessProfile, selected, selectedId]);
 
   // 제휴(프렌즈) 신청 현황 — 대기/면담중이면 CTA 대신 상태 표시
   const [partnerApp, setPartnerApp] = useState<{ status: string } | null>(null);
@@ -369,6 +368,48 @@ const BusinessDashboard = () => {
               )}
             </div>
           </div>
+        </div>
+
+        {/* 지점 선택 — 멀티지점일 때 관리 대상 전환 + 새 지점 추가 */}
+        <div className="mx-4 mt-3 p-3 bg-card rounded-2xl border border-border">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-[13px] font-semibold text-foreground">관리 지점</p>
+            <button
+              onClick={() => navigate("/business/edit?new=1")}
+              className="text-[12px] text-primary font-medium"
+            >
+              + 새 지점 추가
+            </button>
+          </div>
+          {branches.length === 0 ? (
+            <Button variant="outline" className="w-full h-10" onClick={() => navigate("/business/edit")}>
+              업체 정보 입력하기
+            </Button>
+          ) : (
+            <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5">
+              {branches.map((b) => (
+                <button
+                  key={b.place_id}
+                  onClick={() => select(b.place_id)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-medium border transition-colors ${
+                    selectedId === b.place_id
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-muted-foreground"
+                  }`}
+                >
+                  {b.name || "이름 없는 지점"}
+                </button>
+              ))}
+            </div>
+          )}
+          {selectedId && (
+            <button
+              onClick={() => navigate(`/business/edit?branch=${selectedId}`)}
+              className="mt-2 text-[12px] text-muted-foreground flex items-center gap-1"
+            >
+              <Edit className="w-3.5 h-3.5" /> 선택한 지점 정보 수정
+            </button>
+          )}
         </div>
 
         {/* 제휴(프렌즈) 신청 — basic 등급에서만 노출, 등록 완료(프렌즈/베프)되면 사라짐 */}
