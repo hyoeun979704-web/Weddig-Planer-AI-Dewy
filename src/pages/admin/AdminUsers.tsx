@@ -37,9 +37,6 @@ const AdminUsers = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
-  // 소속/역할 필터 — 긴 목록에서 기업·제휴·운영자만 빠르게 추리기(클라 필터, 로드된 200명 대상).
-  const [affFilter, setAffFilter] = useState<Affiliation | "all">("all");
-  const [roleFilter, setRoleFilter] = useState<"all" | "admin">("all");
   // 회원 유형(일반/기업/제휴) 전환 다이얼로그.
   const [convTarget, setConvTarget] = useState<UserProfile | null>(null);
   const [convAff, setConvAff] = useState<Affiliation>("business");
@@ -184,13 +181,13 @@ const AdminUsers = () => {
     setConvTarget(u);
   }, []);
 
-  const filtered = users.filter((u) => {
-    if (affFilter !== "all" && u.affiliation !== affFilter) return false;
-    if (roleFilter === "admin" && !u.roles.includes("admin")) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return u.email?.toLowerCase().includes(q) || u.nickname?.toLowerCase().includes(q) || u.community_nickname?.toLowerCase().includes(q);
-  });
+  const filtered = search
+    ? users.filter(
+        (u) =>
+          u.email?.toLowerCase().includes(search.toLowerCase()) ||
+          u.nickname?.toLowerCase().includes(search.toLowerCase()),
+      )
+    : users;
 
   return (
     <AdminGuard>
