@@ -6,6 +6,7 @@ import {
   auditFullText,
   createSseAuditTransform,
   PRICE_DISCLAIMER,
+  VENDOR_DISCLAIMER,
   type AuditContext,
 } from "../../supabase/functions/ai-planner/postprocess";
 
@@ -38,9 +39,9 @@ describe("auditFullText", () => {
     expect(r.warnings).toEqual([]);
   });
 
-  it("업체 의도인데 근거 0건 → 환각 위험 경고(차단은 안 함)", () => {
+  it("업체 의도인데 근거 0건 → 환각 위험 경고 + 면책 덧붙임(차단은 안 함)", () => {
     const r = auditFullText("이 근처 스튜디오 중에서는...", { ...baseCtx, isVendorQuery: true });
-    expect(r.appendix).toBe("");
+    expect(r.appendix).toBe(VENDOR_DISCLAIMER);
     expect(r.warnings.some((w) => w.includes("hallucination risk"))).toBe(true);
   });
 
