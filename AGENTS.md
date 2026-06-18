@@ -19,6 +19,7 @@
   패턴 조사**(경쟁사 분석 선행 — `docs/feature-simulation.md §5`; 외부 fetch 는 네트워크 정책
   허용 시, 라이선스 유의·복사 금지·패턴만) 를 **먼저** 한 뒤 기획·구현한다. "바로 코딩" 금지 —
   추측 구현이 회귀의 주원인(verification-lessons). 큰 기획은 `docs/`에 문서로 남긴다.
+  DB 를 건드리면 **"DB 작업 전 — 테이블 선확인" 게이트**(검증 섹션)를 분석 단계에서 같이 수행한다.
 - **병렬 작업**: fan-out 탐색은 저토큰 서브에이전트(결론만), 깊은 다단계 작업만 일반 에이전트.
   같은 파일 동시 편집 금지(작업 분할). (Claude 한정) 안전 검증·읽기 명령은 `.claude/settings.json` 에 사전 허용됨.
 
@@ -74,9 +75,19 @@ API→호출 경로 시뮬레이션). e2e 불가(sandbox 차단 등) 시 "검증
 
 - **label(표시) vs value(매칭) 분리**: 사용자 표시 문구 변경 ≠ 백엔드 검색 키워드 변경.
   (회귀: "충남"으로 통일했더니 `ILIKE '%충남%'` 가 "충청남도" 비연속글자 매칭 실패로 0건)
-- **DB 스키마 정합성**: 코드가 참조하는 컬럼/RPC/view 가 **실제 DB 에 있는지** `list_tables`/
-  `information_schema` 로 먼저 확인. 마이그레이션 파일 존재 ≠ DB 적용. (회귀: 없는 컬럼 15개
-  SELECT → PostgREST 422 → 전체 쿼리 실패) `schema_migrations` 적용 history ≠ repo 파일 수면 경고.
+- **DB 작업 전 — 테이블 선확인(필수 게이트, 추측 코딩 금지)**: DB 를 건드리는 코드(쿼리·hook·RPC·
+  마이그레이션)를 짜기 **전에** 반드시 ① **이미 그 테이블/뷰가 있나** ② **어떤 피처·컬럼으로
+  구성됐나**(기존 hook/RPC 가 무엇을 읽고 쓰나 — 재사용, 중복 생성 금지) ③ **내가 쓰려는 컬럼·
+  데이터가 실제로 존재·채워져 있나**(빈 컬럼/미적용 마이그 아님) 를 확인하고 진행한다. "있겠지" 로
+  바로 코딩하면 백엔드에 구멍이 난다.
+  - **실제 DB 의 진짜 소스 = `src/integrations/supabase/types.ts`**(실 DB 에서 생성된 타입). 테이블·
+    컬럼·뷰 존재 확인은 **여기를 먼저** 본다. 그다음 `supabase/migrations/**`(히스토리)와 기존
+    `.from()`/hook 사용처를 grep.
+  - **양쪽 모두 불완전할 수 있다(드리프트)**: 마이그 파일 존재 ≠ DB 적용이고, types.ts 도 stale 일 수
+    있다(핵심 `places`·`place_*` 는 마이그에 CREATE 없음; 최신 테이블은 types.ts 누락). 의심되면
+    실 DB 조회(`information_schema`/`pg_stat_user_tables`)로 교차 확인 — 한쪽만 믿지 말 것.
+  - 상세 분석법·드리프트 현황: `docs/260618_schema_audit.md`. (회귀: 없는 컬럼 15개 SELECT →
+    PostgREST 422 → 전체 쿼리 실패. `schema_migrations` 적용 history ≠ repo 파일 수면 경고.)
 - **RPC 인자 ↔ 함수 시그니처 교차 확인**: `.rpc("name", {…})` 호출 인자 집합이 DB 함수 파라미터와
   **정확히** 일치해야 한다. PostgREST 는 named-arg 매칭이라 빠진/남는 인자 하나면 함수 미발견
   (PGRST202)으로 **호출 전량 실패**한다. `(supabase as any).rpc` 캐스트가 이 불일치를 숨기므로
