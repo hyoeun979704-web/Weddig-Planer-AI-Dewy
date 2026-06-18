@@ -107,24 +107,33 @@ const BusinessGuide = () => {
         <CarouselContent className="ml-0">
           {SLIDES.map((s, i) => (
             <CarouselItem key={i} className="pl-0 basis-full">
-              <div className="flex flex-col items-center text-center px-6 pt-5 pb-4">
-                <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-3">
+              {/* 모바일: 세로 스택(제목→이미지→꿀팁). 데스크톱(lg≥1024, 사이드바 셸):
+                  좌-이미지 / 우-텍스트 2단. grid 의 col/row 배치라 DOM 순서는 모바일용 그대로 유지. */}
+              <div className="flex flex-col items-center text-center px-6 pt-5 pb-4
+                lg:grid lg:grid-cols-[20rem_minmax(0,28rem)] lg:gap-x-12 lg:justify-center lg:items-center
+                lg:text-left lg:px-10 lg:py-10 lg:min-h-[62vh]">
+                <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-3
+                  lg:col-start-2 lg:row-start-1 lg:justify-self-start lg:text-sm lg:mb-4">
                   {s.phase}
                 </span>
-                <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-foreground">{s.title}</h2>
-                <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-[20rem]">{s.subtitle}</p>
+                <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-foreground
+                  lg:col-start-2 lg:row-start-2 lg:text-[2rem]">{s.title}</h2>
+                <p className="mt-2 text-[15px] text-muted-foreground leading-relaxed max-w-[20rem]
+                  lg:col-start-2 lg:row-start-3 lg:text-lg lg:max-w-none lg:mt-3">{s.subtitle}</p>
                 {/* 이미지는 3:4 로 사전 가공됨. 컨테이너에 aspect 로 공간을 미리 예약해
                     로드 전후 레이아웃 시프트(→ 캐러셀 위치 어긋남)를 차단. 전부 즉시 로드. */}
-                <div className="mt-5 mx-auto w-full max-w-[14rem] aspect-[3/4] rounded-2xl border border-border shadow-[0_8px_28px_rgba(190,24,93,0.12)] overflow-hidden bg-card">
+                <div className="mt-5 mx-auto w-full max-w-[14rem] aspect-[3/4] rounded-2xl border border-border shadow-[0_8px_28px_rgba(190,24,93,0.12)] overflow-hidden bg-card
+                  lg:col-start-1 lg:row-start-1 lg:row-span-4 lg:self-center lg:mt-0 lg:max-w-[20rem]">
                   <img
                     src={s.img}
                     alt={s.alt}
                     className="w-full h-full object-cover block"
                   />
                 </div>
-                <div className="mt-4 flex items-start gap-2 text-left max-w-[20rem] rounded-xl bg-amber-50 border border-amber-100 px-3 py-2">
-                  <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <span className="text-xs text-amber-900 leading-relaxed">{s.tip}</span>
+                <div className="mt-4 flex items-start gap-2 text-left max-w-[20rem] rounded-xl bg-amber-50 border border-amber-100 px-3 py-2
+                  lg:col-start-2 lg:row-start-4 lg:max-w-none lg:mt-5 lg:px-4 lg:py-3">
+                  <Lightbulb className="w-4 h-4 lg:w-5 lg:h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <span className="text-[13px] lg:text-sm text-amber-900 leading-relaxed">{s.tip}</span>
                 </div>
               </div>
             </CarouselItem>
@@ -147,7 +156,7 @@ const BusinessGuide = () => {
             />
           ))}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 lg:max-w-xl lg:mx-auto">
           <button
             onClick={() => api?.scrollPrev()}
             disabled={current === 0}
