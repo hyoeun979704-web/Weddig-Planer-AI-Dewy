@@ -4,17 +4,19 @@ import { ArrowLeft, ArrowRight, Lightbulb } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
 
-import imgLanding from "@/assets/business/business-landing.png";
-import imgAuth from "@/assets/business/auth-business.png";
-import imgOnboard from "@/assets/business/business-onboard.png";
-import imgOnboard2 from "@/assets/business/business-onboard-step2.png";
-import imgPending from "@/assets/business/business-pending.png";
-import imgDashboard from "@/assets/business/business-dashboard.png";
-import imgEdit from "@/assets/business/business-edit.png";
-import imgDetail from "@/assets/business/business-detail-redesign.png";
-import imgGallery from "@/assets/business/business-gallery.png";
-import imgProducts from "@/assets/business/business-products.png";
-import imgCoupons from "@/assets/business/business-coupons.png";
+// 캡처는 scripts/build-guide-shots.cjs 로 타깃 영역을 줌-크롭(3:4) + 하이라이트 박스 +
+// 안내 라벨까지 구워낸 결과물(src/assets/business/guide/). 원본은 src/assets/business/*.png.
+import imgLanding from "@/assets/business/guide/business-landing.png";
+import imgAuth from "@/assets/business/guide/auth-business.png";
+import imgOnboard from "@/assets/business/guide/business-onboard.png";
+import imgOnboard2 from "@/assets/business/guide/business-onboard-step2.png";
+import imgPending from "@/assets/business/guide/business-pending.png";
+import imgDashboard from "@/assets/business/guide/business-dashboard.png";
+import imgEdit from "@/assets/business/guide/business-edit.png";
+import imgDetail from "@/assets/business/guide/business-detail-redesign.png";
+import imgGallery from "@/assets/business/guide/business-gallery.png";
+import imgProducts from "@/assets/business/guide/business-products.png";
+import imgCoupons from "@/assets/business/guide/business-coupons.png";
 
 // 기업회원용 인앱 사용법 가이드 — 한 단계=한 슬라이드(레퍼런스 온보딩 스타일).
 // 큰 제목 + 한 줄 설명 + 실제 화면 캡처 + 핵심 꿀팁 1줄. 좌우 스와이프/버튼/점 인디케이터.
@@ -111,15 +113,13 @@ const BusinessGuide = () => {
                 </span>
                 <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-foreground">{s.title}</h2>
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-[20rem]">{s.subtitle}</p>
-                {/* 캡처 원본은 풀페이지라 길이·비율이 제각각 → 고정 비율(9:16) 카드에 상단
-                    정렬 크롭으로 모든 슬라이드를 동일 크기로 통일. 높이는 40vh로 제한해
-                    제목·꿀팁·내비까지 한 화면에 들어오게. */}
-                <div className="mt-5 mx-auto h-[40vh] aspect-[9/16] overflow-hidden rounded-2xl border border-border shadow-[0_8px_28px_rgba(190,24,93,0.12)] bg-card">
+                {/* 이미 타깃 줌-크롭(3:4)+하이라이트가 구워진 이미지 → 그대로 표시(동일 크기). */}
+                <div className="mt-5 mx-auto w-full max-w-[14rem] rounded-2xl border border-border shadow-[0_8px_28px_rgba(190,24,93,0.12)] overflow-hidden bg-card">
                   <img
                     src={s.img}
                     alt={s.alt}
                     loading={i <= 1 ? "eager" : "lazy"}
-                    className="w-full h-full object-cover object-top"
+                    className="w-full h-auto block"
                   />
                 </div>
                 <div className="mt-4 flex items-start gap-2 text-left max-w-[20rem] rounded-xl bg-amber-50 border border-amber-100 px-3 py-2">
