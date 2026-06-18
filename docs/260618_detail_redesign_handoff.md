@@ -43,6 +43,16 @@
 - §4-3: 쿠폰 above-fold 노출·전환 기여, 상품/패키지 가격 노출, 사진 풀스크린 추가.
 - FAQ: "첫 화면 가격이 문의로만 떠요", "직접 작성·검수 배지가 안 붙어요" 2건 추가.
 
+### 4. (이 세션) 가이드 스크린샷 — 개편 상세페이지 캡처 추가
+- 기존 가이드 스크린샷 9장은 전부 **기업 대시보드/온보딩** 화면 → #358(소비자 상세페이지) 재설계로
+  **stale 아님**(재캡처 불필요). 검증 완료.
+- 빠져 있던 **§③-1 상세페이지 캡처**를 신규 생성: `docs/assets/business-guide/business-detail-redesign.png`.
+- **생성기**: `e2e/business-guide-detail-shot.spec.ts` (mock 데이터, data-URI 히어로 사진,
+  splash 끔). 재생성: `PW_CHROME_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npx playwright test business-guide-detail-shot`.
+  - 함정 기록: ⓐ 평점은 매퍼가 `avg_rating` 읽음(`rating` 아님, `usePlaceDetail.ts:537`).
+    ⓑ 외부 이미지(placehold.co) 샌드박스 차단 → data-URI SVG 사용. ⓒ `WeddingBlessingSplash`
+    (`z-[9999]`, 2.6s)가 첫 화면 가림 → `sessionStorage.dewy.splash_shown=1` 선주입으로 끔.
+
 ## 검증 (이번 변경 기준)
 
 - `npx tsc --noEmit`: PlaceDetailLayout 에러 없음
@@ -64,8 +74,9 @@
 ## 남은 작업 (deferred)
 
 - [ ] **사용자 육안 확인** — Vercel 프리뷰에서 첫화면 위계·풀스크린 갤러리·쿠폰 above-fold 확인 후 #358 머지.
-- [ ] (선택) 온보딩 가이드 §③-1 표를 실제 캡처 이미지로 보강 (`docs/assets/business-guide/`).
-  현재는 텍스트 매핑 표만. 개편된 상세페이지 스크린샷 추가하면 사장님 이해도 ↑.
+- [x] ~~온보딩 가이드 §③-1 캡처 이미지 보강~~ → 완료(`business-detail-redesign.png`, 위 §4).
+- [ ] (선택) §③-1 캡처에 **쿠폰 카드(above-fold)** 까지 프레임에 넣기 — 현재 첫 화면 캡처는 가격·배지까지.
+  쿠폰은 그 아래에 렌더되어 한 뷰포트에 안 들어옴. 별도 캡처 또는 더 긴 뷰포트 고려.
 - [ ] (선택) 풀스크린 갤러리 스와이프 제스처(터치 드래그) — 현재는 좌우 화살표 버튼만. 모바일 UX 보강 여지.
 - [ ] CI(verify·e2e) green 확인 — 실패 시 PR #358 웹훅으로 대응.
 
