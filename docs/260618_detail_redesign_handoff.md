@@ -53,6 +53,23 @@
     ⓑ 외부 이미지(placehold.co) 샌드박스 차단 → data-URI SVG 사용. ⓒ `WeddingBlessingSplash`
     (`z-[9999]`, 2.6s)가 첫 화면 가림 → `sessionStorage.dewy.splash_shown=1` 선주입으로 끔.
 
+### 5. (이 세션) 온보딩 가이드 "직접 따라하기" 워크스루 검증
+가이드를 단계별로 앱과 대조(공개 단계는 Playwright 실제 클릭, 게이트 단계는 코드 추적):
+- **공개 단계 라이브 통과**: §1-1 `/business` 입점 CTA, §1-2 `/auth?type=business` → 개인/기업 카드·
+  "기업회원 가입" 버튼(`e2e/business-guide-walkthrough.spec.ts`, 스샷 `test-results/wt-*`).
+- **게이트 단계 코드 일치 확인**: §1-3/1-4 온보딩 3스텝·필드, §1-5 진행단계 문구(가입승인→정보등록→
+  검토후노출), §② 제휴 6필수항목 게이트(name·category·city·district·description·main_image_url),
+  §③ 편집 필드, §④ 메뉴 — 모두 일치. 인용 문구 15개 중 14개 코드 존재(나머지 1개 `기업회원(웨딩 업체)`는
+  실제 2줄 카드 "기업회원/웨딩 업체"의 정확한 묘사).
+- **발견·수정한 불일치(#358 개편 드리프트)**:
+  - 🐞 **편집폼 가격 도움말 오류**: `BusinessVendorEdit.tsx:415` 가 "최소가·시작가 = 상세페이지 최저가~
+    표기용"이라 안내했으나, 개편 후 상세 첫화면 가격은 **`price_packages`(상품 관리)** 에서 나옴.
+    `min_price` 는 실제로 **목록/추천 카드** 미리보기(`placeMappers.cardPricePreview`)+검색/필터에만 쓰임.
+    → 도움말을 실제 동작에 맞게 수정. 가이드 §③/§③-1/FAQ 도 "가격 칸 두 곳·노출 위치 다름"으로 정정.
+  - 가이드 §④ 에 빠졌던 "결과물 보내기" 메뉴 + 카테고리별 메뉴 차이 보강.
+- **남은 한계**: 로그인 필요한 대시보드/온보딩 실제 화면은 샌드박스 Supabase 차단으로 라이브 미실행 →
+  코드 일치까지만 확인(실기기 e2e 권장).
+
 ## 검증 (이번 변경 기준)
 
 - `npx tsc --noEmit`: PlaceDetailLayout 에러 없음

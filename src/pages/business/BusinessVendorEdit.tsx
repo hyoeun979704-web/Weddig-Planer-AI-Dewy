@@ -412,7 +412,7 @@ const BusinessVendorEdit = () => {
         </div>
         <div className="space-y-1">
           <Field label="최소가 · 시작가(원)" value={minPrice} onChange={setMinPrice} placeholder="500000" type="number" />
-          <p className="text-[11px] text-muted-foreground">상세페이지 “최저가~” 표기용. 상품별 가격은 ‘상품 관리’에서 따로 등록해요.</p>
+          <p className="text-[11px] text-muted-foreground">목록·추천 카드의 “최저가~” 미리보기와 검색·필터에 쓰여요. 상세페이지 첫 화면 대표가격은 ‘상품 관리’의 패키지 가격을 따라요.</p>
         </div>
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">키워드 (쉼표로 구분)</Label>
