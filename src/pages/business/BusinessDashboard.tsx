@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star, Inbox, Palette } from "lucide-react";
+import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star, Inbox, Palette, BookOpen } from "lucide-react";
 import { DESIGN_MARKET_ENABLED } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -230,6 +230,13 @@ const BusinessDashboard = () => {
 
   const isMenuCategory = businessProfile.service_category === "invitation_venue";
   const menuItems = [
+    {
+      icon: BookOpen,
+      label: "사용법 가이드",
+      description: "가입부터 노출까지 — 한 장씩 넘기며 보는 사용법",
+      href: "/business/guide",
+      badge: null,
+    },
     {
       icon: Edit,
       label: "업체 정보 수정",

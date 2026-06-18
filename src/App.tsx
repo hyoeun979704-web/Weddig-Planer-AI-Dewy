@@ -175,6 +175,7 @@ const SubscriptionPaymentFail = lazy(() => import("./pages/SubscriptionPaymentFa
 const BusinessLanding = lazy(() => import("./pages/business/BusinessLanding"));
 const BusinessOnboard = lazy(() => import("./pages/business/BusinessOnboard"));
 const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
+const BusinessGuide = lazy(() => import("./pages/business/BusinessGuide"));
 const BusinessVendorEdit = lazy(() => import("./pages/business/BusinessVendorEdit"));
 const BusinessClaim = lazy(() => import("./pages/business/BusinessClaim"));
 const AdminPlaceClaims = lazy(() => import("./pages/admin/AdminPlaceClaims"));
@@ -306,6 +307,7 @@ const App = () => (
               <Route path="/business" element={<BusinessLanding />} />
               <Route path="/business/onboard" element={<BusinessOnboard />} />
               <Route path="/business/dashboard" element={<BusinessGuard><BusinessDashboard /></BusinessGuard>} />
+              <Route path="/business/guide" element={<BusinessGuard><BusinessGuide /></BusinessGuard>} />
               <Route path="/business/edit" element={<BusinessGuard requireApproved><BusinessVendorEdit /></BusinessGuard>} />
               <Route path="/business/claim" element={<BusinessGuard requireApproved><BusinessClaim /></BusinessGuard>} />
               <Route path="/business/gallery" element={<BusinessGuard requireApproved><BusinessGallery /></BusinessGuard>} />
