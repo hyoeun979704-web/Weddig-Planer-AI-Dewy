@@ -102,8 +102,10 @@ const BusinessGuide = () => {
         </div>
       </header>
 
-      {/* 슬라이드 */}
-      <Carousel setApi={setApi} opts={{ align: "start", containScroll: "trimSnaps" }} className="flex-1">
+      {/* 캐러셀은 자연 높이로 두고, 바깥 flex 래퍼가 데스크톱에서 세로 중앙 정렬(embla 내부
+          높이를 건드리지 않아 안정적). 모바일은 상단 정렬(기존과 동일). */}
+      <div className="flex-1 flex flex-col min-w-0 lg:justify-center">
+      <Carousel setApi={setApi} opts={{ align: "start", containScroll: "trimSnaps" }} className="w-full">
         <CarouselContent className="ml-0">
           {SLIDES.map((s, i) => (
             <CarouselItem key={i} className="pl-0 basis-full">
@@ -111,7 +113,7 @@ const BusinessGuide = () => {
                   좌-이미지 / 우-텍스트 2단. grid 의 col/row 배치라 DOM 순서는 모바일용 그대로 유지. */}
               <div className="flex flex-col items-center text-center px-6 pt-5 pb-4
                 lg:grid lg:grid-cols-[20rem_minmax(0,28rem)] lg:gap-x-12 lg:justify-center lg:items-center
-                lg:text-left lg:px-10 lg:py-10 lg:min-h-[62vh]">
+                lg:text-left lg:px-10 lg:py-6">
                 <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-3
                   lg:col-start-2 lg:row-start-1 lg:justify-self-start lg:text-sm lg:mb-4">
                   {s.phase}
@@ -140,6 +142,7 @@ const BusinessGuide = () => {
           ))}
         </CarouselContent>
       </Carousel>
+      </div>
 
       {/* 점 인디케이터 + 하단 내비 */}
       <div className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
