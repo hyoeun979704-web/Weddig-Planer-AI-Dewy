@@ -111,13 +111,17 @@ const BusinessGuide = () => {
                 </span>
                 <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-foreground">{s.title}</h2>
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-[20rem]">{s.subtitle}</p>
-                {/* 캡처는 가용 높이에 맞춰 축소(max-h) — 제목·꿀팁·내비까지 한 화면에 들어오게. */}
-                <img
-                  src={s.img}
-                  alt={s.alt}
-                  loading={i <= 1 ? "eager" : "lazy"}
-                  className="mt-5 mx-auto block max-h-[42vh] w-auto max-w-[15rem] rounded-2xl border border-border shadow-[0_8px_28px_rgba(190,24,93,0.12)] bg-card"
-                />
+                {/* 캡처 원본은 풀페이지라 길이·비율이 제각각 → 고정 비율(9:16) 카드에 상단
+                    정렬 크롭으로 모든 슬라이드를 동일 크기로 통일. 높이는 40vh로 제한해
+                    제목·꿀팁·내비까지 한 화면에 들어오게. */}
+                <div className="mt-5 mx-auto h-[40vh] aspect-[9/16] overflow-hidden rounded-2xl border border-border shadow-[0_8px_28px_rgba(190,24,93,0.12)] bg-card">
+                  <img
+                    src={s.img}
+                    alt={s.alt}
+                    loading={i <= 1 ? "eager" : "lazy"}
+                    className="w-full h-full object-cover object-top"
+                  />
+                </div>
                 <div className="mt-4 flex items-start gap-2 text-left max-w-[20rem] rounded-xl bg-amber-50 border border-amber-100 px-3 py-2">
                   <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                   <span className="text-xs text-amber-900 leading-relaxed">{s.tip}</span>
