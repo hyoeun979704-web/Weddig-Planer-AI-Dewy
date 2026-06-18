@@ -69,6 +69,7 @@ const VendorDetailPage = () => {
       place={place}
       categoryLabel={categoryLabel}
       favoriteType={favoriteType}
+      couponsSection={<PlaceCoupons placeId={place.id} />}
       extraSection={
         <>
           {/* 관리 도구(운영자 수정·업체 인수) — 소비자 화면을 깔끔히 유지하기 위해 기본 접힘.
@@ -115,7 +116,6 @@ const VendorDetailPage = () => {
               )}
             </div>
           )}
-          <PlaceCoupons placeId={place.id} />
           <PlaceBusinessSections placeId={place.id} category={place.category} />
           <CategoryExtras place={place} />
           <RelatedCommunityPosts placeId={place.id} />

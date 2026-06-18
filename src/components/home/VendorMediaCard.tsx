@@ -52,12 +52,18 @@ interface VendorMediaCardProps {
    *  and the image area uses an aspect ratio instead of a fixed pixel height.
    *  Defaults to false so home-page horizontal scroll keeps its 140×195 size. */
   fluid?: boolean;
+  /** 이미지 우위 변형(상세페이지 "비슷한 업체" 추천 등) — 사진을 키우고 카드 높이를
+   *  내용에 맞춰(빈 공간 제거). 정보줄/칩이 적은 추천 맥락에서 텍스트<이미지 위계 확보. */
+  imageDominant?: boolean;
 }
 
 // Fixed home-page horizontal scroll size — keep stable so home cards don't shift.
 export const CARD_W = 140;
 export const CARD_H = 195;
 const IMG_H = 100;
+// 이미지 우위 변형 치수(상세 추천) — 사진 큼·카드 높이는 내용에 맞춤.
+export const REC_CARD_W = 150;
+export const REC_IMG_H = 132;
 // Fluid mode keeps the same total height as the fixed card so list-page rows
 // stay compact and consistent across categories. Width follows the grid cell.
 const FLUID_TEXT_H = 95;
@@ -69,7 +75,7 @@ const KEYWORD_CHIP_CLASSES = {
   strength: "bg-[#f1e3f5] text-[#a64bb8]",
 } as const;
 
-const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps) => {
+const VendorMediaCard = ({ data, onClick, fluid = false, imageDominant = false }: VendorMediaCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isFavorite, toggleFavorite, isToggling } = useFavorites();
@@ -107,13 +113,21 @@ const VendorMediaCard = ({ data, onClick, fluid = false }: VendorMediaCardProps)
       aria-label={data.name}
       className={cn(
         "flex flex-col bg-[#d9d9d9] rounded-[10px] overflow-hidden text-left active:scale-[0.97]",
-        fluid ? "w-full" : "flex-shrink-0"
+        fluid || imageDominant ? "" : "flex-shrink-0",
+        fluid ? "w-full" : "",
+        imageDominant ? "flex-shrink-0" : ""
       )}
-      style={fluid ? { height: CARD_H } : { width: CARD_W, height: CARD_H }}
+      style={
+        imageDominant
+          ? { width: REC_CARD_W }
+          : fluid
+            ? { height: CARD_H }
+            : { width: CARD_W, height: CARD_H }
+      }
     >
       <div
         className="relative w-full"
-        style={{ height: IMG_H }}
+        style={{ height: imageDominant ? REC_IMG_H : IMG_H }}
       >
         {data.thumbnail_url ? (
           <img

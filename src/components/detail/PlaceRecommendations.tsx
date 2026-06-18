@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import VendorMediaCard, {
-  CARD_W,
-  CARD_H,
+  REC_CARD_W,
+  REC_IMG_H,
   type VendorMediaCardData,
 } from "@/components/home/VendorMediaCard";
 import { PLACE_CATEGORY_TO_ITEM_TYPE, joinRegion } from "@/lib/placeMappers";
@@ -63,7 +63,7 @@ const Row = ({
             <Skeleton
               key={i}
               className="flex-shrink-0 rounded-[10px]"
-              style={{ width: CARD_W, height: CARD_H }}
+              style={{ width: REC_CARD_W, height: REC_IMG_H + 52 }}
             />
           ))
         : items.map((r) => (
@@ -71,6 +71,7 @@ const Row = ({
               key={r.place_id}
               data={toCard(r, { showCategory, showDistance })}
               onClick={() => onOpen(r.place_id)}
+              imageDominant
             />
           ))}
     </div>

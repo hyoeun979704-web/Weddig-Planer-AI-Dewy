@@ -16,6 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  X,
+  Expand,
 } from "lucide-react";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { openExternal } from "@/lib/native/openExternal";
@@ -42,6 +44,8 @@ interface Props {
   categoryLabel: string;
   /** Per-category extra section rendered in the detail tab */
   extraSection?: React.ReactNode;
+  /** 혜택(쿠폰) — 첫 화면(기본정보 탭) 혜택군에 노출. 전환 직결이라 디테일 탭에 숨기지 않음. */
+  couponsSection?: React.ReactNode;
   /** Item type for FavoriteButton (venue / studio / hanbok / etc) */
   favoriteType: "venue" | "studio" | "hanbok" | "suit" | "honeymoon" | "jewelry" | "appliance" | "invitation_venues";
 }
@@ -92,7 +96,16 @@ function fmtPrice(
   return `${range}${suffix}`;
 }
 
-const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }: Props) => {
+// 대표 가격(최저가 패키지) 요약 — 첫 화면·sticky CTA 동반용. 가격 없으면 null("견적 문의" 처리).
+// 레퍼런스(네이버·에어비앤비 등) 공통: 가격은 항상 노출해 전환·신뢰를 높인다.
+function pkgPriceSummary(packages: LegacyDetail["price_packages"]): string | null {
+  const withPrice = packages.filter((p) => p.price_min != null);
+  if (withPrice.length === 0) return null;
+  const lowest = withPrice.reduce((a, b) => ((b.price_min as number) < (a.price_min as number) ? b : a));
+  return fmtPrice(lowest.price_min, null, lowest.currency, lowest.unit);
+}
+
+const PlaceDetailLayout = ({ place, categoryLabel, extraSection, couponsSection, favoriteType }: Props) => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<TabKey>("basic");
   // 입점(클레임) 여부 — 소유자가 있으면 '예약 문의'를 인앱 문의로 연결,
@@ -200,7 +213,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
       <nav className="sticky safe-sticky-below-header z-40 bg-card border-b border-border">
         <div className="flex">
           <TabButton label="기본정보" active={tab === "basic"} onClick={() => selectTab("basic")} />
-          <TabButton label="디테일정보" active={tab === "detail"} onClick={() => selectTab("detail")} />
+          <TabButton label="상세정보" active={tab === "detail"} onClick={() => selectTab("detail")} />
           <TabButton label="리뷰" active={tab === "review"} onClick={() => selectTab("review")} count={place.review_count} />
         </div>
       </nav>
@@ -213,6 +226,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
             place={place}
             categoryLabel={categoryLabel}
             vendorAuthored={vendorAuthored}
+            couponsSection={couponsSection}
           />
         )}
         {tab === "detail" && (
@@ -256,7 +270,18 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, favoriteType }:
       )}
 
       {/* Fixed bottom CTA */}
-      <div className="fixed bottom-0 left-0 right-0 app-col mx-auto bg-background border-t border-border px-3 pt-3 pb-[calc(0.75rem+var(--safe-bottom))] z-40">
+      <div className="fixed bottom-0 left-0 right-0 app-col mx-auto bg-background border-t border-border px-3 pt-2 pb-[calc(0.75rem+var(--safe-bottom))] z-40">
+        {/* 가격 동반 표시(레퍼런스 공통) — 최저가 패키지 또는 견적 안내. */}
+        <div className="flex items-baseline gap-1.5 pb-1.5">
+          {pkgPriceSummary(place.price_packages) ? (
+            <>
+              <span className="text-[11px] text-muted-foreground">최저</span>
+              <span className="text-base font-bold text-foreground">{pkgPriceSummary(place.price_packages)}</span>
+            </>
+          ) : (
+            <span className="text-[13px] text-muted-foreground">가격은 문의로 안내해드려요</span>
+          )}
+        </div>
         {/* ② 신뢰 신호 — 입점 업체 응답 통계(문의 시작률 ↑) */}
         {isClaimed && inquiryStats && inquiryStats.total >= 1 && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 pb-2 text-[11px] text-muted-foreground">
@@ -371,14 +396,18 @@ function BasicTab({
   place,
   categoryLabel,
   vendorAuthored = false,
+  couponsSection,
 }: {
   place: LegacyDetail;
   categoryLabel: string;
   /** 업체가 직접 작성하고 운영자 검토를 통과한 정보 — 신뢰 표시 */
   vendorAuthored?: boolean;
+  /** 혜택(쿠폰) — 첫 화면 혜택군에 노출 */
+  couponsSection?: React.ReactNode;
 }) {
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [advIdx, setAdvIdx] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
   const navigate = useNavigate();
 
   const hasContact =
@@ -395,29 +424,43 @@ function BasicTab({
       <div className="relative aspect-[4/3] bg-muted overflow-hidden">
         {gallery.length > 0 ? (
           <>
-            <img
-              src={gallery[galleryIdx]}
-              alt={place.name}
-              className="w-full h-full object-cover"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
-            />
+            {/* 사진 탭 → 풀스크린 뷰어(레퍼런스 공통: "사진 모두 보기"). */}
+            <button
+              type="button"
+              onClick={() => setFullscreen(true)}
+              className="absolute inset-0 w-full h-full"
+              aria-label="사진 전체 보기"
+            >
+              <img
+                src={gallery[galleryIdx]}
+                alt={place.name}
+                className="w-full h-full object-cover"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
+              />
+            </button>
             {gallery.length > 1 && (
               <>
                 <button
                   onClick={() => setGalleryIdx((i) => (i - 1 + gallery.length) % gallery.length)}
                   className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur rounded-full flex items-center justify-center"
+                  aria-label="이전 사진"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setGalleryIdx((i) => (i + 1) % gallery.length)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur rounded-full flex items-center justify-center"
+                  aria-label="다음 사진"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
-                <div className="absolute bottom-3 right-3 px-2 py-0.5 bg-black/60 text-white text-xs rounded-full backdrop-blur">
-                  {galleryIdx + 1} / {gallery.length}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setFullscreen(true)}
+                  className="absolute bottom-3 right-3 inline-flex items-center gap-1 px-2.5 py-1 bg-black/60 text-white text-xs rounded-full backdrop-blur active:scale-95"
+                >
+                  <Expand className="w-3 h-3" /> 전체 {gallery.length}장
+                </button>
               </>
             )}
           </>
@@ -444,31 +487,75 @@ function BasicTab({
         )}
       </div>
 
-      {/* Title block */}
+      {/* 풀스크린 갤러리 — 사진 탭/전체보기 시 큰 화면 스와이프(웨딩은 사진이 핵심 구매요인). */}
+      {fullscreen && gallery.length > 0 && (
+        <div className="fixed inset-0 z-[70] bg-black flex flex-col" role="dialog" aria-modal="true">
+          <div className="flex items-center justify-between px-4 py-3 text-white" style={{ paddingTop: "calc(0.75rem + var(--safe-top))" }}>
+            <span className="text-sm">{galleryIdx + 1} / {gallery.length}</span>
+            <button type="button" onClick={() => setFullscreen(false)} aria-label="닫기" className="w-9 h-9 flex items-center justify-center">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center relative overflow-hidden">
+            <img src={gallery[galleryIdx]} alt={place.name} className="max-w-full max-h-full object-contain"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }} />
+            {gallery.length > 1 && (
+              <>
+                <button onClick={() => setGalleryIdx((i) => (i - 1 + gallery.length) % gallery.length)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/15 rounded-full flex items-center justify-center text-white" aria-label="이전 사진">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button onClick={() => setGalleryIdx((i) => (i + 1) % gallery.length)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/15 rounded-full flex items-center justify-center text-white" aria-label="다음 사진">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Title block — 레퍼런스 공통 위계: 이름 → 평점·카테고리·지역 → 가격 → 설명.
+          첫 화면 3줄 안에 의사결정 정보(무엇·평판·어디·얼마)를 압축한다. */}
       <div className="px-4 pt-4 pb-2">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Badge variant="secondary" className="text-xs">{categoryLabel}</Badge>
+        {/* 1) 업체명 */}
+        <h2 className="text-xl font-bold text-foreground mb-1">{place.name}</h2>
+        {/* 2) 평점 · 카테고리 · 지역 · 진행수 (한 줄) */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm mb-1.5">
           {place.review_count > 0 && (
-            <div className="flex items-center gap-0.5 text-sm">
+            <span className="flex items-center gap-0.5">
               <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
               <span className="font-semibold">{place.rating.toFixed(1)}</span>
               <span className="text-muted-foreground">({place.review_count})</span>
-            </div>
+            </span>
+          )}
+          <Badge variant="secondary" className="text-xs">{categoryLabel}</Badge>
+          {(place.city || place.district) && (
+            <span className="text-xs text-muted-foreground inline-flex items-center gap-0.5">
+              <MapPin className="w-3 h-3" />{[place.city, place.district].filter(Boolean).join(" ")}
+            </span>
           )}
           {place.wedding_count != null && place.wedding_count > 0 && (
             <span className="text-xs text-muted-foreground">· {place.wedding_count.toLocaleString()}건 진행</span>
           )}
         </div>
-        <div className="flex items-end justify-between gap-2 mb-1.5">
-          <h2 className="text-xl font-bold text-foreground min-w-0">{place.name}</h2>
-          {vendorAuthored && (
-            <span className="text-[10px] text-primary font-medium shrink-0 pb-1">
-              {place.name}에서 직접 작성했어요!
-            </span>
-          )}
-        </div>
+        {/* 3) 대표 가격 — 첫 화면 노출(없으면 견적 안내) */}
+        {pkgPriceSummary(place.price_packages) ? (
+          <p className="text-sm mb-1.5">
+            <span className="text-muted-foreground">최저</span>{" "}
+            <span className="font-bold text-primary">{pkgPriceSummary(place.price_packages)}</span>
+            <span className="text-xs text-muted-foreground"> · 패키지별 상이</span>
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground mb-1.5">가격은 문의로 안내해드려요</p>
+        )}
+        {vendorAuthored && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium bg-primary/10 rounded-full px-2 py-0.5 mb-1.5">
+            ✓ 업체가 직접 작성·검수
+          </span>
+        )}
         {place.description && (
-          <p className="text-sm text-muted-foreground leading-relaxed">{place.description}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed mt-1">{place.description}</p>
         )}
         {/* 결혼식장 anchor 등록 CTA — wedding_hall 카테고리에만 표시.
             식장 상세를 보던 흐름 그대로 1탭 등록(§1 L5 JIT). */}
@@ -567,6 +654,9 @@ function BasicTab({
           </div>
         </section>
       )}
+
+      {/* 혜택(쿠폰) — 첫 화면 혜택군. 전환 직결이라 상세 탭에 숨기지 않음(레퍼런스 원칙 4). */}
+      {couponsSection && <section className="px-4 pt-1 pb-2">{couponsSection}</section>}
 
       {/* Contact / hours / location / SNS */}
       {(hasContact || place.hours || hasLocation || hasCoords) && (

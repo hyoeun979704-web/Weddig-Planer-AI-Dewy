@@ -13,6 +13,12 @@ interface Coupon {
   expires_at: string | null;
 }
 
+// 쿠폰 만료일 표시 — ISO("2026-12-31T00:00:00+00:00") → "2026.12.31". 잘못된 값은 숨김.
+const fmtCouponDate = (iso: string): string | null => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m ? `${m[1]}.${m[2]}.${m[3]}` : null;
+};
+
 // 업체 상세페이지의 쿠폰 섹션 — 사용자가 "받기"로 다운로드. 쿠폰 없으면 렌더 안 함.
 const PlaceCoupons = ({ placeId }: { placeId: string }) => {
   const { user } = useAuth();
@@ -74,7 +80,7 @@ const PlaceCoupons = ({ placeId }: { placeId: string }) => {
               <p className="text-[13px] text-primary font-bold">{c.discount_text}</p>
               <div className="flex gap-2 text-[11px] text-muted-foreground mt-0.5">
                 {c.min_order_won != null && <span>최소 {c.min_order_won.toLocaleString()}원</span>}
-                {c.expires_at && <span>{c.expires_at}까지</span>}
+                {c.expires_at && fmtCouponDate(c.expires_at) && <span>{fmtCouponDate(c.expires_at)}까지</span>}
               </div>
             </div>
             <button
