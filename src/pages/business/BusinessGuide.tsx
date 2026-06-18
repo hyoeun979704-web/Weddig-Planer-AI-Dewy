@@ -103,7 +103,7 @@ const BusinessGuide = () => {
       </header>
 
       {/* 슬라이드 */}
-      <Carousel setApi={setApi} opts={{ align: "center" }} className="flex-1">
+      <Carousel setApi={setApi} opts={{ align: "start", containScroll: "trimSnaps" }} className="flex-1">
         <CarouselContent className="ml-0">
           {SLIDES.map((s, i) => (
             <CarouselItem key={i} className="pl-0 basis-full">
@@ -113,13 +113,13 @@ const BusinessGuide = () => {
                 </span>
                 <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-foreground">{s.title}</h2>
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-[20rem]">{s.subtitle}</p>
-                {/* 이미 타깃 줌-크롭(3:4)+하이라이트가 구워진 이미지 → 그대로 표시(동일 크기). */}
-                <div className="mt-5 mx-auto w-full max-w-[14rem] rounded-2xl border border-border shadow-[0_8px_28px_rgba(190,24,93,0.12)] overflow-hidden bg-card">
+                {/* 이미지는 3:4 로 사전 가공됨. 컨테이너에 aspect 로 공간을 미리 예약해
+                    로드 전후 레이아웃 시프트(→ 캐러셀 위치 어긋남)를 차단. 전부 즉시 로드. */}
+                <div className="mt-5 mx-auto w-full max-w-[14rem] aspect-[3/4] rounded-2xl border border-border shadow-[0_8px_28px_rgba(190,24,93,0.12)] overflow-hidden bg-card">
                   <img
                     src={s.img}
                     alt={s.alt}
-                    loading={i <= 1 ? "eager" : "lazy"}
-                    className="w-full h-auto block"
+                    className="w-full h-full object-cover block"
                   />
                 </div>
                 <div className="mt-4 flex items-start gap-2 text-left max-w-[20rem] rounded-xl bg-amber-50 border border-amber-100 px-3 py-2">
