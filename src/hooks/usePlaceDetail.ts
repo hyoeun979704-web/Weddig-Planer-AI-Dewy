@@ -201,9 +201,19 @@ export interface LegacyDetail {
   travel_fee_included: boolean | null;
   director_level: string | null;
   early_morning_fee: number | null;
+  duration_min: number | null;
+  companion_makeup: boolean | null;
+  product_brands: string[];
+  travel_areas: string[];
   // Hanbok
   hanbok_types: string[];
   delivery_available: boolean | null;
+  rental_days: number | null;
+  family_hanbok: boolean | null;
+  // Tailor / Hanbok 공용(사이즈) · Tailor 전용(원단·제작일)
+  size_options: string[];
+  fabric_options: string[];
+  production_days: number | null;
   // Honeymoon (product-based: 한 행 = 여행 상품 1개)
   agency_name: string | null;
   agency_product_url: string | null;
@@ -627,8 +637,17 @@ export function mapPlaceDetailRow(data: unknown): LegacyDetail {
         travel_fee_included: (card?.travel_fee_included as boolean) ?? null,
         director_level: (card?.director_level as string) ?? null,
         early_morning_fee: (card?.early_morning_fee as number) ?? null,
+        duration_min: (card?.duration_min as number) ?? null,
+        companion_makeup: (card?.companion_makeup as boolean) ?? null,
+        product_brands: asStringArray(card?.product_brands),
+        travel_areas: asStringArray(card?.travel_areas),
         hanbok_types: asStringArray(card?.hanbok_types),
         delivery_available: (card?.delivery_available as boolean) ?? null,
+        rental_days: (card?.rental_days as number) ?? null,
+        family_hanbok: (card?.family_hanbok as boolean) ?? null,
+        size_options: asStringArray(card?.size_options),
+        fabric_options: asStringArray(card?.fabric_options),
+        production_days: (card?.production_days as number) ?? null,
         agency_name: (card?.agency_name as string) ?? null,
         agency_product_url: (card?.agency_product_url as string) ?? null,
         product_type: (card?.product_type as string) ?? null,

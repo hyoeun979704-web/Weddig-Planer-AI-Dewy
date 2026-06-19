@@ -89,7 +89,7 @@ const SHOTS = [
   { id: "g4-coupon-form", route: "/business/coupons", auth: true, label: "입력하고 발행", below: true, target: { sel: 'button:has-text("쿠폰 발행")' }, pad: 10 },
   { id: "g4-coupon-list", route: "/business/coupons", auth: true, label: "검토 후 노출", target: { sel: 'text=노출중' }, pad: 10 },
   { id: "g4-event-form", route: "/business/events", auth: true, label: "이벤트 등록", target: { sel: 'h2:has-text("이벤트 등록")' }, pad: 10 },
-  { id: "g4-event-banner", route: "/business/events", auth: true, label: "배너 이미지 필수", target: { sel: 'text=배너 이미지' }, pad: 10 },
+  { id: "g4-event-banner", route: "/business/events", auth: true, label: "이미지로 구성(선택)", target: { sel: 'text=상세 이미지' }, pad: 10 },
   // 5) 견적 제안/수락/채팅 — 소비자 소통
   { id: "g5-leads", route: "/business/leads", auth: true, label: "받은 견적 한눈에", target: { sel: 'text=받은 리드' }, pad: 12 },
   { id: "g5-reply", route: "/business/leads", auth: true, label: "가격·메시지로 답변", target: { sel: 'button:has-text("견적 답변하기")' }, pad: 10 },
