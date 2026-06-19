@@ -74,7 +74,10 @@ const BusinessEvents = () => {
   const handleAdd = async () => {
     if (!user || !placeId) return;
     if (!title.trim()) { toast.error("이벤트명을 입력해주세요"); return; }
-    if (!bannerUrl.trim()) { toast.error("배너 이미지를 올려주세요"); return; }
+    // 상세 이미지로 된 이벤트는 내용·배너 따로 없어도 OK. 배너가 없으면 상세 첫 장을
+    // 썸네일로 쓴다(둘 다 없을 때만 막음). 내용(description)은 항상 선택.
+    const banner = bannerUrl.trim() || detailImages[0] || "";
+    if (!banner) { toast.error("대표 이미지나 상세 이미지를 한 장 이상 올려주세요"); return; }
     setAdding(true);
     const { error } = await supabase.from("business_events").insert({
       place_id: placeId,
@@ -83,7 +86,7 @@ const BusinessEvents = () => {
       description: description.trim() || null,
       starts_at: startsAt || null,
       ends_at: endsAt || null,
-      banner_image_url: bannerUrl.trim(),
+      banner_image_url: banner,
       detail_images: detailImages,
     } as any);
     setAdding(false);
@@ -132,8 +135,8 @@ const BusinessEvents = () => {
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예: 봄맞이 예약 할인" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">내용</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="이벤트 상세 내용" />
+            <Label className="text-xs">내용 (선택)</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="이벤트 상세 내용 (이미지로 대신해도 돼요)" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
@@ -146,7 +149,7 @@ const BusinessEvents = () => {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">배너 이미지 *</Label>
+            <Label className="text-xs">대표 이미지 (썸네일)</Label>
             {user && (
               <ImageUploader
                 key={`banner-${uploaderKey}`}
@@ -156,10 +159,10 @@ const BusinessEvents = () => {
                 onUploaded={(_, url) => setBannerUrl(url)}
               />
             )}
-            <p className="text-[11px] text-muted-foreground">목록·카드에 노출되는 대표 이미지예요(필수).</p>
+            <p className="text-[11px] text-muted-foreground">목록·카드 썸네일이에요. 없으면 아래 상세 이미지 첫 장(또는 업체 대표사진)이 쓰여요.</p>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">상세 이미지 (선택)</Label>
+            <Label className="text-xs">상세 이미지 (여러 장 가능)</Label>
             {detailImages.length > 0 && (
               <div className="grid grid-cols-3 gap-2">
                 {detailImages.map((url, i) => (
@@ -184,7 +187,7 @@ const BusinessEvents = () => {
                 onUploaded={(_, url) => setDetailImages((prev) => [...prev, url])}
               />
             )}
-            <p className="text-[11px] text-muted-foreground">이벤트 상세에 더 보여줄 이미지를 추가로 올릴 수 있어요.</p>
+            <p className="text-[11px] text-muted-foreground">한 장씩 올리면 계속 추가돼요. 이미지만으로 상세페이지를 구성할 수 있어요(내용 생략 가능).</p>
           </div>
           <Button onClick={handleAdd} disabled={adding} className="w-full">
             {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> 이벤트 등록</>}
