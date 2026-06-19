@@ -36,6 +36,11 @@ const Footer = () => {
           <p>고객센터: 050-6459-7504 (평일 10:00~18:00)</p>
           <p>이메일: kheceo@dewy-wedding.com</p>
         </div>
+        {/* 통신판매중개자 책임 제한 고지(전자상거래법 §20-2) — 거래 당사자가 아님을 명확히 */}
+        <p className="text-[11px] leading-[16px] text-muted-foreground border-t border-border/60 pt-[10px] mt-[2px]">
+          듀이(Dewy)는 통신판매중개자로서 통신판매의 당사자가 아니며, 입점 업체가 등록한 상품·서비스
+          정보 및 거래에 대한 책임은 해당 판매자(업체)에게 있습니다.
+        </p>
       </div>
 
       {/* 이용약관 */}
