@@ -9,6 +9,7 @@ import { APPLIANCE_PRODUCT_TYPE_LABEL, JEWELRY_STORE_TYPE_LABEL } from "@/lib/ca
 import PlaceDetailLayout from "@/components/detail/PlaceDetailLayout";
 import PlaceCoupons from "@/components/place/PlaceCoupons";
 import PlaceBusinessSections from "@/components/place/PlaceBusinessSections";
+import PlaceEvents from "@/components/place/PlaceEvents";
 import RelatedCommunityPosts from "@/components/community/RelatedCommunityPosts";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -70,6 +71,7 @@ const VendorDetailPage = () => {
       categoryLabel={categoryLabel}
       favoriteType={favoriteType}
       couponsSection={<PlaceCoupons placeId={place.id} />}
+      eventsSection={<PlaceEvents placeId={place.id} />}
       extraSection={
         <>
           {/* 관리 도구(운영자 수정·업체 인수) — 소비자 화면을 깔끔히 유지하기 위해 기본 접힘.
@@ -150,9 +152,30 @@ function CategoryExtras({ place }: { place: LegacyDetail }) {
       return <JewelryExtras place={place} />;
     case "invitation_venue":
       return <InvitationVenueExtras place={place} />;
+    // 기타(스냅·DVD·네일·축가 등)는 표준 스키마가 없어 구조화 섹션 대신 업체 소개/서비스로
+    // 채운다. 미매핑 카테고리도 동일 폴백(빈 상세정보 방지).
+    case "etc":
+      return <EtcExtras place={place} />;
     default:
-      return null;
+      return <EtcExtras place={place} />;
   }
+}
+
+/** 기타·미분류 카테고리 폴백 — 업체 소개·제공 서비스·편의 정보. 모두 없으면 null. */
+function EtcExtras({ place }: { place: LegacyDetail }) {
+  const hasDesc = !!(place.description && place.description.trim());
+  const has = hasDesc || place.basic_services.length > 0 || place.amenities.length > 0;
+  if (!has) return null;
+  return (
+    <div className="space-y-3">
+      <h3 className="font-bold text-sm">서비스 안내</h3>
+      {hasDesc && (
+        <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{place.description}</p>
+      )}
+      <Tags label="제공 서비스" items={place.basic_services} />
+      <Tags label="편의·특징" items={place.amenities} />
+    </div>
+  );
 }
 
 const Tags = ({ label, items }: { label: string; items: string[] }) =>

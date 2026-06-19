@@ -46,6 +46,8 @@ interface Props {
   extraSection?: React.ReactNode;
   /** 혜택(쿠폰) — 첫 화면(기본정보 탭) 혜택군에 노출. 전환 직결이라 디테일 탭에 숨기지 않음. */
   couponsSection?: React.ReactNode;
+  /** 혜택(진행중 이벤트) — 쿠폰과 함께 기본정보 탭 혜택군에 노출(전환 직결). */
+  eventsSection?: React.ReactNode;
   /** Item type for FavoriteButton (venue / studio / hanbok / etc) */
   favoriteType: "venue" | "studio" | "hanbok" | "suit" | "honeymoon" | "jewelry" | "appliance" | "invitation_venues";
 }
@@ -105,7 +107,7 @@ function pkgPriceSummary(packages: LegacyDetail["price_packages"]): string | nul
   return fmtPrice(lowest.price_min, null, lowest.currency, lowest.unit);
 }
 
-const PlaceDetailLayout = ({ place, categoryLabel, extraSection, couponsSection, favoriteType }: Props) => {
+const PlaceDetailLayout = ({ place, categoryLabel, extraSection, couponsSection, eventsSection, favoriteType }: Props) => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<TabKey>("basic");
   // 입점(클레임) 여부 — 소유자가 있으면 '예약 문의'를 인앱 문의로 연결,
@@ -227,6 +229,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, couponsSection,
             categoryLabel={categoryLabel}
             vendorAuthored={vendorAuthored}
             couponsSection={couponsSection}
+            eventsSection={eventsSection}
           />
         )}
         {tab === "detail" && (
@@ -397,6 +400,7 @@ function BasicTab({
   categoryLabel,
   vendorAuthored = false,
   couponsSection,
+  eventsSection,
 }: {
   place: LegacyDetail;
   categoryLabel: string;
@@ -404,6 +408,8 @@ function BasicTab({
   vendorAuthored?: boolean;
   /** 혜택(쿠폰) — 첫 화면 혜택군에 노출 */
   couponsSection?: React.ReactNode;
+  /** 혜택(진행중 이벤트) — 쿠폰과 함께 첫 화면 혜택군에 노출 */
+  eventsSection?: React.ReactNode;
 }) {
   const [galleryIdx, setGalleryIdx] = useState(0);
   const [advIdx, setAdvIdx] = useState(0);
@@ -655,8 +661,9 @@ function BasicTab({
         </section>
       )}
 
-      {/* 혜택(쿠폰) — 첫 화면 혜택군. 전환 직결이라 상세 탭에 숨기지 않음(레퍼런스 원칙 4). */}
+      {/* 혜택(쿠폰·이벤트) — 첫 화면 혜택군. 전환 직결이라 상세 탭에 숨기지 않음(레퍼런스 원칙 4). */}
       {couponsSection && <section className="px-4 pt-1 pb-2">{couponsSection}</section>}
+      {eventsSection && <section className="px-4 pt-1 pb-2">{eventsSection}</section>}
 
       {/* Contact / hours / location / SNS */}
       {(hasContact || place.hours || hasLocation || hasCoords) && (
