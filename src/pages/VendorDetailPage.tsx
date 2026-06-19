@@ -504,19 +504,26 @@ function MakeupExtras({ place }: { place: LegacyDetail }) {
 
 function HanbokExtras({ place }: { place: LegacyDetail }) {
   const has =
-    place.hanbok_types.length > 0 || place.custom_available != null ||
-    place.accessories_included != null || place.delivery_available != null;
+    place.hanbok_types.length > 0 || place.designer_brands.length > 0 ||
+    place.custom_available != null || place.accessories_included != null ||
+    place.delivery_available != null || place.fitting_count != null ||
+    place.rental_includes_alterations != null;
   if (!has) return null;
   return (
     <div className="space-y-3">
       <h3 className="font-bold text-sm">한복 정보</h3>
       <Tags label="한복 유형" items={place.hanbok_types} />
+      <Tags label="브랜드" items={place.designer_brands} />
       <div className="grid grid-cols-2 gap-2">
         {place.custom_available != null && (
           <Stat label="맞춤 제작" value={place.custom_available ? "가능" : "대여만"} />
         )}
+        {place.fitting_count != null && <Stat label="가봉 횟수" value={`${place.fitting_count}회`} />}
         {place.accessories_included != null && (
           <Stat label="액세서리" value={place.accessories_included ? "포함" : "별도"} />
+        )}
+        {place.rental_includes_alterations != null && (
+          <Stat label="수선" value={place.rental_includes_alterations ? "포함" : "별도"} />
         )}
         {place.delivery_available != null && (
           <Stat label="지방 배송" value={place.delivery_available ? "가능" : "불가"} />
@@ -530,6 +537,7 @@ function TailorExtras({ place }: { place: LegacyDetail }) {
   const has =
     place.suit_styles.length > 0 || place.designer_brands.length > 0 ||
     place.fitting_count != null || place.custom_available != null ||
+    place.rental_only != null || place.rental_includes_alterations != null ||
     place.accessories_included != null;
   if (!has) return null;
   return (
@@ -538,9 +546,15 @@ function TailorExtras({ place }: { place: LegacyDetail }) {
       <Tags label="스타일" items={place.suit_styles} />
       <Tags label="브랜드" items={place.designer_brands} />
       <div className="grid grid-cols-2 gap-2">
+        {place.rental_only != null && (
+          <Stat label="형태" value={place.rental_only ? "대여 전용" : "맞춤 가능"} />
+        )}
         {place.fitting_count != null && <Stat label="가봉 횟수" value={`${place.fitting_count}회`} />}
         {place.custom_available != null && (
           <Stat label="맞춤 제작" value={place.custom_available ? "가능" : "대여만"} />
+        )}
+        {place.rental_includes_alterations != null && (
+          <Stat label="수선" value={place.rental_includes_alterations ? "포함" : "별도"} />
         )}
         {place.accessories_included != null && (
           <Stat label="셔츠·구두·넥타이" value={place.accessories_included ? "포함" : "별도"} />
