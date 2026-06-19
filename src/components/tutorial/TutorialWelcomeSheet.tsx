@@ -4,7 +4,7 @@ import { Sparkles, X, ArrowRight, Play } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
-import { chaptersForUser, firstStartableLessonForUser } from "@/data/tutorialChapters";
+import { chaptersForUser, firstStartableLessonForUser, AUTO_TUTORIAL_ENABLED } from "@/data/tutorialChapters";
 import { isOnboarded } from "@/lib/onboarding";
 
 // Round 18 — subline 톤 정정:
@@ -53,6 +53,8 @@ const TutorialWelcomeSheet = () => {
   const blurb = STYLE_BLURB[style ?? "general"] ?? STYLE_BLURB.general;
 
   useEffect(() => {
+    // 전역 비활성(개편 예정) — 웰컴 시트 자동 노출 차단.
+    if (!AUTO_TUTORIAL_ENABLED) return;
     // Round 17 — 로그인 후만 튜토리얼 진행 (사용자 요구). 비로그인 사용자에겐
     // 튜토리얼 시스템 자체가 의미 없음 (포인트 적립 / 진행 저장 모두 user 의존).
     if (!user || isLoading) return;

@@ -20,6 +20,17 @@
 import type { WeddingStyle } from "@/lib/weddingStyle";
 import type { UserRole, WeddingPersonaMode } from "@/lib/weddingPersona";
 
+/**
+ * 튜토리얼 자동 진입 전역 스위치 (임시).
+ *
+ * 코치마크/웰컴시트 시스템을 전면 개편할 예정이라, 그 전까지 **자동으로 뜨는**
+ * 튜토리얼(첫 방문 코치마크·홈 투어·웰컴 바텀시트)을 모두 끈다. 온보딩(결혼정보
+ * 입력) 시퀀스와 수동 경로(/tutorial 목록, `?tutorial=<id>` 재생)는 그대로 둔다 —
+ * 자동 개입만 차단해 사용자가 정상 흐름을 방해받지 않게 한다.
+ * 개편 완료 시 true 로 되돌리거나 이 플래그를 제거한다.
+ */
+export const AUTO_TUTORIAL_ENABLED = false;
+
 export interface TutorialLessonStep {
   id: string;
   title: string;

@@ -121,3 +121,14 @@ API→호출 경로 시뮬레이션). e2e 불가(sandbox 차단 등) 시 "검증
 (`usePageTutorial`+`TutorialOverlay` 또는 `<PageTutorial>`) ③ **`tutorial_tours` 허용목록에
 `feature_<레슨id>` INSERT 마이그레이션**(빠지면 에러 없이 무지급) ④ 건너뛰기는 미지급.
 상세·체크리스트·함정은 위 문서 참조.
+- **현재 자동 진입 비활성**: `AUTO_TUTORIAL_ENABLED=false`(`tutorialChapters.ts`) — 첫방문
+  코치마크·홈 투어·웰컴 시트만 차단(개편 예정). 온보딩·수동경로(/tutorial·`?tutorial=`)는
+  유지. 재가동하려면 이 플래그를 true 로.
+
+## 사용법 가이드 스크린샷 작업 (해당 작업만 — 상세 `docs/business-guide-capture.md`)
+
+`/business/guide` 슬라이드 11장은 **`scripts/capture-guide-shots.cjs`** 로만 재생성한다
+(표시 프레임과 동일한 **3:4 라이브 캡처** + 앱 본폰트 **SUITE 주입** + DOM 하이라이트).
+게이트된 업체 페이지는 `mock-supabase.cjs`(`MOCK_BUSINESS=1`)로 실계정 없이 렌더한다.
+풀페이지를 크롭하던 구 `build-guide-shots.cjs` 방식 금지(글자 뭉개짐). 절차·시나리오 표·
+SHOTS 추가법·트러블슈팅은 위 문서 참조.
