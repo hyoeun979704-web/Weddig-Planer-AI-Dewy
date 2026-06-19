@@ -4,7 +4,7 @@ import { Tag, Star, ChevronRight, SlidersHorizontal, Sparkles } from "lucide-rea
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
-import { usePartnerDeals } from "@/hooks/usePartnerDeals";
+import { usePartnerDeals, type PartnerDeal } from "@/hooks/usePartnerDeals";
 import { Skeleton } from "@/components/ui/skeleton";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import DealFilterSheet, { DealFilters, defaultFilters } from "@/components/deals/DealFilterSheet";
@@ -61,6 +61,12 @@ const Deals = () => {
   const handleTabChange = (href: string) => navigate(href);
   const handleCategoryTabChange = useCategoryTabNavigation();
 
+  // 업체 이벤트는 업체 상세로, 운영자 혜택은 혜택 상세로.
+  const goDeal = (deal: PartnerDeal) =>
+    deal.kind === "event" && deal.place_id
+      ? navigate(`/vendor/${deal.place_id}`)
+      : navigate(`/deals/${deal.id}`);
+
   // Apply filters
   let filtered = [...deals];
   if (filters.keyword) {
@@ -73,11 +79,15 @@ const Deals = () => {
     filtered = filtered.filter((d) => (d.deal_price ?? 0) <= filters.maxPrice!);
   }
 
-  // Sort
-  const sorted = filtered.sort((a, b) => {
-    if (sortMode === "popular") return b.view_count - a.view_count;
-    return 0;
-  });
+  // 노출 순위: ① 이벤트 상세페이지 등록(배너 有) → ② 텍스트 등록, 각 구분 내 제휴/추천
+  // 업체 우선, 그다음 사용자가 고른 정렬(인기순=조회수 / 최신순=등록일).
+  const sorted = filtered.sort((a, b) =>
+    (Number(!!b.has_banner) - Number(!!a.has_banner)) ||
+    (Number(!!b.is_partner || !!b.is_featured) - Number(!!a.is_partner || !!a.is_featured)) ||
+    (sortMode === "popular"
+      ? b.view_count - a.view_count
+      : new Date(b.created_at ?? b.start_date ?? 0).getTime() - new Date(a.created_at ?? a.start_date ?? 0).getTime()),
+  );
 
   return (
     <div className="min-h-screen bg-background app-col mx-auto relative">
@@ -142,12 +152,12 @@ const Deals = () => {
             {featured.map((deal) => (
               <div
                 key={deal.id}
-                onClick={() => navigate(`/deals/${deal.id}`)}
+                onClick={() => goDeal(deal)}
                 className="p-4 bg-card rounded-2xl border border-border cursor-pointer hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start gap-3">
-                  {deal.partner_logo_url && (
-                    <img src={deal.partner_logo_url} alt={deal.partner_name} className="w-12 h-12 rounded-xl object-cover" />
+                  {(deal.partner_logo_url || deal.banner_image_url) && (
+                    <img src={deal.partner_logo_url ?? deal.banner_image_url ?? undefined} alt={deal.partner_name} className="w-12 h-12 rounded-xl object-cover" />
                   )}
                   <div className="flex-1">
                     <span className="text-xs text-primary font-medium">{deal.partner_name}</span>
@@ -186,12 +196,12 @@ const Deals = () => {
             {sorted.map((deal) => (
               <div
                 key={deal.id}
-                onClick={() => navigate(`/deals/${deal.id}`)}
+                onClick={() => goDeal(deal)}
                 className="p-4 bg-card rounded-2xl border border-border cursor-pointer hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start gap-3">
-                  {deal.partner_logo_url && (
-                    <img src={deal.partner_logo_url} alt={deal.partner_name} className="w-10 h-10 rounded-lg object-cover" />
+                  {(deal.partner_logo_url || deal.banner_image_url) && (
+                    <img src={deal.partner_logo_url ?? deal.banner_image_url ?? undefined} alt={deal.partner_name} className="w-10 h-10 rounded-lg object-cover" />
                   )}
                   <div className="flex-1">
                     <span className="text-xs text-muted-foreground">{deal.partner_name}</span>
