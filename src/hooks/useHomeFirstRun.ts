@@ -4,6 +4,7 @@ import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useTutorialProgress } from "@/hooks/useTutorialProgress";
 import { HOME_POPUP_DISMISS_KEY } from "@/components/home/HomeEntryPopup";
 import { isOnboarded } from "@/lib/onboarding";
+import { AUTO_TUTORIAL_ENABLED } from "@/data/tutorialChapters";
 
 const WEDDING_INFO_DISMISS_KEY = "dewy:wedding-info-modal:dismissed";
 
@@ -76,7 +77,7 @@ export function useHomeFirstRun() {
 
     // 튜토리얼·온보딩은 로그인 사용자만.
     if (user) {
-      if (!homeTourDone) list.push("tutorial");
+      if (AUTO_TUTORIAL_ENABLED && !homeTourDone) list.push("tutorial");
 
       let onbDismissed = false;
       try {

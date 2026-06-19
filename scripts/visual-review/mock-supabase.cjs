@@ -43,6 +43,94 @@ const ROWS = {
   user_consents: [CONSENT],
 };
 
+// ── 기업(business) 가이드 캡처용 데이터 (MOCK_BUSINESS=1 일 때만) ──────────────
+// 사용법: MOCK_BUSINESS=1 [MOCK_APPROVAL=approved|pending|rejected] node ... mock-supabase.cjs
+// scripts/capture-guide-shots.cjs 가 게이트된 업체 관리 페이지를 실계정 없이 렌더하기 위해 사용.
+// 썸네일은 외부 네트워크 없이 보이도록 data-URI SVG 로 생성.
+const PLACE_ID = "00000000-0000-0000-0000-0000000000b1";
+const BP_ID = "00000000-0000-0000-0000-0000000000c1";
+const APPROVAL = process.env.MOCK_APPROVAL || "approved";
+
+// 그라데이션 썸네일(라벨 옵션) — <img src> 에 그대로 들어가는 data-URI.
+function thumb(label = "", from = "#fce7f3", to = "#fbcfe8") {
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' width='600' height='800'>` +
+    `<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>` +
+    `<stop offset='0' stop-color='${from}'/><stop offset='1' stop-color='${to}'/></linearGradient></defs>` +
+    `<rect width='600' height='800' fill='url(#g)'/>` +
+    (label
+      ? `<text x='300' y='420' font-family='sans-serif' font-size='44' font-weight='700' fill='#be185d' text-anchor='middle'>${label}</text>`
+      : "") +
+    `</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+// 업체 place 행 — 대시보드(get_my_listing)·공개 상세(usePlaceDetail → .from("places"))
+// 양쪽에서 공용. usePlaceDetail 의 큰 SELECT 는 목이 컬럼 투영을 무시하고 행 전체를
+// 돌려주므로 핵심 필드만 채우면 나머지는 undefined → 조건부 섹션이 자연 생략된다.
+const PLACE_ROW = {
+  place_id: PLACE_ID, name: "더위드 웨딩스튜디오 강남점", category: "studio",
+  city: "서울특별시", district: "강남구", road_address: "서울 강남구 테헤란로 123",
+  description: "자연광 가득한 단독 스튜디오. 본식스냅·한복화보 전문.",
+  main_image_url: thumb("대표사진"), min_price: 890000,
+  tags: ["강남", "자연광", "본식스냅"], moderation_status: "approved",
+  view_count: 1542, owner_user_id: USER_ID, inquiry_channel: "chat",
+  is_partner: true, avg_rating: 4.9, review_count: 17,
+};
+
+if (process.env.MOCK_BUSINESS === "1") {
+  Object.assign(ROWS, {
+    places: [PLACE_ROW],
+    user_roles: [{ user_id: USER_ID, role: "business" }],
+    business_profiles: [{
+      id: BP_ID, user_id: USER_ID,
+      business_name: "더위드 웨딩스튜디오", business_number: "123-45-67890",
+      representative_name: "김디지", service_category: "studio",
+      is_verified: true, vendor_id: 9001,
+      approval_status: APPROVAL, review_note: APPROVAL === "rejected" ? "사업자등록증 사진이 흐립니다. 다시 업로드해 주세요." : null,
+      partner_tier: "bff",
+    }],
+    partnership_applications: [{ id: "pa1", business_profile_id: BP_ID, status: "interviewing", created_at: new Date().toISOString() }],
+    place_media: [
+      { id: "pm1", place_id: PLACE_ID, kind: "photo", image_url: thumb("스튜디오 A"), title: null, price: null, album_id: "alb1", display_order: 1 },
+      { id: "pm2", place_id: PLACE_ID, kind: "photo", image_url: thumb("야외 촬영", "#ede9fe", "#ddd6fe"), title: null, price: null, album_id: "alb1", display_order: 2 },
+      { id: "pm3", place_id: PLACE_ID, kind: "photo", image_url: thumb("한복 화보", "#fef3c7", "#fde68a"), title: null, price: null, album_id: "alb2", display_order: 3 },
+      { id: "pm4", place_id: PLACE_ID, kind: "photo", image_url: thumb("커플 스냅", "#dcfce7", "#bbf7d0"), title: null, price: null, album_id: null, display_order: 4 },
+    ],
+    place_media_albums: [
+      { id: "alb1", place_id: PLACE_ID, title: "260402_본식스냅", shoot_date: "2026-04-02", venue_name: "그랜드웨딩홀 강남", style_tags: ["내추럴", "필름"], product_id: "prod1" },
+      { id: "alb2", place_id: PLACE_ID, title: "260315_한복화보", shoot_date: "2026-03-15", venue_name: "스튜디오 본점", style_tags: ["전통", "한복"], product_id: null },
+    ],
+    business_products: [
+      { id: "prod1", place_id: PLACE_ID, name: "프리미엄 본식 패키지", price: 3500000, description: "원본 전체 + 수정본 50컷 + 액자", image_url: thumb("패키지"), moderation_status: "approved", moderation_note: null },
+      { id: "prod2", place_id: PLACE_ID, name: "스냅 단독 촬영", price: 890000, description: "촬영 2시간 + 보정 30컷", image_url: thumb("스냅", "#e0f2fe", "#bae6fd"), moderation_status: "pending", moderation_note: null },
+    ],
+    business_coupons: [
+      { id: "c1", place_id: PLACE_ID, title: "봄 시즌 얼리버드", discount_text: "15% 할인", min_order_won: 1000000, expires_at: "2026-12-31T23:59:59Z", is_active: true, moderation_status: "approved", moderation_note: null },
+      { id: "c2", place_id: PLACE_ID, title: "주중 예약 특가", discount_text: "20만원 할인", min_order_won: 2000000, expires_at: "2026-09-30T23:59:59Z", is_active: true, moderation_status: "pending", moderation_note: null },
+    ],
+    place_reviews: [
+      { review_id: "rv1", place_id: PLACE_ID, rating: 5, content: "사진이 정말 자연스럽게 나왔어요!", created_at: new Date().toISOString() },
+      { review_id: "rv2", place_id: PLACE_ID, rating: 5, content: "친절하고 결과물도 만족스러웠습니다.", created_at: new Date().toISOString() },
+    ],
+    favorites: [],
+  });
+}
+
+// count=exact 요청(.select(..,{count:'exact',head:true}))에 돌려줄 합계.
+// 실제 행 수와 무관하게 그럴듯한 통계 숫자를 노출(대시보드).
+const COUNTS = {
+  favorites: 128, place_media: 24, place_reviews: 17,
+};
+
+// RPC 결과 — 이름별. 없는 RPC 는 {} (기본).
+const RPC = {
+  get_my_listings: () => [PLACE_ROW],
+  get_my_listing: () => PLACE_ROW,
+  get_my_coupon_download_count: () => 36,
+  get_place_detail: () => PLACE_ROW,
+};
+
 function b64url(o) {
   return Buffer.from(JSON.stringify(o)).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
@@ -56,6 +144,8 @@ const USER = {
   app_metadata: { provider: "email", providers: ["email"] }, user_metadata: {},
   identities: [], created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
 };
+// 기업 가이드 캡처 모드: account_type=business (needsOnboarding/전환 로직용).
+if (process.env.MOCK_BUSINESS === "1") USER.user_metadata = { account_type: "business" };
 function session() {
   const now = Math.floor(Date.now() / 1000);
   return { access_token: fakeJwt(), token_type: "bearer", expires_in: 3600, expires_at: now + 3600, refresh_token: "mock-refresh-token", user: USER };
@@ -90,11 +180,27 @@ http.createServer((req, res) => {
   if (path.startsWith("/auth/v1/")) return send(res, 200, {});
 
   // ── PostgREST (REST API) ──────────────────────────────────────
-  if (path.startsWith("/rest/v1/rpc/")) return send(res, 200, {});
+  if (path.startsWith("/rest/v1/rpc/")) {
+    const name = path.slice("/rest/v1/rpc/".length).split("?")[0];
+    const fn = RPC[name];
+    return send(res, 200, fn ? fn() : {});
+  }
   if (path.startsWith("/rest/v1/")) {
     const table = path.slice("/rest/v1/".length).split("?")[0];
+    const prefer = req.headers["prefer"] || "";
+    const wantsCount = prefer.includes("count=");
+    const rows = ROWS[table] || [];
+    // count=exact + head:true → HEAD 요청. 본문 없이 Content-Range 로 합계 전달.
+    if (method === "HEAD" || (wantsCount && method === "GET")) {
+      const n = COUNTS[table] ?? rows.length;
+      const extra = { "Content-Range": `0-${Math.max(0, n - 1)}/${n}` };
+      if (method === "HEAD") {
+        try { res.writeHead(200, { "Content-Type": "application/json", ...CORS, ...extra }); res.end(""); } catch { /* */ }
+        return;
+      }
+      return send(res, 200, wantsObject ? (rows[0] ?? null) : rows, extra);
+    }
     if (method === "GET") {
-      const rows = ROWS[table] || [];
       // .single()/.maybeSingle() 은 object accept → 단일 객체(없으면 null).
       return send(res, 200, wantsObject ? (rows[0] ?? null) : rows);
     }

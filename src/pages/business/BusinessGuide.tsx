@@ -5,8 +5,9 @@ import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/com
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
 
-// 캡처는 scripts/build-guide-shots.cjs 로 타깃 영역을 줌-크롭(3:4) + 하이라이트 박스 +
-// 안내 라벨까지 구워낸 결과물(src/assets/business/guide/). 원본은 src/assets/business/*.png.
+// 캡처는 scripts/capture-guide-shots.cjs 로 실제 앱을 3:4 모바일 뷰포트로 라이브 렌더해
+// (표시 프레임과 동일) 한 화면씩 찍고, 타깃에 하이라이트 박스 + 안내 라벨을 얹은 결과물
+// (src/assets/business/guide/). 앱 본폰트(SUITE)를 주입해 실제 화면과 동일한 폰트로 찍는다.
 import imgLanding from "@/assets/business/guide/business-landing.png";
 import imgAuth from "@/assets/business/guide/auth-business.png";
 import imgOnboard from "@/assets/business/guide/business-onboard.png";
