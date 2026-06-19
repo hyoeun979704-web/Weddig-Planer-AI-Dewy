@@ -578,6 +578,21 @@ const Auth = () => {
             </button>
           </p>
         </div>
+
+        {/* 입점 가이드 진입 — 기업회원 '전환부터' 막막한 예비 사장님을 위해
+            로그인/가입 화면에서 바로 단계별 사용법을 볼 수 있게 한다(가입 전 공개). */}
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            onClick={() => navigate("/business/guide")}
+            className="text-sm text-muted-foreground"
+          >
+            웨딩업체 대표님이세요?{" "}
+            <span className="text-primary font-medium underline underline-offset-2">
+              입점·사용법 가이드 보기 →
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Lightbulb } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
+import { useUserRole } from "@/hooks/useUserRole";
 
 // 캡처는 scripts/build-guide-shots.cjs 로 타깃 영역을 줌-크롭(3:4) + 하이라이트 박스 +
 // 안내 라벨까지 구워낸 결과물(src/assets/business/guide/). 원본은 src/assets/business/*.png.
@@ -89,6 +90,11 @@ const Tags = ({ tags, className }: { tags: string[]; className?: string }) => (
 
 const BusinessGuide = () => {
   const navigate = useNavigate();
+  // 가이드는 비로그인 예비 사장님도 보므로(로그인 페이지에서 진입) CTA·뒤로 동작을
+  // 역할에 따라 분기한다. 이미 기업회원이면 대시보드로, 아직 아니면 가입 깔때기로.
+  const { isBusiness } = useUserRole();
+  const ctaLabel = isBusiness ? "대시보드로 가기" : "기업회원 가입하러 가기";
+  const ctaTarget = isBusiness ? "/business/dashboard" : "/business";
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const total = SLIDES.length;
@@ -110,7 +116,7 @@ const BusinessGuide = () => {
     <div className="min-h-screen bg-background app-col mx-auto flex flex-col font-sans break-keep">
       <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center gap-2 px-4 py-3 lg:px-8">
-          <button onClick={() => navigate("/business/dashboard")} aria-label="뒤로" className="p-1 -ml-1">
+          <button onClick={() => navigate(-1)} aria-label="뒤로" className="p-1 -ml-1">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-base font-bold lg:text-lg">사용법 가이드</h1>
@@ -168,8 +174,8 @@ const BusinessGuide = () => {
             <ArrowLeft className="w-4 h-4" /> 이전
           </button>
           {isLast ? (
-            <button onClick={() => navigate("/business/dashboard")} className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold">
-              대시보드로 가기
+            <button onClick={() => navigate(ctaTarget)} className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold">
+              {ctaLabel}
             </button>
           ) : (
             <button onClick={() => api?.scrollNext()} className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold">
@@ -221,10 +227,10 @@ const BusinessGuide = () => {
 
         <div className="mt-10 flex justify-center">
           <button
-            onClick={() => navigate("/business/dashboard")}
+            onClick={() => navigate(ctaTarget)}
             className="px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold inline-flex items-center gap-2"
           >
-            대시보드로 가기 <ArrowRight className="w-4 h-4" />
+            {ctaLabel} <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>

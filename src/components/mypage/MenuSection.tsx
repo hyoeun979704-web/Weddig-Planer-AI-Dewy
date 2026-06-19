@@ -116,6 +116,22 @@ const MenuSection = ({
             </div>
             <ChevronRight className="w-5 h-5 text-primary flex-shrink-0" />
           </button>
+
+          {/* 사용법 가이드 진입 — 대시보드 메뉴 안에도 있지만, 처음 온 사장님이
+              관리 화면 사용법을 가장 먼저 찾도록 업체 관리 카드 바로 아래에 노출. */}
+          <button
+            onClick={() => navigate("/business/guide")}
+            className="mt-2 w-full flex items-center gap-3 px-4 py-3 bg-card rounded-2xl border border-border hover:border-primary/40 active:scale-[0.98] transition-all"
+          >
+            <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+              <HelpCircle className="w-5 h-5 text-amber-500" />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <p className="text-sm font-semibold text-foreground">업체관리 대시보드 사용 가이드</p>
+              <p className="text-[11px] text-muted-foreground">가입·정보 등록·고객 노출까지 단계별 안내</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+          </button>
         </div>
       )}
 

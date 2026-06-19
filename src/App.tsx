@@ -307,7 +307,9 @@ const App = () => (
               <Route path="/business" element={<BusinessLanding />} />
               <Route path="/business/onboard" element={<BusinessOnboard />} />
               <Route path="/business/dashboard" element={<BusinessGuard><BusinessDashboard /></BusinessGuard>} />
-              <Route path="/business/guide" element={<BusinessGuard><BusinessGuide /></BusinessGuard>} />
+              {/* 사용법 가이드는 정적 콘텐츠(데이터 패치 없음) — 기업회원 '전환 전'
+                  예비 사장님(로그인 페이지 진입)도 봐야 하므로 가드 없이 공개한다. */}
+              <Route path="/business/guide" element={<BusinessGuide />} />
               <Route path="/business/edit" element={<BusinessGuard requireApproved><BusinessVendorEdit /></BusinessGuard>} />
               <Route path="/business/claim" element={<BusinessGuard requireApproved><BusinessClaim /></BusinessGuard>} />
               <Route path="/business/gallery" element={<BusinessGuard requireApproved><BusinessGallery /></BusinessGuard>} />
