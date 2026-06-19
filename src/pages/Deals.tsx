@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Tag, Star, ChevronRight, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Tag, Star, ChevronRight, SlidersHorizontal, Sparkles, Ticket, Check } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
@@ -54,7 +54,7 @@ const Deals = () => {
     } catch { /* 저장 실패 무시 */ }
   }, [selectedCategory, sortMode, filters]);
 
-  const { deals, featured, isLoading } = usePartnerDeals(selectedCategory);
+  const { deals, featured, isLoading, claimCoupon } = usePartnerDeals(selectedCategory);
 
   const hasActiveFilters = !!(filters.category || filters.region || filters.maxPrice || filters.keyword);
 
@@ -67,6 +67,10 @@ const Deals = () => {
     if (deal.kind === "event") {
       if (deal.has_banner) navigate(`/event/${deal.id.replace(/^evt_/, "")}`);
       else if (deal.place_id) navigate(`/vendor/${deal.place_id}`);
+      return;
+    }
+    if (deal.kind === "coupon") {
+      if (deal.place_id) navigate(`/vendor/${deal.place_id}`);
       return;
     }
     navigate(`/deals/${deal.id}`);
@@ -169,7 +173,18 @@ const Deals = () => {
                     <h3 className="font-semibold text-foreground text-sm">{deal.title}</h3>
                     {deal.discount_info && <span className="text-xs text-destructive font-bold">{deal.discount_info}</span>}
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  {deal.kind === "coupon" ? (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); if (!deal.is_claimed) void claimCoupon(deal.id); }}
+                      disabled={deal.is_claimed}
+                      className={`shrink-0 self-center px-3 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-1 ${deal.is_claimed ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground active:scale-[0.98]"}`}
+                    >
+                      {deal.is_claimed ? <><Check className="w-3.5 h-3.5" /> 받음</> : <><Ticket className="w-3.5 h-3.5" /> 쿠폰 받기</>}
+                    </button>
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  )}
                 </div>
               </div>
             ))}
@@ -214,7 +229,18 @@ const Deals = () => {
                     {deal.short_description && <p className="text-xs text-muted-foreground mt-0.5">{deal.short_description}</p>}
                     {deal.discount_info && <span className="text-xs text-destructive font-bold mt-1 inline-block">{deal.discount_info}</span>}
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  {deal.kind === "coupon" ? (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); if (!deal.is_claimed) void claimCoupon(deal.id); }}
+                      disabled={deal.is_claimed}
+                      className={`shrink-0 self-center px-3 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-1 ${deal.is_claimed ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground active:scale-[0.98]"}`}
+                    >
+                      {deal.is_claimed ? <><Check className="w-3.5 h-3.5" /> 받음</> : <><Ticket className="w-3.5 h-3.5" /> 쿠폰 받기</>}
+                    </button>
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  )}
                 </div>
               </div>
             ))}
