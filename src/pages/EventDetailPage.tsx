@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Calendar, Loader2, Store, Send } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
+import { useRelatedEvents } from "@/hooks/useRelatedEvents";
 
 interface EventDetail {
   id: string;
@@ -15,6 +16,7 @@ interface EventDetail {
   detail_images: string[] | null;
   placeName: string | null;
   placeThumb: string | null;
+  category: string | null;
 }
 
 // 업체 이미지(vendor-images 공개 버킷) public URL. 경로형 레거시 행 방어.
@@ -40,11 +42,12 @@ const EventDetailPage = () => {
       const { data } = await (supabase.from("business_events" as any).select("*").eq("id", id).maybeSingle() as any);
       if (!mounted) return;
       if (!data) { setEv(null); setLoading(false); return; }
-      let placeName: string | null = null, placeThumb: string | null = null;
+      let placeName: string | null = null, placeThumb: string | null = null, category: string | null = null;
       if (data.place_id) {
-        const { data: p } = await (supabase.from("places" as any).select("name, main_image_url").eq("place_id", data.place_id).maybeSingle() as any);
+        const { data: p } = await (supabase.from("places" as any).select("name, main_image_url, category").eq("place_id", data.place_id).maybeSingle() as any);
         placeName = p?.name ?? null;
         placeThumb = pub(p?.main_image_url ?? null);
+        category = p?.category ?? null;
       }
       if (!mounted) return;
       setEv({
@@ -52,12 +55,15 @@ const EventDetailPage = () => {
         starts_at: data.starts_at ?? null, ends_at: data.ends_at ?? null,
         banner_image_url: pub(data.banner_image_url ?? null),
         detail_images: (data.detail_images ?? null) as string[] | null,
-        placeName, placeThumb,
+        placeName, placeThumb, category,
       });
       setLoading(false);
     })();
     return () => { mounted = false; };
   }, [id]);
+
+  // 관련 이벤트(큐레이션) — 같은 카테고리·활성업체·승인·진행중, 제휴등급 우선.
+  const { data: related = [] } = useRelatedEvents({ category: ev?.category, excludeEventId: ev?.id });
 
   if (loading) {
     return (
@@ -107,6 +113,31 @@ const EventDetailPage = () => {
             </div>
           )}
         </div>
+
+        {/* 관련 이벤트 (큐레이션: 활성업체·승인·진행중·제휴등급 우선). 없으면 섹션 숨김. */}
+        {related.length > 0 && (
+          <div className="px-4 pt-2 pb-4 space-y-2 border-t border-border">
+            <h2 className="text-[15px] font-bold text-foreground">관련 이벤트</h2>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
+              {related.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => { navigate(`/event/${r.id}`); window.scrollTo({ top: 0 }); }}
+                  className="flex-shrink-0 w-36 text-left rounded-xl border border-border overflow-hidden bg-card active:opacity-90"
+                >
+                  <div className="aspect-[3/2] bg-muted">
+                    {r.thumb && <img src={r.thumb} alt={r.title} className="w-full h-full object-cover" loading="lazy" />}
+                  </div>
+                  <div className="p-2">
+                    {r.placeName && <p className="text-[11px] text-primary font-semibold truncate">{r.placeName}</p>}
+                    <p className="text-[12px] font-semibold text-foreground line-clamp-2 leading-snug">{r.title}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 하단 CTA — 업체 확인하기 / 신청하기 */}

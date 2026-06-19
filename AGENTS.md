@@ -66,6 +66,12 @@ UI/placeholder CTA**·**iOS/사파리(웹) 차원**·공통화·도메인 변경
 `ANTHROPIC_API_KEY` 시크릿 필요, 없으면 skip). 시뮬레이션은 **경쟁사 분석 선행** 원칙을 따른다
 (상세 `docs/feature-simulation.md` §5).
 
+**추천/관련 섹션 — 항상 큐레이션 필터링(원천 덤프 금지)**: "추천·관련·이런 것도" 류 섹션은
+**반드시** 큐레이션 게이트를 거친다 — ① 활성/승인 게이트(`is_active`·`moderation_status`·
+진행중 등 유효성) ② **제휴 등급(`partner_rank`) 우선** 등 품질 정렬(기존 `usePlaceRecommendations`
+패턴 재사용) ③ 현재 항목 제외·다양성. 미가공 전체 나열 금지. **결과 0건이면 섹션 자체를 숨김**
+(빈 영역·dead-end 방지).
+
 ## 검증 — "작동한다 ≠ 검증됨"
 
 SQL row count·타입체크·unit test 통과만으로 "정상 작동" 보고 **금지**. 실제 사용자 시점의
