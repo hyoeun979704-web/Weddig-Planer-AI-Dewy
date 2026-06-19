@@ -40,9 +40,10 @@ const SHOTS = [
   { id: "c-category", route: "/venues", auth: false, label: "지역·가격·평점 필터", target: { sel: 'text=가격대' }, pad: 10 },
   { id: "c-vendor", route: `/vendor/${PID}`, auth: false, label: "가격·핵심스펙·혜택 한눈에", target: { sel: 'text=기본정보' }, pad: 10 },
   { id: "c-board", route: "/board", auth: true, label: "보드로 진행 현황 정리", target: { sel: 'text=한눈에 정리' }, pad: 12 },
-  { id: "c-compare", route: "/compare", auth: false, label: "찜한 업체 비교", target: { sel: 'text=업체 비교' }, pad: 12 },
+  { id: "c-compare", route: "/compare", auth: true, label: "찜한 업체 비교", target: { sel: 'text=업체 비교' }, pad: 12 },
   // ── 상담·견적·문의 (inquiry) ──
   { id: "c-quote", route: "/quote/new", auth: true, label: "조건 넣고 한 번에 견적", target: { sel: 'text=어떤 업체' }, pad: 10 },
+  { id: "c-quote-list", route: "/quote", auth: true, label: "받은 견적 모아보기", target: { sel: 'text=내 견적 요청' }, pad: 10 },
   { id: "c-inquiry", route: `/vendor/${PID}`, auth: false, label: "전화·앱 채팅 문의", below: true, target: { sel: 'button:has-text("문의")' }, pad: 10 },
   { id: "c-contact", route: "/contact", auth: true, label: "고객센터 1:1 문의·챗봇", target: { sel: 'text=1:1 문의' }, pad: 12 },
   // ── 준비 관리 (manage) ──
@@ -56,7 +57,7 @@ const SHOTS = [
   { id: "c-store", route: "/store", auth: false, label: "웨딩 소품·셀프웨딩", target: { sel: 'text=촬영소품' }, pad: 10 },
   { id: "c-tips", route: "/tips", auth: false, label: "카테고리별 준비 꿀팁", target: { pick: (p) => p.getByText("상견례").first() }, pad: 10 },
   // ── 커뮤니티·마이페이지 (community-mypage) ──
-  { id: "c-community", route: "/community", auth: false, label: "후기·꿀팁·업체추천", target: { sel: 'text=실시간 후기' }, pad: 10 },
+  { id: "c-community", route: "/community", auth: true, label: "후기·꿀팁·업체추천", target: { sel: 'text=실시간 후기' }, pad: 10 },
   { id: "c-mypage", route: "/mypage", auth: true, label: "찜·포인트·주문·견적", target: { sel: 'text=주문내역' }, pad: 12 },
 ];
 
