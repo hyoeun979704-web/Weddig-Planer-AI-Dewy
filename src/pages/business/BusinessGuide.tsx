@@ -104,7 +104,9 @@ const BusinessGuide = () => {
   const progress = useMemo(() => ((current + 1) / total) * 100, [current, total]);
 
   return (
-    <div className="min-h-screen bg-background app-col mx-auto flex flex-col">
+    // font-sans=SUITE(브랜딩 일관성). break-keep(word-break:keep-all)은 상속 속성이라
+    // 여기 한 번으로 전체 한글이 단어 중간이 아닌 어절 단위로 줄바꿈된다(가독성).
+    <div className="min-h-screen bg-background app-col mx-auto flex flex-col font-sans break-keep">
       <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center gap-2 px-4 py-3 lg:px-8">
           <button onClick={() => navigate("/business/dashboard")} aria-label="뒤로" className="p-1 -ml-1">
@@ -131,8 +133,8 @@ const BusinessGuide = () => {
                   <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-3">
                     {s.phase}
                   </span>
-                  <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-foreground">{s.title}</h2>
-                  <p className="mt-2 text-[15px] text-muted-foreground leading-relaxed max-w-[20rem]">{s.subtitle}</p>
+                  <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-foreground text-balance">{s.title}</h2>
+                  <p className="mt-2 text-[15px] text-muted-foreground leading-relaxed max-w-[20rem] text-pretty">{s.subtitle}</p>
                   <div className="mt-5 mx-auto w-full max-w-[14rem] aspect-[3/4] rounded-2xl border border-border shadow-[0_8px_28px_rgba(190,24,93,0.12)] overflow-hidden bg-card">
                     <img src={s.img} alt={s.alt} className="w-full h-full object-cover block" />
                   </div>
@@ -180,8 +182,8 @@ const BusinessGuide = () => {
       <div className="hidden lg:block px-8 py-10">
         <div className="mb-10">
           <p className="text-sm font-bold text-primary tracking-wide">APPLICATION GUIDE</p>
-          <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-foreground">가입부터 고객 노출까지, 한눈에</h2>
-          <p className="mt-2 text-muted-foreground">웨딩 업체 사장님을 위한 단계별 사용법 — 순서대로 따라 하세요.</p>
+          <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-foreground text-balance">가입부터 고객 노출까지, 한눈에</h2>
+          <p className="mt-2 text-muted-foreground text-pretty">웨딩 업체 사장님을 위한 단계별 사용법 — 순서대로 따라 하세요.</p>
         </div>
 
         <div className="space-y-7">
@@ -205,9 +207,9 @@ const BusinessGuide = () => {
                   </span>
                   <span className="text-sm font-bold text-primary/90">{s.phase}</span>
                 </div>
-                <h3 className="mt-4 text-[1.7rem] font-extrabold leading-tight tracking-tight text-foreground">{s.title}</h3>
+                <h3 className="mt-4 text-[1.7rem] font-extrabold leading-tight tracking-tight text-foreground text-balance">{s.title}</h3>
                 <Tags tags={s.tags} className="mt-3" />
-                <p className="mt-4 text-lg text-muted-foreground leading-relaxed">{s.subtitle}</p>
+                <p className="mt-4 text-lg text-muted-foreground leading-relaxed text-pretty">{s.subtitle}</p>
                 <div className="mt-5">
                   <Tip text={s.tip} lg />
                 </div>

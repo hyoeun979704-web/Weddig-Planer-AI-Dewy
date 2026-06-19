@@ -23,6 +23,11 @@ export default {
       height: {
         screen: "100dvh",
       },
+      // 브랜드 폰트(SUITE)를 Tailwind sans 로 등록 → font-sans / 기본 폰트 전반이 SUITE 로
+      // 통일(브랜딩 일관성). body 도 동일 스택을 쓴다(index.css).
+      fontFamily: {
+        sans: ["SUITE Variable", "Noto Sans KR", "Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+      },
       // 의미론적 타이포 토큰 — 픽셀 임의값(text-[11px] 등) 대신 사용.
       // 페이지 전반의 글자 크기·행간을 한곳에서 관리하기 위함.
       fontSize: {
