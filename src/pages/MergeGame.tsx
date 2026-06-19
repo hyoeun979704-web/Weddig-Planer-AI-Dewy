@@ -35,7 +35,11 @@ export default function MergeGame() {
   const lastScoreRef = useRef<number | null>(null);
   const claimedRef = useRef(false);
 
-  const [bestScore, setBestScore] = useState(() => Number(localStorage.getItem('mergeGame_best') ?? 0));
+  // iOS 사파리 프라이빗/추적방지/용량초과 모드는 localStorage 접근 시 throw → useState
+  // 초기화에서 터지면 페이지 전체 렌더가 실패한다(흰 화면). 반드시 try-catch 로 감싼다.
+  const [bestScore, setBestScore] = useState(() => {
+    try { return Number(localStorage.getItem('mergeGame_best') ?? 0); } catch { return 0; }
+  });
   const [showRanking, setShowRanking] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [lastScore, setLastScore] = useState<number | null>(null);
@@ -168,7 +172,7 @@ export default function MergeGame() {
     (s: number) => {
       if (s > bestScore) {
         setBestScore(s);
-        localStorage.setItem('mergeGame_best', String(s));
+        try { localStorage.setItem('mergeGame_best', String(s)); } catch { /* iOS 프라이빗: 무시 */ }
       }
     },
     [bestScore],
@@ -184,7 +188,7 @@ export default function MergeGame() {
       setLastEarned(null); // 미청구 → 오버레이가 '2배 받기/획득 예정' 노출
       if (finalScore > bestScore) {
         setBestScore(finalScore);
-        localStorage.setItem('mergeGame_best', String(finalScore));
+        try { localStorage.setItem('mergeGame_best', String(finalScore)); } catch { /* iOS 프라이빗: 무시 */ }
       }
     },
     [bestScore],

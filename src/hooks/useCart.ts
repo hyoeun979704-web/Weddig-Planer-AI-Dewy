@@ -28,12 +28,16 @@ const fetchCartItems = async (userId: string): Promise<CartItem[]> => {
 
   if (error) throw error;
 
-  return (data || []).map((item: any) => ({
-    id: item.id,
-    product_id: item.product_id,
-    quantity: item.quantity,
-    product: item.products,
-  }));
+  // 삭제된 상품은 임베드 조인이 null 을 반환한다 → null 행을 제외하지 않으면
+  // 이후 item.product.sale_price 접근에서 카트 페이지 전체가 크래시한다.
+  return (data || [])
+    .filter((item: any) => item.products != null)
+    .map((item: any) => ({
+      id: item.id,
+      product_id: item.product_id,
+      quantity: item.quantity,
+      product: item.products,
+    }));
 };
 
 export const useCart = () => {

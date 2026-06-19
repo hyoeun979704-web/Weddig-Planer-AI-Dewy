@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { escapeLikePattern } from "@/lib/postgrestEscape";
 
 export interface VendorLite {
   place_id: string;
@@ -30,7 +31,7 @@ export function useVendorSearch(query: string) {
       const { data, error } = await supabase
         .from("places")
         .select("place_id, name, category, city, district, main_image_url")
-        .ilike("name", `%${q}%`)
+        .ilike("name", `%${escapeLikePattern(q)}%`)
         .eq("is_active", true)
         .limit(8);
       if (error) throw error;
