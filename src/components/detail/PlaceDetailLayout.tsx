@@ -34,6 +34,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { checkReferralMilestones } from "@/lib/referralEvent";
 import PlaceMap from "@/components/detail/PlaceMap";
 import PlaceRecommendations from "@/components/detail/PlaceRecommendations";
+import PlaceKeyFacts from "@/components/detail/PlaceKeyFacts";
 import PlaceInquirySheet from "@/components/place/PlaceInquirySheet";
 import AddToBoardButton from "@/components/place/AddToBoardButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -563,6 +564,8 @@ function BasicTab({
         {place.description && (
           <p className="text-sm text-muted-foreground leading-relaxed mt-1">{place.description}</p>
         )}
+        {/* 카테고리별 핵심 스펙 요약 — 첫 화면 비교·판단(상세는 디테일 탭). */}
+        <PlaceKeyFacts place={place} />
         {/* 결혼식장 anchor 등록 CTA — wedding_hall 카테고리에만 표시.
             식장 상세를 보던 흐름 그대로 1탭 등록(§1 L5 JIT). */}
         {place.category === "wedding_hall" && (
