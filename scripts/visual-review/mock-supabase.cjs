@@ -214,13 +214,13 @@ if (process.env.MOCK_BUSINESS === "1") {
       { id: "myq2", user_id: USER_ID, category: "wedding_hall", region_city: "서울", region_district: "강남", budget_min: 1000, budget_max: 1800, wedding_date: "2026-09-20", style: null, note: "200명 보증 가능한 채플홀 찾아요", image_paths: [], status: "open", created_at: new Date(Date.now() - 50 * 36e5).toISOString() },
     ],
     budget_settings: [
-      { id: "bs1", user_id: USER_ID, region: "서울특별시", total_budget: 35000000, guest_count: 200, category_budgets: {}, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+      { id: "bs1", user_id: USER_ID, region: "서울특별시", total_budget: 3500, guest_count: 200, category_budgets: {}, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
     ],
     budget_items: [
-      { id: "bi1", user_id: USER_ID, category: "웨딩홀", amount: 12000000, item_date: "2026-05-02", memo: "계약금+잔금", paid_by: "공동", has_balance: true, balance_amount: 9000000, balance_due_date: "2026-08-01", created_at: new Date().toISOString() },
-      { id: "bi2", user_id: USER_ID, category: "스튜디오", amount: 1800000, item_date: "2026-05-10", memo: "본식+촬영", paid_by: "신부", has_balance: false, balance_amount: null, balance_due_date: null, created_at: new Date().toISOString() },
-      { id: "bi3", user_id: USER_ID, category: "드레스", amount: 2400000, item_date: "2026-05-12", memo: "대여 3벌", paid_by: "신부", has_balance: false, balance_amount: null, balance_due_date: null, created_at: new Date().toISOString() },
-      { id: "bi4", user_id: USER_ID, category: "예물", amount: 3000000, item_date: "2026-06-01", memo: "커플링", paid_by: "신랑", has_balance: false, balance_amount: null, balance_due_date: null, created_at: new Date().toISOString() },
+      { id: "bi1", user_id: USER_ID, category: "웨딩홀", amount: 1200, item_date: "2026-05-02", memo: "계약금+잔금", paid_by: "공동", has_balance: true, balance_amount: 900, balance_due_date: "2026-08-01", created_at: new Date().toISOString() },
+      { id: "bi2", user_id: USER_ID, category: "스튜디오", amount: 180, item_date: "2026-05-10", memo: "본식+촬영", paid_by: "신부", has_balance: false, balance_amount: null, balance_due_date: null, created_at: new Date().toISOString() },
+      { id: "bi3", user_id: USER_ID, category: "드레스", amount: 240, item_date: "2026-05-12", memo: "대여 3벌", paid_by: "신부", has_balance: false, balance_amount: null, balance_due_date: null, created_at: new Date().toISOString() },
+      { id: "bi4", user_id: USER_ID, category: "예물", amount: 300, item_date: "2026-06-01", memo: "커플링", paid_by: "신랑", has_balance: false, balance_amount: null, balance_due_date: null, created_at: new Date().toISOString() },
     ],
     vendor_board_items: [
       { id: "vb1", user_id: USER_ID, slot_key: "venue", status: "booked", place_id: PLACE_ID2, vendor_name: "더채플 앳 청담", custom_label: null, memo: "5월 2일 계약", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
@@ -331,8 +331,15 @@ http.createServer((req, res) => {
       return send(res, 200, wantsObject ? (rows[0] ?? null) : rows, extra);
     }
     if (method === "GET") {
+      // id/place_id eq 필터 honor — 다중 행 테이블에서 상세(.maybeSingle())가 단건을
+      // 받도록(예: 업체 5곳 중 /vendor/:id, /product/:id, /event/:id). 그 외 필터는 무시.
+      let grows = rows;
+      for (const key of ["id", "place_id"]) {
+        const v = url.searchParams.get(key);
+        if (v && v.startsWith("eq.")) { const val = v.slice(3); grows = grows.filter((r) => String(r[key]) === val); }
+      }
       // .single()/.maybeSingle() 은 object accept → 단일 객체(없으면 null).
-      return send(res, 200, wantsObject ? (rows[0] ?? null) : rows);
+      return send(res, 200, wantsObject ? (grows[0] ?? null) : grows);
     }
     // 쓰기(PATCH/POST/PUT) — 받은 걸 그대로 echo (저장 성공처럼).
     let buf = "";
