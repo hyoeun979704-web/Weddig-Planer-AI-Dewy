@@ -72,6 +72,14 @@ const BusinessGuideView = ({ headerTitle, eyebrow, deskHeading, deskSub, slides,
     return () => { api.off("select", onSelect); };
   }, [api]);
 
+  // 이전/다음 가이드로 이동(슬라이드 세트 교체)하면 항상 첫 슬라이드부터 — 같은 컴포넌트가
+  // 재사용되며 이전 가이드의 페이지 인덱스가 남는 버그 방지(모바일 캐러셀·데스크톱 공통).
+  useEffect(() => {
+    setCurrent(0);
+    if (api) api.scrollTo(0, true);
+    window.scrollTo({ top: 0 });
+  }, [api, slides]);
+
   const progress = useMemo(() => ((current + 1) / total) * 100, [current, total]);
 
   return (

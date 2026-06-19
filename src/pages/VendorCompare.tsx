@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Check, Scale } from "lucide-react";
@@ -195,6 +195,15 @@ const FavoritesCompare = ({ initialCategory }: { initialCategory: string | null 
   const [category, setCategory] = useState<string>(
     initialCategory && favByCategory.has(initialCategory) ? initialCategory : availableCategories[0] ?? "",
   );
+
+  // 찜은 비동기 로드라 마운트 시점엔 비어 있다 → 로드 후 유효 카테고리가 생기면
+  // (초기 category 가 빈/무효일 때) 첫 카테고리로 맞춘다. (회귀: 기본 탭이 빈 채 고정돼
+  // "찜 0곳"으로 보이던 버그.)
+  useEffect(() => {
+    if (availableCategories.length > 0 && !favByCategory.has(category)) {
+      setCategory(initialCategory && favByCategory.has(initialCategory) ? initialCategory : availableCategories[0]);
+    }
+  }, [availableCategories, favByCategory, category, initialCategory]);
 
   const candidateIds = favByCategory.get(category) ?? [];
 

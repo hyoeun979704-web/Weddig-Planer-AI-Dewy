@@ -131,10 +131,14 @@ API→호출 경로 시뮬레이션). e2e 불가(sandbox 차단 등) 시 "검증
   코치마크·홈 투어·웰컴 시트만 차단(개편 예정). 온보딩·수동경로(/tutorial·`?tutorial=`)는
   유지. 재가동하려면 이 플래그를 true 로.
 
-## 사용법 가이드 스크린샷 작업 (해당 작업만 — 상세 `docs/business-guide-capture.md`)
+## 사용법 가이드 작성·업데이트 (해당 작업만 — **정식 절차서 `docs/guide-authoring.md`**)
 
-`/business/guide` 슬라이드 11장은 **`scripts/capture-guide-shots.cjs`** 로만 재생성한다
-(표시 프레임과 동일한 **3:4 라이브 캡처** + 앱 본폰트 **SUITE 주입** + DOM 하이라이트).
-게이트된 업체 페이지는 `mock-supabase.cjs`(`MOCK_BUSINESS=1`)로 실계정 없이 렌더한다.
-풀페이지를 크롭하던 구 `build-guide-shots.cjs` 방식 금지(글자 뭉개짐). 절차·시나리오 표·
-SHOTS 추가법·트러블슈팅은 위 문서 참조.
+소비자(`/help`)·기업(`/business/guide`) 인앱 가이드를 만들거나 **새 기능을 가이드에 반영**할 때는
+**반드시 `docs/guide-authoring.md` 플레이북대로** 한다("이 기능 가이드에 추가/업데이트해줘" 포함).
+**완성의 정의(셋 다 충족)**: ① 주제↔내용 일치(요청 주제를 임의 축약·병합 금지) ② 텍스트↔시각데이터
+일치(화면에 없는 UI 설명 금지, 강조 박스가 그 요소 위에, 숫자·단위 일치) ③ **사용자 시뮬레이션
+통과**(로그인 사용자가 따라갈 때 화면이 데이터로 채워져 있고 CTA·이전/다음·링크가 안 깨짐 — e2e 확인).
+데이터는 `mock-supabase.cjs`로 **빈 화면 없이** 채워 캡처(단위·enum 주의), 슬라이드 이미지는 캡처
+스크립트(3:4 라이브 + SUITE 폰트 + 하이라이트)로만 생성. 발견 이슈는 `docs/consumer-guide-qa.md`에
+기록. 스크린샷 세부·트러블슈팅: `docs/business-guide-capture.md`. 단일 소스: 소비자=`src/data/consumerGuides.ts`,
+기업=`src/data/businessGuides.ts`. 회귀 함정(다중행 maybeSingle·만원 단위·auth 캡처 등)은 플레이북 §5 필독.

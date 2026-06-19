@@ -52,7 +52,8 @@ const SlotCard = ({
   }, [item?.vendor_name, item?.memo]);
 
   const status = item?.status ?? "undecided";
-  const meta = VENDOR_STATUS_META[status];
+  // 예상치 못한 status 값(드리프트·구버전 데이터)에도 페이지가 깨지지 않게 폴백.
+  const meta = VENDOR_STATUS_META[status] ?? VENDOR_STATUS_META.undecided;
   const vendorLabel = item?.vendor_name || (item?.place_id ? "선택한 업체" : null);
 
   const setStatus = async (s: VendorSlotStatus) => {
