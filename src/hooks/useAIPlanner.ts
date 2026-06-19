@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { supabase } from "@/integrations/supabase/client";
+import { logClientError } from "@/lib/errorLog";
 import { deleteMemoryRow, fetchMemoriesSince, type AIMemory } from "@/lib/aiMemory";
 import { AI_MEMORIES_QUERY_KEY } from "@/hooks/useAIMemories";
 import { useChatSessions } from "@/hooks/useChatSessions";
@@ -602,6 +603,7 @@ export const useAIPlanner = () => {
       }
     } catch (error) {
       console.error("AI Planner error:", error);
+      void logClientError({ message: `AI Planner error: ${(error as Error)?.message ?? String(error)}`, source: "ai-planner" });
       toast({
         title: "오류 발생",
         description: "메시지 전송에 실패했어요. 다시 시도해주세요.",

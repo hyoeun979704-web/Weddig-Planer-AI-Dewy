@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { logClientError } from "@/lib/errorLog";
 
 export const useDefaultRegion = () => {
   const { user } = useAuth();
@@ -34,6 +35,7 @@ export const useDefaultRegion = () => {
         }
       } catch (error) {
         console.error("Error fetching default region:", error);
+        void logClientError({ message: `default region fetch failed: ${(error as Error)?.message ?? String(error)}`, source: "data-fetch" });
       } finally {
         setIsLoaded(true);
       }
