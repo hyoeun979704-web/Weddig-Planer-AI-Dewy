@@ -84,7 +84,10 @@ const MenuSection = ({
     {
       title: "고객 지원",
       items: [
-        { icon: BookOpen, title: "사용 가이드", description: "웨딩 업체 입점·관리 사용법 모아보기", href: "/business/guides" },
+        { icon: BookOpen, title: "앱 사용 가이드", description: "둘러보기·문의·혜택·AI·청첩장 사용법", href: "/help" },
+        ...(isBusiness
+          ? [{ icon: Building2, title: "업체 관리 가이드", description: "웨딩 업체 입점·관리 사용법 모아보기", href: "/business/guides" } as MenuItem]
+          : []),
         { icon: Headset, title: "고객센터 챗봇", description: "불편한 점 바로 해결 · 안 풀리면 담당자 연결", href: "/support" },
         { icon: MessageSquare, title: "1:1 문의", description: "고객센터 문의하기", href: "/contact" },
         { icon: HelpCircle, title: "자주 묻는 질문", description: "FAQ", href: "/faq" },

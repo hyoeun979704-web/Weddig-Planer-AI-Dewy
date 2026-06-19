@@ -91,6 +91,7 @@ const VendorList = lazy(() => import("./pages/VendorList"));
 const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Guide = lazy(() => import("./pages/Guide"));
+const ConsumerGuide = lazy(() => import("./pages/ConsumerGuide"));
 const Beta = lazy(() => import("./pages/Beta"));
 const PremiumContent = lazy(() => import("./pages/PremiumContent"));
 const Premium = lazy(() => import("./pages/Premium"));
@@ -265,6 +266,7 @@ const App = () => (
               <Route path="/contact" element={<Contact />} />
               <Route path="/support" element={<SupportChat />} />
               <Route path="/faq" element={<FAQ />} />
+              <Route path="/help" element={<ConsumerGuide />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/invitation-venues" element={<InvitationVenues />} />
               <Route path="/invitation-venues/:id" element={<InvitationVenueDetail />} />
