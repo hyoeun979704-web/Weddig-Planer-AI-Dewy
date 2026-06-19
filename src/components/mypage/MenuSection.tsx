@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Calendar, User, Bell, FileText, MessageSquare,
   HelpCircle, Settings, ChevronRight, LogOut, Building2, Heart,
-  Mail, Shirt, Sparkles, Shield, Palette, Scissors, Headset
+  Mail, Shirt, Sparkles, Shield, Palette, Scissors, Headset, BookOpen
 } from "lucide-react";
 import { User as SupaUser } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -84,6 +84,7 @@ const MenuSection = ({
     {
       title: "고객 지원",
       items: [
+        { icon: BookOpen, title: "사용 가이드", description: "웨딩 업체 입점·관리 사용법 모아보기", href: "/business/guides" },
         { icon: Headset, title: "고객센터 챗봇", description: "불편한 점 바로 해결 · 안 풀리면 담당자 연결", href: "/support" },
         { icon: MessageSquare, title: "1:1 문의", description: "고객센터 문의하기", href: "/contact" },
         { icon: HelpCircle, title: "자주 묻는 질문", description: "FAQ", href: "/faq" },
@@ -120,15 +121,15 @@ const MenuSection = ({
           {/* 사용법 가이드 진입 — 대시보드 메뉴 안에도 있지만, 처음 온 사장님이
               관리 화면 사용법을 가장 먼저 찾도록 업체 관리 카드 바로 아래에 노출. */}
           <button
-            onClick={() => navigate("/business/guide")}
+            onClick={() => navigate("/business/guides")}
             className="mt-2 w-full flex items-center gap-3 px-4 py-3 bg-card rounded-2xl border border-border hover:border-primary/40 active:scale-[0.98] transition-all"
           >
             <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
               <HelpCircle className="w-5 h-5 text-amber-500" />
             </div>
             <div className="flex-1 text-left min-w-0">
-              <p className="text-sm font-semibold text-foreground">업체관리 대시보드 사용 가이드</p>
-              <p className="text-[11px] text-muted-foreground">가입·정보 등록·고객 노출까지 단계별 안내</p>
+              <p className="text-sm font-semibold text-foreground">사용 가이드 모아보기</p>
+              <p className="text-[11px] text-muted-foreground">전체 사용법 + 기능별 상세 가이드</p>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
           </button>

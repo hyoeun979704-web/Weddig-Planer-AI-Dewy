@@ -1,5 +1,6 @@
 import { useUserRole } from "@/hooks/useUserRole";
 import BusinessGuideView, { type GuideSlide } from "./BusinessGuideView";
+import { adjacentGuides } from "@/data/businessGuides";
 
 // 캡처는 scripts/capture-guide-shots.cjs 로 실제 앱을 3:4 모바일 뷰포트로 라이브 렌더해
 // (표시 프레임과 동일) 한 화면씩 찍고, 타깃에 하이라이트 박스 + 안내 라벨을 얹은 결과물
@@ -72,6 +73,7 @@ const BusinessGuide = () => {
       cta={isBusiness
         ? { label: "대시보드로 가기", target: "/business/dashboard" }
         : { label: "기업회원 가입하러 가기", target: "/business" }}
+      prevNext={adjacentGuides("overview")}
     />
   );
 };

@@ -5,6 +5,8 @@
 
 import type { GuideSlide } from "@/pages/business/BusinessGuideView";
 
+// 개요 가이드 커버(목록 썸네일용)
+import overviewCover from "@/assets/business/guide/business-landing.png";
 // 업체정보 수정
 import g1Basic from "@/assets/business/guide/g1-basic.png";
 import g1Inquiry from "@/assets/business/guide/g1-inquiry.png";
@@ -151,3 +153,44 @@ export const BUSINESS_GUIDES: BusinessGuideDef[] = [
 
 export const findBusinessGuide = (id?: string): BusinessGuideDef | undefined =>
   BUSINESS_GUIDES.find((g) => g.id === id);
+
+// ── 가이드 목록 + 블로그식 이전/다음 네비 ────────────────────────────────────
+// 개요(전체 사용법) + 상세 5종을 한 줄의 순서로 묶는다. 목록 페이지와 각 가이드의
+// 이전/다음 게시물 네비가 이 순서를 공유한다.
+export interface GuideNavItem {
+  /** 개요는 "overview", 상세는 BUSINESS_GUIDES.id */
+  id: string;
+  title: string;
+  summary: string;
+  route: string;
+  cover: string;
+}
+
+export const GUIDE_NAV: GuideNavItem[] = [
+  {
+    id: "overview",
+    title: "전체 사용법 가이드",
+    summary: "가입부터 고객 노출까지 — 처음이라면 여기서 시작하세요.",
+    route: "/business/guide",
+    cover: overviewCover,
+  },
+  ...BUSINESS_GUIDES.map((g) => ({
+    id: g.id,
+    title: g.headerTitle,
+    summary: g.deskSub,
+    route: `/business/guide/${g.id}`,
+    cover: g.slides[0].img,
+  })),
+];
+
+export interface GuideAdjacent {
+  prev: GuideNavItem | null;
+  next: GuideNavItem | null;
+}
+
+/** id("overview" | 상세 id)로 이전/다음 가이드를 찾는다. */
+export const adjacentGuides = (id?: string): GuideAdjacent => {
+  const i = GUIDE_NAV.findIndex((g) => g.id === id);
+  if (i === -1) return { prev: null, next: null };
+  return { prev: i > 0 ? GUIDE_NAV[i - 1] : null, next: i < GUIDE_NAV.length - 1 ? GUIDE_NAV[i + 1] : null };
+};
