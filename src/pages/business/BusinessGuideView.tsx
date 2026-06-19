@@ -33,6 +33,11 @@ export interface GuideViewProps {
   slides: GuideSlide[];
   /** 마지막 슬라이드/하단 CTA */
   cta: { label: string; target: string };
+  /** 블로그식 이전/다음 가이드(게시물) 네비 — 목록 순서 기반 */
+  prevNext?: {
+    prev: { title: string; route: string } | null;
+    next: { title: string; route: string } | null;
+  };
 }
 
 const Tip = ({ text, lg }: { text: string; lg?: boolean }) => (
@@ -51,8 +56,9 @@ const Tags = ({ tags, className }: { tags: string[]; className?: string }) => (
   </div>
 );
 
-const BusinessGuideView = ({ headerTitle, eyebrow, deskHeading, deskSub, slides, cta }: GuideViewProps) => {
+const BusinessGuideView = ({ headerTitle, eyebrow, deskHeading, deskSub, slides, cta, prevNext }: GuideViewProps) => {
   const navigate = useNavigate();
+  const hasPostNav = !!(prevNext && (prevNext.prev || prevNext.next));
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const total = slides.length;
@@ -113,6 +119,23 @@ const BusinessGuideView = ({ headerTitle, eyebrow, deskHeading, deskSub, slides,
 
       {/* 모바일 점 인디케이터 + 하단 내비 */}
       <div className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden">
+        {/* 블로그식 이전/다음 가이드(게시물) — 슬라이드 네비와 구분되는 가이드 단위 이동 */}
+        {hasPostNav && (
+          <div className="flex items-stretch gap-2 mb-2.5">
+            {prevNext?.prev ? (
+              <button onClick={() => navigate(prevNext.prev!.route)} className="flex-1 min-w-0 text-left px-3 py-1.5 rounded-lg border border-border bg-card active:bg-muted/60">
+                <span className="block text-[10px] text-muted-foreground">‹ 이전 가이드</span>
+                <span className="block text-xs font-semibold text-foreground truncate">{prevNext.prev.title}</span>
+              </button>
+            ) : <div className="flex-1" />}
+            {prevNext?.next ? (
+              <button onClick={() => navigate(prevNext.next!.route)} className="flex-1 min-w-0 text-right px-3 py-1.5 rounded-lg border border-border bg-card active:bg-muted/60">
+                <span className="block text-[10px] text-muted-foreground">다음 가이드 ›</span>
+                <span className="block text-xs font-semibold text-foreground truncate">{prevNext.next.title}</span>
+              </button>
+            ) : <div className="flex-1" />}
+          </div>
+        )}
         <div className="flex justify-center gap-1.5 mb-3">
           {slides.map((_, i) => (
             <button
@@ -191,6 +214,24 @@ const BusinessGuideView = ({ headerTitle, eyebrow, deskHeading, deskSub, slides,
             {cta.label} <ArrowRight className="w-4 h-4" />
           </button>
         </div>
+
+        {/* 블로그식 이전/다음 가이드 — 목록 순서대로 이어 보기 */}
+        {hasPostNav && (
+          <div className="mt-10 pt-8 border-t border-border grid grid-cols-2 gap-4">
+            {prevNext?.prev ? (
+              <button onClick={() => navigate(prevNext.prev!.route)} className="text-left rounded-2xl border border-border p-5 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors">
+                <span className="inline-flex items-center gap-1 text-sm font-bold text-muted-foreground"><ArrowLeft className="w-4 h-4" /> 이전 가이드</span>
+                <p className="mt-1.5 text-lg font-extrabold text-foreground">{prevNext.prev.title}</p>
+              </button>
+            ) : <div />}
+            {prevNext?.next ? (
+              <button onClick={() => navigate(prevNext.next!.route)} className="text-right rounded-2xl border border-border p-5 hover:border-primary/40 hover:bg-primary/[0.03] transition-colors">
+                <span className="inline-flex items-center gap-1 text-sm font-bold text-muted-foreground justify-end w-full">다음 가이드 <ArrowRight className="w-4 h-4" /></span>
+                <p className="mt-1.5 text-lg font-extrabold text-foreground">{prevNext.next.title}</p>
+              </button>
+            ) : <div />}
+          </div>
+        )}
       </div>
     </div>
   );

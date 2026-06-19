@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import BusinessGuideView from "./BusinessGuideView";
-import { findBusinessGuide } from "@/data/businessGuides";
+import { findBusinessGuide, adjacentGuides } from "@/data/businessGuides";
 
 // 기업회원 전용 주제별 상세 가이드. /business/guide/:guideId 로 진입.
 // 정의는 src/data/businessGuides.ts, 프레젠테이션은 BusinessGuideView 공유.
@@ -33,6 +33,7 @@ const BusinessGuideDetail = () => {
       deskSub={guide.deskSub}
       slides={guide.slides}
       cta={guide.cta}
+      prevNext={adjacentGuides(guide.id)}
     />
   );
 };
