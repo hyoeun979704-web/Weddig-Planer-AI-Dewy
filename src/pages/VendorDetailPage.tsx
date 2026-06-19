@@ -471,25 +471,33 @@ function DressShopExtras({ place }: { place: LegacyDetail }) {
 function MakeupExtras({ place }: { place: LegacyDetail }) {
   const fmtMan = formatManwon;
   const has =
-    place.makeup_styles.length > 0 ||
+    place.makeup_styles.length > 0 || place.product_brands.length > 0 ||
+    place.travel_areas.length > 0 ||
     place.includes_rehearsal != null || place.hair_makeup_separate != null ||
     place.rehearsal_count != null || place.travel_fee_included != null ||
-    place.director_level || place.early_morning_fee != null;
+    place.director_level || place.early_morning_fee != null ||
+    place.duration_min != null || place.companion_makeup != null;
   if (!has) return null;
   return (
     <div className="space-y-3">
       <h3 className="font-bold text-sm">메이크업 정보</h3>
       <Tags label="스타일" items={place.makeup_styles} />
+      <Tags label="사용 제품" items={place.product_brands} />
+      <Tags label="출장 지역" items={place.travel_areas} />
       <div className="grid grid-cols-2 gap-2">
         {place.director_level && <Stat label="시술자" value={place.director_level} />}
+        {place.duration_min != null && <Stat label="소요시간" value={`${place.duration_min}분`} />}
         {place.includes_rehearsal != null && (
           <Stat label="리허설 포함" value={place.includes_rehearsal ? "포함" : "별도"} />
+        )}
+        {place.rehearsal_count != null && (
+          <Stat label="리허설 횟수" value={`${place.rehearsal_count}회`} />
         )}
         {place.hair_makeup_separate != null && (
           <Stat label="헤어/메이크업" value={place.hair_makeup_separate ? "분리비" : "통합"} />
         )}
-        {place.rehearsal_count != null && (
-          <Stat label="리허설 횟수" value={`${place.rehearsal_count}회`} />
+        {place.companion_makeup != null && (
+          <Stat label="혼주·동행" value={place.companion_makeup ? "가능" : "불가"} />
         )}
         {place.travel_fee_included != null && (
           <Stat label="출장비" value={place.travel_fee_included ? "포함" : "별도"} />
@@ -505,20 +513,27 @@ function MakeupExtras({ place }: { place: LegacyDetail }) {
 function HanbokExtras({ place }: { place: LegacyDetail }) {
   const has =
     place.hanbok_types.length > 0 || place.designer_brands.length > 0 ||
+    place.size_options.length > 0 ||
     place.custom_available != null || place.accessories_included != null ||
     place.delivery_available != null || place.fitting_count != null ||
-    place.rental_includes_alterations != null;
+    place.rental_includes_alterations != null || place.rental_days != null ||
+    place.family_hanbok != null;
   if (!has) return null;
   return (
     <div className="space-y-3">
       <h3 className="font-bold text-sm">한복 정보</h3>
       <Tags label="한복 유형" items={place.hanbok_types} />
       <Tags label="브랜드" items={place.designer_brands} />
+      <Tags label="사이즈" items={place.size_options} />
       <div className="grid grid-cols-2 gap-2">
         {place.custom_available != null && (
           <Stat label="맞춤 제작" value={place.custom_available ? "가능" : "대여만"} />
         )}
         {place.fitting_count != null && <Stat label="가봉 횟수" value={`${place.fitting_count}회`} />}
+        {place.rental_days != null && <Stat label="대여 기간" value={`${place.rental_days}일`} />}
+        {place.family_hanbok != null && (
+          <Stat label="혼주·가족 한복" value={place.family_hanbok ? "가능" : "불가"} />
+        )}
         {place.accessories_included != null && (
           <Stat label="액세서리" value={place.accessories_included ? "포함" : "별도"} />
         )}
@@ -536,20 +551,24 @@ function HanbokExtras({ place }: { place: LegacyDetail }) {
 function TailorExtras({ place }: { place: LegacyDetail }) {
   const has =
     place.suit_styles.length > 0 || place.designer_brands.length > 0 ||
+    place.fabric_options.length > 0 || place.size_options.length > 0 ||
     place.fitting_count != null || place.custom_available != null ||
     place.rental_only != null || place.rental_includes_alterations != null ||
-    place.accessories_included != null;
+    place.accessories_included != null || place.production_days != null;
   if (!has) return null;
   return (
     <div className="space-y-3">
       <h3 className="font-bold text-sm">예복 정보</h3>
       <Tags label="스타일" items={place.suit_styles} />
       <Tags label="브랜드" items={place.designer_brands} />
+      <Tags label="원단" items={place.fabric_options} />
+      <Tags label="사이즈" items={place.size_options} />
       <div className="grid grid-cols-2 gap-2">
         {place.rental_only != null && (
           <Stat label="형태" value={place.rental_only ? "대여 전용" : "맞춤 가능"} />
         )}
         {place.fitting_count != null && <Stat label="가봉 횟수" value={`${place.fitting_count}회`} />}
+        {place.production_days != null && <Stat label="제작 소요" value={`${place.production_days}일`} />}
         {place.custom_available != null && (
           <Stat label="맞춤 제작" value={place.custom_available ? "가능" : "대여만"} />
         )}
