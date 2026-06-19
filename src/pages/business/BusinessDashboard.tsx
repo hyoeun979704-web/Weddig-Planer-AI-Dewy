@@ -8,6 +8,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useBranches } from "@/hooks/useBranches";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { BUSINESS_GUIDES } from "@/data/businessGuides";
 
 const BusinessDashboard = () => {
   const navigate = useNavigate();
@@ -510,6 +511,31 @@ const BusinessDashboard = () => {
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">{item.description}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 기능별 상세 가이드 — 각 기능을 한 장씩 따라 하는 사용법 */}
+        <div className="mx-4 mt-6 space-y-2">
+          <h3 className="text-xs font-medium text-muted-foreground px-1 mb-2">기능별 상세 가이드</h3>
+          <div className="bg-card rounded-2xl border border-border overflow-hidden">
+            {BUSINESS_GUIDES.map((g, idx) => (
+              <button
+                key={g.id}
+                onClick={() => navigate(`/business/guide/${g.id}`)}
+                className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 active:bg-muted/80 transition-colors text-left ${
+                  idx < BUSINESS_GUIDES.length - 1 ? "border-b border-border" : ""
+                }`}
+              >
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{g.headerTitle}</p>
+                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">{g.deskSub}</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               </button>

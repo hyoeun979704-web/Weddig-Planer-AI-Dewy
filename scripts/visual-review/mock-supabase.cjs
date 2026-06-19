@@ -49,6 +49,7 @@ const ROWS = {
 // 썸네일은 외부 네트워크 없이 보이도록 data-URI SVG 로 생성.
 const PLACE_ID = "00000000-0000-0000-0000-0000000000b1";
 const BP_ID = "00000000-0000-0000-0000-0000000000c1";
+const CUST_ID = "00000000-0000-0000-0000-0000000000d1"; // 가짜 고객(견적·문의·채팅 상대)
 const APPROVAL = process.env.MOCK_APPROVAL || "approved";
 
 // 그라데이션 썸네일(라벨 옵션) — <img src> 에 그대로 들어가는 data-URI.
@@ -114,6 +115,49 @@ if (process.env.MOCK_BUSINESS === "1") {
       { review_id: "rv2", place_id: PLACE_ID, rating: 5, content: "친절하고 결과물도 만족스러웠습니다.", created_at: new Date().toISOString() },
     ],
     favorites: [],
+    // ── 상세 가이드(견적·문의·이벤트·결과물)용 ──────────────────────────────
+    business_events: [
+      { id: "ev1", place_id: PLACE_ID, owner_user_id: USER_ID, title: "봄맞이 예약 할인",
+        description: "4월 안에 예약하시면 촬영비 10% 할인해 드려요.", starts_at: "2026-04-01", ends_at: "2026-04-30",
+        banner_image_url: thumb("이벤트 배너", "#fde68a", "#fca5a5"), detail_images: [],
+        moderation_status: "approved", moderation_note: null, created_at: new Date().toISOString() },
+    ],
+    place_inquiries: [
+      { id: "iq1", place_id: PLACE_ID, user_id: CUST_ID, title: "6월 마지막 주 촬영 가능한가요?",
+        content: "신혼부부입니다. 6월 28일 본식스냅 예약 가능한지 문의드려요.", contact: "010-1234-5678",
+        status: "open", answer: null, answered_at: null, created_at: new Date(Date.now() - 36e5).toISOString() },
+      { id: "iq2", place_id: PLACE_ID, user_id: CUST_ID, title: "한복 화보 패키지 문의",
+        content: "한복 화보도 진행하시나요? 가격이 궁금합니다.", contact: "010-2222-3333",
+        status: "answered", answer: "네, 한복 화보 패키지 89만원부터 진행합니다!", answered_at: new Date().toISOString(),
+        created_at: new Date(Date.now() - 72e5).toISOString() },
+    ],
+    quote_request_targets: [
+      // 답변 전(none) — '견적 답변하기' 버튼 노출
+      { request_id: "qr1", place_id: PLACE_ID, owner_user_id: USER_ID,
+        quote_requests: { id: "qr1", user_id: CUST_ID, category: "studio", region_city: "서울", region_district: "강남",
+          budget_min: 80, budget_max: 150, wedding_date: "2026-08-15", style: "natural",
+          note: "본식스냅 + 원본 전체 받고 싶어요. 자연광 스튜디오 선호합니다.", image_paths: [],
+          status: "open", created_at: new Date(Date.now() - 18e5).toISOString() } },
+      // 수락됨(accepted) — '고객과 메시지' + 연락처 노출
+      { request_id: "qr2", place_id: PLACE_ID, owner_user_id: USER_ID,
+        quote_requests: { id: "qr2", user_id: CUST_ID, category: "studio", region_city: "서울", region_district: "송파",
+          budget_min: 100, budget_max: 200, wedding_date: "2026-09-20", style: "modern",
+          note: "한복 화보까지 함께 견적 부탁드려요.", image_paths: [],
+          status: "open", created_at: new Date(Date.now() - 54e5).toISOString() } },
+    ],
+    quote_responses: [
+      { id: "qrs1", request_id: "qr2", place_id: PLACE_ID, owner_user_id: USER_ID,
+        message: "한복 화보 포함 패키지로 진행 가능합니다.", price_min: 120, price_max: 160,
+        status: "accepted", created_at: new Date().toISOString() },
+    ],
+    quote_messages: [
+      { id: "qm1", request_id: "qr2", place_id: PLACE_ID, sender_user_id: CUST_ID,
+        body: "안녕하세요! 견적 보고 연락드려요. 9월 셋째 주 가능할까요?", created_at: new Date(Date.now() - 12e5).toISOString() },
+      { id: "qm2", request_id: "qr2", place_id: PLACE_ID, sender_user_id: USER_ID,
+        body: "안녕하세요 :) 9월 20일 토요일 오후 예약 가능합니다! 원하시는 컨셉 있으실까요?", created_at: new Date(Date.now() - 9e5).toISOString() },
+      { id: "qm3", request_id: "qr2", place_id: PLACE_ID, sender_user_id: CUST_ID,
+        body: "내추럴한 분위기로 부탁드려요. 한복 화보도 같이 하고 싶어요!", created_at: new Date(Date.now() - 6e5).toISOString() },
+    ],
   });
 }
 
@@ -129,6 +173,9 @@ const RPC = {
   get_my_listing: () => PLACE_ROW,
   get_my_coupon_download_count: () => 36,
   get_place_detail: () => PLACE_ROW,
+  // 견적(리드) 가이드용
+  get_business_quote_funnel: () => ({ leads: 2, responded: 1, accepted: 1, booked: 0 }),
+  get_quote_lead_contact: () => ({ ok: true, name: "김신부", phone: "010-1234-5678" }),
 };
 
 function b64url(o) {

@@ -70,7 +70,40 @@ const SHOTS = [
     target: { sel: 'text=가격(원)' }, pad: 10 },
   { id: "business-coupons", route: "/business/coupons", auth: true, label: "입력하고 쿠폰 발행",
     target: { sel: 'button:has-text("쿠폰 발행")' }, pad: 10 },
+
+  // ══ 주제별 상세 가이드 슬라이드 (src/data/businessGuides.ts 가 import) ══════════
+  // 1) 업체정보 수정
+  { id: "g1-basic", route: "/business/edit", auth: true, label: "이름·소개·지역", target: { sel: 'text=업체명' }, pad: 10 },
+  { id: "g1-inquiry", route: "/business/edit", auth: true, label: "문의 받을 방법", target: { sel: 'button:has-text("앱 채팅")' }, pad: 12 },
+  { id: "g1-save", route: "/business/edit", auth: true, label: "저장 = 검토 후 노출", below: true, target: { sel: 'button:has-text("검토 요청")' }, pad: 10 },
+  // 2) 상품등록/수정
+  { id: "g2-form", route: "/business/products", auth: true, label: "상품명·가격 입력", target: { sel: 'text=상품명' }, pad: 10 },
+  { id: "g2-submit", route: "/business/products", auth: true, label: "등록 = 검토 후 노출", below: true, target: { sel: 'button:has-text("상품 등록")' }, pad: 10 },
+  { id: "g2-list", route: "/business/products", auth: true, label: "검토 → 노출 상태", target: { sel: 'text=노출중' }, pad: 10 },
+  // 3) 포트폴리오 등록/수정
+  { id: "g3-album", route: "/business/gallery", auth: true, label: "앨범으로 묶기", target: { sel: 'text=앨범 제목' }, pad: 10 },
+  { id: "g3-add", route: "/business/gallery", auth: true, label: "업로드 = 즉시 노출", below: true, target: { sel: 'button:has-text("사진 추가")' }, pad: 10 },
+  { id: "g3-list", route: "/business/gallery", auth: true, label: "앨범별로 정리",
+    target: { pick: (p) => p.getByText("그랜드웨딩홀 강남").first() }, pad: 12 },
+  // 4) 쿠폰·이벤트
+  { id: "g4-coupon-form", route: "/business/coupons", auth: true, label: "입력하고 발행", below: true, target: { sel: 'button:has-text("쿠폰 발행")' }, pad: 10 },
+  { id: "g4-coupon-list", route: "/business/coupons", auth: true, label: "검토 후 노출", target: { sel: 'text=노출중' }, pad: 10 },
+  { id: "g4-event-form", route: "/business/events", auth: true, label: "이벤트 등록", target: { sel: 'h2:has-text("이벤트 등록")' }, pad: 10 },
+  { id: "g4-event-banner", route: "/business/events", auth: true, label: "배너 이미지 필수", target: { sel: 'text=배너 이미지' }, pad: 10 },
+  // 5) 견적 제안/수락/채팅 — 소비자 소통
+  { id: "g5-leads", route: "/business/leads", auth: true, label: "받은 견적 한눈에", target: { sel: 'text=받은 리드' }, pad: 12 },
+  { id: "g5-reply", route: "/business/leads", auth: true, label: "가격·메시지로 답변", target: { sel: 'button:has-text("견적 답변하기")' }, pad: 10 },
+  { id: "g5-chat", route: "/quote/qr2/thread/00000000-0000-0000-0000-0000000000b1", auth: true, label: "수락 후 실시간 채팅", below: true, target: { sel: 'input[placeholder="메시지 보내기"]' }, pad: 10 },
+  { id: "g5-inquiry", route: "/business/inquiries", auth: true, label: "문의엔 답변 등록", below: true, pre: expandFirstInquiry, target: { sel: 'button:has-text("답변 등록")' }, pad: 10 },
+  { id: "g5-delivery", route: "/business/deliveries", auth: true, label: "결과물 파일 전달", below: true, pre: expandFirstInquiry, target: { sel: 'button:has-text("결과물 보내기")' }, pad: 10 },
 ];
+
+// 문의/결과물 페이지의 첫 문의 카드를 펼쳐 답변·전달 폼을 노출시킨다.
+async function expandFirstInquiry(page) {
+  for (const sel of ['text=6월 마지막 주 촬영', 'text=한복 화보 패키지']) {
+    try { await page.locator(sel).first().click({ timeout: 1500 }); await page.waitForTimeout(700); return; } catch { /* 다음 */ }
+  }
+}
 
 async function fillOnboardToStep1(page) {
   // step0: 사업자등록번호/상호명/대표자명/개업일자 → 다음

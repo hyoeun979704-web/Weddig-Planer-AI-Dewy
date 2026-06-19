@@ -176,6 +176,7 @@ const BusinessLanding = lazy(() => import("./pages/business/BusinessLanding"));
 const BusinessOnboard = lazy(() => import("./pages/business/BusinessOnboard"));
 const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
 const BusinessGuide = lazy(() => import("./pages/business/BusinessGuide"));
+const BusinessGuideDetail = lazy(() => import("./pages/business/BusinessGuideDetail"));
 const BusinessVendorEdit = lazy(() => import("./pages/business/BusinessVendorEdit"));
 const BusinessClaim = lazy(() => import("./pages/business/BusinessClaim"));
 const AdminPlaceClaims = lazy(() => import("./pages/admin/AdminPlaceClaims"));
@@ -310,6 +311,7 @@ const App = () => (
               {/* 사용법 가이드는 정적 콘텐츠(데이터 패치 없음) — 기업회원 '전환 전'
                   예비 사장님(로그인 페이지 진입)도 봐야 하므로 가드 없이 공개한다. */}
               <Route path="/business/guide" element={<BusinessGuide />} />
+              <Route path="/business/guide/:guideId" element={<BusinessGuideDetail />} />
               <Route path="/business/edit" element={<BusinessGuard requireApproved><BusinessVendorEdit /></BusinessGuard>} />
               <Route path="/business/claim" element={<BusinessGuard requireApproved><BusinessClaim /></BusinessGuard>} />
               <Route path="/business/gallery" element={<BusinessGuard requireApproved><BusinessGallery /></BusinessGuard>} />

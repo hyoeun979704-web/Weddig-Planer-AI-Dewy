@@ -79,6 +79,25 @@ node scripts/capture-guide-shots.cjs --only=business-pending
 `PLACE_ID` 는 `mock-supabase.cjs` 와 `capture-guide-shots.cjs` 양쪽에 동일하게 박혀 있다
 (`00000000-…-b1`).
 
+## 주제별 상세 가이드 (5종)
+
+개요 가이드(`/business/guide`) 외에, 기능별 상세 가이드가 `/business/guide/:guideId` 로 있다.
+정의는 `src/data/businessGuides.ts`(단일 소스), 렌더는 `BusinessGuideDetail` → `BusinessGuideView`
+공유. 진입은 **기업 대시보드 "기능별 상세 가이드"** 섹션.
+
+| guideId | 제목 | 슬라이드(SHOTS id) | 캡처 라우트 |
+|---|---|---|---|
+| `vendor-edit` | 업체 정보 수정 | `g1-basic` `g1-inquiry` `g1-save` | /business/edit |
+| `products` | 상품 등록 | `g2-form` `g2-submit` `g2-list` | /business/products |
+| `portfolio` | 포트폴리오 관리 | `g3-album` `g3-add` `g3-list` | /business/gallery |
+| `promotions` | 쿠폰·이벤트 | `g4-coupon-form` `g4-coupon-list` `g4-event-form` `g4-event-banner` | /business/coupons·events |
+| `customers` | 견적·문의·소통 | `g5-leads` `g5-reply` `g5-chat` `g5-inquiry` `g5-delivery` | /business/leads·inquiries·deliveries + /quote/.../thread/... |
+
+`g5-inquiry`·`g5-delivery` 는 첫 문의 카드를 펼쳐(`expandFirstInquiry` pre) 답변·전달 폼을
+노출시킨다. `g5-chat` 은 `/quote/qr2/thread/<PLACE_ID>`(목 quote_messages). 모두 `MOCK_BUSINESS=1`
+승인 상태에서 캡처. 슬라이드 문구를 바꾸려면 `businessGuides.ts`, 사진을 다시 찍으려면 해당
+SHOTS id 로 `--only` 재실행.
+
 ## 시나리오(SHOTS) 추가·수정법
 
 `scripts/capture-guide-shots.cjs` 의 `SHOTS` 배열 항목:
