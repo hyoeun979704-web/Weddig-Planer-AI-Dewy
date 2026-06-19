@@ -20,6 +20,7 @@ interface ProductDetail {
   price: number | null;
   description: string | null;
   image_url: string | null;
+  detail_images: string[];
   placeName: string | null;
   placeThumb: string | null;
   phone: string | null; // 전화 문의 번호(inquiry_phone ?? tel)
@@ -64,6 +65,7 @@ const ProductDetailPage = () => {
     setP({
       id: data.id, place_id: data.place_id, name: data.name, price: data.price ?? null,
       description: data.description ?? null, image_url: pub(data.image_url ?? null),
+      detail_images: ((data.detail_images ?? []) as string[]).map((u) => pub(u)).filter(Boolean) as string[],
       placeName, placeThumb, phone,
     });
     setRelated(relPhotos);
@@ -110,6 +112,16 @@ const ProductDetailPage = () => {
           <h1 className="text-xl font-extrabold text-foreground leading-snug text-balance">{p.name}</h1>
           {p.price != null && <p className="text-lg font-extrabold text-primary">{p.price.toLocaleString()}원</p>}
           {p.description && <p className="text-sm text-foreground whitespace-pre-line leading-relaxed pt-1">{p.description}</p>}
+
+          {p.detail_images.length > 0 && (
+            <div className="space-y-2 pt-1">
+              {p.detail_images.map((u) => (
+                <button key={u} type="button" onClick={() => setLightbox({ urls: p.detail_images, i: p.detail_images.indexOf(u) })} className="block w-full">
+                  <img src={u} alt="" className="w-full rounded-xl" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
 
           {related.length > 0 && (
             <div className="space-y-2 pt-2">
