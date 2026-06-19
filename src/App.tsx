@@ -160,6 +160,7 @@ const DealDetail = lazy(() => import("./pages/DealDetail"));
 // 진행중 이벤트 모음 (가입 혜택·미션·초대 등)
 const Events = lazy(() => import("./pages/Events"));
 const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
+const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
 
 // 기능 4: 쇼핑 결제 플로우
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
@@ -289,6 +290,7 @@ const App = () => (
               <Route path="/deals/:id" element={<DealDetail />} />
               <Route path="/events" element={<Events />} />
               <Route path="/event/:id" element={<EventDetailPage />} />
+              <Route path="/product/:id" element={<ProductDetailPage />} />
 
               {/* 기능 4: 쇼핑 결제 플로우 */}
               <Route path="/store/:id" element={<ProductDetail />} />

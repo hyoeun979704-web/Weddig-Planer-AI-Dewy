@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Package, Image as ImageIcon, UtensilsCrossed, X, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ProductRow { id: string; name: string; price: number | null; description: string | null; image_url: string | null; }
 interface MediaRow {
@@ -40,10 +40,10 @@ const pub = (url?: string | null): string | null => {
 // 업체 상세페이지의 기업회원 등록 콘텐츠(포트폴리오 앨범·상품·이벤트·메뉴) 노출.
 // 승인된 것만 RLS 로 내려오며, 데이터 없는 섹션은 렌더하지 않는다.
 const PlaceBusinessSections = ({ placeId, category }: { placeId: string; category: string }) => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [media, setMedia] = useState<MediaRow[]>([]);
   const [albums, setAlbums] = useState<AlbumRow[]>([]);
-  const [activeProduct, setActiveProduct] = useState<ProductRow | null>(null);
   // 사진 풀스크린 라이트박스(좌우 이동). 포트폴리오/상품 이미지를 크게 본다.
   const [lightbox, setLightbox] = useState<{ urls: string[]; i: number } | null>(null);
   // 포트폴리오 필터(스타일·식장·패키지) — 칩 선택 상태. 미선택 시 전체 노출.
@@ -116,12 +116,6 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
   const openLightbox = (urls: (string | null | undefined)[], i: number) => {
     const clean = urls.map((u) => pub(u)).filter(Boolean) as string[];
     if (clean.length) setLightbox({ urls: clean, i: Math.max(0, Math.min(i, clean.length - 1)) });
-  };
-
-  // 상품 클릭 시 모달에 함께 보여줄 '관련 포트폴리오' = 그 상품에 연결된 앨범의 사진들.
-  const relatedPhotos = (productId: string): MediaRow[] => {
-    const albumIds = new Set(albums.filter((a) => a.product_id === productId).map((a) => a.id));
-    return media.filter((m) => m.album_id && albumIds.has(m.album_id));
   };
 
   return (
@@ -224,7 +218,7 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
               <button
                 key={p.id}
                 type="button"
-                onClick={() => setActiveProduct(p)}
+                onClick={() => navigate(`/product/${p.id}`)}
                 className="text-left rounded-xl border border-border overflow-hidden bg-card active:opacity-90 hover:border-primary/40 transition-colors"
               >
                 <div className="aspect-square bg-muted">
@@ -239,49 +233,6 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
           </div>
         </div>
       )}
-
-      {/* 상품 상세 모달 */}
-      <Dialog open={!!activeProduct} onOpenChange={(o) => !o && setActiveProduct(null)}>
-        <DialogContent className="max-w-md p-0 overflow-hidden max-h-[85vh] overflow-y-auto">
-          {activeProduct && (
-            <>
-              {pub(activeProduct.image_url) && (
-                <button type="button" onClick={() => openLightbox([activeProduct.image_url], 0)} className="block w-full aspect-[4/3] bg-muted">
-                  <img src={pub(activeProduct.image_url)!} alt={activeProduct.name} className="w-full h-full object-cover" />
-                </button>
-              )}
-              <div className="p-5 space-y-3">
-                <DialogHeader>
-                  <DialogTitle className="text-left">{activeProduct.name}</DialogTitle>
-                </DialogHeader>
-                {activeProduct.price != null && (
-                  <p className="text-lg font-extrabold text-primary">{activeProduct.price.toLocaleString()}원</p>
-                )}
-                {activeProduct.description && (
-                  <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{activeProduct.description}</p>
-                )}
-                {(() => {
-                  const rel = relatedPhotos(activeProduct.id);
-                  if (rel.length === 0) return null;
-                  const urls = rel.map((m) => m.image_url);
-                  return (
-                    <div className="space-y-2 pt-1">
-                      <p className="text-xs font-bold text-foreground flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5 text-primary" /> 관련 포트폴리오</p>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {rel.map((m, idx) => (
-                          <button key={m.id} type="button" onClick={() => openLightbox(urls, idx)} className="rounded-lg overflow-hidden bg-muted aspect-square block">
-                            {pub(m.image_url) && <img src={pub(m.image_url)!} alt="" className="w-full h-full object-cover" loading="lazy" />}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* 사진 풀스크린 라이트박스 */}
       {lightbox && (

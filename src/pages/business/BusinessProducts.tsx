@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, Package, Loader2 } from "lucide-react";
+import { Plus, Trash2, Package, Loader2, X } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,7 @@ const BusinessProducts = () => {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [detailImages, setDetailImages] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
   const [uploaderKey, setUploaderKey] = useState(0);
 
@@ -71,10 +72,11 @@ const BusinessProducts = () => {
       price: price ? parseInt(price, 10) : null,
       description: description.trim() || null,
       image_url: imageUrl.trim() || null,
-    });
+      detail_images: detailImages,
+    } as any);
     setAdding(false);
     if (error) { toast.error("등록에 실패했어요"); return; }
-    setName(""); setPrice(""); setDescription(""); setImageUrl("");
+    setName(""); setPrice(""); setDescription(""); setImageUrl(""); setDetailImages([]);
     setUploaderKey((k) => k + 1);
     toast.success("상품을 등록했어요. 운영자 검토 후 노출됩니다");
     await loadProducts(placeId);
@@ -124,11 +126,11 @@ const BusinessProducts = () => {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">설명</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="상품 설명" />
+            <Label className="text-xs">설명 (선택)</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="상품 설명 (상세 이미지로 대신해도 돼요)" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">상품 사진</Label>
+            <Label className="text-xs">대표 사진 (썸네일)</Label>
             {user && (
               <ImageUploader
                 key={uploaderKey}
@@ -144,6 +146,34 @@ const BusinessProducts = () => {
               placeholder="또는 외부 이미지 URL (https://...)"
               className="mt-2"
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">상세 이미지 (여러 장 가능)</Label>
+            {detailImages.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {detailImages.map((url, i) => (
+                  <div key={url} className="relative aspect-square rounded-lg overflow-hidden border border-border bg-muted">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setDetailImages((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {user && (
+              <ImageUploader
+                key={`detail-${uploaderKey}-${detailImages.length}`}
+                bucket="vendor-images"
+                pathPrefix={`${user.id}/`}
+                onUploaded={(_, url) => setDetailImages((prev) => [...prev, url])}
+              />
+            )}
+            <p className="text-[11px] text-muted-foreground">한 장씩 올리면 계속 추가돼요. 이미지만으로 상세를 구성할 수 있어요(설명 생략 가능).</p>
           </div>
           <Button onClick={handleAdd} disabled={adding} className="w-full">
             {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> 상품 등록</>}
