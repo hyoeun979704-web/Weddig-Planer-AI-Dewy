@@ -29,7 +29,7 @@ const Footer = () => {
           <span className="font-logo text-[15px] text-black">Dewy</span>
         </div>
         <div className="text-[12px] leading-[18px] text-black">
-          <p>(주)듀이 | 대표: 김효은</p>
+          <p>듀이 (Dewy) | 대표: 김효은</p>
           <p>사업자등록번호: 218-38-01132</p>
           <p>통신판매업신고: 제 2023-충남천안-1575호</p>
           <p>충청남도 천안시 서북구 천안대로 1446, 16층 듀이</p>
