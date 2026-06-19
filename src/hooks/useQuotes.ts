@@ -2,6 +2,7 @@
 // 읽기는 RLS 가 허용한 직접 SELECT(요청자 + 매칭된 업체 소유자).
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logClientError } from "@/lib/errorLog";
 import { useAuth } from "@/contexts/AuthContext";
 import { rankQuoteResponses } from "@/lib/quoteMatch";
 
@@ -165,6 +166,8 @@ export function useQuoteResponses(requestId: string | undefined) {
     // PGRST200). 최소한 콘솔로 관측 가능하게 남긴다.
     if (reqErr || respErr || cntErr) {
       console.error("useQuoteResponses load failed", { reqErr, respErr, cntErr });
+      // 조용한 실패는 감사에서 누락되기 쉬움 → client_error_logs 에도 기록(관측).
+      void logClientError({ message: `useQuoteResponses load failed: ${reqErr?.message ?? respErr?.message ?? cntErr?.message ?? "unknown"}`, source: "data-fetch" });
     }
     const reqRow = (req as QuoteRequest) ?? null;
     setMatchedCount(matched ?? 0);
