@@ -1,17 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
-import { Megaphone, Package, Image as ImageIcon, UtensilsCrossed, Calendar, ChevronRight } from "lucide-react";
+import { Package, Image as ImageIcon, UtensilsCrossed, X, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-interface EventRow {
-  id: string;
-  title: string;
-  description: string | null;
-  starts_at: string | null;
-  ends_at: string | null;
-  banner_image_url: string | null;
-  detail_images: string[] | null;
-}
 interface ProductRow { id: string; name: string; price: number | null; description: string | null; image_url: string | null; }
 interface MediaRow {
   id: string;
@@ -34,28 +25,39 @@ interface AlbumRow {
   product_id: string | null;
 }
 
+// 업체가 올린 이미지는 vendor-images(공개) 버킷의 public URL 로 저장된다. 다만 과거/외부
+// 경로만 저장된 행(드리프트)도 깨지지 않게, http/data/blob 가 아니면 public URL 로 변환한다.
+const pub = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (/^(https?:|data:|blob:)/i.test(url)) return url;
+  try {
+    return supabase.storage.from("vendor-images").getPublicUrl(url).data.publicUrl || url;
+  } catch {
+    return url;
+  }
+};
+
 // 업체 상세페이지의 기업회원 등록 콘텐츠(포트폴리오 앨범·상품·이벤트·메뉴) 노출.
 // 승인된 것만 RLS 로 내려오며, 데이터 없는 섹션은 렌더하지 않는다.
 const PlaceBusinessSections = ({ placeId, category }: { placeId: string; category: string }) => {
-  const [events, setEvents] = useState<EventRow[]>([]);
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [media, setMedia] = useState<MediaRow[]>([]);
   const [albums, setAlbums] = useState<AlbumRow[]>([]);
-  const [activeEvent, setActiveEvent] = useState<EventRow | null>(null);
+  const [activeProduct, setActiveProduct] = useState<ProductRow | null>(null);
+  // 사진 풀스크린 라이트박스(좌우 이동). 포트폴리오/상품 이미지를 크게 본다.
+  const [lightbox, setLightbox] = useState<{ urls: string[]; i: number } | null>(null);
   // 포트폴리오 필터(스타일·식장·패키지) — 칩 선택 상태. 미선택 시 전체 노출.
   const [filter, setFilter] = useState<{ kind: "style" | "venue" | "product"; value: string } | null>(null);
   const isMenu = category === "invitation_venue";
 
   const load = useCallback(async () => {
-    const [ev, pr, md, alb] = await Promise.all([
-      // select("*") — banner_image_url/detail_images 가 라이브 DB 에 아직 없어도 422 안 나게(드리프트 방어, place_media 와 동일 idiom). 있으면 함께 내려옴.
-      supabase.from("business_events" as any).select("*").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
+    const [pr, md, alb] = await Promise.all([
       supabase.from("business_products" as any).select("id, name, price, description, image_url").eq("place_id", placeId).eq("moderation_status", "approved").order("created_at", { ascending: false }),
+      // select("*") — place_media 컬럼 드리프트 방어. 있으면 함께 내려옴.
       supabase.from("place_media" as any).select("*").eq("place_id", placeId).order("display_order", { ascending: true }),
       // 앨범 테이블이 라이브에 아직 없으면 error → 빈 배열로 폴백(평면 렌더).
       supabase.from("place_media_albums" as any).select("id, title, venue_name, style_tags, description, product_id").eq("place_id", placeId).order("created_at", { ascending: false }),
     ]);
-    setEvents((ev.data ?? []) as unknown as EventRow[]);
     setProducts((pr.data ?? []) as unknown as ProductRow[]);
     setMedia((md.data ?? []) as unknown as MediaRow[]);
     setAlbums((alb.data ?? []) as unknown as AlbumRow[]);
@@ -63,7 +65,19 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
 
   useEffect(() => { load(); }, [load]);
 
-  if (events.length === 0 && products.length === 0 && media.length === 0) return null;
+  // Esc 로 라이트박스 닫기.
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightbox(null);
+      if (e.key === "ArrowLeft") setLightbox((l) => (l ? { ...l, i: (l.i - 1 + l.urls.length) % l.urls.length } : l));
+      if (e.key === "ArrowRight") setLightbox((l) => (l ? { ...l, i: (l.i + 1) % l.urls.length } : l));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox]);
+
+  if (products.length === 0 && media.length === 0) return null;
 
   const productName = new Map(products.map((p) => [p.id, p.name]));
   const albumById = new Map(albums.map((a) => [a.id, a]));
@@ -99,6 +113,17 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
   };
   const visibleAlbumKeys = orderedAlbumKeys.filter((k) => matchAlbum(k ? albumById.get(k) ?? null : null));
 
+  const openLightbox = (urls: (string | null | undefined)[], i: number) => {
+    const clean = urls.map((u) => pub(u)).filter(Boolean) as string[];
+    if (clean.length) setLightbox({ urls: clean, i: Math.max(0, Math.min(i, clean.length - 1)) });
+  };
+
+  // 상품 클릭 시 모달에 함께 보여줄 '관련 포트폴리오' = 그 상품에 연결된 앨범의 사진들.
+  const relatedPhotos = (productId: string): MediaRow[] => {
+    const albumIds = new Set(albums.filter((a) => a.product_id === productId).map((a) => a.id));
+    return media.filter((m) => m.album_id && albumIds.has(m.album_id));
+  };
+
   return (
     <div className="space-y-5">
       {/* 포트폴리오(사진, 앨범 그룹) / 메뉴 */}
@@ -111,11 +136,16 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
 
           {isMenu ? (
             <div className="grid grid-cols-2 gap-2">
-              {media.map((m) => (
+              {media.map((m, idx) => (
                 <div key={m.id} className="rounded-xl border border-border overflow-hidden bg-card">
-                  <div className="aspect-square bg-muted">
-                    {m.image_url && <img src={m.image_url} alt={m.title ?? ""} className="w-full h-full object-cover" />}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openLightbox(media.map((x) => x.image_url), idx)}
+                    className="block w-full aspect-square bg-muted"
+                    aria-label={`${m.title ?? "메뉴"} 크게 보기`}
+                  >
+                    {pub(m.image_url) && <img src={pub(m.image_url)!} alt={m.title ?? ""} className="w-full h-full object-cover" loading="lazy" />}
+                  </button>
                   <div className="p-2">
                     <p className="text-[12px] font-semibold text-foreground truncate">{m.title}</p>
                     {m.price != null && <p className="text-[11px] text-muted-foreground">{m.price.toLocaleString()}원</p>}
@@ -146,6 +176,7 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
                 // 앨범 없는 단독 사진은 행 자체 메타(레거시) 사용.
                 const looseVenue = !alb && photos[0]?.venue_name;
                 const pkg = alb?.product_id ? productName.get(alb.product_id) : undefined;
+                const albumUrls = photos.map((p) => p.image_url);
                 return (
                   <div key={albId ?? "loose"} className="space-y-1.5">
                     {(alb || looseVenue) && (
@@ -164,10 +195,16 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
                     )}
                     {alb?.description && <p className="text-[11px] text-muted-foreground">{alb.description}</p>}
                     <div className="grid grid-cols-2 gap-2">
-                      {photos.map((m) => (
-                        <div key={m.id} className="rounded-xl border border-border overflow-hidden bg-card aspect-square">
-                          {m.image_url && <img src={m.image_url} alt={m.title ?? alb?.title ?? ""} className="w-full h-full object-cover" />}
-                        </div>
+                      {photos.map((m, idx) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => openLightbox(albumUrls, idx)}
+                          className="rounded-xl border border-border overflow-hidden bg-card aspect-square block"
+                          aria-label="사진 크게 보기"
+                        >
+                          {pub(m.image_url) && <img src={pub(m.image_url)!} alt={m.title ?? alb?.title ?? ""} className="w-full h-full object-cover" loading="lazy" />}
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -178,93 +215,107 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
         </div>
       )}
 
-      {/* 상품 */}
+      {/* 상품 — 카드 탭 시 상세 모달(이미지·설명·관련 포트폴리오) */}
       {products.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-bold text-sm flex items-center gap-1.5"><Package className="w-4 h-4 text-primary" /> 상품</h3>
           <div className="grid grid-cols-2 gap-2">
             {products.map((p) => (
-              <div key={p.id} className="rounded-xl border border-border overflow-hidden bg-card">
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setActiveProduct(p)}
+                className="text-left rounded-xl border border-border overflow-hidden bg-card active:opacity-90 hover:border-primary/40 transition-colors"
+              >
                 <div className="aspect-square bg-muted">
-                  {p.image_url && <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />}
+                  {pub(p.image_url) && <img src={pub(p.image_url)!} alt={p.name} className="w-full h-full object-cover" loading="lazy" />}
                 </div>
                 <div className="p-2">
                   <p className="text-[12px] font-semibold text-foreground truncate">{p.name}</p>
                   {p.price != null && <p className="text-[11px] text-muted-foreground">{p.price.toLocaleString()}원</p>}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* 이벤트 — 배너 카드 → 탭 시 상세 모달 */}
-      {events.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="font-bold text-sm flex items-center gap-1.5"><Megaphone className="w-4 h-4 text-primary" /> 진행중 이벤트</h3>
-          {events.map((e) => (
-            <button
-              key={e.id}
-              type="button"
-              onClick={() => setActiveEvent(e)}
-              className="w-full text-left rounded-xl border border-border bg-card overflow-hidden active:opacity-90"
-            >
-              {e.banner_image_url && (
-                <div className="aspect-[2/1] bg-muted">
-                  <img src={e.banner_image_url} alt={e.title} className="w-full h-full object-cover" />
-                </div>
-              )}
-              <div className="p-3 flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{e.title}</p>
-                  {e.description && <p className="text-[13px] text-muted-foreground mt-0.5 line-clamp-1 whitespace-pre-line">{e.description}</p>}
-                  {(e.starts_at || e.ends_at) && (
-                    <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />{e.starts_at ?? ""}{e.ends_at ? ` ~ ${e.ends_at}` : ""}
-                    </p>
-                  )}
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* 이벤트 상세 모달 */}
-      <Dialog open={!!activeEvent} onOpenChange={(o) => !o && setActiveEvent(null)}>
+      {/* 상품 상세 모달 */}
+      <Dialog open={!!activeProduct} onOpenChange={(o) => !o && setActiveProduct(null)}>
         <DialogContent className="max-w-md p-0 overflow-hidden max-h-[85vh] overflow-y-auto">
-          {activeEvent && (
+          {activeProduct && (
             <>
-              {activeEvent.banner_image_url && (
-                <div className="aspect-[2/1] bg-muted">
-                  <img src={activeEvent.banner_image_url} alt={activeEvent.title} className="w-full h-full object-cover" />
-                </div>
+              {pub(activeProduct.image_url) && (
+                <button type="button" onClick={() => openLightbox([activeProduct.image_url], 0)} className="block w-full aspect-[4/3] bg-muted">
+                  <img src={pub(activeProduct.image_url)!} alt={activeProduct.name} className="w-full h-full object-cover" />
+                </button>
               )}
               <div className="p-5 space-y-3">
                 <DialogHeader>
-                  <DialogTitle className="text-left">{activeEvent.title}</DialogTitle>
+                  <DialogTitle className="text-left">{activeProduct.name}</DialogTitle>
                 </DialogHeader>
-                {(activeEvent.starts_at || activeEvent.ends_at) && (
-                  <p className="text-[12px] text-muted-foreground flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />{activeEvent.starts_at ?? ""}{activeEvent.ends_at ? ` ~ ${activeEvent.ends_at}` : ""}
-                  </p>
+                {activeProduct.price != null && (
+                  <p className="text-lg font-extrabold text-primary">{activeProduct.price.toLocaleString()}원</p>
                 )}
-                {activeEvent.description && (
-                  <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{activeEvent.description}</p>
+                {activeProduct.description && (
+                  <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{activeProduct.description}</p>
                 )}
-                {(activeEvent.detail_images ?? []).length > 0 && (
-                  <div className="space-y-2">
-                    {(activeEvent.detail_images ?? []).map((url) => (
-                      <img key={url} src={url} alt="" className="w-full rounded-lg" />
-                    ))}
-                  </div>
-                )}
+                {(() => {
+                  const rel = relatedPhotos(activeProduct.id);
+                  if (rel.length === 0) return null;
+                  const urls = rel.map((m) => m.image_url);
+                  return (
+                    <div className="space-y-2 pt-1">
+                      <p className="text-xs font-bold text-foreground flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5 text-primary" /> 관련 포트폴리오</p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {rel.map((m, idx) => (
+                          <button key={m.id} type="button" onClick={() => openLightbox(urls, idx)} className="rounded-lg overflow-hidden bg-muted aspect-square block">
+                            {pub(m.image_url) && <img src={pub(m.image_url)!} alt="" className="w-full h-full object-cover" loading="lazy" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* 사진 풀스크린 라이트박스 */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[120] bg-black/90 flex items-center justify-center"
+          onClick={() => setLightbox(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button type="button" aria-label="닫기" onClick={() => setLightbox(null)} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center">
+            <X className="w-5 h-5" />
+          </button>
+          <img src={lightbox.urls[lightbox.i]} alt="" className="max-w-[92vw] max-h-[82vh] object-contain" onClick={(e) => e.stopPropagation()} />
+          {lightbox.urls.length > 1 && (
+            <>
+              <button
+                type="button" aria-label="이전 사진"
+                onClick={(e) => { e.stopPropagation(); setLightbox((l) => (l ? { ...l, i: (l.i - 1 + l.urls.length) % l.urls.length } : l)); }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                type="button" aria-label="다음 사진"
+                onClick={(e) => { e.stopPropagation(); setLightbox((l) => (l ? { ...l, i: (l.i + 1) % l.urls.length } : l)); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center"
+              >
+                <ChevronRightIcon className="w-6 h-6" />
+              </button>
+              <p className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/80 text-sm tabular-nums">{lightbox.i + 1} / {lightbox.urls.length}</p>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 };

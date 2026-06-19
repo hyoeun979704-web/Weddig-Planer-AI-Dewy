@@ -25,7 +25,25 @@ export interface PartnerDeal {
   view_count: number;
   claim_count: number;
   is_claimed?: boolean;
+  // 업체 이벤트(business_events)를 같은 목록에 합칠 때 쓰는 부가 필드.
+  kind?: "deal" | "event";
+  place_id?: string;          // event → /vendor/:place_id 이동
+  has_banner?: boolean;       // '이벤트 상세페이지 등록'(배너 有) = 노출 우선
+  is_partner?: boolean;       // 제휴업체 우선
+  created_at?: string | null; // 최신순 정렬용
 }
+
+// 업체 이미지(vendor-images 공개 버킷) public URL. 경로만 저장된 레거시 행 방어.
+const pubUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (/^(https?:|data:|blob:)/i.test(url)) return url;
+  try { return supabase.storage.from("vendor-images").getPublicUrl(url).data.publicUrl || url; } catch { return url; }
+};
+
+// 업체 카테고리(place.category) → 혜택 탭 카테고리 키.
+const PLACE_TO_DEAL_CAT: Record<string, string> = {
+  wedding_hall: "venue", studio: "studio", dress_shop: "studio", makeup_shop: "studio", honeymoon: "honeymoon",
+};
 
 const categoryLabels: Record<string, string> = {
   all: "전체",
@@ -71,13 +89,66 @@ export const usePartnerDeals = (category?: string) => {
         claimedIds = new Set((claims || []).map((c: any) => c.deal_id));
       }
 
-      const enriched = (data || []).map((d: PartnerDeal) => ({
+      const enriched: PartnerDeal[] = (data || []).map((d: PartnerDeal) => ({
         ...d,
         is_claimed: claimedIds.has(d.id),
+        kind: "deal" as const,
+        has_banner: !!d.banner_image_url,
+        is_partner: false,
       }));
 
-      setDeals(enriched);
-      setFeatured(enriched.filter((d: PartnerDeal) => d.is_featured));
+      // 업체가 등록한 이벤트(business_events)도 같은 '전체 혜택' 목록에 노출(별도 페이지 X).
+      // 운영자 검토 통과 + 진행 중인 것만. 업체 카테고리를 혜택 카테고리로 매핑해 필터에 반영.
+      const nowIso = new Date().toISOString();
+      const { data: evs } = await (supabase
+        .from("business_events" as any)
+        .select("id, place_id, title, description, banner_image_url, featured_until, ends_at, created_at") as any)
+        .eq("moderation_status", "approved")
+        .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
+        .order("created_at", { ascending: false })
+        .limit(80);
+
+      let eventItems: PartnerDeal[] = [];
+      if (evs && evs.length) {
+        const ids = Array.from(new Set((evs as any[]).map((e) => e.place_id)));
+        const { data: places } = await (supabase
+          .from("places" as any)
+          .select("place_id, name, category, is_partner, main_image_url") as any)
+          .in("place_id", ids);
+        const pmap = new Map<string, any>(((places as any[]) || []).map((p) => [p.place_id, p]));
+        const now = Date.now();
+        eventItems = (evs as any[]).map((e) => {
+          const p = pmap.get(e.place_id);
+          const isPartner = p?.is_partner === true;
+          return {
+            id: `evt_${e.id}`,
+            title: e.title,
+            description: e.description ?? "",
+            short_description: e.description ?? null,
+            partner_name: p?.name ?? "입점 업체",
+            partner_logo_url: null,
+            // 따로 지정한 배너가 없으면 업체 대표이미지로 폴백(빈 썸네일 방지).
+            banner_image_url: pubUrl(e.banner_image_url) ?? pubUrl(p?.main_image_url),
+            category: PLACE_TO_DEAL_CAT[p?.category] ?? "general",
+            deal_type: "event",
+            discount_info: null, original_price: null, deal_price: null,
+            coupon_code: null, external_url: null, terms: null,
+            start_date: null, end_date: e.ends_at ?? null,
+            is_featured: (!!e.featured_until && new Date(e.featured_until).getTime() > now) || isPartner,
+            view_count: 0, claim_count: 0,
+            kind: "event" as const, place_id: e.place_id,
+            has_banner: !!e.banner_image_url, is_partner: isPartner, created_at: e.created_at ?? null,
+          } as PartnerDeal;
+        });
+        if (category && category !== "all") {
+          eventItems = eventItems.filter((it) => it.category === category);
+        }
+      }
+
+      // 이벤트를 앞에 두되 최종 정렬은 화면(Deals)에서 노출 순위 규칙으로 처리.
+      const merged = [...eventItems, ...enriched];
+      setDeals(merged);
+      setFeatured(merged.filter((d) => d.is_featured));
     } catch (error) {
       console.error("Error fetching deals:", error);
     } finally {

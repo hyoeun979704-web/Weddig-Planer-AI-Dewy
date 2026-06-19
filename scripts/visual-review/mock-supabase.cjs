@@ -70,7 +70,7 @@ function thumb(label = "", from = "#fce7f3", to = "#fbcfe8") {
 // 양쪽에서 공용. usePlaceDetail 의 큰 SELECT 는 목이 컬럼 투영을 무시하고 행 전체를
 // 돌려주므로 핵심 필드만 채우면 나머지는 undefined → 조건부 섹션이 자연 생략된다.
 const PLACE_ROW = {
-  place_id: PLACE_ID, name: "더위드 웨딩스튜디오 강남점", category: "studio",
+  place_id: PLACE_ID, name: "더위드 웨딩스튜디오 강남점", category: process.env.MOCK_CATEGORY || "studio",
   city: "서울특별시", district: "강남구", road_address: "서울 강남구 테헤란로 123",
   description: "자연광 가득한 단독 스튜디오. 본식스냅·한복화보 전문.",
   main_image_url: thumb("대표사진"), min_price: 890000,
