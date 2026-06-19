@@ -61,11 +61,16 @@ const Deals = () => {
   const handleTabChange = (href: string) => navigate(href);
   const handleCategoryTabChange = useCategoryTabNavigation();
 
-  // 업체 이벤트는 업체 상세로, 운영자 혜택은 혜택 상세로.
-  const goDeal = (deal: PartnerDeal) =>
-    deal.kind === "event" && deal.place_id
-      ? navigate(`/vendor/${deal.place_id}`)
-      : navigate(`/deals/${deal.id}`);
+  // 이벤트 카드: 상세페이지형(배너 有)이면 이벤트 상세페이지로, 텍스트형이면 업체 프로필로.
+  // 운영자 혜택은 혜택 상세로.
+  const goDeal = (deal: PartnerDeal) => {
+    if (deal.kind === "event") {
+      if (deal.has_banner) navigate(`/event/${deal.id.replace(/^evt_/, "")}`);
+      else if (deal.place_id) navigate(`/vendor/${deal.place_id}`);
+      return;
+    }
+    navigate(`/deals/${deal.id}`);
+  };
 
   // Apply filters
   let filtered = [...deals];

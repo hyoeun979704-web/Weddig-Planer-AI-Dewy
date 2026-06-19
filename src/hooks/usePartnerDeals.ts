@@ -113,7 +113,7 @@ export const usePartnerDeals = (category?: string) => {
         const ids = Array.from(new Set((evs as any[]).map((e) => e.place_id)));
         const { data: places } = await (supabase
           .from("places" as any)
-          .select("place_id, name, category, is_partner") as any)
+          .select("place_id, name, category, is_partner, main_image_url") as any)
           .in("place_id", ids);
         const pmap = new Map<string, any>(((places as any[]) || []).map((p) => [p.place_id, p]));
         const now = Date.now();
@@ -127,7 +127,8 @@ export const usePartnerDeals = (category?: string) => {
             short_description: e.description ?? null,
             partner_name: p?.name ?? "입점 업체",
             partner_logo_url: null,
-            banner_image_url: pubUrl(e.banner_image_url),
+            // 따로 지정한 배너가 없으면 업체 대표이미지로 폴백(빈 썸네일 방지).
+            banner_image_url: pubUrl(e.banner_image_url) ?? pubUrl(p?.main_image_url),
             category: PLACE_TO_DEAL_CAT[p?.category] ?? "general",
             deal_type: "event",
             discount_info: null, original_price: null, deal_price: null,

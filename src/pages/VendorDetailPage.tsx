@@ -71,7 +71,7 @@ const VendorDetailPage = () => {
       categoryLabel={categoryLabel}
       favoriteType={favoriteType}
       couponsSection={<PlaceCoupons placeId={place.id} />}
-      eventsSection={<PlaceEvents placeId={place.id} />}
+      eventsSection={<PlaceEvents placeId={place.id} fallbackThumb={place.main_image_url ?? place.image_urls?.[0] ?? null} />}
       extraSection={
         <>
           {/* 관리 도구(운영자 수정·업체 인수) — 소비자 화면을 깔끔히 유지하기 위해 기본 접힘.

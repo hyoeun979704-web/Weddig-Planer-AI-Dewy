@@ -23,9 +23,11 @@ const pub = (url?: string | null): string | null => {
 
 // 진행중 이벤트(소비자 혜택) — 전환 직결이라 상세정보가 아닌 **기본정보 탭** 혜택군에 노출.
 // 쿠폰(PlaceCoupons)과 같은 자리. 배너 탭 → 상세 모달.
-const PlaceEvents = ({ placeId }: { placeId: string }) => {
+const PlaceEvents = ({ placeId, fallbackThumb }: { placeId: string; fallbackThumb?: string | null }) => {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [active, setActive] = useState<EventRow | null>(null);
+  // 따로 지정한 배너가 없으면 업체 대표이미지로 폴백.
+  const banner = (e: EventRow): string | null => pub(e.banner_image_url) ?? pub(fallbackThumb);
 
   const load = useCallback(async () => {
     // select("*") — banner_image_url/detail_images 가 라이브 DB 에 없어도 422 안 나게(드리프트 방어).
@@ -50,9 +52,9 @@ const PlaceEvents = ({ placeId }: { placeId: string }) => {
           onClick={() => setActive(e)}
           className="w-full text-left rounded-xl border border-border bg-card overflow-hidden active:opacity-90"
         >
-          {pub(e.banner_image_url) && (
+          {banner(e) && (
             <div className="aspect-[2/1] bg-muted">
-              <img src={pub(e.banner_image_url)!} alt={e.title} className="w-full h-full object-cover" loading="lazy" />
+              <img src={banner(e)!} alt={e.title} className="w-full h-full object-cover" loading="lazy" />
             </div>
           )}
           <div className="p-3 flex items-start justify-between gap-2">
@@ -73,9 +75,9 @@ const PlaceEvents = ({ placeId }: { placeId: string }) => {
         <DialogContent className="max-w-md p-0 overflow-hidden max-h-[85vh] overflow-y-auto">
           {active && (
             <>
-              {pub(active.banner_image_url) && (
+              {banner(active) && (
                 <div className="aspect-[2/1] bg-muted">
-                  <img src={pub(active.banner_image_url)!} alt={active.title} className="w-full h-full object-cover" />
+                  <img src={banner(active)!} alt={active.title} className="w-full h-full object-cover" />
                 </div>
               )}
               <div className="p-5 space-y-3">
