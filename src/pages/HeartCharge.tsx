@@ -27,6 +27,7 @@ const HeartCharge = () => {
   const [pointsToUse, setPointsToUse] = useState(0);
   const [isStarterUsed, setIsStarterUsed] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -218,9 +219,18 @@ const HeartCharge = () => {
               {finalAmount.toLocaleString()}원
             </p>
           </div>
+          <label className="flex items-start gap-2 mb-2 text-[12px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-0.5 shrink-0"
+            />
+            <span>하트는 디지털 콘텐츠로 결제 즉시 충전되며, 사용을 시작하면 청약철회가 제한될 수 있음에 동의합니다. (전자상거래법 제17조)</span>
+          </label>
           <button
             onClick={handlePay}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !agreed}
             className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}

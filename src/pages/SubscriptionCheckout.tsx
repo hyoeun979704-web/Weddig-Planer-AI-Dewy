@@ -17,6 +17,7 @@ const SubscriptionCheckout = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const type = (searchParams.get("type") || "trial") as PlanType;
   const amount = type === "trial" ? 100 : type === "yearly" ? 39000 : 4900;
@@ -140,9 +141,18 @@ const SubscriptionCheckout = () => {
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 app-col mx-auto px-4 pt-4 pb-[calc(1rem+var(--safe-bottom))] bg-background border-t border-border">
+        <label className="flex items-start gap-2 mb-2 text-[12px] text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 shrink-0"
+          />
+          <span>프리미엄은 디지털 서비스로 결제 즉시 이용이 시작되며, 이용을 개시하면 청약철회가 제한될 수 있음에 동의합니다. (전자상거래법 제17조)</span>
+        </label>
         <button
           onClick={handlePayment}
-          disabled={isSubmitting}
+          disabled={isSubmitting || !agreed}
           className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
