@@ -3,6 +3,10 @@
 > 출시·운영에 적용되는 Google Play 정책을 **2026년 기준**으로 조사하고 Dewy 실태에 매핑.
 > ⚠️ 정책은 수시 변경 → 출시 직전 공식 문서 재확인 필수. 컨테이너에 Android SDK 없어
 > 코드 변경 빌드 검증 불가(정책 분석·문서화 중심).
+>
+> **갱신(대조검토)**: 결제 경로는 추정이 아니라 **카카오페이 확정**(`kakao-pay-*` 엣지함수). 후속
+> 결정·실행은 `260620_payment_compliance_plan.md`(네이티브 IAP 분리), 전 영역은
+> `260620_launch_readiness_audit.md`(마스터), iOS는 `ios-packaging.md`로 이관/보강됨.
 
 ## 0. 위험도 요약 (먼저 보기)
 | # | 정책 영역 | 우리 상태 | 위험 | 조치 |
@@ -31,9 +35,9 @@
   "개발자 제공 인앱결제(IAB)+사용자 선택" 프레임 안에서. **임의 웹 PG 우회는 별개**이며 반려 소지.
 
 **우리 상태(확인됨)**: `src/lib/heartPackages.ts` 에 하트 패키지 **판매**(1,900~19,900원),
-`/points` 충전, `/premium/subscribe` 구독. **결제 플러그인 부재**(package.json에 Play 빌링·
-RevenueCat·purchase 플러그인 없음) + `HeartChargeSuccess.tsx`/`HeartChargeFail.tsx` 존재
-→ **웹 PG 리다이렉트 결제로 추정**.
+`/points` 충전, `/premium/subscribe` 구독. 결제는 **카카오페이 확정**(`kakao-pay-ready/approve`·
+`kakao-pay-charge-*`·`kakao-pay-order-*`·`cancel-subscription` 엣지함수). 네이티브 IAP 플러그인은
+없음 → **현재 네이티브 앱도 카카오페이로 흐름 = Play/Apple 정책 위반 소지**(디지털 재화).
 
 **조치(P0)**:
 1. **결제 흐름 실제 확인**: 안드로이드 앱에서 하트·구독 구매가 어떤 경로인지(웹 PG/외부브라우저/
