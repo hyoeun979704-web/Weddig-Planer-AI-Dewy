@@ -20,6 +20,8 @@ const KIND_BADGE: Record<PromptKind, { label: string; cls: string }> = {
 const AdminAIPrompts = () => {
   const [feature, setFeature] = useState<string>("전체");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  // 예시 이미지 로드 실패 시 깨진 아이콘 대신 플레이스홀더로 폴백.
+  const [imgFailedIds, setImgFailedIds] = useState<Set<string>>(new Set());
 
   const visible = useMemo(
     () => (feature === "전체" ? PROMPT_CATALOG : PROMPT_CATALOG.filter((p) => p.feature === feature)),
@@ -64,8 +66,14 @@ const AdminAIPrompts = () => {
               <div className="rounded-[14px] bg-card overflow-hidden flex">
                 {/* 좌: 예시 이미지 */}
                 <div className="w-28 shrink-0 bg-muted self-stretch">
-                  {e.exampleImage ? (
-                    <img src={e.exampleImage} alt={e.title} className="w-full h-full object-cover" loading="lazy" />
+                  {e.exampleImage && !imgFailedIds.has(e.id) ? (
+                    <img
+                      src={e.exampleImage}
+                      alt={e.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={() => setImgFailedIds((s) => new Set(s).add(e.id))}
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center"><FileCode className="w-6 h-6 text-muted-foreground" /></div>
                   )}

@@ -60,3 +60,13 @@ verify_jwt = true
 
 [functions.design-purchase-approve]
 verify_jwt = true
+
+# Google Play IAP 영수증검증 — 로그인 사용자가 호출(Authorization 헤더 + 자체 getClaims). 명시 JWT.
+[functions.iap-verify-google]
+verify_jwt = true
+
+# Google Play RTDN 수신 — Pub/Sub push(JWT 없음)라 false. 대신 ?token=RTDN_VERIFY_TOKEN 으로
+# fail-closed 검증(토큰 미설정 시 전량 거부). JWT 게이트가 켜져 있으면 Pub/Sub 가 401 로 막혀
+# 환불·취소·만료가 영영 처리되지 않으므로 반드시 false 여야 한다.
+[functions.play-rtdn]
+verify_jwt = false

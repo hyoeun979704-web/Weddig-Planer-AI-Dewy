@@ -99,6 +99,9 @@ export async function initIapStore(userId: string): Promise<void> {
         const productId = t.products?.[0]?.id ?? "";
         try {
           const result = await verifyOnServer(t);
+          // 결과를 finish() 전에 보관 — finish 가 동기로 finished 를 트리거해도
+          // finished 가 검증 결과를 확실히 집어가게(없을 때 성공으로 오인 방지).
+          lastVerified.set(productId, result);
           if (result.ok) {
             t.finish();
             // finish→finished 이벤트에서 resolve. (finish 가 동기여도 finished 가 뒤따름.)
@@ -106,8 +109,6 @@ export async function initIapStore(userId: string): Promise<void> {
             pending.get(productId)?.reject(new Error(result.message || "결제 검증 실패"));
             pending.delete(productId);
           }
-          // 결과를 임시 보관(finished 에서 heartsGranted 전달).
-          lastVerified.set(productId, result);
         } catch (e) {
           pending.get(productId)?.reject(e instanceof Error ? e : new Error("결제 처리 중 오류"));
           pending.delete(productId);
@@ -116,7 +117,9 @@ export async function initIapStore(userId: string): Promise<void> {
     })
     .finished((t) => {
       const productId = t.products?.[0]?.id ?? "";
-      const result = lastVerified.get(productId) ?? { ok: true };
+      // 검증 결과가 없으면(예: 복원·재전송) 성공으로 오인하지 않게 ok:false 기본값.
+      // 서버가 단일 진실원천이라 실제 지급은 영향 없고, UX 만 거짓 성공을 막는다.
+      const result = lastVerified.get(productId) ?? { ok: false, message: "결제 확인 정보를 찾지 못했어요." };
       lastVerified.delete(productId);
       pending.get(productId)?.resolve(result);
       pending.delete(productId);
