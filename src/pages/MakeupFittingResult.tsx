@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
 import AiResultReportButton from "@/components/ai/AiResultReportButton";
-import ResultPhotoFrame from "@/components/ai/ResultPhotoFrame";
 import ZoomableImage from "@/components/ai/ZoomableImage";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Download, Share2, Loader2, RefreshCw } from "lucide-react";
@@ -232,22 +231,26 @@ const MakeupFittingResult = () => {
                 </div>
               </div>
             )}
-            <ResultPhotoFrame caption={showSource ? "원본 사진" : sceneLabel}>
-              {resultUrl ? (
-                <ZoomableImage
-                  src={showSource && sourceUrl ? sourceUrl : resultUrl}
-                  alt={showSource ? "업로드한 원본 사진" : "생성된 메이크업"}
-                  className="w-full aspect-[3/4] object-cover"
-                />
-              ) : (
-                <div className="aspect-[3/4] bg-muted flex items-center justify-center">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                </div>
-              )}
-            </ResultPhotoFrame>
+            {resultUrl ? (
+              <ZoomableImage
+                src={showSource && sourceUrl ? sourceUrl : resultUrl}
+                alt={showSource ? "업로드한 원본 사진" : "생성된 메이크업"}
+                className="w-full aspect-[3/4] object-cover rounded-2xl border border-border"
+              />
+            ) : (
+              <div className="aspect-[3/4] rounded-2xl bg-muted flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            )}
 
             <AiDisclosureNotice />
             <AiResultReportButton targetId={id} />
+
+            {sceneLabel && (
+              <p className="text-[12px] text-muted-foreground text-center">
+                {sceneLabel}
+              </p>
+            )}
 
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" onClick={handleDownload}>
