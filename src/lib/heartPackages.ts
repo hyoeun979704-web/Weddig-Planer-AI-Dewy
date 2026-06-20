@@ -28,3 +28,15 @@ export const maxPointsForPackage = (packagePrice: number, balance: number): numb
   const maxPointsByLimit = pointsForKrw(maxKrwDiscount);
   return Math.min(maxPointsByLimit, balance);
 };
+
+// ── 인앱결제(IAP) 단가 ────────────────────────────────────────────────
+// 웹(카카오페이) 원화가가 원천. 네이티브(Google Play·App Store) IAP 는 스토어 수수료를
+// 흡수하기 위해 **웹가 +10%**. 파생 계산이라 웹가만 고치면 IAP 가도 따라감(드리프트 방지).
+// ⚠️ 스토어 가격포인트에 맞춰 추가 반올림이 필요할 수 있음(특히 Apple). 최종 등록가는
+// Play Console / App Store Connect 상품가와 일치시켜야 한다.
+export const IAP_FEE_RATE = 0.10;
+
+/** 웹 원화가 → 네이티브 IAP 원화가(+10%, 1원 단위 반올림). */
+export const iapPriceForKrw = (webPrice: number): number =>
+  Math.round(webPrice * (1 + IAP_FEE_RATE));
+
