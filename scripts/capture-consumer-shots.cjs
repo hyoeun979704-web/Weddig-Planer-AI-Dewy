@@ -51,7 +51,7 @@ const SHOTS = [
   { id: "c-budget", route: "/budget", auth: true, label: "예산·지출 관리", target: { sel: 'text=남은 예산' }, pad: 12 },
   // ── AI 도구 (ai) ──
   { id: "c-ai-planner", route: "/ai-planner", auth: true, label: "맞춤 준비 추천", target: { sel: 'text=결혼식 정보를' }, pad: 12 },
-  { id: "c-ai-studio", route: "/ai-studio", auth: true, label: "드레스·메이크업·헤어 체험", target: { sel: 'text=웨딩컨설팅' }, pad: 10 },
+  { id: "c-ai-studio", route: "/ai-studio", auth: true, label: "스드메·드레스·메이크업 체험", target: { sel: 'text=스드메 미리보기' }, pad: 10 },
   // ── 혜택·쇼핑·꿀팁 (benefits) ──
   { id: "c-deals", route: "/deals", auth: false, label: "쿠폰·이벤트·포인트", target: { sel: 'text=진행 중인 이벤트' }, pad: 12 },
   { id: "c-store", route: "/store", auth: false, label: "웨딩 소품·셀프웨딩", target: { sel: 'text=촬영소품' }, pad: 10 },
