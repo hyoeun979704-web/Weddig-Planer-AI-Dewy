@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Download, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -230,6 +231,7 @@ const ConsultingResult = () => {
                 )}
               </div>
             ))}
+            <AiDisclosureNotice />
             <p className="text-[11px] text-muted-foreground">
               이미지를 길게 눌러 저장할 수 있어요.
             </p>

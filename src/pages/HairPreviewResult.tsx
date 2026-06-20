@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
 import { useNavigate, useParams } from "react-router-dom";
 import { Download, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
@@ -137,6 +138,7 @@ const HairPreviewResult = () => {
                 )}
               </div>
             ))}
+            <AiDisclosureNotice />
             <Button variant="outline" className="w-full" onClick={() => navigate("/ai-studio/hair-room")}>새 헤어 미리보기</Button>
           </div>
         )}

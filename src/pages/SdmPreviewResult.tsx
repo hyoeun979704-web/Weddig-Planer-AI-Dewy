@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Download, Share2, Loader2, RefreshCw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -128,6 +129,7 @@ const SdmPreviewResult = () => {
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             )}
+            <AiDisclosureNotice />
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" onClick={handleDownload}><Download className="w-4 h-4 mr-1" /> 다운로드</Button>
               <Button variant="outline" onClick={handleShare}><Share2 className="w-4 h-4 mr-1" /> 공유</Button>

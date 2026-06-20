@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
 import { useNavigate, useParams } from "react-router-dom";
 import { Download, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
@@ -185,6 +186,7 @@ const PhotoFixResult = () => {
                 </button>
               ))}
             </div>
+            <AiDisclosureNotice />
             <p className="text-[11px] text-muted-foreground">
               이미지를 탭하면 저장돼요.
             </p>
