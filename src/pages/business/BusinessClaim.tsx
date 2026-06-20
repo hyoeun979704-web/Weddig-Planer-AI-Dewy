@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, MapPin, Check } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
+import { escapeLikePattern } from "@/lib/postgrestEscape";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { confirm } from "@/components/ui/confirm-dialog";
@@ -37,7 +38,7 @@ const BusinessClaim = () => {
     const { data, error } = await supabase
       .from("places")
       .select("place_id,name,city,category,owner_user_id")
-      .ilike("name", `%${term}%`)
+      .ilike("name", `%${escapeLikePattern(term)}%`)
       .is("owner_user_id", null)
       .limit(20);
     setLoading(false);

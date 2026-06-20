@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePoints } from "@/hooks/usePoints";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
+import { safeSessionStorage } from "@/lib/safeSessionStorage";
 import {
   HEART_PACKAGES,
   HeartPackage,
@@ -76,7 +77,7 @@ const HeartCharge = () => {
         throw new Error(data?.error || error?.message || "결제 준비 실패");
       }
 
-      sessionStorage.setItem(
+      safeSessionStorage.setItem(
         SESSION_KEY,
         JSON.stringify({
           tid: data.tid,

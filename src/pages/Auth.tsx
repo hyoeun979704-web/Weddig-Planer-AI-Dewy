@@ -86,12 +86,12 @@ const Auth = () => {
 
     const emailResult = emailSchema.safeParse(email);
     if (!emailResult.success) {
-      newErrors.email = emailResult.error.errors[0].message;
+      newErrors.email = emailResult.error.errors[0]?.message ?? "올바른 이메일을 입력해주세요";
     }
 
     const passwordResult = passwordSchema.safeParse(password);
     if (!passwordResult.success) {
-      newErrors.password = passwordResult.error.errors[0].message;
+      newErrors.password = passwordResult.error.errors[0]?.message ?? "비밀번호를 확인해주세요";
     }
 
     if (isSignUp && password !== confirmPassword) {

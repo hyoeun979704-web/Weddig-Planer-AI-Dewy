@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
 import { formatWon as formatPrice } from "@/lib/priceFormat";
+import { safeSessionStorage } from "@/lib/safeSessionStorage";
 
 // 결제 복귀 시 승인에 쓸 주문 정보(tid)를 보존.
 export const ORDER_SESSION_KEY = "dewy:order:pending";
@@ -32,7 +33,7 @@ const Checkout = () => {
       if (error || !data?.success) {
         throw new Error(data?.error || error?.message || "결제 준비에 실패했습니다");
       }
-      sessionStorage.setItem(
+      safeSessionStorage.setItem(
         ORDER_SESSION_KEY,
         JSON.stringify({ tid: data.tid, partnerOrderId: data.partner_order_id, partnerUserId: data.partner_user_id }),
       );

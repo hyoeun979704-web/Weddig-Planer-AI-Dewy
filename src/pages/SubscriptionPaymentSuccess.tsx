@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
+import { safeSessionStorage } from "@/lib/safeSessionStorage";
 
 const KAKAO_PAY_SESSION_KEY = "kakao_pay_session";
 
@@ -26,7 +27,7 @@ const SubscriptionPaymentSuccess = () => {
       const type = searchParams.get("type") || "trial";
       const orderId = searchParams.get("order");
 
-      const sessionRaw = sessionStorage.getItem(KAKAO_PAY_SESSION_KEY);
+      const sessionRaw = safeSessionStorage.getItem(KAKAO_PAY_SESSION_KEY);
       if (!pgToken || !sessionRaw || !user) {
         setStatus("error");
         setErrorMessage("결제 정보가 올바르지 않습니다");
@@ -67,7 +68,7 @@ const SubscriptionPaymentSuccess = () => {
           setHeartsGranted(data.heartsGranted);
         }
 
-        sessionStorage.removeItem(KAKAO_PAY_SESSION_KEY);
+        safeSessionStorage.removeItem(KAKAO_PAY_SESSION_KEY);
         await refetch();
         setStatus("success");
         toast.success(type === "trial" ? " 무료 체험이 시작되었습니다!" : "구독이 완료되었습니다!");

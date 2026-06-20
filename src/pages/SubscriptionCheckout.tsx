@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
+import { safeSessionStorage } from "@/lib/safeSessionStorage";
 
 type PlanType = "trial" | "monthly" | "yearly";
 
@@ -47,7 +48,7 @@ const SubscriptionCheckout = () => {
         throw new Error(data?.error || error?.message || "결제 준비에 실패했습니다");
       }
 
-      sessionStorage.setItem(
+      safeSessionStorage.setItem(
         KAKAO_PAY_SESSION_KEY,
         JSON.stringify({
           tid: data.tid,

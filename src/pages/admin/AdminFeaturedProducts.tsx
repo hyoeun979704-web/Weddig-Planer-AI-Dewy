@@ -3,6 +3,7 @@ import { Loader2, Star, Search, X, ChevronLeft, ChevronRight, Users, ExternalLin
 import AdminGuard from "@/components/admin/AdminGuard";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { escapeLikePattern } from "@/lib/postgrestEscape";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -78,7 +79,7 @@ const AdminFeaturedProducts = () => {
       q = q.eq("is_featured", false);
     }
     if (keyword.trim()) {
-      q = q.ilike("name", `%${keyword.trim()}%`);
+      q = q.ilike("name", `%${escapeLikePattern(keyword.trim())}%`);
     }
     const { data, count, error } = await q;
     if (error) {
