@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { CategoryTab, useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
-import LockedCard from "@/components/LockedCard";
+import StudioBannerCard from "@/components/studio/StudioBannerCard";
 import WaitlistSignupSheet from "@/components/studio/WaitlistSignupSheet";
 import PageTutorial from "@/components/tutorial/PageTutorial";
 import Seo from "@/components/Seo";
@@ -98,30 +98,6 @@ const lockedBadge: Partial<Record<StudioCard["status"], string>> = {
   coming_v3: "한정 외주",
 };
 
-const StudioCardImage = ({
-  card,
-  priority = false,
-}: {
-  card: StudioCard;
-  priority?: boolean;
-}) => (
-  <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-pink-50 to-pink-100">
-    {card.previewImage ? (
-      <img
-        src={card.previewImage}
-        alt={`${card.title} 미리보기`}
-        width={640}
-        height={640}
-        loading={priority ? "eager" : "lazy"}
-        decoding="async"
-        className={`h-full w-full object-cover ${
-          card.previewPosition === "top" ? "object-top" : "object-center"
-        }`}
-      />
-    ) : null}
-  </div>
-);
-
 const AIStudio = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -161,57 +137,23 @@ const AIStudio = () => {
           </span>
           <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
         </button>
-        <div className="grid grid-cols-2 gap-3 px-4 py-5">
+        <div className="flex flex-col gap-3 px-4 py-5">
           {cards.map((card, index) => {
-            // 활성 카드 (실제 동작)
-            if (card.status === "active" && card.href) {
-              return (
-                <button
-                  key={card.id}
-                  type="button"
-                  data-tutorial={card.id === "wedding-consulting" ? "studio-cards" : undefined}
-                  onClick={() => navigate(card.href!)}
-                  className="bg-white rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-transform"
-                >
-                  <StudioCardImage card={card} priority={index < 2} />
-                  <div className="px-4 py-3">
-                    <h3 className="text-[15px] font-bold text-foreground leading-tight">
-                      {card.title}
-                    </h3>
-                    <p className="mt-1 text-[12px] text-muted-foreground line-clamp-2">
-                      {card.description}
-                    </p>
-                    <p className="mt-1.5 text-[11px] text-primary font-medium">
-                      지금 시작 →
-                    </p>
-                  </div>
-                </button>
-              );
-            }
-            // 준비중 카드 (잠금 상태, 클릭 시 사전알림 시트)
-            if (card.status === "coming_soon") {
-              return (
-                <LockedCard
-                  key={card.id}
-                  title={card.title}
-                  description={card.description}
-                  badge={lockedBadge[card.status]}
-                  imageUrl={card.previewImage}
-                  imageAlt={card.previewImage ? `${card.title} 미리보기` : ""}
-                  onClick={() => handleLockedCardClick(card)}
-                />
-              );
-            }
-            // 잠금 카드 (시안·식전영상)
+            const isActive = card.status === "active" && !!card.href;
             return (
-              <LockedCard
+              <StudioBannerCard
                 key={card.id}
                 title={card.title}
                 description={card.description}
-                badge={lockedBadge[card.status]}
                 imageUrl={card.previewImage}
                 imageAlt={card.previewImage ? `${card.title} 미리보기` : ""}
-                onClick={() => handleLockedCardClick(card)}
+                badge={isActive ? undefined : lockedBadge[card.status]}
+                locked={!isActive}
+                ctaLabel={isActive ? "지금 시작 →" : "출시 알림 받기 →"}
+                colorIndex={index}
+                priority={index < 2}
+                dataTutorial={card.id === "wedding-consulting" ? "studio-cards" : undefined}
+                onClick={() => (isActive ? navigate(card.href!) : handleLockedCardClick(card))}
               />
             );
           })}
