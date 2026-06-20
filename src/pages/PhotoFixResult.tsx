@@ -172,20 +172,25 @@ const PhotoFixResult = () => {
                 {urls.length}장 보정이 완료됐어요
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {urls.map((url, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handleDownload(url, i)}
-                  className="relative aspect-square rounded-lg overflow-hidden bg-muted block"
-                >
-                  <img src={url} alt="" className="w-full h-full object-cover" />
-                  <span className="absolute bottom-1 right-1 bg-black/60 text-white rounded-full p-1.5">
-                    <Download className="w-3.5 h-3.5" />
-                  </span>
-                </button>
-              ))}
+            {/* 인화 사진 느낌 — 종이 배경 위 흰 프레임 카드 */}
+            <div className="rounded-2xl bg-[#efe7da] p-3 shadow-inner">
+              <div className="grid grid-cols-2 gap-3">
+                {urls.map((url, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleDownload(url, i)}
+                    className="relative block bg-white p-1.5 pb-5 shadow-[0_4px_14px_rgba(60,40,30,0.16)]"
+                  >
+                    <span className="block aspect-square overflow-hidden bg-muted">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                    </span>
+                    <span className="absolute bottom-1.5 right-1.5 bg-black/60 text-white rounded-full p-1.5">
+                      <Download className="w-3.5 h-3.5" />
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
             <AiDisclosureNotice />
             <AiResultReportButton targetId={id} />

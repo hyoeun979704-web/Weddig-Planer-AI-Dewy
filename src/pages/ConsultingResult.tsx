@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
 import AiResultReportButton from "@/components/ai/AiResultReportButton";
+import ResultPhotoFrame from "@/components/ai/ResultPhotoFrame";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Download, Loader2, RefreshCw, Share2, Sparkles } from "lucide-react";
 import { shareResultWithToast } from "@/lib/shareResultImage";
@@ -231,17 +232,19 @@ const ConsultingResult = () => {
                     </div>
                   )}
                 </div>
-                {urls[b.section] ? (
-                  <ZoomableImage
-                    src={urls[b.section]}
-                    alt={LABEL[b.section] ?? b.section}
-                    className="w-full rounded-xl border border-border bg-white"
-                  />
-                ) : (
-                  <div className="aspect-[3/4] rounded-xl bg-muted flex items-center justify-center">
-                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                  </div>
-                )}
+                <ResultPhotoFrame accent={false} tilt={0}>
+                  {urls[b.section] ? (
+                    <ZoomableImage
+                      src={urls[b.section]}
+                      alt={LABEL[b.section] ?? b.section}
+                      className="w-full bg-white"
+                    />
+                  ) : (
+                    <div className="aspect-[3/4] bg-muted flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </ResultPhotoFrame>
               </div>
             ))}
             <AiDisclosureNotice />

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
 import AiResultReportButton from "@/components/ai/AiResultReportButton";
+import ResultPhotoFrame from "@/components/ai/ResultPhotoFrame";
 import ZoomableImage from "@/components/ai/ZoomableImage";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Download, Share2, Loader2, RefreshCw } from "lucide-react";
@@ -124,13 +125,15 @@ const SdmPreviewResult = () => {
           )
         ) : (
           <div className="space-y-4">
-            {resultUrl ? (
-              <ZoomableImage src={resultUrl} alt="스드메 완성본" className="w-full aspect-[3/4] object-cover rounded-2xl border border-border" />
-            ) : (
-              <div className="aspect-[3/4] rounded-2xl bg-muted flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            )}
+            <ResultPhotoFrame caption="스드메 완성본">
+              {resultUrl ? (
+                <ZoomableImage src={resultUrl} alt="스드메 완성본" className="w-full aspect-[3/4] object-cover" />
+              ) : (
+                <div className="aspect-[3/4] bg-muted flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </ResultPhotoFrame>
             <AiDisclosureNotice />
             <AiResultReportButton targetId={id} />
             <div className="grid grid-cols-2 gap-2">

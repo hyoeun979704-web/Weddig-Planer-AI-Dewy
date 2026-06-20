@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
 import AiResultReportButton from "@/components/ai/AiResultReportButton";
+import ResultPhotoFrame from "@/components/ai/ResultPhotoFrame";
 import ZoomableImage from "@/components/ai/ZoomableImage";
 import { useNavigate, useParams } from "react-router-dom";
 import { Download, Loader2, RefreshCw, Share2, Sparkles } from "lucide-react";
@@ -139,11 +140,13 @@ const HairPreviewResult = () => {
                     </div>
                   )}
                 </div>
-                {urls[it.kind] ? (
-                  <ZoomableImage src={urls[it.kind]} alt={it.kind} className="w-full rounded-xl border border-border bg-white" />
-                ) : (
-                  <div className="aspect-[3/4] rounded-xl bg-muted flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
-                )}
+                <ResultPhotoFrame accent={false} tilt={0}>
+                  {urls[it.kind] ? (
+                    <ZoomableImage src={urls[it.kind]} alt={it.kind} className="w-full bg-white" />
+                  ) : (
+                    <div className="aspect-[3/4] bg-muted flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+                  )}
+                </ResultPhotoFrame>
               </div>
             ))}
             <AiDisclosureNotice />
