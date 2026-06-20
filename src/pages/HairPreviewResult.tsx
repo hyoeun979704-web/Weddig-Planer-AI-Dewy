@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
+import AiResultReportButton from "@/components/ai/AiResultReportButton";
 import ZoomableImage from "@/components/ai/ZoomableImage";
 import { useNavigate, useParams } from "react-router-dom";
 import { Download, Loader2, RefreshCw, Share2, Sparkles } from "lucide-react";
@@ -146,6 +147,7 @@ const HairPreviewResult = () => {
               </div>
             ))}
             <AiDisclosureNotice />
+            <AiResultReportButton targetId={id} />
             <Button variant="outline" className="w-full" onClick={() => navigate("/ai-studio/hair-room")}>새 헤어 미리보기</Button>
           </div>
         )}

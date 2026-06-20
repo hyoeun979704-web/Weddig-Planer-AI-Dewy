@@ -8,7 +8,7 @@ import { usePoints } from "@/hooks/usePoints";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
 import { safeSessionStorage } from "@/lib/safeSessionStorage";
-import { isNativeApp } from "@/lib/platform";
+import { getPaymentProvider, purchaseHeartsIap, heartIapPrice } from "@/lib/payments";
 import {
   HEART_PACKAGES,
   HeartPackage,
@@ -29,6 +29,9 @@ const HeartCharge = () => {
   const [isStarterUsed, setIsStarterUsed] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [agreed, setAgreed] = useState(false);
+
+  // 결제수단: 웹=카카오페이(+포인트할인), 안드로이드=Google IAP(+10%, 포인트 미적용), iOS=준비중.
+  const provider = getPaymentProvider();
 
   useEffect(() => {
     if (!user) {
@@ -107,6 +110,27 @@ const HeartCharge = () => {
     }
   };
 
+  // 안드로이드 Google Play 인앱결제(IAP). 서버(iap-verify-google)가 검증 후 하트를 지급.
+  // 포인트 할인은 미적용(스토어 고정가). 성공 시 하트는 서버에서 이미 지급됨.
+  const handleIapPay = async () => {
+    if (!selected || isSubmitting || !user) return;
+    setIsSubmitting(true);
+    try {
+      const result = await purchaseHeartsIap(user.id, selected.id);
+      if (result.ok) {
+        toast.success(`하트 ${result.heartsGranted ?? selected.hearts}개가 충전되었어요`);
+        navigate(-1);
+      } else {
+        toast.error(result.message || "결제에 실패했어요");
+      }
+    } catch (err: any) {
+      console.error("IAP heart charge failed:", err);
+      toast.error(err?.message || "결제에 실패했어요");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -164,8 +188,8 @@ const HeartCharge = () => {
           })}
         </div>
 
-        {/* Point usage */}
-        {selected && (
+        {/* Point usage — 포인트 할인은 웹(카카오) 전용. IAP 는 스토어 고정가라 미적용. */}
+        {selected && provider === "kakao" && (
           <div className="p-4 rounded-2xl border border-border bg-card space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-foreground">
@@ -217,15 +241,34 @@ const HeartCharge = () => {
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-muted-foreground">최종 결제 금액</p>
             <p className="text-lg font-bold text-foreground">
-              {finalAmount.toLocaleString()}원
+              {(provider === "iap" ? heartIapPrice(selected.id) : finalAmount).toLocaleString()}원
             </p>
           </div>
-          {isNativeApp() ? (
-            // 스토어(네이티브) 빌드: 디지털 재화의 비-IAP 인앱 결제는 정책 위반이라 결제 UI 숨김.
-            // (IAP 도입 전까지 충전은 웹에서. 앱은 잔액 사용만 — anti-steering 위해 웹 안내/링크는 두지 않음.)
+          {provider === "unavailable" ? (
+            // iOS: StoreKit IAP 선반영 전까지 결제 UI 숨김(anti-steering — 웹 안내/링크 미노출).
             <p className="text-[12px] text-muted-foreground text-center py-2">
               하트 충전 기능을 준비 중이에요.
             </p>
+          ) : provider === "iap" ? (
+            <>
+              <label className="flex items-start gap-2 mb-2 text-[12px] text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5 shrink-0"
+                />
+                <span>하트는 디지털 콘텐츠로 결제 즉시 충전되며, 사용을 시작하면 청약철회가 제한될 수 있음에 동의합니다. (전자상거래법 제17조)</span>
+              </label>
+              <button
+                onClick={handleIapPay}
+                disabled={isSubmitting || !agreed}
+                className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
+                Google Play로 결제하기
+              </button>
+            </>
           ) : (
             <>
               <label className="flex items-start gap-2 mb-2 text-[12px] text-muted-foreground">

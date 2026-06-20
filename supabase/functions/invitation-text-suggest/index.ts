@@ -11,6 +11,7 @@
 // 토스트가 뜨고, "추천받기" 클릭 시 이 함수가 호출됨.
 
 import { adminClient } from "../_shared/supabase.ts";
+import { getPrompt } from "../_shared/prompts.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -88,7 +89,7 @@ serve(async (req) => {
     }
 
     try {
-      const suggestions = await callOpenAI(OPENAI_API_KEY, body);
+      const suggestions = await callOpenAI(OPENAI_API_KEY, body, supabaseAdmin);
       return json(
         { suggestions, balance_after: spendRow.balance_after },
         200,
@@ -115,9 +116,18 @@ const ALLOWED_USER_DATA_FIELDS = [
   "venue_name",
 ] as const;
 
+// 청첩장 문구 시스템 프롬프트 폴백 — DB(ai_prompts.invitation_text_system)가
+// 없거나 조회 실패일 때 사용. {{role}}/{{tone}} 토큰은 getPrompt 가 치환한다.
+const INVITATION_TEXT_SYSTEM_FALLBACK = `당신은 한국어 청첩장 카피라이터입니다. 청첩장의
+특정 슬롯({{role}})에 들어갈 문구를 3개 옵션으로 제안합니다. 각 옵션은
+서로 다른 표현이어야 하고, 모두 {{tone}} 톤이어야 합니다. 출력은
+{"suggestions": ["문구1", "문구2", "문구3"]} 형태의 STRICT JSON 객체만
+(다른 텍스트 없음).`;
+
 async function callOpenAI(
   apiKey: string,
   body: RequestBody,
+  admin: ReturnType<typeof adminClient>,
 ): Promise<string[]> {
   const tone = body.tone ?? "ROMANTIC";
   const role = body.slot_role;
@@ -137,11 +147,13 @@ async function callOpenAI(
   if (userData.wedding_date) userContextLines.push(`결혼 날짜: ${userData.wedding_date}`);
   if (userData.venue_name) userContextLines.push(`식장: ${userData.venue_name}`);
 
-  const systemPrompt = `당신은 한국어 청첩장 카피라이터입니다. 청첩장의
-특정 슬롯(${role})에 들어갈 문구를 3개 옵션으로 제안합니다. 각 옵션은
-서로 다른 표현이어야 하고, 모두 ${tone} 톤이어야 합니다. 출력은
-{"suggestions": ["문구1", "문구2", "문구3"]} 형태의 STRICT JSON 객체만
-(다른 텍스트 없음).`;
+  // 시스템 프롬프트는 DB 에서 실시간 로드(어드민 편집 즉시 반영), 실패 시 폴백.
+  const systemPrompt = await getPrompt(
+    admin,
+    "invitation_text_system",
+    INVITATION_TEXT_SYSTEM_FALLBACK,
+    { role, tone },
+  );
 
   const userPrompt = `슬롯 역할: ${role}
 톤: ${tone}
