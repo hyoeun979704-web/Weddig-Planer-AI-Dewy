@@ -23,8 +23,13 @@ iOS / 웹   →  env(safe-area-inset-*)            (Capacitor 기본 edge-to-edg
 ```
 - 플랫폼 클래스(`platform-android`)는 `main.tsx` 가 부팅 시 부여 → **첫 페인트부터** 적용(깜빡임 0).
 - 상태바 색은 `body::before` 스크림(브랜드 핑크) + Android `styles.xml` `statusBarColor`.
-- Android `targetSdk 35`(Android 15) → edge-to-edge **강제**라 시스템바 배경이 없어, 웹 레이어가
-  안전영역만큼 안쪽으로 들어가는 이 구조가 **필수**.
+- **edge-to-edge 강제**: Android 15(SDK35)부터 targetSdk 35+ 앱은 edge-to-edge 강제,
+  **Android 16(SDK36)에서 opt-out 완전 제거**, Android 17(SDK37)도 동일. 시스템바 배경이
+  없으니 웹 레이어가 안전영역만큼 안쪽으로 들어가는 이 구조가 **필수**. (현재 우리 targetSdk=35,
+  17 이상으로의 상향 계획은 `docs/android-target-sdk-upgrade.md`.)
+- **시스템바 색상**: Android 15+ edge-to-edge 에선 `styles.xml` 의 `statusBarColor`/
+  `navigationBarColor` 가 **무시**된다 → 색은 `body::before` 스크림이 담당(이미 구현). 두 속성은
+  ≤Android 14 기기 호환용으로만 남김.
 
 ## 표준 패턴 (이것만 쓴다 — `src/index.css @layer utilities`)
 | 용도 | 클래스 | 효과 |
@@ -64,4 +69,6 @@ iOS / 웹   →  env(safe-area-inset-*)            (Capacitor 기본 edge-to-edg
 - 데스크톱(≥lg) `BottomNav`→사이드바 전환 시 `safe-top` 미적용(현재 데스크톱은 `--safe-top=0`이라 무영향).
 - `body::before` z-index `2147483647` — 다이얼로그가 더 큰 z-index 쓰면 상태바 아이콘 클릭 막힘(현재 모달 z-50~70, 안전).
 - `MainActivity` px→dp 밀도 변환 반올림(실기기 <1px, 무시 가능).
-- **실기기 검증 권장**: Android 15(SDK35) 단말에서 상단/하단 바 직접 확인(코드는 표준 충족, e2e 실측은 별도).
+- **실기기 검증 권장**: 최신 Android(16/17, SDK 36/37) 단말 + 폴더블/태블릿에서 상단/하단 바와
+  대형화면 레이아웃 직접 확인(코드는 표준 충족, e2e 실측은 별도). 타깃 SDK 상향 계획은
+  `docs/android-target-sdk-upgrade.md` 참조 — Android 17(API37)은 대형화면 적응이 강제됨.
