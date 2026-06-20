@@ -26,7 +26,7 @@ const MyResults = () => {
   const [params, setParams] = useSearchParams();
   const raw = params.get("tab");
   const active: TabId = TABS.some((t) => t.id === raw) ? (raw as TabId) : "hair";
-  const ActiveComp = TABS.find((t) => t.id === active)!.Comp;
+  const ActiveComp = (TABS.find((t) => t.id === active) ?? TABS[0]).Comp;
 
   const selectTab = (id: TabId) => {
     setParams({ tab: id }, { replace: true });

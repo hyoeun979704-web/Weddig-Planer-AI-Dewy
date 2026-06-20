@@ -74,6 +74,18 @@ const CONFIG: Record<JobType, JobConfig> = {
     doneTitle: "헤어 미리보기 완료 🎉",
     doneDesc: "헤어 변형 결과가 준비됐어요.",
   },
+  sdm: {
+    table: "sdm_previews",
+    resolve: (s) =>
+      s === "done"
+        ? "done"
+        : s === "failed" || s === "refunded"
+          ? "failed"
+          : "processing",
+    resultRoute: (id) => `/ai-studio/sdm-preview/result/${id}`,
+    doneTitle: "스드메 미리보기 완료 🎉",
+    doneDesc: "완성본이 준비됐어요.",
+  },
 };
 
 const GenerationNotifier = () => {

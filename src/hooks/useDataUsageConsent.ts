@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { CONSENT } from "@/lib/consentDefinitions";
 
 /**
  * 마케팅·서비스 개선 목적 데이터 활용 동의(선택).
@@ -13,8 +14,8 @@ import { useAuth } from "@/contexts/AuthContext";
  * 가장 최근 row 가 현재 상태이며, row 가 없으면 미동의(false)로 본다(opt-in 기본 OFF).
  */
 
-export const DATA_USAGE_CONSENT_TYPE = "data_usage_v1";
-export const DATA_USAGE_CONSENT_VERSION = 1;
+export const DATA_USAGE_CONSENT_TYPE = CONSENT.dataUsage.type;
+export const DATA_USAGE_CONSENT_VERSION = CONSENT.dataUsage.version;
 
 export function useDataUsageConsent() {
   const { user } = useAuth();

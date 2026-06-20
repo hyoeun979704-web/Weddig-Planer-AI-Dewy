@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { ORDER_SESSION_KEY } from "@/pages/Checkout";
 import { computeDesignCharge } from "@/lib/designPricing";
+import { safeSessionStorage } from "@/lib/safeSessionStorage";
 
 interface DesignCard {
   id: string;
@@ -66,7 +67,7 @@ const InvitationMarket = () => {
     });
     setBuying(false);
     if (error || !data?.success) { toast.error(data?.error || "결제 준비에 실패했어요"); return; }
-    sessionStorage.setItem(
+    safeSessionStorage.setItem(
       ORDER_SESSION_KEY,
       JSON.stringify({ tid: data.tid, partnerOrderId: data.partner_order_id, partnerUserId: data.partner_user_id, type: "design" }),
     );

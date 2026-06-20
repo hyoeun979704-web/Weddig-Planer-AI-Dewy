@@ -5,6 +5,8 @@ import {
   krwForPoints,
   pointsForKrw,
   maxPointsForPackage,
+  IAP_FEE_RATE,
+  iapPriceForKrw,
 } from "./heartPackages";
 
 describe("heartPackages 포인트 환산", () => {
@@ -46,6 +48,31 @@ describe("maxPointsForPackage (결제 50% 한도)", () => {
 
   it("잔액 0이면 0", () => {
     expect(maxPointsForPackage(9900, 0)).toBe(0);
+  });
+});
+
+describe("IAP 단가(+10% 수수료 반영)", () => {
+  it("IAP_FEE_RATE 는 10%", () => {
+    expect(IAP_FEE_RATE).toBe(0.10);
+  });
+
+  it("iapPriceForKrw: 웹가 +10% (1원 단위 반올림)", () => {
+    expect(iapPriceForKrw(1900)).toBe(2090);
+    expect(iapPriceForKrw(4900)).toBe(5390);
+    expect(iapPriceForKrw(9900)).toBe(10890);
+    expect(iapPriceForKrw(13900)).toBe(15290);
+    expect(iapPriceForKrw(19900)).toBe(21890);
+  });
+
+  it("구독가도 동일 규칙(월 4900→5390, 연 39000→42900)", () => {
+    expect(iapPriceForKrw(4900)).toBe(5390);
+    expect(iapPriceForKrw(39000)).toBe(42900);
+  });
+
+  it("IAP 가는 항상 웹가보다 큼", () => {
+    for (const p of HEART_PACKAGES) {
+      expect(iapPriceForKrw(p.price)).toBeGreaterThan(p.price);
+    }
   });
 });
 

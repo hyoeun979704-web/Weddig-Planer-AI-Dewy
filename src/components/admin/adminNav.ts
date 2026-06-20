@@ -25,6 +25,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "업체 권한 요청", href: "/admin/place-claims", icon: Building2 },
   { label: "신고 처리", href: "/admin/reports", icon: Flag, featured: true },
   { label: "AI 생성 현황", href: "/admin/ai-jobs", icon: Sparkles, featured: true },
+  { label: "AI 프롬프트 검증", href: "/admin/ai-prompts", icon: Sparkles, featured: true },
   { label: "청첩장 템플릿", href: "/admin/invitation-templates", icon: FileText },
   { label: "청첩장 에셋", href: "/admin/invitation-assets", icon: FileText },
   { label: "청첩장 폰트", href: "/admin/invitation-fonts", icon: FileText },

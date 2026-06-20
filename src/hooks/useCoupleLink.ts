@@ -216,21 +216,27 @@ export const useCoupleLink = () => {
       (coupleLink.user_id === user.id ? null : user.id);
 
     try {
-      await (supabase
+      // supabase-js 는 실패 시 throw 가 아니라 { error } 를 반환한다. error 를 확인하지
+      // 않으면 RLS 거부/네트워크 실패에도 성공처럼 보이고, UI 는 해제됐는데 DB 는 linked
+      // 잔존 → 헤어진 상대에게 공유 데이터가 계속 노출된다(프라이버시). 반드시 throw.
+      const { error: unlinkError } = await (supabase
         .from("couple_links" as any) as any)
         .update({ status: "unlinked", partner_user_id: null })
         .eq("id", coupleLink.id);
+      if (unlinkError) throw unlinkError;
 
       // 양쪽 결혼 설정에서 partner_user_id 제거 — 안 지우면 공유 기능이 계속
       // 연결된 것으로 동작한다.
       const ids = [aId, bId].filter((v): v is string => !!v);
-      await Promise.all(
+      const results = await Promise.all(
         ids.map((id) =>
           (supabase.from("user_wedding_settings") as any)
             .update({ partner_user_id: null })
             .eq("user_id", id),
         ),
       );
+      const settingsError = results.find((r: any) => r?.error)?.error;
+      if (settingsError) throw settingsError;
 
       setCoupleLink(null);
       setPartnerProfile(null);

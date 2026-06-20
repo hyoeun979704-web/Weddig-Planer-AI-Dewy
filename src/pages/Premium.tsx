@@ -176,7 +176,7 @@ const Premium = () => {
               </button>
             </div>
             <button onClick={handleSubscribe} className="w-full mt-3 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
-              구독하기 (테스트)
+              구독하기
             </button>
           </div>
         )}

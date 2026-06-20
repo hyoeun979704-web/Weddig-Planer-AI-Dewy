@@ -139,7 +139,7 @@ const ProductDetailPage = () => {
       </div>
 
       {/* 하단 CTA — 문의하기 (결제지원 상품 '구매하기'는 Phase C) */}
-      <div className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border px-4 pt-3 safe-bottom-cta">
         <button
           onClick={onInquiry}
           className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold"

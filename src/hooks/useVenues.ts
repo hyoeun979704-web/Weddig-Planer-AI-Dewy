@@ -2,6 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useFilterStore, FilterState } from "@/stores/useFilterStore";
 import { placeToVenue, Venue } from "@/lib/placeMappers";
+import { escapeLikePattern } from "@/lib/postgrestEscape";
 
 export type { Venue };
 
@@ -42,12 +43,12 @@ const fetchVenues = async ({ pageParam = 0, filters, partnersOnly = false }: Fet
   }
 
   if (filters.region) {
-    query = query.ilike("city", `%${filters.region}%`);
+    query = query.ilike("city", `%${escapeLikePattern(filters.region)}%`);
   }
 
   // 시군구 — places.district ILIKE. 시도+시군구 조합으로 P6·P11·P12 페르소나 권역 큐레이션.
   if (filters.sigungu) {
-    query = query.ilike("district", `%${filters.sigungu}%`);
+    query = query.ilike("district", `%${escapeLikePattern(filters.sigungu)}%`);
   }
 
   if (filters.maxPrice) {

@@ -4,6 +4,7 @@ import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { safeSessionStorage } from "@/lib/safeSessionStorage";
 
 const SESSION_KEY = "heart_charge_session";
 
@@ -22,7 +23,7 @@ const HeartChargeSuccess = () => {
     const run = async () => {
       const pgToken = searchParams.get("pg_token");
       const orderId = searchParams.get("order");
-      const sessionRaw = sessionStorage.getItem(SESSION_KEY);
+      const sessionRaw = safeSessionStorage.getItem(SESSION_KEY);
 
       if (!pgToken || !sessionRaw || !user) {
         setStatus("error");
@@ -59,7 +60,7 @@ const HeartChargeSuccess = () => {
 
         setHearts(data.heartsGranted ?? session.hearts);
         setPointsSpent(data.pointsSpent ?? 0);
-        sessionStorage.removeItem(SESSION_KEY);
+        safeSessionStorage.removeItem(SESSION_KEY);
         setStatus("success");
         toast.success(`하트 ${data.heartsGranted}개가 적립되었어요!`);
       } catch (err: any) {

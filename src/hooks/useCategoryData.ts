@@ -4,6 +4,7 @@ import { useCategoryFilterStore, CategoryType } from "@/stores/useCategoryFilter
 import { useWeddingVenue } from "@/hooks/useWeddingVenue";
 import { APPLIANCE_PRODUCT_TYPE_LABEL, JEWELRY_STORE_TYPE_LABEL } from "@/lib/categoryLabels";
 import { joinRegion } from "@/lib/placeMappers";
+import { escapeLikePattern } from "@/lib/postgrestEscape";
 
 export interface CategoryItem {
   id: string;
@@ -335,7 +336,7 @@ async function fetchCategoryItems(
       // appliance: hybrid (store/package/single). region 칩 = product_type.
       query = query.eq("place_appliances.product_type", filters.region);
     } else {
-      query = query.ilike("city", `%${filters.region}%`);
+      query = query.ilike("city", `%${escapeLikePattern(filters.region)}%`);
     }
   } else if (
     filters.venueCity &&
@@ -351,7 +352,7 @@ async function fetchCategoryItems(
   ) {
     // 사용자가 명시 region 필터 없으면 venue anchor 의 city 로 자동 좁힘.
     // venue 가 없으면 전국 노출 (기존 동작). v2 §6: 사용자 명시 식장이 primary anchor.
-    query = query.ilike("city", `%${filters.venueCity}%`);
+    query = query.ilike("city", `%${escapeLikePattern(filters.venueCity)}%`);
   }
   if (filters.minRating) {
     query = query.gte("avg_rating", filters.minRating);

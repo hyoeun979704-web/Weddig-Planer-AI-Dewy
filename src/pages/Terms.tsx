@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
+import { COMPANY } from "@/lib/companyInfo";
 
 const Terms = () => {
   const navigate = useNavigate();
@@ -233,12 +234,25 @@ const Terms = () => {
           </ol>
         </Section>
 
+        <Section title="사업자 정보">
+          <ul className="space-y-0.5">
+            <li>상호: {COMPANY.name} ({COMPANY.nameEn})</li>
+            <li>대표자: {COMPANY.ceo}</li>
+            <li>사업자등록번호: {COMPANY.bizRegNo}</li>
+            <li>통신판매업신고번호: {COMPANY.telecomSalesNo}</li>
+            <li>주소: {COMPANY.address}</li>
+            <li>고객센터: {COMPANY.phone} ({COMPANY.operatingHours})</li>
+            <li>이메일: {COMPANY.email}</li>
+            <li>개인정보 보호책임자: {COMPANY.privacyOfficer.name} ({COMPANY.privacyOfficer.title})</li>
+          </ul>
+        </Section>
+
         <Section title="부칙">
           본 약관은 2026년 5월 1일부터 시행됩니다.
         </Section>
 
         <p className="mt-8 text-muted-foreground text-[12px]">
-          문의: kheceo@dewy-wedding.com
+          문의: {COMPANY.email}
         </p>
       </main>
 

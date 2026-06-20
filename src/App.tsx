@@ -63,6 +63,8 @@ const BusinessLeads = lazy(() => import("./pages/business/BusinessLeads"));
 const HairPreview = lazy(() => import("./pages/HairPreview"));
 const HairPreviewResult = lazy(() => import("./pages/HairPreviewResult"));
 const HairPreviewGallery = lazy(() => import("./pages/HairPreviewGallery"));
+const SdmPreview = lazy(() => import("./pages/SdmPreview"));
+const SdmPreviewResult = lazy(() => import("./pages/SdmPreviewResult"));
 const Community = lazy(() => import("./pages/Community"));
 const CommunityWrite = lazy(() => import("./pages/CommunityWrite"));
 const CommunityEdit = lazy(() => import("./pages/CommunityEdit"));
@@ -129,6 +131,7 @@ const AdminInstagramPosts = lazy(() => import("./pages/admin/AdminInstagramPosts
 const AdminInstagramPostEdit = lazy(() => import("./pages/admin/AdminInstagramPostEdit"));
 const AdminMakeupSamples = lazy(() => import("./pages/admin/AdminMakeupSamples"));
 const AdminHairSamples = lazy(() => import("./pages/admin/AdminHairSamples"));
+const AdminAIPrompts = lazy(() => import("./pages/admin/AdminAIPrompts"));
 const AdminAIJobs = lazy(() => import("./pages/admin/AdminAIJobs"));
 const AdminInvitationTemplates = lazy(() => import("./pages/admin/AdminInvitationTemplates"));
 const AdminInvitationAssets = lazy(() => import("./pages/admin/AdminInvitationAssets"));
@@ -357,6 +360,8 @@ const App = () => (
               <Route path="/ai-studio/hair-room" element={<HairPreview />} />
               <Route path="/ai-studio/hair-room/result/:id" element={<HairPreviewResult />} />
               <Route path="/ai-studio/hair-room/gallery" element={<HairPreviewGallery />} />
+              <Route path="/ai-studio/sdm-preview" element={<SdmPreview />} />
+              <Route path="/ai-studio/sdm-preview/result/:id" element={<SdmPreviewResult />} />
               <Route path="/ai-studio/dress-tour" element={<DressFitting />} />
               <Route path="/ai-studio/dress-tour/result/:id" element={<DressFittingResult />} />
               <Route path="/ai-studio/dress-tour/gallery" element={<DressFittingGallery />} />
@@ -383,6 +388,7 @@ const App = () => (
               <Route path="/admin/dress-samples" element={<AdminGuard><AdminDressSamples /></AdminGuard>} />
               <Route path="/admin/makeup-samples" element={<AdminGuard><AdminMakeupSamples /></AdminGuard>} />
               <Route path="/admin/hair-samples" element={<AdminGuard><AdminHairSamples /></AdminGuard>} />
+              <Route path="/admin/ai-prompts" element={<AdminGuard><AdminAIPrompts /></AdminGuard>} />
               <Route path="/admin/ai-jobs" element={<AdminGuard><AdminAIJobs /></AdminGuard>} />
               <Route path="/admin/invitation-templates" element={<AdminGuard><AdminInvitationTemplates /></AdminGuard>} />
               <Route path="/admin/invitation-assets" element={<AdminGuard><AdminInvitationAssets /></AdminGuard>} />

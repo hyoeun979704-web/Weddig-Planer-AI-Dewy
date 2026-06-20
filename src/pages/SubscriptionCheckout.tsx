@@ -6,6 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
+import { safeSessionStorage } from "@/lib/safeSessionStorage";
+import { isNativeApp } from "@/lib/platform";
 
 type PlanType = "trial" | "monthly" | "yearly";
 
@@ -16,6 +18,7 @@ const SubscriptionCheckout = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const type = (searchParams.get("type") || "trial") as PlanType;
   const amount = type === "trial" ? 100 : type === "yearly" ? 39000 : 4900;
@@ -47,7 +50,7 @@ const SubscriptionCheckout = () => {
         throw new Error(data?.error || error?.message || "결제 준비에 실패했습니다");
       }
 
-      sessionStorage.setItem(
+      safeSessionStorage.setItem(
         KAKAO_PAY_SESSION_KEY,
         JSON.stringify({
           tid: data.tid,
@@ -139,14 +142,33 @@ const SubscriptionCheckout = () => {
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 app-col mx-auto px-4 pt-4 pb-[calc(1rem+var(--safe-bottom))] bg-background border-t border-border">
-        <button
-          onClick={handlePayment}
-          disabled={isSubmitting}
-          className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
-          {type === "trial" ? "카카오페이로 인증하기" : `카카오페이로 ${amount.toLocaleString()}원 결제`}
-        </button>
+        {isNativeApp() ? (
+          // 스토어(네이티브) 빌드: 디지털 구독의 비-IAP 인앱 결제는 정책 위반이라 결제 UI 숨김.
+          // (IAP 도입 전까지 구독은 웹에서. anti-steering 위해 앱에 웹 안내/링크는 두지 않음.)
+          <p className="text-[12px] text-muted-foreground text-center py-2">
+            구독 결제 기능을 준비 중이에요.
+          </p>
+        ) : (
+          <>
+            <label className="flex items-start gap-2 mb-2 text-[12px] text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 shrink-0"
+              />
+              <span>프리미엄은 디지털 서비스로 결제 즉시 이용이 시작되며, 이용을 개시하면 청약철회가 제한될 수 있음에 동의합니다. (전자상거래법 제17조)</span>
+            </label>
+            <button
+              onClick={handlePayment}
+              disabled={isSubmitting || !agreed}
+              className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
+              {type === "trial" ? "카카오페이로 인증하기" : `카카오페이로 ${amount.toLocaleString()}원 결제`}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

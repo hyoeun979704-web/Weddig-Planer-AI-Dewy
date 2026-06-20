@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/hooks/useCart";
 import { ORDER_SESSION_KEY } from "./Checkout";
 import { toast } from "sonner";
+import { safeSessionStorage } from "@/lib/safeSessionStorage";
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ const PaymentSuccess = () => {
     const confirmPayment = async () => {
       const pgToken = searchParams.get("pg_token");
       const orderParam = searchParams.get("order");
-      const sessionRaw = sessionStorage.getItem(ORDER_SESSION_KEY);
+      const sessionRaw = safeSessionStorage.getItem(ORDER_SESSION_KEY);
 
       if (!pgToken || !sessionRaw || !user) {
         setStatus("error");
@@ -62,7 +63,7 @@ const PaymentSuccess = () => {
         }
 
         if (!isDesign) await clearCart(); // 디자인은 장바구니 무관
-        sessionStorage.removeItem(ORDER_SESSION_KEY);
+        safeSessionStorage.removeItem(ORDER_SESSION_KEY);
         setOrderNumber(data.order_number ?? session.partnerOrderId);
         setPaidAmount(data.amount ?? 0);
         setStatus("success");

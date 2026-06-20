@@ -5,6 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
 import { supabase } from "@/integrations/supabase/client";
+import { escapeLikePattern } from "@/lib/postgrestEscape";
 import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
@@ -89,7 +90,7 @@ const Store = () => {
         query = query.lte("price", filters.priceRange[1]) as any;
       }
       if (filters.keyword) {
-        query = query.ilike("name", `%${filters.keyword}%`) as any;
+        query = query.ilike("name", `%${escapeLikePattern(filters.keyword)}%`) as any;
       }
 
       const { data } = await query;

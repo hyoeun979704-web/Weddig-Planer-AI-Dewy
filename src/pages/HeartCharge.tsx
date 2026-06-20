@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePoints } from "@/hooks/usePoints";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
+import { safeSessionStorage } from "@/lib/safeSessionStorage";
+import { isNativeApp } from "@/lib/platform";
 import {
   HEART_PACKAGES,
   HeartPackage,
@@ -26,6 +28,7 @@ const HeartCharge = () => {
   const [pointsToUse, setPointsToUse] = useState(0);
   const [isStarterUsed, setIsStarterUsed] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -76,7 +79,7 @@ const HeartCharge = () => {
         throw new Error(data?.error || error?.message || "결제 준비 실패");
       }
 
-      sessionStorage.setItem(
+      safeSessionStorage.setItem(
         SESSION_KEY,
         JSON.stringify({
           tid: data.tid,
@@ -217,14 +220,33 @@ const HeartCharge = () => {
               {finalAmount.toLocaleString()}원
             </p>
           </div>
-          <button
-            onClick={handlePay}
-            disabled={isSubmitting}
-            className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
-            카카오페이로 결제하기
-          </button>
+          {isNativeApp() ? (
+            // 스토어(네이티브) 빌드: 디지털 재화의 비-IAP 인앱 결제는 정책 위반이라 결제 UI 숨김.
+            // (IAP 도입 전까지 충전은 웹에서. 앱은 잔액 사용만 — anti-steering 위해 웹 안내/링크는 두지 않음.)
+            <p className="text-[12px] text-muted-foreground text-center py-2">
+              하트 충전 기능을 준비 중이에요.
+            </p>
+          ) : (
+            <>
+              <label className="flex items-start gap-2 mb-2 text-[12px] text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5 shrink-0"
+                />
+                <span>하트는 디지털 콘텐츠로 결제 즉시 충전되며, 사용을 시작하면 청약철회가 제한될 수 있음에 동의합니다. (전자상거래법 제17조)</span>
+              </label>
+              <button
+                onClick={handlePay}
+                disabled={isSubmitting || !agreed}
+                className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
+                카카오페이로 결제하기
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 // 차단 목록은 피드·댓글 쿼리에서 `not in` 필터로 활용한다.
 // 신고는 community_reports.unique(reporter, target_type, target_id) 로 중복 방지.
 
-export type ReportTargetType = "post" | "comment";
+export type ReportTargetType = "post" | "comment" | "ai_content";
 
 export type ReportReasonCode =
   | "spam"

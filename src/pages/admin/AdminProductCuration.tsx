@@ -3,6 +3,7 @@ import { Search, Loader2, Plus, Pencil, Star, Trash2, ExternalLink, RefreshCw, C
 import AdminGuard from "@/components/admin/AdminGuard";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { escapeLikePattern } from "@/lib/postgrestEscape";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -111,7 +112,7 @@ const AdminProductCuration = () => {
       q = q.contains("categories", [filterCategory]);
     }
     if (poolKeyword.trim()) {
-      q = q.ilike("name", `%${poolKeyword.trim()}%`);
+      q = q.ilike("name", `%${escapeLikePattern(poolKeyword.trim())}%`);
     }
     const [{ data, count, error }, { data: clickRows }] = await Promise.all([
       q,

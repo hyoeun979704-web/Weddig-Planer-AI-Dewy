@@ -39,6 +39,15 @@ const cards: StudioCard[] = [
     previewPosition: "top",
   },
   {
+    id: "sdm-preview",
+    title: "스드메 미리보기",
+    description: "장소·메이크업·헤어·드레스를 한 번에 반영한 완성본 (10하트)",
+    status: "active",
+    href: "/ai-studio/sdm-preview",
+    previewImage: "/ai-studio-previews/dress.webp",
+    previewPosition: "top",
+  },
+  {
     id: "makeup-finder",
     title: "착붙 메이크업 찾기",
     description: "나에게 어울리는 신부 메이크업 시연",

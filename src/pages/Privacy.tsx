@@ -102,9 +102,14 @@ const Privacy = () => {
                 <td className="border border-border p-2">본인 동의</td>
               </tr>
               <tr>
-                <td className="border border-border p-2">사용자 업로드 사진</td>
-                <td className="border border-border p-2">처리 후 30일</td>
-                <td className="border border-border p-2">본인 동의 / 자동 삭제</td>
+                <td className="border border-border p-2">AI Studio 업로드 사진</td>
+                <td className="border border-border p-2">처리 후 30일(자동 삭제)</td>
+                <td className="border border-border p-2">본인 동의</td>
+              </tr>
+              <tr>
+                <td className="border border-border p-2">커뮤니티·커플다이어리 게시 사진</td>
+                <td className="border border-border p-2">게시물 삭제 또는 탈퇴 시까지</td>
+                <td className="border border-border p-2">본인 동의</td>
               </tr>
               <tr>
                 <td className="border border-border p-2">AI 결과물</td>
@@ -113,7 +118,7 @@ const Privacy = () => {
               </tr>
               <tr>
                 <td className="border border-border p-2">채팅 기록</td>
-                <td className="border border-border p-2">최대 1년</td>
+                <td className="border border-border p-2">탈퇴 시까지(요청 시 삭제)</td>
                 <td className="border border-border p-2">서비스 운영</td>
               </tr>
               <tr>
@@ -179,6 +184,14 @@ const Privacy = () => {
                 <td className="border border-border p-2">Vercel Inc.</td>
                 <td className="border border-border p-2">웹 호스팅·CDN</td>
               </tr>
+              <tr>
+                <td className="border border-border p-2">Google Inc. (AdMob·AdSense)</td>
+                <td className="border border-border p-2">광고 식별자 수집 및 맞춤형 광고 노출</td>
+              </tr>
+              <tr>
+                <td className="border border-border p-2">Google·Kakao (캘린더 연동 선택 시)</td>
+                <td className="border border-border p-2">사용자 동의 시 일정(웨딩 일정·체크리스트) 연동</td>
+              </tr>
             </tbody>
           </table>
           <p className="mt-2 text-[12px] text-muted-foreground">
@@ -191,7 +204,7 @@ const Privacy = () => {
           인프라(Supabase, Vercel) 이용 과정에서 회원의 개인정보가 미국 등 해외에 위치한 서버로 전송될 수
           있습니다.
           <ul className="list-disc pl-5 mt-2 space-y-1">
-            <li>이전 항목: 사진(AI Studio), 채팅 내용(AI Planner), 인증·결제 정보, 서비스 이용 정보</li>
+            <li>이전 항목: 사진(AI Studio), 채팅 내용(AI Planner), 인증·결제 정보, 서비스 이용 정보, 광고 식별자(AdMob·AdSense)</li>
             <li>이전 국가: 미국 등 (각 사업자 운영 국가)</li>
             <li>이전 시점: 서비스 이용 시점</li>
             <li>보유 기간: 본 방침의 보유 기간 또는 위탁사의 자체 기준에 따름</li>

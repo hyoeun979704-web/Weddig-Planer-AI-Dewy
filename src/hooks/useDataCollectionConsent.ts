@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { CONSENT } from "@/lib/consentDefinitions";
 
 /**
  * 데이터 수집 동의 상태 관리.
@@ -15,8 +16,8 @@ import { useAuth } from "@/contexts/AuthContext";
  * 이력이 누적된다 (PIPA 준수).
  */
 
-export const DATA_COLLECTION_CONSENT_TYPE = "data_collection_v1";
-export const DATA_COLLECTION_CONSENT_VERSION = 1;
+export const DATA_COLLECTION_CONSENT_TYPE = CONSENT.dataCollection.type;
+export const DATA_COLLECTION_CONSENT_VERSION = CONSENT.dataCollection.version;
 
 export type ConsentState = undefined | null | boolean;
 

@@ -4,7 +4,7 @@
 
 const KEY = "dewy.generation.pending";
 
-export type JobType = "consulting" | "dress" | "makeup" | "photo" | "hair";
+export type JobType = "consulting" | "dress" | "makeup" | "photo" | "hair" | "sdm";
 
 export interface PendingJob {
   id: string;
