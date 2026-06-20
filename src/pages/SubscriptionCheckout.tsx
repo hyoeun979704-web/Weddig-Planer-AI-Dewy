@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
 import { safeSessionStorage } from "@/lib/safeSessionStorage";
-import { isNativeApp } from "@/lib/platform";
+import { getPaymentProvider, purchaseSubscriptionIap, subscriptionIapPrice } from "@/lib/payments";
 
 type PlanType = "trial" | "monthly" | "yearly";
 
@@ -32,6 +32,10 @@ const SubscriptionCheckout = () => {
       : "월간 구독 (4,900원/월)";
   const heartBonus = type === "yearly" ? 180 : type === "monthly" ? 10 : 0;
   const isEarlyBird = heartBonus > 0 && Date.now() < new Date("2026-08-01T00:00:00+09:00").getTime();
+
+  // 결제수단: 웹=카카오페이, 안드로이드=Google IAP(+10%), iOS=준비중.
+  const provider = getPaymentProvider();
+  const displayAmount = provider === "iap" && type !== "trial" ? subscriptionIapPrice(type) : amount;
 
   useEffect(() => {
     if (!user) navigate("/auth");
@@ -72,6 +76,26 @@ const SubscriptionCheckout = () => {
     }
   };
 
+  // 안드로이드 Google Play 구독 IAP. 서버(iap-verify-google)가 검증 후 구독 활성·보너스 하트 지급.
+  const handleIapSubscribe = async () => {
+    if (!user || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const result = await purchaseSubscriptionIap(user.id, type);
+      if (result.ok) {
+        toast.success("구독이 시작되었어요");
+        navigate("/premium");
+      } else {
+        toast.error(result.message || "구독 결제에 실패했어요");
+      }
+    } catch (err: any) {
+      console.error("IAP subscribe failed:", err);
+      toast.error(err?.message || "구독 결제에 실패했어요");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -90,7 +114,7 @@ const SubscriptionCheckout = () => {
               )}
             </div>
             <p className="text-lg font-bold text-primary">
-              {type === "trial" ? "0원" : `${amount.toLocaleString()}원`}
+              {type === "trial" ? "0원" : `${displayAmount.toLocaleString()}원`}
             </p>
           </div>
           {originalPrice > 0 && (
@@ -124,30 +148,70 @@ const SubscriptionCheckout = () => {
           </div>
         )}
 
-        <div className="p-4 bg-card rounded-2xl border border-border">
-          <p className="text-sm font-semibold text-foreground mb-2">결제 수단</p>
-          <div className="flex items-center gap-3 p-3 rounded-xl border border-primary/30 bg-primary/5">
-            <div className="w-10 h-10 rounded-lg bg-[#FFEB00] flex items-center justify-center text-lg font-bold text-[#3C1E1E]">
-              K
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">카카오페이</p>
-              <p className="text-xs text-muted-foreground">카카오톡으로 간편결제</p>
-            </div>
+        {provider !== "unavailable" && (
+          <div className="p-4 bg-card rounded-2xl border border-border">
+            <p className="text-sm font-semibold text-foreground mb-2">결제 수단</p>
+            {provider === "iap" ? (
+              <>
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-primary/30 bg-primary/5">
+                  <div className="w-10 h-10 rounded-lg bg-[#01875F] flex items-center justify-center text-lg font-bold text-white">
+                    ▶
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground">Google Play 인앱결제</p>
+                    <p className="text-xs text-muted-foreground">스토어 계정으로 안전하게 결제</p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-3">
+                  구독 관리·해지는 Google Play 스토어의 구독 메뉴에서 할 수 있어요.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-primary/30 bg-primary/5">
+                  <div className="w-10 h-10 rounded-lg bg-[#FFEB00] flex items-center justify-center text-lg font-bold text-[#3C1E1E]">
+                    K
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground">카카오페이</p>
+                    <p className="text-xs text-muted-foreground">카카오톡으로 간편결제</p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-3">
+                  결제 진행 시 카카오페이 결제창으로 이동합니다.
+                </p>
+              </>
+            )}
           </div>
-          <p className="text-[11px] text-muted-foreground mt-3">
-            결제 진행 시 카카오페이 결제창으로 이동합니다.
-          </p>
-        </div>
+        )}
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 app-col mx-auto px-4 pt-4 pb-[calc(1rem+var(--safe-bottom))] bg-background border-t border-border">
-        {isNativeApp() ? (
-          // 스토어(네이티브) 빌드: 디지털 구독의 비-IAP 인앱 결제는 정책 위반이라 결제 UI 숨김.
-          // (IAP 도입 전까지 구독은 웹에서. anti-steering 위해 앱에 웹 안내/링크는 두지 않음.)
+        {provider === "unavailable" ? (
+          // iOS: StoreKit IAP 선반영 전까지 결제 UI 숨김(anti-steering — 웹 안내/링크 미노출).
           <p className="text-[12px] text-muted-foreground text-center py-2">
             구독 결제 기능을 준비 중이에요.
           </p>
+        ) : provider === "iap" ? (
+          <>
+            <label className="flex items-start gap-2 mb-2 text-[12px] text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 shrink-0"
+              />
+              <span>프리미엄은 디지털 서비스로 결제 즉시 이용이 시작되며, 이용을 개시하면 청약철회가 제한될 수 있음에 동의합니다. (전자상거래법 제17조)</span>
+            </label>
+            <button
+              onClick={handleIapSubscribe}
+              disabled={isSubmitting || !agreed}
+              className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
+              {type === "trial" ? "무료 체험 시작" : `Google Play로 ${displayAmount.toLocaleString()}원 구독`}
+            </button>
+          </>
         ) : (
           <>
             <label className="flex items-start gap-2 mb-2 text-[12px] text-muted-foreground">
