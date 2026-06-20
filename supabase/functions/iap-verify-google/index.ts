@@ -57,6 +57,19 @@ Deno.serve(async (req) => {
       const boundId = v.data.obfuscatedExternalAccountId as string | undefined;
       if (boundId && boundId !== userId) return json({ error: "User mismatch" }, 403);
 
+      // 첫 충전 한정(starter): 웹·IAP 통틀어 평생 1회. 웹과 동일 reason(charge_starter)으로 지급해
+      // 기존 partial UNIQUE(heart_transactions_charge_starter_once)가 최종(레이스 포함) 가드가 된다.
+      // 이미 받았으면 여기서 거부 — 원장(iap_transactions)을 기록하지 않으므로 클라가 finish()(consume)
+      // 하지 않고, 소비되지 않은 소비성 결제는 Google 이 3일 내 자동 환불한다. (웹 kakao-pay-charge-ready 와 동일 정책)
+      const heartReason = def.packageId === "starter" ? "charge_starter" : `iap_${def.packageId}`;
+      if (def.packageId === "starter") {
+        const { data: prior } = await admin
+          .from("heart_transactions").select("id").eq("user_id", userId).eq("reason", "charge_starter").limit(1);
+        if (prior && prior.length > 0) {
+          return json({ success: false, error: "첫 충전 특전은 1회만 받을 수 있어요." });
+        }
+      }
+
       // 원장 기록(멱등 키) — 먼저 확정해 중복 지급 방지.
       const { error: txErr } = await admin.from("iap_transactions").insert({
         user_id: userId, platform: PLATFORM, product_id: productId, store_txn_id: purchaseToken,
@@ -71,13 +84,18 @@ Deno.serve(async (req) => {
       }
 
       const { error: earnErr } = await admin.rpc("earn_hearts", {
-        p_user_id: userId, p_amount: def.hearts, p_reason: `iap_${def.packageId}`, p_ref_id: null,
+        p_user_id: userId, p_amount: def.hearts, p_reason: heartReason, p_ref_id: null,
       });
       if (earnErr) {
-        // 지급 실패 — 원장을 롤백해 재시도 가능하게(중복지급은 UNIQUE 가 여전히 차단).
+        // 지급 실패 — 원장을 롤백(소비성 미consume → Google 자동환불, 중복지급은 UNIQUE 가 여전히 차단).
         console.error("earn_hearts failed (iap), rolling back ledger", earnErr);
         await admin.from("iap_transactions").delete().eq("platform", PLATFORM).eq("store_txn_id", purchaseToken);
-        return json({ success: false, error: "지급 처리에 실패했어요. 잠시 후 다시 시도해 주세요." }, 500);
+        // starter 평생 1회 제약 위반(동시 결제 레이스)은 재시도 무의미 → 명확한 안내.
+        const starterDup = (earnErr.message || "").includes("heart_transactions_charge_starter_once");
+        return json(
+          { success: false, error: starterDup ? "첫 충전 특전은 1회만 받을 수 있어요." : "지급 처리에 실패했어요. 잠시 후 다시 시도해 주세요." },
+          starterDup ? 200 : 500,
+        );
       }
       return json({ success: true, heartsGranted: def.hearts });
     }
