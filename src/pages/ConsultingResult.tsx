@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
+import AiResultReportButton from "@/components/ai/AiResultReportButton";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Download, Loader2, RefreshCw, Share2, Sparkles } from "lucide-react";
 import { shareResultWithToast } from "@/lib/shareResultImage";
@@ -244,6 +245,7 @@ const ConsultingResult = () => {
               </div>
             ))}
             <AiDisclosureNotice />
+            <AiResultReportButton targetId={id} />
             <p className="text-[11px] text-muted-foreground">
               이미지를 길게 눌러 저장할 수 있어요.
             </p>

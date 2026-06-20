@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
+import AiResultReportButton from "@/components/ai/AiResultReportButton";
 import ZoomableImage from "@/components/ai/ZoomableImage";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Download, Share2, Loader2, RefreshCw } from "lucide-react";
@@ -249,6 +250,7 @@ const DressFittingResult = () => {
             )}
 
             <AiDisclosureNotice />
+            <AiResultReportButton targetId={id} />
 
             {sceneLabel && (
               <p className="text-[12px] text-muted-foreground text-center">
