@@ -71,14 +71,8 @@ export async function initAds(): Promise<void> {
     } catch (e) {
       console.warn("[ads] AdMob init 실패 (플러그인 미설치?)", e);
     }
-  } else if (ADSENSE_CLIENT && !document.querySelector('script[src*="adsbygoogle.js"]')) {
-    // index.html 에 이미 정적 포함돼 있으면 재주입하지 않음.
-    const s = document.createElement("script");
-    s.async = true;
-    s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`;
-    s.crossOrigin = "anonymous";
-    document.head.appendChild(s);
   }
+  // 웹: AdSense 비활성(정책상 '콘텐츠 없는 화면 광고' 금지) — 스크립트 미주입. 앱 광고는 AdMob.
 }
 
 // 보상형 게재위치 — 'double': 포인트 2배 / 'extra': 게임기회 1회 추가. 네이티브에서 단위 ID 선택.

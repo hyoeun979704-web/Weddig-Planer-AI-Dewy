@@ -5,6 +5,7 @@ import { Game, type GameHandle } from '@/game/Game';
 import AdBanner from '@/components/ads/AdBanner';
 import RewardedAdModal from '@/components/ads/RewardedAdModal';
 import { setWebRewardedHandler, clearWebRewardedHandler, isNativeAds, showRewardedAd } from '@/lib/ads/adService';
+import { toast } from 'sonner';
 import { useGamePoints } from '@/hooks/useGamePoints';
 import { useGameQuota } from '@/game/useGameQuota';
 import { useAuth } from '@/contexts/AuthContext';
@@ -93,9 +94,22 @@ export default function MergeGame() {
     invalidatePoints();
   }, [user, saveScore, invalidatePoints]);
 
+  // 웹: 보상형 광고는 앱(AdMob) 전용 — AdSense는 보상형이 없고 '콘텐츠 없는 화면 광고'가 정책 위반.
+  // 그래서 웹에선 광고-포인트를 지급하지 않고 앱으로 유도한다.
+  const nudgeToApp = useCallback(() => {
+    toast("앱에서 광고를 보고 포인트를 받을 수 있어요", {
+      description: "Dewy 앱에서 이어가면 광고 시청으로 포인트 2배·한 판 더가 가능해요.",
+      action: {
+        label: "앱 받기",
+        onClick: () => window.open("https://play.google.com/store/apps/details?id=app.dewy", "_blank", "noopener"),
+      },
+    });
+  }, []);
+
   // 포인트 2배 — 15초 보상형 광고 시청 완료 시 doubled=true 로 적립(=기본의 2배 단가).
   const claimDouble = useCallback(async () => {
     if (claimedRef.current || lastScoreRef.current === null || !user || adBusy) return;
+    if (!isNativeAds()) { nudgeToApp(); return; }
     setAdBusy(true);
     setAdCfg({ title: '광고 보고 포인트 2배', cta: '포인트 2배 받기', close: '닫기 (2배 없이)', sec: 15 });
     try {
@@ -127,6 +141,7 @@ export default function MergeGame() {
   // 광고 보고 한 판 더 — 5초 보상형 시청 완료 시에만 소비·시작.
   const startAd = useCallback(async () => {
     if (quota.adLeft <= 0 || adBusy) return;
+    if (!isNativeAds()) { nudgeToApp(); return; }
     void claimBase();
     setAdBusy(true);
     setAdCfg({ title: '광고 보고 한 판 더', cta: '한 판 더 플레이', close: '닫기 (플레이 안 함)', sec: 5 });
