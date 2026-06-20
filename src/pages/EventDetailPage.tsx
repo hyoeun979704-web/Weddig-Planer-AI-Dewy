@@ -141,7 +141,7 @@ const EventDetailPage = () => {
       </div>
 
       {/* 하단 CTA — 업체 확인하기 / 신청하기 */}
-      <div className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border px-4 pt-3 safe-bottom-cta">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(`/vendor/${ev.place_id}`)}

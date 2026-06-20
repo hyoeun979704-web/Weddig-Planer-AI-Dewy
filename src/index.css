@@ -219,6 +219,13 @@
   .safe-bottom-nav {
     padding-bottom: var(--safe-bottom);
   }
+  /* 화면 하단에 고정/스티키로 붙는 CTA 바(예약·구매·문의 등)의 표준 하단 패딩.
+     반드시 var(--safe-bottom) 을 거친다 — 안드로이드는 env(safe-area-inset-bottom) 이
+     0/유령값이라(위 :root 주석, #286) 직접 env() 를 쓰면 하단탭/홈인디케이터에 가린다.
+     1rem 시각 패딩 + 안전영역. raw env() 사용 금지(safeArea.guard.test 가 차단). */
+  .safe-bottom-cta {
+    padding-bottom: calc(1rem + var(--safe-bottom));
+  }
   .safe-bottom-scroll {
     padding-bottom: calc(var(--app-bottom-nav-total-height) + 16px);
   }

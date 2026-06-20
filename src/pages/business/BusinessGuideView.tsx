@@ -126,7 +126,7 @@ const BusinessGuideView = ({ headerTitle, eyebrow, deskHeading, deskSub, slides,
       </div>
 
       {/* 모바일 점 인디케이터 + 하단 내비 */}
-      <div className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden">
+      <div className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border px-4 pt-3 safe-bottom-cta lg:hidden">
         {/* 블로그식 이전/다음 가이드(게시물) — 슬라이드 네비와 구분되는 가이드 단위 이동 */}
         {hasPostNav && (
           <div className="flex items-stretch gap-2 mb-2.5">
