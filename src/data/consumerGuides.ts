@@ -162,7 +162,7 @@ export const CONSUMER_GUIDES: ConsumerGuideDef[] = [
     cta: { label: "마이페이지 가기", target: "/mypage" },
     slides: [
       { phase: "마이페이지", img: cMypage, alt: "마이페이지", tags: ["찜", "포인트", "주문"],
-        title: "내 활동 모아보기", subtitle: "찜·하트·포인트·쿠폰·주문내역·내 견적·\n업체보드·받은 결과물을 한곳에서 봐요.",
+        title: "내 활동 모아보기", subtitle: "찜·하트·포인트·쿠폰·주문내역·내 견적·업체보드와\n‘내가 만든 것’(청첩장·드레스/메이크업/헤어 시뮬레이션·컨설팅 결과)을 한곳에서 봐요.",
         tip: "‘고객 지원’에서 이 사용 가이드도 다시 볼 수 있어요." },
     ],
   },
@@ -180,12 +180,12 @@ export const CONSUMER_GUIDES: ConsumerGuideDef[] = [
   // 12) AI 스튜디오
   {
     id: "ai-studio", headerTitle: "AI 스튜디오 가이드", eyebrow: "AI STUDIO",
-    deskHeading: "드레스·메이크업 체험", deskSub: "내 사진으로 미리 입어보고 받아봐요.",
+    deskHeading: "드레스·메이크업 체험", deskSub: "내 사진으로 드레스·메이크업·헤어·스드메·컨설팅을 미리 받아봐요.",
     cta: { label: "AI 스튜디오 열기", target: "/ai-studio" },
     slides: [
-      { phase: "AI 스튜디오", img: cAiStudio, alt: "AI 스튜디오", tags: ["드레스", "메이크업", "컨설팅"],
-        title: "미리 체험해보기", subtitle: "내 사진으로 드레스·메이크업·헤어·\n퍼스널컬러 컨설팅을 미리 체험해요.",
-        tip: "결과물은 마이페이지 ‘내가 만든 것’에 모여요." },
+      { phase: "AI 스튜디오", img: cAiStudio, alt: "AI 스튜디오", tags: ["드레스", "메이크업", "헤어", "스드메", "컨설팅"],
+        title: "미리 체험해보기", subtitle: "내 사진으로 드레스·메이크업·헤어·스드메 완성본·\n퍼스널컬러 컨설팅을 미리 체험해요.",
+        tip: "결과는 탭하면 크게 보고 공유 버튼으로 바로 보낼 수 있어요. 모든 결과는 AI가 만든 이미지라, 부적절하면 결과 화면에서 신고할 수 있어요. (결과물은 마이페이지 ‘내가 만든 것’에 모여요.)" },
     ],
   },
   // 13) 꿀팁
