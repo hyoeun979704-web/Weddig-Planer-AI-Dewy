@@ -99,5 +99,25 @@
 6. **Batch F(성능)**: 백로그(initplan·정책통합·인덱스) — 출시 후.
 7. **부합성 감사(§다음)**: 코드↔정책 대조(별도).
 
-## J. 검증/적용 상태
-- 감사 단계. 적용 시 항목별 커밋해시 기록. DB 변경은 **브랜치 마이그레이션 파일**로만(배포 영향 0, main 머지 시 적용) — 실 DB 직접변경 금지.
+## K. 코드 ↔ 정책 부합성 감사 (정책이 말하는 것 ↔ 코드가 하는 것)
+| 정책/약관 주장 | 코드 실제 | 부합 |
+|---|---|---|
+| **무료체험 "자동결제 없음"**(UpgradeModal·Premium FAQ·SubscriptionCheckout 일관) | **자동갱신 인프라 0**(재결제 함수·billing_attempts 쓰기·SID 저장 없음). trial=100원 카드인증+환불, 이후 **수동 구독** | ✅ **정직·일관(모델 b)** — 단 **사용자 지시 "U3=a 자동갱신"과 충돌**(아래 ★) |
+| AI 생성물 표시(인공지능기본법) | 결과 6페이지 `<AiDisclosureNotice>` 추가 | ✅ (이번 수정) |
+| 사업자정보 약관 기재(전상법) | Terms 사업자정보 섹션 추가 | ✅ (이번 수정) |
+| 계정삭제 시 데이터 파기(PIPA) | delete-account가 스토리지 파일 purge + auth CASCADE | ✅ (이번 수정). CASCADE 미적용 테이블 잔존 여부는 미검증(후속) |
+| 업로드 사진 "30일 자동삭제" | `cleanup-ai-uploads` 잡 존재 | ⚠️ 커버 버킷 범위 확인 필요(sdm/quote/invitation/diary 포함?) |
+| 마케팅 동의(방침이 마케팅 활용 언급) | data_usage opt-in 존재하나 **야간 수신동의·수집 UI 부재** | ❌ 갭(Batch 2 deferred) |
+| 환불/청약철회(Terms §9: 7일·보너스하트 사용 시 제외 등) | kakao 취소 경로 존재 | ⚠️ 정책 문구 ↔ 실제 환불 분기 e2e 미검증 |
+| 인앱 계정삭제 제공 | /account-deletion + 엣지함수 | ✅ |
+
+★ **U3 충돌(결정 필요)**: 당신은 "자동갱신(a) 확정"이라 했으나 **코드는 자동갱신을 안 한다(b)**. UI 문구도 b 로 일관·정직하다(다크패턴 아님). → 앞선 "문구 수정 P0"는 **무효**(현 문구가 진실). 선택: **(b 유지)** 현행대로 정직·안전(전환↓) / **(a 전환)** 정기결제 인프라(SID 재결제 잡·billing) 신규 구축 + 그때 문구를 "자동결제+해지안내"로 변경. **코드를 함부로 a 문구로 바꾸면 거짓이 되어 역으로 다크패턴**이므로 미변경.
+
+## J. 검증/적용 상태 (이번 세션 적용분)
+- ✅ **Batch A**(P0 코드): 결제 sessionStorage 안전화(7파일) + ilike 이스케이프(4파일) + Auth/MyResults/Premium. build·test(524)·lint(0err).
+- ✅ **AI 라벨**(P0 법): `<AiDisclosureNotice>` 6페이지.
+- ✅ **Batch B**(정책 단일화): companyInfo/consentDefinitions/dataRetention + 사업자정보 약관 기재 + Footer·동의훅 연결.
+- ✅ **Batch D**(계정삭제): 스토리지 purge.
+- ✅ **Batch C(안전분)**: 함수 search_path 마이그(19) — main 머지 시 적용.
+- ⏸ **보류**: security_definer_view·public 버킷 리스팅·always-true RLS(피처손상 위험, e2e 필요) / 마케팅·야간 동의(제품결정) / AI 모더레이션 / 의존성 업데이트 / 성능 백로그 / U3(아래 결정 필요).
+- DB 변경은 브랜치 마이그 파일로만(배포 영향 0). 실 DB 직접변경 안 함(읽기 전용 조회만 사용).
