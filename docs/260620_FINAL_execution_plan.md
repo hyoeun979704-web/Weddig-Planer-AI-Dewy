@@ -23,7 +23,20 @@
 | D14 | AI 결과 UX | 공유통일·전후비교·확대만(나머지 보류) |
 | **D15** | **무료체험 자동갱신** | **a 전환(자동갱신)** — 정기결제 엔진 신규 구축 |
 
+## 0. 🚦 출시 가능 판정 (go/no-go)
+- **웹(PWA) = 지금 출시 가능** ✅: 디지털 결제는 웹에서 카카오페이 허용 + 이번 세션 법/보안 수정 반영.
+  (남은 건 제품 폴리시 R10 — 출시 차단 아님.)
+- **앱 스토어(Android/iOS) = 아직 불가** 🔴: **단 하나의 하드 블로커 = IAP 미구현(R1)**.
+  현재 앱은 **디지털 재화(하트·구독)를 카카오페이로 인앱 판매** → **Google Play 빌링 위반(현재 노출) +
+  Apple 3.1.1 반려**. 스토어 제출/업데이트 전 **IAP 전환 필수**. + iOS는 Apple 승인(신분증 심사 중)·SiwA.
+- **결론**: "바로 출시"는 **웹은 예 / 스토어 앱은 아니오**(IAP가 게이트). IAP는 외부(Apple·KakaoPay·
+  샌드박스) 의존이라 이 환경에서 끝까지 검증 불가 — 설계만 완료(`payment_compliance_plan`).
+
 ## 2. 이번 세션 완료분 (커밋됨 — branch `claude/md-review-audit-at4qt5`)
+**추가 완료(법/보안 — 벌금·반려 직결, 전부 build·test 통과)**:
+- R2 수집항목 정확화(방침+Data Safety 표) · R3 AI 인앱신고 · R8 청약철회 동의 · 웹 AdSense 위반 해소
+  (게임은 앱 유도) · R11 견적 버스트 · R2후속 에러로그 PII 마스킹 · AdMob 테스트토글+app-ads.txt.
+
 - ✅ P0 코드: 결제 sessionStorage 안전화(7) · ilike 이스케이프(4) · Auth/MyResults/Premium.
 - ✅ AI 생성 라벨(`AiDisclosureNotice`) 6페이지 — AI기본법.
 - ✅ 정책 단일화: companyInfo/consentDefinitions/dataRetention + **사업자정보 약관 기재**.
