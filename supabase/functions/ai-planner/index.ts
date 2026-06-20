@@ -1,4 +1,5 @@
 import { MODELS } from "../_shared/llm.ts";
+import { getPrompt } from "../_shared/prompts.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -233,7 +234,10 @@ serve(async (req) => {
     // 캐싱 분리: 정적 프롬프트(BASE+상시캡슐)는 모든 요청 공통 → OpenAI 가
     // 접두를 캐시(입력비↓). 동적(페르소나 캡슐+사용자 컨텍스트)은 별도 메시지로
     // 뒤에 붙여 정적 접두의 캐시 적중을 깨지 않게 한다.
-    const staticPrompt = BASE_SYSTEM_PROMPT + ALWAYS_ON_CAPSULES;
+    // 시스템 프롬프트는 DB(ai_prompts)에서 실시간 로드 — 어드민이 고치면 즉시 반영.
+    // 조회 실패/미시드면 코드의 BASE_SYSTEM_PROMPT 로 폴백(동작 무변).
+    const basePrompt = await getPrompt(supabase, "ai_planner_system", BASE_SYSTEM_PROMPT);
+    const staticPrompt = basePrompt + ALWAYS_ON_CAPSULES;
     const dynamicContext = conditionalCapsules + userContext + priceGrounding + vendorGrounding.block;
     const systemPrompt = evalMode?.raw_system ?? staticPrompt + dynamicContext;
 
