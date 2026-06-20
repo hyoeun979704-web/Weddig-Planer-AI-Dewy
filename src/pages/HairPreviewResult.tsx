@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
 import { useNavigate, useParams } from "react-router-dom";
-import { Download, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Download, Loader2, RefreshCw, Share2, Sparkles } from "lucide-react";
+import { shareResultWithToast } from "@/lib/shareResultImage";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -126,9 +127,14 @@ const HairPreviewResult = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-foreground">{KIND_LABEL[it.kind] ?? it.kind}</span>
                   {urls[it.kind] && (
-                    <button type="button" onClick={() => download(it.kind)} className="flex items-center gap-1 text-[12px] text-primary">
-                      <Download className="w-3.5 h-3.5" />저장
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button type="button" onClick={() => shareResultWithToast({ url: urls[it.kind], title: "Dewy 헤어 미리보기", fileName: `dewy-hair-${it.kind}.png` })} className="flex items-center gap-1 text-[12px] text-primary">
+                        <Share2 className="w-3.5 h-3.5" />공유
+                      </button>
+                      <button type="button" onClick={() => download(it.kind)} className="flex items-center gap-1 text-[12px] text-primary">
+                        <Download className="w-3.5 h-3.5" />저장
+                      </button>
+                    </div>
                   )}
                 </div>
                 {urls[it.kind] ? (

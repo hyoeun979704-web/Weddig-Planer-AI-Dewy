@@ -224,7 +224,7 @@ const HeartCharge = () => {
             // 스토어(네이티브) 빌드: 디지털 재화의 비-IAP 인앱 결제는 정책 위반이라 결제 UI 숨김.
             // (IAP 도입 전까지 충전은 웹에서. 앱은 잔액 사용만 — anti-steering 위해 웹 안내/링크는 두지 않음.)
             <p className="text-[12px] text-muted-foreground text-center py-2">
-              현재 앱에서는 하트 충전을 지원하지 않습니다.
+              하트 충전 기능을 준비 중이에요.
             </p>
           ) : (
             <>

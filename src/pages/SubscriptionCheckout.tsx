@@ -146,7 +146,7 @@ const SubscriptionCheckout = () => {
           // 스토어(네이티브) 빌드: 디지털 구독의 비-IAP 인앱 결제는 정책 위반이라 결제 UI 숨김.
           // (IAP 도입 전까지 구독은 웹에서. anti-steering 위해 앱에 웹 안내/링크는 두지 않음.)
           <p className="text-[12px] text-muted-foreground text-center py-2">
-            현재 앱에서는 구독 결제를 지원하지 않습니다.
+            구독 결제 기능을 준비 중이에요.
           </p>
         ) : (
           <>

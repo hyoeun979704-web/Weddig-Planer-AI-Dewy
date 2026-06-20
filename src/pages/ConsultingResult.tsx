@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { Download, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Download, Loader2, RefreshCw, Share2, Sparkles } from "lucide-react";
+import { shareResultWithToast } from "@/lib/shareResultImage";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -208,14 +209,24 @@ const ConsultingResult = () => {
                     {LABEL[b.section] ?? b.section}
                   </span>
                   {urls[b.section] && (
-                    <button
-                      type="button"
-                      onClick={() => handleDownload(b.section)}
-                      className="flex items-center gap-1 text-[12px] text-primary"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      이미지 저장
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => shareResultWithToast({ url: urls[b.section], title: "Dewy 컨설팅", fileName: `dewy-consulting-${b.section}.png` })}
+                        className="flex items-center gap-1 text-[12px] text-primary"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        공유
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(b.section)}
+                        className="flex items-center gap-1 text-[12px] text-primary"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        이미지 저장
+                      </button>
+                    </div>
                   )}
                 </div>
                 {urls[b.section] ? (
