@@ -19,15 +19,23 @@ export const ADSENSE_CLIENT = (import.meta.env.VITE_ADSENSE_CLIENT as string | u
 export const ADSENSE_BANNER_SLOT = (import.meta.env.VITE_ADSENSE_BANNER_SLOT as string | undefined) || "4600179427";
 // 웹 '2배 적립' 광고 슬롯. AdSense 엔 보상형이 없어 디스플레이 광고를 모달로 노출한다.
 export const ADSENSE_REWARDED_SLOT = (import.meta.env.VITE_ADSENSE_REWARDED_SLOT as string | undefined) || "1646713028";
+// 테스트 광고: VITE_ADMOB_TEST=1 로 빌드하면 Google 공식 테스트 광고단위를 사용한다.
+// 테스트 광고는 항상 100% 노출되므로(연동 검증용), 실제 광고가 빈칸일 때 "연동 문제인지
+// No-fill(신규 앱 재고 없음)인지"를 가르는 데 쓴다. ⚠️ 실제 광고를 본인이 클릭하면 계정 정지
+// 위험이 있으니, 개발/검증 빌드에서만 이 플래그로 테스트 광고를 띄울 것.
+const USE_TEST_ADS = (import.meta.env.VITE_ADMOB_TEST as string | undefined) === "1";
+const TEST_BANNER_ID = "ca-app-pub-3940256099942544/6300978111";
+const TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917";
+
 // AdMob 광고단위 ID 는 배포 APK 에 박혀 공개되는 값(시크릿 아님)이라 기본값으로 둬도 안전 —
 // env 미설정인 네이티브 빌드에서도 동작하도록 Dewy 실제 단위를 기본값으로(AdSense 와 동일 패턴).
-const ADMOB_BANNER_ID =
-  (import.meta.env.VITE_ADMOB_BANNER_ID as string | undefined) || "ca-app-pub-3558095447353368/8611781514";
+const ADMOB_BANNER_ID = USE_TEST_ADS ? TEST_BANNER_ID :
+  ((import.meta.env.VITE_ADMOB_BANNER_ID as string | undefined) || "ca-app-pub-3558095447353368/8611781514");
 // 보상형은 게재위치별 단위가 다르다 — 포인트 2배 / 게임기회 1회 추가.
-const ADMOB_REWARDED_DOUBLE_ID =
-  (import.meta.env.VITE_ADMOB_REWARDED_ID as string | undefined) || "ca-app-pub-3558095447353368/8758376311";
-const ADMOB_REWARDED_EXTRA_ID =
-  (import.meta.env.VITE_ADMOB_REWARDED_EXTRA_ID as string | undefined) || "ca-app-pub-3558095447353368/6397660020";
+const ADMOB_REWARDED_DOUBLE_ID = USE_TEST_ADS ? TEST_REWARDED_ID :
+  ((import.meta.env.VITE_ADMOB_REWARDED_ID as string | undefined) || "ca-app-pub-3558095447353368/8758376311");
+const ADMOB_REWARDED_EXTRA_ID = USE_TEST_ADS ? TEST_REWARDED_ID :
+  ((import.meta.env.VITE_ADMOB_REWARDED_EXTRA_ID as string | undefined) || "ca-app-pub-3558095447353368/6397660020");
 
 export const isNativeAds = () => Capacitor.isNativePlatform();
 
