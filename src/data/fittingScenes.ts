@@ -8,6 +8,8 @@
  * Edge Function 에서 코드값을 받아 promptBlock 을 메인 프롬프트에 주입.
  */
 
+import { shotFramingBlock, type ShotType } from "@/data/shotTypes";
+
 export type SceneType = "CEREMONY" | "STUDIO";
 export type BgTone = "DARK" | "BRIGHT" | "GARDEN";
 export type SceneCode = `${SceneType}_${BgTone}`;
@@ -189,7 +191,7 @@ export const SCENE_TYPE_DESC: Record<SceneType, string> = {
 export const buildFittingPrompt = (
   sceneCode: SceneCode,
   dressDescription: string = "",
-  opts: { custom?: boolean } = {},
+  opts: { custom?: boolean; shotType?: ShotType } = {},
 ): string => {
   const scene = sceneByCode(sceneCode);
   if (!scene) throw new Error(`unknown scene code: ${sceneCode}`);
@@ -197,6 +199,9 @@ export const buildFittingPrompt = (
   const isCeremony = scene.scene === "CEREMONY";
   // 맞춤(custom)=참조 드레스 사진(Image 2) 없이 SCHEMA 텍스트만으로 드레스를 지시.
   const custom = !!opts.custom;
+  const shotType: ShotType = opts.shotType ?? "full";
+  // 짧은/미디 키워드가 없으면 웨딩드레스 기본 = 플로어렝스로 가정(발 강제 안 함).
+  const longGown = !/short|mini|midi|knee|짧|미니|미디|무릎/i.test(dressDescription);
 
   const dressSchemaBlock = dressDescription
     ? custom
@@ -238,23 +243,19 @@ generic "AI bridal model":
 This identity match takes priority over every other instruction below.
 
 TASK
-Produce a single full-body bridal photograph of the bride from
-Image 1 wearing ${taskDressSource}, in the venue described
-below. Vertical 3:4, photorealistic.
+Produce a single bridal photograph of the bride from Image 1 wearing
+${taskDressSource}, in the venue described below.
+
+${shotFramingBlock(shotType, longGown)}
 
 BRIDE — keep exactly from Image 1
 - Face: the SAME PERSON — reproduce EVERY feature exactly as detailed in
   IDENTITY MATCH above (eyes, eyelid type, brows, nose, lips, jawline, chin,
   cheekbones, proportions). Recognizable at a glance; no beautification.
 - Skin tone, complexion, age
-- Hair color and natural texture (bridal updos/waves okay, identity
-  stays)
-- Body proportions:
-  · Full-body input → COPY EVERYTHING from the photo (height, build,
-    torso/leg ratio, shoulder width, hand size). The photo is the
-    source of truth, NOT a generic ideal.
-  · Upper-body input → infer a plausible body from the visible
-    torso and head; do not default to a generic slim model
+- Hair color and natural texture (bridal updos/waves okay, identity stays)
+- Keep her recognizable build, but follow the FRAMING above for proportions
+  (flattering and elegant — do not copy an unflattering posture or angle).
 
 MAKEUP — soft natural bridal makeup
 - If the bride looks bare-faced or wears only minimal makeup, apply tasteful
@@ -278,19 +279,10 @@ ${dressSectionHeader}
 - Drapes naturally; visible skin matches the dress's coverage
 ${dressSchemaBlock}
 BODY PROPORTIONS
-- PRIMARY RULE — if Image 1 shows the bride's full body (head to
-  feet or close to it), the PHOTO WINS. Copy her actual height,
-  leg-to-torso ratio, shoulder width, arm length, hand size, and
-  waistline position exactly as visible in Image 1. Do not normalize
-  toward an "ideal" body. Do not slim, lengthen, or stretch her.
-- FALLBACK — only when Image 1 is a head/upper-body crop and the
-  lower body is not visible, infer realistic adult Korean woman
-  proportions: ~7 to 7.5 heads tall, shoulders ~1.5–1.8× head width,
-  hands sized to face (closed fist ≈ face from chin to hairline),
-  arms reach mid-thigh.
-- ALWAYS — never produce doll-like / chibi proportions (oversized
-  head, tiny hands, shortened torso, missing neck). Never stretch
-  the body to 9-head fashion-illustration proportions.
+- Follow the FRAMING section above for shot range and proportions. Keep her
+  recognizable build and identity, but render a flattering, elegant bridal line.
+- Never produce doll-like / chibi proportions (oversized head, tiny hands,
+  shortened torso, missing neck), and never an awkward short-legged crop.
 
 VENUE
 ${scene.promptBlock}

@@ -18,6 +18,7 @@ interface RequestBody {
   hair_style: string;
   makeup_summary?: string;     // 추적용(ko 요약)
   dress_sample_id?: string;    // 있으면 카탈로그
+  shot_type?: string;          // full | bust | closeup (추적용; 프레이밍은 prompt 에 반영됨)
   reference_mode: "image" | "text";
   prompt: string;
 }
@@ -93,6 +94,7 @@ serve(async (req) => {
           scene_code: body.scene_code,
           hair_style: body.hair_style,
           makeup_summary: body.makeup_summary ?? null,
+          shot_type: body.shot_type ?? "full",
           reference_mode: body.reference_mode,
         },
         hearts_spent: HEART_COST,

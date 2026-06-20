@@ -16,6 +16,7 @@ import { describeMakeup, type MakeupMetadata } from "@/lib/makeupDescription";
 import { CustomDressPicker, summarizeDressKo } from "@/components/fitting/CustomDressPicker";
 import { CustomMakeupPicker, summarizeMakeupKo } from "@/components/fitting/CustomMakeupPicker";
 import { SDM_HAIR_STYLES, sdmHairKo, buildSdmPrompt, type SdmReferenceMode } from "@/data/sdmPrompt";
+import { SHOT_TYPES, shotTypeKo, type ShotType } from "@/data/shotTypes";
 import { addPendingJob } from "@/lib/pendingJobs";
 
 /**
@@ -56,6 +57,7 @@ const SdmPreview = () => {
   const [selectedDress, setSelectedDress] = useState<DressSample | null>(null);
   const [customDress, setCustomDress] = useState<DressMetadata>({});
 
+  const [shotType, setShotType] = useState<ShotType>("full");
   const [referenceMode, setReferenceMode] = useState<SdmReferenceMode>("image");
   const [consentOpen, setConsentOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -152,6 +154,7 @@ const SdmPreview = () => {
         dressDescription,
         dressCustom: dressMode === "custom",
         dressLength,
+        shotType,
         referenceMode,
       });
 
@@ -162,6 +165,7 @@ const SdmPreview = () => {
           hair_style: hairStyle,
           makeup_summary: summarizeMakeupKo(makeup),
           dress_sample_id: dressSampleId,
+          shot_type: shotType,
           reference_mode: referenceMode,
           prompt,
         },
@@ -253,9 +257,21 @@ const SdmPreview = () => {
 
         {step === "photo" && (
           <section className="space-y-4">
-            <h2 className="text-lg font-bold text-foreground">사진 업로드</h2>
+            <h2 className="text-lg font-bold text-foreground">컷 & 사진</h2>
+            <div>
+              <p className="text-[12px] font-semibold text-foreground mb-1.5">어떤 컷으로 만들까요?</p>
+              <div className="grid grid-cols-3 gap-2">
+                {SHOT_TYPES.map((s) => (
+                  <button key={s.value} type="button" onClick={() => setShotType(s.value)}
+                    className={`rounded-xl border p-2 text-center transition-colors ${shotType === s.value ? "bg-primary/10 border-primary" : "bg-card border-border"}`}>
+                    <p className={`text-[13px] font-bold ${shotType === s.value ? "text-primary" : "text-foreground"}`}>{s.ko}</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{s.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
             <p className="text-[12px] text-muted-foreground leading-relaxed">
-              머리부터 발끝까지 <span className="font-semibold text-foreground">전신이 보이는 사진</span>을 권장해요.
+              {SHOT_TYPES.find((s) => s.value === shotType)?.uploadHint}
             </p>
             {photoUrl ? (
               <div className="space-y-3">
@@ -369,7 +385,7 @@ const SdmPreview = () => {
         {step === "review" && (
           <section className="space-y-4">
             <h2 className="text-lg font-bold text-foreground">선택 확인</h2>
-            <ReviewRow label="사진" value={photoUrl ? "업로드됨" : "-"} onEdit={() => setStep("photo")} />
+            <ReviewRow label="컷·사진" value={`${shotTypeKo(shotType)} · ${photoUrl ? "업로드됨" : "-"}`} onEdit={() => setStep("photo")} />
             <ReviewRow label="장소·컷" value={sceneCode ?? "-"} onEdit={() => setStep("scene")} />
             <ReviewRow label="메이크업" value={summarizeMakeupKo(makeup) || "내추럴"} onEdit={() => setStep("makeup")} />
             <ReviewRow label="헤어" value={hairStyle ? sdmHairKo(hairStyle) : "-"} onEdit={() => setStep("hair")} />

@@ -33,6 +33,7 @@ import {
   buildFittingPrompt,
 } from "@/data/fittingScenes";
 import { describeDress, type DressMetadata } from "@/lib/dressDescription";
+import { SHOT_TYPES, type ShotType } from "@/data/shotTypes";
 import { CustomDressPicker, summarizeDressKo } from "@/components/fitting/CustomDressPicker";
 import { FittingProgress } from "@/components/fitting/FittingProgress";
 import { labelOf } from "@/data/dressFilters";
@@ -95,6 +96,7 @@ const DressFitting = () => {
   const [selectedSceneCode, setSelectedSceneCode] = useState<SceneCode | null>(
     null,
   );
+  const [shotType, setShotType] = useState<ShotType>("full");
   const [consentOpen, setConsentOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -256,7 +258,7 @@ const DressFitting = () => {
 
       if (dressMode === "custom") {
         // 맞춤: 사용자가 고른 속성을 SCHEMA 텍스트로 직렬화 → 레퍼런스 이미지 없이 생성.
-        prompt = buildFittingPrompt(selectedSceneCode, describeDress(customDress), { custom: true });
+        prompt = buildFittingPrompt(selectedSceneCode, describeDress(customDress), { custom: true, shotType });
         requestBody = {
           source_image_path: photoPath,
           scene_code: selectedSceneCode,
@@ -273,7 +275,7 @@ const DressFitting = () => {
           .maybeSingle();
 
         const dressDescription = dressMeta ? describeDress(dressMeta) : "";
-        prompt = buildFittingPrompt(selectedSceneCode, dressDescription);
+        prompt = buildFittingPrompt(selectedSceneCode, dressDescription, { shotType });
         requestBody = {
           source_image_path: photoPath,
           dress_sample_id: selectedDress!.id,
@@ -385,6 +387,8 @@ const DressFitting = () => {
         {step === "photo" && (
           <PhotoStep
             photoUrl={photoUrl}
+            shotType={shotType}
+            onPickShot={setShotType}
             onPickFile={() => fileInputRef.current?.click()}
             onNext={() => setStep("dress")}
           />
@@ -614,18 +618,37 @@ const StepRow = ({
 // ════════════════════════════════════════════════
 const PhotoStep = ({
   photoUrl,
+  shotType,
+  onPickShot,
   onPickFile,
   onNext,
 }: {
   photoUrl: string | null;
+  shotType: ShotType;
+  onPickShot: (s: ShotType) => void;
   onPickFile: () => void;
   onNext: () => void;
 }) => (
   <section className="space-y-4">
-    <h2 className="text-lg font-bold text-foreground">사진 업로드</h2>
+    <h2 className="text-lg font-bold text-foreground">컷 & 사진</h2>
+    <div>
+      <p className="text-[12px] font-semibold text-foreground mb-1.5">어떤 컷으로 만들까요?</p>
+      <div className="grid grid-cols-3 gap-2">
+        {SHOT_TYPES.map((s) => (
+          <button
+            key={s.value}
+            type="button"
+            onClick={() => onPickShot(s.value)}
+            className={`rounded-xl border p-2 text-center transition-colors ${shotType === s.value ? "bg-primary/10 border-primary" : "bg-card border-border"}`}
+          >
+            <p className={`text-[13px] font-bold ${shotType === s.value ? "text-primary" : "text-foreground"}`}>{s.ko}</p>
+            <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{s.desc}</p>
+          </button>
+        ))}
+      </div>
+    </div>
     <p className="text-[12px] text-muted-foreground leading-relaxed">
-      머리부터 발끝까지 <span className="font-semibold text-foreground">전신이 보이는 사진</span>일수록
-      드레스 핏·기장·비율이 자연스럽게 합성돼요. (얼굴·상반신만 있어도 가능하지만 전신을 권장해요.)
+      {SHOT_TYPES.find((s) => s.value === shotType)?.uploadHint}
     </p>
     {photoUrl ? (
       <div className="space-y-3">

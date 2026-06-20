@@ -8,6 +8,7 @@
 // 늘씬한 비율 명시. 얼굴은 그대로 잠그되(identity) 몸 비율은 플래터링하게 허용.
 
 import { sceneByCode, type SceneCode } from "@/data/fittingScenes";
+import { shotFramingBlock, type ShotType } from "@/data/shotTypes";
 
 /** 합성에서 참조를 어떻게 줄지 — 이미지 첨부 우선 vs 텍스트(SCHEMA) 우선. A/B 테스트용. */
 export type SdmReferenceMode = "image" | "text";
@@ -39,6 +40,8 @@ interface BuildSdmPromptArgs {
   dressCustom: boolean;
   /** floor/long 이면 발을 강제하지 않는 적응 프레이밍을 쓴다. */
   dressLength?: string | null;
+  /** 촬영 컷 — 전신/상반신/클로즈업. 상반신·클로즈업은 다리를 렌더하지 않는다. */
+  shotType: ShotType;
   referenceMode: SdmReferenceMode;
 }
 
@@ -52,7 +55,7 @@ function isLongGown(length?: string | null): boolean {
 export function buildSdmPrompt(args: BuildSdmPromptArgs): string {
   const {
     sceneCode, makeupDescription, hairStyle, dressDescription,
-    dressCustom, dressLength, referenceMode,
+    dressCustom, dressLength, shotType, referenceMode,
   } = args;
   const scene = sceneByCode(sceneCode);
   if (!scene) throw new Error(`unknown scene code: ${sceneCode}`);
@@ -64,14 +67,8 @@ export function buildSdmPrompt(args: BuildSdmPromptArgs): string {
   const refs: string[] = ["- Image 1: the bride (user's photo). Her identity is the single source of truth."];
   if (dressByImage) refs.push("- Image 2: the wedding dress on a headless mannequin. Use ONLY the dress, NOT any body or face.");
 
-  // 프레이밍 — 발 강제 금지(다리 짧음 회귀 방지).
-  const framing = longGown
-    ? `Elegant three-quarter to full-length bridal portrait. The floor-length gown
-falls naturally to the ground; it is completely fine if the feet are hidden under
-the hem. DO NOT force both feet or the entire body into frame if doing so would
-compress or shorten the legs/torso.`
-    : `Full-length bridal portrait appropriate to the gown length; legs and feet may
-be visible. Keep proportions natural and elegant.`;
+  // 컷별 프레이밍 — 상반신/클로즈업은 다리 미렌더, 전신은 늘씬·로우앵글(다리 짧음 회귀 방지).
+  const framing = shotFramingBlock(shotType, longGown);
 
   const makeup = makeupDescription.trim() || "soft natural Korean bridal makeup, wedding-ready but not heavy glam";
   const dressHeader = dressByImage
@@ -91,14 +88,9 @@ lips, jawline, chin, cheekbones, hairline, skin tone/undertone, and any moles or
 freckles. Do NOT beautify the face, enlarge eyes, or average toward a generic AI
 bridal model. This overrides every instruction below.
 
-BODY & FRAMING — flattering, NOT a forced full body
-- Keep her recognizable build, but render elegant, tastefully ELONGATED proportions:
-  long legs, a high apparent waistline, and a natural head size (about 1/7.5 of body
-  height). Do NOT render an oversized head or short/compressed legs.
-- Photograph from a slightly LOW camera angle (around waist height) for an elegant,
-  leggy line.
-- ${framing}
-- Vertical 3:4, photorealistic.
+${framing}
+Keep her recognizable build and identity; render a flattering, elegant bridal line
+within the framing above. Never doll-like / chibi proportions.
 
 MAKEUP — apply to her face without changing identity
 ${makeup}
