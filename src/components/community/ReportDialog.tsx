@@ -33,7 +33,7 @@ const ReportDialog = ({ open, onOpenChange, targetType, targetId }: ReportDialog
   const [reasonText, setReasonText] = useState("");
   const reportMutation = useReportContent();
 
-  const targetLabel = targetType === "post" ? "게시글" : "댓글";
+  const targetLabel = targetType === "post" ? "게시글" : targetType === "comment" ? "댓글" : "AI 결과";
 
   const reset = () => {
     setReasonCode(null);
