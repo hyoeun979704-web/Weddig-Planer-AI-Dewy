@@ -82,6 +82,24 @@
 **P1**: Data Safety 폼(사진·광고ID·계정·삭제) · AdMob 동의(UMP)·광고ID 표기.
 **P2**: 타깃 API 상향 · Play 빌링 라이브러리 정책 준수 · 한국 대체결제 검토.
 
+## 4-B. 정책 대조 보강 — Google·Apple 전수조사 결과 (계획에 빠졌던 갭)
+초기 스펙은 결제·anti-steering·멱등에 집중 → 아래는 **양 스토어 정책 대조로 추가 발견된 필수 항목**.
+대부분 **iOS 반려 단골**이므로 iOS 선반영에 반드시 포함.
+
+| ID | 정책 | 내용 | 영향 | 우선 |
+|---|---|---|---|---|
+| **G1** | **Apple 4.8 (Login Services)** | 카카오·구글 등 **소셜 로그인으로 주계정 생성** 시, **Sign in with Apple**(또는 동등 옵션: 수집을 이름·이메일로 제한 + 이메일 비공개 허용 + 동의없는 광고추적 금지) **추가 제공 필수**. 카카오/구글 로그인은 이 조건 미충족 → Apple 로그인 추가해야. | iOS 출시 차단 | **P0(iOS)** |
+| **G2** | **Apple 5.1.2 / ATT** | AdMob는 **IDFA로 추적** → iOS는 **App Tracking Transparency** 프롬프트로 동의 받아야 광고추적 가능. 미구현 시 즉시 반려. **UMP(GDPR 동의)와 ATT 순서가 혼란스러우면 5.1.1로도 반려** → 순서·문구 정리. Android는 기존 `AD_ID` 권한(선언됨). | iOS 출시 차단 | **P0(iOS, 광고 도입 시)** |
+| **G3** | **Apple 3.1.2 (구독 고지)** | 구독 **결제화면(앱 바이너리 안)** 에 ① 구독명 ② 기간 ③ 가격/기간 ④ **개인정보처리방침·이용약관(EULA) 기능 링크**를 **앱 UI 내**에 표시(웹/스토어 페이지만으론 불충분). App Store Connect EULA/Privacy 필드도 채움. | iOS 구독 반려 | **P0(iOS)** |
+| **G4** | iOS 권한 문구 | 사진 업로드(AI)용 카메라/앨범 접근 시 `Info.plist` 의 `NSCameraUsageDescription`·`NSPhotoLibraryUsageDescription` 등 **목적 문구 필수**(없으면 크래시/반려). | iOS 반려 | P1(iOS) |
+| **G5** | Apple 5.1.1(v) / Google | **인앱 계정삭제** — ✅ 이미 보유(`/account-deletion`+`delete-account`). 양 스토어 충족. Apple은 인앱에서 삭제 시작 가능해야(웹 링크만 불가) → 충족. | — | ✅ 충족 |
+| **G6** | 환불 동기화 | Apple/Google **환불(REFUND) 알림** 수신 시 하트/구독 **회수**. 소비성 하트를 이미 쓴 경우 잔액 음수 처리 정책 결정(0 하한 vs 마이너스 기록). | 운영/어뷰징 | P1 |
+| **G7** | Apple 1.2 / Google genAI | AI·UGC 안전: **신고(P0-B)** + **사용자 차단** + 사전 **콘텐츠 필터** + 신고 대응 연락수단. 커뮤니티 차단 기능 유무 점검. | 양 스토어 | P0-B 연계 |
+| **G8** | anti-steering 지역차 | 2025 Epic 판결로 **미국은 외부결제 링크 허용**됐으나, 한국 등 그 외 지역은 보수적. → **글로벌 단일 정책으로 네이티브엔 외부결제 미노출** 유지(가장 안전). | 심사 | 유지 |
+
+> 결론: 기존 스펙(결제 분기·멱등·멀티플랫폼)은 **유효**하나, **G1(Apple 로그인)·G2(ATT)·G3(구독 고지)**
+> 세 가지는 **iOS 출시 전 필수 추가**다. 이 셋이 빠지면 "계정만 있으면 즉시 출시"가 성립하지 않는다.
+
 ## 5. 가드레일 (실행 중 반드시 지킴)
 - **영수증은 서버 검증**(클라 결과 신뢰 금지).
 - **멱등**: 모든 적립/구독변경은 `store_txn_id`(또는 notification id) 키로 1회만.
@@ -94,8 +112,12 @@
 코드/심사 대응은 Android과 **공용**이라 미리 다 해둔다. Apple 계정만 남기면 출시:
 - [ ] `@capacitor/ios` 플랫폼 추가 + `cap sync`(iOS 셸 생성).
 - [ ] StoreKit 상품ID = Android과 동일 매핑(`products.ts`), `iap-verify-apple`·`apple-notifications-v2` 준비.
+- [ ] **G1 Sign in with Apple** 추가(소셜 로그인 병행 시 필수) — Auth UI에 Apple 로그인 + 백엔드 연동.
+- [ ] **G2 ATT** — `@capacitor-community/app-tracking-transparency`(또는 동등) 프롬프트, UMP와 순서 정리(추적 동의 후 IDFA 광고).
+- [ ] **G3 구독 고지** — 구독 paywall(`Premium.tsx`/`SubscriptionCheckout.tsx`)에 구독명·기간·가격/기간 + **개인정보·이용약관 인앱 링크** 표시(웹·네이티브 공용으로 두면 양쪽 충족).
+- [ ] **G4 Info.plist 권한 문구**(카메라/앨범 등 사진 업로드 사용 시).
 - [ ] anti-steering·AI신고·계정삭제·개인정보 = 공용 반영(이미/예정).
-- [ ] App Store Connect 설정 문서화(앱 등록·IAP 상품가 §2·약관/개인정보 URL·App Privacy(Data Safety)).
+- [ ] App Store Connect 설정 문서화(앱 등록·IAP 상품가 §2·약관/개인정보(EULA) URL·App Privacy(Data Safety)).
 - [ ] **유일 차단요소 = Apple Developer 계정/인증서**(있으면 Archive→업로드만).
 
 ## 출처
