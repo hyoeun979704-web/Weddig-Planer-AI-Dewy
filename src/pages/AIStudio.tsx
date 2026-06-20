@@ -16,7 +16,6 @@ interface StudioCard {
   status: "active" | "coming_soon" | "coming_v2" | "coming_v3";
   href?: string;
   previewImage?: string;
-  previewPosition?: "center" | "top";
 }
 
 const cards: StudioCard[] = [
@@ -26,8 +25,7 @@ const cards: StudioCard[] = [
     description: "퍼스널컬러·헤어·메이크업·드레스 맞춤 A4 리포트 (첫 1회 50%↓)",
     status: "active",
     href: "/ai-studio/consulting",
-    previewImage: "/ai-studio-previews/consulting-cut.webp",
-    previewPosition: "top",
+    previewImage: "/ai-studio-previews/banner-consulting.webp",
   },
   {
     id: "dress-tour",
@@ -35,8 +33,7 @@ const cards: StudioCard[] = [
     description: "내 사진으로 드레스 핏을 미리 확인",
     status: "active",
     href: "/ai-studio/dress-tour",
-    previewImage: "/ai-studio-previews/dress-cut.webp",
-    previewPosition: "top",
+    previewImage: "/ai-studio-previews/banner-dress.webp",
   },
   {
     id: "sdm-preview",
@@ -44,8 +41,7 @@ const cards: StudioCard[] = [
     description: "장소·메이크업·헤어·드레스를 한 번에 반영한 완성본 (10하트)",
     status: "active",
     href: "/ai-studio/sdm-preview",
-    previewImage: "/ai-studio-previews/sdm-cut.webp",
-    previewPosition: "top",
+    previewImage: "/ai-studio-previews/banner-sdm.webp",
   },
   {
     id: "makeup-finder",
@@ -53,7 +49,7 @@ const cards: StudioCard[] = [
     description: "나에게 어울리는 신부 메이크업 시연",
     status: "active",
     href: "/ai-studio/makeup-room",
-    previewImage: "/ai-studio-previews/makeup-cut.webp",
+    previewImage: "/ai-studio-previews/banner-makeup.webp",
   },
   {
     id: "hair-room",
@@ -61,8 +57,7 @@ const cards: StudioCard[] = [
     description: "내 얼굴 그대로, 헤어스타일·컬러 9그리드 (옵션당 5하트)",
     status: "active",
     href: "/ai-studio/hair-room",
-    previewImage: "/ai-studio-previews/hair-cut.webp",
-    previewPosition: "top",
+    previewImage: "/ai-studio-previews/banner-hair.webp",
   },
   {
     id: "paper-invitation",
@@ -70,7 +65,7 @@ const cards: StudioCard[] = [
     description: "인쇄용 PDF로 받는 종이 청첩장 — 무료 템플릿 시작",
     status: "active",
     href: "/invitation/new?format=paper",
-    previewImage: "/ai-studio-previews/invitation-cut.webp",
+    previewImage: "/ai-studio-previews/banner-invitation.webp",
   },
   {
     id: "mobile-invitation",
@@ -153,7 +148,6 @@ const AIStudio = () => {
                 ctaLabel={isActive ? "지금 시작 →" : "출시 알림 받기 →"}
                 colorIndex={index}
                 priority={index < 2}
-                imgAnchor={card.id === "dress-tour" || card.id === "hair-room" ? "bottom" : "center"}
                 dataTutorial={card.id === "wedding-consulting" ? "studio-cards" : undefined}
                 onClick={() => (isActive ? navigate(card.href!) : handleLockedCardClick(card))}
               />
