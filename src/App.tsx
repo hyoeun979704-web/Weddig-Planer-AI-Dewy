@@ -63,6 +63,8 @@ const BusinessLeads = lazy(() => import("./pages/business/BusinessLeads"));
 const HairPreview = lazy(() => import("./pages/HairPreview"));
 const HairPreviewResult = lazy(() => import("./pages/HairPreviewResult"));
 const HairPreviewGallery = lazy(() => import("./pages/HairPreviewGallery"));
+const SdmPreview = lazy(() => import("./pages/SdmPreview"));
+const SdmPreviewResult = lazy(() => import("./pages/SdmPreviewResult"));
 const Community = lazy(() => import("./pages/Community"));
 const CommunityWrite = lazy(() => import("./pages/CommunityWrite"));
 const CommunityEdit = lazy(() => import("./pages/CommunityEdit"));
@@ -357,6 +359,8 @@ const App = () => (
               <Route path="/ai-studio/hair-room" element={<HairPreview />} />
               <Route path="/ai-studio/hair-room/result/:id" element={<HairPreviewResult />} />
               <Route path="/ai-studio/hair-room/gallery" element={<HairPreviewGallery />} />
+              <Route path="/ai-studio/sdm-preview" element={<SdmPreview />} />
+              <Route path="/ai-studio/sdm-preview/result/:id" element={<SdmPreviewResult />} />
               <Route path="/ai-studio/dress-tour" element={<DressFitting />} />
               <Route path="/ai-studio/dress-tour/result/:id" element={<DressFittingResult />} />
               <Route path="/ai-studio/dress-tour/gallery" element={<DressFittingGallery />} />
