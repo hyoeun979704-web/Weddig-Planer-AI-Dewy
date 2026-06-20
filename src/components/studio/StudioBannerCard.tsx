@@ -52,9 +52,9 @@ const StudioBannerCard = ({
       type="button"
       onClick={onClick}
       data-tutorial={dataTutorial}
-      className={`relative w-full min-h-[168px] overflow-hidden rounded-3xl text-left shadow-sm active:scale-[0.99] transition-transform bg-gradient-to-br ${PALETTE[colorIndex % PALETTE.length]}`}
+      className={`relative w-full h-[200px] overflow-hidden rounded-3xl text-left shadow-sm active:scale-[0.99] transition-transform bg-gradient-to-br ${PALETTE[colorIndex % PALETTE.length]}`}
     >
-      {/* 우측 누끼 피사체 — 투명 배경이라 파스텔 위에 떠 보인다. 하단 정렬. */}
+      {/* 우측 누끼 피사체 — 카드 높이를 꽉 채우고 우하단 정렬(레퍼런스 배너처럼). object-contain 이라 잘리지 않음. */}
       {showImg && (
         <img
           src={imageUrl}
@@ -62,7 +62,7 @@ const StudioBannerCard = ({
           loading={priority ? "eager" : "lazy"}
           decoding="async"
           onError={() => setImgFailed(true)}
-          className={`pointer-events-none absolute bottom-0 right-1 top-2 h-[calc(100%-0.5rem)] w-[56%] object-contain object-bottom ${locked ? "opacity-60" : ""}`}
+          className={`pointer-events-none absolute inset-y-0 right-0 h-full w-[62%] object-contain object-right-bottom ${locked ? "opacity-60" : ""}`}
         />
       )}
 
@@ -75,12 +75,12 @@ const StudioBannerCard = ({
       )}
 
       {/* 좌측 텍스트 */}
-      <div className="relative z-10 max-w-[54%] px-5 py-5">
-        <h3 className="text-[17px] font-extrabold leading-snug text-[#3b2b32] break-keep">{title}</h3>
+      <div className="relative z-10 flex h-full max-w-[52%] flex-col px-5 py-5">
+        <h3 className="text-[17px] font-extrabold leading-snug text-[#3b2b32] break-keep line-clamp-2">{title}</h3>
         {description && (
           <p className="mt-1.5 text-[12px] leading-snug text-[#6b5860] line-clamp-3 break-keep">{description}</p>
         )}
-        <p className={`mt-2.5 text-[12px] font-bold ${locked ? "text-[#8a7a80]" : "text-primary"}`}>{ctaLabel}</p>
+        <p className={`mt-auto pt-2 text-[12px] font-bold ${locked ? "text-[#8a7a80]" : "text-primary"}`}>{ctaLabel}</p>
       </div>
     </button>
   );
