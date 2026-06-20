@@ -62,12 +62,23 @@ Deno.serve(async (req) => {
         user_id: userId, platform: PLATFORM, product_id: productId, store_txn_id: purchaseToken,
         kind: "hearts", status: "verified", raw: v.data,
       });
-      if (txErr) return json({ success: true, alreadyProcessed: true }); // UNIQUE 동시처리
+      if (txErr) {
+        // UNIQUE 위반(23505)만 "이미 처리"로 간주. 그 외 DB 오류를 성공으로 가리면
+        // 결제됐는데 하트 미지급이 되므로 500 실패 반환(클라가 재시도).
+        if ((txErr as { code?: string }).code === "23505") return json({ success: true, alreadyProcessed: true });
+        console.error("iap_transactions insert failed (hearts)", txErr);
+        return json({ success: false, error: "처리에 실패했어요. 잠시 후 다시 시도해 주세요." }, 500);
+      }
 
       const { error: earnErr } = await admin.rpc("earn_hearts", {
         p_user_id: userId, p_amount: def.hearts, p_reason: `iap_${def.packageId}`, p_ref_id: null,
       });
-      if (earnErr) console.error("earn_hearts failed (iap)", earnErr);
+      if (earnErr) {
+        // 지급 실패 — 원장을 롤백해 재시도 가능하게(중복지급은 UNIQUE 가 여전히 차단).
+        console.error("earn_hearts failed (iap), rolling back ledger", earnErr);
+        await admin.from("iap_transactions").delete().eq("platform", PLATFORM).eq("store_txn_id", purchaseToken);
+        return json({ success: false, error: "지급 처리에 실패했어요. 잠시 후 다시 시도해 주세요." }, 500);
+      }
       return json({ success: true, heartsGranted: def.hearts });
     }
 
@@ -96,14 +107,24 @@ Deno.serve(async (req) => {
       user_id: userId, platform: PLATFORM, product_id: productId, store_txn_id: purchaseToken,
       kind: "subscription", status: "verified", amount: planDef.webPrice, raw: v.data,
     });
-    if (txErr) return json({ success: true, alreadyProcessed: true });
+    if (txErr) {
+      if ((txErr as { code?: string }).code === "23505") return json({ success: true, alreadyProcessed: true });
+      console.error("iap_transactions insert failed (subscription)", txErr);
+      return json({ success: false, error: "처리에 실패했어요. 잠시 후 다시 시도해 주세요." }, 500);
+    }
 
     // 구독 활성 — user_id UNIQUE upsert. 토큰을 payment_id 에 보관(RTDN 토큰→user 역조회용).
-    await admin.from("subscriptions").upsert({
+    const { error: subErr } = await admin.from("subscriptions").upsert({
       user_id: userId, plan: planDef.plan, status: "active", price: planDef.webPrice,
       started_at: new Date().toISOString(), expires_at: expiry, next_billing_at: expiry,
       cancelled_at: null, payment_method: "google_play", payment_id: purchaseToken,
     }, { onConflict: "user_id" });
+    if (subErr) {
+      // 구독 활성화 실패 — 원장 롤백해 재시도 가능하게.
+      console.error("subscription upsert failed (iap), rolling back ledger", subErr);
+      await admin.from("iap_transactions").delete().eq("platform", PLATFORM).eq("store_txn_id", purchaseToken);
+      return json({ success: false, error: "구독 활성화에 실패했어요. 잠시 후 다시 시도해 주세요." }, 500);
+    }
 
     // 초기 이용자 보너스 하트(최초 검증 1회만 — iap_transactions 가 멱등 보장).
     let heartsGranted = 0;

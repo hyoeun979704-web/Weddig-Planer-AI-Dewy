@@ -42,63 +42,63 @@ function entry(e: PromptEntry): PromptEntry { return e; }
 export const PROMPT_CATALOG: PromptEntry[] = [
   // ── 드레스 투어 (컷 필터 비교) ──
   entry({ id: "dress-full", feature: "방구석 드레스 투어", title: "드레스 · 전신 컷", kind: "image",
-    exampleImage: `${PREV}/dress.webp`, sourceFile: "src/data/fittingScenes.ts → buildFittingPrompt",
+    exampleImage: `${PREV}/banner-dress.webp`, sourceFile: "src/data/fittingScenes.ts → buildFittingPrompt",
     prompt: buildFittingPrompt("STUDIO_BRIGHT", DRESS, { shotType: "full" }) }),
   entry({ id: "dress-bust", feature: "방구석 드레스 투어", title: "드레스 · 상반신 컷", kind: "image",
-    exampleImage: `${PREV}/dress.webp`, sourceFile: "src/data/fittingScenes.ts → buildFittingPrompt",
+    exampleImage: `${PREV}/banner-dress.webp`, sourceFile: "src/data/fittingScenes.ts → buildFittingPrompt",
     prompt: buildFittingPrompt("STUDIO_BRIGHT", DRESS, { shotType: "bust" }) }),
   entry({ id: "dress-closeup", feature: "방구석 드레스 투어", title: "드레스 · 클로즈업", kind: "image",
-    exampleImage: `${PREV}/dress.webp`, sourceFile: "src/data/fittingScenes.ts → buildFittingPrompt",
+    exampleImage: `${PREV}/banner-dress.webp`, sourceFile: "src/data/fittingScenes.ts → buildFittingPrompt",
     prompt: buildFittingPrompt("STUDIO_BRIGHT", DRESS, { shotType: "closeup" }) }),
   entry({ id: "dress-custom", feature: "방구석 드레스 투어", title: "드레스 · 맞춤(텍스트) 전신", kind: "image",
-    exampleImage: `${PREV}/dress.webp`, sourceFile: "src/data/fittingScenes.ts → buildFittingPrompt(custom)",
+    exampleImage: `${PREV}/banner-dress.webp`, sourceFile: "src/data/fittingScenes.ts → buildFittingPrompt(custom)",
     prompt: buildFittingPrompt("STUDIO_BRIGHT", DRESS, { custom: true, shotType: "full" }) }),
   entry({ id: "dress-recommend", feature: "방구석 드레스 투어", title: "드레스 · AI 추천(체형)", kind: "image",
-    exampleImage: `${PREV}/dress.webp`, sourceFile: "src/data/fittingScenes.ts → buildRecommendDressPrompt",
+    exampleImage: `${PREV}/banner-dress.webp`, sourceFile: "src/data/fittingScenes.ts → buildRecommendDressPrompt",
     prompt: buildRecommendDressPrompt("STUDIO_BRIGHT", "웨이브", "상체가 가늘고 하체에 볼륨 — A라인·엠파이어로 허리선을 강조") }),
 
   // ── 메이크업 ──
   entry({ id: "makeup", feature: "착붙 메이크업", title: "메이크업 시연", kind: "image",
-    exampleImage: `${PREV}/makeup.webp`, sourceFile: "src/data/makeupScenes.ts → buildMakeupPrompt",
+    exampleImage: `${PREV}/banner-makeup.webp`, sourceFile: "src/data/makeupScenes.ts → buildMakeupPrompt",
     prompt: buildMakeupPrompt("STUDIO_NATURAL", MAKEUP) }),
   entry({ id: "makeup-recommend", feature: "착붙 메이크업", title: "메이크업 · AI 추천", kind: "image",
-    exampleImage: `${PREV}/makeup.webp`, sourceFile: "src/data/makeupScenes.ts → buildRecommendMakeupPrompt",
+    exampleImage: `${PREV}/banner-makeup.webp`, sourceFile: "src/data/makeupScenes.ts → buildRecommendMakeupPrompt",
     prompt: buildRecommendMakeupPrompt("STUDIO_NATURAL") }),
 
   // ── 스드메 미리보기(합본) ──
   entry({ id: "sdm", feature: "스드메 미리보기", title: "스드메 합본 · 전신", kind: "image",
-    exampleImage: `${PREV}/dress.webp`, sourceFile: "src/data/sdmPrompt.ts → buildSdmPrompt",
+    exampleImage: `${PREV}/banner-sdm.webp`, sourceFile: "src/data/sdmPrompt.ts → buildSdmPrompt",
     prompt: buildSdmPrompt({ sceneCode: "STUDIO_BRIGHT", makeupDescription: MAKEUP, hairStyle: "loose natural waves",
       dressDescription: DRESS, dressCustom: false, dressLength: "floor", shotType: "full", referenceMode: "image" }) }),
 
   // ── 웨딩촬영 시안 8컷 ──
   ...CUT_PLAN.map((cut) => entry({
     id: `photoshoot-${cut.index}`, feature: "웨딩촬영 시안", title: `촬영시안 #${cut.index} · ${cut.ko}`, kind: "image",
-    exampleImage: `${PREV}/dress.webp`, sourceFile: "src/data/photoshootPrompt.ts → buildPhotoshootCutPrompt",
+    exampleImage: `${PREV}/banner-dress.webp`, sourceFile: "src/data/photoshootPrompt.ts → buildPhotoshootCutPrompt",
     prompt: buildPhotoshootCutPrompt({ cut, brideDescription: DRESS, groomDescription: GROOM,
       sceneText: "soft bright indoor studio, neutral backdrop", propsText: "", refsText: "", longGown: true }),
   })),
 
   // ── 헤어(엣지 전용 스냅샷) ──
   entry({ id: "hair-style", feature: "헤어 변형", title: "헤어 · 스타일 9그리드", kind: "image-snapshot",
-    exampleImage: `${PREV}/hair.webp`, sourceFile: "supabase/functions/dewy-hair-preview/index.ts (STYLE_GRID)",
+    exampleImage: `${PREV}/banner-hair.webp`, sourceFile: "supabase/functions/dewy-hair-preview/index.ts (STYLE_GRID)",
     note: "엣지 함수 상수 스냅샷 — 추천 시 어울림 순으로 동적 재생성됨", prompt: HAIR_STYLE_GRID }),
   entry({ id: "hair-color", feature: "헤어 변형", title: "헤어 · 컬러 9그리드", kind: "image-snapshot",
-    exampleImage: `${PREV}/hair.webp`, sourceFile: "supabase/functions/dewy-hair-preview/index.ts (COLOR_GRID)",
+    exampleImage: `${PREV}/banner-hair.webp`, sourceFile: "supabase/functions/dewy-hair-preview/index.ts (COLOR_GRID)",
     note: "엣지 함수 상수 스냅샷", prompt: HAIR_COLOR_GRID }),
 
   // ── LLM 텍스트 프롬프트(엣지 — 길어서 출처 참조) ──
   entry({ id: "ai-planner", feature: "LLM 텍스트", title: "AI 플래너 시스템+근거주입", kind: "text-ref",
-    exampleImage: `${PREV}/consulting.webp`, sourceFile: "supabase/functions/ai-planner/index.ts + grounding.ts",
+    exampleImage: `${PREV}/banner-consulting.webp`, sourceFile: "supabase/functions/ai-planner/index.ts + grounding.ts",
     note: "시스템 프롬프트 + 가격/업체 근거주입(buildPriceGrounding·buildVendorGrounding). 엣지 정의 — 파일 참조." }),
   entry({ id: "wedding-consulting", feature: "LLM 텍스트", title: "웨딩 컨설팅 리포트", kind: "text-ref",
-    exampleImage: `${PREV}/consulting.webp`, sourceFile: "supabase/functions/wedding-consulting/index.ts",
+    exampleImage: `${PREV}/banner-consulting.webp`, sourceFile: "supabase/functions/wedding-consulting/index.ts",
     note: "퍼스널컬러·헤어·메이크업·드레스 A4 리포트 생성 프롬프트. 엣지 정의 — 파일 참조." }),
   entry({ id: "invitation-illustration", feature: "LLM 텍스트", title: "청첩장 일러스트 생성", kind: "text-ref",
-    exampleImage: `${PREV}/paper-invitation.webp`, sourceFile: "supabase/functions/invitation-illustration/index.ts",
+    exampleImage: `${PREV}/banner-invitation.webp`, sourceFile: "supabase/functions/invitation-illustration/index.ts",
     note: "청첩장 일러스트 이미지 생성 프롬프트. 엣지 정의 — 파일 참조." }),
   entry({ id: "invitation-text", feature: "LLM 텍스트", title: "청첩장 문구 제안", kind: "text-ref",
-    exampleImage: `${PREV}/paper-invitation.webp`, sourceFile: "supabase/functions/invitation-text-suggest/index.ts",
+    exampleImage: `${PREV}/banner-invitation.webp`, sourceFile: "supabase/functions/invitation-text-suggest/index.ts",
     note: "청첩장 인사말/문구 제안 프롬프트. 엣지 정의 — 파일 참조." }),
 ];
 

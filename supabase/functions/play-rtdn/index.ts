@@ -13,12 +13,11 @@ const ACTIVE_TYPES = new Set([1, 2, 4, 7]); // RECOVERED, RENEWED, PURCHASED, RE
 const ENDED_TYPES = new Set([12, 13]); // REVOKED, EXPIRED (CANCELED=3 은 만료 전까지 유효 — 별도 처리)
 
 Deno.serve(async (req) => {
-  // 검증 토큰(설정 시) — 비밀 쿼리파라미터 대조.
+  // 검증 토큰 — 비밀 쿼리파라미터 대조. verify_jwt=false 라 이게 유일한 게이트이므로
+  // fail-closed: 토큰 미설정이면 엔드포인트를 열지 않는다(누구나 위조 환불·취소 POST 가능 방지).
   const expected = Deno.env.get("RTDN_VERIFY_TOKEN");
-  if (expected) {
-    const got = new URL(req.url).searchParams.get("token");
-    if (got !== expected) return new Response("forbidden", { status: 403 });
-  }
+  const got = new URL(req.url).searchParams.get("token");
+  if (!expected || got !== expected) return new Response("forbidden", { status: 403 });
   try {
     const body = (await req.json().catch(() => ({}))) as { message?: { data?: string } };
     const dataB64 = body?.message?.data;
