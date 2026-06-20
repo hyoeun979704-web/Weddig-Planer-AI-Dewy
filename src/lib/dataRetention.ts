@@ -14,9 +14,10 @@ export interface RetentionRow {
 
 export const DATA_RETENTION: readonly RetentionRow[] = [
   { category: "회원 정보", period: "탈퇴 시까지", basis: "본인 동의" },
-  { category: "사용자 업로드 사진", period: "처리 후 30일(자동 삭제)", basis: "본인 동의" },
+  { category: "AI Studio 업로드 사진", period: "처리 후 30일(자동 삭제)", basis: "본인 동의" },
+  { category: "커뮤니티·커플다이어리 게시 사진", period: "게시물 삭제 또는 탈퇴 시까지", basis: "본인 동의" },
   { category: "AI 결과물", period: "탈퇴 시까지", basis: "본인 동의" },
-  { category: "채팅 기록", period: "최대 1년", basis: "서비스 운영" },
+  { category: "채팅 기록", period: "탈퇴 시까지(요청 시 삭제)", basis: "서비스 운영" },
   { category: "계약·결제 기록", period: "5년", basis: "전자상거래 등에서의 소비자보호에 관한 법률" },
   { category: "소비자 분쟁·민원 기록", period: "3년", basis: "전자상거래 등에서의 소비자보호에 관한 법률" },
   { category: "접속 로그(IP 등)", period: "3개월", basis: "통신비밀보호법" },
