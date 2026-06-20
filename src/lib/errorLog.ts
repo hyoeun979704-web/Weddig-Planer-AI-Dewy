@@ -31,6 +31,17 @@ function isNoise(message: string): boolean {
   );
 }
 
+// 에러 메시지·스택에 사용자 PII(이메일·전화·토큰)가 섞여 client_error_logs 에 평문 저장되지
+// 않도록 마스킹한다(PIPA 안전조치 — 스택에 우연히 들어간 식별정보 차단).
+function redactPii(s: string): string {
+  if (!s) return s;
+  return s
+    .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, "[email]")
+    .replace(/\b01[016789][-\s]?\d{3,4}[-\s]?\d{4}\b/g, "[phone]")
+    .replace(/\b[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\b/g, "[token]")
+    .replace(/(Bearer\s+)[A-Za-z0-9._-]+/gi, "$1[token]");
+}
+
 export interface ClientErrorInput {
   message: string;
   stack?: string;
@@ -40,10 +51,11 @@ export interface ClientErrorInput {
 
 export async function logClientError(input: ClientErrorInput): Promise<void> {
   try {
-    const message = (input.message || "").slice(0, 2000);
+    const message = redactPii((input.message || "").slice(0, 2000));
     if (isNoise(message)) return;
+    const stack = redactPii((input.stack || "").slice(0, 8000));
 
-    const digest = digestOf(message, input.stack);
+    const digest = digestOf(message, stack);
     if (seen.has(digest)) return; // 같은 오류 반복 → 1회만
     if (sent >= SESSION_CAP) return; // 폭주 차단
     seen.add(digest);
@@ -65,7 +77,7 @@ export async function logClientError(input: ClientErrorInput): Promise<void> {
       .insert({
         user_id: userId,
         message,
-        stack: (input.stack || "").slice(0, 8000) || null,
+        stack: stack || null,
         source: input.source.slice(0, 40),
         url: (typeof location !== "undefined" ? location.pathname : "").slice(0, 300) || null,
         user_agent: (typeof navigator !== "undefined" ? navigator.userAgent : "").slice(0, 300) || null,
