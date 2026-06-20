@@ -65,6 +65,23 @@ App Store 가이드라인 4.8: **다른 소셜 로그인(Google/Kakao)을 제공
 앱에서 판매하면 Apple 은 IAP(StoreKit) 를 요구**(가이드라인 3.1.1)할 수 있다. 실물/예약
 서비스 위주면 외부 결제가 허용되는 경우가 있으나, 심사 전 결제 품목이 IAP 대상인지 확인 필요.
 
+## 5-B. 광고 (AdMob) — iOS 설정 (Android과 별개)
+
+AdMob은 iOS도 지원(`@capacitor-community/admob`, 미니게임 `MergeGame` 보상형 포함). 단 iOS는
+별도 설정이 필요하다(Android의 `AndroidManifest` 앱ID·광고단위와 **별개**):
+
+1. **AdMob 콘솔**: iOS 앱 추가 → iOS **앱 ID** + iOS **광고단위 ID**(배너/보상형 `VITE_ADMOB_*`의
+   iOS용 값) 발급. Android `ca-app-pub-…~7146431266`은 iOS에 쓰면 안 됨.
+2. **`ios/App/App/Info.plist`**:
+   - `GADApplicationIdentifier` = iOS 앱 ID.
+   - `SKAdNetworkItems` = AdMob 제공 SKAdNetwork ID 목록(Apple 광고 어트리뷰션).
+   - `NSUserTrackingUsageDescription` = ATT 문구(추적 사유).
+3. **ATT(가이드라인 5.1.2)**: IDFA 개인화 광고는 **App Tracking Transparency** 프롬프트 동의 필요.
+   미동의 시 비개인화 광고로 노출(광고 자체는 동작). UMP 동의와 순서 정리(혼선 시 5.1.1 반려).
+4. **프라이버시 매니페스트**: 앱 + AdMob SDK `PrivacyInfo.xcprivacy`(§ launch audit B).
+5. **보상형으로 포인트/하트 지급**: Apple·Google 모두 허용(earned). (웹 AdSense 보상형이 incentivized
+   정책상 더 민감 — 웹은 노출만, 네이티브는 AdMob 보상형이 정석.)
+
 ## 6. 검증 (Mac)
 
 1. 시뮬레이터: `npx cap run ios` → 앱 부팅, SPA 라우팅 동일 동작.
