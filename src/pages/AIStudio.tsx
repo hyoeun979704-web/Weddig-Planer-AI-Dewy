@@ -153,6 +153,7 @@ const AIStudio = () => {
                 ctaLabel={isActive ? "지금 시작 →" : "출시 알림 받기 →"}
                 colorIndex={index}
                 priority={index < 2}
+                imgAnchor={card.id === "dress-tour" || card.id === "hair-room" ? "bottom" : "center"}
                 dataTutorial={card.id === "wedding-consulting" ? "studio-cards" : undefined}
                 onClick={() => (isActive ? navigate(card.href!) : handleLockedCardClick(card))}
               />

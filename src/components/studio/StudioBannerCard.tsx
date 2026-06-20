@@ -28,6 +28,7 @@ export interface StudioBannerCardProps {
   colorIndex: number;
   dataTutorial?: string;
   priority?: boolean;
+  imgAnchor?: "bottom" | "center"; // 서있는 인물(드레스·헤어)=bottom, 얼굴·정물=center
   onClick: () => void;
 }
 
@@ -42,6 +43,7 @@ const StudioBannerCard = ({
   colorIndex,
   dataTutorial,
   priority = false,
+  imgAnchor = "center",
   onClick,
 }: StudioBannerCardProps) => {
   // 이미지 로드 실패 시 깨진 아이콘 대신 배경만 보이게.
@@ -54,7 +56,7 @@ const StudioBannerCard = ({
       data-tutorial={dataTutorial}
       className={`relative w-full h-[200px] overflow-hidden rounded-3xl text-left shadow-sm active:scale-[0.99] transition-transform bg-gradient-to-br ${PALETTE[colorIndex % PALETTE.length]}`}
     >
-      {/* 우측 누끼 피사체 — 카드 높이를 꽉 채우고 우하단 정렬(레퍼런스 배너처럼). object-contain 이라 잘리지 않음. */}
+      {/* 우측 누끼 피사체 — 여백 두고 우측 배치(레퍼런스처럼). 카드별 수직 정렬(인물=하단, 정물=가운데). 잘림 없음. */}
       {showImg && (
         <img
           src={imageUrl}
@@ -62,7 +64,7 @@ const StudioBannerCard = ({
           loading={priority ? "eager" : "lazy"}
           decoding="async"
           onError={() => setImgFailed(true)}
-          className={`pointer-events-none absolute inset-y-0 right-0 h-full w-[62%] object-contain object-right-bottom ${locked ? "opacity-60" : ""}`}
+          className={`pointer-events-none absolute right-3 top-3.5 bottom-3.5 w-[56%] object-contain ${imgAnchor === "bottom" ? "object-right-bottom" : "object-right"} ${locked ? "opacity-60" : ""}`}
         />
       )}
 
@@ -75,7 +77,7 @@ const StudioBannerCard = ({
       )}
 
       {/* 좌측 텍스트 */}
-      <div className="relative z-10 flex h-full max-w-[52%] flex-col px-5 py-5">
+      <div className="relative z-10 flex h-full max-w-[50%] flex-col px-5 py-5">
         <h3 className="text-[17px] font-extrabold leading-snug text-[#3b2b32] break-keep line-clamp-2">{title}</h3>
         {description && (
           <p className="mt-1.5 text-[12px] leading-snug text-[#6b5860] line-clamp-3 break-keep">{description}</p>
