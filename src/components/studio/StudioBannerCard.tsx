@@ -60,7 +60,7 @@ const StudioBannerCard = ({
         loading={priority ? "eager" : "lazy"}
         decoding="async"
         onError={() => setImgFailed(true)}
-        className={`pointer-events-none absolute right-0 top-0 h-full w-[46%] object-cover object-top ${locked ? "opacity-55" : ""}`}
+        className={`pointer-events-none absolute right-0 top-0 h-full w-[46%] object-cover object-center ${locked ? "opacity-55" : ""}`}
         style={{
           WebkitMaskImage: "linear-gradient(to left, #000 65%, transparent)",
           maskImage: "linear-gradient(to left, #000 65%, transparent)",
