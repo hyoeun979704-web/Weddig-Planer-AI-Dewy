@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
+import ZoomableImage from "@/components/ai/ZoomableImage";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Download, Share2, Loader2, RefreshCw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -197,7 +198,7 @@ const MakeupFittingResult = () => {
         ) : (
           <div className="space-y-4">
             {resultUrl ? (
-              <img
+              <ZoomableImage
                 src={resultUrl}
                 alt="생성된 메이크업"
                 className="w-full aspect-[3/4] object-cover rounded-2xl border border-border"

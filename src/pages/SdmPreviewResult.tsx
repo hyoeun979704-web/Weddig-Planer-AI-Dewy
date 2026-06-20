@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
+import ZoomableImage from "@/components/ai/ZoomableImage";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Download, Share2, Loader2, RefreshCw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -123,7 +124,7 @@ const SdmPreviewResult = () => {
         ) : (
           <div className="space-y-4">
             {resultUrl ? (
-              <img src={resultUrl} alt="스드메 완성본" className="w-full aspect-[3/4] object-cover rounded-2xl border border-border" />
+              <ZoomableImage src={resultUrl} alt="스드메 완성본" className="w-full aspect-[3/4] object-cover rounded-2xl border border-border" />
             ) : (
               <div className="aspect-[3/4] rounded-2xl bg-muted flex items-center justify-center">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
