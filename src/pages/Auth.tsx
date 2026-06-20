@@ -42,6 +42,20 @@ const Auth = () => {
   const startAsBusiness = searchParams.get("type") === "business";
   // 로그인 성공 후 복귀할 내부 경로(오픈 리다이렉트 방지). 없으면 홈.
   const redirectTo = safeInternalPath(searchParams.get("redirect"));
+
+  // 추천 링크(/auth?ref=code)로 진입 — 추천코드를 보관해 두고, 세션 확립(첫 로그인)
+  // 후 AuthContext 가 redeem 한다. OAuth 콜백은 쿼리스트링이 유실되므로 localStorage 경유.
+  // 자기추천/중복은 RPC 가 막으므로 여기선 저장만(검증·보상은 서버).
+  useEffect(() => {
+    const ref = searchParams.get("ref")?.trim();
+    if (!ref) return;
+    try {
+      // 키는 AuthContext 의 PENDING_REFERRAL_KEY 와 동일해야 함(마케팅 키와 동일 관례).
+      localStorage.setItem("dewy:pending-referral", JSON.stringify({ code: ref, ts: Date.now() }));
+    } catch {
+      // best effort (프라이빗 모드 등)
+    }
+  }, [searchParams]);
   const [isSignUp, setIsSignUp] = useState(startAsBusiness);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

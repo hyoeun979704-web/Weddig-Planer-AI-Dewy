@@ -19,6 +19,7 @@ interface FittingRow {
   id: string;
   status: "pending" | "done" | "failed" | "refunded";
   result_image_path: string | null;
+  source_image_path: string | null;
   error_message: string | null;
   prompt_params: { scene_code?: string } | null;
   selected_sample_id: string | null;
@@ -31,6 +32,8 @@ const DressFittingResult = () => {
   const location = useLocation();
   const [fitting, setFitting] = useState<FittingRow | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [sourceUrl, setSourceUrl] = useState<string | null>(null);
+  const [showSource, setShowSource] = useState(false); // 기본 = 생성결과 먼저 노출
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [polls, setPolls] = useState(0);
@@ -43,7 +46,7 @@ const DressFittingResult = () => {
     const { data, error } = await (supabase as any)
       .from("dress_fittings")
       .select(
-        "id, status, result_image_path, error_message, prompt_params, selected_sample_id, created_at",
+        "id, status, result_image_path, source_image_path, error_message, prompt_params, selected_sample_id, created_at",
       )
       .eq("id", id)
       .single();
@@ -58,6 +61,13 @@ const DressFittingResult = () => {
         .from("dress-results")
         .createSignedUrl(data.result_image_path, 60 * 60 * 24);
       setResultUrl(signed?.signedUrl ?? null);
+    }
+    // 전후 비교용 원본 — 업로드 버킷(dress-uploads)에서 signed URL.
+    if (data.source_image_path) {
+      const { data: srcSigned } = await supabase.storage
+        .from("dress-uploads")
+        .createSignedUrl(data.source_image_path, 60 * 60 * 24);
+      setSourceUrl(srcSigned?.signedUrl ?? null);
     }
     setLoading(false);
   }, [id]);
@@ -203,10 +213,33 @@ const DressFittingResult = () => {
           )
         ) : (
           <div className="space-y-4">
+            {/* 전후 비교 토글 — 원본·결과 둘 다 있을 때만. 기본은 결과 보기. */}
+            {sourceUrl && resultUrl && (
+              <div className="flex justify-center">
+                <div className="inline-flex rounded-full bg-muted p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowSource(false)}
+                    aria-pressed={!showSource}
+                    className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-colors ${!showSource ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+                  >
+                    결과 보기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowSource(true)}
+                    aria-pressed={showSource}
+                    className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-colors ${showSource ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+                  >
+                    원본 보기
+                  </button>
+                </div>
+              </div>
+            )}
             {resultUrl ? (
               <ZoomableImage
-                src={resultUrl}
-                alt="생성된 드레스 피팅"
+                src={showSource && sourceUrl ? sourceUrl : resultUrl}
+                alt={showSource ? "업로드한 원본 사진" : "생성된 드레스 피팅"}
                 className="w-full aspect-[3/4] object-cover rounded-2xl border border-border"
               />
             ) : (
