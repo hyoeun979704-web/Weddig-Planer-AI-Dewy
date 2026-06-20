@@ -137,7 +137,8 @@ const AIStudio = () => {
           </span>
           <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
         </button>
-        <div className="flex flex-col gap-3 px-4 py-5">
+        {/* 모바일=1열 전체폭 배너, 데스크톱(≥1024px, 칼럼 960px)=2열로 채워 가로 늘어짐 방지 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 px-4 py-5">
           {cards.map((card, index) => {
             const isActive = card.status === "active" && !!card.href;
             return (
