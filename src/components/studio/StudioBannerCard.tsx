@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Lock } from "lucide-react";
 
 // AI 스튜디오 전체폭 가로 배너 카드 — 컬러 그라데이션 배경 + 좌측 타이틀/설명 + 우측 이미지 + 코너 배지.
@@ -39,15 +40,18 @@ const StudioBannerCard = ({
   dataTutorial,
   priority = false,
   onClick,
-}: StudioBannerCardProps) => (
+}: StudioBannerCardProps) => {
+  // 이미지 로드 실패 시(파일 미존재 등) 깨진 아이콘 대신 그라데이션만 보이게 한다.
+  const [imgFailed, setImgFailed] = useState(false);
+  return (
   <button
     type="button"
     onClick={onClick}
     data-tutorial={dataTutorial}
-    className={`relative w-full min-h-[120px] overflow-hidden rounded-3xl text-left shadow-sm active:scale-[0.99] transition-transform bg-gradient-to-br ${PALETTE[colorIndex % PALETTE.length]}`}
+    className={`relative w-full min-h-[164px] overflow-hidden rounded-3xl text-left shadow-sm active:scale-[0.99] transition-transform bg-gradient-to-br ${PALETTE[colorIndex % PALETTE.length]}`}
   >
     {/* 우측 이미지 — 좌측으로 페이드시켜 배경에 자연스럽게 녹임 */}
-    {imageUrl && (
+    {imageUrl && !imgFailed && (
       <img
         src={imageUrl}
         alt={imageAlt}
@@ -55,7 +59,8 @@ const StudioBannerCard = ({
         height={320}
         loading={priority ? "eager" : "lazy"}
         decoding="async"
-        className={`pointer-events-none absolute right-0 top-0 h-full w-[46%] object-cover ${locked ? "opacity-55" : ""}`}
+        onError={() => setImgFailed(true)}
+        className={`pointer-events-none absolute right-0 top-0 h-full w-[46%] object-cover object-top ${locked ? "opacity-55" : ""}`}
         style={{
           WebkitMaskImage: "linear-gradient(to left, #000 65%, transparent)",
           maskImage: "linear-gradient(to left, #000 65%, transparent)",
@@ -80,6 +85,7 @@ const StudioBannerCard = ({
       <p className={`mt-2.5 text-[12px] font-bold ${locked ? "text-[#8a7a80]" : "text-primary"}`}>{ctaLabel}</p>
     </div>
   </button>
-);
+  );
+};
 
 export default StudioBannerCard;

@@ -44,7 +44,7 @@ const cards: StudioCard[] = [
     description: "장소·메이크업·헤어·드레스를 한 번에 반영한 완성본 (10하트)",
     status: "active",
     href: "/ai-studio/sdm-preview",
-    previewImage: "/ai-studio-previews/dress.webp",
+    previewImage: "/ai-studio-previews/sdm.webp",
     previewPosition: "top",
   },
   {
