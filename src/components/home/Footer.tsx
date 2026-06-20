@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import DewyLogo from "./DewyLogo";
+import { COMPANY } from "@/lib/companyInfo";
 
 const Footer = () => {
   const navigate = useNavigate();
@@ -29,12 +30,12 @@ const Footer = () => {
           <span className="font-logo text-[15px] text-black">Dewy</span>
         </div>
         <div className="text-[12px] leading-[18px] text-black">
-          <p>듀이 (Dewy) | 대표: 김효은</p>
-          <p>사업자등록번호: 218-38-01132</p>
-          <p>통신판매업신고: 제 2023-충남천안-1575호</p>
-          <p>충청남도 천안시 서북구 천안대로 1446, 16층 듀이</p>
-          <p>고객센터: 050-6459-7504 (평일 10:00~18:00)</p>
-          <p>이메일: kheceo@dewy-wedding.com</p>
+          <p>{COMPANY.name} ({COMPANY.nameEn}) | 대표: {COMPANY.ceo}</p>
+          <p>사업자등록번호: {COMPANY.bizRegNo}</p>
+          <p>통신판매업신고: {COMPANY.telecomSalesNo}</p>
+          <p>{COMPANY.address}</p>
+          <p>고객센터: {COMPANY.phone} ({COMPANY.operatingHours})</p>
+          <p>이메일: {COMPANY.email}</p>
         </div>
         {/* 통신판매중개자 책임 제한 고지(전자상거래법 §20-2) — 거래 당사자가 아님을 명확히 */}
         <p className="text-[11px] leading-[16px] text-muted-foreground border-t border-border/60 pt-[10px] mt-[2px]">
