@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
+import ZoomableImage from "@/components/ai/ZoomableImage";
 import { useNavigate, useParams } from "react-router-dom";
 import { Download, Loader2, RefreshCw, Share2, Sparkles } from "lucide-react";
 import { shareResultWithToast } from "@/lib/shareResultImage";
@@ -138,7 +139,7 @@ const HairPreviewResult = () => {
                   )}
                 </div>
                 {urls[it.kind] ? (
-                  <img src={urls[it.kind]} alt={it.kind} className="w-full rounded-xl border border-border bg-white" />
+                  <ZoomableImage src={urls[it.kind]} alt={it.kind} className="w-full rounded-xl border border-border bg-white" />
                 ) : (
                   <div className="aspect-[3/4] rounded-xl bg-muted flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
                 )}

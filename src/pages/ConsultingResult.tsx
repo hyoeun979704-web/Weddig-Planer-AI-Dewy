@@ -3,6 +3,7 @@ import AiDisclosureNotice from "@/components/ai/AiDisclosureNotice";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Download, Loader2, RefreshCw, Share2, Sparkles } from "lucide-react";
 import { shareResultWithToast } from "@/lib/shareResultImage";
+import ZoomableImage from "@/components/ai/ZoomableImage";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -230,7 +231,7 @@ const ConsultingResult = () => {
                   )}
                 </div>
                 {urls[b.section] ? (
-                  <img
+                  <ZoomableImage
                     src={urls[b.section]}
                     alt={LABEL[b.section] ?? b.section}
                     className="w-full rounded-xl border border-border bg-white"
