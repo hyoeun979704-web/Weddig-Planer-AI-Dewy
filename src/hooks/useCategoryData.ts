@@ -303,9 +303,15 @@ async function fetchCategoryItems(
     ? CATEGORY_DETAIL_SELECT[category].replace(`${cardKey}(`, `${cardKey}!inner(`)
     : CATEGORY_DETAIL_SELECT[category];
 
+  // places 는 33컬럼인데 카드/정렬에 쓰는 건 14개뿐 → `*` 대신 명시 컬럼만 선택(과다 페치 제거).
+  // 사용처: toCategoryItem(place_id·name·city·district·min_price·avg_rating·review_count·
+  // is_partner·main_image_url·lat·lng·tags) + 정렬(partner_rank·data_completeness·avg_rating).
+  const PLACE_CARD_COLUMNS =
+    "place_id, name, city, district, min_price, avg_rating, review_count, is_partner, main_image_url, lat, lng, tags, partner_rank, data_completeness";
+
   let query = supabase
     .from("places")
-    .select(`*, ${detailSelect}`, { count: "exact" })
+    .select(`${PLACE_CARD_COLUMNS}, ${detailSelect}`, { count: "exact" })
     .eq("category", placeCategory)
     .eq("is_active", true)
     .is("deleted_at", null);

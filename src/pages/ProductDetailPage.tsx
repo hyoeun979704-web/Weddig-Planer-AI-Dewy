@@ -44,24 +44,26 @@ const ProductDetailPage = () => {
     // select("*") — 컬럼 드리프트 방어.
     const { data } = await (supabase.from("business_products" as any).select("*").eq("id", id).maybeSingle() as any);
     if (!data) { setP(null); setLoading(false); return; }
-    let placeName: string | null = null, placeThumb: string | null = null, phone: string | null = null;
-    if (data.place_id) {
-      const { data: pl } = await (supabase.from("places" as any)
-        .select("name, main_image_url, tel, inquiry_phone").eq("place_id", data.place_id).maybeSingle() as any);
-      placeName = pl?.name ?? null;
-      placeThumb = pub(pl?.main_image_url ?? null);
-      phone = (pl?.inquiry_phone || pl?.tel) ?? null;
-    }
+    // 업체 정보 조회와 관련 포트폴리오 조회는 서로 독립(둘 다 product/route id 에만 의존)
+    // → 순차 await 대신 병렬로 묶어 라운드트립 1회 절약.
+    const placePromise = data.place_id
+      ? (supabase.from("places" as any)
+          .select("name, main_image_url, tel, inquiry_phone").eq("place_id", data.place_id).maybeSingle() as any)
+      : Promise.resolve({ data: null });
     // 관련 포트폴리오 = 이 상품에 연결된 앨범의 사진들. (앨범 테이블 미존재 라이브면 빈 배열.)
-    let relPhotos: string[] = [];
-    const { data: albs } = await (supabase.from("place_media_albums" as any)
-      .select("id").eq("product_id", id) as any);
-    const albumIds = (albs ?? []).map((a: any) => a.id);
-    if (albumIds.length > 0) {
+    const relatedPromise = (async (): Promise<string[]> => {
+      const { data: albs } = await (supabase.from("place_media_albums" as any)
+        .select("id").eq("product_id", id) as any);
+      const albumIds = (albs ?? []).map((a: any) => a.id);
+      if (albumIds.length === 0) return [];
       const { data: md } = await (supabase.from("place_media" as any)
         .select("image_url, album_id, display_order").in("album_id", albumIds).order("display_order", { ascending: true }) as any);
-      relPhotos = (md ?? []).map((m: any) => pub(m.image_url)).filter(Boolean) as string[];
-    }
+      return (md ?? []).map((m: any) => pub(m.image_url)).filter(Boolean) as string[];
+    })();
+    const [{ data: pl }, relPhotos] = await Promise.all([placePromise, relatedPromise]);
+    const placeName: string | null = pl?.name ?? null;
+    const placeThumb: string | null = pub(pl?.main_image_url ?? null);
+    const phone: string | null = (pl?.inquiry_phone || pl?.tel) ?? null;
     setP({
       id: data.id, place_id: data.place_id, name: data.name, price: data.price ?? null,
       description: data.description ?? null, image_url: pub(data.image_url ?? null),
