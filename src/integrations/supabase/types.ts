@@ -4250,27 +4250,42 @@ export type Database = {
           accessories_included: boolean | null
           custom_available: boolean | null
           designer_brands: Json | null
+          fabric_options: string[] | null
           fitting_count: number | null
           place_id: string
           price_per_person: number | null
+          production_days: number | null
+          rental_includes_alterations: boolean | null
+          rental_only: boolean | null
+          size_options: string[] | null
           suit_styles: string[] | null
         }
         Insert: {
           accessories_included?: boolean | null
           custom_available?: boolean | null
           designer_brands?: Json | null
+          fabric_options?: string[] | null
           fitting_count?: number | null
           place_id: string
           price_per_person?: number | null
+          production_days?: number | null
+          rental_includes_alterations?: boolean | null
+          rental_only?: boolean | null
+          size_options?: string[] | null
           suit_styles?: string[] | null
         }
         Update: {
           accessories_included?: boolean | null
           custom_available?: boolean | null
           designer_brands?: Json | null
+          fabric_options?: string[] | null
           fitting_count?: number | null
           place_id?: string
           price_per_person?: number | null
+          production_days?: number | null
+          rental_includes_alterations?: boolean | null
+          rental_only?: boolean | null
+          size_options?: string[] | null
           suit_styles?: string[] | null
         }
         Relationships: [

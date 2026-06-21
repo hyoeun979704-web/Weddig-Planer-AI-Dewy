@@ -28,20 +28,20 @@ const cards: StudioCard[] = [
     previewImage: "/ai-studio-previews/banner-consulting.webp",
   },
   {
-    id: "dress-tour",
-    title: "방구석 드레스 투어",
-    description: "내 사진으로 드레스 핏을 미리 확인",
-    status: "active",
-    href: "/ai-studio/dress-tour",
-    previewImage: "/ai-studio-previews/banner-dress.webp",
-  },
-  {
     id: "sdm-preview",
     title: "스드메 미리보기",
     description: "장소·메이크업·헤어·드레스를 한 번에 반영한 완성본 (10하트)",
     status: "active",
     href: "/ai-studio/sdm-preview",
     previewImage: "/ai-studio-previews/banner-sdm.webp",
+  },
+  {
+    id: "dress-tour",
+    title: "방구석 드레스 투어",
+    description: "내 사진으로 드레스 핏을 미리 확인",
+    status: "active",
+    href: "/ai-studio/dress-tour",
+    previewImage: "/ai-studio-previews/banner-dress.webp",
   },
   {
     id: "makeup-finder",
