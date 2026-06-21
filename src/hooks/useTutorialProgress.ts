@@ -9,6 +9,7 @@ import {
 import type { WeddingStyle } from "@/lib/weddingStyle";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { safeLocalStorage } from "@/lib/safeLocalStorage";
 
 // Round 17 — DB-backed 진행 상태.
 //
@@ -32,9 +33,12 @@ interface ProgressRecord {
   welcomeShown: boolean;
 }
 
+// 주의: 모든 저장소 접근은 safeLocalStorage(throw 없음)로. 이전엔 첫 getItem 만 try/catch 였고
+// iOS 프라이빗 모드에서 throw 시 아래 legacy 마이그레이션의 raw getItem 이 catch 밖에서 재throw
+// → useState 초기화(렌더 경로)에서 화이트스크린. safeLocalStorage 로 그 클래스를 제거.
 const load = (): ProgressRecord => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = safeLocalStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed?.completedLessons)) {
@@ -46,13 +50,13 @@ const load = (): ProgressRecord => {
       }
     }
   } catch {
-    /* fall through */
+    /* fall through (JSON.parse 실패 등) */
   }
   // Legacy v1 → v2 migration (per-page localStorage flags).
   const legacy = TUTORIAL_CHAPTERS.flatMap((c) => c.lessons)
-    .filter((l) => localStorage.getItem(LEGACY_PAGE_PREFIX + l.id) === "true")
+    .filter((l) => safeLocalStorage.getItem(LEGACY_PAGE_PREFIX + l.id) === "true")
     .map((l) => l.id);
-  const welcomeShown = localStorage.getItem(LEGACY_FLAG) === "true";
+  const welcomeShown = safeLocalStorage.getItem(LEGACY_FLAG) === "true";
   return {
     completedLessons: legacy,
     lastUpdated: legacy.length > 0 ? new Date().toISOString() : "",
@@ -61,11 +65,7 @@ const load = (): ProgressRecord => {
 };
 
 const save = (rec: ProgressRecord) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(rec));
-  } catch {
-    /* quota errors ignored */
-  }
+  safeLocalStorage.setItem(STORAGE_KEY, JSON.stringify(rec));
 };
 
 // tutorial_completions.tour_id 는 'feature_<lesson_id>' 형식 (useTutorial.awardCompletion).

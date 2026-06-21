@@ -8,6 +8,7 @@ import TutorialOverlay from "@/components/TutorialOverlay";
 import { usePageTutorial } from "@/hooks/usePageTutorial";
 import { useQuery } from "@tanstack/react-query";
 import { MessageSquare, Flame, Image as ImageIcon, Search, Bell } from "lucide-react";
+import { safeSessionStorage } from "@/lib/safeSessionStorage";
 import { relativeTime } from "@/lib/relativeTime";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
@@ -146,9 +147,9 @@ const Community = () => {
     if (weddingSettings.marital_history === "remarriage") return;
     if (typeof window === "undefined") return;
     const GUARD = `dewy:signal-bumped:remarriage`;
-    if (sessionStorage.getItem(GUARD) === "1") return;
+    if (safeSessionStorage.getItem(GUARD) === "1") return;
     bumpSignal(SIGNAL_KEYS.remarriageInterest);
-    sessionStorage.setItem(GUARD, "1");
+    safeSessionStorage.setItem(GUARD, "1");
   }, [selectedCategory, weddingSettings.marital_history]);
   const tutorial = usePageTutorial("community");
 
@@ -162,7 +163,7 @@ const Community = () => {
     setStyleAutoApplied(true);
 
     const NOTICE_KEY = "dewy:community:auto-style-notice";
-    if (typeof window !== "undefined" && sessionStorage.getItem(NOTICE_KEY) !== "1") {
+    if (safeSessionStorage.getItem(NOTICE_KEY) !== "1") {
       const label =
         myStyle === "general" ? "일반 결혼식"
         : myStyle === "small" ? "스몰웨딩"
@@ -171,7 +172,7 @@ const Community = () => {
         description: "상단 필터 버튼으로 다른 스타일 글도 볼 수 있어요.",
         duration: 4000,
       });
-      sessionStorage.setItem(NOTICE_KEY, "1");
+      safeSessionStorage.setItem(NOTICE_KEY, "1");
     }
   }, [myStyle, styleAutoApplied]);
 

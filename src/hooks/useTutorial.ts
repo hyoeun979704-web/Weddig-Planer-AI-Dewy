@@ -9,6 +9,7 @@ import {
 } from "@/data/tutorialChapters";
 import { tutorialActive } from "@/lib/tutorialActive";
 import { useAuth } from "@/contexts/AuthContext";
+import { safeLocalStorage } from "@/lib/safeLocalStorage";
 
 // Coachmark step shape kept identical for backwards compatibility with
 // TutorialOverlay, which renders `targetSelector` + `position`.
@@ -48,7 +49,8 @@ export const useTutorial = () => {
   const [tourId, setTourId] = useState<string | null>(null);
   const startedPathRef = useRef<string | null>(null);
 
-  const hasSeen = localStorage.getItem(TUTORIAL_SEEN_KEY) === "true";
+  // safeLocalStorage — hook 본문(매 렌더)이라 raw 접근 시 iOS 프라이빗 모드에서 화이트스크린.
+  const hasSeen = safeLocalStorage.getItem(TUTORIAL_SEEN_KEY) === "true";
 
   // 활성 동안 전역 신호 등록 — 다른 화면 요소(결혼정보 모달 등)가 튜토리얼에
   // 양보하도록. 활성 구간마다 enter/leave 가 균형을 이룬다.
@@ -157,7 +159,7 @@ export const useTutorial = () => {
     // 라우트 가드 ref 초기화 — 안 하면 다른 페이지에서 다음 튜토리얼을 시작할 때
     // 옛 경로와 불일치로 즉시 닫히는 버그. (route-change effect 참고)
     startedPathRef.current = null;
-    localStorage.setItem(TUTORIAL_SEEN_KEY, "true");
+    safeLocalStorage.setItem(TUTORIAL_SEEN_KEY, "true");
     const finishedTourId = tourId;
     setTourId(null);
     if (!completed || !finishedTourId) return;
@@ -167,14 +169,14 @@ export const useTutorial = () => {
     // accurate even when the Supabase RPC is unavailable (e.g. anonymous
     // browsing). useTutorialProgress reads from localStorage.
     try {
-      const raw = localStorage.getItem("dewy:tutorial-progress:v2");
+      const raw = safeLocalStorage.getItem("dewy:tutorial-progress:v2");
       const parsed = raw ? JSON.parse(raw) : { completedLessons: [], welcomeShown: false };
       const completedLessons: string[] = Array.isArray(parsed.completedLessons)
         ? parsed.completedLessons
         : [];
       if (!completedLessons.includes(finishedTourId)) {
         completedLessons.push(finishedTourId);
-        localStorage.setItem(
+        safeLocalStorage.setItem(
           "dewy:tutorial-progress:v2",
           JSON.stringify({
             ...parsed,

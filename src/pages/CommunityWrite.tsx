@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { checkReferralMilestones } from "@/lib/referralEvent";
 import { supabase } from "@/integrations/supabase/client";
+import { safeLocalStorage } from "@/lib/safeLocalStorage";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import VendorTagPicker from "@/components/community/VendorTagPicker";
@@ -52,7 +53,7 @@ const CommunityWrite = () => {
   // 임시 저장된 작성 내용 복원 (마운트 시 1회)
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(DRAFT_KEY);
+      const raw = safeLocalStorage.getItem(DRAFT_KEY);
       if (raw) {
         const d = JSON.parse(raw);
         if (d.selectedCategory) setSelectedCategory(d.selectedCategory);
@@ -68,11 +69,11 @@ const CommunityWrite = () => {
   useEffect(() => {
     if (!draftLoaded) return;
     if (!title && !content && !selectedCategory && !weddingStyle) {
-      localStorage.removeItem(DRAFT_KEY);
+      safeLocalStorage.removeItem(DRAFT_KEY);
       return;
     }
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ selectedCategory, weddingStyle, title, content }));
+      safeLocalStorage.setItem(DRAFT_KEY, JSON.stringify({ selectedCategory, weddingStyle, title, content }));
     } catch { /* 저장 실패 무시 */ }
   }, [draftLoaded, selectedCategory, weddingStyle, title, content]);
 
@@ -197,7 +198,7 @@ const CommunityWrite = () => {
         if (linkErr) console.warn("vendor link failed:", linkErr.message);
       }
 
-      localStorage.removeItem(DRAFT_KEY);
+      safeLocalStorage.removeItem(DRAFT_KEY);
       // 친구추천 이벤트 미션(커뮤니티 글) 체크 — 초대 가입자면 완료 시 양쪽 하트 지급.
       void checkReferralMilestones();
       toast.success("게시글이 작성되었습니다.");

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { joinRegion } from "@/lib/placeMappers";
+import { safeLocalStorage } from "@/lib/safeLocalStorage";
 
 interface SearchResult {
   id: string;
@@ -67,9 +68,11 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
 
   // Load recent searches from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("recentSearches");
-    if (saved) {
-      setRecentSearches(JSON.parse(saved));
+    try {
+      const saved = safeLocalStorage.getItem("recentSearches");
+      if (saved) setRecentSearches(JSON.parse(saved));
+    } catch {
+      /* 손상된 캐시 무시 — iOS 저장소 throw 는 safeLocalStorage 가 차단 */
     }
   }, []);
 
@@ -77,7 +80,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
   const saveToRecent = (query: string) => {
     const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
     setRecentSearches(updated);
-    localStorage.setItem("recentSearches", JSON.stringify(updated));
+    safeLocalStorage.setItem("recentSearches", JSON.stringify(updated));
   };
 
   // ILIKE 와일드카드(%, _, \) 이스케이프 — 사용자 입력이 의도치 않게 와일드카드로 동작하지
@@ -224,7 +227,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
 
   const clearRecentSearches = () => {
     setRecentSearches([]);
-    localStorage.removeItem("recentSearches");
+    safeLocalStorage.removeItem("recentSearches");
   };
 
   if (!isOpen) return null;

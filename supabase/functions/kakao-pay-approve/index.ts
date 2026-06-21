@@ -261,8 +261,24 @@ Deno.serve(async (req) => {
       approved_at: approveData.approved_at || new Date().toISOString(),
       raw_response: approveData,
     });
-    if (insertError && !insertError.message?.includes("duplicate")) {
-      console.error("payments insert failed:", insertError);
+    if (insertError) {
+      // UNIQUE(payment_key) 위반 = 동시 승인 호출이 먼저 적립한 것 → 여기서 return 해서
+      // 아래 구독 upsert + earn_hearts 재실행을 막는다. (early-bird 하트는 멱등 가드가 없어
+      // 그냥 통과하면 **하트가 두 번 발급**되던 P1 레이스. 위 existing 체크를 두 호출이 동시에
+      // 통과해도 insert 단계에서 한쪽만 성공하므로 여기서 차단.) — charge-approve 와 동일 패턴.
+      const isDuplicate =
+        (insertError as { code?: string }).code === "23505" ||
+        insertError.message?.includes("duplicate");
+      if (isDuplicate) {
+        console.warn("payments insert (duplicate, concurrent approve):", insertError.message);
+        return new Response(
+          JSON.stringify({ success: true, alreadyProcessed: true, message: "이미 처리된 결제입니다." }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      // 비-중복 오류: 결제 레코드 저장은 실패했지만 카카오 승인은 이미 완료 → 구독 활성화는
+      // 진행(결제했는데 미활성되는 것 방지), 단 명시적으로 로깅.
+      console.error("payments insert failed (non-duplicate):", insertError);
     }
 
     const now = new Date();

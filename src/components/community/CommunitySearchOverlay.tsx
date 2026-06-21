@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { escapeLikePattern, quoteForOr } from "@/lib/postgrestEscape";
+import { safeLocalStorage } from "@/lib/safeLocalStorage";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -138,9 +139,11 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
 
   // Load recent searches from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      setRecentSearches(JSON.parse(saved));
+    try {
+      const saved = safeLocalStorage.getItem(STORAGE_KEY);
+      if (saved) setRecentSearches(JSON.parse(saved));
+    } catch {
+      /* 손상된 캐시 무시 */
     }
   }, []);
 
@@ -150,7 +153,7 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
     if (!trimmed) return;
     const updated = [trimmed, ...recentSearches.filter(s => s !== trimmed)].slice(0, 8);
     setRecentSearches(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    safeLocalStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   };
 
   // Search posts with debounce
@@ -220,14 +223,14 @@ const CommunitySearchOverlay = ({ isOpen, onClose }: CommunitySearchOverlayProps
 
   const clearRecentSearches = () => {
     setRecentSearches([]);
-    localStorage.removeItem(STORAGE_KEY);
+    safeLocalStorage.removeItem(STORAGE_KEY);
   };
 
   const removeRecentSearch = (search: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const updated = recentSearches.filter(s => s !== search);
     setRecentSearches(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    safeLocalStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   };
 
   const formatDate = (dateString: string) => {

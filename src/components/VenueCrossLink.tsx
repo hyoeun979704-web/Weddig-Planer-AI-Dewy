@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Sparkles, X } from "lucide-react";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { safeLocalStorage } from "@/lib/safeLocalStorage";
 
 type Variant = "venues" | "invitation-venues";
 
@@ -20,7 +21,7 @@ const VenueCrossLink = ({ variant }: { variant: Variant }) => {
     variant === "venues" ? "venues-style-suggest-dismissed" : "";
   const [styleSuggestDismissed, setStyleSuggestDismissed] = useState(() => {
     if (typeof window === "undefined" || !dismissKey) return false;
-    return window.localStorage.getItem(dismissKey) === "1";
+    return safeLocalStorage.getItem(dismissKey) === "1";
   });
 
   const showStyleSuggest =
@@ -31,7 +32,7 @@ const VenueCrossLink = ({ variant }: { variant: Variant }) => {
   const handleDismiss = () => {
     if (dismissKey) {
       try {
-        window.localStorage.setItem(dismissKey, "1");
+        safeLocalStorage.setItem(dismissKey, "1");
       } catch {
         // localStorage 사용 불가시 무시 (현세션 한정으로만 닫힘)
       }
