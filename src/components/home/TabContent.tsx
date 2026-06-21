@@ -5,6 +5,7 @@ import HomeCategoryGrid from "./HomeCategoryGrid";
 import PersonaDashboard from "./PersonaDashboard";
 import HomeQuickLinks from "./HomeQuickLinks";
 import HomeOnboardingCard from "./HomeOnboardingCard";
+import TasteSeedCard from "./TasteSeedCard";
 import BudgetVsAverageCard from "./BudgetVsAverageCard";
 import RecommendedSection from "./RecommendedSection";
 import PersonaRecommendationRows from "./PersonaRecommendationRows";
@@ -40,6 +41,8 @@ const TabContent = ({ activeTab }: TabContentProps) => {
         {/* 현황(PersonaDashboard) 바로 뒤 행동 단축 — 보드·견적·비교(혼합형 홈 순서). */}
         <HomeQuickLinks />
         <HomeOnboardingCard />
+        {/* 온보딩 후 시각취향 seed 진입(I1) — 취향이 쌓이면 자동 숨김. */}
+        <TasteSeedCard />
         <BudgetVsAverageCard />
         <CompactBannerCarousel />
         <HomeCategoryGrid />
