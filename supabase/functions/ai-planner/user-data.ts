@@ -176,8 +176,18 @@ export function buildUserContext(userData: UserData): string {
       personaBits.push(`식 형태 세분: ${desc}`);
     }
     if (ws.persona_mode) {
+      // I5a — 성향형 페르소나(budget/designer/first_timer/자녀동반 재혼)는 위 role/country/
+      // parents/ceremony 신호로 톤이 잡히지 않아 자동분류 문자열만 가던 갭(persona-sim AI백엔드 ❌).
+      // 해당 모드에 한해 LLM 톤 지침을 명시 주입. (ceremony_type 맵과 동일한 서버측 인라인 패턴.)
+      const personaTone: Record<string, string> = {
+        budget_analytic: "예산 최적화·가성비·추가금 투명성을 우선. 숫자·비교 중심으로 답하고 감성 과잉은 자제.",
+        designer_late: "디자이너·하우스·컨셉 중심의 트렌디·에디토리얼 톤. 만혼이라 효율과 취향을 모두 존중.",
+        first_timer: "결혼 준비가 처음 — 용어를 풀어주고 단계별 What→How로 안내, 막막함을 줄이는 친절한 톤. 한 번에 너무 많은 정보를 쏟지 말 것.",
+        remarriage_with_children: "재혼 + 자녀 동반 — 작은 가족식·자녀 동반 식순·정서 배려를 우선하고 표준 양가/폐백을 강요하지 말 것. 다정한 톤.",
+      };
+      const tone = personaTone[ws.persona_mode];
       personaBits.push(
-        `자동 분류 페르소나: ${ws.persona_mode} (위 신호들의 우선순위 결합 결과 — 톤·미션·큐레이션 분기의 단일 anchor로 사용)`
+        `자동 분류 페르소나: ${ws.persona_mode} (위 신호들의 우선순위 결합 결과 — 톤·미션·큐레이션 분기의 단일 anchor로 사용)${tone ? `\n  · 톤 지침: ${tone}` : ""}`
       );
     }
     if (personaBits.length > 0) {
