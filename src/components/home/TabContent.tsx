@@ -7,6 +7,7 @@ import HomeQuickLinks from "./HomeQuickLinks";
 import HomeOnboardingCard from "./HomeOnboardingCard";
 import BudgetVsAverageCard from "./BudgetVsAverageCard";
 import RecommendedSection from "./RecommendedSection";
+import PersonaRecommendationRows from "./PersonaRecommendationRows";
 import InvitationTemplateSection from "./InvitationTemplateSection";
 import StudioGallery from "./StudioGallery";
 import TipsSection from "./TipsSection";
@@ -42,7 +43,8 @@ const TabContent = ({ activeTab }: TabContentProps) => {
         <BudgetVsAverageCard />
         <CompactBannerCarousel />
         <HomeCategoryGrid />
-        <RecommendedSection />
+        {/* 단일 추천 행 → 페르소나별 카테고리 행 스택(Netflix식)으로 교체. */}
+        <PersonaRecommendationRows />
         <InvitationTemplateSection />
         <TipsSection activeTab={activeTab} />
         <CommunityChatterSection />

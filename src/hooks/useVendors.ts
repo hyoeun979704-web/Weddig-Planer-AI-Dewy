@@ -71,6 +71,67 @@ const VENDOR_WITH_CATEGORY_SELECT = `
   place_honeymoons(*)
 `;
 
+// 지역 우선 큐레이션 — city 정확 일치(부분문자열 매칭 금지: '충남' vs '충청남도'
+// 회귀 방지)를 앞으로 stable 정렬. SQL 이 이미 매긴 파트너>충실도>평점 순서는 각
+// 지역 그룹 안에서 보존된다(map→sort→map 로 원래 인덱스 tie-break).
+function sortRegionFirst<T extends { city: string | null }>(rows: T[], region: string): T[] {
+  return rows
+    .map((r, i) => ({ r, i }))
+    .sort((a, b) => {
+      const am = a.r.city === region ? 0 : 1;
+      const bm = b.r.city === region ? 0 : 1;
+      return am - bm || a.i - b.i;
+    })
+    .map(({ r }) => r);
+}
+
+// 카테고리(한글 라벨 또는 slug)로 vendors 를 조회하는 순수 fetcher. useVendors 와
+// 홈 페르소나 추천 행(usePersonaRows)이 공유한다. limit 지정 시 상위 N개만 필요한
+// 경우(추천 행)라 SQL 풀을 제한하되, region 재정렬이 의미 있도록 넉넉히(×4) 가져온
+// 뒤 잘라낸다. limit 미지정이면 기존 useVendors 와 100% 동일(전량 조회 후 지역 정렬).
+export async function fetchVendorsByCategory(
+  categoryType?: string,
+  region?: string | null,
+  limit?: number,
+): Promise<Vendor[]> {
+  // 카테고리가 지정되면 그 카테고리의 detail 테이블 하나만 join (9→1).
+  // 카드 렌더(buildVendorInfoLines/collectStyleTags)는 place.category 에 해당하는
+  // 테이블만 읽으므로 나머지 8개 join 은 행마다 순수 over-fetch 였다. eq("category")
+  // 로 단일 카테고리만 반환되므로 narrowing 은 회귀 없이 안전. 미지정/미매핑(혼합
+  // 목록)일 때만 전체 join 으로 폴백. slug 를 직접 넘기면 매핑 fallback 으로 동작.
+  const placeCat = categoryType
+    ? KOREAN_TO_PLACE_CATEGORY[categoryType] || categoryType
+    : undefined;
+  const cardTable = placeCat ? CATEGORY_CARD_TABLE[placeCat] : undefined;
+  // detail 테이블이 없는 카테고리(기타 등)는 join 없이 places 만 — 9-join over-fetch 방지.
+  const selectClause = cardTable
+    ? `*, ${cardTable}(*)`
+    : placeCat
+      ? "*"
+      : VENDOR_WITH_CATEGORY_SELECT;
+
+  let query = supabase
+    .from("places")
+    .select(selectClause)
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    // 파트너 등급(베프>프렌즈>일반)은 카테고리 필터 안에서의 정렬일 뿐
+    .order("partner_rank", { ascending: false })
+    .order("data_completeness", { ascending: false })
+    .order("avg_rating", { ascending: false, nullsFirst: false });
+
+  if (placeCat) query = query.eq("category", placeCat);
+  // region 재정렬은 클라에서 하므로, limit 시 그 재정렬이 의미 있도록 풀을 넉넉히 잡는다.
+  if (limit) query = query.limit(region ? limit * 4 : limit);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  let rows = (data ?? []) as unknown as Parameters<typeof placeToVendor>[0][];
+  if (region) rows = sortRegionFirst(rows, region);
+  if (limit) rows = rows.slice(0, limit);
+  return rows.map(placeToVendor);
+}
+
 // Fetch vendors by category (Korean label).
 // region(예식 지역, places.city 와 동일한 정식 명칭)이 주어지면 그 지역 업체를 목록
 // 상단으로 끌어올린다(소프트 큐레이션). 홈 추천(useRecommendedVendors)은 region 으로
@@ -80,55 +141,7 @@ const VENDOR_WITH_CATEGORY_SELECT = `
 export const useVendors = (categoryType?: string, region?: string | null) => {
   return useQuery({
     queryKey: ["vendors", categoryType, region ?? null],
-    queryFn: async (): Promise<Vendor[]> => {
-      // 카테고리가 지정되면 그 카테고리의 detail 테이블 하나만 join (9→1).
-      // 카드 렌더(buildVendorInfoLines/collectStyleTags)는 place.category 에
-      // 해당하는 테이블만 읽으므로 나머지 8개 join 은 행마다 순수 over-fetch 였다.
-      // eq("category") 로 단일 카테고리만 반환되므로 narrowing 은 회귀 없이 안전.
-      // 카테고리 미지정/미매핑(혼합 목록)일 때만 전체 join 으로 폴백.
-      const placeCat = categoryType
-        ? KOREAN_TO_PLACE_CATEGORY[categoryType] || categoryType
-        : undefined;
-      const cardTable = placeCat ? CATEGORY_CARD_TABLE[placeCat] : undefined;
-      // detail 테이블이 없는 카테고리(기타 등)는 join 없이 places 만 — 9-join over-fetch 방지.
-      const selectClause = cardTable
-        ? `*, ${cardTable}(*)`
-        : placeCat
-          ? "*"
-          : VENDOR_WITH_CATEGORY_SELECT;
-
-      let query = supabase
-        .from("places")
-        .select(selectClause)
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        // 파트너 등급(베프>프렌즈>일반)은 카테고리 필터 안에서의 정렬일 뿐
-        .order("partner_rank", { ascending: false })
-        .order("data_completeness", { ascending: false })
-        .order("avg_rating", { ascending: false, nullsFirst: false });
-
-      if (placeCat) {
-        query = query.eq("category", placeCat);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      let rows = (data ?? []) as unknown as Parameters<typeof placeToVendor>[0][];
-      // 지역 우선 큐레이션 — city 정확 일치(부분문자열 매칭 금지: '충남' vs '충청남도'
-      // 회귀 방지)를 앞으로 stable 정렬. SQL 이 이미 매긴 파트너>충실도>평점 순서는
-      // 각 지역 그룹 안에서 보존된다.
-      if (region) {
-        rows = rows
-          .map((r, i) => ({ r, i }))
-          .sort((a, b) => {
-            const am = a.r.city === region ? 0 : 1;
-            const bm = b.r.city === region ? 0 : 1;
-            return am - bm || a.i - b.i;
-          })
-          .map(({ r }) => r);
-      }
-      return rows.map(placeToVendor);
-    },
+    queryFn: () => fetchVendorsByCategory(categoryType, region),
   });
 };
 
