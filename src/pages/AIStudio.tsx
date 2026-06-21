@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -8,6 +8,8 @@ import StudioBannerCard from "@/components/studio/StudioBannerCard";
 import WaitlistSignupSheet from "@/components/studio/WaitlistSignupSheet";
 import PageTutorial from "@/components/tutorial/PageTutorial";
 import Seo from "@/components/Seo";
+import { usePersonaInsights } from "@/hooks/usePersonaInsights";
+import { shouldHideWeddingCeremony } from "@/lib/weddingPersona";
 
 interface StudioCard {
   id: string;
@@ -16,6 +18,12 @@ interface StudioCard {
   status: "active" | "coming_soon" | "coming_v2" | "coming_v3";
   href?: string;
   previewImage?: string;
+  /**
+   * 예식이 전제인 카드(스드메 완성본·청첩장·식전영상). 노웨딩(no_wedding_travel)·스냅(snap_only)
+   * 페르소나에선 숨긴다. 단, 드레스·메이크업·헤어·촬영·컨설팅 같은 *스타일링* 카드는 태그하지
+   * 않는다 — snap_only 는 스냅 촬영용으로 그것들을 원하므로, 일괄 숨기면 빈 스튜디오(dead-end)가 된다.
+   */
+  requiresCeremony?: boolean;
 }
 
 const cards: StudioCard[] = [
@@ -34,6 +42,7 @@ const cards: StudioCard[] = [
     status: "active",
     href: "/ai-studio/sdm-preview",
     previewImage: "/ai-studio-previews/banner-sdm.webp",
+    requiresCeremony: true, // 장소(예식장) 전제 완성본
   },
   {
     id: "dress-tour",
@@ -66,12 +75,14 @@ const cards: StudioCard[] = [
     status: "active",
     href: "/invitation/new?format=paper",
     previewImage: "/ai-studio-previews/banner-invitation.webp",
+    requiresCeremony: true, // 청첩장 = 예식 전제
   },
   {
     id: "mobile-invitation",
     title: "간편 모바일 청첩장",
     description: "정보 입력 + 공유 링크 + QR 코드까지 한 번에",
     status: "coming_soon",
+    requiresCeremony: true, // 청첩장 = 예식 전제
   },
   {
     id: "wedding-photo",
@@ -84,6 +95,7 @@ const cards: StudioCard[] = [
     title: "특별한 식전 영상",
     description: "전문 디자이너가 직접 편집해드려요",
     status: "coming_v3",
+    requiresCeremony: true, // 식전 영상 = 예식 전제
   },
 ];
 
@@ -98,6 +110,15 @@ const AIStudio = () => {
   const location = useLocation();
   const activeTab: CategoryTab = "ai-studio";
   const [waitlistCard, setWaitlistCard] = useState<StudioCard | null>(null);
+  const { personaMode, isLoaded } = usePersonaInsights();
+
+  // I2a — 노웨딩·스냅 페르소나엔 예식 전제 카드(스드메 완성본·청첩장·식전영상)만 숨긴다.
+  // 스타일링 카드는 유지하므로 빈 스튜디오가 되지 않는다. 로드 전(persona_mode null→standard_bride)
+  // 이나 비해당 페르소나는 전부 노출(기본 안전). 분류 후에만 필터가 발동한다.
+  const visibleCards = useMemo(
+    () => cards.filter((c) => !(c.requiresCeremony && isLoaded && shouldHideWeddingCeremony(personaMode))),
+    [personaMode, isLoaded],
+  );
 
   const handleTabChange = (href: string) => {
     navigate(href);
@@ -134,7 +155,7 @@ const AIStudio = () => {
         </button>
         {/* 모바일=1열 전체폭 배너, 데스크톱(≥1024px, 칼럼 960px)=2열로 채워 가로 늘어짐 방지 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 px-4 py-5">
-          {cards.map((card, index) => {
+          {visibleCards.map((card, index) => {
             const isActive = card.status === "active" && !!card.href;
             return (
               <StudioBannerCard
