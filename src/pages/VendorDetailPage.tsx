@@ -29,7 +29,9 @@ const CATEGORY_LABEL: Record<string, string> = {
   tailor_shop: "예복",
   honeymoon: "허니문",
   appliance: "혼수",
+  jewelry: "예물",
   invitation_venue: "청첩장",
+  etc: "기타",
 };
 
 const FAVORITE_TYPE: Record<string, "venue" | "studio" | "hanbok" | "suit" | "honeymoon" | "appliance" | "invitation_venues"> = {
@@ -555,7 +557,8 @@ function TailorExtras({ place }: { place: LegacyDetail }) {
     place.fitting_count != null || place.custom_available != null ||
     place.rental_only != null || place.rental_includes_alterations != null ||
     place.accessories_included != null || place.production_days != null;
-  if (!has) return null;
+  // 구조화 필드가 비어 있으면(아직 미입력 예복 업체) 빈 화면 대신 소개·서비스 폴백을 보여준다.
+  if (!has) return <EtcExtras place={place} />;
   return (
     <div className="space-y-3">
       <h3 className="font-bold text-sm">예복 정보</h3>

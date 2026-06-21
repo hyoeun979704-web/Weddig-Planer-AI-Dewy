@@ -9,8 +9,8 @@ import { Lock } from "lucide-react";
 // 잠금 카드 폴백 배경(배너 미제작분). colorIndex 1:1 대응.
 const PALETTE = [
   "from-[#FDE2E8] to-[#FBD0DD]", // 0 컨설팅 — 핑크
-  "from-[#DCEBFB] to-[#C7DCF7]", // 1 드레스 — 블루
-  "from-[#FBEFC9] to-[#F6E3A8]", // 2 스드메 — 버터
+  "from-[#FBEFC9] to-[#F6E3A8]", // 1 스드메 — 버터
+  "from-[#DCEBFB] to-[#C7DCF7]", // 2 드레스 — 블루
   "from-[#EAE3FB] to-[#DCD0F7]", // 3 메이크업 — 라벤더
   "from-[#E3F1C9] to-[#D2E9AE]", // 4 헤어 — 그린
   "from-[#FBE9D6] to-[#F6DCC0]", // 5 종이청첩장 — 크림
@@ -77,10 +77,10 @@ const StudioBannerCard = ({
       )}
 
       {/* 좌측 텍스트(배너의 빈 여백 위) */}
-      <div className="relative z-10 flex h-full max-w-[46%] flex-col justify-center px-5 py-4">
-        <h3 className="text-[17px] font-extrabold leading-snug text-[#3b2b32] break-keep line-clamp-2">{title}</h3>
+      <div className="relative z-10 flex h-full max-w-[56%] flex-col justify-center px-5 py-4">
+        <h3 className="text-[17px] font-extrabold leading-snug text-[#3b2b32] break-keep line-clamp-3">{title}</h3>
         {description && (
-          <p className="mt-1.5 text-[12px] leading-snug text-[#6b5860] line-clamp-3 break-keep">{description}</p>
+          <p className="mt-1.5 text-[12px] leading-snug text-[#6b5860] line-clamp-2 break-keep">{description}</p>
         )}
         <p className={`mt-2.5 text-[12px] font-bold ${locked ? "text-[#8a7a80]" : "text-primary"}`}>{ctaLabel}</p>
       </div>

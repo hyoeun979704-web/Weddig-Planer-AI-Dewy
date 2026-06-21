@@ -53,10 +53,12 @@ const DETAIL_SCHEMA: Record<string, FieldDef[]> = {
   tailor_shop: [
     { key: "suit_styles", label: "예복 유형", type: "multi", options: ["턱시도", "정장", "예복", "캐주얼", "프리미엄"] },
     { key: "custom_available", label: "맞춤 제작", type: "bool" },
+    { key: "rental_only", label: "대여 전용", type: "bool" },
     { key: "fitting_count", label: "피팅 횟수", type: "number" },
     { key: "fabric_options", label: "원단", type: "multi", options: ["울", "혼방", "린넨", "수입원단"] },
     { key: "production_days", label: "제작 소요(일)", type: "number" },
     { key: "size_options", label: "사이즈", type: "multi", options: ["표준", "빅사이즈", "키즈", "맞춤"] },
+    { key: "rental_includes_alterations", label: "수선 포함", type: "bool" },
   ],
   invitation_venue: [
     { key: "venue_types", label: "장소 유형", type: "multi", options: ["레스토랑", "한정식", "카페", "파인다이닝", "호텔레스토랑"] },
