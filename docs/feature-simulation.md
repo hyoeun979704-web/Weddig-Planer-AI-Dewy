@@ -80,7 +80,7 @@
 > 이 PR에서는 (T) 표시된 튜토리얼 항목만 실제 구현. 나머지는 백로그.
 
 ### 3.1 튜토리얼 (T·이번 PR 본 영역)
-- **현재 페인포인트**:
+- **기존(개선 전) 페인포인트** — 아래 "개선(이번 PR)"에서 해소됨(셀렉터 현황: AIPlanner에 `ai-header`/`ai-suggestions`/`ai-input` 존재, 잘못된 `nav-ai` 단계 제거 완료):
   - `useTutorial.ts`의 `APP_TOUR_STEPS`가 `nav-ai` 셀렉터를 참조하지만 BottomNav에는 AI 탭이 없음 → 빈 강조 박스, 툴팁만 떠 있음.
   - AIPlanner 페이지의 가이드는 `ai-header`/`ai-suggestions`/`ai-input` 셀렉터를 참조하지만 페이지에 해당 attr이 **하나도 없음** → 3단계 모두 빈 화면 코치마크.
   - 가이드 목록이 평평한 리스트 (`FEATURE_GUIDES`). 어디서 시작해야 하는지 직관이 없음.
