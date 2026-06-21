@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Seo from "@/components/Seo";
+import { safeLocalStorage } from "@/lib/safeLocalStorage";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useBudget } from "@/hooks/useBudget";
@@ -64,7 +65,7 @@ const Schedule = () => {
   const tutorial = usePageTutorial("schedule");
   const weddingInfoPrompt = useWeddingInfoPrompt();
   const [tidyTipDismissed, setTidyTipDismissed] = useState<boolean>(
-    () => typeof window !== "undefined" && localStorage.getItem("dewy:schedule:tidy-tip-dismissed") === "1"
+    () => safeLocalStorage.getItem("dewy:schedule:tidy-tip-dismissed") === "1"
   );
 
   const days = daysUntilWedding(weddingSettings.wedding_date);
@@ -92,7 +93,7 @@ const Schedule = () => {
   const showTidyTip = !tidyTipDismissed && incompleteTemplateCount >= 20;
 
   const dismissTidyTip = () => {
-    localStorage.setItem("dewy:schedule:tidy-tip-dismissed", "1");
+    safeLocalStorage.setItem("dewy:schedule:tidy-tip-dismissed", "1");
     setTidyTipDismissed(true);
   };
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { safeLocalStorage } from "@/lib/safeLocalStorage";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +50,7 @@ const LAST_CATEGORY_KEY = "dewy.budget.lastCategory";
 
 const getRememberedCategory = (allowed: BudgetCategory[]): BudgetCategory => {
   if (typeof window === "undefined") return allowed[0] ?? "venue";
-  const stored = window.localStorage.getItem(LAST_CATEGORY_KEY) as BudgetCategory | null;
+  const stored = safeLocalStorage.getItem(LAST_CATEGORY_KEY) as BudgetCategory | null;
   return stored && allowed.includes(stored) ? stored : (allowed[0] ?? "venue");
 };
 
@@ -122,7 +123,7 @@ export default function BudgetAddSheet({
 
   const commitSave = () => {
     if (typeof window !== "undefined" && !editItem) {
-      window.localStorage.setItem(LAST_CATEGORY_KEY, category);
+      safeLocalStorage.setItem(LAST_CATEGORY_KEY, category);
     }
     onSave({
       category, title, amount, paid_by: paidBy,

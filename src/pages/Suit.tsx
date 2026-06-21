@@ -7,6 +7,7 @@ import CategoryHeroBanner from "@/components/CategoryHeroBanner";
 import CategoryFilterBar from "@/components/CategoryFilterBar";
 import CategoryGrid from "@/components/CategoryGrid";
 import ExcludedCategoryBanner from "@/components/ExcludedCategoryBanner";
+import { safeSessionStorage } from "@/lib/safeSessionStorage";
 import VenueAnchorBanner from "@/components/persona/VenueAnchorBanner";
 import { useCategoryFilterStore } from "@/stores/useCategoryFilterStore";
 import { CategoryItem } from "@/hooks/useCategoryData";
@@ -31,9 +32,9 @@ const Suit = () => {
     if (weddingSettings.role === "groom") return; // 이미 신랑이면 신호 불필요.
     if (typeof window === "undefined") return;
     const GUARD = `dewy:signal-bumped:groom-role`;
-    if (sessionStorage.getItem(GUARD) === "1") return;
+    if (safeSessionStorage.getItem(GUARD) === "1") return;
     bumpSignal(SIGNAL_KEYS.groomRoleHint);
-    sessionStorage.setItem(GUARD, "1");
+    safeSessionStorage.setItem(GUARD, "1");
   }, [weddingSettings.role]);
 
   const handleItemClick = (item: CategoryItem) => { navigate(`/suit/${item.id}`); };
