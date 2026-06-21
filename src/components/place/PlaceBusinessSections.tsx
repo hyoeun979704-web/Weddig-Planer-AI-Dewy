@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Package, Image as ImageIcon, UtensilsCrossed, X, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,31 +77,37 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
     return () => window.removeEventListener("keydown", onKey);
   }, [lightbox]);
 
+  // 데이터 파생(그룹핑·필터옵션)은 products/media/albums 에만 의존 → useMemo 로 고정.
+  // (라이트박스·필터 등 다른 state 변경 시 매번 Map 재생성·재그룹핑하던 렌더 폭주 제거.)
+  // 주의: hook 은 조기 return 보다 위에서 무조건 호출(react-hooks/rules-of-hooks).
+  const { productName, albumById, photosByAlbum, orderedAlbumKeys, shownAlbums, styleOpts, venueOpts, productOpts, hasFilters } = useMemo(() => {
+    const productName = new Map(products.map((p) => [p.id, p.name]));
+    const albumById = new Map(albums.map((a) => [a.id, a]));
+
+    // 포트폴리오 그룹핑: 앨범 있는 사진은 앨범별로, 없으면 "기타". 앨범 등록 순서 유지.
+    const photosByAlbum = new Map<string | null, MediaRow[]>();
+    for (const m of media) {
+      const key = m.album_id ?? null;
+      if (!photosByAlbum.has(key)) photosByAlbum.set(key, []);
+      photosByAlbum.get(key)!.push(m);
+    }
+    const orderedAlbumKeys: (string | null)[] = [
+      ...albums.filter((a) => photosByAlbum.has(a.id)).map((a) => a.id as string | null),
+      ...(photosByAlbum.has(null) ? [null] : []),
+    ];
+
+    // 필터 옵션 — 사진이 있는 앨범 기준(스타일·식장·패키지).
+    const shownAlbums = albums.filter((a) => photosByAlbum.has(a.id));
+    const styleOpts = Array.from(new Set(shownAlbums.flatMap((a) => a.style_tags ?? []))).slice(0, 12);
+    const venueOpts = Array.from(new Set(shownAlbums.map((a) => a.venue_name).filter(Boolean) as string[])).slice(0, 12);
+    const productOpts = Array.from(
+      new Map(shownAlbums.filter((a) => a.product_id).map((a) => [a.product_id as string, productName.get(a.product_id as string) ?? ""])).entries(),
+    ).filter(([, n]) => n) as [string, string][];
+    const hasFilters = shownAlbums.length > 1 && styleOpts.length + venueOpts.length + productOpts.length > 0;
+    return { productName, albumById, photosByAlbum, orderedAlbumKeys, shownAlbums, styleOpts, venueOpts, productOpts, hasFilters };
+  }, [products, media, albums]);
+
   if (products.length === 0 && media.length === 0) return null;
-
-  const productName = new Map(products.map((p) => [p.id, p.name]));
-  const albumById = new Map(albums.map((a) => [a.id, a]));
-
-  // 포트폴리오 그룹핑: 앨범 있는 사진은 앨범별로, 없으면 "기타". 앨범 등록 순서 유지.
-  const photosByAlbum = new Map<string | null, MediaRow[]>();
-  for (const m of media) {
-    const key = m.album_id ?? null;
-    if (!photosByAlbum.has(key)) photosByAlbum.set(key, []);
-    photosByAlbum.get(key)!.push(m);
-  }
-  const orderedAlbumKeys: (string | null)[] = [
-    ...albums.filter((a) => photosByAlbum.has(a.id)).map((a) => a.id as string | null),
-    ...(photosByAlbum.has(null) ? [null] : []),
-  ];
-
-  // 필터 옵션 — 사진이 있는 앨범 기준(스타일·식장·패키지).
-  const shownAlbums = albums.filter((a) => photosByAlbum.has(a.id));
-  const styleOpts = Array.from(new Set(shownAlbums.flatMap((a) => a.style_tags ?? []))).slice(0, 12);
-  const venueOpts = Array.from(new Set(shownAlbums.map((a) => a.venue_name).filter(Boolean) as string[])).slice(0, 12);
-  const productOpts = Array.from(
-    new Map(shownAlbums.filter((a) => a.product_id).map((a) => [a.product_id as string, productName.get(a.product_id as string) ?? ""])).entries(),
-  ).filter(([, n]) => n) as [string, string][];
-  const hasFilters = shownAlbums.length > 1 && styleOpts.length + venueOpts.length + productOpts.length > 0;
 
   const matchAlbum = (a: AlbumRow | null): boolean => {
     if (!filter) return true;

@@ -198,7 +198,18 @@ const BusinessDeliveries = lazy(() => import("./pages/business/BusinessDeliverie
 const BusinessDesigns = lazy(() => import("./pages/business/BusinessDesigns"));
 const BusinessReviews = lazy(() => import("./pages/business/BusinessReviews"));
 
-const queryClient = new QueryClient();
+// React Query 전역 기본값: 기본 staleTime=0 + refetchOnWindowFocus=true 면 모바일 웹에서
+// 탭 전환마다 모든 useQuery 가 재요청(중복 라운드트립). 모바일 웹이 주 사용처라 60s 신선도 +
+// focus 재요청 끄기를 기본으로. 알림 등 실시간성이 필요한 hook 은 개별 staleTime 으로 override.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
