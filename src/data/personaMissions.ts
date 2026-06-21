@@ -174,6 +174,25 @@ const PREGNANCY_MISSIONS_BY_TRIMESTER: Record<PregnancyTrimester, PersonaMission
 // (재혼·신랑·해외·국제·1인진행·노식·스냅 등)의 첫 액션을 보강한다.
 // 페르소나가 standard_bride/small_intimate 등 wedding_style 위에 1:1로
 // 매핑되는 경우는 STYLE_SPECIFIC 폴백을 그대로 쓰고 여기엔 안 적는다.
+// 재혼 미션 — remarriage 와 remarriage_with_children 이 공유(자녀 동반 시나리오 hint 포함).
+// 단일 소스로 둬 드리프트 방지(둘에 따로 적으면 한쪽만 수정되는 회귀).
+const REMARRIAGE_MISSIONS: PersonaMission[] = [
+  {
+    key: "remarriage-tone",
+    label: "작은 가족식 진행 톤 정리",
+    hint: "양가 인사·자녀 동반 시나리오 살펴보기",
+    emoji: "",
+    href: "/ai-planner",
+  },
+  {
+    key: "remarriage-community",
+    label: "재혼 익명 커뮤니티 둘러보기",
+    hint: "같은 입장 후기로 정서적 연결",
+    emoji: "",
+    href: "/community",
+  },
+];
+
 const PERSONA_SPECIFIC: Partial<Record<WeddingPersonaMode, PersonaMission[]>> = {
   standard_groom: [
     {
@@ -191,22 +210,9 @@ const PERSONA_SPECIFIC: Partial<Record<WeddingPersonaMode, PersonaMission[]>> = 
       href: "/budget/split-simulator",
     },
   ],
-  remarriage: [
-    {
-      key: "remarriage-tone",
-      label: "작은 가족식 진행 톤 정리",
-      hint: "양가 인사·자녀 동반 시나리오 살펴보기",
-      emoji: "",
-      href: "/ai-planner",
-    },
-    {
-      key: "remarriage-community",
-      label: "재혼 익명 커뮤니티 둘러보기",
-      hint: "같은 입장 후기로 정서적 연결",
-      emoji: "",
-      href: "/community",
-    },
-  ],
+  remarriage: REMARRIAGE_MISSIONS,
+  // 자녀 동반 재혼: 분류는 되지만 미션이 일반 폴백으로 새던 갭 — remarriage 미션 재사용.
+  remarriage_with_children: REMARRIAGE_MISSIONS,
   remote_overseas: [
     {
       key: "overseas-trip",
