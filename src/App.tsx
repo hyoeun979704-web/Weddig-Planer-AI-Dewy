@@ -49,6 +49,7 @@ const WeddingConsulting = lazy(() => import("./pages/WeddingConsulting"));
 const ConsultingResult = lazy(() => import("./pages/ConsultingResult"));
 const ConsultingGallery = lazy(() => import("./pages/ConsultingGallery"));
 const MyResults = lazy(() => import("./pages/MyResults"));
+const WeddingWrapped = lazy(() => import("./pages/WeddingWrapped"));
 const QuoteNew = lazy(() => import("./pages/QuoteNew"));
 const QuoteList = lazy(() => import("./pages/QuoteList"));
 const QuoteDetail = lazy(() => import("./pages/QuoteDetail"));
@@ -260,6 +261,7 @@ const App = () => (
               <Route path="/budget/category/:category" element={<BudgetCategoryDetail />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/ai-studio" element={<AIStudio />} />
+              <Route path="/wrapped" element={<WeddingWrapped />} />
               <Route path="/community" element={<Community />} />
               <Route path="/community/write" element={<CommunityWrite />} />
               <Route path="/community/bookmarks" element={<BookmarkedPosts />} />
