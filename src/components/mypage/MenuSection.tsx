@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { User as SupaUser } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useWeddingRecap } from "@/hooks/useWeddingRecap";
 
 interface MenuSectionProps {
   user: SupaUser | null;
@@ -33,6 +34,8 @@ const MenuSection = ({
 }: MenuSectionProps) => {
   const navigate = useNavigate();
   const { isBusiness, businessProfile } = useUserRole();
+  // 결혼 준비 Wrapped — 보여줄 실데이터가 있을 때만 진입점 노출(빈 회고 방지).
+  const recap = useWeddingRecap();
 
   const menuGroups: { title: string; items: MenuItem[] }[] = [
     {
@@ -43,6 +46,9 @@ const MenuSection = ({
           : []),
         { icon: Calendar, title: "내 웨딩 일정", description: "D-Day 설정 및 일정 관리", href: "/my-schedule" },
         { icon: FileText, title: "내 문의/예약", description: "문의 및 예약 내역 확인", href: "/my-inquiries" },
+        ...(recap.hasAny
+          ? [{ icon: Sparkles, title: "결혼 준비 Wrapped", description: "내 준비 여정 돌아보고 공유하기", href: "/wrapped" } as MenuItem]
+          : []),
       ],
     },
     {
