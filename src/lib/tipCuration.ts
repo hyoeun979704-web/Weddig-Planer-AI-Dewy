@@ -58,6 +58,8 @@ const CROSS_PHASE_BOOSTS: ReadonlyArray<{
 const PERSONA_CATEGORY_BOOSTS: Partial<Record<WeddingPersonaMode, ReadonlyArray<string>>> = {
   pregnancy: ["pregnancy_wedding"],
   remarriage: ["remarriage_family"],
+  // 자녀 동반 재혼도 동일 카테고리 부스트(없으면 popularity 정렬에 묻혀 자기 콘텐츠 못 봄).
+  remarriage_with_children: ["remarriage_family"],
   international: ["international_wedding"],
   remote_overseas: ["international_wedding"],
   self_no_ceremony: ["self_no_ceremony", "ceremony", "legal_paperwork"],
