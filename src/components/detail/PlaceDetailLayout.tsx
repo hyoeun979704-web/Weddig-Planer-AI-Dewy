@@ -301,13 +301,16 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, couponsSection,
         {(() => {
           // dead-end 제거: 연락처 유무를 미리 계산해 '될 때만' 버튼을 살린다.
           //   - 전화 버튼: 번호 있을 때만 렌더(없으면 toast 죽은 버튼 X).
-          //   - 메인 버튼: 입점=인앱 채팅 폴백으로 항상 동작 / 미입점=온라인·전화 있을 때만,
-          //     둘 다 없으면 비활성 + 아래 안내(죽은 토스트 X).
+          //   - 메인 버튼: 입점=인앱 채팅 폴백으로 항상 동작 / 미입점=온라인·전화 있으면 그 채널,
+          //     둘 다 없으면(예전 '연락처 미등록' 비활성=죽은 버튼) 견적-매칭으로 전환(아래 goQuote).
           const online =
             place.kakao_channel_url || place.naver_place_url || place.website_url ||
             place.instagram_url || place.youtube_url || null;
           const unclaimedHasContact = !!online || !!place.tel;
           const noContact = !isClaimed && !unclaimedHasContact;
+          // 같은 카테고리의 응답 가능한 업체들에게 한 번에 견적 요청(전환 경로 복구).
+          // 지역은 견적 폼이 사용자의 식장 지역으로 자동 시드 → 카테고리만 넘긴다.
+          const goQuote = () => navigate(`/quote/new?category=${encodeURIComponent(place.category)}`);
           return (
             <>
               <div className="flex gap-2">
@@ -341,14 +344,28 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, couponsSection,
                     문의하기
                   </Button>
                 ) : (
-                  <Button disabled className="flex-1 h-11">연락처 미등록</Button>
+                  // 죽은 '연락처 미등록' 버튼 대신 실제 동작하는 견적 요청으로 연결(dead-end 복구).
+                  <Button className="flex-1 h-11" onClick={goQuote}>
+                    견적 받기
+                  </Button>
                 )}
               </div>
-              {noContact && (
+              {noContact ? (
                 <p className="text-[11px] text-muted-foreground text-center pt-2">
-                  아직 등록된 연락처가 없어요. 사장님이라면 무료 입점 후 문의를 직접 받을 수 있어요.
+                  이 업체는 등록된 연락처가 없어요. 대신 조건이 맞는 업체들에게 한 번에 견적을 받아보세요.
+                  <br />
+                  사장님이라면 무료 입점 후 문의를 직접 받을 수 있어요.
                 </p>
-              )}
+              ) : !isClaimed && unclaimedHasContact ? (
+                // 미입점 업체는 외부 채널 응답이 불확실 → 응답 보장되는 비교 견적 경로를 함께 제공.
+                <button
+                  type="button"
+                  onClick={goQuote}
+                  className="block w-full text-center pt-2 text-[12px] font-medium text-primary"
+                >
+                  여러 곳 비교 견적 받기 →
+                </button>
+              ) : null}
             </>
           );
         })()}
