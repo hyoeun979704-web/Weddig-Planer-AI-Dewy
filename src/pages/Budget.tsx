@@ -226,6 +226,8 @@ const Budget = () => {
   // 카테고리별 현황 행 — 매 렌더(시트 토글 등 무관한 상태 변화)마다 10개 map+sort 를
   // 다시 돌리지 않도록 지출/예산/제외 상태가 바뀔 때만 재계산.
   const sortedCategoryRows = useMemo(() => {
+    // 지역 평균(벤치마크) — 카테고리별 만원 단위. region 미설정이면 null → 0(숨김).
+    const avg = regionalAverage as Record<string, number> | null;
     return [...categoryKeys]
       .map((key) => {
         const spent = summary.categoryTotals[key] || 0;
@@ -238,7 +240,10 @@ const Budget = () => {
         const budget = dimmed ? 0 : rawBudget;
         const catPct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
         const over = spent > budget && budget > 0;
-        return { key, spent, budget, catPct, over, dimmed };
+        // 3열(예상·실지출·잔여): 잔여 = 예산 − 실지출(음수면 초과). benchmark = 지역 평균.
+        const remaining = budget - spent;
+        const benchmark = dimmed ? 0 : (typeof avg?.[key] === "number" ? avg[key] : 0);
+        return { key, spent, budget, catPct, over, dimmed, remaining, benchmark };
       })
       .sort((a, b) => {
         if (a.dimmed !== b.dimmed) return a.dimmed ? 1 : -1;
@@ -246,7 +251,7 @@ const Budget = () => {
         if (b.spent !== a.spent) return b.spent - a.spent;
         return b.budget - a.budget;
       });
-  }, [summary.categoryTotals, catBudgets, dimmedBudgetCategories]);
+  }, [summary.categoryTotals, catBudgets, dimmedBudgetCategories, regionalAverage]);
 
   const openAddWithPrefill = (title: string, category: BudgetCategory) => {
     setEditItem(null);
@@ -679,7 +684,7 @@ const Budget = () => {
           </div>
           <div className="space-y-3">
             {sortedCategoryRows
-              .map(({ key, spent, budget, catPct, over, dimmed }) => (
+              .map(({ key, spent, budget, catPct, over, dimmed, remaining, benchmark }) => (
                 <button key={key} className={cn("w-full text-left group", dimmed && "opacity-40")} onClick={() => navigate(`/budget/category/${key}`)}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium flex items-center gap-1">
@@ -706,6 +711,26 @@ const Budget = () => {
                       backgroundColor: catPct >= 90 ? "hsl(var(--destructive))" : catPct >= 70 ? "#F59E0B" : categories[key].color,
                     }} />
                   </div>
+                  {/* I6 3열: 잔여(예산−실지출) + 지역 평균 벤치마크. 둘 다 0이면 표기 없음. */}
+                  {(budget > 0 || benchmark > 0) && (
+                    <div className="flex items-center justify-between mt-1 text-[10px] tabular-nums">
+                      {budget > 0 ? (
+                        <span className={cn(remaining < 0 ? "text-destructive font-medium" : "text-muted-foreground")}>
+                          {remaining >= 0 ? `잔여 ${fmt(remaining)}만원` : `초과 ${fmt(-remaining)}만원`}
+                        </span>
+                      ) : <span />}
+                      {benchmark > 0 && (
+                        <span className="text-muted-foreground">
+                          지역 평균 {fmt(benchmark)}만원
+                          {budget > 0 && (
+                            <span className={cn("ml-1 font-medium", budget > benchmark ? "text-amber-600" : "text-emerald-600")}>
+                              {budget > benchmark ? "+" : ""}{Math.round(((budget - benchmark) / benchmark) * 100)}%
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </button>
               ))}
           </div>

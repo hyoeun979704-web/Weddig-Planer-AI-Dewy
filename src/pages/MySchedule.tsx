@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
 import { buildCategoryOptions, buildTimelinePhases, daysUntilWedding, parseLocalDate } from "@/lib/schedule";
+import { parseKoreanDate } from "@/lib/koreanDate";
+import { cn } from "@/lib/utils";
 import {
   CATEGORY_LABELS,
   WEDDING_STYLE_LABEL,
@@ -35,6 +37,8 @@ const MySchedule = () => {
   const [weddingDateInput, setWeddingDateInput] = useState("");
   const [newTask, setNewTask] = useState("");
   const [newTaskDate, setNewTaskDate] = useState("");
+  // 자연어 날짜 입력(예: "다음 주 토요일", "결혼 3개월 전") — 인식되면 newTaskDate 채움.
+  const [nlDateInput, setNlDateInput] = useState("");
   const [newTaskCategory, setNewTaskCategory] = useState("general");
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -82,6 +86,7 @@ const MySchedule = () => {
     if (success) {
       setNewTask("");
       setNewTaskDate("");
+      setNlDateInput("");
       setNewTaskCategory("general");
     }
     setIsSaving(false);
@@ -300,6 +305,24 @@ const MySchedule = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {/* 자연어 날짜 — 인식되면 아래 달력값을 채운다. 인식 실패해도 달력으로 직접 입력 가능. */}
+              <Input
+                placeholder='날짜를 말로 입력 (예: "다음 주 토요일", "결혼 3개월 전")'
+                value={nlDateInput}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setNlDateInput(v);
+                  const parsed = parseKoreanDate(v, { weddingDate: weddingSettings.wedding_date });
+                  if (parsed) setNewTaskDate(parsed);
+                }}
+              />
+              {nlDateInput.trim() && (
+                <p className={cn("text-[11px]", newTaskDate && parseKoreanDate(nlDateInput, { weddingDate: weddingSettings.wedding_date }) ? "text-primary" : "text-muted-foreground")}>
+                  {parseKoreanDate(nlDateInput, { weddingDate: weddingSettings.wedding_date })
+                    ? `→ ${format(parseLocalDate(newTaskDate), "yyyy년 M월 d일 (EEE)", { locale: ko })}`
+                    : "날짜를 인식하지 못했어요. 아래 달력으로 직접 골라주세요."}
+                </p>
+              )}
               <div className="flex gap-2">
                 <Input
                   type="date"
