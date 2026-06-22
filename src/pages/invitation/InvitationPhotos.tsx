@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCouplePartnerId } from "@/hooks/useCouplePartnerId";
+import DriveBackupCard from "@/components/invitation/DriveBackupCard";
 import { toast } from "sonner";
 
 interface PhotoRow {
@@ -159,6 +160,8 @@ const InvitationPhotos = () => {
             </Button>
           )}
         </div>
+
+        {id && !loading && <DriveBackupCard invitationId={id} />}
 
         {loading ? (
           <div className="py-20 flex justify-center">

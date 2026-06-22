@@ -54,6 +54,20 @@ verify_jwt = true
 [functions.gmail-send]
 verify_jwt = true
 
+# 하객 사진 → 신랑신부 Google Drive 자동 백업. 시작/제어는 JWT, 콜백은 Google 리다이렉트(JWT 없음),
+# cron 은 service_role 키 호출이라 verify_jwt=false + 함수 내부에서 키 일치 검증.
+[functions.drive-oauth-start]
+verify_jwt = true
+
+[functions.drive-oauth-callback]
+verify_jwt = false
+
+[functions.drive-photos]
+verify_jwt = true
+
+[functions.drive-sync-cron]
+verify_jwt = false
+
 # 디자인 마켓 구매 결제(카카오페이 + 포인트 할인). 둘 다 인증 필요.
 [functions.design-purchase-ready]
 verify_jwt = true
