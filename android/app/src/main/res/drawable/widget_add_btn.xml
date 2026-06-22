@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- '바로 추가' 버튼 배경 — 연핑크 알약. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/widgetPrimarySoft" />
+    <corners android:radius="14dp" />
+</shape>

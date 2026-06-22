@@ -90,6 +90,14 @@ const Budget = () => {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<BudgetItem | null>(null);
   const [payBalanceTarget, setPayBalanceTarget] = useState<BudgetItem | null>(null);
+
+  // 위젯 '바로 추가'(app.dewy://budget/new → /budget?add=1) → 지출 추가 시트 자동 오픈 후 파라미터 정리.
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get("add") === "1") {
+      setAddOpen(true);
+      navigate("/budget", { replace: true });
+    }
+  }, [location.search, navigate]);
   const [addPrefill, setAddPrefill] = useState<{ title: string; category: BudgetCategory } | null>(null);
   const tutorial = usePageTutorial("budget");
   const { isPremium } = useSubscription();

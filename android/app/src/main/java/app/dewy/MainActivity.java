@@ -8,12 +8,16 @@ import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.WebViewListener;
 
+import app.dewy.widget.WidgetBridgePlugin;
+
 public class MainActivity extends BridgeActivity {
     private int safeAreaTopPx = 0;
     private int safeAreaBottomPx = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // 로컬 플러그인 등록은 반드시 super.onCreate(브리지 초기화) 전에.
+        registerPlugin(WidgetBridgePlugin.class);
         super.onCreate(savedInstanceState);
 
         if (bridge != null) {

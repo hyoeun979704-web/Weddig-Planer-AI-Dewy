@@ -2,6 +2,7 @@ import { App, type URLOpenListenerEvent } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { supabase } from '@/integrations/supabase/client';
 import { isNativeApp } from '@/lib/platform';
+import { emitWidgetNav, widgetUrlToPath } from '@/lib/native/widgetNav';
 import { toast } from 'sonner';
 
 // 앱이 OAuth 콜백을 받는 단일 스킴.
@@ -32,6 +33,13 @@ export function registerDeepLinks(): void {
     const url = event.url;
     // 콜백 URL·인증 code 는 민감정보라 로깅하지 않는다(프로덕션 콘솔/크래시리포터 캡처 방지).
     if (!url || !url.startsWith('app.dewy://')) return;
+
+    // 위젯 탭/바로추가 딥링크(app.dewy://schedule 등) → 라우터로 navigate. (auth 콜백은 아래로.)
+    const widgetPath = widgetUrlToPath(url);
+    if (widgetPath) {
+      emitWidgetNav(widgetPath);
+      return;
+    }
 
     try {
       // PKCE 플로우: URL 의 ?code= 를 세션으로 교환.
