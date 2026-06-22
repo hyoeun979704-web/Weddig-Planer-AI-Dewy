@@ -152,6 +152,23 @@ export const daysUntilWedding = (weddingDate: string | null | undefined): number
   return Math.round((wedding.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 };
 
+// I5b 커플 태스크 분배 — 가벼운 '강점 기반' 담당 추천. 양쪽 role 을 조회하지 않고
+// 카테고리 성격만으로 신부/신랑 담당을 힌트로 제시한다(강제 아님 — 수동 배정 보조).
+// 한쪽 성향이 뚜렷하지 않으면 null(=함께/추천 없음)로 둬 노이즈를 줄인다.
+export type AssigneeHint = "bride" | "groom";
+const BRIDE_HINT_CATEGORIES = new Set(["dress_shop", "makeup_shop", "bridal_care", "hanbok"]);
+const GROOM_HINT_CATEGORIES = new Set(["tailor_shop"]);
+export const categoryAssigneeHint = (category: string | null | undefined): AssigneeHint | null => {
+  if (!category) return null;
+  if (BRIDE_HINT_CATEGORIES.has(category)) return "bride";
+  if (GROOM_HINT_CATEGORIES.has(category)) return "groom";
+  return null;
+};
+export const ASSIGNEE_HINT_LABEL: Record<AssigneeHint, string> = {
+  bride: "신부 담당 추천",
+  groom: "신랑 담당 추천",
+};
+
 export type TaskUrgency = "past_due" | "urgent" | "this_month" | "later";
 
 // Classifies a "YYYY-MM-DD" task date relative to today into a coarse urgency

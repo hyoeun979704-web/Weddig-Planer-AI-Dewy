@@ -54,4 +54,34 @@ describe("mergeCoupleSchedule", () => {
     expect(merged).toHaveLength(1);
     expect(merged[0].id).toBe("partner");
   });
+
+  // I5b 담당자(assigned_to) OR 결합 — 어느 행에 저장됐든 커플 양쪽이 같은 담당자를 본다.
+  it("담당자가 내 행에만 있으면 그 값을 채택한다", () => {
+    const rows = [
+      row({ id: "partner", user_id: "you", assigned_to: null }),
+      row({ id: "mine", user_id: "me", assigned_to: "you" }),
+    ] as any;
+    expect(mergeCoupleSchedule(rows, "me")[0].assigned_to).toBe("you");
+  });
+
+  it("담당자가 파트너 행에만 있으면 그 값을 채택한다", () => {
+    const rows = [
+      row({ id: "mine", user_id: "me", assigned_to: null }),
+      row({ id: "partner", user_id: "you", assigned_to: "me" }),
+    ] as any;
+    expect(mergeCoupleSchedule(rows, "me")[0].assigned_to).toBe("me");
+  });
+
+  it("양쪽 다 담당자가 있으면 내 행을 우선한다", () => {
+    const rows = [
+      row({ id: "partner", user_id: "you", assigned_to: "you" }),
+      row({ id: "mine", user_id: "me", assigned_to: "me" }),
+    ] as any;
+    expect(mergeCoupleSchedule(rows, "me")[0].assigned_to).toBe("me");
+  });
+
+  it("담당자 컬럼이 없어도(마이그 미적용) null 로 정규화한다", () => {
+    const merged = mergeCoupleSchedule([row({ id: "mine", user_id: "me" })] as any, "me");
+    expect(merged[0].assigned_to).toBeNull();
+  });
 });
