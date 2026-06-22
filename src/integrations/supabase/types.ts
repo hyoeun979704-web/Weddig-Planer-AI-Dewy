@@ -5586,6 +5586,7 @@ export type Database = {
           notes: string | null
           scheduled_date: string
           source: string
+          start_date: string | null
           title: string
           updated_at: string
           user_id: string
@@ -5598,6 +5599,7 @@ export type Database = {
           notes?: string | null
           scheduled_date: string
           source?: string
+          start_date?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -5610,6 +5612,7 @@ export type Database = {
           notes?: string | null
           scheduled_date?: string
           source?: string
+          start_date?: string | null
           title?: string
           updated_at?: string
           user_id?: string

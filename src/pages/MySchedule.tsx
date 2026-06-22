@@ -37,6 +37,8 @@ const MySchedule = () => {
   const [weddingDateInput, setWeddingDateInput] = useState("");
   const [newTask, setNewTask] = useState("");
   const [newTaskDate, setNewTaskDate] = useState("");
+  // 선택적 시작일(준비 착수일) — I7 2축. 비우면 마감일만.
+  const [newTaskStart, setNewTaskStart] = useState("");
   // 자연어 날짜 입력(예: "다음 주 토요일", "결혼 3개월 전") — 인식되면 newTaskDate 채움.
   const [nlDateInput, setNlDateInput] = useState("");
   const [newTaskCategory, setNewTaskCategory] = useState("general");
@@ -46,6 +48,7 @@ const MySchedule = () => {
     id: string;
     title: string;
     scheduled_date: string;
+    start_date: string | null;
     category: string;
   } | null>(null);
   const [styleModalOpen, setStyleModalOpen] = useState(false);
@@ -82,10 +85,11 @@ const MySchedule = () => {
   const handleAddTask = async () => {
     if (!newTask.trim() || !newTaskDate) return;
     setIsSaving(true);
-    const success = await addScheduleItem(newTask.trim(), newTaskDate, newTaskCategory);
+    const success = await addScheduleItem(newTask.trim(), newTaskDate, newTaskCategory, newTaskStart || null);
     if (success) {
       setNewTask("");
       setNewTaskDate("");
+      setNewTaskStart("");
       setNlDateInput("");
       setNewTaskCategory("general");
     }
@@ -102,6 +106,7 @@ const MySchedule = () => {
       id: item.id,
       title: item.title,
       scheduled_date: item.scheduled_date,
+      start_date: item.start_date ?? null,
       category: item.category || "general",
     });
   };
@@ -112,6 +117,8 @@ const MySchedule = () => {
     const success = await updateScheduleItem(editingItem.id, {
       title: editingItem.title,
       scheduled_date: editingItem.scheduled_date,
+      // 빈 문자열이면 시작일 해제(null).
+      start_date: editingItem.start_date || null,
       category: editingItem.category,
     });
     if (success) {
@@ -323,7 +330,20 @@ const MySchedule = () => {
                     : "날짜를 인식하지 못했어요. 아래 달력으로 직접 골라주세요."}
                 </p>
               )}
-              <div className="flex gap-2">
+              {/* I7 2축: 시작일(선택) + 마감일. 시작일을 비우면 마감일만 사용. */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground w-10 shrink-0">시작일</span>
+                <Input
+                  type="date"
+                  value={newTaskStart}
+                  max={newTaskDate || undefined}
+                  onChange={(e) => setNewTaskStart(e.target.value)}
+                  className="flex-1"
+                  placeholder="선택"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground w-10 shrink-0">마감일</span>
                 <Input
                   type="date"
                   value={newTaskDate}
@@ -379,11 +399,25 @@ const MySchedule = () => {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Input
-                        type="date"
-                        value={editingItem.scheduled_date}
-                        onChange={(e) => setEditingItem({ ...editingItem, scheduled_date: e.target.value })}
-                      />
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-muted-foreground w-10 shrink-0">시작일</span>
+                        <Input
+                          type="date"
+                          value={editingItem.start_date ?? ""}
+                          max={editingItem.scheduled_date || undefined}
+                          onChange={(e) => setEditingItem({ ...editingItem, start_date: e.target.value || null })}
+                          className="flex-1"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-muted-foreground w-10 shrink-0">마감일</span>
+                        <Input
+                          type="date"
+                          value={editingItem.scheduled_date}
+                          onChange={(e) => setEditingItem({ ...editingItem, scheduled_date: e.target.value })}
+                          className="flex-1"
+                        />
+                      </div>
                       <div className="flex gap-2 pt-2">
                         <Button 
                           onClick={handleSaveEdit} 
@@ -417,7 +451,10 @@ const MySchedule = () => {
                         </p>
                         <div className="flex items-center gap-2">
                           <p className="text-xs text-muted-foreground">
-                            {format(parseLocalDate(item.scheduled_date), "yyyy.M.d (EEE)", { locale: ko })}
+                            {/* I7 2축: 시작일이 있으면 '시작 → 마감' 범위로 표시. */}
+                            {item.start_date
+                              ? `${format(parseLocalDate(item.start_date), "M.d", { locale: ko })} → ${format(parseLocalDate(item.scheduled_date), "M.d (EEE)", { locale: ko })}`
+                              : format(parseLocalDate(item.scheduled_date), "yyyy.M.d (EEE)", { locale: ko })}
                           </p>
                           {item.category && item.category !== "general" && (
                             <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
