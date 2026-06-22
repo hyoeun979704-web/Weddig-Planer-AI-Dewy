@@ -8,7 +8,7 @@ import { usePoints } from "@/hooks/usePoints";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
 import { safeSessionStorage } from "@/lib/safeSessionStorage";
-import { getPaymentProvider, purchaseHeartsIap, heartIapPrice } from "@/lib/payments";
+import { getPaymentProvider, purchaseHeartsIap, heartIapPrice, iapStoreName } from "@/lib/payments";
 import {
   HEART_PACKAGES,
   HeartPackage,
@@ -30,7 +30,7 @@ const HeartCharge = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [agreed, setAgreed] = useState(false);
 
-  // 결제수단: 웹=카카오페이(+포인트할인), 안드로이드=Google IAP(+10%, 포인트 미적용), iOS=준비중.
+  // 결제수단: 웹=카카오페이(+포인트할인), 네이티브(Android·iOS)=IAP(+10%, 포인트 미적용).
   const provider = getPaymentProvider();
 
   useEffect(() => {
@@ -110,8 +110,8 @@ const HeartCharge = () => {
     }
   };
 
-  // 안드로이드 Google Play 인앱결제(IAP). 서버(iap-verify-google)가 검증 후 하트를 지급.
-  // 포인트 할인은 미적용(스토어 고정가). 성공 시 하트는 서버에서 이미 지급됨.
+  // 네이티브 인앱결제(IAP) — Android=Google Play / iOS=App Store. 서버(iap-verify-google|apple)가
+  // 검증 후 하트를 지급. 포인트 할인은 미적용(스토어 고정가). 성공 시 하트는 서버에서 이미 지급됨.
   const handleIapPay = async () => {
     if (!selected || isSubmitting || !user) return;
     setIsSubmitting(true);
@@ -266,7 +266,7 @@ const HeartCharge = () => {
                 className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
-                Google Play로 결제하기
+                {iapStoreName()}로 결제하기
               </button>
             </>
           ) : (

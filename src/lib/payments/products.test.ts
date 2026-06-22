@@ -2,6 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   HEART_PRODUCT_IDS,
   SUBSCRIPTION_PRODUCT_ID,
+  APPLE_SUBSCRIPTION_PRODUCT_IDS,
+  appleSubscriptionProductId,
+  allAppleProductIds,
+  isSubscriptionProductId,
   basePlanForType,
   heartIapPrice,
   subscriptionIapPrice,
@@ -54,5 +58,26 @@ describe("payments/products", () => {
       expect(heartPackageIdForProduct(productId)).toBe(packageId);
     }
     expect(heartPackageIdForProduct("dewy_premium")).toBeNull();
+  });
+
+  it("Apple 구독 상품ID: trial·monthly=월, yearly=년", () => {
+    expect(appleSubscriptionProductId("trial")).toBe(APPLE_SUBSCRIPTION_PRODUCT_IDS.monthly);
+    expect(appleSubscriptionProductId("monthly")).toBe(APPLE_SUBSCRIPTION_PRODUCT_IDS.monthly);
+    expect(appleSubscriptionProductId("yearly")).toBe(APPLE_SUBSCRIPTION_PRODUCT_IDS.yearly);
+  });
+
+  it("allAppleProductIds = 하트5 + 구독2(월/년), 중복 없음", () => {
+    const ids = allAppleProductIds();
+    expect(ids).toContain(APPLE_SUBSCRIPTION_PRODUCT_IDS.monthly);
+    expect(ids).toContain(APPLE_SUBSCRIPTION_PRODUCT_IDS.yearly);
+    expect(ids.length).toBe(HEART_PACKAGES.length + 2);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("isSubscriptionProductId 는 양 스토어 구독 상품만 true", () => {
+    expect(isSubscriptionProductId(SUBSCRIPTION_PRODUCT_ID)).toBe(true);
+    expect(isSubscriptionProductId(APPLE_SUBSCRIPTION_PRODUCT_IDS.monthly)).toBe(true);
+    expect(isSubscriptionProductId(APPLE_SUBSCRIPTION_PRODUCT_IDS.yearly)).toBe(true);
+    expect(isSubscriptionProductId("hearts_starter")).toBe(false);
   });
 });

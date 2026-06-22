@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
 import { safeSessionStorage } from "@/lib/safeSessionStorage";
-import { getPaymentProvider, purchaseSubscriptionIap, subscriptionIapPrice } from "@/lib/payments";
+import { getPaymentProvider, purchaseSubscriptionIap, subscriptionIapPrice, iapStoreName } from "@/lib/payments";
 
 type PlanType = "trial" | "monthly" | "yearly";
 
@@ -33,7 +33,7 @@ const SubscriptionCheckout = () => {
   const heartBonus = type === "yearly" ? 180 : type === "monthly" ? 10 : 0;
   const isEarlyBird = heartBonus > 0 && Date.now() < new Date("2026-08-01T00:00:00+09:00").getTime();
 
-  // 결제수단: 웹=카카오페이, 안드로이드=Google IAP(+10%), iOS=준비중.
+  // 결제수단: 웹=카카오페이, 네이티브(Android·iOS)=IAP(+10%).
   const provider = getPaymentProvider();
   const displayAmount = provider === "iap" && type !== "trial" ? subscriptionIapPrice(type) : amount;
 
@@ -76,7 +76,8 @@ const SubscriptionCheckout = () => {
     }
   };
 
-  // 안드로이드 Google Play 구독 IAP. 서버(iap-verify-google)가 검증 후 구독 활성·보너스 하트 지급.
+  // 네이티브 구독 IAP — Android=Google Play / iOS=App Store. 서버(iap-verify-google|apple)가
+  // 검증 후 구독 활성·보너스 하트 지급.
   const handleIapSubscribe = async () => {
     if (!user || isSubmitting) return;
     setIsSubmitting(true);
@@ -154,16 +155,16 @@ const SubscriptionCheckout = () => {
             {provider === "iap" ? (
               <>
                 <div className="flex items-center gap-3 p-3 rounded-xl border border-primary/30 bg-primary/5">
-                  <div className="w-10 h-10 rounded-lg bg-[#01875F] flex items-center justify-center text-lg font-bold text-white">
-                    ▶
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold text-white ${provider === "iap" && iapStoreName() === "App Store" ? "bg-black" : "bg-[#01875F]"}`}>
+                    {iapStoreName() === "App Store" ? "" : "▶"}
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-foreground">Google Play 인앱결제</p>
+                    <p className="font-semibold text-foreground">{iapStoreName()} 인앱결제</p>
                     <p className="text-xs text-muted-foreground">스토어 계정으로 안전하게 결제</p>
                   </div>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-3">
-                  구독 관리·해지는 Google Play 스토어의 구독 메뉴에서 할 수 있어요.
+                  구독 관리·해지는 {iapStoreName()}의 구독 메뉴에서 할 수 있어요.
                 </p>
               </>
             ) : (
@@ -209,7 +210,7 @@ const SubscriptionCheckout = () => {
               className="w-full h-12 bg-primary text-primary-foreground rounded-2xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
-              {type === "trial" ? "무료 체험 시작" : `Google Play로 ${displayAmount.toLocaleString()}원 구독`}
+              {type === "trial" ? "무료 체험 시작" : `${iapStoreName()}로 ${displayAmount.toLocaleString()}원 구독`}
             </button>
           </>
         ) : (

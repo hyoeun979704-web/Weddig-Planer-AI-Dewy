@@ -103,19 +103,29 @@ Android 앱ID/광고단위와 **별개**. 미설정 시 광고만 비노출 — 
 
 ---
 
-## 7. ⚠️ 결제 정책 — **심사 블로커 후보 #2** (가이드라인 3.1.1)
+## 7. 결제 — iOS IAP로 출시 (코드 구현 완료, 콘솔·e2e 남음)
 
-현재 결제는 **카카오페이(외부 위임, `@capacitor/browser`)** + `cordova-plugin-purchase`. Apple 은
-**디지털 콘텐츠/구독을 앱에서 팔면 IAP(StoreKit) 강제**. 제출 전 반드시 정리:
+> 결제 구조의 단일 소스는 **`docs/260620_payment_compliance_plan.md`**(여기서 중복 서술하지 않음).
+> 확정 결정: **웹=카카오페이 / 네이티브(Android·iOS)=네이티브 IAP**, **anti-steering**(네이티브 빌드에선
+> 외부 결제 UI/링크 숨김). RevenueCat 등 SaaS 미사용. 셋업: Android=`260620_google_iap_setup.md`,
+> **iOS=`260622_apple_iap_setup.md`(신규)**.
 
-- **하트 충전·프리미엄 구독**(디지털 재화)은 iOS 에서 **StoreKit IAP 로 제공해야** 반려를 피한다.
-  - 옵션 A(권장): iOS 빌드에서 디지털 결제는 `cordova-plugin-purchase`(StoreKit) 경로로 분기,
-    카카오페이 외부 링크는 iOS 에서 **숨김/비활성**.
-  - 옵션 B: 1차 iOS 출시에서 **디지털 결제 화면 자체를 iOS 에서 비노출**(읽기 전용 기능만)로 심사 통과 후 후속.
-- **실물/예약/오프라인 서비스 결제**는 외부 결제 허용 여지 — 단 품목별로 IAP 대상인지 제출 전 확인.
+**현재 코드 상태:**
+- **Android = IAP 출시됨** (`cordova-plugin-purchase`, 하트 5종 + 구독 `dewy_premium`,
+  `iap-verify-google` + `play-rtdn`).
+- **iOS = IAP 코드 구현 완료** ✅ — `getPaymentProvider()` ios→`"iap"`, `iap.ts` 가 App Store 분기
+  (`Platform.APPLE_APPSTORE`, 구독은 기간별 상품 `dewy_premium_monthly|yearly`), 서버검증
+  `iap-verify-apple`(App Store Server API) + 갱신·환불 `apple-notifications-v2`(ASN v2).
+  결제 UI(`HeartCharge`/`SubscriptionCheckout`)는 스토어명 자동 분기(App Store/Google Play),
+  G3 구독 고지·anti-steering 반영. 멱등 원장 `iap_transactions`(platform=ios) 재사용.
 
-> ❗이 항목은 **제품 결정**이 필요하다(A vs B). 코드 분기 위치: 결제 진입 CTA 들(하트 충전·구독).
-> 결정되면 별도 작업으로 구현 — 본 런북은 정책 게이트만 명시.
+**출시 전 남은 일(콘솔·시크릿·검증 — 전부 `260622_apple_iap_setup.md` 참조):**
+1. App Store Connect IAP 상품 등록 — 하트 5종(consumable) + 구독 그룹 `dewy_premium` 안
+   `dewy_premium_monthly`(무료체험 intro offer)·`dewy_premium_yearly`. 가격=웹가 +10% 근사 티어.
+2. App Store Server API 키(.p8) 발급 → Supabase 시크릿
+   `APPLE_IAP_KEY_ID`·`APPLE_IAP_ISSUER_ID`·`APPLE_IAP_PRIVATE_KEY`(+선택 `APPLE_BUNDLE_ID`·`APPLE_IAP_ENV`).
+3. App Store Server Notifications **v2** URL 등록(prod+sandbox) + 선택 `APPLE_ASN_TOKEN`.
+4. **샌드박스 + 실기기 e2e**: 하트 구매→적립, 구독→활성, 해지·환불→ASN 반영, 복원. (Mac/실기기 전용 — 빌드 통과=완료 아님.)
 
 ---
 
@@ -169,7 +179,7 @@ Play **Data Safety**(`play-store-listing.md §4`)와 **동일 사실관계**를 
 ## 11. 심사 반려 단골 체크리스트 (제출 전 최종)
 
 - [ ] **Sign in with Apple 동작**(§4) — 4.8 최빈 반려 사유
-- [ ] **디지털 결제 IAP 정책 결정·반영**(§7) — 3.1.1
+- [ ] **결제**(§7): iOS IAP 코드 구현됨 → App Store Connect 상품 등록 + `.p8`/ASN 시크릿 + 샌드박스 e2e (`260622_apple_iap_setup.md`).
 - [ ] 회원 탈퇴(계정 삭제) **앱 내 경로** 제공 — 가이드라인 5.1.1(v) (소셜 로그인 앱 필수)
 - [ ] 개인정보처리방침 URL 유효 + 외부 SDK(Supabase·Gemini·OpenAI·Kakao·AdMob·Vercel) 명시
 - [ ] App Privacy 양식 ↔ 실제 코드 수집 항목 일치(§8)
@@ -191,3 +201,6 @@ Play **Data Safety**(`play-store-listing.md §4`)와 **동일 사실관계**를 
 - `docs/ios-packaging.md` — 기술 셋업(ios/ 생성·Info.plist·딥링크·AdMob) 상세.
 - `docs/play-store-listing.md` — 스토어 카피·연령등급·데이터안전(원본, iOS 재사용).
 - `docs/capacitor-migration-plan.md` — 네이티브 래핑 설계·푸시 보류 근거.
+- **`docs/260620_payment_compliance_plan.md`** — 결제 구조 단일 소스(웹/네이티브 분기·anti-steering).
+- `docs/260620_google_iap_setup.md` — Android IAP 콘솔 셋업(상품ID·구독·RTDN).
+- **`docs/260622_apple_iap_setup.md`** — iOS IAP 콘솔·시크릿·ASN v2 셋업(코드 구현 후 남은 수동작업).
