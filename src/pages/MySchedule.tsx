@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { useCouplePartnerId } from "@/hooks/useCouplePartnerId";
 import { useAuth } from "@/contexts/AuthContext";
-import { buildCategoryOptions, buildTimelinePhases, daysUntilWedding, parseLocalDate } from "@/lib/schedule";
+import { buildCategoryOptions, buildTimelinePhases, daysUntilWedding, parseLocalDate, categoryAssigneeHint, ASSIGNEE_HINT_LABEL } from "@/lib/schedule";
 import { parseKoreanDate } from "@/lib/koreanDate";
 import { cn } from "@/lib/utils";
 import {
@@ -32,7 +33,24 @@ const MySchedule = () => {
     toggleItemCompletion,
     deleteScheduleItem,
     updateScheduleItem,
+    assignScheduleItem,
   } = useWeddingSchedule();
+  // 커플 연동 시에만 담당자 분배 노출(혼자면 의미 없음). partnerId 가 곧 배우자 user_id.
+  const { partnerId } = useCouplePartnerId();
+  const partnerLabel = weddingSettings.partner_name?.trim() || "배우자";
+
+  // 담당 칩: 미정 → 나 → 배우자 → 미정 순으로 한 탭마다 순환(절대 UUID 저장).
+  const assigneeLabel = (assignedTo: string | null): string => {
+    if (assignedTo && assignedTo === user?.id) return "담당: 나";
+    if (assignedTo && assignedTo === partnerId) return `담당: ${partnerLabel}`;
+    return "담당 미정";
+  };
+  const cycleAssignee = (id: string, current: string | null) => {
+    if (!partnerId || !user) return;
+    const order: (string | null)[] = [null, user.id, partnerId];
+    const idx = order.findIndex((v) => v === (current ?? null));
+    assignScheduleItem(id, order[(idx + 1) % order.length]);
+  };
 
   const [weddingDateInput, setWeddingDateInput] = useState("");
   const [newTask, setNewTask] = useState("");
@@ -459,6 +477,26 @@ const MySchedule = () => {
                           {item.category && item.category !== "general" && (
                             <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
                               {getCategoryLabel(item.category)}
+                            </span>
+                          )}
+                          {/* I5b 커플 담당 분배 — 연동 시에만. 탭하면 미정/나/배우자 순환. */}
+                          {partnerId && (
+                            <button
+                              onClick={() => cycleAssignee(item.id, item.assigned_to)}
+                              className={cn(
+                                "text-xs px-1.5 py-0.5 rounded transition-colors",
+                                item.assigned_to
+                                  ? "bg-primary/15 text-primary font-medium"
+                                  : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {assigneeLabel(item.assigned_to)}
+                            </button>
+                          )}
+                          {/* 강점 기반 담당 추천(미지정 + 카테고리 성향 있을 때만). */}
+                          {partnerId && !item.assigned_to && categoryAssigneeHint(item.category) && (
+                            <span className="text-[11px] text-muted-foreground/80">
+                              {ASSIGNEE_HINT_LABEL[categoryAssigneeHint(item.category)!]}
                             </span>
                           )}
                         </div>

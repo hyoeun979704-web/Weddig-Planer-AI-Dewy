@@ -5612,6 +5612,7 @@ export type Database = {
       }
       user_schedule_items: {
         Row: {
+          assigned_to: string | null
           category: string | null
           completed: boolean
           created_at: string
@@ -5625,6 +5626,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_to?: string | null
           category?: string | null
           completed?: boolean
           created_at?: string
@@ -5638,6 +5640,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_to?: string | null
           category?: string | null
           completed?: boolean
           created_at?: string
