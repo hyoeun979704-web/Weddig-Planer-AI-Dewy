@@ -14,6 +14,7 @@ export interface ReportLineItem {
   has_balance: boolean;
   balance_amount: number | null;        // 미납 잔금 (만원)
   payment_method: string;               // "cash" | "card" | "transfer" | "check"
+  is_refund?: boolean;                  // 환불 내역이면 납부액을 음수로(차감)
 }
 
 /** 결제 주체 3분류 — paidByOptions(budgetData) 와 동일 키. */
@@ -60,8 +61,9 @@ export function computeBudgetFinancials(items: ReportLineItem[]): BudgetFinancia
   let cashNeeded = 0;
 
   for (const item of items) {
-    const paid = item.amount > 0 ? item.amount : 0;
-    const pending = pendingOf(item);
+    // 환불은 납부액을 음수로(차감), 미납 잔금은 없음.
+    const paid = item.is_refund ? -item.amount : (item.amount > 0 ? item.amount : 0);
+    const pending = item.is_refund ? 0 : pendingOf(item);
     totalPaid += paid;
     totalPending += pending;
     if (pending > 0 && item.payment_method === "cash") cashNeeded += pending;
@@ -144,12 +146,13 @@ export function buildPaymentTimeline(
 ): TimelineEntry[] {
   const entries: TimelineEntry[] = [];
   for (const item of items) {
-    const paid = item.amount > 0 ? item.amount : 0;
-    const pending = pendingOf(item);
-    if (paid > 0) {
+    // 환불은 음수 납부로(차감) 타임라인에 표기, 미납 잔금은 없음.
+    const paid = item.is_refund ? -item.amount : (item.amount > 0 ? item.amount : 0);
+    const pending = item.is_refund ? 0 : pendingOf(item);
+    if (paid !== 0) {
       entries.push({
         date: item.item_date || null,
-        title: item.title,
+        title: item.is_refund ? `[환불] ${item.title}` : item.title,
         amount: paid,
         payer: item.paid_by,
         stage: item.payment_stage,

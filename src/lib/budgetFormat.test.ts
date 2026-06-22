@@ -1,7 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { formatBudgetAmount, fmt, manwonToWon, wonPreview } from "./budgetFormat";
+import { formatBudgetAmount, fmt, manwonToWon, wonPreview, netManwon } from "./budgetFormat";
 
 describe("budgetFormat", () => {
+  it("netManwon: 환불은 음수(차감), 일반은 그대로", () => {
+    expect(netManwon({ amount: 100 })).toBe(100);
+    expect(netManwon({ amount: 100, is_refund: false })).toBe(100);
+    expect(netManwon({ amount: 100, is_refund: true })).toBe(-100);
+    expect(netManwon({ amount: 0.5, is_refund: true })).toBe(-0.5);
+  });
+
   it("fmt: 천단위 콤마", () => {
     expect(fmt(1234)).toBe("1,234");
     expect(fmt(0)).toBe("0");

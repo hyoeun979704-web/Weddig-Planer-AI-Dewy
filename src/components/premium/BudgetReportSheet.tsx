@@ -236,7 +236,9 @@ const BudgetReportSheet = ({ open, onClose, visibleCategoryKeys }: BudgetReportS
       // 홀 지출은 category 가 필요해 컴포넌트가 합산(납부+미납), 산식은 모델이 담당.
       const hallExpense = items
         .filter((i) => i.category === "venue" || i.category === "meal")
-        .reduce((s, i) => s + i.amount + (i.has_balance && i.balance_amount && i.balance_amount > 0 ? i.balance_amount : 0), 0);
+        .reduce((s, i) => i.is_refund
+          ? s - i.amount
+          : s + i.amount + (i.has_balance && i.balance_amount && i.balance_amount > 0 ? i.balance_amount : 0), 0);
       const defense = computeMealDefenseRate(guestCount, DEFAULT_GIFT_PER_GUEST_MANWON, hallExpense);
       const defenseColor = defense.defenseRatePercent >= 100 ? "#059669" : defense.defenseRatePercent >= 80 ? "#f59e0b" : "#dc2626";
       const defenseBody = hallExpense > 0

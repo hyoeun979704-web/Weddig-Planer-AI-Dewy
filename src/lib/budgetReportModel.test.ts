@@ -37,6 +37,16 @@ describe("computeBudgetFinancials", () => {
     expect(r.grandTotal).toBe(1800);
   });
 
+  it("환불 항목은 납부액에서 차감하고 미납은 0 으로 본다", () => {
+    const r = computeBudgetFinancials([
+      item({ amount: 1000 }),
+      item({ amount: 200, is_refund: true, paid_by: "bride" }),
+    ]);
+    expect(r.totalPaid).toBe(800); // 1000 - 200
+    expect(r.totalPending).toBe(0);
+    expect(r.payers.bride.paid).toBe(-200);
+  });
+
   it("has_balance=false 또는 balance_amount<=0/null 은 미납에서 제외", () => {
     const r = computeBudgetFinancials([
       item({ amount: 100, has_balance: true, balance_amount: null }),

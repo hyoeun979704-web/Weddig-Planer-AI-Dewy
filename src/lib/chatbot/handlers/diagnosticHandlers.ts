@@ -7,7 +7,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { categories as budgetCategories } from "@/data/budgetData";
-import { formatBudgetAmount } from "@/lib/budgetFormat";
+import { formatBudgetAmount, netManwon } from "@/lib/budgetFormat";
 import { CHECKLIST_TEMPLATE } from "@/data/checklistTemplate";
 
 // ════════════════════════════════════════════════════════════
@@ -36,12 +36,12 @@ export const handleBudgetDiagnosis = async (userId: string): Promise<string> => 
       .maybeSingle(),
     (supabase as any)
       .from("budget_items")
-      .select("category, amount")
+      .select("category, amount, is_refund")
       .eq("user_id", userId),
   ]);
 
   const totalBudget: number | null = settingsRes.data?.total_budget ?? null;
-  const items = (itemsRes.data ?? []) as Array<{ category: string; amount: number }>;
+  const items = (itemsRes.data ?? []) as Array<{ category: string; amount: number; is_refund?: boolean }>;
 
   if (!totalBudget) {
     return "총 예산이 설정되지 않아 진단할 수 없어요 \n[예산 페이지](/budget)에서 총 예산을 먼저 설정해주세요.";
@@ -52,7 +52,7 @@ export const handleBudgetDiagnosis = async (userId: string): Promise<string> => 
 
   // 카테고리별 합계
   const byCategory: Record<string, number> = {};
-  for (const i of items) byCategory[i.category] = (byCategory[i.category] ?? 0) + (i.amount ?? 0);
+  for (const i of items) byCategory[i.category] = (byCategory[i.category] ?? 0) + netManwon(i);
 
   // 권장 비율 비교
   const lines: string[] = [];
@@ -81,7 +81,7 @@ export const handleBudgetDiagnosis = async (userId: string): Promise<string> => 
     );
   }
 
-  const totalSpent = items.reduce((s, i) => s + (i.amount ?? 0), 0);
+  const totalSpent = items.reduce((s, i) => s + netManwon(i), 0);
   const totalRatio = Math.round((totalSpent / totalBudget) * 100);
 
   let summary = `총 ${totalRatio}% 사용 중 (${formatBudgetAmount(totalSpent)} / ${formatBudgetAmount(totalBudget)})`;
@@ -183,13 +183,13 @@ const CATEGORY_FOR_CONTRACT = [
 export const handleContractProgress = async (userId: string): Promise<string> => {
   const { data: items } = await (supabase as any)
     .from("budget_items")
-    .select("category, amount, status")
+    .select("category, amount, status, is_refund")
     .eq("user_id", userId);
 
   const byCategory: Record<string, { total: number; count: number }> = {};
   for (const i of (items ?? [])) {
     if (!byCategory[i.category]) byCategory[i.category] = { total: 0, count: 0 };
-    byCategory[i.category].total += i.amount ?? 0;
+    byCategory[i.category].total += netManwon(i);
     byCategory[i.category].count += 1;
   }
 

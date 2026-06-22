@@ -11,7 +11,7 @@ export async function computeWidgetSnapshot(userId: string): Promise<WidgetSnaps
     supabase.from("user_wedding_settings").select("wedding_date, wedding_date_tbd").eq("user_id", userId).maybeSingle(),
     supabase.from("user_schedule_items").select("completed").eq("user_id", userId),
     supabase.from("budget_settings").select("total_budget").eq("user_id", userId).maybeSingle(),
-    supabase.from("budget_items").select("amount").eq("user_id", userId),
+    supabase.from("budget_items").select("amount, is_refund").eq("user_id", userId),
   ]);
 
   const tbd = weddingRes.data?.wedding_date_tbd ?? false;
@@ -22,7 +22,11 @@ export async function computeWidgetSnapshot(userId: string): Promise<WidgetSnaps
   const done = items.filter((i) => i.completed).length;
 
   const totalManwon = budgetSettingsRes.data?.total_budget ?? 0;
-  const usedManwon = (budgetItemsRes.data ?? []).reduce((sum, i) => sum + (i.amount ?? 0), 0);
+  // 환불 항목은 차감(순지출) — Budget 화면 요약과 일관.
+  const usedManwon = (budgetItemsRes.data ?? []).reduce(
+    (sum, i) => sum + (i.is_refund ? -1 : 1) * (i.amount ?? 0),
+    0,
+  );
 
   return {
     weddingDate,
