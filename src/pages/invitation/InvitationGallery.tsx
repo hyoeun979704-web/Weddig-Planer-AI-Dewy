@@ -168,6 +168,15 @@ const InvitationGallery = () => {
                     참석 응답 보기
                   </button>
                 )}
+                {(isMobilePublished || isPartner) && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/invitation/${it.id}/photos`)}
+                    className="text-[11px] h-8 rounded-lg border border-border bg-card text-foreground active:scale-[0.98] transition-transform"
+                  >
+                    하객 사진
+                  </button>
+                )}
                 </div>
               );
             })}

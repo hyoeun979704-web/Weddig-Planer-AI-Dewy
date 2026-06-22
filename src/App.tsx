@@ -123,6 +123,8 @@ const InvitationGallery = lazy(() => import("./pages/invitation/InvitationGaller
 const InvitationViewer = lazy(() => import("./pages/invitation/InvitationViewer"));
 const MobileInvitationView2 = lazy(() => import("./pages/invitation/MobileInvitationView2"));
 const InvitationRsvpDashboard = lazy(() => import("./pages/invitation/InvitationRsvpDashboard"));
+const InvitationPhotos = lazy(() => import("./pages/invitation/InvitationPhotos"));
+const GuestPhotoUpload = lazy(() => import("./pages/invitation/GuestPhotoUpload"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
 const AdminContentReview = lazy(() => import("./pages/admin/AdminContentReview"));
@@ -389,7 +391,10 @@ const App = () => (
               <Route path="/invitation/new" element={<InvitationFlow />} />
               <Route path="/invitation/:id/edit" element={<InvitationStudio />} />
               <Route path="/invitation/:id/rsvp" element={<InvitationRsvpDashboard />} />
+              <Route path="/invitation/:id/photos" element={<InvitationPhotos />} />
               <Route path="/i/:slug" element={<InvitationViewer />} />
+              {/* 하객 사진 업로드 (공개) */}
+              <Route path="/i/:slug/photos" element={<GuestPhotoUpload />} />
               {/* I-MOBILE Phase 1: 네이티브 섹션 뷰어 프리뷰(기존 캔버스 뷰어 병행) */}
               <Route path="/i2/:slug" element={<MobileInvitationView2 />} />
               {/* 관리자 라우트는 가드를 라우트 레벨에 둔다 — 페이지가 마운트되기

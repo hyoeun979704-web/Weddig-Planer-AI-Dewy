@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Loader2, Heart, Share2 } from "lucide-react";
+import { Loader2, Heart, Share2, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { safeLocalStorage } from "@/lib/safeLocalStorage";
@@ -598,6 +598,16 @@ const InvitationViewer = () => {
       </div>
 
       <div className="px-5 pt-5 space-y-3">
+        {/* 하객 사진 수집 — 식 후 하객이 사진을 신랑·신부에게 한 번에 보낼 수 있게 */}
+        {slug && (
+          <Button
+            onClick={() => navigate(`/i/${slug}/photos`)}
+            className="w-full h-12"
+          >
+            <ImagePlus className="w-4 h-4 mr-2" />
+            결혼식 사진 보내기
+          </Button>
+        )}
         <Button
           onClick={handleShare}
           variant="outline"
