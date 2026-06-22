@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Loader2, Heart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { safeLocalStorage } from "@/lib/safeLocalStorage";
 import { toast } from "@/hooks/use-toast";
 import InvitationCanvas from "@/components/invitation/InvitationCanvas";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
@@ -106,6 +107,10 @@ const InvitationViewer = () => {
   const [rsvpSide, setRsvpSide] = useState<RsvpSide>("undecided");
   const [rsvpMessage, setRsvpMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  // I8-C 본인 응답 수정 — 제출 시 발급받은 {id, edit_token}을 이 브라우저에 보관.
+  // 값이 있으면 '이미 응답함' = 수정 모드(insert 대신 update RPC).
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editToken, setEditToken] = useState<string | null>(null);
 
   const usedFonts = useMemo(() => {
     const tpl = data?.invitation_templates;
@@ -170,6 +175,28 @@ const InvitationViewer = () => {
     })();
   }, [slug]);
 
+  // I8-C 이 브라우저에 저장된 이전 응답이 있으면 폼을 채우고 수정 모드로 진입.
+  useEffect(() => {
+    if (!slug) return;
+    const raw = safeLocalStorage.getItem(`dewy_rsvp_resp_v1:${slug}`);
+    if (!raw) return;
+    try {
+      const saved = JSON.parse(raw);
+      if (!saved?.id || !saved?.token) return;
+      setEditId(saved.id);
+      setEditToken(saved.token);
+      setRsvpName(saved.name ?? "");
+      setIsAttending(saved.is_attending ?? true);
+      setRsvpSide(saved.side ?? "undecided");
+      setMealPreference(saved.meal_preference ?? "undecided");
+      setCompanionCount(saved.companion_count ?? 0);
+      setChildCount(saved.child_count ?? 0);
+      setRsvpMessage(saved.message ?? "");
+    } catch {
+      // 손상된 값 — 무시(신규 응답으로 진행).
+    }
+  }, [slug]);
+
   const handleShare = async () => {
     const url = window.location.href;
     if (navigator.share) {
@@ -229,34 +256,66 @@ const InvitationViewer = () => {
         0,
         Math.min(Math.trunc(childCount) || 0, normalizedCompanionCount),
       );
-      const { error } = await (supabase as any)
-        .from("invitation_rsvp")
-        .insert({
-          invitation_id: data.id,
-          name,
-          is_attending: isAttending,
-          side: rsvpSide,
-          meal_preference: mealPreference,
-          companion_count: normalizedCompanionCount,
-          child_count: normalizedChildCount,
-          message: message || null,
+      const payload = {
+        name,
+        is_attending: isAttending,
+        side: rsvpSide,
+        meal_preference: mealPreference,
+        companion_count: normalizedCompanionCount,
+        child_count: normalizedChildCount,
+        message: message || null,
+      };
+      const storageKey = `dewy_rsvp_resp_v1:${slug}`;
+
+      if (editId && editToken) {
+        // 수정 — 토큰 검증 RPC. (insert 트리거 밖이라 마감 검사는 RPC 내부에서 수행)
+        const { error } = await (supabase as any).rpc("update_invitation_rsvp", {
+          p_id: editId,
+          p_edit_token: editToken,
+          p_name: payload.name,
+          p_is_attending: payload.is_attending,
+          p_side: payload.side,
+          p_meal_preference: payload.meal_preference,
+          p_companion_count: payload.companion_count,
+          p_child_count: payload.child_count,
+          p_message: payload.message,
         });
+        if (error) throw error;
+        safeLocalStorage.setItem(
+          storageKey,
+          JSON.stringify({ id: editId, token: editToken, ...payload }),
+        );
+        toast({ title: "참석 응답을 수정했어요!" });
+      } else {
+        // 신규 제출 — RPC 가 edit_token 을 반환(이 브라우저에 보관해 이후 수정 가능).
+        const { data: res, error } = await (supabase as any).rpc("submit_invitation_rsvp", {
+          p_invitation_id: data.id,
+          p_name: payload.name,
+          p_is_attending: payload.is_attending,
+          p_side: payload.side,
+          p_meal_preference: payload.meal_preference,
+          p_companion_count: payload.companion_count,
+          p_child_count: payload.child_count,
+          p_message: payload.message,
+        });
+        if (error) throw error;
+        const created = Array.isArray(res) ? res[0] : res;
+        if (created?.id && created?.edit_token) {
+          setEditId(created.id);
+          setEditToken(created.edit_token);
+          safeLocalStorage.setItem(
+            storageKey,
+            JSON.stringify({ id: created.id, token: created.edit_token, ...payload }),
+          );
+        }
+        toast({ title: "참석 의사가 신랑 신부에게 전달되었습니다!" });
+      }
 
-      if (error) throw error;
-
-      toast({ title: "참석 의사가 신랑 신부에게 전달되었습니다!" });
       setIsRsvpOpen(false);
-      // 폼 리셋
-      setRsvpName("");
-      setIsAttending(true);
-      setRsvpSide("undecided");
-      setMealPreference("undecided");
-      setCompanionCount(0);
-      setChildCount(0);
-      setRsvpMessage("");
+      // 폼은 비우지 않는다 — 재오픈 시 보낸 응답이 보이고 바로 수정할 수 있도록(수정 모드).
     } catch (err: any) {
       console.error(err);
-      // DB 가드(총 한도/연속 과다)는 사용자 친화 문구로 안내. 그 외는 제네릭.
+      // DB 가드(총 한도/연속 과다/마감/토큰)는 사용자 친화 문구로 안내. 그 외는 제네릭.
       const msg = String(err?.message ?? "");
       const description = msg.includes("rsvp_closed")
         ? "참석 응답이 마감되었어요."
@@ -264,7 +323,9 @@ const InvitationViewer = () => {
           ? "참석 등록이 마감되었어요."
           : msg.includes("rsvp_rate_limited")
             ? "잠시 후 다시 시도해 주세요."
-            : "다시 시도해 주세요.";
+            : msg.includes("rsvp_not_found_or_bad_token")
+              ? "이전 응답을 찾을 수 없어요. 새로 응답해 주세요."
+              : "다시 시도해 주세요.";
       toast({ title: "제출 실패", description, variant: "destructive" });
     } finally {
       setSubmitting(false);
@@ -724,8 +785,14 @@ const InvitationViewer = () => {
             <div className="px-4 pt-4 pb-[calc(1rem+var(--safe-bottom))] bg-background rounded-t-[10px] flex-1 overflow-y-auto">
               <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-6" />
               <Drawer.Title className="text-xl font-bold text-center mb-6 text-foreground">
-                참석 의사 전달하기
+                {editId ? "참석 응답 수정" : "참석 의사 전달하기"}
               </Drawer.Title>
+
+              {!rsvpClosed && editId && (
+                <p className="text-[13px] text-center text-muted-foreground -mt-4 mb-5">
+                  이미 보내주신 응답이에요. 내용을 고쳐 다시 보낼 수 있어요.
+                </p>
+              )}
 
               {rsvpClosed ? (
                 <div className="py-10 text-center space-y-2">
@@ -893,7 +960,7 @@ const InvitationViewer = () => {
                 </div>
 
                 <Button type="submit" disabled={submitting} className="w-full h-12 mt-4">
-                  {submitting ? "제출 중..." : "참석 의사 전달하기"}
+                  {submitting ? "제출 중..." : editId ? "응답 수정하기" : "참석 의사 전달하기"}
                 </Button>
               </form>
               )}
