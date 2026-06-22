@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInvitationRsvps } from "@/hooks/useInvitationRsvps";
+import { useCouplePartnerId } from "@/hooks/useCouplePartnerId";
 import {
   RSVP_SIDE_LABEL,
   RSVP_MEAL_LABEL,
@@ -29,21 +30,24 @@ const InvitationRsvpDashboard = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  // 커플 공유(I8-A): 소유자 본인뿐 아니라 연결된 배우자도 같은 응답을 본다.
+  const { partnerId, isLoading: coupleLoading } = useCouplePartnerId();
   const [title, setTitle] = useState<string>("");
   const { rows, stats, importedIds, isLoading, importToGuestList } =
     useInvitationRsvps(id);
 
-  // 소유 확인 겸 제목 — invitations RLS(본인 SELECT)로 타인 청첩장이면 빈 결과.
+  // 인가 확인 겸 제목. invitations RLS(본인+배우자 SELECT)가 서버단 인가를 보장하지만,
+  // 공개 발행본은 누구나 SELECT 가능하므로 클라에서도 소유자/배우자만 허용하도록 교차 검증.
   useEffect(() => {
-    if (!user || !id) return;
+    if (!user || !id || coupleLoading) return;
     (async () => {
       const { data } = await (supabase as any)
         .from("invitations")
-        .select("user_data")
+        .select("user_id, user_data")
         .eq("id", id)
-        .eq("user_id", user.id)
         .maybeSingle();
-      if (!data) {
+      const authorized = !!data && (data.user_id === user.id || data.user_id === partnerId);
+      if (!authorized) {
         navigate("/invitation/my", { replace: true });
         return;
       }
@@ -51,7 +55,7 @@ const InvitationRsvpDashboard = () => {
       const bride = data.user_data?.bride_name ?? "";
       setTitle(groom && bride ? `${groom} · ${bride}` : "");
     })();
-  }, [user, id, navigate]);
+  }, [user, id, partnerId, coupleLoading, navigate]);
 
   const handleExport = () => {
     downloadCsv(`rsvp-${id?.slice(0, 8) ?? "list"}`, toCsv(CSV_COLUMNS, rows));

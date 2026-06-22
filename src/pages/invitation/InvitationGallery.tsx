@@ -6,9 +6,11 @@ import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCouplePartnerId } from "@/hooks/useCouplePartnerId";
 
 interface Row {
   id: string;
+  user_id: string;
   template_id: string | null;
   user_data: Record<string, string> | null;
   status: string;
@@ -25,28 +27,38 @@ const InvitationGallery = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  // 커플 공유(I8-A): 배우자의 '발행된 모바일' 청첩장도 함께 보여 RSVP 응답을 같이 관리.
+  const { partnerId, isLoading: coupleLoading } = useCouplePartnerId();
   const [items, setItems] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
+    if (!user || coupleLoading) {
+      if (!user) setLoading(false);
       return;
     }
     (async () => {
+      const ownerIds = partnerId ? [user.id, partnerId] : [user.id];
       const { data, error } = await (supabase as any)
         .from("invitations")
-        .select("id, template_id, user_data, status, created_at, updated_at, invitation_templates(name, thumbnail_url, format)")
-        .eq("user_id", user.id)
+        .select("id, user_id, template_id, user_data, status, created_at, updated_at, invitation_templates(name, thumbnail_url, format)")
+        .in("user_id", ownerIds)
         .order("updated_at", { ascending: false });
       if (error || !data) {
         setItems([]);
       } else {
-        setItems(data);
+        // 내 것은 전부, 배우자 것은 RSVP 가 있는 '발행된 모바일'만 노출(임시저장·종이 제외).
+        setItems(
+          (data as Row[]).filter(
+            (r) =>
+              r.user_id === user.id ||
+              (r.status === "published" && r.invitation_templates?.format !== "paper"),
+          ),
+        );
       }
       setLoading(false);
     })();
-  }, [user]);
+  }, [user, partnerId, coupleLoading]);
 
   return (
     <div className="min-h-screen bg-background app-col mx-auto pb-24">
@@ -93,11 +105,15 @@ const InvitationGallery = () => {
               const isMobilePublished =
                 it.status === "published" &&
                 it.invitation_templates?.format !== "paper";
+              // 배우자 청첩장 — 편집은 소유자만, 여기선 RSVP 응답만 함께 본다.
+              const isPartner = it.user_id !== user?.id;
               return (
                 <div key={it.id} className="flex flex-col gap-1.5">
                 <button
                   type="button"
-                  onClick={() => navigate(`/invitation/${it.id}/edit`)}
+                  onClick={() =>
+                    navigate(isPartner ? `/invitation/${it.id}/rsvp` : `/invitation/${it.id}/edit`)
+                  }
                   className="bg-card rounded-xl overflow-hidden border border-border text-left active:scale-[0.98] transition-transform"
                 >
                   <div className="aspect-[3/4] bg-muted">
@@ -110,9 +126,14 @@ const InvitationGallery = () => {
                     ) : null}
                   </div>
                   <div className="p-2">
-                    <p className="text-[12px] font-semibold text-foreground truncate">
-                      {groom && bride ? `${groom} · ${bride}` : "제목 없음"}
-                    </p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-[12px] font-semibold text-foreground truncate">
+                        {groom && bride ? `${groom} · ${bride}` : "제목 없음"}
+                      </p>
+                      {isPartner && (
+                        <span className="text-[9px] px-1 py-px rounded bg-primary/10 text-primary shrink-0">배우자</span>
+                      )}
+                    </div>
                     <p className="text-[10px] text-muted-foreground">
                       {it.invitation_templates?.format === "paper" ? "종이" : "모바일"}
                       {" · "}
@@ -129,13 +150,22 @@ const InvitationGallery = () => {
                     </p>
                   </div>
                 </button>
-                {isMobilePublished && (
+                {isMobilePublished && !isPartner && (
                   <button
                     type="button"
                     onClick={() => navigate(`/invitation/${it.id}/rsvp`)}
                     className="text-[11px] h-8 rounded-lg border border-border bg-card text-foreground active:scale-[0.98] transition-transform"
                   >
                     참석 응답 관리
+                  </button>
+                )}
+                {isPartner && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/invitation/${it.id}/rsvp`)}
+                    className="text-[11px] h-8 rounded-lg border border-border bg-card text-foreground active:scale-[0.98] transition-transform"
+                  >
+                    참석 응답 보기
                   </button>
                 )}
                 </div>
