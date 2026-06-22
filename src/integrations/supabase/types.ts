@@ -2085,6 +2085,7 @@ export type Database = {
           child_count: number
           companion_count: number
           created_at: string
+          edit_token: string
           id: string
           invitation_id: string
           is_attending: boolean
@@ -2097,6 +2098,7 @@ export type Database = {
           child_count?: number
           companion_count?: number
           created_at?: string
+          edit_token?: string
           id?: string
           invitation_id: string
           is_attending?: boolean
@@ -2109,6 +2111,7 @@ export type Database = {
           child_count?: number
           companion_count?: number
           created_at?: string
+          edit_token?: string
           id?: string
           invitation_id?: string
           is_attending?: boolean
