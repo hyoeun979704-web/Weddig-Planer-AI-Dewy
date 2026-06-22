@@ -43,7 +43,7 @@ import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { familyCollaborationEnabled } from "@/lib/weddingPersona";
 import { WEDDING_STYLE_PRESETS, WEDDING_STYLE_LABEL, visibleBudgetCategories } from "@/lib/weddingStyle";
-import { fmt } from "@/lib/budgetFormat";
+import { fmt, netManwon } from "@/lib/budgetFormat";
 
 /** SVG donut chart for budget usage */
 const DonutChart = ({ pct, size = 80, strokeWidth = 8 }: { pct: number; size?: number; strokeWidth?: number }) => {
@@ -149,7 +149,8 @@ const Budget = () => {
     for (const item of items) {
       const d = parseLocalDate(item.item_date);
       const bucket = buckets.find(b => isSameMonth(b.monthDate, d));
-      if (bucket) bucket.total += item.amount;
+      // 환불은 그 달 순지출에서 차감(단일 헬퍼 netManwon).
+      if (bucket) bucket.total += netManwon(item);
     }
     return buckets;
   }, [items]);
@@ -849,17 +850,25 @@ const Budget = () => {
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {item.is_refund && (
+                            <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px] font-bold mr-1">환불</span>
+                          )}
+                          {item.title}
+                        </p>
                         <p className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
                           {format(new Date(item.item_date), "M.d")} · {pb?.emoji} {pb?.label}
-                          {item.payment_stage && item.payment_stage !== "full" && (
+                          {!item.is_refund && item.payment_stage && item.payment_stage !== "full" && (
                             <span className="bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
                               {paymentStageOptions.find(s => s.value === item.payment_stage)?.label}
                             </span>
                           )}
                         </p>
                       </div>
-                      <span className="text-sm font-bold text-foreground flex-shrink-0 tabular-nums">{fmt(item.amount)}만원</span>
+                      <span className={cn(
+                        "text-sm font-bold flex-shrink-0 tabular-nums",
+                        item.is_refund ? "text-primary" : "text-foreground",
+                      )}>{item.is_refund ? "−" : ""}{fmt(item.amount)}만원</span>
                     </button>
                     <button className="p-1.5 rounded-lg hover:bg-muted transition-colors flex-shrink-0"
                       onClick={() => setDeleteTarget(item)}

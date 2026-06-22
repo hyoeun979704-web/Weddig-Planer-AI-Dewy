@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { normalizeRegion } from "@/lib/regions";
 import { escapeLikePattern, quoteForOr } from "@/lib/postgrestEscape";
 import { categories as budgetCategories } from "@/data/budgetData";
-import { formatBudgetAmount } from "@/lib/budgetFormat";
+import { formatBudgetAmount, netManwon } from "@/lib/budgetFormat";
 import { CHECKLIST_TEMPLATE } from "@/data/checklistTemplate";
 import {
   handleFavoritesByType,
@@ -146,14 +146,14 @@ export const handleBudget = async (ctx: DbHandlerContext): Promise<string> => {
       .maybeSingle(),
     (supabase as any)
       .from("budget_items")
-      .select("category, amount")
+      .select("category, amount, is_refund")
       .eq("user_id", ctx.userId),
   ]);
 
   // 주의: budget_settings/budget_items 금액은 **만원 단위** 저장 — 표기는
   // formatBudgetAmount 단일 소스로 (과거 "1,500원" 오표기 회귀).
   const totalBudget: number | null = settingsRes.data?.total_budget ?? null;
-  const items = (itemsRes.data ?? []) as Array<{ category: string; amount: number }>;
+  const items = (itemsRes.data ?? []) as Array<{ category: string; amount: number; is_refund?: boolean }>;
 
   if (items.length === 0) {
     return totalBudget
@@ -161,9 +161,9 @@ export const handleBudget = async (ctx: DbHandlerContext): Promise<string> => {
       : "아직 예산 정보가 없어요.\n[예산 페이지](/budget)에서 총 예산을 설정하고 지출을 기록하면, 제가 사용률·카테고리 분석으로 도와드릴 수 있어요!";
   }
 
-  const totalSpent = items.reduce((sum, i) => sum + (i.amount ?? 0), 0);
+  const totalSpent = items.reduce((sum, i) => sum + netManwon(i), 0);
   const byCategory = items.reduce<Record<string, number>>((acc, i) => {
-    acc[i.category] = (acc[i.category] ?? 0) + (i.amount ?? 0);
+    acc[i.category] = (acc[i.category] ?? 0) + netManwon(i);
     return acc;
   }, {});
   const sorted = Object.entries(byCategory).sort(([, a], [, b]) => b - a);

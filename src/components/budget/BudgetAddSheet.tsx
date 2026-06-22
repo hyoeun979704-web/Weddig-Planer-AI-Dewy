@@ -68,6 +68,7 @@ export default function BudgetAddSheet({
   const [paymentStage, setPaymentStage] = useState("full");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [memo, setMemo] = useState("");
+  const [isRefund, setIsRefund] = useState(false);
   const [hasBalance, setHasBalance] = useState(false);
   const [balanceAmount, setBalanceAmount] = useState(0);
   const [balanceDueDate, setBalanceDueDate] = useState<Date | undefined>();
@@ -86,6 +87,7 @@ export default function BudgetAddSheet({
       setPaymentStage(editItem.payment_stage || "full");
       setPaymentMethod(editItem.payment_method || "cash");
       setMemo(editItem.memo || "");
+      setIsRefund(!!editItem.is_refund);
       setHasBalance(editItem.has_balance);
       setBalanceAmount(editItem.balance_amount || 0);
       setBalanceDueDate(editItem.balance_due_date ? new Date(editItem.balance_due_date) : undefined);
@@ -99,7 +101,7 @@ export default function BudgetAddSheet({
       setCategory(initialCategory || getRememberedCategory(visibleKeys));
       setTitle(initialTitle || ""); setItemDate(new Date());
       setPaidBy("shared"); setPaymentStage("full"); setPaymentMethod("cash");
-      setMemo(""); setHasBalance(false); setBalanceAmount(0); setBalanceDueDate(undefined);
+      setMemo(""); setIsRefund(false); setHasBalance(false); setBalanceAmount(0); setBalanceDueDate(undefined);
       setAdvancedOpen(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -131,6 +133,7 @@ export default function BudgetAddSheet({
       payment_method: paymentMethod,
       item_date: format(itemDate, "yyyy-MM-dd"),
       memo: memo || null,
+      is_refund: isRefund,
       has_balance: hasBalance,
       balance_amount: hasBalance ? balanceAmount : null,
       balance_due_date: hasBalance && balanceDueDate ? format(balanceDueDate, "yyyy-MM-dd") : null,
@@ -171,6 +174,22 @@ export default function BudgetAddSheet({
               = {manwonToWon(amount).toLocaleString()}원
               {amount >= 10000 && <span className="text-yellow-700"> · 금액이 너무 큰 건 아닌가요?</span>}
               {amount > 0 && amount < 0.1 && <span className="text-yellow-700"> · 금액이 너무 작은 건 아닌가요?</span>}
+            </p>
+          )}
+        </div>
+
+        {/* 환불 내역 토글 — 켜면 이 금액이 지출 합계에서 차감(순지출)된다. */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-sm font-semibold">환불 받은 내역</Label>
+              <p className="text-[11px] text-muted-foreground mt-0.5">계약 취소·보증금 반환·100원 인증 환불 등</p>
+            </div>
+            <Switch checked={isRefund} onCheckedChange={setIsRefund} aria-label="환불 내역" />
+          </div>
+          {isRefund && (
+            <p className="text-[11px] text-primary mt-1.5">
+              이 금액({fmt(amount)}만원)은 지출 합계에서 <b>차감</b>돼요(순지출 기준).
             </p>
           )}
         </div>

@@ -339,6 +339,7 @@ export type Database = {
           created_at: string
           has_balance: boolean | null
           id: string
+          is_refund: boolean
           item_date: string | null
           memo: string | null
           paid_by: string | null
@@ -356,6 +357,7 @@ export type Database = {
           created_at?: string
           has_balance?: boolean | null
           id?: string
+          is_refund?: boolean
           item_date?: string | null
           memo?: string | null
           paid_by?: string | null
@@ -373,6 +375,7 @@ export type Database = {
           created_at?: string
           has_balance?: boolean | null
           id?: string
+          is_refund?: boolean
           item_date?: string | null
           memo?: string | null
           paid_by?: string | null

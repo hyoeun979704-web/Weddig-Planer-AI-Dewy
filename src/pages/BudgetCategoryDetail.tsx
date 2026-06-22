@@ -198,10 +198,15 @@ const BudgetCategoryDetail = () => {
                   <button className="flex-1 flex items-center gap-3 text-left"
                     onClick={() => { setEditItem(item); setAddOpen(true); }}>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {item.is_refund && (
+                          <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px] font-bold mr-1">환불</span>
+                        )}
+                        {item.title}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">{format(parseLocalDate(item.item_date), "yyyy.M.d")}</p>
                     </div>
-                    <span className="text-sm font-bold text-foreground">{item.amount}만원</span>
+                    <span className={item.is_refund ? "text-sm font-bold text-primary" : "text-sm font-bold text-foreground"}>{item.is_refund ? "−" : ""}{item.amount}만원</span>
                   </button>
                   <button className="p-1.5 rounded-lg hover:bg-muted transition-colors md:opacity-0 md:group-hover:opacity-100"
                     onClick={() => setDeleteTarget(item)}

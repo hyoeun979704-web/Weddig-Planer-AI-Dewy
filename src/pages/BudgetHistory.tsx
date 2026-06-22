@@ -19,7 +19,7 @@ import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-import { fmt } from "@/lib/budgetFormat";
+import { fmt, netManwon } from "@/lib/budgetFormat";
 import { relativeTime } from "@/lib/relativeTime";
 import type { BudgetItem } from "@/hooks/useBudget";
 
@@ -84,7 +84,8 @@ const BudgetHistory = () => {
     (vendorGroups[vkey] ||= []).push(item);
   });
 
-  const filteredTotal = filtered.reduce((s, i) => s + i.amount, 0);
+  // 환불 항목은 차감(순지출) — Budget 요약과 일관.
+  const filteredTotal = filtered.reduce((s, i) => s + netManwon(i), 0);
   const filteredAvg = filtered.length > 0 ? Math.round(filteredTotal / filtered.length) : 0;
   const isFiltering = catFilter !== "all" || paidFilter !== "all" || q.length > 0;
 
@@ -97,8 +98,8 @@ const BudgetHistory = () => {
     const rows = filtered.map(i => [
       i.item_date,
       categories[i.category as BudgetCategory]?.label || i.category,
-      i.title,
-      i.amount,
+      i.is_refund ? `[환불] ${i.title}` : i.title,
+      i.is_refund ? -i.amount : i.amount,
       paidByOptions.find(p => p.value === i.paid_by)?.label || i.paid_by,
       paymentStageOptions.find(s => s.value === i.payment_stage)?.label || i.payment_stage || "",
       paymentMethodOptions.find(m => m.value === i.payment_method)?.label || i.payment_method || "",
@@ -141,10 +142,15 @@ const BudgetHistory = () => {
             />
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+            <p className="text-sm font-medium text-foreground truncate">
+              {item.is_refund && (
+                <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px] font-bold mr-1">환불</span>
+              )}
+              {item.title}
+            </p>
             <p className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
               {format(parseLocalDate(item.item_date), "M.d")} · {pb?.emoji} {pb?.label}
-              {item.payment_stage && (
+              {!item.is_refund && item.payment_stage && (
                 <span className="bg-accent text-accent-foreground px-1.5 py-0.5 rounded">
                   {paymentStageOptions.find(s => s.value === item.payment_stage)?.label || item.payment_stage}
                 </span>
@@ -165,7 +171,10 @@ const BudgetHistory = () => {
               {item.memo && ` · ${item.memo}`}
             </p>
           </div>
-          <span className="text-sm font-bold text-foreground tabular-nums shrink-0">{fmt(item.amount)}만원</span>
+          <span className={cn(
+            "text-sm font-bold tabular-nums shrink-0",
+            item.is_refund ? "text-primary" : "text-foreground",
+          )}>{item.is_refund ? "−" : ""}{fmt(item.amount)}만원</span>
         </button>
         <button className="p-1.5 rounded-lg hover:bg-muted transition-colors md:opacity-0 md:group-hover:opacity-100"
           onClick={() => setDeleteTarget(item)}
@@ -289,7 +298,7 @@ const BudgetHistory = () => {
               <div className="flex items-center justify-between py-2">
                 <span className="text-xs font-bold text-muted-foreground">{month}</span>
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  {fmt(monthItems.reduce((s, i) => s + i.amount, 0))}만원 · {monthItems.length}건
+                  {fmt(monthItems.reduce((s, i) => s + netManwon(i), 0))}만원 · {monthItems.length}건
                 </span>
               </div>
               <div className="space-y-1">
@@ -300,7 +309,7 @@ const BudgetHistory = () => {
         ) : (
           /* Vendor (title) groups */
           Object.entries(vendorGroups)
-            .map(([key, vItems]) => ({ key, items: vItems, total: vItems.reduce((s, i) => s + i.amount, 0) }))
+            .map(([key, vItems]) => ({ key, items: vItems, total: vItems.reduce((s, i) => s + netManwon(i), 0) }))
             .sort((a, b) => b.total - a.total)
             .map(({ key, items: vItems, total }) => {
               const first = vItems[0];

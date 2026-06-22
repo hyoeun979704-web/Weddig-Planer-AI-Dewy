@@ -29,6 +29,8 @@ import {
   getTaskUrgency,
   parseLocalDate,
 } from "@/lib/schedule";
+import { applyPersonaSchedule } from "@/lib/personaPlanProfile";
+import { computePregnancyContext } from "@/lib/pregnancy";
 import {
   CATEGORY_LABELS,
   SKIPPABLE_CATEGORIES,
@@ -71,7 +73,18 @@ const Schedule = () => {
   const days = daysUntilWedding(weddingSettings.wedding_date);
   // 압축 모드 — P18(임신 16주 · 식 4개월) / P13(7개월) 등 임박 사용자도 phase
   // 5단계를 의미 있게 받도록 D-Day 까지 잔여일 기준으로 윈도우 비율을 재계산.
-  const TIMELINE_PHASES = buildTimelinePhases(days);
+  // 페르소나 맞춤 추천 일정 — 표준 5단계에 페르소나 델타(추가/제거)를 입혀 "추천 할 일"만 개인화.
+  // 표시 전용(이미 시드된 일정 불변). 임신 차수·예식 형식·하객 규모로 동적 분기.
+  const pregCtx = computePregnancyContext(
+    weddingSettings.pregnant,
+    weddingSettings.pregnancy_due_date,
+    weddingSettings.wedding_date,
+  );
+  const TIMELINE_PHASES = applyPersonaSchedule(buildTimelinePhases(days), weddingSettings.persona_mode, {
+    trimester: pregCtx.trimesterAtWedding,
+    ceremonyType: weddingSettings.ceremony_type,
+    guestCount: budgetSettings?.guest_count ?? null,
+  });
 
   // 위젯 '바로 추가'(app.dewy://schedule/new → /schedule?add=1) → 현재 시기 phase 상세 시트를
   // 자동 오픈(일정 추가 폼이 그 안에 있음) 후 파라미터 정리. days 범위에 맞는 phase, 없으면 첫 phase.

@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCouplePartnerId } from "@/hooks/useCouplePartnerId";
 import { toast } from "@/hooks/use-toast";
 import { regionalAverages, regions, type BudgetCategory } from "@/data/budgetData";
+import { netManwon } from "@/lib/budgetFormat";
 
 export interface BudgetSettings {
   id: string;
@@ -31,6 +32,8 @@ export interface BudgetItem {
   balance_due_date: string | null;
   payment_stage: string;
   payment_method: string;
+  /** 환불 내역 여부(migration 20260622140000). true 면 지출 합계에서 차감(순지출). 기본 false. */
+  is_refund: boolean;
   created_at: string;
   /** NOT NULL in DB (migration 20260513120000), set by trigger on update.
    *  Older rows backfilled to now() at migration time. */
@@ -117,9 +120,11 @@ export function useBudget(profileRegionKey?: string) {
     const paidByTotals: Record<string, number> = {};
     let totalSpent = 0;
     for (const i of items) {
-      totalSpent += i.amount;
-      categoryTotals[i.category] = (categoryTotals[i.category] || 0) + i.amount;
-      paidByTotals[i.paid_by] = (paidByTotals[i.paid_by] || 0) + i.amount;
+      // 환불 항목은 순지출에서 차감. 합계·카테고리·분담 모두 단일 헬퍼(netManwon)로 일관.
+      const signed = netManwon(i);
+      totalSpent += signed;
+      categoryTotals[i.category] = (categoryTotals[i.category] || 0) + signed;
+      paidByTotals[i.paid_by] = (paidByTotals[i.paid_by] || 0) + signed;
     }
     return {
       totalSpent,
@@ -187,9 +192,13 @@ export function useBudget(profileRegionKey?: string) {
   const addItem = useMutation({
     mutationFn: async (item: Omit<BudgetItem, "id" | "user_id" | "created_at">) => {
       if (!user) throw new Error("로그인이 필요합니다");
+      // is_refund 는 default false — false 면 payload 에서 생략해 마이그레이션 미적용
+      // 환경에서도 일반 지출 기록이 깨지지 않게 한다(환불 기록만 컬럼 필요).
+      const payload: Record<string, unknown> = { ...item, user_id: user.id };
+      if (!payload.is_refund) delete payload.is_refund;
       const { data, error } = await (supabase as any)
         .from("budget_items")
-        .insert({ ...item, user_id: user.id })
+        .insert(payload)
         .select("id")
         .single();
       if (error) throw error;

@@ -11,6 +11,14 @@ export const manwonToWon = (manwon: number): number => Math.round(manwon * 10000
 export const wonPreview = (manwon: number): string => manwonToWon(manwon).toLocaleString();
 
 /**
+ * 예산 항목의 순지출(만원) — 환불(is_refund) 항목은 음수로 차감한다. 모든 예산 합산
+ * (요약·내역·리포트·위젯)이 이 단일 함수를 공유해 환불 반영이 어긋나지 않게 한다.
+ * (migration 20260622140000 is_refund.)
+ */
+export const netManwon = (i: { amount: number; is_refund?: boolean | null }): number =>
+  (i.is_refund ? -1 : 1) * i.amount;
+
+/**
  * 예산 도메인 금액의 사람 표기 — budget_settings.total_budget / budget_items.amount 는
  * **만원 단위로 저장**된다(예: 1500 = 1,500만원). 챗봇이 이를 "1,500원"으로 표기한
  * 회귀(260612)가 있어 표기를 이 함수로 단일화한다.
