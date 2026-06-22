@@ -181,12 +181,24 @@ export interface InvitationCanvas {
   background_url?: string;
 }
 
+/** 접는 선(오시/스코어) 또는 절취선. 인쇄 마크·패널 경계 계산에 쓰인다. */
+export interface FoldLine {
+  /** 'v' = 세로 접는선(x 위치), 'h' = 가로 접는선(y 위치). */
+  axis: "v" | "h";
+  /** 트림(완성 크기) 기준 접는선 위치(mm). 0~wMm(또는 hMm) 사이. */
+  atMm: number;
+  /** score=접이(오시), perforation=절취(미싱). 기본 score. */
+  type?: "score" | "perforation";
+}
+
 export interface InvitationPrintSpec {
-  /** Finished print size in millimeters. */
+  /** Finished print size in millimeters (접이식은 '펼친' 크기 기준). */
   wMm: number;
   hMm: number;
   bleedMm?: number;
   safeMarginMm?: number;
+  /** 접는/절취선. 2단(1개)·3단(2개) 등. 없으면 플랫. */
+  folds?: FoldLine[];
 }
 
 export interface InvitationPageLayout {
@@ -204,7 +216,12 @@ export interface InvitationLayout {
   /** Optional V2 pages. Legacy templates without pages are treated as one page. */
   pages?: InvitationPageLayout[];
   print?: InvitationPrintSpec;
-  product_kind?: "card" | "ticket" | "chocolate" | "bifold" | "newspaper" | "mobile" | "mobile_roll";
+  product_kind?:
+    | "card" | "postcard" | "photocard"
+    | "bifold" | "trifold"
+    | "ticket" | "pinwheel" | "passport"
+    | "chocolate" | "newspaper"
+    | "mobile" | "mobile_roll";
   /** Multi-frame mobile canvases are rendered without visible page seams. */
   presentation?: "paged" | "seamless_roll";
   /** 모바일 청첩장 루프 장식(스크롤 위에 떠다니는 데코). 없으면 없음. */
