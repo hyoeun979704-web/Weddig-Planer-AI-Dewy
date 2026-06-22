@@ -40,6 +40,8 @@ import {
 import AdminGuard from "@/components/admin/AdminGuard";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ImageUploader from "@/components/admin/ImageUploader";
+import InvitationCanvas from "@/components/invitation/InvitationCanvas";
+import { useInvitationFonts } from "@/hooks/useInvitationFonts";
 import AdminTemplateEditor, {
   type EditorTemplate,
 } from "./AdminTemplateEditor";
@@ -48,12 +50,14 @@ import { toast } from "@/hooks/use-toast";
 import {
   createMobileRollLayout,
   createPaperPagesLayout,
+  getInvitationPages,
   isSeamlessRoll,
   MOBILE_ROLL_FRAME_HEIGHT,
   MOBILE_ROLL_MAX_FRAMES,
   MOBILE_ROLL_MAX_HEIGHT,
   MOBILE_ROLL_WIDTH,
   PAPER_MAX_PAGES,
+  pageToLayout,
   type PaperPageInput,
   validateMobileRollLayout,
 } from "@/lib/invitation/layout";
@@ -323,6 +327,82 @@ const STARTER_LAYOUT: InvitationLayout = {
   ],
 };
 
+// 미리보기용 샘플 데이터 — 슬롯 field 가 채워져 실제 모습에 가깝게 렌더된다.
+const PREVIEW_SAMPLE: Record<string, string> = {
+  groom_name: "민준",
+  bride_name: "서연",
+  couple_names: "민준 · 서연",
+  wedding_date: "2026. 10. 17",
+  wedding_time: "오후 1시",
+  venue_name: "그랜드 웨딩홀",
+  venue_address: "서울 강남구 테헤란로 123",
+  intro_text: "두 사람이 사랑으로 하나가 됩니다. 귀한 걸음으로 축복해 주세요.",
+  groom_parents: "홍길동 · 박영자 의 아들 민준",
+  bride_parents: "이순신 · 최영희 의 딸 서연",
+  account_info: "마음 전하실 곳",
+};
+
+/** 레이아웃 JSON 을 실제 캔버스로 렌더하는 읽기전용 미리보기 — 썸네일 없이도 내용 확인. */
+function LayoutPreview({ json }: { json: string }) {
+  const { fontsReady } = useInvitationFonts();
+  const layout = useMemo<InvitationLayout | null>(() => {
+    try {
+      const l = JSON.parse(json || "{}") as InvitationLayout;
+      return l?.canvas?.w && l?.canvas?.h ? l : null;
+    } catch {
+      return null;
+    }
+  }, [json]);
+  if (!layout) {
+    return (
+      <div className="h-28 rounded-md border border-dashed border-border flex items-center justify-center text-[11px] text-muted-foreground">
+        유효한 레이아웃 JSON 을 입력하면 미리보기가 표시돼요
+      </div>
+    );
+  }
+  const pages = getInvitationPages(layout);
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-1">
+      {pages.map((p) => {
+        const w = Math.min(200, p.canvas.w);
+        return (
+          <div key={p.id} className="shrink-0">
+            <div className="rounded-md overflow-hidden border border-border bg-white" style={{ width: w }}>
+              <InvitationCanvas
+                layout={pageToLayout(p)}
+                userData={PREVIEW_SAMPLE}
+                aiText={{}}
+                textOverrides={{}}
+                imageUrls={{}}
+                fontsReady={fontsReady}
+                selectedSlotId={null}
+                onSelectSlot={() => {}}
+                displayWidth={w}
+                background="#ffffff"
+              />
+            </div>
+            {p.label && (
+              <p className="text-[10px] text-center text-muted-foreground mt-1 truncate" style={{ width: w }}>
+                {p.label}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** 목록 카드/선택 화면용 미리보기 이미지 소스 — 썸네일 → 캔버스 배경 → 첫 페이지 배경 순. */
+function resolvePreviewImage(t: { thumbnail_url: string; layout: Record<string, unknown> }): string | null {
+  if (t.thumbnail_url) return t.thumbnail_url;
+  const layout = t.layout as {
+    canvas?: { background_url?: string };
+    pages?: Array<{ canvas?: { background_url?: string } }>;
+  } | null;
+  return layout?.canvas?.background_url || layout?.pages?.[0]?.canvas?.background_url || null;
+}
+
 const AdminInvitationTemplates = () => {
   const [items, setItems] = useState<Template[]>([]);
   const [fonts, setFonts] = useState<Font[]>([]);
@@ -428,13 +508,13 @@ const AdminInvitationTemplates = () => {
   });
 
   const handleSave = async () => {
-    if (!form.thumbnail_url) {
-      toast({ title: "썸네일을 업로드해주세요", variant: "destructive" });
-      return;
-    }
     if (!form.name.trim()) {
       toast({ title: "이름을 입력해주세요", variant: "destructive" });
       return;
+    }
+    // 썸네일은 선택 — 없으면 목록/선택 화면이 레이아웃 미리보기로 폴백한다(아래 LayoutPreview).
+    if (!form.thumbnail_url) {
+      toast({ title: "썸네일 없이 저장합니다", description: "미리보기는 레이아웃으로 표시돼요." });
     }
     let layout: Record<string, unknown> = {};
     try {
@@ -1194,6 +1274,14 @@ const AdminInvitationTemplates = () => {
                 </div>
               </div>
 
+              <section className="rounded-lg border border-border bg-muted/20 p-4 space-y-2">
+                <p className="text-sm font-semibold text-foreground">미리보기</p>
+                <p className="text-[11px] text-muted-foreground -mt-1">
+                  아래 레이아웃 JSON 을 실제 캔버스로 렌더해요(샘플 내용). 썸네일이 없어도 모습을 확인할 수 있어요.
+                </p>
+                <LayoutPreview json={layoutJson} />
+              </section>
+
               {form.format === "mobile" && (
                 <section className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
                   <div>
@@ -1516,11 +1604,20 @@ const AdminInvitationTemplates = () => {
                 className="bg-background rounded-lg overflow-hidden border border-border"
               >
                 <div className="relative aspect-[3/4] bg-muted">
-                  <img
-                    src={t.thumbnail_url}
-                    alt={t.name}
-                    className="w-full h-full object-cover"
-                  />
+                  {resolvePreviewImage(t) ? (
+                    <img
+                      src={resolvePreviewImage(t)!}
+                      alt={t.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    // 썸네일·배경 둘 다 없는 템플릿(슬롯 전용) — 깨진 이미지 대신 플레이스홀더.
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-center px-2">
+                      <Images className="w-6 h-6 text-muted-foreground" />
+                      <span className="text-[11px] font-medium text-foreground line-clamp-2">{t.name}</span>
+                      <span className="text-[10px] text-muted-foreground">미리보기 없음 · 편집기에서 확인</span>
+                    </div>
+                  )}
                   {!t.is_active && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <span className="text-white text-xs font-semibold">
