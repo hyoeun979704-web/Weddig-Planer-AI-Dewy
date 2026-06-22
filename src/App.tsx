@@ -5,6 +5,7 @@ import SessionTracker from "@/components/SessionTracker";
 import GenerationNotifier from "@/components/GenerationNotifier";
 import { ConfirmDialogHost } from "@/components/ui/confirm-dialog";
 import { AmountPromptHost } from "@/components/ui/amount-prompt";
+import WidgetBridgeHost from "@/components/native/WidgetBridgeHost";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import AdminGuard from "@/components/admin/AdminGuard";
@@ -452,6 +453,8 @@ const App = () => (
           <ConfirmDialogHost />
           {/* 명령형 금액 입력 호스트 — 업체 '직접 결정' 시 계약 금액을 예산에 기록. */}
           <AmountPromptHost />
+          {/* 홈 위젯 다리 — 위젯 딥링크 navigate + 진입/resume 시 스냅샷 동기화(네이티브 한정). */}
+          <WidgetBridgeHost />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

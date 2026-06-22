@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Seo from "@/components/Seo";
 import { safeLocalStorage } from "@/lib/safeLocalStorage";
 import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
@@ -72,6 +72,18 @@ const Schedule = () => {
   // 압축 모드 — P18(임신 16주 · 식 4개월) / P13(7개월) 등 임박 사용자도 phase
   // 5단계를 의미 있게 받도록 D-Day 까지 잔여일 기준으로 윈도우 비율을 재계산.
   const TIMELINE_PHASES = buildTimelinePhases(days);
+
+  // 위젯 '바로 추가'(app.dewy://schedule/new → /schedule?add=1) → 현재 시기 phase 상세 시트를
+  // 자동 오픈(일정 추가 폼이 그 안에 있음) 후 파라미터 정리. days 범위에 맞는 phase, 없으면 첫 phase.
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get("add") !== "1") return;
+    const current =
+      (days != null && TIMELINE_PHASES.find((p) => days <= p.startDay && days >= p.endDay)) ||
+      TIMELINE_PHASES[0];
+    if (current) setSelectedPhase(current);
+    navigate("/schedule", { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   // Filter out items in user-excluded categories. The DB still has them, but
   // the schedule UI hides them — re-enabling the category brings them back.
