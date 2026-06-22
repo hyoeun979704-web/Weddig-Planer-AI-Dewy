@@ -44,7 +44,22 @@ describe("personaPlanProfile/applyPersonaSchedule", () => {
     expect(venue.find((p) => p.id === "2")!.defaultTasks).toContain("소규모 베뉴(레스토랑·하우스·카페) 답사");
 
     const scale = applyPersonaSchedule(phases(), "small_intimate", { guestCount: 40 });
-    expect(scale.find((p) => p.id === "4")!.defaultTasks).toContain("하객 40명 기준 좌석·답례품 수량 정하기");
+    expect(scale.find((p) => p.id === "4")!.defaultTasks).toContain("하객 40명 — 식당 보증인원·답례품 수량 확정");
+  });
+
+  it("표준 보강(리서치): 상견례·본식 영상·하객 인원 확정이 기본에 포함", () => {
+    const base = phases();
+    expect(base.find((p) => p.id === "1")!.defaultTasks).toContain("상견례 — 양가 첫 인사·방향 합의");
+    expect(base.find((p) => p.id === "2")!.defaultTasks).toContain("본식 사진·영상(DVD) 예약");
+    expect(base.find((p) => p.id === "4")!.defaultTasks).toContain("하객 인원 확정(식대·답례품 수량)");
+  });
+
+  it("식 없는 페르소나는 본식 영상·하객 식대 추천을 제거", () => {
+    const self = applyPersonaSchedule(phases(), "self_no_ceremony");
+    expect(self.find((p) => p.id === "2")!.defaultTasks).not.toContain("본식 사진·영상(DVD) 예약");
+    expect(self.find((p) => p.id === "4")!.defaultTasks).not.toContain("하객 인원 확정(식대·답례품 수량)");
+    const noWed = applyPersonaSchedule(phases(), "no_wedding_travel");
+    expect(noWed.find((p) => p.id === "2")!.defaultTasks).not.toContain("본식 사진·영상(DVD) 예약");
   });
 
   it("해외/국제는 일정 개인화에서 제외(표준 그대로)", () => {
