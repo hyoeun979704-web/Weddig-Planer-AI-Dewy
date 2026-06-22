@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
 import { extractMobileContent, type MobileInvitationContent } from "@/lib/invitation/mobileContent";
+import { SAMPLE_MOBILE_CONTENT } from "@/lib/invitation/mobileSample";
 import { themeForTone } from "@/lib/invitation/mobileThemes";
 import { BgmPlayer } from "@/components/invitation/native/BgmPlayer";
 import {
@@ -58,6 +59,12 @@ const MobileInvitationView2 = () => {
 
   useEffect(() => {
     if (!slug) return;
+    // 데모 샘플 — DB·인증 없이 즉시 미리보기(/i2/demo). 품질 평가용.
+    if (slug === "demo" || slug === "sample") {
+      setContent(SAMPLE_MOBILE_CONTENT);
+      setLoading(false);
+      return;
+    }
     (async () => {
       const { data: row, error } = await (supabase as any)
         .from("invitations")
