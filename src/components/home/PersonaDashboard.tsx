@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { ArrowRight, BookOpen, Check, Flame, Sparkles, Timer, Gift, Lightbulb } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Flame, Sparkles, Timer, Gift, Lightbulb, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { usePersonaInsights } from "@/hooks/usePersonaInsights";
@@ -347,7 +347,15 @@ const PersonaDashboard = () => {
             <Flame className="w-3.5 h-3.5 text-rose-500" />
             <div className="min-w-0">
               <p className="text-[10px] text-muted-foreground leading-none">연속</p>
-              <p className="text-[11px] font-bold text-foreground">{streak.streak}일</p>
+              <p className="text-[11px] font-bold text-foreground flex items-center gap-0.5">
+                {streak.streak}일
+                {/* 프리즈(하루 빠짐 보호권) 보유 시 표시 — 끊길 걱정 줄이는 안심 신호. */}
+                {streak.streak > 0 && streak.freezesAvailable > 0 && (
+                  <span className="inline-flex items-center text-[9px] font-medium text-sky-500">
+                    <Shield className="w-2.5 h-2.5" />{streak.freezesAvailable}
+                  </span>
+                )}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 bg-card/70 rounded-xl px-2 py-1.5">
