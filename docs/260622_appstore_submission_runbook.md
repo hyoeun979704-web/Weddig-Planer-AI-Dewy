@@ -103,32 +103,29 @@ Android 앱ID/광고단위와 **별개**. 미설정 시 광고만 비노출 — 
 
 ---
 
-## 7. 결제 — **정책은 이미 확정**, iOS IAP 만 후속 (단일 소스 `260620_payment_compliance_plan.md`)
+## 7. 결제 — iOS IAP로 출시 (코드 구현 완료, 콘솔·e2e 남음)
 
 > 결제 구조의 단일 소스는 **`docs/260620_payment_compliance_plan.md`**(여기서 중복 서술하지 않음).
 > 확정 결정: **웹=카카오페이 / 네이티브(Android·iOS)=네이티브 IAP**, **anti-steering**(네이티브 빌드에선
-> 외부 결제 UI/링크 숨김). RevenueCat 등 SaaS 미사용. Android IAP 셋업은 `260620_google_iap_setup.md`.
+> 외부 결제 UI/링크 숨김). RevenueCat 등 SaaS 미사용. 셋업: Android=`260620_google_iap_setup.md`,
+> **iOS=`260622_apple_iap_setup.md`(신규)**.
 
-**현재 코드 상태 (드리프트 주의):**
-- **Android = IAP 로 이미 출시됨** (`cordova-plugin-purchase`, 하트 5종 + 구독 `dewy_premium`,
-  서버검증 `iap-verify-google` + RTDN `play-rtdn`).
-- **iOS = 결제 UI 숨김** — `src/lib/payments/index.ts` 의 `getPaymentProvider()` 가 ios 에서
-  `"unavailable"` 반환(anti-steering). 즉 **iOS 에선 하트/구독 결제 화면 자체가 안 보인다.**
-- ⚠️ 계획서 §6 의 "iOS 선반영 완료" 와 달리, **iOS IAP 경로는 아직 미구현**이다:
-  `iap-verify-apple`·`apple-notifications-v2` 엣지함수 없음, `index.ts` ios case 미연결.
+**현재 코드 상태:**
+- **Android = IAP 출시됨** (`cordova-plugin-purchase`, 하트 5종 + 구독 `dewy_premium`,
+  `iap-verify-google` + `play-rtdn`).
+- **iOS = IAP 코드 구현 완료** ✅ — `getPaymentProvider()` ios→`"iap"`, `iap.ts` 가 App Store 분기
+  (`Platform.APPLE_APPSTORE`, 구독은 기간별 상품 `dewy_premium_monthly|yearly`), 서버검증
+  `iap-verify-apple`(App Store Server API) + 갱신·환불 `apple-notifications-v2`(ASN v2).
+  결제 UI(`HeartCharge`/`SubscriptionCheckout`)는 스토어명 자동 분기(App Store/Google Play),
+  G3 구독 고지·anti-steering 반영. 멱등 원장 `iap_transactions`(platform=ios) 재사용.
 
-**→ 1차 App Store 출시 전략(권장): 결제 미노출 그대로 출시.**
-iOS 에서 디지털 결제를 노출하지 않으므로 **IAP(3.1.1) 의무도, anti-steering 위반도 없다** — 가장 빠른 심사 통과 경로.
-(웹/Android 에서 산 하트·구독은 서버 entitlement 라 iOS 에서도 **사용**은 됨 — 3.1.3(b) 합치.)
-
-**iOS 에서 결제를 켜려면(후속 작업, `260620_payment_compliance_plan.md §3·§6` 그대로):**
-1. App Store Connect 에 IAP 상품 등록 — 하트 5종(consumable) + 구독 `dewy_premium`(auto-renewable),
-   가격 = plan §2 표(웹가 +10%, Apple 가격포인트에 맞춤).
-2. `src/lib/payments/index.ts` ios case `"iap"` + `iap.ts` 에 iOS(StoreKit) 분기.
-3. 엣지함수 신규: `iap-verify-apple`(App Store Server API 영수증검증, 멱등) +
-   `apple-notifications-v2`(갱신·취소·환불 동기화). `iap_transactions` 멱등키 재사용.
-4. **G3 구독 고지(3.1.2)**: 구독 paywall 에 구독명·기간·가격/기간 + 개인정보·이용약관 **인앱 링크** 표시.
-5. 스토어 샌드박스 + 실기기 e2e(이 항목은 Mac/실기기 전용 — 빌드 통과=완료 아님).
+**출시 전 남은 일(콘솔·시크릿·검증 — 전부 `260622_apple_iap_setup.md` 참조):**
+1. App Store Connect IAP 상품 등록 — 하트 5종(consumable) + 구독 그룹 `dewy_premium` 안
+   `dewy_premium_monthly`(무료체험 intro offer)·`dewy_premium_yearly`. 가격=웹가 +10% 근사 티어.
+2. App Store Server API 키(.p8) 발급 → Supabase 시크릿
+   `APPLE_IAP_KEY_ID`·`APPLE_IAP_ISSUER_ID`·`APPLE_IAP_PRIVATE_KEY`(+선택 `APPLE_BUNDLE_ID`·`APPLE_IAP_ENV`).
+3. App Store Server Notifications **v2** URL 등록(prod+sandbox) + 선택 `APPLE_ASN_TOKEN`.
+4. **샌드박스 + 실기기 e2e**: 하트 구매→적립, 구독→활성, 해지·환불→ASN 반영, 복원. (Mac/실기기 전용 — 빌드 통과=완료 아님.)
 
 ---
 
@@ -182,7 +179,7 @@ Play **Data Safety**(`play-store-listing.md §4`)와 **동일 사실관계**를 
 ## 11. 심사 반려 단골 체크리스트 (제출 전 최종)
 
 - [ ] **Sign in with Apple 동작**(§4) — 4.8 최빈 반려 사유
-- [ ] **결제**(§7): 1차는 iOS 결제 미노출(`unavailable`) 확인 → IAP/anti-steering 이슈 없음. iOS IAP 켤 거면 §7 후속 먼저.
+- [ ] **결제**(§7): iOS IAP 코드 구현됨 → App Store Connect 상품 등록 + `.p8`/ASN 시크릿 + 샌드박스 e2e (`260622_apple_iap_setup.md`).
 - [ ] 회원 탈퇴(계정 삭제) **앱 내 경로** 제공 — 가이드라인 5.1.1(v) (소셜 로그인 앱 필수)
 - [ ] 개인정보처리방침 URL 유효 + 외부 SDK(Supabase·Gemini·OpenAI·Kakao·AdMob·Vercel) 명시
 - [ ] App Privacy 양식 ↔ 실제 코드 수집 항목 일치(§8)
@@ -204,5 +201,6 @@ Play **Data Safety**(`play-store-listing.md §4`)와 **동일 사실관계**를 
 - `docs/ios-packaging.md` — 기술 셋업(ios/ 생성·Info.plist·딥링크·AdMob) 상세.
 - `docs/play-store-listing.md` — 스토어 카피·연령등급·데이터안전(원본, iOS 재사용).
 - `docs/capacitor-migration-plan.md` — 네이티브 래핑 설계·푸시 보류 근거.
-- **`docs/260620_payment_compliance_plan.md`** — 결제 구조 단일 소스(웹/네이티브 분기·anti-steering·iOS IAP 후속).
-- `docs/260620_google_iap_setup.md` — Android IAP 콘솔 셋업(상품ID·구독·RTDN, iOS 미러링 참고).
+- **`docs/260620_payment_compliance_plan.md`** — 결제 구조 단일 소스(웹/네이티브 분기·anti-steering).
+- `docs/260620_google_iap_setup.md` — Android IAP 콘솔 셋업(상품ID·구독·RTDN).
+- **`docs/260622_apple_iap_setup.md`** — iOS IAP 콘솔·시크릿·ASN v2 셋업(코드 구현 후 남은 수동작업).

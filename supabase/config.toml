@@ -84,3 +84,13 @@ verify_jwt = true
 # 환불·취소·만료가 영영 처리되지 않으므로 반드시 false 여야 한다.
 [functions.play-rtdn]
 verify_jwt = false
+
+# App Store IAP 영수증검증 — 로그인 사용자가 호출(Authorization 헤더 + 자체 getClaims). 명시 JWT.
+[functions.iap-verify-apple]
+verify_jwt = true
+
+# App Store Server Notifications v2 수신 — Apple 이 호출(JWT 없음)라 false. 선택적 ?token=APPLE_ASN_TOKEN
+# 게이트 + originalTransactionId 로 Apple 권위 재조회해 위조 payload 에도 안전. JWT 게이트가 켜지면
+# Apple 알림이 401 로 막혀 갱신·환불이 영영 처리되지 않으므로 반드시 false 여야 한다.
+[functions.apple-notifications-v2]
+verify_jwt = false

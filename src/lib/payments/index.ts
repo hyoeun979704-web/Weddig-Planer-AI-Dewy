@@ -1,7 +1,7 @@
 import { getPlatform } from "@/lib/platform";
 
-// 결제수단 분기 단일 진입점. 웹=카카오페이(redirect), 안드로이드=Google IAP,
-// iOS=미지원(준비중 — StoreKit 후속). 설계: docs/260620_payment_compliance_plan.md §3.
+// 결제수단 분기 단일 진입점. 웹=카카오페이(redirect), 네이티브(Android=Google Play / iOS=App Store)=IAP.
+// 설계: docs/260620_payment_compliance_plan.md §3. iOS 셋업: docs/260622_apple_iap_setup.md.
 export type PaymentProvider = "kakao" | "iap" | "unavailable";
 
 export function getPaymentProvider(): PaymentProvider {
@@ -9,12 +9,15 @@ export function getPaymentProvider(): PaymentProvider {
     case "web":
       return "kakao";
     case "android":
-      return "iap";
     case "ios":
+      return "iap";
     default:
-      return "unavailable"; // iOS IAP 선반영 전까지 결제 UI 숨김(anti-steering).
+      return "unavailable"; // 알 수 없는 플랫폼 — 결제 UI 숨김(anti-steering 안전기본값).
   }
 }
+
+/** IAP 결제 CTA·안내에 쓰는 스토어 표시명(플랫폼별). */
+export const iapStoreName = (): string => (getPlatform() === "ios" ? "App Store" : "Google Play");
 
 export * from "./products";
 export {

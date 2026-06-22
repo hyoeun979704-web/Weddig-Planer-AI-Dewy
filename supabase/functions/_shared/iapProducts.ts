@@ -25,3 +25,16 @@ export const SUB_EARLY_BIRD: Record<string, { amount: number; reason: string }> 
   monthly: { amount: 10, reason: "early_bird_monthly" },
   yearly: { amount: 180, reason: "early_bird_yearly" },
 };
+
+// Apple App Store 구독 상품ID → plan(서버 진실원천). Google 의 base plan 대신 상품ID 자체가 기간이다.
+// ⚠️ 클라 `src/lib/payments/products.ts` APPLE_SUBSCRIPTION_PRODUCT_IDS 와 1:1 일치해야 한다.
+export const APPLE_SUB_BY_PRODUCT: Record<string, { plan: "monthly" | "yearly"; webPrice: number; months: number }> = {
+  dewy_premium_monthly: SUB_PLANS.monthly,
+  dewy_premium_yearly: SUB_PLANS.yearly,
+};
+
+// Apple 구독 상품ID → early-bird 보너스(plan 기준 동일 규칙).
+export const APPLE_SUB_EARLY_BIRD: Record<string, { amount: number; reason: string }> = {
+  dewy_premium_monthly: SUB_EARLY_BIRD.monthly,
+  dewy_premium_yearly: SUB_EARLY_BIRD.yearly,
+};
