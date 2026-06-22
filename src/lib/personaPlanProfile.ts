@@ -1,13 +1,17 @@
-import type { WeddingPersonaMode } from "@/lib/weddingPersona";
+import type { WeddingPersonaMode, CeremonyType } from "@/lib/weddingPersona";
+import type { PregnancyTrimester } from "@/lib/pregnancy";
 import type { TimelinePhase } from "@/lib/schedule";
 
 // 페르소나별 "추천 계획" 프로파일 — 단일 소스. 표준(standard_bride/groom)의 일정 5단계를
 // 기준선으로 두고, 각 페르소나는 **델타(추가/제거)만** 선언한다(표준 변경이 전 페르소나에
-// 자동 반영 — DRY). 설계·결정: docs/260622_personalization_plan.md (P1).
+// 자동 반영 — DRY). 일부 페르소나는 컨텍스트(임신 차수·예식 형식·하객 규모)로 동적 분기한다.
+// 설계·결정: docs/260622_personalization_plan.md (P1).
 //
 // ⚠️ 적용 범위(사용자 확정): **추천 표시(defaultTasks)에만**. 이미 시드된 user_schedule_items 는
 // 절대 건드리지 않는다. 빈 단계의 "추천 할 일" 목록만 페르소나에 맞춰 보여준다(회귀 0).
 // 프로파일이 없는 페르소나(undefined)는 표준 그대로 — 명시적 델타만 둔다.
+//
+// 적용 제외(현재): international / remote_overseas — 해외/국제 일정은 후속으로 분리(요청).
 
 interface ScheduleDelta {
   /** 그 단계 defaultTasks 에서 제거할 항목(정확 일치). */
@@ -18,6 +22,20 @@ interface ScheduleDelta {
 
 /** key = phase id("1"~"5"). schedule.ts STANDARD_PHASES 와 동일. */
 type ScheduleProfile = Partial<Record<string, ScheduleDelta>>;
+
+/** 동적 프로파일이 참고하는 컨텍스트(없으면 일반 폴백). */
+export interface PlanContext {
+  /** 본식 시점 임신 차수 — 임신 페르소나 일정 분기. */
+  trimester?: PregnancyTrimester | null;
+  /** 예식 형식 — 소형 페르소나(식당 대관 vs 소규모 베뉴) 분기. */
+  ceremonyType?: CeremonyType | null;
+  /** 하객 규모 — 소형 페르소나 좌석·답례품 수량 가이드. */
+  guestCount?: number | null;
+}
+
+type ScheduleProfileOrFn = ScheduleProfile | ((ctx: PlanContext) => ScheduleProfile);
+
+// ── 정적 프로파일 ────────────────────────────────────────────────────────────
 
 // 식(예식) 없는 페르소나 — 웨딩홀·식순·리허설을 빼고 촬영·혼인신고·신혼 준비를 채운다.
 const SELF: ScheduleProfile = {
@@ -45,11 +63,7 @@ const REMARRIAGE_CHILDREN: ScheduleProfile = {
   "5": { add: ["자녀 동반 식순·자리 배치 정하기"] },
 };
 
-// 소형/스몰 — 대형 웨딩홀 대신 소규모 베뉴 답사 + 답례품·웰컴키트.
-const SMALL_BASE: ScheduleProfile = {
-  "2": { add: ["소규모 베뉴(레스토랑·하우스·카페) 답사"] },
-  "5": { add: ["답례품·웰컴키트 준비"] },
-};
+// 소형 변형 — 공공시설/야외/호텔스몰.
 const SMALL_BUDGET: ScheduleProfile = {
   "1": { add: ["공공시설(구민회관 등) 예약 조건 확인"] },
   "2": { add: ["DIY 가능 항목 정리(부케·소품)"] },
@@ -59,60 +73,90 @@ const SMALL_OUTDOOR: ScheduleProfile = {
   "2": { add: ["야외 베뉴 답사(우천 대비·음향 확인)"] },
   "5": { add: ["우천 플랜·의자 배치 최종 점검", "답례품·웰컴키트 준비"] },
 };
-
-// 해외/국제 — 한국 방문 압축·위임·이중식·영문 자료.
-const REMOTE_OVERSEAS: ScheduleProfile = {
-  "1": { add: ["한국 방문 일정(2~3회) 큰 틀 잡기"] },
-  "2": { add: ["방문 회차에 업체 미팅 압축 배치", "양가 부모께 위임할 항목 정리"] },
-  "4": { add: ["체류·비자 동선 확인"] },
-};
-const INTERNATIONAL: ScheduleProfile = {
-  "1": { add: ["한국·해외 이중식 여부·일정 큰 틀 잡기"] },
-  "4": { add: ["영문 청첩장·안내문 준비", "하객 비자·체류 동선 확인"] },
+const SMALL_LUXURY: ScheduleProfile = {
+  "2": { add: ["호텔 스몰 패키지 비교(프라이빗·컨시어지)"] },
+  "5": { add: ["답례품·웰컴키트 준비"] },
 };
 
 const SINGLE_HOUSEHOLD: ScheduleProfile = {
   "1": { remove: ["웨딩플래너 상담"], add: ["1인 진행 체크리스트 확인(부모 역할 부재 대안)"] },
 };
-
 const STANDARD_GROOM: ScheduleProfile = {
   "1": { add: ["신랑 예복 후보 좁히기(맞춤·기성·렌탈)"] },
   "3": { add: ["예복 가봉 일정 잡기"] },
 };
-
 const BUDGET_ANALYTIC: ScheduleProfile = {
   "1": { add: ["업체별 견적 비교표 만들기"] },
   "2": { add: ["계약 전 추가금·숨은비용 확인"] },
 };
-
 const FIRST_TIMER: ScheduleProfile = {
   "1": { add: ["결혼 준비 용어·순서 익히기(스드메가 뭐예요?)"] },
 };
 
-const PREGNANCY: ScheduleProfile = {
-  "1": { add: ["산부인과에 본식 컨디션·일정 상의"] },
-  "2": { add: ["임신 주수 고려해 가봉 일정·여유 사이즈 확인"] },
-  "4": { add: ["신혼여행 단거리·시기 검토(후기 항공 제약)"] },
-  "5": { add: ["본식 당일 동선·의자·간식·낮은 굽 준비"] },
-};
+// ── 동적 프로파일 ────────────────────────────────────────────────────────────
 
-// 페르소나 → 일정 프로파일. 명시 안 한 모드는 표준(델타 없음).
-export const PERSONA_SCHEDULE_PROFILES: Partial<Record<WeddingPersonaMode, ScheduleProfile>> = {
-  pregnancy: PREGNANCY,
-  international: INTERNATIONAL,
+// 임신 — 본식 시점 차수별로 우선순위가 다르다. 산부인과 상담은 공통, 나머지는 차수별.
+function pregnancyProfile(ctx: PlanContext): ScheduleProfile {
+  const consult = "산부인과에 본식 컨디션·일정 상의";
+  switch (ctx.trimester) {
+    case "first": // 초기 — 입덧·안정. 무리한 일정 줄이고 사전 조사 위주.
+      return { "1": { add: [consult, "초기 안정·입덧 관리 — 무리한 일정 줄이기", "임산부 가능 메이크업·시술 미리 알아보기"] } };
+    case "second": // 중기 — 안정기. 촬영·가봉을 본격 집중 배치.
+      return {
+        "1": { add: [consult] },
+        "2": { add: ["안정기에 본식 촬영·가봉 집중 배치", "임신 주수 고려해 가봉 일정·여유 사이즈 확인"] },
+      };
+    case "third": // 후기 — 컨디션·동선·항공 제약.
+      return {
+        "1": { add: [consult] },
+        "4": { add: ["신혼여행 단거리·시기 검토(후기 항공 제약)"] },
+        "5": { add: ["본식 당일 동선·의자·간식·낮은 굽 준비"] },
+      };
+    default: // 차수 미상(출산예정일 미입력) — 전 차수 핵심을 합쳐 노출.
+      return {
+        "1": { add: [consult] },
+        "2": { add: ["임신 주수 고려해 가봉 일정·여유 사이즈 확인"] },
+        "4": { add: ["신혼여행 단거리·시기 검토(후기 항공 제약)"] },
+        "5": { add: ["본식 당일 동선·의자·간식·낮은 굽 준비"] },
+      };
+  }
+}
+
+// 가족 스몰(40~80명) — 형식(식당 대관 vs 소규모 베뉴)·규모로 분기.
+function smallIntimateProfile(ctx: PlanContext): ScheduleProfile {
+  const isRestaurant = ctx.ceremonyType === "restaurant";
+  const phase2 = isRestaurant
+    ? ["식당 대관 — 단독홀 여부·최소 보증인원 확인", "식당 메뉴·주류 패키지 비교"]
+    : ["소규모 베뉴(레스토랑·하우스·카페) 답사"];
+  const profile: ScheduleProfile = {
+    "2": { add: phase2 },
+    "5": { add: ["답례품·웰컴키트 준비"] },
+  };
+  // 친인척+친구 30~50명대 — 좌석·답례품 수량과 식순 간소화를 명시.
+  const g = ctx.guestCount;
+  if (g != null && g >= 25 && g <= 60) {
+    profile["4"] = { add: [`하객 ${g}명 기준 좌석·답례품 수량 정하기`] };
+    profile["5"] = { add: ["답례품·웰컴키트 준비", "사회·식순 간소화 정리"] };
+  }
+  return profile;
+}
+
+// 페르소나 → 일정 프로파일(정적 또는 ctx 함수). 명시 안 한 모드는 표준(델타 없음).
+export const PERSONA_SCHEDULE_PROFILES: Partial<Record<WeddingPersonaMode, ScheduleProfileOrFn>> = {
+  pregnancy: pregnancyProfile,
   remarriage: REMARRIAGE,
   remarriage_with_children: REMARRIAGE_CHILDREN,
   self_no_ceremony: SELF,
   no_wedding_travel: NO_WEDDING,
-  small_intimate: SMALL_BASE,
-  small_luxury: SMALL_BASE,
+  small_intimate: smallIntimateProfile,
+  small_luxury: SMALL_LUXURY,
   small_budget: SMALL_BUDGET,
   small_outdoor: SMALL_OUTDOOR,
-  remote_overseas: REMOTE_OVERSEAS,
   single_household: SINGLE_HOUSEHOLD,
   standard_groom: STANDARD_GROOM,
   budget_analytic: BUDGET_ANALYTIC,
   first_timer: FIRST_TIMER,
+  // international / remote_overseas: 후속(해외/국제 일정 분리).
 };
 
 /**
@@ -122,9 +166,11 @@ export const PERSONA_SCHEDULE_PROFILES: Partial<Record<WeddingPersonaMode, Sched
 export function applyPersonaSchedule(
   phases: TimelinePhase[],
   mode: WeddingPersonaMode | null | undefined,
+  ctx: PlanContext = {},
 ): TimelinePhase[] {
-  const profile = mode ? PERSONA_SCHEDULE_PROFILES[mode] : undefined;
-  if (!profile) return phases;
+  const entry = mode ? PERSONA_SCHEDULE_PROFILES[mode] : undefined;
+  if (!entry) return phases;
+  const profile = typeof entry === "function" ? entry(ctx) : entry;
   return phases.map((p) => {
     const delta = profile[p.id];
     if (!delta) return p;
