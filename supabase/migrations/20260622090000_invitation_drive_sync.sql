@@ -99,7 +99,8 @@ create trigger invitation_drive_settings_set_updated_at
 -- ── 5. pg_cron — 10분마다 자동 동기화 Edge Function 호출 ─────────────────────
 -- Vault 시크릿(project_url·service_role_key)을 읽어 net.http_post 로 호출.
 -- ai-uploads cleanup 과 동일 전제 — Vault 미설정 시 cron 은 조용히 실패하므로
--- supabase/README 의 Vault 설정 절차를 1회 실행해야 자동 동기화가 동작한다.
+-- docs/ai-uploads-retention.md 의 Vault 설정 절차를 1회 실행해야 자동 동기화가 동작한다
+-- (같은 시크릿을 두 cron 이 공유). 시뮬레이션·검증: docs/260622_invitation_drive_sync_simulation.md.
 -- (Vault 미설정·pg_cron 미가용이어도 '지금 동기화' 수동 경로는 정상 동작.)
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
