@@ -47,11 +47,25 @@ type SectionId =
   | "cover" | "greeting" | "family" | "date" | "gallery"
   | "venue" | "account" | "rsvp" | "guestbook" | "closing";
 interface SectionConfig {
-  id: SectionId;
-  enabled: boolean;
+  id: string;                      // 고정 섹션 id 또는 사용자 추가 섹션 uid
+  type: SectionId | "custom_text" | "custom_image";
+  enabled: boolean;                // on/off 토글
   label?: string;                  // 섹션 헤더 커스텀(선택)
+  fontFamily?: string;             // 섹션 폰트 override(허용)
+  content?: Record<string, unknown>; // 사용자 추가 섹션(custom_*)의 텍스트/사진
+  stickers?: StickerPlacement[];   // 섹션 장식 스티커 — 프리셋 앵커(자유 좌표 X)
+}
+// 스티커는 '추가'만, 자유 위치/크기 이동 없음 → 섹션 내 프리셋 앵커에 배치.
+interface StickerPlacement {
+  assetId: string;                 // invitation_assets.id
+  anchor: "tl" | "tr" | "bl" | "br" | "center";
+  scale?: number;                  // 사전 정의 스텝(예: 0.8/1/1.2)만, 자유 리사이즈 X
 }
 ```
+
+> **편집 권한 범위(확정)**: 허용 = 스티커 추가 · 사진/BGM 변경 · 섹션 추가/삭제/순서변경 ·
+> 폰트 변경 · 내용(텍스트) 변경. **제외 = 자유 위치 이동·크기 변경**(메이크디어처럼 드래그
+> 캔버스 없음 — 일관 품질). 스티커도 프리셋 앵커 배치라 좌표 드래그 아님.
 
 - 발행 서명 함수(`signFace`)를 확장해 `bgmPath`·`galleryPaths`·`sharePreview.imagePath` 도 1년 서명.
 - `extractMobileContent` 가 `layout.mobile` 우선 사용, 없으면 현재 휴리스틱(레거시 캔버스 발행본 호환).
@@ -77,15 +91,18 @@ interface SectionConfig {
 
 - **라이브 프리뷰**: 뷰어를 `<MobileInvitationBody content theme bgmUrl/>`(프레젠테이셔널) 와
   데이터-fetch 페이지로 분리 → 에디터가 **인메모리 draft** 로 동일 body 를 렌더(저장 전 실시간).
-- **내용 탭**: 섹션 카드 리스트. 카드 = 드래그 핸들(순서) + 토글(enabled) + 펼침 인라인 폼.
-  - 커버: 대표사진 업로드 + 한/영 이름(=user_data) + 날짜
+- **내용 탭**: 섹션 카드 리스트. 카드 = 드래그 핸들(**순서 변경**) + 토글(**on/off**) +
+  삭제 + 펼침 인라인 폼. 하단에 **＋ 섹션 추가**(custom_text/custom_image). 각 폼에서 **내용(텍스트)·
+  폰트 변경**과 **스티커 추가**(프리셋 앵커) 가능. **위치 이동·크기 변경은 없음.**
+  - 커버: 대표사진 변경 + 한/영 이름(=user_data) + 날짜
   - 인사말: 인사말 텍스트(+AI 생성 재사용) + 혼주
-  - 갤러리: 다중 사진 업로드·정렬(galleryPaths)
+  - 갤러리: 다중 사진 추가·삭제·정렬(galleryPaths)
   - 오시는 길: 예식장명·주소(+지도 좌표 핀)
   - 마음 전하실 곳: 신랑/신부 계좌(은행·번호·예금주)
   - 참석여부: on/off(기존 RSVP RPC 연결)
   - 방명록: on/off
-- **디자인 탭**: 테마 썸네일 그리드(themeId) · 폰트 · 색/톤 · **배경음악 업로드** · 모션 강도 · 배경 장식.
+- **디자인 탭**: 테마 썸네일 그리드(themeId) · 폰트 · 색/톤 · **배경음악(BGM) 업로드/변경** ·
+  모션 강도 · 배경 장식. (자유 캔버스 없음 — 좌표/크기 편집 미제공.)
 - **저장/발행**: 저장 = `user_data` + `layout.mobile` update(status=draft). 발행 = 이미지·BGM 서명 →
   `publish_invitation` RPC(기존 그대로). 공유 URL = `/i2/{share_slug}` (승격 후 `/i/`).
 
@@ -107,10 +124,18 @@ interface SectionConfig {
 - **E4** — 섹션 토글·드래그 순서 + 방명록/지도 좌표 설정. (방명록 테이블은 뷰어 Phase 4 와 연동.)
 - **E5** — 운영자 어드민: 모바일 템플릿=테마 프리셋 관리, 캔버스 모바일 편집 폐지. (선택)테마 토큰 테이블화.
 
-## 7. 결정 필요 / 리스크
+## 7. 결정 사항 / 리스크
 
-- **기존 자유 캔버스 모바일 편집을 완전 대체 vs '고급 모드'로 유지?** — 권장: **대체**(메이크디어도 자유
-  드래그 없음; 일관 품질·유지보수). 단 기존 캔버스 발행본은 /i 에서 계속 보이므로 사용자 영향 없음.
+- **자유 캔버스 편집(위치 이동·크기 변경)은 제외(확정).** 대신 **스티커 추가·사진/BGM 변경·
+  섹션 추가/삭제/순서변경·폰트/내용 변경**은 제공. 메이크디어와 동일하게 드래그 캔버스 없이도
+  충분한 커스터마이즈 + 일관 품질. 기존 캔버스 발행본은 /i 에서 계속 보여 사용자 영향 0.
 - 위저드(`InvitationFlow`)는 최초 생성용으로 유지하되, 모바일은 위저드 완료 후 **섹션 에디터로 진입**
   (캔버스 Studio 대신). 위저드 자체는 그대로(필드 재사용).
+- **스티커 배치 방식 — E-design 시 확정 디테일**: '추가만, 위치이동 없음' 요구를 지키기 위해
+  섹션별 프리셋 앵커(좌상/우상/하단/중앙)에 배치. 자유 좌표/리사이즈는 미제공.
 - 리스크: 라이브 프리뷰 = 실제 body 재사용이라 뷰어/에디터 결합. E1 의 분리 리팩터가 깨끗해야 함.
+
+## 8. 현재 상태
+
+**계획만 확정, 구현 착수 보류(사용자 지시).** 편집 권한 범위·데이터 모델·단계까지 합의 완료.
+재개 시 E1(뷰어 body 분리 + `layout.mobile` 어댑터 + 발행 서명 확장)부터 시작한다.
