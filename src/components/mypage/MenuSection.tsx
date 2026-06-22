@@ -47,7 +47,7 @@ const MenuSection = ({
         { icon: Calendar, title: "내 웨딩 일정", description: "D-Day 설정 및 일정 관리", href: "/my-schedule" },
         { icon: FileText, title: "내 문의/예약", description: "문의 및 예약 내역 확인", href: "/my-inquiries" },
         ...(recap.hasAny
-          ? [{ icon: Sparkles, title: "결혼 준비 Wrapped", description: "내 준비 여정 돌아보고 공유하기", href: "/wrapped" } as MenuItem]
+          ? [{ icon: Sparkles, title: "결혼 준비 돌아보기", description: "내 준비 여정 돌아보고 공유하기", href: "/wrapped" } as MenuItem]
           : []),
       ],
     },

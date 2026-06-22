@@ -6,6 +6,7 @@ import PersonaDashboard from "./PersonaDashboard";
 import HomeQuickLinks from "./HomeQuickLinks";
 import HomeOnboardingCard from "./HomeOnboardingCard";
 import TasteSeedCard from "./TasteSeedCard";
+import RecapMilestoneCard from "./RecapMilestoneCard";
 import BudgetVsAverageCard from "./BudgetVsAverageCard";
 import RecommendedSection from "./RecommendedSection";
 import PersonaRecommendationRows from "./PersonaRecommendationRows";
@@ -44,6 +45,8 @@ const TabContent = ({ activeTab }: TabContentProps) => {
         {/* 온보딩 후 시각취향 seed 진입(I1) — 취향이 쌓이면 자동 숨김. */}
         <TasteSeedCard />
         <BudgetVsAverageCard />
+        {/* I9 결혼 준비 돌아보기 마일스톤(D-100/30/7·결혼 후) 자동노출 — 구간별 닫기·데이터 없으면 숨김. */}
+        <RecapMilestoneCard />
         <CompactBannerCarousel />
         <HomeCategoryGrid />
         {/* 단일 추천 행 → 페르소나별 카테고리 행 스택(Netflix식)으로 교체. */}
