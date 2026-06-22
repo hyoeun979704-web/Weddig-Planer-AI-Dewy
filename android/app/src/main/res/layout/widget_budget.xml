@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 예산 위젯(2×2~4×2). 사용/전체, 탭 → 예산, '추가' → 지출 빠른추가. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg"
+    android:padding="16dp"
+    android:gravity="center_vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="웨딩 예산"
+            android:textColor="@color/widgetMuted"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/btn_add"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/widget_add_btn"
+            android:paddingLeft="11dp"
+            android:paddingRight="11dp"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:text="+ 지출"
+            android:textColor="@color/widgetPrimary"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_budget"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="예산을 설정해보세요"
+        android:textColor="@color/widgetText"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+    <ProgressBar
+        android:id="@+id/pb_budget"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="7dp"
+        android:layout_marginTop="10dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/widget_progress" />
+
+</LinearLayout>

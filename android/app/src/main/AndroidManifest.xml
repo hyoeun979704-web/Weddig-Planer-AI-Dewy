@@ -42,6 +42,33 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
+        <!-- 홈 위젯 4종. exported=false: 시스템 AppWidget 프레임워크/동일앱 갱신만 트리거(보안).
+             설계·데이터 흐름: docs/widget-system.md. -->
+        <receiver android:name=".widget.ComboWidgetProvider" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_combo_info" />
+        </receiver>
+        <receiver android:name=".widget.DdayWidgetProvider" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_dday_info" />
+        </receiver>
+        <receiver android:name=".widget.ChecklistWidgetProvider" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_checklist_info" />
+        </receiver>
+        <receiver android:name=".widget.BudgetWidgetProvider" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_budget_info" />
+        </receiver>
+
         <!-- AdMob App ID (필수). 없거나 틀리면 AdMob SDK 초기화 시 앱이 즉시 죽음.
              Dewy AdMob 앱(pub-3558095447353368)의 실제 App ID.
              (보상형/배너 '광고단위' ID 는 adService 의 VITE_ADMOB_*(또는 기본값)로 별도 주입) -->

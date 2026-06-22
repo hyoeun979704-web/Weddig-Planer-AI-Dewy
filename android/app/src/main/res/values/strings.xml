@@ -4,4 +4,11 @@
     <string name="title_activity_main">Dewy</string>
     <string name="package_name">app.dewy</string>
     <string name="custom_url_scheme">app.dewy</string>
+
+    <!-- 홈 위젯 라벨(위젯 추가 목록에 표시) -->
+    <string name="widget_combo_label">D-Day + 체크리스트</string>
+    <string name="widget_dday_label">D-Day</string>
+    <string name="widget_checklist_label">결혼 준비 체크리스트</string>
+    <string name="widget_budget_label">웨딩 예산</string>
+    <string name="widget_add">추가</string>
 </resources>
