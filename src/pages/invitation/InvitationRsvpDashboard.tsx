@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, Download, UserPlus, Users } from "lucide-react";
+import { Loader2, Download, UserPlus, Users, Lock, LockOpen } from "lucide-react";
+import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +34,11 @@ const InvitationRsvpDashboard = () => {
   // 커플 공유(I8-A): 소유자 본인뿐 아니라 연결된 배우자도 같은 응답을 본다.
   const { partnerId, isLoading: coupleLoading } = useCouplePartnerId();
   const [title, setTitle] = useState<string>("");
+  // I8-B 마감 제어 — 마감 토글·마감일은 소유자만 변경(배우자는 보기만).
+  const [isOwner, setIsOwner] = useState(false);
+  const [rsvpClosed, setRsvpClosed] = useState(false);
+  const [rsvpDeadline, setRsvpDeadline] = useState("");
+  const [savingClose, setSavingClose] = useState(false);
   const { rows, stats, importedIds, isLoading, importToGuestList } =
     useInvitationRsvps(id);
 
@@ -51,11 +57,51 @@ const InvitationRsvpDashboard = () => {
         navigate("/invitation/my", { replace: true });
         return;
       }
+      setIsOwner(data.user_id === user.id);
       const groom = data.user_data?.groom_name ?? "";
       const bride = data.user_data?.bride_name ?? "";
       setTitle(groom && bride ? `${groom} · ${bride}` : "");
+      // 마감 메타는 best-effort(드리프트 시 메인 게이트가 깨지지 않도록 분리 조회).
+      const { data: meta } = await (supabase as any)
+        .from("invitations")
+        .select("rsvp_closed, rsvp_deadline")
+        .eq("id", id)
+        .maybeSingle();
+      if (meta) {
+        setRsvpClosed(meta.rsvp_closed === true);
+        setRsvpDeadline(meta.rsvp_deadline ?? "");
+      }
     })();
   }, [user, id, partnerId, coupleLoading, navigate]);
+
+  // 마감 토글(소유자). RLS UPDATE 는 소유자 전용이라 배우자 경로는 애초에 노출 안 함.
+  const toggleClosed = async () => {
+    if (!id || savingClose) return;
+    setSavingClose(true);
+    const next = !rsvpClosed;
+    const { error } = await (supabase as any)
+      .from("invitations")
+      .update({ rsvp_closed: next })
+      .eq("id", id);
+    if (error) {
+      toast.error("변경에 실패했어요");
+    } else {
+      setRsvpClosed(next);
+      toast.success(next ? "응답 받기를 마감했어요" : "응답 받기를 다시 열었어요");
+    }
+    setSavingClose(false);
+  };
+
+  // 마감일 저장(소유자). 빈 값이면 무기한(NULL).
+  const saveDeadline = async (date: string) => {
+    if (!id) return;
+    setRsvpDeadline(date);
+    const { error } = await (supabase as any)
+      .from("invitations")
+      .update({ rsvp_deadline: date || null })
+      .eq("id", id);
+    if (error) toast.error("마감일 저장에 실패했어요");
+  };
 
   const handleExport = () => {
     downloadCsv(`rsvp-${id?.slice(0, 8) ?? "list"}`, toCsv(CSV_COLUMNS, rows));
@@ -69,7 +115,53 @@ const InvitationRsvpDashboard = () => {
 
       <main className="px-4 py-5 space-y-5">
         {title && (
-          <p className="text-sm text-muted-foreground -mt-2">{title}</p>
+          <p className="text-sm text-muted-foreground -mt-2">
+            {title}
+            {rsvpClosed && (
+              <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">응답 마감됨</span>
+            )}
+          </p>
+        )}
+
+        {/* I8-B 응답 마감 제어 — 소유자만(배우자는 보기 전용). */}
+        {isOwner && (
+          <div className="bg-card border border-border rounded-xl p-3 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">참석 응답 받기</p>
+                <p className="text-[12px] text-muted-foreground">
+                  {rsvpClosed ? "지금은 마감 상태예요. 하객이 응답할 수 없어요." : "하객이 청첩장에서 참석 응답을 보낼 수 있어요."}
+                </p>
+              </div>
+              <Button
+                variant={rsvpClosed ? "default" : "outline"}
+                size="sm"
+                onClick={toggleClosed}
+                disabled={savingClose}
+                className="shrink-0 gap-1"
+              >
+                {rsvpClosed ? <LockOpen className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                {rsvpClosed ? "다시 열기" : "마감하기"}
+              </Button>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+              <label htmlFor="rsvp-deadline" className="text-[13px] text-foreground">
+                마감일 <span className="text-muted-foreground">(선택)</span>
+              </label>
+              <input
+                id="rsvp-deadline"
+                type="date"
+                value={rsvpDeadline}
+                onChange={(e) => saveDeadline(e.target.value)}
+                className="h-9 px-2 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+            {rsvpDeadline && (
+              <p className="text-[11px] text-muted-foreground -mt-1">
+                {rsvpDeadline}까지 응답을 받고, 다음 날부터 자동으로 마감돼요.
+              </p>
+            )}
+          </div>
         )}
 
         {isLoading ? (

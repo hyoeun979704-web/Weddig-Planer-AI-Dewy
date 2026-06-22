@@ -2216,6 +2216,8 @@ export type Database = {
           id: string
           layout: Json
           preview_image_path: string | null
+          rsvp_closed: boolean
+          rsvp_deadline: string | null
           share_slug: string | null
           status: string
           template_id: string | null
@@ -2230,6 +2232,8 @@ export type Database = {
           id?: string
           layout?: Json
           preview_image_path?: string | null
+          rsvp_closed?: boolean
+          rsvp_deadline?: string | null
           share_slug?: string | null
           status?: string
           template_id?: string | null
@@ -2244,6 +2248,8 @@ export type Database = {
           id?: string
           layout?: Json
           preview_image_path?: string | null
+          rsvp_closed?: boolean
+          rsvp_deadline?: string | null
           share_slug?: string | null
           status?: string
           template_id?: string | null
