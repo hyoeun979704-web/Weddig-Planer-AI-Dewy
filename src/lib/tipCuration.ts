@@ -68,6 +68,15 @@ const PERSONA_CATEGORY_BOOSTS: Partial<Record<WeddingPersonaMode, ReadonlyArray<
   // standard_groom: "신랑이 챙길 일" 류 영상 (groom_focus) 우대. queries.ts 의
   // groom_focus seed 가 이걸 수집하지만 boost 가 없으면 popularity 정렬에 묻힘.
   standard_groom: ["groom_focus", "tailor_shop"],
+  // 호텔 웨딩 — 식장(보증인원·코스·대관) 정보 비중이 큼.
+  luxury_hotel: ["wedding_hall"],
+  // 절약·분석형 — 비용 큰 협상 항목(예단·예물·혼수)에서 절약 노하우 수요. 전용 budget
+  //  카테고리는 없어 큰 지출 카테고리로 근사(phase/style 부스트와 직교).
+  budget_analytic: ["wedding_gifts", "appliance"],
+  // 결혼 준비 초보 — 큰 흐름(식 진행·상견례) 기초 콘텐츠 우대.
+  first_timer: ["ceremony", "family_meeting"],
+  // 1인 진행 — 행정(혼인신고)·식 진행 기초가 특히 중요.
+  single_household: ["legal_paperwork", "ceremony"],
 };
 
 // Round 19 — 사전 확장 (시뮬레이션 P3: small 1.6%, self 4.3% hit rate 너무 낮음).

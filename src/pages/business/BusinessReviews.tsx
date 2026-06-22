@@ -20,11 +20,14 @@ interface ReviewRow {
   owner_response_at: string | null;
 }
 
+type RatingFilter = "all" | "5" | "4" | "3" | "2" | "1" | "unanswered";
+type ReviewSort = "recent" | "high" | "low";
+
 /**
- * 업체 포털 — 고객 후기 대시보드(읽기 전용).
- * 사장님이 자기 업체에 쌓인 후기와 평점 분포를 한곳에서 확인할 수 있게 한다.
- * place_reviews 는 공개 읽기 대상이라 별도 권한/마이그레이션 없이 노출만 추가.
- * (답변 기능은 owner_response 컬럼·RLS 설계가 필요해 후속 과제로 분리.)
+ * 업체 포털 — 고객 후기 관리 대시보드.
+ * 사장님이 자기 업체에 쌓인 후기·평점 분포를 확인하고, 답글을 달고, 평점/미답변으로
+ * 필터·정렬해 우선순위가 높은 후기부터 응대할 수 있게 한다. place_reviews 는 공개 읽기
+ * 대상이고 답글(owner_response)은 기존 컬럼을 사용 — 별도 마이그레이션 없음.
  */
 const BusinessReviews = () => {
   const navigate = useNavigate();
@@ -105,8 +108,32 @@ const BusinessReviews = () => {
       count: rated.filter((r) => Math.round(r.rating as number) === star).length,
     }));
     const positive = rated.filter((r) => (r.rating as number) >= 4).length;
-    return { total, avg, dist, positive };
+    // 응대율 — 답글 단 후기 / 전체 후기(타 앱 대비 부족하던 운영 지표).
+    const answered = rows.filter((r) => !!r.owner_response?.trim()).length;
+    const responseRate = rows.length ? Math.round((answered / rows.length) * 100) : 0;
+    return { total, avg, dist, positive, answered, responseRate, unanswered: rows.length - answered };
   }, [rows]);
+
+  // 필터·정렬 — 평점/미답변으로 좁히고 최신·평점순으로 정렬(우선 응대용).
+  const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
+  const [sortBy, setSortBy] = useState<ReviewSort>("recent");
+
+  const visibleRows = useMemo(() => {
+    let list = [...rows];
+    if (ratingFilter === "unanswered") {
+      list = list.filter((r) => !r.owner_response?.trim());
+    } else if (ratingFilter !== "all") {
+      const star = Number(ratingFilter);
+      list = list.filter((r) => typeof r.rating === "number" && Math.round(r.rating!) === star);
+    }
+    if (sortBy === "high") {
+      list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+    } else if (sortBy === "low") {
+      list.sort((a, b) => (a.rating ?? 0) - (b.rating ?? 0));
+    }
+    // recent 는 쿼리에서 이미 review_date desc 정렬됨(별도 정렬 불필요).
+    return list;
+  }, [rows, ratingFilter, sortBy]);
 
   const formatDate = (r: ReviewRow): string => {
     const raw = r.review_date || r.created_at;
@@ -164,6 +191,9 @@ const BusinessReviews = () => {
                   ))}
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-1">후기 {summary.total}개</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  답글률 <span className="font-semibold text-foreground">{summary.responseRate}%</span>
+                </p>
               </div>
               <div className="flex-1 space-y-1">
                 {summary.dist.map(({ star, count }) => {
@@ -187,6 +217,54 @@ const BusinessReviews = () => {
           )}
         </section>
 
+        {/* 필터·정렬 — 후기가 있을 때만 노출 */}
+        {rows.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+              {([
+                ["all", `전체 ${rows.length}`],
+                ["unanswered", `미답변 ${summary.unanswered}`],
+                ["5", "5점"],
+                ["4", "4점"],
+                ["3", "3점"],
+                ["2", "2점"],
+                ["1", "1점"],
+              ] as [RatingFilter, string][]).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setRatingFilter(v)}
+                  className={`text-xs py-1 px-3 rounded-full border whitespace-nowrap transition-all active:scale-95 ${
+                    ratingFilter === v
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border text-muted-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1.5">
+              {([
+                ["recent", "최신순"],
+                ["high", "평점 높은순"],
+                ["low", "평점 낮은순"],
+              ] as [ReviewSort, string][]).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setSortBy(v)}
+                  className={`text-[10px] py-1 px-2.5 rounded-full border transition-all active:scale-95 ${
+                    sortBy === v ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 후기 목록 */}
         {rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-3">
@@ -196,9 +274,13 @@ const BusinessReviews = () => {
               후기가 쌓이면 이곳에서 한눈에 확인할 수 있어요.
             </p>
           </div>
+        ) : visibleRows.length === 0 ? (
+          <p className="text-center text-sm text-muted-foreground py-12">
+            해당 조건의 후기가 없어요.
+          </p>
         ) : (
           <section className="space-y-2">
-            {rows.map((r) => (
+            {visibleRows.map((r) => (
               <article key={r.review_id} className="bg-card rounded-2xl border border-border p-4">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0">

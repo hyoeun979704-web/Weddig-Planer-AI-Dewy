@@ -13,6 +13,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import ImageUploader from "@/components/admin/ImageUploader";
 import BusinessListingDetailForm from "@/components/business/BusinessListingDetailForm";
+import BusinessListingContactForm from "@/components/business/BusinessListingContactForm";
 import { draftKey, loadDraft, saveDraft, clearDraft, shallowEqual } from "@/lib/formDraft";
 import { computeListingCompleteness } from "@/lib/businessListingCompleteness";
 
@@ -472,11 +473,18 @@ const BusinessVendorEdit = () => {
         </Button>
 
         {placeId ? (
-          <div className="pt-4 mt-2 border-t border-border">
-            <h2 className="text-sm font-semibold text-foreground mb-1">업체 종류별 상세 정보</h2>
-            <p className="text-[12px] text-muted-foreground mb-3">아래 "상세 정보 저장"은 위 기본 정보와 별도로 저장돼요. 둘 다 저장하면 함께 검토 요청됩니다.</p>
-            <BusinessListingDetailForm onSaved={() => setModeration("pending")} />
-          </div>
+          <>
+            <div className="pt-4 mt-2 border-t border-border">
+              <h2 className="text-sm font-semibold text-foreground mb-1">연락처 · 운영 정보</h2>
+              <p className="text-[12px] text-muted-foreground mb-3">전화·운영시간·SNS·주차/교통을 채우면 상세페이지에 함께 노출돼요. 비운 항목은 숨겨집니다.</p>
+              <BusinessListingContactForm onSaved={() => setModeration("pending")} />
+            </div>
+            <div className="pt-4 mt-2 border-t border-border">
+              <h2 className="text-sm font-semibold text-foreground mb-1">업체 종류별 상세 정보</h2>
+              <p className="text-[12px] text-muted-foreground mb-3">아래 "상세 정보 저장"은 위 기본 정보와 별도로 저장돼요. 둘 다 저장하면 함께 검토 요청됩니다.</p>
+              <BusinessListingDetailForm onSaved={() => setModeration("pending")} />
+            </div>
+          </>
         ) : (
           <p className="text-[12px] text-muted-foreground text-center pt-2">
             기본 정보를 먼저 저장하면 업체 종류별 상세 항목을 입력할 수 있어요.

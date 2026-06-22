@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { X, Plus, Check, Trash2, MessageSquare, Loader2, Pencil, Save } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Plus, Check, Trash2, MessageSquare, Loader2, Pencil, Save, SkipForward } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -43,12 +43,51 @@ const TimelineDetailSheet = ({
   const [editingItem, setEditingItem] = useState<{ id: string; title: string; scheduled_date: string; category: string } | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  // Quiz-card 할일 추가 — 추천을 한 장씩 카드로 보여주고 추가/건너뛰기. 직접 입력은 접어둔다.
+  const [handledRecs, setHandledRecs] = useState<Set<string>>(new Set());
+  const [addingRec, setAddingRec] = useState<string | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
+
+  // 단계가 바뀌면(시트를 다른 단계로 다시 열면) 카드 진행 상태를 초기화.
+  const phaseId = phase?.id;
+  useEffect(() => {
+    setHandledRecs(new Set());
+    setManualOpen(false);
+    setAddingRec(null);
+  }, [phaseId]);
 
   if (!phase) return null;
 
   const phaseItems = items.filter(item => item.category === phase.category);
   const completedCount = phaseItems.filter(item => item.completed).length;
   const progress = phaseItems.length > 0 ? Math.round((completedCount / phaseItems.length) * 100) : 0;
+
+  // 추천 카드 큐 — 이미 추가됐거나(같은 제목) 이번 세션에 처리(추가/건너뛰기)한 추천은 제외.
+  const addedTitles = new Set(phaseItems.map(i => i.title));
+  const recQueue = phase.defaultTasks.filter(t => !addedTitles.has(t) && !handledRecs.has(t));
+  const currentRec = recQueue[0] ?? null;
+
+  // 추천 추가 시 들어갈 날짜(단계 권장일 = 예식일 - defaultDaysBeforeWedding) — 카드에 미리 보여준다.
+  const toLocalISODate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const recDate = (() => {
+    if (!weddingDate) return toLocalISODate(new Date());
+    const t = parseLocalDate(weddingDate);
+    t.setDate(t.getDate() - phase.defaultDaysBeforeWedding);
+    return toLocalISODate(t);
+  })();
+
+  const handleAdoptRec = async (task: string) => {
+    setAddingRec(task);
+    const success = await onAddItem(task, recDate, phase.category);
+    setAddingRec(null);
+    // 성공/실패 무관하게 카드 큐에서 제거(중복 추가 방지). 실패 시 직접 입력으로 재시도 가능.
+    setHandledRecs(prev => new Set(prev).add(task));
+  };
+
+  const handleSkipRec = (task: string) => {
+    setHandledRecs(prev => new Set(prev).add(task));
+  };
 
   const handleAddTask = async () => {
     if (!newTask.trim() || !newTaskDate) return;
@@ -84,18 +123,6 @@ const TimelineDetailSheet = ({
     setIsSavingEdit(false);
   };
 
-  const handleAddDefaultTask = async (task: string) => {
-    const toLocalISODate = (d: Date) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    let defaultDate = toLocalISODate(new Date());
-    if (weddingDate) {
-      const taskDate = parseLocalDate(weddingDate);
-      taskDate.setDate(taskDate.getDate() - phase.defaultDaysBeforeWedding);
-      defaultDate = toLocalISODate(taskDate);
-    }
-    await onAddItem(task, defaultDate, phase.category);
-  };
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
@@ -126,32 +153,84 @@ const TimelineDetailSheet = ({
         </SheetHeader>
 
         <div className="overflow-y-auto h-[calc(100%-120px)] -mx-6 px-6">
-          {/* Add new task */}
-          <div className="mb-4 p-3 bg-muted/50 rounded-xl">
-            <div className="flex gap-2 mb-2">
+          {/* Quiz-card 추천 — 한 장씩 추가/건너뛰기. 복잡한 폼 대신 한 번에 한 결정만. */}
+          {currentRec && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-foreground">이 단계 추천 할 일</p>
+                <span className="text-[11px] text-muted-foreground">{recQueue.length}개 남음</span>
+              </div>
+              <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                <p className="text-[15px] font-semibold text-foreground leading-snug">{currentRec}</p>
+                <p className="text-[11px] text-muted-foreground mt-1 mb-4">
+                  추가하면 {format(parseLocalDate(recDate), "yyyy.M.d (EEE)", { locale: ko })}로 들어가요
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => handleSkipRec(currentRec)}
+                    disabled={!!addingRec}
+                  >
+                    <SkipForward className="w-4 h-4 mr-1" /> 건너뛰기
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => handleAdoptRec(currentRec)}
+                    disabled={!!addingRec}
+                  >
+                    {addingRec === currentRec
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : <><Plus className="w-4 h-4 mr-1" /> 추가</>}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 직접 입력 — 기본은 접어두고 필요할 때만 펼친다(화면 단순화). */}
+          {manualOpen ? (
+            <div className="mb-4 p-3 bg-muted/50 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-foreground">직접 입력</span>
+                <button
+                  onClick={() => setManualOpen(false)}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="직접 입력 닫기"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
               <Input
                 placeholder="새 할 일 입력"
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
-                className="flex-1"
+                className="flex-1 mb-2"
               />
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={newTaskDate}
+                  onChange={(e) => setNewTaskDate(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleAddTask}
+                  disabled={isAdding || !newTask.trim() || !newTaskDate}
+                  size="sm"
+                >
+                  {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Input
-                type="date"
-                value={newTaskDate}
-                onChange={(e) => setNewTaskDate(e.target.value)}
-                className="flex-1"
-              />
-              <Button 
-                onClick={handleAddTask} 
-                disabled={isAdding || !newTask.trim() || !newTaskDate}
-                size="sm"
-              >
-                {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              </Button>
-            </div>
-          </div>
+          ) : (
+            <button
+              onClick={() => setManualOpen(true)}
+              className="mb-4 w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-border text-sm text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+            >
+              <Pencil className="w-4 h-4" /> 직접 할 일 추가하기
+            </button>
+          )}
 
           {/* Checklist items */}
           {phaseItems.length > 0 ? (
@@ -288,22 +367,14 @@ const TimelineDetailSheet = ({
                 </div>
               ))}
             </div>
-          ) : (
-            /* Default tasks suggestions */
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground mb-3">추천 할 일을 추가해보세요:</p>
-              {phase.defaultTasks.map((task, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleAddDefaultTask(task)}
-                  className="w-full flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-dashed border-border hover:border-primary/50 hover:bg-muted/50 transition-colors text-left"
-                >
-                  <Plus className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{task}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          ) : !currentRec ? (
+            /* 항목도 없고 남은 추천도 없을 때 — 가벼운 빈 상태 안내(추천은 위 카드에서 소진). */
+            <p className="text-center text-sm text-muted-foreground py-10">
+              {phase.defaultTasks.length > 0
+                ? "추천을 모두 확인했어요. 직접 할 일을 추가해보세요."
+                : "위에서 직접 할 일을 추가해보세요."}
+            </p>
+          ) : null}
         </div>
       </SheetContent>
     </Sheet>

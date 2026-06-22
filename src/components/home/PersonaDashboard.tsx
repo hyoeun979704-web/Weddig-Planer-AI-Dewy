@@ -543,7 +543,9 @@ const PersonaDashboard = () => {
                   }`}>
                     {done
                       ? <Check className="w-4 h-4 text-primary" />
-                      : <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />}
+                      : m.emoji
+                        ? <span className="text-sm leading-none" aria-hidden>{m.emoji}</span>
+                        : <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[12px] font-semibold text-foreground truncate">
