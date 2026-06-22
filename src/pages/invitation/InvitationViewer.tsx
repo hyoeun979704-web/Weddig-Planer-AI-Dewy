@@ -89,6 +89,8 @@ const InvitationViewer = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [data, setData] = useState<PublishedInvitation | null>(null);
+  // I8-B RSVP 마감 여부(마감 토글 또는 마감일 경과). 컬럼 미적용(드리프트) 시 기본 open.
+  const [rsvpClosed, setRsvpClosed] = useState(false);
   const [backLayout, setBackLayout] = useState<InvitationLayout | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -141,6 +143,21 @@ const InvitationViewer = () => {
         return;
       }
       setData(row as PublishedInvitation);
+      // 마감 메타는 별도 best-effort 조회 — 컬럼 미적용 시 메인 청첩장 fetch 가 422 로
+      // 통째로 깨지지 않도록(드리프트 안전). 실패하면 기본 open 유지.
+      {
+        const { data: meta } = await (supabase as any)
+          .from("invitations")
+          .select("rsvp_closed, rsvp_deadline")
+          .eq("id", row.id)
+          .maybeSingle();
+        if (meta) {
+          const now = new Date();
+          const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+          const pastDeadline = !!meta.rsvp_deadline && meta.rsvp_deadline < todayStr;
+          setRsvpClosed(meta.rsvp_closed === true || pastDeadline);
+        }
+      }
       if (row.back_template_id) {
         const { data: bt } = await (supabase as any)
           .from("invitation_templates")
@@ -174,6 +191,10 @@ const InvitationViewer = () => {
   const handleRsvpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!data) return;
+    if (rsvpClosed) {
+      toast({ title: "참석 응답이 마감되었어요." });
+      return;
+    }
 
     const name = rsvpName.trim();
     const message = rsvpMessage.trim();
@@ -237,11 +258,13 @@ const InvitationViewer = () => {
       console.error(err);
       // DB 가드(총 한도/연속 과다)는 사용자 친화 문구로 안내. 그 외는 제네릭.
       const msg = String(err?.message ?? "");
-      const description = msg.includes("rsvp_limit_reached")
-        ? "참석 등록이 마감되었어요."
-        : msg.includes("rsvp_rate_limited")
-          ? "잠시 후 다시 시도해 주세요."
-          : "다시 시도해 주세요.";
+      const description = msg.includes("rsvp_closed")
+        ? "참석 응답이 마감되었어요."
+        : msg.includes("rsvp_limit_reached")
+          ? "참석 등록이 마감되었어요."
+          : msg.includes("rsvp_rate_limited")
+            ? "잠시 후 다시 시도해 주세요."
+            : "다시 시도해 주세요.";
       toast({ title: "제출 실패", description, variant: "destructive" });
     } finally {
       setSubmitting(false);
@@ -704,6 +727,14 @@ const InvitationViewer = () => {
                 참석 의사 전달하기
               </Drawer.Title>
 
+              {rsvpClosed ? (
+                <div className="py-10 text-center space-y-2">
+                  <p className="text-sm font-semibold text-foreground">참석 응답이 마감되었어요</p>
+                  <p className="text-[13px] text-muted-foreground">
+                    축하 마음을 전하고 싶으시면 신랑·신부에게 직접 연락해 주세요.
+                  </p>
+                </div>
+              ) : (
               <form onSubmit={handleRsvpSubmit} className="space-y-5">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">성함</label>
@@ -865,6 +896,7 @@ const InvitationViewer = () => {
                   {submitting ? "제출 중..." : "참석 의사 전달하기"}
                 </Button>
               </form>
+              )}
             </div>
           </Drawer.Content>
         </Drawer.Portal>
