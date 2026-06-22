@@ -31,7 +31,7 @@ const WeddingWrapped = () => {
         logging: false,
       });
       const dataUrl = canvas.toDataURL("image/png");
-      const r = await shareResultImage({ url: dataUrl, title: "내 결혼 준비 Wrapped — Dewy", fileName: "dewy-wrapped.png" });
+      const r = await shareResultImage({ url: dataUrl, title: "내 결혼 준비 돌아보기 — Dewy", fileName: "dewy-wrapped.png" });
       if (r === "copied") toast("이미지를 복사했어요");
       else if (r === "error" || r === "skipped") toast("공유 이미지를 저장했어요. 길게 눌러 저장/공유하세요");
     } catch {
@@ -47,7 +47,7 @@ const WeddingWrapped = () => {
       <div className="min-h-screen bg-[#1a1230] text-white flex flex-col items-center justify-center px-8 text-center font-sans break-keep">
         <Sparkles className="w-10 h-10 text-pink-300 mb-4" />
         <p className="text-lg font-bold mb-2">아직 돌아볼 준비 기록이 적어요</p>
-        <p className="text-sm text-white/70 mb-6">체크리스트를 완료하거나 마음에 드는 업체를 담으면 나만의 Wrapped가 만들어져요.</p>
+        <p className="text-sm text-white/70 mb-6">체크리스트를 완료하거나 마음에 드는 업체를 담으면 나만의 결혼 준비 돌아보기가 만들어져요.</p>
         <button onClick={() => navigate("/")} className="px-6 py-3 rounded-full bg-white/15 font-bold active:scale-95 transition">홈으로</button>
       </div>
     );
@@ -145,7 +145,7 @@ const WeddingWrapped = () => {
 
   return (
     <div className="min-h-screen bg-[#1a1230] text-white font-sans break-keep">
-      <Seo title="결혼 준비 Wrapped | Dewy" description="Dewy와 함께한 내 결혼 준비 여정을 돌아보고 공유해요." path="/wrapped" />
+      <Seo title="결혼 준비 돌아보기 | Dewy" description="Dewy와 함께한 내 결혼 준비 여정을 돌아보고 공유해요." path="/wrapped" />
       <button
         onClick={() => navigate(-1)}
         aria-label="닫기"
@@ -174,7 +174,7 @@ const WeddingWrapped = () => {
           style={{ background: "linear-gradient(160deg,#2a1b4d 0%,#1a1230 60%,#3a1f3a 100%)" }}
         >
           <div className="flex items-center gap-2 text-pink-200 font-bold">
-            <span style={{ fontSize: 22 }}>♥</span> Dewy 결혼 준비 Wrapped
+            <span style={{ fontSize: 22 }}>♥</span> Dewy 결혼 준비 돌아보기
           </div>
           <div className="space-y-5">
             {recap.dDay.available && recap.dDay.days > 0 && (
