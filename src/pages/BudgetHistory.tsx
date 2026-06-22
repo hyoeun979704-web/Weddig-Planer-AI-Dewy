@@ -86,7 +86,6 @@ const BudgetHistory = () => {
 
   // 환불 항목은 차감(순지출) — Budget 요약과 일관.
   const filteredTotal = filtered.reduce((s, i) => s + netManwon(i), 0);
-  const filteredAvg = filtered.length > 0 ? Math.round(filteredTotal / filtered.length) : 0;
   const isFiltering = catFilter !== "all" || paidFilter !== "all" || q.length > 0;
 
   const handleExportCsv = () => {
@@ -203,19 +202,11 @@ const BudgetHistory = () => {
 
       {/* Summary */}
       <div className="px-4 pt-3">
-        <div className="rounded-2xl bg-card border border-border p-3 flex items-center justify-between">
-          <div>
-            <p className="text-[11px] text-muted-foreground">
-              {isFiltering ? "필터 합계" : "전체 합계"} · {filtered.length}건
-            </p>
-            <p className="text-lg font-bold text-foreground tabular-nums">{fmt(filteredTotal)}만원</p>
-          </div>
-          {filtered.length > 0 && (
-            <div className="text-right">
-              <p className="text-[11px] text-muted-foreground">건당 평균</p>
-              <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(filteredAvg)}만원</p>
-            </div>
-          )}
+        <div className="rounded-2xl bg-card border border-border p-3">
+          <p className="text-[11px] text-muted-foreground">
+            {isFiltering ? "필터 합계" : "전체 합계"} · {filtered.length}건
+          </p>
+          <p className="text-lg font-bold text-foreground tabular-nums">{fmt(filteredTotal)}만원</p>
         </div>
       </div>
 

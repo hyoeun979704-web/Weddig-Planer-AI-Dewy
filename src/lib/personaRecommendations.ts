@@ -24,7 +24,8 @@ const CORE: RecCategorySlug[] = ["wedding_hall", "studio", "dress_shop", "makeup
 export const PERSONA_REC_CATEGORIES: Record<WeddingPersonaMode, RecCategorySlug[]> = {
   standard_bride: CORE,
   standard_groom: ["wedding_hall", "tailor_shop", "studio", "honeymoon"],
-  luxury_hotel: ["wedding_hall", "studio", "dress_shop", "makeup_shop"],
+  // 호텔 웨딩 — 식장이 중심이고 격식 있는 드레스·메이크업 비중이 큼(예복은 별도 관심).
+  luxury_hotel: ["wedding_hall", "dress_shop", "studio", "makeup_shop"],
   budget_analytic: ["wedding_hall", "studio", "dress_shop", "appliance"],
   designer_late: ["dress_shop", "studio", "wedding_hall", "makeup_shop"],
   first_timer: CORE,
@@ -34,9 +35,12 @@ export const PERSONA_REC_CATEGORIES: Record<WeddingPersonaMode, RecCategorySlug[
   remote_overseas: ["studio", "dress_shop", "invitation_venue", "honeymoon"],
   single_household: ["wedding_hall", "studio", "dress_shop", "honeymoon"],
   small_intimate: ["wedding_hall", "studio", "dress_shop", "hanbok"],
-  small_outdoor: ["wedding_hall", "studio", "dress_shop", "makeup_shop"],
-  small_luxury: ["wedding_hall", "studio", "dress_shop", "makeup_shop"],
-  small_budget: ["wedding_hall", "studio", "dress_shop", "makeup_shop"],
+  // 야외 가든 — 촬영·드레스 비중이 크고 한복(혼주·가족) 수요도 있어 makeup 대신 hanbok.
+  small_outdoor: ["wedding_hall", "studio", "dress_shop", "hanbok"],
+  // 프라이빗 호텔 스몰 — 드레스·메이크업 완성도 중시(소수 정예).
+  small_luxury: ["wedding_hall", "dress_shop", "studio", "makeup_shop"],
+  // 알뜰 스몰 — 혼수(가전)까지 합리적으로 챙기는 성향이 강해 makeup 대신 appliance.
+  small_budget: ["wedding_hall", "studio", "dress_shop", "appliance"],
   self_no_ceremony: ["studio", "dress_shop", "makeup_shop", "hanbok"],
   no_wedding_travel: ["honeymoon", "studio", "dress_shop", "appliance"],
   snap_only: ["studio", "dress_shop", "makeup_shop", "honeymoon"],
