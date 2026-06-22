@@ -189,7 +189,7 @@ export const categories: Record<BudgetCategory, CategoryInfo> = {
   meetup: { label: "상견례", emoji: "", color: "#B45309", sub_items: ["상견례 식사", "양가 선물", "교통·숙박(원거리)", "기타"] },
   house: { label: "혼수", emoji: "", color: "#10B981", sub_items: ["가전(TV/냉장고/세탁기 등)", "가구(침대/소파/식탁 등)", "생활용품", "인테리어/리모델링", "이사비", "기타"] },
   honeymoon: { label: "허니문", emoji: "", color: "#3B82F6", sub_items: ["항공권", "숙소", "여행자보험", "현지경비", "기타"] },
-  etc: { label: "기타", emoji: "", color: "#6B7280", sub_items: ["청첩장(종이/모바일)", "축의금 답례품", "결혼식 소품/데코", "사회자/축가", "감사선물", "기타"] },
+  etc: { label: "기타", emoji: "", color: "#6B7280", sub_items: ["청첩장 종이(디자인·인쇄)", "청첩장 봉투·우표", "모바일 청첩장", "축의금 접수대 소품(함·방명록·명찰)", "도우미 수고비·선물(부신랑·부신부·가방순이)", "접수·식권 도우미 수고비", "사회자/축가", "축의금 답례품", "결혼식 소품/데코", "감사선물", "기타"] },
 };
 
 export const paidByOptions = [
