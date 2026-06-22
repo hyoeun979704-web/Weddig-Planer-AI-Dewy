@@ -63,11 +63,7 @@ import InvitationCanvas, {
 import AISuggestSheet from "@/components/invitation/AISuggestSheet";
 import ShareCodeCard from "@/components/invitation/ShareCodeCard";
 import type { ShareCodeStyle } from "@/lib/invitation/shareCode";
-import {
-  exportInvitationPdfPages,
-  pixelRatioForPrint,
-  type PdfPage,
-} from "@/lib/invitation/exportPdf";
+import { pixelRatioForPrint } from "@/lib/invitation/exportPdf";
 import {
   collectFontFamilies,
   getInvitationPages,
@@ -1486,61 +1482,8 @@ const InvitationStudio = () => {
     }
   };
 
-  // ────────────────────────────────────────
-  // PDF 다운로드
-  // ────────────────────────────────────────
-  const handleExportPdf = async () => {
-    if (!template) return;
-    setIsExporting(true);
-    try {
-      // 선택 점선 테두리·리사이즈 핸들이 캡처에 찍히지 않도록 동기 선택 해제
-      flushSync(() => setSelectedSlotId(null));
-      const pages: PdfPage[] = [];
-      const appendTemplatePages = (
-        targetTemplate: Template,
-        scope: "front" | "back",
-        fallbackRef: React.RefObject<InvitationCanvasHandle>,
-      ) => {
-        getInvitationPages(targetTemplate.layout).forEach((page, index) => {
-          const pageRef =
-            pageCanvasRefs.current[`${scope}:${page.id}`] ??
-            (index === 0 ? fallbackRef.current : null);
-          const dataUrl = pageRef?.toDataUrl(
-            pixelRatioForPrint(340, page.print?.wMm),
-          );
-          if (!dataUrl) return;
-          pages.push({
-            dataUrl,
-            w: page.canvas.w,
-            h: page.canvas.h,
-            printWmm: page.print?.wMm,
-            printHmm: page.print?.hMm,
-          });
-        });
-      };
-      appendTemplatePages(template, "front", canvasRef);
-      if (pages.length === 0) throw new Error("캔버스 추출 실패");
-      if (backTemplate) {
-        appendTemplatePages(backTemplate, "back", backCanvasRef);
-      }
-      const filename = `dewy-invitation-${invitationId ?? "draft"}.pdf`;
-      exportInvitationPdfPages(pages, filename);
-      toast({
-        title: "PDF 다운로드 시작",
-        description: pages.length > 1 ? `${pages.length}페이지 인쇄용 PDF` : undefined,
-      });
-    } catch (err) {
-      toast({
-        title: "PDF 생성 실패",
-        description: err instanceof Error ? err.message : "오류",
-        variant: "destructive",
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  // 이미지(PNG) 다운로드 — 종이 청첩장 페이지별 고해상도 PNG (인쇄소/SNS 공유용)
+  // 이미지(PNG) 다운로드 — 종이 청첩장 페이지별 고해상도 PNG (인쇄소/SNS 공유용).
+  // PDF 는 페이지 규격(세로 A4 등)에 가로 스프레드가 안 맞아 잘리는 이슈가 있어 PNG 로 통일.
   const handleExportImages = async () => {
     if (!template) return;
     setIsExporting(true);
@@ -1713,7 +1656,6 @@ const InvitationStudio = () => {
           onSlotActionChange={handleSlotActionChange}
           onFontSizeChange={handleFontSizeChange}
           onPickPhoto={() => fileInputRef.current?.click()}
-          onExportPdf={handleExportPdf}
           onExportImages={handleExportImages}
           isExporting={isExporting}
           backTemplates={backTemplates}
@@ -2237,7 +2179,6 @@ const StudioView = ({
   onSlotActionChange,
   onFontSizeChange,
   onPickPhoto,
-  onExportPdf,
   onExportImages,
   isExporting,
   backTemplates,
@@ -2307,7 +2248,6 @@ const StudioView = ({
   onSlotActionChange: (action: InvitationSlotAction) => void;
   onFontSizeChange: (delta: number) => void;
   onPickPhoto: () => void;
-  onExportPdf: () => void;
   onExportImages: () => void;
   isExporting: boolean;
   backTemplates: Template[];
@@ -3214,35 +3154,21 @@ const StudioView = ({
         )}
       </section>
 
-      {/* 다운로드 — 종이 청첩장 전용 (모바일은 공유 링크가 결과물) */}
+      {/* 다운로드 — 종이 청첩장 전용 (모바일은 공유 링크가 결과물).
+          페이지별 고해상도 PNG (300dpi). PDF 는 페이지 규격 불일치로 잘림 이슈가 있어 PNG 로 제공. */}
       {template.format === "paper" && (
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            onClick={onExportPdf}
-            disabled={isExporting}
-            className="h-12 text-[14px] font-bold"
-          >
-            {isExporting ? (
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            ) : (
-              <Download className="w-5 h-5 mr-2" />
-            )}
-            인쇄용 PDF
-          </Button>
-          <Button
-            onClick={onExportImages}
-            disabled={isExporting}
-            variant="outline"
-            className="h-12 text-[14px] font-bold"
-          >
-            {isExporting ? (
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            ) : (
-              <ImageIcon className="w-5 h-5 mr-2" />
-            )}
-            이미지 저장
-          </Button>
-        </div>
+        <Button
+          onClick={onExportImages}
+          disabled={isExporting}
+          className="w-full h-12 text-[14px] font-bold"
+        >
+          {isExporting ? (
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+          ) : (
+            <ImageIcon className="w-5 h-5 mr-2" />
+          )}
+          이미지(PNG) 다운로드
+        </Button>
       )}
 
       {/* 무료 안내 */}

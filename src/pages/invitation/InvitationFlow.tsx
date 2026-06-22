@@ -38,11 +38,7 @@ import InvitationCanvas, {
 import ShareCodeCard from "@/components/invitation/ShareCodeCard";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
 import type { ShareCodeStyle } from "@/lib/invitation/shareCode";
-import {
-  exportInvitationPdfPages,
-  pixelRatioForPrint,
-  type PdfPage,
-} from "@/lib/invitation/exportPdf";
+import { pixelRatioForPrint } from "@/lib/invitation/exportPdf";
 import { computeInvitationPrice } from "@/lib/invitation/computePrice";
 import {
   collectFontFamilies,
@@ -950,12 +946,14 @@ const InvitationFlow = () => {
   // ─────────────────────────────────────────────
   // PDF / 공유 / 세부 조정
   // ─────────────────────────────────────────────
-  const handleExportPdf = async () => {
+  // 이미지(PNG) 다운로드 — 페이지별 고해상도 PNG. PDF 는 페이지 규격(세로)에 가로 스프레드가
+  // 안 맞아 잘리는 이슈가 있어 PNG 로 통일(인쇄소·SNS 모두 사용 가능).
+  const handleExportImages = async () => {
     if (!template) return;
     setIsExporting(true);
     try {
-      const pages: PdfPage[] = [];
-      const appendTemplatePages = (
+      let saved = 0;
+      const savePages = (
         targetTemplate: Template,
         scope: "front" | "back",
         fallbackRef: React.RefObject<InvitationCanvasHandle>,
@@ -968,35 +966,28 @@ const InvitationFlow = () => {
             pixelRatioForPrint(360, page.print?.wMm),
           );
           if (!dataUrl) return;
-          pages.push({
-            dataUrl,
-            w: page.canvas.w,
-            h: page.canvas.h,
-            printWmm: page.print?.wMm,
-            printHmm: page.print?.hMm,
-          });
+          const a = document.createElement("a");
+          a.href = dataUrl;
+          a.download = `dewy-invitation-${scope}-${page.label ?? index + 1}.png`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          saved += 1;
         });
       };
-      appendTemplatePages(template, "front", canvasRef);
-      if (pages.length === 0)
+      savePages(template, "front", canvasRef);
+      if (backTemplate) savePages(backTemplate, "back", backCanvasRef);
+      if (saved === 0)
         throw new Error(
           "미리보기가 아직 준비되지 않았어요. 사진·폰트가 모두 로드된 뒤 다시 시도해주세요.",
         );
-      if (backTemplate) {
-        appendTemplatePages(backTemplate, "back", backCanvasRef);
-      }
-      const filename = `dewy-invitation-${invitationId ?? "draft"}.pdf`;
-      exportInvitationPdfPages(pages, filename);
       toast({
-        title: "PDF 다운로드 시작",
-        description:
-          pages.length > 1
-            ? `${pages.length}페이지 인쇄용 PDF를 만들었어요.`
-            : "130×190mm 비율로 출력됐어요. 인쇄소 사양에 맞춰 크기를 조정해주세요.",
+        title: `이미지 ${saved}장 다운로드 시작`,
+        description: "300dpi PNG로 저장했어요. 인쇄소 사양에 맞춰 사용하세요.",
       });
     } catch (e) {
       toast({
-        title: "PDF 생성 실패",
+        title: "이미지 저장 실패",
         description:
           (e instanceof Error ? e.message : "알 수 없는 오류") +
           " 문제가 계속되면 새로고침 후 다시 시도해주세요.",
@@ -1269,7 +1260,7 @@ const InvitationFlow = () => {
           aiText={aiText}
           fontsReady={fontsReady}
           isExporting={isExporting}
-          onExportPdf={handleExportPdf}
+          onExportImages={handleExportImages}
           onShare={handleShare}
           onOpenStudio={handleOpenStudio}
           shareUrl={shareUrl}
@@ -2024,7 +2015,7 @@ const ResultView = ({
   aiText,
   fontsReady,
   isExporting,
-  onExportPdf,
+  onExportImages,
   onShare,
   onOpenStudio,
   shareUrl,
@@ -2044,7 +2035,7 @@ const ResultView = ({
   aiText: Record<string, string>;
   fontsReady: boolean;
   isExporting: boolean;
-  onExportPdf: () => void;
+  onExportImages: () => void;
   onShare: () => void;
   onOpenStudio: () => void;
   shareUrl: string | null;
@@ -2154,16 +2145,16 @@ const ResultView = ({
           )}
         </>
       ) : (
-        // 종이 청첩장 — PDF 다운로드 메인 액션 + 온라인 공유 코드(선택)
+        // 종이 청첩장 — 이미지(PNG) 다운로드 메인 액션 + 온라인 공유 코드(선택)
         <>
           <div className="grid grid-cols-2 gap-2">
-            <Button onClick={onExportPdf} disabled={isExporting} className="h-12">
+            <Button onClick={onExportImages} disabled={isExporting} className="h-12">
               {isExporting ? (
                 <Loader2 className="w-4 h-4 mr-1 animate-spin" />
               ) : (
                 <Download className="w-4 h-4 mr-1" />
               )}
-              PDF
+              이미지(PNG)
             </Button>
             <Button variant="outline" onClick={onShare} className="h-12">
               <Share2 className="w-4 h-4 mr-1" />
