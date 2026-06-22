@@ -1,4 +1,6 @@
 import jsPDF from "jspdf";
+import type { InvitationPrintSpec } from "./types";
+import { pageSizeMm, trimRectMm, cropMarkSegments, foldMarkSegments } from "./foldGeometry";
 
 /**
  * Konva 캔버스 → PDF 다운로드.
@@ -78,6 +80,47 @@ export function exportInvitationPdfPages(pages: PdfPage[], filename: string) {
     const hmm = heightOf(p);
     if (i > 0) pdf.addPage([wmm, hmm]);
     pdf.addImage(p.dataUrl, "PNG", 0, 0, wmm, hmm, undefined, "FAST");
+  });
+  pdf.save(filename);
+}
+
+/** PDF 위에 재단/접는 마크를 그린다(bleed 영역). 좌표는 foldGeometry 가 계산. */
+function drawPrintMarks(pdf: jsPDF, print: InvitationPrintSpec) {
+  const segs = [...cropMarkSegments(print), ...foldMarkSegments(print)];
+  if (segs.length === 0) return;
+  pdf.setLineWidth(0.1);
+  const setDash = (pdf as unknown as { setLineDashPattern?: (p: number[], n: number) => void }).setLineDashPattern?.bind(pdf);
+  for (const s of segs) {
+    if (s.kind === "fold") {
+      setDash?.([1, 1], 0);
+      pdf.setDrawColor(120); // 접는선 = 회색 점선
+    } else {
+      setDash?.([], 0);
+      pdf.setDrawColor(0); // 재단선 = 검정 실선
+    }
+    pdf.line(s.x1, s.y1, s.x2, s.y2);
+  }
+  setDash?.([], 0);
+}
+
+/**
+ * 인쇄용 PDF — 트림 + bleed 페이지에 이미지를 박고 재단/접는 마크를 그린다.
+ * 접이식(2단/3단)·다이컷 등 인쇄소 입고용. 각 페이지는 자기 InvitationPrintSpec 를 가진다.
+ */
+export function exportInvitationPrintPdf(
+  pages: { dataUrl: string; print: InvitationPrintSpec }[],
+  filename: string,
+) {
+  const valid = pages.filter((p) => p.dataUrl && p.print?.wMm > 0 && p.print?.hMm > 0);
+  if (valid.length === 0) return;
+  const first = pageSizeMm(valid[0].print);
+  const pdf = new jsPDF({ unit: "mm", format: [first.wMm, first.hMm] });
+  valid.forEach((p, i) => {
+    const size = pageSizeMm(p.print);
+    if (i > 0) pdf.addPage([size.wMm, size.hMm]);
+    const trim = trimRectMm(p.print);
+    pdf.addImage(p.dataUrl, "PNG", trim.x, trim.y, trim.wMm, trim.hMm, undefined, "FAST");
+    drawPrintMarks(pdf, p.print);
   });
   pdf.save(filename);
 }
