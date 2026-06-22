@@ -5577,6 +5577,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          freezes_available: number
+          last_checkin_date: string | null
+          longest_streak: number
+          total_days: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          freezes_available?: number
+          last_checkin_date?: string | null
+          longest_streak?: number
+          total_days?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          freezes_available?: number
+          last_checkin_date?: string | null
+          longest_streak?: number
+          total_days?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_schedule_items: {
         Row: {
           category: string | null
