@@ -126,7 +126,21 @@ select count(*) from public.invitation_guest_photos where drive_file_id is null;
 
 ## 6. 실제 OAuth → 업로드 e2e (실환경 수동 — 아직 미검증)
 
-이 환경에선 불가(실 커플 토큰 없음, sandbox). **실기기/실계정에서 다음을 따라 확인:**
+### 사전 설정 (1회, 필수)
+
+- **Edge Functions Secrets**: `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`(이미 캘린더/인앱메일
+  연동으로 설정돼 있음 — 같은 OAuth 클라이언트 재사용), `ALLOWED_PAYMENT_ORIGINS`에 앱 도메인 포함
+  (origin 화이트리스트 재사용).
+- **Google Cloud Console → OAuth 2.0 웹 클라이언트 → 승인된 리디렉션 URI에 추가(필수)**:
+  ```
+  <SUPABASE_URL>/functions/v1/drive-oauth-callback
+  ```
+  → 누락 시 동의 단계에서 `redirect_uri_mismatch`로 실패한다. 콜백 함수마다 URI를 따로 등록해야
+  하므로 cal-/mail- 콜백이 이미 있어도 **drive- 콜백은 새로 추가**해야 한다.
+- **Scope**: `drive.file`(+`userinfo.email`)은 인앱 메일(`MAIL_SCOPES`)에서 이미 쓰는 scope라
+  Google 동의화면 **추가 심사는 불필요**.
+
+### 체크리스트 (실기기/실계정 — 이 환경에선 불가: 실 커플 토큰·sandbox)
 
 1. 로그인 → `/invitation/:id/photos` → "구글 드라이브 백업" 카드 → **연결**.
 2. Google 동의(이미 `drive.file`은 인앱 메일에서 등록된 scope라 추가 심사 불필요) → 콜백 복귀

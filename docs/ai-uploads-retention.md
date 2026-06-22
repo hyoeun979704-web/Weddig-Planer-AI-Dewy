@@ -43,6 +43,11 @@ SELECT vault.create_secret(
 ⚠️ `service_role` key 는 절대 클라이언트 코드/repo에 두지 말고 Vault 또는
 환경변수에만 둔다. 위 SQL 도 한 번 실행 후 히스토리에서 지우는 게 좋다.
 
+> 📌 이 두 Vault 시크릿(`project_url`·`service_role_key`)은 **다른 pg_cron 잡도 공유**한다.
+> 현재 `drive-sync-auto`(하객사진 → 커플 Google Drive 자동 백업, 10분 주기 →
+> `drive-sync-cron` 호출)도 같은 시크릿으로 동작한다. 즉 시크릿을 한 번 등록하면 두 cron이
+> 함께 켜지고, 미등록이면 둘 다 조용히 no-op이다. 상세: `docs/260622_invitation_drive_sync_simulation.md` §7.
+
 ### 3. 마이그레이션 적용
 
 ```bash
