@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isNativeApp } from "@/lib/platform";
 import { updateWidgets, type WidgetSnapshot } from "@/lib/native/widgetBridge";
+import { netManwon } from "@/lib/budgetFormat";
 
 // 위젯 스냅샷 계산 — 가벼운 직접 select 3종(예식일·할일 카운트·예산 합계)로 핵심 값만 모은다.
 // 페이지 훅에 강결합하지 않고, 토큰/PII 없이 표시용 숫자만. 설계: docs/widget-system.md §2-3.
@@ -22,11 +23,8 @@ export async function computeWidgetSnapshot(userId: string): Promise<WidgetSnaps
   const done = items.filter((i) => i.completed).length;
 
   const totalManwon = budgetSettingsRes.data?.total_budget ?? 0;
-  // 환불 항목은 차감(순지출) — Budget 화면 요약과 일관.
-  const usedManwon = (budgetItemsRes.data ?? []).reduce(
-    (sum, i) => sum + (i.is_refund ? -1 : 1) * (i.amount ?? 0),
-    0,
-  );
+  // 환불 항목은 차감(순지출) — 단일 헬퍼 netManwon 로 Budget 화면과 일관.
+  const usedManwon = (budgetItemsRes.data ?? []).reduce((sum, i) => sum + netManwon(i), 0);
 
   return {
     weddingDate,

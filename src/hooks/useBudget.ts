@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCouplePartnerId } from "@/hooks/useCouplePartnerId";
 import { toast } from "@/hooks/use-toast";
 import { regionalAverages, regions, type BudgetCategory } from "@/data/budgetData";
+import { netManwon } from "@/lib/budgetFormat";
 
 export interface BudgetSettings {
   id: string;
@@ -119,8 +120,8 @@ export function useBudget(profileRegionKey?: string) {
     const paidByTotals: Record<string, number> = {};
     let totalSpent = 0;
     for (const i of items) {
-      // 환불 항목은 순지출에서 차감(부호 -1). 합계·카테고리·분담 모두 일관.
-      const signed = (i.is_refund ? -1 : 1) * i.amount;
+      // 환불 항목은 순지출에서 차감. 합계·카테고리·분담 모두 단일 헬퍼(netManwon)로 일관.
+      const signed = netManwon(i);
       totalSpent += signed;
       categoryTotals[i.category] = (categoryTotals[i.category] || 0) + signed;
       paidByTotals[i.paid_by] = (paidByTotals[i.paid_by] || 0) + signed;

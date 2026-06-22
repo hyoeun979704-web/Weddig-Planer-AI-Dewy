@@ -43,7 +43,7 @@ import { useDefaultRegion } from "@/hooks/useDefaultRegion";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { familyCollaborationEnabled } from "@/lib/weddingPersona";
 import { WEDDING_STYLE_PRESETS, WEDDING_STYLE_LABEL, visibleBudgetCategories } from "@/lib/weddingStyle";
-import { fmt } from "@/lib/budgetFormat";
+import { fmt, netManwon } from "@/lib/budgetFormat";
 
 /** SVG donut chart for budget usage */
 const DonutChart = ({ pct, size = 80, strokeWidth = 8 }: { pct: number; size?: number; strokeWidth?: number }) => {
@@ -149,8 +149,8 @@ const Budget = () => {
     for (const item of items) {
       const d = parseLocalDate(item.item_date);
       const bucket = buckets.find(b => isSameMonth(b.monthDate, d));
-      // 환불은 그 달 순지출에서 차감(부호 -1).
-      if (bucket) bucket.total += (item.is_refund ? -1 : 1) * item.amount;
+      // 환불은 그 달 순지출에서 차감(단일 헬퍼 netManwon).
+      if (bucket) bucket.total += netManwon(item);
     }
     return buckets;
   }, [items]);
