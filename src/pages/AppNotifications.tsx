@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCheck, Building2, Megaphone } from "lucide-react";
+import { Bell, CheckCheck, Building2, Megaphone, MailCheck } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const iconFor = (type: string) => {
   if (type.startsWith("business_")) return Building2;
+  if (type === "rsvp_submitted") return MailCheck;
   return Megaphone;
 };
 
