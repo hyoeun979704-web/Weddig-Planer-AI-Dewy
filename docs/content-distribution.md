@@ -40,7 +40,8 @@ personas:
   # 화자(author) = 효은의 두 얼굴(같은 사람, 다른 역할). "누구로서 쓰나".
   me:      # 예비신부+개발자 효은 — 개인 계정
     role: "예비신부이자 Dewy 만드는 개발자(나 자신)"
-    voice: '반말·친근, 1인칭("내가 직접 알아봤어")'
+    voice: '1인칭 경험("내가 직접 알아봤어"). 어투는 채널이 결정 — 쓰레드=반말·친근 / 네이버 블로그=친근 존댓말(해요체)'
+    register_rule: "화자(me)는 동일하되 어투 격식은 채널이 결정. 쓰레드=반말(짧은 개인 글), 네이버 블로그=해요체(정보글 규범 — 1인칭·경험담 유지, 어미만 ~했어요/~예요). 반말을 네이버에 쓰지 말 것."
     identity: 'build-in-public — 결혼 준비하며 앱도 만드는 진짜 사람'
     says: "준비하다 알게 된 것·삽질·후기 + 레포 개발일지"
     avoid: '광고 톤, 영업 CTA 남발'
@@ -67,7 +68,7 @@ personas:
 ```yaml
 voice_samples:
   me_threads:   "스드메 순서 나도 헷갈렸는데, 직접 다녀보고 정리함 👉 스→드→메가 국룰인 이유"
-  me_naver:     "스드메 처음이라 막막했던 나를 위한 글 — 예약 순서·실패담·체크포인트 다 적어둠"
+  me_naver:     "스드메 처음이라 막막했는데, 예약 순서·실패담·체크포인트 다 정리해뒀어요 (해요체 — 반말 아님)"
   brand_instagram: "스드메, 뭐부터? [카드 1/5] 스튜디오 먼저인 이유 — 저장해두고 보세요"
   brand_wordpress: "스드메 준비 순서: 스튜디오·드레스·메이크업을 언제, 왜 그 순서로 예약할까요?"
   brand_youtube:   "(0:01 훅) 스드메 순서 틀리면 돈 더 나가요 — 30초 정리"
@@ -96,7 +97,7 @@ content_model:
   transforms:                 # ↓ 전부 blog_core를 '재구성'한 산출물 (별도 소스 아님)
     threads_intro: { from: blog_core, persona: me,    shape: 짧은 소개+다음편 유도 }
     ig_carousel:   { from: blog_core, persona: brand, shape: 카드뉴스(시각 분해) }
-    naver_post:    { from: blog_core, persona: me,    shape: 상세 큐레이션 }
+    naver_post:    { from: blog_core, persona: me,    shape: 상세 큐레이션, register: 해요체 }  # me이지만 네이버는 존댓말(§0 register_rule)
     wp_aio:        { from: blog_core, persona: brand, shape: AIO 질문-답·구조화 }
     cafe_post:     { from: blog_core, persona: brand, shape: 커뮤니티 톤 재서술 }
 ```
