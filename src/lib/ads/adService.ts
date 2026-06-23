@@ -75,6 +75,18 @@ export async function initAds(): Promise<void> {
     try {
       const mod = await import(/* @vite-ignore */ ADMOB_PKG);
       admob = mod.AdMob;
+      // ATT(App Tracking Transparency) — iOS 광고 추적 동의를 initialize 전에 요청해야
+      // SDK 가 추적 상태를 반영한다. AdMob 광고는 IDFA 를 쓰므로 이 동의 흐름이 없으면
+      // App Store 5.1.2 위반으로 반려된다(회귀: AGENTS.md §8). 동의는 비개인화 광고로도
+      // graceful — 거부해도 광고는 나온다. ⚠️ 네이티브 Info.plist 에 NSUserTrackingUsageDescription
+      // (+SKAdNetworkItems) 가 있어야 프롬프트가 뜬다(없으면 무동작). 빌드 시 함께 추가.
+      try {
+        if (typeof admob.requestTrackingAuthorization === "function") {
+          await admob.requestTrackingAuthorization();
+        }
+      } catch (attErr) {
+        console.warn("[ads] ATT 요청 실패(비개인화 광고로 계속)", attErr);
+      }
       await admob.initialize();
     } catch (e) {
       console.warn("[ads] AdMob init 실패 (플러그인 미설치?)", e);
