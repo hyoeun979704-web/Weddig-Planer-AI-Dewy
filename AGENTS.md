@@ -40,7 +40,7 @@
 
 ## 코드 작성·리뷰 규칙 — 항상 적용 (바이브코딩 안전장치)
 
-코드를 새로 짜거나 바꿀 때마다 **반드시** 아래 7차원으로 자기 검증한다. AI 생성 코드는
+코드를 새로 짜거나 바꿀 때마다 **반드시** 아래 9차원으로 자기 검증한다. AI 생성 코드는
 "기능이 되면" 통과한 듯 보이지만 보안·안정성 결함은 **에러 없이 조용히** 깨진다(SusVibes:
 기능 80%+ 통과해도 보안은 8~23%). **"작동한다 ≠ 완성"**. 톤은 should 가 아니라 **must**.
 상세·Red Flags·프롬프트 템플릿: `docs/code-review-rules.md`.
@@ -64,6 +64,21 @@
    자동저장(`useTextDraft`/`formDraft`). ③ **네트워크 에러 문구 다름**("Load failed" vs
    "Failed to fetch") → 에러 매핑·로깅. ④ `<input type=date>`/HEIC 업로드/safe-area
    (`safe-sticky-header`) 확인. ⑤ 실기기 e2e 불가 시 `client_error_logs`(user_agent)로 관측.
+8. **출시 적합성(스토어 컴플라이언스) — 네이티브(iOS/Android) 빌드·제출 시 별도로 본다**: 기능
+   감사는 웹/리눅스 CI 에서 도니 이 차원이 **그냥 통과**한다(빌드·테스트 녹색이라도 스토어 정책
+   결함은 안 보임). 따로 점검: ① **네이티브 권한 사용설명 문자열**(iOS Info.plist
+   `NSUserTrackingUsageDescription`·카메라·사진 / AndroidManifest) — 없으면 권한 호출 시 **크래시·반려**.
+   ② **광고 = ATT(IDFA) 동의 + `SKAdNetworkItems` + `GADApplicationIdentifier`**(5.1.2). ③ **결제 =
+   디지털재화 IAP 강제 + anti-steering**(네이티브 빌드에서 외부/웹 결제 UI·링크 숨김, 3.1.1).
+   ④ **회원탈퇴 인앱 경로**(5.1.1) · **UGC 신고·차단·삭제**(1.2). ⑤ 개인정보 양식↔실수집 일치·정책 URL,
+   placeholder/빈화면 없음(2.1), 딥링크 URL scheme 등록. **회귀: 광고 켜고 ATT 문구 누락 → 추적요청
+   크래시·반려**(코드의 동의요청 + Info.plist 문구 **둘 다** 필요). 체크리스트 단일 소스:
+   `docs/260622_appstore_submission_runbook.md §11` · `docs/ios-packaging.md`.
+9. **안정성(복원력) — 죽지 않고 우아하게 열화**: ① 부팅 경로 **무한로딩·흰화면 방지**(ErrorBoundary,
+   스플래시→첫화면 폴백) · **네이티브 플러그인 init 실패 graceful**(웹/미설치 환경도 동작 — 빈 catch 가
+   아니라 폴백). ② 네트워크 열화·오프라인 우아한 처리(에러 매핑·재시도) · 스토리지 throw 대응
+   (`safeLocalStorage`). ③ **해피패스만이 아니라 실패 경로도** 화면이 안 깨지게 + `client_error_logs`/
+   크래시 로깅으로 관측되게(회귀: 결제 하트 이중발급 레이스·iOS 저장소 화이트스크린).
 
 변경은 **최소·표적화**(요구 범위 밖 전체 재작성·호출부 시그니처 변경 금지). 짠 뒤
 **적대적 시점으로 자기 재검증**.
@@ -71,10 +86,12 @@
 **전체 코드리뷰 기록**: "전체 코드리뷰"(코드 전체 리뷰/보안 감사 등 광범위) 요청을 받으면
 결과를 **반드시** `docs/YYMMDD_codereview.md` 로 남긴다(예: `docs/260606_codereview.md`).
 양식은 그 파일을 템플릿으로 따른다: TL;DR(핵심 성과) → 영역별 섹션(보안·P0버그·**dead-end
-UI/placeholder CTA**·**iOS/사파리(웹) 차원**·공통화·도메인 변경·규칙/문서·검증 인프라) → 적용
-마이그레이션 표 → 남은 작업(deferred). 각 항목에 **커밋 해시·파일명**을 달아 추적 가능하게. 같은 날 여러 건이면
-`_2` 등 suffix. **dead-end UI 섹션은 필수**: 보안·버그만 보면 "동작하는 척하는" placeholder
-(toast/안내만 띄우는 CTA, no-op onClick, "준비 중" 영구 잔존)를 매번 놓친다(검증 섹션 참조).
+UI/placeholder CTA**·**iOS/사파리(웹) 차원**·**출시 적합성(스토어 컴플라이언스)**·**안정성(복원력)**·
+공통화·도메인 변경·규칙/문서·검증 인프라) → 적용 마이그레이션 표 → 남은 작업(deferred). 각 항목에
+**커밋 해시·파일명**을 달아 추적 가능하게. 같은 날 여러 건이면 `_2` 등 suffix. **dead-end UI 섹션은
+필수**: 보안·버그만 보면 "동작하는 척하는" placeholder (toast/안내만 띄우는 CTA, no-op onClick,
+"준비 중" 영구 잔존)를 매번 놓친다(검증 섹션 참조). **출시 적합성 섹션도 필수**: 네이티브 빌드는
+웹 CI 가 안 밟아 ATT·IAP·권한문구 결함이 기능 감사를 그냥 통과한다(회귀: 광고 ATT 누락 — §7-8 차원).
 
 **정기 자동화**: 전체 감사는 **주 1회**(`.github/workflows/weekly-audit.yml`), e2e 전체
 시뮬레이션은 **월 1회**(`monthly-e2e-simulation.yml`) 개발 에이전트가 자동 수행한다(둘 다
