@@ -27,15 +27,33 @@ const USE_TEST_ADS = (import.meta.env.VITE_ADMOB_TEST as string | undefined) ===
 const TEST_BANNER_ID = "ca-app-pub-3940256099942544/6300978111";
 const TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917";
 
-// AdMob 광고단위 ID 는 배포 APK 에 박혀 공개되는 값(시크릿 아님)이라 기본값으로 둬도 안전 —
-// env 미설정인 네이티브 빌드에서도 동작하도록 Dewy 실제 단위를 기본값으로(AdSense 와 동일 패턴).
+// AdMob 광고단위 ID 는 배포 바이너리에 박혀 공개되는 값(시크릿 아님)이라 기본값으로 둬도 안전.
+// ⚠️ AdMob 은 iOS·Android 를 서로 다른 앱/광고단위로 관리한다 — 한쪽 OS 단위를 다른 OS 에서
+// 쓰면 앱↔단위 불일치로 게재가 안 된다(no-fill). 따라서 현재 플랫폼에 맞는 단위를 기본값으로
+// 고른다(env VITE_ADMOB_* 가 있으면 그게 최우선). 같은 퍼블리셔(3558095447353368)의
+// iOS 앱(~7441366116)·Android 앱 각각에서 생성한 단위.
+const ADMOB_IDS_BY_PLATFORM = {
+  android: {
+    banner: "ca-app-pub-3558095447353368/8611781514",
+    rewardedDouble: "ca-app-pub-3558095447353368/8758376311",
+    rewardedExtra: "ca-app-pub-3558095447353368/6397660020",
+  },
+  ios: {
+    banner: "ca-app-pub-3558095447353368/5825032111",
+    rewardedDouble: "ca-app-pub-3558095447353368/5040653817",
+    rewardedExtra: "ca-app-pub-3558095447353368/5270498349",
+  },
+} as const;
+const PLATFORM_ADMOB_IDS =
+  Capacitor.getPlatform() === "ios" ? ADMOB_IDS_BY_PLATFORM.ios : ADMOB_IDS_BY_PLATFORM.android;
+
 const ADMOB_BANNER_ID = USE_TEST_ADS ? TEST_BANNER_ID :
-  ((import.meta.env.VITE_ADMOB_BANNER_ID as string | undefined) || "ca-app-pub-3558095447353368/8611781514");
+  ((import.meta.env.VITE_ADMOB_BANNER_ID as string | undefined) || PLATFORM_ADMOB_IDS.banner);
 // 보상형은 게재위치별 단위가 다르다 — 포인트 2배 / 게임기회 1회 추가.
 const ADMOB_REWARDED_DOUBLE_ID = USE_TEST_ADS ? TEST_REWARDED_ID :
-  ((import.meta.env.VITE_ADMOB_REWARDED_ID as string | undefined) || "ca-app-pub-3558095447353368/8758376311");
+  ((import.meta.env.VITE_ADMOB_REWARDED_ID as string | undefined) || PLATFORM_ADMOB_IDS.rewardedDouble);
 const ADMOB_REWARDED_EXTRA_ID = USE_TEST_ADS ? TEST_REWARDED_ID :
-  ((import.meta.env.VITE_ADMOB_REWARDED_EXTRA_ID as string | undefined) || "ca-app-pub-3558095447353368/6397660020");
+  ((import.meta.env.VITE_ADMOB_REWARDED_EXTRA_ID as string | undefined) || PLATFORM_ADMOB_IDS.rewardedExtra);
 
 export const isNativeAds = () => Capacitor.isNativePlatform();
 

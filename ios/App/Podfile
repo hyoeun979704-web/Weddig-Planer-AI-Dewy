@@ -1,0 +1,35 @@
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+platform :ios, '13.0'
+use_frameworks!
+
+# workaround to avoid Xcode caching of Pods that requires
+# Product -> Clean Build Folder after new Cordova plugins installed
+# Requires CocoaPods 1.6 or newer
+install! 'cocoapods', :disable_input_output_paths => true
+
+def capacitor_pods
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
+  pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+  pod 'CapacitorBrowser', :path => '../../node_modules/@capacitor/browser'
+  pod 'CapacitorPreferences', :path => '../../node_modules/@capacitor/preferences'
+  pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
+  pod 'CordovaPlugins', :path => '../capacitor-cordova-ios-plugins'
+end
+
+target 'App' do
+  capacitor_pods
+  # @capacitor-community/admob@6.2.0 의 ConsentExecutor.swift 는 UMP 2.x 심볼명
+  # (UMPConsentStatus·UMPConsentInformation·sharedInstance 등)을 사용한다.
+  # GoogleUserMessagingPlatform 3.0 에서 이 심볼들이 UMP 접두어 없이 개명돼
+  # (ConsentStatus·ConsentInformation·shared) 플러그인이 컴파일되지 않으므로,
+  # Google-Mobile-Ads-SDK 11.3.0 이 허용하는 범위(>= 1.1) 내에서 2.x 로 고정한다.
+  pod 'GoogleUserMessagingPlatform', '< 3.0'
+  # Add your Pods here
+end
+
+post_install do |installer|
+  assertDeploymentTarget(installer)
+end
