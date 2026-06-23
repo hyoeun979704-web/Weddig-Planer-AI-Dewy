@@ -10,6 +10,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       position="top-center"
+      // iOS 노치/다이나믹아일랜드(상태표시줄)에 토스트가 가리지 않도록 safe-area 만큼 내려 띄운다.
+      offset="calc(env(safe-area-inset-top) + 16px)"
       className="toaster group"
       toastOptions={{
         classNames: {

@@ -56,5 +56,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>가까운 예식장을 추천해 드리기 위해 현재 위치를 한 번 확인합니다. 위치는 저장하지 않습니다.</string>
 </dict>
 </plist>
