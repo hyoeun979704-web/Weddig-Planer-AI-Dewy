@@ -127,6 +127,7 @@ rule: "base_topic 1개 → blog_core 1개. angle 은 transform 단계 입력(채
 voice_variation:
   formula: "최종 보이스 = 화자(me|대표) × 독자_앵글(§4·§5) × partner_overlay(있으면)"
   speaker: "화자 = content-distribution.md §0 의 me(예비신부+개발자) / 대표(업체 대표로서의 나) — 둘 다 효은. 채널이 화자를 결정(공식계정=대표)."
+  register: "채널은 화자뿐 아니라 어투 격식도 결정 — 같은 me라도 쓰레드=반말, 네이버 블로그=해요체(존댓말). content-distribution §0 register_rule 참조."
   reader_angle: "§4 독자 타겟 × §5 키워드 앵글이 강조점을 굴절."
   topic_angle: "§5 keyword_angle_map 의 페르소나 앵글이 톤·강조점을 굴절."
   partner_overlay: "제휴 콘텐츠면 partner-brand-profile.md 의 brand·voice·usp 를 Dewy 위에 얹음(§blend)."
