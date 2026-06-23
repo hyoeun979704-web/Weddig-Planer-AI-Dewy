@@ -12,11 +12,12 @@ iOS(Capacitor/WKWebView) 첫 App Store 제출 준비 중 발견한 출시 차단
 |---|---|---|---|---|
 | A1 | Apple 로그인만 실패(Google/Kakao 정상) — 4.8 위반=반려 | 🔴 반려 | 🛠 | Supabase 콘솔 Apple provider 설정 |
 | A2 | iOS IAP 실구매 — ASC 상품 미등록 시 구매 실패/반려 | 🔴 반려 | 🔎 ⏳ | ASC 상품 등록 + `src/lib/payments/iap.ts` |
-| B1 | 토스트가 노치/상태표시줄에 가림 | 🟠 UX | 🛠 | `src/components/ui/sonner.tsx:12` |
-| B2 | 바텀시트/드로어 하단이 홈인디케이터에 가림 | 🟠 UX | ⏳ | `ui/drawer.tsx:34`, `place/PlaceInquirySheet.tsx`, `onboarding/StyleSwipeSheet.tsx`, `invitation/AISuggestSheet.tsx:83` |
-| B3 | 위치 권한 키 누락 → "근처 식장 추천" 동작 안 함 | 🟠 기능 | ⏳ | `ios/App/App/Info.plist` ↔ `persona/LocationJITCard.tsx:121` |
-| B4 | raw localStorage(try-catch 없음) → 프라이빗 모드 흰 화면 | 🟠 안정성 | ⏳ | `persona/LocationJITCard.tsx:106,167` |
-| C1 | "앱 받기"가 Play스토어 하드코딩(iOS 부적절·anti-steering) | 🟡 정책 | ⏳ | `src/pages/MergeGame.tsx:103-106` |
+| B1 | 토스트가 노치/상태표시줄에 가림 | 🟠 UX | ✅ (재빌드 필요) | `src/components/ui/sonner.tsx` offset 추가 |
+| B2 | AISuggestSheet 하단이 홈인디케이터에 가림 | 🟠 UX | ✅ (재빌드 필요) | `invitation/AISuggestSheet.tsx:83` pb-safe-bottom. ※PlaceInquirySheet·StyleSwipeSheet는 **이미 적용돼 있었음(과대보고)** |
+| B3 | 위치 권한 키 누락 → "근처 식장 추천" 동작 안 함 | 🟠 기능 | ✅ (재빌드 필요) | `Info.plist`에 NSLocationWhenInUseUsageDescription 추가 |
+| B3b | 수출규정(암호화) 매 제출 질문 | 🟢 편의 | ✅ | `Info.plist`에 ITSAppUsesNonExemptEncryption=false |
+| B4 | ~~raw localStorage~~ | — | ❎ 오판 | `LocationJITCard`는 **이미 try-catch 보호** — 수정 불필요 |
+| C1 | ~~"앱 받기" Play스토어~~ | — | ❎ iOS 비해당 | `MergeGame`의 nudge는 `!isNativeAds()`(웹 전용) → iOS 네이티브엔 안 뜸 |
 | C2 | 스플래시 하단 텍스트·일부 전체화면 오버레이 safe-area 미반영 | 🟡 경미 | ⏳ | `WeddingBlessingSplash.tsx:73`, `TutorialOverlay.tsx`, `invitation/native/MobileInvitationSections.tsx:244` |
 
 ## 상세
