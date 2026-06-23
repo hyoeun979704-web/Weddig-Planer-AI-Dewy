@@ -1,8 +1,8 @@
 name: Weekly Full Audit
 
 # 매주 1회, 개발 에이전트(Claude)가 저장소 전체를 감사한다.
-#   - AGENTS.md "전체 코드리뷰" 9차원(보안·P0버그·dead-end UI/placeholder CTA·정확성·
-#     아키텍처·iOS사파리·출시 적합성·안정성) + docs/verification-lessons.md 교훈을 기준으로.
+#   - AGENTS.md "전체 코드리뷰" 13차원(보안·P0버그·dead-end UI/placeholder CTA·정확성·아키텍처·
+#     iOS사파리·출시 적합성·안정성·법적규제·비용/쿼터·접근성·개인정보) + verification-lessons 교훈 기준.
 #   - 결과를 docs/YYMMDD_codereview.md 로 남기고 draft PR 을 연다.
 #
 # ⚙️ 사전 준비(1회): 저장소 Settings → Secrets and variables → Actions 에
@@ -57,8 +57,9 @@ jobs:
           # 감사 지시 — AGENTS.md 의 전체 코드리뷰 양식을 그대로 따르게 한다.
           prompt: |
             이 저장소의 AGENTS.md "코드 작성·리뷰 규칙" 과 "전체 코드리뷰 기록" 절차대로
-            전체 감사를 수행해줘. 9차원(정확성·보안·성능·테스트·유지보수성·아키텍처·iOS사파리·
-            **출시 적합성**·**안정성**)으로 점검하고, 특히 기능 감사가 그냥 통과시키는 세 가지를
+            전체 감사를 수행해줘. 13차원(정확성·보안·성능·테스트·유지보수성·아키텍처·iOS사파리·
+            **출시 적합성**·**안정성**·**법적/전자상거래**·**비용/쿼터**·**접근성**·**개인정보**)으로
+            점검하고, 특히 기능 감사가 그냥 통과시키는 세 가지를
             반드시 별도로 본다: ① **dead-end UI/placeholder CTA**(toast/안내만 띄우는 CTA, no-op
             onClick, "준비 중" 영구 잔존) ② **출시 적합성(스토어 컴플라이언스)** — 네이티브 권한
             사용설명 문자열·광고 ATT/SKAdNetwork·결제 IAP/anti-steering·회원탈퇴·UGC 신고차단
