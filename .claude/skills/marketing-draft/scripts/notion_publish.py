@@ -201,7 +201,7 @@ def publish(title, blocks, token, parent):
     for j in range(0, len(rest), MAX_BLOCKS):
         _request("PATCH", f"/blocks/{page_id}/children",
                  {"children": rest[j:j + MAX_BLOCKS]}, token)
-    return page.get("url", page_id)
+    return page_id, page.get("url", page_id)
 
 
 def main():
@@ -241,8 +241,10 @@ def main():
             "(env vars or --token/--parent).\n")
         sys.exit(2)
 
-    url = publish(title, blocks, a.token, a.parent)
+    page_id, url = publish(title, blocks, a.token, a.parent)
     print(url)
+    # 토픽 트리 구성용 — 후속 변환물을 이 페이지 밑에 적재하려면 이 id 를 --parent 로.
+    print(f"PAGE_ID:{page_id.replace('-', '')}", file=sys.stderr)
 
 
 if __name__ == "__main__":
