@@ -13,6 +13,7 @@ import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
 import { createQuoteRequest, quoteImageUrl } from "@/hooks/useQuotes";
 import { markBoardSlotQuoting } from "@/hooks/useVendorBoard";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { usePersonaInsights } from "@/hooks/usePersonaInsights";
 import { useTextDraft } from "@/hooks/useTextDraft";
 
 const STYLES: { v: string; label: string }[] = [
@@ -28,6 +29,10 @@ const QuoteNew = () => {
   const { user } = useAuth();
   const [params] = useSearchParams();
   const { weddingSettings } = useWeddingSchedule();
+  // 초개인화 — 비표준 페르소나면 "그 조건도 적어달라"는 안심 카피를 덧붙여(④) 매칭 적합도
+  // 인식을 높인다(재혼·스몰·임신·예산형 사용자가 자기 조건을 빼먹지 않게).
+  const { personaMode, personaLabel } = usePersonaInsights();
+  const isStandardPersona = personaMode === "standard_bride" || personaMode === "standard_groom";
   const [category, setCategory] = useState(params.get("category") ?? "");
   const boardSlot = params.get("slot"); // 업체 보드 슬롯에서 진입 시 — 성공하면 그 슬롯을 '견적중'으로
   const [city, setCity] = useState("");
@@ -131,6 +136,11 @@ const QuoteNew = () => {
         <p className="text-[13px] text-muted-foreground">
           필요한 정보를 남기면 조건에 맞는 업체들에게 한 번에 견적을 요청해요. 업체가 답하면 알림으로 알려드려요.
         </p>
+        {!isStandardPersona && (
+          <p className="text-[12px] text-primary bg-primary/5 rounded-lg px-3 py-2">
+            {personaLabel} 조건(예산·규모·일정 등)도 메모에 적어주시면 맞는 업체에게 우선 전달돼요.
+          </p>
+        )}
 
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">어떤 업체를 찾으세요? *</Label>

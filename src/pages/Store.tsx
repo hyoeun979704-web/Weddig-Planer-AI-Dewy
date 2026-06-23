@@ -9,6 +9,7 @@ import { escapeLikePattern } from "@/lib/postgrestEscape";
 import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { usePersonaInsights } from "@/hooks/usePersonaInsights";
 import Seo from "@/components/Seo";
 import { STORE_CATEGORIES, StoreCategoryValue, getSourceLabel } from "@/lib/storeCategories";
 import { formatWon as formatPrice } from "@/lib/priceFormat";
@@ -54,6 +55,9 @@ const Store = () => {
 
   // 결혼 스타일이 셀프인 경우 1회 한정으로 '셀프웨딩 드레스' 탭을 자동 선택.
   const { weddingSettings, isLoading: scheduleLoading } = useWeddingSchedule();
+  // 초개인화 — 추천 띠가 persona 로 필터되는데(featured_personas) 제목은 제네릭이라,
+  // 비표준 페르소나면 "{라벨} 추천 상품"으로 카피까지 맞춘다(③→④).
+  const { personaMode, personaLabel } = usePersonaInsights();
   const didInitTabRef = useRef(false);
   useEffect(() => {
     if (didInitTabRef.current || scheduleLoading) return;
@@ -193,7 +197,11 @@ const Store = () => {
           <section className="mb-5">
             <div className="flex items-center gap-1.5 mb-2">
               <Star className="w-4 h-4 fill-primary text-primary" />
-              <h3 className="text-sm font-bold text-foreground">추천 상품</h3>
+              <h3 className="text-sm font-bold text-foreground">
+                {personaMode !== "standard_bride" && personaMode !== "standard_groom"
+                  ? `${personaLabel} 추천 상품`
+                  : "추천 상품"}
+              </h3>
             </div>
             <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
               {featured.map((product) => {

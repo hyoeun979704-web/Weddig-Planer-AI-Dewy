@@ -12,6 +12,7 @@ import Seo from "@/components/Seo";
 import { useTipVideos, type TipVideo } from "@/hooks/useTipVideos";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { usePersonaInsights } from "@/hooks/usePersonaInsights";
 import { rankTipVideosForUser, buildCurationFactors } from "@/lib/tipCuration";
 
 // Shorts threshold: YouTube classifies up to 3 min as Shorts. We use 180s.
@@ -116,6 +117,9 @@ const Tips = () => {
   // 숨겨졌다면(default small preset 케이스) 자동 선택을 건너뜀 — 위쪽 reset
   // useEffect가 즉시 풀어버려서 결국 사용자에겐 변화로 보이지 않기 때문.
   const { weddingSettings, isLoading: scheduleLoading } = useWeddingSchedule();
+  // 초개인화 — 큐레이션 활성 시 헤더를 페르소나 라벨로(예: "임신 중 결혼 꿀팁"). 신호를
+  // 정렬에만 쓰던 것(③)을 카피 변형(④)까지 끌어올린다. 단일 소스 PERSONA_LABEL 재사용.
+  const { personaMode, personaLabel } = usePersonaInsights();
   const didInitCategoryRef = useRef(false);
   useEffect(() => {
     if (didInitCategoryRef.current || scheduleLoading) return;
@@ -332,7 +336,9 @@ const Tips = () => {
               <h2 className="text-base font-bold text-foreground truncate max-w-[220px]">
                 {uiSearchMode
                   ? `'${isDebouncing ? trimmedInput : debouncedQuery}' 검색 결과`
-                  : "전체 꿀팁"}
+                  : showCuratedBadge && personaMode !== "standard_bride" && personaMode !== "standard_groom"
+                    ? `${personaLabel} 꿀팁`
+                    : "전체 꿀팁"}
               </h2>
               {uiSearchMode ? (
                 !isGridLoading && gridList.length > 0 && (
