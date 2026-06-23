@@ -27,10 +27,12 @@ note: >
 ---
 
 <!-- curation: manual -->
-## 4. 콘텐츠 페르소나 레지스트리 (마케팅 전용 — 앱 20모드와 별개)
+## 4. 독자(청중) 타겟 세그먼트 (마케팅 전용 — 앱 20모드와 별개)
 
-> ⚠️ 이건 **콘텐츠 타겟 세그먼트**다. `src/lib/weddingPersona.ts`의 앱 20모드(분류 엔진)와 **다른 목적·다른 집합**.
-> 충돌 방지 위해 **`mp_` 접두사** 고정. partner-brand-profile.md 의 `persona_fit` 은 여기 `id` 만 참조한다.
+> ⚠️ **두 축을 혼동 금지:** **화자(author)**=누구로서 쓰나(`me`/`대표` — content-distribution §0, 곧 효은의 두 얼굴) /
+> **독자(audience)**=누구에게 쓰나(아래 `mp_*`). 콘텐츠 = **화자 × 독자 × 주제앵글**의 교차. 여기 §4 는 **독자**다.
+> `src/lib/weddingPersona.ts`의 앱 20모드(분류 엔진)와도 **다른 목적·다른 집합** — 충돌 방지 위해 **`mp_` 접두사** 고정.
+> partner-brand-profile.md 의 `persona_fit` 은 여기 `id` 만 참조한다.
 
 ```yaml
 content_personas:
@@ -77,6 +79,13 @@ content_personas:
     voice_angle: "비주얼 우선·저장 유도, 트렌드 큐레이션"
     keywords: [웨딩스냅, 벚꽃스냅, 웨딩드레스트렌드]
 fallback: "신호 없으면 mp_general 로 폴백(빈 타겟 금지)."
+# 차원 정리(오버랩 disambiguation) — 같은 키워드를 두 세그먼트가 쓸 때 어느 축으로 가르나.
+axes:
+  type: "결혼 형태 — mp_general(표준) / mp_small(스몰) / mp_self(셀프)"
+  cost: "비용 성향 — mp_budget(가성비) ↔ mp_premium(프리미엄)"
+  stage: "준비 단계 — mp_beginner(입문). mp_general 과 키워드 겹치면 '입문 깊이'로 분기(쉬운 말 vs 종합)."
+  taste: "미감 — mp_visual(트렌드/비주얼). mp_premium 과 겹치면 '비용 vs 미감' 축으로 분기."
+ai_ownership: "AI 차별점(마케팅계획 메시지축) = orphan 키워드 '웨딩플래너앱'은 mp_general·mp_beginner 가 'AI가 시기·예산 맞춰 답' 앵글로 소유. (방구석 드레스투어·메이크업 시뮬은 mp_visual·mp_self 가.)"
 ```
 
 ---
@@ -116,8 +125,9 @@ rule: "base_topic 1개 → blog_core 1개. angle 은 transform 단계 입력(채
 
 ```yaml
 voice_variation:
-  formula: "최종 보이스 = base_persona(me|brand, content-distribution §0) × topic_angle(§5) × partner_overlay(있으면)"
-  base_persona: "content-distribution.md §0 의 me/brand 보이스가 토대."
+  formula: "최종 보이스 = 화자(me|대표) × 독자_앵글(§4·§5) × partner_overlay(있으면)"
+  speaker: "화자 = content-distribution.md §0 의 me(예비신부+개발자) / 대표(업체 대표로서의 나) — 둘 다 효은. 채널이 화자를 결정(공식계정=대표)."
+  reader_angle: "§4 독자 타겟 × §5 키워드 앵글이 강조점을 굴절."
   topic_angle: "§5 keyword_angle_map 의 페르소나 앵글이 톤·강조점을 굴절."
   partner_overlay: "제휴 콘텐츠면 partner-brand-profile.md 의 brand·voice·usp 를 Dewy 위에 얹음(§blend)."
   anti_fixed: "동일 톤·동일 인트로 반복 금지 — content-distribution §4 variation_pools 와 연동."

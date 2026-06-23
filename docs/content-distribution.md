@@ -37,19 +37,40 @@ curation_map:
 
 ```yaml
 personas:
-  me:      # 개인(효은). 채널: threads, naver_blog
+  # 화자(author) = 효은의 두 얼굴(같은 사람, 다른 역할). "누구로서 쓰나".
+  me:      # 예비신부+개발자 효은 — 개인 계정
+    role: "예비신부이자 Dewy 만드는 개발자(나 자신)"
     voice: '반말·친근, 1인칭("내가 직접 알아봤어")'
-    identity: 'AI 웨딩앱 만드는 개발자 신부 (build-in-public)'
+    identity: 'build-in-public — 결혼 준비하며 앱도 만드는 진짜 사람'
+    says: "준비하다 알게 된 것·삽질·후기 + 레포 개발일지"
     avoid: '광고 톤, 영업 CTA 남발'
-  brand:   # Dewy. 채널: instagram, wordpress, youtube_shorts, cafe
+    channels: [threads, naver_blog]
+  brand:   # 업체 대표로서의 나(효은) — 브랜드 공식계정
+    role: "Dewy 대표로서의 나(효은). 익명 브랜드가 아니라 '내가 운영하는 서비스'"
     voice: '존댓말, 따뜻하지만 단정. "당신에게 맞는" 개인화 큐레이터'
-    avoid: 과한 영업, 일반론 방송
-  coherence_rule: "개인의 빌딩 스토리 → 브랜드의 '진짜 사람이 만든다' 신뢰로 환류. 기존 Dewy/2MOOD 보이스와 동기화."
+    identity: '진짜 사람(개발자 신부)이 만든 서비스의 대표 — 신뢰·전문'
+    says: "큐레이션·가이드·업체 소개·제품 가치(개인 사담은 절제)"
+    avoid: '과한 영업, 일반론 방송, 익명 대기업 톤'
+    channels: [instagram, wordpress, youtube_shorts, cafe]
+  coherence_rule: "둘 다 효은. me 의 빌딩 스토리(진짜 사람이 만든다)가 brand(대표)의 신뢰로 환류 — '내가 만든 앱이라 압니다'. 한 우주, 다른 모자."
 
   # 보이스는 단일 고정 가이드가 아니라 3축 조합으로 매번 산출(고정 톤 금지).
   voice_resolution:
-    formula: "최종 보이스 = base_persona(me|brand) × topic_angle(wedding-intel §5) × partner_overlay(있으면 §7)"
-    source: "wedding-intel.md §6 voice_variation 이 단일 소스. 같은 me/brand 라도 주제 키워드·제휴업체별로 톤·강조점이 굴절."
+    formula: "최종 보이스 = 화자(me|brand) × topic_angle(wedding-intel §5 독자 앵글) × partner_overlay(있으면 §7)"
+    source: "wedding-intel.md §6 voice_variation 이 단일 소스. 같은 화자라도 주제 키워드·독자·제휴업체별로 톤·강조점이 굴절."
+```
+
+### §0 보이스 샘플 (톤 확정용 — 같은 주제 '스드메 순서'를 화자×채널별로)
+
+> ※ 톤 레퍼런스(복제용 템플릿 아님 — §4 variation_pools 로 매번 변주). 사용자 검수·확정 대상.
+
+```yaml
+voice_samples:
+  me_threads:   "스드메 순서 나도 헷갈렸는데, 직접 다녀보고 정리함 👉 스→드→메가 국룰인 이유"
+  me_naver:     "스드메 처음이라 막막했던 나를 위한 글 — 예약 순서·실패담·체크포인트 다 적어둠"
+  brand_instagram: "스드메, 뭐부터? [카드 1/5] 스튜디오 먼저인 이유 — 저장해두고 보세요"
+  brand_wordpress: "스드메 준비 순서: 스튜디오·드레스·메이크업을 언제, 왜 그 순서로 예약할까요?"
+  brand_youtube:   "(0:01 훅) 스드메 순서 틀리면 돈 더 나가요 — 30초 정리"
 ```
 
 ---
