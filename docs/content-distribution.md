@@ -38,13 +38,18 @@ curation_map:
 ```yaml
 personas:
   me:      # 개인(효은). 채널: threads, naver_blog
-    voice: 반말·친근, 1인칭("내가 직접 알아봤어")
-    identity: "AI 웨딩앱 만드는 개발자 신부"(build-in-public)
-    avoid: 광고 톤, 영업 CTA 남발
+    voice: '반말·친근, 1인칭("내가 직접 알아봤어")'
+    identity: 'AI 웨딩앱 만드는 개발자 신부 (build-in-public)'
+    avoid: '광고 톤, 영업 CTA 남발'
   brand:   # Dewy. 채널: instagram, wordpress, youtube_shorts, cafe
-    voice: 존댓말, 따뜻하지만 단정. "당신에게 맞는" 개인화 큐레이터
+    voice: '존댓말, 따뜻하지만 단정. "당신에게 맞는" 개인화 큐레이터'
     avoid: 과한 영업, 일반론 방송
   coherence_rule: "개인의 빌딩 스토리 → 브랜드의 '진짜 사람이 만든다' 신뢰로 환류. 기존 Dewy/2MOOD 보이스와 동기화."
+
+  # 보이스는 단일 고정 가이드가 아니라 3축 조합으로 매번 산출(고정 톤 금지).
+  voice_resolution:
+    formula: "최종 보이스 = base_persona(me|brand) × topic_angle(wedding-intel §5) × partner_overlay(있으면 §7)"
+    source: "wedding-intel.md §6 voice_variation 이 단일 소스. 같은 me/brand 라도 주제 키워드·제휴업체별로 톤·강조점이 굴절."
 ```
 
 ---
@@ -58,6 +63,8 @@ content_model:
 
   ssot:                       # 단일 진실의 원천 (텍스트 채널의 유일 원천)
     blog_core: "주제별 정보·큐레이션 본체 1개. 모든 텍스트 산출물의 소스."
+    store: "docs/blog-core/<topic-slug>.md (git 추적, 사람 검수 가능한 텍스트 SSOT). 주제는 wedding-intel §8 큐에서 선택."
+    rationale: "git 텍스트라 버전·검수·재사용이 명확. (대안 Notion DB 는 검수 UI 는 좋으나 git 이력 약함 → 텍스트 우선.)"
 
   reusable_media:             # 1개 만들어 여러 채널 재사용
     clip: "짧은 컷전환 영상 1개 → 인스타 릴스 · 유튜브 숏폼 · 네이버 클립 (3채널 재사용)"
@@ -120,11 +127,17 @@ channels:
 
 ```yaml
 variation_pools:
-  hook_styles: [질문형, 통계·숫자, 실패·후회담, "나/내가" 경험, 비포애프터, 체크리스트, 의외의 사실, 시즌 긴급]
+  hook_styles: [질문형, 통계·숫자, 실패·후회담, "나/내가 경험", 비포애프터, 체크리스트, 의외의 사실, 시즌 긴급]
   structures:  [리스트형, 스토리형, Q&A, 단일 딥다이브, 페르소나 대조, 미니가이드, 큐레이션 모음]
   cta_modes:   [정보만, 다음편 유도, 저장 유도, 댓글 질문, 부드러운 앱 언급]
   rotation_rule: "동일 채널 최근 5개와 hook+structure 조합 겹치면 재선택"
   guard: "상투적 인트로·동일 문장 시작 감지 시 재생성"
+  # 운영 판정 기준(실행기 구현 시):
+  guard_heuristics:
+    cliché_intro: "'안녕하세요 신부님' '결혼 준비 어떻게 하세요?' 등 사전 금지 인트로 목록 매칭 시 재생성."
+    same_prefix: "최근 5개와 첫 문장 앞 12자 동일/유사(정규화 후 일치) 시 재생성."
+    judge: "위 룰 통과 후에도 LLM-as-judge 가 '상투적' 플래그하면 1회 재생성(무한루프 방지 1회 한정)."
+  rotation_state: "채널×(hook,structure,첫문장prefix) 최근 이력 저장 필요 — 실행기 단계의 소형 상태 테이블(이번 문서 범위 밖)."
 ```
 
 ---
@@ -166,6 +179,8 @@ transform_mandate:
 partner_content:
   asset_source:
     gdrive_root: "<제휴업체 자료 폴더 — 공유 후 folder_id 기입>"
+    # 채우는 법: Drive 에서 제휴업체 루트 폴더 생성 → 공유 → URL 의 .../folders/<ID> 의 <ID> 를 위에 기입.
+    # 인증·업로드는 기존 supabase/functions/_shared/googleDrive.ts(OAuth + uploadToFolder) 재사용.
     structure: "gdrive_root/{partner_id}/  ← brand-profile.md + 사진/영상/로고"
     partner_id_format: "WH-SEL-001 (카테고리-지역-순번)"
   on_partner_feature:        # 제휴업체 소개 콘텐츠 생성 시
@@ -189,14 +204,51 @@ legal:
   per_channel: "카페·블로그 동일 적용. 투명 표기가 진정성 브랜드 신뢰↑."
 ```
 
-## 9. 연동
+## 9. 연동 — 문서 역할 분담 (중복 금지)
+
+| 문서 | 역할(단일 진실) | 본 파이프라인과의 관계 |
+|---|---|---|
+| `marketing-plan.md` | **전략·포지셔닝·브랜드 팩트**(앱명·가격·기능·3대 메시지 축·UTM) | blog_core 작성 시 사실/메시지 근거 |
+| `wedding-intel.md` | **주제 큐(§8) + 콘텐츠 페르소나(§4) + 키워드 앵글(§5) + 보이스 변주(§6)** | 본 매트릭스의 **input** |
+| **`content-distribution.md`(본)** | **변환·배포 파이프라인**(SSOT→transform→6채널) | wedding-intel 입력을 받아 채널 산출물로 |
+| `partner-brand-profile.md` | **제휴업체 브랜드 오버레이**(업체별 1파일, GDrive) | §7 partner_content 에서 로드 |
+
 - **주제·우선순위:** `wedding-intel.md` §8 → 본 매트릭스 input.
-- **페르소나 매칭:** `wedding-intel.md` §4(persona_id).
+- **페르소나 매칭:** `wedding-intel.md` §4(`mp_*` persona_id) → partner-brand-profile `persona_fit`.
 - **제휴 브랜딩:** `partner-brand-profile.md`(GDrive) → §7 partner_content.
-- **검수:** 발행 전 1회(데일리 자습 2h).
+- **검수:** 발행 전 1회(데일리 자습 2h) → §10 의 `/admin/agent-outputs` 큐.
+
+## 10. 실행기 설계 (executor_design — 다음 라운드 구현 청사진)
+
+> 본 spec 을 **돌리는 주체**. 채널 API(네이버·유튜브·메타) 가 없어 **생성→스테이징→사람 게시**(HITL).
+> 코드는 이번 범위 밖. 재사용 자산을 명시해 다음 라운드가 바로 착수하게 한다.
+
+```yaml
+executor_design:
+  pipeline:
+    1_parse:    "본 문서 + wedding-intel 의 yaml 펜스만 파싱(parsing_contract)."
+    2_pick:     "wedding-intel §8 topic_scoring 상위에서 주제 1개 선택(+1차 persona_id·키워드 angle)."
+    3_blog_core: "docs/blog-core/<slug>.md 작성/로드(SSOT)."
+    4_vary:      "§4 variation_pools 에서 hook·structure 추첨 + rotation_state 로 최근5 중복 회피."
+    5_transform: "§1 transforms 5종(threads_intro·ig_carousel·naver_post·wp_aio·cafe_post) + clip 브리프 생성. 보이스=§voice_resolution."
+    6_stage:    "노션 + agent_outputs 큐 적재(status=pending)."
+    7_review:   "/admin/agent-outputs 에서 사람 검수 → 승인."
+    8_publish:  "사람이 각 채널에 게시(자동발행 채널 API 없음). 게시 URL 기록."
+  reuse:
+    generation: ".claude/skills/marketing-draft/ (생성 + Notion 발행)"
+    queue:      "agent-office/supabase_bridge.py (push_output/fetch_approved → agent_outputs)"
+    review_ui:  "/admin/agent-outputs (기존 라우트)"
+    partner_assets: "supabase/functions/_shared/googleDrive.ts (OAuth + uploadToFolder)"
+    schedule:   ".github/workflows/weekly-audit.yml (주간 cron 패턴)"
+  hitl: "네이버/유튜브/메타 = API 부재 → 사람 게시. 노션·드라이브만 자동."
+```
 
 ## CHANGELOG
+- **v2.1 (2026-06-23):** 공백 보강 — blog_core 저장위치(§1 store)·voice_resolution(§0)·guard 운영기준(§4)·
+  gdrive 기입절차(§7)·문서 역할분담표 + executor_design(§9·§10) 신설. wedding-intel.md 신규 연결.
 - **v2.0 (2026-06-23):** Single Source of Truth → Transform 모델로 §1·§3·§6 정돈(복붙 금지 → 재구성 의무) / §7 제휴업체 콘텐츠 GDrive 연동 신설 / partner-brand-profile.md 연결.
-- **v1.0 (2026-06-23):** 채널 매트릭스·원자 모델·변형 풀·SEO 가드 초기 버전.
+- **v1.0 (2026-06-23):** 채널 매트릭스·원자 모델·변형 풀·SEO 가드 초기 버전. (같은 날 v1→v2 정돈.)
 
-> **한계:** brand 보이스는 기존 Dewy/2MOOD 가이드 동기화 시 정확. GDrive folder_id는 폴더 공유 후 기입. cadence는 2주 가동 후 조정.
+> **한계:** 보이스는 §0 voice_resolution(persona×주제앵글×파트너) 으로 산출 — 단일 고정 가이드 아님.
+> GDrive folder_id는 폴더 공유 후 §7 절차로 기입. cadence·페르소나·스코어링 가중치는 2주 가동 후 조정.
+> 채널 자동발행 API 부재 → §10 HITL(사람 게시). 실행기 코드는 다음 라운드.

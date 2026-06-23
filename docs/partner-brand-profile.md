@@ -26,8 +26,9 @@ voice:
 
 usp: []                         # 차별점 3가지 — 다른 업체와 뭐가 다른가 (큐레이션 근거)
 
-persona_fit: []                 # 어떤 신부에게 맞나 → wedding-intel.md §4 persona_id
-                                #   예: [small_luxury, designer_late] / [small_budget, budget_analytic]
+persona_fit: []                 # 어떤 신부에게 맞나 → wedding-intel.md §4 persona_id (mp_* 만)
+                                #   예: [mp_premium, mp_visual] / [mp_budget, mp_general]
+                                #   ※ 앱 20모드(small_luxury 등) 아님 — 마케팅 콘텐츠 페르소나 mp_* 사용
 
 assets:
   folder: "gdrive:.../{partner_id}/"
@@ -53,6 +54,11 @@ updated: "2026-MM-DD"
 
 > 이 문서는 Dewy 콘텐츠 자동화가 이 업체를 소개할 때 **그 업체의 브랜딩을 반영**하기 위한 정보야.
 > Dewy 보이스가 베이스가 되고, 아래 정보가 그 위에 "이 업체다움"을 입힌다. 모든 항목을 채울수록 결과가 정확해진다.
+>
+> **보이스 연결:** `brand`·`voice`·`usp` 는 콘텐츠 보이스의 **파트너 오버레이**로 쓰인다
+> (content-distribution §0 voice_resolution = persona × 주제앵글 × **이 파트너 오버레이**).
+> **DB 시드(선택):** name·category·region 등 기본 칸은 `business_profiles`(승인 업체) +
+> `places`/`place_details`(무드 태그·연락처)에서 일부 자동 채움 가능 — Drive 파일이 정식, DB 는 초안 보조.
 
 ## 1. 기본 정보
 - **관리코드 / 업체명 / 카테고리 / 지역**을 yaml에 기입.
