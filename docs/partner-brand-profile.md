@@ -56,7 +56,7 @@ updated: "2026-MM-DD"
 > Dewy 보이스가 베이스가 되고, 아래 정보가 그 위에 "이 업체다움"을 입힌다. 모든 항목을 채울수록 결과가 정확해진다.
 >
 > **보이스 연결:** `brand`·`voice`·`usp` 는 콘텐츠 보이스의 **파트너 오버레이**로 쓰인다
-> (content-distribution §0 voice_resolution = persona × 주제앵글 × **이 파트너 오버레이**).
+> (content-distribution §0 voice_resolution = 화자(주로 **대표**) × 주제앵글 × **이 파트너 오버레이**).
 > **DB 시드(선택):** name·category·region 등 기본 칸은 `business_profiles`(승인 업체) +
 > `places`/`place_details`(무드 태그·연락처)에서 일부 자동 채움 가능 — Drive 파일이 정식, DB 는 초안 보조.
 
