@@ -41,7 +41,7 @@
 260612_ai_planner_caching_grounding_plan.md · 260612_ai_planner_review.md · 260614_aio_strengthening.md · 260615_rag_grounding_presentation.md · 260615_rag_grounding_script.md · 260619_vertical_ai_positioning.md · ai-planner-handoff.md · aiplanner-ux-review.md · connection_strengthening_design.md · makeup-samples-gpt-guide.md · makeup-samples-final-prompts.md · makeup-samples-prompts-generated.md
 
 ## 📣 마케팅·사업·IR
-260619_gov_funding_strategy.md · marketing-plan.md · naver-search-ads-keyword-map.md · service-briefing.md
+**marketing-plan.md**(전략 단일소스) · **content-distribution.md**(콘텐츠 배포 파이프라인) · **wedding-intel.md**(주제·콘텐츠 페르소나 입력) · **partner-brand-profile.md**(제휴업체 브랜드 양식) · naver-search-ads-keyword-map.md · 260619_gov_funding_strategy.md · service-briefing.md
 
 ## ⚙️ 셋업·운영 가이드
 260617_ops_migration_and_push.md · ADS_SETUP.md · analytics-events-spec.md · calendar-sync-setup.md · inquiry-notification-setup.md · kakao-chatbot-setup.md · kakao-login-setup.md · push-notification-scenarios.md
