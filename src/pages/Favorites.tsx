@@ -62,7 +62,8 @@ const ITEM_TYPE_TO_PLACE_CATEGORY: Record<string, SkippableCategory> = {
   dress: "dress_shop",
   makeup: "makeup_shop",
   honeymoon: "honeymoon",
-  jewelry: "appliance",
+  // jewelry(예물)는 skip 대상 카테고리가 아니다 — appliance 로 오매핑하면 가전 제외 시 예물 찜이
+  // 잘못 muted 됨. skip 비대상이라 매핑하지 않는다(찜은 항상 정상 표시).
   appliance: "appliance",
   suit: "tailor_shop",
   hanbok: "hanbok",

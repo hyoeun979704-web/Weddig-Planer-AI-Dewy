@@ -160,7 +160,10 @@ const DressRecommend = () => {
       if ((data as any)?.error) throw new Error((data as any).error);
 
       const fittingId = (data as any)?.fitting_id;
-      toast({ title: "생성 완료!" });
+      // fittingId 없으면 /result/undefined 데드페이지로 가지 않게 가드(하트는 서버에서 환불 처리).
+      if (!fittingId) throw new Error("generation_failed");
+      // 생성은 비동기(결과 페이지에서 폴링) — "완료"가 아니라 "요청됨"으로 안내.
+      toast({ title: "생성 요청을 보냈어요", description: "결과가 준비되면 화면에 표시돼요." });
       await fetchHearts();
       navigate(`/ai-studio/dress-tour/result/${fittingId}`);
     } catch (err) {
