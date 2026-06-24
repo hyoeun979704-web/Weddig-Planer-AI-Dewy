@@ -127,6 +127,7 @@ const InvitationRsvpDashboard = lazy(() => import("./pages/invitation/Invitation
 const InvitationPhotos = lazy(() => import("./pages/invitation/InvitationPhotos"));
 const GuestPhotoUpload = lazy(() => import("./pages/invitation/GuestPhotoUpload"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminGroupDashboard = lazy(() => import("./pages/admin/AdminGroupDashboard"));
 const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
 const AdminContentReview = lazy(() => import("./pages/admin/AdminContentReview"));
 const AdminPlaceEdit = lazy(() => import("./pages/admin/AdminPlaceEdit"));
@@ -402,6 +403,13 @@ const App = () => (
                   전에 권한을 확인해, 비관리자가 데이터 fetch 를 트리거하거나 잠깐
                   내용을 보는 것을 막는다. */}
               <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+              {/* 그룹 전용 대시보드 — adminNav 의 group 키와 동일 경로. 메인 허브에서 진입. */}
+              <Route path="/admin/vendors" element={<AdminGuard><AdminGroupDashboard group="vendors" /></AdminGuard>} />
+              <Route path="/admin/commerce" element={<AdminGuard><AdminGroupDashboard group="commerce" /></AdminGuard>} />
+              <Route path="/admin/moderation" element={<AdminGuard><AdminGroupDashboard group="moderation" /></AdminGuard>} />
+              <Route path="/admin/invitation" element={<AdminGuard><AdminGroupDashboard group="invitation" /></AdminGuard>} />
+              <Route path="/admin/ai" element={<AdminGuard><AdminGroupDashboard group="ai" /></AdminGuard>} />
+              <Route path="/admin/marketing" element={<AdminGuard><AdminGroupDashboard group="marketing" /></AdminGuard>} />
               <Route path="/admin/content-review" element={<AdminGuard><AdminContentReview /></AdminGuard>} />
               <Route path="/admin/places" element={<AdminGuard><AdminPlaces /></AdminGuard>} />
               <Route path="/admin/places/:id" element={<AdminGuard><AdminPlaceEdit /></AdminGuard>} />

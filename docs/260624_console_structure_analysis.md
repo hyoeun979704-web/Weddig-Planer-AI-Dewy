@@ -180,7 +180,9 @@ Drive 폴더에서 학습**시킨 뒤, 그 브랜드에 **맞춘 콘텐츠**를 
 2. **C-2 nav 그룹핑** ✅완료(2026-06-24): `adminNav.ts`에 `group`(6그룹: 업체·상품·모더레이션·청첩장·
    AI·마케팅) + `ADMIN_NAV_GROUPS`·`adminNavItemsByGroup` 추가. 사이드바(AdminLayout)·대시보드 빠른액션
    (AdminDashboard)을 그룹 섹션으로 렌더. 단일 소스라 새 항목 1개 추가면 자동 반영. 빌드·린트 녹색.
-3. **C-3 그룹 대시보드**: 6개 그룹 Overview 페이지(KPI·배지·최근활동) — AdminDashboard 패턴 복제.
+3. **C-3 그룹 대시보드** ✅완료(2026-06-24): 6개 그룹 전용 Overview(`AdminGroupDashboard` 단일 컴포넌트
+   + `/admin/{vendors,commerce,moderation,invitation,ai,marketing}` 라우트). 그룹 도구 카드 + pending 배지
+   (메인 대시보드 검증 쿼리 재사용). 메인 허브의 그룹 헤더 → 그룹 대시보드 링크. 빌드·린트 녹색.
 4. **C-4 모바일 우선 재편**: 폰 레이아웃(바텀탭/칩/카드) — 솔로+폰 전제.
 5. **C-5 마케팅 모듈 완성**: 일괄 생성·렌더 UI·프리뷰·(선택)6채널 — 로드맵 Phase 5.
 6. **C-6 Console PWA 패키징**(Phase 4): 모바일 우선 → **설치형 PWA**(확정) + 웹푸시. `console.dewy.app`.

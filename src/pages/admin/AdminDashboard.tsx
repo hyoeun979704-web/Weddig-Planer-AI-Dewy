@@ -386,10 +386,14 @@ const AdminDashboard = () => {
               const GIcon = g.icon;
               return (
                 <div key={g.key}>
-                  <h3 className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+                  <Link
+                    to={`/admin/${g.key}`}
+                    className="group flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground mb-2 uppercase tracking-wider w-fit"
+                  >
                     <GIcon className="w-3.5 h-3.5" />
                     {g.label}
-                  </h3>
+                    <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {items.map((item) => (
                       <QuickActionCard
