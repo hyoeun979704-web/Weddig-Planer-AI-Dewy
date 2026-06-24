@@ -61,9 +61,34 @@ export const useCoupleDiary = () => {
         (profiles || []).map((p: { user_id: string; display_name: string | null }) => [p.user_id, p.display_name])
       );
 
+      // 사진 URL 은 조회 시점에 storage_path 로 재서명한다. DB 의 photo_url 은 업로드
+      // 시점 서명 URL 이라 만료되면 깨지므로 신뢰하지 않는다(7일 만료 회귀 방지).
+      const allPaths = [
+        ...new Set(
+          (data || [])
+            .flatMap((d: any) => (d.couple_diary_photos || []) as DiaryPhoto[])
+            .map((p) => p.storage_path)
+            .filter(Boolean)
+        ),
+      ] as string[];
+
+      const signedMap = new Map<string, string>();
+      if (allPaths.length > 0) {
+        const { data: signed } = await supabase.storage
+          .from("couple-diary-photos")
+          .createSignedUrls(allPaths, 60 * 60); // 1h, 조회마다 갱신
+        for (const s of signed || []) {
+          if (s.path && s.signedUrl) signedMap.set(s.path, s.signedUrl);
+        }
+      }
+
       const enriched: DiaryEntry[] = (data || []).map((entry: any) => ({
         ...entry,
-        photos: entry.couple_diary_photos || [],
+        photos: ((entry.couple_diary_photos || []) as DiaryPhoto[]).map((p) => ({
+          ...p,
+          // 재서명 실패 시(권한·네트워크) 기존 photo_url 로 폴백.
+          photo_url: signedMap.get(p.storage_path) || p.photo_url,
+        })),
         author_name: profileMap.get(entry.author_id) || "익명",
         is_mine: entry.author_id === user.id,
       }));

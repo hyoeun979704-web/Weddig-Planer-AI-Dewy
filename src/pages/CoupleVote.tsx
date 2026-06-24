@@ -65,7 +65,10 @@ const CoupleVote = () => {
       if (data) {
         partnerUserId = (data as any).user_id === user.id ? (data as any).partner_user_id : (data as any).user_id;
       }
-    } catch { /* ignore */ }
+    } catch (e) {
+      // 파트너 조회 실패는 치명적이지 않다(혼자 쓰는 투표로 생성). 단 삼키지 말고 로깅.
+      console.error("partner lookup failed:", e);
+    }
 
     // Supabase 는 에러를 throw 하지 않고 { error } 로 반환하므로 직접 확인.
     // 안 그러면 insert 가 실패해도 폼이 비워져 "만들어진 것처럼" 보인다.
@@ -116,6 +119,16 @@ const CoupleVote = () => {
       <PageHeader title="의견 조율 보드" />
 
       <main className="pb-24 px-4 py-4">
+        {/* 비연동 안내 — 의견 조율은 파트너 연동 시 진가를 발휘한다. dead-end 방지용 CTA. */}
+        {!isLoading && !isLinked && (
+          <button
+            onClick={() => navigate("/mypage")}
+            className="w-full mb-4 text-left p-4 rounded-2xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors"
+          >
+            <p className="text-sm font-bold text-foreground mb-0.5">파트너와 연동하면 함께 투표할 수 있어요</p>
+            <p className="text-xs text-muted-foreground">마이페이지에서 초대 코드로 연결하기 →</p>
+          </button>
+        )}
         {isLoading ? (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : votes.length === 0 ? (
