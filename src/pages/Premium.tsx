@@ -3,6 +3,7 @@ import Seo from "@/components/Seo";
 import { Check, X, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useSubscription } from "@/hooks/useSubscription";
+import { isPaymentEntryVisible } from "@/lib/payments";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import BottomNav from "@/components/BottomNav";
@@ -175,9 +176,12 @@ const Premium = () => {
                 <p className="text-xs text-muted-foreground">/년 · 월 3,250원</p>
               </button>
             </div>
-            <button onClick={handleSubscribe} className="w-full mt-3 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
-              구독하기
-            </button>
+            {/* v1.0: iOS 는 IAP 미오픈 → 구독 결제 진입 숨김(혜택 안내는 유지). 상품 등록 후 자동 노출. */}
+            {isPaymentEntryVisible() && (
+              <button onClick={handleSubscribe} className="w-full mt-3 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
+                구독하기
+              </button>
+            )}
           </div>
         )}
 

@@ -6,6 +6,7 @@ import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePoints, labelForReason } from "@/hooks/usePoints";
 import { useAttendance } from "@/hooks/useAttendance";
+import { isPaymentEntryVisible } from "@/lib/payments";
 import { toast } from "sonner";
 
 const formatDate = (iso: string): string => {
@@ -64,12 +65,15 @@ const Points = () => {
               <Coins className="w-4 h-4" />
               게임으로 적립
             </button>
-            <button
-              onClick={() => navigate("/points/charge")}
-              className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2"
-            >
-               하트 충전
-            </button>
+            {/* v1.0: iOS 는 IAP 미오픈 → 하트 구매 진입 숨김(게임 적립은 유지). 상품 등록 후 자동 노출. */}
+            {isPaymentEntryVisible() && (
+              <button
+                onClick={() => navigate("/points/charge")}
+                className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2"
+              >
+                 하트 충전
+              </button>
+            )}
           </div>
         </div>
 
