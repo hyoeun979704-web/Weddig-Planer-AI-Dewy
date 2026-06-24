@@ -7,6 +7,21 @@ import { resolveAllowedOrigin } from "../_shared/allowedOrigins.ts";
 // 생성하고(클라 금액 불신), 카카오 ready 를 호출한다. 승인은 kakao-pay-order-approve.
 
 interface ReqItem { product_id: string; quantity: number; }
+interface Shipping { name?: string; phone?: string; address?: string; memo?: string; }
+
+// 배송 정보 검증 — 물리 배송 주문은 받는분·연락처·주소가 필수(없으면 업체가 배송 불가).
+// 클라 표시와 무관하게 서버에서 재검증한다. 반환: 정제된 값 또는 에러 메시지.
+function validateShipping(s: Shipping | undefined): { ok: true; value: Required<Pick<Shipping, "name" | "phone" | "address">> & { memo: string } } | { ok: false; error: string } {
+  const name = (s?.name ?? "").trim();
+  const phone = (s?.phone ?? "").trim();
+  const address = (s?.address ?? "").trim();
+  const memo = (s?.memo ?? "").trim();
+  if (name.length < 1 || name.length > 50) return { ok: false, error: "받는 분 성함을 입력해 주세요" };
+  if (!/^[0-9+\-\s]{9,20}$/.test(phone)) return { ok: false, error: "연락처를 정확히 입력해 주세요" };
+  if (address.length < 5 || address.length > 200) return { ok: false, error: "배송 주소를 정확히 입력해 주세요" };
+  if (memo.length > 200) return { ok: false, error: "배송 메모가 너무 길어요" };
+  return { ok: true, value: { name, phone, address, memo } };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -26,9 +41,13 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const { items, origin } = (await req.json()) as { items: ReqItem[]; origin: string };
+    const { items, origin, shipping } = (await req.json()) as { items: ReqItem[]; origin: string; shipping?: Shipping };
     if (!Array.isArray(items) || items.length === 0 || !origin) {
       return new Response(JSON.stringify({ error: "Invalid request body" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const ship = validateShipping(shipping);
+    if (!ship.ok) {
+      return new Response(JSON.stringify({ error: ship.error }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const safeOrigin = resolveAllowedOrigin(origin);
     if (!safeOrigin) {
@@ -67,7 +86,11 @@ Deno.serve(async (req) => {
 
     const { data: order, error: orderErr } = await admin
       .from("orders")
-      .insert({ user_id: userId, order_number: orderNumber, status: "pending", total_amount: total, payment_method: "kakaopay" })
+      .insert({
+        user_id: userId, order_number: orderNumber, status: "pending", total_amount: total, payment_method: "kakaopay",
+        shipping_name: ship.value.name, shipping_phone: ship.value.phone,
+        shipping_address: ship.value.address, shipping_memo: ship.value.memo || null,
+      })
       .select("id").single();
     if (orderErr || !order) {
       console.error("order insert failed:", orderErr);
