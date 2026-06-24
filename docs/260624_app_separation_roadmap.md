@@ -103,6 +103,40 @@ dewy/ (monorepo, npm workspaces)
 
 ---
 
+## 3-A. 플랫폼 · 도메인 전략 (2026-06-24 결정)
+
+**지원 플랫폼**
+
+| 플랫폼 | 방식 | 비용/작업 |
+|---|---|---|
+| 웹 | 모든 앱(consumer·partners·console) 웹 빌드 | 기본 |
+| Android | consumer·partners 네이티브(Capacitor) | 스토어 계정 기존 커버, 0원 |
+| iOS | consumer·partners 네이티브(Capacitor) | 스토어 계정 기존 커버, 0원 |
+| **Mac** | **브라우저 웹으로 지원**(별도 데스크톱 앱 X) | **추가 0** — 웹이 곧 Mac 지원. Capacitor는 macOS 데스크톱 미지원이라 네이티브 빌드 안 함 |
+
+- console(운영+마케팅)은 웹 전용. consumer·partners만 네이티브(iOS/Android) + 웹.
+- Mac 데스크톱 앱(Tauri/Electron)은 **만들지 않는다** — 브라우저 웹으로 충분(결정). 추후 OS레벨
+  기능이 필요해지면 재검토.
+
+**도메인 — 단일 루트 도메인 + 서브도메인**
+
+```
+dewy.app            # 소비자(consumer) 웹 + iOS/Android 딥링크 기준
+partners.dewy.app   # Partners 웹 + iOS/Android 딥링크 기준
+console.dewy.app    # Console 웹 전용(내부)
+```
+
+- 같은 루트 도메인 패밀리로 **브랜드 통일**, 서브도메인으로 **앱별 독립 배포·딥링크 스코프 분리**.
+  (`/partners` 경로로 한 도메인에 합치면 별도 네이티브 빌드의 딥링크 association 스코프가 꼬임.)
+- 네이티브 딥링크용 association 파일을 **각 (서브)도메인에 호스팅**:
+  - iOS/Mac(Safari): `https://<도메인>/.well-known/apple-app-site-association`
+  - Android: `https://<도메인>/.well-known/assetlinks.json`
+- OAuth/소셜로그인 콜백 redirect URL도 각 (서브)도메인 기준으로 Supabase Auth에 등록.
+- **현 상태 확인 필요(추후)**: 실제 운영 도메인·기존 딥링크 설정(`capacitor.config.ts`,
+  `src/lib/native/deepLink`)을 Phase 4에서 점검해 서브도메인 구조로 정리.
+
+---
+
 ## 4. 단계별 로드맵
 
 위험 낮고 가치 높은 것부터. 각 단계는 독립적으로 멈출 수 있다(중단해도 회귀 없음).
