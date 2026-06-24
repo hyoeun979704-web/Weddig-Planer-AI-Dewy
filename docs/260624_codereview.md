@@ -162,9 +162,16 @@
   `invitation-uploads/*/{hair,consulting,enhanced}`(PhotoFix 포함), **`guest-photos`(하객 얼굴)**. "30일 자동삭제"
   약속·개인정보 위반. 수정: TARGET_BUCKETS·RPC 에 makeup/sdm 추가 + invitation-uploads AI prefix·guest-photos sweep
   + delete-account 동반 purge.
-- **[P0][A7] 회원탈퇴 콘텐츠 고아화.** `delete-account/index.ts:81-86` 가 storage+auth.deleteUser 만. `community_posts/
-  comments/likes` 는 `user_id NOT NULL` + **auth.users FK 없음** → 탈퇴 후 글·댓글·좋아요 잔존("비식별 처리" 약속 모순).
-  수정: 탈퇴 전 명시 delete/익명화 또는 FK ON DELETE CASCADE.(실DB constraint 1회 확인 권장.)
+  - **✅ 수정(260624, 마이그 적용 대기)**: `260624120000_expand_ai_cleanup_buckets.sql`(makeup 버킷 +
+    invitation-uploads AI prefix consulting/hair/photofix/enhanced 추가, 경로 패턴 실DB 검증) +
+    `cleanup-ai-uploads/index.ts` TARGET_BUCKETS 확장. guest-photos 는 청첩장 생명주기·탈퇴 시 파기로 분리.
+- **[P0][A7] 회원탈퇴 콘텐츠 고아화 — 실DB 확정.** `pg_constraint` 직접 조회 결과 **auth.users 참조 FK 가
+  0개**(CASCADE 전무) → `delete-account` 의 "CASCADE 로 삭제" 주석은 **거짓**, user_id 보유 **67개 테이블 전부**
+  탈퇴 후 고아(커뮤니티·프로필·일정·예산·AI 기록 등).
+  - **✅ 수정(260624, 마이그 적용 대기)**: `260624120100_delete_user_data_rpc.sql`(개인 콘텐츠 ~52테이블 명시
+    DELETE, 금융·거래·동의 11테이블은 법적 보존) + `delete-account/index.ts` 가 RPC 선호출(실패 시 중단) +
+    스토리지 버킷 완비(dress/makeup 결과·guest-photos). **⚠️ 금융기록 보존/삭제 분류는 정책 선택 — prod 적용
+    전 법무 확인**.
 - **[P1][A4] OpenAI 원시 에러 클라 노출** — `dewy-makeup-recommend:137`/`dewy-dress-recommend:149`
   `detail: errText.substring(0,200)`(요청ID·정책문구). 수정: 서버 로깅, 클라 제네릭.
 - **[P1][C] `AdminErrorLogs`(~248,274,277)** message/url/stack raw 노출(토큰·이메일·PII 잔존 가능). 수정: 캡처 시점 마스킹.
