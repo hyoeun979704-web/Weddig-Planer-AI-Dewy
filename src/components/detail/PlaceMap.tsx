@@ -25,9 +25,11 @@ export default function PlaceMap({ lat, lng, name, address }: PlaceMapProps) {
     `${SUPABASE_FUNCTIONS_URL}/place-static-map` +
     `?lat=${lat}&lng=${lng}&w=600&h=300&level=15`;
 
+  // 길찾기/지도: 이름만으로 검색하면 동명 업체(예: "인터불고"=대구 본점)로 빠진다.
+  // 좌표를 카메라 위치(c=경도,위도,줌)에 박아 그 지점 근처 결과로 disambiguate.
   const query = encodeURIComponent([name, address].filter(Boolean).join(" "));
   const openDirections = () =>
-    void openExternal(`https://map.naver.com/p/search/${query}`);
+    void openExternal(`https://map.naver.com/p/search/${query}?c=${lng},${lat},16,0,0,0,dh`);
 
   return (
     <div className="rounded-xl overflow-hidden border border-border">

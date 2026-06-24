@@ -367,6 +367,7 @@ async function fetchCategoryItems(
   // 노출 순서: 파트너 등급(이달의 베프 > 프렌즈 > 일반) → 채움도 → 평점.
   const { data, error, count } = await query
     .order("partner_rank", { ascending: false })
+    .order("has_image", { ascending: false }) // 썸네일 있는 업체 먼저(사진 없는 업체 상위 노출 방지)
     .order("data_completeness", { ascending: false })
     .order("avg_rating", { ascending: false, nullsFirst: false })
     .range(from, to);
