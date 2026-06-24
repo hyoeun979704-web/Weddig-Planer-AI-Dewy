@@ -10,8 +10,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       position="top-center"
-      // iOS 노치/다이나믹아일랜드(상태표시줄)에 토스트가 가리지 않도록 safe-area 만큼 내려 띄운다.
-      offset="calc(env(safe-area-inset-top) + 16px)"
+      // 노치/상태표시줄 가림 방지는 index.css 의 [data-sonner-toaster][data-y-position="top"]
+      // 에서 var(--safe-top) 으로 강제(Sonner 가 모바일에서 offset prop 을 무시하므로 CSS 로 처리).
       className="toaster group"
       toastOptions={{
         classNames: {

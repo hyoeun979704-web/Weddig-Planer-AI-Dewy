@@ -209,6 +209,12 @@
     top: 0;
     padding-top: var(--safe-top);
   }
+  /* Sonner 토스트(top-center)가 노치/상태표시줄에 가리는 문제 — Sonner 는 모바일에서
+     offset prop 을 무시하고 컨테이너 top 을 직접 인라인 지정하므로, CSS 로 강제로 내린다.
+     env() 금지 규칙대로 var(--safe-top) 사용(안드 실측값 일관). */
+  [data-sonner-toaster][data-y-position="top"] {
+    top: calc(var(--safe-top) + 12px) !important;
+  }
   .safe-category-tabs {
     top: var(--app-header-total-height);
     height: var(--app-tab-height);
