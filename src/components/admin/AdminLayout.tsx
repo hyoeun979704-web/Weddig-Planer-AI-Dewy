@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Home, LogOut } from "lucide-react";
+import { Menu, X, Home, LogOut, LayoutDashboard } from "lucide-react";
 import { ADMIN_NAV, ADMIN_NAV_GROUPS, adminNavItemsByGroup, type AdminNavItem } from "./adminNav";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -160,6 +160,41 @@ const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutP
               </div>
             </div>
             {rightAction}
+          </div>
+          {/* 모바일 그룹 칩 네비 — 폰에서 드로어 안 열고 6개 그룹 대시보드 빠른 전환(가로 스크롤).
+              데스크톱(lg+)은 사이드바가 있어 숨김. 터치 타깃 ≥44pt. 솔로+폰 운영 전제(C-4). */}
+          <div className="lg:hidden border-t border-border overflow-x-auto no-scrollbar">
+            <div className="flex gap-1.5 px-3 py-2 min-w-max">
+              <Link
+                to="/admin"
+                className={cn(
+                  "flex items-center gap-1.5 px-3.5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+                  location.pathname === "/admin"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-foreground",
+                )}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                홈
+              </Link>
+              {ADMIN_NAV_GROUPS.map((g) => {
+                const GIcon = g.icon;
+                const active = location.pathname === `/admin/${g.key}`;
+                return (
+                  <Link
+                    key={g.key}
+                    to={`/admin/${g.key}`}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3.5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+                      active ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                    )}
+                  >
+                    <GIcon className="w-4 h-4" />
+                    {g.label}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </header>
 
