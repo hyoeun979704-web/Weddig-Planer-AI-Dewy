@@ -47,10 +47,10 @@ export const withDisclosureCaption = (caption = ""): string => {
 export interface DisclosedContent {
   caption: string;
   hashtags: string[];
-  label: string; // 카드 내 시각 라벨(예: '광고')
+  label: string | null; // 카드 내 시각 라벨(광고일 때 '광고', 정보성이면 null)
 }
 
-// 생성 산출물에 광고 표기를 강제 적용. 외부채널/인앱 어떤 surface 든 이걸 반드시 거친다.
+// 생성 산출물에 광고 표기를 강제 적용. 단독 업체 광고(vendor_ad)일 때만 호출한다.
 export const ensureAdDisclosure = (input: {
   caption?: string;
   hashtags?: readonly string[];
@@ -59,3 +59,23 @@ export const ensureAdDisclosure = (input: {
   hashtags: withDisclosureHashtags(input.hashtags),
   label: AD_DISCLOSURE_LABEL,
 });
+
+// 마케팅 콘텐츠 종류.
+//  - "vendor_ad": 단독 업체 광고(유료·제휴 = 경제적 이해관계 있음) → 광고 표기 강제.
+//  - "editorial": 정보성·큐레이션 등 이해관계 없는 콘텐츠 → 광고 아님(표기 안 함).
+export type MarketingContentKind = "vendor_ad" | "editorial";
+
+// 광고 표기 필요 여부 — 경제적 이해관계가 있는 단독 업체 광고에만 필요.
+// 주의(법적 안전장치): 표기 의무 기준은 '경제적 이해관계'다. 정보성처럼 보여도 대가·제휴가
+// 있으면 vendor_ad 로 분류해야 한다(공정위 추천보증 지침 — '뒷광고' 회피 금지).
+export const requiresAdDisclosure = (kind: MarketingContentKind): boolean =>
+  kind === "vendor_ad";
+
+// 콘텐츠 종류에 따라 광고 표기를 적용한다. vendor_ad 만 강제, editorial 은 원본 유지(label=null).
+export const applyDisclosure = (
+  kind: MarketingContentKind,
+  input: { caption?: string; hashtags?: readonly string[] },
+): DisclosedContent =>
+  requiresAdDisclosure(kind)
+    ? ensureAdDisclosure(input)
+    : { caption: input.caption ?? "", hashtags: [...(input.hashtags ?? [])], label: null };

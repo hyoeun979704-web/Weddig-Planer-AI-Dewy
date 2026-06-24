@@ -3,6 +3,8 @@ import {
   ensureAdDisclosure,
   withDisclosureHashtags,
   withDisclosureCaption,
+  requiresAdDisclosure,
+  applyDisclosure,
   AD_DISCLOSURE_NOTICE,
   AD_DISCLOSURE_LABEL,
 } from "./adDisclosure";
@@ -74,5 +76,35 @@ describe("ensureAdDisclosure", () => {
     expect(r.caption).toBe(AD_DISCLOSURE_NOTICE);
     expect(r.hashtags).toEqual(["#광고", "#제휴"]);
     expect(r.label).toBe(AD_DISCLOSURE_LABEL);
+  });
+});
+
+describe("requiresAdDisclosure", () => {
+  it("단독 업체 광고만 표기 필요", () => {
+    expect(requiresAdDisclosure("vendor_ad")).toBe(true);
+    expect(requiresAdDisclosure("editorial")).toBe(false);
+  });
+});
+
+describe("applyDisclosure", () => {
+  it("vendor_ad: 광고 표기를 강제한다", () => {
+    const r = applyDisclosure("vendor_ad", { caption: "추천 업체", hashtags: ["#웨딩"] });
+    expect(r.caption).toContain(AD_DISCLOSURE_NOTICE);
+    expect(r.hashtags).toEqual(["#광고", "#제휴", "#웨딩"]);
+    expect(r.label).toBe(AD_DISCLOSURE_LABEL);
+  });
+
+  it("editorial: 광고 표기를 하지 않고 원본을 유지한다", () => {
+    const r = applyDisclosure("editorial", { caption: "예식장 고르는 팁", hashtags: ["#웨딩"] });
+    expect(r.caption).toBe("예식장 고르는 팁");
+    expect(r.hashtags).toEqual(["#웨딩"]);
+    expect(r.label).toBeNull();
+  });
+
+  it("editorial: 빈 입력도 안전하게 처리한다", () => {
+    const r = applyDisclosure("editorial", {});
+    expect(r.caption).toBe("");
+    expect(r.hashtags).toEqual([]);
+    expect(r.label).toBeNull();
   });
 });
