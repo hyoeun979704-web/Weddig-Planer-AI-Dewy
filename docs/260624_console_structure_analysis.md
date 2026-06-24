@@ -177,7 +177,9 @@ Drive 폴더에서 학습**시킨 뒤, 그 브랜드에 **맞춘 콘텐츠**를 
 
 1. **C-1 폴더 이동**: `pages/admin/*` → `features/console/`, `components/admin/*` → `features/console/components/`
    (단 `ImageUploader`는 business도 쓰므로 **공유 `components/`로 승격**). 경계 린트.
-2. **C-2 nav 그룹핑**: `adminNav.ts`에 `group` 추가 + 허브/사이드바 그룹화(저위험, 화면 점진 개선).
+2. **C-2 nav 그룹핑** ✅완료(2026-06-24): `adminNav.ts`에 `group`(6그룹: 업체·상품·모더레이션·청첩장·
+   AI·마케팅) + `ADMIN_NAV_GROUPS`·`adminNavItemsByGroup` 추가. 사이드바(AdminLayout)·대시보드 빠른액션
+   (AdminDashboard)을 그룹 섹션으로 렌더. 단일 소스라 새 항목 1개 추가면 자동 반영. 빌드·린트 녹색.
 3. **C-3 그룹 대시보드**: 6개 그룹 Overview 페이지(KPI·배지·최근활동) — AdminDashboard 패턴 복제.
 4. **C-4 모바일 우선 재편**: 폰 레이아웃(바텀탭/칩/카드) — 솔로+폰 전제.
 5. **C-5 마케팅 모듈 완성**: 일괄 생성·렌더 UI·프리뷰·(선택)6채널 — 로드맵 Phase 5.
