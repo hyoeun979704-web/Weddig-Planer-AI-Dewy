@@ -92,13 +92,17 @@ serve(async (req) => {
   const clientSecret = Deno.env.get("NAVER_CLIENT_SECRET");
   if (!clientId || !clientSecret) return json({ error: "NAVER_CLIENT_ID/SECRET not set" }, 500);
 
-  // 대상 — 도로명주소가 비어있는(=미보강) 활성 업체, 작성도 낮은 순 우선. 채워지면 다음 배치에서 빠짐.
+  // 대상 — 도로명주소가 비어있는(=미보강) 활성 업체. 단, 이번 run 에서 이미 "시도(성공/실패)"한
+  // 행은 last_collected_at 을 now() 로 찍어 제외한다 → 매칭 실패한 행이 매 배치 재처리되며
+  // 앞을 막아 나머지에 도달 못 하던 문제 해결(전수 1회 시도 보장). 3h 이전 것만 후보.
+  const cutoff = new Date(Date.now() - 3 * 3600 * 1000).toISOString();
   let q = supabase
     .from("places")
     .select("place_id,name,city,district,category,road_address,lat,lng")
     .eq("is_active", true)
     .is("deleted_at", null)
     .is("road_address", null)
+    .or(`last_collected_at.is.null,last_collected_at.lt.${cutoff}`)
     .order("data_completeness", { ascending: true })
     .limit(limit);
   if (cats) q = q.in("category", cats);
@@ -108,6 +112,10 @@ serve(async (req) => {
 
   // 기존 place_details(빈 필드만 채우려 현재값 확인)
   const ids = targets.map((r) => r.place_id);
+  // 시도 표시 — 이번 배치 전체를 now() 로 찍어 다음 배치에서 재선택되지 않게(실패행 클로깅 방지).
+  if (!dryRun && ids.length) {
+    await supabase.from("places").update({ last_collected_at: new Date().toISOString() }).in("place_id", ids);
+  }
   const { data: pdRows } = ids.length
     ? await supabase.from("place_details").select("place_id,tel,address,website_url,instagram_url,naver_blog_url,youtube_url,kakao_channel_url").in("place_id", ids)
     : { data: [] as any[] };
