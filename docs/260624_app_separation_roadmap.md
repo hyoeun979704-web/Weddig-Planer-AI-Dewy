@@ -63,7 +63,7 @@
 dewy/ (monorepo, npm workspaces)
 ├─ apps/
 │  ├─ consumer/      # Dewy — 신랑·신부. 네이티브(iOS/Android) + 웹/PWA. 가볍게·개인화 핵심
-│  ├─ partners/      # Dewy Partners — 웨딩 사업자. 웹 우선(PWA). 리스팅·리드·상품·쿠폰·문의·배송
+│  ├─ partners/      # Dewy Partners — 웨딩 사업자. 네이티브(iOS/Android)+웹. 리스팅·리드·상품·쿠폰·문의·배송
 │  └─ console/       # Dewy Console — 운영자(내부) + 마케팅 자동화. 웹 전용. 무거워도 됨
 ├─ packages/
 │  ├─ db/            # supabase client + 생성 types.ts + RLS 정책(단일 소스, 분리 금지)
@@ -76,8 +76,11 @@ dewy/ (monorepo, npm workspaces)
 **사용자 편의 관점 (왜 이렇게 가르나)**
 - **소비자**: 결혼준비 본진. 사업자/운영 기능이 0이라 앱이 가볍고 빠르며 개인화에 집중.
 - **사업자(Partners)**: 리스팅·리드·상품관리가 일상 업무. **소비자 앱 안에 끼워넣지 않고** 전용
-  콘솔로 빼면, 사업자는 자기 업무 화면만 보고(인지 부하↓) 데스크톱/모바일웹 어디서나 관리 가능.
-  네이티브 설치 강요 없이 웹/PWA로 충분(사업자는 데스크톱 사용 많음).
+  콘솔로 빼면, 사업자는 자기 업무 화면만 보고(인지 부하↓) 집중 관리 가능.
+  **출시 형태 = 네이티브(iOS/Android) + 웹 병행으로 확정**(2026-06-24 결정). 푸시알림(신규 리드·문의
+  실시간 통지)과 앱스토어 검색 노출로 사업자 유입·재방문을 잡는 게 목적. 별도 Capacitor 빌드·
+  스토어 리스팅·§8 컴플라이언스(ATT/IAP/권한문구)가 따라옴(Phase 4 참조). 웹 빌드도 같이 내
+  데스크톱 관리도 지원.
 - **운영+마케팅(Console)**: 내부 도구. 외부 배포·스토어 심사 대상이 아니라 무게/복잡도 제약이
   거의 없음. 마케팅 자동화 대시보드를 여기로 모아 "실제 surface"로 만들면 감사·운영이 쉬워짐.
 
@@ -143,8 +146,17 @@ dewy/ (monorepo, npm workspaces)
 - 빌드 분리: `apps/consumer`(네이티브+웹), `apps/partners`(웹/PWA), `apps/console`(웹). 배포도 각각
   (예: `partners.dewy...`, 내부 `console.dewy...`). `vercel.json`·CI 파이프라인 앱별로.
 - **단일 Supabase 유지**(§3). `packages/db` 1곳에서 타입 생성 → 3앱 공유.
-- **주의**: 네이티브(Capacitor)는 consumer에만. partners를 앱스토어에 별도 출시할지는 별도 결정
-  (초기엔 PWA 권장 — 스토어 심사·ATT·IAP 부담 회피).
+- **네이티브 패키징(Partners)** — 출시 형태 네이티브 확정(2026-06-24). 작업:
+  - 별도 Capacitor 앱: 자체 `appId`/`appName`/아이콘/스플래시(소비자 앱과 번들 ID 분리),
+    `partners`용 `vite build --mode capacitor` + `cap sync` 파이프라인.
+  - **스토어 비용 추가 0원**(기존 Apple $99/년·Google $25 계정이 앱 무제한 커버). 변동비(IAP
+    수수료)는 사업자 대상이라 인앱 디지털결제가 없으면 미적용 — 사업자 요금은 B2B 외부청구 권장.
+  - **§8 출시적합성 컴플라이언스(앱별 반복)**: 권한 사용설명 문자열(카메라/사진 — 갤러리 업로드),
+    푸시알림 권한, 회원탈퇴 인앱 경로, 개인정보 양식↔실수집 일치. 광고/추적 안 붙이면 ATT 불필요,
+    인앱 디지털결제 없으면 IAP 강제 불필요(부담 최소화 가능). 단일 소스 `docs/260622_appstore_submission_runbook.md §11`.
+  - 푸시알림: 신규 리드·문의 실시간 통지 채널 설계(APNs/FCM, 비용 0).
+- **주의**: consumer 네이티브의 admob·하트 IAP·위젯은 partners에 그대로 끌고 오지 말 것(사업자엔
+  불필요). partners 네이티브는 "관리 업무 + 푸시"에 필요한 플러그인만 선별 탑재.
 
 ### Phase 5 — 마케팅 자동화 독립 모듈화 · 위험 낮음 · 가치 높음
 **목표**: 흩어진 마케팅 자동화를 console 앱의 **실제 대시보드 surface**로 통합.
@@ -178,8 +190,10 @@ dewy/ (monorepo, npm workspaces)
   `npm run lint` 녹색 + 주요 플로우(결제·인증·예약) e2e 확인 후 머지. "정적 통과 ≠ 런타임 안전"(검증 섹션).
 - **공유 충돌 지점**: `App.tsx`·`types.ts`가 최대 머지 충돌원. Phase 1을 **한 번에 큰 PR**보다
   도메인별 작은 PR로 쪼개 진행.
-- **Capacitor/네이티브**: 딥링크·safeArea·admob·IAP·위젯이 consumer 전제(`src/main.tsx`). partners를
-  네이티브로 빼면 권한문구·ATT·IAP 컴플라이언스가 또 필요(§8 출시적합성) → 초기엔 PWA로.
+- **Capacitor/네이티브**: 딥링크·safeArea·admob·IAP·위젯이 consumer 전제(`src/main.tsx`). partners도
+  네이티브로 출시 확정 → 권한문구·푸시권한·회원탈퇴·개인정보 컴플라이언스가 **partners 앱에도 별도로**
+  필요(§8 출시적합성). 단, 광고·하트 IAP를 안 붙이면 ATT·IAP 강제는 회피 가능 → 컴플라이언스 부담을
+  "권한문구+탈퇴+푸시"로 최소화한다. native 빌드는 consumer/partners **각각** 심사·유지보수 대상이 됨.
 - **RLS 의존**: 프론트 분리는 보안을 강화하지 않는다. 인가는 끝까지 **DB RLS**가 책임(클라 가드는 UX용).
 - **마케팅 자동화 비용/쿼터**(§11): 채널 초안 생성은 LLM·외부 API 호출 = 돈. 모듈화 시 캐싱·상한·
   백오프를 같이 설계.
