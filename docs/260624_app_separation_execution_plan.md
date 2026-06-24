@@ -186,6 +186,11 @@ Suite 패턴).
   `marketing-draft` 스킬.
 - **신규 surface**: console에 `마케팅 자동화` 섹션 — 주제→6채널(쓰레드·인스타·네이버블로그·워드프레스·
   유튜브숏폼·카페) 초안 생성 → 검수 → 발행/노션 적재를 한 화면 흐름으로.
+- **업체 마케팅(제휴 브랜드 학습 + 페르소나 소개형 광고)**: 제휴업체의 Drive 폴더 자료를 학습(기존
+  `drive-*` 함수) → 페르소나 보이스 유지한 추천형 콘텐츠를 **광고 표기 강제**(§10)로 생성. 상세 설계·
+  재사용 인프라·신규 테이블(`vendor_brand_profiles`)은 `260624_console_structure_analysis.md §3-A`.
+- **Console 대시보드 재편(솔로+폰)**: admin 30페이지 → 6개 전용 대시보드 + 모바일 우선. `adminNav.ts`
+  단일 소스에 `group` 추가로 고도화 쉬운 구조. 상세 `260624_console_structure_analysis.md §2·4·5`.
 - **감사 등재**: `audit-surface-console.md`에 신규 섹션 등재 → 자동 감사 대상화(현재 사각지대 해소).
 - **비용/쿼터(§11)**: 채널 초안 생성은 LLM·외부 API = 돈. 캐싱·사용량 상한·실패 백오프 같이 설계.
 - 의존성: **Phase 1(console 폴더), Phase 3(console 감사맵) 권장**. 예상: **2~3주**.
