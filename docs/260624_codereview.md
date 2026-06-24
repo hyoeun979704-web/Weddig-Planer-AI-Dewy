@@ -222,3 +222,18 @@
 7. **P0 컨설팅**: wedding-consulting verify_jwt=false 스탠자.
 8. P1 묶음: gmail-send 살균, vendor_deliveries 트리거, earn_hearts 멱등, Recommend null 가드+허위toast, 차단목록 화면,
    미성년자 고지, safeLocalStorage 통일, aria-label.
+
+## 15. P0 진행 상태 (260624 후속)
+
+| P0 | 상태 | 위치 |
+|---|---|---|
+| ① AI 사진 30일 파기 확장 | ✅ 머지(#422) | `260624120000_expand_ai_cleanup_buckets.sql` + cleanup edge |
+| ② 회원탈퇴 데이터 파기 | ✅ 머지(#422) | `260624120100_delete_user_data_rpc.sql` + delete-account edge |
+| ③ 기업 cross-tenant RLS | ✅ PR #423 | `260624130000_business_place_ownership_rls.sql` (place 소유 EXISTS) |
+| ④ Checkout 배송·법적 | ✅ PR #423 | `kakao-pay-order-ready` + `Checkout.tsx`(배송폼·고지·동의) |
+| ⑤ 비용 게이트 | ⚠️ 부분(#423) | invitation-cutout source_paths cap(12). **호출당 하트차감·일일쿼터는 가격 정책 결정 후 별도** |
+| ⑥ iOS 패키징 | ⛔ macOS 필요 | `cap add ios` + Info.plist 4종(NSUserTracking/SKAdNetwork/GAD/NSPhotoLibrary) — 리눅스 sandbox 실행 불가. 키 목록은 `docs/ios-packaging.md`·`260622_appstore_submission_runbook.md §11` 에 문서화됨. iOS 미출시면 `getPaymentProvider()` ios→`unavailable` 강등이 임시 대안 |
+| ⑦ 컨설팅 verify_jwt | ✅ PR #423 | `config.toml [functions.wedding-consulting] verify_jwt=false` |
+
+> ②(모더레이션 복구)는 §14-2 의 admin_review_product/event 시그니처 실DB 확정이 선행 필요 — C↔E 감사 상반,
+> 실DB `\df` 확인 후 별도 처리(미착수). 마이그레이션(①②③)은 prod 직접 미적용 — 배포 파이프라인으로.
