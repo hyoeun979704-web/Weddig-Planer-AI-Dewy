@@ -134,7 +134,7 @@ serve(async (req) => {
         await markFailed(supabaseAdmin, fittingId, `openai_${openaiRes.status}`);
         await refundHearts(supabaseAdmin, userId, HEART_COST, "openai_fail", fittingId);
         return json(
-          { error: "generation_failed", detail: errText.substring(0, 200) },
+          { error: "generation_failed" }, // 원시 외부 에러는 서버 로그에만(클라엔 제네릭 — PII/정책문구 노출 금지)
           502,
         );
       }

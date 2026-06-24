@@ -80,9 +80,15 @@ Deno.serve(async (req) => {
         `--${boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n` +
         bytesToB64(enc.encode(text)) + `\r\n`;
       for (const a of mimeAttachments) {
+        // 헤더 인젝션 방지: 파일명에서 CR/LF/따옴표/역슬래시 제거(BCC 등 임의 헤더 주입 차단),
+        // MIME 타입은 화이트리스트 패턴만 허용(아니면 기본값).
+        const safeName = (a.filename || "file").replace(/[\r\n"\\]/g, "_").slice(0, 200);
+        const safeMime = /^[\w.+-]+\/[\w.+-]+$/.test(a.mimeType || "")
+          ? a.mimeType
+          : "application/octet-stream";
         parts +=
-          `--${boundary}\r\nContent-Type: ${a.mimeType || "application/octet-stream"}; name="${a.filename}"\r\n` +
-          `Content-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="${a.filename}"\r\n\r\n` +
+          `--${boundary}\r\nContent-Type: ${safeMime}; name="${safeName}"\r\n` +
+          `Content-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="${safeName}"\r\n\r\n` +
           a.dataBase64 + `\r\n`;
       }
       parts += `--${boundary}--`;

@@ -79,6 +79,7 @@ const Influencers = () => {
           ))}
           <button
             onClick={() => setFilterOpen(true)}
+            aria-label="필터 열기"
             className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border ${
               hasActiveFilters
                 ? "bg-primary text-primary-foreground border-primary"
