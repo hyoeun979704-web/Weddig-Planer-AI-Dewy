@@ -16,6 +16,19 @@
 **원칙(전 단계 공통)**: ① 백엔드(Supabase)는 단일 유지 ② 각 단계는 빌드·테스트·린트 녹색 +
 주요 플로우 e2e 확인 후 머지 ③ 변경은 최소·표적(요구 밖 재작성 금지) ④ "정적 통과 ≠ 런타임 안전".
 
+## 개선 이력 — 적대적 재검증 (2026-06-24)
+
+초안을 다시 grep으로 검증해 다음을 고쳤다(추측 → 실측 교정).
+
+| # | 발견(실측) | 계획 변경 |
+|---|---|---|
+| 1 | `BusinessGuard`는 **App.tsx에서만** 사용(다른 곳 0). | Phase 1 **5-PR→4-PR**. RoleGuard 제네릭화 삭제 — 라우트 모듈화하면 가드가 따라가 inbound 결합이 저절로 사라짐. |
+| 2 | `AdminGuard`는 **admin 28페이지 내부에서 직접 import + 래핑**(+App.tsx 라우트 = 이중 가드). | console 후속에 "import churn 큼·AdminGuard 동반 이동" 명시 + 이중 가드를 deferred 관찰로 기록. |
+| 3 | `businessGuides`(business 3곳)/`consumerGuides`(consumer 2곳)는 도메인별로 깔끔히 갈림. 유일 교차결합은 `GuideSlide` **타입**. | `data/*Guides.ts`도 도메인 폴더로 이동을 계획에 포함(데이터 단일 dumping 방지). |
+| 4 | business 페이지가 consumer 페이지를 import하는 건 **0건**. | "70% 자체완결" 검증 확정 — 역오염 리스크 낮음. |
+| 5 | partners 자체 네이티브 앱은 Phase 4에야 생김. | Phase 2에 "Phase 4부터 소비자 네이티브에서 partners 라우트도 제외" 연동 명시. |
+| 6 | DoD가 추상적("e2e 확인")이었음. | 구체 e2e 5종(권한 분기·견적 공유·guide 렌더) + 롤백 전략 추가. |
+
 ---
 
 ## Phase 1 — 도메인 경계 확립 (in-repo) · 위험 낮음 · 사용자 변화 0
@@ -37,46 +50,61 @@
   `components/business/{BusinessListingDetailForm,BusinessListingContactForm,DesignListingConsentDialog}`.
 - **부분 공유(admin과)**: `lib/businessCategories`(BusinessOnboard + AdminUsers) → 일단 shared 유지.
 
-### 작업을 5개 작은 PR로 쪼갠다 (충돌·리스크 최소화)
+### 작업을 4개 작은 PR로 쪼갠다 (충돌·리스크 최소화)
 
-**PR 1-a — 타입 추출 (역방향 결합 #2,#3 제거)**
+> **개선(적대적 재검증, 2026-06-24)**: 당초 5-PR(RoleGuard 제네릭화 포함) 계획에서 **RoleGuard
+> 제네릭화를 제거**했다. grep 검증 결과 `BusinessGuard`는 **오직 `App.tsx`에서만** 쓰이므로
+> (다른 사용처 0), 라우트를 partners 모듈로 빼면 가드가 자연히 같이 따라가 App.tsx의 inbound
+> 결합이 **저절로 사라진다**. 제네릭 가드를 새로 만들 필요가 없어 스코프·리스크가 준다.
+
+**PR 1-a — `GuideSlide` 타입 추출 (유일한 교차결합 제거)**
 - 신규 `src/types/guides.ts`에 `GuideSlide` 인터페이스 이동(현 `BusinessGuideView.tsx:14`에서).
-- `BusinessGuideView.tsx`·`consumerGuides.ts`·`businessGuides.ts`가 `@/types/guides`에서 import.
-- 검증: `npm run build`. grep `from "@/pages/business/BusinessGuideView"` → consumerGuides/businessGuides에서 사라짐.
+- `BusinessGuideView.tsx`·`consumerGuides.ts(:9)`·`businessGuides.ts(:6)`가 `@/types/guides`에서 import.
+- 검증: `npm run build` + grep `@/pages/business/BusinessGuideView` → consumer/businessGuides에서 0건.
 
-**PR 1-b — 가드 제네릭화 (역방향 결합 #1 완화)**
-- 신규 `src/components/guards/RoleGuard.tsx`(role prop: `"business"|"admin"`, `requireApproved` 등 옵션).
-- `BusinessGuard`·`AdminGuard`를 `RoleGuard`의 얇은 래퍼로(시그니처·동작 동일 — breaking 없음).
-- `useUserRole`는 공유 위치 그대로. (가드만 도메인 중립 폴더로)
-- 검증: 권한 분기 e2e — 비사업자가 `/business/dashboard` 접근 시 리다이렉트 유지 확인.
+**PR 1-b — Partners 폴더 이동**
+- `src/pages/business/*`(18) → `src/features/partners/pages/*`.
+- `src/components/business/{BusinessGuard,BusinessListingDetailForm,BusinessListingContactForm,DesignListingConsentDialog}`
+  → `src/features/partners/components/*`.
+- `src/hooks/useBranches.ts`(business 8곳만, 역사용 0) → `src/features/partners/hooks/`.
+- `src/lib/businessListingCompleteness.ts`(BusinessVendorEdit만) → `src/features/partners/lib/`.
+- `src/data/businessGuides.ts`(business 3페이지만 import) → `src/features/partners/data/`.
+- `App.tsx`의 business `lazy(import(...))` 경로 + `BusinessGuard` import 경로만 수정(이번 PR엔 routes 구조 유지).
+- 검증: `npm run build`·`test`·`lint` 녹색. (모든 페이지가 `@/` alias 라 outbound import 는 안 깨짐.)
 
-**PR 1-c — Partners 폴더 이동**
-- `src/pages/business/*` → `src/features/partners/pages/*` (18파일).
-- `src/components/business/{BusinessListingDetailForm,BusinessListingContactForm,DesignListingConsentDialog}`
-  → `src/features/partners/components/*`. (BusinessGuard는 1-b로 guards/ 이동했으니 제외)
-- `src/hooks/useBranches.ts` → `src/features/partners/hooks/`, `src/lib/businessListingCompleteness.ts`
-  → `src/features/partners/lib/`. `businessGuides.ts`도 partners로(소비자는 GuideSlide 타입만 의존하므로 OK).
-- import 경로 일괄 수정. 검증: `npm run build`·`test`·`lint` 녹색.
+**PR 1-c — 라우트 모듈 분리 (App.tsx에서 partners 완전 제거)**
+- 신규 `src/features/partners/routes.tsx`: business 18개 `<Route>` + lazy import + `BusinessGuard` 래핑을 여기로.
+- `App.tsx` → `<Route path="/business/*" element={<PartnersRoutes/>}/>` 한 줄. **App.tsx의 BusinessGuard
+  import·partners lazy 선언 전부 삭제** → App.tsx에 partners 참조 0.
+- 검증: business 18경로 직접 진입 + 권한 분기 e2e(아래 DoD).
 
-**PR 1-d — 라우트 모듈 분리**
-- 신규 `src/features/partners/routes.tsx`: business 18개 `<Route>` + lazy import를 여기로 이전.
-- `App.tsx`는 `<Route path="/business/*" element={<PartnersRoutes/>}/>` 한 줄로 조립(465줄 → 축소).
-- 검증: 18개 business 경로 직접 진입 + 딥링크 정상.
-
-**PR 1-e — 경계 린트 + 검증 스크립트**
-- `eslint.config.js`에 `no-restricted-imports`(또는 `dependency-cruiser`): `features/*`가 **다른 feature**를
-  import 금지(shared 루트는 허용). shared(`hooks/lib/...`)가 `features/*`를 import 금지(역의존 차단).
-- CI grep 가드(`scripts/check-integrity.mjs`에 추가): partners 외부에서 `features/partners` import 0,
+**PR 1-d — 경계 린트 + 검증 스크립트**
+- `eslint.config.js` `no-restricted-imports`(또는 `dependency-cruiser`): `features/*`가 **다른 feature**
+  import 금지(shared 루트 허용), shared(`hooks/lib/...`)가 `features/*` import 금지(역의존 차단).
+- `scripts/check-integrity.mjs`에 grep 가드: partners 외부에서 `features/partners` import 0,
   shared→partners 역의존 0.
-- 검증: 일부러 위반 import 추가 → 린트 실패 확인.
+- 검증: 일부러 위반 import 추가 → 린트·스크립트가 잡는지 확인.
 
 ### 완료 기준(Definition of Done)
-빌드·테스트·린트 녹색 + 권한/라우트 e2e + 경계 린트가 위반을 잡음 + 화면 변화 0(시각 회귀 없음).
-예상: **합산 1~2주**(실작업 ~7~8h + PR 리뷰·검증 여유).
+- `npm run build`·`test`·`lint` 녹색 + 경계 린트가 위반을 잡음 + **화면 변화 0**(시각 회귀 없음).
+- **권한/공유 e2e(구체)**: ① 비사업자 `/business/dashboard` → 온보딩 리다이렉트 ② 미승인 사업자
+  `/business/edit`(requireApproved) 차단 ③ 승인 사업자 정상 진입 ④ **소비자 견적→사업자 수신**:
+  `/quote/new` 작성 → `/business/leads` 노출(공유 `useQuotes` 정상) ⑤ guide 렌더(`/business/guides`·`/help`
+  — `GuideSlide` 이동 후 양쪽 정상).
+- **롤백**: 각 PR이 독립적으로 작고 `git revert` 가능(폴더 이동/타입 추출은 순수 리팩토링). 한 PR 문제 시 그
+  PR만 되돌리면 됨.
+- 예상: **합산 1~2주**(실작업 ~6~7h + PR 리뷰·검증 여유). RoleGuard 제거로 당초 7~8h보다 소폭 단축.
 
 ### 이어서: consumer/console도 같은 패턴 (Phase 1 후속)
-partners 검증 후 `pages/admin/*` → `features/console/`, 나머지 소비자 페이지 → `features/consumer/`
-동일 절차. console은 inbound 결합이 admin 내부에 갇혀 있어 partners보다 쉬움(소비자가 admin을 import할 일 거의 없음 — Phase 1 후속에서 grep 확정).
+partners 검증 후 `pages/admin/*`(30) → `features/console/`, 나머지 소비자 페이지 → `features/consumer/`,
+`data/consumerGuides.ts` → `features/consumer/data/` 동일 절차.
+- **console은 inbound 결합이 admin 내부에 갇혀 있어 본질은 더 단순**(소비자→admin import 0건 — grep 확인).
+- **단, import churn은 더 큼(주의)**: `AdminGuard`는 BusinessGuard와 달리 **각 admin 페이지(28개) 내부에서
+  직접 import + `<AdminGuard>` 래핑**한다(+ App.tsx 라우트에서도 wrap = **이중 가드**). 따라서 폴더 이동 시
+  `@/components/admin/AdminGuard` import 경로가 28+곳에서 바뀐다 → 기계적이지만 PR이 큼. **AdminGuard도
+  `features/console/components/`로 같이 이동**(전 사용처가 console 내부라 경계 위반 없음).
+- **부수 관찰(deferred, 이번 범위 밖)**: admin의 라우트레벨+컴포넌트레벨 이중 가드는 기존 중복. 분리와 별개로
+  추후 한쪽으로 정리하면 좋음(지금은 동작 보존 위해 그대로 옮김).
 
 ---
 
@@ -92,6 +120,9 @@ partners 검증 후 `pages/admin/*` → `features/console/`, 나머지 소비자
 - **작업 2**: 네이티브(`--mode capacitor`) 빌드에서 console 라우트 제외(소비자 네이티브는 운영화면 불필요).
   라우트 모듈을 mode 분기 — `if (!isCapacitor) routes.push(consoleRoutes)`. partners는 자체 네이티브
   빌드가 따로 생기는 Phase 4 전까지는 소비자 웹에 동거 가능(청크만 분리).
+- **작업 2-b(Phase 4 연동)**: partners 전용 네이티브 앱이 생기는 Phase 4-C 시점에는 **소비자 네이티브
+  빌드에서 partners 라우트도 제외**(소비자 앱에 사업자 화면 불필요). 그 전까지는 소비자 **웹**에만 동거 +
+  별도 청크로 lazy 로드되어 초기 번들엔 영향 없음.
 - **검증**: `vite build` 후 청크 리포트로 소비자 초기 청크 크기 **before/after 수치 비교**(정량). 번들에
   `features/console` 코드가 안 들어갔는지 `dist` 분석.
 - 의존성: **Phase 1 완료 필수**(폴더 경로 기반 청크라). 예상: **수일~1주**.
