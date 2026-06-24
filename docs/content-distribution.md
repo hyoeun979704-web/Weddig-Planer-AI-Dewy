@@ -55,6 +55,13 @@ personas:
     channels: [instagram, wordpress, youtube_shorts, cafe]
   coherence_rule: "둘 다 효은. me 의 빌딩 스토리(진짜 사람이 만든다)가 brand(대표)의 신뢰로 환류 — '내가 만든 앱이라 압니다'. 한 우주, 다른 모자."
 
+  # 전 화자·전 채널 공통 톤 하한선(어기면 §4 가드가 재생성·감점). 캐주얼은 허용하되 '과도함·공격성'은 금지.
+  # (실데이터 회귀: threads "썩은 웨딩 업계를 뒤집는"[공격], naver 슬랭·군더더기 도입부가 통과했었음)
+  tone_floor:
+    ban_aggressive: "공격적·대결적 표현 금지(예 '썩은 업계 뒤집기/갈아엎기', 경쟁사·업계 비방, 공포마케팅). 톤은 다정·응원·안심."
+    limit_casual: "me 캐주얼은 OK지만 과한 슬랭(빡세게/찐 정보/레전드)·이모지 3개+·느낌표 남발·ㅋㅋ/ㅠㅠ 도배는 금지(절제)."
+    no_filler: "상투 인트로('안녕하세요 …입니다','오늘은 … 알려드릴게요')·군더더기 강조어로 채우지 말 것. 구체 정보·숫자로 승부."
+
   # 보이스는 단일 고정 가이드가 아니라 3축 조합으로 매번 산출(고정 톤 금지).
   voice_resolution:
     formula: "최종 보이스 = 화자(me|brand) × topic_angle(wedding-intel §5 독자 앵글) × partner_overlay(있으면 §7)"
@@ -156,7 +163,8 @@ variation_pools:
   guard: "상투적 인트로·동일 문장 시작 감지 시 재생성"
   # 운영 판정 기준(실행기 구현 시):
   guard_heuristics:
-    cliché_intro: "'안녕하세요 신부님' '결혼 준비 어떻게 하세요?' 등 사전 금지 인트로 목록 매칭 시 재생성."
+    cliché_intro: "'안녕하세요 신부님' '안녕하세요 …입니다' '오늘은 … 알려드릴게요' '결혼 준비 어떻게 하세요?' 등 사전 금지 인트로 매칭 시 재생성."
+    tone_floor_guard: "§0 tone_floor 위반(공격적·대결적 표현·과한 슬랭/이모지/느낌표·ㅋㅋㅠㅠ 도배) 매칭 시 재생성. 룰 기준은 agent-office/deslop.py 와 동일(공통 단일 기준)."
     same_prefix: "최근 5개와 첫 문장 앞 12자 동일/유사(정규화 후 일치) 시 재생성."
     judge: "위 룰 통과 후에도 LLM-as-judge 가 '상투적' 플래그하면 1회 재생성(무한루프 방지 1회 한정)."
   rotation_state: "채널×(hook,structure,첫문장prefix) 최근 이력 저장 필요 — 실행기 단계의 소형 상태 테이블(이번 문서 범위 밖)."
