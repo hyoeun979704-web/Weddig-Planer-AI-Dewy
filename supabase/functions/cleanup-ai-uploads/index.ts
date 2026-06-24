@@ -3,13 +3,14 @@
 // 개인정보처리방침에 "처리 후 30일 자동 삭제" 라고 약속한 항목을 실제로 실행한다.
 // pg_cron 이 매일 1회 service_role 토큰으로 이 함수를 호출.
 //
-// 대상 버킷:
-//   - dress-uploads : 사용자가 AI 합성용으로 올린 본인 사진
-//   - dress-results : AI 가 생성한 합성 결과물
+// 대상 버킷(AI 개인사진 30일 삭제):
+//   - dress-uploads / dress-results : 드레스 AI 합성 입력·결과
+//   - makeup-uploads / makeup-results : 메이크업 AI 합성 입력·결과
+//   - invitation-uploads : 단, RPC 가 AI 결과물 prefix(consulting/hair/photofix/enhanced)만 반환.
+//     (청첩장 사진·지도 등 '직접 {uid}/<file>' 은 청첩장 생명주기로 관리 → 본 일괄삭제 제외)
 //
-// + 청첩장 draft 30일 정리 (별도 phase):
-//   - 미발행(draft) 청첩장 레코드 + 그 invitation-uploads 사진을 30일 후 삭제.
-//   - 발행본(published, 하객 라이브 링크)과 그 사진은 유지.
+// + 청첩장 draft/published 30/90일 정리 (별도 phase, 아래).
+// guest-photos(하객사진)는 청첩장 생명주기·계정 탈퇴 시 파기(여기 일괄삭제 대상 아님).
 //
 // 다른 버킷(community-images, couple-diary-photos, vendor-images 등)은
 // 사용자가 자발적으로 저장·게시한 콘텐츠라 회원 탈퇴 시까지 보관한다.
@@ -33,7 +34,13 @@ const RETENTION_DAYS = 30; // AI 업로드(dress-*) — 개인정보처리방침
 const INVITATION_DRAFT_DAYS = 7;
 const PUBLISHED_PAPER_DAYS = 30;
 const PUBLISHED_MOBILE_DAYS = 90;
-const TARGET_BUCKETS = ["dress-uploads", "dress-results"] as const;
+// RPC(list_expired_ai_uploads)가 반환하는 bucket_id 와 일치해야 한다. invitation-uploads 는
+// RPC 가 AI 결과물 prefix 만 반환하므로 여기서 안전하게 일괄 remove 가능(청첩장 사진 미포함).
+const TARGET_BUCKETS = [
+  "dress-uploads", "dress-results",
+  "makeup-uploads", "makeup-results",
+  "invitation-uploads",
+] as const;
 const BATCH_SIZE = 100; // Storage API .remove() 1회 호출당 최대 경로 수
 
 

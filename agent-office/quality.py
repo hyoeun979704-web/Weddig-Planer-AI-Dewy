@@ -42,8 +42,11 @@ def judge_score(text: str, brief: str = ""):
         import config
         client = anthropic.Anthropic()
         rubric = (
-            "다음 마케팅 초안을 0-10 정수로 평가하라. 기준: 브랜드 톤(존댓말·과장/허위 금지), "
-            "정확성, 유용성. 반드시 JSON {\"score\":N,\"reason\":\"...\"} 만 출력."
+            "다음 마케팅 초안을 0-10 정수로 평가하라. Dewy 톤='다정·응원·안심, 존댓말'. "
+            "감점 기준: (1) 공격적·대결적 표현(예 '썩은 업계 뒤집기')·공포마케팅 (2) 과한 슬랭·이모지/느낌표 남발·"
+            "ㅠㅠ/ㅋㅋ (3) 상투적 인트로('안녕하세요 ~입니다','오늘은~')·군더더기 (4) 두루뭉술·근거 없는 단정. "
+            "가점 기준: 구체적 숫자·근거, 바로 써먹는 실용 정보, 차분한 신뢰 톤. "
+            "반드시 JSON {\"score\":N,\"reason\":\"...\"} 만 출력."
         )
         msg = client.messages.create(
             model=config.MARKETER_MODEL, max_tokens=200,

@@ -6,7 +6,6 @@ import {
   Heart,
   Image as ImageIcon,
   ChevronRight,
-  Sparkles,
   Bell,
   CreditCard,
   TrendingUp,
@@ -25,7 +24,7 @@ import {
 } from "lucide-react";
 import AdminGuard from "@/components/admin/AdminGuard";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { ADMIN_NAV_FEATURED } from "@/components/admin/adminNav";
+import { ADMIN_NAV_GROUPS, adminNavItemsByGroup } from "@/components/admin/adminNav";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { relativeTime } from "@/lib/relativeTime";
@@ -375,26 +374,45 @@ const AdminDashboard = () => {
           </div>
         </section>
 
-        {/* 빠른 액션 */}
+        {/* 빠른 액션 — 6개 전용 관리 그룹별 섹션(ADMIN_NAV 단일 소스의 group·featured 에서 파생).
+            평면 그리드 대신 그룹으로 묶어 "각 관리 영역" 진입을 한눈에. 새 기능은 adminNav 항목만
+            추가하면 해당 그룹에 자동 노출(라벨/경로/그룹 드리프트 방지). */}
         <section className="mb-6">
           <h2 className="text-sm font-bold text-foreground mb-3">빠른 액션</h2>
-          {/* 사이드바와 동일한 단일 소스(ADMIN_NAV)의 featured 항목에서 파생 — 라벨/경로 드리프트 방지(④). */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {ADMIN_NAV_FEATURED.map((item) => (
-              <QuickActionCard
-                key={item.href}
-                to={item.href}
-                label={item.label}
-                icon={item.icon}
-                accent={item.href === "/admin/ai-jobs" ? "primary" : undefined}
-                badge={
-                  item.href === "/admin/service-waitlist" ? stats?.pendingWaitlist
-                  : item.href === "/admin/content-review" ? stats?.pendingContentReview
-                  : undefined
-                }
-              />
-            ))}
-            <QuickActionCard to="/" label="앱으로 돌아가기" icon={Sparkles} />
+          <div className="space-y-5">
+            {ADMIN_NAV_GROUPS.map((g) => {
+              const items = adminNavItemsByGroup(g.key).filter((i) => i.featured);
+              if (items.length === 0) return null;
+              const GIcon = g.icon;
+              return (
+                <div key={g.key}>
+                  <Link
+                    to={`/admin/${g.key}`}
+                    className="group flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground mb-2 uppercase tracking-wider w-fit"
+                  >
+                    <GIcon className="w-3.5 h-3.5" />
+                    {g.label}
+                    <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {items.map((item) => (
+                      <QuickActionCard
+                        key={item.href}
+                        to={item.href}
+                        label={item.label}
+                        icon={item.icon}
+                        accent={item.href === "/admin/ai-jobs" ? "primary" : undefined}
+                        badge={
+                          item.href === "/admin/service-waitlist" ? stats?.pendingWaitlist
+                          : item.href === "/admin/content-review" ? stats?.pendingContentReview
+                          : undefined
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 

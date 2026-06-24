@@ -7,4 +7,6 @@ export const MODELS = {
   image: "gpt-image-2",
   /** Gemini 텍스트 생성 — 빠른 tier(generateContent / streamGenerateContent). */
   geminiFlash: "gemini-2.5-flash",
+  /** Gemini 텍스트 생성 — 고품질 tier. 카피라이팅 등 품질 우선·저volume 작업에 사용. */
+  geminiPro: "gemini-2.5-pro",
 } as const;

@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Home, LogOut } from "lucide-react";
-import { ADMIN_NAV } from "./adminNav";
+import { Menu, X, Home, LogOut, LayoutDashboard } from "lucide-react";
+import { ADMIN_NAV, ADMIN_NAV_GROUPS, adminNavItemsByGroup, type AdminNavItem } from "./adminNav";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,33 @@ interface AdminLayoutProps {
   children: ReactNode;
   rightAction?: ReactNode;
 }
+
+// 사이드바 네비 링크 1개 렌더(평면/그룹 양쪽에서 재사용 — 마크업 드리프트 방지).
+const renderNavLink = (item: AdminNavItem, pathname: string, onNavigate: () => void) => {
+  const Icon = item.icon;
+  const isActive = pathname === item.href;
+  return (
+    <Link
+      key={item.href}
+      to={item.href}
+      onClick={onNavigate}
+      className={cn(
+        "flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+        isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted",
+      )}
+    >
+      <span className="flex items-center gap-2">
+        <Icon className="w-4 h-4" />
+        {item.label}
+      </span>
+      {item.badge && (
+        <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground">
+          {item.badge}
+        </span>
+      )}
+    </Link>
+  );
+};
 
 
 const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutProps) => {
@@ -63,32 +90,24 @@ const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutP
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-          {ADMIN_NAV.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.href;
+        {/* 그룹 섹션으로 렌더 — 단일 소스(adminNav)의 group 으로 파생. 대시보드(group 미지정)는
+            맨 위 고정, 나머지는 6개 전용 관리 섹션으로 묶어 평면 리스트의 인지 부하를 줄인다. */}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-4">
+          <div className="space-y-1">
+            {ADMIN_NAV.filter((i) => !i.group).map((item) => renderNavLink(item, location.pathname, () => setSidebarOpen(false)))}
+          </div>
+          {ADMIN_NAV_GROUPS.map((g) => {
+            const items = adminNavItemsByGroup(g.key);
+            if (items.length === 0) return null;
+            const GIcon = g.icon;
             return (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-foreground hover:bg-muted",
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  <Icon className="w-4 h-4" />
-                  {item.label}
-                </span>
-                {item.badge && (
-                  <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
+              <div key={g.key} className="space-y-1">
+                <div className="flex items-center gap-1.5 px-3 pt-1 pb-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <GIcon className="w-3.5 h-3.5" />
+                  {g.label}
+                </div>
+                {items.map((item) => renderNavLink(item, location.pathname, () => setSidebarOpen(false)))}
+              </div>
             );
           })}
         </nav>
@@ -141,6 +160,41 @@ const AdminLayout = ({ title, description, children, rightAction }: AdminLayoutP
               </div>
             </div>
             {rightAction}
+          </div>
+          {/* 모바일 그룹 칩 네비 — 폰에서 드로어 안 열고 6개 그룹 대시보드 빠른 전환(가로 스크롤).
+              데스크톱(lg+)은 사이드바가 있어 숨김. 터치 타깃 ≥44pt. 솔로+폰 운영 전제(C-4). */}
+          <div className="lg:hidden border-t border-border overflow-x-auto no-scrollbar">
+            <div className="flex gap-1.5 px-3 py-2 min-w-max">
+              <Link
+                to="/admin"
+                className={cn(
+                  "flex items-center gap-1.5 px-3.5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+                  location.pathname === "/admin"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-foreground",
+                )}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                홈
+              </Link>
+              {ADMIN_NAV_GROUPS.map((g) => {
+                const GIcon = g.icon;
+                const active = location.pathname === `/admin/${g.key}`;
+                return (
+                  <Link
+                    key={g.key}
+                    to={`/admin/${g.key}`}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3.5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+                      active ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                    )}
+                  >
+                    <GIcon className="w-4 h-4" />
+                    {g.label}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </header>
 

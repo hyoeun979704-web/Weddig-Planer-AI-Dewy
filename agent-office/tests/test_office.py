@@ -32,6 +32,26 @@ class TestDeslop(unittest.TestCase):
         r = deslop.review("성수동 웨딩홀을 예산과 위치 기준으로 차분히 비교했습니다. 각 홀의 수용 인원과 대관료를 정리했어요.")
         self.assertGreaterEqual(r["score"], 9)
 
+    def test_aggressive_tone_flagged(self):
+        # 실데이터 회귀: 공격적 표현은 브랜드 톤 위반 → 강한 감점 + 플래그.
+        r = deslop.review("썩은 웨딩 업계를 뒤집는 듀이! 판을 바꾸겠습니다.")
+        self.assertTrue(any("공격적" in i for i in r["issues"]))
+        self.assertLessEqual(r["score"], 6)
+
+    def test_slang_hype_flagged(self):
+        r = deslop.review("이번엔 빡세게 준비했어요. 찐 정보만 담은 레전드 글이에요.")
+        self.assertTrue(any("슬랭" in i or "과장" in i for i in r["issues"]))
+
+    def test_throat_intro_flagged(self):
+        r = deslop.review("안녕하세요 참새신부입니다. 오늘은 스드메 순서를 알려드릴게요.")
+        self.assertTrue(any("도입부" in i for i in r["issues"]))
+
+    def test_emoji_and_exclaim_overuse_flagged(self):
+        r = deslop.review("최고예요!!!!! 진짜 좋아요!! 💍✨🌸💗😍🎉🥰👰 완전 추천 ㅠㅠ")
+        joined = " ".join(r["issues"])
+        self.assertTrue("이모지" in joined or "느낌표" in joined or "감탄사" in joined)
+        self.assertLess(r["score"], 9)
+
 
 class TestQuality(unittest.TestCase):
     def test_short_penalized(self):
