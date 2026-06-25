@@ -1,6 +1,7 @@
 import { lazy } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import BusinessGuard from "@/features/partners/components/BusinessGuard";
+import { DESIGN_MARKET_ENABLED } from "@/lib/featureFlags";
 
 // Partners(기업) 도메인 라우트 모듈. App.tsx 는 <Route path="/business/*" element={<PartnersRoutes/>}/>
 // 한 줄로 위임하고, partners 페이지·가드 참조는 전부 이 모듈 안에 갇힌다(도메인 경계).
@@ -41,7 +42,12 @@ const PartnersRoutes = () => (
     <Route path="products" element={<BusinessGuard requireApproved><BusinessProducts /></BusinessGuard>} />
     <Route path="inquiries" element={<BusinessGuard requireApproved><BusinessInquiries /></BusinessGuard>} />
     <Route path="deliveries" element={<BusinessGuard requireApproved><BusinessDeliveries /></BusinessGuard>} />
-    <Route path="designs" element={<BusinessGuard requireApproved><BusinessDesigns /></BusinessGuard>} />
+    {/* 디자인 마켓(판매) 미오픈 — 등록 라우트도 플래그로 막는다(대시보드 메뉴만 숨기면 직접 URL 로
+        승인대기 디자인이 쌓임). buyer 측 /invitation/market 가드와 일관. 켤 때 결제 IAP 분기 필수. */}
+    <Route
+      path="designs"
+      element={DESIGN_MARKET_ENABLED ? <BusinessGuard requireApproved><BusinessDesigns /></BusinessGuard> : <Navigate to="/business/dashboard" replace />}
+    />
     <Route path="reviews" element={<BusinessGuard requireApproved><BusinessReviews /></BusinessGuard>} />
     <Route path="leads" element={<BusinessGuard requireApproved><BusinessLeads /></BusinessGuard>} />
   </Routes>

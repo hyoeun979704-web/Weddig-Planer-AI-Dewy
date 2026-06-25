@@ -43,22 +43,29 @@
 > 새 세션이나 다른 툴(Codex·Antigravity)로 와도 **요청 범위 밖 영역을 건드리지 않도록** 하는 경계 정의다.
 > "이 작업이 어느 영역인지" 먼저 분류하고, **그 영역 밖 파일은 요청 없이 바꾸지 않는다**.
 
-**현재 구조 = 단일 레포·단일 빌드(앱 분리는 로드맵, 미실행).** 소비자·기업·운영자가 한 코드베이스
-(`src/App.tsx` 라우트 130+)에 섞여 있고 **런타임 역할 게이트**로만 갈린다. 물리 분리 계획은
-`docs/260624_app_separation_roadmap.md`(Phase 1~5, 아직 코드 변경 없음) — **임의로 분리 작업 착수 금지**(합의 후).
+**현재 구조 = 단일 레포·단일 빌드, 코드만 도메인 폴더로 분리 진행 중.** 소비자·기업·운영자가 한
+코드베이스(`src/App.tsx`)에 모이고 **런타임 역할 게이트**로 갈린다. 물리 분리는 `docs/260624_app_separation_roadmap.md`
+/ `..._execution_plan.md`(Phase 1~5). **현황: Partners 는 Phase 1 완료(`src/features/partners/` 로 이동 +
+라우트 모듈 + 경계 린트). consumer·console 은 아직 `src/pages/**`·`src/pages/admin/**` 에 있음.** 새 분리
+작업은 실행계획서 순서대로(합의 후) — 임의 착수 금지.
 
 | 영역 | 코드 위치 | 라우트 / 게이트 | 데이터(같은 DB, 접근만 분리) |
 |---|---|---|---|
-| **소비자(Consumer)** | `src/pages/**`(business·admin 제외) | 대부분 라우트, 로그인 가드 | `profiles`·`places`·견적·찜·하트 등 |
-| **기업(Partners)** | `src/pages/business/**`, `src/components/business/**` | `/business/*` · `BusinessGuard` | `business_profiles`·리드·상품·쿠폰·배송 |
+| **소비자(Consumer)** | `src/pages/**`(admin 제외) | 대부분 라우트, 로그인 가드 | `profiles`·`places`·견적·찜·하트 등 |
+| **기업(Partners)** ✅분리됨 | `src/features/partners/**`(pages·components·hooks·lib·data·routes) | `/business/*` → `features/partners/routes.tsx` · `BusinessGuard` | `business_profiles`·리드·상품·쿠폰·배송 |
 | **운영자(Console)** | `src/pages/admin/**`, `src/components/admin/**` | `/admin/*` · `AdminGuard` | 모더레이션·에이전트출력·운영로그 |
-| **공유(Shared)** | `src/lib/**`·`src/components/ui/**`·`src/contexts/**`·`src/integrations/**`·`supabase/**` | 전 영역 공용 | 마켓플레이스 공유 테이블(견적·업체·리뷰) |
+| **공유(Shared)** | `src/lib/**`·`src/components/ui/**`·`src/components/guides/**`·`src/types/**`·`src/contexts/**`·`src/integrations/**`·`src/hooks/**`·`supabase/**` | 전 영역 공용 | 마켓플레이스 공유 테이블(견적·업체·리뷰) |
 
-**경계 규칙(must)**
-- 한 영역 작업 시 **다른 영역 파일을 함께 리팩터/수정하지 않는다**(요청에 명시됐을 때만). 영역 간
-  직접 의존 금지 — 공유는 반드시 `src/lib`·`components/ui`·`contexts` 경유.
-- **공유(Shared) 변경은 3영역에 모두 파급** → 영향 범위를 먼저 점검(grep 사용처)하고 최소·표적 수정.
-- 백엔드는 **단일 Supabase 1개 공유**(분리 금지). 인가는 끝까지 **RLS**가 책임(클라 가드는 UX용).
+**경계 규칙(must)** — partners 는 **린트로 강제**됨(`eslint no-restricted-imports` + `check-integrity` `partners-domain-boundary`).
+- 한 영역 작업 시 **다른 영역 파일을 함께 리팩터/수정하지 않는다**(요청에 명시됐을 때만).
+- **partners 외부에서 `@/features/partners/*` 직접 import 금지**(라우트 마운트는 `App.tsx` 만). partners 는
+  다른 feature import 금지. 공유가 필요하면 shared(`@/lib`·`@/components/ui`·`@/hooks`·`@/types`·`@/contexts`)로 올린다.
+  (예: 가이드 뷰는 소비자+기업 공용이라 `@/components/guides/GuideView`·`@/types/guides` 로 둠.)
+- **공유(Shared) 변경은 전 영역 파급** → 영향 범위를 먼저 점검(grep 사용처)하고 최소·표적 수정.
+- 백엔드는 **단일 Supabase 1개 공유**(분리 금지). 인가는 끝까지 **RLS**가 책임(클라 가드는 UX용 —
+  회귀 사례: `business_profiles` self-UPDATE 권한상승, `docs/audit-surface-partners.md` P0).
+- **새 feature 분리 시**: 위 린트 규칙(`eslint.config.js`·`check-integrity.mjs`)에 그 feature 도 추가한다.
+- **영역별 감사맵**: partners = `docs/audit-surface-partners.md`(14차원 심층). 전체 = `docs/audit-surface-map.md`.
 
 **빌드·플랫폼 현실(오해 방지)**
 - **웹·Android·iOS 는 같은 `dist/` 번들**을 쓴다. Capacitor 가 그 번들을 Android·iOS 네이티브로
