@@ -104,15 +104,24 @@ dry-run 진단으로만 둔다. 가장 무위험이나 "머지=배포" 자동화
 | `20260622060000_notify_on_rsvp_submit` | `notify_on_rsvp_submit` 트리거 | RSVP 호스트 알림 |
 
 → 전부 멱등·추가형(IF NOT EXISTS / CREATE OR REPLACE)이라 적용 안전. 단 photoshoot 는 스키마만으로
-   불완전(워커 함수 필요). **배포 방법 = ① 파이프라인 apply 1회(권장) 또는 ② 수동 적용.**
+   불완전(워커 함수 필요).
+
+### 4-2. 처리 결과 (2026-06-25)
+
+- **안전 추가형 7건 = 프로덕션 적용 완료** + 버전 기록. 적용 후 객체 존재 검증 통과
+  (함수 5·컬럼 5·트리거 2 모두 생성 확인). 깨져 있던 실기능(상품 상세이미지·RSVP 마감/
+  자가수정/알림·구독 컬럼·체크리스트 시작일·어드민 AI 실패조회) 복구.
+- **photoshoot_drafts 1건 = 보류**. 스키마(테이블·버킷)만으로는 불완전하고 워커 edge function
+  연결이 필요해, 그 기능 트랙에서 함께 배포. 현재 repo↔원격 미일치 = **이 1건뿐**.
 
 ## 5. 권장 순서(갱신)
 
 1. ✅ search_path 하드닝.
 2. ✅ `deploy-migrations.yml`(dry-run 기본).
 3. ✅ 마킹 정합(212건) + 진짜 미배포 8건 격리.
-4. ⏳ **미배포 8건 배포 결정**(§4-1). 안전 추가형 7건은 즉시 적용 가능, photoshoot 는 워커 확인 후.
-5. ⏳ `SUPABASE_DB_PASSWORD` 시크릿 등록 → push dry-run 이 8건만 표시 확인 → apply 1회 → 안정화 후 자동 apply 승격.
+4. ✅ 미배포 중 안전 7건 적용(프로덕션 복구) · photoshoot 1건 보류(워커 트랙).
+5. ⏳ `SUPABASE_DB_PASSWORD` 시크릿 등록 → push dry-run 이 **photoshoot 1건만** 표시 확인 →
+   워커 준비되면 apply → 안정화 후 자동 apply 승격.
 
 ## 5. 남은 보안 권고(search_path 외 — 별도 트랙)
 
