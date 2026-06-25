@@ -4,10 +4,16 @@ import { Loader2, Upload, X, Sparkles, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { addPendingJob } from "@/lib/pendingJobs";
+import {
+  fetchPhotoFixDiscounted,
+  fetchPhotoFixJobs,
+  uploadPhotoFixSource,
+  generatePhotoFix,
+  PhotoFixGenerateError,
+} from "@/features/consumer/data/photoFix";
 
 // 사진 체형 보정 — 1회 최대 8장 일괄. 화질 개선 기본 + 슬림/비율 보정.
 // 가격: 장당 5하트, n장 = min(n*5, 35). 계정당 첫 1회 50% 할인(반올림).
@@ -66,12 +72,7 @@ const PhotoFix = () => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await (supabase as any)
-        .from("photo_retouch_usage")
-        .select("used_count")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setDiscounted((data?.used_count ?? 0) === 0);
+      setDiscounted(await fetchPhotoFixDiscounted(user.id));
     })();
   }, [user]);
 
@@ -79,13 +80,7 @@ const PhotoFix = () => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await (supabase as any)
-        .from("photo_retouch_jobs")
-        .select("id, status, source_paths, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      setJobs((data ?? []) as JobRow[]);
+      setJobs((await fetchPhotoFixJobs(user.id, 20)) as JobRow[]);
     })();
   }, [user]);
 
@@ -144,50 +139,30 @@ const PhotoFix = () => {
       // 1) 업로드 → 본인 폴더 경로 수집
       const sourcePaths: string[] = [];
       for (const p of picks) {
-        const ext = p.file.name.split(".").pop()?.toLowerCase() || "jpg";
-        const path = `${user.id}/photofix/${crypto.randomUUID()}.${ext}`;
-        const { error } = await supabase.storage
-          .from("invitation-uploads")
-          .upload(path, p.file, { contentType: p.file.type, upsert: false });
-        if (error) throw new Error(`업로드 실패: ${error.message}`);
-        sourcePaths.push(path);
+        sourcePaths.push(await uploadPhotoFixSource(user.id, p.file));
       }
 
       // 2) 잡 생성만 하고 즉시 job_id 를 받는다(보정은 서버 백그라운드).
-      const { data, error } = await (supabase as any).functions.invoke(
-        "photo-enhance-batch",
-        { body: { source_paths: sourcePaths, options: Array.from(opts), custom_text: customText.trim() } },
-      );
-      if (error) {
-        let code: string | undefined;
-        try {
-          const ctx = (error as { context?: { json?: () => Promise<any> } })
-            .context;
-          if (ctx?.json) code = (await ctx.json())?.error;
-        } catch {
-          /* ignore */
-        }
-        if (code === "insufficient_hearts") {
-          toast({
-            title: "하트가 부족해요",
-            description: `이 보정에 ${finalCost}하트가 필요해요.`,
-            variant: "destructive",
-            action: { label: "충전하기", onClick: () => navigate("/points") },
-          });
-          return;
-        }
-        throw new Error(code ?? error.message ?? "보정 요청 실패");
-      }
-      if (data?.error) throw new Error(data.error);
-
-      const jobId = data?.job_id as string | undefined;
-      if (!jobId) throw new Error("보정 요청 실패");
+      const jobId = await generatePhotoFix({
+        source_paths: sourcePaths,
+        options: Array.from(opts),
+        custom_text: customText.trim(),
+      });
 
       // 완료 알림을 위해 진행중 잡 등록 → 결과 페이지로 이동(거기서 폴링).
       addPendingJob({ id: jobId, type: "photo" });
       setDiscounted(false); // 첫 할인 소진
       navigate(`/ai-studio/photo-fix/result/${jobId}`);
     } catch (e) {
+      if (e instanceof PhotoFixGenerateError && e.code === "insufficient_hearts") {
+        toast({
+          title: "하트가 부족해요",
+          description: `이 보정에 ${finalCost}하트가 필요해요.`,
+          variant: "destructive",
+          action: { label: "충전하기", onClick: () => navigate("/points") },
+        });
+        return;
+      }
       toast({
         title: "보정 요청 실패",
         description: e instanceof Error ? e.message : "오류",

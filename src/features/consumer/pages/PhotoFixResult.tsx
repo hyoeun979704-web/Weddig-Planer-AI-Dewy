@@ -5,10 +5,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Download, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { removePendingJob } from "@/lib/pendingJobs";
 import ProcessingGuide from "@/components/ProcessingGuide";
+import { fetchPhotoFixJob, photoFixResultUrl } from "@/features/consumer/data/photoFix";
 
 // 사진보정 결과 (/ai-studio/photo-fix/result/:id)
 // photo_retouch_jobs row 폴링 — processing/completed/failed.
@@ -44,12 +44,8 @@ const PhotoFixResult = () => {
 
   const load = useCallback(async () => {
     if (!id) return;
-    const { data, error } = await (supabase as any)
-      .from("photo_retouch_jobs")
-      .select("id, status, results, source_paths, error, charged, created_at")
-      .eq("id", id)
-      .single();
-    if (error || !data) {
+    const data = await fetchPhotoFixJob(id);
+    if (!data) {
       setNotFound(true);
       setLoading(false);
       return;
@@ -58,12 +54,7 @@ const PhotoFixResult = () => {
     setJob(row);
     if (row.status === "completed" && Array.isArray(row.results)) {
       const signed = await Promise.all(
-        row.results.map(async (r) => {
-          const { data: s } = await supabase.storage
-            .from("invitation-uploads")
-            .createSignedUrl(r.path, 60 * 60 * 24);
-          return s?.signedUrl ?? null;
-        }),
+        row.results.map((r) => photoFixResultUrl(r.path)),
       );
       setUrls(signed.filter((u): u is string => !!u));
       removePendingJob(row.id);
