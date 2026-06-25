@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star, Inbox, Palette, BookOpen } from "lucide-react";
 import { DESIGN_MARKET_ENABLED } from "@/lib/featureFlags";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useBranches } from "@/features/partners/hooks/useBranches";
-import { supabase } from "@/integrations/supabase/client";
+import { useBusinessStats, usePartnerApplication, useApplyPartnership } from "@/features/partners/hooks/useBusinessDashboard";
 import { toast } from "sonner";
 
 const BusinessDashboard = () => {
@@ -15,8 +15,14 @@ const BusinessDashboard = () => {
   const { isBusiness, isError, businessProfile, isLoading: roleLoading } = useUserRole();
   // 멀티지점: 선택된 지점 기준으로 통계·관리. 단일 지점이면 그 지점이 자동 선택.
   const { branches, selected, selectedId, select } = useBranches();
-  const [placeId, setPlaceId] = useState<string | null>(null);
-  const [stats, setStats] = useState({ media: 0, favorites: 0, views: 0, couponDownloads: 0, reviews: 0 });
+  // 승인된 기업만 통계/제휴 데이터를 로드. placeId·listingRow 는 선택 지점에서 파생.
+  // 데이터 접근은 features/partners/data/businessDashboard 로 추상화(Task #3).
+  const isApproved = businessProfile?.approval_status === "approved";
+  const listingRow = isApproved ? ((selected ?? null) as Record<string, unknown> | null) : null;
+  const placeId = (listingRow?.place_id as string | undefined) ?? null;
+  const { stats } = useBusinessStats(placeId, (listingRow?.view_count as number) ?? 0);
+  const { partnerApp } = usePartnerApplication(isApproved ? (businessProfile?.id ?? null) : null);
+  const applyMutation = useApplyPartnership(businessProfile?.id ?? null);
 
   useEffect(() => {
     if (authLoading || roleLoading) return;
@@ -31,52 +37,6 @@ const BusinessDashboard = () => {
       return;
     }
   }, [authLoading, roleLoading, user, isBusiness, isError, businessProfile, navigate]);
-
-  useEffect(() => {
-    if (!businessProfile || businessProfile.approval_status !== "approved") return;
-    const row = selected as Record<string, unknown> | null;
-    if (!row?.place_id) return;
-    const pid = row.place_id as string;
-    setPlaceId(pid);
-    setListingRow(row);
-    (async () => {
-      const [favRes, mediaRes, dlRes, reviewRes] = await Promise.all([
-        supabase.from("favorites").select("id", { count: "exact", head: true }).eq("item_id", pid),
-        supabase.from("place_media").select("id", { count: "exact", head: true }).eq("place_id", pid),
-        supabase.rpc("get_my_coupon_download_count"),
-        supabase.from("place_reviews").select("review_id", { count: "exact", head: true }).eq("place_id", pid),
-      ]);
-      setStats({
-        favorites: favRes.count ?? 0,
-        media: mediaRes.count ?? 0,
-        views: (row.view_count as number) ?? 0,
-        couponDownloads: typeof dlRes.data === "number" ? dlRes.data : 0,
-        reviews: reviewRes.count ?? 0,
-      });
-    })();
-  }, [businessProfile, selected, selectedId]);
-
-  // 제휴(프렌즈) 신청 현황 — 대기/면담중이면 CTA 대신 상태 표시
-  const [partnerApp, setPartnerApp] = useState<{ status: string } | null>(null);
-  const [listingRow, setListingRow] = useState<Record<string, unknown> | null>(null);
-  const [applying, setApplying] = useState(false);
-  const loadPartnerApp = async () => {
-    if (!businessProfile) return;
-    const { data } = await supabase
-      .from("partnership_applications")
-      .select("status")
-      .eq("business_profile_id", businessProfile.id)
-      .in("status", ["pending", "interviewing"])
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    setPartnerApp(data ?? null);
-  };
-  useEffect(() => {
-    if (!businessProfile || businessProfile.approval_status !== "approved") return;
-    void loadPartnerApp();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [businessProfile]);
 
   // 제휴업체는 스키마(업체 정보) 완성이 필수 — 필수 필드 체크리스트
   const REQUIRED_FIELDS: { key: string; label: string }[] = [
@@ -95,27 +55,15 @@ const BusinessDashboard = () => {
     : REQUIRED_FIELDS;
   const isSchemaComplete = !!listingRow && missingFields.length === 0;
 
-  const handleApplyPartner = async () => {
+  const handleApplyPartner = () => {
     if (!user || !businessProfile) return;
-    setApplying(true);
-    try {
-      const { error } = await supabase
-        .from("partnership_applications")
-        .insert({
-          business_profile_id: businessProfile.id,
-          user_id: user.id,
-          message: "대시보드에서 신청",
-        });
-      if (error) throw error;
-      toast.success("제휴업체 신청을 접수했어요", {
-        description: "검토 후 개인 면담 일정을 안내드릴게요.",
-      });
-      await loadPartnerApp();
-    } catch {
-      toast.error("신청에 실패했어요. 다시 시도해주세요.");
-    } finally {
-      setApplying(false);
-    }
+    applyMutation.mutate(user.id, {
+      onSuccess: () =>
+        toast.success("제휴업체 신청을 접수했어요", {
+          description: "검토 후 개인 면담 일정을 안내드릴게요.",
+        }),
+      onError: () => toast.error("신청에 실패했어요. 다시 시도해주세요."),
+    });
   };
 
   if (authLoading || roleLoading) {
@@ -445,7 +393,7 @@ const BusinessDashboard = () => {
                 {isSchemaComplete ? (
                   <Button
                     className="w-full h-10 mt-1"
-                    disabled={applying}
+                    disabled={applyMutation.isPending}
                     onClick={handleApplyPartner}
                   >
                     제휴업체 신청하기
