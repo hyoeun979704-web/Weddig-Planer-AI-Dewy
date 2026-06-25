@@ -6,29 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ImageUploader from "@/components/ImageUploader";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchGalleryData,
+  createAlbum,
+  addMedia,
+  deleteMedia,
+  type MediaItem,
+  type Album,
+  type ProductOpt,
+} from "@/features/partners/data/gallery";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranches } from "@/features/partners/hooks/useBranches";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
 
-interface MediaItem {
-  id: string;
-  kind: string;
-  image_url: string | null;
-  title: string | null;
-  price: number | null;
-  album_id: string | null;
-}
-interface Album {
-  id: string;
-  title: string;
-  shoot_date: string | null;
-  venue_name: string | null;
-  style_tags: string[] | null;
-  product_id: string | null;
-}
-interface ProductOpt { id: string; name: string }
+// MediaItem·Album·ProductOpt 타입은 features/partners/data/gallery 에서 import.
 
 const NEW_ALBUM = "__new__";
 
@@ -64,16 +56,10 @@ const BusinessGallery = () => {
   const isMenu = category === "invitation_venue";
 
   const loadAll = useCallback(async (pid: string) => {
-    const [mediaRes, albumRes, prodRes] = await Promise.all([
-      supabase.from("place_media" as any).select("id, kind, image_url, title, price, album_id")
-        .eq("place_id", pid).order("display_order", { ascending: true }).order("created_at", { ascending: true }),
-      supabase.from("place_media_albums" as any).select("id, title, shoot_date, venue_name, style_tags, product_id")
-        .eq("place_id", pid).order("created_at", { ascending: false }),
-      supabase.from("business_products" as any).select("id, name").eq("place_id", pid).order("created_at", { ascending: false }),
-    ]);
-    setItems((mediaRes.data ?? []) as unknown as MediaItem[]);
-    setAlbums((albumRes.data ?? []) as unknown as Album[]);
-    setProducts((prodRes.data ?? []) as unknown as ProductOpt[]);
+    const { media, albums, products } = await fetchGalleryData(pid);
+    setItems(media);
+    setAlbums(albums);
+    setProducts(products);
   }, []);
 
   useEffect(() => {
@@ -100,9 +86,8 @@ const BusinessGallery = () => {
       if (!isMenu) {
         if (albumSel === NEW_ALBUM) {
           if (!albTitle.trim()) { toast.error("앨범 제목을 입력해주세요 (예: 260402_경복궁)"); return; }
-          const { data: alb, error: albErr } = await (supabase as any)
-            .from("place_media_albums")
-            .insert({
+          try {
+            albumId = await createAlbum({
               place_id: placeId,
               owner_user_id: user.id,
               title: albTitle.trim(),
@@ -111,26 +96,30 @@ const BusinessGallery = () => {
               style_tags: albTags.split(",").map((t) => t.trim()).filter(Boolean),
               product_id: albProduct || null,
               description: albDesc.trim() || null,
-            })
-            .select("id")
-            .single();
-          if (albErr || !alb) { toast.error("앨범 생성에 실패했어요"); return; }
-          albumId = alb.id as string;
+            });
+          } catch {
+            toast.error("앨범 생성에 실패했어요");
+            return;
+          }
         } else {
           albumId = albumSel;
         }
       }
-      const { error } = await supabase.from("place_media").insert({
-        place_id: placeId,
-        owner_user_id: user.id,
-        kind: isMenu ? "menu" : "photo",
-        image_url: imageUrl.trim(),
-        title: isMenu ? title.trim() : null,
-        price: isMenu && price ? parseInt(price, 10) : null,
-        display_order: items.length,
-        album_id: albumId,
-      } as any);
-      if (error) { toast.error("추가에 실패했어요"); return; }
+      try {
+        await addMedia({
+          place_id: placeId,
+          owner_user_id: user.id,
+          kind: isMenu ? "menu" : "photo",
+          image_url: imageUrl.trim(),
+          title: isMenu ? title.trim() : null,
+          price: isMenu && price ? parseInt(price, 10) : null,
+          display_order: items.length,
+          album_id: albumId,
+        });
+      } catch {
+        toast.error("추가에 실패했어요");
+        return;
+      }
       await loadAll(placeId);
       // 방금 만든 앨범엔 사진을 이어 담기 편하도록 선택 유지.
       if (!isMenu && albumSel === NEW_ALBUM && albumId) setAlbumSel(albumId);
@@ -143,8 +132,12 @@ const BusinessGallery = () => {
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ title: isMenu ? "이 메뉴를 삭제할까요?" : "이 사진을 삭제할까요?", confirmText: "삭제", destructive: true }))) return;
-    const { error } = await supabase.from("place_media").delete().eq("id", id);
-    if (error) { toast.error("삭제에 실패했어요"); return; }
+    try {
+      await deleteMedia(id);
+    } catch {
+      toast.error("삭제에 실패했어요");
+      return;
+    }
     setItems((prev) => prev.filter((i) => i.id !== id));
     toast.success("삭제했어요");
   };
