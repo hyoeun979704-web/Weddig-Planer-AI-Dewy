@@ -7,21 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import ImageUploader from "@/components/ImageUploader";
 import DesignListingConsentDialog from "@/components/consent/DesignListingConsentDialog";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranches } from "@/features/partners/hooks/useBranches";
+import { fetchBusinessDesigns, addBusinessDesign, deleteBusinessDesign, type DesignRow } from "@/features/partners/data/businessDesigns";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
-
-interface DesignRow {
-  id: string;
-  title: string;
-  price: number;
-  preview_urls: string[];
-  sellable: string[];
-  status: "pending" | "approved" | "rejected";
-  review_note: string | null;
-}
 
 const STATUS_LABEL: Record<string, string> = { pending: "검토 중", approved: "판매 중", rejected: "반려" };
 
@@ -51,13 +41,13 @@ const BusinessDesigns = () => {
     setLoading(true);
     setPlaceId(selectedId);
     // 선택 지점(place_id) 의 디자인만 — 기존엔 필터가 없어 다른 지점/디자이너 것까지 섞였음.
-    const { data, error } = await (supabase as any)
-      .from("designer_designs")
-      .select("id, title, price, preview_urls, sellable, status, review_note")
-      .eq("place_id", selectedId)
-      .order("created_at", { ascending: false });
-    if (error) { console.error("designs load failed", error); toast.error("디자인을 불러오지 못했어요"); }
-    setItems((data as DesignRow[]) ?? []);
+    try {
+      setItems(await fetchBusinessDesigns(selectedId));
+    } catch (err) {
+      console.error("designs load failed", err);
+      toast.error("디자인을 불러오지 못했어요");
+      setItems([]);
+    }
     setLoading(false);
   }, [selectedId]);
 
@@ -83,19 +73,23 @@ const BusinessDesigns = () => {
     setSaving(true);
     const tags = styleTags.split(",").map((t) => t.trim()).filter(Boolean);
     const sellable = ["design", ...(sellPrint ? ["design_print"] : [])];
-    const { error } = await (supabase as any).from("designer_designs").insert({
-      designer_user_id: user.id,
-      place_id: placeId,
-      title: title.trim(),
-      description: description.trim() || null,
-      price: priceNum,
-      preview_urls: [previewUrl.trim()],
-      style_tags: tags,
-      sellable,
-      status: "pending",
-    });
+    try {
+      await addBusinessDesign({
+        designer_user_id: user.id,
+        place_id: placeId,
+        title: title.trim(),
+        description: description.trim() || null,
+        price: priceNum,
+        preview_urls: [previewUrl.trim()],
+        style_tags: tags,
+        sellable,
+      });
+    } catch {
+      setSaving(false);
+      toast.error("등록에 실패했어요");
+      return;
+    }
     setSaving(false);
-    if (error) { toast.error("등록에 실패했어요"); return; }
     toast.success("디자인을 등록했어요", { description: "운영자 검토 후 판매가 시작돼요." });
     setTitle(""); setDescription(""); setPrice(""); setPreviewUrl(""); setStyleTags(""); setSellPrint(false);
     setUploaderKey((k) => k + 1);
@@ -104,8 +98,12 @@ const BusinessDesigns = () => {
 
   const onDelete = async (id: string) => {
     if (!(await confirm({ title: "이 디자인을 삭제할까요?", confirmText: "삭제", destructive: true }))) return;
-    const { error } = await (supabase as any).from("designer_designs").delete().eq("id", id);
-    if (error) { toast.error("삭제에 실패했어요"); return; }
+    try {
+      await deleteBusinessDesign(id);
+    } catch {
+      toast.error("삭제에 실패했어요");
+      return;
+    }
     setItems((prev) => prev.filter((d) => d.id !== id));
     toast.success("삭제했어요");
   };
