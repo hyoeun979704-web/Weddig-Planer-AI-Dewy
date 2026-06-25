@@ -23,25 +23,16 @@ import {
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
 import ImageUploader from "@/components/ImageUploader";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchAssets,
+  saveAsset,
+  setAssetActive,
+  deleteAsset,
+  type Asset,
+} from "@/features/console/data/invitationAssets";
 import { toast } from "@/hooks/use-toast";
 
-interface Asset {
-  id: string;
-  name: string;
-  image_url: string;
-  thumbnail_url: string | null;
-  category: string;
-  collection: string | null;
-  tags: string[] | null;
-  is_recolorable: boolean;
-  natural_width: number | null;
-  natural_height: number | null;
-  display_order: number;
-  is_active: boolean;
-  created_at: string;
-}
-
+// Asset 타입은 features/console/data/invitationAssets 에서 import(Task #3).
 type Form = Omit<Asset, "id" | "created_at">;
 
 const emptyForm: Form = {
@@ -89,21 +80,17 @@ const AdminInvitationAssets = () => {
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("invitation_assets")
-      .select("*")
-      .order("display_order", { ascending: true }) // 작을수록 위(선택기와 동일)
-      .order("created_at", { ascending: false });
-    if (error) {
+    try {
+      setItems(await fetchAssets());
+    } catch (e) {
       toast({
         title: "불러오기 실패",
-        description: error.message,
+        description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
-    } else {
-      setItems(data ?? []);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -139,16 +126,16 @@ const AdminInvitationAssets = () => {
 
     setIsSaving(true);
     const payload = { ...form, tags };
-    const { error } = editingId
-      ? await (supabase as any)
-          .from("invitation_assets")
-          .update(payload)
-          .eq("id", editingId)
-      : await (supabase as any).from("invitation_assets").insert(payload);
-    if (error) {
+    let saveError: Error | null = null;
+    try {
+      await saveAsset(editingId, payload);
+    } catch (e) {
+      saveError = e instanceof Error ? e : new Error("오류");
+    }
+    if (saveError) {
       toast({
         title: "저장 실패",
-        description: error.message,
+        description: saveError.message,
         variant: "destructive",
       });
     } else {
@@ -191,36 +178,30 @@ const AdminInvitationAssets = () => {
   };
 
   const handleToggleActive = async (a: Asset) => {
-    const { error } = await (supabase as any)
-      .from("invitation_assets")
-      .update({ is_active: !a.is_active })
-      .eq("id", a.id);
-    if (error) {
+    try {
+      await setAssetActive(a.id, !a.is_active);
+      fetchData();
+    } catch (e) {
       toast({
         title: "변경 실패",
-        description: error.message,
+        description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
-    } else {
-      fetchData();
     }
   };
 
   const handleDelete = async (a: Asset) => {
     if (!confirm(`"${a.name}" 을(를) 삭제하시겠어요?`)) return;
-    const { error } = await (supabase as any)
-      .from("invitation_assets")
-      .delete()
-      .eq("id", a.id);
-    if (error) {
-      toast({
-        title: "삭제 실패",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
+    try {
+      await deleteAsset(a.id);
       toast({ title: "삭제 완료" });
       fetchData();
+    } catch (e) {
+      toast({
+        title: "삭제 실패",
+        description: e instanceof Error ? e.message : "오류",
+        variant: "destructive",
+      });
     }
   };
 
