@@ -5,7 +5,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: (...a: unknown[]) => h.fromImpl(...a) },
 }));
 
-import { fetchAssets, saveAsset, deleteAsset, invitationAssetKeys } from "./invitationAssets";
+import { fetchAssets, fetchAssetOptions, saveAsset, deleteAsset, invitationAssetKeys } from "./invitationAssets";
 
 const builder = (result: unknown) => {
   const b: Record<string, unknown> = {};
@@ -37,6 +37,17 @@ describe("fetchAssets", () => {
   it("에러 시 throw", async () => {
     h.fromImpl.mockReturnValue(builder({ data: null, error: new Error("fail") }));
     await expect(fetchAssets()).rejects.toThrow("fail");
+  });
+});
+
+describe("fetchAssetOptions", () => {
+  it("활성 에셋 옵션을 반환한다", async () => {
+    h.fromImpl.mockReturnValue(builder({ data: [{ id: "a1", name: "꽃" }], error: null }));
+    expect(await fetchAssetOptions()).toEqual([{ id: "a1", name: "꽃" }]);
+  });
+  it("에러 시 throw", async () => {
+    h.fromImpl.mockReturnValue(builder({ data: null, error: new Error("opt fail") }));
+    await expect(fetchAssetOptions()).rejects.toThrow("opt fail");
   });
 });
 
