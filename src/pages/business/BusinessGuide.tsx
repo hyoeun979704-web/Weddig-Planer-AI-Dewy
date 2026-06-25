@@ -1,5 +1,6 @@
 import { useUserRole } from "@/hooks/useUserRole";
-import BusinessGuideView, { type GuideSlide } from "./BusinessGuideView";
+import GuideView from "@/components/guides/GuideView";
+import type { GuideSlide } from "@/types/guides";
 import { adjacentGuides } from "@/data/businessGuides";
 
 // 캡처는 scripts/capture-guide-shots.cjs 로 실제 앱을 3:4 모바일 뷰포트로 라이브 렌더해
@@ -64,7 +65,7 @@ const BusinessGuide = () => {
   // 역할에 따라 분기한다. 이미 기업회원이면 대시보드로, 아직 아니면 가입 깔때기로.
   const { isBusiness } = useUserRole();
   return (
-    <BusinessGuideView
+    <GuideView
       headerTitle="사용법 가이드"
       eyebrow="APPLICATION GUIDE"
       deskHeading="가입부터 고객 노출까지, 한눈에"

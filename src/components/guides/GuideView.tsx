@@ -3,42 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Lightbulb } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
+import type { GuideSlide, GuideViewProps } from "@/types/guides";
 
-// 기업회원용 인앱 사용법 가이드의 **공용 프레젠테이션**.
+// 인앱 사용법 가이드의 **공용 프레젠테이션**(소비자 /help · 기업 /business/guide 공유 — shared).
 //  - 모바일: 한 단계=한 슬라이드(스와이프 캐러셀, 온보딩 코치마크 스타일).
 //  - 데스크톱(lg≥1024): 스크롤형 섹션 — 큰 캡처 + 제목 + 해시태그 + 설명을 좌우 교차 배치.
-// 개요 가이드(BusinessGuide)와 주제별 상세 가이드(BusinessGuideDetail)가 이 뷰를 공유한다.
+// 소비자 ConsumerGuideDetail 와 기업 BusinessGuide/BusinessGuideDetail 가 이 뷰를 공유한다.
 // 캡처는 scripts/capture-guide-shots.cjs (3:4 라이브 + SUITE 폰트 + DOM 하이라이트) — 상세
-// 절차는 docs/business-guide-capture.md.
+// 절차는 docs/business-guide-capture.md. 타입 단일 소스: @/types/guides.
 
-export interface GuideSlide {
-  phase: string;
-  img: string;
-  alt: string;
-  title: string;
-  subtitle: string;
-  tip: string;
-  tags: string[];
-}
-
-export interface GuideViewProps {
-  /** 헤더 h1 (예: "사용법 가이드", "업체 정보 수정 가이드") */
-  headerTitle: string;
-  /** 데스크톱 상단 eyebrow (대문자 라벨) */
-  eyebrow: string;
-  /** 데스크톱 상단 큰 제목 */
-  deskHeading: string;
-  /** 데스크톱 상단 보조 설명 */
-  deskSub: string;
-  slides: GuideSlide[];
-  /** 마지막 슬라이드/하단 CTA */
-  cta: { label: string; target: string };
-  /** 블로그식 이전/다음 가이드(게시물) 네비 — 목록 순서 기반 */
-  prevNext?: {
-    prev: { title: string; route: string } | null;
-    next: { title: string; route: string } | null;
-  };
-}
+export type { GuideSlide, GuideViewProps } from "@/types/guides";
 
 const Tip = ({ text, lg }: { text: string; lg?: boolean }) => (
   <div className={cn("flex items-start gap-2 text-left rounded-xl bg-amber-50 border border-amber-100",
@@ -56,7 +30,7 @@ const Tags = ({ tags, className }: { tags: string[]; className?: string }) => (
   </div>
 );
 
-const BusinessGuideView = ({ headerTitle, eyebrow, deskHeading, deskSub, slides, cta, prevNext }: GuideViewProps) => {
+const GuideView = ({ headerTitle, eyebrow, deskHeading, deskSub, slides, cta, prevNext }: GuideViewProps) => {
   const navigate = useNavigate();
   const hasPostNav = !!(prevNext && (prevNext.prev || prevNext.next));
   const [api, setApi] = useState<CarouselApi>();
@@ -245,4 +219,4 @@ const BusinessGuideView = ({ headerTitle, eyebrow, deskHeading, deskSub, slides,
   );
 };
 
-export default BusinessGuideView;
+export default GuideView;

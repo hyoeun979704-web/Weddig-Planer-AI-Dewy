@@ -1,9 +1,9 @@
 // 기업회원 전용 **주제별 상세 가이드** 레지스트리(단일 소스).
-// 각 가이드는 BusinessGuideDetail 가 :guideId 로 찾아 BusinessGuideView 로 렌더한다.
+// 각 가이드는 BusinessGuideDetail 가 :guideId 로 찾아 공용 GuideView(shared) 로 렌더한다.
 // 슬라이드 이미지는 scripts/capture-guide-shots.cjs 로 3:4 라이브 캡처(SUITE 폰트 +
 // DOM 하이라이트). 새 슬라이드 추가/교체 절차는 docs/business-guide-capture.md.
 
-import type { GuideSlide } from "@/pages/business/BusinessGuideView";
+import type { GuideSlide } from "@/types/guides";
 
 // 개요 가이드 커버(목록 썸네일용)
 import overviewCover from "@/assets/business/guide/business-landing.png";

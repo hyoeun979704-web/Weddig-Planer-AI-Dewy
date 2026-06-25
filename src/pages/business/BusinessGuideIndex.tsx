@@ -5,7 +5,7 @@ import { GUIDE_NAV } from "@/data/businessGuides";
 
 // 사용 가이드 목록(목차). 개요 + 주제별 상세 가이드 전체를 한 페이지에서 고른다.
 // 소비자 마이페이지 · 기업 대시보드 양쪽에서 진입. 각 가이드는 블로그식 이전/다음으로
-// 이어 볼 수 있다(BusinessGuideView).
+// 이어 볼 수 있다(공용 GuideView).
 const BusinessGuideIndex = () => {
   const navigate = useNavigate();
 

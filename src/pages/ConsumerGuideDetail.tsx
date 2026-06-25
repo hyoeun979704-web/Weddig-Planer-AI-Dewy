@@ -1,10 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import BusinessGuideView from "./business/BusinessGuideView";
+import GuideView from "@/components/guides/GuideView";
 import { findConsumerGuide, adjacentConsumerGuides } from "@/data/consumerGuides";
 
 // 소비자 앱 사용 가이드 — 주제별 상세. /help/:guideId.
-// 정의는 src/data/consumerGuides.ts, 프레젠테이션은 기업과 동일한 BusinessGuideView 공유.
+// 정의는 src/data/consumerGuides.ts, 프레젠테이션은 기업과 공용인 GuideView(shared) 공유.
 const ConsumerGuideDetail = () => {
   const { guideId } = useParams<{ guideId: string }>();
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ const ConsumerGuideDetail = () => {
   }
 
   return (
-    <BusinessGuideView
+    <GuideView
       headerTitle={guide.headerTitle}
       eyebrow={guide.eyebrow}
       deskHeading={guide.deskHeading}
