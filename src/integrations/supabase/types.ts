@@ -6193,7 +6193,7 @@ export type Database = {
         Returns: Json
       }
       admin_review_event: {
-        Args: { p_approved: boolean; p_id: string }
+        Args: { p_approved: boolean; p_id: string; p_note?: string }
         Returns: Json
       }
       admin_review_listing: {
@@ -6209,7 +6209,7 @@ export type Database = {
         Returns: Json
       }
       admin_review_product: {
-        Args: { p_approved: boolean; p_id: string }
+        Args: { p_approved: boolean; p_id: string; p_note?: string }
         Returns: Json
       }
       admin_set_app_config: {
