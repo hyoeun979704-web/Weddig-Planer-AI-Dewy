@@ -5,27 +5,16 @@ import AdminLayout from "@/features/console/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchPromotions,
+  upsertPromotion,
+  type PromoRow,
+} from "@/features/console/data/promotions";
 
 type Status = "live" | "scheduled" | "ended";
 type Audience = "all" | "guest" | "user";
 
-interface PromoRow {
-  id: string;
-  slug: string;
-  title: string;
-  subtitle: string | null;
-  cta_label: string;
-  cta_path: string;
-  badge_label: string | null;
-  status: string;
-  position: number;
-  image_url: string | null;
-  audience: string | null;
-  show_as_popup: boolean | null;
-  starts_at: string | null;
-  ends_at: string | null;
-}
+// PromoRow 타입은 features/console/data/promotions 에서 import.
 
 interface Draft {
   slug: string;
@@ -83,18 +72,13 @@ const AdminPromotions = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("promotional_events")
-      .select(
-        "id, slug, title, subtitle, cta_label, cta_path, badge_label, status, position, image_url, audience, show_as_popup, starts_at, ends_at",
-      )
-      .order("position", { ascending: true });
-    setLoading(false);
-    if (error) {
+    try {
+      setRows(await fetchPromotions());
+    } catch {
       toast.error("목록을 불러오지 못했어요.");
-      return;
+    } finally {
+      setLoading(false);
     }
-    setRows((data ?? []) as PromoRow[]);
   }, []);
 
   useEffect(() => {
@@ -157,14 +141,10 @@ const AdminPromotions = () => {
       starts_at: fromLocalInput(draft.starts_at),
       ends_at: fromLocalInput(draft.ends_at),
     };
-    const { data, error } = await (supabase as any).rpc("admin_upsert_promotional_event", {
-      p_slug: slug,
-      p_payload: payload,
-    });
+    const res = await upsertPromotion(slug, payload);
     setSaving(false);
-    const res = data as { ok?: boolean; error?: string } | null;
-    if (error || !res?.ok) {
-      toast.error(res?.error === "forbidden" ? "권한이 없어요." : "저장에 실패했어요.");
+    if (!res.ok) {
+      toast.error(res.error === "forbidden" ? "권한이 없어요." : "저장에 실패했어요.");
       return;
     }
     toast.success("저장했어요.");
@@ -174,25 +154,21 @@ const AdminPromotions = () => {
 
   // 진입 팝업 노출 빠른 토글(다른 필드 보존 위해 현재 행 값으로 재upsert).
   const togglePopup = async (r: PromoRow) => {
-    const { data, error } = await (supabase as any).rpc("admin_upsert_promotional_event", {
-      p_slug: r.slug,
-      p_payload: {
-        title: r.title,
-        subtitle: r.subtitle,
-        cta_label: r.cta_label,
-        cta_path: r.cta_path,
-        badge_label: r.badge_label,
-        status: r.status,
-        position: r.position,
-        image_url: r.image_url,
-        audience: r.audience ?? "all",
-        show_as_popup: !r.show_as_popup,
-        starts_at: r.starts_at ?? "",
-        ends_at: r.ends_at ?? "",
-      },
+    const res = await upsertPromotion(r.slug, {
+      title: r.title,
+      subtitle: r.subtitle,
+      cta_label: r.cta_label,
+      cta_path: r.cta_path,
+      badge_label: r.badge_label,
+      status: r.status,
+      position: r.position,
+      image_url: r.image_url,
+      audience: r.audience ?? "all",
+      show_as_popup: !r.show_as_popup,
+      starts_at: r.starts_at ?? "",
+      ends_at: r.ends_at ?? "",
     });
-    const res = data as { ok?: boolean } | null;
-    if (error || !res?.ok) {
+    if (!res.ok) {
       toast.error("변경하지 못했어요.");
       return;
     }
