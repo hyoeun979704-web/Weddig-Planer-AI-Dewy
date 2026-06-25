@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useBranches } from "@/hooks/useBranches";
+import { useBranches } from "@/features/partners/hooks/useBranches";
 import { toast } from "sonner";
 
 interface ReviewRow {

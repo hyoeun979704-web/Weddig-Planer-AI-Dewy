@@ -5,7 +5,7 @@ import { DESIGN_MARKET_ENABLED } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useBranches } from "@/hooks/useBranches";
+import { useBranches } from "@/features/partners/hooks/useBranches";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 

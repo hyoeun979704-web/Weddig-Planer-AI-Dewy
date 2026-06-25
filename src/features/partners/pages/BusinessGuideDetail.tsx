@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import GuideView from "@/components/guides/GuideView";
-import { findBusinessGuide, adjacentGuides } from "@/data/businessGuides";
+import { findBusinessGuide, adjacentGuides } from "@/features/partners/data/businessGuides";
 
 // 기업회원 전용 주제별 상세 가이드. /business/guide/:guideId 로 진입.
 // 정의는 src/data/businessGuides.ts, 프레젠테이션은 공용 GuideView(shared) 공유.

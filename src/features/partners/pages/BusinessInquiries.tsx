@@ -3,7 +3,7 @@ import { Loader2, MessageSquare } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useBranches } from "@/hooks/useBranches";
+import { useBranches } from "@/features/partners/hooks/useBranches";
 import { toast } from "sonner";
 
 const ANSWER_MAX = 2000;

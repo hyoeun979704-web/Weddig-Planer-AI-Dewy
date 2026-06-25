@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useBranches } from "@/hooks/useBranches";
+import { useBranches } from "@/features/partners/hooks/useBranches";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
 

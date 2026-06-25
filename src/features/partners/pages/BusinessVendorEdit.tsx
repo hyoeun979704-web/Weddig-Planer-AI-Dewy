@@ -12,10 +12,10 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import ImageUploader from "@/components/admin/ImageUploader";
-import BusinessListingDetailForm from "@/components/business/BusinessListingDetailForm";
-import BusinessListingContactForm from "@/components/business/BusinessListingContactForm";
+import BusinessListingDetailForm from "@/features/partners/components/BusinessListingDetailForm";
+import BusinessListingContactForm from "@/features/partners/components/BusinessListingContactForm";
 import { draftKey, loadDraft, saveDraft, clearDraft, shallowEqual } from "@/lib/formDraft";
-import { computeListingCompleteness } from "@/lib/businessListingCompleteness";
+import { computeListingCompleteness } from "@/features/partners/lib/businessListingCompleteness";
 
 type InquiryChannel = "chat" | "url" | "phone";
 

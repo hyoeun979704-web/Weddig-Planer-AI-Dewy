@@ -9,7 +9,7 @@ import WidgetBridgeHost from "@/components/native/WidgetBridgeHost";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import AdminGuard from "@/components/admin/AdminGuard";
-import BusinessGuard from "@/components/business/BusinessGuard";
+import BusinessGuard from "@/features/partners/components/BusinessGuard";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -62,7 +62,7 @@ const MailInbox = lazy(() => import("./pages/MailInbox"));
 const InvitationMarket = lazy(() => import("./pages/invitation/InvitationMarket"));
 const VendorBoard = lazy(() => import("./pages/VendorBoard"));
 const VendorCompare = lazy(() => import("./pages/VendorCompare"));
-const BusinessLeads = lazy(() => import("./pages/business/BusinessLeads"));
+const BusinessLeads = lazy(() => import("@/features/partners/pages/BusinessLeads"));
 const HairPreview = lazy(() => import("./pages/HairPreview"));
 const HairPreviewResult = lazy(() => import("./pages/HairPreviewResult"));
 const HairPreviewGallery = lazy(() => import("./pages/HairPreviewGallery"));
@@ -187,23 +187,23 @@ const SubscriptionPaymentSuccess = lazy(() => import("./pages/SubscriptionPaymen
 const SubscriptionPaymentFail = lazy(() => import("./pages/SubscriptionPaymentFail"));
 
 // 기업회원 플로우
-const BusinessLanding = lazy(() => import("./pages/business/BusinessLanding"));
-const BusinessOnboard = lazy(() => import("./pages/business/BusinessOnboard"));
-const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
-const BusinessGuide = lazy(() => import("./pages/business/BusinessGuide"));
-const BusinessGuideDetail = lazy(() => import("./pages/business/BusinessGuideDetail"));
-const BusinessGuideIndex = lazy(() => import("./pages/business/BusinessGuideIndex"));
-const BusinessVendorEdit = lazy(() => import("./pages/business/BusinessVendorEdit"));
-const BusinessClaim = lazy(() => import("./pages/business/BusinessClaim"));
+const BusinessLanding = lazy(() => import("@/features/partners/pages/BusinessLanding"));
+const BusinessOnboard = lazy(() => import("@/features/partners/pages/BusinessOnboard"));
+const BusinessDashboard = lazy(() => import("@/features/partners/pages/BusinessDashboard"));
+const BusinessGuide = lazy(() => import("@/features/partners/pages/BusinessGuide"));
+const BusinessGuideDetail = lazy(() => import("@/features/partners/pages/BusinessGuideDetail"));
+const BusinessGuideIndex = lazy(() => import("@/features/partners/pages/BusinessGuideIndex"));
+const BusinessVendorEdit = lazy(() => import("@/features/partners/pages/BusinessVendorEdit"));
+const BusinessClaim = lazy(() => import("@/features/partners/pages/BusinessClaim"));
 const AdminPlaceClaims = lazy(() => import("./pages/admin/AdminPlaceClaims"));
-const BusinessGallery = lazy(() => import("./pages/business/BusinessGallery"));
-const BusinessCoupons = lazy(() => import("./pages/business/BusinessCoupons"));
-const BusinessEvents = lazy(() => import("./pages/business/BusinessEvents"));
-const BusinessProducts = lazy(() => import("./pages/business/BusinessProducts"));
-const BusinessInquiries = lazy(() => import("./pages/business/BusinessInquiries"));
-const BusinessDeliveries = lazy(() => import("./pages/business/BusinessDeliveries"));
-const BusinessDesigns = lazy(() => import("./pages/business/BusinessDesigns"));
-const BusinessReviews = lazy(() => import("./pages/business/BusinessReviews"));
+const BusinessGallery = lazy(() => import("@/features/partners/pages/BusinessGallery"));
+const BusinessCoupons = lazy(() => import("@/features/partners/pages/BusinessCoupons"));
+const BusinessEvents = lazy(() => import("@/features/partners/pages/BusinessEvents"));
+const BusinessProducts = lazy(() => import("@/features/partners/pages/BusinessProducts"));
+const BusinessInquiries = lazy(() => import("@/features/partners/pages/BusinessInquiries"));
+const BusinessDeliveries = lazy(() => import("@/features/partners/pages/BusinessDeliveries"));
+const BusinessDesigns = lazy(() => import("@/features/partners/pages/BusinessDesigns"));
+const BusinessReviews = lazy(() => import("@/features/partners/pages/BusinessReviews"));
 
 // React Query 전역 기본값: 기본 staleTime=0 + refetchOnWindowFocus=true 면 모바일 웹에서
 // 탭 전환마다 모든 useQuery 가 재요청(중복 라운드트립). 모바일 웹이 주 사용처라 60s 신선도 +

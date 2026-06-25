@@ -9,7 +9,7 @@ import ImageUploader from "@/components/admin/ImageUploader";
 import DesignListingConsentDialog from "@/components/consent/DesignListingConsentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useBranches } from "@/hooks/useBranches";
+import { useBranches } from "@/features/partners/hooks/useBranches";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
 
