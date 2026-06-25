@@ -3,19 +3,14 @@ import { Loader2, Check, X, MapPin } from "lucide-react";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchPlaceClaims,
+  reviewPlaceClaim,
+  type Claim,
+} from "@/features/console/data/placeClaims";
 import { toast } from "@/hooks/use-toast";
 
-interface Claim {
-  id: string;
-  place_id: string;
-  place_name: string;
-  place_city: string | null;
-  user_id: string;
-  business_number: string | null;
-  note: string | null;
-  created_at: string;
-}
+// Claim 타입은 features/console/data/placeClaims 에서 import.
 
 const AdminPlaceClaims = () => {
   const [claims, setClaims] = useState<Claim[]>([]);
@@ -24,27 +19,23 @@ const AdminPlaceClaims = () => {
 
   const load = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await (supabase as any).rpc("admin_list_place_claims");
-    if (error) {
-      toast({ title: "불러오기 실패", description: error.message, variant: "destructive" });
-    } else {
-      setClaims((data ?? []) as Claim[]);
+    try {
+      setClaims(await fetchPlaceClaims());
+    } catch (e) {
+      toast({ title: "불러오기 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
   const review = async (c: Claim, approved: boolean) => {
     setBusy(c.id);
-    const { data, error } = await (supabase as any).rpc("admin_review_place_claim", {
-      p_claim_id: c.id,
-      p_approved: approved,
-    });
+    const res = await reviewPlaceClaim(c.id, approved);
     setBusy(null);
-    const res = data as { ok?: boolean; error?: string } | null;
-    if (error || !res?.ok) {
-      toast({ title: "처리 실패", description: res?.error || error?.message, variant: "destructive" });
+    if (!res.ok) {
+      toast({ title: "처리 실패", description: res.error, variant: "destructive" });
       return;
     }
     toast({ title: approved ? "승인됨 — 소유권이 연결됐어요" : "반려됨" });
