@@ -3,19 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Ticket, Calendar, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchDownloadedCoupons } from "@/features/consumer/data/shop";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface DownloadedCoupon {
-  id: string;
-  created_at: string;
-  business_coupons: {
-    title: string;
-    discount_text: string;
-    min_order_won: number | null;
-    expires_at: string | null;
-  } | null;
-}
 
 // 사용자가 받은(다운로드한) 업체 쿠폰함.
 const Coupons = () => {
@@ -26,13 +15,7 @@ const Coupons = () => {
     queryKey: ["my-coupons", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await (supabase as any)
-        .from("coupon_downloads")
-        .select("id, created_at, business_coupons(title, discount_text, min_order_won, expires_at)")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as DownloadedCoupon[];
+      return fetchDownloadedCoupons(user.id);
     },
     enabled: !!user,
   });

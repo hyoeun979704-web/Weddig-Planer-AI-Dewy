@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { ArrowLeft, ShoppingCart, Star, Minus, Plus, Loader2, Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchStoreProduct } from "@/features/consumer/data/shop";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { FavoriteButton } from "@/components/FavoriteButton";
@@ -47,12 +47,8 @@ const ProductDetail = () => {
   useEffect(() => {
     if (!id) return;
     const fetch = async () => {
-      const { data } = await (supabase
-        .from("products" as any)
-        .select("*") as any)
-        .eq("id", id)
-        .single();
-      setProduct(data as any);
+      const data = await fetchStoreProduct(id);
+      setProduct(data as unknown as Product | null);
       setIsLoading(false);
     };
     fetch();

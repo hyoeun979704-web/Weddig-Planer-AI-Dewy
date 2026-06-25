@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Calendar, Loader2, Store, Send } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchBusinessEventDetail, vendorPublicUrl } from "@/features/consumer/data/shop";
 import { useRelatedEvents } from "@/hooks/useRelatedEvents";
 
 interface EventDetail {
@@ -19,12 +19,8 @@ interface EventDetail {
   category: string | null;
 }
 
-// 업체 이미지(vendor-images 공개 버킷) public URL. 경로형 레거시 행 방어.
-const pub = (url?: string | null): string | null => {
-  if (!url) return null;
-  if (/^(https?:|data:|blob:)/i.test(url)) return url;
-  try { return supabase.storage.from("vendor-images").getPublicUrl(url).data.publicUrl || url; } catch { return url; }
-};
+// 업체 이미지(vendor-images 공개 버킷) public URL — data 레이어 공용 헬퍼 재사용.
+const pub = vendorPublicUrl;
 
 // 업체 이벤트 상세페이지. 배너·상세 이미지가 있는 '상세페이지형' 이벤트 진입점.
 // 하단 CTA: 업체 확인하기(업체 상세) / 신청하기(업체 문의·예약 동선).
@@ -38,23 +34,18 @@ const EventDetailPage = () => {
     if (!id) return;
     let mounted = true;
     (async () => {
-      // select("*") — detail_images 등 컬럼 드리프트 방어.
-      const { data } = await (supabase.from("business_events" as any).select("*").eq("id", id).maybeSingle() as any);
+      const res = await fetchBusinessEventDetail(id);
       if (!mounted) return;
-      if (!data) { setEv(null); setLoading(false); return; }
-      let placeName: string | null = null, placeThumb: string | null = null, category: string | null = null;
-      if (data.place_id) {
-        const { data: p } = await (supabase.from("places" as any).select("name, main_image_url, category").eq("place_id", data.place_id).maybeSingle() as any);
-        placeName = p?.name ?? null;
-        placeThumb = pub(p?.main_image_url ?? null);
-        category = p?.category ?? null;
-      }
-      if (!mounted) return;
+      if (!res) { setEv(null); setLoading(false); return; }
+      const { event, place } = res;
+      const placeName: string | null = place?.name ?? null;
+      const placeThumb: string | null = pub(place?.main_image_url ?? null);
+      const category: string | null = place?.category ?? null;
       setEv({
-        id: data.id, place_id: data.place_id, title: data.title, description: data.description ?? null,
-        starts_at: data.starts_at ?? null, ends_at: data.ends_at ?? null,
-        banner_image_url: pub(data.banner_image_url ?? null),
-        detail_images: (data.detail_images ?? null) as string[] | null,
+        id: event.id, place_id: event.place_id, title: event.title, description: event.description,
+        starts_at: event.starts_at, ends_at: event.ends_at,
+        banner_image_url: pub(event.banner_image_url ?? null),
+        detail_images: event.detail_images,
         placeName, placeThumb, category,
       });
       setLoading(false);
