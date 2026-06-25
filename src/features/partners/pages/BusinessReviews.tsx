@@ -3,22 +3,9 @@ import { Loader2, Star, MessageSquareText, Store } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useBranches } from "@/features/partners/hooks/useBranches";
+import { REPLY_MAX, fetchBusinessReviews, saveReviewReply, type ReviewRow } from "@/features/partners/data/businessReviews";
 import { toast } from "sonner";
-
-interface ReviewRow {
-  review_id: string;
-  title: string | null;
-  content: string | null;
-  author: string | null;
-  rating: number | null;
-  review_date: string | null;
-  created_at: string | null;
-  source_name: string | null;
-  owner_response: string | null;
-  owner_response_at: string | null;
-}
 
 type RatingFilter = "all" | "5" | "4" | "3" | "2" | "1" | "unanswered";
 type ReviewSort = "recent" | "high" | "low";
@@ -41,15 +28,7 @@ const BusinessReviews = () => {
     setLoading(true);
     setPlaceId(selectedId);
     try {
-      const { data, error } = await supabase
-        .from("place_reviews")
-        .select("review_id, title, content, author, rating, review_date, created_at, source_name, owner_response, owner_response_at")
-        .eq("place_id", selectedId)
-        .order("review_date", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false, nullsFirst: false })
-        .limit(200);
-      if (error) throw error;
-      setRows((data ?? []) as ReviewRow[]);
+      setRows(await fetchBusinessReviews(selectedId));
     } catch {
       toast.error("후기를 불러오지 못했어요");
     } finally {
@@ -63,7 +42,6 @@ const BusinessReviews = () => {
   }, [branchesLoading, load]);
 
   // 답글 작성 상태
-  const REPLY_MAX = 1000;
   const [replyId, setReplyId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
@@ -78,11 +56,7 @@ const BusinessReviews = () => {
     if (!text) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("place_reviews")
-        .update({ owner_response: text.slice(0, REPLY_MAX), owner_response_at: new Date().toISOString() })
-        .eq("review_id", reviewId);
-      if (error) throw error;
+      await saveReviewReply(reviewId, text);
       toast.success("답글을 등록했어요");
       setReplyId(null);
       setDraft("");
