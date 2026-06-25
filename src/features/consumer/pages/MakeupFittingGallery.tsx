@@ -5,9 +5,12 @@ import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/empty-state";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { makeupSceneByCode } from "@/data/makeupScenes";
+import {
+  fetchMakeupGallery,
+  makeupResultUrl,
+} from "@/features/consumer/data/makeupFitting";
 
 interface Row {
   id: string;
@@ -33,26 +36,20 @@ const MakeupFittingGallery = ({ embedded = false }: { embedded?: boolean } = {})
       return;
     }
     (async () => {
-      const { data, error } = await (supabase as any)
-        .from("makeup_fittings")
-        .select("id, result_image_path, prompt_params, created_at")
-        .eq("user_id", user.id)
-        .eq("status", "done")
-        .order("created_at", { ascending: false });
-
-      if (error || !data) {
+      let data: Row[];
+      try {
+        data = (await fetchMakeupGallery(user.id)) as unknown as Row[];
+      } catch {
         setItems([]);
         setLoading(false);
         return;
       }
 
       const withUrls: ItemWithUrl[] = await Promise.all(
-        (data as Row[]).map(async (r) => {
+        data.map(async (r) => {
           if (!r.result_image_path) return { ...r, url: null };
-          const { data: signed } = await supabase.storage
-            .from("makeup-results")
-            .createSignedUrl(r.result_image_path, 60 * 60 * 24);
-          return { ...r, url: signed?.signedUrl ?? null };
+          const url = await makeupResultUrl(r.result_image_path);
+          return { ...r, url };
         }),
       );
       setItems(withUrls);

@@ -18,9 +18,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchHeartBalance } from "@/features/consumer/data/hearts";
+import {
+  uploadMakeupSource,
+  fetchActiveMakeups,
+  fetchMakeupMeta,
+  generateMakeupFitting,
+} from "@/features/consumer/data/makeupFitting";
 import {
   MAKEUP_SCENES,
   MAKEUP_SCENES_BY_TYPE,
@@ -96,12 +102,7 @@ const MakeupFitting = () => {
 
   const fetchHearts = useCallback(async () => {
     if (!user) return;
-    const { data } = await (supabase as any)
-      .from("user_hearts")
-      .select("balance")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    setHearts(data?.balance ?? 0);
+    setHearts(await fetchHeartBalance(user.id));
   }, [user]);
 
   useEffect(() => {
@@ -112,19 +113,14 @@ const MakeupFitting = () => {
     if (step !== "makeup" || makeups.length > 0) return;
     setLoadingMakeups(true);
     (async () => {
-      const { data, error } = await (supabase as any)
-        .from("makeup_samples")
-        .select("id, name, image_url, base_finish, lip_color, eye_style")
-        .eq("is_active", true)
-        .order("display_order", { ascending: false })
-        .order("created_at", { ascending: false });
-      if (error) {
+      try {
+        const data = await fetchActiveMakeups();
+        setMakeups(data as unknown as MakeupSample[]);
+      } catch {
         toast({
           title: "메이크업 목록을 불러올 수 없어요",
           variant: "destructive",
         });
-      } else {
-        setMakeups(data ?? []);
       }
       setLoadingMakeups(false);
     })();
@@ -174,28 +170,18 @@ const MakeupFitting = () => {
       return;
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const filename = `${crypto.randomUUID()}.${ext}`;
-    const path = `${user.id}/${filename}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("makeup-uploads")
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (uploadError) {
+    try {
+      const { path, signedUrl } = await uploadMakeupSource(user.id, file);
+      setPhotoPath(path);
+      setPhotoUrl(signedUrl);
+      setStep("makeup");
+    } catch (uploadError) {
       toast({
         title: "업로드 실패",
-        description: uploadError.message,
+        description: (uploadError as Error).message,
         variant: "destructive",
       });
-      return;
     }
-
-    const { data: signed } = await supabase.storage
-      .from("makeup-uploads")
-      .createSignedUrl(path, 60 * 60 * 2);
-    setPhotoPath(path);
-    setPhotoUrl(signed?.signedUrl ?? null);
-    setStep("makeup");
   };
 
   const handlePickMakeup = (m: MakeupSample) => {
@@ -230,15 +216,9 @@ const MakeupFitting = () => {
           prompt,
         };
       } else {
-        const { data: meta } = await (supabase as any)
-          .from("makeup_samples")
-          .select(
-            "name, base_finish, lip_color, lip_finish, eye_style, eye_color, blush_color, blush_placement, brow_shape, contour_intensity, details, mood",
-          )
-          .eq("id", selectedMakeup!.id)
-          .maybeSingle();
+        const meta = await fetchMakeupMeta(selectedMakeup!.id);
 
-        const description = meta ? describeMakeup(meta) : "";
+        const description = meta ? describeMakeup(meta as MakeupMetadata) : "";
         prompt = buildMakeupPrompt(selectedSceneCode, description);
         requestBody = {
           source_image_path: photoPath,
@@ -248,16 +228,7 @@ const MakeupFitting = () => {
         };
       }
 
-      const { data, error } = await supabase.functions.invoke("dewy-makeup", {
-        body: requestBody,
-      });
-      if (error) throw error;
-      if ((data as any)?.error) {
-        throw new Error((data as any).error);
-      }
-
-      const fittingId = (data as any)?.fitting_id;
-      if (!fittingId) throw new Error("생성 요청 실패");
+      const fittingId = await generateMakeupFitting(requestBody);
       // 백그라운드 생성 시작 — 완료 알림을 위해 진행중 잡 등록 후 결과 페이지로.
       addPendingJob({ id: fittingId, type: "makeup" });
       await fetchHearts();

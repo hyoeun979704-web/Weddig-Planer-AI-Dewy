@@ -17,9 +17,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchHeartBalance } from "@/features/consumer/data/hearts";
+import {
+  uploadMakeupSource,
+  generateMakeupRecommend,
+} from "@/features/consumer/data/makeupFitting";
 import {
   MAKEUP_SCENES_BY_TYPE,
   MAKEUP_SCENE_TYPE_LABEL,
@@ -61,12 +65,7 @@ const MakeupRecommend = () => {
 
   const fetchHearts = useCallback(async () => {
     if (!user) return;
-    const { data } = await (supabase as any)
-      .from("user_hearts")
-      .select("balance")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    setHearts(data?.balance ?? 0);
+    setHearts(await fetchHeartBalance(user.id));
   }, [user]);
 
   useEffect(() => {
@@ -110,28 +109,18 @@ const MakeupRecommend = () => {
       return;
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const filename = `${crypto.randomUUID()}.${ext}`;
-    const path = `${user.id}/${filename}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("makeup-uploads")
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (uploadError) {
+    try {
+      const { path, signedUrl } = await uploadMakeupSource(user.id, file);
+      setPhotoPath(path);
+      setPhotoUrl(signedUrl);
+      setStep("scene");
+    } catch (uploadError) {
       toast({
         title: "업로드 실패",
-        description: uploadError.message,
+        description: (uploadError as Error).message,
         variant: "destructive",
       });
-      return;
     }
-
-    const { data: signed } = await supabase.storage
-      .from("makeup-uploads")
-      .createSignedUrl(path, 60 * 60 * 2);
-    setPhotoPath(path);
-    setPhotoUrl(signed?.signedUrl ?? null);
-    setStep("scene");
   };
 
   const handleGenerate = async () => {
@@ -142,22 +131,12 @@ const MakeupRecommend = () => {
         buildRecommendMakeupPrompt(sceneCode) +
         buildMakeupPromptAddendum(personalization);
 
-      const { data, error } = await supabase.functions.invoke(
-        "dewy-makeup-recommend",
-        {
-          body: {
-            source_image_path: photoPath,
-            scene_code: sceneCode,
-            prompt,
-          },
-        },
-      );
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-
-      const fittingId = (data as any)?.fitting_id;
-      // fittingId 없으면 /result/undefined 데드페이지로 가지 않게 가드(하트는 서버에서 환불 처리).
-      if (!fittingId) throw new Error("generation_failed");
+      // fittingId 없으면 /result/undefined 데드페이지로 가지 않게 데이터 레이어가 generation_failed throw.
+      const fittingId = await generateMakeupRecommend({
+        source_image_path: photoPath,
+        scene_code: sceneCode,
+        prompt,
+      });
       // 생성은 비동기(결과 페이지에서 폴링) — "완료"가 아니라 "요청됨"으로 안내.
       toast({ title: "생성 요청을 보냈어요", description: "결과가 준비되면 화면에 표시돼요." });
       await fetchHearts();
