@@ -5,7 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/empty-state";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchConsultingReports } from "@/features/consumer/data/weddingConsulting";
 import { useAuth } from "@/contexts/AuthContext";
 
 // 웨딩컨설팅 결과 목록 (/ai-studio/consulting/gallery)
@@ -43,12 +43,11 @@ const ConsultingGallery = ({ embedded = false }: { embedded?: boolean } = {}) =>
       return;
     }
     (async () => {
-      const { data } = await (supabase as any)
-        .from("wedding_consulting_reports")
-        .select("id, status, sections, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      setItems((data ?? []) as Row[]);
+      try {
+        setItems((await fetchConsultingReports(user.id)) as unknown as Row[]);
+      } catch {
+        setItems([]);
+      }
       setLoading(false);
     })();
   }, [user]);

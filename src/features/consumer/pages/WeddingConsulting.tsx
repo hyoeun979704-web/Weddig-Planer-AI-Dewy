@@ -4,7 +4,7 @@ import { Loader2, Upload, Sparkles, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { uploadConsultingSource, requestConsulting, fetchConsultingDiscounted, fetchConsultingReports } from "@/features/consumer/data/weddingConsulting";
 import { toast } from "@/hooks/use-toast";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { addPendingJob } from "@/lib/pendingJobs";
@@ -56,12 +56,7 @@ const WeddingConsulting = () => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await (supabase as any)
-        .from("wedding_consulting_usage")
-        .select("used_count")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setDiscounted((data?.used_count ?? 0) === 0);
+      setDiscounted(await fetchConsultingDiscounted(user.id));
     })();
   }, [user]);
 
@@ -69,13 +64,11 @@ const WeddingConsulting = () => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await (supabase as any)
-        .from("wedding_consulting_reports")
-        .select("id, status, sections, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      setReports((data ?? []) as ReportRow[]);
+      try {
+        setReports((await fetchConsultingReports(user.id, 20)) as unknown as ReportRow[]);
+      } catch {
+        setReports([]);
+      }
     })();
   }, [user]);
 
@@ -119,28 +112,14 @@ const WeddingConsulting = () => {
       return;
     setProcessing(true);
     try {
-      const ext = pick.file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${user.id}/consulting/${crypto.randomUUID()}.${ext}`;
-      const up = await supabase.storage
-        .from("invitation-uploads")
-        .upload(path, pick.file, { contentType: pick.file.type, upsert: false });
-      if (up.error) throw new Error(`업로드 실패: ${up.error.message}`);
-
-      // 잡 생성만 하고 즉시 report_id 를 받는다(생성은 서버 백그라운드).
-      const { data, error } = await (supabase as any).functions.invoke(
-        "wedding-consulting",
-        { body: { source_path: path, sections: selected } },
-      );
-      if (error) {
-        let code: string | undefined;
-        try {
-          const ctx = (error as { context?: { json?: () => Promise<any> } })
-            .context;
-          if (ctx?.json) code = (await ctx.json())?.error;
-        } catch {
-          /* ignore */
-        }
-        if (code === "insufficient_hearts") {
+      // 업로드 후 잡 생성만 하고 즉시 report_id 를 받는다(생성은 서버 백그라운드).
+      const path = await uploadConsultingSource(user.id, pick.file);
+      let reportId: string;
+      try {
+        reportId = await requestConsulting(path, selected);
+      } catch (e) {
+        // 하트 부족은 전용 안내(충전 CTA)로 분기 — 일반 실패 토스트로 흘리지 않음.
+        if (e instanceof Error && e.message === "insufficient_hearts") {
           toast({
             title: "하트가 부족해요",
             description: `이 컨설팅에 ${finalCost}하트가 필요해요.`,
@@ -149,12 +128,8 @@ const WeddingConsulting = () => {
           });
           return;
         }
-        throw new Error(code ?? error.message ?? "요청 실패");
+        throw e;
       }
-      if (data?.error) throw new Error(data.error);
-
-      const reportId = data?.report_id as string | undefined;
-      if (!reportId) throw new Error("요청 실패");
 
       // 완료 알림을 위해 진행중 잡 등록 → 결과 페이지로 이동(거기서 폴링).
       addPendingJob({ id: reportId, type: "consulting" });

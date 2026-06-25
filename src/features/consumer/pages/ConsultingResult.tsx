@@ -8,7 +8,7 @@ import ZoomableImage from "@/components/ai/ZoomableImage";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchConsultingReport, consultingResultUrl } from "@/features/consumer/data/weddingConsulting";
 import { toast } from "@/hooks/use-toast";
 import { removePendingJob } from "@/lib/pendingJobs";
 import ProcessingGuide from "@/components/ProcessingGuide";
@@ -57,26 +57,20 @@ const ConsultingResult = () => {
 
   const load = useCallback(async () => {
     if (!id) return;
-    const { data, error } = await (supabase as any)
-      .from("wedding_consulting_reports")
-      .select("id, status, results, error, sections, charged, created_at")
-      .eq("id", id)
-      .single();
-    if (error || !data) {
+    const data = await fetchConsultingReport(id);
+    if (!data) {
       setNotFound(true);
       setLoading(false);
       return;
     }
-    const row = data as ReportRow;
+    const row = data as unknown as ReportRow;
     setReport(row);
     if (row.status === "completed" && Array.isArray(row.results)) {
       const signed: Record<string, string> = {};
       await Promise.all(
         row.results.map(async (b) => {
-          const { data: s } = await supabase.storage
-            .from("invitation-uploads")
-            .createSignedUrl(b.path, 60 * 60 * 24);
-          if (s?.signedUrl) signed[b.section] = s.signedUrl;
+          const url = await consultingResultUrl(b.path);
+          if (url) signed[b.section] = url;
         }),
       );
       setUrls(signed);
