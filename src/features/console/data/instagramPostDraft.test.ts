@@ -5,13 +5,16 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: (...a: unknown[]) => h.fromImpl(...a) },
 }));
 
-import { fetchDraft, updateDraft, deleteDraft, instagramPostDraftKeys } from "./instagramPostDraft";
+import { fetchDraft, fetchDraftList, createDraft, updateDraft, deleteDraft, instagramPostDraftKeys } from "./instagramPostDraft";
 
 const builder = (result: unknown) => {
   const b: Record<string, unknown> = {};
   Object.assign(b, {
     select: () => b,
     eq: () => b,
+    order: () => b,
+    limit: () => b,
+    insert: () => b,
     update: () => b,
     delete: () => b,
     maybeSingle: () => Promise.resolve(result),
@@ -40,6 +43,28 @@ describe("fetchDraft", () => {
   it("에러 시 throw", async () => {
     h.fromImpl.mockReturnValue(builder({ data: null, error: new Error("fail") }));
     await expect(fetchDraft("d1")).rejects.toThrow("fail");
+  });
+});
+
+describe("fetchDraftList", () => {
+  it("목록 반환", async () => {
+    h.fromImpl.mockReturnValue(builder({ data: [{ id: "d1" }], error: null }));
+    expect(await fetchDraftList("all")).toEqual([{ id: "d1" }]);
+  });
+  it("에러 시 throw", async () => {
+    h.fromImpl.mockReturnValue(builder({ data: null, error: new Error("list fail") }));
+    await expect(fetchDraftList("draft")).rejects.toThrow("list fail");
+  });
+});
+
+describe("createDraft", () => {
+  it("정상 시 resolve", async () => {
+    h.fromImpl.mockReturnValue(builder({ error: null }));
+    await expect(createDraft({ topic: "x" })).resolves.toBeUndefined();
+  });
+  it("에러 시 throw", async () => {
+    h.fromImpl.mockReturnValue(builder({ error: new Error("create fail") }));
+    await expect(createDraft({})).rejects.toThrow("create fail");
   });
 });
 
