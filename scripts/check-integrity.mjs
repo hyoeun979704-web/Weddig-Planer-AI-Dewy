@@ -57,6 +57,14 @@ const RULES = [
     exclude: ["features/partners/", "App.tsx"],
   },
   {
+    id: "console-domain-boundary",
+    pattern: /@\/features\/console/,
+    message:
+      "도메인 경계 위반: console 외부에서 @/features/console 참조 금지(앱 분리 Phase 1). 공유는 shared(@/lib·@/components·@/hooks·@/types) 경유, 라우트 마운트는 App.tsx 만. 역의존이면 shared 로 올리세요.",
+    level: "error",
+    exclude: ["features/console/", "App.tsx"],
+  },
+  {
     id: "window-confirm",
     pattern: /window\.confirm\s*\(/,
     message:
