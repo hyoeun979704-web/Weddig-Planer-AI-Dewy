@@ -5,9 +5,12 @@ import BottomNav from "@/components/BottomNav";
 import PhotoUploadConsent from "@/components/PhotoUploadConsent";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchHeartBalance } from "@/features/consumer/data/hearts";
+import {
+  uploadSdmSource, fetchActiveDresses, fetchDressMeta, generateSdmPreview,
+} from "@/features/consumer/data/sdmPreview";
 import {
   SCENES_BY_TYPE, SCENE_TYPE_LABEL, SCENE_TYPE_DESC, SceneType, SceneCode,
 } from "@/data/fittingScenes";
@@ -65,9 +68,7 @@ const SdmPreview = () => {
 
   const fetchHearts = useCallback(async () => {
     if (!user) return;
-    const { data } = await (supabase as any)
-      .from("user_hearts").select("balance").eq("user_id", user.id).maybeSingle();
-    setHearts(data?.balance ?? 0);
+    setHearts(await fetchHeartBalance(user.id));
   }, [user]);
   useEffect(() => { fetchHearts(); }, [fetchHearts]);
 
@@ -75,14 +76,11 @@ const SdmPreview = () => {
     if (step !== "dress" || dresses.length > 0) return;
     setLoadingDresses(true);
     (async () => {
-      const { data, error } = await (supabase as any)
-        .from("dress_samples")
-        .select("id, name, image_url, silhouette, neckline, length")
-        .eq("is_active", true)
-        .order("display_order", { ascending: false })
-        .order("created_at", { ascending: false });
-      if (error) toast({ title: "드레스 목록을 불러올 수 없어요", variant: "destructive" });
-      else setDresses(data ?? []);
+      try {
+        setDresses(await fetchActiveDresses() as DressSample[]);
+      } catch {
+        toast({ title: "드레스 목록을 불러올 수 없어요", variant: "destructive" });
+      }
       setLoadingDresses(false);
     })();
   }, [step, dresses.length]);
@@ -115,15 +113,15 @@ const SdmPreview = () => {
     if (file.size > 20 * 1024 * 1024) { toast({ title: "파일이 너무 커요 (최대 20MB)", variant: "destructive" }); return; }
     if (!file.type.startsWith("image/")) { toast({ title: "이미지 파일만 업로드 가능해요", variant: "destructive" }); return; }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from("sdm-uploads").upload(path, file, { contentType: file.type, upsert: false });
-    if (uploadError) { toast({ title: "업로드 실패", description: uploadError.message, variant: "destructive" }); return; }
-    const { data: signed } = await supabase.storage.from("sdm-uploads").createSignedUrl(path, 60 * 60 * 2);
-    setPhotoPath(path);
-    setPhotoUrl(signed?.signedUrl ?? null);
-    setStep("scene");
+    try {
+      const { path, signedUrl } = await uploadSdmSource(user.id, file);
+      setPhotoPath(path);
+      setPhotoUrl(signedUrl);
+      setStep("scene");
+    } catch (uploadError) {
+      const message = uploadError instanceof Error ? uploadError.message : "알 수 없는 오류";
+      toast({ title: "업로드 실패", description: message, variant: "destructive" });
+    }
   };
 
   const handleGenerate = async () => {
@@ -138,12 +136,9 @@ const SdmPreview = () => {
         dressDescription = describeDress(customDress);
         dressLength = customDress.length ?? null;
       } else {
-        const { data: meta } = await (supabase as any)
-          .from("dress_samples")
-          .select("name, silhouette, neckline, sleeve, length, fabric, details, back_design, color, waist, mood")
-          .eq("id", selectedDress!.id).maybeSingle();
-        dressDescription = meta ? describeDress(meta) : "";
-        dressLength = meta?.length ?? selectedDress!.length ?? null;
+        const meta = await fetchDressMeta(selectedDress!.id);
+        dressDescription = meta ? describeDress(meta as DressMetadata) : "";
+        dressLength = (meta?.length as string | undefined) ?? selectedDress!.length ?? null;
         dressSampleId = selectedDress!.id;
       }
 
@@ -158,22 +153,16 @@ const SdmPreview = () => {
         referenceMode,
       });
 
-      const { data, error } = await supabase.functions.invoke("dewy-sdm", {
-        body: {
-          source_image_path: photoPath,
-          scene_code: sceneCode,
-          hair_style: hairStyle,
-          makeup_summary: summarizeMakeupKo(makeup),
-          dress_sample_id: dressSampleId,
-          shot_type: shotType,
-          reference_mode: referenceMode,
-          prompt,
-        },
+      const previewId = await generateSdmPreview({
+        source_image_path: photoPath,
+        scene_code: sceneCode,
+        hair_style: hairStyle,
+        makeup_summary: summarizeMakeupKo(makeup),
+        dress_sample_id: dressSampleId,
+        shot_type: shotType,
+        reference_mode: referenceMode,
+        prompt,
       });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      const previewId = (data as any)?.preview_id;
-      if (!previewId) throw new Error("생성 요청 실패");
       addPendingJob({ id: previewId, type: "sdm" });
       await fetchHearts();
       navigate(`/ai-studio/sdm-preview/result/${previewId}`);

@@ -7,9 +7,9 @@ import { Download, Share2, Loader2, RefreshCw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { removePendingJob } from "@/lib/pendingJobs";
+import { fetchSdmPreview, sdmResultUrl } from "@/features/consumer/data/sdmPreview";
 
 /** 스드메 미리보기 결과 (/ai-studio/sdm-preview/result/:id) */
 interface PreviewRow {
@@ -32,18 +32,11 @@ const SdmPreviewResult = () => {
 
   const load = useCallback(async () => {
     if (!id) return;
-    const { data, error } = await (supabase as any)
-      .from("sdm_previews")
-      .select("id, status, result_image_path, error_message")
-      .eq("id", id)
-      .single();
-    if (error || !data) { setNotFound(true); setLoading(false); return; }
+    const data = await fetchSdmPreview(id);
+    if (!data) { setNotFound(true); setLoading(false); return; }
     setRow(data);
     if (data.result_image_path) {
-      const { data: signed } = await supabase.storage
-        .from("sdm-results")
-        .createSignedUrl(data.result_image_path, 60 * 60 * 24);
-      setResultUrl(signed?.signedUrl ?? null);
+      setResultUrl(await sdmResultUrl(data.result_image_path));
     }
     setLoading(false);
   }, [id]);
