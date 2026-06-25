@@ -2,22 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, Upload, PackageCheck, X } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useBranches } from "@/features/partners/hooks/useBranches";
+import { fetchDeliveryInquiries, type DeliveryInquiryRow } from "@/features/partners/data/businessDeliveries";
 import { toast } from "sonner";
 import {
   useSentDeliveries,
   uploadDeliveryFile,
   createDelivery,
 } from "@/hooks/useVendorDeliveries";
-
-interface InquiryRow {
-  id: string;
-  title: string;
-  user_id: string;
-  status: string;
-  created_at: string;
-}
 
 const MAX_FILES = 10;
 
@@ -29,7 +21,7 @@ const BusinessDeliveries = () => {
   const { selectedId, loading: branchesLoading } = useBranches();
   const [loading, setLoading] = useState(true);
   const [placeId, setPlaceId] = useState<string | null>(null);
-  const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
+  const [inquiries, setInquiries] = useState<DeliveryInquiryRow[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
@@ -43,13 +35,7 @@ const BusinessDeliveries = () => {
     setLoading(true);
     setPlaceId(selectedId);
     try {
-      const { data, error } = await supabase
-        .from("place_inquiries")
-        .select("id, title, user_id, status, created_at")
-        .eq("place_id", selectedId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      setInquiries((data ?? []) as InquiryRow[]);
+      setInquiries(await fetchDeliveryInquiries(selectedId));
     } catch {
       toast.error("문의를 불러오지 못했어요");
     } finally {
@@ -83,7 +69,7 @@ const BusinessDeliveries = () => {
     setUploading(false);
   };
 
-  const onSend = async (inq: InquiryRow) => {
+  const onSend = async (inq: DeliveryInquiryRow) => {
     if (paths.length === 0) { toast.error("보낼 파일을 먼저 올려주세요"); return; }
     setSending(true);
     const ok = await createDelivery({
