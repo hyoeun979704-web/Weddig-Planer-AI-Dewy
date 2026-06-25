@@ -9,21 +9,10 @@ import {
 } from "@/components/ui/select";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchAgentOutputs, reviewAgentOutput, type AgentOutput } from "@/features/console/data/agentOutputs";
 import { toast } from "@/hooks/use-toast";
 
-interface AgentOutput {
-  id: string;
-  kind: "draft" | "asset";
-  source: string | null;
-  title: string;
-  body: string | null;
-  media_url: string | null;
-  deslop_score: number | null;
-  issues: string | null;
-  status: "pending" | "approved" | "rejected";
-  created_at: string;
-}
+// AgentOutput 타입은 features/console/data/agentOutputs 에서 import.
 
 const STATUS_LABEL: Record<string, { ko: string; cls: string }> = {
   pending: { ko: "대기", cls: "bg-amber-100 text-amber-700" },
@@ -39,19 +28,13 @@ const AdminAgentOutputs = () => {
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
-    let query = (supabase as any)
-      .from("agent_outputs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (statusFilter !== "all") query = query.eq("status", statusFilter);
-    const { data, error } = await query;
-    if (error) {
-      toast({ title: "불러오기 실패", description: error.message, variant: "destructive" });
-    } else {
-      setItems(data ?? []);
+    try {
+      setItems(await fetchAgentOutputs(statusFilter));
+    } catch (e) {
+      toast({ title: "불러오기 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [statusFilter]);
 
   useEffect(() => {
@@ -59,18 +42,15 @@ const AdminAgentOutputs = () => {
   }, [fetchItems]);
 
   const review = async (item: AgentOutput, status: "approved" | "rejected") => {
-    const { data: auth } = await supabase.auth.getUser();
-    const { error } = await (supabase as any)
-      .from("agent_outputs")
-      .update({ status, reviewed_at: new Date().toISOString(), reviewed_by: auth.user?.id ?? null })
-      .eq("id", item.id);
-    if (error) {
-      toast({ title: "처리 실패", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: status === "approved" ? "승인됨" : "반려됨" });
-      if (selected?.id === item.id) setSelected({ ...item, status });
-      fetchItems();
+    try {
+      await reviewAgentOutput(item.id, status);
+    } catch (e) {
+      toast({ title: "처리 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+      return;
     }
+    toast({ title: status === "approved" ? "승인됨" : "반려됨" });
+    if (selected?.id === item.id) setSelected({ ...item, status });
+    fetchItems();
   };
 
   const pendingCount = items.filter((i) => i.status === "pending").length;
