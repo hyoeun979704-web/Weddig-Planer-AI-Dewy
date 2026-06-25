@@ -5,22 +5,11 @@ import { toast } from "sonner";
 import AdminLayout from "@/features/console/components/AdminLayout";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchInquiries, answerInquiry, type AdminInquiry } from "@/features/console/data/inquiries";
 import { inquiryCategoryLabel } from "@/lib/inquiryCategories";
 import { relativeTime } from "@/lib/relativeTime";
 
-interface AdminInquiry {
-  id: string;
-  user_id: string;
-  category: string;
-  title: string;
-  content: string;
-  status: string;
-  answer: string | null;
-  feedback: "up" | "down" | null;
-  created_at: string;
-  answered_at: string | null;
-}
+// AdminInquiry 타입은 features/console/data/inquiries 에서 import.
 
 const STATUS_FILTERS = [
   { value: "all", label: "전체" },
@@ -40,26 +29,11 @@ const AdminInquiries = () => {
 
   const { data: inquiries = [], isLoading } = useQuery({
     queryKey: ["admin-inquiries"],
-    queryFn: async (): Promise<AdminInquiry[]> => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
-        .from("inquiries")
-        .select("id, user_id, category, title, content, status, answer, feedback, created_at, answered_at")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: fetchInquiries,
   });
 
   const answerMutation = useMutation({
-    mutationFn: async ({ id, answer }: { id: string; answer: string }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
-        .from("inquiries")
-        .update({ answer, status: "answered", answered_at: new Date().toISOString() })
-        .eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: ({ id, answer }: { id: string; answer: string }) => answerInquiry(id, answer),
     onSuccess: (_d, { id }) => {
       toast.success("답변을 등록했어요");
       setDrafts(prev => ({ ...prev, [id]: "" }));
