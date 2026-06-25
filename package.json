@@ -36,7 +36,7 @@
     "cap:sync": "cap sync",
     "cap:build": "vite build --mode capacitor && cap sync",
     "assets:icons": "node scripts/generate-app-icons.mjs",
-    "assets:generate": "node scripts/generate-app-icons.mjs && capacitor-assets generate --iconBackgroundColor #FFFFFF --iconBackgroundColorDark #FFFFFF --splashBackgroundColor #FFFFFF --splashBackgroundColorDark #FFFFFF",
+    "assets:generate": "node scripts/generate-app-icons.mjs && npx --yes @capacitor/assets@^3 generate --iconBackgroundColor #FFFFFF --iconBackgroundColorDark #FFFFFF --splashBackgroundColor #FFFFFF --splashBackgroundColorDark #FFFFFF",
     "android:dev": "npm run cap:build && cap run android",
     "android:open": "cap open android",
     "ios:open": "cap open ios"
@@ -120,7 +120,6 @@
     "zustand": "^5.0.10"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.2.1",
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.60.0",

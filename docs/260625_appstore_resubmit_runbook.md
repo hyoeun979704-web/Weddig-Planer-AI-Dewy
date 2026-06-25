@@ -82,19 +82,21 @@ placeholder(빈/투명) 아이콘이 그대로 제출돼 "비어 보임".
 - `assets/icon-only.png`(1024×1024, **불투명** — App Store 마케팅 아이콘 알파 금지), `icon-foreground.png`,
   `icon-background.png` 생성. 소스 = `public/icon-512.png`(Dewy 하트 로고)를 흰 배경에 평탄화.
 - `scripts/generate-app-icons.mjs`(sharp) — 재현 가능한 소스 생성기.
-- `package.json`: `@capacitor/assets` devDep + `npm run assets:generate`(소스 생성 → iOS/Android 아이콘셋 매핑).
+- `package.json`: `npm run assets:generate`(소스 생성 → `npx @capacitor/assets`로 iOS/Android 아이콘셋 매핑).
+  - ⚠️ `@capacitor/assets`는 **devDependency로 넣지 않는다** — 이 패키지가 끌어오는 구버전 sharp가
+    libvips 다운로드를 요구해 일부 CI/프록시 환경에서 `npm ci` lockfile 가드를 깨뜨린다. 대신
+    스크립트가 `npx --yes @capacitor/assets@^3`로 **실행 시점에만** 가져온다(lockfile 무관).
 
 ### Mac(필수)
 ```bash
-npm install                  # @capacitor/assets 포함 설치(Mac은 sharp prebuild 정상)
+npm install
 npm run cap:build
 npx cap add ios
-npm run assets:generate      # assets/ → ios/App/.../AppIcon.appiconset 채움 + Android 재생성
+npm run assets:generate      # assets/ 생성 → npx @capacitor/assets 로 ios/App/.../AppIcon.appiconset 채움 + Android 재생성
 npx cap sync ios
 # 생성된 ios/ 커밋(Pods/·build/·output/ 제외 — .gitignore 반영됨)
 ```
-> 이 Linux 세션에선 `@capacitor/assets`가 끌어오는 구버전 sharp가 프록시에서 libvips 다운로드 실패로
-> 설치 불가했다. 아이콘 **소스(assets/\*.png)는 이미 커밋**돼 있어 Mac에서 매핑만 하면 된다.
+> 아이콘 **소스(assets/\*.png)는 이미 커밋**돼 있어 Mac에서 매핑만 하면 된다.
 
 ---
 
