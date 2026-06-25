@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchAssetOptions } from "@/features/console/data/invitationAssets";
+import { saveTemplate } from "@/features/console/data/invitationTemplates";
 import { toast } from "@/hooks/use-toast";
 import InvitationCanvas from "@/components/invitation/InvitationCanvas";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
@@ -247,13 +248,11 @@ const AdminTemplateEditor = ({
   // 에셋 라이브러리 로드 (편집기에서 카드에 끌어다 놓기용)
   useEffect(() => {
     (async () => {
-      const { data } = await (supabase as any)
-        .from("invitation_assets")
-        .select("id,name,image_url,category,is_recolorable,natural_width,natural_height")
-        .eq("is_active", true)
-        .order("category")
-        .order("display_order");
-      if (data) setAssets(data as AssetOpt[]);
+      try {
+        setAssets(await fetchAssetOptions());
+      } catch {
+        /* 에셋 로드 실패는 무시(드래그 라이브러리 비게 둠) */
+      }
     })();
   }, []);
 
@@ -460,23 +459,18 @@ const AdminTemplateEditor = ({
     }
     setSaving(true);
     try {
-      const payload = { name: name.trim(), layout };
-      const res = template.id
-        ? await (supabase as any)
-            .from("invitation_templates")
-            .update({ ...payload, updated_at: new Date().toISOString() })
-            .eq("id", template.id)
-        : await (supabase as any)
-            .from("invitation_templates")
-            // 신규: NOT NULL 컬럼(thumbnail_url·tone) 기본값 채움 (없으면 insert 실패)
-            .insert({
-              ...payload,
-              format: template.format,
-              tone: template.tone ?? "MODERN",
-              thumbnail_url: template.thumbnail_url ?? "",
-              is_active: false,
-            });
-      if (res.error) throw res.error;
+      const base = { name: name.trim(), layout };
+      // 수정 시 updated_at 만 갱신, 신규 시 NOT NULL 컬럼(thumbnail_url·tone) 기본값 채움.
+      const payload = template.id
+        ? { ...base, updated_at: new Date().toISOString() }
+        : {
+            ...base,
+            format: template.format,
+            tone: template.tone ?? "MODERN",
+            thumbnail_url: template.thumbnail_url ?? "",
+            is_active: false,
+          };
+      await saveTemplate(template.id ?? null, payload);
       setDirty(false);
       toast({ title: "템플릿 저장됨" });
       onSaved();

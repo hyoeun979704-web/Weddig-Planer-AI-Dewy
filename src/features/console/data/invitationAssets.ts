@@ -20,10 +20,34 @@ export interface Asset {
   created_at: string;
 }
 
+// 템플릿 편집기에서 카드에 끌어다 놓을 활성 에셋 옵션(목록 화면 Asset 의 일부 컬럼만).
+export interface AssetOption {
+  id: string;
+  name: string;
+  image_url: string;
+  category: string;
+  is_recolorable: boolean;
+  natural_width: number | null;
+  natural_height: number | null;
+}
+
 export const invitationAssetKeys = {
   all: ["admin", "invitationAssets"] as const,
   list: () => [...invitationAssetKeys.all, "list"] as const,
+  options: () => [...invitationAssetKeys.all, "options"] as const,
 };
+
+/** 활성 에셋 옵션(편집기 드래그용) — 카테고리·display_order 정렬. */
+export async function fetchAssetOptions(): Promise<AssetOption[]> {
+  const { data, error } = await supabase
+    .from("invitation_assets")
+    .select("id,name,image_url,category,is_recolorable,natural_width,natural_height")
+    .eq("is_active", true)
+    .order("category")
+    .order("display_order");
+  if (error) throw error;
+  return (data ?? []) as unknown as AssetOption[];
+}
 
 export async function fetchAssets(): Promise<Asset[]> {
   const { data, error } = await supabase
