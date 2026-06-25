@@ -45,7 +45,15 @@ import { useInvitationFonts } from "@/hooks/useInvitationFonts";
 import AdminTemplateEditor, {
   type EditorTemplate,
 } from "./AdminTemplateEditor";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchTemplatesAndFonts,
+  saveTemplate,
+  setTemplateActive,
+  deleteTemplate,
+  uploadTemplateBlob,
+  type Font,
+  type Template,
+} from "@/features/console/data/invitationTemplates";
 import { toast } from "@/hooks/use-toast";
 import {
   createMobileRollLayout,
@@ -63,31 +71,7 @@ import {
 } from "@/lib/invitation/layout";
 import type { InvitationLayout } from "@/lib/invitation/types";
 
-interface Font {
-  id: string;
-  name: string;
-  family: string;
-  file_url: string;
-  weight: string;
-  style: string;
-}
-
-interface Template {
-  id: string;
-  slug: string | null;
-  name: string;
-  thumbnail_url: string;
-  preview_url: string | null;
-  format: string;            // 'mobile' | 'paper'
-  tone: string;
-  price_hearts: number;
-  layout: Record<string, unknown>;
-  default_font_id: string | null;
-  text_prompt_hint: string | null;
-  display_order: number;
-  is_active: boolean;
-  created_at: string;
-}
+// Font·Template 타입은 features/console/data/invitationTemplates 에서 import(Task #3).
 
 type Form = Omit<Template, "id" | "created_at">;
 
@@ -452,29 +436,17 @@ const AdminInvitationTemplates = () => {
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
-    const [tpl, fnt] = await Promise.all([
-      (supabase as any)
-        .from("invitation_templates")
-        .select("*")
-        .order("display_order", { ascending: true }) // 작을수록 우선(1번이 최상단)
-        .order("created_at", { ascending: false }),
-      (supabase as any)
-        .from("invitation_fonts")
-        .select("id, name, family, file_url, weight, style")
-        .eq("is_active", true)
-        .order("display_order", { ascending: false }),
-    ]);
-    if (tpl.error) {
-      toast({
-        title: "불러오기 실패",
-        description: tpl.error.message,
-        variant: "destructive",
-      });
-    } else {
-      setItems(tpl.data ?? []);
+    try {
+      const r = await fetchTemplatesAndFonts();
+      if (r.templatesError) {
+        toast({ title: "불러오기 실패", description: "템플릿을 불러오지 못했어요.", variant: "destructive" });
+      } else {
+        setItems(r.templates);
+      }
+      if (!r.fontsError) setFonts(r.fonts);
+    } finally {
+      setIsLoading(false);
     }
-    if (!fnt.error) setFonts(fnt.data ?? []);
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -647,16 +619,16 @@ const AdminInvitationTemplates = () => {
 
     setIsSaving(true);
     const payload = { ...form, slug: form.slug?.trim() || null, layout };
-    const { error } = editingId
-      ? await (supabase as any)
-          .from("invitation_templates")
-          .update(payload)
-          .eq("id", editingId)
-      : await (supabase as any).from("invitation_templates").insert(payload);
-    if (error) {
+    let saveError: Error | null = null;
+    try {
+      await saveTemplate(editingId, payload);
+    } catch (e) {
+      saveError = e instanceof Error ? e : new Error("오류");
+    }
+    if (saveError) {
       toast({
         title: "저장 실패",
-        description: error.message,
+        description: saveError.message,
         variant: "destructive",
       });
     } else {
@@ -797,19 +769,7 @@ const AdminInvitationTemplates = () => {
     }
   };
 
-  const uploadTemplateBlob = async (blob: Blob, extension = "png") => {
-    const path = `pages/${crypto.randomUUID()}.${extension}`;
-    const { error } = await supabase.storage
-      .from("invitation-templates")
-      .upload(path, blob, {
-        cacheControl: "3600",
-        upsert: false,
-        contentType: blob.type || "image/png",
-      });
-    if (error) throw error;
-    return supabase.storage.from("invitation-templates").getPublicUrl(path).data
-      .publicUrl;
-  };
+  // uploadTemplateBlob 은 features/console/data/invitationTemplates 에서 import(Task #3).
 
   const prepareMobileRoll = () => {
     setForm((current) => ({ ...current, format: "mobile" }));
@@ -1002,31 +962,30 @@ const AdminInvitationTemplates = () => {
   };
 
   const handleToggleActive = async (t: Template) => {
-    const { error } = await (supabase as any)
-      .from("invitation_templates")
-      .update({ is_active: !t.is_active })
-      .eq("id", t.id);
-    if (error) {
+    try {
+      await setTemplateActive(t.id, !t.is_active);
+      fetchData();
+    } catch (e) {
       toast({
         title: "변경 실패",
-        description: error.message,
+        description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
-    } else {
-      fetchData();
     }
   };
 
   const handleDelete = async (t: Template) => {
     if (!confirm(`"${t.name}" 을(를) 삭제하시겠어요?`)) return;
-    const { error } = await (supabase as any)
-      .from("invitation_templates")
-      .delete()
-      .eq("id", t.id);
-    if (error) {
+    let delError: Error | null = null;
+    try {
+      await deleteTemplate(t.id);
+    } catch (e) {
+      delError = e instanceof Error ? e : new Error("오류");
+    }
+    if (delError) {
       toast({
         title: "삭제 실패",
-        description: error.message,
+        description: delError.message,
         variant: "destructive",
       });
     } else {
