@@ -3,28 +3,12 @@ import { Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchAiJobOverview, type Stat, type Failure } from "@/features/console/data/aiJobs";
 import { toast } from "@/hooks/use-toast";
 
 // AI 생성 기능 통합 현황 — admin_ai_job_stats RPC(관리자만) 집계.
-interface Stat {
-  feature: string;
-  total: number;
-  active: number;
-  done: number;
-  failed: number;
-  stuck: number;
-  today: number;
-}
 
-interface Failure {
-  report_id: string;
-  user_id: string;
-  status: string;
-  error: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Stat·Failure 타입은 features/console/data/aiJobs 에서 import.
 
 const fmtTime = (s: string | null) => {
   if (!s) return "";
@@ -39,15 +23,15 @@ const AdminAIJobs = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [statsRes, failRes] = await Promise.all([
-      (supabase as any).rpc("admin_ai_job_stats"),
-      // 실패 상세(사유 포함) — 미적용 라이브에서도 화면이 안 깨지게 에러는 무시.
-      (supabase as any).rpc("admin_list_ai_failures", { p_limit: 50 }),
-    ]);
-    if (statsRes.error) toast({ title: "불러오기 실패", description: statsRes.error.message, variant: "destructive" });
-    else setStats((statsRes.data ?? []) as Stat[]);
-    setFailures(failRes.error ? [] : ((failRes.data ?? []) as Failure[]));
-    setLoading(false);
+    try {
+      const { stats, failures } = await fetchAiJobOverview();
+      setStats(stats);
+      setFailures(failures);
+    } catch (e) {
+      toast({ title: "불러오기 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
