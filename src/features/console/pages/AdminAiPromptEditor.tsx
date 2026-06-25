@@ -4,22 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchPrompts,
+  updatePromptContent,
+  setPromptActive,
+  type PromptRow,
+} from "@/features/console/data/aiPrompts";
 import { toast } from "@/hooks/use-toast";
 
 // AI 생성 프롬프트(LLM 텍스트) 실시간 편집 (/admin/ai-prompt-editor)
 // ai_prompts 테이블의 content/is_active 를 고치면 엣지 함수가 다음 호출부터 바로 사용한다
 // (앱·함수 재배포 불필요). 행이 비활성/조회실패면 엣지 함수는 코드 폴백을 쓴다.
-
-interface PromptRow {
-  key: string;
-  label: string;
-  description: string | null;
-  content: string;
-  category: string;
-  is_active: boolean;
-  updated_at: string;
-}
+// PromptRow 타입은 features/console/data/aiPrompts 에서 import.
 
 const AdminAiPromptEditor = () => {
   const [rows, setRows] = useState<PromptRow[]>([]);
@@ -30,18 +26,14 @@ const AdminAiPromptEditor = () => {
 
   const fetchRows = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("ai_prompts")
-      .select("key, label, description, content, category, is_active, updated_at")
-      .order("category", { ascending: true })
-      .order("key", { ascending: true });
-    if (error) {
-      toast({ title: "불러오기 실패", description: error.message, variant: "destructive" });
-    } else {
-      setRows((data ?? []) as PromptRow[]);
+    try {
+      setRows(await fetchPrompts());
       setDrafts({});
+    } catch (e) {
+      toast({ title: "불러오기 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -56,27 +48,23 @@ const AdminAiPromptEditor = () => {
       return;
     }
     setSavingKey(row.key);
-    const { data: auth } = await supabase.auth.getUser();
-    const { error } = await (supabase as any)
-      .from("ai_prompts")
-      .update({ content: next, updated_by: auth?.user?.id ?? null })
-      .eq("key", row.key);
-    setSavingKey(null);
-    if (error) {
-      toast({ title: "저장 실패", description: error.message, variant: "destructive" });
+    try {
+      await updatePromptContent(row.key, next);
+    } catch (e) {
+      setSavingKey(null);
+      toast({ title: "저장 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
       return;
     }
+    setSavingKey(null);
     toast({ title: "저장됐어요", description: "다음 생성 호출부터 바로 반영돼요." });
     fetchRows();
   };
 
   const handleToggleActive = async (row: PromptRow, active: boolean) => {
-    const { error } = await (supabase as any)
-      .from("ai_prompts")
-      .update({ is_active: active })
-      .eq("key", row.key);
-    if (error) {
-      toast({ title: "변경 실패", description: error.message, variant: "destructive" });
+    try {
+      await setPromptActive(row.key, active);
+    } catch (e) {
+      toast({ title: "변경 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
       return;
     }
     toast({
