@@ -9,7 +9,6 @@ import WidgetBridgeHost from "@/components/native/WidgetBridgeHost";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
 import AdminGuard from "@/components/admin/AdminGuard";
-import BusinessGuard from "@/features/partners/components/BusinessGuard";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -62,7 +61,6 @@ const MailInbox = lazy(() => import("./pages/MailInbox"));
 const InvitationMarket = lazy(() => import("./pages/invitation/InvitationMarket"));
 const VendorBoard = lazy(() => import("./pages/VendorBoard"));
 const VendorCompare = lazy(() => import("./pages/VendorCompare"));
-const BusinessLeads = lazy(() => import("@/features/partners/pages/BusinessLeads"));
 const HairPreview = lazy(() => import("./pages/HairPreview"));
 const HairPreviewResult = lazy(() => import("./pages/HairPreviewResult"));
 const HairPreviewGallery = lazy(() => import("./pages/HairPreviewGallery"));
@@ -186,24 +184,10 @@ const SubscriptionCheckout = lazy(() => import("./pages/SubscriptionCheckout"));
 const SubscriptionPaymentSuccess = lazy(() => import("./pages/SubscriptionPaymentSuccess"));
 const SubscriptionPaymentFail = lazy(() => import("./pages/SubscriptionPaymentFail"));
 
-// 기업회원 플로우
-const BusinessLanding = lazy(() => import("@/features/partners/pages/BusinessLanding"));
-const BusinessOnboard = lazy(() => import("@/features/partners/pages/BusinessOnboard"));
-const BusinessDashboard = lazy(() => import("@/features/partners/pages/BusinessDashboard"));
-const BusinessGuide = lazy(() => import("@/features/partners/pages/BusinessGuide"));
-const BusinessGuideDetail = lazy(() => import("@/features/partners/pages/BusinessGuideDetail"));
-const BusinessGuideIndex = lazy(() => import("@/features/partners/pages/BusinessGuideIndex"));
-const BusinessVendorEdit = lazy(() => import("@/features/partners/pages/BusinessVendorEdit"));
-const BusinessClaim = lazy(() => import("@/features/partners/pages/BusinessClaim"));
+// 기업(partners) 도메인 — App.tsx 는 /business/* 한 줄로 위임. partners 페이지 lazy·가드는
+// 라우트 모듈(@/features/partners/routes)이 소유한다(도메인 경계 — App.tsx 에 partners 참조 최소화).
+const PartnersRoutes = lazy(() => import("@/features/partners/routes"));
 const AdminPlaceClaims = lazy(() => import("./pages/admin/AdminPlaceClaims"));
-const BusinessGallery = lazy(() => import("@/features/partners/pages/BusinessGallery"));
-const BusinessCoupons = lazy(() => import("@/features/partners/pages/BusinessCoupons"));
-const BusinessEvents = lazy(() => import("@/features/partners/pages/BusinessEvents"));
-const BusinessProducts = lazy(() => import("@/features/partners/pages/BusinessProducts"));
-const BusinessInquiries = lazy(() => import("@/features/partners/pages/BusinessInquiries"));
-const BusinessDeliveries = lazy(() => import("@/features/partners/pages/BusinessDeliveries"));
-const BusinessDesigns = lazy(() => import("@/features/partners/pages/BusinessDesigns"));
-const BusinessReviews = lazy(() => import("@/features/partners/pages/BusinessReviews"));
 
 // React Query 전역 기본값: 기본 staleTime=0 + refetchOnWindowFocus=true 면 모바일 웹에서
 // 탭 전환마다 모든 useQuery 가 재요청(중복 라운드트립). 모바일 웹이 주 사용처라 60s 신선도 +
@@ -336,25 +320,8 @@ const App = () => (
               {/* 꽃 머지 퍼즐 게임 */}
               <Route path="/merge-game" element={<MergeGame />} />
 
-              {/* 기업회원 플로우 */}
-              <Route path="/business" element={<BusinessLanding />} />
-              <Route path="/business/onboard" element={<BusinessOnboard />} />
-              <Route path="/business/dashboard" element={<BusinessGuard><BusinessDashboard /></BusinessGuard>} />
-              {/* 사용법 가이드는 정적 콘텐츠(데이터 패치 없음) — 기업회원 '전환 전'
-                  예비 사장님(로그인 페이지 진입)도 봐야 하므로 가드 없이 공개한다. */}
-              <Route path="/business/guides" element={<BusinessGuideIndex />} />
-              <Route path="/business/guide" element={<BusinessGuide />} />
-              <Route path="/business/guide/:guideId" element={<BusinessGuideDetail />} />
-              <Route path="/business/edit" element={<BusinessGuard requireApproved><BusinessVendorEdit /></BusinessGuard>} />
-              <Route path="/business/claim" element={<BusinessGuard requireApproved><BusinessClaim /></BusinessGuard>} />
-              <Route path="/business/gallery" element={<BusinessGuard requireApproved><BusinessGallery /></BusinessGuard>} />
-              <Route path="/business/coupons" element={<BusinessGuard requireApproved><BusinessCoupons /></BusinessGuard>} />
-              <Route path="/business/events" element={<BusinessGuard requireApproved><BusinessEvents /></BusinessGuard>} />
-              <Route path="/business/products" element={<BusinessGuard requireApproved><BusinessProducts /></BusinessGuard>} />
-              <Route path="/business/inquiries" element={<BusinessGuard requireApproved><BusinessInquiries /></BusinessGuard>} />
-              <Route path="/business/deliveries" element={<BusinessGuard requireApproved><BusinessDeliveries /></BusinessGuard>} />
-              <Route path="/business/designs" element={<BusinessGuard requireApproved><BusinessDesigns /></BusinessGuard>} />
-              <Route path="/business/reviews" element={<BusinessGuard requireApproved><BusinessReviews /></BusinessGuard>} />
+              {/* 기업(partners) 도메인 — 라우트 모듈로 위임(가드·페이지는 그 모듈이 소유). */}
+              <Route path="/business/*" element={<PartnersRoutes />} />
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
@@ -376,7 +343,6 @@ const App = () => (
                 path="/invitation/market"
                 element={DESIGN_MARKET_ENABLED ? <InvitationMarket /> : <Navigate to="/" replace />}
               />
-              <Route path="/business/leads" element={<BusinessGuard requireApproved><BusinessLeads /></BusinessGuard>} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/consulting" element={<WeddingConsulting />} />
