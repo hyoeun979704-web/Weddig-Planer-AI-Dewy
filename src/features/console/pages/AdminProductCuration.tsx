@@ -2,8 +2,22 @@ import { useEffect, useState, useCallback } from "react";
 import { Search, Loader2, Plus, Pencil, Star, Trash2, ExternalLink, RefreshCw, ChevronLeft, ChevronRight, X, ShoppingCart, Tag } from "lucide-react";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
-import { escapeLikePattern } from "@/lib/postgrestEscape";
+import {
+  fetchProductPool,
+  fetchSeedKeywords,
+  upsertSeedKeyword,
+  deleteSeedKeyword,
+  searchProducts,
+  insertProduct,
+  bulkUpsertProducts,
+  updateProduct,
+  deleteProductRow,
+  blockProduct,
+  resyncProducts,
+  batchCollectProducts,
+  type SearchResult,
+  type PoolProduct,
+} from "@/features/console/data/productCuration";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -26,38 +40,8 @@ import { toast } from "sonner";
 import { STORE_CATEGORIES, PRODUCT_SOURCES, getSourceLabel, ProductSource } from "@/lib/storeCategories";
 import { ProductThumb } from "@/components/store/ProductThumb";
 
-interface SearchResult {
-  source: "naver" | "coupang";
-  source_product_id: string;
-  name: string;
-  short_description: string | null;
-  thumbnail_url: string | null;
-  price: number;
-  sale_price: number | null;
-  source_url: string;
-  source_mall: string | null;
-  raw: unknown;
-}
-
-interface PoolProduct {
-  id: string;
-  name: string;
-  short_description: string | null;
-  description: string | null;
-  thumbnail_url: string | null;
-  price: number;
-  sale_price: number | null;
-  is_active: boolean;
-  is_featured: boolean;
-  source: string;
-  source_url: string | null;
-  source_mall: string | null;
-  source_product_id: string | null;
-  categories: string[];
-  stale_reason: string | null;
-  last_resynced_at: string | null;
-  click_count?: number;
-}
+// 데이터 접근·타입은 features/console/data/productCuration 로 추상화(Task #3).
+// SearchResult·PoolProduct 타입도 그 모듈에서 import.
 
 const AdminProductCuration = () => {
   const [searchSource, setSearchSource] = useState<"naver" | "coupang">("naver");
@@ -90,48 +74,22 @@ const AdminProductCuration = () => {
 
   const fetchPool = useCallback(async () => {
     setPoolLoading(true);
-    const from = page * POOL_PAGE_SIZE;
-    const to = from + POOL_PAGE_SIZE - 1;
-    let q = (supabase
-      .from("products" as any)
-      .select(
-        "id, name, short_description, description, thumbnail_url, price, sale_price, is_active, is_featured, source, source_url, source_mall, source_product_id, categories, stale_reason, last_resynced_at",
-        { count: "exact" },
-      ) as any)
-      .order("created_at", { ascending: false })
-      .range(from, to);
-    if (filterSource !== "all") {
-      q = q.eq("source", filterSource);
+    try {
+      const { products, total } = await fetchProductPool({
+        page,
+        pageSize: POOL_PAGE_SIZE,
+        filterSource,
+        filterActive,
+        filterCategory,
+        keyword: poolKeyword,
+      });
+      setPool(products);
+      setPoolTotal(total);
+    } catch (e: any) {
+      toast.error(`풀 조회 실패: ${e?.message ?? "알 수 없는 오류"}`);
+    } finally {
+      setPoolLoading(false);
     }
-    if (filterActive === "on") {
-      q = q.eq("is_active", true);
-    } else if (filterActive === "off") {
-      q = q.eq("is_active", false);
-    }
-    if (filterCategory !== "all") {
-      q = q.contains("categories", [filterCategory]);
-    }
-    if (poolKeyword.trim()) {
-      q = q.ilike("name", `%${escapeLikePattern(poolKeyword.trim())}%`);
-    }
-    const [{ data, count, error }, { data: clickRows }] = await Promise.all([
-      q,
-      (supabase as any).rpc("product_click_counts", { p_days: 7 }),
-    ]);
-    if (error) {
-      toast.error(`풀 조회 실패: ${error.message}`);
-    } else {
-      const clickMap = new Map<string, number>(
-        ((clickRows as any[]) ?? []).map((r) => [r.product_id, Number(r.click_count) || 0]),
-      );
-      const enriched = ((data ?? []) as any[]).map((p) => ({
-        ...p,
-        click_count: clickMap.get(p.id) ?? 0,
-      }));
-      setPool(enriched);
-      setPoolTotal(count ?? 0);
-    }
-    setPoolLoading(false);
   }, [filterSource, filterActive, filterCategory, poolKeyword, page]);
 
   useEffect(() => {
@@ -139,17 +97,11 @@ const AdminProductCuration = () => {
   }, [fetchPool]);
 
   const fetchSeeds = useCallback(async () => {
-    const { data, error } = await (supabase
-      .from("product_seed_keywords" as any)
-      .select("id, category, keyword") as any)
-      .eq("is_active", true)
-      .order("category", { ascending: true })
-      .order("keyword", { ascending: true });
-    if (error) {
-      toast.error(`키워드 조회 실패: ${error.message}`);
-      return;
+    try {
+      setSeedRows(await fetchSeedKeywords());
+    } catch (e: any) {
+      toast.error(`키워드 조회 실패: ${e?.message ?? "알 수 없는 오류"}`);
     }
-    setSeedRows((data ?? []) as any);
   }, []);
 
   useEffect(() => {
@@ -159,37 +111,27 @@ const AdminProductCuration = () => {
   const addSeed = async (category: string) => {
     const kw = (seedInputs[category] ?? "").trim();
     if (!kw) return;
-    const { data, error } = await (supabase
-      .from("product_seed_keywords" as any) as any)
-      .upsert(
-        { category, keyword: kw },
-        { onConflict: "category,keyword", ignoreDuplicates: false },
-      )
-      .select("id, category, keyword")
-      .single();
-    if (error) {
-      toast.error(`추가 실패: ${error.message}`);
-      return;
+    try {
+      const data = await upsertSeedKeyword(category, kw);
+      setSeedInputs((p) => ({ ...p, [category]: "" }));
+      if (data) {
+        setSeedRows((prev) => (prev.some((r) => r.id === data.id) ? prev : [...prev, data]));
+      } else {
+        fetchSeeds();
+      }
+      toast.success(`'${kw}' 추가됨`);
+    } catch (e: any) {
+      toast.error(`추가 실패: ${e?.message ?? "알 수 없는 오류"}`);
     }
-    setSeedInputs((p) => ({ ...p, [category]: "" }));
-    if (data) {
-      setSeedRows((prev) => {
-        if (prev.some((r) => r.id === (data as any).id)) return prev;
-        return [...prev, data as any];
-      });
-    } else {
-      fetchSeeds();
-    }
-    toast.success(`'${kw}' 추가됨`);
   };
 
   const removeSeed = async (id: string) => {
-    const { error } = await (supabase.from("product_seed_keywords" as any) as any).delete().eq("id", id);
-    if (error) {
-      toast.error(`삭제 실패: ${error.message}`);
-      return;
+    try {
+      await deleteSeedKeyword(id);
+      setSeedRows((prev) => prev.filter((r) => r.id !== id));
+    } catch (e: any) {
+      toast.error(`삭제 실패: ${e?.message ?? "알 수 없는 오류"}`);
     }
-    setSeedRows((prev) => prev.filter((r) => r.id !== id));
   };
 
   // 필터/검색 변경 시 페이지 reset.
@@ -206,15 +148,11 @@ const AdminProductCuration = () => {
     setSearching(true);
     setSearchResults([]);
     try {
-      const { data, error } = await supabase.functions.invoke("product-search", {
-        body: { source: searchSource, query: q },
-      });
-      if (error) throw error;
-      const items = (data as any)?.items as SearchResult[] | undefined;
-      if (!items || items.length === 0) {
+      const items = await searchProducts(searchSource, q);
+      if (items.length === 0) {
         toast.info("검색 결과가 없습니다");
       }
-      setSearchResults(items ?? []);
+      setSearchResults(items);
     } catch (err: any) {
       toast.error(`검색 실패: ${err?.message ?? "알 수 없는 오류"}`);
     } finally {
@@ -242,47 +180,43 @@ const AdminProductCuration = () => {
 
   const collect = async (item: SearchResult) => {
     setCollecting(item.source_product_id);
-    const { error } = await (supabase.from("products" as any) as any).insert(buildRow(item));
-    setCollecting(null);
-    if (error) {
-      if (error.code === "23505") {
+    try {
+      await insertProduct(buildRow(item));
+      toast.success("수집 완료. 풀에 추가되었습니다");
+      fetchPool();
+    } catch (error: any) {
+      if (error?.code === "23505") {
         toast.error("이미 수집된 상품입니다");
       } else {
-        toast.error(`수집 실패: ${error.message}`);
+        toast.error(`수집 실패: ${error?.message ?? "알 수 없는 오류"}`);
       }
-      return;
+    } finally {
+      setCollecting(null);
     }
-    toast.success("수집 완료. 풀에 추가되었습니다");
-    fetchPool();
   };
 
   const collectAll = async () => {
     if (searchResults.length === 0) return;
     setBulkCollecting(true);
-    // (source, source_product_id) 가 unique 라 중복은 DB 가 23505 로 거름.
-    // ignoreDuplicates 옵션으로 한 번에 insert.
-    const rows = searchResults.map(buildRow);
-    const { error, count } = await (supabase.from("products" as any) as any)
-      .upsert(rows, { onConflict: "source,source_product_id", ignoreDuplicates: true, count: "exact" });
-    setBulkCollecting(false);
-    if (error) {
-      toast.error(`일괄 수집 실패: ${error.message}`);
-      return;
+    // (source, source_product_id) 가 unique 라 중복은 DB 가 거름(ignoreDuplicates).
+    try {
+      const added = await bulkUpsertProducts(searchResults.map(buildRow));
+      toast.success(`${added}개 수집 완료 (중복은 건너뜀)`);
+      fetchPool();
+    } catch (error: any) {
+      toast.error(`일괄 수집 실패: ${error?.message ?? "알 수 없는 오류"}`);
+    } finally {
+      setBulkCollecting(false);
     }
-    const added = typeof count === "number" ? count : rows.length;
-    toast.success(`${added}개 수집 완료 (중복은 건너뜀)`);
-    fetchPool();
   };
 
   const toggleField = async (id: string, field: "is_active" | "is_featured", value: boolean) => {
-    const { error } = await (supabase.from("products" as any) as any)
-      .update({ [field]: value })
-      .eq("id", id);
-    if (error) {
-      toast.error(`업데이트 실패: ${error.message}`);
-      return;
+    try {
+      await updateProduct(id, { [field]: value });
+      setPool((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+    } catch (error: any) {
+      toast.error(`업데이트 실패: ${error?.message ?? "알 수 없는 오류"}`);
     }
-    setPool((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
   };
 
   const toggleCategory = async (id: string, cat: string) => {
@@ -291,14 +225,12 @@ const AdminProductCuration = () => {
     const next = product.categories.includes(cat)
       ? product.categories.filter((c) => c !== cat)
       : [...product.categories, cat];
-    const { error } = await (supabase.from("products" as any) as any)
-      .update({ categories: next })
-      .eq("id", id);
-    if (error) {
-      toast.error(`카테고리 업데이트 실패: ${error.message}`);
-      return;
+    try {
+      await updateProduct(id, { categories: next });
+      setPool((prev) => prev.map((p) => (p.id === id ? { ...p, categories: next } : p)));
+    } catch (error: any) {
+      toast.error(`카테고리 업데이트 실패: ${error?.message ?? "알 수 없는 오류"}`);
     }
-    setPool((prev) => prev.map((p) => (p.id === id ? { ...p, categories: next } : p)));
   };
 
   const deleteProduct = async (product: PoolProduct) => {
@@ -306,23 +238,17 @@ const AdminProductCuration = () => {
 
     // 외부 상품이면 blocklist 에 (source, source_product_id) 추가 → 재수집 차단.
     if (product.source !== "manual" && product.source_product_id) {
-      const { error: blockErr } = await (supabase.from("product_blocklist" as any) as any).upsert(
-        {
-          source: product.source,
-          source_product_id: product.source_product_id,
-          reason: "admin_reject",
-        },
-        { onConflict: "source,source_product_id", ignoreDuplicates: true },
-      );
-      if (blockErr) {
-        toast.error(`거부 목록 추가 실패: ${blockErr.message}`);
+      try {
+        await blockProduct(product.source, product.source_product_id);
+      } catch (e: any) {
+        toast.error(`거부 목록 추가 실패: ${e?.message ?? "알 수 없는 오류"}`);
         return;
       }
     }
-
-    const { error } = await (supabase.from("products" as any) as any).delete().eq("id", product.id);
-    if (error) {
-      toast.error(`삭제 실패: ${error.message}`);
+    try {
+      await deleteProductRow(product.id);
+    } catch (e: any) {
+      toast.error(`삭제 실패: ${e?.message ?? "알 수 없는 오류"}`);
       return;
     }
     setPool((prev) => prev.filter((p) => p.id !== product.id));
@@ -339,16 +265,7 @@ const AdminProductCuration = () => {
     }
     setResyncRunning(true);
     try {
-      const { data, error } = await supabase.functions.invoke("product-resync", {
-        body: {},
-      });
-      if (error) throw error;
-      const r = data as {
-        scanned: number;
-        updated: number;
-        deactivated: number;
-        errors: any[];
-      };
+      const r = await resyncProducts();
       toast.success(
         `동기화 완료 — ${r.scanned}개 검사 / ${r.updated} 갱신 / ${r.deactivated} 노출 OFF`,
       );
@@ -374,18 +291,7 @@ const AdminProductCuration = () => {
     }
     setBatchRunning(true);
     try {
-      const { data, error } = await supabase.functions.invoke("product-batch-collect", {
-        body: {},
-      });
-      if (error) throw error;
-      const r = data as {
-        totalFetched: number;
-        candidates: number;
-        blocked: number;
-        inserted: number;
-        duplicates: number;
-        errors: any[];
-      };
+      const r = await batchCollectProducts();
       toast.success(
         `자동 수집 완료 — 신규 ${r.inserted}개 / 중복 ${r.duplicates} / 거부 ${r.blocked} (총 ${r.totalFetched} 조회)`,
       );
@@ -411,16 +317,14 @@ const AdminProductCuration = () => {
       price: next.price ?? editing.price,
       sale_price: next.sale_price ?? editing.sale_price,
     };
-    const { error } = await (supabase.from("products" as any) as any)
-      .update(payload)
-      .eq("id", editing.id);
-    if (error) {
-      toast.error(`저장 실패: ${error.message}`);
-      return;
+    try {
+      await updateProduct(editing.id, payload);
+      setPool((prev) => prev.map((p) => (p.id === editing.id ? { ...p, ...payload } : p)));
+      setEditing(null);
+      toast.success("저장 완료");
+    } catch (error: any) {
+      toast.error(`저장 실패: ${error?.message ?? "알 수 없는 오류"}`);
     }
-    setPool((prev) => prev.map((p) => (p.id === editing.id ? { ...p, ...payload } : p)));
-    setEditing(null);
-    toast.success("저장 완료");
   };
 
   return (
