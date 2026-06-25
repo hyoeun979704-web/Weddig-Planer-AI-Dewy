@@ -13,7 +13,7 @@ import { relativeTime } from "@/lib/relativeTime";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchCommunityPosts, communityKeys } from "@/features/consumer/data/community";
 import { useUserBlocks } from "@/hooks/useCommunityModeration";
 import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
 import CommunityAnnouncements from "@/components/community/CommunityAnnouncements";
@@ -179,7 +179,7 @@ const Community = () => {
   const { data: blockedUserIds = [] } = useUserBlocks();
 
   const { data: posts = [], isLoading } = useQuery({
-    queryKey: ["community-posts", blockedUserIds],
+    queryKey: communityKeys.posts(blockedUserIds),
     queryFn: async () => {
       // 차단된 사용자의 글은 피드에서 숨긴다.
       // RLS 가 아닌 클라이언트 필터인 이유: 게시글 자체는 본질적으로
@@ -187,27 +187,15 @@ const Community = () => {
       // 최신 100개로 제한 — 전체 메모리 로드로 인한 성능 저하 방지.
       // 트렌딩·정렬·필터는 이 범위 안에서 클라이언트 계산. 더 깊은 탐색은
       // 서버 커서 페이지네이션으로 후속 개선.
-      let query = supabase
-        .from("community_posts")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      if (blockedUserIds.length > 0) {
-        query = query.not("user_id", "in", `(${blockedUserIds.join(",")})`);
-      }
-
-      const { data: postsData, error: postsError } = await query;
-
-      if (postsError) throw postsError;
+      const postsData = await fetchCommunityPosts(blockedUserIds);
 
       // 좋아요/댓글 수는 community_posts 의 집계 컬럼(트리거 동기화)에서 직접 읽는다.
       // 과거 글마다 count 쿼리를 날리던 N+1 제거.
-      return (postsData || []).map((post) => ({
+      return postsData.map((post) => ({
         ...post,
         likes_count: post.like_count ?? 0,
         comments_count: post.comment_count ?? 0,
-      })) as Post[];
+      })) as unknown as Post[];
     },
   });
 

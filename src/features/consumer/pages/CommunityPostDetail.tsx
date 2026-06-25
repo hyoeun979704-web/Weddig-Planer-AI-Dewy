@@ -18,7 +18,20 @@ import {
 import ReportDialog from "@/components/community/ReportDialog";
 import BlockUserDialog from "@/components/community/BlockUserDialog";
 import { useUserBlocks } from "@/hooks/useCommunityModeration";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchCommunityPost,
+  fetchCommunityComments,
+  fetchPostLikesCount,
+  fetchPostLiked,
+  addPostLike,
+  removePostLike,
+  createCommunityComment,
+  deleteCommunityComment,
+  updateCommunityComment,
+  deleteCommunityPost,
+  incrementPostViews,
+  communityKeys,
+} from "@/features/consumer/data/community";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -89,16 +102,10 @@ const CommunityPostDetail = () => {
 
   // Fetch post
   const { data: post, isLoading: postLoading } = useQuery({
-    queryKey: ["community-post", id],
+    queryKey: communityKeys.post(id),
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("community_posts")
-        .select("*")
-        .eq("id", id!)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data as Post | null;
+      const data = await fetchCommunityPost(id!);
+      return data as unknown as Post | null;
     },
     enabled: !!id,
   });
@@ -109,28 +116,17 @@ const CommunityPostDetail = () => {
   useEffect(() => {
     if (!id || viewedRef.current === id) return;
     viewedRef.current = id;
-    void (supabase as any).rpc("increment_post_views", { p_post_id: id });
+    void incrementPostViews(id);
   }, [id]);
 
   const { data: blockedUserIds = [] } = useUserBlocks();
 
   // Fetch comments — 차단한 사용자 댓글은 숨김.
   const { data: comments = [] } = useQuery({
-    queryKey: ["community-comments", id, blockedUserIds],
+    queryKey: communityKeys.comments(id, blockedUserIds),
     queryFn: async () => {
-      let query = supabase
-        .from("community_comments")
-        .select("*")
-        .eq("post_id", id!)
-        .order("created_at", { ascending: true });
-
-      if (blockedUserIds.length > 0) {
-        query = query.not("user_id", "in", `(${blockedUserIds.join(",")})`);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as Comment[];
+      const data = await fetchCommunityComments(id!, blockedUserIds);
+      return data as unknown as Comment[];
     },
     enabled: !!id,
   });
@@ -146,33 +142,17 @@ const CommunityPostDetail = () => {
 
   // Fetch likes count
   const { data: likesCount = 0 } = useQuery({
-    queryKey: ["community-likes-count", id],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("community_likes")
-        .select("*", { count: "exact", head: true })
-        .eq("post_id", id!);
-      
-      if (error) throw error;
-      return count || 0;
-    },
+    queryKey: communityKeys.likesCount(id),
+    queryFn: () => fetchPostLikesCount(id!),
     enabled: !!id,
   });
 
   // Check if user liked this post
   const { data: isLiked = false } = useQuery({
-    queryKey: ["community-liked", id, user?.id],
+    queryKey: communityKeys.liked(id, user?.id),
     queryFn: async () => {
       if (!user) return false;
-      const { data, error } = await supabase
-        .from("community_likes")
-        .select("id")
-        .eq("post_id", id!)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return !!data;
+      return fetchPostLiked(id!, user.id);
     },
     enabled: !!id && !!user,
   });
@@ -186,22 +166,14 @@ const CommunityPostDetail = () => {
       }
 
       if (isLiked) {
-        const { error } = await supabase
-          .from("community_likes")
-          .delete()
-          .eq("post_id", id!)
-          .eq("user_id", user.id);
-        if (error) throw error;
+        await removePostLike(id!, user.id);
       } else {
-        const { error } = await supabase
-          .from("community_likes")
-          .insert({ post_id: id!, user_id: user.id });
-        if (error) throw error;
+        await addPostLike(id!, user.id);
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["community-likes-count", id] });
-      queryClient.invalidateQueries({ queryKey: ["community-liked", id, user?.id] });
+      queryClient.invalidateQueries({ queryKey: communityKeys.likesCount(id) });
+      queryClient.invalidateQueries({ queryKey: communityKeys.liked(id, user?.id) });
     },
     onError: () => {
       toast.error("좋아요 처리에 실패했습니다.");
@@ -216,15 +188,12 @@ const CommunityPostDetail = () => {
         return;
       }
 
-      const { error } = await supabase
-        .from("community_comments")
-        .insert({
-          post_id: id!,
-          user_id: user.id,
-          content,
-          parent_comment_id: parentCommentId || null
-        });
-      if (error) throw error;
+      await createCommunityComment({
+        postId: id!,
+        userId: user.id,
+        content,
+        parentCommentId,
+      });
     },
     onSuccess: () => {
       setNewComment("");
@@ -242,14 +211,7 @@ const CommunityPostDetail = () => {
   const deleteCommentMutation = useMutation({
     mutationFn: async (commentId: string) => {
       if (!user) return;
-
-      const { error } = await supabase
-        .from("community_comments")
-        .delete()
-        .eq("id", commentId)
-        .eq("user_id", user.id);
-
-      if (error) throw error;
+      await deleteCommunityComment(commentId, user.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["community-comments", id] });
@@ -264,14 +226,7 @@ const CommunityPostDetail = () => {
   const updateCommentMutation = useMutation({
     mutationFn: async ({ commentId, content }: { commentId: string; content: string }) => {
       if (!user) return;
-
-      const { error } = await supabase
-        .from("community_comments")
-        .update({ content })
-        .eq("id", commentId)
-        .eq("user_id", user.id);
-
-      if (error) throw error;
+      await updateCommunityComment(commentId, user.id, content);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["community-comments", id] });
@@ -286,14 +241,7 @@ const CommunityPostDetail = () => {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!user) return;
-
-      const { error } = await supabase
-        .from("community_posts")
-        .delete()
-        .eq("id", id!)
-        .eq("user_id", user.id);
-
-      if (error) throw error;
+      await deleteCommunityPost(id!, user.id);
     },
     onSuccess: () => {
       toast.success("게시글이 삭제되었습니다.");
