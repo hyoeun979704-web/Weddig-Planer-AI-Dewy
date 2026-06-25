@@ -5,9 +5,9 @@ import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/empty-state";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { sceneByCode } from "@/data/fittingScenes";
+import { fetchDressGallery, dressResultUrl, type DressGalleryRow } from "@/features/consumer/data/dressFitting";
 
 /**
  * 드레스 피팅 결과 갤러리 (/ai-studio/dress-tour/gallery)
@@ -15,14 +15,7 @@ import { sceneByCode } from "@/data/fittingScenes";
  * 본인이 생성한 dress_fittings(status=done) 만 표시.
  */
 
-interface Row {
-  id: string;
-  result_image_path: string | null;
-  prompt_params: { scene_code?: string } | null;
-  created_at: string;
-}
-
-interface ItemWithUrl extends Row {
+interface ItemWithUrl extends DressGalleryRow {
   url: string | null;
 }
 
@@ -39,30 +32,20 @@ const DressFittingGallery = ({ embedded = false }: { embedded?: boolean } = {}) 
       return;
     }
     (async () => {
-      const { data, error } = await (supabase as any)
-        .from("dress_fittings")
-        .select("id, result_image_path, prompt_params, created_at")
-        .eq("user_id", user.id)
-        .eq("status", "done")
-        .order("created_at", { ascending: false });
-
-      if (error || !data) {
+      try {
+        const rows = await fetchDressGallery(user.id);
+        const withUrls: ItemWithUrl[] = await Promise.all(
+          rows.map(async (r) => ({
+            ...r,
+            url: r.result_image_path ? await dressResultUrl(r.result_image_path) : null,
+          })),
+        );
+        setItems(withUrls);
+      } catch {
         setItems([]);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const withUrls: ItemWithUrl[] = await Promise.all(
-        (data as Row[]).map(async (r) => {
-          if (!r.result_image_path) return { ...r, url: null };
-          const { data: signed } = await supabase.storage
-            .from("dress-results")
-            .createSignedUrl(r.result_image_path, 60 * 60 * 24);
-          return { ...r, url: signed?.signedUrl ?? null };
-        }),
-      );
-      setItems(withUrls);
-      setLoading(false);
     })();
   }, [user]);
 
