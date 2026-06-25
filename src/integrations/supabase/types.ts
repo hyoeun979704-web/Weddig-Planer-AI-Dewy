@@ -14,6 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
+      _matoni_backup_places: {
+        Row: {
+          avg_rating: number | null
+          category: string | null
+          city: string | null
+          confidence: number | null
+          created_at: string | null
+          currency: string | null
+          data_completeness: number | null
+          data_source: string | null
+          deleted_at: string | null
+          description: string | null
+          district: string | null
+          has_offline_store: boolean | null
+          inquiry_channel: string | null
+          inquiry_phone: string | null
+          inquiry_url: string | null
+          is_active: boolean | null
+          is_partner: boolean | null
+          last_collected_at: string | null
+          last_source_date: string | null
+          lat: number | null
+          lng: number | null
+          main_image_url: string | null
+          min_price: number | null
+          moderation_note: string | null
+          moderation_status: string | null
+          name: string | null
+          owner_user_id: string | null
+          partner_rank: number | null
+          place_id: string | null
+          review_count: number | null
+          road_address: string | null
+          source_refs: Json | null
+          tags: string[] | null
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          avg_rating?: number | null
+          category?: string | null
+          city?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          currency?: string | null
+          data_completeness?: number | null
+          data_source?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          district?: string | null
+          has_offline_store?: boolean | null
+          inquiry_channel?: string | null
+          inquiry_phone?: string | null
+          inquiry_url?: string | null
+          is_active?: boolean | null
+          is_partner?: boolean | null
+          last_collected_at?: string | null
+          last_source_date?: string | null
+          lat?: number | null
+          lng?: number | null
+          main_image_url?: string | null
+          min_price?: number | null
+          moderation_note?: string | null
+          moderation_status?: string | null
+          name?: string | null
+          owner_user_id?: string | null
+          partner_rank?: number | null
+          place_id?: string | null
+          review_count?: number | null
+          road_address?: string | null
+          source_refs?: Json | null
+          tags?: string[] | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          avg_rating?: number | null
+          category?: string | null
+          city?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          currency?: string | null
+          data_completeness?: number | null
+          data_source?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          district?: string | null
+          has_offline_store?: boolean | null
+          inquiry_channel?: string | null
+          inquiry_phone?: string | null
+          inquiry_url?: string | null
+          is_active?: boolean | null
+          is_partner?: boolean | null
+          last_collected_at?: string | null
+          last_source_date?: string | null
+          lat?: number | null
+          lng?: number | null
+          main_image_url?: string | null
+          min_price?: number | null
+          moderation_note?: string | null
+          moderation_status?: string | null
+          name?: string | null
+          owner_user_id?: string | null
+          partner_rank?: number | null
+          place_id?: string | null
+          review_count?: number | null
+          road_address?: string | null
+          source_refs?: Json | null
+          tags?: string[] | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
       agent_outputs: {
         Row: {
           body: string | null
@@ -56,39 +170,6 @@ export type Database = {
           source?: string | null
           status?: string
           title?: string
-        }
-        Relationships: []
-      }
-      ai_prompts: {
-        Row: {
-          category: string
-          content: string
-          description: string | null
-          is_active: boolean
-          key: string
-          label: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          category?: string
-          content: string
-          description?: string | null
-          is_active?: boolean
-          key: string
-          label: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          category?: string
-          content?: string
-          description?: string | null
-          is_active?: boolean
-          key?: string
-          label?: string
-          updated_at?: string
-          updated_by?: string | null
         }
         Relationships: []
       }
@@ -154,6 +235,39 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      ai_prompts: {
+        Row: {
+          category: string
+          content: string
+          description: string | null
+          is_active: boolean
+          key: string
+          label: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string
+          content: string
+          description?: string | null
+          is_active?: boolean
+          key: string
+          label: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          description?: string | null
+          is_active?: boolean
+          key?: string
+          label?: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -473,8 +587,10 @@ export type Database = {
       }
       business_events: {
         Row: {
+          banner_image_url: string | null
           created_at: string
           description: string | null
+          detail_images: string[]
           ends_at: string | null
           featured_until: string | null
           id: string
@@ -489,8 +605,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          banner_image_url?: string | null
           created_at?: string
           description?: string | null
+          detail_images?: string[]
           ends_at?: string | null
           featured_until?: string | null
           id?: string
@@ -505,8 +623,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          banner_image_url?: string | null
           created_at?: string
           description?: string | null
+          detail_images?: string[]
           ends_at?: string | null
           featured_until?: string | null
           id?: string
@@ -526,9 +646,9 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
-          detail_images: string[]
           id: string
           image_url: string | null
+          moderation_note: string | null
           moderation_status: string
           name: string
           owner_user_id: string
@@ -538,9 +658,9 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
-          detail_images?: string[]
           id?: string
           image_url?: string | null
+          moderation_note?: string | null
           moderation_status?: string
           name: string
           owner_user_id: string
@@ -550,9 +670,9 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
-          detail_images?: string[]
           id?: string
           image_url?: string | null
+          moderation_note?: string | null
           moderation_status?: string
           name?: string
           owner_user_id?: string
@@ -576,6 +696,7 @@ export type Database = {
           business_name: string
           business_number: string
           business_type: string | null
+          commission_rate_bps: number
           created_at: string | null
           id: string
           is_verified: boolean | null
@@ -596,6 +717,7 @@ export type Database = {
           business_name: string
           business_number: string
           business_type?: string | null
+          commission_rate_bps?: number
           created_at?: string | null
           id?: string
           is_verified?: boolean | null
@@ -616,6 +738,7 @@ export type Database = {
           business_name?: string
           business_number?: string
           business_type?: string | null
+          commission_rate_bps?: number
           created_at?: string | null
           id?: string
           is_verified?: boolean | null
@@ -629,6 +752,65 @@ export type Database = {
           user_id?: string
           vendor_id?: number | null
           verified_at?: string | null
+        }
+        Relationships: []
+      }
+      calendar_event_links: {
+        Row: {
+          external_event_id: string
+          provider: string
+          schedule_item_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          external_event_id: string
+          provider: string
+          schedule_item_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          external_event_id?: string
+          provider?: string
+          schedule_item_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_event_links_schedule_item_id_fkey"
+            columns: ["schedule_item_id"]
+            isOneToOne: false
+            referencedRelation: "user_schedule_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendar_oauth_states: {
+        Row: {
+          expires_at: string
+          provider: string
+          redirect_origin: string
+          return_path: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          provider: string
+          redirect_origin: string
+          return_path?: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          provider?: string
+          redirect_origin?: string
+          return_path?: string
+          state?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1064,6 +1246,81 @@ export type Database = {
         }
         Relationships: []
       }
+      content_articles: {
+        Row: {
+          answer: string
+          author: string
+          body_images: Json
+          category: string | null
+          created_at: string
+          created_by: string | null
+          data_points: Json
+          deslop_score: number | null
+          faqs: Json
+          h1: string
+          hero_image_url: string | null
+          id: string
+          meta_description: string
+          persona: string | null
+          published_at: string | null
+          related: Json
+          sections: Json
+          slug: string
+          sources: Json
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          answer?: string
+          author?: string
+          body_images?: Json
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_points?: Json
+          deslop_score?: number | null
+          faqs?: Json
+          h1: string
+          hero_image_url?: string | null
+          id?: string
+          meta_description?: string
+          persona?: string | null
+          published_at?: string | null
+          related?: Json
+          sections?: Json
+          slug: string
+          sources?: Json
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          author?: string
+          body_images?: Json
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_points?: Json
+          deslop_score?: number | null
+          faqs?: Json
+          h1?: string
+          hero_image_url?: string | null
+          id?: string
+          meta_description?: string
+          persona?: string | null
+          published_at?: string | null
+          related?: Json
+          sections?: Json
+          slug?: string
+          sources?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       couple_diary: {
         Row: {
           author_id: string
@@ -1285,6 +1542,153 @@ export type Database = {
           },
         ]
       }
+      design_purchase_intents: {
+        Row: {
+          created_at: string
+          design_id: string
+          gross: number
+          order_number: string
+          points_used: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          design_id: string
+          gross: number
+          order_number: string
+          points_used?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          design_id?: string
+          gross?: number
+          order_number?: string
+          points_used?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_purchase_intents_design_id_fkey"
+            columns: ["design_id"]
+            isOneToOne: false
+            referencedRelation: "designer_designs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_purchases: {
+        Row: {
+          amount: number
+          commission_amount: number
+          commission_bps: number
+          design_id: string
+          id: string
+          licensed_at: string
+          net_to_seller: number
+          order_ref: string | null
+          pg_fee: number
+          points_used: number
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          commission_amount?: number
+          commission_bps?: number
+          design_id: string
+          id?: string
+          licensed_at?: string
+          net_to_seller?: number
+          order_ref?: string | null
+          pg_fee?: number
+          points_used?: number
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          commission_amount?: number
+          commission_bps?: number
+          design_id?: string
+          id?: string
+          licensed_at?: string
+          net_to_seller?: number
+          order_ref?: string | null
+          pg_fee?: number
+          points_used?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_purchases_design_id_fkey"
+            columns: ["design_id"]
+            isOneToOne: false
+            referencedRelation: "designer_designs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      designer_designs: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          designer_user_id: string
+          id: string
+          layout: Json | null
+          place_id: string | null
+          preview_urls: string[]
+          price: number
+          review_note: string | null
+          sellable: string[]
+          status: string
+          style_tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          designer_user_id: string
+          id?: string
+          layout?: Json | null
+          place_id?: string | null
+          preview_urls?: string[]
+          price?: number
+          review_note?: string | null
+          sellable?: string[]
+          status?: string
+          style_tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          designer_user_id?: string
+          id?: string
+          layout?: Json | null
+          place_id?: string | null
+          preview_urls?: string[]
+          price?: number
+          review_note?: string | null
+          sellable?: string[]
+          status?: string
+          style_tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "designer_designs_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+        ]
+      }
       dress_fittings: {
         Row: {
           created_at: string
@@ -1407,6 +1811,30 @@ export type Database = {
           thumbnail_url?: string | null
           updated_at?: string
           waist?: string | null
+        }
+        Relationships: []
+      }
+      drive_oauth_states: {
+        Row: {
+          expires_at: string
+          redirect_origin: string
+          return_path: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          redirect_origin: string
+          return_path?: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          redirect_origin?: string
+          return_path?: string
+          state?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -2032,6 +2460,41 @@ export type Database = {
         }
         Relationships: []
       }
+      invitation_drive_settings: {
+        Row: {
+          auto_sync: boolean
+          created_at: string
+          drive_user_id: string
+          folder_id: string | null
+          invitation_id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_sync?: boolean
+          created_at?: string
+          drive_user_id: string
+          folder_id?: string | null
+          invitation_id: string
+          updated_at?: string
+        }
+        Update: {
+          auto_sync?: boolean
+          created_at?: string
+          drive_user_id?: string
+          folder_id?: string | null
+          invitation_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_drive_settings_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: true
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitation_fonts: {
         Row: {
           category: string
@@ -2083,12 +2546,55 @@ export type Database = {
         }
         Relationships: []
       }
+      invitation_guest_photos: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          drive_file_id: string | null
+          drive_synced_at: string | null
+          id: string
+          invitation_id: string
+          size_bytes: number | null
+          storage_path: string
+          uploader_name: string | null
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          drive_file_id?: string | null
+          drive_synced_at?: string | null
+          id?: string
+          invitation_id: string
+          size_bytes?: number | null
+          storage_path: string
+          uploader_name?: string | null
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          drive_file_id?: string | null
+          drive_synced_at?: string | null
+          id?: string
+          invitation_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          uploader_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_guest_photos_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitation_rsvp: {
         Row: {
           child_count: number
           companion_count: number
           created_at: string
-          edit_token: string
           id: string
           invitation_id: string
           is_attending: boolean
@@ -2101,7 +2607,6 @@ export type Database = {
           child_count?: number
           companion_count?: number
           created_at?: string
-          edit_token?: string
           id?: string
           invitation_id: string
           is_attending?: boolean
@@ -2114,7 +2619,6 @@ export type Database = {
           child_count?: number
           companion_count?: number
           created_at?: string
-          edit_token?: string
           id?: string
           invitation_id?: string
           is_attending?: boolean
@@ -2222,8 +2726,6 @@ export type Database = {
           id: string
           layout: Json
           preview_image_path: string | null
-          rsvp_closed: boolean
-          rsvp_deadline: string | null
           share_slug: string | null
           status: string
           template_id: string | null
@@ -2238,8 +2740,6 @@ export type Database = {
           id?: string
           layout?: Json
           preview_image_path?: string | null
-          rsvp_closed?: boolean
-          rsvp_deadline?: string | null
           share_slug?: string | null
           status?: string
           template_id?: string | null
@@ -2254,8 +2754,6 @@ export type Database = {
           id?: string
           layout?: Json
           preview_image_path?: string | null
-          rsvp_closed?: boolean
-          rsvp_deadline?: string | null
           share_slug?: string | null
           status?: string
           template_id?: string | null
@@ -2272,6 +2770,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mail_oauth_states: {
+        Row: {
+          expires_at: string
+          redirect_origin: string
+          return_path: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          redirect_origin: string
+          return_path?: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          redirect_origin?: string
+          return_path?: string
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       makeup_fittings: {
         Row: {
@@ -3901,7 +4423,9 @@ export type Database = {
       }
       place_media: {
         Row: {
+          album_id: string | null
           created_at: string
+          description: string | null
           display_order: number
           id: string
           image_url: string | null
@@ -3909,10 +4433,15 @@ export type Database = {
           owner_user_id: string
           place_id: string
           price: number | null
+          style_tags: string[]
           title: string | null
+          venue_name: string | null
+          venue_place_id: string | null
         }
         Insert: {
+          album_id?: string | null
           created_at?: string
+          description?: string | null
           display_order?: number
           id?: string
           image_url?: string | null
@@ -3920,10 +4449,15 @@ export type Database = {
           owner_user_id: string
           place_id: string
           price?: number | null
+          style_tags?: string[]
           title?: string | null
+          venue_name?: string | null
+          venue_place_id?: string | null
         }
         Update: {
+          album_id?: string | null
           created_at?: string
+          description?: string | null
           display_order?: number
           id?: string
           image_url?: string | null
@@ -3931,12 +4465,102 @@ export type Database = {
           owner_user_id?: string
           place_id?: string
           price?: number | null
+          style_tags?: string[]
           title?: string | null
+          venue_name?: string | null
+          venue_place_id?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "place_media_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "place_media_albums"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "place_media_place_id_fkey"
             columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+          {
+            foreignKeyName: "place_media_venue_place_id_fkey"
+            columns: ["venue_place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+        ]
+      }
+      place_media_albums: {
+        Row: {
+          cover_media_id: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          owner_user_id: string
+          place_id: string
+          product_id: string | null
+          shoot_date: string | null
+          style_tags: string[]
+          title: string
+          updated_at: string
+          venue_name: string | null
+          venue_place_id: string | null
+        }
+        Insert: {
+          cover_media_id?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          owner_user_id: string
+          place_id: string
+          product_id?: string | null
+          shoot_date?: string | null
+          style_tags?: string[]
+          title: string
+          updated_at?: string
+          venue_name?: string | null
+          venue_place_id?: string | null
+        }
+        Update: {
+          cover_media_id?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          owner_user_id?: string
+          place_id?: string
+          product_id?: string | null
+          shoot_date?: string | null
+          style_tags?: string[]
+          title?: string
+          updated_at?: string
+          venue_name?: string | null
+          venue_place_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_media_albums_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+          {
+            foreignKeyName: "place_media_albums_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "business_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "place_media_albums_venue_place_id_fkey"
+            columns: ["venue_place_id"]
             isOneToOne: false
             referencedRelation: "places"
             referencedColumns: ["place_id"]
@@ -4373,6 +4997,8 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           district: string
+          has_image: boolean | null
+          has_offline_store: boolean
           inquiry_channel: string
           inquiry_phone: string | null
           inquiry_url: string | null
@@ -4391,6 +5017,7 @@ export type Database = {
           partner_rank: number
           place_id: string
           review_count: number | null
+          road_address: string | null
           source_refs: Json | null
           tags: string[] | null
           updated_at: string | null
@@ -4408,6 +5035,8 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           district?: string
+          has_image?: boolean | null
+          has_offline_store?: boolean
           inquiry_channel?: string
           inquiry_phone?: string | null
           inquiry_url?: string | null
@@ -4426,6 +5055,7 @@ export type Database = {
           partner_rank?: number
           place_id?: string
           review_count?: number | null
+          road_address?: string | null
           source_refs?: Json | null
           tags?: string[] | null
           updated_at?: string | null
@@ -4443,6 +5073,8 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           district?: string
+          has_image?: boolean | null
+          has_offline_store?: boolean
           inquiry_channel?: string
           inquiry_phone?: string | null
           inquiry_url?: string | null
@@ -4461,6 +5093,7 @@ export type Database = {
           partner_rank?: number
           place_id?: string
           review_count?: number | null
+          road_address?: string | null
           source_refs?: Json | null
           tags?: string[] | null
           updated_at?: string | null
@@ -4972,6 +5605,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "quote_responses_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+          {
             foreignKeyName: "quote_responses_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
@@ -5021,6 +5661,59 @@ export type Database = {
           referrer_user_id?: string
         }
         Relationships: []
+      }
+      sdm_previews: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          hearts_spent: number
+          id: string
+          prompt_params: Json
+          result_image_path: string | null
+          selected_dress_id: string | null
+          source_image_path: string
+          status: string
+          thumbnail_path: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          hearts_spent?: number
+          id?: string
+          prompt_params?: Json
+          result_image_path?: string | null
+          selected_dress_id?: string | null
+          source_image_path: string
+          status?: string
+          thumbnail_path?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          hearts_spent?: number
+          id?: string
+          prompt_params?: Json
+          result_image_path?: string | null
+          selected_dress_id?: string | null
+          source_image_path?: string
+          status?: string
+          thumbnail_path?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdm_previews_selected_dress_id_fkey"
+            columns: ["selected_dress_id"]
+            isOneToOne: false
+            referencedRelation: "dress_samples"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_waitlist: {
         Row: {
@@ -5460,6 +6153,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_calendar_accounts: {
+        Row: {
+          access_token: string | null
+          calendar_id: string
+          connected_at: string
+          provider: string
+          refresh_token: string | null
+          sync_token: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          calendar_id?: string
+          connected_at?: string
+          provider: string
+          refresh_token?: string | null
+          sync_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          calendar_id?: string
+          connected_at?: string
+          provider?: string
+          refresh_token?: string | null
+          sync_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_consents: {
         Row: {
           agreed: boolean
@@ -5489,6 +6218,42 @@ export type Database = {
           id?: string
           notes?: Json | null
           user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_drive_accounts: {
+        Row: {
+          access_token: string | null
+          connected_at: string
+          email: string | null
+          provider: string
+          refresh_token: string | null
+          scopes: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          connected_at?: string
+          email?: string | null
+          provider?: string
+          refresh_token?: string | null
+          scopes?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          connected_at?: string
+          email?: string | null
+          provider?: string
+          refresh_token?: string | null
+          scopes?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -5541,6 +6306,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_mail_accounts: {
+        Row: {
+          access_token: string | null
+          connected_at: string
+          email: string | null
+          provider: string
+          refresh_token: string | null
+          scopes: string | null
+          token_expires_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          connected_at?: string
+          email?: string | null
+          provider?: string
+          refresh_token?: string | null
+          scopes?: string | null
+          token_expires_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          connected_at?: string
+          email?: string | null
+          provider?: string
+          refresh_token?: string | null
+          scopes?: string | null
+          token_expires_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_points: {
         Row: {
           balance: number
@@ -5589,6 +6387,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_schedule_items: {
+        Row: {
+          assigned_to: string | null
+          category: string | null
+          completed: boolean
+          created_at: string
+          id: string
+          notes: string | null
+          scheduled_date: string
+          source: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: string | null
+          completed?: boolean
+          created_at?: string
+          id?: string
+          notes?: string | null
+          scheduled_date: string
+          source?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string | null
+          completed?: boolean
+          created_at?: string
+          id?: string
+          notes?: string | null
+          scheduled_date?: string
+          source?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_streaks: {
         Row: {
           created_at: string
@@ -5617,51 +6457,6 @@ export type Database = {
           last_checkin_date?: string | null
           longest_streak?: number
           total_days?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_schedule_items: {
-        Row: {
-          assigned_to: string | null
-          category: string | null
-          completed: boolean
-          created_at: string
-          id: string
-          notes: string | null
-          scheduled_date: string
-          source: string
-          start_date: string | null
-          title: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          assigned_to?: string | null
-          category?: string | null
-          completed?: boolean
-          created_at?: string
-          id?: string
-          notes?: string | null
-          scheduled_date: string
-          source?: string
-          start_date?: string | null
-          title: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          assigned_to?: string | null
-          category?: string | null
-          completed?: boolean
-          created_at?: string
-          id?: string
-          notes?: string | null
-          scheduled_date?: string
-          source?: string
-          start_date?: string | null
-          title?: string
           updated_at?: string
           user_id?: string
         }
@@ -5835,6 +6630,63 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vendor_board_items_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["place_id"]
+          },
+        ]
+      }
+      vendor_deliveries: {
+        Row: {
+          created_at: string
+          file_paths: string[]
+          id: string
+          inquiry_id: string | null
+          message: string | null
+          owner_user_id: string
+          place_id: string | null
+          received_at: string | null
+          recipient_user_id: string
+          status: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_paths?: string[]
+          id?: string
+          inquiry_id?: string | null
+          message?: string | null
+          owner_user_id: string
+          place_id?: string | null
+          received_at?: string | null
+          recipient_user_id: string
+          status?: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_paths?: string[]
+          id?: string
+          inquiry_id?: string | null
+          message?: string | null
+          owner_user_id?: string
+          place_id?: string | null
+          received_at?: string | null
+          recipient_user_id?: string
+          status?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_deliveries_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "place_inquiries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_deliveries_place_id_fkey"
             columns: ["place_id"]
             isOneToOne: false
             referencedRelation: "places"
@@ -6029,12 +6881,20 @@ export type Database = {
     Functions: {
       _biz_category_to_place: { Args: { p_cat: string }; Returns: string }
       _jsonb_to_text_arr: { Args: { p: Json }; Returns: string[] }
+      _place_norm_name: { Args: { p: string }; Returns: string }
       accept_quote_response: { Args: { p_response_id: string }; Returns: Json }
       add_game_points: {
         Args: { p_doubled?: boolean; p_score: number; p_user_id: string }
         Returns: number
       }
       admin_ai_job_stats: { Args: never; Returns: Json }
+      admin_get_member_affiliations: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          affiliation: string
+          user_id: string
+        }[]
+      }
       admin_list_business_tiers: {
         Args: never
         Returns: {
@@ -6064,6 +6924,7 @@ export type Database = {
           business_name: string
           business_number: string
           business_type: string | null
+          commission_rate_bps: number
           created_at: string | null
           id: string
           is_verified: boolean | null
@@ -6088,8 +6949,10 @@ export type Database = {
       admin_list_pending_events: {
         Args: never
         Returns: {
+          banner_image_url: string | null
           created_at: string
           description: string | null
+          detail_images: string[]
           ends_at: string | null
           featured_until: string | null
           id: string
@@ -6124,6 +6987,8 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           district: string
+          has_image: boolean | null
+          has_offline_store: boolean
           inquiry_channel: string
           inquiry_phone: string | null
           inquiry_url: string | null
@@ -6142,6 +7007,7 @@ export type Database = {
           partner_rank: number
           place_id: string
           review_count: number | null
+          road_address: string | null
           source_refs: Json | null
           tags: string[] | null
           updated_at: string | null
@@ -6161,6 +7027,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          moderation_note: string | null
           moderation_status: string
           name: string
           owner_user_id: string
@@ -6218,6 +7085,14 @@ export type Database = {
       }
       admin_set_business_tier: {
         Args: { p_profile_id: string; p_tier: string }
+        Returns: Json
+      }
+      admin_set_member_affiliation: {
+        Args: {
+          p_affiliation: string
+          p_service_category?: string
+          p_user_id: string
+        }
         Returns: Json
       }
       admin_set_member_tier: {
@@ -6288,34 +7163,39 @@ export type Database = {
         }
         Returns: Json
       }
-      create_quote_request:
-        | {
-            Args: {
-              p_budget_max?: number
-              p_budget_min?: number
-              p_category: string
-              p_city?: string
-              p_district?: string
-              p_note?: string
-              p_style?: string
-              p_wedding_date?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_budget_max?: number
-              p_budget_min?: number
-              p_category: string
-              p_city?: string
-              p_district?: string
-              p_image_paths?: string[]
-              p_note?: string
-              p_style?: string
-              p_wedding_date?: string
-            }
-            Returns: Json
-          }
+      create_my_branch: {
+        Args: {
+          p_city: string
+          p_description: string
+          p_district: string
+          p_has_offline_store?: boolean
+          p_inquiry_channel?: string
+          p_inquiry_phone?: string
+          p_inquiry_url?: string
+          p_lat?: number
+          p_lng?: number
+          p_main_image_url: string
+          p_min_price: number
+          p_name: string
+          p_road_address?: string
+          p_tags: string[]
+        }
+        Returns: Json
+      }
+      create_quote_request: {
+        Args: {
+          p_budget_max?: number
+          p_budget_min?: number
+          p_category: string
+          p_city?: string
+          p_district?: string
+          p_image_paths?: string[]
+          p_note?: string
+          p_style?: string
+          p_wedding_date?: string
+        }
+        Returns: Json
+      }
       derive_wedding_persona: {
         Args: {
           s: Database["public"]["Tables"]["user_wedding_settings"]["Row"]
@@ -6344,8 +7224,27 @@ export type Database = {
           balance_after: number
         }[]
       }
+      find_duplicate_place: {
+        Args: {
+          p_category: string
+          p_city: string
+          p_district: string
+          p_exclude?: string
+          p_has_offline_store: boolean
+          p_lat: number
+          p_lng: number
+          p_name: string
+        }
+        Returns: {
+          data_source: string
+          name: string
+          owner_user_id: string
+          place_id: string
+        }[]
+      }
       get_business_quote_funnel: { Args: never; Returns: Json }
       get_my_coupon_download_count: { Args: never; Returns: number }
+      get_my_drive_account: { Args: never; Returns: Json }
       get_my_listing: {
         Args: never
         Returns: {
@@ -6360,6 +7259,8 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           district: string
+          has_image: boolean | null
+          has_offline_store: boolean
           inquiry_channel: string
           inquiry_phone: string | null
           inquiry_url: string | null
@@ -6378,6 +7279,7 @@ export type Database = {
           partner_rank: number
           place_id: string
           review_count: number | null
+          road_address: string | null
           source_refs: Json | null
           tags: string[] | null
           updated_at: string | null
@@ -6390,7 +7292,56 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_my_listing_contact: { Args: never; Returns: Json }
       get_my_listing_detail: { Args: never; Returns: Json }
+      get_my_listings: {
+        Args: never
+        Returns: {
+          avg_rating: number | null
+          category: string
+          city: string
+          confidence: number | null
+          created_at: string | null
+          currency: string | null
+          data_completeness: number
+          data_source: string | null
+          deleted_at: string | null
+          description: string | null
+          district: string
+          has_image: boolean | null
+          has_offline_store: boolean
+          inquiry_channel: string
+          inquiry_phone: string | null
+          inquiry_url: string | null
+          is_active: boolean | null
+          is_partner: boolean | null
+          last_collected_at: string | null
+          last_source_date: string | null
+          lat: number | null
+          lng: number | null
+          main_image_url: string | null
+          min_price: number | null
+          moderation_note: string | null
+          moderation_status: string
+          name: string
+          owner_user_id: string | null
+          partner_rank: number
+          place_id: string
+          review_count: number | null
+          road_address: string | null
+          source_refs: Json | null
+          tags: string[] | null
+          updated_at: string | null
+          view_count: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "places"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_my_mail_account: { Args: never; Returns: Json }
       get_or_create_referral_code: { Args: never; Returns: string }
       get_place_inquiry_stats: { Args: { p_place_id: string }; Returns: Json }
       get_quote_lead_contact: { Args: { p_request_id: string }; Returns: Json }
@@ -6584,6 +7535,26 @@ export type Database = {
           user_id: string
         }[]
       }
+      update_my_branch: {
+        Args: {
+          p_city: string
+          p_description: string
+          p_district: string
+          p_has_offline_store?: boolean
+          p_inquiry_channel?: string
+          p_inquiry_phone?: string
+          p_inquiry_url?: string
+          p_lat?: number
+          p_lng?: number
+          p_main_image_url: string
+          p_min_price: number
+          p_name: string
+          p_place_id: string
+          p_road_address?: string
+          p_tags: string[]
+        }
+        Returns: Json
+      }
       upsert_my_listing:
         | {
             Args: {
@@ -6612,6 +7583,7 @@ export type Database = {
             }
             Returns: Json
           }
+      upsert_my_listing_contact: { Args: { p_contact: Json }; Returns: Json }
       upsert_my_listing_detail: { Args: { p_detail: Json }; Returns: Json }
     }
     Enums: {
