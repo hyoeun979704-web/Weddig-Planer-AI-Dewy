@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { readySubscription } from "@/features/consumer/data/payments";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
 import { safeSessionStorage } from "@/lib/safeSessionStorage";
@@ -57,9 +57,7 @@ const SubscriptionCheckout = () => {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("kakao-pay-ready", {
-        body: { type, origin: window.location.origin },
-      });
+      const { data, error } = await readySubscription({ type, origin: window.location.origin });
 
       if (error || !data?.success) {
         throw new Error(data?.error || error?.message || "결제 준비에 실패했습니다");

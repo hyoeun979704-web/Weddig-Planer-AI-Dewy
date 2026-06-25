@@ -2,18 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Package, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 
 import { formatWon as formatPrice } from "@/lib/priceFormat";
-
-interface Order {
-  id: string;
-  order_number: string;
-  total_amount: number;
-  shipping_name: string;
-  shipping_address: string;
-  created_at: string;
-}
+import { fetchOrderComplete, type OrderCompleteRow as Order } from "@/features/consumer/data/orders";
 
 const OrderComplete = () => {
   const navigate = useNavigate();
@@ -24,12 +15,8 @@ const OrderComplete = () => {
   useEffect(() => {
     if (!id) return;
     const fetch = async () => {
-      const { data } = await (supabase
-        .from("orders" as any)
-        .select("id, order_number, total_amount, shipping_name, shipping_address, created_at") as any)
-        .eq("id", id)
-        .single();
-      setOrder(data as any);
+      const data = await fetchOrderComplete(id);
+      setOrder(data);
       setIsLoading(false);
     };
     fetch();

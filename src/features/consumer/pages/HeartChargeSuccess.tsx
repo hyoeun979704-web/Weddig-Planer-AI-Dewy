@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { approveHeartCharge } from "@/features/consumer/data/payments";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { safeSessionStorage } from "@/lib/safeSessionStorage";
@@ -40,19 +40,14 @@ const HeartChargeSuccess = () => {
       approvedRef.current = true;
 
       try {
-        const { data, error } = await supabase.functions.invoke(
-          "kakao-pay-charge-approve",
-          {
-            body: {
-              tid: session.tid,
-              partnerOrderId: session.partnerOrderId,
-              partnerUserId: session.partnerUserId,
-              pgToken,
-              packageId: session.packageId,
-              pointsToSpend: session.pointsToSpend,
-            },
-          }
-        );
+        const { data, error } = await approveHeartCharge({
+          tid: session.tid,
+          partnerOrderId: session.partnerOrderId,
+          partnerUserId: session.partnerUserId,
+          pgToken,
+          packageId: session.packageId,
+          pointsToSpend: session.pointsToSpend,
+        });
 
         if (error || !data?.success) {
           throw new Error(data?.error || error?.message || "결제 승인 실패");

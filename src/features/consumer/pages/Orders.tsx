@@ -4,27 +4,9 @@ import { Package, Clock, CheckCircle, XCircle, Truck, CreditCard } from "lucide-
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatWon as formatPrice } from "@/lib/priceFormat";
-
-interface OrderItem {
-  id: string;
-  product_name: string;
-  product_price: number;
-  quantity: number;
-}
-
-interface Order {
-  id: string;
-  order_number: string;
-  status: string;
-  total_amount: number;
-  shipping_name: string;
-  created_at: string;
-  paid_at: string | null;
-  order_items: OrderItem[];
-}
+import { fetchOrders, type OrderListRow as Order } from "@/features/consumer/data/orders";
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   pending: { label: "결제대기", icon: CreditCard, color: "text-amber-500" },
@@ -52,13 +34,8 @@ const Orders = () => {
     }
 
     const fetch = async () => {
-      const { data, error } = await (supabase
-        .from("orders" as any)
-        .select("*, order_items(*)") as any)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (!error && data) setOrders(data as any);
+      const data = await fetchOrders(user.id);
+      setOrders(data);
       setIsLoading(false);
     };
     fetch();

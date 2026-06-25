@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { approveSubscription } from "@/features/consumer/data/payments";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
@@ -49,15 +49,13 @@ const SubscriptionPaymentSuccess = () => {
       }
 
       try {
-        const { data, error } = await supabase.functions.invoke("kakao-pay-approve", {
-          body: {
-            tid: session.tid,
-            partnerOrderId: session.partnerOrderId,
-            partnerUserId: session.partnerUserId,
-            pgToken,
-            type,
-            amount: session.amount,
-          },
+        const { data, error } = await approveSubscription({
+          tid: session.tid,
+          partnerOrderId: session.partnerOrderId,
+          partnerUserId: session.partnerUserId,
+          pgToken,
+          type,
+          amount: session.amount,
         });
 
         if (error || !data?.success) {

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchStarterUsed, readyHeartCharge } from "@/features/consumer/data/payments";
 import { usePoints } from "@/hooks/usePoints";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
@@ -39,13 +39,7 @@ const HeartCharge = () => {
       return;
     }
     (async () => {
-      const { data } = await supabase
-        .from("heart_transactions")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("reason", "charge_starter")
-        .limit(1);
-      setIsStarterUsed((data?.length ?? 0) > 0);
+      setIsStarterUsed(await fetchStarterUsed(user.id));
     })();
   }, [user, navigate]);
 
@@ -67,16 +61,11 @@ const HeartCharge = () => {
     if (!selected || isSubmitting || !user) return;
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke(
-        "kakao-pay-charge-ready",
-        {
-          body: {
-            packageId: selected.id,
-            pointsToSpend: pointsToUse,
-            origin: window.location.origin,
-          },
-        }
-      );
+      const { data, error } = await readyHeartCharge({
+        packageId: selected.id,
+        pointsToSpend: pointsToUse,
+        origin: window.location.origin,
+      });
 
       if (error || !data?.success) {
         throw new Error(data?.error || error?.message || "결제 준비 실패");
