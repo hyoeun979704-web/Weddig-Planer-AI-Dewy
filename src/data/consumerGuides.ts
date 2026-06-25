@@ -1,12 +1,12 @@
 // 소비자(예비부부) 인앱 사용 가이드 레지스트리(단일 소스).
-// 기업 가이드(businessGuides.ts)와 동일 구조: BusinessGuideView 슬라이드로 렌더.
+// 기업 가이드(businessGuides.ts)와 동일 구조: 공용 GuideView(shared) 슬라이드로 렌더.
 // 슬라이드 이미지는 scripts/capture-consumer-shots.cjs 로 3:4 라이브 캡처(SUITE 폰트 +
 // 타깃 하이라이트, 목 데이터로 채운 화면). 산문 문서는 docs/consumer-onboarding-guide.md.
 //
 // 주제는 사용자가 요청한 16개를 **축약 없이** 각각의 가이드로 구성한다(회원가입은 비회원
 // 기준, 나머지는 로그인 회원 기준).
 
-import type { GuideSlide } from "@/pages/business/BusinessGuideView";
+import type { GuideSlide } from "@/types/guides";
 
 import cAuth from "@/assets/consumer/guide/c-auth.png";
 import cHomeTabs from "@/assets/consumer/guide/c-home-tabs.png";

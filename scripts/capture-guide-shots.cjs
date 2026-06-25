@@ -4,7 +4,7 @@
 //
 // 기존 방식(scripts/build-guide-shots.cjs)은 풀페이지(예: 824x3256)를 3:4 로 욱여넣어
 // 여러 섹션이 뭉치고 글자가 뭉개졌다. 이 스크립트는 처음부터 3:4 뷰포트로 찍어 그 문제를
-// 근본 제거한다(프레임 = src/pages/business/BusinessGuide.tsx 의 aspect-[3/4]).
+// 근본 제거한다(프레임 = src/features/partners/pages/BusinessGuide.tsx 의 aspect-[3/4]).
 //
 // 폰트 충실도: 앱 본폰트 SUITE Variable 은 cdn.jsdelivr.net 에서 로드되는데 일부 캡처
 // 환경(샌드박스)은 이를 막아 폴백(Noto Sans KR)으로 찍힌다 → 실제 앱과 다른 폰트.
@@ -71,7 +71,7 @@ const SHOTS = [
   { id: "business-coupons", route: "/business/coupons", auth: true, label: "입력하고 쿠폰 발행",
     target: { sel: 'button:has-text("쿠폰 발행")' }, pad: 10 },
 
-  // ══ 주제별 상세 가이드 슬라이드 (src/data/businessGuides.ts 가 import) ══════════
+  // ══ 주제별 상세 가이드 슬라이드 (src/features/partners/data/businessGuides.ts 가 import) ══════════
   // 1) 업체정보 수정
   { id: "g1-basic", route: "/business/edit", auth: true, label: "이름·소개·지역", target: { sel: 'text=업체명' }, pad: 10 },
   { id: "g1-inquiry", route: "/business/edit", auth: true, label: "문의 받을 방법", target: { sel: 'button:has-text("앱 채팅")' }, pad: 12 },

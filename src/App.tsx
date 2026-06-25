@@ -8,8 +8,6 @@ import { AmountPromptHost } from "@/components/ui/amount-prompt";
 import WidgetBridgeHost from "@/components/native/WidgetBridgeHost";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
-import AdminGuard from "@/components/admin/AdminGuard";
-import BusinessGuard from "@/components/business/BusinessGuard";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -62,7 +60,6 @@ const MailInbox = lazy(() => import("./pages/MailInbox"));
 const InvitationMarket = lazy(() => import("./pages/invitation/InvitationMarket"));
 const VendorBoard = lazy(() => import("./pages/VendorBoard"));
 const VendorCompare = lazy(() => import("./pages/VendorCompare"));
-const BusinessLeads = lazy(() => import("./pages/business/BusinessLeads"));
 const HairPreview = lazy(() => import("./pages/HairPreview"));
 const HairPreviewResult = lazy(() => import("./pages/HairPreviewResult"));
 const HairPreviewGallery = lazy(() => import("./pages/HairPreviewGallery"));
@@ -127,36 +124,10 @@ const MobileInvitationView2 = lazy(() => import("./pages/invitation/MobileInvita
 const InvitationRsvpDashboard = lazy(() => import("./pages/invitation/InvitationRsvpDashboard"));
 const InvitationPhotos = lazy(() => import("./pages/invitation/InvitationPhotos"));
 const GuestPhotoUpload = lazy(() => import("./pages/invitation/GuestPhotoUpload"));
-const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-const AdminGroupDashboard = lazy(() => import("./pages/admin/AdminGroupDashboard"));
-const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
-const AdminContentReview = lazy(() => import("./pages/admin/AdminContentReview"));
-const AdminPlaceEdit = lazy(() => import("./pages/admin/AdminPlaceEdit"));
-const AdminPlaces = lazy(() => import("./pages/admin/AdminPlaces"));
-const AdminTipInstagrams = lazy(() => import("./pages/admin/AdminTipInstagrams"));
-const AdminInstagramPosts = lazy(() => import("./pages/admin/AdminInstagramPosts"));
-const AdminInstagramPostEdit = lazy(() => import("./pages/admin/AdminInstagramPostEdit"));
-const AdminMakeupSamples = lazy(() => import("./pages/admin/AdminMakeupSamples"));
-const AdminHairSamples = lazy(() => import("./pages/admin/AdminHairSamples"));
-const AdminAIPrompts = lazy(() => import("./pages/admin/AdminAIPrompts"));
-const AdminAiPromptEditor = lazy(() => import("./pages/admin/AdminAiPromptEditor"));
-const AdminAIJobs = lazy(() => import("./pages/admin/AdminAIJobs"));
-const AdminInvitationTemplates = lazy(() => import("./pages/admin/AdminInvitationTemplates"));
-const AdminInvitationAssets = lazy(() => import("./pages/admin/AdminInvitationAssets"));
-const AdminInvitationFonts = lazy(() => import("./pages/admin/AdminInvitationFonts"));
-const AdminWeddingPhotoRefs = lazy(() => import("./pages/admin/AdminWeddingPhotoRefs"));
-const AdminServiceWaitlist = lazy(() => import("./pages/admin/AdminServiceWaitlist"));
-const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
-const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
-const AdminInquiries = lazy(() => import("./pages/admin/AdminInquiries"));
-const AdminCommunityAnnouncements = lazy(() => import("./pages/admin/AdminCommunityAnnouncements"));
-const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
-const AdminErrorLogs = lazy(() => import("./pages/admin/AdminErrorLogs"));
-const AdminAgentOutputs = lazy(() => import("./pages/admin/AdminAgentOutputs"));
+// 운영자(console) 도메인 — App.tsx 는 /admin/* 한 줄로 위임. admin 페이지 lazy·가드는
+// 라우트 모듈(@/features/console/routes)이 소유한다(도메인 경계).
+const ConsoleRoutes = lazy(() => import("@/features/console/routes"));
 const SupportChat = lazy(() => import("./pages/SupportChat"));
-const AdminBusinessReview = lazy(() => import("./pages/admin/AdminBusinessReview"));
-const AdminProductCuration = lazy(() => import("./pages/admin/AdminProductCuration"));
-const AdminFeaturedProducts = lazy(() => import("./pages/admin/AdminFeaturedProducts"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
 const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
@@ -186,24 +157,9 @@ const SubscriptionCheckout = lazy(() => import("./pages/SubscriptionCheckout"));
 const SubscriptionPaymentSuccess = lazy(() => import("./pages/SubscriptionPaymentSuccess"));
 const SubscriptionPaymentFail = lazy(() => import("./pages/SubscriptionPaymentFail"));
 
-// 기업회원 플로우
-const BusinessLanding = lazy(() => import("./pages/business/BusinessLanding"));
-const BusinessOnboard = lazy(() => import("./pages/business/BusinessOnboard"));
-const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
-const BusinessGuide = lazy(() => import("./pages/business/BusinessGuide"));
-const BusinessGuideDetail = lazy(() => import("./pages/business/BusinessGuideDetail"));
-const BusinessGuideIndex = lazy(() => import("./pages/business/BusinessGuideIndex"));
-const BusinessVendorEdit = lazy(() => import("./pages/business/BusinessVendorEdit"));
-const BusinessClaim = lazy(() => import("./pages/business/BusinessClaim"));
-const AdminPlaceClaims = lazy(() => import("./pages/admin/AdminPlaceClaims"));
-const BusinessGallery = lazy(() => import("./pages/business/BusinessGallery"));
-const BusinessCoupons = lazy(() => import("./pages/business/BusinessCoupons"));
-const BusinessEvents = lazy(() => import("./pages/business/BusinessEvents"));
-const BusinessProducts = lazy(() => import("./pages/business/BusinessProducts"));
-const BusinessInquiries = lazy(() => import("./pages/business/BusinessInquiries"));
-const BusinessDeliveries = lazy(() => import("./pages/business/BusinessDeliveries"));
-const BusinessDesigns = lazy(() => import("./pages/business/BusinessDesigns"));
-const BusinessReviews = lazy(() => import("./pages/business/BusinessReviews"));
+// 기업(partners) 도메인 — App.tsx 는 /business/* 한 줄로 위임. partners 페이지 lazy·가드는
+// 라우트 모듈(@/features/partners/routes)이 소유한다(도메인 경계 — App.tsx 에 partners 참조 최소화).
+const PartnersRoutes = lazy(() => import("@/features/partners/routes"));
 
 // React Query 전역 기본값: 기본 staleTime=0 + refetchOnWindowFocus=true 면 모바일 웹에서
 // 탭 전환마다 모든 useQuery 가 재요청(중복 라운드트립). 모바일 웹이 주 사용처라 60s 신선도 +
@@ -336,25 +292,8 @@ const App = () => (
               {/* 꽃 머지 퍼즐 게임 */}
               <Route path="/merge-game" element={<MergeGame />} />
 
-              {/* 기업회원 플로우 */}
-              <Route path="/business" element={<BusinessLanding />} />
-              <Route path="/business/onboard" element={<BusinessOnboard />} />
-              <Route path="/business/dashboard" element={<BusinessGuard><BusinessDashboard /></BusinessGuard>} />
-              {/* 사용법 가이드는 정적 콘텐츠(데이터 패치 없음) — 기업회원 '전환 전'
-                  예비 사장님(로그인 페이지 진입)도 봐야 하므로 가드 없이 공개한다. */}
-              <Route path="/business/guides" element={<BusinessGuideIndex />} />
-              <Route path="/business/guide" element={<BusinessGuide />} />
-              <Route path="/business/guide/:guideId" element={<BusinessGuideDetail />} />
-              <Route path="/business/edit" element={<BusinessGuard requireApproved><BusinessVendorEdit /></BusinessGuard>} />
-              <Route path="/business/claim" element={<BusinessGuard requireApproved><BusinessClaim /></BusinessGuard>} />
-              <Route path="/business/gallery" element={<BusinessGuard requireApproved><BusinessGallery /></BusinessGuard>} />
-              <Route path="/business/coupons" element={<BusinessGuard requireApproved><BusinessCoupons /></BusinessGuard>} />
-              <Route path="/business/events" element={<BusinessGuard requireApproved><BusinessEvents /></BusinessGuard>} />
-              <Route path="/business/products" element={<BusinessGuard requireApproved><BusinessProducts /></BusinessGuard>} />
-              <Route path="/business/inquiries" element={<BusinessGuard requireApproved><BusinessInquiries /></BusinessGuard>} />
-              <Route path="/business/deliveries" element={<BusinessGuard requireApproved><BusinessDeliveries /></BusinessGuard>} />
-              <Route path="/business/designs" element={<BusinessGuard requireApproved><BusinessDesigns /></BusinessGuard>} />
-              <Route path="/business/reviews" element={<BusinessGuard requireApproved><BusinessReviews /></BusinessGuard>} />
+              {/* 기업(partners) 도메인 — 라우트 모듈로 위임(가드·페이지는 그 모듈이 소유). */}
+              <Route path="/business/*" element={<PartnersRoutes />} />
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
@@ -376,7 +315,6 @@ const App = () => (
                 path="/invitation/market"
                 element={DESIGN_MARKET_ENABLED ? <InvitationMarket /> : <Navigate to="/" replace />}
               />
-              <Route path="/business/leads" element={<BusinessGuard requireApproved><BusinessLeads /></BusinessGuard>} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/consulting" element={<WeddingConsulting />} />
@@ -406,45 +344,9 @@ const App = () => (
               <Route path="/i/:slug/photos" element={<GuestPhotoUpload />} />
               {/* I-MOBILE Phase 1: 네이티브 섹션 뷰어 프리뷰(기존 캔버스 뷰어 병행) */}
               <Route path="/i2/:slug" element={<MobileInvitationView2 />} />
-              {/* 관리자 라우트는 가드를 라우트 레벨에 둔다 — 페이지가 마운트되기
-                  전에 권한을 확인해, 비관리자가 데이터 fetch 를 트리거하거나 잠깐
-                  내용을 보는 것을 막는다. */}
-              <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
-              {/* 그룹 전용 대시보드 — adminNav 의 group 키와 동일 경로. 메인 허브에서 진입. */}
-              <Route path="/admin/vendors" element={<AdminGuard><AdminGroupDashboard group="vendors" /></AdminGuard>} />
-              <Route path="/admin/commerce" element={<AdminGuard><AdminGroupDashboard group="commerce" /></AdminGuard>} />
-              <Route path="/admin/moderation" element={<AdminGuard><AdminGroupDashboard group="moderation" /></AdminGuard>} />
-              <Route path="/admin/invitation" element={<AdminGuard><AdminGroupDashboard group="invitation" /></AdminGuard>} />
-              <Route path="/admin/ai" element={<AdminGuard><AdminGroupDashboard group="ai" /></AdminGuard>} />
-              <Route path="/admin/marketing" element={<AdminGuard><AdminGroupDashboard group="marketing" /></AdminGuard>} />
-              <Route path="/admin/content-review" element={<AdminGuard><AdminContentReview /></AdminGuard>} />
-              <Route path="/admin/places" element={<AdminGuard><AdminPlaces /></AdminGuard>} />
-              <Route path="/admin/places/:id" element={<AdminGuard><AdminPlaceEdit /></AdminGuard>} />
-              <Route path="/admin/tip-instagrams" element={<AdminGuard><AdminTipInstagrams /></AdminGuard>} />
-              <Route path="/admin/instagram-posts" element={<AdminGuard><AdminInstagramPosts /></AdminGuard>} />
-              <Route path="/admin/instagram-posts/:id" element={<AdminGuard><AdminInstagramPostEdit /></AdminGuard>} />
-              <Route path="/admin/dress-samples" element={<AdminGuard><AdminDressSamples /></AdminGuard>} />
-              <Route path="/admin/makeup-samples" element={<AdminGuard><AdminMakeupSamples /></AdminGuard>} />
-              <Route path="/admin/hair-samples" element={<AdminGuard><AdminHairSamples /></AdminGuard>} />
-              <Route path="/admin/ai-prompts" element={<AdminGuard><AdminAIPrompts /></AdminGuard>} />
-              <Route path="/admin/ai-prompt-editor" element={<AdminGuard><AdminAiPromptEditor /></AdminGuard>} />
-              <Route path="/admin/ai-jobs" element={<AdminGuard><AdminAIJobs /></AdminGuard>} />
-              <Route path="/admin/invitation-templates" element={<AdminGuard><AdminInvitationTemplates /></AdminGuard>} />
-              <Route path="/admin/invitation-assets" element={<AdminGuard><AdminInvitationAssets /></AdminGuard>} />
-              <Route path="/admin/invitation-fonts" element={<AdminGuard><AdminInvitationFonts /></AdminGuard>} />
-              <Route path="/admin/wedding-photo-refs" element={<AdminGuard><AdminWeddingPhotoRefs /></AdminGuard>} />
-              <Route path="/admin/service-waitlist" element={<AdminGuard><AdminServiceWaitlist /></AdminGuard>} />
-              <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
-              <Route path="/admin/reports" element={<AdminGuard><AdminReports /></AdminGuard>} />
-              <Route path="/admin/inquiries" element={<AdminGuard><AdminInquiries /></AdminGuard>} />
-              <Route path="/admin/announcements" element={<AdminGuard><AdminCommunityAnnouncements /></AdminGuard>} />
-              <Route path="/admin/promotions" element={<AdminGuard><AdminPromotions /></AdminGuard>} />
-              <Route path="/admin/error-logs" element={<AdminGuard><AdminErrorLogs /></AdminGuard>} />
-              <Route path="/admin/agent-outputs" element={<AdminGuard><AdminAgentOutputs /></AdminGuard>} />
-              <Route path="/admin/place-claims" element={<AdminGuard><AdminPlaceClaims /></AdminGuard>} />
-              <Route path="/admin/business-review" element={<AdminGuard><AdminBusinessReview /></AdminGuard>} />
-              <Route path="/admin/product-curation" element={<AdminGuard><AdminProductCuration /></AdminGuard>} />
-              <Route path="/admin/featured-products" element={<AdminGuard><AdminFeaturedProducts /></AdminGuard>} />
+              {/* 운영자(console) 도메인 — 라우트 모듈로 위임(가드·페이지는 그 모듈이 소유).
+                  가드는 모듈 내 라우트 레벨 — 페이지 마운트 전 권한 확인(비관리자 fetch·노출 차단). */}
+              <Route path="/admin/*" element={<ConsoleRoutes />} />
 
               {/* AEO 가이드 페이지(결혼어플추천 등). 한글 슬러그 라우트를
                   src/data/aeoGuides 단일 소스에서 생성. 크롤러용 SSR 은 api/guide.ts. */}
