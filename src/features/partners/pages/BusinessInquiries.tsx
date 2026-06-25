@@ -2,22 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, MessageSquare } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useBranches } from "@/features/partners/hooks/useBranches";
+import {
+  ANSWER_MAX,
+  fetchBusinessInquiries,
+  answerInquiry,
+  markInquiryBooked,
+  type InquiryRow,
+} from "@/features/partners/data/businessInquiries";
 import { toast } from "sonner";
-
-const ANSWER_MAX = 2000;
-
-interface InquiryRow {
-  id: string;
-  title: string;
-  content: string;
-  contact: string | null;
-  status: "open" | "answered" | "closed" | "booked";
-  answer: string | null;
-  answered_at: string | null;
-  created_at: string;
-}
 
 /**
  * 업체 포털 — 고객 문의함. RLS 가 내 업체(place 소유) 문의만 돌려준다.
@@ -37,13 +30,7 @@ const BusinessInquiries = () => {
     setLoading(true);
     setPlaceId(selectedId);
     try {
-      const { data, error } = await supabase
-        .from("place_inquiries")
-        .select("id, title, content, contact, status, answer, answered_at, created_at")
-        .eq("place_id", selectedId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      setRows((data ?? []) as InquiryRow[]);
+      setRows(await fetchBusinessInquiries(selectedId));
     } catch {
       toast.error("문의를 불러오지 못했어요");
     } finally {
@@ -61,15 +48,7 @@ const BusinessInquiries = () => {
     if (!answer) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("place_inquiries")
-        .update({
-          answer: answer.slice(0, ANSWER_MAX),
-          status: "answered",
-          answered_at: new Date().toISOString(),
-        })
-        .eq("id", id);
-      if (error) throw error;
+      await answerInquiry(id, answer);
       toast.success("답변을 등록했어요");
       setOpenId(null);
       setDraft("");
@@ -85,11 +64,7 @@ const BusinessInquiries = () => {
 
   const handleBooked = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("place_inquiries")
-        .update({ status: "booked" })
-        .eq("id", id);
-      if (error) throw error;
+      await markInquiryBooked(id);
       toast.success("예약 확정으로 표시했어요");
       await load();
     } catch (err) {
