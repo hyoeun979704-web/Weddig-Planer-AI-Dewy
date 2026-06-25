@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { escapeLikePattern, quoteForOr } from "@/lib/postgrestEscape";
 import {
   Select,
   SelectContent,
@@ -20,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchPlacesList, type PlaceRow } from "@/features/console/data/adminPlaces";
 
 /**
  * 운영자용 places 일괄 점검·검색 페이지.
@@ -51,17 +50,7 @@ const CATEGORY_OPTIONS = [
   { value: "invitation_venue", label: "청첩장 모임 장소" },
 ];
 
-interface PlaceRow {
-  place_id: string;
-  category: string;
-  name: string;
-  city: string | null;
-  district: string | null;
-  main_image_url: string | null;
-  is_active: boolean | null;
-  is_partner: boolean | null;
-  updated_at: string | null;
-}
+// PlaceRow 타입은 features/console/data/adminPlaces 에서 import.
 
 const PAGE_SIZE = 50;
 
@@ -89,31 +78,22 @@ const AdminPlaces = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let q = (supabase as any)
-      .from("places")
-      .select(
-        "place_id, category, name, city, district, main_image_url, is_active, is_partner, updated_at",
-        { count: "exact" },
-      );
-    if (category !== "all") q = q.eq("category", category);
-    if (missingImageOnly) q = q.is("main_image_url", null);
-    if (inactiveOnly) q = q.eq("is_active", false);
-    else q = q.eq("is_active", true);
-    if (debounced) {
-      // name 또는 city ILIKE 검색 — 검색어를 LIKE 와일드카드/.or() 파서 양쪽에서 살균
-      // (raw 보간 시 `,`·`)`·`%` 가 필터 인젝션/오작동을 일으킴). 공통 헬퍼 재사용.
-      const term = quoteForOr(`%${escapeLikePattern(debounced)}%`);
-      q = q.or(`name.ilike.${term},city.ilike.${term}`);
+    try {
+      const { rows, total } = await fetchPlacesList({
+        category,
+        missingImageOnly,
+        inactiveOnly,
+        search: debounced,
+        page,
+        pageSize: PAGE_SIZE,
+      });
+      setRows(rows);
+      setTotal(total);
+    } catch (e) {
+      console.error("places list failed", e);
+    } finally {
+      setLoading(false);
     }
-    q = q.order("updated_at", { ascending: false, nullsFirst: false }).range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
-    const { data, error, count } = await q;
-    setLoading(false);
-    if (error) {
-      console.error("places list failed", error);
-      return;
-    }
-    setRows((data ?? []) as PlaceRow[]);
-    setTotal(count ?? 0);
   }, [debounced, category, missingImageOnly, inactiveOnly, page]);
 
   useEffect(() => { load(); }, [load]);
