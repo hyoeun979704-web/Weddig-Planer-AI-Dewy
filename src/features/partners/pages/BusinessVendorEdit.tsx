@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchListingRow, saveListing, requestPlaceClaim } from "@/features/partners/data/vendorEdit";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -112,23 +112,15 @@ const BusinessVendorEdit = () => {
         return;
       }
       let row: Record<string, any> | null | undefined;
-      let error: unknown;
-      if (branchParam) {
-        // 특정 지점 수정 — 내 지점 목록에서 해당 id.
-        const res = await supabase.rpc("get_my_listings" as never);
-        error = res.error;
-        row = Array.isArray(res.data) ? (res.data as any[]).find((r) => r.place_id === branchParam) : null;
-      } else {
-        const res = await supabase.rpc("get_my_listing");
-        error = res.error;
-        row = Array.isArray(res.data) ? res.data[0] : res.data;
-      }
-      if (cancelled) return;
-      if (error) {
+      try {
+        row = await fetchListingRow(branchParam);
+      } catch {
+        if (cancelled) return;
         toast.error("정보를 불러오지 못했어요. 다시 시도해주세요");
         setLoading(false);
         return;
       }
+      if (cancelled) return;
       let server = EMPTY_LISTING;
       if (row && row.place_id) {
         setPlaceId(row.place_id);
@@ -228,17 +220,14 @@ const BusinessVendorEdit = () => {
       p_has_offline_store: hasOfflineStore,
       p_road_address: hasOfflineStore ? (roadAddress.trim() || undefined) : undefined,
     };
-    let data: unknown, error: unknown;
-    if (isNew) {
-      ({ data, error } = await supabase.rpc("create_my_branch" as never, { ...base, ...branchExtra } as never));
-    } else if (branchParam) {
-      ({ data, error } = await supabase.rpc("update_my_branch" as never, { p_place_id: branchParam, ...base, ...branchExtra } as never));
-    } else {
-      ({ data, error } = await supabase.rpc("upsert_my_listing", base));
-    }
+    const res = await saveListing(
+      isNew ? "new" : branchParam ? "branch" : "single",
+      branchParam,
+      base,
+      branchExtra,
+    );
     setSaving(false);
-    const res = data as { ok?: boolean; error?: string; reason?: string; place_id?: string; name?: string } | null;
-    if (error || !res?.ok) {
+    if (!res?.ok) {
       // 중복 가드 응답 처리 — 같은 좌표/이름 업체 존재 시 차단/claim 안내.
       if (res?.reason === "claimable" && res.place_id) {
         const go = await confirm({
@@ -247,9 +236,9 @@ const BusinessVendorEdit = () => {
           confirmText: "내 업체로 등록 요청",
         });
         if (go) {
-          const claim = await supabase.rpc("request_place_claim", { p_place_id: res.place_id } as never);
-          toast[claim.error ? "error" : "success"](
-            claim.error ? "요청에 실패했어요" : "등록 요청을 보냈어요. 운영자 승인 후 내 업체가 됩니다",
+          const claimOk = await requestPlaceClaim(res.place_id);
+          toast[claimOk ? "success" : "error"](
+            claimOk ? "등록 요청을 보냈어요. 운영자 승인 후 내 업체가 됩니다" : "요청에 실패했어요",
           );
         }
         return;
