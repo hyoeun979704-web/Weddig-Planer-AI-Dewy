@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
-import ImageUploader from "@/components/admin/ImageUploader";
+import ImageUploader from "@/components/ImageUploader";
 import BusinessListingDetailForm from "@/features/partners/components/BusinessListingDetailForm";
 import BusinessListingContactForm from "@/features/partners/components/BusinessListingContactForm";
 import { draftKey, loadDraft, saveDraft, clearDraft, shallowEqual } from "@/lib/formDraft";

@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/select";
 import AdminGuard from "@/components/admin/AdminGuard";
 import AdminLayout from "@/components/admin/AdminLayout";
-import ImageUploader from "@/components/admin/ImageUploader";
+import ImageUploader from "@/components/ImageUploader";
 import InvitationCanvas from "@/components/invitation/InvitationCanvas";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
 import AdminTemplateEditor, {
