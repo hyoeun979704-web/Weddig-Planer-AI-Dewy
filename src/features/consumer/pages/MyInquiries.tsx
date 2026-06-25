@@ -5,19 +5,13 @@ import { toast } from "sonner";
 import { inquiryCategoryLabel } from "@/lib/inquiryCategories";
 import PageHeader from "@/components/PageHeader";
 import BottomNav from "@/components/BottomNav";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface Inquiry {
-  id: string;
-  category: string;
-  title: string;
-  content: string;
-  status: string;
-  answer: string | null;
-  feedback: "up" | "down" | null;
-  created_at: string;
-}
+import {
+  fetchMyInquiries,
+  updateInquiryFeedback,
+  quotesKeys,
+  type InquiryRow,
+} from "@/features/consumer/data/quotes";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   answered: { label: "답변완료", color: "bg-green-100 text-green-700" },
@@ -31,31 +25,15 @@ const MyInquiries = () => {
 
   // 답변 만족도(CSAT) — 같은 평가 재탭 시 철회. RLS+트리거가 feedback 외 수정 차단.
   const feedbackMutation = useMutation({
-    mutationFn: async ({ id, feedback }: { id: string; feedback: "up" | "down" | null }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
-        .from("inquiries")
-        .update({ feedback })
-        .eq("id", id)
-        .eq("user_id", user!.id);
-      if (error) throw error;
-    },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["my-inquiries"] }),
+    mutationFn: ({ id, feedback }: { id: string; feedback: InquiryRow["feedback"] }) =>
+      updateInquiryFeedback({ id, userId: user!.id, feedback }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: quotesKeys.inquiriesPrefix }),
     onError: () => toast.error("평가를 저장하지 못했어요. 잠시 후 다시 시도해 주세요."),
   });
 
   const { data: inquiries = [], isLoading } = useQuery({
-    queryKey: ["my-inquiries", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await (supabase as any)
-        .from("inquiries")
-        .select("id, category, title, content, status, answer, feedback, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Inquiry[];
-    },
+    queryKey: quotesKeys.myInquiries(user?.id),
+    queryFn: () => fetchMyInquiries(user?.id),
     enabled: !!user,
   });
 
