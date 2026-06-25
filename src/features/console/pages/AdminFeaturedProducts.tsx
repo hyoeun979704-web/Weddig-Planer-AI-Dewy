@@ -2,8 +2,11 @@ import { useEffect, useState, useCallback } from "react";
 import { Loader2, Star, Search, X, ChevronLeft, ChevronRight, Users, ExternalLink } from "lucide-react";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
-import { escapeLikePattern } from "@/lib/postgrestEscape";
+import {
+  fetchFeaturedProducts,
+  updateFeaturedProduct,
+  type FeaturedRow,
+} from "@/features/console/data/featuredProducts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -31,18 +34,7 @@ const PERSONA_GROUPS: { title: string; values: WeddingPersonaMode[] }[] = [
 
 const ALL_PERSONAS: WeddingPersonaMode[] = PERSONA_GROUPS.flatMap((g) => g.values);
 
-interface FeaturedRow {
-  id: string;
-  name: string;
-  thumbnail_url: string | null;
-  price: number;
-  sale_price: number | null;
-  source: string;
-  source_url: string | null;
-  categories: string[];
-  is_featured: boolean;
-  featured_personas: string[];
-}
+// FeaturedRow 타입은 features/console/data/featuredProducts 에서 import(Task #3).
 
 const PAGE_SIZE = 20;
 
@@ -58,37 +50,21 @@ const AdminFeaturedProducts = () => {
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
-    const from = page * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-    let q = (supabase
-      .from("products" as any)
-      .select(
-        "id, name, thumbnail_url, price, sale_price, source, source_url, categories, is_featured, featured_personas",
-        { count: "exact" },
-      ) as any)
-      .eq("is_active", true)
-      .order("is_featured", { ascending: false })
-      .order("created_at", { ascending: false })
-      .range(from, to);
-    if (filterCategory !== "all") {
-      q = q.contains("categories", [filterCategory]);
+    try {
+      const { rows, total } = await fetchFeaturedProducts({
+        page,
+        pageSize: PAGE_SIZE,
+        filterCategory,
+        filterStatus,
+        keyword,
+      });
+      setRows(rows);
+      setTotal(total);
+    } catch (e: any) {
+      toast.error(`조회 실패: ${e?.message ?? "오류"}`);
+    } finally {
+      setLoading(false);
     }
-    if (filterStatus === "on") {
-      q = q.eq("is_featured", true);
-    } else if (filterStatus === "off") {
-      q = q.eq("is_featured", false);
-    }
-    if (keyword.trim()) {
-      q = q.ilike("name", `%${escapeLikePattern(keyword.trim())}%`);
-    }
-    const { data, count, error } = await q;
-    if (error) {
-      toast.error(`조회 실패: ${error.message}`);
-    } else {
-      setRows((data ?? []) as any);
-      setTotal(count ?? 0);
-    }
-    setLoading(false);
   }, [page, filterCategory, filterStatus, keyword]);
 
   useEffect(() => {
@@ -101,11 +77,10 @@ const AdminFeaturedProducts = () => {
 
   const toggleFeatured = async (row: FeaturedRow) => {
     const next = !row.is_featured;
-    const { error } = await (supabase.from("products" as any) as any)
-      .update({ is_featured: next })
-      .eq("id", row.id);
-    if (error) {
-      toast.error(`업데이트 실패: ${error.message}`);
+    try {
+      await updateFeaturedProduct(row.id, { is_featured: next });
+    } catch (e: any) {
+      toast.error(`업데이트 실패: ${e?.message ?? "오류"}`);
       return;
     }
     setRows((prev) => prev.map((p) => (p.id === row.id ? { ...p, is_featured: next } : p)));
@@ -114,22 +89,20 @@ const AdminFeaturedProducts = () => {
   const togglePersona = async (row: FeaturedRow, persona: WeddingPersonaMode) => {
     const cur = row.featured_personas ?? [];
     const next = cur.includes(persona) ? cur.filter((p) => p !== persona) : [...cur, persona];
-    const { error } = await (supabase.from("products" as any) as any)
-      .update({ featured_personas: next })
-      .eq("id", row.id);
-    if (error) {
-      toast.error(`페르소나 업데이트 실패: ${error.message}`);
+    try {
+      await updateFeaturedProduct(row.id, { featured_personas: next });
+    } catch (e: any) {
+      toast.error(`페르소나 업데이트 실패: ${e?.message ?? "오류"}`);
       return;
     }
     setRows((prev) => prev.map((p) => (p.id === row.id ? { ...p, featured_personas: next } : p)));
   };
 
   const selectAllPersonas = async (row: FeaturedRow) => {
-    const { error } = await (supabase.from("products" as any) as any)
-      .update({ featured_personas: [] }) // 빈 배열 = 전체.
-      .eq("id", row.id);
-    if (error) {
-      toast.error(`전체 적용 실패: ${error.message}`);
+    try {
+      await updateFeaturedProduct(row.id, { featured_personas: [] }); // 빈 배열 = 전체.
+    } catch (e: any) {
+      toast.error(`전체 적용 실패: ${e?.message ?? "오류"}`);
       return;
     }
     setRows((prev) => prev.map((p) => (p.id === row.id ? { ...p, featured_personas: [] } : p)));
