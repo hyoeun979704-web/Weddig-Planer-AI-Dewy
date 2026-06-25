@@ -80,7 +80,15 @@
 - 빌드·**권한 사용설명 문자열** · **ATT/SKAdNetwork** · **IAP/anti-steering** · 홈 위젯 · 딥링크 · (푸시 보류)
 
 ## E. 백엔드·데이터
-- **RPC↔클라 인자 정합**(PGRST202) · RLS 인가 · edge functions(`supabase/functions/*`) · **마이그 드리프트**(types.ts↔실DB) · 페르소나 20모드 분류 · **큐레이션 게이트**(is_active·moderation·partner_rank) · 검색 인덱스
+> **도메인 소유권 전수 맵 = `docs/260625_backend_domain_map.md`**(단일 소스). 아래는 감사 차원 체크리스트이고,
+> "어느 함수·테이블이 어느 앱 소유인가"는 그 맵을 본다. Phase 3 앱별 감사는 그 맵으로 백엔드를 앱별로 쪼갠다.
+
+- **E1 edge functions(60)** — 도메인: consumer 36(AI·청첩장·결제·동기화) · partners 2(`verify-business`·`notify-inquiry`) ·
+  console 11(마케팅 `instagram-*`·상품수집 `product-*`) · shared 11(IAP검증·웹훅·계정). 미완 `invitation-extract-layout`·폐기 `ask-gemini` 포함. 인덱스 = `supabase/functions/README.md`.
+- **E2 테이블(123)** — shared/마켓플레이스(견적·`places`·`place_*`·리뷰·결제) ↔ consumer 전용 ↔ partners 전용(`business_*`) ↔ console 전용(모더레이션·콘텐츠). 도메인 타입 뷰 = `src/types/domains/*`.
+- **E3 `_shared`(16)** — 인프라 3(`cors`·`supabase`·`jwt`) + consumer 13(결제·AI·동기화). partners/console 전용 0.
+- **E4 차원**: **RPC↔클라 인자 정합**(PGRST202) · **RLS 인가**(partners 는 edge 거의 없고 RLS 의존 — 권한상승 회귀 주의) · **마이그 드리프트**(types.ts↔실DB, 현재 8개 드리프트 — 맵 §4) · 페르소나 20모드 분류 · **큐레이션 게이트**(is_active·moderation·partner_rank) · 검색 인덱스
+- **E5 deferred**(맵 §4): types.ts 재생성 · 데이터접근 레이어 부재(쿼리 pages 산재) · 미완/폐기 함수 정리
 
 ---
 
