@@ -38,6 +38,42 @@
 - **병렬 작업**: fan-out 탐색은 저토큰 서브에이전트(결론만), 깊은 다단계 작업만 일반 에이전트.
   같은 파일 동시 편집 금지(작업 분할). (Claude 한정) 안전 검증·읽기 명령은 `.claude/settings.json` 에 사전 허용됨.
 
+## 작업 영역·경계 (스코프 가드 — 새 세션·타툴 혼선/침범 방지, 먼저 읽기)
+
+> 새 세션이나 다른 툴(Codex·Antigravity)로 와도 **요청 범위 밖 영역을 건드리지 않도록** 하는 경계 정의다.
+> "이 작업이 어느 영역인지" 먼저 분류하고, **그 영역 밖 파일은 요청 없이 바꾸지 않는다**.
+
+**현재 구조 = 단일 레포·단일 빌드(앱 분리는 로드맵, 미실행).** 소비자·기업·운영자가 한 코드베이스
+(`src/App.tsx` 라우트 130+)에 섞여 있고 **런타임 역할 게이트**로만 갈린다. 물리 분리 계획은
+`docs/260624_app_separation_roadmap.md`(Phase 1~5, 아직 코드 변경 없음) — **임의로 분리 작업 착수 금지**(합의 후).
+
+| 영역 | 코드 위치 | 라우트 / 게이트 | 데이터(같은 DB, 접근만 분리) |
+|---|---|---|---|
+| **소비자(Consumer)** | `src/pages/**`(business·admin 제외) | 대부분 라우트, 로그인 가드 | `profiles`·`places`·견적·찜·하트 등 |
+| **기업(Partners)** | `src/pages/business/**`, `src/components/business/**` | `/business/*` · `BusinessGuard` | `business_profiles`·리드·상품·쿠폰·배송 |
+| **운영자(Console)** | `src/pages/admin/**`, `src/components/admin/**` | `/admin/*` · `AdminGuard` | 모더레이션·에이전트출력·운영로그 |
+| **공유(Shared)** | `src/lib/**`·`src/components/ui/**`·`src/contexts/**`·`src/integrations/**`·`supabase/**` | 전 영역 공용 | 마켓플레이스 공유 테이블(견적·업체·리뷰) |
+
+**경계 규칙(must)**
+- 한 영역 작업 시 **다른 영역 파일을 함께 리팩터/수정하지 않는다**(요청에 명시됐을 때만). 영역 간
+  직접 의존 금지 — 공유는 반드시 `src/lib`·`components/ui`·`contexts` 경유.
+- **공유(Shared) 변경은 3영역에 모두 파급** → 영향 범위를 먼저 점검(grep 사용처)하고 최소·표적 수정.
+- 백엔드는 **단일 Supabase 1개 공유**(분리 금지). 인가는 끝까지 **RLS**가 책임(클라 가드는 UX용).
+
+**빌드·플랫폼 현실(오해 방지)**
+- **웹·Android·iOS 는 같은 `dist/` 번들**을 쓴다. Capacitor 가 그 번들을 Android·iOS 네이티브로
+  각각 래핑할 뿐, **iOS·Android 가 서로 다른 코드 빌드가 아니다**. 네이티브 빌드 = `vite build --mode capacitor`
+  (`npm run cap:build`), 단일 `appId: app.dewy`(`capacitor.config.ts`).
+- **Mac = 별도 빌드 아님, 브라우저 웹으로 지원**(Capacitor macOS 데스크톱 미지원). 즉 "iOS/Mac vs 웹/안드로이드"
+  로 갈리지 않는다 — 갈림은 **웹(+Mac 브라우저) ↔ Capacitor 네이티브(Android·iOS, 같은 번들)** 다.
+- 따라서 iOS 바이너리에 기업·운영 화면도 (lazy 지만) 포함된다 → 직접 URL 누수 주의(예: 결제 surface).
+  구조적 분리(네이티브 빌드에서 console/partners 제외)는 로드맵 Phase 2.
+
+**단일 소스 인덱스(여기만 신뢰, 사본 만들지 말 것 — 드리프트 방지)**
+- 에이전트 규칙 = **이 `AGENTS.md`** · 감사 표면 전수 = `docs/audit-surface-map.md` · 앱 분리 계획 =
+  `docs/260624_app_separation_roadmap.md` · 실제 DB 스키마 진실원천 = `src/integrations/supabase/types.ts`
+  · 결제 구조 = `docs/260620_payment_compliance_plan.md` · iOS 제출 = `docs/260622_appstore_submission_runbook.md`.
+
 ## 코드 작성·리뷰 규칙 — 항상 적용 (바이브코딩 안전장치)
 
 코드를 새로 짜거나 바꿀 때마다 **반드시** 아래 14차원으로 자기 검증한다(1~13 방어 + 14 개인화 공세).
