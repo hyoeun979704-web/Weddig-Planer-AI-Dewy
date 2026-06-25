@@ -3,7 +3,13 @@ import { Loader2, Search, Heart, Crown, Shield, User as UserIcon, Building2 } fr
 import { Input } from "@/components/ui/input";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchUsersWithDetails,
+  setMemberTier,
+  setMemberAffiliation,
+  type Affiliation,
+  type UserProfile,
+} from "@/features/console/data/adminUsers";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { MEMBER_TIERS, memberTierLabel, type MemberTier } from "@/lib/memberTier";
@@ -11,27 +17,12 @@ import { SERVICE_CATEGORIES } from "@/lib/businessCategories";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-type Affiliation = "individual" | "business" | "partner";
+// Affiliation·UserProfile 타입은 features/console/data/adminUsers 에서 import(Task #3).
 const AFFILIATION_LABEL: Record<Affiliation, string> = {
   individual: "일반회원",
   business: "기업회원",
   partner: "제휴업체",
 };
-
-interface UserProfile {
-  user_id: string;
-  email: string | null;
-  nickname: string | null;
-  community_nickname: string | null;
-  created_at: string;
-  member_tier: MemberTier;
-  // 조인된 데이터
-  roles: string[];
-  affiliation: Affiliation;
-  hearts_balance: number;
-  hearts_spent: number;
-  fittings_count: number;
-}
 
 const AdminUsers = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -48,75 +39,13 @@ const AdminUsers = () => {
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
-    // profiles 기준으로 조회 (auth.users는 직접 조회 어려움)
-    const { data: profiles, error } = await supabase
-      .from("profiles")
-      .select("user_id, email, display_name, community_nickname, created_at, member_tier")
-      .order("created_at", { ascending: false })
-      .limit(200);
-
-    if (error) {
-      toast({ title: "불러오기 실패", description: error.message, variant: "destructive" });
+    try {
+      setUsers(await fetchUsersWithDetails());
+    } catch (e) {
+      toast({ title: "불러오기 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    const userIds = (profiles ?? []).map((p: any) => p.user_id);
-    if (userIds.length === 0) {
-      setUsers([]);
-      setIsLoading(false);
-      return;
-    }
-
-    // 역할·하트·피팅·소속 데이터 병렬 조회
-    const [rolesRes, heartsRes, fittingsRes, affRes] = await Promise.all([
-      supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
-      supabase
-        .from("user_hearts")
-        .select("user_id, balance, total_spent")
-        .in("user_id", userIds),
-      supabase
-        .from("dress_fittings")
-        .select("user_id")
-        .in("user_id", userIds),
-      // business_profiles 는 owner-only RLS → admin RPC 로 소속(일반/기업/제휴) 조회.
-      (supabase as any).rpc("admin_get_member_affiliations", { p_user_ids: userIds }),
-    ]);
-    const affByUser: Record<string, Affiliation> = {};
-    ((affRes as any)?.data ?? []).forEach((a: any) => {
-      affByUser[a.user_id] = a.affiliation as Affiliation;
-    });
-
-    // 매핑 작성
-    const rolesByUser: Record<string, string[]> = {};
-    (rolesRes.data ?? []).forEach((r: any) => {
-      rolesByUser[r.user_id] = [...(rolesByUser[r.user_id] ?? []), r.role];
-    });
-    const heartsByUser: Record<string, { balance: number; spent: number }> = {};
-    (heartsRes.data ?? []).forEach((h: any) => {
-      heartsByUser[h.user_id] = { balance: h.balance, spent: h.total_spent };
-    });
-    const fittingCountByUser: Record<string, number> = {};
-    (fittingsRes.data ?? []).forEach((f: any) => {
-      fittingCountByUser[f.user_id] = (fittingCountByUser[f.user_id] ?? 0) + 1;
-    });
-
-    const merged: UserProfile[] = (profiles ?? []).map((p: any) => ({
-      user_id: p.user_id,
-      email: p.email,
-      nickname: p.display_name,
-      community_nickname: p.community_nickname ?? null,
-      created_at: p.created_at,
-      member_tier: (MEMBER_TIERS as string[]).includes(p.member_tier) ? p.member_tier : "basic",
-      roles: rolesByUser[p.user_id] ?? [],
-      affiliation: affByUser[p.user_id] ?? "individual",
-      hearts_balance: heartsByUser[p.user_id]?.balance ?? 0,
-      hearts_spent: heartsByUser[p.user_id]?.spent ?? 0,
-      fittings_count: fittingCountByUser[p.user_id] ?? 0,
-    }));
-
-    setUsers(merged);
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -133,15 +62,12 @@ const AdminUsers = () => {
         return { ...u, member_tier: tier };
       }),
     );
-    const { error } = await supabase.rpc("admin_set_member_tier", {
-      p_user_id: userId,
-      p_tier: tier,
-    });
-    if (error) {
-      setUsers((list) => list.map((u) => (u.user_id === userId ? { ...u, member_tier: prev } : u)));
-      toast({ title: "등급 변경 실패", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await setMemberTier(userId, tier);
       toast({ title: "등급을 변경했어요", description: `${memberTierLabel(tier)} 등급으로 설정` });
+    } catch (e) {
+      setUsers((list) => list.map((u) => (u.user_id === userId ? { ...u, member_tier: prev } : u)));
+      toast({ title: "등급 변경 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
     }
   }, []);
 
@@ -149,15 +75,10 @@ const AdminUsers = () => {
   const submitAffiliation = useCallback(async () => {
     if (!convTarget) return;
     setConverting(true);
-    const { data, error } = await (supabase as any).rpc("admin_set_member_affiliation", {
-      p_user_id: convTarget.user_id,
-      p_affiliation: convAff,
-      p_service_category: convAff === "individual" ? null : convCat,
-    });
+    const res = await setMemberAffiliation(convTarget.user_id, convAff, convCat);
     setConverting(false);
-    const res = data as { ok?: boolean; error?: string } | null;
-    if (error || !res?.ok) {
-      toast({ title: "변경 실패", description: res?.error ?? error?.message ?? "오류", variant: "destructive" });
+    if (!res.ok) {
+      toast({ title: "변경 실패", description: res.error ?? "오류", variant: "destructive" });
       return;
     }
     setUsers((list) =>
