@@ -66,7 +66,7 @@
 - 백엔드는 **단일 Supabase 1개 공유**(분리 금지). 인가는 끝까지 **RLS**가 책임(클라 가드는 UX용 —
   회귀 사례: `business_profiles` self-UPDATE 권한상승, `docs/audit-surface-partners.md` P0).
 - **새 feature 분리 시**: 위 린트 규칙(`eslint.config.js`·`check-integrity.mjs`)에 그 feature 도 추가한다.
-- **영역별 감사맵**: partners = `docs/audit-surface-partners.md`(14차원 심층). 전체 = `docs/audit-surface-map.md`.
+- **영역별 감사맵**: partners = `docs/audit-surface-partners.md` · console = `docs/audit-surface-console.md`(각 14차원 심층). 전체 = `docs/audit-surface-map.md`.
 
 **빌드·플랫폼 현실(오해 방지)**
 - **웹·Android·iOS 는 같은 `dist/` 번들**을 쓴다. Capacitor 가 그 번들을 Android·iOS 네이티브로
