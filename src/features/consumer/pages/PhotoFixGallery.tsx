@@ -5,8 +5,8 @@ import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/empty-state";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchPhotoFixJobs } from "@/features/consumer/data/photoFix";
 
 // 사진보정 결과 목록 (/ai-studio/photo-fix/gallery)
 // 본인이 만든 photo_retouch_jobs 전체(진행중/완료/실패) 표시.
@@ -37,12 +37,7 @@ const PhotoFixGallery = ({ embedded = false }: { embedded?: boolean } = {}) => {
       return;
     }
     (async () => {
-      const { data } = await (supabase as any)
-        .from("photo_retouch_jobs")
-        .select("id, status, source_paths, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      setItems((data ?? []) as Row[]);
+      setItems((await fetchPhotoFixJobs(user.id)) as Row[]);
       setLoading(false);
     })();
   }, [user]);
