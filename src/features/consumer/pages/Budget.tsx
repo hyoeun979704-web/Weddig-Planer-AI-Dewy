@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useBudget } from "@/hooks/useBudget";
-import { supabase } from "@/integrations/supabase/client";
+import { payBalance } from "@/features/consumer/data/budget";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   categories, categoryKeys, regions, paidByOptions, paymentStageOptions,
@@ -329,14 +329,14 @@ const Budget = () => {
     if (!item.balance_amount) return;
     setPayBalanceTarget(null);
 
-    const { error } = await (supabase as any).rpc("pay_balance", {
-      p_item_id: item.id,
-      p_pay_date: payload.payDate,
-      p_payment_method: payload.paymentMethod,
-      p_memo: payload.memo,
-    });
-
-    if (error) {
+    try {
+      await payBalance({
+        itemId: item.id,
+        payDate: payload.payDate,
+        paymentMethod: payload.paymentMethod,
+        memo: payload.memo,
+      });
+    } catch (error) {
       console.error("Balance payment failed:", error);
       toast({ title: "잔금 결제 기록에 실패했어요", variant: "destructive" });
       return;

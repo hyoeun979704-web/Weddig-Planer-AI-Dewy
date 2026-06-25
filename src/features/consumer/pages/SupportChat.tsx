@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import BottomNav from "@/components/BottomNav";
 import ChatBubble from "@/components/wedding-planner/ChatBubble";
-import { supabase } from "@/integrations/supabase/client";
+import { createInquiry } from "@/features/consumer/data/supportChat";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   answerSupportQuery,
@@ -98,14 +98,12 @@ const SupportChat = () => {
     }
     setSubmitting(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any).from("inquiries").insert({
-        user_id: user.id,
+      await createInquiry({
+        userId: user.id,
         category: "complaint",
         title: deriveEscalationTitle(messages),
         content: buildEscalationContent(messages, context),
       });
-      if (error) throw error;
       toast.success("담당자에게 연결했어요", {
         description: "확인 후 '내 문의 내역'으로 답변드릴게요 (보통 영업일 1일 이내)",
       });

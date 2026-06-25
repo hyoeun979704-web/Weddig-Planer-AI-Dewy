@@ -4,10 +4,8 @@ import Seo from "@/components/Seo";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchGalleryPlaces, galleryKeys } from "@/features/consumer/data/gallery";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
-
-interface GalleryPlace { place_id: string; name: string; category: string; main_image_url: string | null }
 
 // 웨딩 갤러리(AEO/SEO 랜딩) — 실제 활성 업체의 대표 이미지를 보여주고 탭하면 상세로 이동.
 // (이전: 하드코딩 unsplash 더미 → 실데이터 연동)
@@ -16,19 +14,9 @@ const Gallery = () => {
   const location = useLocation();
 
   const { data: items = [], isLoading } = useQuery({
-    queryKey: ["gallery-places"],
+    queryKey: galleryKeys.places(),
     staleTime: 5 * 60 * 1000,
-    queryFn: async (): Promise<GalleryPlace[]> => {
-      const { data, error } = await (supabase
-        .from("places")
-        .select("place_id, name, category, main_image_url")
-        .eq("is_active", true)
-        .not("main_image_url", "is", null)
-        .order("partner_rank", { ascending: false, nullsFirst: false })
-        .limit(30) as any);
-      if (error) throw error;
-      return ((data ?? []) as GalleryPlace[]).filter((p) => p.main_image_url);
-    },
+    queryFn: fetchGalleryPlaces,
   });
 
   const handleTabChange = (href: string) => navigate(href);
