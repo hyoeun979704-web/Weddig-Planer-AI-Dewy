@@ -2,18 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, MapPin, Check } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
-import { supabase } from "@/integrations/supabase/client";
-import { escapeLikePattern } from "@/lib/postgrestEscape";
+import { searchClaimablePlaces, requestPlaceClaim, type PlaceRow } from "@/features/partners/data/businessClaim";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { confirm } from "@/components/ui/confirm-dialog";
-
-interface PlaceRow {
-  place_id: string;
-  name: string;
-  city: string | null;
-  category: string | null;
-}
 
 // 기존 등록 업체(주인 없음) 관리권한 요청 — 검색 → 한 번에 신청. 운영자 승인 시 소유권 연결.
 const BusinessClaim = () => {
@@ -35,19 +27,15 @@ const BusinessClaim = () => {
     }
     setLoading(true);
     // 공개 read 가능. 아직 주인 없는(owner_user_id null) 업체만 신청 대상.
-    const { data, error } = await supabase
-      .from("places")
-      .select("place_id,name,city,category,owner_user_id")
-      .ilike("name", `%${escapeLikePattern(term)}%`)
-      .is("owner_user_id", null)
-      .limit(20);
-    setLoading(false);
-    setSearched(true);
-    if (error) {
-      toast({ title: "검색 실패", description: error.message, variant: "destructive" });
-      return;
+    try {
+      const rows = await searchClaimablePlaces(term);
+      setResults(rows);
+    } catch (err) {
+      toast({ title: "검색 실패", description: err instanceof Error ? err.message : undefined, variant: "destructive" });
+    } finally {
+      setLoading(false);
+      setSearched(true);
     }
-    setResults((data ?? []) as PlaceRow[]);
   };
 
   // 진입 시 prefill(q) 있으면 1회 자동 검색.
@@ -73,12 +61,11 @@ const BusinessClaim = () => {
       confirmText: "요청",
     });
     if (!ok) return;
-    const { data, error } = await supabase.rpc("request_place_claim", { p_place_id: place.place_id });
-    const res = data as { ok?: boolean; error?: string } | null;
-    if (error || !res?.ok) {
+    const res = await requestPlaceClaim(place.place_id);
+    if (!res.ok) {
       const msg =
-        res?.error === "not_approved" ? "기업회원 승인 후 신청할 수 있어요"
-        : res?.error === "already_owned" ? "이미 다른 회원이 관리 중인 업체예요"
+        res.error === "not_approved" ? "기업회원 승인 후 신청할 수 있어요"
+        : res.error === "already_owned" ? "이미 다른 회원이 관리 중인 업체예요"
         : "요청에 실패했어요";
       toast({ title: msg, variant: "destructive" });
       return;
