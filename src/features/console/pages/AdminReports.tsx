@@ -11,9 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchReports,
+  updateReportStatus,
+  deleteReportTarget,
+  type ReportRow,
+  type ReportStatus,
+} from "@/features/console/data/adminReports";
 import { toast } from "@/hooks/use-toast";
-import { REPORT_REASON_LABELS, type ReportReasonCode } from "@/hooks/useCommunityModeration";
+import { REPORT_REASON_LABELS } from "@/hooks/useCommunityModeration";
 
 // 어드민 신고 처리 페이지.
 //
@@ -28,21 +34,7 @@ import { REPORT_REASON_LABELS, type ReportReasonCode } from "@/hooks/useCommunit
 //   - * → dismissed : 신고 기각
 //   - 강제 삭제 : admin_delete_any_post / admin_delete_any_comment 정책으로 가능
 
-type ReportStatus = "pending" | "reviewing" | "actioned" | "dismissed";
-
-interface ReportRow {
-  report_id: string;
-  reporter_id: string;
-  target_type: "post" | "comment";
-  target_id: string;
-  reason_code: ReportReasonCode;
-  reason_text: string | null;
-  status: ReportStatus;
-  reported_at: string;
-  resolved_at: string | null;
-  target_preview: string | null;
-  target_author_id: string | null;
-}
+// ReportRow·ReportStatus 타입은 features/console/data/adminReports 에서 import.
 
 const STATUS_LABELS: Record<ReportStatus, string> = {
   pending: "접수",
@@ -64,70 +56,49 @@ const AdminReports = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | ReportStatus>("pending");
   const [typeFilter, setTypeFilter] = useState<"all" | "post" | "comment">("all");
 
-  const fetchReports = useCallback(async () => {
+  const loadReports = useCallback(async () => {
     setIsLoading(true);
-    let query = (supabase as any)
-      .from("admin_reports_overview")
-      .select("*")
-      .order("reported_at", { ascending: false });
-
-    if (statusFilter !== "all") query = query.eq("status", statusFilter);
-    if (typeFilter !== "all") query = query.eq("target_type", typeFilter);
-
-    const { data, error } = await query;
-    if (error) {
+    try {
+      setReports(await fetchReports({ statusFilter, typeFilter }));
+    } catch (e) {
       toast({
         title: "불러오기 실패",
-        description: error.message,
+        description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
-    } else {
-      setReports((data ?? []) as ReportRow[]);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [statusFilter, typeFilter]);
 
   useEffect(() => {
-    fetchReports();
-  }, [fetchReports]);
+    loadReports();
+  }, [loadReports]);
 
   const updateStatus = async (reportId: string, status: ReportStatus) => {
-    const { data: userResp } = await supabase.auth.getUser();
-    const me = userResp.user?.id;
-
-    const update: Record<string, unknown> = { status };
-    if (status === "actioned" || status === "dismissed") {
-      update.resolved_at = new Date().toISOString();
-      update.resolved_by = me;
-    }
-
-    const { error } = await supabase
-      .from("community_reports")
-      .update(update)
-      .eq("id", reportId);
-
-    if (error) {
+    try {
+      await updateReportStatus(reportId, status);
+    } catch (e) {
       toast({
         title: "처리 실패",
-        description: error.message,
+        description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
       return;
     }
     toast({ title: `상태를 '${STATUS_LABELS[status]}' 로 변경했습니다` });
-    fetchReports();
+    loadReports();
   };
 
   const deleteTargetContent = async (report: ReportRow) => {
     if (!confirm("대상 콘텐츠를 강제 삭제하고 신고를 '조치 완료' 로 처리하시겠어요?\n복구할 수 없습니다.")) return;
 
-    const table = report.target_type === "post" ? "community_posts" : "community_comments";
-    const { error } = await supabase.from(table).delete().eq("id", report.target_id);
-
-    if (error) {
+    try {
+      await deleteReportTarget(report.target_type, report.target_id);
+    } catch (e) {
       toast({
         title: "삭제 실패",
-        description: error.message,
+        description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
       return;
