@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchDraftList, createDraft } from "@/features/console/data/instagramPostDraft";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -52,20 +52,14 @@ const AdminInstagramPostsInner = () => {
 
   const fetchDrafts = useCallback(async () => {
     setIsLoading(true);
-    let query = supabase
-      .from("instagram_post_drafts")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (filter !== "all") query = query.eq("status", filter);
-    const { data, error } = await query;
-    if (error) {
-      console.error("instagram drafts fetch failed:", error);
-      toast({ title: "불러오기 실패", description: error.message, variant: "destructive" });
-    } else {
-      setDrafts((data ?? []) as unknown as InstagramPostDraft[]);
+    try {
+      setDrafts(await fetchDraftList<InstagramPostDraft>(filter));
+    } catch (e) {
+      console.error("instagram drafts fetch failed:", e);
+      toast({ title: "불러오기 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [filter]);
 
   useEffect(() => {
@@ -78,18 +72,20 @@ const AdminInstagramPostsInner = () => {
       return;
     }
     setIsSubmitting(true);
-    const { error } = await supabase.from("instagram_post_drafts").insert({
-      topic: createTopic.trim(),
-      caption: createCaption.trim() || null,
-      source_type: "manual",
-      status: "draft",
-      created_by: user?.id ?? null,
-    });
-    setIsSubmitting(false);
-    if (error) {
-      toast({ title: "초안 생성 실패", description: error.message, variant: "destructive" });
+    try {
+      await createDraft({
+        topic: createTopic.trim(),
+        caption: createCaption.trim() || null,
+        source_type: "manual",
+        status: "draft",
+        created_by: user?.id ?? null,
+      });
+    } catch (e) {
+      setIsSubmitting(false);
+      toast({ title: "초안 생성 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
       return;
     }
+    setIsSubmitting(false);
     toast({ title: "초안이 생성되었습니다" });
     setIsCreateOpen(false);
     setCreateTopic("");
