@@ -22,25 +22,17 @@ import {
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
 import ImageUploader from "@/components/ImageUploader";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchFonts,
+  saveFont,
+  setFontActive,
+  deleteFont,
+  uploadFontFile,
+  type Font,
+} from "@/features/console/data/invitationFonts";
 import { toast } from "@/hooks/use-toast";
 
-interface Font {
-  id: string;
-  name: string;
-  family: string;
-  file_url: string;
-  preview_url: string | null;
-  category: string;
-  weight: string;
-  style: string;
-  supports_korean: boolean;
-  license: string | null;
-  display_order: number;
-  is_active: boolean;
-  created_at: string;
-}
-
+// Font 타입은 features/console/data/invitationFonts 에서 import(Task #3).
 type Form = Omit<Font, "id" | "created_at">;
 
 const emptyForm: Form = {
@@ -96,21 +88,17 @@ const AdminInvitationFonts = () => {
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("invitation_fonts")
-      .select("*")
-      .order("display_order", { ascending: false })
-      .order("created_at", { ascending: false });
-    if (error) {
+    try {
+      setItems(await fetchFonts());
+    } catch (e) {
       toast({
         title: "불러오기 실패",
-        description: error.message,
+        description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
-    } else {
-      setItems(data ?? []);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -157,20 +145,8 @@ const AdminInvitationFonts = () => {
 
     setIsUploadingFont(true);
     try {
-      const filename = `${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("invitation-fonts")
-        .upload(filename, file, {
-          cacheControl: "31536000",
-          upsert: false,
-          contentType: file.type || FONT_MIME[0],
-        });
-      if (error) throw error;
-
-      const { data: pub } = supabase.storage
-        .from("invitation-fonts")
-        .getPublicUrl(filename);
-      setForm((p) => ({ ...p, file_url: pub.publicUrl }));
+      const publicUrl = await uploadFontFile(file, ext, FONT_MIME[0]);
+      setForm((p) => ({ ...p, file_url: publicUrl }));
       toast({ title: "폰트 업로드 완료" });
     } catch (e) {
       toast({
@@ -196,16 +172,16 @@ const AdminInvitationFonts = () => {
       return;
     }
     setIsSaving(true);
-    const { error } = editingId
-      ? await (supabase as any)
-          .from("invitation_fonts")
-          .update(form)
-          .eq("id", editingId)
-      : await (supabase as any).from("invitation_fonts").insert(form);
-    if (error) {
+    let saveError: Error | null = null;
+    try {
+      await saveFont(editingId, form);
+    } catch (e) {
+      saveError = e instanceof Error ? e : new Error("오류");
+    }
+    if (saveError) {
       toast({
         title: "저장 실패",
-        description: error.message,
+        description: saveError.message,
         variant: "destructive",
       });
     } else {
@@ -245,36 +221,30 @@ const AdminInvitationFonts = () => {
   };
 
   const handleToggleActive = async (f: Font) => {
-    const { error } = await (supabase as any)
-      .from("invitation_fonts")
-      .update({ is_active: !f.is_active })
-      .eq("id", f.id);
-    if (error) {
+    try {
+      await setFontActive(f.id, !f.is_active);
+      fetchData();
+    } catch (e) {
       toast({
         title: "변경 실패",
-        description: error.message,
+        description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
-    } else {
-      fetchData();
     }
   };
 
   const handleDelete = async (f: Font) => {
     if (!confirm(`"${f.name}" 을(를) 삭제하시겠어요?`)) return;
-    const { error } = await (supabase as any)
-      .from("invitation_fonts")
-      .delete()
-      .eq("id", f.id);
-    if (error) {
-      toast({
-        title: "삭제 실패",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
+    try {
+      await deleteFont(f.id);
       toast({ title: "삭제 완료" });
       fetchData();
+    } catch (e) {
+      toast({
+        title: "삭제 실패",
+        description: e instanceof Error ? e.message : "오류",
+        variant: "destructive",
+      });
     }
   };
 
