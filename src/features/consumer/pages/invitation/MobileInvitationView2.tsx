@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchMobileInvitation } from "@/features/consumer/data/invitationView";
 import { useInvitationFonts } from "@/hooks/useInvitationFonts";
 import { extractMobileContent, type MobileInvitationContent } from "@/lib/invitation/mobileContent";
 import { SAMPLE_MOBILE_CONTENT } from "@/lib/invitation/mobileSample";
@@ -66,13 +66,8 @@ const MobileInvitationView2 = () => {
       return;
     }
     (async () => {
-      const { data: row, error } = await (supabase as any)
-        .from("invitations")
-        .select("user_data, layout, invitation_templates(tone)")
-        .eq("share_slug", slug)
-        .eq("status", "published")
-        .maybeSingle();
-      if (error || !row) {
+      const row = await fetchMobileInvitation(slug);
+      if (!row) {
         setNotFound(true);
         setLoading(false);
         return;
