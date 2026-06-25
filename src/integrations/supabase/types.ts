@@ -1689,6 +1689,30 @@ export type Database = {
           },
         ]
       }
+      device_tokens: {
+        Row: {
+          created_at: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          platform: string
+          token: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       dress_fittings: {
         Row: {
           created_at: string
@@ -2190,6 +2214,48 @@ export type Database = {
           id?: string
           reason?: string
           ref_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      iap_transactions: {
+        Row: {
+          amount: number | null
+          created_at: string
+          id: string
+          kind: string
+          platform: string
+          product_id: string
+          raw: Json | null
+          status: string
+          store_txn_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          kind: string
+          platform: string
+          product_id: string
+          raw?: Json | null
+          status?: string
+          store_txn_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          kind?: string
+          platform?: string
+          product_id?: string
+          raw?: Json | null
+          status?: string
+          store_txn_id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -7196,6 +7262,7 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_user_data: { Args: { p_user_id: string }; Returns: undefined }
       derive_wedding_persona: {
         Args: {
           s: Database["public"]["Tables"]["user_wedding_settings"]["Row"]
