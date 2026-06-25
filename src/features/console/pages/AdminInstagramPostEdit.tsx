@@ -16,8 +16,8 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
-import AdminGuard from "@/components/admin/AdminGuard";
-import AdminLayout from "@/components/admin/AdminLayout";
+import AdminGuard from "@/features/console/components/AdminGuard";
+import AdminLayout from "@/features/console/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

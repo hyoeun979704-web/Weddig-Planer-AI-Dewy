@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, Save, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import AdminGuard from "@/components/admin/AdminGuard";
-import AdminLayout from "@/components/admin/AdminLayout";
+import AdminGuard from "@/features/console/components/AdminGuard";
+import AdminLayout from "@/features/console/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 

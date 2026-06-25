@@ -22,9 +22,9 @@ import {
   Star,
   type LucideIcon,
 } from "lucide-react";
-import AdminGuard from "@/components/admin/AdminGuard";
-import AdminLayout from "@/components/admin/AdminLayout";
-import { ADMIN_NAV_GROUPS, adminNavItemsByGroup } from "@/components/admin/adminNav";
+import AdminGuard from "@/features/console/components/AdminGuard";
+import AdminLayout from "@/features/console/components/AdminLayout";
+import { ADMIN_NAV_GROUPS, adminNavItemsByGroup } from "@/features/console/components/adminNav";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { relativeTime } from "@/lib/relativeTime";

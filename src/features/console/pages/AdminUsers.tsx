@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { Loader2, Search, Heart, Crown, Shield, User as UserIcon, Building2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import AdminGuard from "@/components/admin/AdminGuard";
-import AdminLayout from "@/components/admin/AdminLayout";
+import AdminGuard from "@/features/console/components/AdminGuard";
+import AdminLayout from "@/features/console/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";

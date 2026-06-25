@@ -19,53 +19,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import AdminGuard from "@/components/admin/AdminGuard";
-import AdminLayout from "@/components/admin/AdminLayout";
+import AdminGuard from "@/features/console/components/AdminGuard";
+import AdminLayout from "@/features/console/components/AdminLayout";
 import ImageUploader from "@/components/ImageUploader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { DRESS_FILTERS, FilterAxis, labelOf } from "@/data/dressFilters";
+import {
+  MAKEUP_FILTERS,
+  MakeupFilterAxis,
+  labelOfMakeup,
+} from "@/data/makeupFilters";
 
-interface DressSample {
+interface MakeupSample {
   id: string;
   name: string;
   image_url: string;
-  silhouette: string | null;
-  neckline: string | null;
-  sleeve: string | null;
-  length: string | null;
-  fabric: string | null;
+  base_finish: string | null;
+  lip_color: string | null;
+  lip_finish: string | null;
+  eye_style: string | null;
+  eye_color: string | null;
+  blush_color: string | null;
+  blush_placement: string | null;
+  brow_shape: string | null;
+  contour_intensity: string | null;
   details: string[] | null;
-  back_design: string | null;
-  color: string | null;
-  waist: string | null;
   mood: string[] | null;
   is_active: boolean;
   display_order: number;
   created_at: string;
 }
 
-type SampleForm = Omit<DressSample, "id" | "created_at">;
+type SampleForm = Omit<MakeupSample, "id" | "created_at">;
 
 const emptyForm: SampleForm = {
   name: "",
   image_url: "",
-  silhouette: null,
-  neckline: null,
-  sleeve: null,
-  length: null,
-  fabric: null,
+  base_finish: null,
+  lip_color: null,
+  lip_finish: null,
+  eye_style: null,
+  eye_color: null,
+  blush_color: null,
+  blush_placement: null,
+  brow_shape: null,
+  contour_intensity: null,
   details: [],
-  back_design: null,
-  color: null,
-  waist: null,
   mood: [],
   is_active: true,
   display_order: 0,
 };
 
-const AdminDressSamples = () => {
-  const [samples, setSamples] = useState<DressSample[]>([]);
+type MultiKey = "details" | "mood";
+
+const AdminMakeupSamples = () => {
+  const [samples, setSamples] = useState<MakeupSample[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [form, setForm] = useState<SampleForm>(emptyForm);
@@ -75,12 +83,16 @@ const AdminDressSamples = () => {
   const fetchSamples = useCallback(async () => {
     setIsLoading(true);
     const { data, error } = await (supabase as any)
-      .from("dress_samples")
+      .from("makeup_samples")
       .select("*")
       .order("display_order", { ascending: false })
       .order("created_at", { ascending: false });
     if (error) {
-      toast({ title: "불러오기 실패", description: error.message, variant: "destructive" });
+      toast({
+        title: "불러오기 실패",
+        description: error.message,
+        variant: "destructive",
+      });
     } else {
       setSamples(data ?? []);
     }
@@ -108,12 +120,16 @@ const AdminDressSamples = () => {
     };
     const { error } = editingId
       ? await (supabase as any)
-          .from("dress_samples")
+          .from("makeup_samples")
           .update(payload)
           .eq("id", editingId)
-      : await (supabase as any).from("dress_samples").insert(payload);
+      : await (supabase as any).from("makeup_samples").insert(payload);
     if (error) {
-      toast({ title: "저장 실패", description: error.message, variant: "destructive" });
+      toast({
+        title: "저장 실패",
+        description: error.message,
+        variant: "destructive",
+      });
     } else {
       toast({ title: editingId ? "수정 완료" : "저장 완료" });
       setForm(emptyForm);
@@ -124,20 +140,21 @@ const AdminDressSamples = () => {
     setIsSaving(false);
   };
 
-  const handleEdit = (sample: DressSample) => {
+  const handleEdit = (sample: MakeupSample) => {
     setEditingId(sample.id);
     setForm({
       name: sample.name,
       image_url: sample.image_url,
-      silhouette: sample.silhouette,
-      neckline: sample.neckline,
-      sleeve: sample.sleeve,
-      length: sample.length,
-      fabric: sample.fabric,
+      base_finish: sample.base_finish,
+      lip_color: sample.lip_color,
+      lip_finish: sample.lip_finish,
+      eye_style: sample.eye_style,
+      eye_color: sample.eye_color,
+      blush_color: sample.blush_color,
+      blush_placement: sample.blush_placement,
+      brow_shape: sample.brow_shape,
+      contour_intensity: sample.contour_intensity,
       details: sample.details ?? [],
-      back_design: sample.back_design,
-      color: sample.color,
-      waist: sample.waist,
       mood: sample.mood ?? [],
       is_active: sample.is_active,
       display_order: sample.display_order,
@@ -153,26 +170,34 @@ const AdminDressSamples = () => {
     }
   };
 
-  const handleToggleActive = async (sample: DressSample) => {
+  const handleToggleActive = async (sample: MakeupSample) => {
     const { error } = await (supabase as any)
-      .from("dress_samples")
+      .from("makeup_samples")
       .update({ is_active: !sample.is_active })
       .eq("id", sample.id);
     if (error) {
-      toast({ title: "변경 실패", description: error.message, variant: "destructive" });
+      toast({
+        title: "변경 실패",
+        description: error.message,
+        variant: "destructive",
+      });
     } else {
       fetchSamples();
     }
   };
 
-  const handleDelete = async (sample: DressSample) => {
+  const handleDelete = async (sample: MakeupSample) => {
     if (!confirm(`"${sample.name}" 을(를) 삭제하시겠어요?`)) return;
     const { error } = await (supabase as any)
-      .from("dress_samples")
+      .from("makeup_samples")
       .delete()
       .eq("id", sample.id);
     if (error) {
-      toast({ title: "삭제 실패", description: error.message, variant: "destructive" });
+      toast({
+        title: "삭제 실패",
+        description: error.message,
+        variant: "destructive",
+      });
     } else {
       toast({ title: "삭제 완료" });
       fetchSamples();
@@ -183,7 +208,7 @@ const AdminDressSamples = () => {
     setForm((prev) => ({ ...prev, [key]: value || null }));
   };
 
-  const toggleMulti = (key: "details" | "mood", value: string) => {
+  const toggleMulti = (key: MultiKey, value: string) => {
     setForm((prev) => {
       const current = (prev[key] ?? []) as string[];
       const next = current.includes(value)
@@ -196,48 +221,50 @@ const AdminDressSamples = () => {
   return (
     <AdminGuard>
       <AdminLayout
-        title="드레스 카탈로그"
-        description="마네킹 드레스 샘플 관리"
+        title="메이크업 카탈로그"
+        description="신부 메이크업 룩 샘플 관리"
         rightAction={
           <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5">
                 <Plus className="w-4 h-4" />
-                새 드레스
+                새 메이크업
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
-                  {editingId ? "드레스 샘플 수정" : "새 드레스 샘플 등록"}
+                  {editingId ? "메이크업 샘플 수정" : "새 메이크업 샘플 등록"}
                 </DialogTitle>
               </DialogHeader>
 
               <div className="grid sm:grid-cols-2 gap-6">
-                {/* 좌측: 이미지 업로드 */}
                 <div>
-                  <Label className="mb-2 block">마네킹 이미지</Label>
+                  <Label className="mb-2 block">레퍼런스 이미지</Label>
                   <ImageUploader
                     key={editingId ?? "new"}
-                    bucket="dress-samples"
+                    bucket="makeup-samples"
                     initialUrl={form.image_url || undefined}
-                    onUploaded={(_, url) => setForm((prev) => ({ ...prev, image_url: url }))}
+                    onUploaded={(_, url) =>
+                      setForm((prev) => ({ ...prev, image_url: url }))
+                    }
                   />
                 </div>
 
-                {/* 우측: 메타 입력 */}
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="name">이름</Label>
                     <Input
                       id="name"
                       value={form.name}
-                      onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                      placeholder="예: 클래식 A라인 V넥 #001"
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, name: e.target.value }))
+                      }
+                      placeholder="예: 한국 신부 — 글로우 MLBB #001"
                     />
                   </div>
 
-                  {DRESS_FILTERS.map((axis) => (
+                  {MAKEUP_FILTERS.map((axis) => (
                     <FilterField
                       key={axis.key}
                       axis={axis}
@@ -255,7 +282,10 @@ const AdminDressSamples = () => {
                         setForm((p) => ({ ...p, is_active: !!c }))
                       }
                     />
-                    <Label htmlFor="is_active" className="text-sm cursor-pointer">
+                    <Label
+                      htmlFor="is_active"
+                      className="text-sm cursor-pointer"
+                    >
                       즉시 노출 (사용자 갤러리에 표시)
                     </Label>
                   </div>
@@ -263,11 +293,16 @@ const AdminDressSamples = () => {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => handleDialogOpenChange(false)}
+                >
                   취소
                 </Button>
                 <Button onClick={handleSave} disabled={isSaving}>
-                  {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  {isSaving && (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  )}
                   {editingId ? "수정 저장" : "저장"}
                 </Button>
               </DialogFooter>
@@ -296,7 +331,9 @@ const AdminDressSamples = () => {
                   />
                   {!s.is_active && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="text-white text-xs font-semibold">비활성</span>
+                      <span className="text-white text-xs font-semibold">
+                        비활성
+                      </span>
                     </div>
                   )}
                 </div>
@@ -304,9 +341,9 @@ const AdminDressSamples = () => {
                   <h3 className="text-sm font-semibold truncate">{s.name}</h3>
                   <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                     {[
-                      labelOf("silhouette", s.silhouette),
-                      labelOf("neckline", s.neckline),
-                      labelOf("sleeve", s.sleeve),
+                      labelOfMakeup("base_finish", s.base_finish),
+                      labelOfMakeup("lip_color", s.lip_color),
+                      labelOfMakeup("eye_style", s.eye_style),
                     ]
                       .filter(Boolean)
                       .join(" · ") || "메타 미입력"}
@@ -355,19 +392,27 @@ const AdminDressSamples = () => {
 };
 
 interface FilterFieldProps {
-  axis: FilterAxis;
+  axis: MakeupFilterAxis;
   form: SampleForm;
   onSingleChange: (key: keyof SampleForm, value: string) => void;
-  onMultiToggle: (key: "details" | "mood", value: string) => void;
+  onMultiToggle: (key: MultiKey, value: string) => void;
 }
 
-const FilterField = ({ axis, form, onSingleChange, onMultiToggle }: FilterFieldProps) => {
+const FilterField = ({
+  axis,
+  form,
+  onSingleChange,
+  onMultiToggle,
+}: FilterFieldProps) => {
   if (axis.type === "single") {
     const value = (form[axis.key] as string | null) ?? "";
     return (
       <div>
         <Label htmlFor={axis.key}>{axis.label}</Label>
-        <Select value={value} onValueChange={(v) => onSingleChange(axis.key, v)}>
+        <Select
+          value={value}
+          onValueChange={(v) => onSingleChange(axis.key, v)}
+        >
           <SelectTrigger id={axis.key}>
             <SelectValue placeholder="선택" />
           </SelectTrigger>
@@ -383,7 +428,6 @@ const FilterField = ({ axis, form, onSingleChange, onMultiToggle }: FilterFieldP
     );
   }
 
-  // multi-select (checkboxes)
   const selected = (form[axis.key] as string[] | null) ?? [];
   return (
     <div>
@@ -395,7 +439,7 @@ const FilterField = ({ axis, form, onSingleChange, onMultiToggle }: FilterFieldP
             <button
               key={opt.value}
               type="button"
-              onClick={() => onMultiToggle(axis.key as "details" | "mood", opt.value)}
+              onClick={() => onMultiToggle(axis.key as MultiKey, opt.value)}
               className={`text-left text-xs px-2 py-1.5 rounded border ${
                 isSelected
                   ? "bg-primary text-primary-foreground border-primary"
@@ -417,12 +461,12 @@ const EmptyState = () => (
       <Plus className="w-6 h-6 text-muted-foreground" />
     </div>
     <h2 className="text-base font-semibold text-foreground mb-2">
-      등록된 드레스 샘플이 없어요
+      등록된 메이크업 샘플이 없어요
     </h2>
     <p className="text-sm text-muted-foreground">
-      우측 상단 "새 드레스" 버튼으로 첫 샘플을 등록해보세요.
+      우측 상단 "새 메이크업" 버튼으로 첫 샘플을 등록해보세요.
     </p>
   </div>
 );
 
-export default AdminDressSamples;
+export default AdminMakeupSamples;

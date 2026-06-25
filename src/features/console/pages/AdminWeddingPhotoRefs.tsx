@@ -1,5 +1,5 @@
 import { Camera } from "lucide-react";
-import ComingSoonAdminPage from "@/components/admin/ComingSoonAdminPage";
+import ComingSoonAdminPage from "@/features/console/components/ComingSoonAdminPage";
 
 const AdminWeddingPhotoRefs = () => (
   <ComingSoonAdminPage

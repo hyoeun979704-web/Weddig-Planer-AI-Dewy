@@ -1,6 +1,6 @@
 import { Sparkles, type LucideIcon } from "lucide-react";
-import AdminGuard from "@/components/admin/AdminGuard";
-import AdminLayout from "@/components/admin/AdminLayout";
+import AdminGuard from "@/features/console/components/AdminGuard";
+import AdminLayout from "@/features/console/components/AdminLayout";
 
 interface ComingSoonAdminPageProps {
   title: string;

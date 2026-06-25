@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Search, Loader2, Plus, Pencil, Star, Trash2, ExternalLink, RefreshCw, ChevronLeft, ChevronRight, X, ShoppingCart, Tag } from "lucide-react";
-import AdminGuard from "@/components/admin/AdminGuard";
-import AdminLayout from "@/components/admin/AdminLayout";
+import AdminGuard from "@/features/console/components/AdminGuard";
+import AdminLayout from "@/features/console/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { escapeLikePattern } from "@/lib/postgrestEscape";
 import { Button } from "@/components/ui/button";

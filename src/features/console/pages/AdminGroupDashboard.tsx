@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
-import AdminGuard from "@/components/admin/AdminGuard";
-import AdminLayout from "@/components/admin/AdminLayout";
+import AdminGuard from "@/features/console/components/AdminGuard";
+import AdminLayout from "@/features/console/components/AdminLayout";
 import {
   ADMIN_NAV_GROUPS,
   adminNavItemsByGroup,
   type AdminNavGroupKey,
-} from "@/components/admin/adminNav";
+} from "@/features/console/components/adminNav";
 import { supabase } from "@/integrations/supabase/client";
 
 // 그룹별 전용 대시보드 — 그 그룹의 관리 도구(adminNav 단일 소스의 group 으로 파생)를 카드로 모으고,

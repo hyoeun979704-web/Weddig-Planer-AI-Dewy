@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, MessageSquare, ThumbsDown, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
-import AdminLayout from "@/components/admin/AdminLayout";
+import AdminLayout from "@/features/console/components/AdminLayout";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";

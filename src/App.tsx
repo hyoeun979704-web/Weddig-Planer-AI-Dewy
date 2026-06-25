@@ -8,7 +8,7 @@ import { AmountPromptHost } from "@/components/ui/amount-prompt";
 import WidgetBridgeHost from "@/components/native/WidgetBridgeHost";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
-import AdminGuard from "@/components/admin/AdminGuard";
+import AdminGuard from "@/features/console/components/AdminGuard";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -125,36 +125,36 @@ const MobileInvitationView2 = lazy(() => import("./pages/invitation/MobileInvita
 const InvitationRsvpDashboard = lazy(() => import("./pages/invitation/InvitationRsvpDashboard"));
 const InvitationPhotos = lazy(() => import("./pages/invitation/InvitationPhotos"));
 const GuestPhotoUpload = lazy(() => import("./pages/invitation/GuestPhotoUpload"));
-const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-const AdminGroupDashboard = lazy(() => import("./pages/admin/AdminGroupDashboard"));
-const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
-const AdminContentReview = lazy(() => import("./pages/admin/AdminContentReview"));
-const AdminPlaceEdit = lazy(() => import("./pages/admin/AdminPlaceEdit"));
-const AdminPlaces = lazy(() => import("./pages/admin/AdminPlaces"));
-const AdminTipInstagrams = lazy(() => import("./pages/admin/AdminTipInstagrams"));
-const AdminInstagramPosts = lazy(() => import("./pages/admin/AdminInstagramPosts"));
-const AdminInstagramPostEdit = lazy(() => import("./pages/admin/AdminInstagramPostEdit"));
-const AdminMakeupSamples = lazy(() => import("./pages/admin/AdminMakeupSamples"));
-const AdminHairSamples = lazy(() => import("./pages/admin/AdminHairSamples"));
-const AdminAIPrompts = lazy(() => import("./pages/admin/AdminAIPrompts"));
-const AdminAiPromptEditor = lazy(() => import("./pages/admin/AdminAiPromptEditor"));
-const AdminAIJobs = lazy(() => import("./pages/admin/AdminAIJobs"));
-const AdminInvitationTemplates = lazy(() => import("./pages/admin/AdminInvitationTemplates"));
-const AdminInvitationAssets = lazy(() => import("./pages/admin/AdminInvitationAssets"));
-const AdminInvitationFonts = lazy(() => import("./pages/admin/AdminInvitationFonts"));
-const AdminWeddingPhotoRefs = lazy(() => import("./pages/admin/AdminWeddingPhotoRefs"));
-const AdminServiceWaitlist = lazy(() => import("./pages/admin/AdminServiceWaitlist"));
-const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
-const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
-const AdminInquiries = lazy(() => import("./pages/admin/AdminInquiries"));
-const AdminCommunityAnnouncements = lazy(() => import("./pages/admin/AdminCommunityAnnouncements"));
-const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
-const AdminErrorLogs = lazy(() => import("./pages/admin/AdminErrorLogs"));
-const AdminAgentOutputs = lazy(() => import("./pages/admin/AdminAgentOutputs"));
+const AdminDashboard = lazy(() => import("@/features/console/pages/AdminDashboard"));
+const AdminGroupDashboard = lazy(() => import("@/features/console/pages/AdminGroupDashboard"));
+const AdminDressSamples = lazy(() => import("@/features/console/pages/AdminDressSamples"));
+const AdminContentReview = lazy(() => import("@/features/console/pages/AdminContentReview"));
+const AdminPlaceEdit = lazy(() => import("@/features/console/pages/AdminPlaceEdit"));
+const AdminPlaces = lazy(() => import("@/features/console/pages/AdminPlaces"));
+const AdminTipInstagrams = lazy(() => import("@/features/console/pages/AdminTipInstagrams"));
+const AdminInstagramPosts = lazy(() => import("@/features/console/pages/AdminInstagramPosts"));
+const AdminInstagramPostEdit = lazy(() => import("@/features/console/pages/AdminInstagramPostEdit"));
+const AdminMakeupSamples = lazy(() => import("@/features/console/pages/AdminMakeupSamples"));
+const AdminHairSamples = lazy(() => import("@/features/console/pages/AdminHairSamples"));
+const AdminAIPrompts = lazy(() => import("@/features/console/pages/AdminAIPrompts"));
+const AdminAiPromptEditor = lazy(() => import("@/features/console/pages/AdminAiPromptEditor"));
+const AdminAIJobs = lazy(() => import("@/features/console/pages/AdminAIJobs"));
+const AdminInvitationTemplates = lazy(() => import("@/features/console/pages/AdminInvitationTemplates"));
+const AdminInvitationAssets = lazy(() => import("@/features/console/pages/AdminInvitationAssets"));
+const AdminInvitationFonts = lazy(() => import("@/features/console/pages/AdminInvitationFonts"));
+const AdminWeddingPhotoRefs = lazy(() => import("@/features/console/pages/AdminWeddingPhotoRefs"));
+const AdminServiceWaitlist = lazy(() => import("@/features/console/pages/AdminServiceWaitlist"));
+const AdminUsers = lazy(() => import("@/features/console/pages/AdminUsers"));
+const AdminReports = lazy(() => import("@/features/console/pages/AdminReports"));
+const AdminInquiries = lazy(() => import("@/features/console/pages/AdminInquiries"));
+const AdminCommunityAnnouncements = lazy(() => import("@/features/console/pages/AdminCommunityAnnouncements"));
+const AdminPromotions = lazy(() => import("@/features/console/pages/AdminPromotions"));
+const AdminErrorLogs = lazy(() => import("@/features/console/pages/AdminErrorLogs"));
+const AdminAgentOutputs = lazy(() => import("@/features/console/pages/AdminAgentOutputs"));
 const SupportChat = lazy(() => import("./pages/SupportChat"));
-const AdminBusinessReview = lazy(() => import("./pages/admin/AdminBusinessReview"));
-const AdminProductCuration = lazy(() => import("./pages/admin/AdminProductCuration"));
-const AdminFeaturedProducts = lazy(() => import("./pages/admin/AdminFeaturedProducts"));
+const AdminBusinessReview = lazy(() => import("@/features/console/pages/AdminBusinessReview"));
+const AdminProductCuration = lazy(() => import("@/features/console/pages/AdminProductCuration"));
+const AdminFeaturedProducts = lazy(() => import("@/features/console/pages/AdminFeaturedProducts"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
 const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
@@ -187,7 +187,7 @@ const SubscriptionPaymentFail = lazy(() => import("./pages/SubscriptionPaymentFa
 // 기업(partners) 도메인 — App.tsx 는 /business/* 한 줄로 위임. partners 페이지 lazy·가드는
 // 라우트 모듈(@/features/partners/routes)이 소유한다(도메인 경계 — App.tsx 에 partners 참조 최소화).
 const PartnersRoutes = lazy(() => import("@/features/partners/routes"));
-const AdminPlaceClaims = lazy(() => import("./pages/admin/AdminPlaceClaims"));
+const AdminPlaceClaims = lazy(() => import("@/features/console/pages/AdminPlaceClaims"));
 
 // React Query 전역 기본값: 기본 staleTime=0 + refetchOnWindowFocus=true 면 모바일 웹에서
 // 탭 전환마다 모든 useQuery 가 재요청(중복 라운드트립). 모바일 웹이 주 사용처라 60s 신선도 +
