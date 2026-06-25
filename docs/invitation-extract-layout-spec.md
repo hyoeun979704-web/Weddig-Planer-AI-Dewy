@@ -1,5 +1,10 @@
 # invitation-extract-layout — GPT 비전 슬롯 추출 프롬프트 (초안)
 
+> **상태: 미구현 설계 스펙(2026-06-25 기준).** 원래 `supabase/functions/invitation-extract-layout/PROMPT.md`
+> 에 있었으나 index.ts 없는 배포 불가 placeholder 라, 함수 폴더는 제거하고 설계 스펙만 여기로 보존했다
+> (백엔드 정리, `260625_backend_domain_map.md` 후속). 향후 구현 시 이 스펙을 출발점으로 쓴다.
+> 좌표 측정 원칙은 `docs/invitation-template-rules.md`(그리드 수치 측정·눈대중 금지)와 정합.
+
 > 청첩장 레퍼런스 이미지 1장(앞/뒤 카드)을 받아 `invitation_templates.layout`(InvitationLayout)
 > JSON 을 생성하는 GPT-vision 프롬프트. **핵심 원칙: 모든 좌표는 그리드 측정값. 눈대중 금지.**
 
