@@ -5,9 +5,15 @@ import { Loader2, Upload, Sparkles, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { addPendingJob } from "@/lib/pendingJobs";
+import {
+  fetchHairSamples,
+  fetchHairUsageCount,
+  fetchHairJobs,
+  uploadHairSource,
+  invokeHairPreview,
+} from "@/features/consumer/data/hairPreview";
 
 // 헤어 변형 미리보기 — 셀카 1장으로 (단일 / 스타일 9그리드 / 컬러 9그리드) 선택 생성.
 // 옵션당 5하트, 첫 1회 50% 할인. 동일 인물(이목구비 고정).
@@ -66,12 +72,7 @@ const HairPreview = () => {
   // 단일 헤어 선택지(이미지). 어드민이 등록한 hair_samples. 없으면 텍스트 STYLES 폴백.
   useEffect(() => {
     (async () => {
-      const { data } = await (supabase as any)
-        .from("hair_samples")
-        .select("id, name, image_url, prompt")
-        .eq("is_active", true)
-        .order("display_order", { ascending: false });
-      const list = (data ?? []) as HairSample[];
+      const list = (await fetchHairSamples()) as unknown as HairSample[];
       setSamples(list);
       if (list.length > 0) setStyle({ label: list[0].name, prompt: list[0].prompt ?? list[0].name });
     })();
@@ -80,22 +81,16 @@ const HairPreview = () => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await (supabase as any)
-        .from("hair_preview_usage").select("used_count").eq("user_id", user.id).maybeSingle();
-      setDiscounted((data?.used_count ?? 0) === 0);
+      const usedCount = await fetchHairUsageCount(user.id);
+      setDiscounted(usedCount === 0);
     })();
   }, [user]);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await (supabase as any)
-        .from("hair_preview_jobs")
-        .select("id, status, options, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      setJobs((data ?? []) as JobRow[]);
+      const rows = (await fetchHairJobs(user.id)) as unknown as JobRow[];
+      setJobs(rows);
     })();
   }, [user]);
 
@@ -138,13 +133,14 @@ const HairPreview = () => {
     try {
       const ext = pick.file.name.split(".").pop()?.toLowerCase() || "jpg";
       const path = `${user.id}/hair/${crypto.randomUUID()}.${ext}`;
-      const up = await supabase.storage
-        .from("invitation-uploads")
-        .upload(path, pick.file, { contentType: pick.file.type, upsert: false });
-      if (up.error) throw new Error(`업로드 실패: ${up.error.message}`);
+      try {
+        await uploadHairSource(path, pick.file);
+      } catch (upErr) {
+        throw new Error(`업로드 실패: ${upErr instanceof Error ? upErr.message : "오류"}`);
+      }
 
-      const { data, error } = await (supabase as any).functions.invoke("dewy-hair-preview", {
-        body: { source_path: path, options: selected, single_style: opts.has("single") ? style.prompt : "" },
+      const { data, error } = await invokeHairPreview({
+        source_path: path, options: selected, single_style: opts.has("single") ? style.prompt : "",
       });
       if (error) {
         let code: string | undefined;

@@ -7,9 +7,9 @@ import { Download, Loader2, RefreshCw, Share2, Sparkles } from "lucide-react";
 import { shareResultWithToast } from "@/lib/shareResultImage";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { removePendingJob } from "@/lib/pendingJobs";
+import { fetchHairJob, hairResultUrl } from "@/features/consumer/data/hairPreview";
 import ProcessingGuide from "@/components/ProcessingGuide";
 
 // 헤어 변형 미리보기 결과 (/ai-studio/hair-room/result/:id)
@@ -42,18 +42,15 @@ const HairPreviewResult = () => {
 
   const load = useCallback(async () => {
     if (!id) return;
-    const { data, error } = await (supabase as any)
-      .from("hair_preview_jobs")
-      .select("id, status, results, options, error, created_at")
-      .eq("id", id).single();
-    if (error || !data) { setNotFound(true); setLoading(false); return; }
-    const row = data as JobRow;
+    const data = await fetchHairJob(id);
+    if (!data) { setNotFound(true); setLoading(false); return; }
+    const row = data as unknown as JobRow;
     setJob(row);
     if (row.status === "completed" && Array.isArray(row.results)) {
       const signed: Record<string, string> = {};
       await Promise.all(row.results.map(async (it) => {
-        const { data: s } = await supabase.storage.from("invitation-uploads").createSignedUrl(it.path, 60 * 60 * 24);
-        if (s?.signedUrl) signed[it.kind] = s.signedUrl;
+        const url = await hairResultUrl(it.path);
+        if (url) signed[it.kind] = url;
       }));
       setUrls(signed);
       removePendingJob(row.id);
