@@ -73,12 +73,46 @@ repo 마이그 220개를 원격 `schema_migrations` 에 "이미 적용됨"으로
 자동배포 없이, 마이그 추가 시 지금처럼 MCP/수동으로 적용. `deploy-migrations.yml` 는
 dry-run 진단으로만 둔다. 가장 무위험이나 "머지=배포" 자동화는 미완.
 
-## 4. 권장 순서
+## 4. 실행 결과 — 옵션 B(마킹 정합) 완료 + 진짜 미배포 8건 발견
 
-1. ✅ search_path 하드닝 — 완료.
-2. ✅ `deploy-migrations.yml`(dry-run 기본) 추가 — 완료. 머지만으로 프로덕션 변경 없음.
-3. ⏳ **옵션 선택**(A 권장). A 면 DB 비번 확보 후 스쿼시 1회. B 면 전수 객체검증 후 마킹.
-4. ⏳ `SUPABASE_DB_PASSWORD` 시크릿 등록 → dry-run 자동 동작 → 검증 후 apply 수동 1회 → 안정화되면 자동 apply 로 승격.
+**선택: 옵션 B(검증 기반 마킹).** 2026-06-25 실행.
+
+1. repo 220개 미기록 마이그의 생성 객체(테이블·함수·컬럼·뷰 = 115/103/77/4)를 실DB 전수 대조.
+2. 분류:
+   - **이미 실행됨(객체 존재 또는 후속 마이그로 대체)**: 212건 → `schema_migrations` 에 기록(마킹).
+     - 옛 프로토타입 테이블(vendors·events·reviews·ext_*·product_options·invitation_venues 등)을
+       만든 2건은 "실행 후 폐기(places 모델로 대체)"라, **마킹**해서 push 재실행으로 죽은 테이블이
+       부활하지 않게 했다.
+   - **진짜 미배포(merge 됐지만 프로덕션에 안 닿음)**: **8건** → 마킹하지 않고 남김(파이프라인이
+     배포하도록). 아래 §4-1.
+3. 결과: 원격 히스토리 161 → **371** 기록. repo↔원격 미일치 = **딱 이 8건**(= push dry-run 이 보여줄 목록).
+
+### 4-1. ⚠️ 진짜 미배포 마이그 8건 (merge 됐으나 프로덕션 미적용 — 실기능 갭)
+
+배포 파이프라인 부재로 6/17~6/22 머지분 일부가 프로덕션에 안 닿았다. **현재 프로덕션에서 해당
+기능이 깨져 있거나 빠져 있다**(클라는 배포됐는데 DB 스키마/RPC 가 없음):
+
+| 마이그 | 미적용 객체 | 영향 |
+|---|---|---|
+| `20260617100000_admin_list_ai_failures` | `admin_list_ai_failures()` | 어드민 AI 실패 상세 조회 불가 |
+| `20260619090000_business_product_detail_images` | `business_products.detail_images` | 상품 상세 다중이미지 저장 실패 |
+| `20260620010000_photoshoot_drafts` | `photoshoot_drafts`·`_cuts` 테이블+버킷 | 웨딩촬영 시안 기능 전체(※ 워커 edge function 도 필요) |
+| `20260620030000_subscription_recurring_columns` | `subscriptions.sid` 등 | 구독 자동갱신 토대 컬럼 |
+| `20260622000000_add_schedule_start_date` | `user_schedule_items.start_date` | 체크리스트 시작일 |
+| `20260622040000_invitation_rsvp_deadline` | `invitations.rsvp_closed/deadline`+gate | RSVP 마감 |
+| `20260622050000_invitation_rsvp_self_edit` | `invitation_rsvp.edit_token`+RPC | 하객 응답 수정 |
+| `20260622060000_notify_on_rsvp_submit` | `notify_on_rsvp_submit` 트리거 | RSVP 호스트 알림 |
+
+→ 전부 멱등·추가형(IF NOT EXISTS / CREATE OR REPLACE)이라 적용 안전. 단 photoshoot 는 스키마만으로
+   불완전(워커 함수 필요). **배포 방법 = ① 파이프라인 apply 1회(권장) 또는 ② 수동 적용.**
+
+## 5. 권장 순서(갱신)
+
+1. ✅ search_path 하드닝.
+2. ✅ `deploy-migrations.yml`(dry-run 기본).
+3. ✅ 마킹 정합(212건) + 진짜 미배포 8건 격리.
+4. ⏳ **미배포 8건 배포 결정**(§4-1). 안전 추가형 7건은 즉시 적용 가능, photoshoot 는 워커 확인 후.
+5. ⏳ `SUPABASE_DB_PASSWORD` 시크릿 등록 → push dry-run 이 8건만 표시 확인 → apply 1회 → 안정화 후 자동 apply 승격.
 
 ## 5. 남은 보안 권고(search_path 외 — 별도 트랙)
 
