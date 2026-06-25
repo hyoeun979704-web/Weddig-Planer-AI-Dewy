@@ -82,4 +82,19 @@ export default tseslint.config(
       }],
     },
   },
+  // ④ consumer 는 다른 feature(partners·console)를 직접 import 금지(공유는 shared 경유).
+  {
+    files: ["src/features/consumer/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: [
+            "@/features/partners", "@/features/partners/*", "@/features/partners/**",
+            "@/features/console", "@/features/console/*", "@/features/console/**",
+          ],
+          message: "도메인 경계 위반: consumer 가 다른 feature(partners·console)를 직접 import 금지. 공유는 shared(@/lib 등) 경유.",
+        }],
+      }],
+    },
+  },
 );

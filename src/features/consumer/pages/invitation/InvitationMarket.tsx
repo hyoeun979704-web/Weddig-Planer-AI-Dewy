@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { ORDER_SESSION_KEY } from "@/pages/Checkout";
+import { ORDER_SESSION_KEY } from "@/features/consumer/pages/Checkout";
 import { computeDesignCharge } from "@/lib/designPricing";
 import { safeSessionStorage } from "@/lib/safeSessionStorage";
 

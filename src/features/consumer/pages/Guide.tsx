@@ -10,7 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { getGuide } from "@/data/aeoGuides";
-import NotFound from "@/pages/NotFound";
+import NotFound from "@/features/consumer/pages/NotFound";
 
 // AEO 가이드 페이지(결혼어플추천 등)의 사용자용 렌더.
 // 크롤러/AI 용 본문은 api/guide.ts 가 같은 데이터(src/data/aeoGuides)로 SSR 주입.
