@@ -15,6 +15,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { aeoGuides } from "./data/aeoGuides";
+import { DESIGN_MARKET_ENABLED } from "@/lib/featureFlags";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 
@@ -368,7 +369,13 @@ const App = () => (
               <Route path="/my-deliveries" element={<MyDeliveries />} />
               <Route path="/taste" element={<TasteQuiz />} />
               <Route path="/mail" element={<MailInbox />} />
-              <Route path="/invitation/market" element={<InvitationMarket />} />
+              {/* 청첩장 디자인 마켓 = 디지털재화 판매(카카오 PG, IAP 분기 없음). 플래그가 꺼진 동안에는
+                  라우트 자체를 막는다 — 직접 URL 도달 시 iOS에서 외부결제 노출 = App Store 3.1.1 위반.
+                  플래그를 켜기 전 반드시 결제 IAP 분기 추가(docs/260625_appstore_resubmit_runbook.md §1). */}
+              <Route
+                path="/invitation/market"
+                element={DESIGN_MARKET_ENABLED ? <InvitationMarket /> : <Navigate to="/" replace />}
+              />
               <Route path="/business/leads" element={<BusinessGuard requireApproved><BusinessLeads /></BusinessGuard>} />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />

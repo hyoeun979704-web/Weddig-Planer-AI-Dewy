@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,7 +35,18 @@ const SubscriptionCheckout = () => {
 
   // 결제수단: 웹=카카오페이, 네이티브(Android·iOS)=IAP(+10%).
   const provider = getPaymentProvider();
-  const displayAmount = provider === "iap" && type !== "trial" ? subscriptionIapPrice(type) : amount;
+  const isIap = provider === "iap";
+  const displayAmount = isIap && type !== "trial" ? subscriptionIapPrice(type) : amount;
+
+  // 무료체험 안내 문구는 결제수단별로 사실관계가 다르다(3.1.1/3.1.2 — 거짓 설명 금지).
+  // 웹(카카오) = 100원 카드 인증 후 즉시 환불(자동결제 없음). 네이티브(IAP) = 스토어 무료체험 →
+  // 종료 후 자동 갱신(스토어 설정에서 해지 가능). iOS 빌드에 카드 인증 문구를 노출하면 안 된다.
+  const trialSubtitle = isIap
+    ? `첫 1개월 무료 · 무료 기간이 끝나면 자동 갱신돼요`
+    : `100원 인증 후 즉시 환불 · 1개월 무료 이용`;
+  const trialNote = isIap
+    ? `${iapStoreName()}의 무료체험으로 1개월간 무료 이용 후, 해지하지 않으면 다음 기간 요금이 자동 청구됩니다. 무료 기간 중 ${iapStoreName()} 구독 메뉴에서 언제든 해지할 수 있어요.`
+    : `카드 유효성 확인을 위해 100원이 결제 후 즉시 환불됩니다. 체험 종료 후 자동 결제는 없습니다.`;
 
   useEffect(() => {
     if (!user) navigate("/auth");
@@ -110,7 +121,7 @@ const SubscriptionCheckout = () => {
               <p className="font-bold text-foreground">{label}</p>
               {type === "trial" && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  100원 인증 후 즉시 환불 · 1개월 무료 이용
+                  {trialSubtitle}
                 </p>
               )}
             </div>
@@ -126,7 +137,7 @@ const SubscriptionCheckout = () => {
           )}
           {type === "trial" && (
             <p className="text-[11px] text-muted-foreground mt-2 bg-background/50 rounded-lg p-2">
-               카드 유효성 확인을 위해 100원이 결제 후 즉시 환불됩니다. 체험 종료 후 자동 결제는 없습니다.
+               {trialNote}
             </p>
           )}
         </div>
@@ -164,7 +175,10 @@ const SubscriptionCheckout = () => {
                   </div>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-3">
-                  구독 관리·해지는 {iapStoreName()}의 구독 메뉴에서 할 수 있어요.
+                  {type === "trial"
+                    ? `${label} · 무료체험 종료 후 자동 갱신`
+                    : `${label} · 자동 갱신 구독`}
+                  {" "}— 구독은 현재 기간이 끝나기 전 자동으로 갱신되며, 갱신 24시간 전까지 {iapStoreName()}의 구독 설정에서 해지하지 않으면 다음 기간 요금이 청구됩니다. 구독 관리·해지는 {iapStoreName()}의 구독 메뉴에서 할 수 있어요.
                 </p>
               </>
             ) : (
@@ -185,6 +199,13 @@ const SubscriptionCheckout = () => {
             )}
           </div>
         )}
+
+        {/* 구독 필수 고지 링크(App Store 3.1.2 / Google Play) — 약관·개인정보처리방침 인앱 기능 링크. */}
+        <div className="flex items-center justify-center gap-3 text-[11px] text-muted-foreground pt-1">
+          <Link to="/terms" className="underline underline-offset-2">이용약관</Link>
+          <span aria-hidden>·</span>
+          <Link to="/privacy" className="underline underline-offset-2">개인정보처리방침</Link>
+        </div>
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 app-col mx-auto px-4 pt-4 pb-[calc(1rem+var(--safe-bottom))] bg-background border-t border-border">
