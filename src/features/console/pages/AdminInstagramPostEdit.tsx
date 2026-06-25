@@ -39,7 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchDraft, updateDraft, deleteDraft } from "@/features/console/data/instagramPostDraft";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -199,26 +199,22 @@ const AdminInstagramPostEditInner = () => {
     }
     setIsLoading(true);
     setLoadError(null);
-    // 생성된 supabase 타입에 instagram_post_drafts 가 아직 없을 수 있어 cast.
-    // 프로젝트 컨벤션: AdminTipInstagrams 등에서 동일 패턴 사용.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from("instagram_post_drafts")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-    setIsLoading(false);
-    if (error) {
-      console.error("draft fetch failed:", error);
-      // PostgREST 406 / 인터넷 끊김 등은 load error 로 표시. RLS 거부면 데이터 없음으로 처리.
-      setLoadError(error.message);
+    let data: Record<string, unknown> | null = null;
+    try {
+      data = await fetchDraft(id);
+    } catch (e) {
+      setIsLoading(false);
+      console.error("draft fetch failed:", e);
+      // PostgREST 406 / 인터넷 끊김 등은 load error 로 표시.
+      setLoadError(e instanceof Error ? e.message : "오류");
       return;
     }
+    setIsLoading(false);
     if (!data) {
       setNotFound(true);
       return;
     }
-    const normalized = normalizeDraft(data as Record<string, unknown>);
+    const normalized = normalizeDraft(data);
     setDraft(normalized);
     setForm(buildFormFromDraft(normalized));
   }, [id]);
@@ -330,25 +326,25 @@ const AdminInstagramPostEditInner = () => {
     };
     setDraft(optimistic);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from("instagram_post_drafts")
-      .update(buildUpdatePayload(form))
-      .eq("id", id)
-      .select("*")
-      .maybeSingle();
+    let data: Record<string, unknown> | null = null;
+    let saveError: Error | null = null;
+    try {
+      data = await updateDraft(id, buildUpdatePayload(form));
+    } catch (e) {
+      saveError = e instanceof Error ? e : new Error("오류");
+    }
     setIsSaving(false);
 
-    if (error || !data) {
+    if (saveError || !data) {
       setDraft(prevDraft);
       toast({
         title: "저장 실패",
-        description: error?.message ?? "응답이 비어있어요",
+        description: saveError?.message ?? "응답이 비어있어요",
         variant: "destructive",
       });
       return false;
     }
-    const normalized = normalizeDraft(data as Record<string, unknown>);
+    const normalized = normalizeDraft(data);
     setDraft(normalized);
     setForm(buildFormFromDraft(normalized));
     toast({ title: "저장 완료" });
@@ -362,23 +358,23 @@ const AdminInstagramPostEditInner = () => {
   ) => {
     if (!id || !draft) return;
     setIsMutating(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from("instagram_post_drafts")
-      .update(patch)
-      .eq("id", id)
-      .select("*")
-      .maybeSingle();
+    let data: Record<string, unknown> | null = null;
+    let mutError: Error | null = null;
+    try {
+      data = await updateDraft(id, patch);
+    } catch (e) {
+      mutError = e instanceof Error ? e : new Error("오류");
+    }
     setIsMutating(false);
-    if (error || !data) {
+    if (mutError || !data) {
       toast({
         title: "처리 실패",
-        description: error?.message ?? "응답이 비어있어요",
+        description: mutError?.message ?? "응답이 비어있어요",
         variant: "destructive",
       });
       return;
     }
-    const normalized = normalizeDraft(data as Record<string, unknown>);
+    const normalized = normalizeDraft(data);
     setDraft(normalized);
     setForm(buildFormFromDraft(normalized));
     toast({ title: successTitle });
@@ -426,17 +422,18 @@ const AdminInstagramPostEditInner = () => {
   const handleDelete = async () => {
     if (!id) return;
     setIsMutating(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("instagram_post_drafts")
-      .delete()
-      .eq("id", id);
+    let delError: Error | null = null;
+    try {
+      await deleteDraft(id);
+    } catch (e) {
+      delError = e instanceof Error ? e : new Error("오류");
+    }
     setIsMutating(false);
     setConfirmDelete(false);
-    if (error) {
+    if (delError) {
       toast({
         title: "삭제 실패",
-        description: error.message,
+        description: delError.message,
         variant: "destructive",
       });
       return;
