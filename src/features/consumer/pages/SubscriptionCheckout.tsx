@@ -75,7 +75,7 @@ const SubscriptionCheckout = () => {
       );
 
       const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-      const redirectUrl = isMobile ? data.next_redirect_mobile_url : data.next_redirect_pc_url;
+      const redirectUrl = (isMobile ? data.next_redirect_mobile_url : data.next_redirect_pc_url) as string;
       // 네이티브: Custom Tabs 로 띄워 카카오페이 → 은행/카드 앱 → 복귀 흐름 보존.
       await openExternal(redirectUrl, { target: '_self' });
     } catch (err: any) {

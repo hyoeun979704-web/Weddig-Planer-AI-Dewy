@@ -374,7 +374,7 @@ const InvitationStudio = () => {
     if (!params.id || !user) return;
     (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = (await fetchInvitationForEdit(params.id, user.id)) as any;
+      const data = (await fetchInvitationForEdit(params.id!, user.id)) as any;
       if (!data) {
         toast({ title: "청첩장을 불러올 수 없어요", variant: "destructive" });
         navigate("/invitation/my");

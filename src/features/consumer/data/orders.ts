@@ -36,6 +36,18 @@ export interface OrderCompleteRow {
 export interface EdgeResult {
   success?: boolean;
   error?: string;
+  // 결제 edge function 응답에서 호출부가 직접 읽는 동적 필드들(엔드포인트별 일부만 채워짐).
+  tid?: string;
+  partner_order_id?: string;
+  partner_user_id?: string;
+  next_redirect_mobile_url?: string;
+  next_redirect_pc_url?: string;
+  order_number?: string;
+  amount?: number;
+  final_amount?: number;
+  hearts?: number;
+  heartsGranted?: number;
+  pointsSpent?: number;
   [key: string]: unknown;
 }
 
