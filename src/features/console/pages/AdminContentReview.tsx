@@ -114,9 +114,25 @@ const AdminContentReview = () => {
   }, [load]);
 
   const approve = async (type: ContentType, id: string) => {
-    const table = type === "events" ? "business_events" : "business_coupons";
+    if (type === "events") {
+      // 이벤트는 admin_review_event RPC(SECURITY DEFINER, has_role 강제)로 승인.
+      // business_events 에 admin UPDATE RLS 정책이 없어 직접 .update() 는 0행 매칭으로
+      // 조용히 무동작(성공 toast 만 뜨는 dead-end)이었다 — RPC 경로로 교정.
+      const { data, error } = await (supabase as any).rpc("admin_review_event", {
+        p_id: id, p_approved: true, p_note: null,
+      });
+      if (error || (data && data.ok === false)) {
+        toast({ title: "승인 실패", description: error?.message || data?.error || "권한을 확인해주세요.", variant: "destructive" });
+        return;
+      }
+      toast({ title: "승인됨", description: "사용자에게 노출됩니다." });
+      await load();
+      return;
+    }
+    // 쿠폰: admin_review_coupon RPC·admin UPDATE RLS 모두 미구현 → 현재 검토가 동작하지 않음
+    // (P0, docs/audit-surface-console.md). 백엔드 확정(면제 유지 vs RPC+정책 추가) 전까지 이관.
     const { error } = await (supabase as any)
-      .from(table)
+      .from("business_coupons")
       .update({ moderation_status: "approved", moderation_note: null })
       .eq("id", id);
     if (error) {
@@ -134,9 +150,23 @@ const AdminContentReview = () => {
       toast({ title: "반려 사유 입력", description: "사유를 적어 기업회원에게 안내해주세요.", variant: "destructive" });
       return;
     }
-    const table = rejectTarget.type === "events" ? "business_events" : "business_coupons";
+    if (rejectTarget.type === "events") {
+      const { data, error } = await (supabase as any).rpc("admin_review_event", {
+        p_id: rejectTarget.id, p_approved: false, p_note: trimmed,
+      });
+      if (error || (data && data.ok === false)) {
+        toast({ title: "반려 실패", description: error?.message || data?.error || "권한을 확인해주세요.", variant: "destructive" });
+        return;
+      }
+      toast({ title: "반려됨", description: "기업회원에게 사유가 전달됩니다." });
+      setRejectTarget(null);
+      setRejectNote("");
+      await load();
+      return;
+    }
+    // 쿠폰: 위 approve 와 동일 — 백엔드 미구현으로 이관(P0).
     const { error } = await (supabase as any)
-      .from(table)
+      .from("business_coupons")
       .update({ moderation_status: "rejected", moderation_note: trimmed })
       .eq("id", rejectTarget.id);
     if (error) {
