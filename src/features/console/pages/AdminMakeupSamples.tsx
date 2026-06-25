@@ -22,7 +22,7 @@ import {
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
 import ImageUploader from "@/components/ImageUploader";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchSamples, saveSample, setSampleActive, deleteSample } from "@/features/console/data/sampleAdmin";
 import { toast } from "@/hooks/use-toast";
 import {
   MAKEUP_FILTERS,
@@ -80,28 +80,24 @@ const AdminMakeupSamples = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const fetchSamples = useCallback(async () => {
+  const loadSamples = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("makeup_samples")
-      .select("*")
-      .order("display_order", { ascending: false })
-      .order("created_at", { ascending: false });
-    if (error) {
+    try {
+      setSamples(await fetchSamples<MakeupSample>("makeup_samples"));
+    } catch (e) {
       toast({
         title: "불러오기 실패",
-        description: error.message,
+        description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
-    } else {
-      setSamples(data ?? []);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchSamples();
-  }, [fetchSamples]);
+    loadSamples();
+  }, [loadSamples]);
 
   const handleSave = async () => {
     if (!form.image_url) {
@@ -118,26 +114,22 @@ const AdminMakeupSamples = () => {
       details: form.details ?? [],
       mood: form.mood ?? [],
     };
-    const { error } = editingId
-      ? await (supabase as any)
-          .from("makeup_samples")
-          .update(payload)
-          .eq("id", editingId)
-      : await (supabase as any).from("makeup_samples").insert(payload);
-    if (error) {
-      toast({
-        title: "저장 실패",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
+    try {
+      await saveSample("makeup_samples", editingId, payload);
       toast({ title: editingId ? "수정 완료" : "저장 완료" });
       setForm(emptyForm);
       setEditingId(null);
       setIsDialogOpen(false);
-      fetchSamples();
+      loadSamples();
+    } catch (e) {
+      toast({
+        title: "저장 실패",
+        description: e instanceof Error ? e.message : "오류",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const handleEdit = (sample: MakeupSample) => {
@@ -171,36 +163,30 @@ const AdminMakeupSamples = () => {
   };
 
   const handleToggleActive = async (sample: MakeupSample) => {
-    const { error } = await (supabase as any)
-      .from("makeup_samples")
-      .update({ is_active: !sample.is_active })
-      .eq("id", sample.id);
-    if (error) {
+    try {
+      await setSampleActive("makeup_samples", sample.id, !sample.is_active);
+      loadSamples();
+    } catch (e) {
       toast({
         title: "변경 실패",
-        description: error.message,
+        description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
-    } else {
-      fetchSamples();
     }
   };
 
   const handleDelete = async (sample: MakeupSample) => {
     if (!confirm(`"${sample.name}" 을(를) 삭제하시겠어요?`)) return;
-    const { error } = await (supabase as any)
-      .from("makeup_samples")
-      .delete()
-      .eq("id", sample.id);
-    if (error) {
+    try {
+      await deleteSample("makeup_samples", sample.id);
+      toast({ title: "삭제 완료" });
+      loadSamples();
+    } catch (e) {
       toast({
         title: "삭제 실패",
-        description: error.message,
+        description: e instanceof Error ? e.message : "오류",
         variant: "destructive",
       });
-    } else {
-      toast({ title: "삭제 완료" });
-      fetchSamples();
     }
   };
 

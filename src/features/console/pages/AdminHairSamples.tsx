@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
 import ImageUploader from "@/components/ImageUploader";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchSamples, saveSample, setSampleActive, deleteSample } from "@/features/console/data/sampleAdmin";
 import { toast } from "@/hooks/use-toast";
 
 // 헤어 변형 미리보기 — 단일 헤어 선택지(이미지) 카탈로그.
@@ -48,34 +48,33 @@ const AdminHairSamples = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const fetchSamples = useCallback(async () => {
+  const loadSamples = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("hair_samples")
-      .select("*")
-      .order("display_order", { ascending: false })
-      .order("created_at", { ascending: false });
-    if (error) toast({ title: "불러오기 실패", description: error.message, variant: "destructive" });
-    else setSamples(data ?? []);
-    setIsLoading(false);
+    try {
+      setSamples(await fetchSamples<HairSample>("hair_samples"));
+    } catch (e) {
+      toast({ title: "불러오기 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  useEffect(() => { fetchSamples(); }, [fetchSamples]);
+  useEffect(() => { loadSamples(); }, [loadSamples]);
 
   const handleSave = async () => {
     if (!form.image_url) return toast({ title: "이미지를 업로드해주세요", variant: "destructive" });
     if (!form.name.trim()) return toast({ title: "이름을 입력해주세요", variant: "destructive" });
     setIsSaving(true);
     const payload = { ...form, prompt: form.prompt || null, category: form.category || null };
-    const { error } = editingId
-      ? await (supabase as any).from("hair_samples").update(payload).eq("id", editingId)
-      : await (supabase as any).from("hair_samples").insert(payload);
-    if (error) toast({ title: "저장 실패", description: error.message, variant: "destructive" });
-    else {
+    try {
+      await saveSample("hair_samples", editingId, payload);
       toast({ title: editingId ? "수정 완료" : "저장 완료" });
-      setForm(emptyForm); setEditingId(null); setIsDialogOpen(false); fetchSamples();
+      setForm(emptyForm); setEditingId(null); setIsDialogOpen(false); loadSamples();
+    } catch (e) {
+      toast({ title: "저장 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const handleEdit = (s: HairSample) => {
@@ -93,16 +92,22 @@ const AdminHairSamples = () => {
   };
 
   const handleToggleActive = async (s: HairSample) => {
-    const { error } = await (supabase as any).from("hair_samples").update({ is_active: !s.is_active }).eq("id", s.id);
-    if (error) toast({ title: "변경 실패", description: error.message, variant: "destructive" });
-    else fetchSamples();
+    try {
+      await setSampleActive("hair_samples", s.id, !s.is_active);
+      loadSamples();
+    } catch (e) {
+      toast({ title: "변경 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    }
   };
 
   const handleDelete = async (s: HairSample) => {
     if (!confirm(`"${s.name}" 을(를) 삭제하시겠어요?`)) return;
-    const { error } = await (supabase as any).from("hair_samples").delete().eq("id", s.id);
-    if (error) toast({ title: "삭제 실패", description: error.message, variant: "destructive" });
-    else { toast({ title: "삭제 완료" }); fetchSamples(); }
+    try {
+      await deleteSample("hair_samples", s.id);
+      toast({ title: "삭제 완료" }); loadSamples();
+    } catch (e) {
+      toast({ title: "삭제 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    }
   };
 
   return (
