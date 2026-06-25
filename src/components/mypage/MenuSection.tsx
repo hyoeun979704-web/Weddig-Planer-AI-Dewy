@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Calendar, User, Bell, FileText, MessageSquare,
   HelpCircle, Settings, ChevronRight, LogOut, Building2, Heart,
-  Mail, Shirt, Sparkles, Shield, Palette, Scissors, Headset, BookOpen
+  Mail, Shirt, Sparkles, Shield, Palette, Scissors, Headset, BookOpen, Ban
 } from "lucide-react";
 import { User as SupaUser } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -76,6 +76,7 @@ const MenuSection = ({
             } as MenuItem]
           : []),
         { icon: Bell, title: "알림 설정", description: "푸시 알림 관리", href: "/notifications" },
+        { icon: Ban, title: "차단 목록", description: "차단한 사용자 관리", href: "/settings/blocked" },
         { icon: Settings, title: "설정", description: "다크 모드, 언어 등", href: "/settings" },
         ...(onViewDataConsent
           ? [{

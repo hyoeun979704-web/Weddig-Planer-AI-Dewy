@@ -5,6 +5,7 @@ import { useWeddingSchedule } from "./useWeddingSchedule";
 import { useTutorialProgress } from "./useTutorialProgress";
 import { useAuth } from "@/contexts/AuthContext";
 import { findLessonById, isLessonVisible, AUTO_TUTORIAL_ENABLED } from "@/data/tutorialChapters";
+import { safeLocalStorage } from "@/lib/safeLocalStorage";
 
 const PAGE_SEEN_PREFIX = "dewy_tutorial_page_";
 
@@ -66,7 +67,7 @@ export const usePageTutorial = (
     // 전역 비활성(개편 예정) 시 자동 시작만 차단 — 위 query-param 재생은 유지.
     if (AUTO_TUTORIAL_ENABLED && pageGuideId && autoStart) {
       const seenKey = PAGE_SEEN_PREFIX + pageGuideId;
-      const hasSeen = localStorage.getItem(seenKey) === "true";
+      const hasSeen = safeLocalStorage.getItem(seenKey) === "true";
       const alreadyDone = progress.isCompleted(pageGuideId);
       const lesson = findLessonById(pageGuideId);
 
@@ -84,7 +85,7 @@ export const usePageTutorial = (
 
       const timer = setTimeout(() => {
         tutorial.startTutorial(lesson.steps, lesson.id);
-        localStorage.setItem(seenKey, "true");
+        safeLocalStorage.setItem(seenKey, "true");
       }, 800);
       return () => clearTimeout(timer);
     }

@@ -87,6 +87,7 @@ const MyInquiries = lazy(() => import("@/features/consumer/pages/MyInquiries"));
 const Contact = lazy(() => import("@/features/consumer/pages/Contact"));
 const FAQ = lazy(() => import("@/features/consumer/pages/FAQ"));
 const Settings = lazy(() => import("@/features/consumer/pages/Settings"));
+const BlockedUsers = lazy(() => import("@/features/consumer/pages/BlockedUsers"));
 const InvitationVenues = lazy(() => import("@/features/consumer/pages/InvitationVenues"));
 const InvitationVenueDetail = lazy(() => import("@/features/consumer/pages/InvitationVenueDetail"));
 const VendorList = lazy(() => import("@/features/consumer/pages/VendorList"));
@@ -249,6 +250,7 @@ const App = () => (
               <Route path="/help" element={<ConsumerGuideIndex />} />
               <Route path="/help/:guideId" element={<ConsumerGuideDetail />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/settings/blocked" element={<BlockedUsers />} />
               <Route path="/invitation-venues" element={<InvitationVenues />} />
               <Route path="/invitation-venues/:id" element={<InvitationVenueDetail />} />
               <Route path="/vendors/:category" element={<VendorList />} />
