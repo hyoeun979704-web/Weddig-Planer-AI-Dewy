@@ -10,17 +10,15 @@ import {
 import { Button } from "@/components/ui/button";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchWaitlist,
+  markNotified,
+  markAllNotified,
+  type WaitlistEntry,
+} from "@/features/console/data/serviceWaitlist";
 import { toast } from "@/hooks/use-toast";
 
-interface WaitlistEntry {
-  id: string;
-  user_id: string | null;
-  service_id: string;
-  contact: string | null;
-  notified: boolean;
-  created_at: string;
-}
+// WaitlistEntry 타입은 features/console/data/serviceWaitlist 에서 import.
 
 const SERVICE_LABELS: Record<string, string> = {
   "makeup-finder": "착붙 메이크업 찾기",
@@ -38,27 +36,13 @@ const AdminServiceWaitlist = () => {
 
   const fetchEntries = useCallback(async () => {
     setIsLoading(true);
-    let query = (supabase as any)
-      .from("service_waitlist")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (serviceFilter !== "all") {
-      query = query.eq("service_id", serviceFilter);
+    try {
+      setEntries(await fetchWaitlist({ serviceFilter, notifiedFilter: notifiedFilter as "all" | "pending" | "notified" }));
+    } catch (e) {
+      toast({ title: "불러오기 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-    if (notifiedFilter === "pending") {
-      query = query.eq("notified", false);
-    } else if (notifiedFilter === "notified") {
-      query = query.eq("notified", true);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      toast({ title: "불러오기 실패", description: error.message, variant: "destructive" });
-    } else {
-      setEntries(data ?? []);
-    }
-    setIsLoading(false);
   }, [serviceFilter, notifiedFilter]);
 
   useEffect(() => {
@@ -66,29 +50,23 @@ const AdminServiceWaitlist = () => {
   }, [fetchEntries]);
 
   const handleMarkNotified = async (entry: WaitlistEntry) => {
-    const { error } = await (supabase as any)
-      .from("service_waitlist")
-      .update({ notified: true })
-      .eq("id", entry.id);
-    if (error) {
-      toast({ title: "처리 실패", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await markNotified(entry.id);
       toast({ title: "알림 발송 처리 완료" });
       fetchEntries();
+    } catch (e) {
+      toast({ title: "처리 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
     }
   };
 
   const handleBulkMarkNotified = async () => {
     if (!confirm("모든 미발송 신청을 발송 완료로 처리하시겠어요?")) return;
-    const { error } = await (supabase as any)
-      .from("service_waitlist")
-      .update({ notified: true })
-      .eq("notified", false);
-    if (error) {
-      toast({ title: "처리 실패", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await markAllNotified();
       toast({ title: "일괄 처리 완료" });
       fetchEntries();
+    } catch (e) {
+      toast({ title: "처리 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
     }
   };
 
