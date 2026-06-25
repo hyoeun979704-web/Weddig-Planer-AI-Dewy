@@ -4,7 +4,12 @@ import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchMarketDesigns,
+  fetchPointBalance,
+  fetchOwnedDesignIds,
+  invokeDesignPurchaseReady,
+} from "@/features/consumer/data/invitation";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { ORDER_SESSION_KEY } from "@/features/consumer/pages/Checkout";
@@ -33,19 +38,14 @@ const InvitationMarket = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [{ data: market }, { data: pts }] = await Promise.all([
-      (supabase as any)
-        .from("designer_designs")
-        .select("id, title, price, preview_urls, style_tags, sellable")
-        .eq("status", "approved").eq("active", true)
-        .order("created_at", { ascending: false }),
-      user ? supabase.from("user_points").select("balance").eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null }),
+    const [market, pts] = await Promise.all([
+      fetchMarketDesigns(),
+      user ? fetchPointBalance(user.id) : Promise.resolve(0),
     ]);
-    setDesigns((market as DesignCard[]) ?? []);
-    setBalance((pts?.data?.balance as number) ?? 0);
+    setDesigns(market as DesignCard[]);
+    setBalance(pts);
     if (user) {
-      const { data: owned } = await (supabase as any).from("design_purchases").select("design_id").eq("user_id", user.id);
-      setOwnedIds(new Set(((owned as { design_id: string }[]) ?? []).map((o) => o.design_id)));
+      setOwnedIds(await fetchOwnedDesignIds(user.id));
     }
     setLoading(false);
   }, [user]);
@@ -62,8 +62,10 @@ const InvitationMarket = () => {
   const onBuy = async () => {
     if (!selected) return;
     setBuying(true);
-    const { data, error } = await supabase.functions.invoke("design-purchase-ready", {
-      body: { designId: selected.id, usePoints, origin: window.location.origin },
+    const { data, error } = await invokeDesignPurchaseReady({
+      designId: selected.id,
+      usePoints,
+      origin: window.location.origin,
     });
     setBuying(false);
     if (error || !data?.success) { toast.error(data?.error || "결제 준비에 실패했어요"); return; }

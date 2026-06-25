@@ -4,7 +4,13 @@ import { Loader2, Download, Trash2, ImageIcon, Share2 } from "lucide-react";
 import JSZip from "jszip";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchInvitationOwnerMeta,
+  fetchGuestPhotos,
+  deleteGuestPhoto,
+  removeGuestPhoto,
+  guestPhotoSignedUrls,
+} from "@/features/consumer/data/invitation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCouplePartnerId } from "@/hooks/useCouplePartnerId";
 import DriveBackupCard from "@/components/invitation/DriveBackupCard";
@@ -41,11 +47,7 @@ const InvitationPhotos = () => {
   const load = useCallback(async () => {
     if (!user || !id) return;
     // 인가 + 제목 (소유자/배우자만). 공개 발행본은 누구나 SELECT 가능하므로 클라 교차검증.
-    const { data: inv } = await (supabase as any)
-      .from("invitations")
-      .select("user_id, user_data, share_slug")
-      .eq("id", id)
-      .maybeSingle();
+    const inv = await fetchInvitationOwnerMeta(id);
     const authorized = !!inv && (inv.user_id === user.id || inv.user_id === partnerId);
     if (!authorized) {
       navigate("/invitation/my", { replace: true });
@@ -56,25 +58,20 @@ const InvitationPhotos = () => {
     setTitle(g && b ? `${g} · ${b}` : "");
     setShareSlug(inv.share_slug ?? null);
 
-    const { data, error } = await (supabase as any)
-      .from("invitation_guest_photos")
-      .select("id, uploader_name, storage_path, content_type, created_at")
-      .eq("invitation_id", id)
-      .order("created_at", { ascending: false });
-    if (error) {
+    let list: PhotoRow[];
+    try {
+      list = await fetchGuestPhotos(id);
+    } catch {
       toast.error("불러오기 실패");
       setLoading(false);
       return;
     }
-    const list = (data ?? []) as PhotoRow[];
     setRows(list);
     if (list.length > 0) {
-      const { data: signed } = await supabase.storage
-        .from("guest-photos")
-        .createSignedUrls(list.map((r) => r.storage_path), 60 * 60); // 1시간
+      const signed = await guestPhotoSignedUrls(list.map((r) => r.storage_path)); // 1시간
       const map: Record<string, string> = {};
-      (signed ?? []).forEach((s, i) => {
-        if (s.signedUrl) map[list[i].id] = s.signedUrl;
+      signed.forEach((url, i) => {
+        if (url) map[list[i].id] = url;
       });
       setUrls(map);
     }
@@ -118,15 +115,13 @@ const InvitationPhotos = () => {
 
   const remove = async (r: PhotoRow) => {
     if (!confirm("이 사진을 삭제할까요?")) return;
-    const { error } = await (supabase as any)
-      .from("invitation_guest_photos")
-      .delete()
-      .eq("id", r.id);
-    if (error) {
+    try {
+      await deleteGuestPhoto(r.id);
+    } catch {
       toast.error("삭제 실패");
       return;
     }
-    await supabase.storage.from("guest-photos").remove([r.storage_path]).catch(() => undefined);
+    await removeGuestPhoto(r.storage_path);
     setRows((prev) => prev.filter((x) => x.id !== r.id));
     toast.success("삭제했어요");
   };
