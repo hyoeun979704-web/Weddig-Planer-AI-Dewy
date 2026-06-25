@@ -3,7 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Building2, Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchPendingModeration,
+  fetchBusinessTiers,
+  reviewPartnership as reviewPartnershipApi,
+  setBusinessTier,
+  reviewProduct as reviewProductApi,
+  reviewEvent as reviewEventApi,
+  reviewListing as reviewListingApi,
+  reviewBusiness as reviewBusinessApi,
+  type PendingBusiness,
+} from "@/features/console/data/businessReview";
 import { toast } from "sonner";
 import { logClientError } from "@/lib/errorLog";
 import EmptyState from "@/components/ui/empty-state";
@@ -24,15 +34,7 @@ const reportReviewFailure = (
   void logClientError({ message: `${what}: ${detail}`, source: "manual" });
 };
 
-interface PendingBusiness {
-  id: string;
-  business_name: string;
-  business_number: string;
-  representative_name: string;
-  service_category: string;
-  is_verified: boolean | null;
-  created_at: string | null;
-}
+// PendingBusiness 타입은 features/console/data/businessReview 에서 import(Task #3).
 
 const CATEGORY_LABELS: Record<string, string> = {
   wedding_hall: "웨딩홀",
@@ -73,47 +75,43 @@ const AdminBusinessReview = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [biz, list, evt, prod, apps, tierList] = await Promise.all([
-      supabase.rpc("admin_list_pending_businesses"),
-      supabase.rpc("admin_list_pending_listings"),
-      supabase.rpc("admin_list_pending_events"),
-      supabase.rpc("admin_list_pending_products"),
-      supabase.rpc("admin_list_partnership_applications"),
-      supabase.rpc("admin_list_business_tiers"),
-    ]);
-    if (biz.error || list.error || evt.error || prod.error) {
+    const m = await fetchPendingModeration();
+    if (m.partialError) {
       toast.error("일부 검토 목록을 불러오지 못했어요. 다시 시도해주세요");
     }
-    setItems(biz.error ? [] : (biz.data ?? []) as PendingBusiness[]);
-    setListings(list.error ? [] : ((list.data ?? []) as any[]).map((p) => ({ place_id: p.place_id, name: p.name, city: p.city, category: p.category })));
-    setEvents(evt.error ? [] : ((evt.data ?? []) as any[]).map((e) => ({ id: e.id, title: e.title, description: e.description })));
-    setProducts(prod.error ? [] : ((prod.data ?? []) as any[]).map((p) => ({ id: p.id, name: p.name, price: p.price })));
-    setApplications(apps.error ? [] : (apps.data ?? []));
-    setTiers(tierList.error ? [] : (tierList.data ?? []));
+    setItems(m.businesses);
+    setListings(m.listings);
+    setEvents(m.events);
+    setProducts(m.products);
+    setApplications(m.applications);
+    setTiers(m.tiers);
     setLoading(false);
   }, []);
 
   // 제휴 신청 처리 — 면담 진행 / 승인(프렌즈 자동 부여) / 반려
   const reviewPartnership = async (id: string, status: "interviewing" | "approved" | "rejected") => {
     setProcessingApp(id);
-    const { data, error } = await supabase.rpc("admin_review_partnership", { p_id: id, p_status: status, p_note: null });
+    const ok = await reviewPartnershipApi(id, status);
     setProcessingApp(null);
-    if (error || !(data as { ok?: boolean })?.ok) { toast.error("처리에 실패했어요"); return; }
+    if (!ok) { toast.error("처리에 실패했어요"); return; }
     toast.success(status === "approved" ? "프렌즈로 승격했어요" : status === "interviewing" ? "면담 진행으로 표시했어요" : "반려했어요");
     if (status === "interviewing") {
       setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
     } else {
       setApplications((prev) => prev.filter((a) => a.id !== id));
     }
-    const refreshed = await supabase.rpc("admin_list_business_tiers");
-    if (!refreshed.error) setTiers(refreshed.data ?? []);
+    try {
+      setTiers(await fetchBusinessTiers());
+    } catch {
+      // 등급 목록 갱신 실패는 무시(다음 로드에서 반영).
+    }
   };
 
   const setTier = async (profileId: string, tier: string) => {
     setProcessingTier(profileId);
-    const { data, error } = await supabase.rpc("admin_set_business_tier", { p_profile_id: profileId, p_tier: tier });
+    const ok = await setBusinessTier(profileId, tier);
     setProcessingTier(null);
-    if (error || !(data as { ok?: boolean })?.ok) { toast.error("등급 변경 실패"); return; }
+    if (!ok) { toast.error("등급 변경 실패"); return; }
     toast.success("등급을 변경했어요");
     setTiers((prev) => prev.map((t) => (t.id === profileId ? { ...t, partner_tier: tier } : t)));
   };
@@ -124,10 +122,9 @@ const AdminBusinessReview = () => {
 
   const reviewProduct = async (id: string, approved: boolean, reviewNote?: string) => {
     setProcessingProduct(id);
-    const { data, error } = await supabase.rpc("admin_review_product", { p_id: id, p_approved: approved, p_note: reviewNote ?? null });
+    const res = await reviewProductApi(id, approved, reviewNote);
     setProcessingProduct(null);
-    const res = data as { ok?: boolean; error?: string } | null;
-    if (error || !res?.ok) { reportReviewFailure("admin_review_product", res, error); return; }
+    if (!res.ok) { reportReviewFailure("admin_review_product", { error: res.error }, null); return; }
     toast.success(approved ? "상품을 승인했어요" : "상품을 반려했어요");
     clearReject();
     setProducts((prev) => prev.filter((p) => p.id !== id));
@@ -135,10 +132,9 @@ const AdminBusinessReview = () => {
 
   const reviewEvent = async (id: string, approved: boolean, reviewNote?: string) => {
     setProcessingEvent(id);
-    const { data, error } = await supabase.rpc("admin_review_event", { p_id: id, p_approved: approved, p_note: reviewNote ?? null });
+    const res = await reviewEventApi(id, approved, reviewNote);
     setProcessingEvent(null);
-    const res = data as { ok?: boolean; error?: string } | null;
-    if (error || !res?.ok) { reportReviewFailure("admin_review_event", res, error); return; }
+    if (!res.ok) { reportReviewFailure("admin_review_event", { error: res.error }, null); return; }
     toast.success(approved ? "이벤트를 승인했어요" : "이벤트를 반려했어요");
     clearReject();
     setEvents((prev) => prev.filter((e) => e.id !== id));
@@ -146,14 +142,9 @@ const AdminBusinessReview = () => {
 
   const reviewListing = async (placeId: string, approved: boolean, reviewNote?: string) => {
     setProcessingListing(placeId);
-    const { data, error } = await supabase.rpc("admin_review_listing", {
-      p_place_id: placeId,
-      p_approved: approved,
-      p_note: reviewNote ?? undefined,
-    });
+    const res = await reviewListingApi(placeId, approved, reviewNote);
     setProcessingListing(null);
-    const res = data as { ok?: boolean; error?: string } | null;
-    if (error || !res?.ok) { reportReviewFailure("admin_review_listing", res, error); return; }
+    if (!res.ok) { reportReviewFailure("admin_review_listing", { error: res.error }, null); return; }
     toast.success(approved ? "리스팅을 승인했어요" : "리스팅을 반려했어요");
     clearReject();
     setListings((prev) => prev.filter((l) => l.place_id !== placeId));
@@ -161,14 +152,9 @@ const AdminBusinessReview = () => {
 
   const review = async (id: string, approved: boolean, reviewNote?: string) => {
     setProcessing(id);
-    const { data, error } = await supabase.rpc("admin_review_business", {
-      p_profile_id: id,
-      p_approved: approved,
-      p_note: reviewNote ?? undefined,
-    });
+    const res = await reviewBusinessApi(id, approved, reviewNote);
     setProcessing(null);
-    const res = data as { ok?: boolean; error?: string } | null;
-    if (error || !res?.ok) { reportReviewFailure("admin_review_business", res, error); return; }
+    if (!res.ok) { reportReviewFailure("admin_review_business", { error: res.error }, null); return; }
     toast.success(approved ? "승인했어요" : "반려했어요");
     setRejectingId(null);
     setNote("");
