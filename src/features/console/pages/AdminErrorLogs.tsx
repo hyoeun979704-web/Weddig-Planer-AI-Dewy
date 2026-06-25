@@ -10,21 +10,15 @@ import {
 import { Button } from "@/components/ui/button";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchErrorLogs,
+  cleanupOldLogs,
+  type ErrorLog,
+} from "@/features/console/data/errorLogs";
 import { toast } from "@/hooks/use-toast";
 import { confirm } from "@/components/ui/confirm-dialog";
 
-interface ErrorLog {
-  id: string;
-  user_id: string | null;
-  message: string;
-  stack: string | null;
-  source: string;
-  url: string | null;
-  user_agent: string | null;
-  digest: string | null;
-  created_at: string;
-}
+// ErrorLog 타입은 features/console/data/errorLogs 에서 import.
 
 // 같은 digest 오류를 묶어 보여주는 그룹.
 interface ErrorGroup {
@@ -111,26 +105,13 @@ const AdminErrorLogs = () => {
 
   const fetchLogs = useCallback(async () => {
     setIsLoading(true);
-    let query = (supabase as any)
-      .from("client_error_logs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(1000);
-
-    const days = RANGE_OPTIONS[range]?.days;
-    if (days != null) {
-      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-      query = query.gte("created_at", since);
+    try {
+      setLogs(await fetchErrorLogs({ days: RANGE_OPTIONS[range]?.days ?? null, source: sourceFilter }));
+    } catch (e) {
+      toast({ title: "불러오기 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-    if (sourceFilter !== "all") query = query.eq("source", sourceFilter);
-
-    const { data, error } = await query;
-    if (error) {
-      toast({ title: "불러오기 실패", description: error.message, variant: "destructive" });
-    } else {
-      setLogs(data ?? []);
-    }
-    setIsLoading(false);
   }, [range, sourceFilter]);
 
   useEffect(() => {
@@ -145,16 +126,12 @@ const AdminErrorLogs = () => {
       destructive: true,
     });
     if (!ok) return;
-    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const { error } = await (supabase as any)
-      .from("client_error_logs")
-      .delete()
-      .lt("created_at", cutoff);
-    if (error) {
-      toast({ title: "삭제 실패", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await cleanupOldLogs(30);
       toast({ title: "정리 완료" });
       fetchLogs();
+    } catch (e) {
+      toast({ title: "삭제 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
     }
   };
 
