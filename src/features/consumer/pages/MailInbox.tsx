@@ -4,10 +4,16 @@ import { Loader2, Mail, Send, Paperclip, X, RefreshCw, Link2 } from "lucide-reac
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchMailAccount,
+  fetchMailList,
+  startMailOAuth,
+  disconnectMailAccount,
+  sendMail,
+  type MailItem,
+} from "@/features/consumer/data/account";
 import { toast } from "sonner";
 
-interface MailItem { id: string; subject: string; from: string; date: string; snippet: string }
 interface Attach { filename: string; mimeType: string; dataBase64: string; size: number }
 
 const DRIVE_HINT = 18 * 1024 * 1024;
@@ -43,9 +49,8 @@ const MailInbox = () => {
 
   const checkStatus = useCallback(async () => {
     setChecking(true);
-    const { data, error } = await supabase.rpc("get_my_mail_account" as any);
+    const { data: acc, error } = await fetchMailAccount();
     if (error) console.error("mail status failed", error);
-    const acc = (data ?? {}) as { connected?: boolean; email?: string };
     setConnected(!!acc.connected);
     setEmail(acc.email ?? null);
     setChecking(false);
@@ -53,10 +58,14 @@ const MailInbox = () => {
 
   const loadMail = useCallback(async () => {
     setListing(true);
-    const { data, error } = await supabase.functions.invoke("gmail-list", { body: { max: 20 } });
-    setListing(false);
-    if (error) { console.error("gmail-list failed", error); return; }
-    setItems(((data as any)?.items ?? []) as MailItem[]);
+    try {
+      const list = await fetchMailList(20);
+      setItems(list);
+    } catch (error) {
+      console.error("gmail-list failed", error);
+    } finally {
+      setListing(false);
+    }
   }, []);
 
   useEffect(() => { void checkStatus(); }, [checkStatus]);
@@ -71,13 +80,9 @@ const MailInbox = () => {
 
   const connect = async () => {
     setConnecting(true);
-    const { data, error } = await supabase.functions.invoke("mail-oauth-start", {
-      body: { origin: window.location.origin, returnPath: "/mail" },
-    });
+    const { url, error, code } = await startMailOAuth(window.location.origin, "/mail");
     setConnecting(false);
-    const url = (data as any)?.url;
     if (error || !url) {
-      const code = (data as any)?.error;
       toast.error(code === "mail_not_configured" ? "메일 연동이 아직 설정되지 않았어요" : "연결을 시작하지 못했어요");
       return;
     }
@@ -85,9 +90,7 @@ const MailInbox = () => {
   };
 
   const disconnect = async () => {
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return;
-    await supabase.from("user_mail_accounts" as any).delete().eq("user_id", u.user.id);
+    await disconnectMailAccount();
     setConnected(false); setEmail(null); setItems([]);
     toast.success("연결을 해제했어요");
   };
@@ -107,11 +110,19 @@ const MailInbox = () => {
   const send = async () => {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to.trim())) { toast.error("받는 사람 메일 주소를 확인해주세요"); return; }
     setSending(true);
-    const { data, error } = await supabase.functions.invoke("gmail-send", {
-      body: { to: to.trim(), subject, body: bodyText, attachments: attachments.map(({ filename, mimeType, dataBase64 }) => ({ filename, mimeType, dataBase64 })) },
-    });
+    try {
+      await sendMail({
+        to: to.trim(),
+        subject,
+        body: bodyText,
+        attachments: attachments.map(({ filename, mimeType, dataBase64 }) => ({ filename, mimeType, dataBase64 })),
+      });
+    } catch {
+      setSending(false);
+      toast.error("메일 전송에 실패했어요");
+      return;
+    }
     setSending(false);
-    if (error || (data as any)?.error) { toast.error("메일 전송에 실패했어요"); return; }
     toast.success("메일을 보냈어요");
     setSubject(""); setBodyText(""); setAttachments([]);
     void loadMail();

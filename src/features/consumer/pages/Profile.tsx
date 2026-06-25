@@ -6,7 +6,17 @@ import { genNickname } from "@/lib/communityIdentity";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchProfile,
+  fetchWeddingSettings,
+  uploadAvatar,
+  updateAvatarUrl,
+  updateProfile,
+  upsertWeddingSettings,
+  syncBudgetRegion,
+  sendReauthCode,
+  updatePassword,
+} from "@/features/consumer/data/account";
 import { regions } from "@/data/budgetData";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -56,32 +66,24 @@ const Profile = () => {
 
       try {
         // Load profile
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("display_name, avatar_url, birth_year, phone, community_nickname")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const profile = await fetchProfile(user.id);
 
         // Load wedding settings
-        const { data: settings } = await supabase
-          .from("user_wedding_settings")
-          .select("wedding_date, partner_name, wedding_region")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const settings = await fetchWeddingSettings(user.id);
 
         if (profile) {
           setDisplayName(profile.display_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "");
-          setAvatarUrl((profile as any).avatar_url ?? null);
+          setAvatarUrl(profile.avatar_url ?? null);
           setBirthYear(profile.birth_year ? String(profile.birth_year) : "1997");
-          setPhone((profile as any).phone || "");
-          setCommunityNickname((profile as any).community_nickname || "");
+          setPhone(profile.phone || "");
+          setCommunityNickname(profile.community_nickname || "");
         } else {
           setDisplayName(user?.user_metadata?.full_name || user?.user_metadata?.name || "");
         }
 
         if (settings) {
           setWeddingDate(settings.wedding_date || "");
-          setWeddingRegion((settings as any).wedding_region || "서울");
+          setWeddingRegion(settings.wedding_region || "서울");
         }
       } catch (error) {
         console.error("Error loading profile:", error);
@@ -105,13 +107,8 @@ const Profile = () => {
     if (file.size > 5 * 1024 * 1024) { toast.error("5MB 이하 이미지를 올려주세요"); return; }
     setUploadingAvatar(true);
     try {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("vendor-images").upload(path, file, { upsert: true });
-      if (upErr) throw upErr;
-      const url = supabase.storage.from("vendor-images").getPublicUrl(path).data.publicUrl;
-      const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: url } as any).eq("user_id", user.id);
-      if (dbErr) throw dbErr;
+      const url = await uploadAvatar(user.id, file);
+      await updateAvatarUrl(user.id, url);
       setAvatarUrl(url);
       toast.success("프로필 사진을 변경했어요");
     } catch (err) {
@@ -128,7 +125,7 @@ const Profile = () => {
     if (newPassword.length < 8) { toast.error("새 비밀번호는 8자 이상이어야 해요"); return; }
     setSendingCode(true);
     try {
-      const { error } = await supabase.auth.reauthenticate();
+      const { error } = await sendReauthCode();
       if (error) { toast.error("인증 코드 발송 실패", { description: error.message }); return; }
       setReauthSent(true);
       toast.success("가입 이메일로 인증 코드를 보냈어요");
@@ -145,7 +142,7 @@ const Profile = () => {
     setChangingPw(true);
     try {
       // 이메일 코드(nonce) 로 재인증 + 새 비밀번호 적용.
-      const { error } = await supabase.auth.updateUser({ password: newPassword, nonce: reauthCode.trim() });
+      const { error } = await updatePassword(newPassword, reauthCode.trim());
       if (error) {
         const msg = /nonce|reauth|token|expired|invalid/i.test(error.message)
           ? "인증 코드가 올바르지 않거나 만료됐어요. 코드를 다시 받아주세요."
@@ -173,54 +170,26 @@ const Profile = () => {
     setIsSaving(true);
     try {
       // Update profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          display_name: displayName,
-          community_nickname: communityNickname.trim() || null,
-          birth_year: birthYear ? parseInt(birthYear) : null,
-          phone: phone.trim() || null
-        } as any)
-        .eq("user_id", user.id);
-
-      if (profileError) throw profileError;
+      await updateProfile(user.id, {
+        display_name: displayName,
+        community_nickname: communityNickname.trim() || null,
+        birth_year: birthYear ? parseInt(birthYear) : null,
+        phone: phone.trim() || null,
+      });
 
       // Update or insert wedding settings
       if (weddingDate || weddingRegion) {
-        const { data: existing } = await supabase
-          .from("user_wedding_settings")
-          .select("id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (existing) {
-          await supabase
-            .from("user_wedding_settings")
-            .update({ wedding_date: weddingDate || null, wedding_region: weddingRegion || null } as any)
-            .eq("user_id", user.id);
-        } else {
-          await supabase
-            .from("user_wedding_settings")
-            .insert({ user_id: user.id, wedding_date: weddingDate || null, wedding_region: weddingRegion || null } as any);
-        }
+        await upsertWeddingSettings(user.id, {
+          wedding_date: weddingDate || null,
+          wedding_region: weddingRegion || null,
+        });
       }
 
       // Sync region to budget_settings
       if (weddingRegion) {
         const budgetRegionKey = Object.entries(regions).find(([_, r]) => r.label === weddingRegion)?.[0];
         if (budgetRegionKey) {
-          const { data: budgetSettings } = await (supabase as any)
-            .from("budget_settings")
-            .select("id")
-            .eq("user_id", user.id)
-            .maybeSingle();
-
-          if (budgetSettings) {
-            await (supabase as any)
-              .from("budget_settings")
-              .update({ region: budgetRegionKey })
-              .eq("id", budgetSettings.id);
-          }
+          await syncBudgetRegion(user.id, budgetRegionKey);
         }
       }
 

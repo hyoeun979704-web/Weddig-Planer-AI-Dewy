@@ -15,7 +15,7 @@ import { useState } from "react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { deleteAccount } from "@/features/consumer/data/account";
 import { Switch } from "@/components/ui/switch";
 import { APP_VERSION } from "@/lib/appVersion";
 import { toast } from "sonner";
@@ -62,11 +62,7 @@ const Settings = () => {
     if (!ok) return;
     setDeleting(true);
     try {
-      const { error } = await supabase.functions.invoke("delete-account");
-      if (error) {
-        toast.error("계정 삭제에 실패했어요. 잠시 후 다시 시도해주세요");
-        return;
-      }
+      await deleteAccount();
       await signOut().catch(() => {});
       toast.success("계정이 삭제되었어요");
       navigate("/", { replace: true });
