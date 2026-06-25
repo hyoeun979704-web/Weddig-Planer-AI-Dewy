@@ -8,7 +8,7 @@ import {
   adminNavItemsByGroup,
   type AdminNavGroupKey,
 } from "@/features/console/components/adminNav";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchGroupPendingCounts } from "@/features/console/data/groupDashboard";
 
 // 그룹별 전용 대시보드 — 그 그룹의 관리 도구(adminNav 단일 소스의 group 으로 파생)를 카드로 모으고,
 // 처리 대기(pending) 배지를 함께 보여준다. 메인 허브(/admin)에서 그룹 헤더로 진입.
@@ -30,36 +30,10 @@ const AdminGroupDashboard = ({ group }: { group: AdminNavGroupKey }) => {
 
   useEffect(() => {
     let cancelled = false;
-    const run = async () => {
-      const next: Record<string, number> = {};
-      if (group === "commerce") {
-        const [ev, cp] = await Promise.all([
-          (supabase as any)
-            .from("business_events")
-            .select("id", { count: "exact", head: true })
-            .eq("moderation_status", "pending"),
-          (supabase as any)
-            .from("business_coupons")
-            .select("id", { count: "exact", head: true })
-            .eq("moderation_status", "pending"),
-        ]);
-        next["/admin/content-review"] = (ev.count ?? 0) + (cp.count ?? 0);
-      } else if (group === "moderation") {
-        const wl = await (supabase as any)
-          .from("service_waitlist")
-          .select("id", { count: "exact", head: true })
-          .eq("notified", false);
-        next["/admin/service-waitlist"] = wl.count ?? 0;
-      } else if (group === "ai") {
-        const f = await (supabase as any)
-          .from("dress_fittings")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "pending");
-        next["/admin/ai-jobs"] = f.count ?? 0;
-      }
+    void (async () => {
+      const next = await fetchGroupPendingCounts(group);
       if (!cancelled) setPending(next);
-    };
-    void run();
+    })();
     return () => {
       cancelled = true;
     };
