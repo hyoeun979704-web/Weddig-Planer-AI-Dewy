@@ -4,14 +4,7 @@ import { Loader2, Phone, MessageCircle, Image as ImageIcon, X } from "lucide-rea
 import PageHeader from "@/components/PageHeader";
 import PlaceInquirySheet from "@/components/place/PlaceInquirySheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
-
-// 업체가 올린 이미지는 vendor-images(공개) 버킷 public URL. 경로형 레거시 행 방어.
-const pub = (url?: string | null): string | null => {
-  if (!url) return null;
-  if (/^(https?:|data:|blob:)/i.test(url)) return url;
-  try { return supabase.storage.from("vendor-images").getPublicUrl(url).data.publicUrl || url; } catch { return url; }
-};
+import { fetchBusinessProductDetail } from "@/features/consumer/data/shop";
 
 interface ProductDetail {
   id: string;
@@ -41,33 +34,16 @@ const ProductDetailPage = () => {
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
-    // select("*") — 컬럼 드리프트 방어.
-    const { data } = await (supabase.from("business_products" as any).select("*").eq("id", id).maybeSingle() as any);
-    if (!data) { setP(null); setLoading(false); return; }
-    // 업체 정보 조회와 관련 포트폴리오 조회는 서로 독립(둘 다 product/route id 에만 의존)
-    // → 순차 await 대신 병렬로 묶어 라운드트립 1회 절약.
-    const placePromise = data.place_id
-      ? (supabase.from("places" as any)
-          .select("name, main_image_url, tel, inquiry_phone").eq("place_id", data.place_id).maybeSingle() as any)
-      : Promise.resolve({ data: null });
-    // 관련 포트폴리오 = 이 상품에 연결된 앨범의 사진들. (앨범 테이블 미존재 라이브면 빈 배열.)
-    const relatedPromise = (async (): Promise<string[]> => {
-      const { data: albs } = await (supabase.from("place_media_albums" as any)
-        .select("id").eq("product_id", id) as any);
-      const albumIds = (albs ?? []).map((a: any) => a.id);
-      if (albumIds.length === 0) return [];
-      const { data: md } = await (supabase.from("place_media" as any)
-        .select("image_url, album_id, display_order").in("album_id", albumIds).order("display_order", { ascending: true }) as any);
-      return (md ?? []).map((m: any) => pub(m.image_url)).filter(Boolean) as string[];
-    })();
-    const [{ data: pl }, relPhotos] = await Promise.all([placePromise, relatedPromise]);
-    const placeName: string | null = pl?.name ?? null;
-    const placeThumb: string | null = pub(pl?.main_image_url ?? null);
-    const phone: string | null = (pl?.inquiry_phone || pl?.tel) ?? null;
+    const res = await fetchBusinessProductDetail(id);
+    if (!res) { setP(null); setLoading(false); return; }
+    const { product, place, related: relPhotos } = res;
+    const placeName: string | null = place?.name ?? null;
+    const placeThumb: string | null = place?.main_image_url ?? null;
+    const phone: string | null = (place?.inquiry_phone || place?.tel) ?? null;
     setP({
-      id: data.id, place_id: data.place_id, name: data.name, price: data.price ?? null,
-      description: data.description ?? null, image_url: pub(data.image_url ?? null),
-      detail_images: ((data.detail_images ?? []) as string[]).map((u) => pub(u)).filter(Boolean) as string[],
+      id: product.id, place_id: product.place_id, name: product.name, price: product.price,
+      description: product.description, image_url: product.image_url,
+      detail_images: product.detail_images,
       placeName, placeThumb, phone,
     });
     setRelated(relPhotos);

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
 import CompareTable from "@/components/compare/CompareTable";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchComparePlaces, quotesKeys } from "@/features/consumer/data/quotes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCoupleFavorites } from "@/hooks/useCoupleFavorites";
 import { useQuoteResponses } from "@/hooks/useQuotes";
@@ -209,16 +209,10 @@ const FavoritesCompare = ({ initialCategory }: { initialCategory: string | null 
 
   // 후보 칩용 경량 메타(이름·썸네일만) — 상세는 선택 시 useCompareItems 가 로드.
   const { data: candidates = [], isLoading } = useQuery({
-    queryKey: ["compare-candidates", candidateIds.join(",")],
+    queryKey: quotesKeys.compareCandidates(candidateIds),
     queryFn: async (): Promise<CandidateMeta[]> => {
-      if (candidateIds.length === 0) return [];
-      const { data } = await supabase
-        .from("places")
-        .select("place_id, name, main_image_url")
-        .in("place_id", candidateIds);
-      return ((data ?? []) as { place_id: string; name: string; main_image_url: string | null }[]).map((p) => ({
-        placeId: p.place_id, name: p.name, image: p.main_image_url,
-      }));
+      const places = await fetchComparePlaces(candidateIds);
+      return places.map((p) => ({ placeId: p.place_id, name: p.name, image: p.main_image_url }));
     },
     enabled: candidateIds.length > 0,
   });

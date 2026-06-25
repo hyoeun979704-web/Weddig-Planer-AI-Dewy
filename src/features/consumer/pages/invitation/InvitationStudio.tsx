@@ -51,7 +51,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchFreeTemplates,
+  fetchBackTemplates,
+  fetchTemplateFull,
+  fetchStickerAssets,
+  fetchInvitationForEdit,
+  fetchPublishedMobileInvitations,
+  insertInvitation,
+  updateInvitation,
+  uploadInvitationImage,
+  invitationImageUrl,
+  invitationViewerUrl,
+  invokeCutout,
+  invokeIllustration,
+  invokeMap,
+  publishInvitation,
+} from "@/features/consumer/data/invitation";
 import { toast } from "@/hooks/use-toast";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/contexts/AuthContext";
@@ -338,17 +354,11 @@ const InvitationStudio = () => {
     (async () => {
       setLoadingMobileInvitations(true);
       try {
-        const { data, error } = await (supabase as any)
-          .from("invitations")
-          .select("id, share_slug, status, invitation_templates(name, format)")
-          .eq("user_id", user.id)
-          .eq("status", "published");
-        if (!error && data) {
-          const filtered = (data || []).filter(
-            (item: any) => item.invitation_templates?.format === "mobile"
-          );
-          setMobileInvitations(filtered);
-        }
+        const data = await fetchPublishedMobileInvitations(user.id);
+        const filtered = data.filter(
+          (item) => item.invitation_templates?.format === "mobile",
+        );
+        setMobileInvitations(filtered);
       } catch (err) {
         console.error("Failed to load mobile invitations:", err);
       } finally {
@@ -363,13 +373,9 @@ const InvitationStudio = () => {
   useEffect(() => {
     if (!params.id || !user) return;
     (async () => {
-      const { data, error } = await (supabase as any)
-        .from("invitations")
-        .select("*, invitation_templates(*)")
-        .eq("id", params.id)
-        .eq("user_id", user.id)
-        .single();
-      if (error || !data) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = (await fetchInvitationForEdit(params.id!, user.id)) as any;
+      if (!data) {
         toast({ title: "청첩장을 불러올 수 없어요", variant: "destructive" });
         navigate("/invitation/my");
         return;
@@ -386,10 +392,8 @@ const InvitationStudio = () => {
         const urls: Record<string, string> = {};
         await Promise.all(
           Object.entries(paths).map(async ([slotId, path]) => {
-            const { data: s } = await supabase.storage
-              .from("invitation-uploads")
-              .createSignedUrl(path, 60 * 60 * 24);
-            if (s?.signedUrl) urls[slotId] = s.signedUrl;
+            const signedUrl = await invitationImageUrl(path);
+            if (signedUrl) urls[slotId] = signedUrl;
           }),
         );
         return urls;
@@ -419,12 +423,8 @@ const InvitationStudio = () => {
       // 후면 템플릿 (FK 미사용 → 별도 조회)
       if (data.back_template_id) {
         setBackTemplateId(data.back_template_id);
-        const { data: bt } = await (supabase as any)
-          .from("invitation_templates")
-          .select("*")
-          .eq("id", data.back_template_id)
-          .maybeSingle();
-        if (bt) setBackTemplate(bt as Template);
+        const bt = await fetchTemplateFull(data.back_template_id);
+        if (bt) setBackTemplate(bt as unknown as Template);
         backHist.reset({
           textOverrides: faces.back.textOverrides ?? {},
           fontOverrides: faces.back.fontOverrides ?? {},
@@ -495,34 +495,25 @@ const InvitationStudio = () => {
       try {
         const layout = await buildLayout(false); // 수정한 경우 draft 상태이므로 forViewer=false
         if (invitationId) {
-          const { error } = await (supabase as any)
-            .from("invitations")
-            .update({
-              template_id: template.id,
-              back_template_id: backTemplateId,
-              user_data: userData,
-              layout,
-              ai_generated_text: aiText,
-              status: "draft" as const, // 수정 후 저장 시 임시저장으로 강등
-            })
-            .eq("id", invitationId);
-          if (error) throw error;
+          await updateInvitation(invitationId, {
+            template_id: template.id,
+            back_template_id: backTemplateId,
+            user_data: userData,
+            layout,
+            ai_generated_text: aiText,
+            status: "draft" as const, // 수정 후 저장 시 임시저장으로 강등
+          });
         } else {
-          const { data, error } = await (supabase as any)
-            .from("invitations")
-            .insert({
-              user_id: user.id,
-              template_id: template.id,
-              back_template_id: backTemplateId,
-              user_data: userData,
-              layout,
-              ai_generated_text: aiText,
-              status: "draft" as const,
-            })
-            .select("id")
-            .single();
-          if (error) throw error;
-          setInvitationId(data.id);
+          const newId = await insertInvitation({
+            user_id: user.id,
+            template_id: template.id,
+            back_template_id: backTemplateId,
+            user_data: userData,
+            layout,
+            ai_generated_text: aiText,
+            status: "draft" as const,
+          });
+          setInvitationId(newId);
         }
         setAutoSavedAt(new Date());
         setAutoSaveFailed(false);
@@ -544,20 +535,14 @@ const InvitationStudio = () => {
     if (step !== "template" || templates.length > 0) return;
     setLoadingTemplates(true);
     (async () => {
-      const { data, error } = await (supabase as any)
-        .from("invitation_templates")
-        .select("id, name, thumbnail_url, format, tone, price_hearts, layout, text_prompt_hint")
-        .eq("is_active", true)
-        .eq("format", formatFilter)
-        .eq("price_hearts", 0)  // V1: 무료 등급만
-        .order("display_order", { ascending: false });
-      if (error) {
+      try {
+        const data = await fetchFreeTemplates(formatFilter);
+        setTemplates(data as unknown as Template[]);
+      } catch {
         toast({
           title: "템플릿을 불러올 수 없어요",
           variant: "destructive",
         });
-      } else {
-        setTemplates(data ?? []);
       }
       setLoadingTemplates(false);
     })();
@@ -803,13 +788,8 @@ const InvitationStudio = () => {
   useEffect(() => {
     if (!stickerSheetOpen || stickerAssets !== null) return;
     (async () => {
-      const { data } = await (supabase as any)
-        .from("invitation_assets")
-        .select("id,name,image_url,thumbnail_url,category,natural_width,natural_height")
-        .eq("is_active", true)
-        .order("category")
-        .order("display_order");
-      setStickerAssets((data ?? []) as StickerAsset[]);
+      const data = await fetchStickerAssets();
+      setStickerAssets(data as unknown as StickerAsset[]);
     })();
   }, [stickerSheetOpen, stickerAssets]);
 
@@ -968,28 +948,23 @@ const InvitationStudio = () => {
         ? `${selectedSlot.id}#${nextGalleryIndex(selectedSlot.id)}`
         : selectedSlot.id);
     const applyFace = setFace;
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const filename = `${crypto.randomUUID()}.${ext}`;
-    const path = `${user.id}/${filename}`;
-    const { error } = await supabase.storage
-      .from("invitation-uploads")
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (error) {
+    let path: string;
+    let signedUrl: string | null;
+    try {
+      ({ path, signedUrl } = await uploadInvitationImage(user.id, file)); // 화면 표시용 24h
+    } catch (error) {
       toast({
         title: "업로드 실패",
-        description: error.message,
+        description: error instanceof Error ? error.message : "오류",
         variant: "destructive",
       });
       return;
     }
-    const { data: signed } = await supabase.storage
-      .from("invitation-uploads")
-      .createSignedUrl(path, 60 * 60 * 24); // 화면 표시용 24h
     applyFace((p) => ({
       ...p,
       imagePaths: { ...p.imagePaths, [id]: path },
-      imageUrls: signed?.signedUrl
-        ? { ...p.imageUrls, [id]: signed.signedUrl }
+      imageUrls: signedUrl
+        ? { ...p.imageUrls, [id]: signedUrl }
         : p.imageUrls,
     }));
   };
@@ -1034,17 +1009,7 @@ const InvitationStudio = () => {
     const id = selectedSlot.id;
     setIsCuttingOut(true);
     try {
-      const { data, error } = await supabase.functions.invoke(
-        "invitation-cutout",
-        { body: { source_paths: [src] } },
-      );
-      if (error) throw error;
-      const result = data as {
-        cutout_paths?: Record<string, string>;
-        cutout_urls?: Record<string, string>;
-        error?: string;
-      };
-      if (result.error) throw new Error(result.error);
+      const result = await invokeCutout([src]);
       const newPath = result.cutout_paths?.[src];
       if (!newPath) throw new Error("누끼 결과를 받지 못했어요");
       const newUrl = result.cutout_urls?.[src];
@@ -1091,22 +1056,17 @@ const InvitationStudio = () => {
     const applyFace = setFace;
     setIsGeneratingMap(true);
     try {
-      const { data, error } = await (supabase as any).functions.invoke(
-        "invitation-map",
-        { body: { address } },
-      );
+      const { data, error } = await invokeMap(address);
       const path = data?.path as string | undefined;
       if (error || !path) {
         throw new Error(data?.error ?? error?.message ?? "약도 생성 실패");
       }
-      const { data: signed } = await supabase.storage
-        .from("invitation-uploads")
-        .createSignedUrl(path, 60 * 60 * 24);
+      const signedUrl = await invitationImageUrl(path);
       applyFace((p) => ({
         ...p,
         imagePaths: { ...p.imagePaths, [id]: path },
-        imageUrls: signed?.signedUrl
-          ? { ...p.imageUrls, [id]: signed.signedUrl }
+        imageUrls: signedUrl
+          ? { ...p.imageUrls, [id]: signedUrl }
           : p.imageUrls,
       }));
       toast({ title: "약도를 생성했어요" });
@@ -1155,19 +1115,14 @@ const InvitationStudio = () => {
     const applyFace = setFace;
     setIsStylizingMap(true);
     try {
-      const { data, error } = await (supabase as any).functions.invoke(
-        "invitation-illustration",
-        {
-          body: {
-            source_paths: [sourcePath],
-            style: "map",
-            template_tone: activeTpl.tone,
-            template_name: activeTpl.name,
-            text_prompt_hint: activeTpl.text_prompt_hint,
-            bg_color: bgColor,
-          },
-        },
-      );
+      const { data, error } = await invokeIllustration({
+        source_paths: [sourcePath],
+        style: "map",
+        template_tone: activeTpl.tone,
+        template_name: activeTpl.name,
+        text_prompt_hint: activeTpl.text_prompt_hint,
+        bg_color: bgColor,
+      });
       if (error) {
         let code: string | undefined;
         try {
@@ -1311,14 +1266,8 @@ const InvitationStudio = () => {
   const loadBackTemplates = useCallback(async () => {
     if (backTemplates.length > 0) return;
     // 후면은 종이 카드 전용 — 모바일(세로 긴 캔버스) 템플릿 제외
-    const { data } = await (supabase as any)
-      .from("invitation_templates")
-      .select("id, name, thumbnail_url, format, tone, price_hearts, layout, text_prompt_hint")
-      .eq("is_active", true)
-      .eq("format", "paper")
-      .in("face", ["back", "both"])
-      .order("display_order", { ascending: false });
-    setBackTemplates((data ?? []) as Template[]);
+    const data = await fetchBackTemplates();
+    setBackTemplates(data as unknown as Template[]);
   }, [backTemplates.length]);
 
   // 후면 템플릿 교체
@@ -1359,10 +1308,8 @@ const InvitationStudio = () => {
     const imageUrlsForViewer: Record<string, string> = {};
     await Promise.all(
       Object.entries(f.imagePaths).map(async ([slotId, path]) => {
-        const { data: s } = await supabase.storage
-          .from("invitation-uploads")
-          .createSignedUrl(path, 60 * 60 * 24 * 365); // 1년
-        if (s?.signedUrl) imageUrlsForViewer[slotId] = s.signedUrl;
+        const signedUrl = await invitationViewerUrl(path); // 1년
+        if (signedUrl) imageUrlsForViewer[slotId] = signedUrl;
       }),
     );
     return { ...base, imageUrlsForViewer };
@@ -1381,36 +1328,27 @@ const InvitationStudio = () => {
       const layout = await buildLayout(false); // 수정한 경우 draft 상태이므로 forViewer=false
       if (invitationId) {
         // 수정 사항 저장 시 status = 'draft' 로 강등
-        const { error } = await (supabase as any)
-          .from("invitations")
-          .update({
-            template_id: template.id,
-            back_template_id: backTemplateId,
-            user_data: userData,
-            layout,
-            ai_generated_text: aiText,
-            status: "draft" as const,
-          })
-          .eq("id", invitationId);
-        if (error) throw error;
+        await updateInvitation(invitationId, {
+          template_id: template.id,
+          back_template_id: backTemplateId,
+          user_data: userData,
+          layout,
+          ai_generated_text: aiText,
+          status: "draft" as const,
+        });
         setLoadedStatus("draft");
         setShareUrl(null);
       } else {
-        const { data, error } = await (supabase as any)
-          .from("invitations")
-          .insert({
-            user_id: user.id,
-            template_id: template.id,
-            back_template_id: backTemplateId,
-            user_data: userData,
-            layout,
-            ai_generated_text: aiText,
-            status: "draft" as const,
-          })
-          .select("id")
-          .single();
-        if (error) throw error;
-        setInvitationId(data.id);
+        const newId = await insertInvitation({
+          user_id: user.id,
+          template_id: template.id,
+          back_template_id: backTemplateId,
+          user_data: userData,
+          layout,
+          ai_generated_text: aiText,
+          status: "draft" as const,
+        });
+        setInvitationId(newId);
       }
       toast({ title: "저장 완료" });
     } catch (err) {
@@ -1432,41 +1370,26 @@ const InvitationStudio = () => {
       const layout = await buildLayout(true);
       let id = invitationId;
       if (id) {
-        const { error } = await (supabase as any)
-          .from("invitations")
-          .update({
-            template_id: template.id,
-            back_template_id: backTemplateId,
-            user_data: userData,
-            layout,
-            ai_generated_text: aiText,
-          })
-          .eq("id", id);
-        if (error) throw error;
+        await updateInvitation(id, {
+          template_id: template.id,
+          back_template_id: backTemplateId,
+          user_data: userData,
+          layout,
+          ai_generated_text: aiText,
+        });
       } else {
-        const { data, error } = await (supabase as any)
-          .from("invitations")
-          .insert({
-            user_id: user.id,
-            template_id: template.id,
-            back_template_id: backTemplateId,
-            user_data: userData,
-            layout,
-            ai_generated_text: aiText,
-            status: "draft" as const,
-          })
-          .select("id")
-          .single();
-        if (error) throw error;
-        id = data.id as string;
+        id = await insertInvitation({
+          user_id: user.id,
+          template_id: template.id,
+          back_template_id: backTemplateId,
+          user_data: userData,
+          layout,
+          ai_generated_text: aiText,
+          status: "draft" as const,
+        });
         setInvitationId(id);
       }
-      const { data: pub, error: pubErr } = await (supabase as any).rpc(
-        "publish_invitation",
-        { p_invitation_id: id },
-      );
-      if (pubErr) throw pubErr;
-      const row = Array.isArray(pub) ? pub[0] : pub;
+      const row = await publishInvitation(id);
       if (!row?.share_slug) throw new Error("공유 링크 발급 실패");
       setShareUrl(`${window.location.origin}/i/${row.share_slug}`);
       setLoadedStatus("published");

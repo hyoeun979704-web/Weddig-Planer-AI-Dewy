@@ -4,24 +4,12 @@ import { Loader2, Plus, FileText, Smartphone } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCouplePartnerId } from "@/hooks/useCouplePartnerId";
-
-interface Row {
-  id: string;
-  user_id: string;
-  template_id: string | null;
-  user_data: Record<string, string> | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  invitation_templates: {
-    name: string;
-    thumbnail_url: string;
-    format: string;
-  } | null;
-}
+import {
+  fetchMyInvitations,
+  type InvitationGalleryRow as Row,
+} from "@/features/consumer/data/invitationView";
 
 const InvitationGallery = () => {
   const navigate = useNavigate();
@@ -39,23 +27,15 @@ const InvitationGallery = () => {
     }
     (async () => {
       const ownerIds = partnerId ? [user.id, partnerId] : [user.id];
-      const { data, error } = await (supabase as any)
-        .from("invitations")
-        .select("id, user_id, template_id, user_data, status, created_at, updated_at, invitation_templates(name, thumbnail_url, format)")
-        .in("user_id", ownerIds)
-        .order("updated_at", { ascending: false });
-      if (error || !data) {
-        setItems([]);
-      } else {
-        // 내 것은 전부, 배우자 것은 RSVP 가 있는 '발행된 모바일'만 노출(임시저장·종이 제외).
-        setItems(
-          (data as Row[]).filter(
-            (r) =>
-              r.user_id === user.id ||
-              (r.status === "published" && r.invitation_templates?.format !== "paper"),
-          ),
-        );
-      }
+      const data = await fetchMyInvitations(ownerIds);
+      // 내 것은 전부, 배우자 것은 RSVP 가 있는 '발행된 모바일'만 노출(임시저장·종이 제외).
+      setItems(
+        data.filter(
+          (r) =>
+            r.user_id === user.id ||
+            (r.status === "published" && r.invitation_templates?.format !== "paper"),
+        ),
+      );
       setLoading(false);
     })();
   }, [user, partnerId, coupleLoading]);

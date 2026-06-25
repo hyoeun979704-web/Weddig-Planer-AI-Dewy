@@ -8,7 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchCommunityPostForEdit,
+  updateCommunityPost,
+  uploadCommunityImages,
+  communityKeys,
+} from "@/features/consumer/data/community";
 import { useAuth } from "@/contexts/AuthContext";
 
 const categories = ["웨딩홀", "스드메", "혼수", "허니문", "자유"];
@@ -27,17 +32,8 @@ const CommunityEdit = () => {
 
   // Fetch existing post
   const { data: post, isLoading } = useQuery({
-    queryKey: ["community-post-edit", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("community_posts")
-        .select("*")
-        .eq("id", id!)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
+    queryKey: communityKeys.postEdit(id),
+    queryFn: () => fetchCommunityPostForEdit(id!),
     enabled: !!id,
   });
 
@@ -90,34 +86,6 @@ const CommunityEdit = () => {
     setNewImagePreviews(newImagePreviews.filter((_, i) => i !== index));
   };
 
-  const uploadNewImages = async (): Promise<string[]> => {
-    if (!user || newImages.length === 0) return [];
-
-    const uploadedUrls: string[] = [];
-
-    for (const image of newImages) {
-      const fileExt = image.name.split(".").pop();
-      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-      const { error } = await supabase.storage
-        .from("community-images")
-        .upload(fileName, image);
-
-      if (error) {
-        console.error("Image upload error:", error);
-        throw new Error("이미지 업로드에 실패했습니다.");
-      }
-
-      const { data: urlData } = supabase.storage
-        .from("community-images")
-        .getPublicUrl(fileName);
-
-      uploadedUrls.push(urlData.publicUrl);
-    }
-
-    return uploadedUrls;
-  };
-
   const handleSubmit = async () => {
     if (!user) {
       toast.error("로그인이 필요합니다.");
@@ -145,24 +113,18 @@ const CommunityEdit = () => {
     try {
       let newUploadedUrls: string[] = [];
       if (newImages.length > 0) {
-        newUploadedUrls = await uploadNewImages();
+        newUploadedUrls = await uploadCommunityImages(user.id, newImages);
       }
 
       const allImageUrls = [...existingImages, ...newUploadedUrls];
 
-      const { error } = await supabase
-        .from("community_posts")
-        .update({
-          category: selectedCategory,
-          title: title.trim(),
-          content: content.trim(),
-          has_image: allImageUrls.length > 0,
-          image_urls: allImageUrls,
-        })
-        .eq("id", id!)
-        .eq("user_id", user.id);
-
-      if (error) throw error;
+      await updateCommunityPost(id!, user.id, {
+        category: selectedCategory,
+        title: title.trim(),
+        content: content.trim(),
+        has_image: allImageUrls.length > 0,
+        image_urls: allImageUrls,
+      });
 
       toast.success("게시글이 수정되었습니다.");
       navigate(`/community/${id}`);

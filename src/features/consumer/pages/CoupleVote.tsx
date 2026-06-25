@@ -5,7 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCoupleLink } from "@/hooks/useCoupleLink";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchCoupleVotes, fetchLinkedPartnerId, createCoupleVote } from "@/features/consumer/data/coupleVote";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -35,12 +35,8 @@ const CoupleVote = () => {
   const fetchVotes = useCallback(async () => {
     if (!user) return;
     try {
-      const { data } = await (supabase
-        .from("couple_votes" as any)
-        .select("*") as any)
-        .or(`user_id.eq.${user.id},partner_user_id.eq.${user.id}`)
-        .order("created_at", { ascending: false });
-      setVotes((data || []) as CoupleVoteItem[]);
+      const data = await fetchCoupleVotes(user.id);
+      setVotes(data as unknown as CoupleVoteItem[]);
     } catch (e) {
       console.error(e);
     } finally {
@@ -54,33 +50,24 @@ const CoupleVote = () => {
     if (!user || !topic.trim() || !optionA.trim() || !optionB.trim()) return;
 
     // Get partner_user_id from couple link context
-    let partnerUserId = null;
+    let partnerUserId: string | null = null;
     try {
-      const { data } = await (supabase
-        .from("couple_links" as any)
-        .select("user_id, partner_user_id") as any)
-        .or(`user_id.eq.${user.id},partner_user_id.eq.${user.id}`)
-        .eq("status", "linked")
-        .maybeSingle();
-      if (data) {
-        partnerUserId = (data as any).user_id === user.id ? (data as any).partner_user_id : (data as any).user_id;
-      }
+      partnerUserId = await fetchLinkedPartnerId(user.id);
     } catch (e) {
       // 파트너 조회 실패는 치명적이지 않다(혼자 쓰는 투표로 생성). 단 삼키지 말고 로깅.
       console.error("partner lookup failed:", e);
     }
 
-    // Supabase 는 에러를 throw 하지 않고 { error } 로 반환하므로 직접 확인.
-    // 안 그러면 insert 가 실패해도 폼이 비워져 "만들어진 것처럼" 보인다.
-    const { error } = await (supabase.from("couple_votes" as any) as any).insert({
-      user_id: user.id,
-      partner_user_id: partnerUserId,
-      topic: topic.trim(),
-      option_a: optionA.trim(),
-      option_b: optionB.trim(),
-      status: "voting",
-    });
-    if (error) {
+    // insert 실패 시 폼이 비워져 "만들어진 것처럼" 보이지 않도록 에러를 직접 분기.
+    try {
+      await createCoupleVote({
+        userId: user.id,
+        partnerUserId,
+        topic: topic.trim(),
+        optionA: optionA.trim(),
+        optionB: optionB.trim(),
+      });
+    } catch (error) {
       console.error("vote create failed:", error);
       toast.error("투표 만들기에 실패했어요. 다시 시도해주세요");
       return;

@@ -7,7 +7,7 @@ import EmptyState from "@/components/ui/empty-state";
 import VendorMediaCard, { type VendorMediaCardData } from "@/components/home/VendorMediaCard";
 import { PLACE_CATEGORY_TO_ITEM_TYPE, joinRegion } from "@/lib/placeMappers";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchPlacesByTag } from "@/features/consumer/data/shop";
 
 // 같은 태그가 달린 업체를 카테고리 구분 없이 모아 보여준다(상세 #태그 칩에서 진입).
 // places.tags(text[]) 를 contains 로 필터. 파트너 우선 → 조회수 순.
@@ -46,17 +46,9 @@ const TagResults = () => {
     let mounted = true;
     (async () => {
       setLoading(true);
-      const { data, error } = await (supabase as any)
-        .from("places")
-        .select("place_id, name, main_image_url, city, district, category, is_partner")
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        .contains("tags", [decodedTag])
-        .order("partner_rank", { ascending: false, nullsFirst: false })
-        .order("view_count", { ascending: false })
-        .limit(60);
+      const data = await fetchPlacesByTag(decodedTag);
       if (!mounted) return;
-      setItems(error || !data ? [] : (data as PlaceRow[]));
+      setItems(data as unknown as PlaceRow[]);
       setLoading(false);
     })();
     return () => {

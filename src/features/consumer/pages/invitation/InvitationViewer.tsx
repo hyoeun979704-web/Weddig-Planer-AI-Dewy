@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Loader2, Heart, Share2, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchPublishedInvitation,
+  fetchRsvpMeta,
+  fetchBackTemplateLayout,
+  submitRsvp,
+  updateRsvp,
+} from "@/features/consumer/data/invitationView";
 import { safeLocalStorage } from "@/lib/safeLocalStorage";
 import { toast } from "@/hooks/use-toast";
 import InvitationCanvas from "@/components/invitation/InvitationCanvas";
@@ -134,28 +140,17 @@ const InvitationViewer = () => {
   useEffect(() => {
     if (!slug) return;
     (async () => {
-      const { data: row, error } = await (supabase as any)
-        .from("invitations")
-        .select(
-          "id, user_data, layout, ai_generated_text, share_slug, status, back_template_id, invitation_templates(name, layout, tone, format)",
-        )
-        .eq("share_slug", slug)
-        .eq("status", "published")
-        .maybeSingle();
-      if (error || !row) {
+      const row = await fetchPublishedInvitation(slug);
+      if (!row) {
         setNotFound(true);
         setLoading(false);
         return;
       }
-      setData(row as PublishedInvitation);
+      setData(row as unknown as PublishedInvitation);
       // 마감 메타는 별도 best-effort 조회 — 컬럼 미적용 시 메인 청첩장 fetch 가 422 로
       // 통째로 깨지지 않도록(드리프트 안전). 실패하면 기본 open 유지.
       {
-        const { data: meta } = await (supabase as any)
-          .from("invitations")
-          .select("rsvp_closed, rsvp_deadline")
-          .eq("id", row.id)
-          .maybeSingle();
+        const meta = await fetchRsvpMeta(row.id);
         if (meta) {
           const now = new Date();
           const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -164,12 +159,8 @@ const InvitationViewer = () => {
         }
       }
       if (row.back_template_id) {
-        const { data: bt } = await (supabase as any)
-          .from("invitation_templates")
-          .select("layout")
-          .eq("id", row.back_template_id)
-          .maybeSingle();
-        if (bt?.layout) setBackLayout(bt.layout as InvitationLayout);
+        const bt = await fetchBackTemplateLayout(row.back_template_id);
+        if (bt) setBackLayout(bt as InvitationLayout);
       }
       setLoading(false);
     })();
@@ -269,18 +260,7 @@ const InvitationViewer = () => {
 
       if (editId && editToken) {
         // 수정 — 토큰 검증 RPC. (insert 트리거 밖이라 마감 검사는 RPC 내부에서 수행)
-        const { error } = await (supabase as any).rpc("update_invitation_rsvp", {
-          p_id: editId,
-          p_edit_token: editToken,
-          p_name: payload.name,
-          p_is_attending: payload.is_attending,
-          p_side: payload.side,
-          p_meal_preference: payload.meal_preference,
-          p_companion_count: payload.companion_count,
-          p_child_count: payload.child_count,
-          p_message: payload.message,
-        });
-        if (error) throw error;
+        await updateRsvp(editId, editToken, payload);
         safeLocalStorage.setItem(
           storageKey,
           JSON.stringify({ id: editId, token: editToken, ...payload }),
@@ -288,18 +268,7 @@ const InvitationViewer = () => {
         toast({ title: "참석 응답을 수정했어요!" });
       } else {
         // 신규 제출 — RPC 가 edit_token 을 반환(이 브라우저에 보관해 이후 수정 가능).
-        const { data: res, error } = await (supabase as any).rpc("submit_invitation_rsvp", {
-          p_invitation_id: data.id,
-          p_name: payload.name,
-          p_is_attending: payload.is_attending,
-          p_side: payload.side,
-          p_meal_preference: payload.meal_preference,
-          p_companion_count: payload.companion_count,
-          p_child_count: payload.child_count,
-          p_message: payload.message,
-        });
-        if (error) throw error;
-        const created = Array.isArray(res) ? res[0] : res;
+        const created = await submitRsvp(data.id, payload);
         if (created?.id && created?.edit_token) {
           setEditId(created.id);
           setEditToken(created.edit_token);

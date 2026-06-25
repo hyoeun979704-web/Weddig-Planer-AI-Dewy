@@ -4,7 +4,12 @@ import { Loader2, Download, UserPlus, Users, Lock, LockOpen } from "lucide-react
 import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchInvitationOwnerMeta,
+  fetchRsvpMeta,
+  setRsvpClosed as setRsvpClosedRemote,
+  setRsvpDeadline as setRsvpDeadlineRemote,
+} from "@/features/consumer/data/invitationView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInvitationRsvps } from "@/hooks/useInvitationRsvps";
 import { useCouplePartnerId } from "@/hooks/useCouplePartnerId";
@@ -47,11 +52,7 @@ const InvitationRsvpDashboard = () => {
   useEffect(() => {
     if (!user || !id || coupleLoading) return;
     (async () => {
-      const { data } = await (supabase as any)
-        .from("invitations")
-        .select("user_id, user_data")
-        .eq("id", id)
-        .maybeSingle();
+      const data = await fetchInvitationOwnerMeta(id);
       const authorized = !!data && (data.user_id === user.id || data.user_id === partnerId);
       if (!authorized) {
         navigate("/invitation/my", { replace: true });
@@ -62,11 +63,7 @@ const InvitationRsvpDashboard = () => {
       const bride = data.user_data?.bride_name ?? "";
       setTitle(groom && bride ? `${groom} · ${bride}` : "");
       // 마감 메타는 best-effort(드리프트 시 메인 게이트가 깨지지 않도록 분리 조회).
-      const { data: meta } = await (supabase as any)
-        .from("invitations")
-        .select("rsvp_closed, rsvp_deadline")
-        .eq("id", id)
-        .maybeSingle();
+      const meta = await fetchRsvpMeta(id);
       if (meta) {
         setRsvpClosed(meta.rsvp_closed === true);
         setRsvpDeadline(meta.rsvp_deadline ?? "");
@@ -79,15 +76,12 @@ const InvitationRsvpDashboard = () => {
     if (!id || savingClose) return;
     setSavingClose(true);
     const next = !rsvpClosed;
-    const { error } = await (supabase as any)
-      .from("invitations")
-      .update({ rsvp_closed: next })
-      .eq("id", id);
-    if (error) {
-      toast.error("변경에 실패했어요");
-    } else {
+    try {
+      await setRsvpClosedRemote(id, next);
       setRsvpClosed(next);
       toast.success(next ? "응답 받기를 마감했어요" : "응답 받기를 다시 열었어요");
+    } catch {
+      toast.error("변경에 실패했어요");
     }
     setSavingClose(false);
   };
@@ -96,11 +90,11 @@ const InvitationRsvpDashboard = () => {
   const saveDeadline = async (date: string) => {
     if (!id) return;
     setRsvpDeadline(date);
-    const { error } = await (supabase as any)
-      .from("invitations")
-      .update({ rsvp_deadline: date || null })
-      .eq("id", id);
-    if (error) toast.error("마감일 저장에 실패했어요");
+    try {
+      await setRsvpDeadlineRemote(id, date);
+    } catch {
+      toast.error("마감일 저장에 실패했어요");
+    }
   };
 
   const handleExport = () => {

@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { readyOrderPayment } from "@/features/consumer/data/orders";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
 import { formatWon as formatPrice } from "@/lib/priceFormat";
@@ -65,16 +65,14 @@ const Checkout = () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("kakao-pay-order-ready", {
-        body: {
-          items: items.map((it) => ({ product_id: it.product.id, quantity: it.quantity })),
-          origin: window.location.origin,
-          shipping: {
-            name: shipName.trim(),
-            phone: shipPhone.trim(),
-            address: shipAddress.trim(),
-            memo: shipMemo.trim(),
-          },
+      const { data, error } = await readyOrderPayment({
+        items: items.map((it) => ({ product_id: it.product.id, quantity: it.quantity })),
+        origin: window.location.origin,
+        shipping: {
+          name: shipName.trim(),
+          phone: shipPhone.trim(),
+          address: shipAddress.trim(),
+          memo: shipMemo.trim(),
         },
       });
       if (error || !data?.success) {

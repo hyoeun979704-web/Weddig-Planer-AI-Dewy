@@ -11,7 +11,7 @@ import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchBookmarkedPosts, communityKeys } from "@/features/consumer/data/community";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import { formatDistanceToNow } from "date-fns";
@@ -42,24 +42,16 @@ const BookmarkedPosts = () => {
 
   // Fetch bookmarked posts from database
   const { data: posts = [], isLoading: postsLoading } = useQuery({
-    queryKey: ["bookmarked-posts", bookmarkedPostIds],
+    queryKey: communityKeys.bookmarked(bookmarkedPostIds),
     queryFn: async () => {
-      if (bookmarkedPostIds.length === 0) return [];
-
-      const { data: postsData, error: postsError } = await supabase
-        .from("community_posts")
-        .select("*")
-        .in("id", bookmarkedPostIds)
-        .order("created_at", { ascending: false });
-
-      if (postsError) throw postsError;
+      const postsData = await fetchBookmarkedPosts(bookmarkedPostIds);
 
       // 좋아요/댓글 수는 집계 컬럼(트리거 동기화)에서 직접 읽는다. (N+1 제거)
-      return (postsData || []).map((post) => ({
+      return postsData.map((post) => ({
         ...post,
         likes_count: post.like_count ?? 0,
         comments_count: post.comment_count ?? 0,
-      })) as Post[];
+      })) as unknown as Post[];
     },
     enabled: bookmarkedPostIds.length > 0,
   });

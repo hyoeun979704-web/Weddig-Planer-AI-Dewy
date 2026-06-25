@@ -4,8 +4,8 @@ import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchPlaceName } from "@/features/consumer/data/quotes";
 import { useQuoteThread, sendQuoteMessage } from "@/hooks/useQuotes";
 
 // 견적 요청-업체 간 인앱 메시지 스레드. 소비자·업체 양쪽이 같은 화면을 쓴다(RLS 로 보호).
@@ -21,12 +21,7 @@ const QuoteThread = () => {
 
   useEffect(() => {
     if (!placeId) return;
-    void (supabase as any)
-      .from("places")
-      .select("name")
-      .eq("place_id", placeId)
-      .maybeSingle()
-      .then(({ data }: any) => setPlaceName(data?.name ?? ""));
+    void fetchPlaceName(placeId).then(setPlaceName);
   }, [placeId]);
 
   useEffect(() => {

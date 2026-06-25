@@ -29,7 +29,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchFrontTemplates,
+  fetchTemplateById,
+  fetchLatestUserData,
+  countInvitations,
+  insertInvitation,
+  updateInvitation,
+  deleteInvitation,
+  fetchInvitationLayout,
+  uploadInvitationImage,
+  invitationViewerUrl,
+  invokeCutout,
+  invokeIllustration,
+  invokeTextSuggest,
+  invokeAddressSearch,
+  spendHearts,
+  publishInvitation,
+} from "@/features/consumer/data/invitation";
+import { fetchHeartBalance } from "@/features/consumer/data/hearts";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import InvitationCanvas, {
@@ -158,14 +176,10 @@ const InvitationFlow = () => {
     setBackTemplate(null);
     setBackTemplateId(null);
     if (t.default_back_template_id) {
-      const { data: bt } = await (supabase as any)
-        .from("invitation_templates")
-        .select("id, name, thumbnail_url, format, tone, price_hearts, layout, text_prompt_hint")
-        .eq("id", t.default_back_template_id)
-        .maybeSingle();
+      const bt = await fetchTemplateById(t.default_back_template_id);
       // 연타 레이스 방지 — 그 사이 다른 템플릿을 골랐으면 무시
       if (bt && latestPickRef.current === t.id) {
-        setBackTemplate(bt as Template);
+        setBackTemplate(bt as unknown as Template);
         setBackTemplateId(bt.id);
       }
     }
@@ -213,12 +227,7 @@ const InvitationFlow = () => {
 
   const fetchHearts = useCallback(async () => {
     if (!user) return;
-    const { data } = await (supabase as any)
-      .from("user_hearts")
-      .select("balance")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    setHearts(data?.balance ?? 0);
+    setHearts(await fetchHeartBalance(user.id));
   }, [user]);
 
   useEffect(() => {
@@ -271,14 +280,7 @@ const InvitationFlow = () => {
     if (Object.keys(userData).length > 0) return; // 이미 입력 시작했으면 보존
     prefillTriedRef.current = true;
     (async () => {
-      const { data } = await (supabase as any)
-        .from("invitations")
-        .select("user_data")
-        .eq("user_id", user.id)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      const prev = data?.user_data as InvitationUserData | undefined;
+      const prev = await fetchLatestUserData(user.id);
       if (!prev) return;
       const PERSONAL_FIELDS = [
         "groom_name",
@@ -318,22 +320,14 @@ const InvitationFlow = () => {
     if (templates.length > 0) return;
     setLoadingTemplates(true);
     (async () => {
-      const { data, error } = await (supabase as any)
-        .from("invitation_templates")
-        .select(
-          "id, name, thumbnail_url, format, tone, price_hearts, layout, text_prompt_hint, default_back_template_id",
-        )
-        .eq("is_active", true)
-        .eq("format", formatFilter)
-        .in("face", ["front", "both"]) // 전면으로 쓸 수 있는 템플릿만
-        .order("display_order", { ascending: true }); // 작을수록 우선(1번이 최상단)
-      if (error) {
+      try {
+        const data = await fetchFrontTemplates(formatFilter);
+        setTemplates(data as unknown as Template[]);
+      } catch {
         toast({
           title: "템플릿을 불러올 수 없어요",
           variant: "destructive",
         });
-      } else {
-        setTemplates(data ?? []);
       }
       setLoadingTemplates(false);
     })();
@@ -396,26 +390,18 @@ const InvitationFlow = () => {
       if (warn)
         toast({ title: `${file.name} · 해상도 확인`, description: warn });
 
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const filename = `${crypto.randomUUID()}.${ext}`;
-      const path = `${user.id}/${filename}`;
-
-      const { error } = await supabase.storage
-        .from("invitation-uploads")
-        .upload(path, file, { contentType: file.type, upsert: false });
-      if (error) {
+      try {
+        const { path, signedUrl } = await uploadInvitationImage(user.id, file);
+        if (signedUrl) {
+          setPhotos((p) => [...p, { path, url: signedUrl }]);
+        }
+      } catch (error) {
         toast({
           title: "업로드 실패",
-          description: error.message,
+          description: error instanceof Error ? error.message : "오류",
           variant: "destructive",
         });
         continue;
-      }
-      const { data: signed } = await supabase.storage
-        .from("invitation-uploads")
-        .createSignedUrl(path, 60 * 60 * 24);
-      if (signed?.signedUrl) {
-        setPhotos((p) => [...p, { path, url: signed.signedUrl }]);
       }
     }
   };
@@ -448,21 +434,23 @@ const InvitationFlow = () => {
       toast({ title: "QR 이미지가 너무 커요 (20MB 초과)" });
       return;
     }
-    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-    const path = `${user.id}/qr-${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage
-      .from("invitation-uploads")
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (error) {
-      toast({ title: "QR 업로드 실패", description: error.message, variant: "destructive" });
+    let path: string;
+    let signedUrl: string | null;
+    try {
+      ({ path, signedUrl } = await uploadInvitationImage(user.id, file, {
+        prefix: "qr",
+        fallbackExt: "png",
+      }));
+    } catch (error) {
+      toast({
+        title: "QR 업로드 실패",
+        description: error instanceof Error ? error.message : "오류",
+        variant: "destructive",
+      });
       return;
     }
-    const { data: signed } = await supabase.storage
-      .from("invitation-uploads")
-      .createSignedUrl(path, 60 * 60 * 24);
     setQrPaths((p) => ({ ...p, [slotId]: path }));
-    if (signed?.signedUrl)
-      setQrUrls((u) => ({ ...u, [slotId]: signed.signedUrl }));
+    if (signedUrl) setQrUrls((u) => ({ ...u, [slotId]: signedUrl }));
   };
   const removeQr = (slotId: string) => {
     setQrPaths((p) => {
@@ -543,33 +531,24 @@ const InvitationFlow = () => {
           imagePaths: { ...paths, ...qrPaths },
         };
         if (invitationId) {
-          const { error } = await (supabase as any)
-            .from("invitations")
-            .update({
-              template_id: template.id,
-              back_template_id: backTemplateId,
-              user_data: userData,
-              layout,
-              ai_generated_text: aiText,
-            })
-            .eq("id", invitationId);
-          if (error) throw error;
+          await updateInvitation(invitationId, {
+            template_id: template.id,
+            back_template_id: backTemplateId,
+            user_data: userData,
+            layout,
+            ai_generated_text: aiText,
+          });
         } else {
-          const { data, error } = await (supabase as any)
-            .from("invitations")
-            .insert({
-              user_id: user.id,
-              template_id: template.id,
-              back_template_id: backTemplateId,
-              user_data: userData,
-              layout,
-              ai_generated_text: aiText,
-              status: "draft" as const,
-            })
-            .select("id")
-            .single();
-          if (error) throw error;
-          if (data?.id) setInvitationId(data.id);
+          const newId = await insertInvitation({
+            user_id: user.id,
+            template_id: template.id,
+            back_template_id: backTemplateId,
+            user_data: userData,
+            layout,
+            ai_generated_text: aiText,
+            status: "draft" as const,
+          });
+          setInvitationId(newId);
         }
         setFlowSavedAt(new Date());
         setFlowSaveFailed(false);
@@ -615,17 +594,7 @@ const InvitationFlow = () => {
         return { paths: currentPaths, urls: currentUrls };
       }
 
-      const { data, error } = await supabase.functions.invoke(
-        "invitation-cutout",
-        { body: { source_paths: sourcePaths } },
-      );
-      if (error) throw error;
-      const result = data as {
-        cutout_paths?: Record<string, string>;
-        cutout_urls?: Record<string, string>;
-        error?: string;
-      };
-      if (result.error) throw new Error(result.error);
+      const result = await invokeCutout(sourcePaths);
 
       // auto_cutout 슬롯들의 path/url 을 누낀 결과로 덮어쓰기
       // (원본 슬롯들은 그대로 유지)
@@ -674,17 +643,12 @@ const InvitationFlow = () => {
         return { paths: currentPaths, urls: currentUrls };
       }
 
-      const { data, error } = await supabase.functions.invoke(
-        "invitation-illustration",
-        {
-          body: {
-            source_paths: sourcePaths,
-            template_tone: tpl.tone,
-            template_name: tpl.name,
-            text_prompt_hint: tpl.text_prompt_hint,
-          },
-        },
-      );
+      const { data, error } = await invokeIllustration({
+        source_paths: sourcePaths,
+        template_tone: tpl.tone,
+        template_name: tpl.name,
+        text_prompt_hint: tpl.text_prompt_hint,
+      });
       if (error) throw error;
       const result = data as {
         illustration_paths?: Record<string, string>;
@@ -740,11 +704,8 @@ const InvitationFlow = () => {
     }
 
     // 첫 사용(첫 청첩장) 반값 — 검증·차감 동일 기준
-    const { count: priorCount } = await (supabase as any)
-      .from("invitations")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id);
-    const isFirstUse = (priorCount ?? 0) === 0;
+    const priorCount = await countInvitations(user.id);
+    const isFirstUse = priorCount === 0;
     const templateCharge = computeInvitationPrice(template.price_hearts, {
       firstUse: isFirstUse,
     });
@@ -823,28 +784,20 @@ const InvitationFlow = () => {
       if (aiAuto && aiSlots.length > 0) {
         for (const slot of aiSlots) {
           try {
-            const { data, error } = await supabase.functions.invoke(
-              "invitation-text-suggest",
-              {
-                body: {
-                  slot_id: slot.id,
-                  slot_role: (slot.role ?? "free") as SlotRole,
-                  slot_placeholder: slot.placeholder,
-                  tone: template.tone,
-                  template_hint: template.text_prompt_hint,
-                  user_data: {
-                    groom_name: userData.groom_name,
-                    bride_name: userData.bride_name,
-                    wedding_date: userData.wedding_date,
-                    wedding_time: userData.wedding_time,
-                    venue_name: userData.venue_name,
-                  },
-                },
+            const result = await invokeTextSuggest({
+              slot_id: slot.id,
+              slot_role: (slot.role ?? "free") as SlotRole,
+              slot_placeholder: slot.placeholder,
+              tone: template.tone,
+              template_hint: template.text_prompt_hint,
+              user_data: {
+                groom_name: userData.groom_name,
+                bride_name: userData.bride_name,
+                wedding_date: userData.wedding_date,
+                wedding_time: userData.wedding_time,
+                venue_name: userData.venue_name,
               },
-            );
-            if (error) throw error;
-            const result = data as { suggestions?: string[]; error?: string };
-            if (result.error) throw new Error(result.error);
+            });
             const first = result.suggestions?.[0];
             if (first) generatedAi[slot.id] = first;
           } catch (e) {
@@ -869,11 +822,9 @@ const InvitationFlow = () => {
       let rowId = invitationId;
       let createdNew = false;
       if (rowId) {
-        const { error: updErr } = await (supabase as any)
-          .from("invitations")
-          .update(payload)
-          .eq("id", rowId);
-        if (updErr) {
+        try {
+          await updateInvitation(rowId, payload);
+        } catch {
           toast({
             title: "청첩장 저장에 실패했어요",
             description: "다시 시도해주세요",
@@ -883,12 +834,9 @@ const InvitationFlow = () => {
           return;
         }
       } else {
-        const { data: row, error: insertError } = await (supabase as any)
-          .from("invitations")
-          .insert({ ...payload, status: "draft" as const })
-          .select("id")
-          .single();
-        if (insertError || !row?.id) {
+        try {
+          rowId = await insertInvitation({ ...payload, status: "draft" as const });
+        } catch {
           toast({
             title: "청첩장 저장에 실패했어요",
             description: "다시 시도해주세요",
@@ -897,26 +845,27 @@ const InvitationFlow = () => {
           setIsGenerating(false);
           return;
         }
-        rowId = row.id;
         createdNew = true;
       }
 
       // 5) 템플릿 가격 차감 (첫 사용 반값 적용). 실패 시 방금 만든 draft 삭제(보상).
       if (templateCharge > 0) {
-        const { data: spendData, error: spendError } = await (supabase as any).rpc(
-          "spend_hearts",
-          {
-            p_user_id: user.id,
-            p_amount: templateCharge,
-            p_reason: "invitation_publish",
-            p_ref_id: rowId,
-          },
-        );
-        const spendRow = Array.isArray(spendData) ? spendData[0] : spendData;
+        let spendRow: { success?: boolean; message?: string } | null = null;
+        let spendError: Error | null = null;
+        try {
+          spendRow = await spendHearts({
+            userId: user.id,
+            amount: templateCharge,
+            reason: "invitation_publish",
+            refId: rowId,
+          });
+        } catch (e) {
+          spendError = e instanceof Error ? e : new Error("하트 차감 실패");
+        }
         if (spendError || !spendRow?.success) {
           // 보상 삭제는 방금 새로 만든 경우에만 — 자동저장 draft 는 보존.
           if (createdNew) {
-            await (supabase as any).from("invitations").delete().eq("id", rowId);
+            await deleteInvitation(rowId);
           }
           toast({
             title: spendError ? "하트 차감 실패" : "하트가 부족해요",
@@ -1033,17 +982,9 @@ const InvitationFlow = () => {
         status: "draft" as const,
       };
       if (invitationId) {
-        await (supabase as any)
-          .from("invitations")
-          .update(payload)
-          .eq("id", invitationId);
+        await updateInvitation(invitationId, payload);
       } else {
-        const { data: row } = await (supabase as any)
-          .from("invitations")
-          .insert(payload)
-          .select("id")
-          .single();
-        if (row?.id) setInvitationId(row.id);
+        setInvitationId(await insertInvitation(payload));
       }
       toast({ title: "저장 완료" });
     } catch (e) {
@@ -1085,21 +1026,15 @@ const InvitationFlow = () => {
       // 1) 기존 layout 을 읽어 면별 구조를 보존하고, 발행은 익명 viewer 용
       //    long-lived signed URL 만 가산적으로 추가한다.
       //    (Studio 에서 편집한 전/후면 오버라이드·위치·추가요소를 유실하지 않도록)
-      const { data: cur } = await (supabase as any)
-        .from("invitations")
-        .select("layout")
-        .eq("id", invitationId)
-        .single();
-      const faces = readFaceLayout(cur?.layout);
+      const curLayout = await fetchInvitationLayout(invitationId);
+      const faces = readFaceLayout(curLayout);
       const signFace = async (f: {
         imagePaths?: Record<string, string>;
       }): Promise<Record<string, string>> => {
         const v: Record<string, string> = {};
         for (const [slotId, path] of Object.entries(f.imagePaths ?? {})) {
-          const { data: signed } = await supabase.storage
-            .from("invitation-uploads")
-            .createSignedUrl(path, 60 * 60 * 24 * 365); // 1년
-          if (signed?.signedUrl) v[slotId] = signed.signedUrl;
+          const signedUrl = await invitationViewerUrl(path); // 1년
+          if (signedUrl) v[slotId] = signedUrl;
         }
         return v;
       };
@@ -1107,24 +1042,15 @@ const InvitationFlow = () => {
       // 2) invitations layout 에 면별 imageUrlsForViewer 추가 저장 (기존 필드 보존)
       //    이 저장이 실패하면 뷰어가 서명 URL 없이 발행돼 이미지가 깨진다 →
       //    에러를 삼키지 말고 발행을 중단(아래 publish 로 진행 금지).
-      const { error: layoutError } = await (supabase as any)
-        .from("invitations")
-        .update({
-          layout: {
-            front: { ...faces.front, imageUrlsForViewer: await signFace(faces.front) },
-            back: { ...faces.back, imageUrlsForViewer: await signFace(faces.back) },
-          },
-        })
-        .eq("id", invitationId);
-      if (layoutError) throw layoutError;
+      await updateInvitation(invitationId, {
+        layout: {
+          front: { ...faces.front, imageUrlsForViewer: await signFace(faces.front) },
+          back: { ...faces.back, imageUrlsForViewer: await signFace(faces.back) },
+        },
+      });
 
       // 3) publish_invitation RPC 호출 (slug 자동 발급)
-      const { data, error } = await (supabase as any).rpc(
-        "publish_invitation",
-        { p_invitation_id: invitationId },
-      );
-      if (error) throw error;
-      const row = Array.isArray(data) ? data[0] : data;
+      const row = await publishInvitation(invitationId);
       if (!row?.share_slug) throw new Error("slug 발급 실패");
 
       const url = `${window.location.origin}/i/${row.share_slug}`;
@@ -1908,10 +1834,7 @@ const VenueAddressField = ({
     }
     setSearching(true);
     try {
-      const { data, error } = await (supabase as any).functions.invoke(
-        "invitation-address-search",
-        { body: { query: q } },
-      );
+      const { data, error } = await invokeAddressSearch(q);
       if (error || data?.error) {
         throw new Error(data?.error ?? error?.message ?? "검색 실패");
       }

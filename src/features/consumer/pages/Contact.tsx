@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { createInquiry } from "@/features/consumer/data/quotes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContactConfig } from "@/hooks/useAppConfig";
 import { useTextDraft } from "@/hooks/useTextDraft";
@@ -55,17 +55,19 @@ const Contact = () => {
       return;
     }
     setSubmitting(true);
-    const { error } = await (supabase as any).from("inquiries").insert({
-      user_id: user.id,
-      category,
-      title: title.trim(),
-      content: content.trim(),
-    });
-    setSubmitting(false);
-    if (error) {
+    try {
+      await createInquiry({
+        userId: user.id,
+        category,
+        title: title.trim(),
+        content: content.trim(),
+      });
+    } catch {
+      setSubmitting(false);
       toast.error("문의 접수에 실패했어요. 잠시 후 다시 시도해주세요");
       return;
     }
+    setSubmitting(false);
     toast.success("문의가 접수되었습니다. 빠른 시일 내에 답변드리겠습니다.");
     draft.clear();
     setCategory("");

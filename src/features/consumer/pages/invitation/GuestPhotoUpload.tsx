@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Loader2, ImagePlus, Check, Heart } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchPublishedInvitationBySlug,
+  uploadGuestPhoto,
+  insertGuestPhoto,
+  removeGuestPhoto,
+} from "@/features/consumer/data/invitation";
 import { toast } from "sonner";
 
 /**
@@ -45,13 +50,8 @@ const GuestPhotoUpload = () => {
   useEffect(() => {
     if (!slug) return;
     (async () => {
-      const { data, error } = await (supabase as any)
-        .from("invitations")
-        .select("id, user_data")
-        .eq("share_slug", slug)
-        .eq("status", "published")
-        .maybeSingle();
-      if (error || !data) {
+      const data = await fetchPublishedInvitationBySlug(slug);
+      if (!data) {
         setNotFound(true);
       } else {
         setInvitation({
@@ -80,22 +80,18 @@ const GuestPhotoUpload = () => {
       for (let i = 0; i < list.length; i++) {
         const file = list[i];
         const path = `${invitation.id}/${crypto.randomUUID()}.${extOf(file)}`;
-        const { error: upErr } = await supabase.storage
-          .from("guest-photos")
-          .upload(path, file, { contentType: file.type || "image/jpeg", upsert: false });
-        if (upErr) throw upErr;
-        const { error: rowErr } = await (supabase as any)
-          .from("invitation_guest_photos")
-          .insert({
-            invitation_id: invitation.id,
-            uploader_name: trimmedName,
-            storage_path: path,
-            content_type: file.type || null,
-            size_bytes: file.size,
+        await uploadGuestPhoto(path, file);
+        try {
+          await insertGuestPhoto({
+            invitationId: invitation.id,
+            uploaderName: trimmedName,
+            storagePath: path,
+            contentType: file.type || null,
+            sizeBytes: file.size,
           });
-        if (rowErr) {
+        } catch (rowErr) {
           // 행 등록 실패 시 올린 파일 정리(고아 방지).
-          await supabase.storage.from("guest-photos").remove([path]).catch(() => undefined);
+          await removeGuestPhoto(path);
           throw rowErr;
         }
         ok += 1;

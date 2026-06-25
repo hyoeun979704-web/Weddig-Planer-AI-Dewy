@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { uploadQuoteImage } from "@/features/consumer/data/quotes";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
 import { createQuoteRequest, quoteImageUrl } from "@/hooks/useQuotes";
 import { markBoardSlotQuoting } from "@/hooks/useVendorBoard";
@@ -89,11 +89,14 @@ const QuoteNew = () => {
     if (!file || !user) return;
     if (imagePaths.length >= 3) { toast.error("사진은 최대 3장까지 올릴 수 있어요."); return; }
     setUploading(true);
-    const path = `${user.id}/${crypto.randomUUID()}.${(file.name.split(".").pop() || "jpg").toLowerCase()}`;
-    const { error } = await supabase.storage.from("quote-uploads").upload(path, file, { contentType: file.type, upsert: false });
-    setUploading(false);
-    if (error) { toast.error("사진 업로드에 실패했어요."); return; }
-    setImagePaths((p) => [...p, path]);
+    try {
+      const path = await uploadQuoteImage(user.id, file);
+      setImagePaths((p) => [...p, path]);
+    } catch {
+      toast.error("사진 업로드에 실패했어요.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const submit = async () => {

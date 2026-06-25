@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { approveOrderPayment } from "@/features/consumer/data/orders";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/hooks/useCart";
 import { ORDER_SESSION_KEY } from "./Checkout";
@@ -46,17 +46,12 @@ const PaymentSuccess = () => {
       const isDesign = session.type === "design" || searchParams.get("type") === "design";
 
       try {
-        const { data, error } = await supabase.functions.invoke(
-          isDesign ? "design-purchase-approve" : "kakao-pay-order-approve",
-          {
-            body: {
-              tid: session.tid,
-              partnerOrderId: session.partnerOrderId,
-              partnerUserId: session.partnerUserId,
-              pgToken,
-            },
-          },
-        );
+        const { data, error } = await approveOrderPayment(isDesign, {
+          tid: session.tid,
+          partnerOrderId: session.partnerOrderId,
+          partnerUserId: session.partnerUserId,
+          pgToken,
+        });
 
         if (error || !data?.success) {
           throw new Error(data?.error || error?.message || "결제 승인 실패");

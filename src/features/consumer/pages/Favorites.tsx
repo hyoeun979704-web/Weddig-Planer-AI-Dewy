@@ -20,7 +20,12 @@ import { useFavorites, ItemType } from "@/hooks/useFavorites";
 import { useCoupleFavorites, type MergedFavorite, type Ownership } from "@/hooks/useCoupleFavorites";
 import { youTubeUrl } from "@/hooks/useTipVideos";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchFavoritePlaces,
+  fetchFavoriteDeals,
+  fetchFavoriteProducts,
+  fetchFavoriteTipVideos,
+} from "@/features/consumer/data/account";
 import { openExternal } from "@/lib/native/openExternal";
 import { useQuery } from "@tanstack/react-query";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
@@ -220,10 +225,7 @@ const Favorites = () => {
 
       if (activeTab === "vendor") {
         const ids = filteredFavs.map((f) => f.item_id);
-        const { data } = await supabase
-          .from("places")
-          .select("place_id, name, main_image_url, avg_rating, category")
-          .in("place_id", ids);
+        const data = await fetchFavoritePlaces(ids);
         if (!data) return [];
         return data.map((p) => {
           const fav = lookup(p.place_id, filteredFavs.find((f) => f.item_id === p.place_id)!.item_type);
@@ -238,45 +240,36 @@ const Favorites = () => {
 
       if (activeTab === "event") {
         const ids = filteredFavs.map((f) => f.item_id);
-        const { data } = await (supabase
-          .from("partner_deals" as any)
-          .select("id, title, partner_name, banner_image_url, deal_price, original_price, discount_info") as any)
-          .in("id", ids);
+        const data = await fetchFavoriteDeals(ids);
         if (!data) return [];
-        return (data as any[]).map((d) =>
+        return data.map((d) =>
           enrich(lookup(d.id, "deal"), {
             name: d.title,
             thumbnail_url: d.banner_image_url,
             price: d.deal_price ?? undefined,
-            subtitle: d.discount_info || d.partner_name,
+            subtitle: d.discount_info || d.partner_name || undefined,
           }),
         );
       }
 
       if (activeTab === "shopping") {
         const ids = filteredFavs.map((f) => f.item_id);
-        const { data } = await (supabase
-          .from("products" as any)
-          .select("id, name, thumbnail_url, price, sale_price, rating, category, categories") as any)
-          .in("id", ids);
+        const data = await fetchFavoriteProducts(ids);
         if (!data) return [];
-        return (data as any[]).map((p) =>
+        return data.map((p) =>
           enrich(lookup(p.id, "product"), {
             name: p.name,
             thumbnail_url: p.thumbnail_url,
             rating: p.rating ?? undefined,
             price: p.sale_price ?? p.price ?? undefined,
-            subtitle: Array.isArray(p.categories) && p.categories.length > 0 ? p.categories[0] : p.category,
+            subtitle: Array.isArray(p.categories) && p.categories.length > 0 ? p.categories[0] : (p.category ?? undefined),
           }),
         );
       }
 
       if (activeTab === "info") {
         const ids = filteredFavs.map((f) => f.item_id);
-        const { data } = await supabase
-          .from("tip_videos")
-          .select("video_id, title, thumbnail_url, channel_name")
-          .in("video_id", ids);
+        const data = await fetchFavoriteTipVideos(ids);
         if (!data) return [];
         return data.map((v) =>
           enrich(lookup(v.video_id, "tip_video"), {

@@ -4,7 +4,7 @@ import { Bell, MessageSquare, Tag, Calendar, Heart } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Switch } from "@/components/ui/switch";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchMarketingConsent, recordMarketingConsent } from "@/features/consumer/data/account";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -19,7 +19,6 @@ const notificationSettings = [
 // 기기 단위 알림 토글은 localStorage 에 보관(서버 푸시는 1차 출시 제외).
 // 마케팅 토글만 PIPA 동의 이력(user_consents.marketing_v1)과 동기화한다.
 const STORAGE_KEY = "dewy.notification.prefs";
-const MARKETING_CONSENT_TYPE = "marketing_v1";
 
 const DEFAULTS: Record<string, boolean> = {
   push: true,
@@ -48,15 +47,9 @@ const Notifications = () => {
     let active = true;
     (async () => {
       // Round 10 — canonical view 로 reads 통일. backfill 행 자동 제외.
-      const { data } = await (supabase as any)
-        .from("user_consents_canonical")
-        .select("agreed")
-        .eq("user_id", user.id)
-        .eq("consent_type", MARKETING_CONSENT_TYPE)
-        .order("agreed_at", { ascending: false })
-        .limit(1);
-      if (active && data && data.length > 0) {
-        setSettings((prev) => ({ ...prev, marketing: !!data[0].agreed }));
+      const agreed = await fetchMarketingConsent(user.id);
+      if (active && agreed !== null) {
+        setSettings((prev) => ({ ...prev, marketing: agreed }));
       }
     })();
     return () => {
@@ -84,16 +77,9 @@ const Notifications = () => {
         return;
       }
       // PIPA — 동의·철회 모두 새 row 로 기록(이력 보존).
-      const { error } = await (supabase as any).from("user_consents").insert({
-        user_id: user.id,
-        consent_type: MARKETING_CONSENT_TYPE,
-        agreed: nextValue,
-        user_agent:
-          typeof navigator !== "undefined"
-            ? navigator.userAgent?.slice(0, 500)
-            : null,
-      });
-      if (error) {
+      try {
+        await recordMarketingConsent(user.id, nextValue);
+      } catch {
         // 실패 시 토글 롤백
         const reverted = { ...next, marketing: !nextValue };
         setSettings(reverted);

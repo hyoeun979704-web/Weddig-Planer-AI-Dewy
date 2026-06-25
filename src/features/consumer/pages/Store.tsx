@@ -4,8 +4,12 @@ import { Star, Loader2, SlidersHorizontal, ExternalLink } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import HomeHeader from "@/components/home/HomeHeader";
 import CategoryTabBar, { useCategoryTabNavigation } from "@/components/home/CategoryTabBar";
-import { supabase } from "@/integrations/supabase/client";
 import { escapeLikePattern } from "@/lib/postgrestEscape";
+import {
+  fetchStoreProducts,
+  fetchFeaturedProducts,
+  trackProductClick,
+} from "@/features/consumer/data/shop";
 import StoreFilterSheet, { StoreFilters, initialFilters } from "@/components/store/StoreFilterSheet";
 import SortToggle, { SortMode } from "@/components/SortToggle";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
@@ -70,35 +74,14 @@ const Store = () => {
   useEffect(() => {
     const fetch = async () => {
       setIsLoading(true);
-      let query = (supabase
-        .from("products" as any)
-        .select(
-          "id, name, short_description, category, categories, price, sale_price, thumbnail_url, rating, review_count, sold_count, is_featured, source, source_url, source_mall",
-        ) as any)
-        .eq("is_active", true)
-        .order(sortMode === "popular" ? "sold_count" : "created_at", { ascending: false });
-
-      // Tab-based category filter (multi-category via array contains).
-      if (selectedTab !== "all") {
-        query = query.contains("categories", [selectedTab]) as any;
-      }
-
-      // Advanced filter category — also matched against categories[].
-      if (filters.category) {
-        query = query.contains("categories", [filters.category]) as any;
-      }
-      if (filters.priceRange[0] > 0) {
-        query = query.gte("price", filters.priceRange[0]) as any;
-      }
-      if (filters.priceRange[1] < 500000) {
-        query = query.lte("price", filters.priceRange[1]) as any;
-      }
-      if (filters.keyword) {
-        query = query.ilike("name", `%${escapeLikePattern(filters.keyword)}%`) as any;
-      }
-
-      const { data } = await query;
-      setProducts((data || []) as any);
+      const data = await fetchStoreProducts({
+        tab: selectedTab,
+        sortMode,
+        category: filters.category,
+        priceRange: filters.priceRange,
+        keywordLike: filters.keyword ? escapeLikePattern(filters.keyword) : null,
+      });
+      setProducts(data as unknown as Product[]);
       setIsLoading(false);
     };
     fetch();
@@ -109,24 +92,8 @@ const Store = () => {
   useEffect(() => {
     const fetchFeatured = async () => {
       const persona = weddingSettings.persona_mode ?? null;
-      let q = (supabase
-        .from("products" as any)
-        .select(
-          "id, name, short_description, category, categories, price, sale_price, thumbnail_url, rating, review_count, sold_count, is_featured, source, source_url, source_mall, featured_personas",
-        ) as any)
-        .eq("is_active", true)
-        .eq("is_featured", true)
-        .limit(8);
-      if (selectedTab !== "all") {
-        q = q.contains("categories", [selectedTab]) as any;
-      }
-      // 빈 배열(전체 대상) OR 사용자 persona 가 배열에 포함.
-      const orFilter = persona
-        ? `featured_personas.eq.{},featured_personas.cs.{${persona}}`
-        : "featured_personas.eq.{}";
-      q = q.or(orFilter) as any;
-      const { data } = await q;
-      setFeatured((data || []) as any);
+      const data = await fetchFeaturedProducts(selectedTab, persona);
+      setFeatured(data as unknown as Product[]);
     };
     fetchFeatured();
   }, [selectedTab, weddingSettings.persona_mode]);
@@ -143,10 +110,7 @@ const Store = () => {
 
   const handleProductClick = (product: Product) => {
     // 클릭 트래킹 — fire-and-forget. 실패해도 UX 영향 없음.
-    void (supabase.from("product_clicks" as any) as any).insert({
-      product_id: product.id,
-      source_tab: selectedTab,
-    });
+    trackProductClick(product.id, selectedTab);
 
     // 외부 상품(쿠팡/네이버)은 원본으로 새 탭 이동. 자체 상품은 내부 상세로.
     if (product.source !== "manual" && product.source_url) {

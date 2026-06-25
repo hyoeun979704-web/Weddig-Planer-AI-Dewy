@@ -3,7 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Sparkles, Check } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchCoupleVote,
+  saveCoupleVotePick,
+  saveCoupleVoteAISuggestion,
+  decideCoupleVote,
+  getSessionAccessToken,
+} from "@/features/consumer/data/coupleVote";
 import { toast } from "sonner";
 
 interface Vote {
@@ -35,19 +41,23 @@ const CoupleVoteDetail = () => {
 
   const fetchVote = useCallback(async () => {
     if (!id) return;
-    const { data } = await (supabase.from("couple_votes" as any).select("*") as any).eq("id", id).maybeSingle();
-    if (data) {
-      setVote(data as Vote);
-      // Set initial picks based on user role
-      if (user) {
-        if ((data as any).user_id === user.id) {
-          setMyPick((data as any).my_pick);
-          setMyReason((data as any).my_reason || "");
-        } else {
-          setMyPick((data as any).partner_pick);
-          setMyReason((data as any).partner_reason || "");
+    try {
+      const data = await fetchCoupleVote(id);
+      if (data) {
+        setVote(data as unknown as Vote);
+        // Set initial picks based on user role
+        if (user) {
+          if (data.user_id === user.id) {
+            setMyPick(data.my_pick);
+            setMyReason(data.my_reason || "");
+          } else {
+            setMyPick(data.partner_pick);
+            setMyReason(data.partner_reason || "");
+          }
         }
       }
+    } catch (e) {
+      console.error(e);
     }
     setIsLoading(false);
   }, [id, user]);
@@ -60,10 +70,9 @@ const CoupleVoteDetail = () => {
       ? { my_pick: myPick, my_reason: myReason || null }
       : { partner_pick: myPick, partner_reason: myReason || null };
 
-    const { error } = await (supabase.from("couple_votes" as any) as any)
-      .update(updateData)
-      .eq("id", vote.id);
-    if (error) {
+    try {
+      await saveCoupleVotePick(vote.id, updateData);
+    } catch (error) {
       console.error("vote save failed:", error);
       toast.error("투표 저장에 실패했어요. 다시 시도해주세요");
       return;
@@ -78,8 +87,8 @@ const CoupleVoteDetail = () => {
     if (!vote || !bothVoted) return;
     setAiLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token || ((import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ?? "");
+      const accessToken = await getSessionAccessToken();
+      const authToken = accessToken || ((import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ?? "");
 
       const prompt = `커플이 '${vote.topic}'에 대해 의견이 나뉘었어요.\n\nA: ${vote.option_a} — 이유: ${vote.my_reason || "없음"}\nB: ${vote.option_b} — 이유: ${vote.partner_reason || "없음"}\n\n양쪽 의견을 분석하고 절충안을 제안해주세요. 짧고 따뜻하게 3~5문장으로 답변해주세요.`;
 
@@ -115,7 +124,7 @@ const CoupleVoteDetail = () => {
         }
       }
 
-      await (supabase.from("couple_votes" as any) as any).update({ ai_suggestion: result, status: "discussed" }).eq("id", vote.id);
+      await saveCoupleVoteAISuggestion(vote.id, result);
       fetchVote();
     } catch (e) {
       console.error(e);
@@ -131,10 +140,9 @@ const CoupleVoteDetail = () => {
       toast.error("양쪽 모두 투표한 뒤 결정할 수 있어요");
       return;
     }
-    const { error } = await (supabase.from("couple_votes" as any) as any)
-      .update({ status: "decided" })
-      .eq("id", vote.id);
-    if (error) {
+    try {
+      await decideCoupleVote(vote.id);
+    } catch (error) {
       console.error("decide failed:", error);
       toast.error("결정 저장에 실패했어요. 다시 시도해주세요");
       return;

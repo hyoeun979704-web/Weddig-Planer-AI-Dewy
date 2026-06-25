@@ -7,7 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { checkReferralMilestones } from "@/lib/referralEvent";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  uploadCommunityImages,
+  createCommunityPost,
+  linkCommunityPostPlaces,
+} from "@/features/consumer/data/community";
 import { safeLocalStorage } from "@/lib/safeLocalStorage";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
@@ -116,34 +120,6 @@ const CommunityWrite = () => {
     setImagePreviews(imagePreviews.filter((_, i) => i !== index));
   };
 
-  const uploadImages = async (): Promise<string[]> => {
-    if (!user || images.length === 0) return [];
-
-    const uploadedUrls: string[] = [];
-
-    for (const image of images) {
-      const fileExt = image.name.split(".").pop();
-      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-      const { error } = await supabase.storage
-        .from("community-images")
-        .upload(fileName, image);
-
-      if (error) {
-        console.error("Image upload error:", error);
-        throw new Error("이미지 업로드에 실패했습니다.");
-      }
-
-      const { data: urlData } = supabase.storage
-        .from("community-images")
-        .getPublicUrl(fileName);
-
-      uploadedUrls.push(urlData.publicUrl);
-    }
-
-    return uploadedUrls;
-  };
-
   const handleSubmit = async () => {
     if (!user) {
       toast.error("로그인이 필요합니다.");
@@ -171,31 +147,26 @@ const CommunityWrite = () => {
     try {
       let imageUrls: string[] = [];
       if (images.length > 0) {
-        imageUrls = await uploadImages();
+        imageUrls = await uploadCommunityImages(user.id, images);
       }
 
-      const { data, error } = await supabase
-        .from("community_posts")
-        .insert({
-          user_id: user.id,
-          category: selectedCategory,
-          title: title.trim(),
-          content: content.trim(),
-          has_image: imageUrls.length > 0,
-          image_urls: imageUrls,
-          wedding_style: weddingStyle === "" ? null : weddingStyle,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await createCommunityPost({
+        user_id: user.id,
+        category: selectedCategory,
+        title: title.trim(),
+        content: content.trim(),
+        has_image: imageUrls.length > 0,
+        image_urls: imageUrls,
+        wedding_style: weddingStyle === "" ? null : weddingStyle,
+      });
 
       // 태그한 업체 연결 (실패해도 글 작성은 성공으로 처리).
       if (selectedVendors.length > 0) {
-        const { error: linkErr } = await supabase
-          .from("community_post_places")
-          .insert(selectedVendors.map((v) => ({ post_id: data.id, place_id: v.place_id })));
-        if (linkErr) console.warn("vendor link failed:", linkErr.message);
+        try {
+          await linkCommunityPostPlaces(data.id, selectedVendors.map((v) => v.place_id));
+        } catch (linkErr) {
+          console.warn("vendor link failed:", (linkErr as Error)?.message);
+        }
       }
 
       safeLocalStorage.removeItem(DRAFT_KEY);
