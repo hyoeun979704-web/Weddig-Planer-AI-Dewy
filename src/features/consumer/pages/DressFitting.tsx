@@ -18,9 +18,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { uploadDressSource, fetchDressMeta, fetchActiveDresses, generateDressFitting } from "@/features/consumer/data/dressFitting";
+import { fetchHeartBalance } from "@/features/consumer/data/hearts";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { bumpSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
 import {
@@ -106,12 +107,7 @@ const DressFitting = () => {
   // ──────────────────────────────────────────────
   const fetchHearts = useCallback(async () => {
     if (!user) return;
-    const { data } = await (supabase as any)
-      .from("user_hearts")
-      .select("balance")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    setHearts(data?.balance ?? 0);
+    setHearts(await fetchHeartBalance(user.id));
   }, [user]);
 
   useEffect(() => {
@@ -125,19 +121,13 @@ const DressFitting = () => {
     if (step !== "dress" || dresses.length > 0) return;
     setLoadingDresses(true);
     (async () => {
-      const { data, error } = await (supabase as any)
-        .from("dress_samples")
-        .select("id, name, image_url, silhouette, neckline, sleeve, color, pregnancy_supported")
-        .eq("is_active", true)
-        .order("display_order", { ascending: false })
-        .order("created_at", { ascending: false });
-      if (error) {
+      try {
+        setDresses((await fetchActiveDresses()) as unknown as DressSample[]);
+      } catch {
         toast({
           title: "드레스 목록을 불러올 수 없어요",
           variant: "destructive",
         });
-      } else {
-        setDresses(data ?? []);
       }
       setLoadingDresses(false);
     })();
@@ -187,27 +177,19 @@ const DressFitting = () => {
       return;
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const filename = `${crypto.randomUUID()}.${ext}`;
-    const path = `${user.id}/${filename}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("dress-uploads")
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (uploadError) {
+    let uploaded: { path: string; signedUrl: string | null };
+    try {
+      uploaded = await uploadDressSource(user.id, file);
+    } catch (err) {
       toast({
         title: "업로드 실패",
-        description: uploadError.message,
+        description: err instanceof Error ? err.message : undefined,
         variant: "destructive",
       });
       return;
     }
-
-    const { data: signed } = await supabase.storage
-      .from("dress-uploads")
-      .createSignedUrl(path, 60 * 60 * 2);
-    setPhotoPath(path);
-    setPhotoUrl(signed?.signedUrl ?? null);
+    setPhotoPath(uploaded.path);
+    setPhotoUrl(uploaded.signedUrl);
     setStep("dress");
   };
 
@@ -266,13 +248,7 @@ const DressFitting = () => {
         };
       } else {
         // 카탈로그: 드레스 메타데이터 전체를 가져와 프롬프트에 주입(목록은 일부만 SELECT).
-        const { data: dressMeta } = await (supabase as any)
-          .from("dress_samples")
-          .select(
-            "name, silhouette, neckline, sleeve, length, fabric, details, back_design, color, waist, mood",
-          )
-          .eq("id", selectedDress!.id)
-          .maybeSingle();
+        const dressMeta = await fetchDressMeta(selectedDress!.id);
 
         const dressDescription = dressMeta ? describeDress(dressMeta) : "";
         prompt = buildFittingPrompt(selectedSceneCode, dressDescription, { shotType });
@@ -284,16 +260,7 @@ const DressFitting = () => {
         };
       }
 
-      const { data, error } = await supabase.functions.invoke("dewy-fitting", {
-        body: requestBody,
-      });
-      if (error) throw error;
-      if ((data as any)?.error) {
-        throw new Error((data as any).error);
-      }
-
-      const fittingId = (data as any)?.fitting_id;
-      if (!fittingId) throw new Error("생성 요청 실패");
+      const fittingId = await generateDressFitting(requestBody);
       // 백그라운드 생성 시작 — 완료 알림을 위해 진행중 잡 등록 후 결과 페이지로.
       addPendingJob({ id: fittingId, type: "dress" });
       await fetchHearts();

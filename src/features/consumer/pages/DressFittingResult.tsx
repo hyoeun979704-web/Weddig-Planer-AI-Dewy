@@ -7,10 +7,10 @@ import { Download, Share2, Loader2, RefreshCw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { sceneByCode } from "@/data/fittingScenes";
 import { removePendingJob } from "@/lib/pendingJobs";
+import { fetchDressFitting, dressResultUrl, dressSourceUrl } from "@/features/consumer/data/dressFitting";
 
 /**
  * 드레스 피팅 결과 페이지 (/ai-studio/dress-tour/result/:id)
@@ -44,31 +44,19 @@ const DressFittingResult = () => {
 
   const load = useCallback(async () => {
     if (!id) return;
-    const { data, error } = await (supabase as any)
-      .from("dress_fittings")
-      .select(
-        "id, status, result_image_path, source_image_path, error_message, prompt_params, selected_sample_id, created_at",
-      )
-      .eq("id", id)
-      .single();
-    if (error || !data) {
+    const data = await fetchDressFitting(id);
+    if (!data) {
       setNotFound(true);
       setLoading(false);
       return;
     }
-    setFitting(data);
+    setFitting(data as unknown as FittingRow);
     if (data.result_image_path) {
-      const { data: signed } = await supabase.storage
-        .from("dress-results")
-        .createSignedUrl(data.result_image_path, 60 * 60 * 24);
-      setResultUrl(signed?.signedUrl ?? null);
+      setResultUrl(await dressResultUrl(data.result_image_path));
     }
     // 전후 비교용 원본 — 업로드 버킷(dress-uploads)에서 signed URL.
     if (data.source_image_path) {
-      const { data: srcSigned } = await supabase.storage
-        .from("dress-uploads")
-        .createSignedUrl(data.source_image_path, 60 * 60 * 24);
-      setSourceUrl(srcSigned?.signedUrl ?? null);
+      setSourceUrl(await dressSourceUrl(data.source_image_path));
     }
     setLoading(false);
   }, [id]);

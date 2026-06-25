@@ -17,9 +17,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { uploadDressSource, generateDressRecommend } from "@/features/consumer/data/dressFitting";
+import { fetchHeartBalance } from "@/features/consumer/data/hearts";
 import {
   SCENES_BY_TYPE,
   SCENE_TYPE_LABEL,
@@ -63,12 +64,7 @@ const DressRecommend = () => {
 
   const fetchHearts = useCallback(async () => {
     if (!user) return;
-    const { data } = await (supabase as any)
-      .from("user_hearts")
-      .select("balance")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    setHearts(data?.balance ?? 0);
+    setHearts(await fetchHeartBalance(user.id));
   }, [user]);
 
   useEffect(() => {
@@ -112,27 +108,19 @@ const DressRecommend = () => {
       return;
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const filename = `${crypto.randomUUID()}.${ext}`;
-    const path = `${user.id}/${filename}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("dress-uploads")
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (uploadError) {
+    let uploaded: { path: string; signedUrl: string | null };
+    try {
+      uploaded = await uploadDressSource(user.id, file);
+    } catch (err) {
       toast({
         title: "업로드 실패",
-        description: uploadError.message,
+        description: err instanceof Error ? err.message : undefined,
         variant: "destructive",
       });
       return;
     }
-
-    const { data: signed } = await supabase.storage
-      .from("dress-uploads")
-      .createSignedUrl(path, 60 * 60 * 2);
-    setPhotoPath(path);
-    setPhotoUrl(signed?.signedUrl ?? null);
+    setPhotoPath(uploaded.path);
+    setPhotoUrl(uploaded.signedUrl);
     setStep("shape");
   };
 
@@ -145,23 +133,12 @@ const DressRecommend = () => {
         buildRecommendDressPrompt(sceneCode, shape.label, shape.englishGuide) +
         buildDressPromptAddendum(personalization);
 
-      const { data, error } = await supabase.functions.invoke(
-        "dewy-dress-recommend",
-        {
-          body: {
-            source_image_path: photoPath,
-            body_shape: bodyShape,
-            scene_code: sceneCode,
-            prompt,
-          },
-        },
-      );
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-
-      const fittingId = (data as any)?.fitting_id;
-      // fittingId 없으면 /result/undefined 데드페이지로 가지 않게 가드(하트는 서버에서 환불 처리).
-      if (!fittingId) throw new Error("generation_failed");
+      const fittingId = await generateDressRecommend({
+        source_image_path: photoPath,
+        body_shape: bodyShape,
+        scene_code: sceneCode,
+        prompt,
+      });
       // 생성은 비동기(결과 페이지에서 폴링) — "완료"가 아니라 "요청됨"으로 안내.
       toast({ title: "생성 요청을 보냈어요", description: "결과가 준비되면 화면에 표시돼요." });
       await fetchHearts();
