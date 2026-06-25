@@ -5,22 +5,11 @@ import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranches } from "@/features/partners/hooks/useBranches";
+import { fetchBusinessCoupons, addBusinessCoupon, deleteBusinessCoupon, type Coupon } from "@/features/partners/data/businessCoupons";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
-
-interface Coupon {
-  id: string;
-  title: string;
-  discount_text: string;
-  min_order_won: number | null;
-  expires_at: string | null;
-  is_active: boolean;
-  moderation_status: string;
-  moderation_note: string | null;
-}
 
 const STATUS: Record<string, { label: string; color: string }> = {
   approved: { label: "노출중", color: "bg-green-100 text-green-700" },
@@ -44,12 +33,11 @@ const BusinessCoupons = () => {
   const [adding, setAdding] = useState(false);
 
   const loadCoupons = useCallback(async (pid: string) => {
-    const { data } = await supabase
-      .from("business_coupons" as any)
-      .select("id, title, discount_text, min_order_won, expires_at, is_active, moderation_status, moderation_note")
-      .eq("place_id", pid)
-      .order("created_at", { ascending: false });
-    setItems((data ?? []) as unknown as Coupon[]);
+    try {
+      setItems(await fetchBusinessCoupons(pid));
+    } catch {
+      setItems([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -72,16 +60,21 @@ const BusinessCoupons = () => {
       return;
     }
     setAdding(true);
-    const { error } = await supabase.from("business_coupons").insert({
-      place_id: placeId,
-      owner_user_id: user.id,
-      title: title.trim(),
-      discount_text: discount.trim(),
-      min_order_won: minOrder ? parseInt(minOrder, 10) : null,
-      expires_at: expires || null,
-    });
+    try {
+      await addBusinessCoupon({
+        place_id: placeId,
+        owner_user_id: user.id,
+        title: title.trim(),
+        discount_text: discount.trim(),
+        min_order_won: minOrder ? parseInt(minOrder, 10) : null,
+        expires_at: expires || null,
+      });
+    } catch {
+      setAdding(false);
+      toast.error("발행에 실패했어요");
+      return;
+    }
     setAdding(false);
-    if (error) { toast.error("발행에 실패했어요"); return; }
     setTitle(""); setDiscount(""); setMinOrder(""); setExpires("");
     toast.success("쿠폰을 등록했어요. 운영자 검토 후 노출됩니다");
     await loadCoupons(placeId);
@@ -89,8 +82,12 @@ const BusinessCoupons = () => {
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ title: "이 쿠폰을 삭제할까요?", confirmText: "삭제", destructive: true }))) return;
-    const { error } = await supabase.from("business_coupons").delete().eq("id", id);
-    if (error) { toast.error("삭제에 실패했어요"); return; }
+    try {
+      await deleteBusinessCoupon(id);
+    } catch {
+      toast.error("삭제에 실패했어요");
+      return;
+    }
     setItems((prev) => prev.filter((c) => c.id !== id));
     toast.success("삭제했어요");
   };
