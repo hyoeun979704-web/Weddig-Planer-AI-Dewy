@@ -5,8 +5,12 @@ import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/empty-state";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  fetchHairGallery,
+  hairResultUrl,
+  type HairResultItem,
+} from "@/features/consumer/data/hairPreview";
 
 /**
  * 헤어 변형 결과 갤러리 (/ai-studio/hair-room/gallery)
@@ -15,14 +19,9 @@ import { useAuth } from "@/contexts/AuthContext";
  * 갤러리와 동일한 형식 — 결과 첫 이미지를 썸네일로, 카드 탭 시 결과 페이지로.
  */
 
-interface ResultItem {
-  kind: string;
-  path: string;
-}
-
 interface Row {
   id: string;
-  results: ResultItem[] | null;
+  results: HairResultItem[] | null;
   created_at: string;
 }
 
@@ -44,33 +43,24 @@ const HairPreviewGallery = ({ embedded = false }: { embedded?: boolean } = {}) =
       return;
     }
     (async () => {
-      const { data, error } = await (supabase as any)
-        .from("hair_preview_jobs")
-        .select("id, results, created_at")
-        .eq("user_id", user.id)
-        .eq("status", "completed")
-        .order("created_at", { ascending: false });
-
-      if (error || !data) {
+      try {
+        const rows = await fetchHairGallery(user.id);
+        const withUrls: ItemWithUrl[] = await Promise.all(
+          (rows as Row[]).map(async (r) => {
+            const results = Array.isArray(r.results) ? r.results : [];
+            const first = results[0];
+            if (!first?.path) return { ...r, url: null, count: results.length };
+            // 헤어 결과는 청첩장 업로드와 같은 버킷에 재호스팅된다(HairPreviewResult 참고).
+            const url = await hairResultUrl(first.path);
+            return { ...r, url, count: results.length };
+          }),
+        );
+        setItems(withUrls);
+      } catch {
         setItems([]);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const withUrls: ItemWithUrl[] = await Promise.all(
-        (data as Row[]).map(async (r) => {
-          const results = Array.isArray(r.results) ? r.results : [];
-          const first = results[0];
-          if (!first?.path) return { ...r, url: null, count: results.length };
-          // 헤어 결과는 청첩장 업로드와 같은 버킷에 재호스팅된다(HairPreviewResult 참고).
-          const { data: signed } = await supabase.storage
-            .from("invitation-uploads")
-            .createSignedUrl(first.path, 60 * 60 * 24);
-          return { ...r, url: signed?.signedUrl ?? null, count: results.length };
-        }),
-      );
-      setItems(withUrls);
-      setLoading(false);
     })();
   }, [user]);
 
