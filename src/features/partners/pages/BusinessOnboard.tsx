@@ -4,7 +4,7 @@ import { ArrowLeft, Building2, Clock, Hash, User, FileText, Phone } from "lucide
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { verifyBusiness, applyPartnership } from "@/features/partners/data/businessOnboard";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -62,29 +62,16 @@ const BusinessOnboard = () => {
 
     setIsSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const resp = await fetch(
-        `${((import.meta as any).env?.VITE_SUPABASE_URL ?? "")}/functions/v1/verify-business`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({
-            business_number: businessNumber,
-            business_name: businessName,
-            representative_name: representativeName,
-            open_date: openDate,
-            business_type: businessType,
-            service_category: serviceCategory,
-            phone: bizPhone,
-          }),
-        }
-      );
-
-      const data = await resp.json();
-      if (!resp.ok) {
+      const { ok, data } = await verifyBusiness({
+        business_number: businessNumber,
+        business_name: businessName,
+        representative_name: representativeName,
+        open_date: openDate,
+        business_type: businessType,
+        service_category: serviceCategory,
+        phone: bizPhone,
+      });
+      if (!ok) {
         toast.error(data.error || "등록에 실패했습니다");
         return;
       }
@@ -93,24 +80,13 @@ const BusinessOnboard = () => {
       // 생성된 id 를 조회해 신청 행을 추가한다. 실패해도 가입 자체는 유효(대시보드에서 재신청 가능).
       if (applyPartner) {
         try {
-          const { data: bp } = await supabase
-            .from("business_profiles")
-            .select("id")
-            .eq("user_id", user.id)
-            .maybeSingle();
-          if (bp?.id) {
-            await supabase.from("partnership_applications").insert({
-              business_profile_id: bp.id,
-              user_id: user.id,
-              message: "가입 시 신청",
-            });
-          }
+          await applyPartnership(user.id);
         } catch {
           /* 신청 실패는 가입 흐름을 막지 않음 — 대시보드 CTA 로 재신청 */
         }
       }
 
-      setResult(data);
+      setResult(data as { is_verified: boolean; verification_failed?: boolean; message: string });
       setStep(2);
       if (data.verification_failed) {
         toast("사업자 정보가 자동 인증되지 않았어요. 운영자가 직접 확인합니다");
