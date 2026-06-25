@@ -1,8 +1,8 @@
 // ───────────────────────────────────────────────────────────────────────────
 // 도메인 타입 뷰 — 공유(마켓플레이스·결제·인프라) 도메인
-// 소비자↔사업자가 주고받는 마켓플레이스(견적·업체·리뷰)+결제/커머스+계정/인프라. 분리 금지.
+// 소비자↔사업자가 주고받는 마켓플레이스(견적·업체·리뷰·배송)+결제/커머스+계정/인프라. 분리 금지.
 //
-// 단일 소스 = src/integrations/supabase/types.ts(실 DB 생성). 이 파일은 그 6,749줄에서
+// 단일 소스 = src/integrations/supabase/types.ts(실 DB 생성). 이 파일은 그 전체에서
 // 이 도메인 테이블만 골라 re-export 하는 "뷰"다(소유권 분류 근거: docs/260625_backend_domain_map.md §3).
 // 목적: 각 feature 가 자기 도메인 표면만 보게 해 ergonomics 개선. 인가는 RLS 가 책임(이 분류 ≠ 권한).
 // Insert/Update 가 필요하면 types.ts 의 TablesInsert<"x">/TablesUpdate<"x"> 를 직접 쓴다.
@@ -28,6 +28,7 @@ export type SharedTable =
   | "place_appliances"
   | "place_invitation_venues"
   | "place_media"
+  | "place_media_albums"
   | "place_sources"
   | "place_reviews"
   | "place_inquiries"
@@ -51,6 +52,7 @@ export type SharedTable =
   | "profiles"
   | "user_roles"
   | "user_consents"
+  | "user_consents_canonical"
   | "app_config"
   | "app_notifications"
   | "client_error_logs"
@@ -62,7 +64,9 @@ export type SharedTable =
   | "invitation_templates"
   | "business_products"
   | "business_coupons"
-  | "business_events";
+  | "business_events"
+  | "vendor_deliveries"
+  | "admin_reports_overview";
 
 // ── 각 테이블 Row 타입 ──
 export type Places = Tables<"places">;
@@ -81,6 +85,7 @@ export type PlaceHoneymoons = Tables<"place_honeymoons">;
 export type PlaceAppliances = Tables<"place_appliances">;
 export type PlaceInvitationVenues = Tables<"place_invitation_venues">;
 export type PlaceMedia = Tables<"place_media">;
+export type PlaceMediaAlbums = Tables<"place_media_albums">;
 export type PlaceSources = Tables<"place_sources">;
 export type PlaceReviews = Tables<"place_reviews">;
 export type PlaceInquiries = Tables<"place_inquiries">;
@@ -104,6 +109,7 @@ export type UserPoints = Tables<"user_points">;
 export type Profiles = Tables<"profiles">;
 export type UserRoles = Tables<"user_roles">;
 export type UserConsents = Tables<"user_consents">;
+export type UserConsentsCanonical = Tables<"user_consents_canonical">;
 export type AppConfig = Tables<"app_config">;
 export type AppNotifications = Tables<"app_notifications">;
 export type ClientErrorLogs = Tables<"client_error_logs">;
@@ -116,3 +122,5 @@ export type InvitationTemplates = Tables<"invitation_templates">;
 export type BusinessProducts = Tables<"business_products">;
 export type BusinessCoupons = Tables<"business_coupons">;
 export type BusinessEvents = Tables<"business_events">;
+export type VendorDeliveries = Tables<"vendor_deliveries">;
+export type AdminReportsOverview = Tables<"admin_reports_overview">;

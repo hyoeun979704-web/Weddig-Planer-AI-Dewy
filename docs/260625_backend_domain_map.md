@@ -205,10 +205,20 @@ llm/prompts 만 console(AI) 과 공유. → `_shared` 는 도메인 분리보다
 
 ## 4. 발견 — 정리하며 드러난 것 (deferred / 후속)
 
-1. **types.ts 드리프트(8)** — features 가 쓰는데 types.ts 에 없는 식별자: `admin_reports_overview`(뷰),
-   `design_purchases`, `designer_designs`, `invitation_guest_photos`, `place_media_albums`, `sdm_previews`,
-   `user_consents_canonical`, `user_mail_accounts`. → 일부는 뷰/신규 테이블. **types.ts 재생성 필요**
-   (`mcp__Supabase__generate_typescript_types`). 검증 섹션 "마이그 드리프트" 회귀 위험.
+1. **types.ts 재생성 완료(2026-06-25)** — 실 DB 에서 `generate_typescript_types` 로 재생성(prettier 포맷).
+   **양방향 드리프트가 컸다**: 테이블 123→137(**+16 추가**: design_purchases·designer_designs·
+   invitation_guest_photos·place_media_albums·user_mail_accounts·vendor_deliveries·content_articles·
+   각종 oauth_states/accounts 등), **2개 드롭**(`ai_prompts`·`user_streaks`). 도메인 타입 뷰(`src/types/domains/*`)
+   도 새 스키마로 재생성(139 배정). tsc 베이스라인 불변(29→29, 재생성發 새 에러 0).
+   - **재생성이 드러낸 기존 드리프트 버그(stale types 가 가리고 있던 것)** — 별도 task 로 추적:
+     - 🟡 `ai_prompts` 드롭 — `ai-planner`·`_shared/prompts.ts`·`invitation-text-suggest` 가 조회하나
+       **하드코딩 폴백으로 정상 작동**(머니패스 안 깨짐). `AdminAiPromptEditor` 는 사실상 데드(런타임 수정 불가).
+     - 🟡 `user_streaks` 드롭 — `useDailyStreak`/`PersonaDashboard` 가 조회하나 **localStorage 폴백으로 작동**.
+     - 🔴 `user_schedule_items.assigned_to` 컬럼 드롭 — `assignScheduleItem`(커플 태스크 분배) **작동 안 함**
+       (폴백 없이 에러 토스트). → 컬럼 재생성 또는 기능 제거 결정 필요.
+     - 🔴 `sdm_previews` 애초에 부재 — `dewy-sdm`+`SdmPreviewResult` 사용(SDM 미리보기). (별도 task)
+   - 위 4건은 `(supabase as any)`/`as never` 캐스트(기존 `SdmPreviewResult` 선례)로 타입만 통과시키고
+     **주석으로 드리프트 명시**. 영구 해소(테이블/컬럼 재생성 vs 코드경로 제거)는 제품 결정 → deferred.
 2. **데이터 접근 레이어 부재** — 세 feature 모두 DB 호출(`.from()`/`rpc`/`invoke`)이 **pages 에 분산**.
    `data/` 폴더엔 가이드 정적데이터만. → 도메인별 `data/` 접근 레이어로 추상화하면 감사·재사용·테스트가
    쉬워짐(현재는 페이지마다 쿼리 산재). **표적 리팩터로 후속**(이번 범위 밖 — 광범위 변경).
@@ -231,6 +241,6 @@ llm/prompts 만 console(AI) 과 공유. → `_shared` 는 도메인 분리보다
 | 도메인 타입 뷰 | `src/types/domains/{consumer,partners,console,shared}.ts` | 각 도메인 테이블 타입만 re-export(6,749줄 전체 X) |
 | 감사맵 §E 확장 | `docs/audit-surface-map.md` | 한 줄 → 구조화 + 이 문서 가리킴 |
 
-> **후속 진행(2026-06-25~)**: §4 deferred 를 순차 PR 로 진행 중 — ① 데드/스텁 함수 정리 ✅(완료, 위 §4-4)
-> ② types.ts 드리프트 재생성 ③ 데이터접근 레이어 추상화(도메인별 점진). 물리 함수 폴더 이동은 Supabase
-> 배포 제약으로 영구 보류(§0).
+> **후속 진행(2026-06-25~)**: §4 deferred 를 순차 PR 로 진행 — ① 데드/스텁 함수 정리 ✅(§4-4)
+> ② types.ts 드리프트 재생성 ✅(§4-1) ③ 데이터접근 레이어 추상화(도메인별 점진, 진행 예정). 물리 함수
+> 폴더 이동은 Supabase 배포 제약으로 영구 보류(§0). ②에서 드러난 드롭 테이블/컬럼 버그 4건은 제품 결정 필요로 deferred.

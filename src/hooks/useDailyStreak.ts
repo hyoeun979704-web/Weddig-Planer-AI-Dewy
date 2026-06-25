@@ -131,7 +131,11 @@ export function useDailyStreak() {
 
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
+      // 드리프트(260625): user_streaks 테이블이 실 DB 에서 드롭됨 → types.ts 에 없다. 조회는
+      // 런타임에 실패하고 아래 error 분기에서 localStorage 폴백으로 동작(스트릭은 보조 기능).
+      // 캐스트는 SdmPreviewResult 의 sdm_previews 처리와 동일 패턴. 영구 해소(재생성 또는 DB경로 제거)는
+      // docs/260625_backend_domain_map.md §4 / 드리프트 task 참조.
+      const { data, error } = await (supabase as any)
         .from("user_streaks")
         .select("last_checkin_date, current_streak, longest_streak, total_days, freezes_available")
         .eq("user_id", user.id)
@@ -155,7 +159,8 @@ export function useDailyStreak() {
         : null;
       const { next, changed } = applyCheckIn(prev, today);
       if (changed) {
-        const { error: upErr } = await supabase
+        // user_streaks 드롭됨(위 주석 참조) — upsert 도 런타임 실패하나 saveLocal 로 폴백.
+        const { error: upErr } = await (supabase as any)
           .from("user_streaks")
           .upsert({ user_id: user.id, ...next, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
         if (upErr) console.warn("useDailyStreak upsert failed", upErr);

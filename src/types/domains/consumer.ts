@@ -1,8 +1,8 @@
 // ───────────────────────────────────────────────────────────────────────────
 // 도메인 타입 뷰 — 소비자(신랑신부) 도메인
-// AI 도구·준비도구·커뮤니티·청첩장·성장. 소비자 본인 데이터(RLS auth.uid()=user).
+// AI 도구·준비도구·커뮤니티·청첩장·성장·동기화(캘린더/드라이브/메일). 소비자 본인 데이터(RLS auth.uid()=user).
 //
-// 단일 소스 = src/integrations/supabase/types.ts(실 DB 생성). 이 파일은 그 6,749줄에서
+// 단일 소스 = src/integrations/supabase/types.ts(실 DB 생성). 이 파일은 그 전체에서
 // 이 도메인 테이블만 골라 re-export 하는 "뷰"다(소유권 분류 근거: docs/260625_backend_domain_map.md §3).
 // 목적: 각 feature 가 자기 도메인 표면만 보게 해 ergonomics 개선. 인가는 RLS 가 책임(이 분류 ≠ 권한).
 // Insert/Update 가 필요하면 types.ts 의 TablesInsert<"x">/TablesUpdate<"x"> 를 직접 쓴다.
@@ -48,7 +48,6 @@ export type ConsumerTable =
   | "referral_codes"
   | "game_scores"
   | "user_attendance"
-  | "user_streaks"
   | "user_events"
   | "view_events"
   | "product_clicks"
@@ -57,7 +56,19 @@ export type ConsumerTable =
   | "tutorial_completions"
   | "tip_videos"
   | "partner_deals"
-  | "deal_claims";
+  | "deal_claims"
+  | "calendar_event_links"
+  | "calendar_oauth_states"
+  | "user_calendar_accounts"
+  | "drive_oauth_states"
+  | "user_drive_accounts"
+  | "invitation_drive_settings"
+  | "mail_oauth_states"
+  | "user_mail_accounts"
+  | "design_purchase_intents"
+  | "design_purchases"
+  | "designer_designs"
+  | "invitation_guest_photos";
 
 // ── 각 테이블 Row 타입 ──
 export type AiChatSessions = Tables<"ai_chat_sessions">;
@@ -96,7 +107,6 @@ export type Referrals = Tables<"referrals">;
 export type ReferralCodes = Tables<"referral_codes">;
 export type GameScores = Tables<"game_scores">;
 export type UserAttendance = Tables<"user_attendance">;
-export type UserStreaks = Tables<"user_streaks">;
 export type UserEvents = Tables<"user_events">;
 export type ViewEvents = Tables<"view_events">;
 export type ProductClicks = Tables<"product_clicks">;
@@ -106,3 +116,15 @@ export type TutorialCompletions = Tables<"tutorial_completions">;
 export type TipVideos = Tables<"tip_videos">;
 export type PartnerDeals = Tables<"partner_deals">;
 export type DealClaims = Tables<"deal_claims">;
+export type CalendarEventLinks = Tables<"calendar_event_links">;
+export type CalendarOauthStates = Tables<"calendar_oauth_states">;
+export type UserCalendarAccounts = Tables<"user_calendar_accounts">;
+export type DriveOauthStates = Tables<"drive_oauth_states">;
+export type UserDriveAccounts = Tables<"user_drive_accounts">;
+export type InvitationDriveSettings = Tables<"invitation_drive_settings">;
+export type MailOauthStates = Tables<"mail_oauth_states">;
+export type UserMailAccounts = Tables<"user_mail_accounts">;
+export type DesignPurchaseIntents = Tables<"design_purchase_intents">;
+export type DesignPurchases = Tables<"design_purchases">;
+export type DesignerDesigns = Tables<"designer_designs">;
+export type InvitationGuestPhotos = Tables<"invitation_guest_photos">;
