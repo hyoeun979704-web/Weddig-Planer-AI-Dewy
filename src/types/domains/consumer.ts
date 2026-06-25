@@ -68,7 +68,9 @@ export type ConsumerTable =
   | "design_purchase_intents"
   | "design_purchases"
   | "designer_designs"
-  | "invitation_guest_photos";
+  | "invitation_guest_photos"
+  | "user_streaks"
+  | "sdm_previews";
 
 // ── 각 테이블 Row 타입 ──
 export type AiChatSessions = Tables<"ai_chat_sessions">;
@@ -128,3 +130,5 @@ export type DesignPurchaseIntents = Tables<"design_purchase_intents">;
 export type DesignPurchases = Tables<"design_purchases">;
 export type DesignerDesigns = Tables<"designer_designs">;
 export type InvitationGuestPhotos = Tables<"invitation_guest_photos">;
+export type UserStreaks = Tables<"user_streaks">;
+export type SdmPreviews = Tables<"sdm_previews">;

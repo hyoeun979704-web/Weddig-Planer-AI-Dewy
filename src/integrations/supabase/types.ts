@@ -238,6 +238,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_prompts: {
+        Row: {
+          category: string
+          content: string
+          description: string | null
+          is_active: boolean
+          key: string
+          label: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string
+          content: string
+          description?: string | null
+          is_active?: boolean
+          key: string
+          label: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          description?: string | null
+          is_active?: boolean
+          key?: string
+          label?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       ai_usage_daily: {
         Row: {
           created_at: string | null
@@ -5629,6 +5662,59 @@ export type Database = {
         }
         Relationships: []
       }
+      sdm_previews: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          hearts_spent: number
+          id: string
+          prompt_params: Json
+          result_image_path: string | null
+          selected_dress_id: string | null
+          source_image_path: string
+          status: string
+          thumbnail_path: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          hearts_spent?: number
+          id?: string
+          prompt_params?: Json
+          result_image_path?: string | null
+          selected_dress_id?: string | null
+          source_image_path: string
+          status?: string
+          thumbnail_path?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          hearts_spent?: number
+          id?: string
+          prompt_params?: Json
+          result_image_path?: string | null
+          selected_dress_id?: string | null
+          source_image_path?: string
+          status?: string
+          thumbnail_path?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdm_previews_selected_dress_id_fkey"
+            columns: ["selected_dress_id"]
+            isOneToOne: false
+            referencedRelation: "dress_samples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_waitlist: {
         Row: {
           contact: string | null
@@ -6303,6 +6389,7 @@ export type Database = {
       }
       user_schedule_items: {
         Row: {
+          assigned_to: string | null
           category: string | null
           completed: boolean
           created_at: string
@@ -6315,6 +6402,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_to?: string | null
           category?: string | null
           completed?: boolean
           created_at?: string
@@ -6327,6 +6415,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_to?: string | null
           category?: string | null
           completed?: boolean
           created_at?: string
@@ -6335,6 +6424,39 @@ export type Database = {
           scheduled_date?: string
           source?: string
           title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          freezes_available: number
+          last_checkin_date: string | null
+          longest_streak: number
+          total_days: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          freezes_available?: number
+          last_checkin_date?: string | null
+          longest_streak?: number
+          total_days?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          freezes_available?: number
+          last_checkin_date?: string | null
+          longest_streak?: number
+          total_days?: number
           updated_at?: string
           user_id?: string
         }

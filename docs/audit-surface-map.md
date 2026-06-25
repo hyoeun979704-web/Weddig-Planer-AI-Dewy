@@ -87,8 +87,8 @@
   console 11(마케팅 `instagram-*`·상품수집 `product-*`) · shared 10(IAP검증·웹훅·계정). 인덱스 = `supabase/functions/README.md`. (260625 데드/스텁 3개 제거: dewy-studio·ask-gemini·invitation-extract-layout)
 - **E2 테이블(123)** — shared/마켓플레이스(견적·`places`·`place_*`·리뷰·결제) ↔ consumer 전용 ↔ partners 전용(`business_*`) ↔ console 전용(모더레이션·콘텐츠). 도메인 타입 뷰 = `src/types/domains/*`.
 - **E3 `_shared`(16)** — 인프라 3(`cors`·`supabase`·`jwt`) + consumer 13(결제·AI·동기화). partners/console 전용 0.
-- **E4 차원**: **RPC↔클라 인자 정합**(PGRST202) · **RLS 인가**(partners 는 edge 거의 없고 RLS 의존 — 권한상승 회귀 주의) · **마이그 드리프트**(types.ts↔실DB — 260625 재생성으로 양방향 드리프트 교정: +16 테이블·드롭 2; 드러난 드롭 객체 버그 4건은 맵 §4-1) · 페르소나 20모드 분류 · **큐레이션 게이트**(is_active·moderation·partner_rank) · 검색 인덱스
-- **E5 deferred**(맵 §4): 데이터접근 레이어 부재(쿼리 pages 산재) · 드롭 객체 해소(ai_prompts·user_streaks·assigned_to·sdm_previews). (데드/스텁 함수 정리·types.ts 재생성은 260625 완료)
+- **E4 차원**: **RPC↔클라 인자 정합**(PGRST202) · **RLS 인가**(partners 는 edge 거의 없고 RLS 의존 — 권한상승 회귀 주의) · **마이그 드리프트**(types.ts↔실DB — 260625 재생성 + 미적용 마이그 4건 적용으로 교정, 테이블 140; 맵 §4-1) · 페르소나 20모드 분류 · **큐레이션 게이트**(is_active·moderation·partner_rank) · 검색 인덱스
+- **E5 deferred**(맵 §4): 데이터접근 레이어 부재(쿼리 pages 산재) · 마이그 정합 후속(ai_prompts 시드·migration repair·repo 258 vs 적용 150 재정렬). (데드/스텁 함수·types 재생성·드롭객체 4건 마이그 적용은 260625 완료)
 
 ---
 
