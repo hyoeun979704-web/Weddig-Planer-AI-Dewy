@@ -20,7 +20,20 @@ import {
 } from "@/components/ui/select";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchInstagramAccounts,
+  upsertInstagramAccount,
+  deleteInstagramAccount,
+  collectReels,
+  fetchInstagramPosts,
+  insertInstagramPost,
+  setPostModeration,
+  deleteInstagramPost,
+  updateInstagramThumbnail,
+  mirrorImage,
+  type InstagramPost,
+  type InstagramAccount,
+} from "@/features/console/data/tipInstagrams";
 import { toast } from "@/hooks/use-toast";
 
 /**
@@ -58,18 +71,7 @@ const CATEGORIES = [
   { value: "general", label: "일반" },
 ];
 
-interface InstagramPost {
-  id: string;
-  url: string;
-  title: string | null;
-  description: string | null;
-  author: string | null;
-  thumbnail_url: string | null;
-  categories: string[];
-  moderation_status: string;
-  moderation_note: string | null;
-  collected_at: string;
-}
+// InstagramPost 타입은 features/console/data/tipInstagrams 에서 import(Task #3).
 
 interface FormState {
   url: string;
@@ -109,19 +111,18 @@ const REJECT_REASONS = [
 
 // 릴스 자동 수집 패널 — 큐레이션한 비즈니스 계정 소스 관리 + "지금 수집"(Business Discovery).
 function ReelAutoCollect({ onCollected }: { onCollected: () => void }) {
-  interface Acc { username: string; category: string; is_active: boolean; last_synced_at: string | null; last_sync_new: number | null; last_sync_error: string | null }
-  const [accounts, setAccounts] = useState<Acc[]>([]);
+  const [accounts, setAccounts] = useState<InstagramAccount[]>([]);
   const [username, setUsername] = useState("");
   const [category, setCategory] = useState("general");
   const [busy, setBusy] = useState(false);
   const [collecting, setCollecting] = useState(false);
 
   const load = useCallback(async () => {
-    const { data } = await (supabase as any)
-      .from("tip_instagram_accounts")
-      .select("username,category,is_active,last_synced_at,last_sync_new,last_sync_error")
-      .order("added_at", { ascending: false });
-    setAccounts((data ?? []) as Acc[]);
+    try {
+      setAccounts(await fetchInstagramAccounts());
+    } catch {
+      setAccounts([]);
+    }
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -129,25 +130,28 @@ function ReelAutoCollect({ onCollected }: { onCollected: () => void }) {
     const u = username.trim().replace(/^@/, "");
     if (!u) return;
     setBusy(true);
-    const { error } = await (supabase as any)
-      .from("tip_instagram_accounts")
-      .upsert({ username: u, category }, { onConflict: "username" });
-    setBusy(false);
-    if (error) { toast({ title: "추가 실패", description: error.message, variant: "destructive" }); return; }
-    setUsername("");
-    await load();
+    try {
+      await upsertInstagramAccount(u, category);
+      setUsername("");
+      await load();
+    } catch (e) {
+      toast({ title: "추가 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
   };
   const removeAccount = async (u: string) => {
-    await (supabase as any).from("tip_instagram_accounts").delete().eq("username", u);
+    try {
+      await deleteInstagramAccount(u);
+    } catch {
+      /* 삭제 실패는 무시(다음 로드에서 반영) */
+    }
     await load();
   };
   const collect = async () => {
     setCollecting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("instagram-collect-reels", { body: {} });
-      if (error) throw error;
-      const r = data as { total_new?: number; accounts?: number; error?: string };
-      if (r.error) throw new Error(r.error);
+      const r = await collectReels();
       toast({ title: "수집 완료", description: `${r.accounts ?? 0}개 계정에서 신규 릴스 ${r.total_new ?? 0}건` });
       await load();
       onCollected();
@@ -213,20 +217,13 @@ const AdminTipInstagrams = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let q = (supabase as any)
-      .from("tip_instagrams")
-      .select(
-        "id, url, title, description, author, thumbnail_url, categories, moderation_status, moderation_note, collected_at",
-      )
-      .order("collected_at", { ascending: false });
-    if (filter === "pending") q = q.eq("moderation_status", "pending");
-    const { data, error } = await q;
-    setLoading(false);
-    if (error) {
-      toast({ title: "불러오기 실패", description: error.message, variant: "destructive" });
-      return;
+    try {
+      setItems(await fetchInstagramPosts(filter));
+    } catch (e) {
+      toast({ title: "불러오기 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    setItems((data ?? []) as InstagramPost[]);
   }, [filter]);
 
   useEffect(() => { load(); }, [load]);
@@ -246,15 +243,18 @@ const AdminTipInstagrams = () => {
       categories: [form.category],
       source: "admin",
     };
-    const { error } = await (supabase as any).from("tip_instagrams").insert(payload);
-    setSaving(false);
-    if (error) {
-      if (error.code === "23505") {
+    try {
+      await insertInstagramPost(payload);
+    } catch (e) {
+      const err = e as { code?: string; message?: string };
+      if (err?.code === "23505") {
         toast({ title: "이미 등록된 URL", description: "같은 URL 이 이미 있어요.", variant: "destructive" });
       } else {
-        toast({ title: "등록 실패", description: error.message, variant: "destructive" });
+        toast({ title: "등록 실패", description: err?.message ?? "오류", variant: "destructive" });
       }
       return;
+    } finally {
+      setSaving(false);
     }
     toast({ title: "등록 완료", description: "검토 대기 상태로 추가됐어요." });
     setAddOpen(false);
@@ -271,31 +271,19 @@ const AdminTipInstagrams = () => {
       toast({ title: "미러링할 URL 이 없어요", description: "썸네일/이미지 URL 을 먼저 입력하세요.", variant: "destructive" });
       return null;
     }
-    const { data, error } = await supabase.functions.invoke("mirror-image", { body: { url: trimmed } });
-    if (error) {
-      let msg = error.message;
-      try {
-        const ctx = await (error as { context?: { json?: () => Promise<{ hint?: string; error?: string }> } }).context?.json?.();
-        if (ctx?.hint || ctx?.error) msg = ctx.hint ?? ctx.error ?? msg;
-      } catch { /* 본문 파싱 실패는 무시 */ }
-      toast({ title: "미러링 실패", description: msg, variant: "destructive" });
+    try {
+      return await mirrorImage(trimmed);
+    } catch (e) {
+      toast({ title: "미러링 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
       return null;
     }
-    const url = (data as { thumbnail_url?: string } | null)?.thumbnail_url;
-    if (!url) {
-      toast({ title: "미러링 실패", description: "응답에 thumbnail_url 이 없어요.", variant: "destructive" });
-      return null;
-    }
-    return url;
   };
 
   const approve = async (id: string) => {
-    const { error } = await (supabase as any)
-      .from("tip_instagrams")
-      .update({ moderation_status: "approved", moderation_note: null })
-      .eq("id", id);
-    if (error) {
-      toast({ title: "승인 실패", description: error.message, variant: "destructive" });
+    try {
+      await setPostModeration(id, "approved", null);
+    } catch (e) {
+      toast({ title: "승인 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
       return;
     }
     toast({ title: "승인됨", description: "사용자에게 노출됩니다." });
@@ -309,12 +297,10 @@ const AdminTipInstagrams = () => {
     if (trimmedNote) parts.push(trimmedNote);
     const combined = parts.length > 0 ? parts.join(", ") : null;
 
-    const { error } = await (supabase as any)
-      .from("tip_instagrams")
-      .update({ moderation_status: "rejected", moderation_note: combined })
-      .eq("id", rejectTarget);
-    if (error) {
-      toast({ title: "반려 실패", description: error.message, variant: "destructive" });
+    try {
+      await setPostModeration(rejectTarget, "rejected", combined);
+    } catch (e) {
+      toast({ title: "반려 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
       return;
     }
     toast({ title: "반려됨" });
@@ -326,9 +312,10 @@ const AdminTipInstagrams = () => {
 
   const remove = async (id: string) => {
     if (!confirm("이 게시물을 영구 삭제할까요?")) return;
-    const { error } = await (supabase as any).from("tip_instagrams").delete().eq("id", id);
-    if (error) {
-      toast({ title: "삭제 실패", description: error.message, variant: "destructive" });
+    try {
+      await deleteInstagramPost(id);
+    } catch (e) {
+      toast({ title: "삭제 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
       return;
     }
     toast({ title: "삭제됨" });
@@ -446,15 +433,12 @@ const AdminTipInstagrams = () => {
                           setMirroringId(p.id);
                           const mirrored = await mirror(p.thumbnail_url ?? p.url);
                           if (mirrored) {
-                            const { error } = await (supabase as any)
-                              .from("tip_instagrams")
-                              .update({ thumbnail_url: mirrored })
-                              .eq("id", p.id);
-                            if (error) {
-                              toast({ title: "저장 실패", description: error.message, variant: "destructive" });
-                            } else {
+                            try {
+                              await updateInstagramThumbnail(p.id, mirrored);
                               toast({ title: "썸네일 미러링 완료" });
                               await load();
+                            } catch (e) {
+                              toast({ title: "저장 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
                             }
                           }
                           setMirroringId(null);
