@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import GuideView from "@/components/guides/GuideView";
-import { findConsumerGuide, adjacentConsumerGuides } from "@/data/consumerGuides";
+import { findConsumerGuide, adjacentConsumerGuides } from "@/features/consumer/data/consumerGuides";
 
 // 소비자 앱 사용 가이드 — 주제별 상세. /help/:guideId.
 // 정의는 src/data/consumerGuides.ts, 프레젠테이션은 기업과 공용인 GuideView(shared) 공유.

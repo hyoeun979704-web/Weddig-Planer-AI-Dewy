@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 import Seo from "@/components/Seo";
 import PageHeader from "@/components/PageHeader";
 import BottomNav from "@/components/BottomNav";
-import { CONSUMER_NAV } from "@/data/consumerGuides";
+import { CONSUMER_NAV } from "@/features/consumer/data/consumerGuides";
 
 // 소비자 앱 사용 가이드 목록(목차) — /help. 주제별 가이드를 골라 슬라이드로 본다.
 // 기업 가이드 목록(BusinessGuideIndex)과 동일한 카드 레이아웃.

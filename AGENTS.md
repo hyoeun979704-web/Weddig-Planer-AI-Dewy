@@ -45,18 +45,19 @@
 
 **현재 구조 = 단일 레포·단일 빌드, 코드만 도메인 폴더로 분리 진행 중.** 소비자·기업·운영자가 한
 코드베이스(`src/App.tsx`)에 모이고 **런타임 역할 게이트**로 갈린다. 물리 분리는 `docs/260624_app_separation_roadmap.md`
-/ `..._execution_plan.md`(Phase 1~5). **현황: Partners·Console 은 Phase 1 완료(`src/features/partners/`·
-`src/features/console/` 로 이동 + 라우트 모듈 + 경계 린트). consumer 만 아직 `src/pages/**` 에 있음.** 새 분리
-작업은 실행계획서 순서대로(합의 후) — 임의 착수 금지.
+/ `..._execution_plan.md`(Phase 1~5). **현황: Phase 1(도메인 폴더 경계) 완료 — Consumer·Partners·Console
+모두 `src/features/<feature>/` 로 분리 + 경계 린트 강제.** 페이지는 전부 `src/features/*/pages/**` 이고
+`src/pages/**` 는 비었다(소비자 라우트는 App.tsx 가 직접 마운트 — 단일 접두사가 없어 라우트 모듈화 안 함).
+다음은 Phase 2(번들 도메인 청크)·Phase 3(앱별 감사 자동화) — 실행계획서 순서대로(합의 후), 임의 착수 금지.
 
 | 영역 | 코드 위치 | 라우트 / 게이트 | 데이터(같은 DB, 접근만 분리) |
 |---|---|---|---|
-| **소비자(Consumer)** | `src/pages/**` | 대부분 라우트, 로그인 가드 | `profiles`·`places`·견적·찜·하트 등 |
+| **소비자(Consumer)** ✅분리됨 | `src/features/consumer/**`(pages·data) | 대부분 라우트(App.tsx 직접 마운트), 로그인 가드 | `profiles`·`places`·견적·찜·하트 등 |
 | **기업(Partners)** ✅분리됨 | `src/features/partners/**`(pages·components·hooks·lib·data·routes) | `/business/*` → `features/partners/routes.tsx` · `BusinessGuard` | `business_profiles`·리드·상품·쿠폰·배송 |
 | **운영자(Console)** ✅분리됨 | `src/features/console/**`(pages·components·routes) | `/admin/*` → `features/console/routes.tsx` · `AdminGuard` | 모더레이션·에이전트출력·운영로그 |
 | **공유(Shared)** | `src/lib/**`·`src/components/**`(ui·guides·`ImageUploader` 등 공용)·`src/types/**`·`src/contexts/**`·`src/integrations/**`·`src/hooks/**`·`supabase/**` | 전 영역 공용 | 마켓플레이스 공유 테이블(견적·업체·리뷰) |
 
-**경계 규칙(must)** — partners·console 은 **린트로 강제**됨(`eslint no-restricted-imports` 3블록 + `check-integrity` `partners-/console-domain-boundary`).
+**경계 규칙(must)** — 세 feature 모두 **린트로 강제**됨(`eslint no-restricted-imports`: inbound 1블록 + feature별 3블록 + `check-integrity` `{partners,console,consumer}-domain-boundary`).
 - 한 영역 작업 시 **다른 영역 파일을 함께 리팩터/수정하지 않는다**(요청에 명시됐을 때만).
 - **feature 외부에서 `@/features/<feature>/*` 직접 import 금지**(라우트 마운트는 `App.tsx` 만). feature 는
   다른 feature import 금지. 공유가 필요하면 shared(`@/lib`·`@/components`·`@/hooks`·`@/types`·`@/contexts`)로 올린다.
