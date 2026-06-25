@@ -7,23 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import ImageUploader from "@/components/ImageUploader";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranches } from "@/features/partners/hooks/useBranches";
+import { fetchBusinessEvents, addBusinessEvent, deleteBusinessEvent, type EventItem } from "@/features/partners/data/businessEvents";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
-
-interface EventItem {
-  id: string;
-  title: string;
-  description: string | null;
-  starts_at: string | null;
-  ends_at: string | null;
-  banner_image_url: string | null;
-  detail_images: string[] | null;
-  moderation_status: string;
-  moderation_note: string | null;
-}
 
 const fmtDate = (s: string | null) => {
   if (!s) return "";
@@ -55,13 +43,11 @@ const BusinessEvents = () => {
   const [uploaderKey, setUploaderKey] = useState(0);
 
   const loadEvents = useCallback(async (pid: string) => {
-    const { data } = await supabase
-      .from("business_events" as any)
-      // select("*") — banner_image_url/detail_images 미적용 라이브에서도 422 방어(드리프트 idiom).
-      .select("*")
-      .eq("place_id", pid)
-      .order("created_at", { ascending: false });
-    setItems((data ?? []) as unknown as EventItem[]);
+    try {
+      setItems(await fetchBusinessEvents(pid));
+    } catch {
+      setItems([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -79,18 +65,23 @@ const BusinessEvents = () => {
     const banner = bannerUrl.trim() || detailImages[0] || "";
     if (!banner) { toast.error("대표 이미지나 상세 이미지를 한 장 이상 올려주세요"); return; }
     setAdding(true);
-    const { error } = await supabase.from("business_events").insert({
-      place_id: placeId,
-      owner_user_id: user.id,
-      title: title.trim(),
-      description: description.trim() || null,
-      starts_at: startsAt || null,
-      ends_at: endsAt || null,
-      banner_image_url: banner,
-      detail_images: detailImages,
-    } as any);
+    try {
+      await addBusinessEvent({
+        place_id: placeId,
+        owner_user_id: user.id,
+        title: title.trim(),
+        description: description.trim() || null,
+        starts_at: startsAt || null,
+        ends_at: endsAt || null,
+        banner_image_url: banner,
+        detail_images: detailImages,
+      });
+    } catch {
+      setAdding(false);
+      toast.error("등록에 실패했어요");
+      return;
+    }
     setAdding(false);
-    if (error) { toast.error("등록에 실패했어요"); return; }
     setTitle(""); setDescription(""); setStartsAt(""); setEndsAt("");
     setBannerUrl(""); setDetailImages([]); setUploaderKey((k) => k + 1);
     toast.success("이벤트를 등록했어요. 운영자 검토 후 노출됩니다");
@@ -99,8 +90,12 @@ const BusinessEvents = () => {
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ title: "이 이벤트를 삭제할까요?", confirmText: "삭제", destructive: true }))) return;
-    const { error } = await supabase.from("business_events").delete().eq("id", id);
-    if (error) { toast.error("삭제에 실패했어요"); return; }
+    try {
+      await deleteBusinessEvent(id);
+    } catch {
+      toast.error("삭제에 실패했어요");
+      return;
+    }
     setItems((prev) => prev.filter((e) => e.id !== id));
     toast.success("삭제했어요");
   };
