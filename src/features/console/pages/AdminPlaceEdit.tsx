@@ -25,7 +25,12 @@ import {
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
 import ImageUploader from "@/components/ImageUploader";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchPlace,
+  fetchPlaceContentSummary,
+  updatePlace,
+  type PlaceRow,
+} from "@/features/console/data/placeEdit";
 import { toast } from "@/hooks/use-toast";
 
 /**
@@ -59,22 +64,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   invitation_venue: "청첩장 모임 장소",
 };
 
-interface PlaceRow {
-  place_id: string;
-  category: string;
-  name: string;
-  city: string | null;
-  district: string | null;
-  min_price: number | null;
-  description: string | null;
-  tags: string[] | null;
-  main_image_url: string | null;
-  lat: number | null;
-  lng: number | null;
-  is_active: boolean | null;
-  is_partner: boolean | null;
-  updated_at: string | null;
-}
+// PlaceRow 타입은 features/console/data/placeEdit 에서 import(Task #3).
 
 const AdminPlaceEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -90,20 +80,20 @@ const AdminPlaceEdit = () => {
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("places")
-      .select(
-        "place_id, category, name, city, district, min_price, description, tags, main_image_url, lat, lng, is_active, is_partner, updated_at",
-      )
-      .eq("place_id", id)
-      .maybeSingle();
+    let data: PlaceRow | null = null;
+    let loadError: Error | null = null;
+    try {
+      data = await fetchPlace(id);
+    } catch (e) {
+      loadError = e instanceof Error ? e : new Error("오류");
+    }
     setLoading(false);
-    if (error || !data) {
-      toast({ title: "불러오기 실패", description: error?.message ?? "업체를 찾을 수 없습니다.", variant: "destructive" });
+    if (loadError || !data) {
+      toast({ title: "불러오기 실패", description: loadError?.message ?? "업체를 찾을 수 없습니다.", variant: "destructive" });
       return;
     }
-    setForm(data as PlaceRow);
-    setTagsInput((data as PlaceRow).tags?.join(", ") ?? "");
+    setForm(data);
+    setTagsInput(data.tags?.join(", ") ?? "");
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
@@ -113,17 +103,12 @@ const AdminPlaceEdit = () => {
     if (!id) return;
     let cancelled = false;
     (async () => {
-      const [pr, ev, md] = await Promise.all([
-        (supabase as any).from("business_products").select("name, price").eq("place_id", id).order("created_at", { ascending: false }),
-        (supabase as any).from("business_events").select("id", { count: "exact", head: true }).eq("place_id", id),
-        (supabase as any).from("place_media").select("id", { count: "exact", head: true }).eq("place_id", id),
-      ]);
-      if (cancelled) return;
-      setSummary({
-        products: ((pr.data ?? []) as { name: string; price: number | null }[]),
-        events: ev.count ?? 0,
-        media: md.count ?? 0,
-      });
+      try {
+        const s = await fetchPlaceContentSummary(id);
+        if (!cancelled) setSummary(s);
+      } catch {
+        /* 요약 실패는 무시(null 유지) */
+      }
     })();
     return () => { cancelled = true; };
   }, [id]);
@@ -157,15 +142,14 @@ const AdminPlaceEdit = () => {
       is_active: form.is_active ?? true,
       is_partner: form.is_partner ?? false,
     };
-    const { error } = await (supabase as any)
-      .from("places")
-      .update(payload)
-      .eq("place_id", id);
-    setSaving(false);
-    if (error) {
-      toast({ title: "저장 실패", description: error.message, variant: "destructive" });
+    try {
+      await updatePlace(id, payload);
+    } catch (e) {
+      setSaving(false);
+      toast({ title: "저장 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
       return;
     }
+    setSaving(false);
     // 사용자 화면의 React Query 캐시 (place_detail · places 목록 등) 무효화.
     // staleTime 5분 기다리지 않고 다음 마운트 시 즉시 새 데이터 fetch.
     await queryClient.invalidateQueries({ queryKey: ["place_detail", id] });
