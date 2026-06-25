@@ -12,7 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchPendingContent,
+  reviewEvent,
+  setCouponModeration,
+  type BusinessEvent,
+  type BusinessCoupon,
+} from "@/features/console/data/contentReview";
 import { toast } from "@/hooks/use-toast";
 
 /**
@@ -27,34 +33,7 @@ import { toast } from "@/hooks/use-toast";
 
 type ContentType = "events" | "coupons";
 
-interface BusinessEvent {
-  id: string;
-  place_id: string;
-  owner_user_id: string;
-  title: string;
-  description: string | null;
-  starts_at: string | null;
-  ends_at: string | null;
-  banner_image_url: string | null;
-  detail_images: string[] | null;
-  moderation_status: string;
-  moderation_note: string | null;
-  created_at: string;
-}
-
-interface BusinessCoupon {
-  id: string;
-  place_id: string;
-  owner_user_id: string;
-  title: string;
-  discount_text: string;
-  min_order_won: number | null;
-  expires_at: string | null;
-  is_active: boolean;
-  moderation_status: string;
-  moderation_note: string | null;
-  created_at: string;
-}
+// BusinessEvent·BusinessCoupon 타입은 features/console/data/contentReview 에서 import(Task #3).
 
 type AnyItem = BusinessEvent | BusinessCoupon;
 
@@ -90,23 +69,13 @@ const AdminContentReview = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const eventsQ = supabase
-      .from("business_events" as any)
-      // select("*") — banner_image_url/detail_images 미적용 라이브에서도 422 방어(드리프트 idiom).
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (filter === "pending") eventsQ.eq("moderation_status", "pending");
-
-    const couponsQ = supabase
-      .from("business_coupons" as any)
-      .select("id, place_id, owner_user_id, title, discount_text, min_order_won, expires_at, is_active, moderation_status, moderation_note, created_at")
-      .order("created_at", { ascending: false });
-    if (filter === "pending") couponsQ.eq("moderation_status", "pending");
-
-    const [eRes, cRes] = await Promise.all([eventsQ, couponsQ]);
-    setEvents((eRes.data ?? []) as unknown as BusinessEvent[]);
-    setCoupons((cRes.data ?? []) as unknown as BusinessCoupon[]);
-    setLoading(false);
+    try {
+      const { events, coupons } = await fetchPendingContent(filter);
+      setEvents(events);
+      setCoupons(coupons);
+    } finally {
+      setLoading(false);
+    }
   }, [filter]);
 
   useEffect(() => {
@@ -115,28 +84,19 @@ const AdminContentReview = () => {
 
   const approve = async (type: ContentType, id: string) => {
     if (type === "events") {
-      // 이벤트는 admin_review_event RPC(SECURITY DEFINER, has_role 강제)로 승인.
-      // business_events 에 admin UPDATE RLS 정책이 없어 직접 .update() 는 0행 매칭으로
-      // 조용히 무동작(성공 toast 만 뜨는 dead-end)이었다 — RPC 경로로 교정.
-      const { data, error } = await (supabase as any).rpc("admin_review_event", {
-        p_id: id, p_approved: true, p_note: null,
-      });
-      if (error || (data && data.ok === false)) {
-        toast({ title: "승인 실패", description: error?.message || data?.error || "권한을 확인해주세요.", variant: "destructive" });
+      const res = await reviewEvent(id, true, null);
+      if (!res.ok) {
+        toast({ title: "승인 실패", description: res.error || "권한을 확인해주세요.", variant: "destructive" });
         return;
       }
       toast({ title: "승인됨", description: "사용자에게 노출됩니다." });
       await load();
       return;
     }
-    // 쿠폰: admin_review_coupon RPC·admin UPDATE RLS 모두 미구현 → 현재 검토가 동작하지 않음
-    // (P0, docs/audit-surface-console.md). 백엔드 확정(면제 유지 vs RPC+정책 추가) 전까지 이관.
-    const { error } = await (supabase as any)
-      .from("business_coupons")
-      .update({ moderation_status: "approved", moderation_note: null })
-      .eq("id", id);
-    if (error) {
-      toast({ title: "승인 실패", description: error.message, variant: "destructive" });
+    try {
+      await setCouponModeration(id, "approved", null);
+    } catch (e) {
+      toast({ title: "승인 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
       return;
     }
     toast({ title: "승인됨", description: "사용자에게 노출됩니다." });
@@ -151,11 +111,9 @@ const AdminContentReview = () => {
       return;
     }
     if (rejectTarget.type === "events") {
-      const { data, error } = await (supabase as any).rpc("admin_review_event", {
-        p_id: rejectTarget.id, p_approved: false, p_note: trimmed,
-      });
-      if (error || (data && data.ok === false)) {
-        toast({ title: "반려 실패", description: error?.message || data?.error || "권한을 확인해주세요.", variant: "destructive" });
+      const res = await reviewEvent(rejectTarget.id, false, trimmed);
+      if (!res.ok) {
+        toast({ title: "반려 실패", description: res.error || "권한을 확인해주세요.", variant: "destructive" });
         return;
       }
       toast({ title: "반려됨", description: "기업회원에게 사유가 전달됩니다." });
@@ -164,13 +122,10 @@ const AdminContentReview = () => {
       await load();
       return;
     }
-    // 쿠폰: 위 approve 와 동일 — 백엔드 미구현으로 이관(P0).
-    const { error } = await (supabase as any)
-      .from("business_coupons")
-      .update({ moderation_status: "rejected", moderation_note: trimmed })
-      .eq("id", rejectTarget.id);
-    if (error) {
-      toast({ title: "반려 실패", description: error.message, variant: "destructive" });
+    try {
+      await setCouponModeration(rejectTarget.id, "rejected", trimmed);
+    } catch (e) {
+      toast({ title: "반려 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
       return;
     }
     toast({ title: "반려됨", description: "기업회원에게 사유가 전달됩니다." });
