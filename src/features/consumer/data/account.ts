@@ -143,7 +143,7 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
 export async function updateAvatarUrl(userId: string, url: string): Promise<void> {
   const { error } = await supabase
     .from("profiles")
-    .update({ avatar_url: url } as never)
+    .update({ avatar_url: url })
     .eq("user_id", userId);
   if (error) throw error;
 }
@@ -152,7 +152,7 @@ export async function updateAvatarUrl(userId: string, url: string): Promise<void
 export async function updateProfile(userId: string, patch: ProfileUpdate): Promise<void> {
   const { error } = await supabase
     .from("profiles")
-    .update(patch as never)
+    .update(patch)
     .eq("user_id", userId);
   if (error) throw error;
 }
@@ -171,12 +171,12 @@ export async function upsertWeddingSettings(
   if (existing) {
     await supabase
       .from("user_wedding_settings")
-      .update(patch as never)
+      .update(patch)
       .eq("user_id", userId);
   } else {
     await supabase
       .from("user_wedding_settings")
-      .insert({ user_id: userId, ...patch } as never);
+      .insert({ user_id: userId, ...patch });
   }
 }
 
@@ -191,7 +191,7 @@ export async function syncBudgetRegion(userId: string, regionKey: string): Promi
   if (budgetSettings) {
     await supabase
       .from("budget_settings")
-      .update({ region: regionKey } as never)
+      .update({ region: regionKey })
       .eq("id", (budgetSettings as { id: string }).id);
   }
 }

@@ -646,6 +646,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          detail_images: string[]
           id: string
           image_url: string | null
           moderation_note: string | null
@@ -658,6 +659,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          detail_images?: string[]
           id?: string
           image_url?: string | null
           moderation_note?: string | null
@@ -670,6 +672,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          detail_images?: string[]
           id?: string
           image_url?: string | null
           moderation_note?: string | null
@@ -2661,6 +2664,7 @@ export type Database = {
           child_count: number
           companion_count: number
           created_at: string
+          edit_token: string
           id: string
           invitation_id: string
           is_attending: boolean
@@ -2673,6 +2677,7 @@ export type Database = {
           child_count?: number
           companion_count?: number
           created_at?: string
+          edit_token?: string
           id?: string
           invitation_id: string
           is_attending?: boolean
@@ -2685,6 +2690,7 @@ export type Database = {
           child_count?: number
           companion_count?: number
           created_at?: string
+          edit_token?: string
           id?: string
           invitation_id?: string
           is_attending?: boolean
@@ -2792,6 +2798,8 @@ export type Database = {
           id: string
           layout: Json
           preview_image_path: string | null
+          rsvp_closed: boolean
+          rsvp_deadline: string | null
           share_slug: string | null
           status: string
           template_id: string | null
@@ -2806,6 +2814,8 @@ export type Database = {
           id?: string
           layout?: Json
           preview_image_path?: string | null
+          rsvp_closed?: boolean
+          rsvp_deadline?: string | null
           share_slug?: string | null
           status?: string
           template_id?: string | null
@@ -2820,6 +2830,8 @@ export type Database = {
           id?: string
           layout?: Json
           preview_image_path?: string | null
+          rsvp_closed?: boolean
+          rsvp_deadline?: string | null
           share_slug?: string | null
           status?: string
           template_id?: string | null
@@ -5818,14 +5830,17 @@ export type Database = {
           created_at: string | null
           expires_at: string | null
           id: string
+          last_billing_at: string | null
           last_billing_error: string | null
           last_billing_failure_at: string | null
           last_renewal_notified_at: string | null
+          next_billing_at: string | null
           next_billing_date: string | null
           payment_id: string | null
           payment_method: string | null
           plan: string
           price: number | null
+          sid: string | null
           started_at: string | null
           status: string
           trial_ends_at: string | null
@@ -5841,14 +5856,17 @@ export type Database = {
           created_at?: string | null
           expires_at?: string | null
           id?: string
+          last_billing_at?: string | null
           last_billing_error?: string | null
           last_billing_failure_at?: string | null
           last_renewal_notified_at?: string | null
+          next_billing_at?: string | null
           next_billing_date?: string | null
           payment_id?: string | null
           payment_method?: string | null
           plan?: string
           price?: number | null
+          sid?: string | null
           started_at?: string | null
           status?: string
           trial_ends_at?: string | null
@@ -5864,14 +5882,17 @@ export type Database = {
           created_at?: string | null
           expires_at?: string | null
           id?: string
+          last_billing_at?: string | null
           last_billing_error?: string | null
           last_billing_failure_at?: string | null
           last_renewal_notified_at?: string | null
+          next_billing_at?: string | null
           next_billing_date?: string | null
           payment_id?: string | null
           payment_method?: string | null
           plan?: string
           price?: number | null
+          sid?: string | null
           started_at?: string | null
           status?: string
           trial_ends_at?: string | null
@@ -6463,6 +6484,7 @@ export type Database = {
           notes: string | null
           scheduled_date: string
           source: string
+          start_date: string | null
           title: string
           updated_at: string
           user_id: string
@@ -6476,6 +6498,7 @@ export type Database = {
           notes?: string | null
           scheduled_date: string
           source?: string
+          start_date?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -6489,6 +6512,7 @@ export type Database = {
           notes?: string | null
           scheduled_date?: string
           source?: string
+          start_date?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -6961,6 +6985,17 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_ai_failures: {
+        Args: { p_limit?: number }
+        Returns: {
+          created_at: string
+          error: string
+          report_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       admin_list_business_tiers: {
         Args: never
         Returns: {
@@ -7091,6 +7126,7 @@ export type Database = {
         Returns: {
           created_at: string
           description: string | null
+          detail_images: string[]
           id: string
           image_url: string | null
           moderation_note: string | null
@@ -7569,6 +7605,22 @@ export type Database = {
           balance_after: number
         }[]
       }
+      submit_invitation_rsvp: {
+        Args: {
+          p_child_count: number
+          p_companion_count: number
+          p_invitation_id: string
+          p_is_attending: boolean
+          p_meal_preference: string
+          p_message: string
+          p_name: string
+          p_side: string
+        }
+        Returns: {
+          edit_token: string
+          id: string
+        }[]
+      }
       submit_place_review: {
         Args: {
           p_content: string
@@ -7601,6 +7653,20 @@ export type Database = {
           subscription_id: string
           user_id: string
         }[]
+      }
+      update_invitation_rsvp: {
+        Args: {
+          p_child_count: number
+          p_companion_count: number
+          p_edit_token: string
+          p_id: string
+          p_is_attending: boolean
+          p_meal_preference: string
+          p_message: string
+          p_name: string
+          p_side: string
+        }
+        Returns: undefined
       }
       update_my_branch: {
         Args: {
