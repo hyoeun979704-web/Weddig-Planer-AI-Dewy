@@ -36,7 +36,7 @@ export async function reviewAgentOutput(id: string, status: "approved" | "reject
   const { data: auth } = await supabase.auth.getUser();
   const { error } = await supabase
     .from("agent_outputs")
-    .update({ status, reviewed_at: new Date().toISOString(), reviewed_by: auth.user?.id ?? null } as never)
+    .update({ status, reviewed_at: new Date().toISOString(), reviewed_by: auth.user?.id ?? null })
     .eq("id", id);
   if (error) throw error;
 }

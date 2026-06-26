@@ -55,7 +55,7 @@ export async function fetchInstagramAccounts(): Promise<InstagramAccount[]> {
 export async function upsertInstagramAccount(username: string, category: string): Promise<void> {
   const { error } = await supabase
     .from("tip_instagram_accounts")
-    .upsert({ username, category } as never, { onConflict: "username" });
+    .upsert({ username, category }, { onConflict: "username" });
   if (error) throw error;
 }
 
@@ -95,7 +95,7 @@ export async function setPostModeration(
 ): Promise<void> {
   const { error } = await supabase
     .from("tip_instagrams")
-    .update({ moderation_status: status, moderation_note: note } as never)
+    .update({ moderation_status: status, moderation_note: note })
     .eq("id", id);
   if (error) throw error;
 }

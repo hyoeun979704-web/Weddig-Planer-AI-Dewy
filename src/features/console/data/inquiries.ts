@@ -35,7 +35,7 @@ export async function fetchInquiries(): Promise<AdminInquiry[]> {
 export async function answerInquiry(id: string, answer: string): Promise<void> {
   const { error } = await supabase
     .from("inquiries")
-    .update({ answer, status: "answered", answered_at: new Date().toISOString() } as never)
+    .update({ answer, status: "answered", answered_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;
 }

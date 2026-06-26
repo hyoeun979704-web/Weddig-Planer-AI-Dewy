@@ -35,7 +35,7 @@ export async function updatePromptContent(key: string, content: string): Promise
   const { data: auth } = await supabase.auth.getUser();
   const { error } = await supabase
     .from("ai_prompts")
-    .update({ content, updated_by: auth?.user?.id ?? null } as never)
+    .update({ content, updated_by: auth?.user?.id ?? null })
     .eq("key", key);
   if (error) throw error;
 }

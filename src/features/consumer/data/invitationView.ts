@@ -166,7 +166,7 @@ export async function fetchMobileInvitation(slug: string): Promise<MobileInvitat
 export async function setRsvpClosed(invitationId: string, closed: boolean): Promise<void> {
   const { error } = await supabase
     .from("invitations")
-    .update({ rsvp_closed: closed } as never)
+    .update({ rsvp_closed: closed })
     .eq("id", invitationId);
   if (error) throw error;
 }
@@ -175,7 +175,7 @@ export async function setRsvpClosed(invitationId: string, closed: boolean): Prom
 export async function setRsvpDeadline(invitationId: string, date: string): Promise<void> {
   const { error } = await supabase
     .from("invitations")
-    .update({ rsvp_deadline: date || null } as never)
+    .update({ rsvp_deadline: date || null })
     .eq("id", invitationId);
   if (error) throw error;
 }

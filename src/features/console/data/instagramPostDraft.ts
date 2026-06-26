@@ -38,7 +38,7 @@ export async function fetchDraft(id: string): Promise<DraftRow | null> {
 export async function updateDraft(id: string, payload: Record<string, unknown>): Promise<DraftRow | null> {
   const { data, error } = await supabase
     .from("instagram_post_drafts")
-    .update(payload as never)
+    .update(payload)
     .eq("id", id)
     .select("*")
     .maybeSingle();
