@@ -9,6 +9,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 const IMAGE_BUCKET = "community-images";
 
+// 커뮤니티 글 카테고리 칩 단일 소스 (작성/수정 화면 공유 — 드리프트 방지).
+// (회귀: 작성 12개 vs 수정 5개 불일치로 페르소나 카테고리 글이 수정 불가였음 — 260626 codereview P0-7)
+// 페르소나 모드(신랑/재혼·자녀/임신/해외/지방/노웨딩/스냅)로 작성한 글도 수정 화면에서 칩이 보이게 한다.
+export const COMMUNITY_CATEGORIES = [
+  "웨딩홀", "스드메", "혼수", "허니문",
+  "신랑 모드", "재혼·자녀", "임신 결혼",
+  "해외·국제결혼", "지방 결혼", "노웨딩·셀프", "스냅·기념일",
+  "자유",
+] as const;
+
 // 모든 community_posts 컬럼을 포함하는 원시 행. like_count·comment_count 집계 컬럼은
 // 트리거 동기화 값(페이지가 likes_count·comments_count 로 매핑).
 export interface CommunityPostRow {

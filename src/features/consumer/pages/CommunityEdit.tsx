@@ -13,10 +13,9 @@ import {
   updateCommunityPost,
   uploadCommunityImages,
   communityKeys,
+  COMMUNITY_CATEGORIES as categories,
 } from "@/features/consumer/data/community";
 import { useAuth } from "@/contexts/AuthContext";
-
-const categories = ["웨딩홀", "스드메", "혼수", "허니문", "자유"];
 
 const CommunityEdit = () => {
   const { id } = useParams<{ id: string }>();
