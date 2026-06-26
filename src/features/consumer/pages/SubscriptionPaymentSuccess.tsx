@@ -48,6 +48,11 @@ const SubscriptionPaymentSuccess = () => {
         return;
       }
 
+      // 검증 통과 후 1회만 승인 — effect 재실행/StrictMode 이중마운트로 인한
+      // approveSubscription 중복호출(구독 이중활성·하트 이중지급) 차단.
+      if (approvedRef.current) return;
+      approvedRef.current = true;
+
       try {
         const { data, error } = await approveSubscription({
           tid: session.tid,
