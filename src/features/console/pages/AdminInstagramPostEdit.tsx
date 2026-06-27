@@ -7,12 +7,15 @@ import {
   CalendarClock,
   Check,
   ChevronLeft,
+  Copy,
+  Download,
   ExternalLink,
   Image as ImageIcon,
   Info,
   Loader2,
   Plus,
   RefreshCw,
+  Upload,
   RotateCcw,
   Save,
   Trash2,
@@ -20,6 +23,7 @@ import {
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
 import ImageUploader from "@/components/ImageUploader";
+import InstagramCardPreview from "@/features/console/components/InstagramCardPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -409,6 +413,68 @@ const AdminInstagramPostEditInner = () => {
     } finally {
       setIsRendering(false);
     }
+  };
+
+  // 캡션 + 해시태그 전체 복사(인스타에 붙여넣기용) — publisher 의 buildCaption 과 동일 포맷.
+  const handleCopyCaption = async () => {
+    if (!form) return;
+    const tags = form.hashtags.map((t) => `#${t.replace(/^#/, "")}`).join(" ");
+    const text = [form.caption.trim(), tags].filter(Boolean).join("\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "캡션 전체 복사됨", description: "인스타에 붙여넣으세요." });
+    } catch {
+      toast({
+        title: "복사 실패",
+        description: "클립보드 접근이 막혔어요.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // 렌더된 카드 이미지 전체 다운로드(운영자가 직접 인스타에 업로드).
+  const handleDownloadAll = async () => {
+    if (!draft) return;
+    const urls = draft.card_image_urls;
+    if (!urls.length) {
+      toast({
+        title: "다운로드할 이미지가 없어요",
+        description: '먼저 "카드 렌더"로 이미지를 만드세요.',
+        variant: "destructive",
+      });
+      return;
+    }
+    let okCount = 0;
+    for (let i = 0; i < urls.length; i++) {
+      try {
+        const res = await fetch(urls[i]);
+        const blob = await res.blob();
+        const href = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = href;
+        a.download = `card-${i + 1}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(href);
+        okCount += 1;
+      } catch {
+        // 개별 실패는 건너뜀(나머지는 계속 받음)
+      }
+    }
+    toast({
+      title: okCount > 0 ? "다운로드 시작" : "다운로드 실패",
+      description: `카드 ${okCount}/${urls.length}장`,
+      variant: okCount > 0 ? undefined : "destructive",
+    });
+  };
+
+  // 운영자가 인스타에 직접 업로드 완료 → 상태를 발행완료로 표시(수동 발행 플로우).
+  const handleMarkUploaded = async () => {
+    await applyLifecycleUpdate(
+      { status: "published", published_at: new Date().toISOString() },
+      "업로드 완료로 표시했어요",
+    );
   };
 
   const handleApprove = async () => {
@@ -975,6 +1041,18 @@ const AdminInstagramPostEditInner = () => {
                 그라데이션으로 폴백됩니다.
               </span>
             </div>
+
+            {/* 라이브 미리보기 — 편집 즉시 반영(브라우저 CSS 미러). 실제 PNG 는 "카드 렌더". */}
+            {form.card_texts.length > 0 ? (
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-medium text-foreground">
+                  라이브 미리보기 (편집 즉시 반영 · SUITE 폰트)
+                </p>
+                <div className="overflow-x-auto pb-1">
+                  <InstagramCardPreview cards={form.card_texts} />
+                </div>
+              </div>
+            ) : null}
             {form.card_texts.length === 0 ? (
               <p className="text-xs text-muted-foreground">카드를 먼저 추가하세요.</p>
             ) : (
@@ -1072,6 +1150,35 @@ const AdminInstagramPostEditInner = () => {
                 )}
                 카드 렌더
               </Button>
+              <Button
+                variant="outline"
+                onClick={handleCopyCaption}
+                disabled={isSaving || isMutating}
+                title="캡션 + 해시태그를 클립보드에 복사"
+              >
+                <Copy className="w-4 h-4 mr-1" />
+                캡션 전체복사
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleDownloadAll}
+                disabled={isSaving || isMutating || draft.card_image_urls.length === 0}
+                title="렌더된 카드 이미지 전체 다운로드"
+              >
+                <Download className="w-4 h-4 mr-1" />
+                이미지 다운로드
+              </Button>
+              {draft.status !== "published" && (
+                <Button
+                  variant="outline"
+                  onClick={handleMarkUploaded}
+                  disabled={isSaving || isMutating}
+                  title="인스타에 직접 올린 뒤 발행완료로 표시"
+                >
+                  <Upload className="w-4 h-4 mr-1" />
+                  업로드 완료
+                </Button>
+              )}
               {draft.status === "draft" && (
                 <Button
                   variant="outline"
