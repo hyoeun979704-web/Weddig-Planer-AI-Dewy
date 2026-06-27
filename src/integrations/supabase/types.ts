@@ -444,6 +444,96 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_post_drafts: {
+        Row: {
+          author_persona: string
+          canonical_url: string | null
+          categories: string[]
+          content_markdown: string | null
+          created_at: string
+          created_by: string | null
+          excerpt: string | null
+          featured_image_url: string | null
+          id: string
+          last_error: string | null
+          notes: string | null
+          notion_page_id: string | null
+          retry_count: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          slug: string | null
+          source_id: string | null
+          source_type: string
+          status: string
+          tags: string[]
+          title: string
+          updated_at: string
+          wp_featured_media_id: number | null
+          wp_post_id: number | null
+          wp_published_at: string | null
+          wp_status: string | null
+          wp_url: string | null
+        }
+        Insert: {
+          author_persona?: string
+          canonical_url?: string | null
+          categories?: string[]
+          content_markdown?: string | null
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string | null
+          featured_image_url?: string | null
+          id?: string
+          last_error?: string | null
+          notes?: string | null
+          notion_page_id?: string | null
+          retry_count?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          slug?: string | null
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+          wp_featured_media_id?: number | null
+          wp_post_id?: number | null
+          wp_published_at?: string | null
+          wp_status?: string | null
+          wp_url?: string | null
+        }
+        Update: {
+          author_persona?: string
+          canonical_url?: string | null
+          categories?: string[]
+          content_markdown?: string | null
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string | null
+          featured_image_url?: string | null
+          id?: string
+          last_error?: string | null
+          notes?: string | null
+          notion_page_id?: string | null
+          retry_count?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          slug?: string | null
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          wp_featured_media_id?: number | null
+          wp_post_id?: number | null
+          wp_published_at?: string | null
+          wp_status?: string | null
+          wp_url?: string | null
+        }
+        Relationships: []
+      }
       budget_items: {
         Row: {
           amount: number
