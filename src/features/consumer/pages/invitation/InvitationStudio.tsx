@@ -88,6 +88,7 @@ import {
   pageToLayout,
 } from "@/lib/invitation/layout";
 import {
+  isHtmlComponent,
   readFaceLayout,
   type InvitationFace,
   type InvitationLayout,
@@ -97,6 +98,10 @@ import {
   type InvitationUserData,
   type BgFill,
 } from "@/lib/invitation/types";
+import ScrollEditor, {
+  type ScrollPaths,
+} from "@/components/invitation/scroll/ScrollEditor";
+import type { ScrollInvitationData } from "@/lib/invitation/scrollTypes";
 import { readImageSize, lowResPrintWarning } from "@/lib/invitation/imageQuality";
 import {
   animOptionsFor,
@@ -267,6 +272,8 @@ const InvitationStudio = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [template, setTemplate] = useState<Template | null>(null);
+  // html_component(스크롤) 청첩장 편집 시 저장된 사진 storage path
+  const [scrollPaths, setScrollPaths] = useState<ScrollPaths | null>(null);
 
   // 후면 템플릿 (없으면 단면 — 하위호환). template = 전면.
   const [backTemplate, setBackTemplate] = useState<Template | null>(null);
@@ -384,6 +391,17 @@ const InvitationStudio = () => {
       const tpl = data.invitation_templates as Template;
       setTemplate(tpl);
       setTargetMobileSlug((data.layout as any)?.target_mobile_slug ?? null);
+
+      // html_component(스크롤) 청첩장은 슬롯 하이드레이션 불필요 — ScrollEditor 로 분기.
+      if (isHtmlComponent(tpl.layout)) {
+        setScrollPaths(
+          ((data.layout as any)?.scrollPaths as ScrollPaths) ?? {
+            gallery: [],
+            story: [],
+          },
+        );
+        return;
+      }
 
       // storage path → 표시용 signed URL (24h) 복원
       const hydrate = async (
@@ -1449,6 +1467,38 @@ const InvitationStudio = () => {
   // ────────────────────────────────────────
   // 렌더링
   // ────────────────────────────────────────
+
+  // 스크롤(인터랙티브) 청첩장 편집 — 슬롯 스튜디오 대신 전용 폼 편집기.
+  if (params.id && template && isHtmlComponent(template.layout)) {
+    return (
+      <div className="min-h-screen bg-background app-col mx-auto pb-32">
+        <header className="sticky safe-sticky-header z-40 bg-card/95 backdrop-blur-md border-b border-border">
+          <div className="flex items-center gap-3 px-4 h-14">
+            <button onClick={() => navigate(-1)} className="p-1" aria-label="뒤로">
+              <ArrowLeft className="w-5 h-5 text-foreground" />
+            </button>
+            <h1 className="text-base font-bold text-foreground flex-1">청첩장 편집</h1>
+          </div>
+        </header>
+        <ScrollEditor
+          template={{
+            id: template.id,
+            name: template.name,
+            price_hearts: template.price_hearts,
+            format: template.format,
+          }}
+          invitationId={params.id}
+          initialData={userData as unknown as ScrollInvitationData}
+          initialPaths={scrollPaths}
+        />
+        <BottomNav
+          activeTab={location.pathname}
+          onTabChange={(href) => navigate(href)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className="min-h-screen bg-background app-col mx-auto"

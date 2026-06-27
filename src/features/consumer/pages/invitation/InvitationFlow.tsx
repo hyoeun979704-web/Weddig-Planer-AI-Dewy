@@ -69,12 +69,14 @@ import {
   requiredPhotoCount,
 } from "@/lib/invitation/layout";
 import {
+  isHtmlComponent,
   readFaceLayout,
   type InvitationLayout,
   type InvitationUserData,
   type SlotRole,
 } from "@/lib/invitation/types";
 import { readImageSize, lowResPrintWarning } from "@/lib/invitation/imageQuality";
+import ScrollEditor from "@/components/invitation/scroll/ScrollEditor";
 
 /**
  * 청첩장 메인 흐름 — One-page UX.
@@ -516,6 +518,9 @@ const InvitationFlow = () => {
   const [flowSaveFailed, setFlowSaveFailed] = useState(false);
   useEffect(() => {
     if (step !== "wizard" || !user || !template) return;
+    // html_component(스크롤) 템플릿은 ScrollEditor 가 자체적으로 저장/발행을
+    // 관리하므로 슬롯 기반 자동저장을 돌리지 않는다(중복 draft 방지).
+    if (isHtmlComponent(template.layout)) return;
     if (isGenerating || isFlowSaving) return;
     const hasContent =
       Object.keys(userData).length > 0 ||
@@ -1154,24 +1159,36 @@ const InvitationFlow = () => {
         />
       )}
 
-      {step === "wizard" && template && (
-        <WizardCombined
-          template={template}
-          userData={userData}
-          onUserDataChange={setUserData}
-          photos={photos}
-          onAddPhoto={handleStartPhotoUpload}
-          onRemovePhoto={removePhoto}
-          aiAuto={aiAuto}
-          onAiAutoChange={setAiAuto}
-          hearts={hearts}
-          isGenerating={isGenerating}
-          onGenerate={handleGenerate}
-          qrUrls={qrUrls}
-          onAttachQr={onAttachQr}
-          onRemoveQr={removeQr}
-        />
-      )}
+      {step === "wizard" &&
+        template &&
+        (isHtmlComponent(template.layout) ? (
+          <ScrollEditor
+            template={{
+              id: template.id,
+              name: template.name,
+              price_hearts: template.price_hearts,
+              format: template.format,
+            }}
+            invitationId={invitationId}
+          />
+        ) : (
+          <WizardCombined
+            template={template}
+            userData={userData}
+            onUserDataChange={setUserData}
+            photos={photos}
+            onAddPhoto={handleStartPhotoUpload}
+            onRemovePhoto={removePhoto}
+            aiAuto={aiAuto}
+            onAiAutoChange={setAiAuto}
+            hearts={hearts}
+            isGenerating={isGenerating}
+            onGenerate={handleGenerate}
+            qrUrls={qrUrls}
+            onAttachQr={onAttachQr}
+            onRemoveQr={removeQr}
+          />
+        ))}
 
       {step === "result" && template && (
         <ResultView
@@ -1387,9 +1404,11 @@ const TemplatePicker = ({
                     )}
                   </p>
                   <p className="text-[10px] text-muted-foreground">
-                    {photoSlots === 0
-                      ? "사진 없음"
-                      : `사진 ${uniquePhotoOrders}장`}
+                    {isHtmlComponent(t.layout)
+                      ? "인터랙티브"
+                      : photoSlots === 0
+                        ? "사진 없음"
+                        : `사진 ${uniquePhotoOrders}장`}
                   </p>
                 </div>
               </div>

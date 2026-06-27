@@ -87,7 +87,9 @@ export function getInvitationPages(layout: InvitationLayout): InvitationPageLayo
       label: "1P",
       order: 1,
       canvas: layout.canvas,
-      slots: layout.slots,
+      // html_component 템플릿은 슬롯이 없다(undefined) → 빈 배열로 방어해
+      // getInvitationSlots 가 [undefined] 를 만들어 picker 등이 크래시하지 않게.
+      slots: layout.slots ?? [],
       print: layout.print,
     },
   ];

@@ -21,12 +21,15 @@ import {
   pageToLayout,
 } from "@/lib/invitation/layout";
 import {
+  isHtmlComponent,
   readFaceLayout,
   type InvitationLayout,
   type InvitationSlot,
   type InvitationSlotAction,
   type InvitationUserData,
 } from "@/lib/invitation/types";
+import { getScrollComponent } from "@/components/invitation/scroll";
+import type { ScrollInvitationData } from "@/lib/invitation/scrollTypes";
 
 /**
  * 공개 청첩장 뷰어 — /i/:slug
@@ -483,6 +486,24 @@ const InvitationViewer = () => {
   }
 
   const tpl = data.invitation_templates;
+
+  // 인터랙티브 컴포넌트 템플릿(롱스크롤 등)은 슬롯-캔버스가 아니라 전용
+  // React 컴포넌트로 전체화면 렌더한다. user_data 는 컴포넌트 콘텐츠 계약.
+  if (isHtmlComponent(tpl.layout)) {
+    const ScrollComponent = getScrollComponent(tpl.layout.component);
+    if (ScrollComponent) {
+      return (
+        <div className="min-h-screen bg-background">
+          <ScrollComponent
+            data={(data.user_data ?? {}) as unknown as ScrollInvitationData}
+            invitationId={data.id}
+            mode="view"
+          />
+        </div>
+      );
+    }
+  }
+
   const faces = readFaceLayout(data.layout);
   const seamlessRoll = isSeamlessRoll(tpl.layout);
   const qrShareUrl = data.layout.target_mobile_slug
