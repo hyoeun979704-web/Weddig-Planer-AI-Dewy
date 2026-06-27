@@ -131,9 +131,12 @@ const Premium = () => {
                 <span> 월간 10 / 연간 180 (6개월치 보너스)</span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-2">2026년 7월까지 월간·연간 구독 시 한정 · 체험 종료 후 자동 결제 없음</p>
-              <button onClick={handleStartTrial} className="mt-3 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
-                무료 체험 시작하기
-              </button>
+              {/* v1.0: iOS IAP 미오픈 → 결제로 향하는 무료체험 CTA도 숨김(혜택 안내는 유지). 상품 등록 후 자동 노출. */}
+              {isPaymentEntryVisible() && (
+                <button onClick={handleStartTrial} className="mt-3 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-bold text-sm">
+                  무료 체험 시작하기
+                </button>
+              )}
             </div>
           </div>
         )}
