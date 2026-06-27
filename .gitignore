@@ -62,3 +62,6 @@ dev/
 
 # chatbot eval transcripts (대용량·민감 응답)
 scripts/eval-chatbot/out/
+
+# 일일 에러로그 트리아지 스냅샷(사용자 데이터 — 절대 커밋 금지, daily-error-triage.yml 생성물)
+error-log-snapshot.json
