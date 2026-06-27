@@ -19,11 +19,19 @@ interface CardText {
   footer?: string;
 }
 
+interface CaptionAnalysis {
+  score?: number;
+  checks?: Record<string, boolean>;
+  keywords?: string[];
+  notes?: string;
+}
+
 interface GenerateResult {
   topic: string;
   caption: string;
   hashtags: string[];
   card_texts: CardText[];
+  analysis: CaptionAnalysis | null; // 캡션 IG 로직 자가 점검(운영자 후작업 최소화)
 }
 
 // ============================================================================
@@ -70,9 +78,18 @@ AI 웨딩플래너 앱. 결혼 준비 처음부터 끝까지 한 곳에서.
 - 본문(가운데): title=구체 항목명, body=설명, footer=실전 TIP(반드시 채움).
 - 마무리(마지막): title="", body=질문형 후킹 + 공유/저장 유도 CTA.
 
-[캡션 구조 (밋밋한 캡션 금지)]
-3~6줄, 해요체. ① 공감 후킹 한 줄(독자의 고민 짚기) → ② 이 카드뉴스의 핵심 가치 1~2줄 →
-③ Dewy 가 어떻게 돕는지 한 줄 → ④ 부드러운 행동 유도(저장/공유 또는 "Dewy 웹에서 시작"). 이모지 1~2개.
+[캡션 구조 — 톤·페르소나는 그대로(다정 해요체·신부님/신랑님), 인스타 도달 로직만 강화]
+3~6줄, 해요체. 기존의 다정한 톤·말투를 절대 바꾸지 말 것. 구성만 아래로:
+① 첫 줄 = 공감 후킹 + **검색 키워드 자연 삽입**(예 "여름 웨딩촬영 부케"처럼 — IG 캡션 검색 대비).
+② 핵심 가치 1~2줄. ※ 훅+가치는 반드시 **첫 2줄(…더보기 폴드) 안**에 들어오게.
+③ Dewy 가 어떻게 돕는지 한 줄.
+④ 행동 유도 3종을 자연스럽게(어색하게 욱여넣지 말 것): **저장**("저장해두세요") + **공유**(친구 태그/DM 공유)
+   + **댓글 질문**(예 "여러분 픽은 몇 번이에요?"). 이모지 1~2개. 공포·단정 금지(기존 톤 유지).
+
+[분석 레이어 — 출력 전 자가 점검 후 결과를 analysis 로 함께 출력(운영자 후작업 최소화용)]
+캡션이 아래를 만족하는지 점검하고, 미달이면 **고쳐 쓴 뒤** 점검 결과를 analysis 에 담는다(고친 최종본 기준):
+hook(첫 줄 훅) · seo(검색 키워드 삽입) · fold(훅+가치가 첫 2줄 안) · save_cta · share_cta · comment_cta · tone(다정 해요체·페르소나 유지).
+notes 에는 운영자가 손볼 점 1~2줄만(없으면 "통과"). 톤을 바꿔 점수를 올리지 말 것 — tone 유지가 최우선.
 
 [참고 자료 활용 — grounding]
 참고 자료가 주어지면 그 안의 사실·숫자·고유명사를 **우선 근거**로 쓴다. 자료에 없는 수치를 지어내지 않는다.
@@ -109,7 +126,13 @@ AI 웨딩플래너 앱. 결혼 준비 처음부터 끝까지 한 곳에서.
     { "title": "본문 항목명", "body": "설명", "footer": "실전 TIP" },
     { "title": "본문 항목명", "body": "설명", "footer": "실전 TIP" },
     { "title": "", "body": "마무리 질문 + 공유/저장 CTA" }
-  ]
+  ],
+  "analysis": {
+    "score": 0,
+    "checks": { "hook": true, "seo": true, "fold": true, "save_cta": true, "share_cta": true, "comment_cta": true, "tone": true },
+    "keywords": ["검색 키워드", "..."],
+    "notes": "운영자가 손볼 점 1~2줄 (없으면 '통과')"
+  }
 }`;
 
 async function buildUserPrompt(topic: string, sourceType: string | null, sourceContext: string | null): Promise<string> {
@@ -161,6 +184,9 @@ async function callGemini(apiKey: string, systemPrompt: string, userPrompt: stri
     caption: String(parsed.caption ?? ""),
     hashtags,
     card_texts: Array.isArray(parsed.card_texts) ? parsed.card_texts : [],
+    analysis: (parsed.analysis && typeof parsed.analysis === "object")
+      ? (parsed.analysis as CaptionAnalysis)
+      : null,
   };
 }
 
@@ -263,6 +289,7 @@ Deno.serve(async (req) => {
           hashtags: result.hashtags,
           card_texts: result.card_texts,
           card_count: result.card_texts.length,
+          caption_analysis: result.analysis,
         })
         .eq("id", draftId);
 

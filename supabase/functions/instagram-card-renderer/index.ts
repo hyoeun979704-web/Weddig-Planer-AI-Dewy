@@ -16,8 +16,8 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import satori from "https://esm.sh/satori@0.10.13";
-import { Resvg } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
-import initResvg from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
+// ⚠️ named import { Resvg, initWasm } 사용 — default import 는 esm.sh 에서 BOOT_ERROR 유발.
+import { Resvg, initWasm } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
 
 
 const STORAGE_BUCKET = "instagram-cards";
@@ -37,6 +37,42 @@ interface CardText {
   title?: string;
   body?: string;
   footer?: string;
+  // ── 사진 합성(Figma 227-2) — 있으면 사진 배경 카드, 없으면 그라데이션 폴백 ──
+  image_url?: string;   // 카드 배경 사진 URL(표지/본문)
+  handle?: string;      // 단일 출처 핸들(@계정) — 운영자가 카드별로 입력
+  handles?: string[];   // 좌하단 출처 핸들(@계정) — 표지=최대3줄, 본문=첫 줄(보통 handle 에서 도출)
+  thumb_urls?: string[];// 표지 우상단 썸네일(최대 3, 보통 본문 image_url 에서 도출)
+  grid_urls?: string[]; // CTA 카드 2x2 사진 그리드(최대 4, 보통 본문 image_url 에서 도출)
+  // ── 배경 사진 framing(운영자 조절) ──
+  image_fit?: "cover" | "contain"; // 채움/맞춤 (기본 cover)
+  image_pos_x?: number; // 초점 좌우 0~100% (기본 50)
+  image_pos_y?: number; // 초점 상하 0~100% (기본 50)
+  image_zoom?: number;  // 확대 50~300% (기본 100)
+}
+
+// 하단 가독성 그라데이션(Figma 227-2 정확 스톱): 위 투명 → 아래 핑크. 표지/CTA 와 본문 스톱이 다름.
+const GRAD_COVER =
+  "linear-gradient(to bottom, rgba(255,255,255,0) 71.635%, rgba(252,215,219,0.62) 83.654%, rgba(249,182,189,0.8) 100%)";
+const GRAD_BODY =
+  "linear-gradient(to bottom, rgba(255,255,255,0) 75.481%, rgba(252,215,219,0.62) 87.019%, rgba(249,182,189,0.8) 100%)";
+
+// 원격 이미지 → data URI(satori 내부 fetch 불안정 회피, 콜드스타트 안정성). 실패 시 null.
+async function fetchAsDataUri(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.warn(`card bg fetch failed: ${url} ${res.status}`);
+      return null;
+    }
+    const buf = new Uint8Array(await res.arrayBuffer());
+    const contentType = res.headers.get("content-type") ?? "image/jpeg";
+    let bin = "";
+    for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+    return `data:${contentType};base64,${btoa(bin)}`;
+  } catch (e) {
+    console.warn("card bg fetch error:", url, e instanceof Error ? e.message : e);
+    return null;
+  }
 }
 
 // 폰트 캐시 (Edge Function 인스턴스 lifecycle 동안 재사용)
@@ -54,10 +90,12 @@ interface LoadedFonts {
 let fontsCache: LoadedFonts | null = null;
 let resvgInitialized = false;
 
-const PRETENDARD_BASE =
-  "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2";
-const SUITE_BASE =
-  "https://cdn.jsdelivr.net/gh/sun-typeface/SUITE@2.0.0/fonts/static/woff2";
+// ⚠️ satori 는 woff2 를 못 읽는다(OTF/TTF 만). 그래서 OTF 를 쓴다(이전 woff2 로딩이 조용히
+// 실패해 Pretendard 로 폴백되던 버그의 원인). Supabase egress 가 jsdelivr 에 닿는 것 검증됨.
+const PRETENDARD_OTF =
+  "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static";
+const SUITE_OTF =
+  "https://cdn.jsdelivr.net/gh/sun-typeface/SUITE@2.0.0/fonts/static/otf";
 
 async function fetchFont(url: string): Promise<ArrayBuffer> {
   const res = await fetch(url);
@@ -68,11 +106,11 @@ async function fetchFont(url: string): Promise<ArrayBuffer> {
 async function loadFonts(): Promise<LoadedFonts> {
   if (fontsCache) return fontsCache;
 
-  // Pretendard 세 굵기(800/600/400) — 검증된 CDN, 항상 로드해 폴백 보장.
+  // Pretendard OTF 세 굵기(800/600/400) — satori 호환, 항상 로드해 폴백 보장.
   const [pExtraBold, pSemiBold, pRegular] = await Promise.all([
-    fetchFont(`${PRETENDARD_BASE}/Pretendard-ExtraBold.woff2`),
-    fetchFont(`${PRETENDARD_BASE}/Pretendard-SemiBold.woff2`),
-    fetchFont(`${PRETENDARD_BASE}/Pretendard-Regular.woff2`),
+    fetchFont(`${PRETENDARD_OTF}/Pretendard-ExtraBold.otf`),
+    fetchFont(`${PRETENDARD_OTF}/Pretendard-SemiBold.otf`),
+    fetchFont(`${PRETENDARD_OTF}/Pretendard-Regular.otf`),
   ]);
 
   const fonts: SatoriFont[] = [
@@ -82,16 +120,19 @@ async function loadFonts(): Promise<LoadedFonts> {
   ];
   let family = "Pretendard";
 
-  // SUITE(디자인 기준) 시도 — 실패해도 Pretendard 로 진행(렌더가 깨지지 않게).
+  // SUITE(디자인 기준) OTF 시도 — 실패해도 Pretendard 로 진행(렌더가 깨지지 않게).
+  // weight 500(Medium) 도 로드: 본문 TIP/CTA 등에서 사용.
   try {
-    const [sExtraBold, sSemiBold, sRegular] = await Promise.all([
-      fetchFont(`${SUITE_BASE}/SUITE-ExtraBold.woff2`),
-      fetchFont(`${SUITE_BASE}/SUITE-SemiBold.woff2`),
-      fetchFont(`${SUITE_BASE}/SUITE-Regular.woff2`),
+    const [sExtraBold, sSemiBold, sMedium, sRegular] = await Promise.all([
+      fetchFont(`${SUITE_OTF}/SUITE-ExtraBold.otf`),
+      fetchFont(`${SUITE_OTF}/SUITE-SemiBold.otf`),
+      fetchFont(`${SUITE_OTF}/SUITE-Medium.otf`),
+      fetchFont(`${SUITE_OTF}/SUITE-Regular.otf`),
     ]);
     fonts.push(
       { name: "SUITE", data: sExtraBold, weight: 800, style: "normal" },
       { name: "SUITE", data: sSemiBold, weight: 600, style: "normal" },
+      { name: "SUITE", data: sMedium, weight: 500, style: "normal" },
       { name: "SUITE", data: sRegular, weight: 400, style: "normal" },
     );
     family = "SUITE, Pretendard";
@@ -117,6 +158,119 @@ interface CardJSXProps {
   fontFamily: string;
 }
 
+// 작은 JSX 헬퍼(사진 카드용) — satori 호환 트리.
+function el(style: Record<string, unknown>, children?: unknown): unknown {
+  return { type: "div", props: { style, ...(children !== undefined ? { children } : {}) } };
+}
+function imgEl(src: string, style: Record<string, unknown>): unknown {
+  return { type: "img", props: { src, style } };
+}
+
+// 배경 사진 — 운영자 framing(fit/초점/zoom) 적용. 기본: cover·중앙·100%.
+function bgImg(text: CardText): unknown {
+  const fit = text.image_fit === "contain" ? "contain" : "cover";
+  const zoom = Math.max(50, Math.min(300, text.image_zoom ?? 100)) / 100;
+  const px = Math.max(0, Math.min(100, text.image_pos_x ?? 50));
+  const py = Math.max(0, Math.min(100, text.image_pos_y ?? 50));
+  const w = Math.round(CARD_WIDTH * zoom);
+  const h = Math.round(CARD_HEIGHT * zoom);
+  return imgEl(text.image_url as string, {
+    position: "absolute",
+    left: Math.round((CARD_WIDTH - w) / 2),
+    top: Math.round((CARD_HEIGHT - h) / 2),
+    width: w,
+    height: h,
+    objectFit: fit,
+    objectPosition: `${px}% ${py}%`,
+  });
+}
+
+// 사진 배경 카드(Figma 227-2 정확 스펙 1:1). 좌표·크기·색·그라데이션은 get_design_context 추출값.
+// 사진은 hand-tuned per-image crop 대신 object-cover 센터(자동화 한계 — 템플릿은 정확 일치).
+function buildPhotoCardJSX({ type, text, fontFamily }: CardJSXProps): unknown {
+  // ── CTA (node 248:52): 흰 배경 + 하단 핑크 그라데이션, ♥DEWY 워드마크, 2x2 그리드(870), 카피 ──
+  if (type === "cta") {
+    const copy = text.body || text.footer || CTA_DEFAULT_FOOTER;
+    const cells = (text.grid_urls ?? []).slice(0, 4);
+    return el(
+      {
+        width: CARD_WIDTH, height: CARD_HEIGHT, display: "flex", flexDirection: "column",
+        alignItems: "center", gap: 40, padding: "80px 60px", backgroundColor: COLOR_BG_WHITE,
+        position: "relative", fontFamily,
+      },
+      [
+        el({ position: "absolute", left: 0, top: 0, width: CARD_WIDTH, height: CARD_HEIGHT, backgroundImage: GRAD_COVER }),
+        // 워드마크: ♥ + DEWY (70px)
+        el({ display: "flex", alignItems: "center", gap: 10, padding: 10, backgroundColor: COLOR_BG_WHITE }, [
+          el({ display: "flex", fontSize: 72, color: COLOR_POINT_PINK }, "♥"),
+          el({ display: "flex", fontSize: 70, fontWeight: 500, color: COLOR_TEXT_BLACK }, "DEWY"),
+        ]),
+        // 2x2 그리드 870x870, cell 415, gap 40, 테두리 없음
+        el(
+          { display: "flex", flexWrap: "wrap", width: 870, height: 870, gap: 40 },
+          cells.map((u) =>
+            el({ display: "flex", width: 415, height: 415, overflow: "hidden", backgroundColor: COLOR_BG_WHITE }, [
+              imgEl(u, { width: 415, height: 415, objectFit: "cover" }),
+            ])),
+        ),
+        // 카피 50px 중앙
+        el({ display: "flex", width: 960, fontSize: 50, fontWeight: 400, color: COLOR_TEXT_BLACK, textAlign: "center", lineHeight: 1.25, whiteSpace: "pre-wrap" }, copy),
+      ],
+    );
+  }
+
+  const isCover = type === "cover";
+  const children: unknown[] = [
+    bgImg(text),
+    el({ position: "absolute", left: 0, top: 0, width: CARD_WIDTH, height: CARD_HEIGHT, backgroundImage: isCover ? GRAD_COVER : GRAD_BODY }),
+  ];
+
+  if (isCover) {
+    // 표지 (node 248:14): 우상단 썸네일 3장 + 핸들 3줄 + 제목블록(80px)
+    const thumbs = (text.thumb_urls ?? []).slice(0, 3);
+    thumbs.forEach((u, i) => {
+      children.push(el(
+        { position: "absolute", left: 770, top: 60 + i * 300, width: 250, height: 250, display: "flex", backgroundColor: COLOR_BG_WHITE, border: `5px solid ${COLOR_POINT_PINK}`, overflow: "hidden" },
+        [imgEl(u, { width: 250, height: 250, objectFit: "cover" })],
+      ));
+    });
+    if (text.handles?.length) {
+      children.push(el(
+        { position: "absolute", left: 60, top: 831, width: 960, display: "flex", flexDirection: "column" },
+        text.handles.slice(0, 3).map((h) =>
+          el({ display: "flex", height: 60, fontSize: 48, fontWeight: 600, color: "#ffffff", lineHeight: "60px" }, h)),
+      ));
+    }
+    children.push(el(
+      { position: "absolute", left: 60, top: 1030, width: 960, display: "flex", flexDirection: "column" },
+      [
+        el({ display: "flex", flexDirection: "column", fontSize: 80, fontWeight: 800, color: COLOR_TEXT_BLACK, lineHeight: 1.18, whiteSpace: "pre-wrap", wordBreak: "keep-all" }, text.title ?? ""),
+        ...(text.body ? [el({ display: "flex", marginTop: 10, fontSize: 48, fontWeight: 600, color: COLOR_TEXT_BLACK, lineHeight: 1.25, wordBreak: "keep-all" }, text.body)] : []),
+      ],
+    ));
+  } else {
+    // 본문 (node 248:25): 핸들 1줄(y=980) + 제목블록(64px, y=1090) — TIP 박스 없음, 설명 2줄에 팁 포함
+    const handle = text.handles?.[0];
+    if (handle) {
+      children.push(el(
+        { position: "absolute", left: 60, top: 980, width: 960, height: 60, display: "flex", fontSize: 48, fontWeight: 600, color: "#ffffff" }, handle,
+      ));
+    }
+    children.push(el(
+      { position: "absolute", left: 60, top: 1090, width: 960, display: "flex", flexDirection: "column" },
+      [
+        el({ display: "flex", height: 80, fontSize: 64, fontWeight: 800, color: COLOR_TEXT_BLACK, lineHeight: 1.1, wordBreak: "keep-all" }, text.title ?? ""),
+        ...(text.body ? [el({ display: "flex", marginTop: 10, fontSize: 48, fontWeight: 600, color: COLOR_TEXT_BLACK, lineHeight: 1.25, whiteSpace: "pre-wrap", wordBreak: "keep-all" }, text.body)] : []),
+      ],
+    ));
+  }
+
+  return el(
+    { width: CARD_WIDTH, height: CARD_HEIGHT, display: "flex", position: "relative", overflow: "hidden", backgroundColor: "#ffffff", fontFamily },
+    children,
+  );
+}
+
 // 흰색→핑크 그라데이션 배경 레이어 (모든 카드 공통, 콘텐츠 뒤에 깔림)
 function gradientLayer(): unknown {
   return {
@@ -139,6 +293,12 @@ function gradientLayer(): unknown {
 //  - CTA: 상단 ❤️DEWY 워드마크 + 중앙 정렬 안내 카피(Regular 50)
 // 이미지 슬롯은 후속 단계(텍스트/타이포 우선) — 지금은 그라데이션+카피만 렌더.
 function buildCardJSX({ type, text, fontFamily }: CardJSXProps): unknown {
+  // 사진 데이터가 있으면 Figma 227-2 사진 카드, 없으면 아래 그라데이션 폴백(하위호환).
+  const hasPhoto = type === "cta"
+    ? !!text.grid_urls?.length
+    : !!text.image_url;
+  if (hasPhoto) return buildPhotoCardJSX({ type, text, fontFamily });
+
   if (type === "cta") {
     const footer = text.body || text.footer || CTA_DEFAULT_FOOTER;
     return {
@@ -338,7 +498,7 @@ async function renderCardToPng(jsx: unknown, fonts: SatoriFont[]): Promise<Uint8
   if (!resvgInitialized) {
     const wasmRes = await fetch("https://esm.sh/@resvg/resvg-wasm@2.6.2/index_bg.wasm");
     const wasmBuf = await wasmRes.arrayBuffer();
-    await initResvg(wasmBuf);
+    await initWasm(wasmBuf);
     resvgInitialized = true;
   }
   const resvg = new Resvg(svg, { fitTo: { mode: "width", value: CARD_WIDTH } });
@@ -432,10 +592,53 @@ Deno.serve(async (req) => {
     const { fonts, family } = await loadFonts();
     const cardUrls: string[] = [];
 
+    // 본문 카드(표지·CTA 제외)의 사진·핸들 수집 → 표지 썸네일/핸들·CTA 그리드 자동 도출(Figma 227-2:
+    // 본문 부케 사진들이 곧 표지 썸네일·CTA 그리드). 운영자는 카드별 image_url·handle 만 입력하면 됨.
+    const bodyImageUrls: string[] = [];
+    const bodyHandles: string[] = [];
+    for (let i = 1; i < cardTexts.length - 1; i++) {
+      const u = cardTexts[i]?.image_url;
+      if (u) bodyImageUrls.push(u);
+      const h = cardTexts[i]?.handle;
+      if (h && !bodyHandles.includes(h)) bodyHandles.push(h);
+    }
+
     for (let i = 0; i < cardTexts.length; i++) {
       const isLast = i === cardTexts.length - 1;
       const type: "cover" | "body" | "cta" = i === 0 ? "cover" : isLast ? "cta" : "body";
-      const jsx = buildCardJSX({ type, text: cardTexts[i], fontFamily: family });
+
+      // 사진 합성: 원격 URL 을 data URI 로 미리 변환(satori 안정성). 실패 시 그라데이션 폴백.
+      const src = cardTexts[i];
+      const resolved: CardText = { ...src };
+      if (type === "cta") {
+        // 그리드: 명시 grid_urls 우선, 없으면 본문 사진에서 도출(최대 4)
+        const urls = (src.grid_urls?.length ? src.grid_urls : bodyImageUrls).slice(0, 4);
+        const uris = await Promise.all(urls.map((u) => fetchAsDataUri(u)));
+        resolved.grid_urls = uris.filter((u): u is string => !!u);
+      } else {
+        if (src.image_url) {
+          const uri = await fetchAsDataUri(src.image_url);
+          resolved.image_url = uri ?? undefined; // 실패하면 그라데이션 폴백
+        }
+        if (type === "cover") {
+          // 썸네일: 명시 thumb_urls 우선, 없으면 본문 사진(최대 3)
+          const turls = (src.thumb_urls?.length ? src.thumb_urls : bodyImageUrls).slice(0, 3);
+          const turis = await Promise.all(turls.map((u) => fetchAsDataUri(u)));
+          resolved.thumb_urls = turis.filter((u): u is string => !!u);
+          // 핸들: 명시 handles 우선, 없으면 표지 자신 handle + 본문 handle 모음(중복 제거, 최대 3)
+          const coverHandles = src.handles?.length
+            ? src.handles
+            : [src.handle, ...bodyHandles].filter((h): h is string => !!h);
+          resolved.handles = Array.from(new Set(coverHandles)).slice(0, 3);
+        } else {
+          // 본문: 단일 handle → handles[0]
+          resolved.handles = src.handles?.length
+            ? src.handles
+            : (src.handle ? [src.handle] : []);
+        }
+      }
+
+      const jsx = buildCardJSX({ type, text: resolved, fontFamily: family });
       const png = await renderCardToPng(jsx, fonts);
 
       const path = `drafts/${draftId}/card-${i + 1}.png`;

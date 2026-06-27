@@ -7,17 +7,24 @@ import {
   CalendarClock,
   Check,
   ChevronLeft,
+  Copy,
+  Download,
   ExternalLink,
   Image as ImageIcon,
   Info,
   Loader2,
   Plus,
+  RefreshCw,
+  Upload,
   RotateCcw,
   Save,
   Trash2,
 } from "lucide-react";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
+import ImageUploader from "@/components/ImageUploader";
+import InstagramCardPreview from "@/features/console/components/InstagramCardPreview";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +50,7 @@ import { fetchDraft, updateDraft, deleteDraft } from "@/features/console/data/in
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import {
+  type CaptionAnalysis,
   type InstagramCardText,
   type InstagramPostDraft,
   type InstagramPostSourceType,
@@ -99,6 +107,10 @@ const normalizeDraft = (row: Record<string, unknown>): InstagramPostDraft => {
       ? (row.card_image_urls as string[])
       : [],
     card_texts: cardTexts,
+    caption_analysis:
+      row.caption_analysis && typeof row.caption_analysis === "object"
+        ? (row.caption_analysis as CaptionAnalysis)
+        : null,
     status: (row.status ?? "draft") as InstagramPostStatus,
     scheduled_for: (row.scheduled_for as string | null) ?? null,
     published_at: (row.published_at as string | null) ?? null,
@@ -176,6 +188,63 @@ const buildFormFromDraft = (d: InstagramPostDraft): FormState => ({
   status: d.status,
 });
 
+const CHECK_LABELS: Record<string, string> = {
+  hook: "훅",
+  seo: "검색어",
+  fold: "폴드",
+  save_cta: "저장",
+  share_cta: "공유",
+  comment_cta: "댓글",
+  tone: "톤유지",
+};
+
+/** 캡션 IG-로직 자가 점검 결과 패널 — generator 가 채움. 운영자 후작업 가이드. */
+const CaptionAnalysisPanel = ({ analysis }: { analysis: CaptionAnalysis }) => {
+  const checks = analysis.checks ?? {};
+  return (
+    <div className="rounded-xl border border-border bg-muted/20 p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-foreground">
+          캡션 분석 (인스타 도달 로직)
+        </span>
+        {typeof analysis.score === "number" && (
+          <span className="text-xs font-semibold text-pink-600">
+            {analysis.score}/100
+          </span>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {Object.entries(CHECK_LABELS).map(([k, label]) => {
+          const ok = checks[k as keyof typeof checks];
+          return (
+            <span
+              key={k}
+              className={
+                "text-[10px] px-2 py-0.5 rounded-full border " +
+                (ok
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-rose-50 text-rose-700 border-rose-200")
+              }
+            >
+              {ok ? "✓" : "✕"} {label}
+            </span>
+          );
+        })}
+      </div>
+      {analysis.keywords?.length ? (
+        <p className="text-[10px] text-muted-foreground">
+          검색어: {analysis.keywords.join(", ")}
+        </p>
+      ) : null}
+      {analysis.notes ? (
+        <p className="text-[11px] text-foreground bg-amber-50 border border-amber-200 rounded p-2">
+          📝 {analysis.notes}
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
 const AdminInstagramPostEditInner = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -188,6 +257,7 @@ const AdminInstagramPostEditInner = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isMutating, setIsMutating] = useState(false); // 승인/예약/되돌리기/삭제 등
+  const [isRendering, setIsRendering] = useState(false); // 카드 렌더(이미지 생성)
   const [hashtagInput, setHashtagInput] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -378,6 +448,95 @@ const AdminInstagramPostEditInner = () => {
     setDraft(normalized);
     setForm(buildFormFromDraft(normalized));
     toast({ title: successTitle });
+  };
+
+  // 카드 렌더 — 저장 후 instagram-card-renderer 호출(card_texts→PNG), 완료되면 리로드.
+  const handleRender = async () => {
+    if (!id) return;
+    const ok = await handleSave();
+    if (!ok) return;
+    setIsRendering(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "instagram-card-renderer",
+        { body: { draftId: id } },
+      );
+      if (error) throw error;
+      const errMsg = (data as { error?: string } | null)?.error;
+      if (errMsg) throw new Error(errMsg);
+      toast({ title: "카드 렌더 완료", description: "카드 이미지가 갱신됐어요." });
+      await fetchDraft();
+    } catch (e) {
+      toast({
+        title: "카드 렌더 실패",
+        description: e instanceof Error ? e.message : "렌더러 호출 오류",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRendering(false);
+    }
+  };
+
+  // 캡션 + 해시태그 전체 복사(인스타에 붙여넣기용) — publisher 의 buildCaption 과 동일 포맷.
+  const handleCopyCaption = async () => {
+    if (!form) return;
+    const tags = form.hashtags.map((t) => `#${t.replace(/^#/, "")}`).join(" ");
+    const text = [form.caption.trim(), tags].filter(Boolean).join("\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "캡션 전체 복사됨", description: "인스타에 붙여넣으세요." });
+    } catch {
+      toast({
+        title: "복사 실패",
+        description: "클립보드 접근이 막혔어요.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // 렌더된 카드 이미지 전체 다운로드(운영자가 직접 인스타에 업로드).
+  const handleDownloadAll = async () => {
+    if (!draft) return;
+    const urls = draft.card_image_urls;
+    if (!urls.length) {
+      toast({
+        title: "다운로드할 이미지가 없어요",
+        description: '먼저 "카드 렌더"로 이미지를 만드세요.',
+        variant: "destructive",
+      });
+      return;
+    }
+    let okCount = 0;
+    for (let i = 0; i < urls.length; i++) {
+      try {
+        const res = await fetch(urls[i]);
+        const blob = await res.blob();
+        const href = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = href;
+        a.download = `card-${i + 1}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(href);
+        okCount += 1;
+      } catch {
+        // 개별 실패는 건너뜀(나머지는 계속 받음)
+      }
+    }
+    toast({
+      title: okCount > 0 ? "다운로드 시작" : "다운로드 실패",
+      description: `카드 ${okCount}/${urls.length}장`,
+      variant: okCount > 0 ? undefined : "destructive",
+    });
+  };
+
+  // 운영자가 인스타에 직접 업로드 완료 → 상태를 발행완료로 표시(수동 발행 플로우).
+  const handleMarkUploaded = async () => {
+    await applyLifecycleUpdate(
+      { status: "published", published_at: new Date().toISOString() },
+      "업로드 완료로 표시했어요",
+    );
   };
 
   const handleApprove = async () => {
@@ -660,6 +819,11 @@ const AdminInstagramPostEditInner = () => {
               )}
             </div>
 
+            {/* 캡션 분석(IG 로직 자가 점검) — generator 가 채움. ✕ 표시·메모만 손보면 됨. */}
+            {draft.caption_analysis ? (
+              <CaptionAnalysisPanel analysis={draft.caption_analysis} />
+            ) : null}
+
             {/* 출처 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -787,9 +951,138 @@ const AdminInstagramPostEditInner = () => {
                         onChange={(e) =>
                           updateCard(idx, { footer: e.target.value })
                         }
-                        placeholder="푸터 (선택)"
+                        placeholder="푸터 / TIP (선택)"
                       />
                     </div>
+
+                    {/* 사진 + 출처 핸들 (Figma 227-2 사진 카드). 표지 썸네일 3장·CTA 그리드 4장은
+                        본문 카드 사진에서 자동 도출 → 여기선 카드별 배경 사진·핸들만 입력하면 됨. */}
+                    <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-2 pt-1">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">
+                          배경 사진
+                        </Label>
+                        <ImageUploader
+                          bucket="instagram-cards"
+                          pathPrefix={`drafts/${id ?? "new"}/src/`}
+                          initialUrl={card.image_url}
+                          onUploaded={(_path, url) =>
+                            updateCard(idx, { image_url: url })
+                          }
+                          className="aspect-[4/5]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">
+                          출처 핸들 (@계정)
+                        </Label>
+                        <Input
+                          value={card.handle ?? ""}
+                          onChange={(e) =>
+                            updateCard(idx, { handle: e.target.value })
+                          }
+                          placeholder="@ete_garden"
+                        />
+                        {card.image_url ? (
+                          <Input
+                            value={card.image_url}
+                            onChange={(e) =>
+                              updateCard(idx, { image_url: e.target.value })
+                            }
+                            placeholder="사진 URL (직접 입력/수정)"
+                            className="text-[11px] text-muted-foreground"
+                          />
+                        ) : null}
+                        <p className="text-[10px] text-muted-foreground">
+                          {idx === 0
+                            ? "표지: 본문 카드 사진들이 우상단 썸네일·핸들로 자동 들어가요."
+                            : idx === form.card_texts.length - 1
+                              ? "마무리(CTA): 본문 카드 사진들이 2×2 그리드로 자동 들어가요."
+                              : "본문: 이 사진이 풀배경 + 좌하단에 제목·설명·핸들."}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 사진 framing — 채움/확대/초점 위치. 렌더 시 적용(미리보기는 렌더 후). */}
+                    {card.image_url ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 pt-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-muted-foreground w-10 shrink-0">
+                            채움
+                          </span>
+                          <Select
+                            value={card.image_fit ?? "cover"}
+                            onValueChange={(v) =>
+                              updateCard(idx, {
+                                image_fit: v as "cover" | "contain",
+                              })
+                            }
+                          >
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="cover">채우기 (cover)</SelectItem>
+                              <SelectItem value="contain">
+                                맞추기 (contain)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="w-16 shrink-0">
+                            확대 {card.image_zoom ?? 100}%
+                          </span>
+                          <input
+                            type="range"
+                            min={50}
+                            max={300}
+                            step={5}
+                            value={card.image_zoom ?? 100}
+                            onChange={(e) =>
+                              updateCard(idx, {
+                                image_zoom: Number(e.target.value),
+                              })
+                            }
+                            className="flex-1 accent-pink-500"
+                          />
+                        </label>
+                        <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="w-16 shrink-0">
+                            좌우 {card.image_pos_x ?? 50}%
+                          </span>
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={card.image_pos_x ?? 50}
+                            onChange={(e) =>
+                              updateCard(idx, {
+                                image_pos_x: Number(e.target.value),
+                              })
+                            }
+                            className="flex-1 accent-pink-500"
+                          />
+                        </label>
+                        <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="w-16 shrink-0">
+                            상하 {card.image_pos_y ?? 50}%
+                          </span>
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={card.image_pos_y ?? 50}
+                            onChange={(e) =>
+                              updateCard(idx, {
+                                image_pos_y: Number(e.target.value),
+                              })
+                            }
+                            className="flex-1 accent-pink-500"
+                          />
+                        </label>
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -803,17 +1096,30 @@ const AdminInstagramPostEditInner = () => {
                 카드 이미지 미리보기
               </h2>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                이번 단계는 placeholder만 표시합니다. 2단계 렌더러가 각 카드를
-                PNG 로 만들어 채워요.
+                "카드 렌더"를 누르면 각 카드가 PNG 로 렌더돼 여기 채워져요(Figma
+                템플릿 + SUITE 폰트).
               </p>
             </div>
             <div className="rounded-lg bg-muted/40 p-3 text-[11px] text-muted-foreground flex items-start gap-2">
               <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
               <span>
-                card_image_urls 는 read-only. 카드 텍스트가 확정되면 다음 단계에서
-                자동 렌더링됩니다.
+                위에서 카드별 텍스트·배경 사진·핸들을 편집하고 "카드 렌더"로
+                이미지를 만든 뒤, 검수하고 승인·예약하세요. 사진이 없는 카드는
+                그라데이션으로 폴백됩니다.
               </span>
             </div>
+
+            {/* 라이브 미리보기 — 편집 즉시 반영(브라우저 CSS 미러). 실제 PNG 는 "카드 렌더". */}
+            {form.card_texts.length > 0 ? (
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-medium text-foreground">
+                  라이브 미리보기 (편집 즉시 반영 · SUITE 폰트)
+                </p>
+                <div className="overflow-x-auto pb-1">
+                  <InstagramCardPreview cards={form.card_texts} />
+                </div>
+              </div>
+            ) : null}
             {form.card_texts.length === 0 ? (
               <p className="text-xs text-muted-foreground">카드를 먼저 추가하세요.</p>
             ) : (
@@ -898,6 +1204,48 @@ const AdminInstagramPostEditInner = () => {
                 )}
                 저장
               </Button>
+              <Button
+                variant="outline"
+                onClick={handleRender}
+                disabled={isSaving || isMutating || isRendering || form.card_texts.length === 0}
+                title="저장 후 카드 이미지를 렌더합니다"
+              >
+                {isRendering ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                )}
+                카드 렌더
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCopyCaption}
+                disabled={isSaving || isMutating}
+                title="캡션 + 해시태그를 클립보드에 복사"
+              >
+                <Copy className="w-4 h-4 mr-1" />
+                캡션 전체복사
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleDownloadAll}
+                disabled={isSaving || isMutating || draft.card_image_urls.length === 0}
+                title="렌더된 카드 이미지 전체 다운로드"
+              >
+                <Download className="w-4 h-4 mr-1" />
+                이미지 다운로드
+              </Button>
+              {draft.status !== "published" && (
+                <Button
+                  variant="outline"
+                  onClick={handleMarkUploaded}
+                  disabled={isSaving || isMutating}
+                  title="인스타에 직접 올린 뒤 발행완료로 표시"
+                >
+                  <Upload className="w-4 h-4 mr-1" />
+                  업로드 완료
+                </Button>
+              )}
               {draft.status === "draft" && (
                 <Button
                   variant="outline"
