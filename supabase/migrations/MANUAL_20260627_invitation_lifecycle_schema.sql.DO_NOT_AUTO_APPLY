@@ -1,0 +1,25 @@
+-- ============================================================================
+-- [설계 단계 — 자동 적용 금지] 청첩장 생명주기/평생소장 수익화 스키마
+--
+-- 정책(설계): 발행 후 3개월간 무료 보관 → 만료 시 자동 삭제. 하트 결제로
+-- "평생 소장"(is_permanent) 전환 시 만료 없이 영구 보관. 상세 설계는
+-- docs/invitation-lifecycle-monetization.md 참조.
+--
+-- 이 파일은 이번 작업에서 "설계만" 합의됨 — 라이브 미적용. 다음 작업에서
+-- 자동삭제 크론 + 결제 RPC + 만료 알림 UX 와 함께 적용한다. 적용 시 이 파일을
+-- 정식 타임스탬프 마이그레이션으로 이름 변경(.DO_NOT_AUTO_APPLY 제거).
+-- ============================================================================
+
+alter table public.invitations
+  add column if not exists expires_at   timestamptz,
+  add column if not exists is_permanent boolean not null default false;
+
+comment on column public.invitations.expires_at is
+  '무료 보관 만료 시각(발행 후 3개월). is_permanent=true 면 무시. 자동삭제 크론이 참조.';
+comment on column public.invitations.is_permanent is
+  '하트 결제로 평생 소장 전환됨. true 면 expires_at 무관하게 영구 보관.';
+
+-- 만료 임박/대상 조회용 인덱스 (자동삭제 크론·알림 배치)
+create index if not exists idx_invitations_expires_at
+  on public.invitations (expires_at)
+  where is_permanent = false and expires_at is not null;

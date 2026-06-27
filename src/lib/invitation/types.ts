@@ -226,6 +226,25 @@ export interface InvitationLayout {
   presentation?: "paged" | "seamless_roll";
   /** 모바일 청첩장 루프 장식(스크롤 위에 떠다니는 데코). 없으면 없음. */
   decor?: "hearts" | "petals" | "confetti";
+  /**
+   * 슬롯-캔버스 엔진이 아닌 별도 렌더 경로 표식.
+   * 'html_component' 이면 절대좌표 슬롯 대신 `component` 가 가리키는 인터랙티브
+   * React 컴포넌트로 렌더한다(예: 트로피컬 그린 롱스크롤 청첩장). canvas/slots 미사용.
+   */
+  kind?: "html_component";
+  /** kind==='html_component' 일 때 렌더할 컴포넌트 키 (예: 'tropical-green-scroll'). */
+  component?: string;
+}
+
+/**
+ * 슬롯-캔버스 엔진으로 그릴 수 없는 인터랙티브 컴포넌트 템플릿인가.
+ * 이 경우 `invitations.user_data` 는 슬롯용 평면 InvitationUserData 가 아니라
+ * 컴포넌트별 콘텐츠 계약(예: ScrollInvitationData)을 담는다.
+ */
+export function isHtmlComponent(
+  layout: InvitationLayout | null | undefined,
+): boolean {
+  return layout?.kind === "html_component";
 }
 
 export interface InvitationUserData {
