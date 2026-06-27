@@ -3,7 +3,8 @@ import Seo from "@/components/Seo";
 import { Check, X, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useSubscription } from "@/hooks/useSubscription";
-import { isPaymentEntryVisible } from "@/lib/payments";
+import { isPaymentEntryVisible, getPaymentProvider, restoreIapPurchases } from "@/lib/payments";
+import { openExternal } from "@/lib/native/openExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import BottomNav from "@/components/BottomNav";
@@ -49,9 +50,16 @@ const featureGroups = [
   },
 ];
 
-const faqs = [
-  { q: "무료 체험 후 자동 결제되나요?", a: "아니요. 체험 종료 후 직접 구독을 선택하셔야 합니다." },
-  { q: "구독을 취소하면 어떻게 되나요?", a: "만료일까지 프리미엄을 이용하실 수 있고, 이후 무료로 전환됩니다." },
+// FAQ 는 결제 수단에 따라 답이 다르다 — IAP(App Store 자동갱신 구독)는 체험 후 "자동 결제"가
+// 사실이고 해지는 App Store 설정에서 한다. 웹 카카오 흐름은 자동갱신이 아니라 그대로 둔다.
+// (회귀: native IAP 인데 "자동결제 안 됨" 고지는 3.1.2 오인표시 — 260626 codereview)
+const buildFaqs = (isIap: boolean) => [
+  isIap
+    ? { q: "무료 체험 후 자동 결제되나요?", a: "네, 무료 체험이 끝나면 선택하신 구독으로 자동 결제됩니다. App Store 설정 > 구독에서 언제든 해지할 수 있어요." }
+    : { q: "무료 체험 후 자동 결제되나요?", a: "아니요. 체험 종료 후 직접 구독을 선택하셔야 합니다." },
+  isIap
+    ? { q: "구독을 취소하면 어떻게 되나요?", a: "App Store 설정 > 구독에서 해지하면 만료일까지 프리미엄을 이용하실 수 있고, 이후 무료로 전환됩니다." }
+    : { q: "구독을 취소하면 어떻게 되나요?", a: "만료일까지 프리미엄을 이용하실 수 있고, 이후 무료로 전환됩니다." },
   { q: "플랜을 변경할 수 있나요?", a: "언제든 월간 ↔ 연간 변경이 가능합니다." },
 ];
 
@@ -61,6 +69,30 @@ const Premium = () => {
   const { plan, isPremium, isTrialActive, trialDaysLeft, expiresAt, cancelSubscription, isLoading } = useSubscription();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("yearly");
+  const [restoring, setRestoring] = useState(false);
+  // 결제 수단 — IAP(App Store)면 해지·복원은 스토어 규칙을 따른다(자체 백엔드 해지 금지).
+  const provider = getPaymentProvider();
+  const isIap = provider === "iap";
+  const faqs = buildFaqs(isIap);
+
+  // App Store 자동갱신 구독은 자체 백엔드로 못 끊는다 — Apple 구독 설정으로 안내(3.1.2).
+  const handleManageIap = () => {
+    void openExternal("https://apps.apple.com/account/subscriptions", { target: "_blank" });
+  };
+
+  // 구매 복원 — 기기 변경·재설치 후 구독 entitlement 동기화(App Store 3.1.1 필수).
+  const handleRestore = async () => {
+    if (!user) { navigate("/auth"); return; }
+    setRestoring(true);
+    try {
+      await restoreIapPurchases(user.id);
+      toast.success("구매 내역을 확인했어요. 활성 구독이 있으면 곧 반영됩니다.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "구매 복원에 실패했어요");
+    } finally {
+      setRestoring(false);
+    }
+  };
 
   const handleStartTrial = () => {
     if (!user) { navigate("/auth"); return; }
@@ -254,24 +286,39 @@ const Premium = () => {
           </div>
         </div>
 
-        {/* Cancel */}
+        {/* Cancel — IAP 는 App Store 설정에서 해지(자체 백엔드 해지 불가), 그 외는 기존 흐름 */}
         {isPremium && !isTrialActive && (
           <div className="px-4 py-4 text-center">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <button className="text-sm text-muted-foreground underline">구독 취소</button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="max-w-[360px]">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>구독을 취소하시겠어요?</AlertDialogTitle>
-                  <AlertDialogDescription>만료일까지 프리미엄을 이용하실 수 있고, 이후 무료로 전환됩니다.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>유지하기</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleCancel} className="bg-destructive text-destructive-foreground">취소하기</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {isIap ? (
+              <button onClick={handleManageIap} className="text-sm text-muted-foreground underline">
+                App Store에서 구독 관리·해지
+              </button>
+            ) : (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="text-sm text-muted-foreground underline">구독 취소</button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="max-w-[360px]">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>구독을 취소하시겠어요?</AlertDialogTitle>
+                    <AlertDialogDescription>만료일까지 프리미엄을 이용하실 수 있고, 이후 무료로 전환됩니다.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>유지하기</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleCancel} className="bg-destructive text-destructive-foreground">취소하기</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
+        )}
+
+        {/* 구매 복원 — App Store 3.1.1: 기기 변경·재설치 후 구독 복원 경로 필수(IAP 한정 노출) */}
+        {isIap && (
+          <div className="px-4 pb-6 text-center">
+            <button onClick={handleRestore} disabled={restoring} className="text-sm text-muted-foreground underline disabled:opacity-50">
+              {restoring ? "구매 복원 중…" : "구매 복원"}
+            </button>
           </div>
         )}
       </main>

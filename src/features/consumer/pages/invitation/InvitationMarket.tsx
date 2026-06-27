@@ -11,6 +11,7 @@ import {
   invokeDesignPurchaseReady,
 } from "@/features/consumer/data/invitation";
 import { useAuth } from "@/contexts/AuthContext";
+import { getPaymentProvider } from "@/lib/payments";
 import { toast } from "sonner";
 import { ORDER_SESSION_KEY } from "@/features/consumer/pages/Checkout";
 import { computeDesignCharge } from "@/lib/designPricing";
@@ -52,15 +53,21 @@ const InvitationMarket = () => {
 
   useEffect(() => { void load(); }, [load]);
 
+  // 디자인은 가변가격 마켓이라 IAP 고정티어로 못 판다 → 웹(카카오)에서만 구매 가능.
+  // 네이티브(iOS=unavailable / Android=iap, 디자인 IAP 상품 없음)에선 결제 경로 차단(스토어 정책).
+  // 안내 문구는 "웹에서 사세요" 식 steering 금지(anti-steering) — 중립 메시지.
+  const canBuyDesign = getPaymentProvider() === "kakao";
+
   const openBuy = (d: DesignCard) => {
     if (!user) { toast.error("로그인이 필요해요"); return; }
+    if (!canBuyDesign) { toast("현재 앱에서는 디자인 구매를 이용할 수 없어요."); return; }
     setSelected(d); setUsePoints(0);
   };
 
   const charge = selected ? computeDesignCharge(selected.price, usePoints, balance) : null;
 
   const onBuy = async () => {
-    if (!selected) return;
+    if (!selected || !canBuyDesign) return;
     setBuying(true);
     const { data, error } = await invokeDesignPurchaseReady({
       designId: selected.id,
