@@ -127,9 +127,17 @@ const MobileInvitationView2 = lazy(() => import("@/features/consumer/pages/invit
 const InvitationRsvpDashboard = lazy(() => import("@/features/consumer/pages/invitation/InvitationRsvpDashboard"));
 const InvitationPhotos = lazy(() => import("@/features/consumer/pages/invitation/InvitationPhotos"));
 const GuestPhotoUpload = lazy(() => import("@/features/consumer/pages/invitation/GuestPhotoUpload"));
+// 네이티브(Capacitor) 빌드 여부. import.meta.env.MODE 는 Vite 가 빌드시 정적 치환하므로
+// 아래 조건부 import 가 dead-code 제거(트리셰이크) 대상이 된다.
+const IS_NATIVE = import.meta.env.MODE === "capacitor";
+
 // 운영자(console) 도메인 — App.tsx 는 /admin/* 한 줄로 위임. admin 페이지 lazy·가드는
 // 라우트 모듈(@/features/console/routes)이 소유한다(도메인 경계).
-const ConsoleRoutes = lazy(() => import("@/features/console/routes"));
+// ★보안(Phase 2-2): 운영자는 앱을 쓰지 않으므로 네이티브 빌드에서 console 을 번들에서 제외한다
+// (앱 바이너리에 어드민이 들어가 직접 URL 누수되는 위험 제거 — 로드맵 보안 1순위). 동적 import
+// 참조가 !IS_NATIVE 분기 안에서만 일어나야 Rollup 이 capacitor 빌드에서 console 코드를
+// 트리셰이크로 뺀다(정량 검증: capacitor dist sourcemap 에 features/console 모듈 0개).
+const ConsoleRoutes = IS_NATIVE ? null : lazy(() => import("@/features/console/routes"));
 const SupportChat = lazy(() => import("@/features/consumer/pages/SupportChat"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
@@ -351,8 +359,11 @@ const App = () => (
               {/* I-MOBILE Phase 1: 네이티브 섹션 뷰어 프리뷰(기존 캔버스 뷰어 병행) */}
               <Route path="/i2/:slug" element={<MobileInvitationView2 />} />
               {/* 운영자(console) 도메인 — 라우트 모듈로 위임(가드·페이지는 그 모듈이 소유).
-                  가드는 모듈 내 라우트 레벨 — 페이지 마운트 전 권한 확인(비관리자 fetch·노출 차단). */}
-              <Route path="/admin/*" element={<ConsoleRoutes />} />
+                  가드는 모듈 내 라우트 레벨 — 페이지 마운트 전 권한 확인(비관리자 fetch·노출 차단).
+                  네이티브 빌드에서는 ConsoleRoutes=null → 라우트 미등록 → /admin 진입 시 catch-all NotFound. */}
+              {!IS_NATIVE && ConsoleRoutes && (
+                <Route path="/admin/*" element={<ConsoleRoutes />} />
+              )}
 
               {/* AEO 가이드 페이지(결혼어플추천 등). 한글 슬러그 라우트를
                   src/data/aeoGuides 단일 소스에서 생성. 크롤러용 SSR 은 api/guide.ts. */}
