@@ -50,6 +50,7 @@ import { fetchDraft, updateDraft, deleteDraft } from "@/features/console/data/in
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import {
+  type CaptionAnalysis,
   type InstagramCardText,
   type InstagramPostDraft,
   type InstagramPostSourceType,
@@ -106,6 +107,10 @@ const normalizeDraft = (row: Record<string, unknown>): InstagramPostDraft => {
       ? (row.card_image_urls as string[])
       : [],
     card_texts: cardTexts,
+    caption_analysis:
+      row.caption_analysis && typeof row.caption_analysis === "object"
+        ? (row.caption_analysis as CaptionAnalysis)
+        : null,
     status: (row.status ?? "draft") as InstagramPostStatus,
     scheduled_for: (row.scheduled_for as string | null) ?? null,
     published_at: (row.published_at as string | null) ?? null,
@@ -182,6 +187,63 @@ const buildFormFromDraft = (d: InstagramPostDraft): FormState => ({
   scheduled_for: toDatetimeLocal(d.scheduled_for),
   status: d.status,
 });
+
+const CHECK_LABELS: Record<string, string> = {
+  hook: "훅",
+  seo: "검색어",
+  fold: "폴드",
+  save_cta: "저장",
+  share_cta: "공유",
+  comment_cta: "댓글",
+  tone: "톤유지",
+};
+
+/** 캡션 IG-로직 자가 점검 결과 패널 — generator 가 채움. 운영자 후작업 가이드. */
+const CaptionAnalysisPanel = ({ analysis }: { analysis: CaptionAnalysis }) => {
+  const checks = analysis.checks ?? {};
+  return (
+    <div className="rounded-xl border border-border bg-muted/20 p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-foreground">
+          캡션 분석 (인스타 도달 로직)
+        </span>
+        {typeof analysis.score === "number" && (
+          <span className="text-xs font-semibold text-pink-600">
+            {analysis.score}/100
+          </span>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {Object.entries(CHECK_LABELS).map(([k, label]) => {
+          const ok = checks[k as keyof typeof checks];
+          return (
+            <span
+              key={k}
+              className={
+                "text-[10px] px-2 py-0.5 rounded-full border " +
+                (ok
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-rose-50 text-rose-700 border-rose-200")
+              }
+            >
+              {ok ? "✓" : "✕"} {label}
+            </span>
+          );
+        })}
+      </div>
+      {analysis.keywords?.length ? (
+        <p className="text-[10px] text-muted-foreground">
+          검색어: {analysis.keywords.join(", ")}
+        </p>
+      ) : null}
+      {analysis.notes ? (
+        <p className="text-[11px] text-foreground bg-amber-50 border border-amber-200 rounded p-2">
+          📝 {analysis.notes}
+        </p>
+      ) : null}
+    </div>
+  );
+};
 
 const AdminInstagramPostEditInner = () => {
   const { id } = useParams<{ id: string }>();
@@ -756,6 +818,11 @@ const AdminInstagramPostEditInner = () => {
                 </p>
               )}
             </div>
+
+            {/* 캡션 분석(IG 로직 자가 점검) — generator 가 채움. ✕ 표시·메모만 손보면 됨. */}
+            {draft.caption_analysis ? (
+              <CaptionAnalysisPanel analysis={draft.caption_analysis} />
+            ) : null}
 
             {/* 출처 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

@@ -40,6 +40,16 @@ export interface InstagramCardText {
   image_zoom?: number;
 }
 
+export interface CaptionAnalysis {
+  score?: number;
+  checks?: Partial<Record<
+    "hook" | "seo" | "fold" | "save_cta" | "share_cta" | "comment_cta" | "tone",
+    boolean
+  >>;
+  keywords?: string[];
+  notes?: string;
+}
+
 export interface InstagramPostDraft {
   id: string;
   topic: string;
@@ -50,6 +60,7 @@ export interface InstagramPostDraft {
   card_count: number;
   card_image_urls: string[];
   card_texts: InstagramCardText[];
+  caption_analysis: CaptionAnalysis | null;
   status: InstagramPostStatus;
   scheduled_for: string | null;
   published_at: string | null;
