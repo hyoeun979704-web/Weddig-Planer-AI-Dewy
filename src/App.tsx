@@ -170,7 +170,9 @@ const SubscriptionPaymentFail = lazy(() => import("@/features/consumer/pages/Sub
 
 // 기업(partners) 도메인 — App.tsx 는 /business/* 한 줄로 위임. partners 페이지 lazy·가드는
 // 라우트 모듈(@/features/partners/routes)이 소유한다(도메인 경계 — App.tsx 에 partners 참조 최소화).
-const PartnersRoutes = lazy(() => import("@/features/partners/routes"));
+// Phase 2-3: 네이티브 앱 = 소비자 전용. 기업은 웹(/business)으로 분리하므로 capacitor 빌드에서
+// partners 코드를 트리셰이크로 제외한다(console 과 동일 패턴 — !IS_NATIVE 분기 안에서만 import 참조).
+const PartnersRoutes = IS_NATIVE ? null : lazy(() => import("@/features/partners/routes"));
 
 // React Query 전역 기본값: 기본 staleTime=0 + refetchOnWindowFocus=true 면 모바일 웹에서
 // 탭 전환마다 모든 useQuery 가 재요청(중복 라운드트립). 모바일 웹이 주 사용처라 60s 신선도 +
@@ -306,8 +308,11 @@ const App = () => (
               {/* 꽃 머지 퍼즐 게임 */}
               <Route path="/merge-game" element={<MergeGame />} />
 
-              {/* 기업(partners) 도메인 — 라우트 모듈로 위임(가드·페이지는 그 모듈이 소유). */}
-              <Route path="/business/*" element={<PartnersRoutes />} />
+              {/* 기업(partners) 도메인 — 라우트 모듈로 위임(가드·페이지는 그 모듈이 소유).
+                  네이티브 빌드에서는 PartnersRoutes=null → 라우트 미등록 → /business 진입 시 catch-all NotFound. */}
+              {!IS_NATIVE && PartnersRoutes && (
+                <Route path="/business/*" element={<PartnersRoutes />} />
+              )}
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
