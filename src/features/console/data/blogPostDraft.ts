@@ -66,6 +66,19 @@ export async function deleteBlogDraft(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** 발행 글 중 같은 slug 가 이미 있는지(자기 자신 제외) — 공개 URL 중복 방지. */
+export async function isPublishedSlugTaken(slug: string, exceptId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("blog_post_drafts")
+    .select("id")
+    .eq("status", "published")
+    .eq("slug", slug)
+    .neq("id", exceptId)
+    .limit(1);
+  if (error) throw error;
+  return (data ?? []).length > 0;
+}
+
 export interface GenerateBlogResult {
   success: boolean;
   draftId?: string;

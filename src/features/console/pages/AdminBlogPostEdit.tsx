@@ -5,8 +5,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   ChevronLeft,
-  Code2,
-  Copy,
   ExternalLink,
   Eye,
   Link2,
@@ -52,6 +50,7 @@ import {
   updateBlogDraft,
   deleteBlogDraft,
   generateBlogDraft,
+  isPublishedSlugTaken,
 } from "@/features/console/data/blogPostDraft";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -72,6 +71,21 @@ const CHECK_LABEL: Record<string, string> = {
   no_fabrication: "지어낸 수치 없음",
 };
 
+const SITE = "https://dewy-wedding.com";
+
+/** 제목/슬러그 → URL 슬러그. 한글 보존(\p{L}), 공백·기호는 하이픈. */
+function slugify(s: string): string {
+  return (
+    s
+      .trim()
+      .toLowerCase()
+      .replace(/['"]/g, "")
+      .replace(/[^\p{L}\p{N}]+/gu, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "post"
+  );
+}
+
 interface FormState {
   title: string;
   slug: string;
@@ -82,7 +96,6 @@ interface FormState {
   tags: string; // 콤마 구분
   content_markdown: string;
   featured_image_url: string;
-  wp_url: string; // 직접 발행한 글의 공개 URL(수동 기록)
   notes: string;
 }
 
@@ -99,7 +112,6 @@ function buildForm(d: BlogPostDraft): FormState {
     tags: (d.tags ?? []).join(", "),
     content_markdown: d.content_markdown ?? "",
     featured_image_url: d.featured_image_url ?? "",
-    wp_url: d.wp_url ?? "",
     notes: d.notes ?? "",
   };
 }
@@ -168,7 +180,6 @@ const AdminBlogPostEditInner = () => {
         tags: splitList(form.tags),
         content_markdown: form.content_markdown.trim() || null,
         featured_image_url: form.featured_image_url.trim() || null,
-        wp_url: form.wp_url.trim() || null,
         notes: form.notes.trim() || null,
         reviewed_by: user?.id ?? null,
         reviewed_at: new Date().toISOString(),
@@ -196,48 +207,44 @@ const AdminBlogPostEditInner = () => {
     }
   };
 
-  const copyText = async (text: string, label: string) => {
-    if (!text.trim()) {
-      toast({ title: "복사할 내용이 없어요", variant: "destructive" });
+  /** 발행(공개) — status=published 로 전환하면 dewy-wedding.com/blog/<slug> 에 라이브.
+   *  슬러그 보장(없으면 제목에서 생성)·중복 회피 + 발행 시점 HTML 스냅샷 저장. */
+  const handlePublish = async () => {
+    if (!id || !form) return;
+    if (!form.content_markdown.trim()) {
+      toast({ title: "본문이 비어 있어요", variant: "destructive" });
       return;
     }
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({ title: `${label} 복사됨`, description: "워드프레스 편집기에 붙여넣으세요." });
-    } catch {
-      toast({ title: "복사 실패", description: "클립보드 접근이 막혔어요.", variant: "destructive" });
-    }
-  };
-
-  const handleCopyMarkdown = () => copyText(form?.content_markdown ?? "", "마크다운");
-  const handleCopyHtml = () => {
-    const html = htmlRef.current?.innerHTML ?? "";
-    copyText(html, "HTML");
-  };
-
-  /** 운영자가 워드프레스에 직접 올린 뒤 "발행 완료"로 표시(수동 상태 추적). */
-  const handleMarkPublished = async () => {
     setMarking(true);
     try {
+      // 슬러그 보장 + 발행글 중 중복이면 짧은 접미사.
+      let slug = (form.slug.trim() ? slugify(form.slug) : slugify(form.title)) || "post";
+      if (await isPublishedSlugTaken(slug, id)) slug = `${slug}-${id.slice(0, 4)}`;
+      const contentHtml = htmlRef.current?.innerHTML ?? "";
+
       const updated = await persist({
+        slug,
         status: "published",
         wp_status: "publish",
         wp_published_at: new Date().toISOString(),
+        content_html: contentHtml,
       });
-      if (updated) toast({ title: "발행 완료로 표시했어요" });
+      if (updated) {
+        toast({ title: "발행됐어요", description: `dewy-wedding.com/blog/${slug} 에 공개됐습니다.` });
+      }
     } catch (e) {
-      toast({ title: "처리 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+      toast({ title: "발행 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
     } finally {
       setMarking(false);
     }
   };
 
-  /** 발행 표시를 되돌려 다시 검수 상태로. */
-  const handleRevertToReview = async () => {
+  /** 비공개로 전환 — /blog 에서 내려가고 검수 상태로. */
+  const handleUnpublish = async () => {
     setMarking(true);
     try {
       const updated = await persist({ status: "review", wp_status: null, wp_published_at: null });
-      if (updated) toast({ title: "검수 상태로 되돌렸어요" });
+      if (updated) toast({ title: "비공개로 전환했어요" });
     } catch (e) {
       toast({ title: "처리 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
     } finally {
@@ -304,7 +311,7 @@ const AdminBlogPostEditInner = () => {
   return (
     <AdminLayout
       title="블로그 원고 검수"
-      description="wp_aio 원고 검수 → 복사해서 워드프레스에 직접 발행 → 발행 완료 표시"
+      description="AI 원고 검수·편집(텍스트·사진) → 발행하면 dewy-wedding.com/blog 에 공개"
       rightAction={
         <Button variant="outline" size="sm" onClick={() => navigate("/admin/blog-posts")}>
           <ChevronLeft className="w-4 h-4 mr-1" />목록
@@ -317,14 +324,14 @@ const AdminBlogPostEditInner = () => {
           <span className={"text-[11px] px-2 py-0.5 rounded-full font-semibold " + BLOG_STATUS_TONE[draft.status]}>
             {BLOG_STATUS_LABEL[draft.status]}
           </span>
-          {draft.wp_url && (
+          {isPublished && draft.slug && (
             <a
-              href={draft.wp_url}
+              href={`${SITE}/blog/${encodeURIComponent(draft.slug)}`}
               target="_blank"
               rel="noreferrer"
               className="text-xs text-primary inline-flex items-center gap-1 hover:underline"
             >
-              <ExternalLink className="w-3.5 h-3.5" />발행된 글 보기
+              <ExternalLink className="w-3.5 h-3.5" />라이브 글 보기 (/blog/{draft.slug})
             </a>
           )}
           {draft.wp_published_at && (
@@ -506,40 +513,21 @@ const AdminBlogPostEditInner = () => {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="f-md">본문 (Markdown)</Label>
-            <div className="flex items-center gap-1.5">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setIsPreviewOpen(true)}>
-                <Eye className="w-3.5 h-3.5 mr-1" />미리보기
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={handleCopyMarkdown}>
-                <Copy className="w-3.5 h-3.5 mr-1" />마크다운 복사
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={handleCopyHtml}>
-                <Code2 className="w-3.5 h-3.5 mr-1" />HTML 복사
-              </Button>
-            </div>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsPreviewOpen(true)}>
+              <Eye className="w-3.5 h-3.5 mr-1" />미리보기
+            </Button>
           </div>
           <Textarea
             id="f-md"
             rows={18}
             className="font-mono text-xs"
-            placeholder="wp_aio 본문(Markdown). 복사 버튼으로 워드프레스에 붙여넣으세요."
+            placeholder="본문(Markdown). 발행하면 dewy-wedding.com/blog 에 이 내용이 공개됩니다."
             value={form.content_markdown}
             onChange={(e) => set({ content_markdown: e.target.value })}
           />
           <p className="text-[11px] text-muted-foreground">
-            "HTML 복사" 는 워드프레스 블록 편집기에, "마크다운 복사" 는 마크다운 지원 블록/플러그인에 붙여넣기 좋아요. (표 등 GFM 문법은 마크다운 복사를 권장)
+            사진이 필요하면 위 "대표 이미지" 에 올리거나, 본문 마크다운에 이미지를 넣을 수 있어요. 발행 전 "미리보기" 로 최종 확인하세요.
           </p>
-        </div>
-
-        {/* 발행 기록 */}
-        <div className="space-y-1.5">
-          <Label htmlFor="f-wpurl">발행된 글 URL (직접 올린 뒤 붙여넣기)</Label>
-          <Input
-            id="f-wpurl"
-            placeholder="https://post.dewy-wedding.com/..."
-            value={form.wp_url}
-            onChange={(e) => set({ wp_url: e.target.value })}
-          />
         </div>
 
         {/* 내부 메모 */}
@@ -559,14 +547,14 @@ const AdminBlogPostEditInner = () => {
             AI 재생성
           </Button>
           {isPublished ? (
-            <Button onClick={handleRevertToReview} disabled={busy} variant="secondary">
+            <Button onClick={handleUnpublish} disabled={busy} variant="secondary">
               {marking ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-1" />}
-              검수 상태로 되돌리기
+              비공개로 전환
             </Button>
           ) : (
-            <Button onClick={handleMarkPublished} disabled={busy}>
+            <Button onClick={handlePublish} disabled={busy}>
               {marking ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
-              발행 완료로 표시
+              발행 (공개)
             </Button>
           )}
           <div className="flex-1" />
@@ -576,7 +564,7 @@ const AdminBlogPostEditInner = () => {
         </div>
 
         <p className="text-[11px] text-muted-foreground">
-          이 화면에서 원고를 검수·복사해 워드프레스에 직접 게시한 뒤, 위에 발행된 글 URL 을 넣고 "발행 완료로 표시" 를 누르면 상태가 기록돼요.
+          "발행 (공개)" 을 누르면 dewy-wedding.com/blog/&lt;슬러그&gt; 에 바로 공개돼요. 슬러그가 비어 있으면 제목에서 자동 생성됩니다. "비공개로 전환" 으로 언제든 내릴 수 있어요.
         </p>
       </div>
 

@@ -139,8 +139,8 @@ const AdminBlogPostsInner = () => {
 
   return (
     <AdminLayout
-      title="블로그 · 워드프레스 발행"
-      description="wp_aio 원고 적재 → 검수 → 워드프레스 REST 자동 발행(임시저장·발행)"
+      title="블로그 발행"
+      description="AI 생성 → 검수·편집(텍스트·사진) → 발행하면 dewy-wedding.com/blog 에 공개"
       rightAction={
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={fetchDrafts} disabled={isLoading}>
@@ -336,17 +336,14 @@ const DraftRow = ({ draft }: { draft: BlogPostDraft }) => {
             {BLOG_STATUS_LABEL[draft.status]}
           </span>
           <span className="text-[11px] text-muted-foreground">{BLOG_PERSONA_LABEL[draft.author_persona]}</span>
-          {draft.wp_status && (
-            <span className="text-[11px] text-muted-foreground">· WP {draft.wp_status}</span>
-          )}
         </div>
         <p className="text-sm font-medium text-foreground mt-1 line-clamp-1">{draft.title}</p>
         {draft.excerpt && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{draft.excerpt}</p>}
         <div className="flex items-center gap-2 mt-1">
           <p className="text-[11px] text-muted-foreground">{created}</p>
-          {draft.wp_url && (
+          {draft.status === "published" && draft.slug && (
             <span className="text-[11px] text-emerald-600 inline-flex items-center gap-0.5">
-              <ExternalLink className="w-3 h-3" />발행됨
+              <ExternalLink className="w-3 h-3" />/blog/{draft.slug}
             </span>
           )}
         </div>
