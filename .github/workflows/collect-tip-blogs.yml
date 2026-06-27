@@ -1,0 +1,87 @@
+name: Collect Tip Blogs
+
+# 결혼준비 블로그/매거진 꿀팁 수집 — 네이버 블로그 검색 API + 매거진 RSS.
+#
+# 배경: 영상(tip-videos.yml→collect-tips)은 매일 수집돼 tip_videos 가 신선한데,
+# **블로그(tip_blogs)는 수집 스케줄이 없어 0건**, 인스타도 멈춰 있었다. 수집 스크립트
+# (scripts/collect-tips/naver-blogs.ts·magazine-rss.ts)는 멀쩡한데 **워크플로가 없어** 안 돌던 것.
+# 이 워크플로가 블로그 수집을 매일 돌려 꿀팁 블로그 탭을 채운다.
+#
+# 쿼터: 네이버 블로그 검색 무료 한도 25,000/일 중 ~5% 만 사용(카테고리×키워드×2페이지).
+# 매거진 RSS 는 quota 0(현재 MAGAZINES 배열이 비어 있으면 no-op — URL 등록 시 자동 수집).
+#
+# 필요한 시크릿(이미 nightly-collection·tip-videos 가 쓰는 것 재사용 — 신규 등록 불필요):
+#   NAVER_CLIENT_ID, NAVER_CLIENT_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+
+on:
+  schedule:
+    # 05:40 KST every day (20:40 UTC the previous day) — 영상 수집(21:00 UTC)과 분리.
+    - cron: "40 20 * * *"
+  workflow_dispatch:
+    inputs:
+      category:
+        description: "Single category slug (general / wedding_hall / ...) — empty = all"
+        required: false
+        default: ""
+      pages:
+        description: "네이버 블로그 페이지 수 per 키워드 (default 2)"
+        required: false
+        default: "2"
+
+concurrency:
+  group: collect-tip-blogs
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify required secrets
+        env:
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          missing=()
+          for v in NAVER_CLIENT_ID NAVER_CLIENT_SECRET SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!v}" ]; then missing+=("$v"); fi
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required secrets: ${missing[*]}"
+            echo "Add them in Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Collect blog tips (Naver search)
+        env:
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          INPUT_CATEGORY: ${{ github.event.inputs.category }}
+          INPUT_PAGES: ${{ github.event.inputs.pages }}
+        run: |
+          ARGS="--pages=${INPUT_PAGES:-2}"
+          if [ -n "$INPUT_CATEGORY" ]; then
+            ARGS="$ARGS --category=$INPUT_CATEGORY"
+          fi
+          echo "Running: npm run collect-blogs -- $ARGS"
+          npm run collect-blogs -- $ARGS
+
+      - name: Collect magazine tips (RSS, quota 0)
+        # MAGAZINES 배열이 비어 있으면 no-op(안내만). URL 등록 시 자동 수집.
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run collect-magazines
