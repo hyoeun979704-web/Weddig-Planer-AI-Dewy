@@ -13,6 +13,43 @@ export type BlogAuthorPersona = "me" | "brand";
 /** WP 쪽 실제 게시 상태(status 와 별개 — 부분 상태 추적). */
 export type WpPostStatus = "draft" | "publish";
 
+/** 마케팅 독자 페르소나(wedding-intel §4 mp_*). */
+export type ReaderPersona =
+  | "mp_general"
+  | "mp_budget"
+  | "mp_small"
+  | "mp_self"
+  | "mp_premium"
+  | "mp_beginner"
+  | "mp_visual";
+
+export const READER_PERSONA_LABEL: Record<ReaderPersona, string> = {
+  mp_general: "일반(표준)",
+  mp_budget: "가성비",
+  mp_small: "스몰웨딩",
+  mp_self: "셀프웨딩",
+  mp_premium: "프리미엄",
+  mp_beginner: "입문",
+  mp_visual: "트렌드·비주얼",
+};
+
+/** 자료조사 그라운딩 출처. */
+export interface BlogSource {
+  title: string;
+  url: string;
+}
+
+/** AI 자가 분석(인스타 caption_analysis 와 동형). */
+export interface BlogAnalysis {
+  score?: number; // 0~100
+  checks?: Partial<Record<
+    "tldr" | "question_headings" | "faq" | "scannability" | "persona" | "no_fabrication",
+    boolean
+  >>;
+  keywords?: string[];
+  notes?: string;
+}
+
 export interface BlogPostDraft {
   id: string;
   title: string;
@@ -36,6 +73,13 @@ export interface BlogPostDraft {
   last_error: string | null;
   retry_count: number;
   notes: string | null;
+  // AI 생성 메타(blog-draft-generator)
+  analysis: BlogAnalysis | null;
+  sources: BlogSource[];
+  reader_persona: ReaderPersona | null;
+  angle: string | null;
+  model: string | null;
+  generated_at: string | null;
   created_by: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;

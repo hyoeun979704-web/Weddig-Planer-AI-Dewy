@@ -65,3 +65,39 @@ export async function deleteBlogDraft(id: string): Promise<void> {
   const { error } = await supabase.from("blog_post_drafts").delete().eq("id", id);
   if (error) throw error;
 }
+
+export interface GenerateBlogResult {
+  success: boolean;
+  draftId?: string;
+  sourceCount?: number;
+  error?: string;
+}
+
+/**
+ * blog-draft-generator edge function 호출 — 자료조사(그라운딩)→신뢰성 검증→wp_aio 작성→자가분석.
+ * topic 으로 신규 생성(draftId 반환) 또는 draftId 로 기존 원고 재생성.
+ */
+export async function generateBlogDraft(input: {
+  topic?: string;
+  draftId?: string;
+  readerPersona?: string | null;
+  angle?: string | null;
+}): Promise<GenerateBlogResult> {
+  const { data, error } = await supabase.functions.invoke("blog-draft-generator", { body: input });
+  if (error) {
+    let detail = error.message;
+    const ctx = (error as { context?: Response }).context;
+    if (ctx && typeof ctx.json === "function") {
+      try {
+        const j = await ctx.json();
+        detail = j?.message || j?.error || detail;
+      } catch {
+        /* 본문 파싱 실패 — 기본 메시지 유지 */
+      }
+    }
+    throw new Error(detail);
+  }
+  const result = data as GenerateBlogResult | null;
+  if (!result || result.error) throw new Error(result?.error ?? "응답이 비어있어요");
+  return result;
+}
