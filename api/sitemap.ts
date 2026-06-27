@@ -79,6 +79,16 @@ export default async function handler(req: Request): Promise<Response> {
       const urls = rows.map((r) => urlTag(`${SITE}/store/${r.id}`, r.updated_at));
       return new Response(xmlDoc(urls), { headers });
     }
+    if (type === "blog") {
+      // 발행된 블로그 글 개별 URL. anon 키로 published 만 읽힘(RLS 공개 정책).
+      const rows = await fetchAll(
+        "blog_post_drafts?select=slug,updated_at&status=eq.published&slug=not.is.null",
+      );
+      const urls = rows.flatMap((r) =>
+        r.slug ? [urlTag(`${SITE}/blog/${encodeURIComponent(String(r.slug))}`, r.updated_at)] : [],
+      );
+      return new Response(xmlDoc(urls), { headers });
+    }
     // 기본: 활성·미삭제 + 라우트 있는 카테고리만.
     const cats = Object.keys(PLACE_PREFIX).join(",");
     const rows = await fetchAll(

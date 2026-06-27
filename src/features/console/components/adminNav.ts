@@ -75,7 +75,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   // 마케팅
   { label: "인스타 큐레이션", href: "/admin/tip-instagrams", icon: Instagram, featured: true, group: "marketing" },
   { label: "인스타 카드뉴스", href: "/admin/instagram-posts", icon: Instagram, badge: "1단계", group: "marketing" },
-  { label: "블로그·워드프레스", href: "/admin/blog-posts", icon: FileText, group: "marketing" },
+  { label: "블로그(SEO)", href: "/admin/blog-posts", icon: FileText, group: "marketing" },
   { label: "이벤트·진입 팝업", href: "/admin/promotions", icon: Star, featured: true, group: "marketing" },
 ];
 

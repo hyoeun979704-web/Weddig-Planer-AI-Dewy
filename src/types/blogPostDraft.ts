@@ -55,6 +55,7 @@ export interface BlogPostDraft {
   title: string;
   slug: string | null;
   content_markdown: string | null;
+  content_html: string | null;
   excerpt: string | null;
   canonical_url: string | null;
   featured_image_url: string | null;

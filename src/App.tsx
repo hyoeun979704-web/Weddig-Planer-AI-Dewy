@@ -20,6 +20,8 @@ import { ThemeProvider } from "next-themes";
 // Lazy-loaded pages
 const MergeGame = lazy(() => import("@/features/consumer/pages/MergeGame"));
 const Index = lazy(() => import("@/features/consumer/pages/Index"));
+const BlogList = lazy(() => import("@/features/consumer/pages/BlogList"));
+const BlogPost = lazy(() => import("@/features/consumer/pages/BlogPost"));
 const Auth = lazy(() => import("@/features/consumer/pages/Auth"));
 const Studios = lazy(() => import("@/features/consumer/pages/Studios"));
 const StudioDetail = lazy(() => import("@/features/consumer/pages/StudioDetail"));
@@ -216,6 +218,8 @@ const App = () => (
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/store" element={<Store />} />
               <Route path="/tips" element={<Tips />} />
+              <Route path="/blog" element={<BlogList />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/magazine" element={<Navigate to="/tips" replace />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/ai-planner" element={<AIPlanner />} />

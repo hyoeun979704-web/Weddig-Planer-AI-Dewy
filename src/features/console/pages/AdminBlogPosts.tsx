@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { fetchBlogDraftList, createBlogDraft, generateBlogDraft } from "@/features/console/data/blogPostDraft";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -60,6 +61,7 @@ const AdminBlogPostsInner = () => {
   const [genTopic, setGenTopic] = useState("");
   const [genPersona, setGenPersona] = useState<ReaderPersona>("mp_general");
   const [genAngle, setGenAngle] = useState("");
+  const [genAutoPublish, setGenAutoPublish] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const fetchDrafts = useCallback(async () => {
@@ -116,10 +118,15 @@ const AdminBlogPostsInner = () => {
         topic: genTopic.trim(),
         readerPersona: genPersona,
         angle: genAngle.trim() || null,
+        autoPublish: genAutoPublish,
       });
       toast({
-        title: "AI 원고 생성 완료",
-        description: `자료조사 출처 ${res.sourceCount ?? 0}건 · 검수 화면으로 이동합니다.`,
+        title: res.published ? "AI 원고 자동 발행 완료" : "AI 원고 생성 완료",
+        description: res.published
+          ? `AIO 기준 통과 → /blog/${res.slug} 에 공개됨 (출처 ${res.sourceCount ?? 0}건)`
+          : res.holdReason
+            ? `${res.holdReason} · 검수 화면에서 확인하세요`
+            : `자료조사 출처 ${res.sourceCount ?? 0}건 · 검수 화면으로 이동합니다.`,
       });
       setIsGenOpen(false);
       setGenTopic("");
@@ -139,8 +146,8 @@ const AdminBlogPostsInner = () => {
 
   return (
     <AdminLayout
-      title="블로그 · 워드프레스 발행"
-      description="wp_aio 원고 적재 → 검수 → 워드프레스 REST 자동 발행(임시저장·발행)"
+      title="블로그 발행"
+      description="AI 생성 → 검수·편집(텍스트·사진) → 발행하면 dewy-wedding.com/blog 에 공개"
       rightAction={
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={fetchDrafts} disabled={isLoading}>
@@ -273,6 +280,20 @@ const AdminBlogPostsInner = () => {
                 disabled={isGenerating}
               />
             </div>
+            <div className="flex items-start gap-3 rounded-xl border border-border p-3">
+              <Switch
+                id="gen-autopublish"
+                checked={genAutoPublish}
+                onCheckedChange={setGenAutoPublish}
+                disabled={isGenerating}
+              />
+              <div className="space-y-0.5">
+                <Label htmlFor="gen-autopublish" className="cursor-pointer">자동 발행 (AIO 기준 통과 시)</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  생성 후 분석·개선을 거쳐 <b>점수·지어내기없음·TL;DR·FAQ·출처</b> 기준을 통과하면 자동으로 /blog 에 공개합니다. 미달이면 검수함에 보류돼요.
+                </p>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsGenOpen(false)} disabled={isGenerating}>
@@ -336,17 +357,14 @@ const DraftRow = ({ draft }: { draft: BlogPostDraft }) => {
             {BLOG_STATUS_LABEL[draft.status]}
           </span>
           <span className="text-[11px] text-muted-foreground">{BLOG_PERSONA_LABEL[draft.author_persona]}</span>
-          {draft.wp_status && (
-            <span className="text-[11px] text-muted-foreground">· WP {draft.wp_status}</span>
-          )}
         </div>
         <p className="text-sm font-medium text-foreground mt-1 line-clamp-1">{draft.title}</p>
         {draft.excerpt && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{draft.excerpt}</p>}
         <div className="flex items-center gap-2 mt-1">
           <p className="text-[11px] text-muted-foreground">{created}</p>
-          {draft.wp_url && (
+          {draft.status === "published" && draft.slug && (
             <span className="text-[11px] text-emerald-600 inline-flex items-center gap-0.5">
-              <ExternalLink className="w-3 h-3" />발행됨
+              <ExternalLink className="w-3 h-3" />/blog/{draft.slug}
             </span>
           )}
         </div>

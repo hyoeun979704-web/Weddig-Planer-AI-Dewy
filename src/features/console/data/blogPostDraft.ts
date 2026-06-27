@@ -66,15 +66,35 @@ export async function deleteBlogDraft(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** 발행 글 중 같은 slug 가 이미 있는지(자기 자신 제외) — 공개 URL 중복 방지. */
+export async function isPublishedSlugTaken(slug: string, exceptId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("blog_post_drafts")
+    .select("id")
+    .eq("status", "published")
+    .eq("slug", slug)
+    .neq("id", exceptId)
+    .limit(1);
+  if (error) throw error;
+  return (data ?? []).length > 0;
+}
+
 export interface GenerateBlogResult {
   success: boolean;
   draftId?: string;
   sourceCount?: number;
+  /** 'draft' | 'review' | 'published' — autoPublish + AIO 게이트 결과. */
+  status?: string;
+  published?: boolean;
+  slug?: string | null;
+  /** autoPublish 인데 게이트 미달로 보류된 사유. */
+  holdReason?: string | null;
   error?: string;
 }
 
 /**
- * blog-draft-generator edge function 호출 — 자료조사(그라운딩)→신뢰성 검증→wp_aio 작성→자가분석.
+ * blog-draft-generator edge function 호출 — 자료조사(그라운딩)→신뢰성 검증→작성→개선→자가분석.
+ * autoPublish=true 면 AIO 게이트(점수·no_fabrication·TL;DR·FAQ·출처) 통과 시 자동 공개, 미달 시 검수함 보류.
  * topic 으로 신규 생성(draftId 반환) 또는 draftId 로 기존 원고 재생성.
  */
 export async function generateBlogDraft(input: {
@@ -82,6 +102,7 @@ export async function generateBlogDraft(input: {
   draftId?: string;
   readerPersona?: string | null;
   angle?: string | null;
+  autoPublish?: boolean;
 }): Promise<GenerateBlogResult> {
   const { data, error } = await supabase.functions.invoke("blog-draft-generator", { body: input });
   if (error) {

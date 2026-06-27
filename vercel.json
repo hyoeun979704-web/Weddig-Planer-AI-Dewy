@@ -15,6 +15,9 @@
 
     { "source": "/sitemap-places.xml", "destination": "/api/sitemap?type=places" },
     { "source": "/sitemap-products.xml", "destination": "/api/sitemap?type=products" },
+    { "source": "/sitemap-blog.xml", "destination": "/api/sitemap?type=blog" },
+
+    { "source": "/blog/:slug", "destination": "/api/blog?slug=:slug" },
 
     { "source": "/결혼어플추천", "destination": "/api/guide?slug=결혼어플추천" },
     { "source": "/결혼준비앱추천", "destination": "/api/guide?slug=결혼준비앱추천" },

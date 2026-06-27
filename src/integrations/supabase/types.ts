@@ -451,6 +451,7 @@ export type Database = {
           author_persona: string
           canonical_url: string | null
           categories: string[]
+          content_html: string | null
           content_markdown: string | null
           created_at: string
           created_by: string | null
@@ -486,6 +487,7 @@ export type Database = {
           author_persona?: string
           canonical_url?: string | null
           categories?: string[]
+          content_html?: string | null
           content_markdown?: string | null
           created_at?: string
           created_by?: string | null
@@ -521,6 +523,7 @@ export type Database = {
           author_persona?: string
           canonical_url?: string | null
           categories?: string[]
+          content_html?: string | null
           content_markdown?: string | null
           created_at?: string
           created_by?: string | null
