@@ -20,6 +20,16 @@ export interface InstagramCardText {
   title?: string;
   body?: string;
   footer?: string;
+  /** 카드 배경 사진 URL (표지/본문). 없으면 그라데이션 폴백. */
+  image_url?: string;
+  /** 좌하단 출처 핸들(@계정). 표지는 본문 카드들의 handle 을 모아 표시(렌더러 도출). */
+  handle?: string;
+  /** 표지 우상단 썸네일(최대 3). 보통 렌더러가 본문 image_url 에서 자동 도출. */
+  thumb_urls?: string[];
+  /** CTA 2x2 그리드(최대 4). 보통 렌더러가 본문 image_url 에서 자동 도출. */
+  grid_urls?: string[];
+  /** 표지 핸들 여러 줄(명시 지정 시). 보통 렌더러가 본문 handle 에서 도출. */
+  handles?: string[];
 }
 
 export interface InstagramPostDraft {

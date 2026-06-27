@@ -12,12 +12,15 @@ import {
   Info,
   Loader2,
   Plus,
+  RefreshCw,
   RotateCcw,
   Save,
   Trash2,
 } from "lucide-react";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
+import ImageUploader from "@/components/ImageUploader";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -188,6 +191,7 @@ const AdminInstagramPostEditInner = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isMutating, setIsMutating] = useState(false); // 승인/예약/되돌리기/삭제 등
+  const [isRendering, setIsRendering] = useState(false); // 카드 렌더(이미지 생성)
   const [hashtagInput, setHashtagInput] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -378,6 +382,33 @@ const AdminInstagramPostEditInner = () => {
     setDraft(normalized);
     setForm(buildFormFromDraft(normalized));
     toast({ title: successTitle });
+  };
+
+  // 카드 렌더 — 저장 후 instagram-card-renderer 호출(card_texts→PNG), 완료되면 리로드.
+  const handleRender = async () => {
+    if (!id) return;
+    const ok = await handleSave();
+    if (!ok) return;
+    setIsRendering(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "instagram-card-renderer",
+        { body: { draftId: id } },
+      );
+      if (error) throw error;
+      const errMsg = (data as { error?: string } | null)?.error;
+      if (errMsg) throw new Error(errMsg);
+      toast({ title: "카드 렌더 완료", description: "카드 이미지가 갱신됐어요." });
+      await fetchDraft();
+    } catch (e) {
+      toast({
+        title: "카드 렌더 실패",
+        description: e instanceof Error ? e.message : "렌더러 호출 오류",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRendering(false);
+    }
   };
 
   const handleApprove = async () => {
@@ -787,8 +818,56 @@ const AdminInstagramPostEditInner = () => {
                         onChange={(e) =>
                           updateCard(idx, { footer: e.target.value })
                         }
-                        placeholder="푸터 (선택)"
+                        placeholder="푸터 / TIP (선택)"
                       />
+                    </div>
+
+                    {/* 사진 + 출처 핸들 (Figma 227-2 사진 카드). 표지 썸네일 3장·CTA 그리드 4장은
+                        본문 카드 사진에서 자동 도출 → 여기선 카드별 배경 사진·핸들만 입력하면 됨. */}
+                    <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-2 pt-1">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">
+                          배경 사진
+                        </Label>
+                        <ImageUploader
+                          bucket="instagram-cards"
+                          pathPrefix={`drafts/${id ?? "new"}/src/`}
+                          initialUrl={card.image_url}
+                          onUploaded={(_path, url) =>
+                            updateCard(idx, { image_url: url })
+                          }
+                          className="aspect-[4/5]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">
+                          출처 핸들 (@계정)
+                        </Label>
+                        <Input
+                          value={card.handle ?? ""}
+                          onChange={(e) =>
+                            updateCard(idx, { handle: e.target.value })
+                          }
+                          placeholder="@ete_garden"
+                        />
+                        {card.image_url ? (
+                          <Input
+                            value={card.image_url}
+                            onChange={(e) =>
+                              updateCard(idx, { image_url: e.target.value })
+                            }
+                            placeholder="사진 URL (직접 입력/수정)"
+                            className="text-[11px] text-muted-foreground"
+                          />
+                        ) : null}
+                        <p className="text-[10px] text-muted-foreground">
+                          {idx === 0
+                            ? "표지: 본문 카드 사진들이 우상단 썸네일·핸들로 자동 들어가요."
+                            : idx === form.card_texts.length - 1
+                              ? "마무리(CTA): 본문 카드 사진들이 2×2 그리드로 자동 들어가요."
+                              : "본문: 이 사진이 풀배경 + 좌하단에 제목·설명·핸들."}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -803,15 +882,16 @@ const AdminInstagramPostEditInner = () => {
                 카드 이미지 미리보기
               </h2>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                이번 단계는 placeholder만 표시합니다. 2단계 렌더러가 각 카드를
-                PNG 로 만들어 채워요.
+                "카드 렌더"를 누르면 각 카드가 PNG 로 렌더돼 여기 채워져요(Figma
+                템플릿 + SUITE 폰트).
               </p>
             </div>
             <div className="rounded-lg bg-muted/40 p-3 text-[11px] text-muted-foreground flex items-start gap-2">
               <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
               <span>
-                card_image_urls 는 read-only. 카드 텍스트가 확정되면 다음 단계에서
-                자동 렌더링됩니다.
+                위에서 카드별 텍스트·배경 사진·핸들을 편집하고 "카드 렌더"로
+                이미지를 만든 뒤, 검수하고 승인·예약하세요. 사진이 없는 카드는
+                그라데이션으로 폴백됩니다.
               </span>
             </div>
             {form.card_texts.length === 0 ? (
@@ -897,6 +977,19 @@ const AdminInstagramPostEditInner = () => {
                   <Save className="w-4 h-4 mr-1" />
                 )}
                 저장
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleRender}
+                disabled={isSaving || isMutating || isRendering || form.card_texts.length === 0}
+                title="저장 후 카드 이미지를 렌더합니다"
+              >
+                {isRendering ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                )}
+                카드 렌더
               </Button>
               {draft.status === "draft" && (
                 <Button
