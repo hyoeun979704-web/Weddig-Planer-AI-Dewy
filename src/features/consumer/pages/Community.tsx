@@ -1,0 +1,629 @@
+import { useEffect, useMemo, useState } from "react";
+import LoginRequiredOverlay from "@/components/LoginRequiredOverlay";
+import Seo from "@/components/Seo";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
+import TutorialOverlay from "@/components/TutorialOverlay";
+import { usePageTutorial } from "@/hooks/usePageTutorial";
+import { useQuery } from "@tanstack/react-query";
+import { MessageSquare, Flame, Image as ImageIcon, Search, Bell } from "lucide-react";
+import { safeSessionStorage } from "@/lib/safeSessionStorage";
+import { relativeTime } from "@/lib/relativeTime";
+import BottomNav from "@/components/BottomNav";
+import HomeHeader from "@/components/home/HomeHeader";
+import { Skeleton } from "@/components/ui/skeleton";
+import { fetchCommunityPosts, communityKeys } from "@/features/consumer/data/community";
+import { useUserBlocks } from "@/hooks/useCommunityModeration";
+import CommunitySearchOverlay from "@/components/community/CommunitySearchOverlay";
+import CommunityAnnouncements from "@/components/community/CommunityAnnouncements";
+import AuthorChip from "@/components/community/AuthorChip";
+import { useCommunityAuthors } from "@/hooks/useCommunityAuthors";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { bumpSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
+import type { WeddingStyle } from "@/lib/weddingStyle";
+import noteIcon from "@/assets/community/note.svg";
+import searchBoxIcon from "@/assets/community/search-box.svg";
+import editIcon from "@/assets/community/edit.svg";
+import heartFilledIcon from "@/assets/community/heart-filled.svg";
+
+type PostWeddingStyle = "general" | "small" | "self";
+
+interface Post {
+  id: string;
+  user_id: string;
+  category: string;
+  title: string;
+  content: string;
+  has_image: boolean;
+  views: number;
+  created_at: string;
+  likes_count: number;
+  comments_count: number;
+  wedding_style: PostWeddingStyle | null;
+}
+
+// 카테고리 — 페르소나 시트 v1에 맞춰 비표준 페르소나 카테고리 추가.
+// 재혼/임신/신랑/해외·국제/노웨딩·셀프/스냅/지방. 빈 카테고리도 노출해 첫 글
+// 유도 — empty state는 카테고리별 카피로 별도 분기.
+const categories = [
+  "전체",
+  "웨딩홀", "스드메", "허니문", "혼수",
+  "신랑 모드", "재혼·자녀", "임신 결혼",
+  "해외·국제결혼", "지방 결혼", "노웨딩·셀프", "스냅·기념일",
+  "자유",
+];
+
+type StyleFilter = "all" | PostWeddingStyle;
+
+const STYLE_FILTERS: { key: StyleFilter; label: string }[] = [
+  { key: "all", label: "전체" },
+  { key: "general", label: "일반 결혼식" },
+  { key: "small", label: "스몰웨딩" },
+  { key: "self", label: "셀프웨딩" },
+];
+
+const STYLE_BADGE: Record<PostWeddingStyle, { label: string; classes: string }> = {
+  general: { label: "일반", classes: "bg-blue-100 text-blue-700" },
+  small: { label: "스몰", classes: "bg-emerald-100 text-emerald-700" },
+  self: { label: "셀프", classes: "bg-amber-100 text-amber-700" },
+};
+
+const EMPTY_STATES: Record<StyleFilter, { title: string; cta: string }> = {
+  all: {
+    title: "아직 게시글이 없어요.",
+    cta: "첫 번째 글을 작성해 다른 부부와 이야기 나눠보세요.",
+  },
+  general: {
+    title: "일반 결혼식 글이 아직 없어요.",
+    cta: "웨딩홀·스드메 후기를 공유하고 첫 글을 남겨보세요.",
+  },
+  small: {
+    title: "스몰웨딩 글이 아직 없어요.",
+    cta: "하우스웨딩·레스토랑 후기 등 작은 결혼식 노하우를 나눠주세요.",
+  },
+  self: {
+    title: "셀프웨딩 글이 아직 없어요.",
+    cta: "셀프 촬영, 부케 DIY, 직접 만든 청첩장 이야기를 남겨보세요.",
+  },
+};
+
+type SortKey = "latest" | "popular" | "comments";
+
+// 인기글 트렌딩 점수: 참여(댓글)와 호응(좋아요), 최근성을 함께 고려.
+// 최근 7일 글에는 부스트, 그 외에는 시간에 따라 완만하게 감쇠.
+const trendingScore = (post: Post) => {
+  const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 36e5;
+  const recency = ageHours < 24 ? 8 : ageHours < 72 ? 4 : ageHours < 168 ? 2 : 0;
+  return post.likes_count * 2 + post.comments_count * 3 + recency;
+};
+
+const isHotPost = (post: Post) => {
+  const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 36e5;
+  return ageHours <= 168 && post.likes_count + post.comments_count >= 3;
+};
+
+// 스타일 필터: 선택된 유형과 일치하는 글 + 유형 미지정(NULL) 글을 함께 노출.
+// NULL = "모든 부부 대상" 글이므로 어떤 필터에서도 가려져선 안 됨 (작성 UI 약속).
+const matchesStyle = (post: Post, filter: StyleFilter) =>
+  filter === "all" || post.wedding_style === filter || post.wedding_style === null;
+
+const Community = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
+  const myStyle: WeddingStyle | null = weddingSettings.wedding_style;
+  const [searchParams] = useSearchParams();
+  // 홈 카테고리 타일(`/community?style=self` 등)로 들어오면 해당 스타일을
+  // 초기 필터로 적용 — 타일이 약속한 화면을 그대로 보여주기 위함.
+  const styleParam = searchParams.get("style");
+  const initialStyle: StyleFilter =
+    styleParam === "self" || styleParam === "small" || styleParam === "general"
+      ? styleParam
+      : "all";
+  const [selectedCategory, setSelectedCategory] = useState("전체");
+  const [styleFilter, setStyleFilter] = useState<StyleFilter>(initialStyle);
+  // 딥링크로 스타일이 지정되면 myStyle 자동적용/안내 토스트를 건너뛴다.
+  const [styleAutoApplied, setStyleAutoApplied] = useState(initialStyle !== "all");
+  const [sortBy, setSortBy] = useState<SortKey>("latest");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const PAGE_SIZE = 15;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // 필터·정렬이 바뀌면 표시 개수를 처음으로 되돌린다.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [selectedCategory, styleFilter, sortBy]);
+
+  // Round 8 B — 재혼·자녀 카테고리 진입 시 remarriageInterest 신호 증분.
+  // 사용자가 이미 marital_history='remarriage' 면 신호 불필요. 같은 세션 1회만 증분.
+  // Round 9 fix — user.id 를 GUARD key 에 넣으면 anon→login 전환 시 key 가 달라져 재증분.
+  // 세션 단위 1회만이 의도라 user 식별 빼고 단일 key 사용. 동일 세션 내 로그아웃·재로그인
+  // 다른 계정 전환은 sessionStorage 가 페이지 닫을 때까지 유지되므로 자연 차단.
+  useEffect(() => {
+    if (selectedCategory !== "재혼·자녀") return;
+    if (weddingSettings.marital_history === "remarriage") return;
+    if (typeof window === "undefined") return;
+    const GUARD = `dewy:signal-bumped:remarriage`;
+    if (safeSessionStorage.getItem(GUARD) === "1") return;
+    bumpSignal(SIGNAL_KEYS.remarriageInterest);
+    safeSessionStorage.setItem(GUARD, "1");
+  }, [selectedCategory, weddingSettings.marital_history]);
+  const tutorial = usePageTutorial("community");
+
+  // 사용자의 결혼 유형이 로드되면 첫 1회만 같은 유형을 기본 필터로 적용.
+  // 이후 사용자가 직접 바꾸면 자동 적용을 멈춰서 의도를 덮어쓰지 않도록 함.
+  // sessionStorage 가드로 같은 세션에선 안내 토스트가 중복 노출되지 않도록.
+  useEffect(() => {
+    if (styleAutoApplied) return;
+    if (!myStyle || myStyle === "custom") return;
+    setStyleFilter(myStyle);
+    setStyleAutoApplied(true);
+
+    const NOTICE_KEY = "dewy:community:auto-style-notice";
+    if (safeSessionStorage.getItem(NOTICE_KEY) !== "1") {
+      const label =
+        myStyle === "general" ? "일반 결혼식"
+        : myStyle === "small" ? "스몰웨딩"
+        : "셀프웨딩";
+      toast(`${label} 글로 자동 필터링했어요`, {
+        description: "상단 필터 버튼으로 다른 스타일 글도 볼 수 있어요.",
+        duration: 4000,
+      });
+      safeSessionStorage.setItem(NOTICE_KEY, "1");
+    }
+  }, [myStyle, styleAutoApplied]);
+
+  const { data: blockedUserIds = [] } = useUserBlocks();
+
+  const { data: posts = [], isLoading } = useQuery({
+    queryKey: communityKeys.posts(blockedUserIds),
+    queryFn: async () => {
+      // 차단된 사용자의 글은 피드에서 숨긴다.
+      // RLS 가 아닌 클라이언트 필터인 이유: 게시글 자체는 본질적으로
+      // 공개 콘텐츠라 RLS 로 막으면 다른 화면(좋아요·북마크 등) 이 깨진다.
+      // 최신 100개로 제한 — 전체 메모리 로드로 인한 성능 저하 방지.
+      // 트렌딩·정렬·필터는 이 범위 안에서 클라이언트 계산. 더 깊은 탐색은
+      // 서버 커서 페이지네이션으로 후속 개선.
+      const postsData = await fetchCommunityPosts(blockedUserIds);
+
+      // 좋아요/댓글 수는 community_posts 의 집계 컬럼(트리거 동기화)에서 직접 읽는다.
+      // 과거 글마다 count 쿼리를 날리던 N+1 제거.
+      return postsData.map((post) => ({
+        ...post,
+        likes_count: post.like_count ?? 0,
+        comments_count: post.comment_count ?? 0,
+      })) as unknown as Post[];
+    },
+  });
+
+  // 작성자 공개 정체성(닉네임·스타일·역할). user_id 만으로도 항상 해석됨.
+  // userIds 를 메모해 매 렌더 새 배열로 인한 useCommunityAuthors 캐시미스·refetch 방지.
+  const userIds = useMemo(() => posts.map((p) => p.user_id), [posts]);
+  const authors = useCommunityAuthors(userIds);
+
+  // 알림 미읽음 배지.
+  const { unreadCount } = useNotifications();
+
+  // 콜드스타트 가드: 자동 적용된 스타일 필터에서 결과가 0개면 안전하게 전체로 폴백.
+  // 사용자가 직접 칩을 누른 경우(수동)에는 폴백하지 않음 — 의도 존중.
+  const isColdStartFallback = useMemo(
+    () =>
+      styleAutoApplied &&
+      styleFilter !== "all" &&
+      posts.length > 0 &&
+      posts.filter((p) => matchesStyle(p, styleFilter)).length === 0,
+    [posts, styleFilter, styleAutoApplied]
+  );
+  const effectiveStyleFilter: StyleFilter = isColdStartFallback ? "all" : styleFilter;
+
+  // 필터/정렬은 매 렌더가 아닌 입력값이 바뀔 때만 재계산 — 스크롤·입력 시 메인스레드 블로킹 방지.
+  const styleFiltered = useMemo(
+    () => posts.filter((p) => matchesStyle(p, effectiveStyleFilter)),
+    [posts, effectiveStyleFilter]
+  );
+
+  const trendingPosts = useMemo(
+    () => [...styleFiltered].sort((a, b) => trendingScore(b) - trendingScore(a)).slice(0, 5),
+    [styleFiltered]
+  );
+
+  const filteredPosts = useMemo(
+    () =>
+      selectedCategory === "전체"
+        ? styleFiltered
+        : styleFiltered.filter((post) => post.category === selectedCategory),
+    [styleFiltered, selectedCategory]
+  );
+
+  const sortedPosts = useMemo(
+    () =>
+      [...filteredPosts].sort((a, b) => {
+        if (sortBy === "popular") return trendingScore(b) - trendingScore(a);
+        if (sortBy === "comments") return b.comments_count - a.comments_count;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }),
+    [filteredPosts, sortBy]
+  );
+
+  const handleTabChange = (href: string) => navigate(href);
+  const handlePostClick = (postId: string) => navigate(`/community/${postId}`);
+  const handleWriteClick = () => navigate("/community/write");
+
+  const getPreview = (content: string) =>
+    content.length > 40 ? content.slice(0, 40) + "..." : content;
+
+
+  const renderStyleBadge = (style: PostWeddingStyle | null) => {
+    if (!style) return null;
+    const { label, classes } = STYLE_BADGE[style];
+    return (
+      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${classes}`}>
+        {label}
+      </span>
+    );
+  };
+
+  const renderPostCard = (post: Post) => (
+    <button
+      key={post.id}
+      onClick={() => handlePostClick(post.id)}
+      className="w-full text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
+    >
+      <div className="mb-3">
+        <AuthorChip identity={authors.get(post.user_id)} size="sm" />
+      </div>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+          {post.category}
+        </span>
+        {renderStyleBadge(post.wedding_style)}
+        {isHotPost(post) && (
+          <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-semibold">
+            <Flame className="w-3 h-3" /> HOT
+          </span>
+        )}
+        {post.has_image && (
+          <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
+        )}
+      </div>
+      <h3 className="mt-2 text-[16px] font-bold text-foreground line-clamp-1">
+        {post.title}
+      </h3>
+      <p className="mt-0.5 text-[13px] text-muted-foreground line-clamp-1">
+        {getPreview(post.content)}
+      </p>
+      <div className="mt-5 flex items-center justify-between text-[12px] text-muted-foreground">
+        <span>{relativeTime(post.created_at)} · 조회 {post.views}</span>
+        <span className="flex items-center gap-3">
+          <span className="flex items-center gap-1">
+            <MessageSquare className="w-[13px] h-[13px]" />
+            <span>{post.comments_count}</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span>{post.likes_count}</span>
+            <img src={heartFilledIcon} alt="" className="w-[15px] h-[14px]" />
+          </span>
+        </span>
+      </div>
+    </button>
+  );
+
+  return (
+    <div className="min-h-screen bg-[hsl(var(--pink-50))] app-col mx-auto relative">
+      <Seo title="예비부부 커뮤니티 - 결혼 준비 후기·고민 | Dewy" description="예비부부들이 결혼 준비 후기와 고민을 나누는 커뮤니티. 웨딩홀·스드메 실후기와 꿀팁을 실시간으로 확인하세요." path="/community" />
+      {!user && (
+        <LoginRequiredOverlay
+          message="다른 예비부부들의 생생한 후기를 확인하세요"
+          features={["실시간 후기", "웨딩 꿀팁", "업체 추천"]}
+        />
+      )}
+
+      <CommunitySearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
+
+      <HomeHeader />
+
+      <header
+        data-tutorial="community-header"
+        className="sticky safe-sticky-below-header z-30 bg-card border-b border-border"
+      >
+        <div className="flex items-center justify-between px-4 h-14">
+          {/* 커뮤니티는 하단 탭의 1차 목적지라 뒤로가기 버튼 제거 (진입 경로가
+              다양해 navigate(-1)이 의미 있는 이전 화면을 보장하지 못함). */}
+          <div className="flex items-center gap-1">
+            <h1 className="text-[18px] font-bold text-foreground">커뮤니티</h1>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate("/community/notifications")}
+              className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="알림"
+            >
+              <Bell className="w-[19px] h-[19px] text-foreground" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => navigate("/community/bookmarks")}
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="북마크"
+            >
+              <img src={noteIcon} alt="" className="w-[19px] h-[19px]" />
+            </button>
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="검색"
+            >
+              <img src={searchBoxIcon} alt="" className="w-[19px] h-[19px]" />
+            </button>
+            <button
+              data-tutorial="community-write"
+              onClick={handleWriteClick}
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              aria-label="글쓰기"
+            >
+              <img src={editIcon} alt="" className="w-[21px] h-[21px]" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="pb-24">
+        <div className="px-4 pt-3 pb-1 bg-card">
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            className="w-full flex items-center gap-2 px-4 h-10 rounded-full bg-card border border-border text-left hover:bg-muted/40 transition-colors"
+            aria-label="게시글 검색"
+          >
+            <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-[13px] text-muted-foreground">
+              게시글 제목·내용 검색
+            </span>
+          </button>
+        </div>
+
+        <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-3 pb-2 bg-[hsl(var(--pink-50))]">
+          {STYLE_FILTERS.map((filter) => {
+            const isActive = styleFilter === filter.key;
+            const isMine =
+              filter.key !== "all" && myStyle && myStyle === filter.key;
+            return (
+              <button
+                key={filter.key}
+                onClick={() => {
+                  setStyleFilter(filter.key);
+                  setStyleAutoApplied(true);
+                }}
+                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-colors flex items-center gap-1 ${
+                  isActive
+                    ? "bg-foreground text-background"
+                    : "bg-muted/60 text-muted-foreground"
+                }`}
+              >
+                {filter.label}
+                {isMine && (
+                  <span
+                    className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                      isActive ? "bg-background/20" : "bg-primary/15 text-primary"
+                    }`}
+                  >
+                    내 스타일
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div
+          data-tutorial="community-categories"
+          className="flex overflow-x-auto scrollbar-hide gap-2 px-4 pt-1 pb-3 bg-[hsl(var(--pink-50))]"
+        >
+          {categories.map((category) => {
+            const isActive = selectedCategory === category;
+            return (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {category}
+              </button>
+            );
+          })}
+        </div>
+
+        {isColdStartFallback && (
+          <div className="mx-4 mt-2 mb-1 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800 leading-snug">
+            {STYLE_FILTERS.find((f) => f.key === styleFilter)?.label} 글이 아직 없어 전체 게시글을 함께 보여드려요.
+            글이 쌓이면 자동으로 필터링해드릴게요.
+          </div>
+        )}
+
+        {/* 운영자 전용 공지 — 활성 공지를 상단 고정 노출(운영자만 작성/관리). */}
+        <CommunityAnnouncements />
+
+        <section className="bg-[hsl(var(--pink-100))] px-4 pt-5 pb-6">
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-[18px] font-bold text-foreground">
+              오늘의 수다
+            </h2>
+            <span className="text-[11px] text-muted-foreground">
+              {effectiveStyleFilter === "all"
+                ? "전체"
+                : STYLE_FILTERS.find((f) => f.key === effectiveStyleFilter)?.label}
+              {" "}· 핫토픽
+            </span>
+          </div>
+          {isLoading ? (
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
+              {[1, 2].map((i) => (
+                <Skeleton
+                  key={i}
+                  className="flex-shrink-0 w-[260px] h-[170px] rounded-2xl"
+                />
+              ))}
+            </div>
+          ) : trendingPosts.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">
+              아직 인기 게시글이 없어요.
+            </p>
+          ) : (
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4">
+              {trendingPosts.map((post) => (
+                <button
+                  key={post.id}
+                  onClick={() => handlePostClick(post.id)}
+                  className="flex-shrink-0 w-[260px] text-left bg-white rounded-2xl px-5 pt-4 pb-4 shadow-[var(--shadow-card)] flex flex-col"
+                >
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+                      {post.category}
+                    </span>
+                    {renderStyleBadge(post.wedding_style)}
+                    {isHotPost(post) && (
+                      <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-semibold">
+                        <Flame className="w-3 h-3" /> HOT
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="mt-2 text-[16px] font-bold text-foreground line-clamp-1">
+                    {post.title}
+                  </h3>
+                  <p className="mt-0.5 text-[13px] text-muted-foreground line-clamp-1">
+                    {getPreview(post.content)}
+                  </p>
+                  <div className="mt-6 flex items-center justify-between text-[12px] text-muted-foreground">
+                    <span>{relativeTime(post.created_at)}</span>
+                    <span className="flex items-center gap-3">
+                      <span className="flex items-center gap-1">
+                        <MessageSquare className="w-[13px] h-[13px]" />
+                        {post.comments_count}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span>{post.likes_count}</span>
+                        <img src={heartFilledIcon} alt="" className="w-[15px] h-[14px]" />
+                      </span>
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <div className="px-4 pt-5 pb-3 flex items-baseline gap-4">
+          <button
+            onClick={() => setSortBy("latest")}
+            className={`text-[15px] transition-colors ${
+              sortBy === "latest"
+                ? "font-bold text-foreground"
+                : "font-medium text-muted-foreground"
+            }`}
+          >
+            최신순
+          </button>
+          <button
+            onClick={() => setSortBy("popular")}
+            className={`text-[15px] transition-colors ${
+              sortBy === "popular"
+                ? "font-bold text-foreground"
+                : "font-medium text-muted-foreground"
+            }`}
+          >
+            인기순
+          </button>
+          <button
+            onClick={() => setSortBy("comments")}
+            className={`text-[15px] transition-colors ${
+              sortBy === "comments"
+                ? "font-bold text-foreground"
+                : "font-medium text-muted-foreground"
+            }`}
+          >
+            댓글많은순
+          </button>
+        </div>
+
+        <div className="px-4 pb-6 space-y-3">
+          {isLoading ? (
+            [1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-[120px] rounded-2xl" />
+            ))
+          ) : sortedPosts.length === 0 ? (
+            <div className="py-12 px-6 text-center bg-white rounded-2xl shadow-[var(--shadow-card)]">
+              <p className="text-foreground text-sm font-semibold mb-1">
+                {selectedCategory !== "전체"
+                  ? `'${selectedCategory}' 글이 아직 없어요.`
+                  : EMPTY_STATES[effectiveStyleFilter].title}
+              </p>
+              <p className="text-muted-foreground text-xs mb-4 leading-relaxed">
+                {selectedCategory !== "전체"
+                  ? `다른 카테고리로 둘러보거나 첫 글을 작성해보세요.`
+                  : EMPTY_STATES[effectiveStyleFilter].cta}
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                {selectedCategory !== "전체" && (
+                  <button
+                    onClick={() => setSelectedCategory("전체")}
+                    className="px-4 py-2 rounded-full bg-muted text-foreground text-xs font-semibold"
+                  >
+                    전체 카테고리 보기
+                  </button>
+                )}
+                <button
+                  onClick={handleWriteClick}
+                  className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold"
+                >
+                  글 작성하기
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {sortedPosts.slice(0, visibleCount).map(renderPostCard)}
+              {sortedPosts.length > visibleCount && (
+                <button
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  className="w-full py-3 rounded-2xl bg-muted text-foreground text-sm font-semibold"
+                >
+                  더보기
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </main>
+
+      <BottomNav activeTab={location.pathname} onTabChange={handleTabChange} />
+
+      {tutorial.isActive && tutorial.currentStep && (
+        <TutorialOverlay
+          isActive={tutorial.isActive}
+          currentStep={tutorial.currentStep}
+          currentStepIndex={tutorial.currentStepIndex}
+          totalSteps={tutorial.totalSteps}
+          onNext={tutorial.nextStep}
+          onPrev={tutorial.prevStep}
+          onSkip={tutorial.skipTutorial}
+        />
+      )}
+    </div>
+  );
+};
+
+export default Community;

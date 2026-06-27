@@ -8,200 +8,159 @@ import { AmountPromptHost } from "@/components/ui/amount-prompt";
 import WidgetBridgeHost from "@/components/native/WidgetBridgeHost";
 import TutorialWelcomeSheet from "@/components/tutorial/TutorialWelcomeSheet";
 import WeddingBlessingSplash from "@/components/WeddingBlessingSplash";
-import AdminGuard from "@/components/admin/AdminGuard";
-import BusinessGuard from "@/components/business/BusinessGuard";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { aeoGuides } from "./data/aeoGuides";
+import { DESIGN_MARKET_ENABLED } from "@/lib/featureFlags";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 
 // Lazy-loaded pages
-const MergeGame = lazy(() => import("./pages/MergeGame"));
-const Index = lazy(() => import("./pages/Index"));
-const Auth = lazy(() => import("./pages/Auth"));
-const Studios = lazy(() => import("./pages/Studios"));
-const StudioDetail = lazy(() => import("./pages/StudioDetail"));
-const Jewelry = lazy(() => import("./pages/Jewelry"));
-const JewelryDetail = lazy(() => import("./pages/JewelryDetail"));
-const Honeymoon = lazy(() => import("./pages/Honeymoon"));
-const HoneymoonDetail = lazy(() => import("./pages/HoneymoonDetail"));
-const Appliances = lazy(() => import("./pages/Appliances"));
-const ApplianceDetail = lazy(() => import("./pages/ApplianceDetail"));
-const Suit = lazy(() => import("./pages/Suit"));
-const SuitDetail = lazy(() => import("./pages/SuitDetail"));
-const Hanbok = lazy(() => import("./pages/Hanbok"));
-const HanbokDetail = lazy(() => import("./pages/HanbokDetail"));
-const Venues = lazy(() => import("./pages/Venues"));
-const VenueDetail = lazy(() => import("./pages/VenueDetail"));
-const Favorites = lazy(() => import("./pages/Favorites"));
-const Store = lazy(() => import("./pages/Store"));
-const Tips = lazy(() => import("./pages/Tips"));
-const Gallery = lazy(() => import("./pages/Gallery"));
-const AIPlanner = lazy(() => import("./pages/AIPlanner"));
-const Budget = lazy(() => import("./pages/Budget"));
-const BudgetHistory = lazy(() => import("./pages/BudgetHistory"));
-const BudgetCategoryDetail = lazy(() => import("./pages/BudgetCategoryDetail"));
-const Schedule = lazy(() => import("./pages/Schedule"));
-const AIStudio = lazy(() => import("./pages/AIStudio"));
-const WeddingConsulting = lazy(() => import("./pages/WeddingConsulting"));
-const ConsultingResult = lazy(() => import("./pages/ConsultingResult"));
-const ConsultingGallery = lazy(() => import("./pages/ConsultingGallery"));
-const MyResults = lazy(() => import("./pages/MyResults"));
-const WeddingWrapped = lazy(() => import("./pages/WeddingWrapped"));
-const QuoteNew = lazy(() => import("./pages/QuoteNew"));
-const QuoteList = lazy(() => import("./pages/QuoteList"));
-const QuoteDetail = lazy(() => import("./pages/QuoteDetail"));
-const QuoteThread = lazy(() => import("./pages/QuoteThread"));
-const MyDeliveries = lazy(() => import("./pages/MyDeliveries"));
-const TasteQuiz = lazy(() => import("./pages/TasteQuiz"));
-const MailInbox = lazy(() => import("./pages/MailInbox"));
-const InvitationMarket = lazy(() => import("./pages/invitation/InvitationMarket"));
-const VendorBoard = lazy(() => import("./pages/VendorBoard"));
-const VendorCompare = lazy(() => import("./pages/VendorCompare"));
-const BusinessLeads = lazy(() => import("./pages/business/BusinessLeads"));
-const HairPreview = lazy(() => import("./pages/HairPreview"));
-const HairPreviewResult = lazy(() => import("./pages/HairPreviewResult"));
-const HairPreviewGallery = lazy(() => import("./pages/HairPreviewGallery"));
-const SdmPreview = lazy(() => import("./pages/SdmPreview"));
-const SdmPreviewResult = lazy(() => import("./pages/SdmPreviewResult"));
-const Community = lazy(() => import("./pages/Community"));
-const CommunityWrite = lazy(() => import("./pages/CommunityWrite"));
-const CommunityEdit = lazy(() => import("./pages/CommunityEdit"));
-const CommunityPostDetail = lazy(() => import("./pages/CommunityPostDetail"));
-const BookmarkedPosts = lazy(() => import("./pages/BookmarkedPosts"));
-const CommunityNotifications = lazy(() => import("./pages/CommunityNotifications"));
-const MyPage = lazy(() => import("./pages/MyPage"));
-const Points = lazy(() => import("./pages/Points"));
-const HeartCharge = lazy(() => import("./pages/HeartCharge"));
-const HeartChargeSuccess = lazy(() => import("./pages/HeartChargeSuccess"));
-const HeartChargeFail = lazy(() => import("./pages/HeartChargeFail"));
-const Referral = lazy(() => import("./pages/Referral"));
-const Coupons = lazy(() => import("./pages/Coupons"));
-const Orders = lazy(() => import("./pages/Orders"));
-const MySchedule = lazy(() => import("./pages/MySchedule"));
-const Profile = lazy(() => import("./pages/Profile"));
-const Notifications = lazy(() => import("./pages/Notifications"));
-const AppNotifications = lazy(() => import("./pages/AppNotifications"));
-const MyInquiries = lazy(() => import("./pages/MyInquiries"));
-const Contact = lazy(() => import("./pages/Contact"));
-const FAQ = lazy(() => import("./pages/FAQ"));
-const Settings = lazy(() => import("./pages/Settings"));
-const InvitationVenues = lazy(() => import("./pages/InvitationVenues"));
-const InvitationVenueDetail = lazy(() => import("./pages/InvitationVenueDetail"));
-const VendorList = lazy(() => import("./pages/VendorList"));
-const VendorDetailPage = lazy(() => import("./pages/VendorDetailPage"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const Guide = lazy(() => import("./pages/Guide"));
-const ConsumerGuideIndex = lazy(() => import("./pages/ConsumerGuideIndex"));
-const ConsumerGuideDetail = lazy(() => import("./pages/ConsumerGuideDetail"));
-const Beta = lazy(() => import("./pages/Beta"));
-const PremiumContent = lazy(() => import("./pages/PremiumContent"));
-const Premium = lazy(() => import("./pages/Premium"));
-const CoupleVote = lazy(() => import("./pages/CoupleVote"));
-const CoupleVoteDetail = lazy(() => import("./pages/CoupleVoteDetail"));
-const BudgetSplitSimulator = lazy(() => import("./pages/BudgetSplitSimulator"));
-const Tutorial = lazy(() => import("./pages/Tutorial"));
-const Terms = lazy(() => import("./pages/Terms"));
-const Privacy = lazy(() => import("./pages/Privacy"));
-const OssLicenses = lazy(() => import("./pages/OssLicenses"));
-const TagResults = lazy(() => import("./pages/TagResults"));
-const AccountDeletion = lazy(() => import("./pages/AccountDeletion"));
-const LocationTerms = lazy(() => import("./pages/LocationTerms"));
-const DressFitting = lazy(() => import("./pages/DressFitting"));
-const DressFittingResult = lazy(() => import("./pages/DressFittingResult"));
-const DressFittingGallery = lazy(() => import("./pages/DressFittingGallery"));
-const MakeupFitting = lazy(() => import("./pages/MakeupFitting"));
-const MakeupFittingResult = lazy(() => import("./pages/MakeupFittingResult"));
-const MakeupFittingGallery = lazy(() => import("./pages/MakeupFittingGallery"));
-const DressRecommend = lazy(() => import("./pages/DressRecommend"));
-const MakeupRecommend = lazy(() => import("./pages/MakeupRecommend"));
-const InvitationFlow = lazy(() => import("./pages/invitation/InvitationFlow"));
-const InvitationStudio = lazy(() => import("./pages/invitation/InvitationStudio"));
-const InvitationGallery = lazy(() => import("./pages/invitation/InvitationGallery"));
-const InvitationViewer = lazy(() => import("./pages/invitation/InvitationViewer"));
-const MobileInvitationView2 = lazy(() => import("./pages/invitation/MobileInvitationView2"));
-const InvitationRsvpDashboard = lazy(() => import("./pages/invitation/InvitationRsvpDashboard"));
-const InvitationPhotos = lazy(() => import("./pages/invitation/InvitationPhotos"));
-const GuestPhotoUpload = lazy(() => import("./pages/invitation/GuestPhotoUpload"));
-const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-const AdminDressSamples = lazy(() => import("./pages/admin/AdminDressSamples"));
-const AdminContentReview = lazy(() => import("./pages/admin/AdminContentReview"));
-const AdminPlaceEdit = lazy(() => import("./pages/admin/AdminPlaceEdit"));
-const AdminPlaces = lazy(() => import("./pages/admin/AdminPlaces"));
-const AdminTipInstagrams = lazy(() => import("./pages/admin/AdminTipInstagrams"));
-const AdminInstagramPosts = lazy(() => import("./pages/admin/AdminInstagramPosts"));
-const AdminInstagramPostEdit = lazy(() => import("./pages/admin/AdminInstagramPostEdit"));
-const AdminMakeupSamples = lazy(() => import("./pages/admin/AdminMakeupSamples"));
-const AdminHairSamples = lazy(() => import("./pages/admin/AdminHairSamples"));
-const AdminAIPrompts = lazy(() => import("./pages/admin/AdminAIPrompts"));
-const AdminAiPromptEditor = lazy(() => import("./pages/admin/AdminAiPromptEditor"));
-const AdminAIJobs = lazy(() => import("./pages/admin/AdminAIJobs"));
-const AdminInvitationTemplates = lazy(() => import("./pages/admin/AdminInvitationTemplates"));
-const AdminInvitationAssets = lazy(() => import("./pages/admin/AdminInvitationAssets"));
-const AdminInvitationFonts = lazy(() => import("./pages/admin/AdminInvitationFonts"));
-const AdminWeddingPhotoRefs = lazy(() => import("./pages/admin/AdminWeddingPhotoRefs"));
-const AdminServiceWaitlist = lazy(() => import("./pages/admin/AdminServiceWaitlist"));
-const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
-const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
-const AdminInquiries = lazy(() => import("./pages/admin/AdminInquiries"));
-const AdminCommunityAnnouncements = lazy(() => import("./pages/admin/AdminCommunityAnnouncements"));
-const AdminPromotions = lazy(() => import("./pages/admin/AdminPromotions"));
-const AdminErrorLogs = lazy(() => import("./pages/admin/AdminErrorLogs"));
-const AdminAgentOutputs = lazy(() => import("./pages/admin/AdminAgentOutputs"));
-const SupportChat = lazy(() => import("./pages/SupportChat"));
-const AdminBusinessReview = lazy(() => import("./pages/admin/AdminBusinessReview"));
-const AdminProductCuration = lazy(() => import("./pages/admin/AdminProductCuration"));
-const AdminFeaturedProducts = lazy(() => import("./pages/admin/AdminFeaturedProducts"));
+const MergeGame = lazy(() => import("@/features/consumer/pages/MergeGame"));
+const Index = lazy(() => import("@/features/consumer/pages/Index"));
+const Auth = lazy(() => import("@/features/consumer/pages/Auth"));
+const Studios = lazy(() => import("@/features/consumer/pages/Studios"));
+const StudioDetail = lazy(() => import("@/features/consumer/pages/StudioDetail"));
+const Jewelry = lazy(() => import("@/features/consumer/pages/Jewelry"));
+const JewelryDetail = lazy(() => import("@/features/consumer/pages/JewelryDetail"));
+const Honeymoon = lazy(() => import("@/features/consumer/pages/Honeymoon"));
+const HoneymoonDetail = lazy(() => import("@/features/consumer/pages/HoneymoonDetail"));
+const Appliances = lazy(() => import("@/features/consumer/pages/Appliances"));
+const ApplianceDetail = lazy(() => import("@/features/consumer/pages/ApplianceDetail"));
+const Suit = lazy(() => import("@/features/consumer/pages/Suit"));
+const SuitDetail = lazy(() => import("@/features/consumer/pages/SuitDetail"));
+const Hanbok = lazy(() => import("@/features/consumer/pages/Hanbok"));
+const HanbokDetail = lazy(() => import("@/features/consumer/pages/HanbokDetail"));
+const Venues = lazy(() => import("@/features/consumer/pages/Venues"));
+const VenueDetail = lazy(() => import("@/features/consumer/pages/VenueDetail"));
+const Favorites = lazy(() => import("@/features/consumer/pages/Favorites"));
+const Store = lazy(() => import("@/features/consumer/pages/Store"));
+const Tips = lazy(() => import("@/features/consumer/pages/Tips"));
+const Gallery = lazy(() => import("@/features/consumer/pages/Gallery"));
+const AIPlanner = lazy(() => import("@/features/consumer/pages/AIPlanner"));
+const Budget = lazy(() => import("@/features/consumer/pages/Budget"));
+const BudgetHistory = lazy(() => import("@/features/consumer/pages/BudgetHistory"));
+const BudgetCategoryDetail = lazy(() => import("@/features/consumer/pages/BudgetCategoryDetail"));
+const Schedule = lazy(() => import("@/features/consumer/pages/Schedule"));
+const AIStudio = lazy(() => import("@/features/consumer/pages/AIStudio"));
+const WeddingConsulting = lazy(() => import("@/features/consumer/pages/WeddingConsulting"));
+const ConsultingResult = lazy(() => import("@/features/consumer/pages/ConsultingResult"));
+const ConsultingGallery = lazy(() => import("@/features/consumer/pages/ConsultingGallery"));
+const MyResults = lazy(() => import("@/features/consumer/pages/MyResults"));
+const WeddingWrapped = lazy(() => import("@/features/consumer/pages/WeddingWrapped"));
+const QuoteNew = lazy(() => import("@/features/consumer/pages/QuoteNew"));
+const QuoteList = lazy(() => import("@/features/consumer/pages/QuoteList"));
+const QuoteDetail = lazy(() => import("@/features/consumer/pages/QuoteDetail"));
+const QuoteThread = lazy(() => import("@/features/consumer/pages/QuoteThread"));
+const MyDeliveries = lazy(() => import("@/features/consumer/pages/MyDeliveries"));
+const TasteQuiz = lazy(() => import("@/features/consumer/pages/TasteQuiz"));
+const MailInbox = lazy(() => import("@/features/consumer/pages/MailInbox"));
+const InvitationMarket = lazy(() => import("@/features/consumer/pages/invitation/InvitationMarket"));
+const VendorBoard = lazy(() => import("@/features/consumer/pages/VendorBoard"));
+const VendorCompare = lazy(() => import("@/features/consumer/pages/VendorCompare"));
+const HairPreview = lazy(() => import("@/features/consumer/pages/HairPreview"));
+const HairPreviewResult = lazy(() => import("@/features/consumer/pages/HairPreviewResult"));
+const HairPreviewGallery = lazy(() => import("@/features/consumer/pages/HairPreviewGallery"));
+const SdmPreview = lazy(() => import("@/features/consumer/pages/SdmPreview"));
+const SdmPreviewResult = lazy(() => import("@/features/consumer/pages/SdmPreviewResult"));
+const Community = lazy(() => import("@/features/consumer/pages/Community"));
+const CommunityWrite = lazy(() => import("@/features/consumer/pages/CommunityWrite"));
+const CommunityEdit = lazy(() => import("@/features/consumer/pages/CommunityEdit"));
+const CommunityPostDetail = lazy(() => import("@/features/consumer/pages/CommunityPostDetail"));
+const BookmarkedPosts = lazy(() => import("@/features/consumer/pages/BookmarkedPosts"));
+const CommunityNotifications = lazy(() => import("@/features/consumer/pages/CommunityNotifications"));
+const MyPage = lazy(() => import("@/features/consumer/pages/MyPage"));
+const Points = lazy(() => import("@/features/consumer/pages/Points"));
+const HeartCharge = lazy(() => import("@/features/consumer/pages/HeartCharge"));
+const HeartChargeSuccess = lazy(() => import("@/features/consumer/pages/HeartChargeSuccess"));
+const HeartChargeFail = lazy(() => import("@/features/consumer/pages/HeartChargeFail"));
+const Referral = lazy(() => import("@/features/consumer/pages/Referral"));
+const Coupons = lazy(() => import("@/features/consumer/pages/Coupons"));
+const Orders = lazy(() => import("@/features/consumer/pages/Orders"));
+const MySchedule = lazy(() => import("@/features/consumer/pages/MySchedule"));
+const Profile = lazy(() => import("@/features/consumer/pages/Profile"));
+const Notifications = lazy(() => import("@/features/consumer/pages/Notifications"));
+const AppNotifications = lazy(() => import("@/features/consumer/pages/AppNotifications"));
+const MyInquiries = lazy(() => import("@/features/consumer/pages/MyInquiries"));
+const Contact = lazy(() => import("@/features/consumer/pages/Contact"));
+const FAQ = lazy(() => import("@/features/consumer/pages/FAQ"));
+const Settings = lazy(() => import("@/features/consumer/pages/Settings"));
+const BlockedUsers = lazy(() => import("@/features/consumer/pages/BlockedUsers"));
+const InvitationVenues = lazy(() => import("@/features/consumer/pages/InvitationVenues"));
+const InvitationVenueDetail = lazy(() => import("@/features/consumer/pages/InvitationVenueDetail"));
+const VendorList = lazy(() => import("@/features/consumer/pages/VendorList"));
+const VendorDetailPage = lazy(() => import("@/features/consumer/pages/VendorDetailPage"));
+const NotFound = lazy(() => import("@/features/consumer/pages/NotFound"));
+const Guide = lazy(() => import("@/features/consumer/pages/Guide"));
+const ConsumerGuideIndex = lazy(() => import("@/features/consumer/pages/ConsumerGuideIndex"));
+const ConsumerGuideDetail = lazy(() => import("@/features/consumer/pages/ConsumerGuideDetail"));
+const Beta = lazy(() => import("@/features/consumer/pages/Beta"));
+const PremiumContent = lazy(() => import("@/features/consumer/pages/PremiumContent"));
+const Premium = lazy(() => import("@/features/consumer/pages/Premium"));
+const CoupleVote = lazy(() => import("@/features/consumer/pages/CoupleVote"));
+const CoupleVoteDetail = lazy(() => import("@/features/consumer/pages/CoupleVoteDetail"));
+const BudgetSplitSimulator = lazy(() => import("@/features/consumer/pages/BudgetSplitSimulator"));
+const Tutorial = lazy(() => import("@/features/consumer/pages/Tutorial"));
+const Terms = lazy(() => import("@/features/consumer/pages/Terms"));
+const Privacy = lazy(() => import("@/features/consumer/pages/Privacy"));
+const OssLicenses = lazy(() => import("@/features/consumer/pages/OssLicenses"));
+const TagResults = lazy(() => import("@/features/consumer/pages/TagResults"));
+const AccountDeletion = lazy(() => import("@/features/consumer/pages/AccountDeletion"));
+const LocationTerms = lazy(() => import("@/features/consumer/pages/LocationTerms"));
+const DressFitting = lazy(() => import("@/features/consumer/pages/DressFitting"));
+const DressFittingResult = lazy(() => import("@/features/consumer/pages/DressFittingResult"));
+const DressFittingGallery = lazy(() => import("@/features/consumer/pages/DressFittingGallery"));
+const MakeupFitting = lazy(() => import("@/features/consumer/pages/MakeupFitting"));
+const MakeupFittingResult = lazy(() => import("@/features/consumer/pages/MakeupFittingResult"));
+const MakeupFittingGallery = lazy(() => import("@/features/consumer/pages/MakeupFittingGallery"));
+const DressRecommend = lazy(() => import("@/features/consumer/pages/DressRecommend"));
+const MakeupRecommend = lazy(() => import("@/features/consumer/pages/MakeupRecommend"));
+const InvitationFlow = lazy(() => import("@/features/consumer/pages/invitation/InvitationFlow"));
+const InvitationStudio = lazy(() => import("@/features/consumer/pages/invitation/InvitationStudio"));
+const InvitationGallery = lazy(() => import("@/features/consumer/pages/invitation/InvitationGallery"));
+const InvitationViewer = lazy(() => import("@/features/consumer/pages/invitation/InvitationViewer"));
+const MobileInvitationView2 = lazy(() => import("@/features/consumer/pages/invitation/MobileInvitationView2"));
+const InvitationRsvpDashboard = lazy(() => import("@/features/consumer/pages/invitation/InvitationRsvpDashboard"));
+const InvitationPhotos = lazy(() => import("@/features/consumer/pages/invitation/InvitationPhotos"));
+const GuestPhotoUpload = lazy(() => import("@/features/consumer/pages/invitation/GuestPhotoUpload"));
+// 운영자(console) 도메인 — App.tsx 는 /admin/* 한 줄로 위임. admin 페이지 lazy·가드는
+// 라우트 모듈(@/features/console/routes)이 소유한다(도메인 경계).
+const ConsoleRoutes = lazy(() => import("@/features/console/routes"));
+const SupportChat = lazy(() => import("@/features/consumer/pages/SupportChat"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
-const CoupleDiary = lazy(() => import("./pages/CoupleDiary"));
-const CoupleDiaryWrite = lazy(() => import("./pages/CoupleDiaryWrite"));
+const CoupleDiary = lazy(() => import("@/features/consumer/pages/CoupleDiary"));
+const CoupleDiaryWrite = lazy(() => import("@/features/consumer/pages/CoupleDiaryWrite"));
 
 // 기능 2: 인플루언서 소개
-const Influencers = lazy(() => import("./pages/Influencers"));
-const InfluencerDetail = lazy(() => import("./pages/InfluencerDetail"));
+const Influencers = lazy(() => import("@/features/consumer/pages/Influencers"));
+const InfluencerDetail = lazy(() => import("@/features/consumer/pages/InfluencerDetail"));
 
 // 기능 3: 업체 제휴 혜택
-const Deals = lazy(() => import("./pages/Deals"));
-const DealDetail = lazy(() => import("./pages/DealDetail"));
+const Deals = lazy(() => import("@/features/consumer/pages/Deals"));
+const DealDetail = lazy(() => import("@/features/consumer/pages/DealDetail"));
 
 // 진행중 이벤트 모음 (가입 혜택·미션·초대 등)
-const Events = lazy(() => import("./pages/Events"));
-const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
-const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
+const Events = lazy(() => import("@/features/consumer/pages/Events"));
+const EventDetailPage = lazy(() => import("@/features/consumer/pages/EventDetailPage"));
+const ProductDetailPage = lazy(() => import("@/features/consumer/pages/ProductDetailPage"));
 
 // 기능 4: 쇼핑 결제 플로우
-const ProductDetail = lazy(() => import("./pages/ProductDetail"));
-const Cart = lazy(() => import("./pages/Cart"));
-const Checkout = lazy(() => import("./pages/Checkout"));
-const OrderComplete = lazy(() => import("./pages/OrderComplete"));
-const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
-const PaymentFail = lazy(() => import("./pages/PaymentFail"));
-const SubscriptionCheckout = lazy(() => import("./pages/SubscriptionCheckout"));
-const SubscriptionPaymentSuccess = lazy(() => import("./pages/SubscriptionPaymentSuccess"));
-const SubscriptionPaymentFail = lazy(() => import("./pages/SubscriptionPaymentFail"));
+const ProductDetail = lazy(() => import("@/features/consumer/pages/ProductDetail"));
+const Cart = lazy(() => import("@/features/consumer/pages/Cart"));
+const Checkout = lazy(() => import("@/features/consumer/pages/Checkout"));
+const OrderComplete = lazy(() => import("@/features/consumer/pages/OrderComplete"));
+const PaymentSuccess = lazy(() => import("@/features/consumer/pages/PaymentSuccess"));
+const PaymentFail = lazy(() => import("@/features/consumer/pages/PaymentFail"));
+const SubscriptionCheckout = lazy(() => import("@/features/consumer/pages/SubscriptionCheckout"));
+const SubscriptionPaymentSuccess = lazy(() => import("@/features/consumer/pages/SubscriptionPaymentSuccess"));
+const SubscriptionPaymentFail = lazy(() => import("@/features/consumer/pages/SubscriptionPaymentFail"));
 
-// 기업회원 플로우
-const BusinessLanding = lazy(() => import("./pages/business/BusinessLanding"));
-const BusinessOnboard = lazy(() => import("./pages/business/BusinessOnboard"));
-const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
-const BusinessGuide = lazy(() => import("./pages/business/BusinessGuide"));
-const BusinessGuideDetail = lazy(() => import("./pages/business/BusinessGuideDetail"));
-const BusinessGuideIndex = lazy(() => import("./pages/business/BusinessGuideIndex"));
-const BusinessVendorEdit = lazy(() => import("./pages/business/BusinessVendorEdit"));
-const BusinessClaim = lazy(() => import("./pages/business/BusinessClaim"));
-const AdminPlaceClaims = lazy(() => import("./pages/admin/AdminPlaceClaims"));
-const BusinessGallery = lazy(() => import("./pages/business/BusinessGallery"));
-const BusinessCoupons = lazy(() => import("./pages/business/BusinessCoupons"));
-const BusinessEvents = lazy(() => import("./pages/business/BusinessEvents"));
-const BusinessProducts = lazy(() => import("./pages/business/BusinessProducts"));
-const BusinessInquiries = lazy(() => import("./pages/business/BusinessInquiries"));
-const BusinessDeliveries = lazy(() => import("./pages/business/BusinessDeliveries"));
-const BusinessDesigns = lazy(() => import("./pages/business/BusinessDesigns"));
-const BusinessReviews = lazy(() => import("./pages/business/BusinessReviews"));
+// 기업(partners) 도메인 — App.tsx 는 /business/* 한 줄로 위임. partners 페이지 lazy·가드는
+// 라우트 모듈(@/features/partners/routes)이 소유한다(도메인 경계 — App.tsx 에 partners 참조 최소화).
+const PartnersRoutes = lazy(() => import("@/features/partners/routes"));
 
 // React Query 전역 기본값: 기본 staleTime=0 + refetchOnWindowFocus=true 면 모바일 웹에서
 // 탭 전환마다 모든 useQuery 가 재요청(중복 라운드트립). 모바일 웹이 주 사용처라 60s 신선도 +
@@ -291,6 +250,7 @@ const App = () => (
               <Route path="/help" element={<ConsumerGuideIndex />} />
               <Route path="/help/:guideId" element={<ConsumerGuideDetail />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/settings/blocked" element={<BlockedUsers />} />
               <Route path="/invitation-venues" element={<InvitationVenues />} />
               <Route path="/invitation-venues/:id" element={<InvitationVenueDetail />} />
               <Route path="/vendors/:category" element={<VendorList />} />
@@ -334,25 +294,8 @@ const App = () => (
               {/* 꽃 머지 퍼즐 게임 */}
               <Route path="/merge-game" element={<MergeGame />} />
 
-              {/* 기업회원 플로우 */}
-              <Route path="/business" element={<BusinessLanding />} />
-              <Route path="/business/onboard" element={<BusinessOnboard />} />
-              <Route path="/business/dashboard" element={<BusinessGuard><BusinessDashboard /></BusinessGuard>} />
-              {/* 사용법 가이드는 정적 콘텐츠(데이터 패치 없음) — 기업회원 '전환 전'
-                  예비 사장님(로그인 페이지 진입)도 봐야 하므로 가드 없이 공개한다. */}
-              <Route path="/business/guides" element={<BusinessGuideIndex />} />
-              <Route path="/business/guide" element={<BusinessGuide />} />
-              <Route path="/business/guide/:guideId" element={<BusinessGuideDetail />} />
-              <Route path="/business/edit" element={<BusinessGuard requireApproved><BusinessVendorEdit /></BusinessGuard>} />
-              <Route path="/business/claim" element={<BusinessGuard requireApproved><BusinessClaim /></BusinessGuard>} />
-              <Route path="/business/gallery" element={<BusinessGuard requireApproved><BusinessGallery /></BusinessGuard>} />
-              <Route path="/business/coupons" element={<BusinessGuard requireApproved><BusinessCoupons /></BusinessGuard>} />
-              <Route path="/business/events" element={<BusinessGuard requireApproved><BusinessEvents /></BusinessGuard>} />
-              <Route path="/business/products" element={<BusinessGuard requireApproved><BusinessProducts /></BusinessGuard>} />
-              <Route path="/business/inquiries" element={<BusinessGuard requireApproved><BusinessInquiries /></BusinessGuard>} />
-              <Route path="/business/deliveries" element={<BusinessGuard requireApproved><BusinessDeliveries /></BusinessGuard>} />
-              <Route path="/business/designs" element={<BusinessGuard requireApproved><BusinessDesigns /></BusinessGuard>} />
-              <Route path="/business/reviews" element={<BusinessGuard requireApproved><BusinessReviews /></BusinessGuard>} />
+              {/* 기업(partners) 도메인 — 라우트 모듈로 위임(가드·페이지는 그 모듈이 소유). */}
+              <Route path="/business/*" element={<PartnersRoutes />} />
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
@@ -367,8 +310,13 @@ const App = () => (
               <Route path="/my-deliveries" element={<MyDeliveries />} />
               <Route path="/taste" element={<TasteQuiz />} />
               <Route path="/mail" element={<MailInbox />} />
-              <Route path="/invitation/market" element={<InvitationMarket />} />
-              <Route path="/business/leads" element={<BusinessGuard requireApproved><BusinessLeads /></BusinessGuard>} />
+              {/* 청첩장 디자인 마켓 = 디지털재화 판매(카카오 PG, IAP 분기 없음). 플래그가 꺼진 동안에는
+                  라우트 자체를 막는다 — 직접 URL 도달 시 iOS에서 외부결제 노출 = App Store 3.1.1 위반.
+                  플래그를 켜기 전 반드시 결제 IAP 분기 추가(docs/260625_appstore_resubmit_runbook.md §1). */}
+              <Route
+                path="/invitation/market"
+                element={DESIGN_MARKET_ENABLED ? <InvitationMarket /> : <Navigate to="/" replace />}
+              />
               <Route path="/account-deletion" element={<AccountDeletion />} />
               <Route path="/location-terms" element={<LocationTerms />} />
               <Route path="/ai-studio/consulting" element={<WeddingConsulting />} />
@@ -398,38 +346,9 @@ const App = () => (
               <Route path="/i/:slug/photos" element={<GuestPhotoUpload />} />
               {/* I-MOBILE Phase 1: 네이티브 섹션 뷰어 프리뷰(기존 캔버스 뷰어 병행) */}
               <Route path="/i2/:slug" element={<MobileInvitationView2 />} />
-              {/* 관리자 라우트는 가드를 라우트 레벨에 둔다 — 페이지가 마운트되기
-                  전에 권한을 확인해, 비관리자가 데이터 fetch 를 트리거하거나 잠깐
-                  내용을 보는 것을 막는다. */}
-              <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
-              <Route path="/admin/content-review" element={<AdminGuard><AdminContentReview /></AdminGuard>} />
-              <Route path="/admin/places" element={<AdminGuard><AdminPlaces /></AdminGuard>} />
-              <Route path="/admin/places/:id" element={<AdminGuard><AdminPlaceEdit /></AdminGuard>} />
-              <Route path="/admin/tip-instagrams" element={<AdminGuard><AdminTipInstagrams /></AdminGuard>} />
-              <Route path="/admin/instagram-posts" element={<AdminGuard><AdminInstagramPosts /></AdminGuard>} />
-              <Route path="/admin/instagram-posts/:id" element={<AdminGuard><AdminInstagramPostEdit /></AdminGuard>} />
-              <Route path="/admin/dress-samples" element={<AdminGuard><AdminDressSamples /></AdminGuard>} />
-              <Route path="/admin/makeup-samples" element={<AdminGuard><AdminMakeupSamples /></AdminGuard>} />
-              <Route path="/admin/hair-samples" element={<AdminGuard><AdminHairSamples /></AdminGuard>} />
-              <Route path="/admin/ai-prompts" element={<AdminGuard><AdminAIPrompts /></AdminGuard>} />
-              <Route path="/admin/ai-prompt-editor" element={<AdminGuard><AdminAiPromptEditor /></AdminGuard>} />
-              <Route path="/admin/ai-jobs" element={<AdminGuard><AdminAIJobs /></AdminGuard>} />
-              <Route path="/admin/invitation-templates" element={<AdminGuard><AdminInvitationTemplates /></AdminGuard>} />
-              <Route path="/admin/invitation-assets" element={<AdminGuard><AdminInvitationAssets /></AdminGuard>} />
-              <Route path="/admin/invitation-fonts" element={<AdminGuard><AdminInvitationFonts /></AdminGuard>} />
-              <Route path="/admin/wedding-photo-refs" element={<AdminGuard><AdminWeddingPhotoRefs /></AdminGuard>} />
-              <Route path="/admin/service-waitlist" element={<AdminGuard><AdminServiceWaitlist /></AdminGuard>} />
-              <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
-              <Route path="/admin/reports" element={<AdminGuard><AdminReports /></AdminGuard>} />
-              <Route path="/admin/inquiries" element={<AdminGuard><AdminInquiries /></AdminGuard>} />
-              <Route path="/admin/announcements" element={<AdminGuard><AdminCommunityAnnouncements /></AdminGuard>} />
-              <Route path="/admin/promotions" element={<AdminGuard><AdminPromotions /></AdminGuard>} />
-              <Route path="/admin/error-logs" element={<AdminGuard><AdminErrorLogs /></AdminGuard>} />
-              <Route path="/admin/agent-outputs" element={<AdminGuard><AdminAgentOutputs /></AdminGuard>} />
-              <Route path="/admin/place-claims" element={<AdminGuard><AdminPlaceClaims /></AdminGuard>} />
-              <Route path="/admin/business-review" element={<AdminGuard><AdminBusinessReview /></AdminGuard>} />
-              <Route path="/admin/product-curation" element={<AdminGuard><AdminProductCuration /></AdminGuard>} />
-              <Route path="/admin/featured-products" element={<AdminGuard><AdminFeaturedProducts /></AdminGuard>} />
+              {/* 운영자(console) 도메인 — 라우트 모듈로 위임(가드·페이지는 그 모듈이 소유).
+                  가드는 모듈 내 라우트 레벨 — 페이지 마운트 전 권한 확인(비관리자 fetch·노출 차단). */}
+              <Route path="/admin/*" element={<ConsoleRoutes />} />
 
               {/* AEO 가이드 페이지(결혼어플추천 등). 한글 슬러그 라우트를
                   src/data/aeoGuides 단일 소스에서 생성. 크롤러용 SSR 은 api/guide.ts. */}

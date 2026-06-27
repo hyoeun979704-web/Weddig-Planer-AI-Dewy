@@ -180,7 +180,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         // 푸시 알림은 1차 출시에서 제외 (Firebase 미설정).
         // 활성화 시: SIGNED_IN 분기에서 isNativeApp() 가드 후 push 모듈을 동적 import.
-        // 참고: supabase/functions/send-push, supabase/migrations/...device_tokens.sql 미배포 상태.
+        // 참고: supabase/functions/send-push, device_tokens 테이블은 배포됨(20260519050000) — 남은 게이트는 Firebase 설정뿐.
       }
     );
 

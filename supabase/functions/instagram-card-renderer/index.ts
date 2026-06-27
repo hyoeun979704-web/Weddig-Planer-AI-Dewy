@@ -253,6 +253,52 @@ function buildCardJSX({ type, text, fontFamily }: CardJSXProps): unknown {
       },
     });
   }
+  // 본문 카드 TIP 블록 — footer(실전 팁)이 있을 때만 렌더(표지/CTA 는 footer 없음).
+  // 핑크 톤 박스 + "TIP" 라벨로 설명과 시각 분리(골든 샘플 기준). additive: 기존 카드 영향 0.
+  if (type === "body" && text.footer) {
+    textBlock.push({
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          marginTop: 28,
+          padding: "26px 32px",
+          backgroundColor: "rgba(244, 144, 155, 0.14)",
+          borderRadius: 24,
+        },
+        children: [
+          {
+            type: "div",
+            props: {
+              style: {
+                fontSize: 36,
+                fontWeight: 800,
+                color: COLOR_POINT_PINK,
+                letterSpacing: 3,
+                marginBottom: 8,
+              },
+              children: "TIP",
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                fontSize: 46,
+                fontWeight: 500,
+                color: COLOR_TEXT_BLACK,
+                lineHeight: 1.4,
+                whiteSpace: "pre-wrap",
+                wordBreak: "keep-all",
+              },
+              children: text.footer,
+            },
+          },
+        ],
+      },
+    });
+  }
 
   return {
     type: "div",

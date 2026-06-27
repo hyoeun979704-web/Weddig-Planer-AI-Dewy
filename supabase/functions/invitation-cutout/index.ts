@@ -72,6 +72,14 @@ serve(async (req) => {
     // 중복 제거 — 같은 사진이 여러 슬롯에 매핑됐을 수 있음
     const uniquePaths = Array.from(new Set(body.source_paths));
 
+    // 비용 폭주 방지(감사 260624 P0) — remove.bg 는 유료 호출이라 한 요청이 무제한 호출하지 못하게
+    // 경로 수 상한을 둔다(illustration 의 cap 과 동일 취지). 호출당 하트 차감/일일 쿼터는 가격 정책
+    // 확정 후 별도 적용(현재는 publish 시점 과금).
+    const MAX_SOURCE_PATHS = 12;
+    if (uniquePaths.length > MAX_SOURCE_PATHS) {
+      return json({ error: "too_many_paths", detail: `최대 ${MAX_SOURCE_PATHS}장까지 처리할 수 있어요` }, 400);
+    }
+
     const REMOVEBG_API_KEY = Deno.env.get("REMOVEBG_API_KEY");
     if (!REMOVEBG_API_KEY) {
       return json({ error: "removebg_not_configured" }, 500);

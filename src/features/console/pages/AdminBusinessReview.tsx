@@ -1,0 +1,413 @@
+import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Building2, Check, X, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  fetchPendingModeration,
+  fetchBusinessTiers,
+  reviewPartnership as reviewPartnershipApi,
+  setBusinessTier,
+  reviewProduct as reviewProductApi,
+  reviewEvent as reviewEventApi,
+  reviewListing as reviewListingApi,
+  reviewBusiness as reviewBusinessApi,
+  type PendingBusiness,
+} from "@/features/console/data/businessReview";
+import { toast } from "sonner";
+import { logClientError } from "@/lib/errorLog";
+import EmptyState from "@/components/ui/empty-state";
+
+// 검토 RPC 실패 시 실제 원인(res.error / DB error)을 토스트 설명 + 서버 로깅으로 노출.
+// (기존엔 "처리에 실패했어요"만 띄워 PGRST/권한/스키마 원인이 가려졌다 — 진단 안티패턴.)
+const reportReviewFailure = (
+  what: string,
+  res: { error?: string } | null,
+  error: { message?: string } | null,
+) => {
+  const detail = res?.error || error?.message || "unknown";
+  if (detail === "forbidden") {
+    toast.error("권한이 없어요(관리자 전용)");
+  } else {
+    toast.error("처리에 실패했어요", { description: detail.slice(0, 160) });
+  }
+  void logClientError({ message: `${what}: ${detail}`, source: "manual" });
+};
+
+// PendingBusiness 타입은 features/console/data/businessReview 에서 import(Task #3).
+
+const CATEGORY_LABELS: Record<string, string> = {
+  wedding_hall: "웨딩홀",
+  studio: "스드메",
+  hanbok: "한복",
+  suit: "예복",
+  honeymoon: "허니문",
+  appliance: "혼수가전",
+  jewelry: "예물/예단",
+  invitation_venue: "청첩장 모임",
+  tailor_shop: "예복",
+};
+
+const AdminBusinessReview = () => {
+  const navigate = useNavigate();
+  const [items, setItems] = useState<PendingBusiness[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+  const [processing, setProcessing] = useState<string | null>(null);
+
+  const [listings, setListings] = useState<{ place_id: string; name: string; city: string | null; category: string }[]>([]);
+  const [processingListing, setProcessingListing] = useState<string | null>(null);
+  const [events, setEvents] = useState<{ id: string; title: string; description: string | null }[]>([]);
+  const [processingEvent, setProcessingEvent] = useState<string | null>(null);
+  const [products, setProducts] = useState<{ id: string; name: string; price: number | null }[]>([]);
+  const [processingProduct, setProcessingProduct] = useState<string | null>(null);
+
+  // 업체정보·이벤트·상품 반려 시 사유 입력 대상. { type, id } 로 한 번에 하나만.
+  const [rejectTarget, setRejectTarget] = useState<{ type: "listing" | "event" | "product"; id: string } | null>(null);
+  const [sectionNote, setSectionNote] = useState("");
+
+  // 제휴(프렌즈) 신청 + 등급 지정 — 이달의 베프(bff)는 매달 교체
+  const [applications, setApplications] = useState<{ id: string; business_name: string; service_category: string; status: string; message: string | null; created_at: string }[]>([]);
+  const [tiers, setTiers] = useState<{ id: string; business_name: string; service_category: string; partner_tier: string }[]>([]);
+  const [processingApp, setProcessingApp] = useState<string | null>(null);
+  const [processingTier, setProcessingTier] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const m = await fetchPendingModeration();
+    if (m.partialError) {
+      toast.error("일부 검토 목록을 불러오지 못했어요. 다시 시도해주세요");
+    }
+    setItems(m.businesses);
+    setListings(m.listings);
+    setEvents(m.events);
+    setProducts(m.products);
+    setApplications(m.applications);
+    setTiers(m.tiers);
+    setLoading(false);
+  }, []);
+
+  // 제휴 신청 처리 — 면담 진행 / 승인(프렌즈 자동 부여) / 반려
+  const reviewPartnership = async (id: string, status: "interviewing" | "approved" | "rejected") => {
+    setProcessingApp(id);
+    const ok = await reviewPartnershipApi(id, status);
+    setProcessingApp(null);
+    if (!ok) { toast.error("처리에 실패했어요"); return; }
+    toast.success(status === "approved" ? "프렌즈로 승격했어요" : status === "interviewing" ? "면담 진행으로 표시했어요" : "반려했어요");
+    if (status === "interviewing") {
+      setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
+    } else {
+      setApplications((prev) => prev.filter((a) => a.id !== id));
+    }
+    try {
+      setTiers(await fetchBusinessTiers());
+    } catch {
+      // 등급 목록 갱신 실패는 무시(다음 로드에서 반영).
+    }
+  };
+
+  const setTier = async (profileId: string, tier: string) => {
+    setProcessingTier(profileId);
+    const ok = await setBusinessTier(profileId, tier);
+    setProcessingTier(null);
+    if (!ok) { toast.error("등급 변경 실패"); return; }
+    toast.success("등급을 변경했어요");
+    setTiers((prev) => prev.map((t) => (t.id === profileId ? { ...t, partner_tier: tier } : t)));
+  };
+
+  useEffect(() => { load(); }, [load]);
+
+  const clearReject = () => { setRejectTarget(null); setSectionNote(""); };
+
+  const reviewProduct = async (id: string, approved: boolean, reviewNote?: string) => {
+    setProcessingProduct(id);
+    const res = await reviewProductApi(id, approved, reviewNote);
+    setProcessingProduct(null);
+    if (!res.ok) { reportReviewFailure("admin_review_product", { error: res.error }, null); return; }
+    toast.success(approved ? "상품을 승인했어요" : "상품을 반려했어요");
+    clearReject();
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const reviewEvent = async (id: string, approved: boolean, reviewNote?: string) => {
+    setProcessingEvent(id);
+    const res = await reviewEventApi(id, approved, reviewNote);
+    setProcessingEvent(null);
+    if (!res.ok) { reportReviewFailure("admin_review_event", { error: res.error }, null); return; }
+    toast.success(approved ? "이벤트를 승인했어요" : "이벤트를 반려했어요");
+    clearReject();
+    setEvents((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const reviewListing = async (placeId: string, approved: boolean, reviewNote?: string) => {
+    setProcessingListing(placeId);
+    const res = await reviewListingApi(placeId, approved, reviewNote);
+    setProcessingListing(null);
+    if (!res.ok) { reportReviewFailure("admin_review_listing", { error: res.error }, null); return; }
+    toast.success(approved ? "리스팅을 승인했어요" : "리스팅을 반려했어요");
+    clearReject();
+    setListings((prev) => prev.filter((l) => l.place_id !== placeId));
+  };
+
+  const review = async (id: string, approved: boolean, reviewNote?: string) => {
+    setProcessing(id);
+    const res = await reviewBusinessApi(id, approved, reviewNote);
+    setProcessing(null);
+    if (!res.ok) { reportReviewFailure("admin_review_business", { error: res.error }, null); return; }
+    toast.success(approved ? "승인했어요" : "반려했어요");
+    setRejectingId(null);
+    setNote("");
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  return (
+    <div className="min-h-screen bg-background app-col mx-auto">
+      <header className="sticky safe-sticky-header z-50 bg-card/95 backdrop-blur-sm border-b border-border">
+        <div className="flex items-center h-14 px-4">
+          <button onClick={() => navigate("/admin")} className="w-10 h-10 flex items-center justify-center -ml-2">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="flex-1 text-center font-semibold text-lg pr-10">기업회원 검토</h1>
+        </div>
+      </header>
+
+      <main className="p-4 space-y-6">
+        {loading ? (
+          <div className="py-20 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+        ) : (
+        <>
+        <section>
+          <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">가입 검토 ({items.length})</h2>
+          {items.length === 0 ? (
+            <EmptyState icon={Building2} title="검토 대기중인 기업회원이 없어요" />
+          ) : (
+          <div className="space-y-3">
+            {items.map((b) => (
+              <div key={b.id} className="bg-card rounded-2xl border border-border p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-bold text-foreground">{b.business_name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {CATEGORY_LABELS[b.service_category] ?? b.service_category} · 대표 {b.representative_name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">사업자번호 {b.business_number}</p>
+                  </div>
+                  <span className={`text-[11px] px-2 py-1 rounded-full shrink-0 ${b.is_verified ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                    {b.is_verified ? "국세청 인증" : "미인증"}
+                  </span>
+                </div>
+
+                {rejectingId === b.id ? (
+                  <div className="mt-3 space-y-2">
+                    <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="반려 사유를 입력하세요" rows={2} />
+                    <div className="flex gap-2">
+                      <Button variant="destructive" size="sm" className="flex-1" disabled={processing === b.id} onClick={() => review(b.id, false, note)}>
+                        반려 확정
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => { setRejectingId(null); setNote(""); }}>
+                        취소
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 mt-3">
+                    <Button size="sm" className="flex-1" disabled={processing === b.id} onClick={() => review(b.id, true)}>
+                      <Check className="w-4 h-4 mr-1" /> 승인
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => { setRejectingId(b.id); setNote(""); }}>
+                      <X className="w-4 h-4 mr-1" /> 반려
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">업체 정보 검토 ({listings.length})</h2>
+          {listings.length === 0 ? (
+            <EmptyState icon={Building2} title="검토 대기중인 업체 정보가 없어요" />
+          ) : (
+          <div className="space-y-3">
+            {listings.map((l) => (
+              <div key={l.place_id} className="bg-card rounded-2xl border border-border p-4">
+                <p className="font-bold text-foreground">{l.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {CATEGORY_LABELS[l.category] ?? l.category}{l.city ? ` · ${l.city}` : ""}
+                </p>
+                <button onClick={() => navigate(`/vendor/${l.place_id}`)} className="text-xs text-primary font-medium mt-1">상세 미리보기</button>
+                {rejectTarget?.type === "listing" && rejectTarget.id === l.place_id ? (
+                  <div className="mt-3 space-y-2">
+                    <Textarea value={sectionNote} onChange={(e) => setSectionNote(e.target.value)} placeholder="반려 사유를 입력하세요 (사업자에게 전달됩니다)" rows={2} />
+                    <div className="flex gap-2">
+                      <Button variant="destructive" size="sm" className="flex-1" disabled={processingListing === l.place_id} onClick={() => reviewListing(l.place_id, false, sectionNote)}>반려 확정</Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={clearReject}>취소</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 mt-3">
+                    <Button size="sm" className="flex-1" disabled={processingListing === l.place_id} onClick={() => reviewListing(l.place_id, true)}>
+                      <Check className="w-4 h-4 mr-1" /> 승인
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" disabled={processingListing === l.place_id} onClick={() => { setRejectTarget({ type: "listing", id: l.place_id }); setSectionNote(""); }}>
+                      <X className="w-4 h-4 mr-1" /> 반려
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">이벤트 검토 ({events.length})</h2>
+          {events.length === 0 ? (
+            <EmptyState icon={Building2} title="검토 대기중인 이벤트가 없어요" />
+          ) : (
+          <div className="space-y-3">
+            {events.map((e) => (
+              <div key={e.id} className="bg-card rounded-2xl border border-border p-4">
+                <p className="font-bold text-foreground">{e.title}</p>
+                {e.description && <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-line">{e.description}</p>}
+                {rejectTarget?.type === "event" && rejectTarget.id === e.id ? (
+                  <div className="mt-3 space-y-2">
+                    <Textarea value={sectionNote} onChange={(ev) => setSectionNote(ev.target.value)} placeholder="반려 사유를 입력하세요 (사업자에게 전달됩니다)" rows={2} />
+                    <div className="flex gap-2">
+                      <Button variant="destructive" size="sm" className="flex-1" disabled={processingEvent === e.id} onClick={() => reviewEvent(e.id, false, sectionNote)}>반려 확정</Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={clearReject}>취소</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 mt-3">
+                    <Button size="sm" className="flex-1" disabled={processingEvent === e.id} onClick={() => reviewEvent(e.id, true)}>
+                      <Check className="w-4 h-4 mr-1" /> 승인
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" disabled={processingEvent === e.id} onClick={() => { setRejectTarget({ type: "event", id: e.id }); setSectionNote(""); }}>
+                      <X className="w-4 h-4 mr-1" /> 반려
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">상품 검토 ({products.length})</h2>
+          {products.length === 0 ? (
+            <EmptyState icon={Building2} title="검토 대기중인 상품이 없어요" />
+          ) : (
+          <div className="space-y-3">
+            {products.map((p) => (
+              <div key={p.id} className="bg-card rounded-2xl border border-border p-4">
+                <p className="font-bold text-foreground">{p.name}</p>
+                {p.price != null && <p className="text-xs text-muted-foreground mt-0.5">{p.price.toLocaleString()}원</p>}
+                {rejectTarget?.type === "product" && rejectTarget.id === p.id ? (
+                  <div className="mt-3 space-y-2">
+                    <Textarea value={sectionNote} onChange={(e) => setSectionNote(e.target.value)} placeholder="반려 사유를 입력하세요 (사업자에게 전달됩니다)" rows={2} />
+                    <div className="flex gap-2">
+                      <Button variant="destructive" size="sm" className="flex-1" disabled={processingProduct === p.id} onClick={() => reviewProduct(p.id, false, sectionNote)}>반려 확정</Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={clearReject}>취소</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 mt-3">
+                    <Button size="sm" className="flex-1" disabled={processingProduct === p.id} onClick={() => reviewProduct(p.id, true)}>
+                      <Check className="w-4 h-4 mr-1" /> 승인
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1" disabled={processingProduct === p.id} onClick={() => { setRejectTarget({ type: "product", id: p.id }); setSectionNote(""); }}>
+                      <X className="w-4 h-4 mr-1" /> 반려
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">제휴(프렌즈) 신청 ({applications.length})</h2>
+          {applications.length === 0 ? (
+            <EmptyState icon={Building2} title="대기 중인 제휴 신청이 없어요" />
+          ) : (
+          <div className="space-y-3">
+            {applications.map((a) => (
+              <div key={a.id} className="bg-card rounded-2xl border border-border p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-bold text-foreground">{a.business_name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {CATEGORY_LABELS[a.service_category] ?? a.service_category}
+                      {a.message ? ` · ${a.message}` : ""}
+                    </p>
+                  </div>
+                  {a.status === "interviewing" && (
+                    <span className="text-[11px] px-2 py-1 rounded-full bg-blue-100 text-blue-700 shrink-0">면담 중</span>
+                  )}
+                </div>
+                <div className="flex gap-2 mt-3">
+                  {a.status !== "interviewing" && (
+                    <Button variant="outline" size="sm" className="flex-1" disabled={processingApp === a.id} onClick={() => reviewPartnership(a.id, "interviewing")}>
+                      면담 진행
+                    </Button>
+                  )}
+                  <Button size="sm" className="flex-1" disabled={processingApp === a.id} onClick={() => reviewPartnership(a.id, "approved")}>
+                    <Check className="w-4 h-4 mr-1" /> 프렌즈 승인
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1" disabled={processingApp === a.id} onClick={() => reviewPartnership(a.id, "rejected")}>
+                    <X className="w-4 h-4 mr-1" /> 반려
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          )}
+        </section>
+
+        <section>
+          <h2 className="text-xs font-medium text-muted-foreground mb-2 px-1">파트너 등급 지정 ({tiers.length})</h2>
+          {tiers.length === 0 ? (
+            <EmptyState icon={Building2} title="승인된 기업회원이 없어요" />
+          ) : (
+          <div className="space-y-3">
+            {tiers.map((t) => (
+              <div key={t.id} className="bg-card rounded-2xl border border-border p-4">
+                <p className="font-bold text-foreground">{t.business_name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{CATEGORY_LABELS[t.service_category] ?? t.service_category}</p>
+                <div className="flex gap-1.5 mt-3">
+                  {([
+                    { val: "basic", label: "일반" },
+                    { val: "friends", label: "프렌즈" },
+                    { val: "bff", label: "이달의 베프" },
+                  ] as const).map((opt) => (
+                    <Button
+                      key={opt.val}
+                      size="sm"
+                      variant={t.partner_tier === opt.val ? "default" : "outline"}
+                      className="flex-1 text-xs"
+                      disabled={processingTier === t.id || t.partner_tier === opt.val}
+                      onClick={() => setTier(t.id, opt.val)}
+                    >
+                      {opt.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          )}
+        </section>
+        </>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default AdminBusinessReview;

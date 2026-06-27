@@ -38,9 +38,55 @@
 - **병렬 작업**: fan-out 탐색은 저토큰 서브에이전트(결론만), 깊은 다단계 작업만 일반 에이전트.
   같은 파일 동시 편집 금지(작업 분할). (Claude 한정) 안전 검증·읽기 명령은 `.claude/settings.json` 에 사전 허용됨.
 
+## 작업 영역·경계 (스코프 가드 — 새 세션·타툴 혼선/침범 방지, 먼저 읽기)
+
+> 새 세션이나 다른 툴(Codex·Antigravity)로 와도 **요청 범위 밖 영역을 건드리지 않도록** 하는 경계 정의다.
+> "이 작업이 어느 영역인지" 먼저 분류하고, **그 영역 밖 파일은 요청 없이 바꾸지 않는다**.
+
+**현재 구조 = 단일 레포·단일 빌드, 코드만 도메인 폴더로 분리 진행 중.** 소비자·기업·운영자가 한
+코드베이스(`src/App.tsx`)에 모이고 **런타임 역할 게이트**로 갈린다. 물리 분리는 `docs/260624_app_separation_roadmap.md`
+/ `..._execution_plan.md`(Phase 1~5). **현황: Phase 1(도메인 폴더 경계) 완료 — Consumer·Partners·Console
+모두 `src/features/<feature>/` 로 분리 + 경계 린트 강제.** 페이지는 전부 `src/features/*/pages/**` 이고
+`src/pages/**` 는 비었다(소비자 라우트는 App.tsx 가 직접 마운트 — 단일 접두사가 없어 라우트 모듈화 안 함).
+다음은 Phase 2(번들 도메인 청크)·Phase 3(앱별 감사 자동화) — 실행계획서 순서대로(합의 후), 임의 착수 금지.
+
+| 영역 | 코드 위치 | 라우트 / 게이트 | 데이터(같은 DB, 접근만 분리) |
+|---|---|---|---|
+| **소비자(Consumer)** ✅분리됨 | `src/features/consumer/**`(pages·data) | 대부분 라우트(App.tsx 직접 마운트), 로그인 가드 | `profiles`·`places`·견적·찜·하트 등 |
+| **기업(Partners)** ✅분리됨 | `src/features/partners/**`(pages·components·hooks·lib·data·routes) | `/business/*` → `features/partners/routes.tsx` · `BusinessGuard` | `business_profiles`·리드·상품·쿠폰·배송 |
+| **운영자(Console)** ✅분리됨 | `src/features/console/**`(pages·components·routes) | `/admin/*` → `features/console/routes.tsx` · `AdminGuard` | 모더레이션·에이전트출력·운영로그 |
+| **공유(Shared)** | `src/lib/**`·`src/components/**`(ui·guides·`ImageUploader` 등 공용)·`src/types/**`·`src/contexts/**`·`src/integrations/**`·`src/hooks/**`·`supabase/**` | 전 영역 공용 | 마켓플레이스 공유 테이블(견적·업체·리뷰) |
+
+**경계 규칙(must)** — 세 feature 모두 **린트로 강제**됨(`eslint no-restricted-imports`: inbound 1블록 + feature별 3블록 + `check-integrity` `{partners,console,consumer}-domain-boundary`).
+- 한 영역 작업 시 **다른 영역 파일을 함께 리팩터/수정하지 않는다**(요청에 명시됐을 때만).
+- **feature 외부에서 `@/features/<feature>/*` 직접 import 금지**(라우트 마운트는 `App.tsx` 만). feature 는
+  다른 feature import 금지. 공유가 필요하면 shared(`@/lib`·`@/components`·`@/hooks`·`@/types`·`@/contexts`)로 올린다.
+  (예: 가이드 뷰는 소비자+기업 공용이라 `@/components/guides/GuideView`·`@/types/guides`, 이미지 업로더는
+  기업+운영 공용이라 `@/components/ImageUploader` 로 둠.)
+- **공유(Shared) 변경은 전 영역 파급** → 영향 범위를 먼저 점검(grep 사용처)하고 최소·표적 수정.
+- 백엔드는 **단일 Supabase 1개 공유**(분리 금지). 인가는 끝까지 **RLS**가 책임(클라 가드는 UX용 —
+  회귀 사례: `business_profiles` self-UPDATE 권한상승, `docs/audit-surface-partners.md` P0).
+- **새 feature 분리 시**: 위 린트 규칙(`eslint.config.js`·`check-integrity.mjs`)에 그 feature 도 추가한다.
+- **영역별 감사맵**: partners = `docs/audit-surface-partners.md` · console = `docs/audit-surface-console.md`(각 14차원 심층). 전체 = `docs/audit-surface-map.md`.
+
+**빌드·플랫폼 현실(오해 방지)**
+- **웹·Android·iOS 는 같은 `dist/` 번들**을 쓴다. Capacitor 가 그 번들을 Android·iOS 네이티브로
+  각각 래핑할 뿐, **iOS·Android 가 서로 다른 코드 빌드가 아니다**. 네이티브 빌드 = `vite build --mode capacitor`
+  (`npm run cap:build`), 단일 `appId: app.dewy`(`capacitor.config.ts`).
+- **Mac = 별도 빌드 아님, 브라우저 웹으로 지원**(Capacitor macOS 데스크톱 미지원). 즉 "iOS/Mac vs 웹/안드로이드"
+  로 갈리지 않는다 — 갈림은 **웹(+Mac 브라우저) ↔ Capacitor 네이티브(Android·iOS, 같은 번들)** 다.
+- 따라서 iOS 바이너리에 기업·운영 화면도 (lazy 지만) 포함된다 → 직접 URL 누수 주의(예: 결제 surface).
+  구조적 분리(네이티브 빌드에서 console/partners 제외)는 로드맵 Phase 2.
+
+**단일 소스 인덱스(여기만 신뢰, 사본 만들지 말 것 — 드리프트 방지)**
+- 에이전트 규칙 = **이 `AGENTS.md`** · 감사 표면 전수 = `docs/audit-surface-map.md` · 앱 분리 계획 =
+  `docs/260624_app_separation_roadmap.md` · 실제 DB 스키마 진실원천 = `src/integrations/supabase/types.ts`
+  · 결제 구조 = `docs/260620_payment_compliance_plan.md` · iOS 제출 = `docs/260622_appstore_submission_runbook.md`.
+
 ## 코드 작성·리뷰 규칙 — 항상 적용 (바이브코딩 안전장치)
 
-코드를 새로 짜거나 바꿀 때마다 **반드시** 아래 7차원으로 자기 검증한다. AI 생성 코드는
+코드를 새로 짜거나 바꿀 때마다 **반드시** 아래 14차원으로 자기 검증한다(1~13 방어 + 14 개인화 공세).
+AI 생성 코드는
 "기능이 되면" 통과한 듯 보이지만 보안·안정성 결함은 **에러 없이 조용히** 깨진다(SusVibes:
 기능 80%+ 통과해도 보안은 8~23%). **"작동한다 ≠ 완성"**. 톤은 should 가 아니라 **must**.
 상세·Red Flags·프롬프트 템플릿: `docs/code-review-rules.md`.
@@ -64,6 +110,45 @@
    자동저장(`useTextDraft`/`formDraft`). ③ **네트워크 에러 문구 다름**("Load failed" vs
    "Failed to fetch") → 에러 매핑·로깅. ④ `<input type=date>`/HEIC 업로드/safe-area
    (`safe-sticky-header`) 확인. ⑤ 실기기 e2e 불가 시 `client_error_logs`(user_agent)로 관측.
+8. **출시 적합성(스토어 컴플라이언스) — 네이티브(iOS/Android) 빌드·제출 시 별도로 본다**: 기능
+   감사는 웹/리눅스 CI 에서 도니 이 차원이 **그냥 통과**한다(빌드·테스트 녹색이라도 스토어 정책
+   결함은 안 보임). 따로 점검: ① **네이티브 권한 사용설명 문자열**(iOS Info.plist
+   `NSUserTrackingUsageDescription`·카메라·사진 / AndroidManifest) — 없으면 권한 호출 시 **크래시·반려**.
+   ② **광고 = ATT(IDFA) 동의 + `SKAdNetworkItems` + `GADApplicationIdentifier`**(5.1.2). ③ **결제 =
+   디지털재화 IAP 강제 + anti-steering**(네이티브 빌드에서 외부/웹 결제 UI·링크 숨김, 3.1.1).
+   ④ **회원탈퇴 인앱 경로**(5.1.1) · **UGC 신고·차단·삭제**(1.2). ⑤ 개인정보 양식↔실수집 일치·정책 URL,
+   placeholder/빈화면 없음(2.1), 딥링크 URL scheme 등록. **회귀: 광고 켜고 ATT 문구 누락 → 추적요청
+   크래시·반려**(코드의 동의요청 + Info.plist 문구 **둘 다** 필요). 체크리스트 단일 소스:
+   `docs/260622_appstore_submission_runbook.md §11` · `docs/ios-packaging.md`.
+9. **안정성(복원력) — 죽지 않고 우아하게 열화**: ① 부팅 경로 **무한로딩·흰화면 방지**(ErrorBoundary,
+   스플래시→첫화면 폴백) · **네이티브 플러그인 init 실패 graceful**(웹/미설치 환경도 동작 — 빈 catch 가
+   아니라 폴백). ② 네트워크 열화·오프라인 우아한 처리(에러 매핑·재시도) · 스토리지 throw 대응
+   (`safeLocalStorage`). ③ **해피패스만이 아니라 실패 경로도** 화면이 안 깨지게 + `client_error_logs`/
+   크래시 로깅으로 관측되게(회귀: 결제 하트 이중발급 레이스·iOS 저장소 화이트스크린).
+10. **법적/전자상거래 규제 — 한국 커머스 표시·정책 의무**: 유료(하트·구독) 판매 + 업체 정보
+    제공이라 결함 = 법적 리스크. ① **전자상거래법 표시의무**(판매자 사업자정보·이용약관·연락처·
+    이용조건) ② **환불·청약철회 정책 고지**(디지털재화 특성·기간) ③ **미성년자 결제 보호**(만 19세
+    미만 동의·취소권) ④ **위치기반서비스 약관·동의**(지도/주변 업체). 결제·약관·환불 흐름 바꿀 때 본다.
+11. **비용/쿼터 — 외부 호출이 곧 돈**: ① LLM 토큰(AI 플래너·스튜디오)·외부 API(Gemini·OpenAI·Drive)
+    **호출 비용·rate limit 인지** ② **폭주 방지**(무한루프·매 렌더 호출·N+1 외부콜 금지, 디바운스/캐싱)
+    ③ **사용량 상한·쿼터·실패 시 백오프**(재시도 폭주 금지). 코드 한 줄이 비용에 직결되므로 새 외부
+    호출 추가 시 캐싱·상한을 같이 설계.
+12. **접근성(a11y)**: 인터랙티브 요소 라벨(`aria-label`/`alt`), **색 대비**(텍스트/배경), **터치 타깃
+    ≥44pt**, 다이나믹 타입/줌에 안 깨짐, 포커스 순서·키보드 접근. 모바일 웹이 주 사용처라 본다.
+13. **개인정보/데이터 거버넌스 — 수집~파기 생명주기**: ① **PII 최소수집**·필요범위만 ② **보존기간·
+    파기**(탈퇴 즉시 파기·만료 데이터 정리) ③ **AI 사진 처리 후 삭제**(드레스/메이크업 업로드 잔존 금지)
+    ④ **수집·이용 동의 + 제3자 제공/위탁 고지**(Supabase·Gemini·OpenAI·Drive 등). 보안·출시 적합성과
+    중첩하되 **데이터 생명주기 관점**으로 별도로 본다.
+14. **초개인화(개인화 고도화) — "안 깨지나"가 아니라 "충분히 개인화됐나"(유일한 공세 차원)**: 1~13은
+    방어(결함 차단)지만 이 차원은 **"이 화면이 가진 신호를 충분히 써서 더 개인화할 여지가 있나"**를 본다
+    (제품의 핵심 베팅). surface 마다 ① **가용 신호 활용도**(페르소나 20모드·D-day·예산·지역·취향[taste]·
+    진행단계·역할·행동로그 — 실제로 쓰나, 아니면 전원 동일 화면인가) ② **개인화 깊이 단계**
+    (①없음→②정렬/필터→③콘텐츠 큐레이션→④카피/CTA 변형→⑤생성형 맞춤·추천이유) — **한 단계 위로 갈
+    여지** 표기 ③ **빈 신호 폴백**(신호 없을 때 우아한 기본 — 빈화면/dead-end 금지) ④ **교차 surface
+    일관성**(한 곳 신호[예: taste 스와이프]가 추천·꿀팁·쇼핑·일정에 다 반영 — 사일로 금지) ⑤ **측정**
+    (개인화→전환 기여 로깅). **산출물 = 개인화 기회 매트릭스**(surface × 신호 × 현재깊이→목표깊이)를 감사
+    문서에 넣어 **덜 개인화된 곳을 가시화**(`docs/audit-surface-map.md` 양식). 신호·큐레이션 단일 소스:
+    `src/lib/weddingPersona.ts`(20모드)·`tipCuration`·`personaRecommendations`·`personaMissions`.
 
 변경은 **최소·표적화**(요구 범위 밖 전체 재작성·호출부 시그니처 변경 금지). 짠 뒤
 **적대적 시점으로 자기 재검증**.
@@ -71,10 +156,24 @@
 **전체 코드리뷰 기록**: "전체 코드리뷰"(코드 전체 리뷰/보안 감사 등 광범위) 요청을 받으면
 결과를 **반드시** `docs/YYMMDD_codereview.md` 로 남긴다(예: `docs/260606_codereview.md`).
 양식은 그 파일을 템플릿으로 따른다: TL;DR(핵심 성과) → 영역별 섹션(보안·P0버그·**dead-end
-UI/placeholder CTA**·**iOS/사파리(웹) 차원**·공통화·도메인 변경·규칙/문서·검증 인프라) → 적용
-마이그레이션 표 → 남은 작업(deferred). 각 항목에 **커밋 해시·파일명**을 달아 추적 가능하게. 같은 날 여러 건이면
-`_2` 등 suffix. **dead-end UI 섹션은 필수**: 보안·버그만 보면 "동작하는 척하는" placeholder
-(toast/안내만 띄우는 CTA, no-op onClick, "준비 중" 영구 잔존)를 매번 놓친다(검증 섹션 참조).
+UI/placeholder CTA**·**iOS/사파리(웹) 차원**·**출시 적합성(스토어 컴플라이언스)**·**안정성(복원력)**·
+**법적/전자상거래**·**비용/쿼터**·**접근성**·**개인정보/데이터 거버넌스**·**초개인화(개인화 기회
+매트릭스)**·공통화·도메인 변경·규칙/문서·검증 인프라) → 적용 마이그레이션 표 → 남은 작업(deferred). 각 항목에
+**커밋 해시·파일명**을 달아 추적 가능하게. 같은 날 여러 건이면 `_2` 등 suffix. **dead-end UI 섹션은
+필수**: 보안·버그만 보면 "동작하는 척하는" placeholder (toast/안내만 띄우는 CTA, no-op onClick,
+"준비 중" 영구 잔존)를 매번 놓친다(검증 섹션 참조). **출시 적합성 섹션도 필수**: 네이티브 빌드는
+웹 CI 가 안 밟아 ATT·IAP·권한문구 결함이 기능 감사를 그냥 통과한다(회귀: 광고 ATT 누락 — §7-8 차원).
+
+**전체감사 범위(스코프) — 빠짐없이, "변경분만" 금지**: "전체감사"는 그 세션의 diff 가 아니라
+**레포 전체 × 전 surface × 14차원** 이다. 변경분만 보면 ATT 처럼 **기존부터 있던 구멍**을 영영 못 본다
+(회귀: 광고 ATT — 기능 감사가 매번 통과시킴). **점검할 surface 의 단일 소스 = `docs/audit-surface-map.md`**
+(라우트 130+ 전수: 소비자 A1~A7[탐색·**꿀팁**·준비도구·AI·청첩장·**쇼핑/견적문의**·커뮤니티], 기업
+B[상세관리·갤러리·상품·리뷰·쿠폰·리드·문의·배송·디자인·가이드 — 관리 항목 전수], 운영자 C1~C5
+[업체·모더레이션·청첩장에셋·AI운영·마케팅/CS — admin 28개 전수], 네이티브 D, 백엔드 E). 감사 문서에
+**그 맵 기준 커버리지 표**(✅본/⚠️일부/⬜미점검)를 반드시 넣어 **빠진 곳을 가시화**한다. 병렬
+서브에이전트로 **surface 별 fan-out** 하고 각자 14차원으로 훑는다. **"몇 개만/일부만"은 전체감사가
+아니다** — 관리 항목 수십 개인 surface(기업·운영자)는 **하위 항목까지** 보고, ⬜(미점검)는 문서에
+**명시적 deferred** 로 이월. 새 라우트·관리 항목 추가 시 `audit-surface-map.md` 도 같이 갱신.
 
 **정기 자동화**: 전체 감사는 **주 1회**(`.github/workflows/weekly-audit.yml`), e2e 전체
 시뮬레이션은 **월 1회**(`monthly-e2e-simulation.yml`) 개발 에이전트가 자동 수행한다(둘 다

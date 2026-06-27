@@ -28,6 +28,12 @@ verify_jwt = false
 [functions.verify-business]
 verify_jwt = false
 
+# verify_jwt=false: START 는 함수 내부 getClaims 로 사용자 인증, BOARD self-invoke 는
+# x-internal-secret(service_role 키) 검사(index.ts:248,280). 게이트웨이 verify_jwt=true 면 Bearer
+# 없는 self-invoke 가 401 로 막혀 컨설팅 보드가 생성되지 않는다(감사 260624 P0). 자체 인증하므로 false 안전.
+[functions.wedding-consulting]
+verify_jwt = false
+
 [functions.kakao-chatbot-skill]
 verify_jwt = false
 

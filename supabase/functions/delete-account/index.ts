@@ -2,22 +2,27 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// 회원 탈퇴(계정·데이터 삭제). 본인 인증 후 service role 로 auth 사용자를 삭제한다.
-// 사용자 소유 DB 행은 auth.users(id) ON DELETE CASCADE 로 함께 삭제되지만, **스토리지 객체는
-// CASCADE 대상이 아니므로 별도로 지워야** 한다(개인정보보호법 파기 의무 + Apple/Google 삭제정책).
-// (앱스토어·구글플레이 정책: 인앱 계정 삭제 제공 필수)
+// 회원 탈퇴(계정·데이터 삭제). 본인 인증 후 ① 소유 DB 행 파기(delete_user_data RPC) ② 소유 스토리지
+// 객체 파기 ③ auth 사용자 삭제 순으로 처리한다.
+// ⚠️ 중요(감사 260624): auth.users 참조 FK 가 DB 에 하나도 없어 ON DELETE CASCADE 는 동작하지 않는다.
+// 따라서 DB 행은 반드시 delete_user_data RPC 로 명시 파기해야 한다(과거 "CASCADE 로 삭제" 주석은 오류).
+// 스토리지도 CASCADE 대상이 아니라 별도 삭제(개인정보보호법 파기 의무 + Apple/Google 삭제정책).
 
 type AdminClient = ReturnType<typeof createClient>;
 
-// 사용자 소유 파일이 `${userId}/...` 경로로 저장되는 버킷들.
+// 사용자 소유 파일이 `${userId}/...` 경로로 저장되는 버킷들(실DB storage.buckets 확인 기준).
+// AI 개인사진(dress/makeup 입력·결과)과 guest-photos(하객사진) 포함 — 탈퇴 시 즉시 파기.
 const USER_CONTENT_BUCKETS = [
-  "sdm-uploads",
+  "dress-uploads",
+  "dress-results",
+  "makeup-uploads",
+  "makeup-results",
   "quote-uploads",
   "invitation-uploads",
+  "guest-photos",
   "couple-diary-photos",
   "community-images",
   "vendor-images",
-  "ai-uploads",
 ];
 
 // 한 버킷에서 prefix(보통 userId) 하위의 모든 파일을 재귀적으로 삭제. 폴더(entry.id === null)는
@@ -68,17 +73,25 @@ serve(async (req) => {
       return json({ error: "인증에 실패했습니다" }, 401);
     }
 
-    // 1) 사용자 소유 스토리지 파일 삭제(DB 행은 아래 CASCADE, 객체는 여기서 수동 파기).
+    // 1) 사용자 소유 DB 행 파기 — auth.users 참조 FK 가 없어 CASCADE 가 안 되므로 명시 RPC 로 삭제.
+    //    실패 시 auth 사용자를 지우지 않고 중단(데이터만 남는 부분삭제 방지 — 재시도 가능하게).
+    const { error: dataError } = await supabase.rpc("delete_user_data", { p_user_id: user.id });
+    if (dataError) {
+      console.error("delete-account delete_user_data failed:", dataError);
+      return json({ error: "계정 데이터 삭제에 실패했어요. 잠시 후 다시 시도해 주세요." }, 500);
+    }
+
+    // 2) 사용자 소유 스토리지 파일 파기(객체는 CASCADE 대상이 아니라 수동 삭제). 일부 버킷 실패는
+    //    전체 탈퇴를 막지 않게 계속 진행(남은 객체는 30일 자동삭제로 보강).
     for (const bucket of USER_CONTENT_BUCKETS) {
       try {
         await removeUserFiles(supabase, bucket, user.id);
       } catch (e) {
         console.error(`delete-account storage purge failed (${bucket}):`, e);
-        // 일부 버킷 실패가 전체 탈퇴를 막지 않도록 계속 진행.
       }
     }
 
-    // 2) auth 사용자 삭제 → FK ON DELETE CASCADE 로 사용자 소유 DB 행 정리.
+    // 3) auth 사용자 삭제.
     const { error: delError } = await supabase.auth.admin.deleteUser(user.id);
     if (delError) {
       console.error("delete-account error:", delError);
