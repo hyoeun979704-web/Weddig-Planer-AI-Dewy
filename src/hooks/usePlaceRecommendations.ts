@@ -61,6 +61,7 @@ async function fetchSimilar(a: RecAnchor): Promise<RecPlace[]> {
     .eq("category", a.category)
     .neq("place_id", a.id)
     .order("partner_rank", { ascending: false })
+    .order("has_image", { ascending: false })
     .order("avg_rating", { ascending: false, nullsFirst: false })
     .limit(SIMILAR_LIMIT);
   if (a.city) q = q.eq("city", a.city);

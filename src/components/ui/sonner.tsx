@@ -10,6 +10,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       position="top-center"
+      // 노치/상태표시줄 가림 방지는 index.css 의 [data-sonner-toaster][data-y-position="top"]
+      // 에서 var(--safe-top) 으로 강제(Sonner 가 모바일에서 offset prop 을 무시하므로 CSS 로 처리).
       className="toaster group"
       toastOptions={{
         classNames: {

@@ -4,6 +4,10 @@ project_id = "qabeywyzjsgyqpjqsvkd"
 [functions.place-geocode-backfill]
 verify_jwt = false
 
+# 관리자 업체 보강(연락처·주소·SNS·좌표) — 동일 x-admin-token 인증, JWT 미사용
+[functions.place-enrich]
+verify_jwt = false
+
 [functions.cancel-subscription]
 verify_jwt = true
 

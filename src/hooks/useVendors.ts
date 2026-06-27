@@ -117,6 +117,7 @@ export async function fetchVendorsByCategory(
     .is("deleted_at", null)
     // 파트너 등급(베프>프렌즈>일반)은 카테고리 필터 안에서의 정렬일 뿐
     .order("partner_rank", { ascending: false })
+    .order("has_image", { ascending: false }) // 썸네일 있는 업체 먼저(사진 없는 업체 상위 노출 방지)
     .order("data_completeness", { ascending: false })
     .order("avg_rating", { ascending: false, nullsFirst: false });
 
