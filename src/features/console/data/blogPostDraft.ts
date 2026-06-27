@@ -1,5 +1,6 @@
 // 블로그 원고(워드프레스 발행 큐) 데이터 접근 레이어 — console 마케팅 도메인.
-// 패턴: instagramPostDraft.ts. blog_post_drafts CRUD + wordpress-publisher 호출.
+// 패턴: instagramPostDraft.ts. blog_post_drafts CRUD.
+// 발행은 수동(운영자가 복사 → 워드프레스에 직접 게시 → "발행 완료" 표시). 자동 REST 발행 없음.
 
 import { supabase } from "@/integrations/supabase/client";
 import type { BlogPostDraft } from "@/types/blogPostDraft";
@@ -63,39 +64,4 @@ export async function updateBlogDraft(
 export async function deleteBlogDraft(id: string): Promise<void> {
   const { error } = await supabase.from("blog_post_drafts").delete().eq("id", id);
   if (error) throw error;
-}
-
-export interface WordpressPublishResult {
-  success: boolean;
-  wpPostId?: number;
-  wpUrl?: string | null;
-  wpStatus?: "draft" | "publish";
-  error?: string;
-}
-
-/** wordpress-publisher edge function 호출. wpStatus: 임시저장(draft)·발행(publish). */
-export async function publishToWordpress(
-  draftId: string,
-  wpStatus: "draft" | "publish",
-): Promise<WordpressPublishResult> {
-  const { data, error } = await supabase.functions.invoke("wordpress-publisher", {
-    body: { draftId, wpStatus },
-  });
-  if (error) {
-    // edge function 이 4xx/5xx 면 supabase-js 가 error 로 던짐 — 본문 메시지 회수 시도.
-    let detail = error.message;
-    const ctx = (error as { context?: Response }).context;
-    if (ctx && typeof ctx.json === "function") {
-      try {
-        const j = await ctx.json();
-        detail = j?.message || j?.error || detail;
-      } catch {
-        /* 본문 파싱 실패 — 기본 메시지 유지 */
-      }
-    }
-    throw new Error(detail);
-  }
-  const result = data as WordpressPublishResult | null;
-  if (!result || result.error) throw new Error(result?.error ?? "응답이 비어있어요");
-  return result;
 }

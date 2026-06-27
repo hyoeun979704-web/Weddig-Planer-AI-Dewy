@@ -3,10 +3,10 @@
 
 export type BlogPostStatus =
   | "draft" // 작성/적재됨
-  | "review" // 운영자 검수 중(또는 WP 임시저장됨)
-  | "publishing" // 발행 처리 중(전이)
-  | "published" // WP 발행 완료
-  | "failed"; // 발행 실패
+  | "review" // 운영자 검수 중
+  | "publishing" // (예약) 전이 상태 — 현재 수동 흐름 미사용
+  | "published" // 운영자가 워드프레스에 직접 게시 완료로 표시
+  | "failed"; // (예약) 실패 상태 — 현재 수동 흐름 미사용
 
 export type BlogAuthorPersona = "me" | "brand";
 

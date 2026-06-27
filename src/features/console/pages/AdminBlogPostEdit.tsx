@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import {
   AlertTriangle,
+  CheckCircle2,
   ChevronLeft,
+  Code2,
+  Copy,
   ExternalLink,
-  FileText,
-  Globe,
+  Eye,
   Loader2,
+  RotateCcw,
   Save,
-  Send,
   Trash2,
 } from "lucide-react";
 import AdminGuard from "@/features/console/components/AdminGuard";
@@ -26,6 +29,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -39,7 +48,6 @@ import {
   fetchBlogDraft,
   updateBlogDraft,
   deleteBlogDraft,
-  publishToWordpress,
 } from "@/features/console/data/blogPostDraft";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -60,10 +68,11 @@ interface FormState {
   tags: string; // 콤마 구분
   content_markdown: string;
   featured_image_url: string;
+  wp_url: string; // 직접 발행한 글의 공개 URL(수동 기록)
   notes: string;
 }
 
-const FEATURED_BUCKET = "instagram-cards"; // 공개 버킷 재사용(WP 가 fetch 가능해야 함)
+const FEATURED_BUCKET = "instagram-cards"; // 공개 버킷 재사용
 
 function buildForm(d: BlogPostDraft): FormState {
   return {
@@ -76,6 +85,7 @@ function buildForm(d: BlogPostDraft): FormState {
     tags: (d.tags ?? []).join(", "),
     content_markdown: d.content_markdown ?? "",
     featured_image_url: d.featured_image_url ?? "",
+    wp_url: d.wp_url ?? "",
     notes: d.notes ?? "",
   };
 }
@@ -96,8 +106,11 @@ const AdminBlogPostEditInner = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [publishing, setPublishing] = useState<"draft" | "publish" | null>(null);
+  const [marking, setMarking] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  // HTML 복사용 — 화면 밖에 마크다운을 렌더해 innerHTML 을 추출.
+  const htmlRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -123,33 +136,38 @@ const AdminBlogPostEditInner = () => {
   }, [load]);
 
   /** 폼 → DB 저장. 성공 시 갱신된 draft 반환. */
-  const persist = useCallback(async (): Promise<BlogPostDraft | null> => {
-    if (!id || !form) return null;
-    if (!form.title.trim()) {
-      toast({ title: "제목은 비울 수 없어요", variant: "destructive" });
-      return null;
-    }
-    const payload = {
-      title: form.title.trim(),
-      slug: form.slug.trim() || null,
-      excerpt: form.excerpt.trim() || null,
-      canonical_url: form.canonical_url.trim() || null,
-      author_persona: form.author_persona,
-      categories: splitList(form.categories),
-      tags: splitList(form.tags),
-      content_markdown: form.content_markdown.trim() || null,
-      featured_image_url: form.featured_image_url.trim() || null,
-      notes: form.notes.trim() || null,
-      reviewed_by: user?.id ?? null,
-      reviewed_at: new Date().toISOString(),
-    };
-    const updated = await updateBlogDraft(id, payload);
-    if (updated) {
-      setDraft(updated);
-      setForm(buildForm(updated));
-    }
-    return updated;
-  }, [id, form, user?.id]);
+  const persist = useCallback(
+    async (extra?: Record<string, unknown>): Promise<BlogPostDraft | null> => {
+      if (!id || !form) return null;
+      if (!form.title.trim()) {
+        toast({ title: "제목은 비울 수 없어요", variant: "destructive" });
+        return null;
+      }
+      const payload = {
+        title: form.title.trim(),
+        slug: form.slug.trim() || null,
+        excerpt: form.excerpt.trim() || null,
+        canonical_url: form.canonical_url.trim() || null,
+        author_persona: form.author_persona,
+        categories: splitList(form.categories),
+        tags: splitList(form.tags),
+        content_markdown: form.content_markdown.trim() || null,
+        featured_image_url: form.featured_image_url.trim() || null,
+        wp_url: form.wp_url.trim() || null,
+        notes: form.notes.trim() || null,
+        reviewed_by: user?.id ?? null,
+        reviewed_at: new Date().toISOString(),
+        ...extra,
+      };
+      const updated = await updateBlogDraft(id, payload);
+      if (updated) {
+        setDraft(updated);
+        setForm(buildForm(updated));
+      }
+      return updated;
+    },
+    [id, form, user?.id],
+  );
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -163,31 +181,52 @@ const AdminBlogPostEditInner = () => {
     }
   };
 
-  const handlePublish = async (wpStatus: "draft" | "publish") => {
-    if (!id) return;
-    setPublishing(wpStatus);
+  const copyText = async (text: string, label: string) => {
+    if (!text.trim()) {
+      toast({ title: "복사할 내용이 없어요", variant: "destructive" });
+      return;
+    }
     try {
-      // 항상 최신 폼을 먼저 저장한 뒤 발행(검수 내용 반영).
-      const saved = await persist();
-      if (!saved) {
-        setPublishing(null);
-        return;
-      }
-      const result = await publishToWordpress(id, wpStatus);
-      toast({
-        title: wpStatus === "publish" ? "워드프레스 발행 완료" : "워드프레스 임시저장 완료",
-        description: result.wpUrl ? "글 링크가 생성됐어요." : undefined,
+      await navigator.clipboard.writeText(text);
+      toast({ title: `${label} 복사됨`, description: "워드프레스 편집기에 붙여넣으세요." });
+    } catch {
+      toast({ title: "복사 실패", description: "클립보드 접근이 막혔어요.", variant: "destructive" });
+    }
+  };
+
+  const handleCopyMarkdown = () => copyText(form?.content_markdown ?? "", "마크다운");
+  const handleCopyHtml = () => {
+    const html = htmlRef.current?.innerHTML ?? "";
+    copyText(html, "HTML");
+  };
+
+  /** 운영자가 워드프레스에 직접 올린 뒤 "발행 완료"로 표시(수동 상태 추적). */
+  const handleMarkPublished = async () => {
+    setMarking(true);
+    try {
+      const updated = await persist({
+        status: "published",
+        wp_status: "publish",
+        wp_published_at: new Date().toISOString(),
       });
-      await load();
+      if (updated) toast({ title: "발행 완료로 표시했어요" });
     } catch (e) {
-      toast({
-        title: "워드프레스 발행 실패",
-        description: e instanceof Error ? e.message : "함수 호출 오류",
-        variant: "destructive",
-      });
-      await load(); // status=failed·last_error 반영
+      toast({ title: "처리 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
     } finally {
-      setPublishing(null);
+      setMarking(false);
+    }
+  };
+
+  /** 발행 표시를 되돌려 다시 검수 상태로. */
+  const handleRevertToReview = async () => {
+    setMarking(true);
+    try {
+      const updated = await persist({ status: "review", wp_status: null, wp_published_at: null });
+      if (updated) toast({ title: "검수 상태로 되돌렸어요" });
+    } catch (e) {
+      toast({ title: "처리 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setMarking(false);
     }
   };
 
@@ -227,12 +266,13 @@ const AdminBlogPostEditInner = () => {
   }
 
   const set = (patch: Partial<FormState>) => setForm((f) => (f ? { ...f, ...patch } : f));
-  const busy = isSaving || publishing !== null;
+  const busy = isSaving || marking;
+  const isPublished = draft.status === "published";
 
   return (
     <AdminLayout
-      title="블로그 원고 검수·발행"
-      description="워드프레스 REST 자동 발행 — 검수 후 임시저장 또는 발행"
+      title="블로그 원고 검수"
+      description="wp_aio 원고 검수 → 복사해서 워드프레스에 직접 발행 → 발행 완료 표시"
       rightAction={
         <Button variant="outline" size="sm" onClick={() => navigate("/admin/blog-posts")}>
           <ChevronLeft className="w-4 h-4 mr-1" />목록
@@ -240,14 +280,11 @@ const AdminBlogPostEditInner = () => {
       }
     >
       <div className="space-y-5 max-w-3xl">
-        {/* 상태 + WP 결과 */}
+        {/* 상태 + 발행 링크 */}
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className={"text-[11px] px-2 py-0.5 rounded-full font-semibold " + BLOG_STATUS_TONE[draft.status]}>
             {BLOG_STATUS_LABEL[draft.status]}
           </span>
-          {draft.wp_status && (
-            <span className="text-xs text-muted-foreground">WP 상태: {draft.wp_status}</span>
-          )}
           {draft.wp_url && (
             <a
               href={draft.wp_url}
@@ -265,13 +302,6 @@ const AdminBlogPostEditInner = () => {
           )}
         </div>
 
-        {draft.status === "failed" && draft.last_error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-            <p className="font-semibold mb-0.5">마지막 발행 실패 (재시도 {draft.retry_count}회)</p>
-            <p className="break-words">{draft.last_error}</p>
-          </div>
-        )}
-
         {/* 메타 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5 md:col-span-2">
@@ -282,7 +312,7 @@ const AdminBlogPostEditInner = () => {
             <Label htmlFor="f-slug">슬러그 (URL)</Label>
             <Input
               id="f-slug"
-              placeholder="비우면 제목에서 자동 생성"
+              placeholder="워드프레스에서 정해도 됨"
               value={form.slug}
               onChange={(e) => set({ slug: e.target.value })}
             />
@@ -303,7 +333,7 @@ const AdminBlogPostEditInner = () => {
             </Select>
           </div>
           <div className="space-y-1.5 md:col-span-2">
-            <Label htmlFor="f-excerpt">요약 (TL;DR → WP excerpt)</Label>
+            <Label htmlFor="f-excerpt">요약 (TL;DR)</Label>
             <Textarea
               id="f-excerpt"
               rows={2}
@@ -316,13 +346,10 @@ const AdminBlogPostEditInner = () => {
             <Label htmlFor="f-canonical">Canonical URL</Label>
             <Input
               id="f-canonical"
-              placeholder="네이버 등 원본에 먼저 게시했다면 그 원본 URL (중복 SEO 회피)"
+              placeholder="네이버 등 원본에 먼저 게시했다면 그 원본 URL (워드프레스에서 SEO 설정에 입력)"
               value={form.canonical_url}
               onChange={(e) => set({ canonical_url: e.target.value })}
             />
-            <p className="text-[11px] text-muted-foreground">
-              Yoast/RankMath SEO 플러그인이 설치돼 있어야 적용됩니다(둘 다 메타로 전달).
-            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="f-cats">카테고리 (콤마 구분)</Label>
@@ -366,26 +393,48 @@ const AdminBlogPostEditInner = () => {
 
         {/* 본문 */}
         <div className="space-y-1.5">
-          <Label htmlFor="f-md">본문 (Markdown)</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="f-md">본문 (Markdown)</Label>
+            <div className="flex items-center gap-1.5">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setIsPreviewOpen(true)}>
+                <Eye className="w-3.5 h-3.5 mr-1" />미리보기
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={handleCopyMarkdown}>
+                <Copy className="w-3.5 h-3.5 mr-1" />마크다운 복사
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={handleCopyHtml}>
+                <Code2 className="w-3.5 h-3.5 mr-1" />HTML 복사
+              </Button>
+            </div>
+          </div>
           <Textarea
             id="f-md"
             rows={18}
             className="font-mono text-xs"
-            placeholder="wp_aio 본문(Markdown). 발행 시 HTML 로 변환됩니다."
+            placeholder="wp_aio 본문(Markdown). 복사 버튼으로 워드프레스에 붙여넣으세요."
             value={form.content_markdown}
             onChange={(e) => set({ content_markdown: e.target.value })}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            "HTML 복사" 는 워드프레스 블록 편집기에, "마크다운 복사" 는 마크다운 지원 블록/플러그인에 붙여넣기 좋아요. (표 등 GFM 문법은 마크다운 복사를 권장)
+          </p>
+        </div>
+
+        {/* 발행 기록 */}
+        <div className="space-y-1.5">
+          <Label htmlFor="f-wpurl">발행된 글 URL (직접 올린 뒤 붙여넣기)</Label>
+          <Input
+            id="f-wpurl"
+            placeholder="https://post.dewy-wedding.com/..."
+            value={form.wp_url}
+            onChange={(e) => set({ wp_url: e.target.value })}
           />
         </div>
 
         {/* 내부 메모 */}
         <div className="space-y-1.5">
           <Label htmlFor="f-notes">내부 메모 (선택)</Label>
-          <Textarea
-            id="f-notes"
-            rows={2}
-            value={form.notes}
-            onChange={(e) => set({ notes: e.target.value })}
-          />
+          <Textarea id="f-notes" rows={2} value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
         </div>
 
         {/* 액션 */}
@@ -394,26 +443,16 @@ const AdminBlogPostEditInner = () => {
             {isSaving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
             저장
           </Button>
-          <Button onClick={() => handlePublish("draft")} disabled={busy} variant="secondary">
-            {publishing === "draft" ? (
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-            ) : (
-              <FileText className="w-4 h-4 mr-1" />
-            )}
-            WP 임시저장
-          </Button>
-          <Button onClick={() => handlePublish("publish")} disabled={busy}>
-            {publishing === "publish" ? (
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4 mr-1" />
-            )}
-            워드프레스 발행
-          </Button>
-          {draft.wp_post_id && (
-            <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
-              <Globe className="w-3.5 h-3.5" />WP #{draft.wp_post_id}
-            </span>
+          {isPublished ? (
+            <Button onClick={handleRevertToReview} disabled={busy} variant="secondary">
+              {marking ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-1" />}
+              검수 상태로 되돌리기
+            </Button>
+          ) : (
+            <Button onClick={handleMarkPublished} disabled={busy}>
+              {marking ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
+              발행 완료로 표시
+            </Button>
           )}
           <div className="flex-1" />
           <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setIsDeleteOpen(true)} disabled={busy}>
@@ -422,16 +461,37 @@ const AdminBlogPostEditInner = () => {
         </div>
 
         <p className="text-[11px] text-muted-foreground">
-          "WP 임시저장" 은 워드프레스에 비공개 초안으로, "워드프레스 발행" 은 공개 글로 올립니다. 이미 발행한 글을 다시 누르면 같은 글이 갱신돼요.
+          이 화면에서 원고를 검수·복사해 워드프레스에 직접 게시한 뒤, 위에 발행된 글 URL 을 넣고 "발행 완료로 표시" 를 누르면 상태가 기록돼요.
         </p>
       </div>
+
+      {/* HTML 추출용 숨김 렌더(화면 밖). 복사 버튼이 innerHTML 을 읽음. */}
+      <div ref={htmlRef} aria-hidden className="sr-only">
+        <ReactMarkdown>{form.content_markdown}</ReactMarkdown>
+      </div>
+
+      {/* 미리보기 */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{form.title || "미리보기"}</DialogTitle>
+          </DialogHeader>
+          <div className="prose prose-sm max-w-none text-sm leading-relaxed [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mt-4 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-4 [&_h3]:font-semibold [&_h3]:mt-3 [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground">
+            {form.content_markdown.trim() ? (
+              <ReactMarkdown>{form.content_markdown}</ReactMarkdown>
+            ) : (
+              <p className="text-muted-foreground">본문이 비어 있어요.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>원고를 삭제할까요?</AlertDialogTitle>
             <AlertDialogDescription>
-              이 작업은 되돌릴 수 없어요. 이미 워드프레스에 발행된 글은 워드프레스에서 별도로 삭제해야 합니다.
+              이 작업은 되돌릴 수 없어요. 이미 워드프레스에 올린 글은 워드프레스에서 별도로 삭제해야 합니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

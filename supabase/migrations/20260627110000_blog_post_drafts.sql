@@ -2,19 +2,20 @@
 -- 블로그 원고 — 워드프레스 발행 큐 (blog_post_drafts)
 -- ============================================================================
 --
--- 마케팅 파이프라인 ②워드프레스 자동 발행용. marketing-draft 스킬의 wp_aio 산출물
+-- 마케팅 파이프라인 ②워드프레스 발행용. marketing-draft 스킬의 wp_aio 산출물
 -- (TL;DR·FAQ·canonical 포함 본문)을 이 테이블에 적재해 운영자가 검수한 뒤,
--- wordpress-publisher edge function 으로 WP REST 에 자동 발행한다(복붙 X).
+-- 어드민에서 마크다운/HTML 을 복사해 워드프레스에 직접 게시하고 발행 결과를 기록한다
+-- (카드뉴스와 동일한 수동 흐름 — 자격증명 없이 운용. 자동 REST 발행은 미사용).
 --
 -- 흐름(검수→발행):
 --   draft      — 작성/적재됨, 아직 검수 안 함
 --   review     — 운영자 검수 중
---   publishing — wordpress-publisher 가 처리 중(낙관적 락, 전이 상태)
---   published  — WP 발행 완료(wp_post_id·wp_url 연결)
---   failed     — 발행 실패(last_error·retry_count 기록)
+--   publishing — (예약) 전이 상태. 현재 수동 흐름에선 미사용
+--   published  — 운영자가 워드프레스에 게시 완료로 표시(wp_url 기록)
+--   failed     — (예약) 실패 상태. 현재 수동 흐름에선 미사용
 --
--- "노션엔 올렸는데 WP엔 아직" 같은 부분 상태를 wp_* 컬럼으로 분리 추적한다.
--- (status 는 Dewy 내부 워크플로 상태, wp_status 는 WP 쪽 실제 게시 상태 draft|publish)
+-- wp_* 컬럼으로 워드프레스 발행 결과를 분리 기록한다(수동 흐름에선 wp_url·wp_status·
+-- wp_published_at 사용. wp_post_id·wp_featured_media_id 는 향후 자동 발행 대비 예약 컬럼).
 --
 -- 운영자(admin)만 read/write. 사용자 데이터 아님 — 마케팅 운영 테이블.
 -- instagram_post_drafts 와 동일 RLS·트리거 패턴.
