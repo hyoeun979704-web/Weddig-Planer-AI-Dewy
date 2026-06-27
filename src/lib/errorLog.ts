@@ -27,7 +27,10 @@ function isNoise(message: string): boolean {
     // 청크 로드 실패는 ErrorBoundary 가 자동 새로고침으로 복구 → 별도 로깅 불필요.
     /ChunkLoadError/i.test(message) ||
     /dynamically imported module/i.test(message) ||
-    /importing a module script failed/i.test(message)
+    /importing a module script failed/i.test(message) ||
+    // Capacitor 네이티브 플러그인 미구현(예: iOS 위젯 플러그인 미번들) — 호출부가 graceful
+    // 폴백하므로 앱 영향 0. 양성 잡음이 실제 오류를 묻어 로깅 가치 없음.
+    /plugin is not implemented on/i.test(message)
   );
 }
 

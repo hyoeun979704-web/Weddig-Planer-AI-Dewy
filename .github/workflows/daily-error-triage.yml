@@ -1,0 +1,119 @@
+name: Daily Error-Log Triage
+
+# 하루 1회, 개발 에이전트(Claude)가 운영 에러로그(client_error_logs)를 트리아지한다.
+#   - 최근 48h 에러를 REST 로 수집 → **잡음/사용자오류를 거르고** → **진짜 코드·백엔드 버그만**
+#     추려 저위험·표적 수정을 적용하고 **draft PR** 을 연다(없으면 PR 안 엶 — 빈 PR 노이즈 금지).
+#   - 배경: 로그는 자동 수집되지만 "보고 → 수정" 루프가 없어 진짜 버그가 양성잡음(비번오류·
+#     ResizeObserver·iOS 위젯 미구현 등) 사이에 묻혀 늦게 발견됐다(예: quote_requests RLS 무한재귀,
+#     docs 260627). 매일 트리아지로 조기에 가시화한다. 기준은 AGENTS.md 검증 규칙·14차원.
+#
+# ⚙️ 필요한 시크릿(이미 다른 워크플로가 쓰는 것 재사용 — 신규 등록 불필요):
+#   - ANTHROPIC_API_KEY                     : 에이전트 구동(weekly-audit 공용). 없으면 통째로 skip.
+#   - SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY : 에러로그 읽기(nightly-collection 공용). 없으면 skip.
+#   service_role 은 RLS 우회로 전체 로그를 읽는다. 수집물(error-log-snapshot.json)은 .gitignore 로
+#   커밋 차단(사용자 데이터). 메시지·스택은 write 시점에 redactPii 로 1차 마스킹돼 있다.
+
+on:
+  schedule:
+    # 매일 19:13 UTC (= 04:13 KST). off-peak 분(:00/:30 회피).
+    - cron: "13 19 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: daily-error-triage
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    name: error-log triage (claude)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # 시크릿은 step if 에서 직접 못 쓴다(워크플로 무효화 → startup failure 사고, deploy-migrations 주석).
+    # job env 로 끌어올려 env 컨텍스트로 분기한다.
+    env:
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+      HAS_DB: ${{ secrets.SUPABASE_URL != '' && secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
+    steps:
+      - name: Checkout
+        if: env.HAS_KEY == 'true' && env.HAS_DB == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        if: env.HAS_KEY == 'true' && env.HAS_DB == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        if: env.HAS_KEY == 'true' && env.HAS_DB == 'true'
+        run: npm ci
+
+      - name: Fetch recent client_error_logs (last 48h)
+        id: fetch
+        if: env.HAS_KEY == 'true' && env.HAS_DB == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          SINCE=$(date -u -d '48 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          # service_role 키로 RLS 우회 전체 조회. 최신순 최대 3000행(필요 컬럼만).
+          curl -sS --fail \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            "${SUPABASE_URL}/rest/v1/client_error_logs?created_at=gte.${SINCE}&select=created_at,source,url,message,stack,user_agent&order=created_at.desc&limit=3000" \
+            -o error-log-snapshot.json
+          COUNT=$(jq 'length' error-log-snapshot.json)
+          echo "count=${COUNT}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Error-log triage::최근 48h 에러로그 ${COUNT} 건 수집"
+
+      - name: Run Claude triage
+        if: env.HAS_KEY == 'true' && env.HAS_DB == 'true' && steps.fetch.outputs.count != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            저장소 루트의 error-log-snapshot.json 은 최근 48시간 운영 에러로그(client_error_logs)
+            원본 행이다(created_at·source·url·message·stack·user_agent). 이걸 트리아지해라.
+
+            1) message 기준으로 그룹핑하고 빈도·최근발생·발생 url 을 집계한다.
+            2) **반드시 분류부터** 한다(무지성 수정 금지 — 로그의 절반 이상은 버그가 아님):
+               - **사용자 오류(버그 아님, 무시)**: "Invalid login credentials", "Email not confirmed",
+                 "Password is known to be weak", 입력값 검증 실패 등 정상 인증·검증 흐름.
+               - **양성 잡음(무시)**: errorLog.ts 의 isNoise 가 거르는 류(ResizeObserver, Script error,
+                 ChunkLoadError, "plugin is not implemented on", auth lock 'steal'), 브라우저 번역확장
+                 ↔ React DOM 간섭("insertBefore/removeChild on Node").
+               - **이미 해결됨**: git log·마이그레이션·현재 코드로 보아 최근 픽스가 반영돼 더는
+                 재발 안 하는 것(최근발생 시점으로 판단).
+               - **진짜 버그(조치 대상)**: 위 셋에 안 들어가는 코드·백엔드 결함. RLS 재귀, RPC 시그니처
+                 불일치(PGRST202), 타입 캐스트 에러, await 누락, 널 참조 등.
+            3) 진짜 버그만 **저장소 코드·supabase/migrations·types.ts 를 근거로 직접 조사**해 원인을
+               특정한다(AGENTS.md "DB 작업 전 테이블 선확인"·"RPC 인자 교차확인"·검증 규칙 준수).
+               추측 금지 — 근거(파일·줄·정책명)를 댄다.
+            4) **저위험·표적 수정만** 적용한다. DB(RLS/함수) 결함은 supabase/migrations/ 에 새 마이그
+               파일로 제안하되 **CI 에서 프로덕션에 직접 apply 하지 말 것**(사람이 deploy-migrations
+               파이프라인으로 적용). 광범위 리팩터·호출부 시그니처 변경 금지.
+            5) 결과를 docs/<오늘YYMMDD>_error_triage.md 로 남긴다: 분류표(메시지·빈도·분류·근거·조치),
+               수정 항목(파일·요지), 미해결/이월(deferred). build/lint 로 자체 검증.
+            6) **진짜 버그가 1건이라도 있어 수정했으면** 새 브랜치에 커밋해 **draft PR** 을 연다.
+               **조치할 진짜 버그가 없으면 PR 도 문서도 만들지 말고** "오늘은 신규 실버그 없음"만
+               로그로 남겨라(빈 PR·노이즈 금지).
+            중요: error-log-snapshot.json 은 사용자 데이터다 — **절대 커밋하지 마라**(.gitignore 처리됨).
+          claude_args: "--max-turns 60"
+
+      - name: Note no new bugs
+        if: env.HAS_KEY == 'true' && env.HAS_DB == 'true' && steps.fetch.outputs.count == '0'
+        run: echo "::notice title=Error-log triage::최근 48h 에러로그 0건 — 트리아지 skip."
+
+      - name: Note when skipped (missing secrets)
+        if: env.HAS_KEY != 'true' || env.HAS_DB != 'true'
+        run: |
+          echo "::notice title=Daily triage skipped::ANTHROPIC_API_KEY 또는 SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY 시크릿이 없어 트리아지를 건너뛰었어요. Settings → Secrets 에 등록하면 매일 자동 실행됩니다."
