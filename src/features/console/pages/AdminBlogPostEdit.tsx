@@ -9,10 +9,13 @@ import {
   Copy,
   ExternalLink,
   Eye,
+  Link2,
   Loader2,
   RotateCcw,
   Save,
+  Sparkles,
   Trash2,
+  XCircle,
 } from "lucide-react";
 import AdminGuard from "@/features/console/components/AdminGuard";
 import AdminLayout from "@/features/console/components/AdminLayout";
@@ -48,6 +51,7 @@ import {
   fetchBlogDraft,
   updateBlogDraft,
   deleteBlogDraft,
+  generateBlogDraft,
 } from "@/features/console/data/blogPostDraft";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -56,7 +60,17 @@ import {
   type BlogPostDraft,
   BLOG_STATUS_LABEL,
   BLOG_STATUS_TONE,
+  READER_PERSONA_LABEL,
 } from "@/types/blogPostDraft";
+
+const CHECK_LABEL: Record<string, string> = {
+  tldr: "TL;DR 요약답",
+  question_headings: "질문형 소제목",
+  faq: "FAQ 블록",
+  scannability: "스캔 가능(표·리스트)",
+  persona: "페르소나 반영",
+  no_fabrication: "지어낸 수치 없음",
+};
 
 interface FormState {
   title: string;
@@ -107,6 +121,7 @@ const AdminBlogPostEditInner = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [marking, setMarking] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   // HTML 복사용 — 화면 밖에 마크다운을 렌더해 innerHTML 을 추출.
@@ -230,6 +245,21 @@ const AdminBlogPostEditInner = () => {
     }
   };
 
+  /** AI 재생성 — 현재 제목을 주제로 자료조사부터 다시(저장된 페르소나/앵글 승계). */
+  const handleRegenerate = async () => {
+    if (!id) return;
+    setRegenerating(true);
+    try {
+      const res = await generateBlogDraft({ draftId: id });
+      toast({ title: "AI 재생성 완료", description: `자료조사 출처 ${res.sourceCount ?? 0}건` });
+      await load();
+    } catch (e) {
+      toast({ title: "재생성 실패", description: e instanceof Error ? e.message : "오류", variant: "destructive" });
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!id) return;
     try {
@@ -266,8 +296,10 @@ const AdminBlogPostEditInner = () => {
   }
 
   const set = (patch: Partial<FormState>) => setForm((f) => (f ? { ...f, ...patch } : f));
-  const busy = isSaving || marking;
+  const busy = isSaving || marking || regenerating;
   const isPublished = draft.status === "published";
+  const analysis = draft.analysis;
+  const sources = draft.sources ?? [];
 
   return (
     <AdminLayout
@@ -300,7 +332,86 @@ const AdminBlogPostEditInner = () => {
               · {new Date(draft.wp_published_at).toLocaleString("ko-KR")}
             </span>
           )}
+          {draft.reader_persona && (
+            <span className="text-xs text-muted-foreground">
+              · 독자 {READER_PERSONA_LABEL[draft.reader_persona] ?? draft.reader_persona}
+            </span>
+          )}
         </div>
+
+        {/* AI 분석 패널 (생성된 원고만) */}
+        {(analysis || sources.length > 0) && (
+          <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold">AI 분석</span>
+              {typeof analysis?.score === "number" && (
+                <span
+                  className={
+                    "text-xs font-bold px-2 py-0.5 rounded-full " +
+                    (analysis.score >= 80
+                      ? "bg-emerald-100 text-emerald-700"
+                      : analysis.score >= 60
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-destructive/10 text-destructive")
+                  }
+                >
+                  {analysis.score}점
+                </span>
+              )}
+              {draft.angle && <span className="text-[11px] text-muted-foreground">앵글: {draft.angle}</span>}
+            </div>
+
+            {analysis?.checks && (
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(analysis.checks).map(([key, ok]) => (
+                  <span
+                    key={key}
+                    className={
+                      "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border " +
+                      (ok
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-destructive/30 bg-destructive/5 text-destructive")
+                    }
+                  >
+                    {ok ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                    {CHECK_LABEL[key] ?? key}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {analysis?.keywords && analysis.keywords.length > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                검색어: {analysis.keywords.join(" · ")}
+              </p>
+            )}
+            {analysis?.notes && <p className="text-[11px] text-muted-foreground">메모: {analysis.notes}</p>}
+
+            {sources.length > 0 && (
+              <div className="space-y-1 pt-1 border-t border-border">
+                <p className="text-[11px] font-medium text-muted-foreground inline-flex items-center gap-1">
+                  <Link2 className="w-3 h-3" />자료조사 출처 {sources.length}건 (신뢰성 근거)
+                </p>
+                <ul className="space-y-0.5">
+                  {sources.map((s, i) => (
+                    <li key={i} className="truncate">
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] text-primary hover:underline"
+                        title={s.url}
+                      >
+                        {s.title || s.url}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 메타 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -442,6 +553,10 @@ const AdminBlogPostEditInner = () => {
           <Button onClick={handleSave} disabled={busy} variant="outline">
             {isSaving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
             저장
+          </Button>
+          <Button onClick={handleRegenerate} disabled={busy} variant="outline">
+            {regenerating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+            AI 재생성
           </Button>
           {isPublished ? (
             <Button onClick={handleRevertToReview} disabled={busy} variant="secondary">

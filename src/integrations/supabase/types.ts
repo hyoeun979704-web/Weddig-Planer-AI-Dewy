@@ -446,6 +446,8 @@ export type Database = {
       }
       blog_post_drafts: {
         Row: {
+          analysis: Json | null
+          angle: string | null
           author_persona: string
           canonical_url: string | null
           categories: string[]
@@ -454,16 +456,20 @@ export type Database = {
           created_by: string | null
           excerpt: string | null
           featured_image_url: string | null
+          generated_at: string | null
           id: string
           last_error: string | null
+          model: string | null
           notes: string | null
           notion_page_id: string | null
+          reader_persona: string | null
           retry_count: number
           reviewed_at: string | null
           reviewed_by: string | null
           slug: string | null
           source_id: string | null
           source_type: string
+          sources: Json
           status: string
           tags: string[]
           title: string
@@ -475,6 +481,8 @@ export type Database = {
           wp_url: string | null
         }
         Insert: {
+          analysis?: Json | null
+          angle?: string | null
           author_persona?: string
           canonical_url?: string | null
           categories?: string[]
@@ -483,16 +491,20 @@ export type Database = {
           created_by?: string | null
           excerpt?: string | null
           featured_image_url?: string | null
+          generated_at?: string | null
           id?: string
           last_error?: string | null
+          model?: string | null
           notes?: string | null
           notion_page_id?: string | null
+          reader_persona?: string | null
           retry_count?: number
           reviewed_at?: string | null
           reviewed_by?: string | null
           slug?: string | null
           source_id?: string | null
           source_type?: string
+          sources?: Json
           status?: string
           tags?: string[]
           title: string
@@ -504,6 +516,8 @@ export type Database = {
           wp_url?: string | null
         }
         Update: {
+          analysis?: Json | null
+          angle?: string | null
           author_persona?: string
           canonical_url?: string | null
           categories?: string[]
@@ -512,16 +526,20 @@ export type Database = {
           created_by?: string | null
           excerpt?: string | null
           featured_image_url?: string | null
+          generated_at?: string | null
           id?: string
           last_error?: string | null
+          model?: string | null
           notes?: string | null
           notion_page_id?: string | null
+          reader_persona?: string | null
           retry_count?: number
           reviewed_at?: string | null
           reviewed_by?: string | null
           slug?: string | null
           source_id?: string | null
           source_type?: string
+          sources?: Json
           status?: string
           tags?: string[]
           title?: string
