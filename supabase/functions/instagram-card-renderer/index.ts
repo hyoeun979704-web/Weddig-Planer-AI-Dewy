@@ -43,6 +43,11 @@ interface CardText {
   handles?: string[];   // 좌하단 출처 핸들(@계정) — 표지=최대3줄, 본문=첫 줄(보통 handle 에서 도출)
   thumb_urls?: string[];// 표지 우상단 썸네일(최대 3, 보통 본문 image_url 에서 도출)
   grid_urls?: string[]; // CTA 카드 2x2 사진 그리드(최대 4, 보통 본문 image_url 에서 도출)
+  // ── 배경 사진 framing(운영자 조절) ──
+  image_fit?: "cover" | "contain"; // 채움/맞춤 (기본 cover)
+  image_pos_x?: number; // 초점 좌우 0~100% (기본 50)
+  image_pos_y?: number; // 초점 상하 0~100% (기본 50)
+  image_zoom?: number;  // 확대 50~300% (기본 100)
 }
 
 // 하단 가독성 그라데이션(Figma 227-2 정확 스톱): 위 투명 → 아래 핑크. 표지/CTA 와 본문 스톱이 다름.
@@ -161,6 +166,25 @@ function imgEl(src: string, style: Record<string, unknown>): unknown {
   return { type: "img", props: { src, style } };
 }
 
+// 배경 사진 — 운영자 framing(fit/초점/zoom) 적용. 기본: cover·중앙·100%.
+function bgImg(text: CardText): unknown {
+  const fit = text.image_fit === "contain" ? "contain" : "cover";
+  const zoom = Math.max(50, Math.min(300, text.image_zoom ?? 100)) / 100;
+  const px = Math.max(0, Math.min(100, text.image_pos_x ?? 50));
+  const py = Math.max(0, Math.min(100, text.image_pos_y ?? 50));
+  const w = Math.round(CARD_WIDTH * zoom);
+  const h = Math.round(CARD_HEIGHT * zoom);
+  return imgEl(text.image_url as string, {
+    position: "absolute",
+    left: Math.round((CARD_WIDTH - w) / 2),
+    top: Math.round((CARD_HEIGHT - h) / 2),
+    width: w,
+    height: h,
+    objectFit: fit,
+    objectPosition: `${px}% ${py}%`,
+  });
+}
+
 // 사진 배경 카드(Figma 227-2 정확 스펙 1:1). 좌표·크기·색·그라데이션은 get_design_context 추출값.
 // 사진은 hand-tuned per-image crop 대신 object-cover 센터(자동화 한계 — 템플릿은 정확 일치).
 function buildPhotoCardJSX({ type, text, fontFamily }: CardJSXProps): unknown {
@@ -197,7 +221,7 @@ function buildPhotoCardJSX({ type, text, fontFamily }: CardJSXProps): unknown {
 
   const isCover = type === "cover";
   const children: unknown[] = [
-    imgEl(text.image_url as string, { position: "absolute", top: 0, left: 0, width: CARD_WIDTH, height: CARD_HEIGHT, objectFit: "cover" }),
+    bgImg(text),
     el({ position: "absolute", left: 0, top: 0, width: CARD_WIDTH, height: CARD_HEIGHT, backgroundImage: isCover ? GRAD_COVER : GRAD_BODY }),
   ];
 

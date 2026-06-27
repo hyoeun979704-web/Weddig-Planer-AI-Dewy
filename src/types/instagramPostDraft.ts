@@ -30,6 +30,14 @@ export interface InstagramCardText {
   grid_urls?: string[];
   /** 표지 핸들 여러 줄(명시 지정 시). 보통 렌더러가 본문 handle 에서 도출. */
   handles?: string[];
+  /** 배경 사진 채움 방식 (기본 cover). */
+  image_fit?: "cover" | "contain";
+  /** 배경 사진 초점 좌우 0~100% (기본 50). */
+  image_pos_x?: number;
+  /** 배경 사진 초점 상하 0~100% (기본 50). */
+  image_pos_y?: number;
+  /** 배경 사진 확대 50~300% (기본 100). */
+  image_zoom?: number;
 }
 
 export interface InstagramPostDraft {

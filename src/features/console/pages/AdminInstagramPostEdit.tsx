@@ -869,6 +869,87 @@ const AdminInstagramPostEditInner = () => {
                         </p>
                       </div>
                     </div>
+
+                    {/* 사진 framing — 채움/확대/초점 위치. 렌더 시 적용(미리보기는 렌더 후). */}
+                    {card.image_url ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 pt-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-muted-foreground w-10 shrink-0">
+                            채움
+                          </span>
+                          <Select
+                            value={card.image_fit ?? "cover"}
+                            onValueChange={(v) =>
+                              updateCard(idx, {
+                                image_fit: v as "cover" | "contain",
+                              })
+                            }
+                          >
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="cover">채우기 (cover)</SelectItem>
+                              <SelectItem value="contain">
+                                맞추기 (contain)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="w-16 shrink-0">
+                            확대 {card.image_zoom ?? 100}%
+                          </span>
+                          <input
+                            type="range"
+                            min={50}
+                            max={300}
+                            step={5}
+                            value={card.image_zoom ?? 100}
+                            onChange={(e) =>
+                              updateCard(idx, {
+                                image_zoom: Number(e.target.value),
+                              })
+                            }
+                            className="flex-1 accent-pink-500"
+                          />
+                        </label>
+                        <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="w-16 shrink-0">
+                            좌우 {card.image_pos_x ?? 50}%
+                          </span>
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={card.image_pos_x ?? 50}
+                            onChange={(e) =>
+                              updateCard(idx, {
+                                image_pos_x: Number(e.target.value),
+                              })
+                            }
+                            className="flex-1 accent-pink-500"
+                          />
+                        </label>
+                        <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="w-16 shrink-0">
+                            상하 {card.image_pos_y ?? 50}%
+                          </span>
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={card.image_pos_y ?? 50}
+                            onChange={(e) =>
+                              updateCard(idx, {
+                                image_pos_y: Number(e.target.value),
+                              })
+                            }
+                            className="flex-1 accent-pink-500"
+                          />
+                        </label>
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
