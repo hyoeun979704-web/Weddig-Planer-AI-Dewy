@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { fetchBlogDraftList, createBlogDraft, generateBlogDraft } from "@/features/console/data/blogPostDraft";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -60,6 +61,7 @@ const AdminBlogPostsInner = () => {
   const [genTopic, setGenTopic] = useState("");
   const [genPersona, setGenPersona] = useState<ReaderPersona>("mp_general");
   const [genAngle, setGenAngle] = useState("");
+  const [genAutoPublish, setGenAutoPublish] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const fetchDrafts = useCallback(async () => {
@@ -116,10 +118,15 @@ const AdminBlogPostsInner = () => {
         topic: genTopic.trim(),
         readerPersona: genPersona,
         angle: genAngle.trim() || null,
+        autoPublish: genAutoPublish,
       });
       toast({
-        title: "AI 원고 생성 완료",
-        description: `자료조사 출처 ${res.sourceCount ?? 0}건 · 검수 화면으로 이동합니다.`,
+        title: res.published ? "AI 원고 자동 발행 완료" : "AI 원고 생성 완료",
+        description: res.published
+          ? `AIO 기준 통과 → /blog/${res.slug} 에 공개됨 (출처 ${res.sourceCount ?? 0}건)`
+          : res.holdReason
+            ? `${res.holdReason} · 검수 화면에서 확인하세요`
+            : `자료조사 출처 ${res.sourceCount ?? 0}건 · 검수 화면으로 이동합니다.`,
       });
       setIsGenOpen(false);
       setGenTopic("");
@@ -272,6 +279,20 @@ const AdminBlogPostsInner = () => {
                 onChange={(e) => setGenAngle(e.target.value)}
                 disabled={isGenerating}
               />
+            </div>
+            <div className="flex items-start gap-3 rounded-xl border border-border p-3">
+              <Switch
+                id="gen-autopublish"
+                checked={genAutoPublish}
+                onCheckedChange={setGenAutoPublish}
+                disabled={isGenerating}
+              />
+              <div className="space-y-0.5">
+                <Label htmlFor="gen-autopublish" className="cursor-pointer">자동 발행 (AIO 기준 통과 시)</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  생성 후 분석·개선을 거쳐 <b>점수·지어내기없음·TL;DR·FAQ·출처</b> 기준을 통과하면 자동으로 /blog 에 공개합니다. 미달이면 검수함에 보류돼요.
+                </p>
+              </div>
             </div>
           </div>
           <DialogFooter>

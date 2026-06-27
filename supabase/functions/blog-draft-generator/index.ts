@@ -16,6 +16,7 @@
 import { MODELS } from "../_shared/llm.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { marked } from "https://esm.sh/marked@12";
 
 interface BlogSource {
   title: string;
@@ -203,6 +204,123 @@ ${brief}
   };
 }
 
+// ── Stage 3: 개선 레이어 — 분석 약점을 고쳐 재작성 + 재분석 (발행 전 자가교정) ──────────
+async function improveDraft(
+  apiKey: string,
+  topic: string,
+  readerPersona: string | null,
+  angle: string | null,
+  brief: string,
+  draft: ComposeResult,
+): Promise<ComposeResult> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.geminiPro}:generateContent?key=${apiKey}`;
+  const failed = draft.analysis?.checks
+    ? Object.entries(draft.analysis.checks).filter(([, v]) => !v).map(([k]) => k).join(", ")
+    : "(분석 없음)";
+  const userPrompt = `주제: "${topic}"
+${personaLine(readerPersona, angle)}
+
+[검증된 리서치 — 이 사실들만 근거로 사용]
+${brief}
+
+[현재 초안 — 분석 결과 약점이 있어 개선이 필요]
+점수: ${draft.analysis?.score ?? "?"} / 미달 항목: ${failed}
+제목: ${draft.title}
+본문:
+${draft.content_markdown}
+
+위 초안을 **AIO 기준으로 개선해 재작성**하라(리서치 밖 수치·주장은 삭제):
+- TL;DR 첫 문장에 결론, 질문형 ## 소제목 5~8개, FAQ 4~6개, 표/리스트로 스캔 가능, 지어내기 금지.
+- 미달 항목(${failed})을 우선 교정. 톤·페르소나 유지.
+출력은 composeDraft 와 동일한 JSON 한 개(개선된 최종본 기준으로 analysis 재작성).
+
+{
+  "title": "...", "slug": "...", "excerpt": "...", "content_markdown": "# ...전체...",
+  "categories": ["..."], "tags": ["..."],
+  "analysis": { "score": 0-100, "checks": { "tldr": true, "question_headings": true, "faq": true, "scannability": true, "persona": true, "no_fabrication": true }, "keywords": ["..."], "notes": "..." }
+}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: COMPOSE_SYSTEM_PROMPT }] },
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      generationConfig: { temperature: 0.6, maxOutputTokens: 8192, responseMimeType: "application/json" },
+    }),
+  });
+  if (!res.ok) {
+    // 개선 실패 시 원본 유지(치명적 아님 — 게이트가 최종 판단).
+    console.warn(`개선(Gemini) 실패: ${res.status}`);
+    return draft;
+  }
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) return draft;
+  try {
+    const parsed = JSON.parse(text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, ""));
+    return {
+      title: String(parsed.title ?? draft.title),
+      slug: String(parsed.slug ?? draft.slug).trim(),
+      excerpt: String(parsed.excerpt ?? draft.excerpt).trim(),
+      content_markdown: String(parsed.content_markdown ?? draft.content_markdown).trim(),
+      categories: Array.isArray(parsed.categories) ? parsed.categories.map(String).slice(0, 5) : draft.categories,
+      tags: Array.isArray(parsed.tags) ? parsed.tags.map(String).slice(0, 10) : draft.tags,
+      analysis: parsed.analysis && typeof parsed.analysis === "object" ? (parsed.analysis as BlogAnalysis) : draft.analysis,
+    };
+  } catch {
+    return draft;
+  }
+}
+
+// AIO 자동발행 게이트 — 통과해야 자동 공개. (자가분석 점수 + 객관 신호[출처] 병행)
+const AUTO_PUBLISH_MIN_SCORE = 75;
+function passesPublishGate(a: BlogAnalysis | null, sourceCount: number): boolean {
+  if (!a) return false;
+  const c = a.checks ?? {};
+  return (
+    (a.score ?? 0) >= AUTO_PUBLISH_MIN_SCORE &&
+    c.no_fabrication === true && // 지어내기 없음(핵심 안전)
+    c.tldr === true && // AIO: 요약답
+    c.faq === true && // AIO: FAQ 스키마
+    sourceCount >= 1 // 그라운딩(근거) 보유
+  );
+}
+// 개선 필요 판단 — 완벽(고점+전 체크 통과)이 아니면 1회 개선.
+function needsImprovement(a: BlogAnalysis | null): boolean {
+  if (!a) return true;
+  const c = a.checks ?? {};
+  const allChecks = ["tldr", "question_headings", "faq", "scannability", "no_fabrication"] as const;
+  const anyFail = allChecks.some((k) => c[k] === false);
+  return (a.score ?? 0) < 85 || anyFail;
+}
+
+function slugify(s: string): string {
+  return (
+    s.trim().toLowerCase().replace(/['"]/g, "").replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 80) ||
+    "post"
+  );
+}
+
+async function markdownToHtml(md: string): Promise<string> {
+  const out = await Promise.resolve(marked.parse(md, { gfm: true, breaks: false }));
+  return typeof out === "string" ? out : String(out);
+}
+
+// 발행글 중 같은 slug 가 있으면 짧은 접미사로 유니크화.
+async function ensureUniqueSlug(
+  adminClient: ReturnType<typeof createClient>,
+  base: string,
+  exceptId: string | null,
+): Promise<string> {
+  let slug = base;
+  let q = adminClient.from("blog_post_drafts").select("id").eq("status", "published").eq("slug", slug);
+  if (exceptId) q = q.neq("id", exceptId);
+  const { data } = await q.limit(1);
+  if (data && data.length > 0) slug = `${base}-${crypto.randomUUID().slice(0, 4)}`;
+  return slug;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -264,6 +382,7 @@ Deno.serve(async (req) => {
     let topic: string | undefined = body.topic;
     let readerPersona: string | null = body.readerPersona ?? null;
     let angle: string | null = body.angle ?? null;
+    const autoPublish: boolean = body.autoPublish === true;
 
     if (readerPersona && !PERSONA_GUIDE[readerPersona]) readerPersona = null; // 알 수 없는 값 방어
 
@@ -294,14 +413,46 @@ Deno.serve(async (req) => {
 
     // ① 리서치 + 신뢰성 검증, ② 작성 + 분석
     const { brief, sources } = await researchTopic(geminiKey, topic!, readerPersona, angle);
-    const result = await composeDraft(geminiKey, topic!, readerPersona, angle, brief);
+    let result = await composeDraft(geminiKey, topic!, readerPersona, angle, brief);
 
+    // ③ 개선 레이어(발행 전 자가교정) — AIO 분석이 완벽하지 않으면 1회 개선+재분석.
+    if (needsImprovement(result.analysis)) {
+      result = await improveDraft(geminiKey, topic!, readerPersona, angle, brief, result);
+    }
+
+    // ④ AIO 자동발행 게이트 — autoPublish 요청 + 게이트 통과해야 공개. 미달이면 검수함 보류.
+    const gatePass = passesPublishGate(result.analysis, sources.length);
+    const willPublish = autoPublish && gatePass;
     const nowIso = new Date().toISOString();
+
+    let finalSlug: string | null = result.slug ? slugify(result.slug) : slugify(result.title);
+    let contentHtml: string | null = null;
+    let publishedAt: string | null = null;
+    let status = autoPublish ? "review" : "draft"; // autoPublish 인데 게이트 미달 → review 보류
+    let holdReason: string | null = null;
+    if (willPublish) {
+      finalSlug = await ensureUniqueSlug(adminClient, finalSlug, draftId ?? null);
+      contentHtml = await markdownToHtml(result.content_markdown);
+      publishedAt = nowIso;
+      status = "published";
+    } else if (autoPublish) {
+      const c = result.analysis?.checks ?? {};
+      const reasons = [
+        (result.analysis?.score ?? 0) < AUTO_PUBLISH_MIN_SCORE ? `점수 ${result.analysis?.score ?? 0}<${AUTO_PUBLISH_MIN_SCORE}` : "",
+        c.no_fabrication === true ? "" : "지어내기 의심",
+        c.tldr === true ? "" : "TL;DR 미흡",
+        c.faq === true ? "" : "FAQ 미흡",
+        sources.length >= 1 ? "" : "출처 없음",
+      ].filter(Boolean);
+      holdReason = `자동발행 보류(검수 필요): ${reasons.join(", ")}`;
+    }
+
     const payload = {
       title: result.title,
-      slug: result.slug || null,
+      slug: finalSlug,
       excerpt: result.excerpt || null,
       content_markdown: result.content_markdown || null,
+      content_html: contentHtml,
       categories: result.categories,
       tags: result.tags,
       author_persona: "brand",
@@ -311,8 +462,10 @@ Deno.serve(async (req) => {
       sources,
       model: MODELS.geminiPro,
       generated_at: nowIso,
-      status: "draft",
-      last_error: null,
+      status,
+      wp_status: status === "published" ? "publish" : null,
+      wp_published_at: publishedAt,
+      last_error: holdReason,
     };
 
     let resultId = draftId;
@@ -330,7 +483,16 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, draftId: resultId, sourceCount: sources.length, analysis: result.analysis }),
+      JSON.stringify({
+        success: true,
+        draftId: resultId,
+        sourceCount: sources.length,
+        analysis: result.analysis,
+        status,
+        published: status === "published",
+        slug: status === "published" ? finalSlug : null,
+        holdReason,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
