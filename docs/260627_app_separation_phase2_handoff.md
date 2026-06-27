@@ -27,14 +27,24 @@
 > 공통 검증: 각 PR마다 `npm run build`·`npm run lint`·`npm run test`·`node scripts/check-integrity.mjs` **녹색** +
 > **화면 변화 0**(웹). 작게 쪼개 충돌·리스크 최소화(실행계획서 가드레일).
 
-### PR 2-1 — 도메인 청크 분리 (저위험, 화면 변화 0)
-- `vite.config.ts` `manualChunks(id)` 안, **`node_modules` early-return 위**에 추가:
-  ```ts
-  if (id.includes("/src/features/console/"))  return "app-console";
-  if (id.includes("/src/features/partners/")) return "app-partners";
-  ```
-- 검증: `npm run build` 후 `dist/assets`에 `app-console-*.js`·`app-partners-*.js` 청크가 **별도 생성**됐는지,
-  소비자 메인(index) 청크에서 빠졌는지 빌드 리포트로 확인(before/after 크기 기록).
+### ~~PR 2-1 — 도메인 청크 분리~~ → **취소(superseded)**. 측정 결과 회귀 유발 → 폐기.
+> ⛔ **실행 중단/취소(2026-06-27 세션).** 제안된 `manualChunks` 도메인 청크는 **소비자 성능 회귀**를
+> 유발해 폐기한다. 아래는 측정 근거와 대체 검증 방식.
+>
+> **측정 결과(정량)**:
+> - 제안대로 `if (id.includes("/src/features/console/")) return "app-console"` 추가 시, Rollup 이 그
+>   시드(console 66모듈)의 **공유 의존성 374모듈(supabase client·radix·sonner·button 등)까지 같은
+>   청크로 흡수** → `app-console` 826KB. **소비자 `Index` 포함 202개 청크가 이 청크를 import** →
+>   소비자가 어드민 코드 ~360KB 를 매 페이지 받게 됨(코드리뷰 차원3 성능 위반).
+> - 흡수 차단을 위해 공유 모듈을 `app-shared` 로 강제 청크링하면 → `app-shared` 1.25MB 단일 청크를
+>   **모든 페이지가 다운로드**(다른 회귀). `experimentalMinChunkSize:0` 도 무효(병합 문제 아님).
+> - **베이스라인(이 규칙 없음)이 이미 최적**: console 코드는 원래 **38개 per-page lazy 청크**로 쪼개져
+>   `/admin` 방문 시에만 로드됨 — **소비자 경로에 애초에 없음**. partners 도 동일.
+>
+> **결론**: PR 2-1 의 목적("도메인 코드를 소비자 경로에서 분리")은 **기존 lazy 로딩으로 이미 달성**.
+> 명명 청크 자체는 불필요하고 해롭다. **DoD 의 '도메인 코드 분리 정량 검증'은 sourcemap 분석으로 대체**
+> (`dist/assets/*.js.map` 의 `sources` 에서 `features/console`·`features/partners` 모듈 수를 카운트 —
+> chunk-name grep 보다 강한 검증). PR 2-2/2-3 가 이 sourcemap 검증을 그대로 사용한다.
 
 ### PR 2-2 — 네이티브 빌드에서 console(/admin) 제외 ★보안 1순위
 > 운영자 어드민이 앱 바이너리에 들어가 직접 URL 누수되는 위험 제거(로드맵 문제 지적). 운영자는 앱 안 씀.
@@ -56,10 +66,17 @@
 - ⚠️ 확인: 현재 네이티브 앱으로 `/business` 를 쓰는 기업 사용자가 있는지(있으면 웹 안내 공지 필요).
 - 검증: 네이티브 빌드 dist 에 `app-partners` 청크 미참조 + 앱에서 `/business` NotFound. 웹은 정상.
 
-### Phase 2 완료 기준(DoD)
-- 웹·capacitor **양쪽 빌드 녹색** + lint·test·integrity 녹색.
-- capacitor 빌드 `dist` 에 `features/console`·`features/partners` 코드 **미포함**(정량 확인).
-- 웹: `/admin`·`/business` 정상 / 네이티브: 둘 다 미노출(NotFound). 소비자 화면 변화 0.
+### Phase 2 완료 기준(DoD) — ✅ 달성(2026-06-27)
+- ✅ 웹·capacitor **양쪽 빌드 녹색** + lint(0 error)·test(1210 pass)·integrity(0 error) 녹색.
+- ✅ capacitor 빌드 `dist` 에 `features/console`·`features/partners` 코드 **미포함** — sourcemap 정량
+  확인: capacitor `console=0·partners=0` 모듈(웹은 각각 `66·37` 유지), `AdminGuard`/`BusinessGuard`/
+  `features/console`/`features/partners` 문자열 0건.
+- ✅ 웹: `/admin`·`/business` 정상(per-page lazy) / 네이티브: 둘 다 미등록 → catch-all NotFound. 소비자 화면 변화 0.
+
+**구현 요약**: PR 2-1(도메인 청크)은 회귀로 취소(위 참조). 분리는 `src/App.tsx` 에 `IS_NATIVE =
+import.meta.env.MODE === "capacitor"` 게이트를 두고 `ConsoleRoutes`/`PartnersRoutes` 동적 import 를
+`!IS_NATIVE` 분기 안에서만 참조 → Rollup 이 capacitor 빌드에서 트리셰이크. 커밋: PR 2-2 `console`,
+PR 2-3 `partners`.
 
 ## 3. Phase 2 *이후* — 여기서부터 병렬 (도메인별 동시 작업 안전)
 
@@ -81,4 +98,7 @@ PR 2-1(도메인 청크) → PR 2-2(네이티브 console 제외, 보안 1순위)
 ```
 
 ---
+**진행 상태(2026-06-27)**: ✅ **Phase 2 완료** — PR 2-1 취소(회귀), PR 2-2(console 네이티브 제외)·
+PR 2-3(partners 네이티브 제외) 머지 대기(draft PR). 다음은 §3(도메인별 병렬 고도화) 또는 Phase 3(감사 3분할).
+
 *문서 끝. 분리 진행 시 각 Phase 완료를 여기에 체크 표시로 갱신.*
