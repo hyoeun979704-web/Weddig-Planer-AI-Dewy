@@ -20,6 +20,9 @@
       "@/integrations/*": [
         "./packages/db/src/*"
       ],
+      "@/components/ui/*": [
+        "./packages/ui/src/*"
+      ],
       "@/*": [
         "./src/*"
       ],
