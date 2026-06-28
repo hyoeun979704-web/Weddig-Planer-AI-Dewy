@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { STORE_CATEGORIES } from "@/lib/storeCategories";
-import { formatManwon as formatPrice } from "@/lib/priceFormat";
+import { formatManwon as formatPrice } from "@dewy/lib";
 
 export interface StoreFilters {
   category: string | null;

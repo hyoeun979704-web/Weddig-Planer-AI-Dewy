@@ -1,5 +1,5 @@
 import { X, Check, BadgeCheck } from "lucide-react";
-import { formatManwon } from "@/lib/priceFormat";
+import { formatManwon } from "@dewy/lib";
 import { getCompareFields, bestValueIndices } from "@/lib/vendorCompare";
 import type { CompareItem } from "@/hooks/useCompareItems";
 

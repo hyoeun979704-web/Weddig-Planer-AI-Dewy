@@ -16,7 +16,7 @@ import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { usePersonaInsights } from "@/hooks/usePersonaInsights";
 import Seo from "@/components/Seo";
 import { STORE_CATEGORIES, StoreCategoryValue, getSourceLabel } from "@/lib/storeCategories";
-import { formatWon as formatPrice } from "@/lib/priceFormat";
+import { formatWon as formatPrice } from "@dewy/lib";
 import { ProductThumb } from "@/components/store/ProductThumb";
 
 interface Product {

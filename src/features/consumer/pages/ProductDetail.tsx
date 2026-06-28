@@ -8,7 +8,7 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { getSourceLabel } from "@/lib/storeCategories";
-import { formatWon as formatPrice } from "@/lib/priceFormat";
+import { formatWon as formatPrice } from "@dewy/lib";
 import { safeUrl } from "@/lib/safeUrl";
 
 interface Product {

@@ -6,7 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { useCart } from "@/hooks/useCart";
 
-import { formatWon as formatPrice } from "@/lib/priceFormat";
+import { formatWon as formatPrice } from "@dewy/lib";
 
 const Cart = () => {
   const navigate = useNavigate();

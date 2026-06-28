@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Package, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-import { formatWon as formatPrice } from "@/lib/priceFormat";
+import { formatWon as formatPrice } from "@dewy/lib";
 import { fetchOrderComplete, type OrderCompleteRow as Order } from "@/features/consumer/data/orders";
 
 const OrderComplete = () => {

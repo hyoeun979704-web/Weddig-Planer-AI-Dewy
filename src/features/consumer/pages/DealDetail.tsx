@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { usePartnerDealDetail, usePartnerDeals } from "@/hooks/usePartnerDeals";
 import { useAuth } from "@/contexts/AuthContext";
 import { FavoriteButton } from "@/components/FavoriteButton";
-import { formatWon as formatPrice } from "@/lib/priceFormat";
+import { formatWon as formatPrice } from "@dewy/lib";
 
 const dealTypeLabels: Record<string, { label: string; color: string }> = {
   discount: { label: "할인", color: "bg-red-100 text-red-600" },

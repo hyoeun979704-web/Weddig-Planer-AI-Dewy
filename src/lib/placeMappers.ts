@@ -1,6 +1,6 @@
 import type { Database } from "@/integrations/supabase/types";
 import type { ItemType } from "@/hooks/useFavorites";
-import { formatManwonRange } from "./priceFormat";
+import { formatManwonRange } from "@dewy/lib";
 import {
   buildVendorInfoLines,
   collectKeywordTags,

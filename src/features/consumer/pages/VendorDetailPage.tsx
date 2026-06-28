@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Pencil, Building2, MoreHorizontal, ChevronDown } from "lucide-react";
 import { usePlaceDetail, type LegacyDetail } from "@/hooks/usePlaceDetail";
-import { formatManwon } from "@/lib/priceFormat";
+import { formatManwon } from "@dewy/lib";
 import { APPLIANCE_PRODUCT_TYPE_LABEL, JEWELRY_STORE_TYPE_LABEL } from "@/lib/categoryLabels";
 import PlaceDetailLayout from "@/components/detail/PlaceDetailLayout";
 import PlaceCoupons from "@/components/place/PlaceCoupons";
