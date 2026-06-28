@@ -26,6 +26,9 @@
       "@/lib/*": [
         "./packages/lib/src/*"
       ],
+      "@/hooks/*": [
+        "./packages/hooks/src/*"
+      ],
       "@/*": [
         "./src/*"
       ],

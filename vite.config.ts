@@ -72,6 +72,7 @@ export default defineConfig(({ mode }) => {
         "@/integrations": path.resolve(__dirname, "./packages/db/src"),
         "@/components/ui": path.resolve(__dirname, "./packages/ui/src"),
         "@/lib": path.resolve(__dirname, "./packages/lib/src"),
+        "@/hooks": path.resolve(__dirname, "./packages/hooks/src"),
         "@dewy/lib": path.resolve(__dirname, "./packages/lib/src/index.ts"),
         "@": path.resolve(__dirname, "./src"),
         // Capacitor 빌드에서는 PWA 플러그인이 꺼져 가상 모듈이 없으므로 no-op shim 으로 대체.
