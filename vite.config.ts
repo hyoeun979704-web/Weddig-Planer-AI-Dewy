@@ -65,6 +65,9 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+        // 모노레포 공유 패키지(Phase 4-A) — 워크스페이스 심볼릭링크 대신 alias 로 직접 해석해
+        // 웹/capacitor 빌드 모두에서 안정적으로 번들된다.
+        "@dewy/lib": path.resolve(__dirname, "./packages/lib/src/index.ts"),
         // Capacitor 빌드에서는 PWA 플러그인이 꺼져 가상 모듈이 없으므로 no-op shim 으로 대체.
         ...(isCapacitor
           ? {

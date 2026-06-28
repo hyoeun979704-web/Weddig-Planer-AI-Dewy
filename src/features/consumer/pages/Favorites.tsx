@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { formatWon as formatPrice } from "@/lib/priceFormat";
+import { formatWon as formatPrice } from "@dewy/lib";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Heart,

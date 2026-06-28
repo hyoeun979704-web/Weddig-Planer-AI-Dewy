@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { formatManwonRange } from "@/lib/priceFormat";
+import { formatManwonRange } from "@dewy/lib";
 import { CATEGORY_CARD_TABLE, joinRegion } from "@/lib/placeMappers";
 
 // 세션 내 같은 place 중복 증가 방지.

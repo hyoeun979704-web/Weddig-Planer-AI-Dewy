@@ -5,7 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatWon as formatPrice } from "@/lib/priceFormat";
+import { formatWon as formatPrice } from "@dewy/lib";
 import { fetchOrders, type OrderListRow as Order } from "@/features/consumer/data/orders";
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {

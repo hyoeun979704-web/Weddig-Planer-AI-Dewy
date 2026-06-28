@@ -2,7 +2,7 @@
 // 표시 라벨/포맷/매칭 키 분리 원칙: category 값은 places.category(enum)와 동일해야 보드 결정
 // (markBoardSlotBookedByQuoteCategory)·견적 매칭이 동작한다. 한글 라벨은 categoryLabels 단일 소스.
 import type { LegacyDetail } from "@/hooks/usePlaceDetail";
-import { formatManwon } from "@/lib/priceFormat";
+import { formatManwon } from "@dewy/lib";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
 import { PLACE_CATEGORY_TO_ITEM_TYPE } from "@/lib/placeMappers";
 import type { ItemType } from "@/hooks/useFavorites";

@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { readyOrderPayment } from "@/features/consumer/data/orders";
 import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
-import { formatWon as formatPrice } from "@/lib/priceFormat";
+import { formatWon as formatPrice } from "@dewy/lib";
 import { safeSessionStorage } from "@/lib/safeSessionStorage";
 import { useTextDraft } from "@/hooks/useTextDraft";
 

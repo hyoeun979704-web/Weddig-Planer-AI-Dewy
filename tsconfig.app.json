@@ -19,6 +19,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@dewy/lib": [
+        "./packages/lib/src/index.ts"
       ]
     },
     "skipLibCheck": true,
