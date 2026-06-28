@@ -24,6 +24,9 @@
       "@/components/ui/*": [
         "./packages/ui/src/*"
       ],
+      "@/lib/*": [
+        "./packages/lib/src/*"
+      ],
       "@/*": [
         "./src/*"
       ],
