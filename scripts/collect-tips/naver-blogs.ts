@@ -19,8 +19,8 @@ import {
   buildClassifyText,
   classifyTipCategories,
   isLikelyAdvertisement,
-} from "../../src/lib/tipClassify";
-import { normalizeTipCategories } from "../../src/lib/tipNormalize";
+} from "../../packages/lib/src/tipClassify";
+import { normalizeTipCategories } from "../../packages/lib/src/tipNormalize";
 import { TIP_CATEGORIES } from "./queries";
 
 // ─── 카테고리·키워드 ──────────────────────────────────────

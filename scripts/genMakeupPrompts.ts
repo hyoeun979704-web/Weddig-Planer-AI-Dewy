@@ -8,7 +8,7 @@
  * 실행: npx tsx scripts/genMakeupPrompts.ts
  */
 import { readFileSync, writeFileSync } from "fs";
-import { describeMakeup } from "../src/lib/makeupDescription";
+import { describeMakeup } from "../packages/lib/src/makeupDescription";
 
 const sql = readFileSync("seed/makeup-samples/seed.sql", "utf8");
 

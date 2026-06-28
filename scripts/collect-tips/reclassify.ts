@@ -22,8 +22,8 @@ import { createClient } from "@supabase/supabase-js";
 import { fetchVideoStats } from "./youtube";
 import { fetchTranscript } from "./transcript";
 import { TIP_CATEGORIES } from "./queries";
-import { normalizeTipCategories } from "../../src/lib/tipNormalize";
-import { classifyTipCategories, buildClassifyText } from "../../src/lib/tipClassify";
+import { normalizeTipCategories } from "../../packages/lib/src/tipNormalize";
+import { classifyTipCategories, buildClassifyText } from "../../packages/lib/src/tipClassify";
 
 interface Args {
   dryRun: boolean;
