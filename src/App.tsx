@@ -127,9 +127,17 @@ const MobileInvitationView2 = lazy(() => import("@/features/consumer/pages/invit
 const InvitationRsvpDashboard = lazy(() => import("@/features/consumer/pages/invitation/InvitationRsvpDashboard"));
 const InvitationPhotos = lazy(() => import("@/features/consumer/pages/invitation/InvitationPhotos"));
 const GuestPhotoUpload = lazy(() => import("@/features/consumer/pages/invitation/GuestPhotoUpload"));
+// 네이티브(Capacitor) 빌드 여부. import.meta.env.MODE 는 Vite 가 빌드시 정적 치환하므로
+// 아래 조건부 import 가 dead-code 제거(트리셰이크) 대상이 된다.
+const IS_NATIVE = import.meta.env.MODE === "capacitor";
+
 // 운영자(console) 도메인 — App.tsx 는 /admin/* 한 줄로 위임. admin 페이지 lazy·가드는
 // 라우트 모듈(@/features/console/routes)이 소유한다(도메인 경계).
-const ConsoleRoutes = lazy(() => import("@/features/console/routes"));
+// ★보안(Phase 2-2): 운영자는 앱을 쓰지 않으므로 네이티브 빌드에서 console 을 번들에서 제외한다
+// (앱 바이너리에 어드민이 들어가 직접 URL 누수되는 위험 제거 — 로드맵 보안 1순위). 동적 import
+// 참조가 !IS_NATIVE 분기 안에서만 일어나야 Rollup 이 capacitor 빌드에서 console 코드를
+// 트리셰이크로 뺀다(정량 검증: capacitor dist sourcemap 에 features/console 모듈 0개).
+const ConsoleRoutes = IS_NATIVE ? null : lazy(() => import("@/features/console/routes"));
 const SupportChat = lazy(() => import("@/features/consumer/pages/SupportChat"));
 
 // 기능 1: 커플 일정 공유 + 공유 일기
@@ -162,7 +170,15 @@ const SubscriptionPaymentFail = lazy(() => import("@/features/consumer/pages/Sub
 
 // 기업(partners) 도메인 — App.tsx 는 /business/* 한 줄로 위임. partners 페이지 lazy·가드는
 // 라우트 모듈(@/features/partners/routes)이 소유한다(도메인 경계 — App.tsx 에 partners 참조 최소화).
-const PartnersRoutes = lazy(() => import("@/features/partners/routes"));
+// Phase 2-3: 네이티브 앱 = 소비자 전용. 기업은 웹(/business)으로 분리하므로 capacitor 빌드에서
+// partners 코드를 트리셰이크로 제외한다(console 과 동일 패턴 — !IS_NATIVE 분기 안에서만 import 참조).
+const PartnersRoutes = IS_NATIVE ? null : lazy(() => import("@/features/partners/routes"));
+// 네이티브 전용 폴백 — 앱 안에서 /business* 로 가는 모든 진입(입점 배너·마이페이지 업체관리·
+// Auth 로그인 리다이렉트 등)이 404 가 되지 않도록, 같은 경로의 웹 포털을 외부 브라우저로 연다.
+// partners 코드를 import 하지 않으므로 트리셰이크에 영향 없음. 웹 빌드에선 null → 미참조.
+const BusinessWebRedirect = IS_NATIVE
+  ? lazy(() => import("@/features/consumer/pages/BusinessWebRedirect"))
+  : null;
 
 // React Query 전역 기본값: 기본 staleTime=0 + refetchOnWindowFocus=true 면 모바일 웹에서
 // 탭 전환마다 모든 useQuery 가 재요청(중복 라운드트립). 모바일 웹이 주 사용처라 60s 신선도 +
@@ -298,8 +314,15 @@ const App = () => (
               {/* 꽃 머지 퍼즐 게임 */}
               <Route path="/merge-game" element={<MergeGame />} />
 
-              {/* 기업(partners) 도메인 — 라우트 모듈로 위임(가드·페이지는 그 모듈이 소유). */}
-              <Route path="/business/*" element={<PartnersRoutes />} />
+              {/* 기업(partners) 도메인 — 라우트 모듈로 위임(가드·페이지는 그 모듈이 소유).
+                  네이티브 빌드에서는 PartnersRoutes=null → 라우트 미등록 → /business 진입 시 catch-all NotFound. */}
+              {!IS_NATIVE && PartnersRoutes && (
+                <Route path="/business/*" element={<PartnersRoutes />} />
+              )}
+              {/* 네이티브: /business* 진입을 404 대신 웹 포털 안내로(설치앱엔 partners 미포함). */}
+              {IS_NATIVE && BusinessWebRedirect && (
+                <Route path="/business/*" element={<BusinessWebRedirect />} />
+              )}
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
@@ -351,8 +374,11 @@ const App = () => (
               {/* I-MOBILE Phase 1: 네이티브 섹션 뷰어 프리뷰(기존 캔버스 뷰어 병행) */}
               <Route path="/i2/:slug" element={<MobileInvitationView2 />} />
               {/* 운영자(console) 도메인 — 라우트 모듈로 위임(가드·페이지는 그 모듈이 소유).
-                  가드는 모듈 내 라우트 레벨 — 페이지 마운트 전 권한 확인(비관리자 fetch·노출 차단). */}
-              <Route path="/admin/*" element={<ConsoleRoutes />} />
+                  가드는 모듈 내 라우트 레벨 — 페이지 마운트 전 권한 확인(비관리자 fetch·노출 차단).
+                  네이티브 빌드에서는 ConsoleRoutes=null → 라우트 미등록 → /admin 진입 시 catch-all NotFound. */}
+              {!IS_NATIVE && ConsoleRoutes && (
+                <Route path="/admin/*" element={<ConsoleRoutes />} />
+              )}
 
               {/* AEO 가이드 페이지(결혼어플추천 등). 한글 슬러그 라우트를
                   src/data/aeoGuides 단일 소스에서 생성. 크롤러용 SSR 은 api/guide.ts. */}
