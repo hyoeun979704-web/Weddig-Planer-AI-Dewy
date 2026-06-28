@@ -173,6 +173,12 @@ const SubscriptionPaymentFail = lazy(() => import("@/features/consumer/pages/Sub
 // Phase 2-3: 네이티브 앱 = 소비자 전용. 기업은 웹(/business)으로 분리하므로 capacitor 빌드에서
 // partners 코드를 트리셰이크로 제외한다(console 과 동일 패턴 — !IS_NATIVE 분기 안에서만 import 참조).
 const PartnersRoutes = IS_NATIVE ? null : lazy(() => import("@/features/partners/routes"));
+// 네이티브 전용 폴백 — 앱 안에서 /business* 로 가는 모든 진입(입점 배너·마이페이지 업체관리·
+// Auth 로그인 리다이렉트 등)이 404 가 되지 않도록, 같은 경로의 웹 포털을 외부 브라우저로 연다.
+// partners 코드를 import 하지 않으므로 트리셰이크에 영향 없음. 웹 빌드에선 null → 미참조.
+const BusinessWebRedirect = IS_NATIVE
+  ? lazy(() => import("@/features/consumer/pages/BusinessWebRedirect"))
+  : null;
 
 // React Query 전역 기본값: 기본 staleTime=0 + refetchOnWindowFocus=true 면 모바일 웹에서
 // 탭 전환마다 모든 useQuery 가 재요청(중복 라운드트립). 모바일 웹이 주 사용처라 60s 신선도 +
@@ -312,6 +318,10 @@ const App = () => (
                   네이티브 빌드에서는 PartnersRoutes=null → 라우트 미등록 → /business 진입 시 catch-all NotFound. */}
               {!IS_NATIVE && PartnersRoutes && (
                 <Route path="/business/*" element={<PartnersRoutes />} />
+              )}
+              {/* 네이티브: /business* 진입을 404 대신 웹 포털 안내로(설치앱엔 partners 미포함). */}
+              {IS_NATIVE && BusinessWebRedirect && (
+                <Route path="/business/*" element={<BusinessWebRedirect />} />
               )}
 
               <Route path="/terms" element={<Terms />} />
