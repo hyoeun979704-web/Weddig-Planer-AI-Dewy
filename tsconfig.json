@@ -30,6 +30,15 @@
       "@/hooks/*": [
         "./packages/hooks/src/*"
       ],
+      "@/contexts/*": [
+        "./packages/shared/src/contexts/*"
+      ],
+      "@/types/*": [
+        "./packages/shared/src/types/*"
+      ],
+      "@/data/*": [
+        "./packages/shared/src/data/*"
+      ],
       "@/*": [
         "./src/*"
       ],

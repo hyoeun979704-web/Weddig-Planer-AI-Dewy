@@ -26,7 +26,7 @@ import { compress } from "wawoff2";
 import {
   SEED_INVITATION_FONTS,
   type SeedInvitationFont,
-} from "../src/data/seedInvitationFonts";
+} from "../packages/shared/src/data/seedInvitationFonts";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

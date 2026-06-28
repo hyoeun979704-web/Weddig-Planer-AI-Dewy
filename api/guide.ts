@@ -4,9 +4,9 @@
 // MobileApplication)를 HTML에 주입해 해결한다. 사용자에게는 기존 SPA가 부팅돼
 // #root 를 대체한다. vercel.json 의 rewrite 가 한글 슬러그 경로를 이 함수로 보낸다.
 //
-// 콘텐츠는 src/data/aeoGuides.ts 단일 소스를 React 페이지와 공유한다.
+// 콘텐츠는 packages/shared/src/data/aeoGuides.ts 단일 소스를 React 페이지와 공유한다.
 
-import { aeoGuides, getGuide, BRAND_DEFINITION, type AeoGuide } from "../src/data/aeoGuides";
+import { aeoGuides, getGuide, BRAND_DEFINITION, type AeoGuide } from "../packages/shared/src/data/aeoGuides";
 import { SITE, esc, headTags, inject, bareDoc, getTemplate, type Rendered } from "./_lib/ssr";
 
 export const config = { runtime: "edge" };

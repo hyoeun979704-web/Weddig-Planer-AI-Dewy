@@ -16,7 +16,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { SEED_INVITATION_TEMPLATES } from "../src/data/seedInvitationTemplates";
+import { SEED_INVITATION_TEMPLATES } from "../packages/shared/src/data/seedInvitationTemplates";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
