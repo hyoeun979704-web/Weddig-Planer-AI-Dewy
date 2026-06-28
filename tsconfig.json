@@ -18,6 +18,9 @@
     "jsx": "react-jsx",
     "incremental": true,
     "paths": {
+      "@/integrations/*": [
+        "./packages/db/src/*"
+      ],
       "@/*": [
         "./src/*"
       ],

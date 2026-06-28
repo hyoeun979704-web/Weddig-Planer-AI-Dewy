@@ -64,10 +64,14 @@ export default defineConfig(({ mode }) => {
     ].filter(Boolean),
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "./src"),
         // 모노레포 공유 패키지(Phase 4-A) — 워크스페이스 심볼릭링크 대신 alias 로 직접 해석해
         // 웹/capacitor 빌드 모두에서 안정적으로 번들된다.
+        // ⚠️ 더 구체적인 "@/integrations" 를 "@" 보다 **먼저** 둔다(첫 매칭 우선) — 안 그러면
+        // "@" 가 "@/..." 를 먼저 삼켜 분리된 packages/db 로 리다이렉트되지 않는다.
+        // 분리(4-A2): src/integrations → packages/db. import 문(@/integrations/*)은 그대로 유지.
+        "@/integrations": path.resolve(__dirname, "./packages/db/src"),
         "@dewy/lib": path.resolve(__dirname, "./packages/lib/src/index.ts"),
+        "@": path.resolve(__dirname, "./src"),
         // Capacitor 빌드에서는 PWA 플러그인이 꺼져 가상 모듈이 없으므로 no-op shim 으로 대체.
         ...(isCapacitor
           ? {

@@ -2,7 +2,7 @@
 // 도메인 타입 뷰 — 소비자(신랑신부) 도메인
 // AI 도구·준비도구·커뮤니티·청첩장·성장·동기화(캘린더/드라이브/메일). 소비자 본인 데이터(RLS auth.uid()=user).
 //
-// 단일 소스 = src/integrations/supabase/types.ts(실 DB 생성). 이 파일은 그 전체에서
+// 단일 소스 = packages/db/src/supabase/types.ts(실 DB 생성). 이 파일은 그 전체에서
 // 이 도메인 테이블만 골라 re-export 하는 "뷰"다(소유권 분류 근거: docs/260625_backend_domain_map.md §3).
 // 목적: 각 feature 가 자기 도메인 표면만 보게 해 ergonomics 개선. 인가는 RLS 가 책임(이 분류 ≠ 권한).
 // Insert/Update 가 필요하면 types.ts 의 TablesInsert<"x">/TablesUpdate<"x"> 를 직접 쓴다.

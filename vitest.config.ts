@@ -16,8 +16,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      // "@/integrations" 를 "@" 보다 먼저(첫 매칭 우선) — packages/db 로 리다이렉트.
+      "@/integrations": path.resolve(__dirname, "./packages/db/src"),
       "@dewy/lib": path.resolve(__dirname, "./packages/lib/src/index.ts"),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
 });

@@ -30,7 +30,7 @@ if (isNativeApp()) {
     // WebView 가 백그라운드에서 JS 타이머를 throttle 하므로
     // autoRefreshToken 만 믿지 않고 resume 마다 한 번 명시 갱신한다.
     void CapApp.addListener("resume", async () => {
-      const { supabase } = await import("./integrations/supabase/client");
+      const { supabase } = await import("@/integrations/supabase/client");
       void supabase.auth.refreshSession();
     });
   })();
