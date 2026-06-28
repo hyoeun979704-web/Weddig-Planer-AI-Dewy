@@ -2,7 +2,7 @@
 // 도메인 타입 뷰 — 공유(마켓플레이스·결제·인프라) 도메인
 // 소비자↔사업자가 주고받는 마켓플레이스(견적·업체·리뷰·배송)+결제/커머스+계정/인프라. 분리 금지.
 //
-// 단일 소스 = src/integrations/supabase/types.ts(실 DB 생성). 이 파일은 그 전체에서
+// 단일 소스 = packages/db/src/supabase/types.ts(실 DB 생성). 이 파일은 그 전체에서
 // 이 도메인 테이블만 골라 re-export 하는 "뷰"다(소유권 분류 근거: docs/260625_backend_domain_map.md §3).
 // 목적: 각 feature 가 자기 도메인 표면만 보게 해 ergonomics 개선. 인가는 RLS 가 책임(이 분류 ≠ 권한).
 // Insert/Update 가 필요하면 types.ts 의 TablesInsert<"x">/TablesUpdate<"x"> 를 직접 쓴다.

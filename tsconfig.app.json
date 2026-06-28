@@ -17,6 +17,9 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "paths": {
+      "@/integrations/*": [
+        "./packages/db/src/*"
+      ],
       "@/*": [
         "./src/*"
       ],
