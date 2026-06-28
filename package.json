@@ -10,8 +10,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:partners": "vite build --config apps/partners/vite.config.ts",
     "start": "vite preview",
-    "lint": "eslint src packages scripts vite.config.ts tailwind.config.ts",
+    "lint": "eslint src packages apps scripts vite.config.ts tailwind.config.ts",
     "check:integrity": "node scripts/check-integrity.mjs",
     "dev:vite": "vite",
     "build:vite": "vite build",

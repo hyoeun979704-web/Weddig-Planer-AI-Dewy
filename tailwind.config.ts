@@ -4,7 +4,7 @@ export default {
   darkMode: ["class"],
   // packages/** 추가(모노레포 분리) — 이동된 @dewy/ui·lib 의 className 을 Tailwind 가 스캔하도록.
   // 빠지면 packages 로 옮긴 컴포넌트의 고유 클래스가 purge 돼 스타일이 조용히 깨진다(빌드 에러 없음).
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}", "./packages/**/src/**/*.{ts,tsx}"],
+  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}", "./packages/**/src/**/*.{ts,tsx}", "./apps/**/src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
     container: {
