@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBranches } from "@/features/partners/hooks/useBranches";
 import { toast } from "sonner";
 import { confirm } from "@/components/ui/confirm-dialog";
+import { MOOD_TAGS, type MoodTag } from "@/lib/tasteTaxonomy";
 
 // MediaItem·Album·ProductOpt 타입은 features/partners/data/gallery 에서 import.
 
@@ -46,6 +47,8 @@ const BusinessGallery = () => {
   const [albTitle, setAlbTitle] = useState("");
   const [albShootDate, setAlbShootDate] = useState("");
   const [albVenue, setAlbVenue] = useState("");
+  // 무드(매칭용 통제어휘) + 자유 태그(표현용) 분리 — 무드만 취향 추천 매칭에 쓰인다(label vs value).
+  const [albMoods, setAlbMoods] = useState<MoodTag[]>([]);
   const [albTags, setAlbTags] = useState("");
   const [albProduct, setAlbProduct] = useState("");
   const [albDesc, setAlbDesc] = useState("");
@@ -72,7 +75,7 @@ const BusinessGallery = () => {
 
   const resetForm = () => {
     setImageUrl(""); setTitle(""); setPrice("");
-    setAlbTitle(""); setAlbShootDate(""); setAlbVenue(""); setAlbTags(""); setAlbProduct(""); setAlbDesc("");
+    setAlbTitle(""); setAlbShootDate(""); setAlbVenue(""); setAlbMoods([]); setAlbTags(""); setAlbProduct(""); setAlbDesc("");
     setUploaderKey((k) => k + 1);
   };
 
@@ -93,7 +96,11 @@ const BusinessGallery = () => {
               title: albTitle.trim(),
               shoot_date: albShootDate || null,
               venue_name: albVenue.trim() || null,
-              style_tags: albTags.split(",").map((t) => t.trim()).filter(Boolean),
+              // 무드(통제어휘) 우선 + 자유 태그. 무드를 앞에 둬 매칭 키를 보존(중복 제거).
+              style_tags: [
+                ...albMoods,
+                ...albTags.split(",").map((t) => t.trim()).filter((t) => t && !albMoods.includes(t as MoodTag)),
+              ],
               product_id: albProduct || null,
               description: albDesc.trim() || null,
             });
@@ -233,8 +240,33 @@ const BusinessGallery = () => {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">스타일 태그 (쉼표)</Label>
-                    <Input value={albTags} onChange={(e) => setAlbTags(e.target.value)} placeholder="필름, 내추럴, 야외" />
+                    <Label className="text-xs">무드 (취향 추천 매칭에 사용)</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {MOOD_TAGS.map((mood) => {
+                        const active = albMoods.includes(mood);
+                        return (
+                          <button
+                            key={mood}
+                            type="button"
+                            onClick={() =>
+                              setAlbMoods((prev) =>
+                                prev.includes(mood) ? prev.filter((m) => m !== mood) : [...prev, mood],
+                              )
+                            }
+                            className={`px-2.5 py-1 rounded-full text-[12px] transition-colors ${
+                              active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            #{mood}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">고른 무드의 신부에게 이 앨범이 우선 노출돼요.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">추가 태그 (선택, 쉼표)</Label>
+                    <Input value={albTags} onChange={(e) => setAlbTags(e.target.value)} placeholder="필름, 야외, 자연광" />
                   </div>
                   {products.length > 0 && (
                     <div className="space-y-1.5">
