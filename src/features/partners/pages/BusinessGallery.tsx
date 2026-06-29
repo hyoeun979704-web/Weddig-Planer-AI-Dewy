@@ -262,7 +262,7 @@ const BusinessGallery = () => {
                         );
                       })}
                     </div>
-                    <p className="text-[11px] text-muted-foreground">고른 무드의 신부에게 이 앨범이 우선 노출돼요.</p>
+                    <p className="text-[11px] text-muted-foreground">신부가 상세페이지에서 무드로 골라 볼 수 있어요.</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">추가 태그 (선택, 쉼표)</Label>

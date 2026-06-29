@@ -220,6 +220,13 @@
 - **M3 ⚠️ 완성도 spine 확장이 소비자 추천 정렬에 영향** — `places.data_completeness`를 추천이 쓰므로, spine 재정의로 **기존 업체 완성도 점수가 출렁** → 추천 순위 급변(소비자 회귀).
   → **개선**: data_completeness **산식 변경은 별도 단계**로 격리 + 점수 분포 before/after 비교 + 점진 적용. 위저드 게이지(UX)와 추천 산식(백엔드)을 **분리**해 먼저 UX만, 산식은 검증 후.
 
+### A.4-b 구현 후 연결성 검토 (260629, 실측 — "백엔드 끝까지 닿나")
+- **M4 🔴→부분수정 무드 피커 ↔ 매칭 단절.** `BusinessGallery` 무드 피커는 `place_media_albums.style_tags`에 저장되나, 소비자 매칭(`VendorList`)이 읽는 `v.style_tags`는 `collectStyleTags`(업종 **상세 테이블** hall_styles·shoot_styles·dress_styles… 집계)라 **앨범 무드가 매칭에 안 들어간다**. 앨범 무드는 현재 `PlaceBusinessSections`의 **수동 필터 칩**으로만 쓰임(taste 자동정렬 delta③ 미구현).
+  → **즉시 수정**: 피커 카피 "우선 노출돼요"(거짓 약속) → "무드로 골라 볼 수 있어요"(사실). → **본 연결(deferred)**: ⓐ delta③ — `PlaceBusinessSections` 앨범 피드를 viewer taste(∩ 앨범 무드)로 정렬 ⓑ 앨범 무드를 `collectStyleTags`/매칭에 반영(업체 쿼리 앨범 join = S3·성능 주의). **S3로 이관.**
+- **M5 ⚠️ 완성도 spine 미확장(§8.4 deferred).** `computeListingCompleteness`는 여전히 기본 7필드만 — 위저드 게이지의 "100%"가 상세·연락처·무드·포트폴리오를 반영 못 함. **S2에서 확장 예정(미구현 명시).**
+- **M6 ⚠️ 위저드에 무드·포트폴리오 step 없음.** b3 위저드는 5단계(기본·소개·지역·가격문의·연락처상세)뿐 — 설계 §8.1의 무드 태깅·포트폴리오 step 미포함(둘 다 별도 `BusinessGallery` 페이지). 신규 사장은 위저드만 따라가면 무드·포폴을 안 거침. **S1 포트폴리오 단계에서 위저드에 합류 검토(deferred).**
+- ✅ **정상 연결 확인**: VendorList 정규화(상세테이블 style 읽음·매칭 반영), `parent_makeup→makeup_shop`(quote/compare 라우트·`recordVendorDecision` budget=sdm 유효), createAlbum style_tags 저장, 위저드 저장/draft 기존 경로 공유.
+
 ### A.5 개선 반영 요약 (단계에 반영)
 - **S0**: 기존 태그 정규화 + 무태깅 백필 **필수 선행**(R1). **`etc` 스키마 결정**(M2) 추가.
 - **S1.5**: 위저드는 **기존 저장·draft 100% 공유**(M1), 전체편집 토글 유지(W1), 예시 단일소스(W3).
