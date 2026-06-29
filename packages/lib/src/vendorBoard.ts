@@ -47,7 +47,9 @@ export const VENDOR_SLOTS: VendorSlot[] = [
   { key: "makeup", label: "본식 메이크업", group: "의상·뷰티", quoteCategory: "makeup_shop", browseLabel: "스드메", primaryForQuoteCategory: true },
   { key: "suit", label: "예복", group: "의상·뷰티", quoteCategory: "tailor_shop", browseLabel: "예복", primaryForQuoteCategory: true },
   { key: "parent_hanbok", label: "혼주 한복", group: "의상·뷰티", quoteCategory: "hanbok", browseLabel: "한복", primaryForQuoteCategory: true },
-  { key: "parent_makeup", label: "혼주 메이크업", group: "의상·뷰티", browseLabel: "스드메" },
+  // 혼주 메이크업 = 메이크업샵이 담당 → 기존 makeup_shop 견적에 연결(이미 있는 걸 연결, S0.5-a).
+  // 본식 메이크업(makeup)이 primary 라 견적 부킹 자동반영은 본식만, 혼주는 수동(중복 부킹 방지).
+  { key: "parent_makeup", label: "혼주 메이크업", group: "의상·뷰티", quoteCategory: "makeup_shop", browseLabel: "스드메" },
 
   // ── 예물·소품 ──
   { key: "ring", label: "예물·웨딩밴드", group: "예물·소품", quoteCategory: "jewelry", primaryForQuoteCategory: true },
