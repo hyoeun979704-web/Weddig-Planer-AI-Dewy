@@ -222,7 +222,7 @@
 
 ### A.4-b 구현 후 연결성 검토 (260629, 실측 — "백엔드 끝까지 닿나")
 - **M4 🔴→부분수정 무드 피커 ↔ 매칭 단절.** `BusinessGallery` 무드 피커는 `place_media_albums.style_tags`에 저장되나, 소비자 매칭(`VendorList`)이 읽는 `v.style_tags`는 `collectStyleTags`(업종 **상세 테이블** hall_styles·shoot_styles·dress_styles… 집계)라 **앨범 무드가 매칭에 안 들어간다**. 앨범 무드는 현재 `PlaceBusinessSections`의 **수동 필터 칩**으로만 쓰임(taste 자동정렬 delta③ 미구현).
-  → **즉시 수정**: 피커 카피 "우선 노출돼요"(거짓 약속) → "무드로 골라 볼 수 있어요"(사실). → **본 연결(deferred)**: ⓐ delta③ — `PlaceBusinessSections` 앨범 피드를 viewer taste(∩ 앨범 무드)로 정렬 ⓑ 앨범 무드를 `collectStyleTags`/매칭에 반영(업체 쿼리 앨범 join = S3·성능 주의). **S3로 이관.**
+  → **수정①(카피)**: "우선 노출"(거짓) → 정직화. → **수정②(연결, delta③ 구현)**: `PlaceBusinessSections` 앨범 피드를 **viewer taste(∩ 앨범 무드, 정규화) 내림차순 안정 정렬** + "내 취향에 가까운 작업부터" 카피. 이제 피커 약속이 상세페이지에서 실제로 동작 → 카피 "같은 무드 고른 신부에게 이 앨범이 더 위로 보여요"로 복원(사실). → **남은 연결(deferred S3)**: 앨범 무드를 `collectStyleTags`/업체-레벨 랭킹(`VendorList`)에 반영(업체 쿼리 앨범 join·성능 주의).
 - **M5 ⚠️ 완성도 spine 미확장(§8.4 deferred).** `computeListingCompleteness`는 여전히 기본 7필드만 — 위저드 게이지의 "100%"가 상세·연락처·무드·포트폴리오를 반영 못 함. **S2에서 확장 예정(미구현 명시).**
 - **M6 ⚠️ 위저드에 무드·포트폴리오 step 없음.** b3 위저드는 5단계(기본·소개·지역·가격문의·연락처상세)뿐 — 설계 §8.1의 무드 태깅·포트폴리오 step 미포함(둘 다 별도 `BusinessGallery` 페이지). 신규 사장은 위저드만 따라가면 무드·포폴을 안 거침. **S1 포트폴리오 단계에서 위저드에 합류 검토(deferred).**
 - ✅ **정상 연결 확인**: VendorList 정규화(상세테이블 style 읽음·매칭 반영), `parent_makeup→makeup_shop`(quote/compare 라우트·`recordVendorDecision` budget=sdm 유효), createAlbum style_tags 저장, 위저드 저장/draft 기존 경로 공유.
