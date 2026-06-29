@@ -10,6 +10,7 @@ import PlaceDetailLayout from "@/components/detail/PlaceDetailLayout";
 import PlaceCoupons from "@/components/place/PlaceCoupons";
 import PlaceBusinessSections from "@/components/place/PlaceBusinessSections";
 import PlaceEvents from "@/components/place/PlaceEvents";
+import PlaceFaqs from "@/components/place/PlaceFaqs";
 import RelatedCommunityPosts from "@/components/community/RelatedCommunityPosts";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -122,6 +123,7 @@ const VendorDetailPage = () => {
           )}
           <PlaceBusinessSections placeId={place.id} category={place.category} />
           <CategoryExtras place={place} />
+          <PlaceFaqs placeId={place.id} />
           <RelatedCommunityPosts placeId={place.id} />
         </>
       }
