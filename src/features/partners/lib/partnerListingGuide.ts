@@ -141,8 +141,13 @@ export const LISTING_GUIDE: Record<string, CategoryListingGuide> = {
   },
 };
 
-/** 업종 가이드 조회 — 없으면 우아한 기본(빈 신호 폴백). */
+// business_profiles.service_category ↔ place category 차이 보정(검증 규칙: label vs value).
+// 대부분 동일하나 suit(기업 업종) = tailor_shop(place). 그 외는 그대로.
+const CATEGORY_ALIAS: Record<string, string> = { suit: "tailor_shop" };
+
+/** 업종 가이드 조회 — business/place 카테고리 모두 허용, 없으면 우아한 기본(빈 신호 폴백). */
 export function getListingGuide(category: string | null | undefined): CategoryListingGuide {
   if (!category) return DEFAULT_LISTING_GUIDE;
-  return LISTING_GUIDE[category] ?? DEFAULT_LISTING_GUIDE;
+  const key = CATEGORY_ALIAS[category] ?? category;
+  return LISTING_GUIDE[key] ?? DEFAULT_LISTING_GUIDE;
 }

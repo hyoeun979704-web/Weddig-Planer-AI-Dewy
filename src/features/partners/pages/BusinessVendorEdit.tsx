@@ -16,6 +16,7 @@ import BusinessListingDetailForm from "@/features/partners/components/BusinessLi
 import BusinessListingContactForm from "@/features/partners/components/BusinessListingContactForm";
 import { draftKey, loadDraft, saveDraft, clearDraft, shallowEqual } from "@/lib/formDraft";
 import { computeListingCompleteness } from "@/features/partners/lib/businessListingCompleteness";
+import { getListingGuide } from "@/features/partners/lib/partnerListingGuide";
 
 type InquiryChannel = "chat" | "url" | "phone";
 
@@ -188,6 +189,20 @@ const BusinessVendorEdit = () => {
     [name, description, city, district, imageUrl, minPrice, tags, inquiryChannel, inquiryUrl, inquiryPhone],
   );
 
+  // 업종별 입력 가이드(소개글 예시·키워드 칩·진입 카피). 업종 미상이면 우아한 기본 폴백.
+  const guide = useMemo(
+    () => getListingGuide(businessProfile?.service_category),
+    [businessProfile?.service_category],
+  );
+  // 키워드 칩 클릭 → tags(쉼표 원문)에 추가/중복 방지.
+  const addKeywordChip = useCallback((chip: string) => {
+    setTags((prev) => {
+      const list = prev.split(",").map((t) => t.trim()).filter(Boolean);
+      if (list.includes(chip)) return prev;
+      return [...list, chip].join(", ");
+    });
+  }, []);
+
   const handleSave = async () => {
     if (!name.trim()) {
       toast.error("업체명을 입력해주세요");
@@ -337,10 +352,34 @@ const BusinessVendorEdit = () => {
           )}
         </div>
 
+        {/* 업종별 진입 가이드 — 무엇부터 적으면 좋은지 한 줄(따라하면 고퀄). */}
+        <div className="bg-primary/5 border border-primary/15 rounded-xl p-3">
+          <p className="text-[12px] text-foreground leading-relaxed">{guide.intro}</p>
+        </div>
+
         <Field label="업체명 *" value={name} onChange={setName} placeholder="상세페이지에 표시될 이름" />
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">소개</Label>
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="업체 소개" />
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            placeholder={guide.description.placeholder}
+          />
+          {/* 가이드 2종(왜·좋은예/나쁜예) + 실시간 글자수 힌트. 설명 대신 예시가 말하게(§8.2). */}
+          <div className="rounded-lg bg-muted/50 p-2.5 space-y-1.5">
+            <p className="text-[11px] text-muted-foreground">{guide.description.why}</p>
+            <p className="text-[11px] text-emerald-700">
+              <b>좋은 예</b> · {guide.description.good}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              <b>피하기</b> · {guide.description.bad}
+            </p>
+            <p className={`text-[11px] ${description.trim().length >= 100 ? "text-emerald-600" : "text-muted-foreground"}`}>
+              {description.trim().length}자
+              {description.trim().length < 100 ? " · 100자 넘으면 노출에 더 유리해요" : " · 좋아요!"}
+            </p>
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="시/도" value={city} onChange={setCity} placeholder="서울특별시" />
@@ -407,6 +446,25 @@ const BusinessVendorEdit = () => {
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">키워드 (쉼표로 구분)</Label>
           <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="강남웨딩홀, 가성비, 소규모" />
+          {/* 업종별 추천 키워드 칩 — 탭하면 추가(검색·필터 노출 보조). */}
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {guide.keywordChips.map((chip) => {
+              const active = tags.split(",").map((t) => t.trim()).includes(chip);
+              return (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => addKeywordChip(chip)}
+                  disabled={active}
+                  className={`px-2.5 py-1 rounded-full text-[12px] transition-colors ${
+                    active ? "bg-primary/10 text-primary/60" : "bg-muted text-muted-foreground hover:bg-muted/70"
+                  }`}
+                >
+                  {active ? "✓ " : "+ "}{chip}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* 문의 받는 방법 — 상세페이지 '문의하기' 버튼이 이대로 동작한다. */}

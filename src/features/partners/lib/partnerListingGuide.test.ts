@@ -34,4 +34,8 @@ describe("partnerListingGuide", () => {
   it("getListingGuide — 알려진 업종은 해당 가이드", () => {
     expect(getListingGuide("wedding_hall")).toBe(LISTING_GUIDE.wedding_hall);
   });
+
+  it("getListingGuide — 기업 업종 suit 는 tailor_shop 가이드로 별칭 매핑", () => {
+    expect(getListingGuide("suit")).toBe(LISTING_GUIDE.tailor_shop);
+  });
 });
