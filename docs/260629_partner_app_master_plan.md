@@ -163,6 +163,7 @@
 
 ## 13. 구현 단계 (토대부터 — 안전 분리 우선)
 - **S0 택소노미 단일 소스화** — `tasteTaxonomy`(무드6 + 확장축) 공용화. **기존 free-text `style_tags` 정규화 배치 + 무태깅 백필**(콜드스타트 필수 선행).
+- **S0.5 `etc` 세부 슬러그 분화(M2 결정)** — `vendorBoard.ts` 기존 슬롯명 재사용 + 세부별 `DETAIL_SCHEMA` + `quoteCategory` 배선 + 기존 etc 업체 재분류 마이그레이션. **DB 선확인 게이트 필수**(place enum 신설 최소화).
 - **S1 포트폴리오 강화** — 멀티업로드 + 무드 피커 + 인스타 피드(공급/소비). *루프의 연료.*
 - **S1.5 가이드형 상세정보 위저드(§8)** — 덤프폼 → step + 가이드 카피 + 완성도 spine 확장. *재배치 중심.*
 - **S2 대시보드 액션큐 + 완성도 게이지** — 런처→3단(입력① P0).
@@ -209,8 +210,11 @@
 ### A.4 신규 발견 (이번 통합에서 추가)
 - **M1 🔴 위저드 ↔ 기존 폼 데이터 정합** — 같은 리스팅을 위저드(신규)·전체편집(기존) 둘로 쓰면 **draft 키·저장 단위 충돌** 위험(현 `BusinessVendorEdit`은 기본/연락처/상세 3 draft 키 분리).
   → **개선**: 위저드는 **저장 RPC·draft 키를 기존과 100% 공유**(새 저장경로 신설 금지). 위저드 step = 같은 필드의 다른 뷰일 뿐. 전환 시 동일 draft 복원.
-- **M2 ⚠️ `etc`(기타) 카테고리에 `DETAIL_SCHEMA` 없음** — 페르소나 11~19(DVD·스냅·네일·부케 등)가 전부 `etc`인데 업종 상세 스키마가 없어 위저드 5번 step이 빈손 → "상세 항목 준비 중" placeholder(현 `BusinessListingDetailForm` 분기).
-  → **개선**: `etc`를 **세부 슬러그로 분화하거나**(스냅/네일/부케…), 최소한 **공통 경량 스키마**(가격·소요시간·출장·당일가능)를 etc에 부여. S1.5 전 결정 필요. (없으면 9개 페르소나가 위저드 혜택 0)
+- **M2 ⚠️→결정됨 `etc`(기타) 카테고리에 `DETAIL_SCHEMA` 없음** — 페르소나 11~19(DVD·스냅·네일·부케 등)가 전부 `etc`인데 업종 상세 스키마가 없어 위저드 5번 step이 빈손 → "상세 항목 준비 중" placeholder.
+  → **결정(사용자 확정): `etc`를 세부 슬러그로 분화** + 각자 `DETAIL_SCHEMA`. **단, 분화는 3개 레이어에 파급 → 전용 서브단계(S0.5)로 격리.**
+  → **실측 발견(중복/드리프트 방지)**: 소비자 보드 `vendorBoard.ts`에 이미 세부 슬롯이 **존재**한다 — `main_snap`(본식스냅)·`main_dvd`(본식DVD)·`iphone_snap`·`jeju_snap`·`horse_snap`·`mc`(사회자)·`bouquet`(부케)·`parent_makeup`(혼주메이크업). **하지만 전부 `browseLabel:"기타"` + `quoteCategory` 없음** = Dewy 공급/견적 매칭이 없어 소비자측은 "둘러보기"만 가능. → **슬러그 이름은 이걸 재사용**(새 작명 금지).
+  → **3 레이어 파급**: ① `business_profiles.service_category` 목록에 세부 slug 추가(+`SERVICE_CATEGORIES`) ② `places.category`는 **10종 enum** — 세부를 새 enum으로 올릴지 vs 공통 place 카테고리+detail tag 로 둘지 결정(DB enum 변경 = 큰 작업) ③ `vendorBoard.ts` 슬롯에 **`quoteCategory` 배선**(없으면 사장이 등록해도 소비자가 견적·검색으로 못 찾음 → 루프 끊김) + 기존 `etc` 업체 **재분류 마이그레이션**.
+  → **권고**: enum 신설 최소화 — 세부 slug 는 `service_category`+detail 로 두고, `vendorBoard` quoteCategory 매칭만 연결(저위험). 정밀 결정은 S0.5에서 **DB 선확인 게이트**로.
 - **M3 ⚠️ 완성도 spine 확장이 소비자 추천 정렬에 영향** — `places.data_completeness`를 추천이 쓰므로, spine 재정의로 **기존 업체 완성도 점수가 출렁** → 추천 순위 급변(소비자 회귀).
   → **개선**: data_completeness **산식 변경은 별도 단계**로 격리 + 점수 분포 before/after 비교 + 점진 적용. 위저드 게이지(UX)와 추천 산식(백엔드)을 **분리**해 먼저 UX만, 산식은 검증 후.
 
