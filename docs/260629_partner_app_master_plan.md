@@ -170,13 +170,18 @@
   - **점진 경로**: ① 먼저 **기존 quote-able 카테고리에 대응되는 슬롯만** 안전 연결(예: `parent_makeup`→`makeup_shop` — 공급·카테고리 이미 존재). ② etc 진짜 분화(부케·스냅·네일…를 구분 가능한 service_category/subcategory + detail)는 **DB 작업** → 별도 S0.5 본단계에서 **선확인 게이트** 후. ③ 그 전까지 세부 슬롯은 현행 "둘러보기(기타)" 유지(dead-end 아님).
 - **4-B 사장님 앱 독립 로그인** ✅ — `PartnerAuth`(이메일/비번 + 카카오·구글·애플 소셜), `apps/partners` `/auth` 연결. *OAuth 허용 URL = 배포 시 Supabase 설정.*
 - **S1 포트폴리오 강화** ✅ — 무드 피커(통제어휘) + 추가태그 분리 + **10장 일괄 업로드** + 소비자 앨범피드 **취향 정렬**(delta③).
-- **S1.5 가이드형 상세정보 위저드(§8)** ✅ — `partnerListingGuide`(업종 가이드) + 가이드 레이어(소개 예시·글자수·키워드 칩) + **스텝 위저드**(같은 저장/draft, 전체보기 토글). *완성도 spine 확장(M5)은 deferred.*
+- **S1.5 가이드형 상세정보 위저드(§8)** ✅ — `partnerListingGuide`(업종 가이드) + 가이드 레이어(소개 예시·글자수·키워드 칩) + **스텝 위저드**(같은 저장/draft, 전체보기 토글).
 - **S2 대시보드 액션큐 + 완성도 게이지** ✅ — `useBusinessActionItems`(미응답 리드·문의·후기·임박이벤트 count 병렬) + 완성도 게이지. *허영 스탯 폐기는 product 결정 deferred.*
 - **S3 추천 루프 확장** ✅ — `usePlaceRecommendations` 취향 **부스트(플래그 `TASTE_BOOST_ENABLED` off·tie-breaker·R5 가드)**. *full mood-join 랭킹은 deferred.*
-- **S4 리드/문의 상태머신 파이프라인** ✅(기존) — `BusinessLeads` 에 이미 퍼널 요약(받은리드→응답→수락→예약) + 단계별 상태머신 + 다음액션 버튼 구현됨. *자동 첫응답/템플릿(P1)은 deferred.*
+- **S4 리드/문의 상태머신 파이프라인** ✅(기존) — `BusinessLeads` 퍼널 요약 + 단계별 상태머신 + 다음액션. **견적 답변 템플릿**(`quoteTemplates`, localStorage) ✅ 추가. *자동 발송(auto-send)은 deferred.*
+- **M5 완성도 spine 확장** ✅ — `useListingExtras`(포트폴리오·무드 신호) → 대시보드 게이지 6→8 항목. "100%=노출+매칭 가능" 정합.
 - **S5+ (deferred, P2 로드맵)** 행동 랭킹·배지 / BI 퍼널+페르소나 / 구독 푸시 / 광고 2분기.
 
-**남은 deferred(요약)**: S0.5 etc 진짜 분화(DB 선확인 필요)·무태깅 백필 캠페인 · M4 앨범무드→업체레벨 랭킹(쿼리 join) · M5 완성도 spine(상세·포폴·무드 신호) · 허영 스탯 정리 · 자동 첫응답/템플릿 · S5+ 전체.
+**남은 deferred — DB/product/대형 게이트(코드만으로 안전히 못 함)**:
+- 🔒 **S0.5 etc 진짜 분화** + **무태깅 백필 캠페인** = **프로덕션 DB 마이그레이션·데이터 변경** → 실 스키마 선확인 + 명시적 승인 필요(함부로 미실행).
+- ⚠️ **M4 앨범무드→업체레벨 랭킹** = 추천 쿼리에 앨범 join(성능·R5 회귀) → 별도 설계·플래그.
+- 🤔 **허영 스탯 정리** = 조회/찜 제거 여부 product 결정.
+- 📋 **S5+** = 행동랭킹·BI·구독·광고(대형 로드맵).
 > 각 단계: web·capacitor build + lint/test/integrity 녹색 + 캡처 시뮬 + DB 선확인 + 소비자 회귀 0.
 
 ## 14. 측정 (개인화→전환 로깅)
