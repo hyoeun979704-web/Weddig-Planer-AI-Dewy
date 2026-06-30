@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { distanceKm } from "@/hooks/useWeddingVenue";
+import { TASTE_BOOST_ENABLED } from "@/lib/featureFlags";
+import { loadTasteTags } from "@/lib/tasteQuiz";
+import { normalizeTagsToMoods } from "@/lib/tasteTaxonomy";
 
 /**
  * 벤더 상세 페이지의 "필터 기반" 추천.
@@ -52,6 +55,21 @@ const NEARBY_POOL = 150;
 const NEARBY_LIMIT = 8;
 /** 근처 bounding box 반경 ~9km (위도 1°≈111km). 너무 좁으면 지방은 0건. */
 const BOX_DEG = 0.08;
+
+// 취향 가산점(S3, R5 가드) — partner_rank 1차 정렬 보존, 동순위에서만 취향 매칭을 위로.
+// JS sort 는 stable 이라 (rank, taste) 동률은 기존(DB) 순서(has_image·avg_rating)를 유지한다.
+// 플래그 off 또는 취향 0 이면 입력 그대로 반환(회귀 0). 추가 쿼리 없음(기존 tags 사용).
+function applyTasteBoost(list: RecPlace[]): RecPlace[] {
+  if (!TASTE_BOOST_ENABLED) return list;
+  const moods = new Set<string>(normalizeTagsToMoods(loadTasteTags()));
+  if (moods.size === 0) return list;
+  const overlap = (r: RecPlace) =>
+    normalizeTagsToMoods(r.tags ?? []).filter((m) => moods.has(m)).length;
+  return list
+    .map((r, i) => ({ r, i, rank: r.partner_rank ?? 0, t: overlap(r) }))
+    .sort((x, y) => y.rank - x.rank || y.t - x.t || x.i - y.i)
+    .map((e) => e.r);
+}
 
 async function fetchSimilar(a: RecAnchor): Promise<RecPlace[]> {
   let q = supabase
@@ -139,7 +157,8 @@ export function usePlaceRecommendations(anchor: RecAnchor | null) {
         fetchSimilar(a),
         fetchNearby(a),
       ]);
-      return { similar, nearby };
+      // "비슷한 업체"에만 취향 가산점(근처는 카테고리 다양성이 목적이라 제외).
+      return { similar: applyTasteBoost(similar), nearby };
     },
   });
 }
