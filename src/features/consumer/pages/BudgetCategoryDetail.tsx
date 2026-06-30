@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import BudgetAddSheet from "@/components/budget/BudgetAddSheet";
+import MealCostCalculator from "@/components/budget/MealCostCalculator";
 import { fmt } from "@/lib/budgetFormat";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/schedule";
@@ -122,6 +123,9 @@ const BudgetCategoryDetail = () => {
             <p className="text-[10px] text-muted-foreground text-right">{Math.round(pct)}% 사용</p>
           )}
         </div>
+
+        {/* 식대 추정 계산기 — 식수 × 단가 + 보증인원 미달 경고(meal 전용 개인화). */}
+        {cat === "meal" && <MealCostCalculator />}
 
         {/* Regional comparison */}
         {avgVal > 0 && (
