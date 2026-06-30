@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Drawer } from "vaul";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useTextDraft } from "@/hooks/useTextDraft";
+import { draftKey, loadDraft } from "@/lib/formDraft";
 import { toast } from "sonner";
 
 const TITLE_MAX = 100;
@@ -36,11 +38,13 @@ interface Props {
 const PlaceInquirySheet = ({ placeId, placeName, open, onOpenChange }: Props) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { weddingSettings } = useWeddingSchedule();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [contact, setContact] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [mine, setMine] = useState<InquiryRow[] | null>(null);
+  const prefilledRef = useRef(false);
 
   // 미저장 입력 유실 방지 — 시트를 닫거나 페이지 이탈해도 작성하던 문의 복원(업체별 격리).
   const draft = useTextDraft({
@@ -55,6 +59,40 @@ const PlaceInquirySheet = ({ placeId, placeName, open, onOpenChange }: Props) =>
     },
     hasContent: (v) => !!(v.title?.trim() || v.content?.trim()),
   });
+
+  // 빈 폼 마찰 줄이기 — 신부가 가진 예식 신호(예식월·지역)로 제목/내용 초안을 미리 채운다.
+  // 의향의 순간 빈 textarea 가 최대 이탈점이라, 한 번만(시트 열릴 때) 비어있을 때만 채운다.
+  // 이미 작성하던 draft 가 있으면(복원 대상) 건드리지 않는다 — draft 훅이 복원하도록 양보.
+  useEffect(() => {
+    if (!open) {
+      prefilledRef.current = false;
+      return;
+    }
+    if (prefilledRef.current || !user) return;
+    prefilledRef.current = true;
+    // 작성 중이던 초안이 있으면 prefill 생략(사용자 입력 우선).
+    const saved = loadDraft<{ title?: string; content?: string }>(
+      draftKey(`place-inquiry:${placeId}`, user.id),
+    );
+    if (saved?.title?.trim() || saved?.content?.trim()) return;
+    const date = weddingSettings.wedding_date;
+    const month =
+      !weddingSettings.wedding_date_tbd && date
+        ? parseInt(date.slice(5, 7), 10)
+        : null;
+    const region =
+      weddingSettings.wedding_venue_city || weddingSettings.wedding_region || "";
+    if (!month && !region) return; // 채울 신호가 없으면 빈 폼 유지
+    if (month) {
+      setTitle((cur) => cur || `${month}월 예식 견적 문의`);
+    }
+    setContent((cur) => {
+      if (cur) return cur;
+      const head = month ? `${month}월 예식 예정이에요` : "예식 준비 중이에요";
+      const loc = region ? ` (${region})` : "";
+      return `${head}${loc}. 가능 날짜와 견적 안내 부탁드려요.`;
+    });
+  }, [open, user, placeId, weddingSettings]);
 
   // 열릴 때 이 업체에 보낸 내 문의 + 답변 로드
   useEffect(() => {

@@ -789,6 +789,7 @@ function DetailTab({
   place: LegacyDetail;
   extraSection?: React.ReactNode;
 }) {
+  const navigate = useNavigate();
   const isEmpty =
     place.price_packages.length === 0 &&
     place.basic_services.length === 0 &&
@@ -799,10 +800,19 @@ function DetailTab({
     !place.contract_policy;
 
   if (isEmpty) {
+    // 상세정보 미등록 업체(다수)가 dead-end 가 되지 않도록 — 빈 안내 대신 실제 동작하는
+    // 비교 견적 경로를 함께 둔다. 카테고리만 넘기면 견적 폼이 식장 지역을 자동 시드.
     return (
       <div className="flex flex-col items-center justify-center px-6 py-16 text-center text-muted-foreground">
         <Sparkles className="w-8 h-8 mb-3 opacity-50" />
-        <p className="text-sm">아직 디테일 정보가 등록되지 않았어요.</p>
+        <p className="text-sm">아직 상세정보가 등록되지 않았어요.</p>
+        <p className="text-[13px] mt-1">조건이 맞는 업체들에게 한 번에 견적을 받아보세요.</p>
+        <Button
+          className="mt-4 h-10"
+          onClick={() => navigate(`/quote/new?category=${encodeURIComponent(place.category)}`)}
+        >
+          비교 견적 받기
+        </Button>
       </div>
     );
   }
