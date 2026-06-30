@@ -37,31 +37,48 @@ const QuoteNew = () => {
   const boardSlot = params.get("slot"); // 업체 보드 슬롯에서 진입 시 — 성공하면 그 슬롯을 '견적중'으로
   const [city, setCity] = useState("");
   const [district, setDistrict] = useState("");
-  // 지역 자동 채움 — 사용자가 이미 등록한 결혼식장/지역을 견적 요청에 기본값으로 넣어
-  // 매칭이 '내 지역' 기준으로 큐레이션되게 한다(보드에서 진입 시 매번 지역을 다시 적던
-  // 마찰 + 지역 누락으로 매칭이 전국구가 되던 큐레이션 공백 해소). 사용자가 입력 중이면
-  // 덮지 않도록 1회만 시드(ref 가드).
-  const prefilledRegion = useRef(false);
-  useEffect(() => {
-    if (prefilledRegion.current) return;
-    const seedCity = weddingSettings.wedding_venue_city || weddingSettings.wedding_region;
-    const seedDistrict = weddingSettings.wedding_venue_district;
-    if (!seedCity && !seedDistrict) return;
-    prefilledRegion.current = true;
-    setCity((cur) => (cur ? cur : seedCity ?? ""));
-    setDistrict((cur) => (cur ? cur : seedDistrict ?? ""));
-  }, [weddingSettings.wedding_venue_city, weddingSettings.wedding_venue_district, weddingSettings.wedding_region]);
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [weddingDate, setWeddingDate] = useState("");
   const [style, setStyle] = useState("");
+  // 이미 입력한 결혼 정보 자동 채움 — 회원가입·결혼정보 설정에서 등록한 데이터를 견적 요청에
+  // 기본값으로 넣어 같은 정보를 매번 다시 적던 마찰을 없앤다. 매칭이 '내 지역/일정' 기준으로
+  // 큐레이션되고 리드 품질도 올라간다. 사용자가 입력 중이면 덮지 않도록 1회만 시드(ref 가드).
+  //   · 지역 ← 등록한 결혼식장/지역  · 예식일 ← wedding_date(미정 제외)  · 스타일 ← wedding_style
+  // 예산은 시드하지 않는다: 저장된 예산은 카테고리군(예: sdm=스튜디오+드레스+메이크업) 단위
+  // 단일 금액이라 단일 카테고리 견적에 넣으면 과대 시드로 매칭이 왜곡된다.
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (prefilled.current) return;
+    const seedCity = weddingSettings.wedding_venue_city || weddingSettings.wedding_region;
+    const seedDistrict = weddingSettings.wedding_venue_district;
+    const seedDate = weddingSettings.wedding_date_tbd ? "" : weddingSettings.wedding_date || "";
+    const seedStyle = weddingSettings.wedding_style || "";
+    if (!seedCity && !seedDistrict && !seedDate && !seedStyle) return;
+    prefilled.current = true;
+    if (seedCity || seedDistrict) {
+      setCity((cur) => (cur ? cur : seedCity ?? ""));
+      setDistrict((cur) => (cur ? cur : seedDistrict ?? ""));
+    }
+    if (seedDate) setWeddingDate((cur) => (cur ? cur : seedDate));
+    if (seedStyle) setStyle((cur) => (cur ? cur : seedStyle));
+  }, [
+    weddingSettings.wedding_venue_city,
+    weddingSettings.wedding_venue_district,
+    weddingSettings.wedding_region,
+    weddingSettings.wedding_date,
+    weddingSettings.wedding_date_tbd,
+    weddingSettings.wedding_style,
+  ]);
   const [note, setNote] = useState("");
   const [imagePaths, setImagePaths] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // 미저장 입력 유실 방지(iOS 웹 등). 이미지는 업로드된 path(문자열)라 직렬화 가능.
-  // hasContent 는 프리필(카테고리·지역)만으로 빈 draft 가 생기지 않게 '작성한' 필드만 본다.
+  // hasContent 는 프리필(카테고리·지역·예식일·스타일)만으로 빈 draft·오인 복원토스트가
+  // 생기지 않게 '직접 작성한' 필드만 본다(메모·예산·사진). 예식일/스타일은 설정에서
+  // 재시드되므로 draft 에 안 넣어도 복귀 시 그대로 채워진다.
   const draft = useTextDraft({
     scope: "quote-new",
     userId: user?.id,
@@ -79,7 +96,7 @@ const QuoteNew = () => {
       if (Array.isArray(d.imagePaths)) setImagePaths(d.imagePaths);
     },
     hasContent: (v) =>
-      !!(v.note?.trim() || v.budgetMin || v.budgetMax || v.weddingDate || v.style) ||
+      !!(v.note?.trim() || v.budgetMin || v.budgetMax) ||
       (Array.isArray(v.imagePaths) && v.imagePaths.length > 0),
   });
 
@@ -193,6 +210,9 @@ const QuoteNew = () => {
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">예식 예정일</Label>
           <Input type="date" value={weddingDate} onChange={(e) => setWeddingDate(e.target.value)} />
+          {!weddingSettings.wedding_date_tbd && weddingSettings.wedding_date && weddingDate === weddingSettings.wedding_date && (
+            <p className="text-[12px] text-primary">내 결혼 정보에서 채웠어요 · 바꿔도 돼요</p>
+          )}
         </div>
 
         <div className="space-y-1.5">
