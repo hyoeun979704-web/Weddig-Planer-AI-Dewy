@@ -356,6 +356,33 @@ const BusinessDashboard = () => {
           )}
         </div>
 
+        {/* 프로필 완성도 — 채울수록 추천 노출↑(plan §7). 기존 REQUIRED_FIELDS 재사용. */}
+        {listingRow && (
+          <div className="mx-4 mt-3 p-4 bg-card rounded-2xl border border-border">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[13px] font-semibold text-foreground">프로필 완성도</p>
+              <p className="text-[13px] font-bold text-primary">
+                {Math.round(((REQUIRED_FIELDS.length - missingFields.length) / REQUIRED_FIELDS.length) * 100)}%
+              </p>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${Math.round(((REQUIRED_FIELDS.length - missingFields.length) / REQUIRED_FIELDS.length) * 100)}%` }}
+              />
+            </div>
+            {missingFields.length > 0 ? (
+              <button onClick={() => navigate("/business/edit")} className="mt-2 text-[11px] text-left w-full">
+                <span className="text-foreground font-medium">채우면 노출↑:</span>{" "}
+                <span className="text-muted-foreground">{missingFields.map((f) => f.label).join(" · ")}</span>
+                <span className="text-primary font-medium"> 채우러 가기 ›</span>
+              </button>
+            ) : (
+              <p className="text-[11px] text-emerald-600 mt-2">기본 정보를 모두 채웠어요. 포트폴리오까지 올리면 취향 추천에 더 잘 노출돼요.</p>
+            )}
+          </div>
+        )}
+
         {/* 지점 선택 — 멀티지점일 때 관리 대상 전환 + 새 지점 추가 */}
         <div className="mx-4 mt-3 p-3 bg-card rounded-2xl border border-border">
           <div className="flex items-center justify-between gap-2 mb-2">
