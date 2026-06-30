@@ -26,7 +26,7 @@ const BusinessDashboard = () => {
   const { partnerApp } = usePartnerApplication(isApproved ? (businessProfile?.id ?? null) : null);
   const applyMutation = useApplyPartnership(businessProfile?.id ?? null);
   // "오늘 할 일" 액션큐 — 승인된 업체만 의미. 미응답 리드·문의·후기·임박 이벤트 집계.
-  const { items: actionItems, total: actionTotal } = useBusinessActionItems(isApproved ? placeId : null);
+  const { items: actionItems, total: actionTotal, totalLeads, responseRate } = useBusinessActionItems(isApproved ? placeId : null);
   // 완성도 게이지 확장(M5) — 기본 필드 + 포트폴리오·무드(개인화 연료) 신호.
   const extras = useListingExtras(isApproved ? placeId : null);
 
@@ -492,8 +492,9 @@ const BusinessDashboard = () => {
           {[
             { icon: Eye, label: "조회수", value: stats.views, color: "text-primary" },
             { icon: Heart, label: "찜", value: stats.favorites, color: "text-primary" },
-            { icon: Ticket, label: "쿠폰받기", value: stats.couponDownloads, color: "text-primary" },
-            { icon: Image, label: isMenuCategory ? "메뉴" : "사진", value: stats.media, color: "text-primary" },
+            // 허영 스탯(쿠폰받기·사진) 폐기 → 의미있는 운영 지표(받은 리드·응답률)로 교체.
+            { icon: Inbox, label: "받은 리드", value: totalLeads, color: "text-primary" },
+            { icon: MessageSquare, label: "응답률", value: responseRate == null ? "–" : `${responseRate}%`, color: "text-primary" },
           ].map((stat) => (
             <div key={stat.label} className="bg-card rounded-2xl border border-border p-3 text-center">
               <stat.icon className={`w-5 h-5 ${stat.color} mx-auto`} />

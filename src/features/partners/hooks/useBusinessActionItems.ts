@@ -42,12 +42,19 @@ export function useBusinessActionItems(placeId: string | null) {
       ]);
       // 미응답 리드 = 받은 리드 중 아직 응답 안 한 건(음수 방지).
       const leads = funnel ? Math.max(0, funnel.leads - funnel.responded) : 0;
-      return { inquiries, reviews, events, leads };
+      return {
+        inquiries,
+        reviews,
+        events,
+        leads,
+        totalLeads: funnel?.leads ?? 0,
+        responded: funnel?.responded ?? 0,
+      };
     },
     staleTime: 30_000,
   });
 
-  const c = data ?? { inquiries: 0, reviews: 0, events: 0, leads: 0 };
+  const c = data ?? { inquiries: 0, reviews: 0, events: 0, leads: 0, totalLeads: 0, responded: 0 };
   const items: BizActionItem[] = [
     { key: "leads", label: "미응답 견적 요청", count: c.leads, href: "/business/leads" },
     { key: "inquiries", label: "답변 안 한 문의", count: c.inquiries, href: "/business/inquiries" },
@@ -58,5 +65,8 @@ export function useBusinessActionItems(placeId: string | null) {
     items,
     total: items.reduce((sum, i) => sum + i.count, 0),
     isLoading,
+    // 대시보드 핵심 지표(허영 스탯 대체) — 받은 리드·응답률.
+    totalLeads: c.totalLeads,
+    responseRate: c.totalLeads > 0 ? Math.round((c.responded / c.totalLeads) * 100) : null,
   };
 }
