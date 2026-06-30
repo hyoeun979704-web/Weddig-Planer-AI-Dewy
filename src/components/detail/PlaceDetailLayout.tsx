@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -27,6 +27,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { LegacyDetail } from "@/hooks/usePlaceDetail";
 import PlaceImagePlaceholder from "@/components/place/PlaceImagePlaceholder";
 import { usePlaceReviews, REVIEW_SOURCE_META, type PlaceReview } from "@/hooks/usePlaceReviews";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import { rankReviews, regionMatches, VERIFICATION_TIER_META } from "@/lib/reviewRanking";
 import HiddenCostsCard from "@/components/detail/HiddenCostsCard";
 import SetAsWeddingVenueButton from "@/components/detail/SetAsWeddingVenueButton";
 import PlaceReviewWriteSheet from "@/components/detail/PlaceReviewWriteSheet";
@@ -930,9 +932,14 @@ function ReviewTab({
 }) {
   const { data: reviews = [], isLoading } = usePlaceReviews(placeId);
   const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [writeOpen, setWriteOpen] = useState(false);
+
+  // 인증(계약>상담>없음) → 같은 지역 → 최신 순으로 정렬해 신뢰·관련 후기를 위로.
+  const viewerRegion = weddingSettings.wedding_region;
+  const rankedReviews = useMemo(() => rankReviews(reviews, viewerRegion), [reviews, viewerRegion]);
 
   const handleWriteClick = () => {
     if (!user) { navigate("/auth"); return; }
@@ -994,8 +1001,8 @@ function ReviewTab({
         </div>
       ) : (
         <div className="px-4 py-3 space-y-3">
-          {reviews.map((r) => (
-            <ReviewCard key={r.review_id} review={r} />
+          {rankedReviews.map((r) => (
+            <ReviewCard key={r.review_id} review={r} viewerRegion={viewerRegion} />
           ))}
         </div>
       )}
@@ -1010,7 +1017,9 @@ function ReviewTab({
   );
 }
 
-function ReviewCard({ review }: { review: PlaceReview }) {
+function ReviewCard({ review, viewerRegion }: { review: PlaceReview; viewerRegion?: string | null }) {
+  const tierMeta = review.verification_tier ? VERIFICATION_TIER_META[review.verification_tier] : null;
+  const isLocal = regionMatches(review.author_region, viewerRegion);
   const date = review.review_date
     ? new Date(review.review_date).toLocaleDateString("ko-KR", {
         year: "numeric",
@@ -1029,6 +1038,21 @@ function ReviewCard({ review }: { review: PlaceReview }) {
         )}
         {review.author && (
           <span className="text-sm text-foreground">{review.author}</span>
+        )}
+        {/* 실거래 인증 칩 — 행동로그 기반(계약/상담). 신뢰 신호라 가장 먼저. */}
+        {tierMeta && (
+          <span
+            title={tierMeta.hint}
+            className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${tierMeta.tone}`}
+          >
+            {tierMeta.label}
+          </span>
+        )}
+        {/* 같은 지역 후기 — 개인화 신호. */}
+        {isLocal && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-primary/10 text-primary border-primary/20">
+            내 지역
+          </span>
         )}
         {/* 출처 칩 — source_type 우선, 없으면 is_verified 폴백. P3·P13·P18 광고/협찬 분간 해소. */}
         {(() => {

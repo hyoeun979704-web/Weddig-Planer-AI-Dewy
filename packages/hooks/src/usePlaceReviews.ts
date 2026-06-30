@@ -25,6 +25,10 @@ export interface PlaceReview {
   is_verified: boolean | null;
   /** 후기 출처 분류 — 광고/협찬/사용자/에디터 구분. P3·P13·P18 페인 해소용. */
   source_type: ReviewSourceType;
+  /** Dewy 행동로그 기반 자동 인증 — consult(문의/견적)·contract(예식장 등록)·null. 트리거가 세팅. */
+  verification_tier: "consult" | "contract" | null;
+  /** 작성자 지역(같은 지역 후기 우선 정렬용). */
+  author_region: string | null;
 }
 
 /** 후기 출처별 사용자에게 보일 라벨·색상·우선순위(낮을수록 신뢰 높음). */
@@ -74,7 +78,7 @@ export const usePlaceReviews = (placeId: string | undefined, enabled = true) => 
       const { data, error } = await (supabase as any)
         .from("place_reviews")
         .select(
-          "review_id, title, content, author, rating, review_date, ai_summary, sentiment, helpful_count, source_name, hall_name, wedding_date, is_verified, source_type"
+          "review_id, title, content, author, rating, review_date, ai_summary, sentiment, helpful_count, source_name, hall_name, wedding_date, is_verified, source_type, verification_tier, author_region"
         )
         .eq("place_id", placeId)
         .order("review_date", { ascending: false, nullsFirst: false })
