@@ -3,7 +3,9 @@
 // 결과 무드 태그는 필터·레퍼런스 매칭·포폴 태그와 동일 통제어휘(§3.6) — DRY.
 // 순수 함수(같은 답=같은 결과). 비전/임베딩 불필요(Phase 0).
 
-export type MoodTag = "클래식" | "모던" | "로맨틱" | "빈티지" | "미니멀" | "볼드";
+// 무드 어휘 단일 소스 = tasteTaxonomy. 기존 import 호환을 위해 MoodTag 를 그대로 재노출한다.
+import type { MoodTag } from "./tasteTaxonomy";
+export type { MoodTag } from "./tasteTaxonomy";
 
 export interface QuizOption {
   id: string;

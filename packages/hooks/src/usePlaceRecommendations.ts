@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { distanceKm } from "@/hooks/useWeddingVenue";
+import { TASTE_BOOST_ENABLED } from "@/lib/featureFlags";
+import { loadTasteTags } from "@/lib/tasteQuiz";
+import { normalizeTagsToMoods } from "@/lib/tasteTaxonomy";
 
 /**
  * 벤더 상세 페이지의 "필터 기반" 추천.
@@ -52,6 +55,45 @@ const NEARBY_POOL = 150;
 const NEARBY_LIMIT = 8;
 /** 근처 bounding box 반경 ~9km (위도 1°≈111km). 너무 좁으면 지방은 0건. */
 const BOX_DEG = 0.08;
+
+// 후보 업체들의 앨범 무드(M4) — 업체-레벨 신호를 키워드 tags 보다 정확히 잡기 위해
+// place_media_albums.style_tags 를 bounded(후보 ≤12) 1쿼리로 모은다. 플래그 on 일 때만 호출.
+async function fetchAlbumMoods(placeIds: string[]): Promise<Map<string, Set<string>>> {
+  const map = new Map<string, Set<string>>();
+  if (placeIds.length === 0) return map;
+  const { data } = await supabase
+    .from("place_media_albums")
+    .select("place_id, style_tags")
+    .in("place_id", placeIds);
+  for (const row of (data ?? []) as { place_id: string; style_tags: string[] | null }[]) {
+    const moods = normalizeTagsToMoods(row.style_tags ?? []);
+    if (moods.length === 0) continue;
+    const set = map.get(row.place_id) ?? new Set<string>();
+    moods.forEach((m) => set.add(m));
+    map.set(row.place_id, set);
+  }
+  return map;
+}
+
+// 취향 가산점(S3+M4, R5 가드) — partner_rank 1차 정렬 보존, 동순위에서만 취향 매칭을 위로.
+// JS sort 는 stable 이라 (rank, taste) 동률은 기존(DB) 순서(has_image·avg_rating)를 유지한다.
+// 신호 = 업체 키워드 tags ∪ 앨범 무드(M4). 플래그 off/취향 0 이면 입력 그대로(회귀 0).
+function applyTasteBoost(list: RecPlace[], albumMoods: Map<string, Set<string>>): RecPlace[] {
+  if (!TASTE_BOOST_ENABLED) return list;
+  const moods = new Set<string>(normalizeTagsToMoods(loadTasteTags()));
+  if (moods.size === 0) return list;
+  const overlap = (r: RecPlace) => {
+    const combined = new Set<string>(normalizeTagsToMoods(r.tags ?? []));
+    albumMoods.get(r.place_id)?.forEach((m) => combined.add(m));
+    let c = 0;
+    combined.forEach((m) => { if (moods.has(m)) c++; });
+    return c;
+  };
+  return list
+    .map((r, i) => ({ r, i, rank: r.partner_rank ?? 0, t: overlap(r) }))
+    .sort((x, y) => y.rank - x.rank || y.t - x.t || x.i - y.i)
+    .map((e) => e.r);
+}
 
 async function fetchSimilar(a: RecAnchor): Promise<RecPlace[]> {
   let q = supabase
@@ -139,7 +181,13 @@ export function usePlaceRecommendations(anchor: RecAnchor | null) {
         fetchSimilar(a),
         fetchNearby(a),
       ]);
-      return { similar, nearby };
+      // "비슷한 업체"에만 취향 가산점(근처는 카테고리 다양성이 목적이라 제외).
+      // 앨범 무드 조회는 플래그 on + 취향 있을 때만(off면 추가 쿼리·비용 0).
+      const albumMoods =
+        TASTE_BOOST_ENABLED && loadTasteTags().length > 0
+          ? await fetchAlbumMoods(similar.map((s) => s.place_id))
+          : new Map<string, Set<string>>();
+      return { similar: applyTasteBoost(similar, albumMoods), nearby };
     },
   });
 }

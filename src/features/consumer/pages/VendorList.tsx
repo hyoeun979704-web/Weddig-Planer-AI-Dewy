@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { MapPin, Camera, Sparkles } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -9,6 +9,7 @@ import { useWeddingVenue } from "@/hooks/useWeddingVenue";
 import { usePortfolioVenueMatch } from "@/hooks/usePortfolioVenueMatch";
 import { rankByVenueMatch } from "@/lib/venueMatch";
 import { loadTasteTags } from "@/lib/tasteQuiz";
+import { normalizeTagsToMoods } from "@/lib/tasteTaxonomy";
 import { Skeleton } from "@/components/ui/skeleton";
 import VendorMediaCard, {
   CARD_W,
@@ -50,6 +51,14 @@ const VendorList = () => {
   const { data: pfMap } = usePortfolioVenueMatch(venue.isSet ? placeIds : []);
   // 취향 진단(미니퀴즈) 결과 태그 — 있으면 업체 스타일 태그와 겹치는 만큼 소프트 가산.
   const tasteTags = useMemo(() => loadTasteTags() as string[], []);
+  const tasteSet = useMemo(() => new Set(tasteTags), [tasteTags]);
+  // 업체 style_tags(자유텍스트일 수 있음)를 무드로 정규화 후 취향과 겹치는 수. 읽기 시점
+  // 정규화라 기존 데이터 변형 없이(가역) "심플→모던" 같은 동의어도 매칭된다(콜드스타트 보강).
+  const countTasteOverlap = useCallback(
+    (styleTags: string[] | null | undefined) =>
+      normalizeTagsToMoods(styleTags ?? []).filter((m) => tasteSet.has(m)).length,
+    [tasteSet],
+  );
   const ranked = useMemo(() => {
     const withVenue =
       venue.isSet && pfMap && pfMap.size > 0
@@ -59,15 +68,13 @@ const VendorList = () => {
     // 같은-식장(1순위) → 취향 겹침 수(2순위) → 기존 순서. 취향이 결과 정렬에 실제 반영되게
     // 해 미니퀴즈가 "동작하는 척"하지 않도록(거짓 약속 방지).
     return withVenue
-      .map((v, i) => ({ v, i, t: (v.style_tags ?? []).filter((s) => tasteTags.includes(s)).length }))
+      .map((v, i) => ({ v, i, t: countTasteOverlap(v.style_tags) }))
       .sort((a, b) => b.v.venueMatch.score - a.v.venueMatch.score || b.t - a.t || a.i - b.i)
       .map(({ v }) => v);
-  }, [vendors, pfMap, venue.isSet, venue.placeId, venue.name, tasteTags]);
+  }, [vendors, pfMap, venue.isSet, venue.placeId, venue.name, tasteTags, countTasteOverlap]);
   const venueMatchCount = ranked.filter((v) => v.venueMatch.score > 0).length;
   const tasteMatchCount =
-    tasteTags.length > 0
-      ? ranked.filter((v) => (v.style_tags ?? []).some((s) => tasteTags.includes(s))).length
-      : 0;
+    tasteTags.length > 0 ? ranked.filter((v) => countTasteOverlap(v.style_tags) > 0).length : 0;
 
   return (
     <div className="min-h-screen bg-background app-col mx-auto relative">

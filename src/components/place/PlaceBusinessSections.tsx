@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Package, Image as ImageIcon, UtensilsCrossed, X, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { loadTasteTags } from "@/lib/tasteQuiz";
+import { normalizeTagsToMoods } from "@/lib/tasteTaxonomy";
 
 interface ProductRow { id: string; name: string; price: number | null; description: string | null; image_url: string | null; }
 interface MediaRow {
@@ -49,6 +51,8 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
   // 포트폴리오 필터(스타일·식장·패키지) — 칩 선택 상태. 미선택 시 전체 노출.
   const [filter, setFilter] = useState<{ kind: "style" | "venue" | "product"; value: string } | null>(null);
   const isMenu = category === "invitation_venue";
+  // 취향(미니퀴즈) 무드 — 있으면 앨범 피드를 그 취향에 가까운 순으로 정렬(delta③). 1회 로드.
+  const tasteMoods = useMemo(() => new Set<string>(loadTasteTags()), []);
 
   const load = useCallback(async () => {
     const [pr, md, alb] = await Promise.all([
@@ -80,7 +84,7 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
   // 데이터 파생(그룹핑·필터옵션)은 products/media/albums 에만 의존 → useMemo 로 고정.
   // (라이트박스·필터 등 다른 state 변경 시 매번 Map 재생성·재그룹핑하던 렌더 폭주 제거.)
   // 주의: hook 은 조기 return 보다 위에서 무조건 호출(react-hooks/rules-of-hooks).
-  const { productName, albumById, photosByAlbum, orderedAlbumKeys, shownAlbums, styleOpts, venueOpts, productOpts, hasFilters } = useMemo(() => {
+  const { productName, albumById, photosByAlbum, orderedAlbumKeys, shownAlbums, styleOpts, venueOpts, productOpts, hasFilters, tasteSorted } = useMemo(() => {
     const productName = new Map(products.map((p) => [p.id, p.name]));
     const albumById = new Map(albums.map((a) => [a.id, a]));
 
@@ -91,8 +95,19 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
       if (!photosByAlbum.has(key)) photosByAlbum.set(key, []);
       photosByAlbum.get(key)!.push(m);
     }
+    // 사진 있는 앨범. 취향이 있으면 (앨범 무드 ∩ 취향) 겹침 수 내림차순으로 안정 정렬(동점=등록순).
+    // 앨범 무드는 자유텍스트일 수 있어 정규화 후 비교(VendorList 와 동일 규칙). 취향 없으면 등록순 유지.
+    const albumsWithPhotos = albums.filter((a) => photosByAlbum.has(a.id));
+    const tasteOrdered =
+      tasteMoods.size === 0
+        ? albumsWithPhotos
+        : albumsWithPhotos
+            .map((a, i) => ({ a, i, t: normalizeTagsToMoods(a.style_tags ?? []).filter((m) => tasteMoods.has(m)).length }))
+            .sort((x, y) => y.t - x.t || x.i - y.i)
+            .map(({ a }) => a);
+    const tasteSorted = tasteMoods.size > 0 && tasteOrdered.some((a) => normalizeTagsToMoods(a.style_tags ?? []).some((m) => tasteMoods.has(m)));
     const orderedAlbumKeys: (string | null)[] = [
-      ...albums.filter((a) => photosByAlbum.has(a.id)).map((a) => a.id as string | null),
+      ...tasteOrdered.map((a) => a.id as string | null),
       ...(photosByAlbum.has(null) ? [null] : []),
     ];
 
@@ -104,8 +119,8 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
       new Map(shownAlbums.filter((a) => a.product_id).map((a) => [a.product_id as string, productName.get(a.product_id as string) ?? ""])).entries(),
     ).filter(([, n]) => n) as [string, string][];
     const hasFilters = shownAlbums.length > 1 && styleOpts.length + venueOpts.length + productOpts.length > 0;
-    return { productName, albumById, photosByAlbum, orderedAlbumKeys, shownAlbums, styleOpts, venueOpts, productOpts, hasFilters };
-  }, [products, media, albums]);
+    return { productName, albumById, photosByAlbum, orderedAlbumKeys, shownAlbums, styleOpts, venueOpts, productOpts, hasFilters, tasteSorted };
+  }, [products, media, albums, tasteMoods]);
 
   if (products.length === 0 && media.length === 0) return null;
 
@@ -155,6 +170,9 @@ const PlaceBusinessSections = ({ placeId, category }: { placeId: string; categor
             </div>
           ) : (
             <div className="space-y-3">
+              {tasteSorted && !filter && (
+                <p className="text-[11px] text-primary">내 취향에 가까운 작업부터 보여드려요.</p>
+              )}
               {hasFilters && (
                 <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5">
                   <FilterChip label="전체" active={!filter} onClick={() => setFilter(null)} />

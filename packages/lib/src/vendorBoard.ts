@@ -31,7 +31,10 @@ export const VENDOR_SLOT_GROUPS: string[] = ["예식", "촬영·영상", "의상
 export const VENDOR_SLOTS: VendorSlot[] = [
   // ── 예식 ──
   { key: "venue", label: "베뉴(웨딩홀)", group: "예식", quoteCategory: "wedding_hall", browseLabel: "웨딩홀", primaryForQuoteCategory: true },
-  { key: "planner", label: "플래너", group: "예식", browseLabel: "웨딩플래너" },
+  // 플래너는 Dewy 핵심 제품(AI 플래너)이라 vendor 카테고리가 아님(placeMappers 정책) +
+  // place.category='planner' 공급 0 → '둘러보기' = 빈 목록 dead-end 였다. browseLabel 제거해
+  // 메모 기록 슬롯으로만 둔다("공급 없는 슬롯엔 죽은 버튼 안 둔다" 원칙 준수).
+  { key: "planner", label: "플래너", group: "예식" },
   { key: "mc", label: "사회자", group: "예식", browseLabel: "기타" },
 
   // ── 촬영·영상 ──
@@ -47,7 +50,9 @@ export const VENDOR_SLOTS: VendorSlot[] = [
   { key: "makeup", label: "본식 메이크업", group: "의상·뷰티", quoteCategory: "makeup_shop", browseLabel: "스드메", primaryForQuoteCategory: true },
   { key: "suit", label: "예복", group: "의상·뷰티", quoteCategory: "tailor_shop", browseLabel: "예복", primaryForQuoteCategory: true },
   { key: "parent_hanbok", label: "혼주 한복", group: "의상·뷰티", quoteCategory: "hanbok", browseLabel: "한복", primaryForQuoteCategory: true },
-  { key: "parent_makeup", label: "혼주 메이크업", group: "의상·뷰티", browseLabel: "스드메" },
+  // 혼주 메이크업 = 메이크업샵이 담당 → 기존 makeup_shop 견적에 연결(이미 있는 걸 연결, S0.5-a).
+  // 본식 메이크업(makeup)이 primary 라 견적 부킹 자동반영은 본식만, 혼주는 수동(중복 부킹 방지).
+  { key: "parent_makeup", label: "혼주 메이크업", group: "의상·뷰티", quoteCategory: "makeup_shop", browseLabel: "스드메" },
 
   // ── 예물·소품 ──
   { key: "ring", label: "예물·웨딩밴드", group: "예물·소품", quoteCategory: "jewelry", primaryForQuoteCategory: true },

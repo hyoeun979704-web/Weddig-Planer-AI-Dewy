@@ -9,6 +9,7 @@ import EmptyState from "@/components/ui/empty-state";
 import { relativeTime } from "@/lib/relativeTime";
 import { PLACE_CATEGORY_LABEL } from "@/lib/categoryLabels";
 import { useBusinessLeads, submitQuoteResponse, getQuoteLeadContact, getBusinessQuoteFunnel, quoteImageUrl, type BusinessLead, type BusinessFunnel } from "@/hooks/useQuotes";
+import { loadQuoteTemplates, saveQuoteTemplate, removeQuoteTemplate, DEFAULT_QUOTE_TEMPLATES } from "@/features/partners/lib/quoteTemplates";
 
 const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () => void }) => {
   const navigate = useNavigate();
@@ -18,6 +19,8 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
   const [priceMax, setPriceMax] = useState("");
   const [sending, setSending] = useState(false);
   const [contact, setContact] = useState<{ name: string | null; phone: string | null } | null>(null);
+  // 견적 답변 템플릿(반복 입력 제거) — 저장본 없으면 기본 제안 노출.
+  const [templates, setTemplates] = useState<string[]>(() => loadQuoteTemplates());
 
   const connected = lead.responseStatus === "accepted" || lead.responseStatus === "booked";
 
@@ -121,7 +124,25 @@ const LeadCard = ({ lead, onResponded }: { lead: BusinessLead; onResponded: () =
       )}
       {open && (
         <div className="mt-3 space-y-2">
+          {/* 답변 템플릿 — 탭하면 채우기. 저장본 없으면 기본 제안. */}
+          {(templates.length > 0 ? templates : DEFAULT_QUOTE_TEMPLATES).length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {(templates.length > 0 ? templates : DEFAULT_QUOTE_TEMPLATES).map((t) => (
+                <span key={t} className="inline-flex items-center gap-1 rounded-full bg-muted text-muted-foreground text-[11px] pl-2.5 pr-1 py-1">
+                  <button type="button" onClick={() => setMessage(t)} className="max-w-[160px] truncate" title={t}>{t}</button>
+                  {templates.includes(t) && (
+                    <button type="button" onClick={() => setTemplates(removeQuoteTemplate(t))} aria-label="템플릿 삭제" className="w-4 h-4 rounded-full hover:bg-background flex items-center justify-center">×</button>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
           <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder="고객에게 보낼 견적/안내 메시지" />
+          {message.trim() && !templates.includes(message.trim()) && (
+            <button type="button" onClick={() => { setTemplates(saveQuoteTemplate(message)); toast.success("템플릿으로 저장했어요"); }} className="text-[11px] text-primary font-medium">
+              + 이 문구 템플릿으로 저장
+            </button>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <Input type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="최소(만원)" />
             <Input type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} placeholder="최대(만원)" />

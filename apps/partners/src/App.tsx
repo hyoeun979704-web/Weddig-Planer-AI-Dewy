@@ -12,9 +12,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 // partners 라우트 모듈은 /business 하위 상대경로(dashboard·onboard 등)를 그대로 쓰므로
 // 앱에서도 /business/* 로 마운트하고, 앱 진입("/")은 대시보드로 보낸다(내부 navigate 경로 무수정).
 const PartnersRoutes = lazy(() => import("@/features/partners/routes"));
-// 로그인 화면은 당분간 소비자 Auth 를 재사용한다(공유 AuthContext 기반).
-// TODO(4-B): 사장님 전용/공유 로그인으로 분리(소비자 전용 분기 제거).
-const Auth = lazy(() => import("@/features/consumer/pages/Auth"));
+// 사장님 전용 독립 로그인(4-B). 소비자 Auth 재사용을 끊고 사장님 맥락의 진입 동선 제공.
+const PartnerAuth = lazy(() => import("@/features/partners/pages/PartnerAuth"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,7 +38,7 @@ const App = () => (
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Navigate to="/business/dashboard" replace />} />
-                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/auth" element={<PartnerAuth />} />
                   <Route path="/business/*" element={<PartnersRoutes />} />
                   {/* 알 수 없는 경로는 대시보드로(사장님 앱엔 소비자 라우트가 없음). */}
                   <Route path="*" element={<Navigate to="/business/dashboard" replace />} />

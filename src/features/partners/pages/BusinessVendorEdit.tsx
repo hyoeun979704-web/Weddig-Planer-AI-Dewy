@@ -16,6 +16,7 @@ import BusinessListingDetailForm from "@/features/partners/components/BusinessLi
 import BusinessListingContactForm from "@/features/partners/components/BusinessListingContactForm";
 import { draftKey, loadDraft, saveDraft, clearDraft, shallowEqual } from "@/lib/formDraft";
 import { computeListingCompleteness } from "@/features/partners/lib/businessListingCompleteness";
+import { getListingGuide } from "@/features/partners/lib/partnerListingGuide";
 
 type InquiryChannel = "chat" | "url" | "phone";
 
@@ -62,6 +63,10 @@ const BusinessVendorEdit = () => {
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [moderation, setModeration] = useState<string | null>(null);
   const [moderationNote, setModerationNote] = useState<string | null>(null);
+  // 가이드형 위저드(step별 점진 노출). 신규/첫 등록은 위저드, 기존 수정은 전체보기 기본(W1).
+  // 같은 state·같은 저장을 공유 — 위저드는 표시 방식만(M1). 토글로 전체보기 전환 가능.
+  const [wizard, setWizard] = useState(true);
+  const [step, setStep] = useState(0);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -124,6 +129,7 @@ const BusinessVendorEdit = () => {
       let server = EMPTY_LISTING;
       if (row && row.place_id) {
         setPlaceId(row.place_id);
+        setWizard(false); // 이미 등록된 업체 수정 = 전체보기 기본(숙련자 빠른 편집).
         setModeration(row.moderation_status);
         setModerationNote(row.moderation_note ?? null);
         setHasOfflineStore(row.has_offline_store ?? true);
@@ -187,6 +193,32 @@ const BusinessVendorEdit = () => {
     }),
     [name, description, city, district, imageUrl, minPrice, tags, inquiryChannel, inquiryUrl, inquiryPhone],
   );
+
+  // 업종별 입력 가이드(소개글 예시·키워드 칩·진입 카피). 업종 미상이면 우아한 기본 폴백.
+  const guide = useMemo(
+    () => getListingGuide(businessProfile?.service_category),
+    [businessProfile?.service_category],
+  );
+  // 위저드 단계 정의 — 각 블록을 키로 묶어 현재 step 만 노출(필수 0~3 먼저 → 저장=노출 → 심화 4).
+  const STEPS: { title: string; keys: string[] }[] = [
+    { title: "기본 정보", keys: ["name", "image"] },
+    { title: "소개", keys: ["description"] },
+    { title: "지역·매장", keys: ["region", "store"] },
+    { title: "가격·문의", keys: ["price", "tags", "inquiry"] },
+    { title: "연락처·상세", keys: ["contact", "detail"] },
+  ];
+  // 전체보기면 전부, 위저드면 현재 step 의 블록만 노출.
+  const show = (key: string) => !wizard || STEPS[step].keys.includes(key);
+  const isLastEssential = step === 3; // 가격·문의 = 저장(노출) 마일스톤 단계.
+
+  // 키워드 칩 클릭 → tags(쉼표 원문)에 추가/중복 방지.
+  const addKeywordChip = useCallback((chip: string) => {
+    setTags((prev) => {
+      const list = prev.split(",").map((t) => t.trim()).filter(Boolean);
+      if (list.includes(chip)) return prev;
+      return [...list, chip].join(", ");
+    });
+  }, []);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -269,6 +301,8 @@ const BusinessVendorEdit = () => {
     };
     clearDraft(draftKeyStr);
     toast.success("저장됐어요. 운영자 검토 후 상세페이지에 노출됩니다");
+    // 위저드: 기본 저장(=노출) 후 심화(연락처·상세) 단계로 이어가기.
+    if (wizard) setStep(4);
   };
 
   if (roleLoading || loading) {
@@ -337,17 +371,71 @@ const BusinessVendorEdit = () => {
           )}
         </div>
 
+        {/* 업종별 진입 가이드 — 무엇부터 적으면 좋은지 한 줄(따라하면 고퀄). */}
+        <div className="bg-primary/5 border border-primary/15 rounded-xl p-3">
+          <p className="text-[12px] text-foreground leading-relaxed">{guide.intro}</p>
+        </div>
+
+        {/* 위저드 진행 헤더 — 현재 단계/전체 + 전체보기 토글(W1). */}
+        <div className="flex items-center justify-between">
+          {wizard ? (
+            <div className="flex items-center gap-2 flex-1">
+              <div className="flex gap-1 flex-1 max-w-[180px]">
+                {STEPS.map((_, i) => (
+                  <div key={i} className={`flex-1 h-1 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-muted"}`} />
+                ))}
+              </div>
+              <span className="text-[12px] font-medium text-muted-foreground">{STEPS[step].title}</span>
+            </div>
+          ) : (
+            <span className="text-[12px] text-muted-foreground">전체 항목 보기</span>
+          )}
+          <button
+            type="button"
+            onClick={() => setWizard((w) => !w)}
+            className="text-[12px] text-primary font-medium"
+          >
+            {wizard ? "전체 보기" : "단계별 입력"}
+          </button>
+        </div>
+
+        {show("name") && (
         <Field label="업체명 *" value={name} onChange={setName} placeholder="상세페이지에 표시될 이름" />
+        )}
+        {show("description") && (
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">소개</Label>
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="업체 소개" />
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            placeholder={guide.description.placeholder}
+          />
+          {/* 가이드 2종(왜·좋은예/나쁜예) + 실시간 글자수 힌트. 설명 대신 예시가 말하게(§8.2). */}
+          <div className="rounded-lg bg-muted/50 p-2.5 space-y-1.5">
+            <p className="text-[11px] text-muted-foreground">{guide.description.why}</p>
+            <p className="text-[11px] text-emerald-700">
+              <b>좋은 예</b> · {guide.description.good}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              <b>피하기</b> · {guide.description.bad}
+            </p>
+            <p className={`text-[11px] ${description.trim().length >= 100 ? "text-emerald-600" : "text-muted-foreground"}`}>
+              {description.trim().length}자
+              {description.trim().length < 100 ? " · 100자 넘으면 노출에 더 유리해요" : " · 좋아요!"}
+            </p>
+          </div>
         </div>
+        )}
+        {show("region") && (
         <div className="grid grid-cols-2 gap-3">
           <Field label="시/도" value={city} onChange={setCity} placeholder="서울특별시" />
           <Field label="구/군" value={district} onChange={setDistrict} placeholder="강남구" />
         </div>
+        )}
 
         {/* 오프라인 매장 유무 → 중복 등록 판정 기준. 매장 있으면 주소(좌표)로, 없으면 이름+지역으로 판정. */}
+        {show("store") && (
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">오프라인 매장</Label>
           <div className="grid grid-cols-2 gap-2">
@@ -383,6 +471,8 @@ const BusinessVendorEdit = () => {
               : "매장이 없는 경우 같은 이름·지역 중복만 확인해요."}
           </p>
         </div>
+        )}
+        {show("image") && (
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">대표 이미지</Label>
           {user && (
@@ -400,16 +490,41 @@ const BusinessVendorEdit = () => {
             className="mt-2"
           />
         </div>
+        )}
+        {show("price") && (
         <div className="space-y-1">
           <Field label="최소가 · 시작가(원)" value={minPrice} onChange={setMinPrice} placeholder="500000" type="number" />
           <p className="text-[11px] text-muted-foreground">목록·추천 카드의 “최저가~” 미리보기와 검색·필터에 쓰여요. 상세페이지 첫 화면 대표가격은 ‘상품 관리’의 패키지 가격을 따라요.</p>
         </div>
+        )}
+        {show("tags") && (
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">키워드 (쉼표로 구분)</Label>
           <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="강남웨딩홀, 가성비, 소규모" />
+          {/* 업종별 추천 키워드 칩 — 탭하면 추가(검색·필터 노출 보조). */}
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {guide.keywordChips.map((chip) => {
+              const active = tags.split(",").map((t) => t.trim()).includes(chip);
+              return (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => addKeywordChip(chip)}
+                  disabled={active}
+                  className={`px-2.5 py-1 rounded-full text-[12px] transition-colors ${
+                    active ? "bg-primary/10 text-primary/60" : "bg-muted text-muted-foreground hover:bg-muted/70"
+                  }`}
+                >
+                  {active ? "✓ " : "+ "}{chip}
+                </button>
+              );
+            })}
+          </div>
         </div>
+        )}
 
         {/* 문의 받는 방법 — 상세페이지 '문의하기' 버튼이 이대로 동작한다. */}
+        {show("inquiry") && (
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">문의 받는 방법</Label>
           <p className="text-[12px] text-muted-foreground">
@@ -456,12 +571,24 @@ const BusinessVendorEdit = () => {
             />
           )}
         </div>
+        )}
 
-        <Button onClick={handleSave} disabled={saving} className="w-full h-12 mt-2">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "기본 정보 저장하고 검토 요청"}
-        </Button>
+        {/* 기본 정보 저장(=노출) — 전체보기는 항상, 위저드는 필수 마지막 단계(가격·문의)에서만. */}
+        {(!wizard || isLastEssential) && (
+          <>
+            {wizard && (
+              <p className="text-[12px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5">
+                여기까지 저장하면 바로 노출돼요. 다음 단계까지 채우면 더 위로 올라가요.
+              </p>
+            )}
+            <Button onClick={handleSave} disabled={saving} className="w-full h-12 mt-2">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "기본 정보 저장하고 검토 요청"}
+            </Button>
+          </>
+        )}
 
-        {placeId ? (
+        {/* 연락처·상세 — 전체보기는 항상(placeId 후), 위저드는 step 4(연락처·상세). */}
+        {show("contact") && (placeId ? (
           <>
             <div className="pt-4 mt-2 border-t border-border">
               <h2 className="text-sm font-semibold text-foreground mb-1">연락처 · 운영 정보</h2>
@@ -478,7 +605,7 @@ const BusinessVendorEdit = () => {
           <p className="text-[12px] text-muted-foreground text-center pt-2">
             기본 정보를 먼저 저장하면 업체 종류별 상세 항목을 입력할 수 있어요.
           </p>
-        )}
+        ))}
 
         {placeId && (
           <button
@@ -487,6 +614,27 @@ const BusinessVendorEdit = () => {
           >
             <Eye className="w-4 h-4" /> 상세페이지 미리보기
           </button>
+        )}
+
+        {/* 위저드 단계 이동 — 필수 0~2 다음 / 4 완료. 3은 위 저장 버튼이 액션. */}
+        {wizard && (
+          <div className="flex gap-2 pt-1">
+            {step > 0 && (
+              <Button variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} className="flex-1">
+                이전
+              </Button>
+            )}
+            {step < 3 && (
+              <Button onClick={() => setStep((s) => s + 1)} className="flex-1">
+                다음
+              </Button>
+            )}
+            {step === 4 && (
+              <Button onClick={() => navigate("/business/dashboard")} className="flex-1">
+                완료
+              </Button>
+            )}
+          </div>
         )}
       </main>
     </div>

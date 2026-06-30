@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star, Inbox, Palette, BookOpen } from "lucide-react";
+import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star, Inbox, Palette, BookOpen, ListChecks } from "lucide-react";
 import { DESIGN_MARKET_ENABLED } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useBranches } from "@/features/partners/hooks/useBranches";
 import { useBusinessStats, usePartnerApplication, useApplyPartnership } from "@/features/partners/hooks/useBusinessDashboard";
+import { useBusinessActionItems } from "@/features/partners/hooks/useBusinessActionItems";
+import { useListingExtras } from "@/features/partners/hooks/useListingExtras";
 import { toast } from "sonner";
 
 const BusinessDashboard = () => {
@@ -23,6 +25,10 @@ const BusinessDashboard = () => {
   const { stats } = useBusinessStats(placeId, (listingRow?.view_count as number) ?? 0);
   const { partnerApp } = usePartnerApplication(isApproved ? (businessProfile?.id ?? null) : null);
   const applyMutation = useApplyPartnership(businessProfile?.id ?? null);
+  // "오늘 할 일" 액션큐 — 승인된 업체만 의미. 미응답 리드·문의·후기·임박 이벤트 집계.
+  const { items: actionItems, total: actionTotal, totalLeads, responseRate } = useBusinessActionItems(isApproved ? placeId : null);
+  // 완성도 게이지 확장(M5) — 기본 필드 + 포트폴리오·무드(개인화 연료) 신호.
+  const extras = useListingExtras(isApproved ? placeId : null);
 
   useEffect(() => {
     if (authLoading || roleLoading) return;
@@ -54,6 +60,19 @@ const BusinessDashboard = () => {
       })
     : REQUIRED_FIELDS;
   const isSchemaComplete = !!listingRow && missingFields.length === 0;
+
+  // 확장 완성도(M5) — 기본 필드 + 개인화 연료(포트폴리오·무드). "100%=노출+매칭 가능" 정합.
+  const extraItems = [
+    { key: "portfolio", label: "포트폴리오 사진", done: extras.hasPortfolio },
+    { key: "mood", label: "취향 무드 태깅", done: extras.hasMood },
+  ];
+  const completenessDone = REQUIRED_FIELDS.length - missingFields.length + extraItems.filter((e) => e.done).length;
+  const completenessTotal = REQUIRED_FIELDS.length + extraItems.length;
+  const completenessPercent = Math.round((completenessDone / completenessTotal) * 100);
+  const completenessMissing = [
+    ...missingFields.map((f) => f.label),
+    ...extraItems.filter((e) => !e.done).map((e) => e.label),
+  ];
 
   const handleApplyPartner = () => {
     if (!user || !businessProfile) return;
@@ -325,6 +344,56 @@ const BusinessDashboard = () => {
           </div>
         </div>
 
+        {/* 오늘 할 일 (액션큐) — 분산 메뉴 대신 미처리 건을 한 곳으로(S2). 0건이면 청정 상태. */}
+        <div className="mx-4 mt-3 p-4 bg-card rounded-2xl border border-border">
+          <div className="flex items-center gap-2 mb-2.5">
+            <ListChecks className="w-4 h-4 text-primary" />
+            <p className="text-[13px] font-semibold text-foreground">오늘 할 일</p>
+            {actionTotal > 0 && (
+              <span className="ml-auto text-[12px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5">{actionTotal}</span>
+            )}
+          </div>
+          {actionTotal === 0 ? (
+            <p className="text-[13px] text-muted-foreground py-1">처리할 일이 없어요. 깔끔하네요 👍</p>
+          ) : (
+            <div className="space-y-1.5">
+              {actionItems.filter((it) => it.count > 0).map((it) => (
+                <button
+                  key={it.key}
+                  onClick={() => navigate(it.href)}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-muted/40 hover:bg-muted/70 active:bg-muted transition-colors text-left"
+                >
+                  <span className="flex-1 text-[13px] font-medium text-foreground">{it.label}</span>
+                  <span className="text-[12px] font-bold text-primary bg-background rounded-full px-2 py-0.5 min-w-[24px] text-center">{it.count}</span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 프로필 완성도 — 채울수록 추천 노출↑(plan §7). 기존 REQUIRED_FIELDS 재사용. */}
+        {listingRow && (
+          <div className="mx-4 mt-3 p-4 bg-card rounded-2xl border border-border">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[13px] font-semibold text-foreground">프로필 완성도</p>
+              <p className="text-[13px] font-bold text-primary">{completenessPercent}%</p>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-primary transition-all" style={{ width: `${completenessPercent}%` }} />
+            </div>
+            {completenessMissing.length > 0 ? (
+              <button onClick={() => navigate("/business/edit")} className="mt-2 text-[11px] text-left w-full">
+                <span className="text-foreground font-medium">채우면 노출↑:</span>{" "}
+                <span className="text-muted-foreground">{completenessMissing.join(" · ")}</span>
+                <span className="text-primary font-medium"> 채우러 가기 ›</span>
+              </button>
+            ) : (
+              <p className="text-[11px] text-emerald-600 mt-2">완벽해요! 기본 정보·포트폴리오·취향 태깅까지 다 채웠어요. 취향 추천에 잘 노출돼요.</p>
+            )}
+          </div>
+        )}
+
         {/* 지점 선택 — 멀티지점일 때 관리 대상 전환 + 새 지점 추가 */}
         <div className="mx-4 mt-3 p-3 bg-card rounded-2xl border border-border">
           <div className="flex items-center justify-between gap-2 mb-2">
@@ -423,8 +492,9 @@ const BusinessDashboard = () => {
           {[
             { icon: Eye, label: "조회수", value: stats.views, color: "text-primary" },
             { icon: Heart, label: "찜", value: stats.favorites, color: "text-primary" },
-            { icon: Ticket, label: "쿠폰받기", value: stats.couponDownloads, color: "text-primary" },
-            { icon: Image, label: isMenuCategory ? "메뉴" : "사진", value: stats.media, color: "text-primary" },
+            // 허영 스탯(쿠폰받기·사진) 폐기 → 의미있는 운영 지표(받은 리드·응답률)로 교체.
+            { icon: Inbox, label: "받은 리드", value: totalLeads, color: "text-primary" },
+            { icon: MessageSquare, label: "응답률", value: responseRate == null ? "–" : `${responseRate}%`, color: "text-primary" },
           ].map((stat) => (
             <div key={stat.label} className="bg-card rounded-2xl border border-border p-3 text-center">
               <stat.icon className={`w-5 h-5 ${stat.color} mx-auto`} />
