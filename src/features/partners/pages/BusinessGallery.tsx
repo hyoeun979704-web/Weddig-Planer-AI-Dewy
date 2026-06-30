@@ -1,6 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, Loader2, UtensilsCrossed, FolderPlus } from "lucide-react";
+import { Plus, Trash2, Loader2, UtensilsCrossed, FolderPlus, Images, X } from "lucide-react";
+import { uploadToBucket } from "@/lib/storage";
+import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,8 +57,37 @@ const BusinessGallery = () => {
 
   const [adding, setAdding] = useState(false);
   const [uploaderKey, setUploaderKey] = useState(0);
+  // 여러 장 한 번에 — 같은 앨범에 최대 10장 일괄 업로드(델타①). 단일 ImageUploader 와 별개.
+  const [bulkUrls, setBulkUrls] = useState<string[]>([]);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const bulkInputRef = useRef<HTMLInputElement>(null);
 
   const isMenu = category === "invitation_venue";
+  const BULK_MAX = 10;
+
+  // 파일 여러 개 선택 → 각각 검증·업로드 후 public URL 수집(앨범엔 handleAdd 에서 일괄 귀속).
+  const handleBulkSelect = async (files: FileList | null) => {
+    if (!user || !files || files.length === 0) return;
+    const picked = Array.from(files).slice(0, BULK_MAX - bulkUrls.length);
+    if (picked.length === 0) { toast.error(`한 번에 최대 ${BULK_MAX}장까지 올릴 수 있어요`); return; }
+    setBulkUploading(true);
+    const added: string[] = [];
+    for (const file of picked) {
+      if (!file.type.startsWith("image/")) { toast.error(`이미지 파일만 가능해요: ${file.name}`); continue; }
+      if (file.size > 5 * 1024 * 1024) { toast.error(`5MB를 넘어요: ${file.name}`); continue; }
+      try {
+        const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+        const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+        await uploadToBucket("vendor-images", path, file, { contentType: file.type });
+        added.push(supabase.storage.from("vendor-images").getPublicUrl(path).data.publicUrl);
+      } catch {
+        toast.error(`업로드 실패: ${file.name}`);
+      }
+    }
+    setBulkUrls((prev) => [...prev, ...added]);
+    setBulkUploading(false);
+    if (added.length) toast.success(`${added.length}장 올렸어요`);
+  };
 
   const loadAll = useCallback(async (pid: string) => {
     const { media, albums, products } = await fetchGalleryData(pid);
@@ -74,14 +105,18 @@ const BusinessGallery = () => {
   }, [branchesLoading, selectedId, selected, loadAll]);
 
   const resetForm = () => {
-    setImageUrl(""); setTitle(""); setPrice("");
+    setImageUrl(""); setTitle(""); setPrice(""); setBulkUrls([]);
     setAlbTitle(""); setAlbShootDate(""); setAlbVenue(""); setAlbMoods([]); setAlbTags(""); setAlbProduct(""); setAlbDesc("");
     setUploaderKey((k) => k + 1);
   };
 
   const handleAdd = async () => {
     if (!user || !placeId) return;
-    if (!imageUrl.trim()) { toast.error("이미지를 올려주세요"); return; }
+    // 메뉴는 1장, 포트폴리오는 단일 업로더 + 일괄 업로드분을 합쳐 등록(중복 제거).
+    const urls = isMenu
+      ? (imageUrl.trim() ? [imageUrl.trim()] : [])
+      : Array.from(new Set([...(imageUrl.trim() ? [imageUrl.trim()] : []), ...bulkUrls]));
+    if (urls.length === 0) { toast.error("이미지를 올려주세요"); return; }
     if (isMenu && !title.trim()) { toast.error("메뉴명을 입력해주세요"); return; }
     setAdding(true);
     try {
@@ -113,16 +148,19 @@ const BusinessGallery = () => {
         }
       }
       try {
-        await addMedia({
-          place_id: placeId,
-          owner_user_id: user.id,
-          kind: isMenu ? "menu" : "photo",
-          image_url: imageUrl.trim(),
-          title: isMenu ? title.trim() : null,
-          price: isMenu && price ? parseInt(price, 10) : null,
-          display_order: items.length,
-          album_id: albumId,
-        });
+        // 일괄: 각 사진을 같은 앨범에 순서대로 등록(display_order 이어붙임).
+        for (let i = 0; i < urls.length; i++) {
+          await addMedia({
+            place_id: placeId,
+            owner_user_id: user.id,
+            kind: isMenu ? "menu" : "photo",
+            image_url: urls[i],
+            title: isMenu ? title.trim() : null,
+            price: isMenu && price ? parseInt(price, 10) : null,
+            display_order: items.length + i,
+            album_id: albumId,
+          });
+        }
       } catch {
         toast.error("추가에 실패했어요");
         return;
@@ -131,7 +169,7 @@ const BusinessGallery = () => {
       // 방금 만든 앨범엔 사진을 이어 담기 편하도록 선택 유지.
       if (!isMenu && albumSel === NEW_ALBUM && albumId) setAlbumSel(albumId);
       resetForm();
-      toast.success(isMenu ? "메뉴를 추가했어요" : "사진을 앨범에 추가했어요");
+      toast.success(isMenu ? "메뉴를 추가했어요" : `${urls.length}장을 앨범에 추가했어요`);
     } finally {
       setAdding(false);
     }
@@ -312,7 +350,50 @@ const BusinessGallery = () => {
             />
           </div>
 
-          <Button onClick={handleAdd} disabled={adding} className="w-full">
+          {/* 여러 장 한 번에(포트폴리오만) — 같은 앨범에 일괄 등록(델타①). */}
+          {!isMenu && (
+            <div className="space-y-2">
+              <input
+                ref={bulkInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => { handleBulkSelect(e.target.files); e.target.value = ""; }}
+              />
+              <button
+                type="button"
+                onClick={() => bulkInputRef.current?.click()}
+                disabled={bulkUploading || bulkUrls.length >= BULK_MAX}
+                className="w-full h-10 rounded-lg border border-dashed border-border bg-muted/30 text-[13px] font-medium text-muted-foreground flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {bulkUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Images className="w-4 h-4" />}
+                여러 장 한 번에 올리기 (최대 {BULK_MAX}장)
+              </button>
+              {bulkUrls.length > 0 && (
+                <>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {bulkUrls.map((url, i) => (
+                      <div key={url} className="relative aspect-square rounded-md overflow-hidden border border-border">
+                        <img src={url} alt="" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setBulkUrls((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center"
+                          aria-label="제거"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">{bulkUrls.length}장 선택됨 · '사진 추가'를 누르면 이 앨범에 함께 등록돼요.</p>
+                </>
+              )}
+            </div>
+          )}
+
+          <Button onClick={handleAdd} disabled={adding || bulkUploading} className="w-full">
             {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> {isMenu ? "메뉴 추가" : "사진 추가"}</>}
           </Button>
         </div>
