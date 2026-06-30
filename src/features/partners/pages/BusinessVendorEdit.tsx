@@ -242,7 +242,8 @@ const BusinessVendorEdit = () => {
       p_city: city.trim() || undefined,
       p_district: district.trim() || undefined,
       p_main_image_url: imageUrl.trim() || undefined,
-      p_min_price: minPrice ? parseInt(minPrice, 10) : undefined,
+      // 숫자 변환 실패(NaN)는 보내지 않음 — RPC int 캐스트 에러로 저장 전체 실패 방지.
+      p_min_price: minPrice && Number.isFinite(parseInt(minPrice, 10)) ? parseInt(minPrice, 10) : undefined,
       p_tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
       p_inquiry_channel: inquiryChannel,
       p_inquiry_url: inquiryChannel === "url" ? inquiryUrl.trim() : undefined,

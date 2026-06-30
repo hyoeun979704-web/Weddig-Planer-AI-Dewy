@@ -26,6 +26,7 @@ const BusinessCoupons = () => {
   const [loading, setLoading] = useState(true);
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [items, setItems] = useState<Coupon[]>([]);
+  const [loadError, setLoadError] = useState(false);
   const [title, setTitle] = useState("");
   const [discount, setDiscount] = useState("");
   const [minOrder, setMinOrder] = useState("");
@@ -33,10 +34,13 @@ const BusinessCoupons = () => {
   const [adding, setAdding] = useState(false);
 
   const loadCoupons = useCallback(async (pid: string) => {
+    setLoadError(false);
     try {
       setItems(await fetchBusinessCoupons(pid));
     } catch {
+      // 로드 실패를 "없어요" 빈 상태로 위장하지 않음(재발행 유도·데이터 소실 오인 방지).
       setItems([]);
+      setLoadError(true);
     }
   }, []);
 
@@ -144,7 +148,14 @@ const BusinessCoupons = () => {
         </div>
 
         {items.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground py-8">발행한 쿠폰이 없어요</p>
+          loadError ? (
+            <div className="text-center py-8 space-y-2">
+              <p className="text-sm text-muted-foreground">쿠폰을 불러오지 못했어요.</p>
+              <button onClick={() => placeId && loadCoupons(placeId)} className="text-sm text-primary font-semibold">다시 시도</button>
+            </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground py-8">발행한 쿠폰이 없어요</p>
+          )
         ) : (
           <div className="space-y-3">
             {items.map((c) => {

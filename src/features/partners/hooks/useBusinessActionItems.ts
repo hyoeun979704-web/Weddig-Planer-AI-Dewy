@@ -27,7 +27,9 @@ export function useBusinessActionItems(placeId: string | null) {
   const { data, isLoading } = useQuery({
     queryKey: ["biz-action-items", placeId],
     queryFn: async () => {
-      const nowIso = new Date().toISOString();
+      // business_events.starts_at 는 DATE 컬럼 → 날짜(YYYY-MM-DD)로 비교(시간 포함 ISO 와
+      // 비교하면 '오늘 시작' 이벤트가 자정 이후 빠지는 버그). 임박/진행 예정 = 오늘 이후.
+      const today = new Date().toISOString().slice(0, 10);
       const [inquiries, reviews, events, funnel] = await Promise.all([
         placeId
           ? countOf(supabase.from("place_inquiries").select("*", { count: "exact", head: true }).eq("place_id", placeId).eq("status", "open"))
@@ -36,7 +38,8 @@ export function useBusinessActionItems(placeId: string | null) {
           ? countOf(supabase.from("place_reviews").select("*", { count: "exact", head: true }).eq("place_id", placeId).is("owner_response", null))
           : 0,
         placeId
-          ? countOf(supabase.from("business_events").select("*", { count: "exact", head: true }).eq("place_id", placeId).gte("starts_at", nowIso))
+          // 승인된(노출 중) 진행 예정 이벤트만 — pending/rejected 는 '할 일'이 아님.
+          ? countOf(supabase.from("business_events").select("*", { count: "exact", head: true }).eq("place_id", placeId).eq("moderation_status", "approved").gte("starts_at", today))
           : 0,
         getBusinessQuoteFunnel().catch(() => null),
       ]);

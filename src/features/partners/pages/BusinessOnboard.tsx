@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { draftKey, loadDraft, saveDraft, clearDraft } from "@/lib/formDraft";
 import { ArrowLeft, Building2, Clock, Hash, User, FileText, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,36 @@ const BusinessOnboard = () => {
   const [applyPartner, setApplyPartner] = useState(false);
 
   const [result, setResult] = useState<{ is_verified: boolean; verification_failed?: boolean; message: string } | null>(null);
+
+  // 입력 자동 임시저장(draft) — iOS Safari 탭 폐기/앱 전환으로 SPA 재로드 시 미저장 입력
+  // (사업자번호·상호·대표자·개업일·카테고리 등)이 사라지는 데이터 유실 방지. user별 격리.
+  interface OnboardDraft {
+    businessNumber: string; businessName: string; representativeName: string;
+    openDate: string; businessType: string; bizPhone: string; serviceCategory: string; applyPartner: boolean;
+  }
+  const draftKeyStr = useMemo(() => draftKey("biz-onboard", user?.id), [user?.id]);
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (!user || hydratedRef.current) return;
+    const d = loadDraft<Partial<OnboardDraft>>(draftKeyStr);
+    if (d) {
+      if (d.businessNumber) setBusinessNumber(d.businessNumber);
+      if (d.businessName) setBusinessName(d.businessName);
+      if (d.representativeName) setRepresentativeName(d.representativeName);
+      if (d.openDate) setOpenDate(d.openDate);
+      if (d.businessType) setBusinessType(d.businessType);
+      if (d.bizPhone) setBizPhone(d.bizPhone);
+      if (d.serviceCategory) setServiceCategory(d.serviceCategory);
+      if (typeof d.applyPartner === "boolean") setApplyPartner(d.applyPartner);
+    }
+    hydratedRef.current = true;
+  }, [user, draftKeyStr]);
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    saveDraft<OnboardDraft>(draftKeyStr, {
+      businessNumber, businessName, representativeName, openDate, businessType, bizPhone, serviceCategory, applyPartner,
+    });
+  }, [draftKeyStr, businessNumber, businessName, representativeName, openDate, businessType, bizPhone, serviceCategory, applyPartner]);
 
   const formatBusinessNumber = (value: string) => {
     const nums = value.replace(/\D/g, "").slice(0, 10);
@@ -87,6 +118,7 @@ const BusinessOnboard = () => {
       }
 
       setResult(data as { is_verified: boolean; verification_failed?: boolean; message: string });
+      clearDraft(draftKeyStr); // 접수 성공 → 미저장 draft 제거.
       setStep(2);
       if (data.verification_failed) {
         toast("사업자 정보가 자동 인증되지 않았어요. 운영자가 직접 확인합니다");
@@ -212,6 +244,7 @@ const BusinessOnboard = () => {
               {/* 제휴업체(프렌즈) 신청 옵션 */}
               <button
                 type="button"
+                aria-pressed={applyPartner}
                 onClick={() => setApplyPartner((v) => !v)}
                 className={`w-full p-4 rounded-2xl border-2 text-left transition-all ${applyPartner ? "border-primary bg-primary/5" : "border-border bg-card"}`}
               >
