@@ -59,6 +59,15 @@
   **추천이유 카피**. 페르소나(스몰/셀프)면 해당 세그먼트 통계만. 표본<임계면 광역 폴백 + 한계 명시.
 - **신규 스키마**: 집계 RPC `get_category_price_stats(region, category)` + 캐시 뷰. (원천 무가공 노출 금지.)
 - 난이도: **M** · 위험: 중(표본부족 시 오도 — N 게이트 필수).
+- **구현 노트(260630) — 데이터 정직성으로 범위 조정**: 실측 결과 의도 소스가 부재/더러움 →
+  `place_details.avg_total_estimate`=**0(완전 비어있음)**, `quote_requests`=**1**, `places.min_price`
+  는 **카테고리 내 단위 혼재**(웨딩홀 min_price 가 1인 식대 8.5만 ~ 총액 1,200만 섞임; 1만원
+  드레스샵 등 이상치). 표본도 region×category 36버킷만 N≥5. → **개별 업체 실가격 백분위는
+  보류**(오추정 위험). 대신 **큐레이션 지역 평균(regionalAverages, 완전·정합) + 내 예산 비교**
+  (같은 budget-category 단위=사과-사과)를 상세페이지에 "참고 평균"으로 노출. sdm 은 번들임을
+  정직 표기. 구현: `regionalPriceGuide.ts`(+7테스트)·`RegionalPriceGuide.tsx`(상세 BasicTab).
+  **이월**: 실거래가 분포/백분위는 가격 데이터 정제·수집(업체 가격 입력 정규화, quote_responses
+  가격 누적) 후 재개.
 
 ---
 
