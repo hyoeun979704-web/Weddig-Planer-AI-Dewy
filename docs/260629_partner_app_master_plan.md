@@ -162,16 +162,21 @@
 - **표시광고**: "유리/우선"은 OK, "무조건 1등" 등 보장성 표현 금지.
 
 ## 13. 구현 단계 (토대부터 — 안전 분리 우선)
-- **S0 택소노미 단일 소스화** — `tasteTaxonomy`(무드6 + 확장축) 공용화. **기존 free-text `style_tags` 정규화 배치 + 무태깅 백필**(콜드스타트 필수 선행).
+> **구현 현황(260630, 이 세션)**: S0·S1·S1.5·S2·S3 + 4-B 독립 로그인 **완료**. S4 = 기존 코드에 이미 구현됨(아래). 남은 deferred 는 §13 하단.
+> 커밋(브랜치 `claude/app-separation-phase-2-6qzz8z`): tasteTaxonomy·무드피커·매칭정규화·앨범 취향정렬·10장 일괄·partnerListingGuide·가이드레이어·스텝위저드·PartnerAuth(+소셜)·액션큐·완성도게이지·취향부스트(플래그).
+- **S0 택소노미 단일 소스화** ✅ — `packages/lib/src/tasteTaxonomy.ts`(MOOD_TAGS·isMoodTag·normalizeToMood). free-text 정규화는 **읽기시점 정규화**(VendorList·앨범피드)로 해결(파괴적 백필 불필요). *무태깅 백필 캠페인은 deferred.*
 - **S0.5 `etc` 세부 슬러그 분화(M2 결정)** — **실행 지침(사용자 확정): ① 이미 있는 걸 연결 ② 점진적 고도화.** `places.category` enum 신설 최소화.
   - **DB 선확인 결과(260629)**: `PLACE_CATEGORY_LABEL`에 `etc` 키는 존재하고 견적 흐름(`/quote/new?category=…`·`useQuotes` `p_category`)도 그 값을 받는다. **그러나** etc 세부 슬롯(`main_snap`·`mc`·`bouquet`·`iphone_snap`…)에 일괄 `quoteCategory:"etc"`를 배선하면 **부케·사회자·DVD 견적이 전부 하나의 `etc` 버킷으로 뭉개져** 교차-오매칭(부케 요청에 DVD 업체 노출)이 난다 — 코드가 의도적으로 비워둔 이유(죽은/오매칭 CTA 회피). **그래서 일괄 배선 보류가 정답.**
   - **점진 경로**: ① 먼저 **기존 quote-able 카테고리에 대응되는 슬롯만** 안전 연결(예: `parent_makeup`→`makeup_shop` — 공급·카테고리 이미 존재). ② etc 진짜 분화(부케·스냅·네일…를 구분 가능한 service_category/subcategory + detail)는 **DB 작업** → 별도 S0.5 본단계에서 **선확인 게이트** 후. ③ 그 전까지 세부 슬롯은 현행 "둘러보기(기타)" 유지(dead-end 아님).
-- **S1 포트폴리오 강화** — 멀티업로드 + 무드 피커 + 인스타 피드(공급/소비). *루프의 연료.*
-- **S1.5 가이드형 상세정보 위저드(§8)** — 덤프폼 → step + 가이드 카피 + 완성도 spine 확장. *재배치 중심.*
-- **S2 대시보드 액션큐 + 완성도 게이지** — 런처→3단(입력① P0).
-- **S3 추천 루프 확장** — `usePlaceRecommendations`에 취향 **부스트(tie-breaker)**(메인 추천 개인화, 회귀 가드+플래그).
-- **S4 리드/문의 상태머신 파이프라인** + 자동 첫응답/템플릿(입력① P1).
-- **S5+** 행동 랭킹·배지 / BI 퍼널+페르소나 / 구독 푸시 / 광고 2분기(입력① P2).
+- **4-B 사장님 앱 독립 로그인** ✅ — `PartnerAuth`(이메일/비번 + 카카오·구글·애플 소셜), `apps/partners` `/auth` 연결. *OAuth 허용 URL = 배포 시 Supabase 설정.*
+- **S1 포트폴리오 강화** ✅ — 무드 피커(통제어휘) + 추가태그 분리 + **10장 일괄 업로드** + 소비자 앨범피드 **취향 정렬**(delta③).
+- **S1.5 가이드형 상세정보 위저드(§8)** ✅ — `partnerListingGuide`(업종 가이드) + 가이드 레이어(소개 예시·글자수·키워드 칩) + **스텝 위저드**(같은 저장/draft, 전체보기 토글). *완성도 spine 확장(M5)은 deferred.*
+- **S2 대시보드 액션큐 + 완성도 게이지** ✅ — `useBusinessActionItems`(미응답 리드·문의·후기·임박이벤트 count 병렬) + 완성도 게이지. *허영 스탯 폐기는 product 결정 deferred.*
+- **S3 추천 루프 확장** ✅ — `usePlaceRecommendations` 취향 **부스트(플래그 `TASTE_BOOST_ENABLED` off·tie-breaker·R5 가드)**. *full mood-join 랭킹은 deferred.*
+- **S4 리드/문의 상태머신 파이프라인** ✅(기존) — `BusinessLeads` 에 이미 퍼널 요약(받은리드→응답→수락→예약) + 단계별 상태머신 + 다음액션 버튼 구현됨. *자동 첫응답/템플릿(P1)은 deferred.*
+- **S5+ (deferred, P2 로드맵)** 행동 랭킹·배지 / BI 퍼널+페르소나 / 구독 푸시 / 광고 2분기.
+
+**남은 deferred(요약)**: S0.5 etc 진짜 분화(DB 선확인 필요)·무태깅 백필 캠페인 · M4 앨범무드→업체레벨 랭킹(쿼리 join) · M5 완성도 spine(상세·포폴·무드 신호) · 허영 스탯 정리 · 자동 첫응답/템플릿 · S5+ 전체.
 > 각 단계: web·capacitor build + lint/test/integrity 녹색 + 캡처 시뮬 + DB 선확인 + 소비자 회귀 0.
 
 ## 14. 측정 (개인화→전환 로깅)
