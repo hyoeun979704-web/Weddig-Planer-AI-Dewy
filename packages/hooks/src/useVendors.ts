@@ -33,7 +33,8 @@ export const VENDOR_CATEGORIES = [
   "허니문",
   "혼수",
   "청첩장",
-  "웨딩플래너",
+  // "웨딩플래너" 제거 — Dewy 핵심 제품(AI 플래너)이라 vendor 카테고리 아님(placeMappers 정책).
+  // KOREAN_TO_PLACE_CATEGORY 에도 없어 browse 시 잘못된 slug 로 0건 조회되던 드리프트 정리.
   "기타",
 ] as const;
 
@@ -51,7 +52,6 @@ export const categoryRouteMap: Record<string, { listPath: string; detailPath: st
   "허니문": { listPath: "/vendors/허니문", detailPath: "/honeymoon", label: "허니문", emoji: "" },
   "혼수": { listPath: "/vendors/혼수", detailPath: "/appliances", label: "혼수·가전", emoji: "" },
   "청첩장": { listPath: "/vendors/청첩장", detailPath: "/invitation-venues", label: "청첩장", emoji: "" },
-  "웨딩플래너": { listPath: "/vendors/웨딩플래너", detailPath: "/vendor", label: "웨딩플래너", emoji: "" },
   // 기타 — 본식DVD·스냅류·네일·관리·축가·부케 등(전용 detail 테이블 없음 → /vendor 공용).
   "기타": { listPath: "/vendors/기타", detailPath: "/vendor", label: "기타", emoji: "" },
 };

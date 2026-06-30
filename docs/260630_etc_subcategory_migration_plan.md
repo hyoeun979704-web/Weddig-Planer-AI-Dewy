@@ -55,5 +55,33 @@ ALTER TABLE places ADD CONSTRAINT places_category_check CHECK (category = ANY (A
 - 그 전까지: 현행 "둘러보기(기타)" 유지(dead-end 아님). 무드 통제 피커·취향 정렬(이미 구현)이 공급 유입 시 바로 작동.
 - 적용을 원하면: 본 계획 §2 순서로 PR(코드 어휘 + 마이그레이션 + 운영자 재분류 안내). **CHECK ALTER는 프로덕션 변경이라 별도 승인.**
 
+## 4. 빈 카테고리·죽은 배선 감사 + 정리 (260630, 사용자 요청 "비어있는 것 연결 확인·정리")
+
+### 4-1. 실측 (읽기 전용)
+| 항목 | 수치 | 판정 |
+|---|---|---|
+| `places.category='planner'` | **0** | 죽은 카테고리(공급 0) |
+| `places.category='etc'` | 7 | 희소 |
+| `place_media` | 18 | (사진 일부 존재) |
+| `place_media_albums` | 1 | 거의 빔 |
+| 앨범 style_tags 보유 | **0** | 무드 루프 미사용(신규 기능, forward-looking — 정리 대상 아님) |
+| `place_media` style_tags 보유 | 3 | 레거시 per-photo 태그 |
+| business_profiles | 19(전부 승인) | — |
+| quote_requests | 1 | — |
+
+### 4-2. 발견한 **죽은 배선**(정리함)
+- 🔴 **`웨딩플래너` vendor 카테고리 dead-end** — `placeMappers.KOREAN_TO_PLACE_CATEGORY`는 *"웨딩플래너는 Dewy 핵심 제품(AI 플래너)이라 vendor 카테고리 제외"* 라고 명시·제외했는데, `useVendors.VENDOR_CATEGORIES`·`categoryRouteMap`·`vendorBoard`(planner 슬롯 `browseLabel`)엔 **남아 있어** 드리프트. 결과: 소비자 보드 '플래너' 슬롯의 **'둘러보기'→`/vendors/웨딩플래너`→0건 빈 목록**(VendorBoard 주석 "공급 없는 슬롯 죽은 버튼 금지" 위반, 게다가 유효하지 않은 slug 로 조회).
+  - **정리(적용)**: vendorBoard planner 슬롯 `browseLabel` 제거(메모 기록 슬롯화) + `useVendors`의 `VENDOR_CATEGORIES`·`categoryRouteMap`에서 `웨딩플래너` 제거. → placeMappers 정책과 일치, dead-end CTA 제거.
+
+### 4-3. etc 분화 = **지금 미루는 게 코드베이스 자체 의도와 일치**
+`KOREAN_TO_PLACE_CATEGORY` 주석(기존):
+> *"기타 세부 유형은 places.tags 로 구분하고, **업체가 충분히 모이면 단일 카테고리로 분리**한다(분리 시 이 매핑만 추가)."*
+
+즉 §3 권고(공급 쌓인 뒤 분화)는 **새 제안이 아니라 기존 설계가 이미 그렇게 정해둔 것**. etc 7개·앨범 0무드 상태에서 6사이트 분화+프로덕션 마이그레이션은 그 의도에 반함. → **분화 보류 확정**, 공급 신호 생기면 그때 §2.
+
+### 4-4. 안 건드린 것(정리 대상 아님)
+- 앨범 무드 0 / etc 7 = **신규 기능의 빈 상태**(데이터가 차야 함) — 배선은 정상(무드 피커·취향 정렬 구현됨), 데이터만 비었을 뿐. 제거 금지.
+- vendorBoard 기타 슬롯(main_snap·mc·bouquet…) `browseLabel:"기타"` → `/vendors/기타`(etc 7건) = **공급 있음**, dead-end 아님 — 유지.
+
 ---
-*문서 끝. 선확인까지 완료(읽기 전용). 실제 마이그레이션 미적용 — 승인 시 §2 진행.*
+*문서 끝. 선확인·죽은배선 정리 완료. etc 분화는 기존 설계 의도대로 **공급 축적 후**로 보류(프로덕션 마이그레이션 미적용).*
