@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { uploadDressSource, fetchDressMeta, fetchActiveDresses, generateDressFitting } from "@/features/consumer/data/dressFitting";
+import { uploadDressSource, fetchActiveDresses, generateDressFitting } from "@/features/consumer/data/dressFitting";
 import { fetchHeartBalance } from "@/features/consumer/data/hearts";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { bumpSignal, SIGNAL_KEYS } from "@/lib/behavioralSignals";
@@ -31,10 +31,11 @@ import {
   SCENE_TYPE_DESC,
   SceneType,
   SceneCode,
-  buildFittingPrompt,
 } from "@/data/fittingScenes";
-import { describeDress, type DressMetadata } from "@/lib/dressDescription";
+import { type DressMetadata } from "@/lib/dressDescription";
 import { SHOT_TYPES, type ShotType } from "@/data/shotTypes";
+import { type RetouchLevel } from "@/data/retouch";
+import { RetouchLevelPicker } from "@/components/fitting/RetouchLevelPicker";
 import { CustomDressPicker, summarizeDressKo } from "@/components/fitting/CustomDressPicker";
 import { FittingProgress } from "@/components/fitting/FittingProgress";
 import { labelOf } from "@/data/dressFilters";
@@ -103,6 +104,8 @@ const DressFitting = () => {
     null,
   );
   const [shotType, setShotType] = useState<ShotType>("full");
+  // 보정 강도 — 웨딩 당일은 전문 보정이 기본이라 "화보 보정"을 기본값으로.
+  const [retouchLevel, setRetouchLevel] = useState<RetouchLevel>("studio");
   const [consentOpen, setConsentOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -240,38 +243,24 @@ const DressFitting = () => {
     if (gender === "bride" && dressMode === "catalog" && !selectedDress) return;
     setIsGenerating(true);
     try {
-      let prompt: string;
+      // 프롬프트는 서버(dewy-fitting)가 조립한다(신뢰 경계) — 구조화 파라미터만 전달.
+      const base = {
+        source_image_path: photoPath,
+        scene_code: selectedSceneCode,
+        shot_type: shotType,
+        gender,
+        retouch_level: retouchLevel,
+      };
       let requestBody: Record<string, unknown>;
-
       if (gender === "groom") {
         // 신랑: 예복(수트) 텍스트로 커스텀 생성(수트 카탈로그 데이터 없음). 참조 이미지 없음.
-        const suit = groomSuit.trim() || "a classic well-fitted wedding suit, notch lapel, slim fit, navy or black";
-        prompt = buildFittingPrompt(selectedSceneCode, suit, { custom: true, shotType, gender: "groom" });
-        requestBody = {
-          source_image_path: photoPath,
-          scene_code: selectedSceneCode,
-          prompt,
-        };
+        requestBody = { ...base, suit_text: groomSuit.trim() };
       } else if (dressMode === "custom") {
-        // 맞춤: 사용자가 고른 속성을 SCHEMA 텍스트로 직렬화 → 레퍼런스 이미지 없이 생성.
-        prompt = buildFittingPrompt(selectedSceneCode, describeDress(customDress), { custom: true, shotType });
-        requestBody = {
-          source_image_path: photoPath,
-          scene_code: selectedSceneCode,
-          prompt,
-        };
+        // 맞춤: 사용자가 고른 enum 속성 객체 그대로 — 서버가 사전 기반으로 직렬화.
+        requestBody = { ...base, custom_dress: customDress };
       } else {
-        // 카탈로그: 드레스 메타데이터 전체를 가져와 프롬프트에 주입(목록은 일부만 SELECT).
-        const dressMeta = await fetchDressMeta(selectedDress!.id);
-
-        const dressDescription = dressMeta ? describeDress(dressMeta) : "";
-        prompt = buildFittingPrompt(selectedSceneCode, dressDescription, { shotType });
-        requestBody = {
-          source_image_path: photoPath,
-          dress_sample_id: selectedDress!.id,
-          scene_code: selectedSceneCode,
-          prompt,
-        };
+        // 카탈로그: 드레스 메타는 서버가 직접 조회해 프롬프트에 주입.
+        requestBody = { ...base, dress_sample_id: selectedDress!.id };
       }
 
       const fittingId = await generateDressFitting(requestBody);
@@ -464,6 +453,10 @@ const DressFitting = () => {
             onPickType={handlePickSceneType}
             onPickTone={handlePickTone}
           />
+        )}
+
+        {step === "review" && (
+          <RetouchLevelPicker value={retouchLevel} onChange={setRetouchLevel} className="mb-4" />
         )}
 
         {step === "review" && (

@@ -27,7 +27,6 @@ import {
   SCENE_TYPE_DESC,
   SceneType,
   SceneCode,
-  buildRecommendDressPrompt,
 } from "@/data/fittingScenes";
 import {
   BODY_SHAPES,
@@ -35,12 +34,13 @@ import {
   BodyShape,
   bodyShapeShortDescription,
   bodyShapeIdentify,
-  bodyShapeGuide,
 } from "@/data/bodyShapes";
+import { type RetouchLevel } from "@/data/retouch";
+import { RetouchLevelPicker } from "@/components/fitting/RetouchLevelPicker";
 import { FittingProgress } from "@/components/fitting/FittingProgress";
 import { PersonalizationChips } from "@/components/PersonalizationChips";
 import { useWeddingContext } from "@/hooks/useWeddingContext";
-import { buildDressPromptAddendum } from "@/lib/weddingContext";
+import { toStylePreferencePayload } from "@/lib/weddingContext";
 
 /**
  * 드레스 AI 추천 — 사진 + 체형 → gpt-image-2 가 직접 어울리는 드레스
@@ -71,6 +71,8 @@ const DressRecommend = () => {
   const [sceneCode, setSceneCode] = useState<SceneCode | null>(null);
   const [consentOpen, setConsentOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  // 보정 강도 — 웨딩 당일은 전문 보정이 기본이라 "화보 보정"을 기본값으로.
+  const [retouchLevel, setRetouchLevel] = useState<RetouchLevel>("studio");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchHearts = useCallback(async () => {
@@ -137,22 +139,17 @@ const DressRecommend = () => {
 
   const handleGenerate = async () => {
     if (!photoPath || !bodyShape || !sceneCode) return;
-    const shape = BODY_SHAPE_BY_VALUE[bodyShape];
     setIsGenerating(true);
     try {
-      const prompt =
-        buildRecommendDressPrompt(
-          sceneCode,
-          shape.label,
-          bodyShapeGuide(shape, gender),
-          gender,
-        ) + buildDressPromptAddendum(personalization);
-
+      // 프롬프트·체형 가이드는 서버(dewy-dress-recommend)가 조립한다(신뢰 경계).
+      // 개인화 신호는 구조화 슬롯(style_preference)으로만 전달(서버 살균).
       const fittingId = await generateDressRecommend({
         source_image_path: photoPath,
         body_shape: bodyShape,
         scene_code: sceneCode,
-        prompt,
+        gender,
+        retouch_level: retouchLevel,
+        style_preference: toStylePreferencePayload(personalization) ?? undefined,
       });
       // 생성은 비동기(결과 페이지에서 폴링) — "완료"가 아니라 "요청됨"으로 안내.
       toast({ title: "생성 요청을 보냈어요", description: "결과가 준비되면 화면에 표시돼요." });
@@ -272,6 +269,10 @@ const DressRecommend = () => {
             }}
           />
         )}
+        {step === "review" && (
+          <RetouchLevelPicker value={retouchLevel} onChange={setRetouchLevel} className="mb-4" />
+        )}
+
         {step === "review" && (
           <ReviewSection
             photoUrl={photoUrl}

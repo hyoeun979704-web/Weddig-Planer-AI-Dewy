@@ -9,16 +9,18 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchHeartBalance } from "@/features/consumer/data/hearts";
 import {
-  uploadSdmSource, fetchActiveDresses, fetchDressMeta, generateSdmPreview,
+  uploadSdmSource, fetchActiveDresses, generateSdmPreview,
 } from "@/features/consumer/data/sdmPreview";
 import {
   SCENES_BY_TYPE, SCENE_TYPE_LABEL, SCENE_TYPE_DESC, SceneType, SceneCode,
 } from "@/data/fittingScenes";
-import { describeDress, type DressMetadata } from "@/lib/dressDescription";
-import { describeMakeup, type MakeupMetadata } from "@/lib/makeupDescription";
+import { type DressMetadata } from "@/lib/dressDescription";
+import { type MakeupMetadata } from "@/lib/makeupDescription";
+import { type RetouchLevel } from "@/data/retouch";
+import { RetouchLevelPicker } from "@/components/fitting/RetouchLevelPicker";
 import { CustomDressPicker, summarizeDressKo } from "@/components/fitting/CustomDressPicker";
 import { CustomMakeupPicker, summarizeMakeupKo } from "@/components/fitting/CustomMakeupPicker";
-import { sdmHairStyles, sdmHairKo, buildSdmPrompt, type SdmReferenceMode } from "@/data/sdmPrompt";
+import { sdmHairStyles, sdmHairKo, type SdmReferenceMode } from "@/data/sdmPrompt";
 import { SHOT_TYPES, shotTypeKo, type ShotType } from "@/data/shotTypes";
 import { addPendingJob } from "@/lib/pendingJobs";
 
@@ -66,6 +68,8 @@ const SdmPreview = () => {
   const [customDress, setCustomDress] = useState<DressMetadata>({});
 
   const [shotType, setShotType] = useState<ShotType>("full");
+  // 보정 강도 — 웨딩 당일은 전문 보정이 기본이라 "화보 보정"을 기본값으로.
+  const [retouchLevel, setRetouchLevel] = useState<RetouchLevel>("studio");
   const [referenceMode, setReferenceMode] = useState<SdmReferenceMode>("image");
   const [consentOpen, setConsentOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -134,44 +138,28 @@ const SdmPreview = () => {
     if (gender === "bride" && dressMode === "catalog" && !selectedDress) return;
     setIsGenerating(true);
     try {
-      let dressDescription = "";
-      let dressLength: string | null = null;
-      let dressSampleId: string | undefined;
-      if (gender === "groom") {
-        // 신랑: 예복 텍스트로 커스텀. 수트 카탈로그·레퍼런스 이미지 없음.
-        dressDescription = groomSuit.trim() || "a classic well-fitted wedding suit, notch lapel, navy or black";
-      } else if (dressMode === "custom") {
-        dressDescription = describeDress(customDress);
-        dressLength = customDress.length ?? null;
-      } else {
-        const meta = await fetchDressMeta(selectedDress!.id);
-        dressDescription = meta ? describeDress(meta as DressMetadata) : "";
-        dressLength = (meta?.length as string | undefined) ?? selectedDress!.length ?? null;
-        dressSampleId = selectedDress!.id;
-      }
-
-      const prompt = buildSdmPrompt({
-        sceneCode,
-        makeupDescription: gender === "groom" ? "" : describeMakeup(makeup),
-        hairStyle,
-        dressDescription,
-        dressCustom: gender === "groom" || dressMode === "custom",
-        dressLength,
-        shotType,
-        referenceMode: gender === "groom" ? "text" : referenceMode,
-        gender,
-      });
-
-      const previewId = await generateSdmPreview({
+      // 프롬프트는 서버(dewy-sdm)가 조립한다(신뢰 경계) — 구조화 파라미터만 전달.
+      // 드레스 메타(카탈로그)는 서버가 직접 조회하고, 맞춤/메이크업 속성은 enum 객체
+      // 그대로 보내 서버가 사전 기반으로 직렬화한다.
+      const base: Record<string, unknown> = {
         source_image_path: photoPath,
         scene_code: sceneCode,
         hair_style: hairStyle,
         makeup_summary: gender === "groom" ? "그루밍(자동)" : summarizeMakeupKo(makeup),
-        dress_sample_id: dressSampleId,
         shot_type: shotType,
         reference_mode: referenceMode,
-        prompt,
-      });
+        gender,
+        retouch_level: retouchLevel,
+      };
+      if (gender === "groom") {
+        base.suit_text = groomSuit.trim();
+      } else {
+        base.custom_makeup = makeup;
+        if (dressMode === "custom") base.custom_dress = customDress;
+        else base.dress_sample_id = selectedDress!.id;
+      }
+
+      const previewId = await generateSdmPreview(base);
       addPendingJob({ id: previewId, type: "sdm" });
       await fetchHearts();
       navigate(`/ai-studio/sdm-preview/result/${previewId}`);
@@ -399,6 +387,10 @@ const SdmPreview = () => {
                 onConfirm={() => { setSelectedDress(null); setStep("review"); }} />
             )}
           </section>
+        )}
+
+        {step === "review" && (
+          <RetouchLevelPicker value={retouchLevel} onChange={setRetouchLevel} className="mb-4" />
         )}
 
         {step === "review" && (

@@ -2,30 +2,56 @@
 //
 // 흐름:
 //   1. 인증 검증
-//   2. 입력 검증 (source_image_path, dress_sample_id, scene_code)
-//   3. spend_hearts(5) 차감
-//   4. dress_fittings row 생성 (status=pending)
-//   5. OpenAI gpt-image-2 호출 (사용자 사진 + 드레스 이미지)
-//   6. 결과 이미지를 dress-results 버킷에 업로드
-//   7. dress_fittings 업데이트 (status=done, result_image_path)
-//   8. 실패 시 earn_hearts 환불 + status=refunded
+//   2. 입력 검증 (source_image_path, scene_code + 모드별 파라미터)
+//   3. 프롬프트 서버 조립 — 클라이언트 prompt 는 받지 않는다(신뢰 경계).
+//      · 카탈로그: dress_sample_id → dress_samples 메타를 서버가 조회해 묘사 직렬화
+//      · 맞춤: custom_dress(enum 속성 객체) → describeDress 로 직렬화(사전 기반 = 주입 불가)
+//      · 신랑: suit_text(살균·300자 제한) → SUIT SCHEMA 슬롯에만 주입
+//   4. spend_hearts(5) 차감 → dress_fittings row 생성(pending)
+//   5. gpt-image 합성 → dress-results 업로드 → status=done (백그라운드, 202 즉시 반환)
+//   6. 실패 시 earn_hearts 환불 + status=refunded
 //
-// 보안: 본인 사진 source_image_path 는 dress-uploads/{userId}/ 폴더 검증
+// 보안: 본인 사진 source_image_path 는 dress-uploads/{userId}/ 폴더 검증.
+// v1 호환: 구 클라이언트가 보내는 body.prompt 는 무시된다(서버 조립만 신뢰).
 
 import { adminClient } from "../_shared/supabase.ts";
-import { MODELS } from "../_shared/llm.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
+import {
+  json,
+  authenticateUser,
+  downloadFromStorage,
+  downloadFromUrl,
+  callImageEdit,
+  makeJobFailureHandlers,
+  spendHearts,
+  runInBackground,
+} from "../_shared/studioEdge.ts";
+import { buildFittingPrompt, sceneByCode, type SceneCode } from "../_shared/studio/fittingScenes.ts";
+import { SHOT_TYPES, type ShotType } from "../_shared/studio/shotTypes.ts";
+import { describeDress, type DressMetadata } from "../_shared/studio/dressDescription.ts";
+import { parseRetouchLevel } from "../_shared/studio/retouch.ts";
+import { cleanSuitText } from "../_shared/studio/stylePreference.ts";
 
 const HEART_COST = 5;
 
 interface RequestBody {
   source_image_path: string; // dress-uploads/{userId}/xxx.jpg
-  dress_sample_id?: string;   // 선택: 있으면 카탈로그, 없으면 맞춤 생성(텍스트 전용)
   scene_code: string;
-  prompt: string;
+  shot_type?: string;        // full | bust | closeup (기본 full)
+  gender?: string;           // bride(기본) | groom
+  retouch_level?: string;    // natural(기본) | studio | glam
+  dress_sample_id?: string;  // 카탈로그 모드(신부)
+  custom_dress?: DressMetadata; // 맞춤 모드(신부) — enum 속성만 유효(사전 기반 직렬화)
+  suit_text?: string;        // 신랑 예복 자유 텍스트(살균됨)
+}
+
+// dress_samples 메타 컬럼 — 프롬프트 묘사 직렬화 대상(클라 fetchDressMeta 와 동일 집합).
+const DRESS_META_COLS =
+  "name, silhouette, neckline, sleeve, length, fabric, details, back_design, color, waist, mood";
+
+function parseShotType(v: unknown): ShotType {
+  return SHOT_TYPES.some((s) => s.value === v) ? (v as ShotType) : "full";
 }
 
 serve(async (req) => {
@@ -34,99 +60,86 @@ serve(async (req) => {
   }
 
   try {
-    // ─────────────────────────────────────────────
-    // 1) 인증
-    // ─────────────────────────────────────────────
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return json({ error: "Unauthorized" }, 401);
-    }
+    const userId = await authenticateUser(req);
+    if (!userId) return json({ error: "Unauthorized" }, 401);
 
-    const supabaseUser = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } =
-      await supabaseUser.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return json({ error: "Unauthorized" }, 401);
-    }
-    const userId = claimsData.claims.sub as string;
-
-    // service_role 클라이언트 — RPC·Storage 쓰기용
     const supabaseAdmin = adminClient();
 
-    // ─────────────────────────────────────────────
-    // 2) 입력 검증
-    // ─────────────────────────────────────────────
     const body = (await req.json()) as RequestBody;
-    // dress_sample_id 는 선택: 있으면 카탈로그(레퍼런스 합성), 없으면 맞춤(텍스트 전용).
-    if (!body.source_image_path || !body.scene_code || !body.prompt) {
+    if (!body.source_image_path || !body.scene_code) {
       return json({ error: "Missing required fields" }, 400);
     }
-
-    // source_image_path 가 본인 폴더인지 확인 (RLS 보강)
     if (!body.source_image_path.startsWith(`${userId}/`)) {
       return json({ error: "invalid_source_image" }, 403);
     }
+    if (!sceneByCode(body.scene_code as SceneCode)) {
+      return json({ error: "unknown_scene" }, 400);
+    }
+    const sceneCode = body.scene_code as SceneCode;
+    const shotType = parseShotType(body.shot_type);
+    const gender = body.gender === "groom" ? "groom" as const : "bride" as const;
+    const retouch = parseRetouchLevel(body.retouch_level);
 
-    // 카탈로그 모드만 드레스 샘플 조회(맞춤 모드는 레퍼런스 이미지 없음).
-    let dress: { id: string; image_url: string; is_active: boolean } | null = null;
-    if (body.dress_sample_id) {
+    // 카탈로그 모드: 드레스 샘플 조회(레퍼런스 이미지 + 메타 → 서버 프롬프트 조립).
+    let dress: { id: string; image_url: string } | null = null;
+    let dressDescription = "";
+    let custom = true;
+    if (gender === "groom") {
+      dressDescription = cleanSuitText(body.suit_text) ||
+        "a classic well-fitted wedding suit, notch lapel, slim fit, navy or black";
+    } else if (body.dress_sample_id) {
       const { data: d, error: dressError } = await supabaseAdmin
         .from("dress_samples")
-        .select("id, image_url, is_active")
+        .select(`id, image_url, is_active, ${DRESS_META_COLS}`)
         .eq("id", body.dress_sample_id)
         .single();
       if (dressError || !d || !d.is_active) {
         return json({ error: "dress_not_found" }, 404);
       }
-      dress = d as { id: string; image_url: string; is_active: boolean };
+      dress = { id: d.id as string, image_url: d.image_url as string };
+      dressDescription = describeDress(d as DressMetadata);
+      custom = false;
+    } else {
+      // 맞춤 모드 — enum 속성 객체만 신뢰(사전에 없는 값은 describeDress 가 무시).
+      dressDescription = describeDress(body.custom_dress ?? {}) ||
+        "- An elegant Korean bridal wedding gown appropriate for the venue.";
     }
+
+    const prompt = buildFittingPrompt(sceneCode, dressDescription, {
+      custom,
+      shotType,
+      gender,
+      retouch,
+    });
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
-      return json({ error: "openai_not_configured" }, 500);
-    }
+    if (!OPENAI_API_KEY) return json({ error: "openai_not_configured" }, 500);
 
-    // ─────────────────────────────────────────────
-    // 3) 하트 차감
-    // ─────────────────────────────────────────────
-    const { data: spendData, error: spendError } = await supabaseAdmin.rpc(
-      "spend_hearts",
-      {
-        p_user_id: userId,
-        p_amount: HEART_COST,
-        p_reason: "dress_fitting",
-        p_ref_id: null,
-      },
-    );
-    if (spendError) {
-      console.error("spend_hearts error:", spendError);
-      return json({ error: "hearts_error" }, 500);
-    }
-    const spendRow = Array.isArray(spendData) ? spendData[0] : spendData;
-    if (!spendRow?.success) {
-      return json(
-        { error: "insufficient_hearts", message: spendRow?.message },
-        402,
-      );
-    }
+    // 하트 차감
+    const spend = await spendHearts(supabaseAdmin, userId, HEART_COST, "dress_fitting");
+    if (spend instanceof Response) return spend;
 
-    // ─────────────────────────────────────────────
-    // 4) dress_fittings row 생성
-    // ─────────────────────────────────────────────
+    const { markFailed, refund } = makeJobFailureHandlers({
+      client: supabaseAdmin,
+      table: "dress_fittings",
+      userId,
+      amount: HEART_COST,
+      earnReason: "refund_failed_generation",
+    });
+
+    // dress_fittings row 생성
     const { data: fitting, error: insertError } = await supabaseAdmin
       .from("dress_fittings")
       .insert({
         user_id: userId,
         source_image_path: body.source_image_path,
-        selected_sample_id: body.dress_sample_id ?? null,
+        selected_sample_id: dress?.id ?? null,
         prompt_params: {
-          scene_code: body.scene_code,
+          scene_code: sceneCode,
+          shot_type: shotType,
+          gender,
+          retouch_level: retouch,
+          mode: gender === "groom" ? "suit" : custom ? "custom" : "catalog",
         },
         hearts_spent: HEART_COST,
         status: "pending",
@@ -134,61 +147,28 @@ serve(async (req) => {
       .select("id")
       .single();
     if (insertError || !fitting) {
-      // 하트만 차감되고 row 못 만든 케이스 → 환불
-      await refundHearts(supabaseAdmin, userId, HEART_COST, "row_insert_fail");
+      await refund("row_insert_fail");
       return json({ error: "insert_fail" }, 500);
     }
     const fittingId = fitting.id as string;
 
-    // ─────────────────────────────────────────────
-    // 5~7) 백그라운드 작업 — 페이지 이탈/창닫음에도 서버에서 계속 진행
-    //      (즉시 202 반환, 결과는 dress_fittings.status 폴링으로 확인)
-    // ─────────────────────────────────────────────
+    // 백그라운드 합성 — 페이지 이탈/창닫음에도 서버에서 계속 진행(202 즉시 반환).
     const job = (async () => {
       try {
-        // 카탈로그 모드면 드레스 레퍼런스(Image 2)도 첨부. 맞춤 모드는 사용자 사진 1장 + 텍스트만.
-        // 카탈로그는 기존처럼 병렬 다운로드(지연 무변화), 맞춤은 dress 없으니 null.
         const [userImgBlob, dressImgBlob] = await Promise.all([
           downloadFromStorage(supabaseAdmin, "dress-uploads", body.source_image_path),
           dress ? downloadFromUrl(dress.image_url) : Promise.resolve(null),
         ]);
 
-        const form = new FormData();
-        form.append("model", MODELS.image);
-        form.append("prompt", body.prompt);
-        form.append("size", "1024x1536");
-        form.append("quality", "medium");
-        form.append("n", "1");
-        form.append("image[]", userImgBlob, "user.png");
-        if (dressImgBlob) form.append("image[]", dressImgBlob, "dress.png");
+        const images = [{ blob: userImgBlob, name: "user.png" }];
+        if (dressImgBlob) images.push({ blob: dressImgBlob, name: "dress.png" });
 
-        const openaiRes = await fetch("https://api.openai.com/v1/images/edits", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-          body: form,
+        const resultBlob = await callImageEdit({
+          apiKey: OPENAI_API_KEY,
+          prompt,
+          size: "1024x1536",
+          images,
         });
-
-        if (!openaiRes.ok) {
-          const errText = await openaiRes.text();
-          console.error(`OpenAI error ${openaiRes.status}:`, errText);
-          await markFailed(supabaseAdmin, fittingId, `openai_${openaiRes.status}`);
-          await refundHearts(supabaseAdmin, userId, HEART_COST, "openai_fail", fittingId);
-          return;
-        }
-
-        const openaiData = (await openaiRes.json()) as {
-          data: { b64_json?: string; url?: string }[];
-        };
-        const item = openaiData.data?.[0];
-        if (!item) {
-          await markFailed(supabaseAdmin, fittingId, "no_image_returned");
-          await refundHearts(supabaseAdmin, userId, HEART_COST, "openai_no_result", fittingId);
-          return;
-        }
-
-        const resultBlob = item.b64_json
-          ? base64ToBlob(item.b64_json, "image/png")
-          : await (await fetch(item.url!)).blob();
 
         const resultPath = `${userId}/${fittingId}.png`;
         const { error: uploadError } = await supabaseAdmin.storage
@@ -196,8 +176,8 @@ serve(async (req) => {
           .upload(resultPath, resultBlob, { contentType: "image/png", upsert: true });
         if (uploadError) {
           console.error("upload error:", uploadError);
-          await markFailed(supabaseAdmin, fittingId, "upload_fail");
-          await refundHearts(supabaseAdmin, userId, HEART_COST, "upload_fail", fittingId);
+          await markFailed(fittingId, "upload_fail");
+          await refund("upload_fail", fittingId);
           return;
         }
 
@@ -211,26 +191,16 @@ serve(async (req) => {
           .eq("id", fittingId);
       } catch (innerError) {
         console.error("inner error:", innerError);
-        await markFailed(
-          supabaseAdmin,
-          fittingId,
-          innerError instanceof Error ? innerError.message : "inner_error",
-        );
-        await refundHearts(supabaseAdmin, userId, HEART_COST, "inner_error", fittingId);
+        const reason = innerError instanceof Error ? innerError.message : "inner_error";
+        await markFailed(fittingId, reason);
+        await refund(reason, fittingId);
       }
     })();
 
-    // 응답 후에도 워커 유지(Supabase Edge 런타임).
-    // @ts-ignore EdgeRuntime 은 런타임 전역
-    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
-      // @ts-ignore
-      EdgeRuntime.waitUntil(job);
-    } else {
-      await job; // 로컬/폴백
-    }
+    await runInBackground(job);
 
     return json(
-      { fitting_id: fittingId, status: "pending", balance_after: spendRow.balance_after },
+      { fitting_id: fittingId, status: "pending", balance_after: spend.balanceAfter },
       202,
     );
   } catch (error) {
@@ -238,76 +208,3 @@ serve(async (req) => {
     return json({ error: "server_error" }, 500);
   }
 });
-
-// ════════════════════════════════════════════════
-// 유틸
-// ════════════════════════════════════════════════
-function json(payload: unknown, status: number) {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-async function downloadFromStorage(
-  client: ReturnType<typeof createClient>,
-  bucket: string,
-  path: string,
-): Promise<Blob> {
-  const { data, error } = await client.storage.from(bucket).download(path);
-  if (error || !data) throw new Error(`storage download fail: ${path}`);
-  return data;
-}
-
-async function downloadFromUrl(url: string): Promise<Blob> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`url download fail: ${url}`);
-  return await res.blob();
-}
-
-function base64ToBlob(b64: string, mime: string): Blob {
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return new Blob([bytes], { type: mime });
-}
-
-async function markFailed(
-  client: ReturnType<typeof createClient>,
-  fittingId: string,
-  reason: string,
-) {
-  await client
-    .from("dress_fittings")
-    .update({
-      status: "failed",
-      error_message: reason.substring(0, 500),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", fittingId);
-}
-
-async function refundHearts(
-  client: ReturnType<typeof createClient>,
-  userId: string,
-  amount: number,
-  reason: string,
-  fittingId?: string,
-) {
-  try {
-    await client.rpc("earn_hearts", {
-      p_user_id: userId,
-      p_amount: amount,
-      p_reason: "refund_failed_generation",
-      p_ref_id: fittingId ?? null,
-    });
-    if (fittingId) {
-      await client
-        .from("dress_fittings")
-        .update({ status: "refunded", error_message: reason.substring(0, 500) })
-        .eq("id", fittingId);
-    }
-  } catch (e) {
-    console.error("refund failed:", e);
-  }
-}
