@@ -18,7 +18,8 @@ import { describeDress, type DressMetadata } from "@/lib/dressDescription";
 import { describeMakeup, type MakeupMetadata } from "@/lib/makeupDescription";
 import { CustomDressPicker, summarizeDressKo } from "@/components/fitting/CustomDressPicker";
 import { CustomMakeupPicker, summarizeMakeupKo } from "@/components/fitting/CustomMakeupPicker";
-import { SDM_HAIR_STYLES, sdmHairKo, buildSdmPrompt, type SdmReferenceMode } from "@/data/sdmPrompt";
+import { sdmHairStyles, sdmHairKo, buildSdmPrompt, type SdmReferenceMode } from "@/data/sdmPrompt";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { SHOT_TYPES, shotTypeKo, type ShotType } from "@/data/shotTypes";
 import { addPendingJob } from "@/lib/pendingJobs";
 
@@ -53,6 +54,12 @@ const SdmPreview = () => {
   const [sceneCode, setSceneCode] = useState<SceneCode | null>(null);
   const [makeup, setMakeup] = useState<MakeupMetadata>({});
   const [hairStyle, setHairStyle] = useState<string | null>(null);
+  // 성별(신부/신랑) — 기본 role. 신랑은 메이크업 스텝 스킵(그루밍 자동)·남성 헤어·예복 텍스트.
+  const { weddingSettings } = useWeddingSchedule();
+  const [genderOverride, setGenderOverride] = useState<"bride" | "groom" | null>(null);
+  const gender: "bride" | "groom" =
+    genderOverride ?? (weddingSettings.role === "groom" ? "groom" : "bride");
+  const [groomSuit, setGroomSuit] = useState("");
 
   const [dresses, setDresses] = useState<DressSample[]>([]);
   const [loadingDresses, setLoadingDresses] = useState(false);
@@ -126,13 +133,16 @@ const SdmPreview = () => {
 
   const handleGenerate = async () => {
     if (!photoPath || !sceneCode || !hairStyle) return;
-    if (dressMode === "catalog" && !selectedDress) return;
+    if (gender === "bride" && dressMode === "catalog" && !selectedDress) return;
     setIsGenerating(true);
     try {
       let dressDescription = "";
       let dressLength: string | null = null;
       let dressSampleId: string | undefined;
-      if (dressMode === "custom") {
+      if (gender === "groom") {
+        // 신랑: 예복 텍스트로 커스텀. 수트 카탈로그·레퍼런스 이미지 없음.
+        dressDescription = groomSuit.trim() || "a classic well-fitted wedding suit, notch lapel, navy or black";
+      } else if (dressMode === "custom") {
         dressDescription = describeDress(customDress);
         dressLength = customDress.length ?? null;
       } else {
@@ -144,20 +154,21 @@ const SdmPreview = () => {
 
       const prompt = buildSdmPrompt({
         sceneCode,
-        makeupDescription: describeMakeup(makeup),
+        makeupDescription: gender === "groom" ? "" : describeMakeup(makeup),
         hairStyle,
         dressDescription,
-        dressCustom: dressMode === "custom",
+        dressCustom: gender === "groom" || dressMode === "custom",
         dressLength,
         shotType,
-        referenceMode,
+        referenceMode: gender === "groom" ? "text" : referenceMode,
+        gender,
       });
 
       const previewId = await generateSdmPreview({
         source_image_path: photoPath,
         scene_code: sceneCode,
         hair_style: hairStyle,
-        makeup_summary: summarizeMakeupKo(makeup),
+        makeup_summary: gender === "groom" ? "그루밍(자동)" : summarizeMakeupKo(makeup),
         dress_sample_id: dressSampleId,
         shot_type: shotType,
         reference_mode: referenceMode,
@@ -175,10 +186,13 @@ const SdmPreview = () => {
     }
   };
 
-  const stepNumber: Record<Step, number> = { intro: 0, photo: 1, scene: 2, makeup: 3, hair: 4, dress: 5, review: 6 };
+  // 신랑은 메이크업 스텝을 건너뛴다(그루밍 자동). 진행바·뒤로가기가 이 순서를 따른다.
+  const steps: Step[] = gender === "groom" ? STEP_ORDER.filter((s) => s !== "makeup") : STEP_ORDER;
+  const stepIdx = Math.max(0, steps.indexOf(step));
+  const stepTotal = steps.length - 1; // intro 제외 카운트 기준
   const goBack = () => {
-    const idx = STEP_ORDER.indexOf(step);
-    setStep(idx > 0 ? STEP_ORDER[idx - 1] : "intro");
+    const idx = steps.indexOf(step);
+    setStep(idx > 0 ? steps[idx - 1] : "intro");
   };
 
   return (
@@ -191,14 +205,14 @@ const SdmPreview = () => {
           <h1 className="text-base font-bold text-foreground flex-1">스드메 미리보기</h1>
           {step !== "intro" && (
             <div className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">{stepNumber[step]}</span>/6
+              <span className="font-semibold text-foreground">{stepIdx}</span>/{stepTotal}
             </div>
           )}
         </div>
         {step !== "intro" && (
           <div className="px-4 pb-2">
             <div className="h-1 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-primary transition-all" style={{ width: `${(stepNumber[step] / 6) * 100}%` }} />
+              <div className="h-full bg-primary transition-all" style={{ width: `${(stepIdx / stepTotal) * 100}%` }} />
             </div>
           </div>
         )}
@@ -283,6 +297,20 @@ const SdmPreview = () => {
 
         {step === "scene" && (
           <section className="space-y-4">
+            {/* 성별 — 신랑은 드레스 대신 예복, 메이크업 스텝 스킵 */}
+            <div className="grid grid-cols-2 gap-2">
+              {(["bride", "groom"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGenderOverride(g)}
+                  aria-pressed={gender === g}
+                  className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${gender === g ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+                >
+                  {g === "bride" ? "신부" : "신랑"}
+                </button>
+              ))}
+            </div>
             <h2 className="text-lg font-bold text-foreground">어떤 장소·컷이 좋으세요?</h2>
             <div className="grid grid-cols-2 gap-2">
               {(["CEREMONY", "STUDIO"] as SceneType[]).map((t) => {
@@ -299,7 +327,7 @@ const SdmPreview = () => {
             {sceneType && (
               <div className="grid grid-cols-1 gap-2">
                 {SCENES_BY_TYPE[sceneType].map((s) => (
-                  <button key={s.code} type="button" onClick={() => { setSceneCode(s.code); setStep("makeup"); }}
+                  <button key={s.code} type="button" onClick={() => { setSceneCode(s.code); setStep(gender === "groom" ? "hair" : "makeup"); }}
                     className="bg-card rounded-xl border border-border p-3 text-left">
                     <p className="text-sm font-bold text-foreground mb-0.5">{s.shortLabel}</p>
                     <p className="text-[11px] text-muted-foreground leading-snug">{s.description}</p>
@@ -323,7 +351,7 @@ const SdmPreview = () => {
             <h2 className="text-lg font-bold text-foreground">헤어 스타일</h2>
             <p className="text-[12px] text-muted-foreground">합성에 반영할 헤어를 하나 골라주세요.</p>
             <div className="grid grid-cols-2 gap-2">
-              {SDM_HAIR_STYLES.map((h) => (
+              {sdmHairStyles(gender).map((h) => (
                 <button key={h.value} type="button" onClick={() => { setHairStyle(h.value); setStep("dress"); }}
                   className={`rounded-xl border p-3 text-left transition-colors ${hairStyle === h.value ? "bg-primary/10 border-primary" : "bg-card border-border"}`}>
                   <p className="text-sm font-bold text-foreground">{h.ko}</p>
@@ -333,7 +361,25 @@ const SdmPreview = () => {
           </section>
         )}
 
-        {step === "dress" && (
+        {step === "dress" && gender === "groom" && (
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-foreground">예복(수트)</h2>
+            <p className="text-[13px] text-muted-foreground">원하는 예복을 적어주세요. 비워두면 기본 클래식 수트로 생성돼요.</p>
+            <div className="flex flex-wrap gap-1.5">
+              {["네이비 슬림핏", "블랙 턱시도", "그레이 쓰리피스", "노치라펠", "피크라펠", "아이보리 재킷", "보타이"].map((c) => (
+                <button key={c} type="button" onClick={() => setGroomSuit((cur) => (cur.trim() ? `${cur.trim()}, ${c}` : c))}
+                  className="px-2.5 py-1 rounded-full border border-border text-[12px] text-foreground bg-card">{c}</button>
+              ))}
+            </div>
+            <textarea value={groomSuit} onChange={(e) => setGroomSuit(e.target.value)} maxLength={200}
+              placeholder="예: 네이비 슬림핏, 노치라펠, 쓰리피스"
+              className="w-full h-20 p-3 rounded-xl border border-input bg-background text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            <button type="button" onClick={() => { setSelectedDress(null); setStep("review"); }}
+              className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-bold text-sm">다음</button>
+          </section>
+        )}
+
+        {step === "dress" && gender === "bride" && (
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-foreground">드레스</h2>
             <div className="grid grid-cols-2 gap-2">
@@ -376,10 +422,17 @@ const SdmPreview = () => {
             <h2 className="text-lg font-bold text-foreground">선택 확인</h2>
             <ReviewRow label="컷·사진" value={`${shotTypeKo(shotType)} · ${photoUrl ? "업로드됨" : "-"}`} onEdit={() => setStep("photo")} />
             <ReviewRow label="장소·컷" value={sceneCode ?? "-"} onEdit={() => setStep("scene")} />
-            <ReviewRow label="메이크업" value={summarizeMakeupKo(makeup) || "내추럴"} onEdit={() => setStep("makeup")} />
+            {gender === "bride" && (
+              <ReviewRow label="메이크업" value={summarizeMakeupKo(makeup) || "내추럴"} onEdit={() => setStep("makeup")} />
+            )}
             <ReviewRow label="헤어" value={hairStyle ? sdmHairKo(hairStyle) : "-"} onEdit={() => setStep("hair")} />
-            <ReviewRow label="드레스"
-              value={dressMode === "custom" ? `맞춤 · ${summarizeDressKo(customDress)}` : (selectedDress?.name ?? "-")}
+            <ReviewRow
+              label={gender === "groom" ? "예복" : "드레스"}
+              value={
+                gender === "groom"
+                  ? (groomSuit.trim() || "기본 클래식 수트")
+                  : dressMode === "custom" ? `맞춤 · ${summarizeDressKo(customDress)}` : (selectedDress?.name ?? "-")
+              }
               onEdit={() => setStep("dress")} />
 
             <div className="rounded-xl border border-border p-3">
