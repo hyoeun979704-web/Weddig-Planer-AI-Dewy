@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Heart,
@@ -91,10 +91,10 @@ const DressFitting = () => {
   const [selectedDress, setSelectedDress] = useState<DressSample | null>(null);
   const [dressMode, setDressMode] = useState<"catalog" | "custom">("catalog");
   const [customDress, setCustomDress] = useState<DressMetadata>({});
-  // 성별(신부/신랑) — 기본 role, 토글 가능. 신랑은 드레스 카탈로그 대신 예복(수트) 텍스트로 생성.
-  const [genderOverride, setGenderOverride] = useState<"bride" | "groom" | null>(null);
-  const gender: "bride" | "groom" =
-    genderOverride ?? (weddingSettings.role === "groom" ? "groom" : "bride");
+  // 성별 — 예복(신랑)은 AI 스튜디오의 별도 진입점(?gender=groom)으로만 들어온다(진입점 분리).
+  // 드레스 도구 자체는 신부 전용(인라인 토글 제거). 신랑이면 카탈로그 대신 예복 텍스트로 생성.
+  const [searchParams] = useSearchParams();
+  const gender: "bride" | "groom" = searchParams.get("gender") === "groom" ? "groom" : "bride";
   const [groomSuit, setGroomSuit] = useState("");
   const [selectedSceneType, setSelectedSceneType] = useState<SceneType | null>(
     null,
@@ -377,21 +377,6 @@ const DressFitting = () => {
 
         {step === "dress" && (
           <div className="space-y-3">
-            {/* 성별 — 신랑은 드레스 대신 예복(수트) */}
-            <div className="grid grid-cols-2 gap-2">
-              {(["bride", "groom"] as const).map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setGenderOverride(g)}
-                  aria-pressed={gender === g}
-                  className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${gender === g ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
-                >
-                  {g === "bride" ? "신부 · 드레스" : "신랑 · 예복"}
-                </button>
-              ))}
-            </div>
-
             {gender === "groom" ? (
               <div className="space-y-2">
                 <p className="text-[13px] text-muted-foreground">

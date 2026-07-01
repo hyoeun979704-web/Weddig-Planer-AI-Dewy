@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Heart, Sparkles, Upload, Loader2, Info } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import PhotoUploadConsent from "@/components/PhotoUploadConsent";
@@ -19,7 +19,6 @@ import { describeMakeup, type MakeupMetadata } from "@/lib/makeupDescription";
 import { CustomDressPicker, summarizeDressKo } from "@/components/fitting/CustomDressPicker";
 import { CustomMakeupPicker, summarizeMakeupKo } from "@/components/fitting/CustomMakeupPicker";
 import { sdmHairStyles, sdmHairKo, buildSdmPrompt, type SdmReferenceMode } from "@/data/sdmPrompt";
-import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { SHOT_TYPES, shotTypeKo, type ShotType } from "@/data/shotTypes";
 import { addPendingJob } from "@/lib/pendingJobs";
 
@@ -54,11 +53,10 @@ const SdmPreview = () => {
   const [sceneCode, setSceneCode] = useState<SceneCode | null>(null);
   const [makeup, setMakeup] = useState<MakeupMetadata>({});
   const [hairStyle, setHairStyle] = useState<string | null>(null);
-  // 성별(신부/신랑) — 기본 role. 신랑은 메이크업 스텝 스킵(그루밍 자동)·남성 헤어·예복 텍스트.
-  const { weddingSettings } = useWeddingSchedule();
-  const [genderOverride, setGenderOverride] = useState<"bride" | "groom" | null>(null);
-  const gender: "bride" | "groom" =
-    genderOverride ?? (weddingSettings.role === "groom" ? "groom" : "bride");
+  // 성별 — 예복(신랑)은 별도 진입점(?gender=groom)으로만 들어온다(진입점 분리). 스드메 자체는
+  // 신부 전용 진입. 신랑이면 메이크업 스텝 스킵(그루밍 자동)·남성 헤어·예복 텍스트.
+  const [searchParams] = useSearchParams();
+  const gender: "bride" | "groom" = searchParams.get("gender") === "groom" ? "groom" : "bride";
   const [groomSuit, setGroomSuit] = useState("");
 
   const [dresses, setDresses] = useState<DressSample[]>([]);
@@ -297,20 +295,6 @@ const SdmPreview = () => {
 
         {step === "scene" && (
           <section className="space-y-4">
-            {/* 성별 — 신랑은 드레스 대신 예복, 메이크업 스텝 스킵 */}
-            <div className="grid grid-cols-2 gap-2">
-              {(["bride", "groom"] as const).map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setGenderOverride(g)}
-                  aria-pressed={gender === g}
-                  className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${gender === g ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
-                >
-                  {g === "bride" ? "신부" : "신랑"}
-                </button>
-              ))}
-            </div>
             <h2 className="text-lg font-bold text-foreground">어떤 장소·컷이 좋으세요?</h2>
             <div className="grid grid-cols-2 gap-2">
               {(["CEREMONY", "STUDIO"] as SceneType[]).map((t) => {

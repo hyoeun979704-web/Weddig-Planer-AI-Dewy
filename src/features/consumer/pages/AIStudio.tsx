@@ -26,6 +26,11 @@ interface StudioCard {
    * 않는다 — snap_only 는 스냅 촬영용으로 그것들을 원하므로, 일괄 숨기면 빈 스튜디오(dead-end)가 된다.
    */
   requiresCeremony?: boolean;
+  /**
+   * 대상 성별 — 진입점 분리(예복은 신랑 전용 카드). 미지정=공용. 신랑 role 이면 bride 카드 숨김,
+   * bride/미상 role 이면 groom 카드 숨김. 내부 엔진은 같은 컴포넌트를 ?gender=groom 로 재사용.
+   */
+  audience?: "bride" | "groom";
 }
 
 const cards: StudioCard[] = [
@@ -45,6 +50,7 @@ const cards: StudioCard[] = [
     href: "/ai-studio/sdm-preview",
     previewImage: "/ai-studio-previews/banner-sdm.webp",
     requiresCeremony: true, // 장소(예식장) 전제 완성본
+    audience: "bride",
   },
   {
     id: "dress-tour",
@@ -53,6 +59,7 @@ const cards: StudioCard[] = [
     status: "active",
     href: "/ai-studio/dress-tour",
     previewImage: "/ai-studio-previews/banner-dress.webp",
+    audience: "bride",
   },
   {
     id: "makeup-finder",
@@ -61,6 +68,25 @@ const cards: StudioCard[] = [
     status: "active",
     href: "/ai-studio/makeup-room",
     previewImage: "/ai-studio-previews/banner-makeup.webp",
+    audience: "bride",
+  },
+  // 신랑 전용 진입점(엔진 공유 — 기존 컴포넌트를 ?gender=groom 로 재사용).
+  {
+    id: "groom-suit-tour",
+    title: "방구석 예복 투어",
+    description: "내 사진으로 예복(수트) 핏을 미리 확인",
+    status: "active",
+    href: "/ai-studio/dress-tour?gender=groom",
+    audience: "groom",
+  },
+  {
+    id: "groom-sdm",
+    title: "신랑 스드메 미리보기",
+    description: "장소·헤어·예복을 한 번에 반영한 완성본 (10하트)",
+    status: "active",
+    href: "/ai-studio/sdm-preview?gender=groom",
+    requiresCeremony: true,
+    audience: "groom",
   },
   {
     id: "hair-room",
@@ -121,8 +147,11 @@ const AIStudio = () => {
   // 이나 비해당 페르소나는 전부 노출(기본 안전). 분류 후에만 필터가 발동한다.
   // 개인화(P3): 로드 후 역할·페르소나로 카드 순서만 재정렬(숨김 아님 — rankStudioCardIds).
   const visibleCards = useMemo(() => {
+    // 진입점 분리 — 신랑 role 은 예복(groom) 카드만, 그 외는 신부(bride) 카드만. 공용(audience 미지정)은 항상.
+    const audienceOk = (c: StudioCard) =>
+      c.audience === "groom" ? role === "groom" : c.audience === "bride" ? role !== "groom" : true;
     const filtered = cards.filter(
-      (c) => !(c.requiresCeremony && isLoaded && shouldHideWeddingCeremony(personaMode)),
+      (c) => audienceOk(c) && !(c.requiresCeremony && isLoaded && shouldHideWeddingCeremony(personaMode)),
     );
     if (!isLoaded) return filtered; // 분류 전엔 기본 순서(안전)
     const order = rankStudioCardIds(filtered.map((c) => c.id), { personaMode, role });
