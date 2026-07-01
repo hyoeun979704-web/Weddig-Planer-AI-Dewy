@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Heart,
@@ -29,7 +29,14 @@ import {
   SceneCode,
   buildRecommendDressPrompt,
 } from "@/data/fittingScenes";
-import { BODY_SHAPES, BODY_SHAPE_BY_VALUE, BodyShape } from "@/data/bodyShapes";
+import {
+  BODY_SHAPES,
+  BODY_SHAPE_BY_VALUE,
+  BodyShape,
+  bodyShapeShortDescription,
+  bodyShapeIdentify,
+  bodyShapeGuide,
+} from "@/data/bodyShapes";
 import { FittingProgress } from "@/components/fitting/FittingProgress";
 import { PersonalizationChips } from "@/components/PersonalizationChips";
 import { useWeddingContext } from "@/hooks/useWeddingContext";
@@ -48,6 +55,10 @@ const STEP_ORDER: Step[] = ["intro", "photo", "shape", "scene", "tone", "review"
 const DressRecommend = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  // 성별 — 예복(신랑)은 예복 투어의 "AI 추천받기"가 ?gender=groom 을 달고 진입한다(진입점 분리).
+  const gender: "bride" | "groom" = searchParams.get("gender") === "groom" ? "groom" : "bride";
+  const isGroom = gender === "groom";
   const { user } = useAuth();
   const { context: personalization } = useWeddingContext();
 
@@ -130,8 +141,12 @@ const DressRecommend = () => {
     setIsGenerating(true);
     try {
       const prompt =
-        buildRecommendDressPrompt(sceneCode, shape.label, shape.englishGuide) +
-        buildDressPromptAddendum(personalization);
+        buildRecommendDressPrompt(
+          sceneCode,
+          shape.label,
+          bodyShapeGuide(shape, gender),
+          gender,
+        ) + buildDressPromptAddendum(personalization);
 
       const fittingId = await generateDressRecommend({
         source_image_path: photoPath,
@@ -192,7 +207,7 @@ const DressRecommend = () => {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <h1 className="text-base font-bold text-foreground flex-1">
-            드레스 AI 추천
+            {isGroom ? "예복 AI 추천" : "드레스 AI 추천"}
           </h1>
           {step !== "intro" && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -220,7 +235,7 @@ const DressRecommend = () => {
         {step === "intro" && (
           <>
             <PersonalizationChips chips={personalization.summaryChips} />
-            <IntroSection hearts={hearts} onStart={handleStart} />
+            <IntroSection hearts={hearts} onStart={handleStart} isGroom={isGroom} />
           </>
         )}
         {step === "photo" && (
@@ -233,6 +248,7 @@ const DressRecommend = () => {
         {step === "shape" && (
           <ShapeStep
             selected={bodyShape}
+            gender={gender}
             onPick={(v) => {
               setBodyShape(v);
               setStep("scene");
@@ -302,22 +318,26 @@ const DressRecommend = () => {
 const IntroSection = ({
   hearts,
   onStart,
+  isGroom,
 }: {
   hearts: number | null;
   onStart: () => void;
+  isGroom: boolean;
 }) => (
   <>
     <section className="mb-6">
       <div className="flex items-center gap-2 mb-2">
         <Sparkles className="w-5 h-5 text-primary" />
         <h2 className="text-lg font-bold text-foreground">
-          내 체형에 어울리는 드레스를 AI가 추천
+          {isGroom
+            ? "내 체형에 어울리는 예복을 AI가 추천"
+            : "내 체형에 어울리는 드레스를 AI가 추천"}
         </h2>
       </div>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        체형(스트레이트·웨이브·다이아몬드 등)을 알려주시면 AI가 가장 잘
-        어울리는 드레스를 직접 디자인해서 입혀드려요. 카탈로그에 없는
-        조합도 가능해요.
+        {isGroom
+          ? "체형(어깨·허리 비율)을 알려주시면 AI가 가장 잘 어울리는 예복(핏·라펠·컬러)을 직접 골라 입혀드려요. 원하는 수트가 딱히 없어도 괜찮아요."
+          : "체형(스트레이트·웨이브·다이아몬드 등)을 알려주시면 AI가 가장 잘 어울리는 드레스를 직접 디자인해서 입혀드려요. 카탈로그에 없는 조합도 가능해요."}
       </p>
     </section>
 
@@ -398,9 +418,11 @@ const PhotoStep = ({
 
 const ShapeStep = ({
   selected,
+  gender,
   onPick,
 }: {
   selected: BodyShape | null;
+  gender: "bride" | "groom";
   onPick: (v: BodyShape) => void;
 }) => (
   <section className="space-y-3">
@@ -422,9 +444,11 @@ const ShapeStep = ({
         >
           <p className="text-base font-bold text-foreground mb-1">{b.label}</p>
           <p className="text-[12px] text-muted-foreground mb-1.5">
-            {b.shortDescription}
+            {bodyShapeShortDescription(b, gender)}
           </p>
-          <p className="text-[11px] text-foreground/60">{b.identify}</p>
+          <p className="text-[11px] text-foreground/60">
+            {bodyShapeIdentify(b, gender)}
+          </p>
         </button>
       ))}
     </div>

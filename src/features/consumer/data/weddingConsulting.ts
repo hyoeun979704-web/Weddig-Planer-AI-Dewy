@@ -30,6 +30,23 @@ export interface ConsultingReport {
   created_at: string;
 }
 
+/** 컨설팅 섹션 키(백엔드 ALL_SECTIONS 와 동일 — 신부/신랑 공유). */
+export const CONSULTING_SECTION_KEYS = ["personal_color", "hair", "makeup", "dress"] as const;
+export type ConsultingSectionKey = (typeof CONSULTING_SECTION_KEYS)[number];
+
+/**
+ * 섹션 라벨 단일 소스 — 신부(드레스+부케·메이크업) vs 신랑(예복+타이·그루밍).
+ * 백엔드는 같은 키(makeup/dress)를 성별별로 재해석하므로 표시 라벨만 분기(드리프트 방지).
+ */
+const CONSULTING_SECTION_LABELS: Record<"bride" | "groom", Record<ConsultingSectionKey, string>> = {
+  bride: { personal_color: "퍼스널컬러", hair: "헤어", makeup: "메이크업", dress: "드레스+부케" },
+  groom: { personal_color: "퍼스널컬러", hair: "헤어", makeup: "그루밍", dress: "예복+타이" },
+};
+
+export function consultingSectionLabel(section: string, gender: "bride" | "groom" = "bride"): string {
+  return CONSULTING_SECTION_LABELS[gender][section as ConsultingSectionKey] ?? section;
+}
+
 export const weddingConsultingKeys = {
   all: ["consumer", "weddingConsulting"] as const,
   gallery: (userId: string) => [...weddingConsultingKeys.all, "gallery", userId] as const,
@@ -53,9 +70,13 @@ export async function uploadConsultingSource(userId: string, file: File): Promis
  * 에러 시 edge function 의 error code(예: insufficient_hearts)를 추출해 그 code 를
  * 메시지로 throw — 호출부가 code 로 분기(하트부족 안내 등). report_id 누락 시 "요청 실패".
  */
-export async function requestConsulting(sourcePath: string, sections: string[]): Promise<string> {
+export async function requestConsulting(
+  sourcePath: string,
+  sections: string[],
+  gender: "bride" | "groom" = "bride",
+): Promise<string> {
   const { data, error } = await supabase.functions.invoke("wedding-consulting", {
-    body: { source_path: sourcePath, sections },
+    body: { source_path: sourcePath, sections, gender },
   });
   if (error) {
     let code: string | undefined;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Heart,
@@ -91,10 +91,10 @@ const DressFitting = () => {
   const [selectedDress, setSelectedDress] = useState<DressSample | null>(null);
   const [dressMode, setDressMode] = useState<"catalog" | "custom">("catalog");
   const [customDress, setCustomDress] = useState<DressMetadata>({});
-  // 성별(신부/신랑) — 기본 role, 토글 가능. 신랑은 드레스 카탈로그 대신 예복(수트) 텍스트로 생성.
-  const [genderOverride, setGenderOverride] = useState<"bride" | "groom" | null>(null);
-  const gender: "bride" | "groom" =
-    genderOverride ?? (weddingSettings.role === "groom" ? "groom" : "bride");
+  // 성별 — 예복(신랑)은 AI 스튜디오의 별도 진입점(?gender=groom)으로만 들어온다(진입점 분리).
+  // 드레스 도구 자체는 신부 전용(인라인 토글 제거). 신랑이면 카탈로그 대신 예복 텍스트로 생성.
+  const [searchParams] = useSearchParams();
+  const gender: "bride" | "groom" = searchParams.get("gender") === "groom" ? "groom" : "bride";
   const [groomSuit, setGroomSuit] = useState("");
   const [selectedSceneType, setSelectedSceneType] = useState<SceneType | null>(
     null,
@@ -309,7 +309,7 @@ const DressFitting = () => {
   const stepLabel: Record<Step, string> = {
     intro: "시작",
     photo: "사진 업로드",
-    dress: "드레스 선택",
+    dress: gender === "groom" ? "예복 입력" : "드레스 선택",
     scene: "컷·배경 선택",
     review: "확인",
   };
@@ -331,7 +331,7 @@ const DressFitting = () => {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <h1 className="text-base font-bold text-foreground flex-1">
-            방구석 드레스 투어
+            {gender === "groom" ? "방구석 예복 투어" : "방구석 드레스 투어"}
           </h1>
           {step !== "intro" && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -359,8 +359,15 @@ const DressFitting = () => {
         {step === "intro" && (
           <IntroSection
             hearts={hearts}
+            isGroom={gender === "groom"}
             onStart={handleStart}
-            onRecommend={() => navigate("/ai-studio/dress-tour/recommend")}
+            onRecommend={() =>
+              navigate(
+                gender === "groom"
+                  ? "/ai-studio/dress-tour/recommend?gender=groom"
+                  : "/ai-studio/dress-tour/recommend",
+              )
+            }
             onGallery={() => navigate("/ai-studio/dress-tour/gallery")}
           />
         )}
@@ -377,21 +384,6 @@ const DressFitting = () => {
 
         {step === "dress" && (
           <div className="space-y-3">
-            {/* 성별 — 신랑은 드레스 대신 예복(수트) */}
-            <div className="grid grid-cols-2 gap-2">
-              {(["bride", "groom"] as const).map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setGenderOverride(g)}
-                  aria-pressed={gender === g}
-                  className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${gender === g ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
-                >
-                  {g === "bride" ? "신부 · 드레스" : "신랑 · 예복"}
-                </button>
-              ))}
-            </div>
-
             {gender === "groom" ? (
               <div className="space-y-2">
                 <p className="text-[13px] text-muted-foreground">
@@ -527,11 +519,13 @@ const DressFitting = () => {
 // ════════════════════════════════════════════════
 const IntroSection = ({
   hearts,
+  isGroom,
   onStart,
   onRecommend,
   onGallery,
 }: {
   hearts: number | null;
+  isGroom: boolean;
   onStart: () => void;
   onRecommend: () => void;
   onGallery: () => void;
@@ -541,12 +535,13 @@ const IntroSection = ({
       <div className="flex items-center gap-2 mb-2">
         <Sparkles className="w-5 h-5 text-primary" />
         <h2 className="text-lg font-bold text-foreground">
-          내 사진으로 드레스 핏 미리보기
+          {isGroom ? "내 사진으로 예복 핏 미리보기" : "내 사진으로 드레스 핏 미리보기"}
         </h2>
       </div>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        본인 사진 한 장만 있으면 다양한 드레스를 입어본 모습을 AI가
-        자연스럽게 생성해드려요.
+        {isGroom
+          ? "본인 사진 한 장만 있으면 원하는 예복(수트)을 입어본 모습을 AI가 자연스럽게 생성해드려요."
+          : "본인 사진 한 장만 있으면 다양한 드레스를 입어본 모습을 AI가 자연스럽게 생성해드려요."}
       </p>
     </section>
 
@@ -573,7 +568,7 @@ const IntroSection = ({
       <h3 className="text-sm font-bold text-foreground mb-3">진행 순서</h3>
       <ol className="space-y-2 text-sm text-foreground/85">
         <StepRow n={1}>본인 사진 업로드 (얼굴/전신, 최대 20MB)</StepRow>
-        <StepRow n={2}>마음에 드는 드레스 선택</StepRow>
+        <StepRow n={2}>{isGroom ? "원하는 예복(수트) 입력" : "마음에 드는 드레스 선택"}</StepRow>
         <StepRow n={3}>본식 / 웨딩촬영 컷 선택</StepRow>
         <StepRow n={4}>배경 분위기 선택 (어두운/밝은/가든)</StepRow>
         <StepRow n={5}>AI 생성 대기 (약 15~30초)</StepRow>
@@ -626,7 +621,7 @@ const IntroSection = ({
         className="w-full flex items-center justify-between text-left"
       >
         <span className="text-sm font-medium text-foreground">
-          내 드레스 갤러리
+          {isGroom ? "내 예복 갤러리" : "내 드레스 갤러리"}
         </span>
         <span className="text-[13px] text-muted-foreground">→</span>
       </button>

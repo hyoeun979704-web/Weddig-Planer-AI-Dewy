@@ -71,13 +71,28 @@
      가장 큰 작업 → 독립 세션 권장.
 - **권장 착수 순서**: ① `fittingScenes` 예복(+DressFitting 토글) → ② `sdmPrompt` → ③ 컨설팅(재설계).
 
+### IA 결정 (260701) — 예복 진입점 분리 + 엔진 공유
+신랑이 "방구석 드레스 투어"(신부용 이름)에 들어가 토글하는 구조가 어색 → **진입점 분리**:
+AI 스튜디오에 **신랑 전용 카드**("방구석 예복 투어"·"신랑 스드메 미리보기") 신설, `?gender=groom`
+쿼리로 **기존 DressFitting/SdmPreview 컴포넌트를 그대로 재사용**(코드 중복 0). 인라인 성별 토글은
+제거(드레스 도구=신부 전용). **역할 기반 노출**: `role==="groom"` 이면 예복 카드만·드레스/메이크업 카드
+숨김, 그 외는 신부 카드만·예복 카드 숨김(`StudioCard.audience`).
+
 ### 진행 현황 (260701 세션)
 - ✅ **헤어**: 백엔드+프론트 완료(토글·남성 프리셋).
 - ✅ **드레스 피팅(예복)**: `buildFittingPrompt`/`buildGroomFittingPrompt` + DressFitting 토글·예복 텍스트 완료.
 - ✅ **스드메**: `buildSdmPrompt` 신랑 분기 + **SdmPreview UI 완료** — 성별 토글, makeup 스텝 스킵,
   남성 SDM 헤어 옵션(`SDM_GROOM_HAIR_STYLES`/`sdmHairStyles`), 예복 텍스트 입력, 진행바 동적화.
-- ⬜ **드레스 추천(DressRecommend)**: `buildRecommendSuitPrompt` 준비됨, **신랑 체형·수트 가이드 데이터** 필요(이월).
-- ⬜ **컨설팅**: 신부 A4 보드 재설계(수트·타이·그루밍) — 가장 큼, 독립 세션.
+- ✅ **예복 추천(DressRecommend)**: `bodyShapes.ts` 6체형 신랑 예복 가이드(`groomEnglishGuide`) +
+  신랑 카피 추가 → `?gender=groom` 감지 → `buildRecommendDressPrompt(...,"groom")` = `buildRecommendSuitPrompt`.
+  예복 투어 "AI 추천받기"가 gender 전달. DressFitting 인트로/헤더/스텝 잔여 카피도 예복화.
+- ✅ **컨설팅(신랑)**: `wedding-consulting` edge 에 `ANALYSIS_GUIDE_GROOM`(수트·라펠·타이·그루밍 스키마) +
+  `SHARED_GROOM` + `groomBoardPrompt`(4보드: 퍼스널컬러·헤어[수염]·그루밍·예복+타이) 추가. 같은 4섹션
+  키 재사용(makeup→그루밍, dress→예복+타이), gender 를 분석 jsonb 에 심어 BOARD 모드 전달(마이그 불필요).
+  프론트: WeddingConsulting·ConsultingResult·ConsultingGallery 역할(role) 기반 라벨/카피 분기 +
+  `consultingSectionLabel` 단일 소스. 신부 경로·프롬프트 전량 보존(회귀 0).
+
+**신랑 이미지생성 전 기능 완료** — 헤어·예복 피팅·예복 추천·스드메·컨설팅(사진보정=성별무관, 메이크업=신부 전용 유지).
 
 ## 5. 검증 메모(정직)
 - 이번 세션 P3 는 카드 *정렬 로직*만 유닛테스트(8케이스). **실제 스튜디오 화면·신랑 e2e 미확인**(현재 신랑
