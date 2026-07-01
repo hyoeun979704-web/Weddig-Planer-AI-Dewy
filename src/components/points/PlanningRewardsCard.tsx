@@ -59,7 +59,7 @@ const PlanningRewardsCard = () => {
               </div>
               {m.done ? (
                 <span className="text-[11px] text-primary font-medium shrink-0">
-                  {m.rewarded ? "+30하트" : "지급 중"}
+                  {m.rewarded ? `+${PLANNING_MILESTONE_AMOUNT}하트` : "지급 중"}
                 </span>
               ) : (
                 <span className="flex items-center gap-0.5 text-[11px] text-primary font-semibold shrink-0">

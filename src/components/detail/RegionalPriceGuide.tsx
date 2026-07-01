@@ -65,7 +65,7 @@ const RegionalPriceGuide = ({ place }: { place: { category: string; city: string
         <button
           type="button"
           onClick={() => navigate("/budget")}
-          className="text-[11px] text-primary font-medium mt-2"
+          className="text-[11px] text-primary font-medium mt-2 py-2 inline-flex min-h-[44px] items-center"
         >
           내 예산을 설정하면 평균과 비교해드려요 →
         </button>

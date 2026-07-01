@@ -13,7 +13,7 @@ export const BUDGET_GUIDE_LABEL: Record<
   { label: string; bundle?: boolean; note?: string }
 > = {
   venue: { label: "예식장 대관" },
-  meal: { label: "식대" },
+  // meal 은 PLACE_TO_BUDGET_CATEGORY 매핑 대상이 없어(식대는 per_guest_meal 별도) 여기선 미도달.
   sdm: { label: "스드메", bundle: true, note: "스튜디오·드레스·메이크업 합산 평균" },
   suit: { label: "예복" },
   hanbok: { label: "한복" },

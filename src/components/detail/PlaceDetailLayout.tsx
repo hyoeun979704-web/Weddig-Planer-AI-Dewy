@@ -1046,6 +1046,7 @@ function ReviewCard({ review, viewerRegion }: { review: PlaceReview; viewerRegio
         {tierMeta && (
           <span
             title={tierMeta.hint}
+            aria-label={`${tierMeta.label} — ${tierMeta.hint}`}
             className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${tierMeta.tone}`}
           >
             {tierMeta.label}

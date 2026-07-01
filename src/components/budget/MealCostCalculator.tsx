@@ -118,7 +118,7 @@ const MealCostCalculator = () => {
         <button
           type="button"
           onClick={() => navigate("/budget")}
-          className="text-[11px] text-primary font-medium inline-flex items-center gap-0.5"
+          className="text-[11px] text-primary font-medium inline-flex items-center gap-0.5 py-2 min-h-[44px]"
         >
           예상 하객수를 설정하면 더 정확해져요 <ArrowRight className="w-3 h-3" />
         </button>
@@ -130,7 +130,7 @@ const MealCostCalculator = () => {
           type="button"
           onClick={applyToBudget}
           disabled={saveSettings.isPending}
-          className="w-full h-10 rounded-xl bg-primary/10 text-primary font-semibold text-sm disabled:opacity-60"
+          className="w-full h-11 rounded-xl bg-primary/10 text-primary font-semibold text-sm disabled:opacity-60"
         >
           이 금액 식대 예산으로 반영
         </button>
