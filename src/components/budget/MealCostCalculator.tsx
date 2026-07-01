@@ -4,7 +4,7 @@ import { useMealCostEstimate } from "@/hooks/useMealCostEstimate";
 import { useBudget } from "@/hooks/useBudget";
 import { fmt, wonPreview } from "@/lib/budgetFormat";
 import { MEAL_HEADS_SOURCE_LABEL, MEAL_PRICE_SOURCE_LABEL } from "@/lib/mealCost";
-import { mealShortfallCoaching } from "@/lib/personaCoaching";
+import { mealShortfallCoaching, mealBudgetOverCoaching } from "@/lib/personaCoaching";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -100,12 +100,19 @@ const MealCostCalculator = () => {
 
       {/* 예산 대비 */}
       {e.budgetDeltaManwon != null && mealBudget > 0 && (
-        <p className="text-xs text-muted-foreground">
-          식대 예산 {fmt(mealBudget)}만원 대비{" "}
-          <span className={cn("font-semibold", e.budgetDeltaManwon > 0 ? "text-red-500" : "text-emerald-600")}>
-            {e.budgetDeltaManwon > 0 ? `${fmt(e.budgetDeltaManwon)}만원 초과` : e.budgetDeltaManwon < 0 ? `${fmt(-e.budgetDeltaManwon)}만원 여유` : "딱 맞아요"}
-          </span>
-        </p>
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">
+            식대 예산 {fmt(mealBudget)}만원 대비{" "}
+            <span className={cn("font-semibold", e.budgetDeltaManwon > 0 ? "text-red-500" : "text-emerald-600")}>
+              {e.budgetDeltaManwon > 0 ? `${fmt(e.budgetDeltaManwon)}만원 초과` : e.budgetDeltaManwon < 0 ? `${fmt(-e.budgetDeltaManwon)}만원 여유` : "딱 맞아요"}
+            </span>
+          </p>
+          {/* 초과 시 성향별 다음 행동 코칭(개인화 깊이 ④). 여유/딱맞음은 코칭 생략. */}
+          {(() => {
+            const over = mealBudgetOverCoaching(planningStyle, e.budgetDeltaManwon);
+            return over ? <p className="text-[11px] text-muted-foreground">{over}</p> : null;
+          })()}
+        </div>
       )}
 
       {/* D-day 리마인더 */}

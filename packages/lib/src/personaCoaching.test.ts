@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { priceBandFromDelta, pricePersonaCoaching, mealShortfallCoaching } from "./personaCoaching";
+import {
+  priceBandFromDelta,
+  pricePersonaCoaching,
+  mealShortfallCoaching,
+  mealBudgetOverCoaching,
+} from "./personaCoaching";
 
 describe("priceBandFromDelta", () => {
   it("±10% 경계로 low/mid/high", () => {
@@ -41,5 +46,27 @@ describe("mealShortfallCoaching", () => {
     expect(mealShortfallCoaching("beginner")).toContain("계약 전");
     expect(mealShortfallCoaching("standard")).toContain("문의");
     expect(mealShortfallCoaching(null)).toContain("문의");
+  });
+});
+
+describe("mealBudgetOverCoaching", () => {
+  it("초과(>0) 아닐 때는 null — 여유/딱맞음은 코칭 생략", () => {
+    expect(mealBudgetOverCoaching("budget_analytic", 0)).toBeNull();
+    expect(mealBudgetOverCoaching("standard", -50)).toBeNull();
+  });
+  it("초과 시 성향별로 다른 다음 행동 코칭", () => {
+    const b = mealBudgetOverCoaching("budget_analytic", 100);
+    const d = mealBudgetOverCoaching("designer", 100);
+    const beg = mealBudgetOverCoaching("beginner", 100);
+    const s = mealBudgetOverCoaching("standard", 100);
+    expect(b).toContain("보증인원");
+    expect(d).toContain("재배분");
+    expect(beg).toContain("인원");
+    expect(s).toContain("다시");
+    // 성향별로 실제 상이해야 함(복붙 방지).
+    expect(new Set([b, d, beg, s]).size).toBe(4);
+  });
+  it("null 성향은 표준 코칭으로 폴백", () => {
+    expect(mealBudgetOverCoaching(null, 100)).toBe(mealBudgetOverCoaching("standard", 100));
   });
 });
