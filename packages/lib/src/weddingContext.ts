@@ -286,3 +286,26 @@ export function buildMakeupPromptAddendum(ctx: PersonalizationContext): string {
     lines.join("\n")
   );
 }
+
+/**
+ * 서버측 프롬프트 조립(dewy-dress-recommend/dewy-makeup-recommend)의 style_preference
+ * 슬롯 페이로드. 애드덤 문자열 대신 구조화 신호만 보내고, 렌더·살균은 서버 단일 소스
+ * (supabase/functions/_shared/studio/stylePreference.ts)가 담당한다. 신호 없으면 null.
+ */
+export function toStylePreferencePayload(
+  ctx: PersonalizationContext,
+): Record<string, unknown> | null {
+  if (!ctx.hasData) return null;
+  return {
+    season: ctx.seasonLabel ?? undefined,
+    tone: ctx.colorTone ?? undefined,
+    dress_white: ctx.dressWhiteName ?? undefined,
+    silhouettes: ctx.recommendedSilhouettes.length ? ctx.recommendedSilhouettes : undefined,
+    necklines: ctx.recommendedNecklines.length ? ctx.recommendedNecklines : undefined,
+    metal: ctx.metal ?? undefined,
+    style_tags: ctx.styleTags.length ? ctx.styleTags : undefined,
+    lip: ctx.makeupLip ?? undefined,
+    cheek: ctx.makeupCheek ?? undefined,
+    eye: ctx.makeupEye ?? undefined,
+  };
+}

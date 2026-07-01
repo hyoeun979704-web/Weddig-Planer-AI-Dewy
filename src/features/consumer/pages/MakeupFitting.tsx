@@ -24,7 +24,6 @@ import { fetchHeartBalance } from "@/features/consumer/data/hearts";
 import {
   uploadMakeupSource,
   fetchActiveMakeups,
-  fetchMakeupMeta,
   generateMakeupFitting,
 } from "@/features/consumer/data/makeupFitting";
 import {
@@ -34,9 +33,10 @@ import {
   MAKEUP_SCENE_TYPE_DESC,
   MakeupSceneType,
   MakeupSceneCode,
-  buildMakeupPrompt,
 } from "@/data/makeupScenes";
-import { describeMakeup, type MakeupMetadata } from "@/lib/makeupDescription";
+import { type MakeupMetadata } from "@/lib/makeupDescription";
+import { type RetouchLevel } from "@/data/retouch";
+import { RetouchLevelPicker } from "@/components/fitting/RetouchLevelPicker";
 import { CustomMakeupPicker, summarizeMakeupKo } from "@/components/fitting/CustomMakeupPicker";
 import { FittingProgress } from "@/components/fitting/FittingProgress";
 import { labelOfMakeup } from "@/data/makeupFilters";
@@ -89,6 +89,8 @@ const MakeupFitting = () => {
   const [loadingMakeups, setLoadingMakeups] = useState(false);
   const [makeupMode, setMakeupMode] = useState<"catalog" | "custom">("catalog");
   const [customMakeup, setCustomMakeup] = useState<MakeupMetadata>({});
+  // 보정 강도 — 웨딩 당일은 전문 보정이 기본이라 "화보 보정"을 기본값으로.
+  const [retouchLevel, setRetouchLevel] = useState<RetouchLevel>("studio");
   const [selectedMakeup, setSelectedMakeup] = useState<MakeupSample | null>(
     null,
   );
@@ -204,29 +206,16 @@ const MakeupFitting = () => {
     if (makeupMode === "catalog" && !selectedMakeup) return;
     setIsGenerating(true);
     try {
-      let prompt: string;
-      let requestBody: Record<string, unknown>;
-
-      if (makeupMode === "custom") {
-        // 맞춤: 고른 속성을 SCHEMA 텍스트로 직렬화 → 레퍼런스 이미지 없이 생성.
-        prompt = buildMakeupPrompt(selectedSceneCode, describeMakeup(customMakeup), { custom: true });
-        requestBody = {
-          source_image_path: photoPath,
-          scene_code: selectedSceneCode,
-          prompt,
-        };
-      } else {
-        const meta = await fetchMakeupMeta(selectedMakeup!.id);
-
-        const description = meta ? describeMakeup(meta as MakeupMetadata) : "";
-        prompt = buildMakeupPrompt(selectedSceneCode, description);
-        requestBody = {
-          source_image_path: photoPath,
-          makeup_sample_id: selectedMakeup!.id,
-          scene_code: selectedSceneCode,
-          prompt,
-        };
-      }
+      // 프롬프트는 서버(dewy-makeup)가 조립한다(신뢰 경계) — 구조화 파라미터만 전달.
+      const base = {
+        source_image_path: photoPath,
+        scene_code: selectedSceneCode,
+        retouch_level: retouchLevel,
+      };
+      const requestBody: Record<string, unknown> =
+        makeupMode === "custom"
+          ? { ...base, custom_makeup: customMakeup } // enum 속성 객체 — 서버가 사전 기반 직렬화
+          : { ...base, makeup_sample_id: selectedMakeup!.id }; // 메타는 서버가 직접 조회
 
       const fittingId = await generateMakeupFitting(requestBody);
       // 백그라운드 생성 시작 — 완료 알림을 위해 진행중 잡 등록 후 결과 페이지로.
@@ -370,6 +359,10 @@ const MakeupFitting = () => {
 
         {step === "tone" && selectedSceneType && (
           <ToneStep sceneType={selectedSceneType} onPick={handlePickTone} />
+        )}
+
+        {step === "review" && (
+          <RetouchLevelPicker value={retouchLevel} onChange={setRetouchLevel} className="mb-4" />
         )}
 
         {step === "review" && (
