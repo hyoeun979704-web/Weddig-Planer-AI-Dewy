@@ -215,8 +215,13 @@ graph TD
 
 ### 트랙 C — 개인화 심화 백로그 (AGENTS 차원14)
 
-- **C1 페르소나 카피 20모드 확장**: `RegionalPriceGuide`·`MealCostCalculator` 가 지금 예산형 1개만 차등 →
-  나머지 19모드·예산 초과 코칭 추가(깊이 4). `personaCoaching` 단일 소스 활용.
+- **C1 페르소나 카피 심화** — ✅ **이번 세션 착수**: `personaCoaching.mealBudgetOverCoaching`(성향별
+  식대 초과 코칭) 추가 + `MealCostCalculator` 예산초과 라인에 배선(codereview 260701 이 짚은 "예산
+  초과 코칭 없음" 갭 해소, 깊이 ④). 테스트 3케이스. **의도적 스코프**: 식대·가격 코칭의 결정 축은
+  wedding-type 20모드가 아니라 `planning_style`(예산형·디자이너·초보·표준) — 20모드(임신·국제·재혼
+  등)에 식대 카피를 강제하면 노이즈(AGENTS §14 "강제 개인화 금지"). 그래서 `planning_style` 4축을
+  촘촘히 하고 20모드 강제 확장은 **하지 않음**(품질>체크박스). 남은 여지: 소규모(small_*) 모드의
+  보증인원 협상 카피는 신호가 hook 까지 오면 추가 검토.
 - **C2 교차 surface 일관성**: taste 스와이프 신호가 추천·꿀팁·쇼핑·일정에 다 반영되는지 사일로 점검.
 - **C3 QuoteNew etc/invitation_venue 카테고리 프리필 미매칭**(저빈도) — 카테고리 목록 정합 시 개선.
 

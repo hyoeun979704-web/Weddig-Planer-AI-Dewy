@@ -43,6 +43,29 @@ export function pricePersonaCoaching(
 }
 
 /**
+ * 예상 식대가 내 식대 예산을 **초과**할 때 덧붙일 성향별 다음 행동 한 줄. (codereview 260701 갭:
+ * 예산 대비 "초과"만 표시하고 코칭이 없었음.) 초과가 아니면(≤0) null → 카피 생략(경고 불필요).
+ * 톤: 성향별 현실적 조정안 — 예산형=식수/보증인원·평일, 디자이너=항목간 재배분, 초보=인원 확정 먼저.
+ */
+export function mealBudgetOverCoaching(
+  style: PlanningStyle | null | undefined,
+  overManwon: number,
+): string | null {
+  if (!(overManwon > 0)) return null;
+  switch (style) {
+    case "budget_analytic":
+      return "식수·보증인원을 줄이거나 대관·평일 시간대를 검토해 초과분을 줄여보세요.";
+    case "designer":
+      return "연출·플라워 등 다른 항목에서 식대로 재배분할 수 있는지 살펴보세요.";
+    case "beginner":
+      return "식대는 하객수에 비례해요. 예상 인원을 먼저 확정하면 초과를 줄일 수 있어요.";
+    case "standard":
+    default:
+      return "다른 항목에서 조정하거나 식대 예산을 현실적으로 다시 잡아보세요.";
+  }
+}
+
+/**
  * 식대 보증인원 미달 경고에 덧붙일 성향별 한 줄. 미달분은 "그냥 나가는 돈"이라 성향별로 강조.
  */
 export function mealShortfallCoaching(style: PlanningStyle | null | undefined): string {
