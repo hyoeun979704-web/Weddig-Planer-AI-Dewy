@@ -5,8 +5,10 @@ import { Loader2, Upload, Sparkles, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { toast } from "@/hooks/use-toast";
 import { addPendingJob } from "@/lib/pendingJobs";
+import { cn } from "@/lib/utils";
 import {
   fetchHairSamples,
   fetchHairUsageCount,
@@ -38,6 +40,19 @@ const STYLES: { label: string; prompt: string }[] = [
   { label: "시뇽 업스타일", prompt: "romantic chignon updo with loose strands" },
 ];
 
+// 신랑 단일 헤어 프리셋(남성). 신부용 STYLES 와 대칭. 어드민 hair_samples 는 신부 카탈로그라
+// 신랑 모드에선 노출하지 않고 이 텍스트 프리셋을 쓴다.
+const GROOM_STYLES: { label: string; prompt: string }[] = [
+  { label: "클린 사이드파트", prompt: "clean side part, neat classic men's cut" },
+  { label: "내추럴 다운펌", prompt: "natural down perm, soft men's fringe" },
+  { label: "슬릭백", prompt: "slicked-back undercut" },
+  { label: "쉼표머리", prompt: "comma-shaped fringe (Korean comma hair)" },
+  { label: "투블럭", prompt: "two-block cut, neat sides" },
+  { label: "포마드", prompt: "pompadour with volume" },
+  { label: "가르마펌", prompt: "middle or side part perm, natural volume" },
+  { label: "짧은 크롭", prompt: "textured short crop" },
+];
+
 interface JobRow {
   id: string;
   status: "processing" | "completed" | "failed";
@@ -60,6 +75,13 @@ interface HairSample {
 const HairPreview = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  // 성별(신부/신랑) — 기본은 내 role, 수동 토글 가능. 신랑이면 남성 헤어 어휘로 생성(백엔드 분기).
+  const { weddingSettings } = useWeddingSchedule();
+  const [genderOverride, setGenderOverride] = useState<"bride" | "groom" | null>(null);
+  const gender: "bride" | "groom" =
+    genderOverride ?? (weddingSettings.role === "groom" ? "groom" : "bride");
+  // 신랑은 어드민 신부 샘플 대신 남성 텍스트 프리셋. 신부는 기존대로 샘플>STYLES.
+  const stylePresets = gender === "groom" ? GROOM_STYLES : STYLES;
   const [pick, setPick] = useState<{ file: File; url: string } | null>(null);
   const [opts, setOpts] = useState<Set<Kind>>(new Set<Kind>(["style"]));
   const [style, setStyle] = useState<{ label: string; prompt: string }>(STYLES[0]);
@@ -69,7 +91,7 @@ const HairPreview = () => {
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // 단일 헤어 선택지(이미지). 어드민이 등록한 hair_samples. 없으면 텍스트 STYLES 폴백.
+  // 단일 헤어 선택지(이미지). 어드민이 등록한 hair_samples(신부 카탈로그). 없으면 텍스트 폴백.
   useEffect(() => {
     (async () => {
       const list = (await fetchHairSamples()) as unknown as HairSample[];
@@ -77,6 +99,14 @@ const HairPreview = () => {
       if (list.length > 0) setStyle({ label: list[0].name, prompt: list[0].prompt ?? list[0].name });
     })();
   }, []);
+
+  // 성별 전환 시 단일 헤어 선택을 그 성별 기본값으로 리셋(반대 성별 스타일 잔존 방지).
+  // 신랑=남성 프리셋, 신부=신부 샘플>STYLES. 위 샘플 로드 효과 뒤에 선언돼 신랑일 때 우선한다.
+  useEffect(() => {
+    if (gender === "groom") setStyle(GROOM_STYLES[0]);
+    else if (samples.length > 0) setStyle({ label: samples[0].name, prompt: samples[0].prompt ?? samples[0].name });
+    else setStyle(STYLES[0]);
+  }, [gender, samples]);
 
   useEffect(() => {
     if (!user) return;
@@ -141,6 +171,7 @@ const HairPreview = () => {
 
       const { data, error } = await invokeHairPreview({
         source_path: path, options: selected, single_style: opts.has("single") ? style.prompt : "",
+        gender,
       });
       if (error) {
         let code: string | undefined;
@@ -183,6 +214,31 @@ const HairPreview = () => {
           <p className="mt-2 text-[12px] text-foreground">
             옵션당 {PER}하트
             {discounted && <span className="ml-1 text-primary font-semibold">· 첫 1회 50% 할인</span>}
+          </p>
+        </section>
+
+        <section className="space-y-2">
+          <h3 className="text-sm font-bold text-foreground">누구의 헤어인가요?</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {(["bride", "groom"] as const).map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setGenderOverride(g)}
+                aria-pressed={gender === g}
+                className={cn(
+                  "h-11 rounded-xl border text-sm font-semibold transition-colors",
+                  gender === g
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card border-border text-muted-foreground",
+                )}
+              >
+                {g === "bride" ? "신부" : "신랑"}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            {gender === "groom" ? "신랑에게 어울리는 남성 헤어로 생성해요." : "신부에게 어울리는 헤어로 생성해요."}
           </p>
         </section>
 
@@ -235,7 +291,7 @@ const HairPreview = () => {
                 (정면·측면·후면으로 생성)
               </span>
             </h3>
-            {samples.length > 0 ? (
+            {gender === "bride" && samples.length > 0 ? (
               <div className="grid grid-cols-3 gap-2">
                 {samples.map((s) => {
                   const on = style.label === s.name;
@@ -256,7 +312,7 @@ const HairPreview = () => {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                {STYLES.map((s) => {
+                {stylePresets.map((s) => {
                   const on = style.label === s.label;
                   return (
                     <button

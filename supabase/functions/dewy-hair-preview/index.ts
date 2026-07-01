@@ -9,6 +9,18 @@
 import { adminClient } from "../_shared/supabase.ts";
 import { MODELS } from "../_shared/llm.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import {
+  type SubjectGender,
+  parseGender,
+  faceLock,
+  identityLock,
+  hairStyleGrid,
+  hairColorGrid,
+  hairCandidates,
+  hairColorCandidates,
+  hairRecommendRole,
+  subjectFileName,
+} from "../_shared/subjectPrompt.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -18,63 +30,23 @@ const PER = 5;
 type Kind = "single" | "style" | "color";
 const VALID: Kind[] = ["single", "style", "color"];
 
-const IDENTITY =
-  " The face must remain UNMISTAKABLY the same person as the provided photo — reproduce her " +
-  "exact features: eyes (shape, size, slant, spacing, eyelid type: monolid/double, crease height), " +
-  "eyebrows, nose (bridge height & width, tip, nostrils), lips (shape, fullness, philtrum), jawline, " +
-  "chin, cheekbones, hairline, face length-to-width ratio, skin texture & tone, and any moles/freckles. " +
-  "Do NOT beautify, slim, enlarge eyes, change age, or average toward a generic face. Same camera angle, soft studio lighting and " +
-  "framing, neutral natural expression, clean minimal background. Clean beauty portrait, " +
-  "natural skin texture, no plastic skin, no over-smoothing, ultra-high realism, sharp " +
-  "focus, professional beauty photography. Do not stylize or cartoonize. No text, no logos, no watermarks.";
+// 정체성 고정·헤어 어휘·9그리드 프롬프트는 성별 인지 공유 모듈(_shared/subjectPrompt)로 이관.
+// 신부/신랑 분기를 여기서 하드코딩하지 않는다(체계화).
 
-// 단일 3뷰용 — 카메라 각도 고정 문구는 빼고 얼굴 정체성만 고정.
-const FACE_LOCK =
-  " Keep the face UNMISTAKABLY the same person as the provided photo in every view where the face " +
-  "is visible — reproduce her exact eyes (shape, size, slant, spacing, eyelid type), eyebrows, nose " +
-  "(bridge, tip, nostrils), lips (shape, fullness), jawline, chin, cheekbones, hairline, face proportions " +
-  "and skin tone; do NOT beautify, enlarge eyes, or change age. " +
-  "Natural skin texture, no plastic skin, ultra-high realism, sharp focus, soft studio " +
-  "lighting, clean minimal light-gray background. Do not stylize or cartoonize. No text, no logos, no watermarks.";
-
-const STYLE_GRID =
-  "Generate a 3x3 grid (9 cells) of ultra-realistic portrait photos of the SAME person " +
-  "with different hairstyles. Only change the hairstyle in each cell, keep perfect facial " +
-  "consistency across all nine. Hairstyles: loose natural waves, soft beach curls, sleek " +
-  "straight hair, high ponytail, low ponytail, messy bun, high bun, braided hairstyle, " +
-  "half-up half-down." + IDENTITY;
-
-const COLOR_GRID =
-  "Generate a 3x3 grid (9 cells) of ultra-realistic portrait photos of the SAME person " +
-  "with different hair colors. Only change the hair color in each cell, keep perfect facial " +
-  "consistency across all nine. Hair colors: natural black, dark brown, chocolate brown, " +
-  "light brown, soft caramel, warm honey blonde, ash brown, copper red, platinum blonde." + IDENTITY;
-
-function singlePrompt(style: string) {
-  const s = (style || "soft natural waves").slice(0, 160);
+function singlePrompt(style: string, gender: SubjectGender) {
+  const s = (style || (gender === "groom" ? "clean natural style" : "soft natural waves")).slice(0, 160);
   return (
     "Generate ONE image showing the SAME person with the chosen hairstyle from THREE angles, " +
     "side by side left to right: (1) FRONT view, (2) 45-degree SIDE view, (3) BACK view — so " +
     "the hairstyle is shown fully. Restyle ONLY the hair to: " + s + ". The hair must be " +
-    "identical and consistent across all three views; label nothing." + FACE_LOCK
+    "identical and consistent across all three views; label nothing." + faceLock(gender)
   );
 }
 
 // ── 추천: 업로드 사진 분석 → 어울리는 스타일/컬러 선택 (Gemini Flash 비전) ──
 // 고정 9개를 모두에게 똑같이 찍던 것을 "얼굴 분석 기반 추천"으로 전환.
+// 후보 목록·역할 프롬프트는 성별 인지 공유 모듈에서(신부/신랑 분기 단일 소스).
 // label 은 영어 고정(이미지 프롬프트에 그대로 들어감), reason 은 한국어 설명.
-const HAIR_CANDIDATES = [
-  "loose natural waves", "soft beach curls", "sleek straight hair", "high ponytail",
-  "low ponytail", "messy bun", "high bun", "braided updo", "half-up half-down",
-  "side-swept waves", "voluminous blowout", "low chignon", "face-framing layers",
-  "slicked-back low bun", "romantic loose updo",
-];
-const COLOR_CANDIDATES = [
-  "natural black", "dark brown", "chocolate brown", "light brown", "soft caramel",
-  "warm honey blonde", "ash brown", "copper red", "platinum blonde", "rose brown",
-  "cool dark ash", "golden brown",
-];
-
 type Reco = { summary: string; items: { label: string; reason: string }[] };
 
 // 어울림 순 9개 선택. 실패/불완전(키 없음·응답오류·파싱실패)하면 null → 호출부가 고정목록 폴백.
@@ -83,12 +55,11 @@ async function recommend(
   mimeType: string,
   kind: "style" | "color",
   geminiKey: string,
+  gender: SubjectGender,
 ): Promise<Reco | null> {
   const isColor = kind === "color";
-  const candidates = isColor ? COLOR_CANDIDATES : HAIR_CANDIDATES;
-  const role = isColor
-    ? "너는 웨딩 헤어컬러 전문가다. 사진 속 인물의 피부 언더톤(웜/쿨/뉴트럴)·명도·퍼스널컬러를 분석해 가장 잘 어울리는 헤어 컬러를 고른다."
-    : "너는 웨딩 헤어 스타일리스트다. 사진 속 인물의 얼굴형·이목구비·현재 헤어 길이를 분석해 가장 잘 어울리는 헤어스타일을 고른다.";
+  const candidates = isColor ? hairColorCandidates(gender) : hairCandidates(gender);
+  const role = hairRecommendRole(gender, kind);
   const prompt =
     `${role}\n아래 후보 목록에서만 9개를 어울리는 순서대로 골라라(label 은 목록의 영어 표현을 그대로 사용).\n` +
     `후보: ${candidates.join(", ")}.\n` +
@@ -156,14 +127,14 @@ async function recommend(
 }
 
 // 추천 결과(어울림 순)로 9그리드 프롬프트를 동적 생성.
-function gridPrompt(kind: "style" | "color", items: { label: string }[]): string {
+function gridPrompt(kind: "style" | "color", items: { label: string }[], gender: SubjectGender): string {
   const ordered = items.slice(0, 9).map((it, i) => `${i + 1}) ${it.label}`).join(", ");
   const what = kind === "color" ? "hair color" : "hairstyle";
   return (
     "Generate a 3x3 grid (9 cells) of ultra-realistic portrait photos of the SAME person " +
     `with different ${what}s, one per cell in this exact order (left-to-right, top-to-bottom): ` +
     ordered + `. Only change the ${what} in each cell, keep perfect facial consistency across all nine.` +
-    IDENTITY
+    identityLock(gender)
   );
 }
 
@@ -194,12 +165,14 @@ serve(async (req) => {
 
     const admin = adminClient();
 
-    const body = (await req.json()) as { source_path?: string; options?: string[]; single_style?: string };
+    const body = (await req.json()) as { source_path?: string; options?: string[]; single_style?: string; gender?: string };
     const sourcePath = body.source_path;
     if (!sourcePath || !sourcePath.startsWith(`${userId}/`)) return json({ error: "invalid_source_path" }, 403);
     const options = Array.from(new Set((body.options ?? []).filter((o): o is Kind => VALID.includes(o as Kind))));
     if (options.length === 0) return json({ error: "no_options" }, 400);
     const singleStyle = (body.single_style ?? "").toString();
+    // 성별(신부/신랑) — 프론트가 내 role 기준으로 전달. 없으면 신부 기본(기존 동작·회귀 0).
+    const gender = parseGender(body.gender);
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) return json({ error: "openai_not_configured" }, 500);
@@ -250,14 +223,14 @@ serve(async (req) => {
             let prompt: string;
             let recommendation: Reco | null = null;
             if (kind === "single") {
-              prompt = singlePrompt(singleStyle);
+              prompt = singlePrompt(singleStyle, gender);
             } else {
               recommendation = GEMINI_API_KEY
-                ? await recommend(srcBase64, srcMime, kind, GEMINI_API_KEY)
+                ? await recommend(srcBase64, srcMime, kind, GEMINI_API_KEY, gender)
                 : null;
               prompt = recommendation
-                ? gridPrompt(kind, recommendation.items)
-                : (kind === "style" ? STYLE_GRID : COLOR_GRID);
+                ? gridPrompt(kind, recommendation.items, gender)
+                : (kind === "style" ? hairStyleGrid(gender) : hairColorGrid(gender));
             }
             const form = new FormData();
             form.append("model", MODELS.image);
@@ -265,7 +238,7 @@ serve(async (req) => {
             form.append("size", kind === "single" ? "1536x1024" : "1024x1536");
             form.append("quality", "medium");
             form.append("n", "1");
-            form.append("image[]", blob, "bride.png");
+            form.append("image[]", blob, subjectFileName(gender));
             const res = await fetch("https://api.openai.com/v1/images/edits", {
               method: "POST", headers: { Authorization: `Bearer ${OPENAI_API_KEY}` }, body: form,
             });
