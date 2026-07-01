@@ -73,7 +73,11 @@
 - AI 잡 (`/admin/ai-jobs`) · 프롬프트 (`/admin/ai-prompts /admin/ai-prompt-editor`) · 에이전트 산출물 (`/admin/agent-outputs`)
 - AI 샘플 (`/admin/dress-samples /admin/hair-samples /admin/makeup-samples /admin/wedding-photo-refs`)
 ### C5. 마케팅·CS·운영
+> **마케팅 자동화 모듈**(Phase 5) = 콘솔 `marketing` 그룹(adminNav 단일 소스) + 아래 surface +
+> 배포 파이프라인 `docs/content-distribution.md`(주제→6채널[쓰레드·인스타·네이버블로그·워드프레스·
+> 유튜브숏폼·카페] 초안→검수→발행/Notion, `marketing-draft` 스킬 실행). 그룹 랜딩 = `AdminGroupDashboard`.
 - 인스타 포스트 (`/admin/instagram-posts /admin/instagram-posts/:id /admin/tip-instagrams`)
+- 블로그(SEO) (`/admin/blog-posts /admin/blog-posts/:id`)
 - 프로모션·공지 (`/admin/promotions /admin/announcements`)
 - 사용자 (`/admin/users`) · 문의 (`/admin/inquiries`) · 서비스 대기열 (`/admin/service-waitlist`)
 - 에러로그 (`/admin/error-logs`)
