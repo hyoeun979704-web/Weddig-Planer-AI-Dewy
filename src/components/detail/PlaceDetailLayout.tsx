@@ -121,6 +121,8 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, couponsSection,
   // 업체가 직접 작성 + 운영자 검토 통과한 정보인지 — 신뢰 표시용
   const [vendorAuthored, setVendorAuthored] = useState(false);
   const [inquiryOpen, setInquiryOpen] = useState(false);
+  // 홀 가능일 카드에서 고른 날짜(있으면 문의 시트를 그 날짜로 prefill). 결제 아님.
+  const [inquiryDate, setInquiryDate] = useState<string | undefined>(undefined);
   // 입점 업체가 고른 문의 채널 — 'chat'(인앱) | 'url' | 'phone'. 사장님이 설정.
   const [inquiry, setInquiry] = useState<{ channel: string; url: string | null; phone: string | null }>({
     channel: "chat",
@@ -335,7 +337,10 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, couponsSection,
                       // 사장님이 고른 채널(url/phone), 기본은 인앱 문의 시트(항상 동작).
                       if (inquiry.channel === "url" && inquiry.url) void openExternal(inquiry.url);
                       else if (inquiry.channel === "phone" && inquiry.phone) void openExternal(`tel:${inquiry.phone}`);
-                      else setInquiryOpen(true);
+                      else {
+                        setInquiryDate(undefined); // 일반 문의는 날짜 prefill 없이
+                        setInquiryOpen(true);
+                      }
                     }}
                   >
                     예약 문의
@@ -380,6 +385,7 @@ const PlaceDetailLayout = ({ place, categoryLabel, extraSection, couponsSection,
         placeName={place.name}
         open={inquiryOpen}
         onOpenChange={setInquiryOpen}
+        suggestedDate={inquiryDate}
       />
     </div>
   );
@@ -590,7 +596,20 @@ function BasicTab({
         {/* 지역 가격 가이드 — 큐레이션 지역 평균 + 내 예산 위치(가격 투명성, 참고용). */}
         <RegionalPriceGuide place={{ category: place.category, city: place.city }} />
         {/* 예약 가능일(홀 전용) — 내 예식 예정일 가능 여부 개인화. 데이터 없으면 숨김. */}
-        {place.category === "wedding_hall" && <HallAvailabilityCard placeId={place.id} />}
+        {place.category === "wedding_hall" && (
+          <HallAvailabilityCard
+            placeId={place.id}
+            // 입점(인앱 문의 가능) 홀에서만 날짜칩을 '예약 문의' 버튼으로 — 미입점은 dead-end 방지.
+            onPickDate={
+              isClaimed
+                ? (iso) => {
+                    setInquiryDate(iso);
+                    setInquiryOpen(true);
+                  }
+                : undefined
+            }
+          />
+        )}
         {/* 결혼식장 anchor 등록 CTA — wedding_hall 카테고리에만 표시.
             식장 상세를 보던 흐름 그대로 1탭 등록(§1 L5 JIT). */}
         {place.category === "wedding_hall" && (
