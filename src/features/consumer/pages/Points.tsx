@@ -6,6 +6,7 @@ import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePoints, labelForReason } from "@/hooks/usePoints";
 import { useAttendance } from "@/hooks/useAttendance";
+import PlanningRewardsCard from "@/components/points/PlanningRewardsCard";
 import { isPaymentEntryVisible } from "@/lib/payments";
 import { toast } from "sonner";
 
@@ -122,6 +123,9 @@ const Points = () => {
             포인트 더 모으기
           </h2>
           <div className="space-y-2">
+            {/* 준비 진행 리워드 — 예산·식장·첫견적·체크리스트 완료 시 자동 하트 적립 */}
+            <PlanningRewardsCard />
+
             {/* 미니게임 */}
             <button
               onClick={() => navigate('/merge-game')}
