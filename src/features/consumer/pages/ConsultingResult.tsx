@@ -8,20 +8,14 @@ import ZoomableImage from "@/components/ai/ZoomableImage";
 import BottomNav from "@/components/BottomNav";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { fetchConsultingReport, consultingResultUrl } from "@/features/consumer/data/weddingConsulting";
+import { fetchConsultingReport, consultingResultUrl, consultingSectionLabel } from "@/features/consumer/data/weddingConsulting";
 import { toast } from "@/hooks/use-toast";
 import { removePendingJob } from "@/lib/pendingJobs";
 import ProcessingGuide from "@/components/ProcessingGuide";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 
 // 2026 웨딩컨설팅 결과 (/ai-studio/consulting/result/:id)
 // reports row 를 폴링 — processing 이면 생성 중, completed 면 보드 표시, failed 면 안내.
-
-const LABEL: Record<string, string> = {
-  personal_color: "퍼스널컬러",
-  hair: "헤어",
-  makeup: "메이크업",
-  dress: "드레스+부케",
-};
 
 interface BoardItem {
   section: string;
@@ -44,6 +38,8 @@ const ConsultingResult = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { weddingSettings } = useWeddingSchedule();
+  const gender: "bride" | "groom" = weddingSettings.role === "groom" ? "groom" : "bride";
   const [report, setReport] = useState<ReportRow | null>(null);
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -202,7 +198,7 @@ const ConsultingResult = () => {
               <div key={b.path} className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-foreground">
-                    {LABEL[b.section] ?? b.section}
+                    {consultingSectionLabel(b.section, gender)}
                   </span>
                   {urls[b.section] && (
                     <div className="flex items-center gap-3">
@@ -228,7 +224,7 @@ const ConsultingResult = () => {
                 {urls[b.section] ? (
                   <ZoomableImage
                     src={urls[b.section]}
-                    alt={LABEL[b.section] ?? b.section}
+                    alt={consultingSectionLabel(b.section, gender)}
                     className="w-full rounded-xl border border-border bg-white"
                   />
                 ) : (

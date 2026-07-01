@@ -1,30 +1,29 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Upload, Sparkles, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { uploadConsultingSource, requestConsulting, fetchConsultingDiscounted, fetchConsultingReports } from "@/features/consumer/data/weddingConsulting";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
+import {
+  uploadConsultingSource,
+  requestConsulting,
+  fetchConsultingDiscounted,
+  fetchConsultingReports,
+  consultingSectionLabel,
+  CONSULTING_SECTION_KEYS,
+  type ConsultingSectionKey,
+} from "@/features/consumer/data/weddingConsulting";
 import { toast } from "@/hooks/use-toast";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { addPendingJob } from "@/lib/pendingJobs";
 
-// 2026 웨딩컨설팅 — 신부 사진 분석 → 매거진급 A4 보드(gpt-image-2 생성) 4종.
+// 2026 웨딩컨설팅 — 신부/신랑 사진 분석 → 매거진급 A4 보드(gpt-image-2 생성) 4종.
 // 가격: 섹션당 10하트, 4섹션(종합) 30하트. 계정당 첫 1회 50% 할인(반올림).
+// 성별은 역할(role)로 자동 판별(+ ?gender=groom 오버라이드). 신랑판은 예복·그루밍으로 재구성.
 
-type SectionKey = "personal_color" | "hair" | "makeup" | "dress";
-const SECTION_META: { key: SectionKey; label: string }[] = [
-  { key: "personal_color", label: "퍼스널컬러" },
-  { key: "hair", label: "헤어" },
-  { key: "makeup", label: "메이크업" },
-  { key: "dress", label: "드레스+부케" },
-];
-const LABEL: Record<string, string> = {
-  personal_color: "퍼스널컬러",
-  hair: "헤어",
-  makeup: "메이크업",
-  dress: "드레스+부케",
-};
+type SectionKey = ConsultingSectionKey;
+const SECTION_KEYS = CONSULTING_SECTION_KEYS;
 
 interface ReportRow {
   id: string;
@@ -44,10 +43,14 @@ const costOf = (n: number) => (n >= 4 ? 30 : n * 10);
 const WeddingConsulting = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { weddingSettings } = useWeddingSchedule();
+  const [searchParams] = useSearchParams();
+  // 성별 — ?gender=groom 오버라이드 우선, 없으면 역할(role)로 자동 판별(기본=신부).
+  const gender: "bride" | "groom" =
+    searchParams.get("gender") === "groom" || weddingSettings.role === "groom" ? "groom" : "bride";
+  const isGroom = gender === "groom";
   const [pick, setPick] = useState<{ file: File; url: string } | null>(null);
-  const [sel, setSel] = useState<Set<SectionKey>>(
-    new Set(SECTION_META.map((s) => s.key)),
-  );
+  const [sel, setSel] = useState<Set<SectionKey>>(new Set(SECTION_KEYS));
   const [discounted, setDiscounted] = useState<boolean | null>(null);
   const [processing, setProcessing] = useState(false);
   const [reports, setReports] = useState<ReportRow[]>([]);
@@ -80,7 +83,7 @@ const WeddingConsulting = () => {
       return next;
     });
 
-  const selected = SECTION_META.filter((s) => sel.has(s.key)).map((s) => s.key);
+  const selected = SECTION_KEYS.filter((k) => sel.has(k));
   const base = costOf(selected.length);
   const finalCost = discounted ? Math.round(base / 2) : base;
 
@@ -99,7 +102,7 @@ const WeddingConsulting = () => {
 
   const handleStart = async () => {
     if (!user) return navigate("/auth");
-    if (!pick) return toast({ title: "신부 사진을 올려주세요" });
+    if (!pick) return toast({ title: `${isGroom ? "신랑" : "신부"} 사진을 올려주세요` });
     if (selected.length === 0)
       return toast({ title: "섹션을 1개 이상 선택해주세요" });
     if (
@@ -116,7 +119,7 @@ const WeddingConsulting = () => {
       const path = await uploadConsultingSource(user.id, pick.file);
       let reportId: string;
       try {
-        reportId = await requestConsulting(path, selected);
+        reportId = await requestConsulting(path, selected, gender);
       } catch (e) {
         // 하트 부족은 전용 안내(충전 CTA)로 분기 — 일반 실패 토스트로 흘리지 않음.
         if (e instanceof Error && e.message === "insufficient_hearts") {
@@ -158,8 +161,9 @@ const WeddingConsulting = () => {
             </h2>
           </div>
           <p className="mt-1 text-[12px] text-muted-foreground leading-relaxed">
-            신부님 사진을 분석해 퍼스널컬러·헤어·메이크업·드레스를 매거진풍 A4로
-            만들어 드려요. 전문 진단이 아닌 프리미엄 스타일링 제안이에요.
+            {isGroom
+              ? "신랑님 사진을 분석해 퍼스널컬러·헤어·그루밍·예복을 매거진풍 A4로 만들어 드려요. 전문 진단이 아닌 프리미엄 스타일링 제안이에요."
+              : "신부님 사진을 분석해 퍼스널컬러·헤어·메이크업·드레스를 매거진풍 A4로 만들어 드려요. 전문 진단이 아닌 프리미엄 스타일링 제안이에요."}
           </p>
           <p className="mt-2 text-[12px] text-foreground">
             섹션당 10하트 · 종합 4장 30하트
@@ -172,11 +176,13 @@ const WeddingConsulting = () => {
         </section>
 
         <section className="space-y-2">
-          <h3 className="text-sm font-bold text-foreground">신부 사진</h3>
+          <h3 className="text-sm font-bold text-foreground">{isGroom ? "신랑 사진" : "신부 사진"}</h3>
           <p className="text-[12px] text-muted-foreground leading-relaxed">
             얼굴이 잘 보이는 정면·자연광 사진을 올려주세요.{" "}
             <span className="font-semibold text-foreground">전신이 함께 나오면</span>{" "}
-            체형·드레스 실루엣·넥라인 추천이 더 정확해져요.
+            {isGroom
+              ? "골격·수트 핏·라펠 추천이 더 정확해져요."
+              : "체형·드레스 실루엣·넥라인 추천이 더 정확해져요."}
           </p>
           <button
             type="button"
@@ -206,20 +212,20 @@ const WeddingConsulting = () => {
         <section className="space-y-2">
           <h3 className="text-sm font-bold text-foreground">받을 섹션</h3>
           <div className="grid grid-cols-2 gap-2">
-            {SECTION_META.map((s) => {
-              const on = sel.has(s.key);
+            {SECTION_KEYS.map((k) => {
+              const on = sel.has(k);
               return (
                 <button
-                  key={s.key}
+                  key={k}
                   type="button"
-                  onClick={() => toggle(s.key)}
+                  onClick={() => toggle(k)}
                   className={`h-11 rounded-xl border text-[13px] font-medium ${
                     on
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-background text-foreground"
                   }`}
                 >
-                  {s.label}
+                  {consultingSectionLabel(k, gender)}
                 </button>
               );
             })}
@@ -245,7 +251,7 @@ const WeddingConsulting = () => {
                 >
                   <div className="text-left">
                     <p className="text-[13px] font-medium text-foreground">
-                      {r.sections.map((s) => LABEL[s] ?? s).join(" · ")}
+                      {r.sections.map((s) => consultingSectionLabel(s, gender)).join(" · ")}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
                       {new Date(r.created_at).toLocaleString("ko-KR", {
