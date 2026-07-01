@@ -162,7 +162,7 @@ graph TD
 | 공유 위치 | `src/lib`·`src/integrations`·`src/contexts` | **`packages/{lib,db,shared,...}` 로 이동, alias 로 `@/*` 유지** | grep 시 packages 도 본다 |
 | 사장님 앱 | "네이티브+푸시, Phase 4-B(장기)" | **`apps/partners/` 웹 스캐폴드 착수(4-B1) — 독립 App/main/vite + PartnerAuth** | 4-B 이어가기(§3-A) |
 | Phase 1(도메인폴더) | 완료 | ✅ 완료 확인(`features/{consumer,partners,console}` + 경계 린트) | 유지 |
-| Phase 2(번들청크) | 다음 | **부분 — IS_NATIVE 시 console/partners tree-shake는 있음**(App.tsx). 단 `manualChunks` 는 **vendor 라이브러리만** 분리, 도메인 청크(app-partners/app-console) **없음**(vite.config.ts:95-109) | A1에서 도메인 청크 추가 |
+| Phase 2(번들청크) | 다음 | **사실상 완료(재확인)** — console/partners 는 라우트별 lazy + IS_NATIVE 빌드타임 제외. 소비자 eager(index) 진입에 도메인 코드 0. `manualChunks` 도메인 청크는 **불필요·역효과**(A1 실측 §3-A) | 추가 작업 없음(코드 변경 안 함) |
 | DB 규모 | 147테이블(06-28 운영DB 스냅샷) | **types.ts 211테이블 · 마이그 276** | 큰 값 기준 인용 |
 
 > 이 표가 이 문서의 존재 이유다: **"문서엔 장기라던 모노레포가 이미 진행 중"** 이라는 사실을 모르면
@@ -178,10 +178,26 @@ graph TD
 
 | 순서 | 작업 | 근거 | 완료 기준 |
 |---|---|---|---|
-| A1 | **Phase 2 도메인 청크 추가** — `vite.config` manualChunks 에 `app-partners`·`app-console` 도메인 청크 신설(현재 vendor 만 분리). 네이티브 제외는 IS_NATIVE 로 부분 완료 → 청크 리포트 before/after 수치 검증 | 260624 §Phase2 | 소비자 초기 청크 축소 수치 |
+| A1 | ~~Phase 2 도메인 청크 추가~~ **→ 검증 결과 불필요·역효과, 코드 변경 안 함(아래 검증 로그)** | 260624 §Phase2 | **완료(negative result)** |
 | A2 | **Phase 4-B 사장님 앱 이어가기** — `apps/partners` 를 웹 스캐폴드→실사용까지: 라우트 완결성·독립 로그인 동선·web·capacitor 양빌드, 소비자 회귀 0 | 260629 마스터 · 260624 §Phase4 | 파트너 전 화면 apps/partners 로 접근, lint/test/integrity 녹색 |
 | A3 | **Phase 3 앱별 감사 자동화** — `audit-surface-map` 를 앱별 분할 + `weekly-audit.yml` 매트릭스 job(consumer/partners/console 병렬) | 260624 §Phase3(가치 최상) | 앱별 커버리지 표 완결 |
 | A4 | **Phase 5 마케팅 자동화 모듈화** — 흩어진 `instagram-*`+`AdminInstagramPosts`+`content-distribution` 를 console 대시보드 surface 로 통합 | 260624 §Phase5 | 감사맵 등재 |
+
+> **A1 검증 로그 (260701, 실측 후 코드 변경 없음)**: `vite.config` manualChunks 에
+> `/features/partners/`→`app-partners`, `/features/console/`→`app-console` 도메인 청크를 실제로
+> 넣고 before/after 프로덕션 빌드를 비교했다. 결론: **넣으면 안 된다.**
+> - **베이스라인이 이미 최적**: console·partners 는 라우트별 lazy 청크(각 66개) + `App.tsx` 의
+>   `IS_NATIVE ? null : lazy()` 로 네이티브 빌드타임 제외. 소비자 진입(index.html)의 modulepreload
+>   에 도메인 코드가 **0**(vendor·index 만 preload). 즉 "소비자 초기 청크에서 기업/운영 분리"라는
+>   Phase 2 목표는 **이미 달성**돼 있어 도메인 청크로 더 줄일 여지가 없다.
+> - **오히려 역효과(console)**: 모든 console 모듈을 한 `app-console` 청크로 강제하니 Rollup 이
+>   엔트리에 **정적 import 엣지**를 만들어 `index.html` 이 **app-console(826KB / gz 240KB)** 를
+>   **modulepreload** 로 당겨왔다(소비자 진입에 운영 코드 240KB 선다운로드 = 회귀). partners 는
+>   정적 엣지가 없어 preload 안 됨(무해하나 이득도 없음 — 이미 lazy).
+> - **교훈**: manualChunks 문자열 매칭 consolidation 은 이미 잘 쪼개진(=per-route lazy) 도메인에는
+>   순이득이 없고, 정적 엣지가 하나라도 있으면 도메인 전체를 eager preload 로 승격시켜 위험하다.
+>   Phase 2 는 "완료"로 간주하고, 정말 필요하면 **번들 리포트 회귀 가드(CI)** 로 대체한다(도메인
+>   코드가 소비자 eager 그래프에 새로 유입되면 실패시키는 테스트) — consolidation 보다 안전.
 
 ### 트랙 B — 제품(경쟁 갭 해소) 나머지
 
