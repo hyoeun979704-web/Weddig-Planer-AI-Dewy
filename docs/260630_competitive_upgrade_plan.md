@@ -105,6 +105,13 @@
   명단 관리 접근을 살림**(RSVP→명단 import 루프 완성). 사용자 노출되므로 삭제 confirm 추가.
   **좌석배치(seating_layouts + 드래그 UI)는 명단이 채워진 뒤로 이월.** 구현: App.tsx 라우트·
   HomeQuickLinks·InvitationRsvpDashboard·Guests.tsx(삭제 confirm).
+- **구현 노트(260701-b) — 좌석배치 데이터 수집 ① 착수**: 좌석 미리보기는 각 홀 구조가
+  필요한데 미수집이었다. 정밀 평면도 대신 **"테이블 수 × 테이블당 좌석" 구조 숫자만** 수집:
+  `place_wedding_halls`(파트너 편집 detail 테이블 — place_halls 는 카탈로그)에
+  `table_count`·`seats_per_table` 추가 + `upsert_my_listing_detail`/`get_my_listing_detail`
+  wedding_hall 분기 확장(tailor_shop 선례 패턴, 전체 CREATE OR REPLACE) + 기업 홀 관리
+  폼(`BusinessListingDetailForm`)에 입력칸 2개. 마이그 20260701010000, 라이브 적용.
+  DB 라운드트립 실측(upsert→get, 25/10 정상). **좌석배치 UI(②)는 구조·명단 수집 뒤.**
 
 ---
 

@@ -22,6 +22,9 @@ const DETAIL_SCHEMA: Record<string, FieldDef[]> = {
     { key: "meal_types", label: "식사 옵션", type: "multi", options: ["한식", "양식", "뷔페"] },
     { key: "min_guarantee", label: "최소 보증 인원", type: "number" },
     { key: "max_guarantee", label: "최대 수용 인원", type: "number" },
+    // 좌석배치 미리보기 기반 — 정밀 도면 대신 "테이블 수 × 테이블당 좌석" 구조 숫자만 수집.
+    { key: "table_count", label: "테이블 수", type: "number" },
+    { key: "seats_per_table", label: "테이블당 좌석", type: "number" },
   ],
   studio: [
     { key: "shoot_styles", label: "촬영 스타일", type: "multi", options: ["모던", "내추럴", "클래식", "로맨틱", "빈티지", "심플", "엘레강스"] },
