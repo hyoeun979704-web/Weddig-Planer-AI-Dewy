@@ -5,8 +5,9 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchPlaceName } from "@/features/consumer/data/quotes";
+import { fetchPlaceName, fetchQuoteContext, type QuoteContext } from "@/features/consumer/data/quotes";
 import { useQuoteThread, sendQuoteMessage } from "@/hooks/useQuotes";
+import QuoteContextCard from "@/components/quote/QuoteContextCard";
 
 // 견적 요청-업체 간 인앱 메시지 스레드. 소비자·업체 양쪽이 같은 화면을 쓴다(RLS 로 보호).
 const QuoteThread = () => {
@@ -17,12 +18,19 @@ const QuoteThread = () => {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [placeName, setPlaceName] = useState<string>("");
+  const [context, setContext] = useState<QuoteContext | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!placeId) return;
     void fetchPlaceName(placeId).then(setPlaceName);
   }, [placeId]);
+
+  // 요청 요약 컨텍스트(예식일·지역·예산·스타일) — 업체가 즉시 맞춤 답변하도록.
+  useEffect(() => {
+    if (!requestId) return;
+    void fetchQuoteContext(requestId).then(setContext);
+  }, [requestId]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,6 +59,7 @@ const QuoteThread = () => {
       </header>
 
       <main className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+        {context && <QuoteContextCard context={context} />}
         {loading ? (
           <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : messages.length === 0 ? (

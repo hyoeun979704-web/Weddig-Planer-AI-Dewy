@@ -6,6 +6,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { uploadToBucket } from "@/lib/storage";
+import type { QuoteContext } from "@/lib/quoteContext";
+
+export type { QuoteContext };
 
 const QUOTE_UPLOAD_BUCKET = "quote-uploads";
 
@@ -44,6 +47,30 @@ export async function uploadQuoteImage(userId: string, file: File): Promise<stri
   const path = `${userId}/${crypto.randomUUID()}.${ext}`;
   await uploadToBucket(QUOTE_UPLOAD_BUCKET, path, file, { contentType: file.type, upsert: false });
   return path;
+}
+
+/** 견적 요청 컨텍스트(스레드 상단 요약 카드용). RLS: 요청자 본인 + 매칭 업체 모두 조회 가능
+ *  (quote_requests_select = user_id=auth.uid() OR is_quote_target(id)).
+ *  타입은 소비자·업체 공유라 @/lib/quoteContext(shared)에 둔다. */
+export async function fetchQuoteContext(requestId: string): Promise<QuoteContext | null> {
+  const { data } = await supabase
+    .from("quote_requests")
+    .select("category, region_city, region_district, budget_min, budget_max, wedding_date, style, note, image_paths")
+    .eq("id", requestId)
+    .maybeSingle();
+  if (!data) return null;
+  const d = data as Record<string, unknown>;
+  return {
+    category: (d.category as string) ?? "",
+    region_city: (d.region_city as string) ?? null,
+    region_district: (d.region_district as string) ?? null,
+    budget_min: (d.budget_min as number) ?? null,
+    budget_max: (d.budget_max as number) ?? null,
+    wedding_date: (d.wedding_date as string) ?? null,
+    style: (d.style as string) ?? null,
+    note: (d.note as string) ?? null,
+    image_count: Array.isArray(d.image_paths) ? d.image_paths.length : 0,
+  };
 }
 
 /** 견적 스레드 헤더용 업체 이름 조회. 없으면 빈 문자열(헤더 폴백). */

@@ -15,13 +15,10 @@ import { markBoardSlotQuoting } from "@/hooks/useVendorBoard";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { usePersonaInsights } from "@/hooks/usePersonaInsights";
 import { useTextDraft } from "@/hooks/useTextDraft";
+import { QUOTE_STYLE_LABEL } from "@/lib/quoteContext";
 
-const STYLES: { v: string; label: string }[] = [
-  { v: "general", label: "일반 예식" },
-  { v: "small", label: "스몰웨딩" },
-  { v: "self", label: "셀프웨딩" },
-  { v: "custom", label: "기타" },
-];
+// 스타일 라벨 단일 소스(견적 컨텍스트 카드와 공유 — 드리프트 방지).
+const STYLES = Object.entries(QUOTE_STYLE_LABEL).map(([v, label]) => ({ v, label }));
 
 // 소비자가 필요를 한 번에 남기면 조건 매칭 업체들에 리드가 뿌려진다(견적 요청).
 const QuoteNew = () => {
