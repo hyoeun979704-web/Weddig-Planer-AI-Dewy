@@ -6,6 +6,8 @@
 // 대상 버킷(AI 개인사진 30일 삭제):
 //   - dress-uploads / dress-results : 드레스 AI 합성 입력·결과
 //   - makeup-uploads / makeup-results : 메이크업 AI 합성 입력·결과
+//   - sdm-uploads / sdm-results : 스드메 미리보기 입력·결과 (RPC 는 20260626100000 에서
+//     추가됐지만 이 함수의 TARGET_BUCKETS 에 빠져 있어 삭제가 no-op 이던 P0 교정)
 //   - invitation-uploads : 단, RPC 가 AI 결과물 prefix(consulting/hair/photofix/enhanced)만 반환.
 //     (청첩장 사진·지도 등 '직접 {uid}/<file>' 은 청첩장 생명주기로 관리 → 본 일괄삭제 제외)
 //
@@ -39,6 +41,7 @@ const PUBLISHED_MOBILE_DAYS = 90;
 const TARGET_BUCKETS = [
   "dress-uploads", "dress-results",
   "makeup-uploads", "makeup-results",
+  "sdm-uploads", "sdm-results",
   "invitation-uploads",
 ] as const;
 const BATCH_SIZE = 100; // Storage API .remove() 1회 호출당 최대 경로 수
