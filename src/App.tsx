@@ -82,6 +82,7 @@ const Referral = lazy(() => import("@/features/consumer/pages/Referral"));
 const Coupons = lazy(() => import("@/features/consumer/pages/Coupons"));
 const Orders = lazy(() => import("@/features/consumer/pages/Orders"));
 const MySchedule = lazy(() => import("@/features/consumer/pages/MySchedule"));
+const Guests = lazy(() => import("@/features/consumer/pages/Guests"));
 const Profile = lazy(() => import("@/features/consumer/pages/Profile"));
 const Notifications = lazy(() => import("@/features/consumer/pages/Notifications"));
 const AppNotifications = lazy(() => import("@/features/consumer/pages/AppNotifications"));
@@ -243,6 +244,7 @@ const App = () => (
               <Route path="/budget/history" element={<BudgetHistory />} />
               <Route path="/budget/category/:category" element={<BudgetCategoryDetail />} />
               <Route path="/schedule" element={<Schedule />} />
+              <Route path="/guests" element={<Guests />} />
               <Route path="/ai-studio" element={<AIStudio />} />
               <Route path="/wrapped" element={<WeddingWrapped />} />
               <Route path="/community" element={<Community />} />

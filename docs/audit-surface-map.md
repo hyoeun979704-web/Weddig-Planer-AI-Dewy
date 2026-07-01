@@ -23,6 +23,7 @@
 ### A3. 준비 도구 (개인화 핵심)
 - 일정/타임라인 (`/schedule /my-schedule`) — 추천 할일 퀴즈카드
 - **보드/체크리스트** (`/board`)
+- 하객 명단 (`/guests`) — 측·관계·RSVP·참석인원 관리(RSVP 대시보드에서 import, 식대 추정 연동)
 - 예산 (`/budget /budget/history /budget/category/:c /budget/split-simulator`) — 환불 포함
 - 커플 다이어리·투표 (`/couple-diary /couple-vote`) · Wrapped/마일스톤 (`/wrapped`) · 머지게임 (`/merge-game`) · 리퍼럴 (`/referral`)
 

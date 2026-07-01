@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ClipboardList, Scale, FileText } from "lucide-react";
+import { ClipboardList, Scale, FileText, Users } from "lucide-react";
 import { trackHomeNav } from "@/lib/track";
 
 // 홈에서 주요 도구로 바로 가는 단축 줄. 홈이 AI 플래너 중심이라 보드·견적·비교 같은
@@ -9,6 +9,7 @@ const LINKS: { label: string; href: string; Icon: typeof ClipboardList }[] = [
   { label: "업체보드", href: "/board", Icon: ClipboardList },
   { label: "내 견적", href: "/quote", Icon: FileText },
   { label: "업체비교", href: "/compare", Icon: Scale },
+  { label: "하객 명단", href: "/guests", Icon: Users },
 ];
 
 const HomeQuickLinks = () => {

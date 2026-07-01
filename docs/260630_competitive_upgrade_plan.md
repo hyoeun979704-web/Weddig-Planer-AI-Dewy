@@ -98,6 +98,13 @@
 - **개인화 ③→⑤**: 관계(가족/친구/회사)·side 로 테이블 군집 자동 제안, 식장 테이블수 입력 시 분배.
 - **신규 스키마**: `seating_layouts`(invitation/user scope, JSON 배치) 신규 테이블.
 - 난이도: **M~L** · 위험: 중(UX 복잡도).
+- **구현 노트(260701) — 데이터 소스 선결로 범위 조정(옵션 B)**: 좌석배치 데이터 소스인
+  하객 명단 페이지(`Guests.tsx`)가 **라우팅 안 됨**(orphan) — 사용자가 명단을 만들 화면이
+  없어 빈 데이터 위 좌석 도구는 시기상조. → 먼저 `Guests.tsx` 를 `/guests` 로 라우팅 +
+  진입점(홈 퀵링크 `HomeQuickLinks`, RSVP 대시보드 "하객 명단에서 관리하기") 추가로 **하객
+  명단 관리 접근을 살림**(RSVP→명단 import 루프 완성). 사용자 노출되므로 삭제 confirm 추가.
+  **좌석배치(seating_layouts + 드래그 UI)는 명단이 채워진 뒤로 이월.** 구현: App.tsx 라우트·
+  HomeQuickLinks·InvitationRsvpDashboard·Guests.tsx(삭제 confirm).
 
 ---
 
