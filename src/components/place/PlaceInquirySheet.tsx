@@ -29,13 +29,26 @@ interface Props {
   placeName?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * 홀 예약 가능일 카드에서 특정 날짜(ISO yyyy-mm-dd)를 골라 문의를 열 때 그 날짜.
+   * 있으면 제목/내용을 그 날짜 기준으로 prefill(예식월 기반 prefill보다 우선). 결제 아님.
+   */
+  suggestedDate?: string;
 }
+
+const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
+/** ISO(yyyy-mm-dd) → "M월 D일(요일)". 파싱 실패 시 원문 반환(방어). */
+const fmtInquiryDate = (iso: string): string => {
+  const d = new Date(iso + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${d.getMonth() + 1}월 ${d.getDate()}일(${WEEKDAY[d.getDay()]})`;
+};
 
 /**
  * 입점 업체 인앱 문의 시트 — 작성 + 내 문의/답변 확인을 한 화면에서.
  * RLS: 본인 문의만 조회되고, 소유자 있는(입점) 업체에만 INSERT 가 허용된다.
  */
-const PlaceInquirySheet = ({ placeId, placeName, open, onOpenChange }: Props) => {
+const PlaceInquirySheet = ({ placeId, placeName, open, onOpenChange, suggestedDate }: Props) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { weddingSettings } = useWeddingSchedule();
@@ -75,6 +88,17 @@ const PlaceInquirySheet = ({ placeId, placeName, open, onOpenChange }: Props) =>
       draftKey(`place-inquiry:${placeId}`, user.id),
     );
     if (saved?.title?.trim() || saved?.content?.trim()) return;
+    // 가능일 카드에서 고른 특정 날짜가 있으면 그 날짜로 예약 문의 초안(예식월 prefill보다 우선).
+    if (suggestedDate) {
+      const label = fmtInquiryDate(suggestedDate);
+      setTitle((cur) => cur || `${label} 예약 문의`);
+      setContent(
+        (cur) =>
+          cur ||
+          `${label}에 예약 가능한지 문의드려요. 예상 인원·견적도 함께 안내 부탁드려요.`,
+      );
+      return;
+    }
     const date = weddingSettings.wedding_date;
     const month =
       !weddingSettings.wedding_date_tbd && date
@@ -92,7 +116,7 @@ const PlaceInquirySheet = ({ placeId, placeName, open, onOpenChange }: Props) =>
       const loc = region ? ` (${region})` : "";
       return `${head}${loc}. 가능 날짜와 견적 안내 부탁드려요.`;
     });
-  }, [open, user, placeId, weddingSettings]);
+  }, [open, user, placeId, weddingSettings, suggestedDate]);
 
   // 열릴 때 이 업체에 보낸 내 문의 + 답변 로드
   useEffect(() => {

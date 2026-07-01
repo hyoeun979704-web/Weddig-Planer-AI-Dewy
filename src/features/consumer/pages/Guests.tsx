@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGuestList, type GuestDraft } from "@/hooks/useGuestList";
+import SeatingDraftPreview from "@/components/schedule/SeatingDraftPreview";
 import {
   GUEST_RSVP_LABEL,
   GUEST_RSVP_ORDER,
@@ -307,6 +308,9 @@ const Guests = () => {
             </ul>
           )}
         </section>
+
+        {/* 좌석 배치 초안(B2) — 관계 기반 자동 초안. 참석 확정 없으면 안내만(빈 데이터 폴백). */}
+        <SeatingDraftPreview />
       </main>
 
       <BottomNav activeTab={location.pathname} onTabChange={(href) => navigate(href)} />

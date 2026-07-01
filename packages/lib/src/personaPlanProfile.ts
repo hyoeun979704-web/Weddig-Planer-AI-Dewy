@@ -1,6 +1,6 @@
 import type { WeddingPersonaMode, CeremonyType } from "@/lib/weddingPersona";
 import type { PregnancyTrimester } from "@/lib/pregnancy";
-import type { TimelinePhase } from "@/lib/schedule";
+import { WEDDING_EXPO_TASK, type TimelinePhase } from "@/lib/schedule";
 
 // 페르소나별 "추천 계획" 프로파일 — 단일 소스. 표준(standard_bride/groom)의 일정 5단계를
 // 기준선으로 두고, 각 페르소나는 **델타(추가/제거)만** 선언한다(표준 변경이 전 페르소나에
@@ -40,14 +40,14 @@ type ScheduleProfileOrFn = ScheduleProfile | ((ctx: PlanContext) => ScheduleProf
 // 식(예식) 없는 페르소나 — 웨딩홀·식순·리허설·본식 영상·하객 식대를 빼고 촬영·혼인신고·신혼 준비를 채운다.
 // 혼인신고 행정은 리서치 근거로 구체화(증인 2인·가족관계증명서·평일 시군구청).
 const SELF: ScheduleProfile = {
-  "1": { remove: ["웨딩홀 리스트업", "웨딩플래너 상담"], add: ["셀프 촬영 콘셉트·장소 정하기"] },
+  "1": { remove: ["웨딩홀 리스트업", "웨딩플래너 상담", WEDDING_EXPO_TASK], add: ["셀프 촬영 콘셉트·장소 정하기"] },
   "2": { remove: ["웨딩홀 계약하기", "본식 사진·영상(DVD) 예약"], add: ["셀프 촬영 장비·동선 준비", "혼인신고 서류 준비(증인 2인·가족관계증명서)"] },
   "4": { remove: ["하객 인원 확정(식대·답례품 수량)"] },
   "5": { remove: ["웨딩 리허설", "식순 확인", "답례품 준비"], add: ["혼인신고 접수(평일·시군구청)"] },
 };
 
 const NO_WEDDING: ScheduleProfile = {
-  "1": { remove: ["웨딩홀 리스트업", "웨딩플래너 상담", "웨딩 스타일 결정하기"], add: ["신혼집·혼수 우선순위 정하기"] },
+  "1": { remove: ["웨딩홀 리스트업", "웨딩플래너 상담", "웨딩 스타일 결정하기", WEDDING_EXPO_TASK], add: ["신혼집·혼수 우선순위 정하기"] },
   "2": { remove: ["웨딩홀 계약하기", "스튜디오 선정", "드레스샵 예약", "메이크업샵 예약", "본식 사진·영상(DVD) 예약"], add: ["신혼여행 큐레이션 비교"] },
   "4": { remove: ["청첩장 제작", "모바일 청첩장 발송", "하객 리스트 정리", "하객 인원 확정(식대·답례품 수량)"], add: ["허니문 상세 일정 확정"] },
   "5": { remove: ["드레스 최종 피팅", "웨딩 리허설", "식순 확인", "답례품 준비"], add: ["신혼집 셋업 마무리"] },
