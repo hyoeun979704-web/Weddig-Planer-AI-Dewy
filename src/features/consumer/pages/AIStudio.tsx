@@ -9,7 +9,9 @@ import WaitlistSignupSheet from "@/components/studio/WaitlistSignupSheet";
 import PageTutorial from "@/components/tutorial/PageTutorial";
 import Seo from "@/components/Seo";
 import { usePersonaInsights } from "@/hooks/usePersonaInsights";
+import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { shouldHideWeddingCeremony } from "@/lib/weddingPersona";
+import { rankStudioCardIds, studioPersonaHint } from "@/lib/studioPersonalization";
 
 interface StudioCard {
   id: string;
@@ -111,14 +113,25 @@ const AIStudio = () => {
   const activeTab: CategoryTab = "ai-studio";
   const [waitlistCard, setWaitlistCard] = useState<StudioCard | null>(null);
   const { personaMode, isLoaded } = usePersonaInsights();
+  const { weddingSettings } = useWeddingSchedule();
+  const role = weddingSettings.role ?? null;
 
   // I2a — 노웨딩·스냅 페르소나엔 예식 전제 카드(스드메 완성본·청첩장·식전영상)만 숨긴다.
   // 스타일링 카드는 유지하므로 빈 스튜디오가 되지 않는다. 로드 전(persona_mode null→standard_bride)
   // 이나 비해당 페르소나는 전부 노출(기본 안전). 분류 후에만 필터가 발동한다.
-  const visibleCards = useMemo(
-    () => cards.filter((c) => !(c.requiresCeremony && isLoaded && shouldHideWeddingCeremony(personaMode))),
-    [personaMode, isLoaded],
-  );
+  // 개인화(P3): 로드 후 역할·페르소나로 카드 순서만 재정렬(숨김 아님 — rankStudioCardIds).
+  const visibleCards = useMemo(() => {
+    const filtered = cards.filter(
+      (c) => !(c.requiresCeremony && isLoaded && shouldHideWeddingCeremony(personaMode)),
+    );
+    if (!isLoaded) return filtered; // 분류 전엔 기본 순서(안전)
+    const order = rankStudioCardIds(filtered.map((c) => c.id), { personaMode, role });
+    const byId = new Map(filtered.map((c) => [c.id, c]));
+    return order.map((id) => byId.get(id)!);
+  }, [personaMode, isLoaded, role]);
+
+  // 성향/역할 힌트 — 없으면 렌더 안 함(노이즈 방지).
+  const personaHint = isLoaded ? studioPersonaHint({ personaMode, role }) : null;
 
   const handleTabChange = (href: string) => {
     navigate(href);
@@ -153,6 +166,9 @@ const AIStudio = () => {
           </span>
           <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
         </button>
+        {personaHint && (
+          <p className="mx-4 mt-3 text-[12px] text-primary">{personaHint}</p>
+        )}
         {/* 모바일=1열 전체폭 배너, 데스크톱(≥1024px, 칼럼 960px)=2열로 채워 가로 늘어짐 방지 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 px-4 py-5">
           {visibleCards.map((card, index) => {
