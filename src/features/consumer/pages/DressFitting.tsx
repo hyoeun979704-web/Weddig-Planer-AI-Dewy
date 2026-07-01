@@ -91,6 +91,11 @@ const DressFitting = () => {
   const [selectedDress, setSelectedDress] = useState<DressSample | null>(null);
   const [dressMode, setDressMode] = useState<"catalog" | "custom">("catalog");
   const [customDress, setCustomDress] = useState<DressMetadata>({});
+  // 성별(신부/신랑) — 기본 role, 토글 가능. 신랑은 드레스 카탈로그 대신 예복(수트) 텍스트로 생성.
+  const [genderOverride, setGenderOverride] = useState<"bride" | "groom" | null>(null);
+  const gender: "bride" | "groom" =
+    genderOverride ?? (weddingSettings.role === "groom" ? "groom" : "bride");
+  const [groomSuit, setGroomSuit] = useState("");
   const [selectedSceneType, setSelectedSceneType] = useState<SceneType | null>(
     null,
   );
@@ -232,13 +237,22 @@ const DressFitting = () => {
 
   const handleGenerate = async () => {
     if (!photoPath || !selectedSceneCode) return;
-    if (dressMode === "catalog" && !selectedDress) return;
+    if (gender === "bride" && dressMode === "catalog" && !selectedDress) return;
     setIsGenerating(true);
     try {
       let prompt: string;
       let requestBody: Record<string, unknown>;
 
-      if (dressMode === "custom") {
+      if (gender === "groom") {
+        // 신랑: 예복(수트) 텍스트로 커스텀 생성(수트 카탈로그 데이터 없음). 참조 이미지 없음.
+        const suit = groomSuit.trim() || "a classic well-fitted wedding suit, notch lapel, slim fit, navy or black";
+        prompt = buildFittingPrompt(selectedSceneCode, suit, { custom: true, shotType, gender: "groom" });
+        requestBody = {
+          source_image_path: photoPath,
+          scene_code: selectedSceneCode,
+          prompt,
+        };
+      } else if (dressMode === "custom") {
         // 맞춤: 사용자가 고른 속성을 SCHEMA 텍스트로 직렬화 → 레퍼런스 이미지 없이 생성.
         prompt = buildFittingPrompt(selectedSceneCode, describeDress(customDress), { custom: true, shotType });
         requestBody = {
@@ -363,40 +377,91 @@ const DressFitting = () => {
 
         {step === "dress" && (
           <div className="space-y-3">
+            {/* 성별 — 신랑은 드레스 대신 예복(수트) */}
             <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setDressMode("catalog")}
-                className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${dressMode === "catalog" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
-              >
-                카탈로그에서 선택
-              </button>
-              <button
-                type="button"
-                onClick={() => setDressMode("custom")}
-                className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${dressMode === "custom" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
-              >
-                맞춤 생성
-              </button>
+              {(["bride", "groom"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGenderOverride(g)}
+                  aria-pressed={gender === g}
+                  className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${gender === g ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+                >
+                  {g === "bride" ? "신부 · 드레스" : "신랑 · 예복"}
+                </button>
+              ))}
             </div>
-            {dressMode === "catalog" ? (
-              <DressStep
-                dresses={dresses}
-                loading={loadingDresses}
-                onPick={handlePickDress}
-                isPregnant={isPregnant}
-                showAll={showAllDressesEvenIfPregnant}
-                onToggleShowAll={() => setShowAllDressesEvenIfPregnant((v) => !v)}
-              />
+
+            {gender === "groom" ? (
+              <div className="space-y-2">
+                <p className="text-[13px] text-muted-foreground">
+                  원하는 예복(수트)을 적어주세요. 비워두면 기본 클래식 수트로 생성돼요.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["네이비 슬림핏", "블랙 턱시도", "그레이 쓰리피스", "노치라펠", "피크라펠", "아이보리 재킷", "보타이"].map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setGroomSuit((cur) => (cur.trim() ? `${cur.trim()}, ${c}` : c))}
+                      className="px-2.5 py-1 rounded-full border border-border text-[12px] text-foreground bg-card"
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  value={groomSuit}
+                  onChange={(e) => setGroomSuit(e.target.value)}
+                  maxLength={200}
+                  placeholder="예: 네이비 슬림핏, 노치라펠, 쓰리피스"
+                  className="w-full h-20 p-3 rounded-xl border border-input bg-background text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <button
+                  type="button"
+                  onClick={() => { setSelectedDress(null); setStep("scene"); }}
+                  className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-bold text-sm"
+                >
+                  다음
+                </button>
+              </div>
             ) : (
-              <CustomDressPicker
-                value={customDress}
-                onChange={setCustomDress}
-                onConfirm={() => {
-                  setSelectedDress(null);
-                  setStep("scene");
-                }}
-              />
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDressMode("catalog")}
+                    className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${dressMode === "catalog" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+                  >
+                    카탈로그에서 선택
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDressMode("custom")}
+                    className={`h-10 rounded-xl text-[13px] font-bold border transition-colors ${dressMode === "custom" ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border"}`}
+                  >
+                    맞춤 생성
+                  </button>
+                </div>
+                {dressMode === "catalog" ? (
+                  <DressStep
+                    dresses={dresses}
+                    loading={loadingDresses}
+                    onPick={handlePickDress}
+                    isPregnant={isPregnant}
+                    showAll={showAllDressesEvenIfPregnant}
+                    onToggleShowAll={() => setShowAllDressesEvenIfPregnant((v) => !v)}
+                  />
+                ) : (
+                  <CustomDressPicker
+                    value={customDress}
+                    onChange={setCustomDress}
+                    onConfirm={() => {
+                      setSelectedDress(null);
+                      setStep("scene");
+                    }}
+                  />
+                )}
+              </>
             )}
           </div>
         )}
@@ -413,7 +478,11 @@ const DressFitting = () => {
           <ReviewSection
             photoUrl={photoUrl}
             dress={selectedDress}
-            customSummary={dressMode === "custom" ? summarizeDressKo(customDress) : null}
+            customSummary={
+              gender === "groom"
+                ? (groomSuit.trim() || "기본 클래식 수트")
+                : dressMode === "custom" ? summarizeDressKo(customDress) : null
+            }
             sceneCode={selectedSceneCode}
             hearts={hearts}
             isGenerating={isGenerating}
