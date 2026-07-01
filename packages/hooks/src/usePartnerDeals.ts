@@ -41,8 +41,10 @@ const pubUrl = (url?: string | null): string | null => {
   try { return supabase.storage.from("vendor-images").getPublicUrl(url).data.publicUrl || url; } catch { return url; }
 };
 
-// 업체 카테고리(place.category) → 혜택 탭 카테고리 키.
-const PLACE_TO_DEAL_CAT: Record<string, string> = {
+// 업체 카테고리(place.category) → 혜택 탭 카테고리 키. 매핑에 없는 카테고리는 호출부에서
+// "general"(기타)로 폴백한다(아래 병합 로직의 `?? "general"` 와 동일). 홈 페르소나 매칭 등
+// 다른 곳에서도 같은 규칙을 쓰도록 export — 매핑 드리프트 방지(단일 소스).
+export const PLACE_TO_DEAL_CAT: Record<string, string> = {
   wedding_hall: "venue", studio: "studio", dress_shop: "studio", makeup_shop: "studio", honeymoon: "honeymoon",
 };
 

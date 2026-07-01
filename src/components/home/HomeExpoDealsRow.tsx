@@ -1,19 +1,9 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Ticket, ChevronRight } from "lucide-react";
-import { usePartnerDeals } from "@/hooks/usePartnerDeals";
+import { usePartnerDeals, PLACE_TO_DEAL_CAT } from "@/hooks/usePartnerDeals";
 import { useWeddingProfile } from "@/hooks/useWeddingProfile";
 import { PERSONA_REC_CATEGORIES } from "@/lib/personaRecommendations";
-
-// 페르소나 추천 카테고리(place 카테고리) → 혜택 카테고리 키(usePartnerDeals 의 category).
-// usePartnerDeals 내부 PLACE_TO_DEAL_CAT 과 동일 규칙(그쪽이 비공개라 최소 매핑만 재현).
-const REC_TO_DEAL_CAT: Record<string, string> = {
-  wedding_hall: "venue",
-  studio: "studio",
-  dress_shop: "studio",
-  makeup_shop: "studio",
-  honeymoon: "honeymoon",
-};
 
 /**
  * 홈 "나에게 맞는 웨딩 혜택·박람회" 행 — 온라인 박람회(상시 혜택) 진입점.
@@ -29,10 +19,12 @@ const HomeExpoDealsRow = () => {
 
   const ranked = useMemo(() => {
     if (!deals.length) return [];
-    // 내 페르소나가 우선하는 혜택 카테고리 집합.
+    // 내 페르소나가 우선하는 혜택 카테고리 집합. usePartnerDeals 와 같은 매핑(단일 소스)을 쓰고,
+    // 매핑에 없는 카테고리(예복·한복·청첩장 등)는 deals 와 동일하게 "general"로 폴백 —
+    // 안 그러면 그 페르소나(예: standard_groom·small_intimate)는 매칭이 0이 돼 개인화가 무력화된다.
     const personaDealCats = new Set(
       (personaMode ? PERSONA_REC_CATEGORIES[personaMode] ?? [] : []).map(
-        (c) => REC_TO_DEAL_CAT[c] ?? c,
+        (c) => PLACE_TO_DEAL_CAT[c] ?? "general",
       ),
     );
     const score = (d: (typeof deals)[number]): number =>
