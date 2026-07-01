@@ -56,3 +56,10 @@ jobs:
       # 엔트리(index.ts)+import 만 스코프해서 머지 전에 타입에러를 잡는다.
       - name: Typecheck collect-places
         run: npx tsc -p scripts/collect-places/tsconfig.json
+
+      # 사장님 앱(apps/partners, Phase 4-B) 빌드 가드 — 소비자 CI(e2e·Vercel)는 root 빌드만
+      # 본다. 파트너 앱이 공유 패키지 alias 해석 실패·삭제된 shared export 등으로 조용히
+      # 깨져도 소비자 신호는 초록이라 놓친다(앱 분리가 풀려는 "감사 누락" 문제 그 자체).
+      # 이 스텝이 2번째 앱 빌드를 PR 단계에서 빨갛게 만든다(로컬 실측 ~10s).
+      - name: Build partners app (Phase 4-B guard)
+        run: npm run build:partners

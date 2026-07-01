@@ -179,7 +179,7 @@ graph TD
 | 순서 | 작업 | 근거 | 완료 기준 |
 |---|---|---|---|
 | A1 | ~~Phase 2 도메인 청크 추가~~ **→ 검증 결과 불필요·역효과, 코드 변경 안 함(아래 검증 로그)** | 260624 §Phase2 | **완료(negative result)** |
-| A2 | **Phase 4-B 사장님 앱 이어가기** — `apps/partners` 를 웹 스캐폴드→실사용까지: 라우트 완결성·독립 로그인 동선·web·capacitor 양빌드, 소비자 회귀 0 | 260629 마스터 · 260624 §Phase4 | 파트너 전 화면 apps/partners 로 접근, lint/test/integrity 녹색 |
+| A2 | **Phase 4-B 사장님 앱 이어가기** — 이번 세션: ① 웹 스캐폴드 **빌드·라우트·로그인 동선 실측 확인**(build:partners 녹색 9.5s, 전 `/business/*` 마운트, 로그아웃→`/auth`→PartnerAuth 루프 없음) ② **CI 빌드 가드 추가**(`ci.yml` verify 잡에 `npm run build:partners` — 2번째 앱이 조용히 깨지는 걸 PR 단계에서 차단). 남은 4-B: **네이티브 패키징(4-B2)**(별도 appId·푸시·safeArea) · check-integrity 에 partners 경계 추가 | 260629 마스터 · 260624 §Phase4 | 웹 스캐폴드·CI 가드 ✅ / 네이티브·integrity 이월 |
 | A3 | **Phase 3 앱별 감사 자동화** — `audit-surface-map` 를 앱별 분할 + `weekly-audit.yml` 매트릭스 job(consumer/partners/console 병렬) | 260624 §Phase3(가치 최상) | 앱별 커버리지 표 완결 |
 | A4 | **Phase 5 마케팅 자동화 모듈화** — 흩어진 `instagram-*`+`AdminInstagramPosts`+`content-distribution` 를 console 대시보드 surface 로 통합 | 260624 §Phase5 | 감사맵 등재 |
 
