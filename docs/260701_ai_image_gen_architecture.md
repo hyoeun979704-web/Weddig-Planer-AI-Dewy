@@ -52,6 +52,25 @@
 5. **점진 착수 권장 순서**(ROI): ① 헤어(남성 헤어 수요 큼·구조 단순) → ② 예복(드레스 파이프 치환) →
    ③ 컨설팅 신랑 섹션 → ④ 메이크업(남성 그루밍, 수요 낮음). 사진보정은 이미 성별무관(불필요).
 
+## 4-A. 프롬프트 위치 실측 (체계화 방향 — 260701 추가)
+- **헤어**: 프롬프트가 edge 함수 인라인이었음 → **`_shared/subjectPrompt.ts`(성별 인지 공유 모듈)로 이관 완료** + 신랑 지원 end-to-end 완료(토글·남성 어휘·`bride.png` 제거).
+- **드레스·스드메**: 프롬프트가 **`packages/shared/src/data/{fittingScenes,sdmPrompt}.ts`** 의 빌더
+  (`buildFittingPrompt`·`buildRecommendDressPrompt`·`buildSdmPrompt`)에 있음 — **이미 단일 소스**
+  (프론트 페이지 + `promptCatalog.ts` 어드민 미리보기가 공유). 즉 "프롬프트가 흩어졌다"기보다
+  **신부 문구로 고정**된 상태. → **체계적 개선 = 이 빌더들을 성별 파라미터화**(서버 이전 불필요).
+  참고: `buildPhotoshootCutPrompt` 는 이미 `groomDescription`/`GROOM` 존재(부분 신랑 개념 있음).
+- **남은 신랑 작업(정확한 스펙)**:
+  1. `fittingScenes.ts`: `buildFittingPrompt`/`buildRecommendDressPrompt` 에 `gender` 추가 →
+     "Korean bridal portrait/the bride/her/드레스" → 신랑판(그루밍 포트레이트/the groom/his/**예복(수트)**),
+     DRESS SCHEMA→SUIT SCHEMA, 마네킹 드레스→수트. SCENES 프롬프트블록의 "bride stands" 등 주체어도 성별화.
+  2. `sdmPrompt.ts`: `buildSdmPrompt` 성별 분기(드레스→예복, 헤어 남성 어휘).
+  3. 프론트(`DressFitting`·`SdmPreview`): 신부/신랑 토글(기본=role) + `gender` 전달. **신랑은 수트 카탈로그
+     데이터가 없어 dress 카탈로그 대신 커스텀(텍스트) 예복 플로우**(또는 어드민 suit_samples 신설=데이터 과제).
+  4. **컨설팅**(`wedding-consulting`): 별개 — edge 에서 신부 A4 보드(부케·드레스·넥라인·퍼스널컬러)를
+     생성. 신랑판은 **보드 재설계**(수트·셔츠·타이·그루밍, 부케/드레스/넥라인 제거) + ANALYSIS_GUIDE 신랑 스키마.
+     가장 큰 작업 → 독립 세션 권장.
+- **권장 착수 순서**: ① `fittingScenes` 예복(+DressFitting 토글) → ② `sdmPrompt` → ③ 컨설팅(재설계).
+
 ## 5. 검증 메모(정직)
 - 이번 세션 P3 는 카드 *정렬 로직*만 유닛테스트(8케이스). **실제 스튜디오 화면·신랑 e2e 미확인**(현재 신랑
   생성 자체가 없음). 위 신랑 지원은 신규 기능 개발 건 — 프롬프트 남성판이 실제 작업량의 핵심.
