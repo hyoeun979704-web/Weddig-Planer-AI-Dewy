@@ -6,6 +6,12 @@
  *  - tone:  어두운(DARK) / 밝은(BRIGHT) / 가든(GARDEN)
  *
  * Edge Function 에서 코드값을 받아 promptBlock 을 메인 프롬프트에 주입.
+ *
+ * 결과물의 기준 시점 = 웨딩 당일(본식/웨딩촬영) — 첨부사진은 "누구인지(identity)"의
+ * 근거일 뿐, 당일 스타일링의 근거가 아니다. 카탈로그/맞춤/추천 모두 WEDDING-DAY
+ * HAIR·MAKEUP(신랑은 GROOMING) 섹션이 일상 상태 복사를 금지하고 완성 스타일링을
+ * 지시한다. 맞춤 모드는 TAILORED 블록으로 사진 무언 분석(얼굴형·체형·언더톤) 기반
+ * 개인화를 강제한다(스키마 속성은 고정, 해석만 개인화). 보정 강도는 retouch.ts.
  */
 
 import { shotFramingBlock, type ShotType } from "./shotTypes.ts";
@@ -229,6 +235,22 @@ export const buildFittingPrompt = (
   const dressSectionHeader = custom
     ? "DRESS — render exactly as specified in DRESS SCHEMA"
     : "DRESS — keep exactly from Image 2";
+  // 결과물의 기준 시점 = 웨딩 당일(본식/촬영). 첨부사진은 "누구인지"의 근거일 뿐,
+  // 당일 스타일링(헤어·메이크업)의 근거가 아니다 — 일상 상태 복사 앵커 제거.
+  const occasionNoun = isCeremony
+    ? "her actual wedding ceremony"
+    : "her professional wedding photoshoot";
+  // 맞춤 모드: 스키마 속성은 고정하되, 스키마가 비워둔 선택은 사진 분석 기반으로 개인화.
+  const tailoringBlock = custom
+    ? `TAILORED TO HER — the schema is fixed, the interpretation is personal
+Silently analyze Image 1 first: her face shape, body proportions, and skin
+undertone. Follow the DRESS SCHEMA attributes exactly as specified — but every
+choice the schema leaves open (how the fit sits on her body, the hairstyle,
+makeup tones, jewelry scale, pose nuance) must be chosen specifically to
+flatter HER, never a generic default.
+
+`
+    : "";
 
   return `You're generating a photorealistic Korean bridal portrait.
 
@@ -256,24 +278,34 @@ ${taskDressSource}, in the venue described below.
 
 ${shotFramingBlock(shotType, longGown)}
 
-BRIDE — keep exactly from Image 1
+${tailoringBlock}BRIDE — identity from Image 1, styling from her wedding day
 - Face: the SAME PERSON — reproduce EVERY feature exactly as detailed in
   IDENTITY MATCH above (eyes, eyelid type, brows, nose, lips, jawline, chin,
   cheekbones, proportions). Recognizable at a glance; no beautification.
 - Skin tone, complexion, age
-- Hair color and natural texture (bridal updos/waves okay, identity stays)
 - Keep her recognizable build, but follow the FRAMING above for proportions
   (flattering and elegant — do not copy an unflattering posture or angle).
+- Image 1 shows WHO she is — NOT how she is styled today. This portrait is
+  ${occasionNoun}: do NOT carry the photo's everyday hair, bare face or daily
+  makeup, casual clothing, or ambient lighting into the output.
 
-MAKEUP — soft natural bridal makeup
-- If the bride looks bare-faced or wears only minimal makeup, apply tasteful
-  soft bridal makeup so she reads as wedding-ready: smooth even base, subtly
-  groomed and filled brows, soft neutral eyeshadow with light definition,
-  natural curled lashes, a healthy blush, and a tinted MLBB/rose lip. Keep it
-  natural and elegant — wedding day, NOT heavy glam.
-- Enhance only. Do NOT change her identity, facial features, eye/lip shape,
-  bone structure, skin tone, or age — she must still clearly be the same person.
-- If she already wears makeup in the photo, keep her existing look.
+WEDDING-DAY HAIR — restyled by a professional Korean bridal stylist
+- Silently note her face shape and the dress neckline, then restyle her hair
+  into ONE polished bridal style that flatters both — e.g. a soft low updo
+  with delicate face-framing strands, romantic waves, an elegant half-up, or
+  a clean chignon${isCeremony ? " (veil-friendly, ceremony-proof)" : " (editorial, camera-ready)"}.
+- Keep her natural hair color and hairline: the STYLING transforms, the
+  identity does not.
+
+WEDDING-DAY MAKEUP — complete professional bridal makeup
+- Apply a COMPLETE Korean bridal makeup look regardless of what she wears in
+  Image 1 — even if she is bare-faced, and replacing any everyday makeup:
+  flawless even base, groomed and defined brows, soft eye definition with
+  curled lashes, a healthy blush, and an elegant lip tone chosen to suit her
+  skin undertone. Wedding-day polished — elegant, NOT heavy glam.
+- Makeup is painted ONTO her exact features. Do NOT change her identity,
+  facial features, eye/lip shape, bone structure, skin tone, or age — she
+  must still clearly be the same person, on her wedding day.
 
 ${dressSectionHeader}
 - Silhouette, fit, length, train, neckline, sleeves, back design
@@ -316,6 +348,8 @@ ${
 
 DO NOT
 - Drift the face toward generic / idealized features
+- Copy the everyday hair, daily makeup, or casual clothing from Image 1 —
+  she is fully wedding-styled in the output
 - Slim, broaden, or alter the bride's body
 - Modify any dress detail
 - Show a mannequin, stand, or pole
@@ -363,6 +397,19 @@ function buildGroomFittingPrompt(
   const suitSectionHeader = custom
     ? "SUIT — render exactly as specified in SUIT SCHEMA"
     : "SUIT — keep exactly from Image 2";
+  const occasionNoun = isCeremony
+    ? "his actual wedding ceremony"
+    : "his professional wedding photoshoot";
+  const tailoringBlock = custom
+    ? `TAILORED TO HIM — the schema is fixed, the interpretation is personal
+Silently analyze Image 1 first: his face shape, build, and skin undertone.
+Follow the SUIT SCHEMA attributes exactly as specified — but every choice the
+schema leaves open (how the tailoring sits on his frame, hairstyle, grooming
+level, pose nuance) must be chosen specifically to flatter HIM, never a
+generic default.
+
+`
+    : "";
   // 씬 문구의 신부 표현 중립화(장소 묘사라 대부분 무해, "the bride stands" 류만 치환).
   const venue = scene.promptBlock
     .replace(/\bbride\b/gi, "groom")
@@ -395,18 +442,24 @@ ${taskSuitSource}, in the venue described below.
 
 ${shotFramingBlock(shotType, false)}
 
-GROOM — keep exactly from Image 1
+${tailoringBlock}GROOM — identity from Image 1, styling from his wedding day
 - Face: the SAME PERSON — reproduce EVERY feature exactly as in IDENTITY MATCH
   above. Recognizable at a glance; no beautification.
 - Skin tone, complexion, age
-- Hair color and natural texture (neat men's grooming okay, identity stays)
 - Keep his recognizable build, but follow the FRAMING above for proportions.
+- Image 1 shows WHO he is — NOT how he is styled today. This portrait is
+  ${occasionNoun}: do NOT carry the photo's casual hair, clothing, or ambient
+  lighting into the output.
 
-GROOMING — clean, wedding-ready (NOT makeup)
-- Neat groomed hair, tidy brows, clean healthy skin. If facial hair is present,
-  keep it neatly trimmed; do NOT add or remove facial hair. Natural, not made-up.
-- Enhance only. Do NOT change his identity, features, bone structure, skin tone,
-  or age — he must still clearly be the same person.
+WEDDING-DAY HAIR & GROOMING — styled for his wedding (NOT makeup)
+- Restyle his hair into ONE neat wedding-day style chosen to flatter his face
+  shape — e.g. a clean side part, natural down styling, or softly swept-back
+  volume. Keep his natural hair color and hairline.
+- Wedding-day grooming: clean healthy prepared skin, tidy brows; if facial
+  hair is present, keep it neatly trimmed — do NOT add or remove it. Natural,
+  never made-up.
+- Do NOT change his identity, features, bone structure, skin tone, or age —
+  he must still clearly be the same person, on his wedding day.
 
 ${suitSectionHeader}
 - Silhouette and fit (slim / regular), jacket length, lapel type (notch / peak /
@@ -441,6 +494,8 @@ ${
 
 DO NOT
 - Drift the face toward generic / idealized features
+- Copy the everyday hair or casual clothing from Image 1 — he is fully
+  wedding-styled in the output
 - Slim, broaden, or alter the groom's body
 - Modify any suit detail
 - Show a mannequin, stand, or pole
@@ -478,6 +533,9 @@ export const buildRecommendDressPrompt = (
 
   const isCeremony = scene.scene === "CEREMONY";
   const retouch = retouchBlock(opts.retouch ?? "natural", "bride");
+  const occasionNoun = isCeremony
+    ? "her actual wedding ceremony"
+    : "her professional wedding photoshoot";
 
   return `You're generating a photorealistic Korean bridal portrait.
 
@@ -513,10 +571,13 @@ against. Stick to bridal colors (white / ivory / off-white /
 champagne / blush). The chosen dress must look intentional and
 fully designed, not a mix of conflicting elements.
 
-BRIDE — keep exactly from Image 1
+BRIDE — identity from Image 1, styling from her wedding day
 - Face: the SAME PERSON — reproduce every feature exactly as detailed in
   IDENTITY MATCH above; recognizable at a glance, no beautification
-- Skin tone, complexion, age, hair color and natural texture
+- Skin tone, complexion, age; keep her natural hair color
+- Image 1 shows WHO she is — NOT how she is styled today. This portrait is
+  ${occasionNoun}: do NOT carry the photo's everyday hair, bare face or daily
+  makeup, casual clothing, or ambient lighting into the output.
 - Body proportions:
   · Full-body input → COPY EVERYTHING from the photo (height, build,
     torso/leg ratio, shoulder width, hand size). The photo wins.
@@ -525,12 +586,20 @@ BRIDE — keep exactly from Image 1
 - Never produce doll-like / chibi or stretched fashion-illustration
   proportions.
 
-MAKEUP — soft natural bridal makeup
-- If the bride looks bare-faced or wears only minimal makeup, apply tasteful
-  soft bridal makeup (smooth base, groomed brows, soft neutral eye, natural
-  lashes, healthy blush, tinted MLBB/rose lip) so she reads as wedding-ready —
-  natural and elegant, NOT heavy glam. Enhance only; keep her identity,
-  features, skin tone and age unchanged. If she already wears makeup, keep it.
+WEDDING-DAY HAIR — restyled by a professional Korean bridal stylist
+- Silently note her face shape and the neckline of the dress you chose, then
+  restyle her hair into ONE polished bridal style that flatters both — e.g. a
+  soft low updo with face-framing strands, romantic waves, an elegant
+  half-up, or a clean chignon${isCeremony ? " (veil-friendly, ceremony-proof)" : " (editorial, camera-ready)"}.
+  Keep her natural hair color and hairline.
+
+WEDDING-DAY MAKEUP — complete professional bridal makeup
+- Apply a COMPLETE Korean bridal makeup look regardless of what she wears in
+  Image 1 — even if bare-faced, replacing any everyday makeup: flawless even
+  base, groomed defined brows, soft eye definition with curled lashes, healthy
+  blush, and an elegant lip tone suited to her skin undertone and the dress.
+  Wedding-day polished — elegant, NOT heavy glam. Makeup is painted ONTO her
+  exact features; identity, feature shapes, skin tone and age stay unchanged.
 
 ${retouch ? retouch + "\n\n" : ""}VENUE
 ${scene.promptBlock}
@@ -552,6 +621,8 @@ ${
 
 DO NOT
 - Drift the face toward generic / idealized features
+- Copy the everyday hair, daily makeup, or casual clothing from Image 1 —
+  she is fully wedding-styled in the output
 - Slim, broaden, or alter the bride's actual body
 - Mix conflicting design elements (e.g. boho lace with sharp modern
   satin column) — the dress must read as one cohesive design
@@ -582,6 +653,9 @@ function buildRecommendSuitPrompt(
   if (!scene) throw new Error(`unknown scene code: ${sceneCode}`);
   const isCeremony = scene.scene === "CEREMONY";
   const retouch = retouchBlock(opts.retouch ?? "natural", "groom");
+  const occasionNoun = isCeremony
+    ? "his actual wedding ceremony"
+    : "his professional wedding photoshoot";
   const venue = scene.promptBlock
     .replace(/\bbride\b/gi, "groom")
     .replace(/\bher\b/gi, "his")
@@ -615,17 +689,24 @@ shawl), jacket length, vest or no vest, shirt, tie or bow tie, and a color
 (classic black / charcoal / navy / grey / ivory tux). Avoid what the guide
 warns against. The suit must look intentional and fully designed.
 
-GROOM — keep exactly from Image 1
+GROOM — identity from Image 1, styling from his wedding day
 - Face: the SAME PERSON — every feature exactly as in IDENTITY MATCH above.
-- Skin tone, complexion, age, hair color and natural texture (neat grooming okay).
+- Skin tone, complexion, age; keep his natural hair color.
+- Image 1 shows WHO he is — NOT how he is styled today. This portrait is
+  ${occasionNoun}: do NOT carry the photo's casual hair, clothing, or ambient
+  lighting into the output.
 - Body proportions:
   · Full-body input → COPY the photo's height, build, proportions. The photo wins.
   · Upper-body input → infer a plausible Korean man body consistent with "${bodyShapeLabel}".
 - Never doll-like / chibi or stretched proportions.
 
-GROOMING — clean, wedding-ready (NOT makeup)
-- Neat groomed hair, tidy brows, clean healthy skin; keep any facial hair neatly
-  trimmed (do not add/remove). Enhance only; identity, features, skin tone, age unchanged.
+WEDDING-DAY HAIR & GROOMING — styled for his wedding (NOT makeup)
+- Restyle his hair into ONE neat wedding-day style chosen to flatter his face
+  shape — e.g. a clean side part, natural down styling, or softly swept-back
+  volume. Keep his natural hair color and hairline.
+- Wedding-day grooming: clean healthy prepared skin, tidy brows; keep any
+  facial hair neatly trimmed (do not add/remove). Identity, features, skin
+  tone, age unchanged — the same person, on his wedding day.
 
 ${retouch ? retouch + "\n\n" : ""}VENUE
 ${venue}
@@ -645,6 +726,8 @@ ${
 
 DO NOT
 - Drift the face toward generic / idealized features
+- Copy the everyday hair or casual clothing from Image 1 — he is fully
+  wedding-styled in the output
 - Slim, broaden, or alter the groom's actual body
 - Mix conflicting design elements — the suit must read as one cohesive look
 - Show a mannequin, stand, or pole
